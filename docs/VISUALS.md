@@ -1,7 +1,7 @@
 # Graphics redesign
 
 This is the implementation brief for the opt-in illustrated overhaul in
-[PLAYTEST-30.md](PLAYTEST-30.md), covering the whole game. SVG graphics are the main presentation
+[PLAYTEST-30.md](playtests/PLAYTEST-30.md), covering the whole game. SVG graphics are the main presentation
 for now and are maintained against the existing SVG style. This brief describes the illustrated
 target, not a claim that its renderer or artwork is implemented. Animation, depth, material and
 composition are designed together. Luna agents implement bounded pieces; the orchestrating session

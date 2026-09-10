@@ -4,7 +4,7 @@
 
 > the player texture is missing. the legs of the mustard and red people look odd -- slanted when goind east/west and moving outwards when going north/south. from the reference image you created I can tell that the distance between pram and player is too large forcing the arms the stretch unnaturally long. also, the pram is pixelated for some reason. document/create skills/etc for making the process of adding textures reproducible. note down all traps and footguns so we can be faster in the future
 
-The player supplies [this gameplay image](evidence/run-195148-seed1407488451-v0.7.0-34-g4ae11f4/asked/008s-attempt1-asked.png).
+The player supplies [this gameplay image](../evidence/run-195148-seed1407488451-v0.7.0-34-g4ae11f4/asked/008s-attempt1-asked.png).
 The complete originating run folder is preserved beside it, including the log and map. The image
 shows the legacy mother/pram comparison without its illustrated counterpart. The directional
 movement observations are the player's report; a still does not establish their motion.

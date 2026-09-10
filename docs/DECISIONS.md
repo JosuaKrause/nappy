@@ -817,7 +817,7 @@ cyclist's whole 3.3s approach reads as warning or as alarm. The vocabulary's fou
 ### The entry as it stood when it was built
 
 
-[PLAYTEST-37.md](PLAYTEST-37.md) finding 5, in three sentences: *"caret == lethal is good but is
+[PLAYTEST-37.md](playtests/PLAYTEST-37.md) finding 5, in three sentences: *"caret == lethal is good but is
 inconsistently applied at the moment"*, *"a cat has a caret but it's benign"*, *"a pedestrian
 without caret has a greater impact than a cat"* — and the instruction: **"carets shouldn't be
 chosen by source value but by expected impact value."**
@@ -1130,7 +1130,7 @@ entry above this one.
 
 ## M95 — The signal head that faces north shows its back — 2026-09-09
 
-[PLAYTEST-48.md](PLAYTEST-48.md): *"the north facing traffic light shows the lights towards the
+[PLAYTEST-48.md](playtests/PLAYTEST-48.md): *"the north facing traffic light shows the lights towards the
 south. we should only see the back of it. the information is fully encoded in the south facing
 one. let's make a proper north facing graphic"*.
 
@@ -1149,7 +1149,7 @@ head goes from a red lamp to a back plate and the other three are identical in b
 
 ## M94 — The tunnel and the bridge carry traffic both ways — 2026-09-09
 
-[PLAYTEST-47.md](PLAYTEST-47.md), two notes on a freshly pulled `main` at `b4e0fba`. *"no car
+[PLAYTEST-47.md](playtests/PLAYTEST-47.md), two notes on a freshly pulled `main` at `b4e0fba`. *"no car
 ever comes *out* of the tunnel or from the bridge"*, and a boot that failed on the pram texture
 `ModularPerson` preloads, taking every script that depends on the player down with it.
 
@@ -1730,7 +1730,7 @@ that is not on `main`*. The verify skill says where a probe worth keeping goes.
 
 ## The tunnel swallows the road · built 2026-09-08
 
-[PLAYTEST-39.md](PLAYTEST-39.md)'s one finding, and the second time the tunnel has been reported:
+[PLAYTEST-39.md](playtests/PLAYTEST-39.md)'s one finding, and the second time the tunnel has been reported:
 *"the fading out should happen inside the tunnel entrance above the tunnel entrance should just be
 the mountain. and the road texture should be the normal road texture not the pedcrossing"*.
 Playtest 24 finding 5 had said the first two things — *"its road texture above the tunnel entrance
@@ -1803,8 +1803,8 @@ is a real crossing in the open, and its paint says so.
 
 ## M92 — The halo says how much it cost · built 2026-09-08
 
-Three findings from [PLAYTEST-36.md](PLAYTEST-36.md), then four more from
-[PLAYTEST-38.md](PLAYTEST-38.md) played on the branch, and a design conversation in between that
+Three findings from [PLAYTEST-36.md](playtests/PLAYTEST-36.md), then four more from
+[PLAYTEST-38.md](playtests/PLAYTEST-38.md) played on the branch, and a design conversation in between that
 answered the question M89 had tabled. Built by two sub-agents from briefs; the design moved four
 times while the first one worked, each time from the player, and the moves are the record.
 
@@ -1890,7 +1890,7 @@ transparency curve, the 0.3s and 0.8s fades, the 40-point red, and the mother's 
 
 ## M78 — The chalk mark can be found · built 2026-09-08
 
-Two findings from [PLAYTEST-19.md](PLAYTEST-19.md), halves of one thing: the first mark was
+Two findings from [PLAYTEST-19.md](playtests/PLAYTEST-19.md), halves of one thing: the first mark was
 announced when it should not be, and it could not be found when it should be. Neither needed a
 drawing, which is why they stood apart from M65's pointing protester. Built by a sub-agent from a
 brief; the choices below marked *orchestrator's reading* were fixed in the brief and are open to
@@ -1976,7 +1976,7 @@ one owner of every prop. The capture is
 — seed 4242, day 1, the precinct's west mouth — and shows the five posts in a vertical line where
 the open paving meets an ordinary crossroads, the pavement strips unbroken on either side.
 
-**The bollards did not address the complaint, and the player said so the same day.** [PLAYTEST-37.md](PLAYTEST-37.md):
+**The bollards did not address the complaint, and the player said so the same day.** [PLAYTEST-37.md](playtests/PLAYTEST-37.md):
 *"the original complaint was that there is a zebra crossing at the edge of the precinct which
 shouldn't be there"*, and *"we can keep the bollards but it doesn't address the complaint"*. The
 2026-09-02 instruction — *all roads leading up to a precinct should be t-junctions at the edge* —
@@ -2147,7 +2147,7 @@ to prevent. Three possible answers are written down in `TODO.md` and none is cho
 
 ## M91 — Notice, per pursuer, and the biker's own side of the road · built 2026-09-07
 
-Three findings from [PLAYTEST-34.md](PLAYTEST-34.md), and the headline is that **one rule was wrong
+Three findings from [PLAYTEST-34.md](playtests/PLAYTEST-34.md), and the headline is that **one rule was wrong
 at both ends at once**: M87 gave every approaching row the same `OFFSCREEN_NOTICE` (0.2s of closing
 on top of the ray to the edge of the view), and the player asked for two rows to move in **opposite**
 directions on the same day. *(2026-09-07: "pursuing dog is still too short notice while biker is now
@@ -2176,7 +2176,7 @@ allows.
 *(2026-09-07: "getting lucky once is fine.")* On the worst siting geometry a walking player could
 outlast the clock rather than being caught. Recorded so a later report of *"the dog gave up and I
 never ran"* is recognised as this rather than investigated as a new defect — and see
-[PLAYTEST-35.md](PLAYTEST-35.md) for the full answer to *does the dog ever give up while she walks*:
+[PLAYTEST-35.md](playtests/PLAYTEST-35.md) for the full answer to *does the dog ever give up while she walks*:
 the give-up condition is 0.35s of the gap **opening**, which only a run can produce.
 
 **The biker's field had to shrink to let its telegraph shrink.** `telegraph_time` is tied to
@@ -2203,8 +2203,8 @@ row that cannot be sited is an encounter that silently does not happen.
 
 ## M90 — The controls do what the hand does · built 2026-09-07
 
-Seven findings from [PLAYTEST-34.md](PLAYTEST-34.md) and four more from
-[PLAYTEST-35.md](PLAYTEST-35.md), which arrived while this branch was still open and were built into
+Seven findings from [PLAYTEST-34.md](playtests/PLAYTEST-34.md) and four more from
+[PLAYTEST-35.md](playtests/PLAYTEST-35.md), which arrived while this branch was still open and were built into
 it rather than queued against it — **nothing merges carrying a defect that was already found**.
 
 **Two root causes, and neither is visible in the diff that fixed it.**
@@ -2322,7 +2322,7 @@ title captions say once.
 
 ## M85 — One press, answered · built 2026-09-07
 
-Eight findings from [PLAYTEST-33.md](PLAYTEST-33.md), and one milestone because they are one
+Eight findings from [PLAYTEST-33.md](playtests/PLAYTEST-33.md), and one milestone because they are one
 subject: **what a press does, and what the screens around a run say about it.**
 
 **The two focal points moved a third of the way out and a third of the way down.** *(2026-09-07:
@@ -2689,7 +2689,7 @@ produced it:
 **What does not belong here.** Anything that is currently true. If a sentence in this file describes
 how the game works today, it is in the wrong file and belongs in the design doc it is about.
 
-**The playtest files are not absorbed into this one.** `docs/PLAYTEST-NN.md` are primary sources — a
+**The playtest files are not absorbed into this one.** `docs/playtests/PLAYTEST-NN.md` are primary sources — a
 player's own words on a date — and this file cites them rather than restating them.
 
 ---
@@ -2704,7 +2704,7 @@ for.
 
 ## M83 — One set of controls, everywhere, that answers a press — 2026-09-06
 
-**[PLAYTEST-29.md](PLAYTEST-29.md), and it opens by rejecting a status report rather than the
+**[PLAYTEST-29.md](playtests/PLAYTEST-29.md), and it opens by rejecting a status report rather than the
 build**: *"I did not approve any of this."* M82's own end-of-session note listed two things as known
 and deliberate — the pause button still painted in `_draw()` primitives, and an unreachable
 mouse-click branch on the continue and restart buttons. Neither had been agreed, and three of this
@@ -2816,7 +2816,7 @@ Whether they can be found by feel is the played question this milestone leaves o
 
 ## M82 — One way to say where she goes — 2026-09-06
 
-**[PLAYTEST-28.md](PLAYTEST-28.md), all three findings, plus the four answers under them, and
+**[PLAYTEST-28.md](playtests/PLAYTEST-28.md), all three findings, plus the four answers under them, and
 playtest 27's sixth finding for the walking rule itself.** The game had two control schemes chosen
 on the title screen — the drag stick, and a tap-to-walk mode that fixed a heading *and* a target,
 walked the straight line, and paused after `ARRIVAL_PAUSE_AFTER` (5s) of standing at it. Asked
@@ -3072,7 +3072,7 @@ explicit stronger-model overrides when needed. The parent retained design and ve
 > of *each axis* and a precinct of one corridor in each, which is three kinds of street and no
 > hierarchy among them: a spine that crosses itself is two spines, and a precinct you meet on every
 > third street is what a street is. Two of the three kinds are **places** now rather than classes,
-> and that is the correction worth carrying — see [PLAYTEST-12.md](PLAYTEST-12.md), which is the
+> and that is the correction worth carrying — see [PLAYTEST-12.md](playtests/PLAYTEST-12.md), which is the
 > first playtest this project has ever taken *inside* a milestone rather than a milestone late.
 >
 > **The ground is a rate, not a category**, and it is the change that reaches furthest. Calm 2.2,
@@ -3134,7 +3134,7 @@ explicit stronger-model overrides when needed. The parent retained design and ve
 
 > **Playtest 11 arrived after M39 was built and before it was merged**, so two of its nine findings
 > are about work the player was not running. It is written up in
-> [PLAYTEST-11.md](PLAYTEST-11.md) and planned as **M41** (a main road with lights, a tunnel, a
+> [PLAYTEST-11.md](playtests/PLAYTEST-11.md) and planned as **M41** (a main road with lights, a tunnel, a
 > bridge, junctions that give way), **M42** (a 9x9 city with the home in the middle) and **M43**
 > (the rest). The one sentence is *several things in this city are placed without asking what they
 > are in the way of*, and the one to read first is the day-3 dog: **standing still is not the fix on
@@ -3484,7 +3484,7 @@ explicit stronger-model overrides when needed. The parent retained design and ve
 > went **12.2 → 17.2**. One row of the cost table moved and it is the robbery's.
 >
 > **Finding 4 is diagnosed and deliberately not fixed** — see below, and
-> [PLAYTEST-07.md](PLAYTEST-07.md). It is a `Building` sorting by its **south edge** while its mass
+> [PLAYTEST-07.md](playtests/PLAYTEST-07.md). It is a `Building` sorting by its **south edge** while its mass
 > extends a block north of it.
 
 > **M33 is playtest 07, and it is one sentence: every cost in the game was paid on contact, and
@@ -3548,7 +3548,7 @@ explicit stronger-model overrides when needed. The parent retained design and ve
 > who has stopped, and not over the walking lesson, because the `Teach` label is one label.
 >
 > **Ten of the nineteen are open** and they are listed at the bottom of
-> [PLAYTEST-07.md](PLAYTEST-07.md). The two worth knowing before touching anything: **solid
+> [PLAYTEST-07.md](playtests/PLAYTEST-07.md). The two worth knowing before touching anything: **solid
 > objects are not solid** — `obstructs_radius` is set on five rows of thirty, so a delivery van, an
 > ice cream van, a reversing lorry and a burnt-out shell can all be walked through — and **finding
 > 4 is not diagnosed**. The warning indicators render below roofs and the geometry says they
@@ -3758,7 +3758,7 @@ everything upfront"* — reads as a performance note and is not one: the game wa
 divided by the 99.2% of the city nobody is looking at. The crowd is a **field** that travels
 with her, events are **planned across the whole city at dawn and instantiated near her**, the
 cat is the first `AHEAD_OF_PLAYER` event, and traffic keeps a headway. Day 1 is 11–13 events
-of which 3–4 are live at any moment. [PLAYTEST-04.md](PLAYTEST-04.md) has the measured table.
+of which 3–4 are live at any moment. [PLAYTEST-04.md](playtests/PLAYTEST-04.md) has the measured table.
 
 **M22 deleted the circles.** `EventAuraLayer` no longer exists and a test asserts it cannot
 come back. What replaced it: a **caret over the entity** for danger that *changes over time*
@@ -3949,13 +3949,13 @@ a design decision, not a drawing one; read `docs/EVENTS.md`, "The visual vocabul
 
 ## Seven playtests, and the order they left behind
 
-All seven are live plans: **[PLAYTEST-01.md](PLAYTEST-01.md)** (thirteen findings → M11–M17),
-**[PLAYTEST-02.md](PLAYTEST-02.md)** (twelve → M18–M26), **[PLAYTEST-03.md](PLAYTEST-03.md)**
+All seven are live plans: **[PLAYTEST-01.md](playtests/PLAYTEST-01.md)** (thirteen findings → M11–M17),
+**[PLAYTEST-02.md](playtests/PLAYTEST-02.md)** (twelve → M18–M26), **[PLAYTEST-03.md](playtests/PLAYTEST-03.md)**
 (the first read off a run log; it reorders rather than adds),
-**[PLAYTEST-04.md](PLAYTEST-04.md)** (seven findings; adds M27 and moved M22 and M21 to the
-front), **[PLAYTEST-05.md](PLAYTEST-05.md)** (six findings → M28, M29, M30, M24 and M31,
-**all closed**), **[PLAYTEST-06.md](PLAYTEST-06.md)** (five things, **all closed** as M32), and
-**[PLAYTEST-07.md](PLAYTEST-07.md)** (nineteen, **fifteen** closed — M33, M34, two picked up by
+**[PLAYTEST-04.md](playtests/PLAYTEST-04.md)** (seven findings; adds M27 and moved M22 and M21 to the
+front), **[PLAYTEST-05.md](playtests/PLAYTEST-05.md)** (six findings → M28, M29, M30, M24 and M31,
+**all closed**), **[PLAYTEST-06.md](playtests/PLAYTEST-06.md)** (five things, **all closed** as M32), and
+**[PLAYTEST-07.md](playtests/PLAYTEST-07.md)** (nineteen, **fifteen** closed — M33, M34, two picked up by
 M35, and four as M37).
 Read 07 and then 06 before picking anything up; the summaries here are not a substitute for them,
 and each carries what its analysis got wrong as well as what it got right — 06's is at the bottom
@@ -4313,7 +4313,7 @@ obstacle course. Three specific things to watch, because a rig cannot:
 
 ### Then: the three left from playtest 07
 
-Listed at the bottom of [PLAYTEST-07.md](PLAYTEST-07.md), and none of them is large: **1**, the cat
+Listed at the bottom of [PLAYTEST-07.md](playtests/PLAYTEST-07.md), and none of them is large: **1**, the cat
 crossing perpendicular to her *heading*, which is a run down the middle of the carriageway when she
 is crossing a road; **8**, a four-block calm zone rolling `QUIET_SQUARE` and becoming a 22-tile
 concrete plaza with thirty trees on it; and **6**, a car turning swapping axes in one frame with no
@@ -4811,11 +4811,11 @@ Each milestone is one git branch, merged to `main` when green.
 
 **Where things stand:** M0–M16, M18, M19, M22, M23 and M27 are done and merged, and the game has
 now been played four times by a human. The first playtest produced thirteen findings, planned
-as M11–M17 in **[docs/PLAYTEST-01.md](PLAYTEST-01.md)**; the second produced twelve, planned as
-M18–M26 in **[docs/PLAYTEST-02.md](PLAYTEST-02.md)**; the third, in
-**[docs/PLAYTEST-03.md](PLAYTEST-03.md)**, is the first read off a run log and reorders some
+as M11–M17 in **[docs/playtests/PLAYTEST-01.md](playtests/PLAYTEST-01.md)**; the second produced twelve, planned as
+M18–M26 in **[docs/playtests/PLAYTEST-02.md](playtests/PLAYTEST-02.md)**; the third, in
+**[docs/playtests/PLAYTEST-03.md](playtests/PLAYTEST-03.md)**, is the first read off a run log and reorders some
 of what the second one planned rather than adding milestones; the fourth, in
-**[docs/PLAYTEST-04.md](PLAYTEST-04.md)**, adds one milestone and puts two that were already
+**[docs/playtests/PLAYTEST-04.md](playtests/PLAYTEST-04.md)**, adds one milestone and puts two that were already
 queued at the front of the queue. All four are live plans and should be read before picking
 anything up.
 
@@ -4827,7 +4827,7 @@ finding — *"don't load everything upfront"* — turned out to be what was unde
 other six, and because M21 and M22 both get judged against a street that now has traffic on it.
 
 **Playtest 05 has landed and all six of its findings are done** — M28, M29, M30, M24 and M31.
-Six findings in **[docs/PLAYTEST-05.md](PLAYTEST-05.md)**: two
+Six findings in **[docs/playtests/PLAYTEST-05.md](playtests/PLAYTEST-05.md)**: two
 traffic defects (cars stop at arbitrary points for a zebra; the two axes drive on opposite
 sides of the road), M22's exclamation mark firing unattributably and without consequence, the
 same park being usable on day 1 and day 2 (M24), **"day two doesn't feel more difficult than
@@ -4844,7 +4844,7 @@ lap. The other two halves of M21 (main roads with lights; the canal) are deliber
 open; see the entry below.
 
 **Playtest 06 has landed and all five of its things are done (M32).** In
-**[docs/PLAYTEST-06.md](PLAYTEST-06.md)**, the first playtest ever taken on M28–M31: **the
+**[docs/playtests/PLAYTEST-06.md](playtests/PLAYTEST-06.md)**, the first playtest ever taken on M28–M31: **the
 difficulty is now right** — the first balance number in this game ever confirmed by a human —
 plus two cues whose *condition was not the thing they claimed to mean*, a lost day that should be
 **retried rather than skipped**, and the vocabulary asked for in the other direction: something
@@ -4853,12 +4853,12 @@ narrowed *which* things a cue is raised for and never looked at **when**: a cue 
 a moment, and nothing in `tests/test_danger.gd` can see a moment.
 
 **Playtest 07 has landed and M33 is its first half.** Nineteen things in
-**[docs/PLAYTEST-07.md](PLAYTEST-07.md)**, reported as a running commentary rather than as a list,
+**[docs/playtests/PLAYTEST-07.md](playtests/PLAYTEST-07.md)**, reported as a running commentary rather than as a list,
 and the one sentence under them is that **every cost in the game is paid on contact and almost
 nothing else in it is real**. Nine are done; ten are queued behind them and listed there.
 
 **Playtest 08 has landed and all five of its things are done (M35).** In
-**[docs/PLAYTEST-08.md](PLAYTEST-08.md)**, taken on M34, and the run it came from ended on **day 3**
+**[docs/playtests/PLAYTEST-08.md](playtests/PLAYTEST-08.md)**, taken on M34, and the run it came from ended on **day 3**
 — the shortest any playtest has produced. Three of the five are one sentence, and it is playtest
 07's own surviving a milestone meant to answer it: *a thing exists, and being near it changes
 nothing.* The park spoiler denied three percent of a park, the pigeons were over before she arrived,
@@ -4868,7 +4868,7 @@ of itself while it was doing it** — because the contract was stated in speeds 
 pursuit is played out in distances. The fifth is a number: five nerves.
 
 **Playtest 09 has landed and all four of its things are done (M36).** In
-**[docs/PLAYTEST-09.md](PLAYTEST-09.md)**, four sentences reported mid-session, and the one under
+**[docs/playtests/PLAYTEST-09.md](playtests/PLAYTEST-09.md)**, four sentences reported mid-session, and the one under
 them is that **two things in the build had been doing nothing at all for milestones and both looked
 finished from the outside**: `Esc` had never once opened the pause it shipped with in M33, and the
 man shouting was killing day 1 by standing still. Plus two design instructions — a man who paces,
@@ -4900,7 +4900,7 @@ the complaint.* All of it was reverted and replaced with `Tuning.PURSUIT_SHAKEN_
 chase at a **rate**. Two things about the day-3 dog are still open and are written down in M43.
 
 **Playtest 10 landed as M39.** Fourteen findings in
-**[docs/PLAYTEST-10.md](PLAYTEST-10.md)**, off a session of five runs in which **no day was won**.
+**[docs/playtests/PLAYTEST-10.md](playtests/PLAYTEST-10.md)**, off a session of five runs in which **no day was won**.
 The sentence under them is that *the danger marks and the danger have come apart*: three of the
 fourteen are one finding — a fire engine carries no caret and a burning building does — and the rule
 underneath is M22's, which asks whether a danger *changes over time* and never asked how bad it is.
@@ -4911,7 +4911,7 @@ which is playtest 07's finding 17 arriving again after the milestone that answer
 **the milestone after M39**, measured rather than argued.
 
 **Playtest 11 has landed and is M41, M42 and M43.** Nine findings plus a design for the edge of
-the map, in **[docs/PLAYTEST-11.md](PLAYTEST-11.md)**. The sentence under it: *several things in this
+the map, in **[docs/playtests/PLAYTEST-11.md](playtests/PLAYTEST-11.md)**. The sentence under it: *several things in this
 city are placed without asking what they are in the way of* — an event on the home block, a closure
 beside a park, a busker in a courtyard she can walk round, a car turning into a junction another car
 is already in. Underneath three more is a larger one: **the city has no hierarchy.** Every street is
@@ -4924,7 +4924,7 @@ main road running north to south, signalled at every junction and bad ground to 
 retail precincts of three blocks each, one along the southern shore; ordinary streets everywhere
 else; junctions that ration their own box; a lattice grown to 11×11; and a boundary with frontages
 on the far side of it and a tunnel, a bridge and a road running out of the map. Nine findings in
-**[docs/PLAYTEST-12.md](PLAYTEST-12.md)**, taken on the branch while it was half-built, and the
+**[docs/playtests/PLAYTEST-12.md](playtests/PLAYTEST-12.md)**, taken on the branch while it was half-built, and the
 sentence under them is *a hierarchy is only a hierarchy if there is one of the top thing* — the
 first build put a main road on each axis and a precinct in every corridor, which is three kinds of
 street and no hierarchy among them.
@@ -4946,7 +4946,7 @@ branch stays open for the two findings; the work that is done is on `main` where
 screenshot and the next playtest will be taken against it.
 
 **Playtest 13 has landed and it overrides that order.** Eight findings in
-**[docs/PLAYTEST-13.md](PLAYTEST-13.md)**, off one run that ended on day 4 with a bad ending, and
+**[docs/playtests/PLAYTEST-13.md](playtests/PLAYTEST-13.md)**, off one run that ended on day 4 with a bad ending, and
 the sentence under it is *the crowd is supplying almost all of the difficulty and every authored
 system in the game is being judged through it* — reported this time by a person, in the plainest
 possible words: **"just walking around now increases excitement — this is bad."** The trace has
@@ -4984,7 +4984,7 @@ left of it — eight-way driving, overtaking, a crash as a catalogue event — i
 longer urgent. **M17, the route map, is backlogged by decision** — *"let's not do that for now,
 we might revisit later"* — so it is no longer the thing behind M21.
 
-**What M27 leaves open.** Nobody has played it. The densities in `docs/PLAYTEST-04.md` came off
+**What M27 leaves open.** Nobody has played it. The densities in `docs/playtests/PLAYTEST-04.md` came off
 a probe, and *"the arterial is for crossing"* is still a claim about a player rather than about
 a rig. Read a run before touching a constant: `crowd` for contacts and horns, `near` for what
 came within reach — which should now be a great deal more than playtest 03's zero — `road` for
@@ -5038,7 +5038,7 @@ events there"** — which keeps every unvisited area clean and raises the densit
 spends the budget twice.
 
 **Playtest 15 has landed, mid-M50, and it is `M51`.** Seven things in
-**[docs/PLAYTEST-15.md](PLAYTEST-15.md)** plus a re-report that belongs to playtest 14's finding 7.
+**[docs/playtests/PLAYTEST-15.md](playtests/PLAYTEST-15.md)** plus a re-report that belongs to playtest 14's finding 7.
 The sentence under it is *the city is drawing things it does not mean*: a cul-de-sac is a wall on
 the graph and nothing on the pavement, the spine has a zebra painted under a traffic light —
 two contradictory promises about who gives way, on the one street where getting it wrong ends the
@@ -5304,7 +5304,7 @@ back what the last run did.
 
 ## M11–M17 — Playtest 01
 
-See **[docs/PLAYTEST-01.md](PLAYTEST-01.md)** for the findings, the analysis and the
+See **[docs/playtests/PLAYTEST-01.md](playtests/PLAYTEST-01.md)** for the findings, the analysis and the
 sequencing. Summary only here:
 
 - [x] **M11 Playtest fixes** — home arrow, three graphics glitches, day-start position,
@@ -5346,7 +5346,7 @@ sequencing. Summary only here:
 
 ## M18–M26 — Playtest 02
 
-See **[docs/PLAYTEST-02.md](PLAYTEST-02.md)** for the findings and the reasoning. Six
+See **[docs/playtests/PLAYTEST-02.md](playtests/PLAYTEST-02.md)** for the findings and the reasoning. Six
 findings from the second human playtest, queued behind M16 and M17. Summary only here:
 
 - [x] **M18 The park has to be worth it** — finding 1. Calm ground fills the meter in 24s
@@ -5466,7 +5466,7 @@ findings from the second human playtest, queued behind M16 and M17. Summary only
 
 ## M27 — Playtest 04
 
-See **[docs/PLAYTEST-04.md](PLAYTEST-04.md)** for the seven findings, the measurements and the
+See **[docs/playtests/PLAYTEST-04.md](playtests/PLAYTEST-04.md)** for the seven findings, the measurements and the
 reasoning. Two of the seven were milestones already queued (M22, M21) and are unchanged; one
 was the summary of the rest. The other four are one milestone:
 
@@ -5501,7 +5501,7 @@ was the summary of the rest. The other four are one milestone:
 
 ## M28+ — Playtest 05
 
-See **[docs/PLAYTEST-05.md](PLAYTEST-05.md)** for the six findings. One is done:
+See **[docs/playtests/PLAYTEST-05.md](playtests/PLAYTEST-05.md)** for the six findings. One is done:
 
 - [x] **M28 One event per block** — finding 6, taken first because the handoff named it and
       because it is a number rather than an argument: *"I want one event per block. The dog
@@ -5580,7 +5580,7 @@ See **[docs/PLAYTEST-05.md](PLAYTEST-05.md)** for the six findings. One is done:
 
 ## M32 — Playtest 06: the cues mean now
 
-See **[docs/PLAYTEST-06.md](PLAYTEST-06.md)**. The first playtest taken on M28–M31, reported
+See **[docs/playtests/PLAYTEST-06.md](playtests/PLAYTEST-06.md)**. The first playtest taken on M28–M31, reported
 part-way through M21 with the instruction to *"take note of those but continue implementing the
 next item on the handoff first"*. **All five are done.** Three were small fixes in code M22, M30
 and M6 already owned; one added a row to the vocabulary; and the four of them together are one
@@ -5630,7 +5630,7 @@ sentence — *a cue is a claim about a moment*, which is the axis M30 had not lo
 
 ## M33 — Playtest 07: the cost model was inverted, and running started to matter
 
-See **[docs/PLAYTEST-07.md](PLAYTEST-07.md)** for all nineteen findings, the traces that confirm
+See **[docs/playtests/PLAYTEST-07.md](playtests/PLAYTEST-07.md)** for all nineteen findings, the traces that confirm
 three of them, and the ten that are still open. Nine are done.
 
 - [x] **The falloff has a shoulder** — finding 18, and the one change that answers it for the whole
@@ -5703,11 +5703,11 @@ three of them, and the ten that are still open. Nine are done.
 - [x] **One picture per row** — findings 2, 11, 4 and 14, done as **M37**. See the section below
 - [ ] **The last four.** The cat crosses the wrong axis (1); a four-block concrete plaza (8); a car
       turning has no diagonal (6); and the crowd's own anonymity, which is deliberately *not* the
-      same rule — see the bottom of `docs/PLAYTEST-07.md`
+      same rule — see the bottom of `docs/playtests/PLAYTEST-07.md`
 
 ## M35 — Playtest 08: nothing vanishes, and the dog gives you a chance
 
-See **[docs/PLAYTEST-08.md](PLAYTEST-08.md)**. Five things, all done.
+See **[docs/playtests/PLAYTEST-08.md](playtests/PLAYTEST-08.md)**. Five things, all done.
 
 - [x] **The spoiler covers the park rather than standing in it** — finding 1, which is playtest 07's
       finding 10 asked a second time. M24 placed **one** event and nobody did the arithmetic: what
@@ -5757,7 +5757,7 @@ See **[docs/PLAYTEST-08.md](PLAYTEST-08.md)**. Five things, all done.
 
 ## M36 — Playtest 09: the key that did nothing, and the man who did nothing
 
-See **[docs/PLAYTEST-09.md](PLAYTEST-09.md)**. Four things, all done.
+See **[docs/playtests/PLAYTEST-09.md](playtests/PLAYTEST-09.md)**. Four things, all done.
 
 - [x] **`Esc` works** — and it had never worked. The guard read `visible` on a `CanvasLayer`, which
       is true from the moment the node is in the tree; the question it meant to ask is `is_showing()`.
@@ -5792,7 +5792,7 @@ See **[docs/PLAYTEST-09.md](PLAYTEST-09.md)**. Four things, all done.
 
 ## M37 — Playtest 07 again: one picture per row
 
-See **[docs/PLAYTEST-07.md](PLAYTEST-07.md)**. Four of the six that were left, and they are all
+See **[docs/playtests/PLAYTEST-07.md](playtests/PLAYTEST-07.md)**. Four of the six that were left, and they are all
 "what you can actually see".
 
 - [x] **One picture per row, and no two rows share one** — finding 2, and the fix is bigger than
@@ -5887,7 +5887,7 @@ at the top.
 
 ## M39 — Playtest 10: the cue that meant nothing, and the day that was not the same day · `feature/marks-that-mean-danger`
 
-See **[docs/PLAYTEST-10.md](PLAYTEST-10.md)**. Fourteen findings, reported as a list after a session
+See **[docs/playtests/PLAYTEST-10.md](playtests/PLAYTEST-10.md)**. Fourteen findings, reported as a list after a session
 of five runs in which **no day was won**. Eleven are work; two are answered in writing; one — the
 difficulty — is deliberately the milestone after this one.
 
@@ -5971,7 +5971,7 @@ the same day.**
       `_place_home` already sorts by distance to the centre; what pushes the home out is
       `MIN_HOME_TO_PARK_TILES`. The two rules compete for the same thing and at 7×7 both cannot
       hold. The recommendation is to take the trade **by growing the city to 9×9**, as its own
-      milestone, because it re-measures every density number in `docs/PLAYTEST-04.md`
+      milestone, because it re-measures every density number in `docs/playtests/PLAYTEST-04.md`
 
 ### And the thing nobody reported
 
@@ -6282,7 +6282,7 @@ check count.
 
 ## M41 — The shape of the city: a spine, and an edge you can walk to · `feature/the-shape-of-the-city`
 
-See **[docs/PLAYTEST-11.md](PLAYTEST-11.md)**, section C, and **[docs/PLAYTEST-12.md](PLAYTEST-12.md)**,
+See **[docs/playtests/PLAYTEST-11.md](playtests/PLAYTEST-11.md)**, section C, and **[docs/playtests/PLAYTEST-12.md](playtests/PLAYTEST-12.md)**,
 which is this milestone played while it was still on the branch. Three entries that are one
 milestone, because they are the same sentence: **the city has no hierarchy.** Every street is the
 same street, the arterials differ only by how many cars are on them, and the map stops at an
@@ -6412,7 +6412,7 @@ park. Both rules are about the same thing — the walk out has to be long enough
 - [x] **9×9.** Odd, and large enough that a central home is still a long walk from calm ground.
       Acceptance test: `MIN_HOME_TO_PARK_TILES` satisfied from a block within one of the centre, over
       200 seeds
-- [x] **Re-measure every density number in `docs/PLAYTEST-04.md`.** 65% more blocks, one event per
+- [x] **Re-measure every density number in `docs/playtests/PLAYTEST-04.md`.** 65% more blocks, one event per
       block since M28, and a crowd that is a field around the player since M27 — so placed per day,
       live inside the stream radius, on screen at once, and met on a route all move, and the budget
       with them. This is why it is a milestone and not a constant
@@ -6435,7 +6435,7 @@ measurements rather than an assumption.
 
 ## M43 — Things that are in the way of nothing · `feature/in-the-way-of-nothing`
 
-Playtest 11's remaining findings. See **[docs/PLAYTEST-11.md](PLAYTEST-11.md)**. The sentence under
+Playtest 11's remaining findings. See **[docs/playtests/PLAYTEST-11.md](playtests/PLAYTEST-11.md)**. The sentence under
 the first three: **several things in this city are placed without asking what they are in the way
 of** — which is `CLAUDE.md`'s first rule failing at *placement* rather than at design.
 
@@ -6823,7 +6823,7 @@ unchanged and is the second half of M47; read it there.
 **Done.** Playtest 13's finding 1 — *"just walking around now increases excitement — this is
 bad"* — which is playtest 07's finding 17 and playtest 10's *"the thing nobody reported"*, found
 for the third time and said out loud for the first. See
-**[docs/PLAYTEST-13.md](PLAYTEST-13.md)**.
+**[docs/playtests/PLAYTEST-13.md](playtests/PLAYTEST-13.md)**.
 
 **What it came to, in one paragraph.** Almost every item was answered by measuring rather than by
 arguing, and four of them came back the opposite of what the item predicted. The crowd was not too
@@ -7257,7 +7257,7 @@ behaviour — people step aside. Fifteen contacts in four days says the behaviou
 ## M47 — A city with places in it · `feature/a-city-with-places`
 
 Not started. Playtest 13's finding 2 and the second half of finding 7, **plus the whole of M45**,
-which is absorbed here because it is the same machinery. See **[docs/PLAYTEST-13.md](PLAYTEST-13.md)**
+which is absorbed here because it is the same machinery. See **[docs/playtests/PLAYTEST-13.md](playtests/PLAYTEST-13.md)**
 and the M45 entry above, which is still the design for the closure half.
 
 **The one sentence: the count of calm areas is right and their density is not, and the answer is
@@ -7501,7 +7501,7 @@ every part competing for it.
 ## M49 — A city that says what it is · `feature/run-and-it-backs-off`
 
 Playtest 14, taken **before** M47 because four of its six are small and two of them are things a
-player has now asked for twice. See **[docs/PLAYTEST-14.md](PLAYTEST-14.md)**.
+player has now asked for twice. See **[docs/playtests/PLAYTEST-14.md](playtests/PLAYTEST-14.md)**.
 
 **The one sentence: nothing here is about balance — five of the six are the city failing to say
 what it is**, and the sixth is a mechanic that was answering a question about geometry when the
@@ -8068,7 +8068,7 @@ that other documents and a test comment already point at, and because renumberin
 just landed touches one PR's worth of references instead of the archive. The mapping, since the
 commit messages on `main` still say the old numbers: **M70 → M73** (the meter tells the truth, and
 the local build starts), **M71 → M74** (the title screen asks which controls), **M72 → M75** (what
-the city costs to walk through). `docs/PLAYTEST-25.md` also names M70 for the environment-gate
+the city costs to walk through). `docs/playtests/PLAYTEST-25.md` also names M70 for the environment-gate
 finding and is left alone: a playtest file is a primary source and is never rewritten.
 
 ## M75 — What the city costs to walk through · built 2026-09-06
@@ -9721,7 +9721,7 @@ not placed properly."* No new cue, no new silhouette, no change to what a closur
 
 ## M51 — The city draws what it means · `feature/draws-what-it-means`
 
-Playtest 15, in full in **[docs/PLAYTEST-15.md](PLAYTEST-15.md)**. Seven findings, and they split
+Playtest 15, in full in **[docs/playtests/PLAYTEST-15.md](playtests/PLAYTEST-15.md)**. Seven findings, and they split
 into three that are the city lying about its own rules, two about the frame around the game, one
 art bug and one report the player is not certain of.
 
@@ -10006,7 +10006,7 @@ picked-up-but-unperformed instruction expires at the end of its day — **the co
 incomplete perform step is re-offered every subsequent day, and the only expiries are the poster
 deadline and the rider finishing, both inside one day. Moved to the open design questions.
 
-Playtest 17, in full in **[docs/PLAYTEST-17.md](PLAYTEST-17.md)**. Twelve findings, and everything
+Playtest 17, in full in **[docs/playtests/PLAYTEST-17.md](playtests/PLAYTEST-17.md)**. Twelve findings, and everything
 that is a change to the build is done and ticked below — the off-corridor cost, what goes between
 two strands of corridor that run alongside each other, and the corners of the world. What is left is
 the four resistance items, and drafting them turned up half of a second item already built and never
@@ -10261,7 +10261,7 @@ built on and it is being **removed**: touching the mark completes the pick-up, i
 first and had to be corrected on.** *(2026-09-01: "why are you still talking about holding E? we
 removed E early on in the development.")* The key is still bound — `E`, `project.godot:64`, added in
 M0 and never touched since — but **the decision to delete it was taken in playtest 02 and was never
-built**. `docs/PLAYTEST-02.md`, under *"Teach the controls; do not teach a key that exists once"*:
+built**. `docs/playtests/PLAYTEST-02.md`, under *"Teach the controls; do not teach a key that exists once"*:
 
 > **Delete the interact key.** The resistance contact is held with `E`, and `E` is used in **exactly
 > one place in the entire game** — `contact_point.gd`, one line. A key that appears once is a key
@@ -10435,7 +10435,7 @@ than re-designed:
 
   **Which means finding 9 is a re-report and this file did not notice.** *"I did like the robber
   next to the chalk marking… pursuing the resistance should make the game harder"* is the mechanism
-  above, and the analysis in `docs/PLAYTEST-17.md` says *"it happened by accident — the scheduler
+  above, and the analysis in `docs/playtests/PLAYTEST-17.md` says *"it happened by accident — the scheduler
   placed a robbery where the chalk mark was"* without looking. Both can be true — the trap starts on
   day 8 and a chalk mark is a day-5 step, so what the player met was probably the scheduler — but
   *the design was already on disk* and the item was written as though it were new. That is
@@ -10585,7 +10585,7 @@ choice offered and a question whose answer changed the question is worth being a
   than the caps read as promising — the caps' meaning changed while their numbers did not. The
   suite is green under it; retuning wants its own measurement. Filed under M50's density entry.
 
-Playtest 16's findings 6, 7 and 8, in full in **[docs/PLAYTEST-16.md](PLAYTEST-16.md)**. **This is
+Playtest 16's findings 6, 7 and 8, in full in **[docs/playtests/PLAYTEST-16.md](playtests/PLAYTEST-16.md)**. **This is
 the first report anybody has ever made about the back half of the game**, and two of the three are
 entries that have been sitting under "Known-shaky ground" waiting for exactly it.
 
@@ -10683,7 +10683,7 @@ below are about what a junction is made of. Building them against a lattice that
 re-asked the same question would be doing the work twice.
 
 
-Playtest 16, in full in **[docs/PLAYTEST-16.md](PLAYTEST-16.md)**. Five findings; four of them are
+Playtest 16, in full in **[docs/playtests/PLAYTEST-16.md](playtests/PLAYTEST-16.md)**. Five findings; four of them are
 one complaint: **the city draws a lattice it does not have, and the crowd walks it.** It walks onto a bridge with no
 footway, off a bulkhead into the sea, and through crossroads whose arms are grass — and in every
 case it then vanishes where somebody is looking at it. Underneath the first two is one missing
@@ -10803,7 +10803,7 @@ which is likewise recorded there and likewise never built.
 
       **Built: `1 / sqrt(blocks)`, normalised so a 2x2 zone is the base — 21x, 29.7x, 42x for four,
       two and one blocks, i.e. 11.3s, 8.0s and 5.7s to fill from empty.** The base moved 14 → 21,
-      and one correction travelled with it: `docs/PLAYTEST-14.md` recorded the request against a
+      and one correction travelled with it: `docs/playtests/PLAYTEST-14.md` recorded the request against a
       value of **12**, which had been wrong since M41, so the 1.5 is taken on the 14 that was
       actually there.
 
@@ -11018,7 +11018,7 @@ overturn a decision the player took"*.
       all three: *"faster cars should either slow down or when the opposite lane is clear overtake
       the slower car. this requires cars to be able to drive in 8 directions as well. if overtaking
       hits an oncoming car a crash should happen which is a very exciting event so the player has
-      to clear the area fast."* It is recorded correctly in `docs/PLAYTEST-02.md`; only the status
+      to clear the area fast."* It is recorded correctly in `docs/playtests/PLAYTEST-02.md`; only the status
       line is false. **Fix the line, then ask whether it stays parked** — parked with the player's
       agreement is a fine place for it to be, and that is not what it currently is
 - [x] **The east and west spine exits were deleted, and three places still describe them.**
@@ -11039,7 +11039,7 @@ overturn a decision the player took"*.
       *"Calm ground is worth more"* reads `SLEEPINESS_CALM_ZONE_MULTIPLIER` as **12** and derives
       18 and 24 from *"x1.5 … and double it for 1x1"*. It has been **14** since M46 took it 12 → 14
       for playtest 12 finding 6. Applied to the real value the instruction gives **21**, not 18.
-      `docs/PLAYTEST-14.md` carries the same stale reading, and `CLAUDE.md`'s known-shaky-ground
+      `docs/playtests/PLAYTEST-14.md` carries the same stale reading, and `CLAUDE.md`'s known-shaky-ground
       note still describes the M38 10 → 12 move as the current state. Correct all three before the
       number is moved — this is the constant M38's own entry warns decides whether a day is
       winnable once the park is reached
@@ -11146,5 +11146,5 @@ These need a human playing the game, not more code.
       the same closures, the same event plan, because all of those are deterministic from the
       seed and the day number — and the calendar only moves when a day is won. Nerves stop being
       a second currency and become three failed attempts spread over the run. Carried open since
-      M6; closed by being asked out loud. See [PLAYTEST-06.md](PLAYTEST-06.md) for what it does
+      M6; closed by being asked out loud. See [PLAYTEST-06.md](playtests/PLAYTEST-06.md) for what it does
       to the one-shots, the block arcs and the endings

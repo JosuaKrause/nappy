@@ -129,7 +129,7 @@ day 2 and three more on day 3, and `(4,8)`, biased with nine events on day 4 and
 6. Both of those are dense every time they are biased — nothing in this run's log shows a biased
 park landing at zero or at a walkable-edge density, so the specific run that produced the player's
 four-visit report is not the trace attached here; this is the mechanism the complaint is presumably
-about, not yet the evidence for it. `docs/PLAYTEST-02.md` records the intended shape: *"the
+about, not yet the evidence for it. `docs/playtests/PLAYTEST-02.md` records the intended shape: *"the
 scheduler biases a spoiling event toward a calm area the player settled in on day N−1"* — a bias
 toward, not a guarantee of a minimum density, which is consistent with a roll landing low enough
 on some days to leave a walkable edge and high enough on others to deny it outright. Whether that

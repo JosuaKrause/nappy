@@ -3,7 +3,7 @@
 ## Read first
 
 Read `CLAUDE.md`, `docs/HANDOFF.md`, `docs/TODO.md`'s Visual overhaul section, then
-`docs/PLAYTEST-30.md` and `docs/VISUALS.md`. The playtest preserves the player's full words;
+`docs/playtests/PLAYTEST-30.md` and `docs/VISUALS.md`. The playtest preserves the player's full words;
 the visuals document states the current target. Read the relevant skills before editing.
 The orchestration and committing rules still apply. Implementation uses Luna.
 

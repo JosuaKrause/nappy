@@ -5,9 +5,9 @@
 > you can also inspect the images of the video you know where to find them
 
 The whole source run is preserved in
-[the evidence folder](evidence/run-204805-seed2468684785-v0.7.0-43-g1131bba/).
-The [video](evidence/run-204805-seed2468684785-v0.7.0-43-g1131bba/asked/burst-15638553-002.mp4)
-has its [original PNG sequence and timing record](evidence/run-204805-seed2468684785-v0.7.0-43-g1131bba/asked/burst-15638553-002/)
+[the evidence folder](../evidence/run-204805-seed2468684785-v0.7.0-43-g1131bba/).
+The [video](../evidence/run-204805-seed2468684785-v0.7.0-43-g1131bba/asked/burst-15638553-002.mp4)
+has its [original PNG sequence and timing record](../evidence/run-204805-seed2468684785-v0.7.0-43-g1131bba/asked/burst-15638553-002/)
 beside it. These are runtime defect evidence, not approved art references.
 
 The arm reach, directional gait and pixelation findings re-report PLAYTEST-45. The extra visible
