@@ -341,12 +341,17 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 ## The queue, as prioritised on 2026-09-09
 
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56's
-remaining hunting row, the roadblock, is next, on its own branch, and it is a drawing. M61, one
-shape per object from which the field, the shadow and the collision body are derived, follows; M65, the protester who points, is revisited against the walled city rather than
+remaining hunting row, the roadblock, is next, on its own branch, and it is a drawing. M104, the
+debug view with fields, shadows and bounding boxes as toggleable layers, comes next because it is
+how M61 is checked; M61, one rectangle per object from which the field, the shadow and the
+collision body are derived, follows; M65, the protester who points, is revisited against the walled city rather than
 built as written. Behind those, unordered: M96 (the teaching day and
 the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's
 density after the sealing) and M100 (the small work, the polish and the open design questions,
-consolidated). Reaching act III — which M56's measurement against the nerves needs — waits until
+consolidated), with M105 (the city degrades), M106 (roofs, fronts and street trees) and M107 (the
+run clock, hidden until an ending) placed in that batch provisionally, since the player asked
+for them on 2026-09-10 without placing them.
+Reaching act III — which M56's measurement against the nerves needs — waits until
 that batch is done, and M101, the fire found before the engine, comes after that. The illustrated
 actor work is Codex's parallel track. **M103, the drawings the queue owes, runs beside all of it**:
 one list of every picture an open item needs, drawn ahead so no milestone waits on one.
