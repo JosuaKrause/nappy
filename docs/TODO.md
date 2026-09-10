@@ -120,8 +120,9 @@ with the code's constraints in hand. It is not queued and it is not rejected.
 **M102, the finale, is planned and not queued.** *(2026-09-09: "this is just a plan for now — we
 probably won't actually implement it for a while (there are a lot of milestones before that)".)* It
 is the good ending's last scene — out of the apartment, out of the city — written down in full so
-that the milestones before it can be built knowing what they are building towards, and it carries
-four open questions that are asked there rather than answered.
+that the milestones before it can be built knowing what they are building towards. Its four
+collisions with the good ending as written today were asked and answered the same day, and the
+entry records the answers in the player's words.
 
 **[PLAYTEST-50.md](PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
@@ -1177,9 +1178,12 @@ milestone is their owner. `burnt_out_car.svg` with its vertical sibling, `barric
 `army_truck.svg` and `army_truck_end.svg` are the trucks; `unmarked_van.svg`, `unmarked_van_end.svg`
 and the `abduction` row are the masked men in vans; `guard_standing.svg` and `guard_lunging.svg`
 are masked men on foot; `flame.svg` is the staircase fire; `sound_pulse.svg` is the arc an
-off-screen explosion draws, once M100's sound lines bind it. New drawings: the hallway, stair,
-corridor and basement tiles, a dead lift door, mice, steam, and an explosion row's own picture if
-one is wanted beyond the arc and the crater.
+off-screen explosion draws, once M100's sound lines bind it. The player herself is drawn:
+`assets/rig/mother_carrying_{front,back,side}_{a,b}.svg` are the existing mother's six frames with
+the baby in her arms and no pram, on the same canvases and feet anchors as the walking set, so
+`Stroller` can swap them in facing for facing. New drawings: the hallway, stair, corridor and
+basement tiles, a dead lift door, mice, steam, and an explosion row's own picture if one is wanted
+beyond the arc and the crater.
 
 **What is genuinely new, and the order to build it in:**
 
@@ -1199,39 +1203,45 @@ one is wanted beyond the arc and the crater.
       out of view, a sound arc when M100's sound lines exist, and a crater left behind as a scar
       the way `barricade` leaves one — `spawns_on_finish` naming a crater row whose picture is one
       of the three prepared sizes, obstructing at the size it is drawn
-- [ ] **The two hint lines and the millisecond clock**, each a small change to `HUD`
-- [ ] **The summary after it**, which is the good ending's epilogue and is written under the
-      question below
+- [ ] **She carries the baby.** `Stroller` draws the carrying frames instead of the mother-and-pram
+      pair for the whole finale, with the pram's own collision gone with it (the pram has no
+      collision of its own today, so this is the sprite alone). The baby-state cue over the pram
+      moves to over the bundle
+- [ ] **The two hint lines, the millisecond clock and the section restart**, each a small change
+      to `HUD` and `DayController`: the clock formats milliseconds, and the day-lost path restarts
+      the section rather than ending a day
+- [ ] **The summary after it**, which is the good ending's epilogue: the tunnel or the bridge
+      behind her, and nothing triumphant
 
-**Four questions, each asked rather than inferred, because this collides with the finale as
-`docs/NARRATIVE.md` writes it today:**
+**Four things the brief collided with in the finale as `docs/NARRATIVE.md` writes it today, each
+asked and each answered by the player on 2026-09-09:**
 
-1. **What happens to the sabotage?** Today the good ending is `RESISTANCE_GOAL` reached *and* the
-   day-14 step "The last night" touched (`ResistanceSteps._finale`, a civic-district contact that
-   sets `sabotage_done`), and its reward is mechanical quiet: every `city_wide` source is silenced
-   and she walks home on the easiest ground in the run. The brief says *"after completing all
-   tasks. after the last day ends"*, which reads as the escape following that walk home the same
-   night, with the sabotage as the thing that brought the trucks out. **The pick would be: keep the
-   sabotage as day 14's act and make the escape its consequence** — the quiet walk home is then the
-   breath before the climax, and *"no triumphalism"* still governs what is shown after the tunnel.
-   The other reading is that the escape replaces the sabotage as the last act, which drops a built
-   step and its silence reward.
-2. **What does losing cost?** A day lost costs one Nerve and the day is over; the finale has no
-   next day. Capture, the meter reaching 100, or the clock running out could each end it. **The pick
-   would be: the section restarts** — from the hallway or from the service exit — at no Nerve cost,
-   because Nerves are the run's currency and the run is already won on paper; a fourteen-day run
-   thrown by one wrong turn in the last two minutes is the failure mode to avoid. The other reading
-   is that the finale is a day like the others and can end the run.
-3. **What does the clock count?** The day clock counts `DAY_LENGTH_SECONDS` (180s) down to a lost
-   day. The brief gives the clock more precision and says nothing about its length or what zero
-   means. **The pick would be: one clock across both sections, on the order of a day's length,
-   and zero is capture** — the trucks reach the building. The alternative is a clock that only
-   counts up, purely for the effect, which has no game in it.
-4. **Tunnel or bridge, or both?** *"ending at the tunnel or bridge (or maybe one path for each and
-   the player can choose)"*. **The pick would be: both, two strands sharing the first stretch and
-   forking** — a choice is the game's verb, and the home lot sits between the two ends of the main
-   road so neither exit is trivially nearer. The cost is the second strand's three parks; the
-   alternative is one strand and the exit the seed picks.
+1. **The sabotage stays, and the escape is what it causes.** *("yes, the sabotage is the cause of
+   the brutal crackdown.")* Today the good ending is `RESISTANCE_GOAL` reached *and* the day-14
+   step "The last night" touched (`ResistanceSteps._finale`, a civic-district contact that sets
+   `sabotage_done`), and its reward is mechanical quiet: every `city_wide` source is silenced and
+   she walks home on the easiest ground in the run. That stands. The quiet walk home is the breath
+   before the climax; the hallway scene follows it the same night, and the trucks and the masked
+   men are the regime's answer to what she did. *"No triumphalism"* still governs what is shown
+   after the tunnel.
+2. **Losing the finale restarts the section, at no Nerve cost.** *("sounds good at that point you
+   earned it.")* A day lost costs one Nerve and the day is over; the finale has no next day, and
+   the run is already won on paper. Capture, the meter reaching 100, or the clock running out each
+   put her back at the start of the section she was in — the hallway, or the service exit — with
+   Nerves untouched. A fourteen-day run is never thrown by one wrong turn in the last minutes.
+3. **The clock is a day's clock with milliseconds on it, and zero loses.** *("the timer for the
+   sequence is the same length and running out loses (the bridge/tunnel collapses or something
+   like that). the only change is that in addition to minutes and seconds the timer also shows
+   milliseconds. this makes the timer appear faster than just the seconds alone which adds
+   additional tension.")* So: one clock for the whole sequence, `DAY_LENGTH_SECONDS` (180s) long
+   like any day, counting down through both sections; at zero the way out is gone — the bridge or
+   the tunnel collapses, or something of that shape — and the section restarts as in 2. The only
+   change to the clock itself is the format, `%d:%02d.%03d` in place of `%d:%02d`, because
+   milliseconds ticking make the same countdown read as faster.
+4. **Two paths.** *("two paths it is.")* Two strands sharing the first stretch from the service
+   exit and forking, one to the tunnel at the north end of the main road and one to the bridge at
+   its south end, each crossing three parks. The choice is the game's verb, and the home lot sits
+   between the two ends of the main road so neither exit is trivially nearer.
 
 **And what the finale is not.** No fighting, no button — the tone rules stand: the danger is
 noise, the men are the same masked men as act III's abductions, and the baby is never threatened by
