@@ -88,14 +88,7 @@ static func assign(map: CityMap, rng: RandomNumberGenerator) -> void:
 ## boundary. See the class doc, "Atoms".
 static func _union_atoms(map: CityMap, dsu: _DSU) -> void:
 	for area in ClosurePlanner.calm_areas(map):
-		var first := -1
-		for pair in _area_touch_points(map, area.rect):
-			for junction in pair:
-				var node := StreetNetwork.node_of(junction)
-				if first < 0:
-					first = node
-				else:
-					dsu.union(first, node)
+		_union_touch_points(map, area.rect, dsu)
 	var home := ClosurePlanner.home_street(map)
 	if home:
 		dsu.union(StreetNetwork.node_of(home.a), StreetNetwork.node_of(home.b))
@@ -110,18 +103,23 @@ static func _union_atoms(map: CityMap, dsu: _DSU) -> void:
 		# stub then needs the same treatment a calm area's own stub-adjacency does — see that
 		# function's doc. An alley is two tiles wide and one block long, so this walk from its own
 		# rect finds exactly its two bordering streets when both are real, the ordinary case.
-		var first := -1
-		for pair in _area_touch_points(map, rect):
-			for junction in pair:
-				var node := StreetNetwork.node_of(junction)
-				if first < 0:
-					first = node
-				else:
-					dsu.union(first, node)
+		_union_touch_points(map, rect, dsu)
 	for span: Vector4i in map.precinct_spans:
 		var junctions := _precinct_span_junctions(span)
 		for i in range(1, junctions.size()):
 			dsu.union(StreetNetwork.node_of(junctions[0]), StreetNetwork.node_of(junctions[i]))
+
+## Unions every junction `_area_touch_points(map, rect)` finds into one atom. Shared by the
+## calm-area and the alley loops above, which differ only in which rect they walk outward from.
+static func _union_touch_points(map: CityMap, rect: Rect2i, dsu: _DSU) -> void:
+	var first := -1
+	for pair in _area_touch_points(map, rect):
+		for junction in pair:
+			var node := StreetNetwork.node_of(junction)
+			if first < 0:
+				first = node
+			else:
+				dsu.union(first, node)
 
 ## Every segment `area`'s own walkable buffer touches, real or not, as `[junction, junction]`
 ## pairs to union — `ClosurePlanner.calm_areas().access` is not enough on its own.
