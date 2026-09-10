@@ -203,6 +203,20 @@ while their owning milestones settle placement and behavior.
 
 Use [GRAPHICS.md](GRAPHICS.md) for the asset catalogue, current runtime bindings and prepared
 parts. The assignments below name the assets each graphics-dependent milestone should use.
+
+**Bind prepared environment art with its existing gameplay owner.** These are integration
+checks within those milestones, not separate implementations of the same feature. Source canvases,
+anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified in the caller.
+
+| Owner | Integration work and acceptance |
+|---|---|
+| M56 — The resistance is noticed | Bind the riot van's directional family and standing/lunging guard poses to the actual waiting, departing and pursuit states. Preserve the waiting silhouette and telegraph; use M108's heading selector rather than a second direction table. |
+| M65 — A protester points at the objective | Aim the eight `protester_point_*.svg` poses at the chosen objective; verify all target octants and no-target behavior without adding a first-encounter quest marker. |
+| M100 — Small, real, and nobody's | Review `chalk_mark.svg` beside `chalk_mark_touched.svg`, then bind the touched state to the acknowledgement she adds when contact counts. Keep the original mark visible and readable on the pavement. Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family with the alley event and the sound arcs with their event timing; source availability does not decide either behavior. |
+| M102 — The finale: out of the apartment, out of the city | Build the interior TileSet/map binding for hallway, stairwell and basement floors/edges/walls. Register doors, barricade, chandelier and puddle separately; retain the south hallway's implied door thresholds. Bind normal/flash windows to explosion timing, steam to its pulse, and carrying-mother facing/gait to actual movement. Reuse mouse, guards, vehicles and crater sources. Decide whether the optional `explosion_preview.svg` is needed; the off-screen explosion brief does not require a visible burst. Check room transitions, foot anchors, layering and state changes in runtime evidence. |
+| M105 — The city degrades | Register the three crack levels and two patterns for each road/sidewalk/alley base in the TileSet, preserving markings, kerbs, seams and tile semantics. Place the five flat litter decals under actors; place single/piled sacks with the milestone's obstruction decision. Select matching `storefront_{a,b,c,d}_shuttered.svg` variants through M106's frontage binding. Compare a fixed seed across acts. |
+| M106 — Roofs, fronts and street trees | Bind roof units and both vent phases in `Building`, preserving the fixed housing while the rotor changes. Assemble straight/corner ducts with matching joins; keep furniture inside roofs. Bind each storefront's plain/awning/shuttered states without moving its door, place fire escapes over existing walls/windows, and select tall/shuttered window pairs. Centre `tree_pit.svg` beneath the existing standing tree. Verify tint, depth, overhang and registration in district comparisons. |
+
 The impact-crater decals `assets/props/impact_crater_1x1.svg`,
 `impact_crater_2x2.svg` and `impact_crater_3x3.svg` (32×32, 64×64 and 96×96 footprints) are the
 finale's: the marks its off-screen explosions leave on the street. M102 also owns the prepared `assets/rig/mother_carrying_{front,back,side}_{a,b}.svg`
@@ -1296,7 +1310,7 @@ below rather than smuggled in. The pictures are M103's; this milestone places th
       milestone could touch a route, and whether it should is decided when a pile is seen in an
       alley she has to use, not before. The mouse in the alley (M100) is placed by preference
       beside a pile once both exist
-- [ ] **The storefronts shutter.** M106's `storefront_shuttered.svg` replaces a block's storefronts
+- [ ] **The storefronts shutter.** M106's `storefront_{a,b,c,d}_shuttered.svg` replaces a block's storefronts
       when the block goes `BOARDED_UP`, and from a later point on the curve for any commercial
       block, so the degrading city and the block purposes tell one story rather than two
 - [ ] **A rig picture per act.** Four screenshots of the same seed on days 1, 5, 9 and 13 from the
