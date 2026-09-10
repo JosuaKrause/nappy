@@ -1,0 +1,7 @@
+<!-- Raw brick north wall tile for the basement. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" fill="#76544b"/>
+  <path d="M0 7H32 M0 15H32 M0 23H32 M8 0V7 M24 0V7 M4 7V15 M18 7V15 M28 7V15 M11 15V23 M25 15V23 M5 23V32 M20 23V32" stroke="#4d3838" stroke-width="1"/>
+  <path d="M2 3H6 M14 11H17 M21 19H24 M12 28H17" stroke="#a3765d" stroke-width="1"/>
+  <rect y="29" width="32" height="3" fill="#30292f" fill-opacity="0.62"/>
+</svg>

@@ -1,0 +1,6 @@
+<!-- Road degradation level 1, pattern B. Drop-in 32px road tile. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" fill="#46464f"/>
+  <path d="M26 2L23 8L25 13L20 17L22 24L18 29" fill="none" stroke="#2c2d35" stroke-width="1"/>
+  <path d="M23 8L18 7 M25 13L29 15 M20 17L15 19" fill="none" stroke="#68656b" stroke-width="1"/>
+</svg>

@@ -1,0 +1,10 @@
+<!-- Boxed rooftop condenser, oblique view with its south face visible. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round">
+  <path d="M4 25L24 25L29 29L9 29Z" fill="#221f28" fill-opacity="0.2" stroke="none"/>
+  <path d="M5 10L23 7L28 11L10 15Z" fill="#b8b6ad"/>
+  <path d="M10 15L28 11V25L10 28Z" fill="#777d7d"/>
+  <path d="M5 10V24L10 28V15Z" fill="#8b8f8c"/>
+  <path d="M14 15L25 13V22L14 24Z" fill="#424c50"/>
+  <path d="M16 16L24 15 M15 19L24 18 M15 22L23 21" stroke="#a7a79e" stroke-width="0.7"/>
+  <circle cx="9" cy="20" r="1.4" fill="#c6934c"/>
+</svg>

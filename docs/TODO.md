@@ -16,36 +16,91 @@ mid-way through.
 
 ### M108 — Eight-direction entity graphics
 
+The SVG-only authoring and subsequent integration requests are recorded in [PLAYTEST-53](playtests/PLAYTEST-53.md).
+Drafts rejected only internally by an assistant stay outside the repository; retain artwork
+suggested for human review or rejected by a human.
+
 This graphics track runs beside the gameplay queue. [PLAYTEST-51](playtests/PLAYTEST-51.md)
 approves the SVG-to-PNG workflow and requests eight-direction movement graphics for all entities
 before catalogue-wide conversion. See `DECISIONS.md` under Eight-direction style transfer.
-Author SVGs first, with N, NE, E, SE, S, SW, W, NW coverage and the existing animation/state
-variants. Preserve native scale, ground anchors, actor identity and gameplay. Document genuine
-mirror symmetry explicitly; front, back and diagonal projections must be authored rather than
-made by rotating an upright picture.
+Use the reviewed N, NE, E, SE, S, SW, W, NW source coverage and existing animation/state variants.
+Preserve native scale, ground anchors, actor identity and gameplay. Follow the documented mirror
+symmetry; choose an authored projection rather than rotating an upright picture.
 
-- [ ] Audit every entity drawing and its runtime caller against `GRAPHICS.md`, the event looks,
-      crowd families and prepared artwork in M103, the drawings the queue owes. Record a matrix
-      of eight facings, movement/idle/action states, native canvases, anchors, layer order and
-      permitted symmetry. Include stationary actors' directional action poses; a stationary
-      prop or building is not movement artwork. Keep prepared assets separate from live bindings.
-- [ ] Complete people: crowd walker body/trim layers, mother carrying the baby for M102, the finale,
-      chatting mother walking/talking, dog walker, yeller, busker, poster crew, café sitters,
-      guards standing/lunging, van victim, robber waiting/lunging, protesters and gunmen.
-      Reuse the eight protester pointing poses where appropriate. Preserve authored event identity,
-      carried objects and untinted overlays; do not substitute a generic walker for each event.
-- [ ] Complete animals and riders: crouched/running cat, dogs including charging posture,
-      pigeons with both wing phases, and cyclist. Preserve leads, contact shadows and state-specific
-      silhouettes while adding directional frames.
-- [ ] Complete vehicles: crowd cars with body/trim layers, delivery van, fire engine, ice-cream
-      van, lorry, police car, unmarked van, riot van, army truck and moving vans. Include vehicles
-      prepared by open gameplay items. Distinguish front from rear and keep wheels/footprints
-      grounded; eight facings do not authorize new traffic paths or moving stationary vehicles.
-- [ ] Bind live families to their actual heading with stable direction selection. Preserve
-      movement, collision, animation timing, sorting, tinting, cues and halo silhouettes. Leave
-      prepared families unbound until their owning gameplay item needs them. Verify all facings,
-      turns, idle and moving states with rendered SVG sheets and focused runtime checks; update
-      `GRAPHICS.md` with each family's actual binding and registration.
+The prepared source families and their complete facing/state matrices are in `GRAPHICS.md` and
+its linked people, vehicle/animal and environment inventories. The source-art record is in
+`DECISIONS.md` under SVG completion and selective rejection retention. Work below binds those
+pictures to their actual runtime consumers.
+- [ ] **Bind crowd walkers first.** Add a shared eight-sector heading selector and explicit
+      family tables for source paths, mirrors, canvases and anchors. Reuse the stroller's stable
+      sector-selection behavior where appropriate: retain facing at rest, avoid chatter at sector
+      boundaries, reset cleanly on placement/recycle. Drive walking facing from applied travel,
+      keeping authored action aim separate. Bind matching walker body/trim views with one transform
+      and preserve tint, gait timing, sorting and foot registration. Verify all eight headings,
+      boundary crossings, stops, blocked movement and recycle with a focused rig and rendered
+      native-size movement evidence.
+- [ ] **Bind live event people, animals and riders.** Extend the same selector to each actual
+      drawing path in `EventInstance`, including composed actors, leads, prams, held tools and
+      weapons. Keep idle/moving, waiting/lunging, talking/walking and wing/gait phases distinct;
+      an action's target supplies its aim even when its actor is stationary. Preserve event
+      identity, timing, collision, cues and halo silhouettes. Exercise state transitions as well
+      as every facing; a source sheet alone does not verify the runtime composite.
+- [ ] **Bind vehicle views.** Use each family's explicit front/back/side/diagonal table, including
+      its documented side-facing convention, rather than assuming every side source faces east.
+      Keep crowd car body/trim and police overlays registered together. Straight-moving event
+      vehicles use their existing travel heading. Crowd cars consume the continuous turn heading
+      supplied by M111, cars follow their turns; changing the picture alone does not close that
+      item. Preserve native scale, contact point, sorting and per-view halo geometry. Keep
+      `GroundShape` as the independent ground datum; changing sprite view must not resize the
+      shape or lethal strike box. Orient shape-derived shadows with the continuous travel heading.
+- [ ] **Verify and document each binding increment.** Update `GRAPHICS.md` from prepared to live
+      only for callers actually wired. Check SVG override and illustrated fallback so an available
+      cardinal PNG cannot replace a newly selected diagonal SVG or lose its state/registration.
+      PNG generation stays with M109, convert the SVG catalogue to PNG. Use focused selector and
+      caller tests, import/boot checks and movement evidence; keep prepared families unbound until
+      their gameplay owner needs them. M56, the resistance is noticed, owns guard/riot-van states;
+      M65, a protester points at the objective, owns objective-directed pointing; M102, the finale,
+      owns the carrying mother and interior sequence.
+
+### M111 — Cars follow their turns
+
+[PLAYTEST-53](playtests/PLAYTEST-53.md) asks for proper turns and turnarounds using diagonal
+sprites. This is the motion work needed alongside M108, eight-direction entity graphics.
+`CrowdAgent._divert()` immediately swaps the travel axis and lane, and `_turn_round()` immediately
+reverses direction before steering to the opposite lane. The heading exposed to drawing remains
+cardinal. A continuous turn must change the travelled path and the body facing together.
+
+Coordinate implementation with M110, the crowd goes round a seal: it supplies which lanes and
+segments are blocked to each crowd kind; this item supplies how a car physically follows the
+chosen diversion. Preserve its distinction between hard seals and passable soft-seal carriageways,
+and keep its open question about ordinary solid obstacles with that item's owner.
+
+- [ ] **Plan a continuous path before entering a turn.** Cover left/right junction diversions
+      and 180-degree returns at dead ends, closures and precinct boundaries from both road axes.
+      Join the incoming and correct outgoing lane with continuous position and heading; the car
+      follows the curve and its sprite follows the tangent through diagonal sectors. No instant
+      reversal, lateral lane jump, rotation of an upright side sprite or cosmetic diagonal frame
+      over unchanged right-angle movement. Keep current route choices and straight-through travel.
+- [ ] **Fit the manoeuvre to legal road space.** Validate the swept vehicle footprint against
+      pavement, closures, walls and other cars before committing. Check destination room and
+      reserve conflicting turn space, including same-frame claims. If a turnaround cannot fit,
+      stop safely before the obstruction and choose a feasible earlier turning place; never drive
+      through a barrier or use separation to repair a knowingly invalid turn. Document any space
+      constraint that needs a different manoeuvre before broadening the driving behavior.
+- [ ] **Keep traffic rules coherent throughout the curve.** Adapt lane indexing, box occupancy,
+      following gaps and conflict tests that currently assume a cardinal axis. Keep a turning
+      car claimed until its tail clears; do not enter a junction without room to leave. Preserve
+      signal/amber clearance, zebra stopping, right-of-way, horn warning and lethal carriageway
+      contracts. Derive velocity from actual motion for collision and approach calculations.
+      Measure any required turn-speed/radius choices under the balance rules; do not retune
+      population, light timing or cruise speeds as an incidental graphics change.
+- [ ] **Prove movement and presentation together.** Step the whole crowd with `Crowd.step()` in
+      focused traffic rigs: left/right turns and U-turns from every approach, a blocked exit,
+      simultaneous arrivals, queues, signals, zebras and boundary closures. Assert continuous
+      travel, legal swept space, correct exit lanes, no overlaps/deadlock and finite completion
+      when the path is free. Capture native-scale turns showing intermediate diagonal views,
+      including body/trim and police markings, and inspect grounding and heading at entry/apex/exit.
+      Update traffic documentation and `GRAPHICS.md` with the resulting motion/binding contract.
 
 ### M109 — Convert the SVG catalogue to PNG
 
@@ -59,7 +114,7 @@ and call that SVG-first creation.
 The approval and request are recorded in PLAYTEST-51 and `DECISIONS.md` under Eight-direction
 style transfer.
 
-- [ ] Inventory every current tracked SVG, including M103's prepared graphics and the new
+- [ ] Inventory every current tracked SVG, including the prepared environment graphics and the new
       directional families, into a conversion manifest with source path, PNG destination,
       dimensions, anchor, usage and review evidence. Include root application/identity SVGs;
       exclude the historical archive. Reconcile newly added SVGs before closing the item.
@@ -83,7 +138,9 @@ style transfer.
 - [ ] Review catalogue completeness, native-size quality, alpha, seams, tinting, cues, all eight
       facings and moving-state consistency. Publish SVG/PNG comparisons and purposeful gameplay
       evidence in the PR; document actual bindings and make SVG-first followed by transfer the
-      graphics authoring procedure. Archive superseded outputs with their import metadata.
+      graphics authoring procedure. Archive outputs suggested for human review or rejected by a
+      human; keep drafts rejected only internally by an assistant outside the repo. Keep import
+      metadata only outside folders excluded by `.gdignore`.
 
 ### Gameplay queue
 
@@ -94,11 +151,6 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
-0. **M103** — every drawing the open queue owes, in one list, drawn ahead of the milestones that
-   bind them. *(2026-09-10: "create a comprehensive list of graphics that need to be generated for
-   *all* open items. create a new todo item with the list so it can be picked up independently and
-   the graphics will be ready before implementation of any of the functionalities start.")* It
-   runs beside the queue rather than in it: any item below that needs a picture finds it prepared.
 1. **M56**'s build item, the other rows that hunt. *("M56 is also related to the other items to
    work on right now.")* Its measurement against the nerves waits, because reaching act III
    waits: *"I wanna wait reaching act III until those things are done."*
@@ -139,9 +191,23 @@ while their owning milestones settle placement and behavior.
 
 Use [GRAPHICS.md](GRAPHICS.md) for the asset catalogue, current runtime bindings and prepared
 parts. The assignments below name the assets each graphics-dependent milestone should use.
+
+**Bind prepared environment art with its existing gameplay owner.** These are integration
+checks within those milestones, not separate implementations of the same feature. Source canvases,
+anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified in the caller.
+
+| Owner | Integration work and acceptance |
+|---|---|
+| M56 — The resistance is noticed | Bind the riot van's directional family and standing/lunging guard poses to the actual waiting, departing and pursuit states. Preserve the waiting silhouette and telegraph; use M108's heading selector rather than a second direction table. |
+| M65 — A protester points at the objective | Aim the eight `protester_point_*.svg` poses at the chosen objective; verify all target octants and no-target behavior without adding a first-encounter quest marker. |
+| M100 — Small, real, and nobody's | Review `chalk_mark.svg` beside `chalk_mark_touched.svg`, then bind the touched state to the acknowledgement she adds when contact counts. Keep the original mark visible and readable on the pavement. Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family with the alley event and the sound arcs with their event timing; source availability does not decide either behavior. |
+| M102 — The finale: out of the apartment, out of the city | Build the interior TileSet/map binding for hallway, stairwell and basement floors/edges/walls. Register doors, barricade, chandelier and puddle separately; retain the south hallway's implied door thresholds. Bind normal/flash windows to explosion timing, steam to its pulse, and carrying-mother facing/gait to actual movement. Reuse mouse, guards, vehicles and crater sources. Decide whether the optional `explosion_preview.svg` is needed; the off-screen explosion brief does not require a visible burst. Check room transitions, foot anchors, layering and state changes in runtime evidence. |
+| M105 — The city degrades | Register the three crack levels and two patterns for each road/sidewalk/alley base in the TileSet, preserving markings, kerbs, seams and tile semantics. Place the five flat litter decals under actors; place single/piled sacks with the milestone's obstruction decision. Select matching `storefront_{a,b,c,d}_shuttered.svg` variants through M106's frontage binding. Compare a fixed seed across acts. |
+| M106 — Roofs, fronts and street trees | Bind roof units and both vent phases in `Building`, preserving the fixed housing while the rotor changes. Assemble straight/corner ducts with matching joins; keep furniture inside roofs. Bind each storefront's plain/awning/shuttered states without moving its door, place fire escapes over existing walls/windows, and select tall/shuttered window pairs. Centre `tree_pit.svg` beneath the existing standing tree. Verify tint, depth, overhang and registration in district comparisons. |
+
 The impact-crater decals `assets/props/impact_crater_1x1.svg`,
 `impact_crater_2x2.svg` and `impact_crater_3x3.svg` (32×32, 64×64 and 96×96 footprints) are the
-finale's: the marks its off-screen explosions leave on the street. M102 also owns the prepared `assets/rig/mother_carrying_{front,back,side}_{a,b}.svg`
+finale's: the marks its off-screen explosions leave on the street. M102 also owns the prepared `assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b}.svg`
 set, documented in GRAPHICS.md; nothing binds it until that milestone is built.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
@@ -267,182 +333,6 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
-## M103 — The drawings the queue owes · asked for 2026-09-10
-
-> "create a comprehensive list of graphics that need to be generated for *all* open items. create a
-> new todo item with the list so it can be picked up independently and the graphics will be ready
-> before implementation of any of the functionalities start"
-
-**One list, every open item, so a picture is never the thing an implementation waits on.** Each
-entry names the owning milestone, the file it becomes, the family it joins and the contract the
-code will hold it to — canvas, anchor, projection — so it can be drawn cold, reviewed with the
-**svg-art** skill, and filed in `GRAPHICS.md` as *prepared* until its milestone binds it. Drawn as
-SVG first: every PNG needs an authored SVG source, and M108, eight-direction entity graphics,
-and M109, convert the SVG catalogue to PNG, cover direction and transfer work. **A prepared picture is not a
-binding**: nothing here changes what the game does, and the milestone that owns each one still
-decides placement, timing and rules. **Anything that repeats along a street comes in a few
-variations** *(2026-09-10: "we need a few variations for some of these items (like store
-fronts)")*: the entry says how many, and a family is named by a glob only when the glob names
-every member.
-
-The families and their contracts are in `GRAPHICS.md`: standing things are bottom-centre anchored
-through `Sprites.draw_standing()` and mirror about that point; a vehicle that travels has a side
-view (east, mirrored for west) and an end view (north or south, one picture, authored proportions);
-a seal or scene that follows a street has an east–west picture and a `_vertical` sibling rather
-than a rotation; ground tiles are 32×32 in `assets/tiles/` and reach the game through
-`assets/ground_tileset.tres`; the checkpoint kit keeps its own off-centre anchors in SVG comments.
-
-**To draw** — nothing in this list exists yet:
-
-- [ ] **M56 — `assets/events/riot_van_end.svg`.** The night raid's van seen end-on, for the frames
-      it hunts north or south. Matches `riot_van.svg` (54×38, side view) the way
-      `unmarked_van_end.svg` (32×48) matches `unmarked_van.svg` (50×32): narrower than the side
-      view, taller, authored proportions, not mirrored. Bound by M56's riot-van item through
-      `EventInstance._draw_vehicle`, which selects side or end from the heading
-- [ ] **M100 — `assets/tiles/alley.svg`, revised so an alley does not read as a roof.** Playtest
-      50 read the two-tile alley behind a building as its roof (*"the robber is stuck inside the
-      roof"*). Conditional on that reading persisting in the next played session — the item is
-      filed under M100's open design questions — but the picture can be drafted now: same 32×32
-      tile contract, distinct at a glance from `roof.svg` and from the pavement, and it must still
-      tile seamlessly with its own neighbours. Draft it, put it beside the current tile in the
-      review render, and let the played verdict choose
-- [ ] **M100 — the chalk mark, made unmistakable, as one option among four.** Playtest 50 could not
-      tell a mark had been touched (*"how do I know I stepped on the chalk"*). Today the touch is a
-      colour change from `Palette.CHALK` to `CHALK_DONE`, both code-drawn. If the player's answer to
-      that open question is *the mark's colour made unmistakable*, that is a palette pair rather
-      than an SVG; if it is a touched-mark picture, it is a ground decal in the crater family
-      (centre-anchored, one tile). Drawn only once the question is answered, and listed so the
-      answer is not waited on twice
-**The interior, for M102** — the apartment section is a second small map drawn with the ground
-`TileMapLayer` and the same oblique view as the city: floors are 32×32 tiles chosen by type and
-exposed edge, walls stand along a room's north edge in elevation the way a building's front does,
-and props are bottom-centre anchored on the floor. The room list is the player's, 2026-09-10:
-
-- [ ] **M102 — the hallway.** *("we need a hallway with windows that can flash (from the implied
-      bombs) we need a hallway floor … doors to the stairway (only visible from inside the stairway
-      -- in the hallway the doors are at the bottom and can be implied by the edge of the
-      flooring.")* `assets/interior/hallway_floor.svg`, edge-aware like the street tiles;
-      `hallway_wall.svg` and `hallway_wall_window.svg` for its north wall, plus
-      `hallway_wall_window_flash.svg`, the same window lit white for the one or two frames an
-      off-screen explosion throws light through it — the flash is the explosion row's cue indoors,
-      where no crater can be seen; and `hallway_floor_edge_s.svg`, the hallway's south edge with
-      the apartment doors' thresholds drawn into the floor's edge, since the doors themselves are
-      below the view and never drawn
-- [ ] **M102 — the stairwell.** *("we need a staircase, a mechanical looking floor for the
-      staircase shaft.")* `stair_down.svg`, a flight one tile wide that reads as *down* at a glance
-      — going onto it is going to the next floor's map; `stairwell_floor.svg`, checker plate or
-      grating, so the shaft reads as the building's machinery rather than another corridor; and
-      `stairwell_door.svg`, the door back onto a floor's hallway, in the stairwell's north wall and
-      seen only from inside the stairwell, which is the player's rule
-- [ ] **M102 — the entrance, blocked.** *("we need a main entrance door and thrown together
-      furniture that blocks it.")* `entrance_door.svg`, a double door wider than `door.svg`, and
-      `entrance_barricade.svg`, the furniture heaped against it — a wardrobe, chairs, a mattress —
-      drawn so it reads as *thrown together* rather than built, and as *not this way* from across
-      the hallway. Two pictures rather than one, so the door can be seen behind the pile
-- [ ] **M102 — `assets/interior/chandelier.svg`.** *("maybe chandeliers for lightning inside the
-      building.")* A hanging fixture drawn over the hallway with a pool of light on the floor
-      beneath it, the interior's one light source; whether it swings under the explosions is the
-      milestone's call, and a second frame is cheap if it does
-- [ ] **M102 — the basement.** *("a gloomy floor for the basement and raw brick walls. a puddle
-      tile.")* `basement_floor.svg`, dark and stained, edge-aware; `basement_wall_brick.svg` for
-      its north walls, raw brick where the hallway is plaster; and `puddle.svg`, a floor overlay
-      tile the corridor is dotted with, which the steam row stands beside
-- [ ] **M102 — `assets/interior/emergency_exit_door.svg`.** *("an emergency exit door (the service
-      entrance).")* The push-bar door at the end of the basement corridor, the finale's way out
-      onto the city; plainer and narrower than the home door so the two are never confused
-- [ ] **M102 — `assets/interior/lift_door_dead.svg`.** The non-functioning lift on the hallway: a
-      closed door pair, dark, with whatever says *dead* at a glance — no lamp, or a hand-written
-      notice
-- [ ] **M102 and M100 — `assets/events/mouse.svg`.** The apartment's own small event, and an
-      alley's *("btw we can reuse the mouse for alleyways as well", 2026-09-10 — the row is
-      M100's)*: a moving picture in the `cat_running.svg` family, tiny, side view mirrored for
-      west. One picture is enough; a mouse that startles is a short pulse and does not need a
-      second pose, and one drawing serves both rows
-- [ ] **M102 — `assets/events/steam.svg`.** A stationary field in a basement corridor: a vent or a
-      burst pipe with a plume, bottom-centre anchored, drawn so the pulse animation can scale the
-      plume the way `flame.svg` is scaled by the fire animation. The plume is the field's picture
-      and must not be mistaken for the sound-pulse arcs
-- [ ] **M102 — an explosion picture, only if wanted.** The brief's explosions are off screen: their
-      sound is `sound_pulse.svg`'s arcs once M100's sound lines bind them, and their mark is one of
-      the three prepared craters. A flash or a smoke column at the screen's edge is optional and the
-      milestone decides; listed so that decision is taken with the option drawn rather than
-      imagined
-
-**The city degrading, for M105** — *(2026-09-10: "we need cracked street/sidewalk tiles to be able
-to deteriorate the city. we need loose garbage (eg eaten apple, newspaper, etc) that can be spread
-around throughout the city to show basic services failing towards the later acts … we need garbage
-sacks that can be placed in alleyways at first and at the side of buildings later on as the city
-degrades.")*
-
-- [ ] **M105 — cracked ground, in `assets/tiles/`, at several levels.** *(2026-09-10: "floor tiles
-      of the city need different levels of cracks … so we can add variety and gradient.")* Levels
-      are the gradient and patterns within a level are the variety. For the road tile, the pavement tile, and
-      the alley if it reads differently: a ladder of three variants — hairline, cracked, broken
-      (a chunk missing, weeds through it) — each a drop-in for its base tile in
-      `assets/ground_tileset.tres`, same 32×32 and same edge behaviour, so `GroundTiles` can swap
-      one for the other per tile without a new type, and so the level a tile shows can rise with
-      the day. Two patterns per level so a run of them does not repeat visibly
-- [ ] **M106 — street trees.** *(2026-09-10: "we could also add trees that can be placed in the
-      street. right now the fallen tree doesn't make that much sense.")* `assets/props/tree_pit.svg`,
-      a square grate or bare-earth pit one tile wide, centre-anchored on the pavement, with the
-      existing `tree_a.svg` / `tree_b.svg` standing in it — the canopy is reused, so the new
-      drawing is only the ground it grows from. Whether a street tree wants a slimmer canopy than a
-      park's is the review's call
-- [ ] **M105 — loose litter, in `assets/props/`.** A family of small ground decals, centre-anchored
-      like the craters: `litter_apple.svg`, `litter_newspaper.svg`, `litter_cup.svg`,
-      `litter_bag.svg`, `litter_can.svg` — five or six, each under a third of a tile, drawn flat
-      on the ground so they never stand up or cast a shadow
-- [ ] **M105 — garbage sacks, in `assets/props/`.** `garbage_sack.svg`, one tied black sack,
-      bottom-centre anchored, and `garbage_sacks_pile.svg`, three or four heaped, the alley's
-      version; both stand against a wall the way `door.svg` does and both get a shape under M61
-
-**Roofs and fronts, for M106** — *(2026-09-10: "we need stuff on top of roofs -- we have an air
-duct already -- it needs to be animated. but we need other things on roofs as well (there are
-reference photos to draw ideas from). we need more varied building fronts. storefronts, fire
-escapes.")* The reference photos are in `docs/reference/`: `rooftop-hvac-units-01.jpg`,
-`rooftop-duct-run-01.jpg`, `rooftop-skylights-01.jpg`, `rooftop-vents-fire-escape-01.jpg`,
-`rooftop-flat-brick-01.jpg`, the two `rooftop-parapet-*` pictures and `rooftop-hvac-ducts-01.mp4`
-for the roofs; `storefront-row-awnings-01.jpg`, `storefront-row-souvenirs-01.jpg`, the three
-`storefront-row-taco-bell-*.jpg` and `street-fire-escape-yellow-cab-01.jpg` for the fronts.
-
-- [ ] **M106 — the vent, animated.** `assets/props/industrial_vent.svg` (32×32 roof unit) becomes
-      frame `a` of a pair, and `industrial_vent_b.svg` is the same unit with the fan a quarter turn
-      on, so alternating them at a walk's cadence reads as turning
-- [ ] **M106 — roof furniture, in `assets/props/`, each a 32×32 or 64×32 roof unit like the
-      vent.** `roof_hvac_unit.svg` (a boxed condenser with a grille), `roof_duct_straight.svg` and
-      `roof_duct_corner.svg` (a run that can be laid along a roof), `roof_skylight.svg` (a raised
-      glazed pitch), `roof_vent_stack.svg` (a short pipe with a cowl), and `roof_water_tank.svg` (a
-      tank on legs, the tallest of them, which sets whether a roof unit may cast a shadow onto the
-      roof at all). Seen from the same oblique angle as the roof tiles, so a unit's south face
-      shows and its north does not. The HVAC unit and the skylight come in two variations each,
-      since they are the ones a roof repeats
-- [ ] **M106 — fronts, in `assets/buildings/`, in variations.** Ground-floor facade tiles that
-      stand where `wall_base.svg` does, **four storefronts** — `storefront_{a,b,c,d}.svg`, a
-      grocer, a café, a pharmacy, a shop with a sign — each in three states: plain, under an
-      awning (`storefront_a_awning.svg`, which overhangs the pavement by a few pixels and is the
-      one front that is not flush), and shuttered (`storefront_a_shuttered.svg`, behind a rolled
-      steel shutter, for M105's later acts) — twelve tiles that share one door position so a
-      street of them lines up. **Two fire escapes**, `fire_escape_{a,b}.svg`, overlays the height
-      of two wall cells with a ladder to the ground, drawn over `wall.svg` cells rather than
-      replacing them, so a facade keeps its windows behind it. And **two more window pairs** in
-      the `window_{dark,lit}.svg` family — a taller sash and a shuttered one — so a residential
-      facade is not one window repeated
-
-**Already drawn — nothing to do, listed so the list is complete.** M56's roadblock guards use
-the prepared `assets/checkpoints/guard_standing.svg` and `guard_lunging.svg` pair. M65's eight
-`protester_point_*.svg` poses. M100's `industrial_vent.svg`, `civic_portico.svg`, `sound_pulse.svg`,
-and `tree_{a,b}.svg`. M101's `flame.svg`, `rubble.svg`, `fire_engine.svg` and `fire_engine_end.svg`.
-M102's six carrying frames, three craters, and every truck, van, seal, guard and flame it reuses
-from the live tables; the baby-state cue over the bundle is the existing `baby_{zzz,fuss,cry}.svg`.
-
-**Needs no picture.** M61's shadows and the field's visibility are code-drawn from the shape, and
-there is no shadow SVG to draw. M96 to M99 own no drawing;
-M99's building type that closes four streets composes from the existing wall and roof tiles unless
-its milestone decides it should read differently from a big building, which is a question for
-then. M100's accessibility, controller, save and audio items own none. M79 is tabled and its facade
-art is not owed until it is picked up.
-
----
 
 ## M56 — The resistance is noticed
 
@@ -486,12 +376,11 @@ use the guard pair for a guard departure if that proposed response is accepted.
       and are never rolled by the scheduler, so they are not candidates; neither is
       `police_patrol`, the `PRESSES` rung that *"never gains `hard_fail`, whatever the heat"* —
       the player's own instruction, 2026-09-01
-- [ ] **The riot van has no end-on view, and now it drives.** `Look.RIOT_VAN` is drawn by
-      `EventInstance._draw_simple` — one side view, mirrored for west — so a hunting raid van
-      chasing her north or south is drawn side-on. The unmarked van earned `unmarked_van_end.svg`
-      for exactly that moment when it began to hunt; the raid owes the same picture, drawn to
-      `riot_van.svg`'s scale under M103 and bound here through `_draw_vehicle` the way the
-      abduction's pair is
+- [ ] **Bind the riot van's end and diagonal views.** `Look.RIOT_VAN` uses one side view, so
+      a hunting raid van chasing north or south is drawn side-on. Select the prepared
+      `riot_van_{front,back,front_diagonal,back_diagonal}.svg` family through M108's heading
+      binding; `riot_van_end.svg` is available for the side/end caller during integration.
+      Preserve the waiting-to-hunting state change and the van's native ground registration.
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
 
@@ -512,9 +401,10 @@ of its graphics). let's structure it in that way and we'll get three wins out of
 **The datum and two of its three consumers exist; the field is what is left.** Every object
 carries a `GroundShape` (`src/ground_shape.gd`): a point or a segment with a rounding radius — a
 disc or a capsule — and, for a building's footprint alone, a rectangle. Every event row, walker,
-car, prop, building, she and the pram carry one; the shadow is drawn from it, and where a thing has
-a body the body is its `collision_shape()`, with `obstructs_radius` equal to the shape's `reach()`
-and `EventDef.validate()` refusing the two disagreeing. *Asked for as rectangles on 2026-09-10
+car, prop, building, she and the pram carry one. Event and building bodies derive from the shape;
+`obstructs_radius` equals the event shape's `reach()` and `EventDef.validate()` refuses disagreement.
+The player's combined physics circle remains independent of the mother/pram shadow shapes, and
+authored car-accident shadow textures remain in their scene caller. *Asked for as rectangles on 2026-09-10
 ("we can restrict bounding boxes to be rectangles") · overturned the same day to the point, segment
 and rectangle datum: "I said rectangle because it's easier. If you can do more complex things to
 it that way".* The record, with every row's shape, is in `DECISIONS.md` under M61.
@@ -529,7 +419,8 @@ does — a car is 5.4 over 38/104px plus an 18-point horn jolt, a walker 4.2 —
 `Crowd.total_excitement_at()` sums it into the meter beside the events, so the field work below
 covers the crowd's sources on the same terms. Being hit is separate: a moving car's strike box,
 `CAR_STRIKE_HALF_LENGTH` 26 by `CAR_STRIKE_HALF_WIDTH` 14, read by `will_be_lethal()`, is not the
-car's shape and a test holds the shape never smaller than it.
+car's shape. A test compares their longitudinal and transverse extents; it does not establish
+containment of the rectangle's corners by the capsule.
 
 **The debug view is how the field is checked** — in a debug build `1` draws every field's inner
 and outer boundary and `3` every body, and `--layers 1,3` puts both on a rig screenshot — because
@@ -976,10 +867,10 @@ is still true.
 
 **Drawings, as SVG:**
 
-**Vehicle collision and silhouette agreement moved to M61 on 2026-09-10**, where one shape per
-object gives the body, the shadow and the field together: the circular obstructions under the skip,
-the moving vans and the burnt-out cars leave apparent gaps that cannot be walked through, and the
-fix is the body following the picture's footprint rather than a per-row adjustment. The directional
+**Vehicle collision and silhouette agreement is checked with M61, one shape per object, and
+the debug view's bounding-box layer (`3`).** Skip and burnt-out-car obstructions remain circular; the moving van uses
+a capsule. Shape-derived bodies do not alone establish that apparent gaps can be walked through:
+the live body and picture's footprint still need comparison with the debug layers. The directional
 artwork, the player's perpendicular burnt-car correction and the rendered evidence are in
 `DECISIONS.md`, "SVG artwork and upcoming milestone assets".
 
@@ -987,8 +878,8 @@ artwork, the player's perpendicular burnt-car correction and the rendered eviden
       new catalogue row placed on `ALLEY` tiles: a mouse that darts across the alley when she comes
       near, the `cat_dash` shape — a short pulse, no body, nothing lethal — at a lower intensity,
       since it is a startle rather than a threat, and the alley's own `+3.0` a second of dread is
-      already the row's setting. The picture is `assets/events/mouse.svg`, drawn once under M103
-      for M102's apartment and reused here. Which acts it appears in and its cap are the build's
+      already the row's setting. The picture is `assets/events/mouse.svg`, shared with
+      M102, the finale, and its prepared directional family. Which acts it appears in and its cap are the build's
       to derive from the cat's, and its dash is aimed across the alley's short axis so it crosses
       her path rather than running down it
 - [ ] **Park trees clump.** `City` places them by rejection sampling inside the lot with no
@@ -1030,7 +921,9 @@ re-pitched:
       design's own rule is no quest log — *the first encounter comes with no hint at all* — so how
       much a touch may say is the player's call: nothing more; the mark's colour made
       unmistakable; the brief shown on a lost day's summary too; or a one-line status change on
-      the pick-up itself
+      the pick-up itself. PLAYTEST-53 requests a distinct touched-mark SVG for review: she adds
+      something to the existing mark to indicate she has seen it. `chalk_mark_touched.svg`
+      prepares that acknowledgement; selecting and binding the feedback remains here
 - [ ] **Three cues on one screen needed asking about, and an alley read as a roof.** *(2026-09-09,
       playtest 50: "what is shown here?", and "the robber is stuck inside the roof" of a robber
       standing beside an alley.)* The baby's unsettled cue over the pram, the alert over her and a
@@ -1177,7 +1070,8 @@ the crowd thins from act III because *"there is nobody left going out on them"*,
 the city a visible decline that rises with the day: cracks in the road, litter on the pavement,
 sacks in the alleys and then against the buildings. **None of it changes what a route costs**, on
 purpose: it is presentation, and the one exception — a sack pile that stands in the way — is stated
-below rather than smuggled in. The pictures are M103's; this milestone places them.
+below rather than smuggled in. The prepared pictures are catalogued in `GRAPHICS.md`; this
+milestone places them.
 
 - [ ] **One degradation curve, in `Tuning`.** A density per tile that is zero through the early
       days and rises from `DEGRADATION_FIRST_DAY` — *"day 4 or 5"*, the player's range, and the
@@ -1207,7 +1101,7 @@ below rather than smuggled in. The pictures are M103's; this milestone places th
       milestone could touch a route, and whether it should is decided when a pile is seen in an
       alley she has to use, not before. The mouse in the alley (M100) is placed by preference
       beside a pile once both exist
-- [ ] **The storefronts shutter.** M106's `storefront_shuttered.svg` replaces a block's storefronts
+- [ ] **The storefronts shutter.** M106's `storefront_{a,b,c,d}_shuttered.svg` replaces a block's storefronts
       when the block goes `BOARDED_UP`, and from a later point on the curve for any commercial
       block, so the degrading city and the block purposes tell one story rather than two
 - [ ] **A rig picture per act.** Four screenshots of the same seed on days 1, 5, 9 and 13 from the
@@ -1226,7 +1120,7 @@ below rather than smuggled in. The pictures are M103's; this milestone places th
 **The buildings are the same wall and roof repeated, and the districts are told apart by nothing
 but height.** `Building` composes every facade from `wall.svg`, `wall_base.svg`, the two window
 tiles and the edge tiles, and every roof from `roof.svg` and its edges; `INDUSTRIAL` and `CIVIC`
-differ only in storeys (this is M100's district item, moved here). The pictures are M103's; this
+differ only in storeys. The prepared pictures are catalogued in `GRAPHICS.md`; this
 milestone places them so a street reads as a place, and a district as a district, at a glance.
 
 - [ ] **Roof furniture, placed per building at generation.** A seeded pick from the roof units by
@@ -1241,7 +1135,10 @@ milestone places them so a street reads as a place, and a district as a district
       escapes go on `RESIDENTIAL` facades at a seeded share, two cells tall over the existing
       windows. A storefront is a `wall_base` replacement and a fire escape is an overlay, so
       `Building`'s composition changes in two places and the tint rules stay. The awning is the
-      one piece that leaves the facade plane, and it stays out of the pavement's walkable band
+      one piece that leaves the facade plane, and it stays out of the pavement's walkable band.
+      Fire-escape flights run sideways parallel to the facade and reverse direction at landings;
+      retain their transparent treads and rail gaps over windows. Use PLAYTEST-53's exterior
+      reference for that construction, with the prepared SVG's native placement contract.
 - [ ] **Street trees.** Trees on the pavement, in pits, along `RESIDENTIAL` and `COMMERCIAL`
       streets at a seeded spacing — never on a crossing, never within a tile of a door or a
       checkpoint, and never on the main road's pavements where the crowd's lanes are densest. A
@@ -1295,7 +1192,11 @@ baby starts asleep with sleepiness full, and everything on the way is a reason f
 **Section one — the apartment.** *"escape the apartment"*, said once at the start, the way the
 HUD's `_say()` teaches tapping and running on day 1 and then never again. The building is the
 home lot's own block, seen from inside for the first and only time in the run: the hallway outside
-the door at night, a dead lift, and two staircases (*"all buildings have two egresses"*) down a few
+the door at night, a dead lift, and two stairwells: one at the building's left side and one at its
+right side. Within each stairwell, flights zigzag sideways across the view with landings between
+them, as shown in the [supplied stair references](evidence/stair-layout-reference-2026-09-10/README.md).
+They do not recede front-to-back.
+The two egresses (*"all buildings have two egresses"*) lead down a few
 floors — three or four, *"not excessively many"*. The main entrance is barricaded, so the way out
 is down past the ground floor into the basement, along its corridors to the service entrance on
 the side of the building. Events here are *"relatively minimal"*: mice; masked pursuers who run up
@@ -1337,14 +1238,15 @@ milestone is their owner. `burnt_out_car.svg` with its vertical sibling, `barric
 and the `abduction` row are the masked men in vans; `guard_standing.svg` and `guard_lunging.svg`
 are masked men on foot; `flame.svg` is the staircase fire; `sound_pulse.svg` is the arc an
 off-screen explosion draws, once M100's sound lines bind it. The player herself is drawn:
-`assets/rig/mother_carrying_{front,back,side}_{a,b}.svg` are the existing mother's six frames with
+`assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b}.svg` are the mother's ten sources with
 the baby in her arms and no pram, on the same canvases and feet anchors as the walking set, so
-`Stroller` can swap them in facing for facing. New drawings, each listed with its contract under
-M103: the hallway with its flashing windows and its floor edge that implies the apartment doors,
+`Stroller` can swap them in facing for facing. Prepared drawings, each listed with its contract in
+`GRAPHICS.md`: the hallway with its flashing windows and its floor edge that implies the apartment doors,
 the stairwell with its mechanical floor and its door seen only from inside, the entrance and the
 furniture heaped against it, a chandelier, the basement's gloomy floor, brick walls and puddles, the
 emergency exit, a dead lift door, mice, steam, and an explosion row's own picture if one is wanted
-beyond the arc and the crater. *(2026-09-10, the player's room list — see M103.)*
+beyond the arc and the crater. The original room list is preserved in `DECISIONS.md` under
+M103, the drawings the queue owes.
 
 **What is genuinely new, and the order to build it in:**
 
@@ -1360,8 +1262,17 @@ beyond the arc and the crater. *(2026-09-10, the player's room list — see M103
       drawn, only implied by the floor's south edge; a stairwell with a mechanical floor whose
       doors back onto the hallway are seen only from inside it; the main entrance with furniture
       heaped against it; a chandelier as the hallway's light; a gloomy basement with raw brick
-      walls, puddles and the emergency exit at the end. Every picture is listed under M103 with
+      walls, puddles and the emergency exit at the end. Every picture is listed in `GRAPHICS.md` with
       its contract
+- [ ] **Bind sideways stair modules and floor transitions.** Place the prepared 64×64
+      `assets/interior/stair_down.svg` once per building side: mirrored on the left, unmirrored
+      on the right, so upper/lower landings face the hallway. Use the anchors and landing points
+      in [GRAPHICS.md](GRAPHICS.md), keeping the projected picture separate from the
+      floor-transition trigger. Bind landings and transitions so changing floors preserves the
+      selected stairwell side. Review the assembled hallway at native size and traverse both
+      sides through every floor. The construction decision is recorded under “Sideways stair
+      flights and two building-side stairwells” in [DECISIONS.md](DECISIONS.md); exterior overlay
+      placement belongs to M106, roofs, fronts and street trees.
 - [ ] **A finale plan for the city map.** An ordered chain, not a `RouteTree`: service exit to
       first park to second to third to the edge, one street-walk between each pair and nothing
       else open. `RouteTree.for_day` and its redundancy guarantee (two distinct routes to each calm

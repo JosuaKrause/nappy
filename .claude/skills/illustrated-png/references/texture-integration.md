@@ -3,8 +3,11 @@
 ## Preserve inputs
 
 Read `docs/VISUALS.md` for reference roles. Preserve the SVG, its native and enlarged raster,
-the exact prompt and reference paths, and the actual generated output. Generation need not
-reproduce identical pixels; extraction must be reproducible from the saved output.
+the exact prompt and reference paths, and the actual generated output for accepted assets and
+candidates suggested for human review or rejected by a human. Drafts rejected only internally
+by an assistant stay outside the repository.
+Generation need not reproduce identical pixels; extraction must be reproducible from the saved
+output.
 
 The rig's generation inputs and commands are in
 `docs/evidence/style-transfer-2026-09-10/GENERATION.md`. Its `register-transfer.py` uses

@@ -1,0 +1,9 @@
+<!-- Crowd walker front three-quarter body; authored upright projection. Canvas 18x38; bottom-centre ground anchor (9,38). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="38" viewBox="0 0 18 38" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M13 11 Q17 12 17 20 L15 23 L12 20 Z" fill="#e0e0e0"/>
+  <path d="M5 10 Q10 8 14 11 L15 14 L15 28 L8 30 L3 26 L3 13 Z" fill="#ffffff"/>
+  <path d="M5 10 L8 14 L8 30 L3 26 L3 13 Z" fill="#e0e0e0"/>
+  <path d="M8 25 L15 23 L15 28 L8 30 L3 26 L3 22 Z" fill="#e0e0e0"/>
+  <path d="M3 12 Q1 16 2 25 L5 27 L6 15 Z" fill="#f2f2f2"/>
+  <path d="M9 12 L12 14 L14 12 M12 14 L12 25" fill="none" stroke="#c9c9c9"/>
+</svg>

@@ -1,0 +1,8 @@
+<!-- One tied black garbage sack, wall-side and bottom-centre anchored. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="28" height="34" viewBox="0 0 28 34" shape-rendering="geometricPrecision" stroke="#3b3034" stroke-linejoin="round">
+  <path d="M3 30H25L23 33H5Z" fill="#221f28" fill-opacity="0.25" stroke="none"/>
+  <path d="M7 10C4 14 5 24 8 29C12 32 19 31 22 28C25 23 24 14 20 10C16 8 11 8 7 10Z" fill="#252b31" stroke-width="1"/>
+  <path d="M9 9C10 6 12 5 14 6C16 4 19 6 19 9L16 12L12 12Z" fill="#303940" stroke-width="1"/>
+  <path d="M8 15C11 17 18 17 22 14 M9 22C13 24 18 24 22 21" fill="none" stroke="#4d5558" stroke-width="1"/>
+  <path d="M11 9L14 11L17 9" fill="none" stroke="#b9956c" stroke-width="1"/>
+</svg>

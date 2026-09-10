@@ -1,0 +1,42 @@
+<!-- Sage mother talking with tan pram, front diagonal. Wheel contact and handle join follow the pram heading. Ground anchor (27,46). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="54" height="46" viewBox="0 0 54 46" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <g transform="translate(14 0)">
+  <path d="M-5 31 L-1 31 L-2 44 L-7 44Z M1 31 L5 31 L7 44 L2 44Z" fill="#665f50"/>
+  <path d="M-8 44 L-1 44 L-1 46 L-9 46Z M1 44 L8 44 L9 46 L1 46Z" fill="#2f2a2c"/>
+  </g>
+  <g transform="translate(14 0)">
+  <path d="M-6 14 L1 11 L7 15 L8 31 L1 34 L-7 31Z" fill="#5c7a52"/>
+  <path d="M-6 27 L1 29 L8 27 L8 32 L1 34 L-7 31Z" fill="#455e3d"/>
+  </g>
+  <g transform="translate(14 0)">
+  <path d="M-6 16 L-11 15 L-11 4 L-7 4 L-7 11 L-3 12Z" fill="#5c7a52"/>
+  <rect x="-11" y="1" width="4" height="4" fill="#d9a878"/>
+  </g>
+  <path d="M19 16 L25 20 L25 24 L17 21Z" fill="#5c7a52"/>
+  <circle cx="25" cy="23" r="1.8" fill="#d9a878"/>
+  <g transform="translate(14 8) scale(1.08 1.03)">
+  <g transform="translate(0 0)">
+  <path d="M-5 -4 Q0 -8 5 -4 L5 0 L6.5 2 L5 3 Q3 7 -1 6 Q-6 5 -6 0Z" fill="#d9a878"/>
+  <path d="M-6 0 Q-6 -7 0 -7 Q5 -7 5 -3 Q1 -4 -1 -2 L-3 2Z" fill="#2f2a20"/>
+  <circle cx="3" cy="0" r="0.5" fill="#221f28"/>
+  <circle cx="-0.5" cy="-0.3" r="0.6" fill="#221f28"/>
+  </g>
+  </g>
+  <ellipse cx="17" cy="11" rx="1.4" ry="0.9" fill="#221f28"/>
+  <g transform="translate(13 16)">
+<path d="M5 4L10 4L7 13L3 13Z" fill="#4a3f2f"/>
+  <path d="M8 4Q16 -4 25 4V10H8Z" fill="#cbb98f"/>
+  <path d="M10 5Q16 0 23 5V9H10Z" fill="#b8a67c"/>
+  <circle cx="18" cy="7" r="3.2" fill="#d9a878"/>
+  <circle cx="16.9" cy="7" r="0.6" fill="#221f28"/>
+  <circle cx="19.2" cy="7" r="0.6" fill="#221f28"/>
+<path d="M4 9L21 8L32 11V20L17 24L4 20Z" fill="#8b7552"/>
+  <path d="M4 9L17 12V24L4 20Z" fill="#9c835e"/>
+  <path d="M17 12L32 11V20L17 24Z" fill="#6b5a42"/>
+  <path d="M9 11L24 10L30 12" fill="none" stroke="#b8a67c"/>
+<circle cx="10" cy="24" r="5" fill="#26232a"/>
+  <circle cx="27" cy="24" r="4" fill="#26232a"/>
+  <circle cx="10" cy="24" r="2" fill="#4a464f"/>
+  <circle cx="27" cy="24" r="1.5" fill="#4a464f"/>
+  </g>
+</svg>

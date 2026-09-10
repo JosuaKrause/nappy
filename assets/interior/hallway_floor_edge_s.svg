@@ -1,0 +1,9 @@
+<!-- South hallway edge. Thresholds are part of the floor because the doors sit below the view. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" fill="#77716d"/>
+  <path d="M0 8H32 M0 16H32 M0 24H32" stroke="#625e5d" stroke-width="1"/>
+  <path d="M8 0V8 M24 0V8 M16 8V16 M0 16V24 M8 24V32 M24 24V32" stroke="#847c76" stroke-width="1"/>
+  <path d="M3 27H13V31H3Z M19 27H29V31H19Z" fill="#4d4140"/>
+  <path d="M3 27H13 M19 27H29" stroke="#c0a783" stroke-width="1"/>
+  <path d="M0 31H32" stroke="#3b3034" stroke-width="1"/>
+</svg>
