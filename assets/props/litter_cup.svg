@@ -1,0 +1,9 @@
+<!-- Crushed takeaway cup on its side, seen on the ground; centre anchored without a shadow. Bottom-centre ground anchor; prepared and unbound. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+
+  <path d="M12 13 L19.5 15.5 L19 18.5 L12 18 Z" fill="#c27d52" stroke-width="0.6"/>
+  <path d="M14 14 L14.5 17.5 L19 18.5 L17 16.5 Z" fill="#a76b4c" stroke="none"/>
+  <ellipse cx="12.5" cy="15.5" rx="1.2" ry="2.4" fill="#e0c49c" stroke-width="0.6"/>
+  <ellipse cx="12.5" cy="15.5" rx="0.55" ry="1.5" fill="#6b544b" stroke="none"/>
+  <path d="M17 15 L16 17 L18 18" fill="none" stroke="#e0c49c" stroke-width="0.5"/>
+</svg>
