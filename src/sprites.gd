@@ -7,8 +7,6 @@ extends RefCounted
 ## docs/CITY.md, "Rendering". These helpers exist so that rule is written once instead of
 ## being re-derived, slightly differently, in every `_draw()`.
 
-const SHADOW := preload("res://assets/props/shadow.svg")
-
 ## Draws `texture` standing on `at`, in the canvas's own coordinates: bottom-centre on the
 ## ground plane, art rising from it.
 ##
@@ -48,9 +46,9 @@ static func draw_caret(canvas: CanvasItem, at: Vector2, width: float, colour: Co
 	canvas.draw_colored_polygon(points, colour)
 	canvas.draw_polyline(points + PackedVector2Array([points[0]]), Palette.OUTLINE, 2.0)
 
-## The contact shadow every standing thing draws first. Squashed on Y by the same amount
-## the rest of the oblique view is, so it reads as lying on the pavement.
+## The contact shadow every standing **point** thing draws first — the mother, the pram, a walker,
+## a tree, a per-part shadow inside an event, anything whose shape is a single point rather than a
+## spread. The point shortcut over `GroundShape.point(radius).draw_shadow()`: something whose
+## shape is not a point reads `GroundShape` directly instead of coming through here.
 static func draw_shadow(canvas: CanvasItem, at: Vector2, radius: float) -> void:
-	var extent := Vector2(radius * 2.0, radius * 0.8)
-	canvas.draw_texture_rect(TextureResolver.resolve(SHADOW),
-			Rect2(at - extent * 0.5, extent), false, Palette.SHADOW)
+	GroundShape.point(radius).draw_shadow(canvas, at)

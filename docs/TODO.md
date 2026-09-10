@@ -105,11 +105,11 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 2. **M104** — the debug view: fields, shadows and bounding boxes as toggleable layers, and the
    existing readout made toggleable with them. *(2026-09-10: "create a debug view to show the
    fields and the shadows and the bounding boxes. make each layer toggleable (maybe number keys?)
-   also make other debug information toggleable.")* Ahead of M61 because it is how M61 is
-   checked.
+   also make other debug information toggleable.")* Ahead of M61's field because it is how M61
+   is checked.
 3. **M61** — one shape per object, from which the field (the Minkowski sum of the body and a
-   kernel), the shadow and the collision body are all derived. *("M61 is kind of important but not
-   the immediate next item.")*
+   kernel) is derived the way the shadow and the collision body already are. *("M61 is kind of
+   important but not the immediate next item.")*
 4. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
    revisit after M62.")* Revisited rather than built as written: the regions and their
    checkpoints (`DECISIONS.md`, M62) may change what finding a mark is like, and the entry is
@@ -435,8 +435,8 @@ and `tree_{a,b}.svg`. M101's `flame.svg`, `rubble.svg`, `fire_engine.svg` and `f
 M102's six carrying frames, three craters, and every truck, van, seal, guard and flame it reuses
 from the live tables; the baby-state cue over the bundle is the existing `baby_{zzz,fuss,cry}.svg`.
 
-**Needs no picture.** M61's shape-derived shadows and the field's visibility are code-drawn from
-the shape, and `shadow.svg` is retired by it rather than replaced. M96 to M99 own no drawing;
+**Needs no picture.** M61's shadows and the field's visibility are code-drawn from the shape, and
+there is no shadow SVG to draw. M96 to M99 own no drawing;
 M99's building type that closes four streets composes from the existing wall and roof tiles unless
 its milestone decides it should read differently from a big building, which is a question for
 then. M100's accessibility, controller, save and audio items own none. M79 is tabled and its facade
@@ -546,68 +546,31 @@ sprite which looks odd for a lot of objects. both the shadow and the influence f
 bounding boxes) could be derived from the same shape associated with an object (that is independent
 of its graphics). let's structure it in that way and we'll get three wins out of it.")*
 
-- [ ] **Every object carries one ground shape, independent of its picture, and three things are
-      derived from it.** Today the three are set separately and none of them agrees with the
-      drawing. **The shadow** is `Sprites.draw_shadow()`: `assets/props/shadow.svg`, an ellipse,
-      stretched to twice a radius wide and 0.8 of it tall, with the radius hand-picked at every
-      call site — 9px for her and 12 for the pram in `Stroller`, 18 for a car and 7 for a walker in
-      `CrowdAgent`, 19 for a tree and a fraction of the sprite's width for the other props in
-      `Prop`, and a per-look number in `EventInstance` — so a 120px roadblock band and a four-car
-      seal both stand on an oval. **The body** is a `CircleShape2D` of `obstructs_radius` under
-      every event that obstructs, whatever it is drawn as, which is why a spread drawn
-      `obstructs_radius` either side of centre is solid as a disc rather than as the band it shows;
-      a building is a `RectangleShape2D` of its footprint and she is one circle. **The field** is a
-      point falloff, which the bullets below already replace with `body ⊕ kernel`. The shape is the
-      body operand of that sum, stated once: a rectangle in the object's own ground frame, rotated
-      with its facing (the decision below). Then the field is the rectangle offset by the kernel,
-      the shadow is the rectangle drawn on the ground — squashed on Y by the oblique view's own
-      0.8, the way the oval is today — and the body is a `RectangleShape2D` of it. Two numbers to
-      tune per object and three places that stop disagreeing.
+**The datum and two of its three consumers exist; the field is what is left.** Every object
+carries a `GroundShape` (`src/ground_shape.gd`): a point or a segment with a rounding radius — a
+disc or a capsule — and, for a building's footprint alone, a rectangle. Every event row, walker,
+car, prop, building, she and the pram carry one; the shadow is drawn from it, and where a thing has
+a body the body is its `collision_shape()`, with `obstructs_radius` equal to the shape's `reach()`
+and `EventDef.validate()` refusing the two disagreeing. *Asked for as rectangles on 2026-09-10
+("we can restrict bounding boxes to be rectangles") · overturned the same day to the point, segment
+and rectangle datum: "I said rectangle because it's easier. If you can do more complex things to
+it that way".* The record, with every row's shape, is in `DECISIONS.md` under M61.
 
-      **What has to survive the change.** The halo skips the shadow (playtest 35: *"the halo should
-      not include the shadow"*), and a shape-drawn shadow is skipped the same way. The rule that a
-      moving pursuer keeps no body is about *whether* there is a body, not its shape, and stands.
-      `EventDef.validate()`'s reachability rule — body plus her 14px inside `inner_radius` — is
-      restated over the shape's reach along its worst axis, the same restatement the telegraph
-      bullet below asks for. And the illustrated presentation is a picture, not a shape: the shape
-      is the same under either drawing, which is the point of keeping it off the graphics.
+**The field is still a point falloff**, and the shape is the body operand of the sum the bullets
+below describe: `GroundShape.distance_to_spine()` is the function the field is to be stated over —
+zero on a point, a segment or inside a rectangle, the ordinary distance outside — and nothing reads
+it yet. **Lethal is not noise, and the crowd is not a different mechanism** *(2026-09-10: "lethal
+!= noise. lethal is when you get hit by a car. but the car itself produces noise which is what the
+purpose of the field is.")*: `CrowdAgent.contribution_at()` runs the same `Tuning.falloff` an event
+does — a car is 5.4 over 38/104px plus an 18-point horn jolt, a walker 4.2 — and
+`Crowd.total_excitement_at()` sums it into the meter beside the events, so the field work below
+covers the crowd's sources on the same terms. Being hit is separate: a moving car's strike box,
+`CAR_STRIKE_HALF_LENGTH` 26 by `CAR_STRIKE_HALF_WIDTH` 14, read by `will_be_lethal()`, is not the
+car's shape and a test holds the shape never smaller than it.
 
-      **This closes M100's "vehicle collision and silhouette agreement" item from here**, since a
-      body derived from the same shape as the picture's footprint is the whole of that ask; its
-      text moved under this bullet rather than being designed twice.
-
-      **Three decisions, 2026-09-10, in the player's words.**
-
-      - **Everything gets a shape.** *("everything gets a shape even if the shape ends up not being
-        used by the field.")* Walkers, cars, props, buildings, the player and the pram, every
-        event: no object without one, whether or not it emits.
-      - **Shapes are rectangles.** *("we can restrict bounding boxes to be rectangles which then
-        defines the shadow and minkowski influences as stretched rounded rectangles.")* A shape is
-        an axis-aligned rectangle in the object's own frame, rotated with its facing — a point is a
-        square, a person is a small one, a van is a long one, a spread is the band it draws. The
-        body is a `RectangleShape2D`; the shadow is that rectangle drawn on the ground, squashed
-        on Y by the oblique view's 0.8; the field is the rectangle ⊕ the kernel, a rounded
-        rectangle whose corner radius is the kernel's — stretched further ahead when the kernel is
-        the ellipse of a moving thing. No capsules, no polygons, and the general Minkowski sum is
-        never needed: a rectangle offset by a disc or an ellipse is closed-form.
-      - **Lethal is not noise, and the crowd is not a different mechanism.** *("lethal != noise.
-        lethal is when you get hit by a car. but the car itself produces noise which is what the
-        purpose of the field is.")* The queue said on 2026-09-10 that a crowd car has no field and
-        is lethal instead, and that was wrong: `CrowdAgent.contribution_at()` runs the same
-        `Tuning.falloff` an event does — a car is 5.4 over 38/104px plus an 18-point horn jolt, a
-        walker 4.2 — and `Crowd.total_excitement_at()` sums it into the meter beside the events,
-        which is what `docs/MECHANICS.md` calls the emergent noise floor. Being hit is separate: a
-        moving car's strike box is already a rectangle, `CAR_STRIKE_HALF_LENGTH` 26 by
-        `CAR_STRIKE_HALF_WIDTH` 14, read by `will_be_lethal()`. So the noise shape and the strike
-        shape are one rectangle read twice, which is the shape doing its job; what the crowd does
-        not have is a physics body (walkers are shoved apart by `Crowd`'s bump mechanism, not by
-        collision), and whether a rectangle body replaces that is a build question, not a design
-        one. The mechanism is the same falloff; only the class holding it differs.
-
-      **M104's debug view is built first**, because none of the three derivations can be checked
-      by a rig alone: a shadow that is the wrong shape, a field that reaches further than the
-      body it is drawn around, and a body that does not match the picture are all things a person
-      sees in one frame with the layers on.
+**M104's debug view is how the field is checked**, because a field that reaches further than the
+body it is drawn around is a thing a person sees in one frame with the layers on and a rig cannot.
+The shadow and the body landed before it and are checked by eye once it exists.
 
 **A change to the emission model itself, and it is the first one since the falloff shape.** Today
 every field is a disc: `Tuning.falloff(distance, intensity, inner, outer)` prices being near a thing

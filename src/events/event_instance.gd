@@ -9,7 +9,6 @@ extends Node2D
 
 const CAT_CROUCHED := preload("res://assets/events/cat_crouched.svg")
 const CAT_RUNNING := preload("res://assets/events/cat_running.svg")
-const WIDE_SCENE_SHADOW := preload("res://assets/props/shadow.svg")
 ## The only generic here, and it is not a look: it is the *walker* half of a dog walker, which is a
 ## picture of somebody holding a lead rather than a picture of nobody in particular. Every row draws
 ## something of its own.
@@ -401,13 +400,18 @@ func _ready() -> void:
 
 ## Some events are physically in the way. The body is a child so it travels with a mobile
 ## event and disappears with the instance.
+##
+## Built from `def.shape` — a `CircleShape2D` for a point, a `CapsuleShape2D` for a segment — so
+## the collision resource agrees with whatever `_draw_body()` actually drew: the same datum, read
+## twice. A capsule stands along local Y by default; `_solid_axis()` says which of this instance's
+## own axes the spine actually lies along, and the `CollisionShape2D` is rotated to match.
 func _build_obstruction() -> void:
 	var body := StaticBody2D.new()
-	var shape := CollisionShape2D.new()
-	var circle := CircleShape2D.new()
-	circle.radius = def.obstructs_radius
-	shape.shape = circle
-	body.add_child(shape)
+	var collision := CollisionShape2D.new()
+	collision.shape = def.shape.collision_shape()
+	if def.shape.half_length > 0.0:
+		collision.rotation = _solid_axis().angle() - PI * 0.5
+	body.add_child(collision)
 	add_child(body)
 	_obstruction = body
 
@@ -1336,6 +1340,32 @@ func _draw_shadow(canvas: CanvasItem, at: Vector2, radius: float) -> void:
 		return
 	Sprites.draw_shadow(canvas, at, radius)
 
+## The shadow for a row read off its own `GroundShape` rather than a fixed radius — every
+## spread-drawn row (`_draw_spread`, `_draw_cafe`, `_draw_protest`, `_draw_firefight`,
+## `_draw_wide_scene`'s own fallback) and the stationary vehicles (`_draw_stationary_vehicle`).
+## Same halo guard as `_draw_shadow` above, routed through `shape.draw_shadow()` along
+## `_solid_axis()` — a point shape ignores the axis, same as `GroundShape.draw_shadow()` does.
+func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Vector2.ZERO) -> void:
+	if canvas == _halo:
+		return
+	shape.draw_shadow(canvas, at, _solid_axis())
+
+## The ground-plane direction a spread-shaped shadow sweeps along — local Y when the street this
+## instance stands on is east-west (`_spread_vertical`), local X otherwise. The same axis
+## `_spread_at()` already lays the drawn body along.
+func _spread_axis() -> Vector2:
+	return Vector2.DOWN if _spread_vertical else Vector2.RIGHT
+
+## The ground-plane direction this instance's own solid body's spine lies along, for whichever of
+## the two families ever has a segment shape: a spread-drawn row (`_spread_axis()`, above) or the
+## one stationary-vehicle row wide enough to be a segment (`moving_van` — see `GroundShape.band()`
+## on that row), which lies along whichever of the street's axes `_stationary_vehicle_side` already
+## draws it on. Never asked of a point shape, where an axis means nothing.
+func _solid_axis() -> Vector2:
+	if has_a_spread(def) or def.look == EventDef.Look.PROTEST or def.look == EventDef.Look.FIREFIGHT:
+		return _spread_axis()
+	return Vector2.RIGHT if _stationary_vehicle_side else Vector2.DOWN
+
 ## Forwards to `_halo`'s own `set_glow()` — see `EntityHalo`'s class doc for the duck-typed shape
 ## `CrowdAgent` shares. Called by `ExcitementHalo` once a frame for every live instance — above
 ## zero for the handful `select_sources()` picked, zero for everything else. Refuses a nonzero
@@ -1455,19 +1485,19 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.CAT:
 			_draw_cat(canvas)
 		EventDef.Look.YELLER:
-			_draw_simple(YELLER, 9.0, canvas)
+			_draw_simple(YELLER, canvas)
 		EventDef.Look.DOG_WALKER:
 			_draw_dog_walker(canvas)
 		EventDef.Look.CAFE:
 			_draw_cafe(canvas)
 		EventDef.Look.DELIVERY_VAN:
-			_draw_simple(DELIVERY_VAN, 20.0, canvas)
+			_draw_simple(DELIVERY_VAN, canvas)
 		EventDef.Look.BUSKER:
-			_draw_simple(BUSKER, 9.0, canvas)
+			_draw_simple(BUSKER, canvas)
 		EventDef.Look.ROADWORKS:
 			_draw_spread(BARRIER_SEGMENT, BARRIER_END, canvas)
 		EventDef.Look.FIRE_ENGINE:
-			_draw_vehicle(FIRE_ENGINE, FIRE_ENGINE_END, 26.0, canvas)
+			_draw_vehicle(FIRE_ENGINE, FIRE_ENGINE_END, canvas)
 		EventDef.Look.BURNING_BUILDING:
 			_draw_fire(canvas)
 		EventDef.Look.BURNT_SHELL:
@@ -1477,23 +1507,23 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.STALL:
 			_draw_spread(STALL, null, canvas)
 		EventDef.Look.LEAF_BLOWER:
-			_draw_simple(LEAF_BLOWER, 8.0, canvas)
+			_draw_simple(LEAF_BLOWER, canvas)
 		EventDef.Look.BIRDS:
 			_draw_birds(canvas)
 		EventDef.Look.CYCLIST:
-			_draw_simple(CYCLIST, 12.0, canvas)
+			_draw_simple(CYCLIST, canvas)
 		EventDef.Look.ICE_CREAM_VAN:
-			_draw_simple(ICE_CREAM_VAN, 20.0, canvas)
+			_draw_simple(ICE_CREAM_VAN, canvas)
 		EventDef.Look.LORRY:
-			_draw_simple(LORRY, 26.0, canvas)
+			_draw_simple(LORRY, canvas)
 		EventDef.Look.CHARGING_DOG:
-			_draw_simple(CHARGING_DOG, 13.0, canvas)
+			_draw_simple(CHARGING_DOG, canvas)
 		EventDef.Look.CHATTING_MOTHER:
 			_draw_chatting_mother(canvas)
 		EventDef.Look.POLICE_CAR:
-			_draw_vehicle(POLICE_CAR, POLICE_CAR_END, 19.0, canvas)
+			_draw_vehicle(POLICE_CAR, POLICE_CAR_END, canvas)
 		EventDef.Look.POSTER_CREW:
-			_draw_simple(POSTER_CREW, 9.0, canvas)
+			_draw_simple(POSTER_CREW, canvas)
 		EventDef.Look.ROADBLOCK:
 			_draw_spread(CHECKPOINT_BLOCK, null, canvas)
 		EventDef.Look.UNMARKED_VAN:
@@ -1501,9 +1531,9 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.ROBBER:
 			_draw_robber(canvas)
 		EventDef.Look.RIOT_VAN:
-			_draw_simple(RIOT_VAN, 23.0, canvas)
+			_draw_simple(RIOT_VAN, canvas)
 		EventDef.Look.ARMY_TRUCK:
-			_draw_vehicle(ARMY_TRUCK, ARMY_TRUCK_END, 26.0, canvas)
+			_draw_vehicle(ARMY_TRUCK, ARMY_TRUCK_END, canvas)
 		EventDef.Look.BARRICADE:
 			_draw_spread(BARRICADE_PILE, null, canvas)
 		EventDef.Look.PROTEST:
@@ -1521,19 +1551,20 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.SCAFFOLDING:
 			_draw_spread(SCAFFOLDING, null, canvas)
 		EventDef.Look.SKIP:
-			_draw_simple(SKIP, 11.0, canvas)
+			_draw_simple(SKIP, canvas)
 		EventDef.Look.MOVING_VAN:
-			_draw_stationary_vehicle(
-					EventDef.Look.MOVING_VAN, def.obstructs_radius * 2.0, 26.0, canvas)
+			_draw_stationary_vehicle(EventDef.Look.MOVING_VAN, def.obstructs_radius * 2.0, canvas)
 		EventDef.Look.BURNT_OUT_CAR:
-			_draw_stationary_vehicle(
-					EventDef.Look.BURNT_OUT_CAR, def.obstructs_radius * 2.0, 14.0, canvas)
+			_draw_stationary_vehicle(EventDef.Look.BURNT_OUT_CAR, def.obstructs_radius * 2.0, canvas)
 		EventDef.Look.CHECKPOINT_HUT:
 			_draw_checkpoint_hut(canvas)
 		EventDef.Look.CHECKPOINT_GATE:
 			_draw_checkpoint_gate(canvas)
 		EventDef.Look.CHECKPOINT_POST:
-			_draw_shadow(canvas, Vector2.ZERO, 8.0)
+			# The guard's own picture is person-scale, but his shape is the checkpoint's own —
+			# one body covers the whole 64px alley mouth, same as `checkpoint_hut`'s hut. See
+			# `EventCatalogue._checkpoint_post`.
+			_draw_shape_shadow(canvas, def.shape)
 			_draw_at_anchor(canvas, GUARD_STANDING, _GUARD_ANCHOR)
 		EventDef.Look.NONE:
 			pass
@@ -1554,24 +1585,27 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 ##
 ## The badge itself keeps the **side** view, which is deliberate: an icon is read at 40px against a
 ## row of other icons, and a vehicle end-on is a box at any size.
-func _draw_vehicle(side: Texture2D, end: Texture2D, shadow: float, canvas: CanvasItem = self) -> void:
-	_draw_shadow(canvas, Vector2.ZERO, shadow)
+func _draw_vehicle(side: Texture2D, end: Texture2D, canvas: CanvasItem = self) -> void:
+	_draw_shape_shadow(canvas, def.shape)
 	if absf(_heading.y) > absf(_heading.x):
 		Sprites.draw_standing(canvas, end, Vector2.ZERO, Vector2.ZERO, false)
 		return
 	Sprites.draw_standing(canvas, side, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
-func _draw_simple(texture: Texture2D, shadow: float, canvas: CanvasItem = self) -> void:
-	_draw_shadow(canvas, Vector2.ZERO, shadow)
+func _draw_simple(texture: Texture2D, canvas: CanvasItem = self) -> void:
+	_draw_shape_shadow(canvas, def.shape)
 	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 ## A stationary vehicle projected along the axis of the street it occupies. Its side silhouette
 ## may mirror with its facing; an end-on silhouette keeps its authored proportions and orientation.
-func _draw_stationary_vehicle(look: EventDef.Look, side_width: float, shadow: float,
+## Its shadow is `def.shape` — a point for `burnt_out_car`, a capsule along the street for
+## `moving_van`, whose `obstructs_radius` clears `GroundShape.BAND_RADIUS` — rather than a
+## hand-picked radius of its own.
+func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 		canvas: CanvasItem = self) -> void:
 	var texture := _stationary_vehicle_texture(look, _stationary_vehicle_side)
 	var extent := _stationary_vehicle_extent(texture, _stationary_vehicle_side, side_width)
-	_draw_shadow(canvas, Vector2.ZERO, shadow)
+	_draw_shape_shadow(canvas, def.shape)
 	Sprites.draw_standing(canvas, texture, Vector2.ZERO, extent,
 			_stationary_vehicle_side and _heading_is_west())
 
@@ -1582,7 +1616,7 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float, shadow: fl
 ## behind one body, and the difference between the two pictures is the whole event.
 func _draw_loose_dog(canvas: CanvasItem = self) -> void:
 	var behind := Vector2(26.0 if _heading_is_west() else -26.0, 0.0)
-	_draw_shadow(canvas, Vector2.ZERO, 9.0)
+	_draw_shape_shadow(canvas, def.shape)
 	# On the ground and slack, not held up at hip height. Nobody is holding it.
 	canvas.draw_line(Vector2(0.0, -8.0), behind + Vector2(0.0, -2.0), Palette.OUTLINE, 2.0)
 	Sprites.draw_standing(canvas, DOG, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
@@ -1623,7 +1657,7 @@ func _draw_cat(canvas: CanvasItem = self) -> void:
 	# Crouched while telegraphing, stretched out once it bolts. The crouch *is* the
 	# telegraph, so the two silhouettes have to differ at a glance, not by a scale factor.
 	var texture := CAT_CROUCHED if is_telegraphing() else CAT_RUNNING
-	_draw_shadow(canvas, Vector2.ZERO, 7.0)
+	_draw_shape_shadow(canvas, def.shape)
 	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 ## Hood up and hands in the coat while he is only somewhere; leaning out over a forward leg once
@@ -1636,7 +1670,7 @@ func _draw_cat(canvas: CanvasItem = self) -> void:
 ## frame he notices her, before the telegraph has finished and well before he moves.
 func _draw_robber(canvas: CanvasItem = self) -> void:
 	var texture := ROBBER_WAITING if is_waiting() else ROBBER_LUNGING
-	_draw_shadow(canvas, Vector2.ZERO, 9.0)
+	_draw_shape_shadow(canvas, def.shape)
 	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 ## Flames scaled by what the event is currently emitting, so a fire visibly roars.
@@ -1644,7 +1678,7 @@ func _draw_fire(canvas: CanvasItem = self) -> void:
 	var strength := 1.0
 	if def.intensity > 0.0:
 		strength = clampf(current_intensity() / def.intensity, 0.2, 1.0)
-	_draw_shadow(canvas, Vector2.ZERO, 22.0)
+	_draw_shape_shadow(canvas, def.shape)
 	for i in 5:
 		var offset := (i - 2.0) * 11.0
 		var flicker := 1.0 + 0.25 * sin(age * 9.0 + i * 1.7)
@@ -1673,7 +1707,7 @@ func _spread_extent(along: float, thickness: float) -> Vector2:
 ## equal the obstructed one, matching the segments above rather than overhanging them.
 func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null, canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	_draw_shadow(canvas, Vector2.ZERO, half * 0.9)
+	_draw_shape_shadow(canvas, def.shape)
 	var segment := segment_texture.get_size()
 	var along_natural := segment.y if _spread_vertical else segment.x
 	var thickness := segment.x if _spread_vertical else segment.y
@@ -1707,13 +1741,11 @@ func _draw_wide_scene(texture: Texture2D, canvas: CanvasItem = self) -> void:
 		canvas.draw_texture_rect(TextureResolver.resolve(shadow),
 				Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent),
 				false, Palette.SHADOW)
-	elif _spread_vertical and canvas != _halo:
-		# A vertical scene's shadow follows the same 192px ground span as its body.
-		canvas.draw_texture_rect(TextureResolver.resolve(WIDE_SCENE_SHADOW),
-				Rect2(Vector2(-thickness * 0.5, -half), Vector2(thickness, half * 2.0)),
-				false, Palette.SHADOW)
 	else:
-		_draw_shadow(canvas, Vector2.ZERO, half * 0.9)
+		# No authored ground-contact art for this axis (only `car_accident` has one either way) —
+		# the shape's own capsule shadow follows the same span as the body, `-half` to `half`
+		# along the spread axis.
+		_draw_shape_shadow(canvas, def.shape)
 	Sprites.draw_standing(canvas, texture, anchor, extent)
 
 static func _wide_scene_anchor(vertical: bool, half: float) -> Vector2:
@@ -1742,7 +1774,7 @@ static func _cap_offset(half: float, cap_along: float, side: float) -> float:
 ## rather than turning with the spread.
 func _draw_cafe(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	_draw_shadow(canvas, Vector2.ZERO, half * 0.9)
+	_draw_shape_shadow(canvas, def.shape)
 	var segment := CAFE_TABLE.get_size()
 	var along_natural := segment.y if _spread_vertical else segment.x
 	var thickness := segment.x if _spread_vertical else segment.y
@@ -1771,7 +1803,7 @@ func _draw_cafe(canvas: CanvasItem = self) -> void:
 ## would be a second cue saying the same thing.
 func _draw_protest(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	_draw_shadow(canvas, Vector2.ZERO, half * 0.95)
+	_draw_shape_shadow(canvas, def.shape)
 	# Spaced off the body rather than off the sprite, so the rank ends where the ground it takes
 	# ends. A crowd drawn at its own natural spacing overhangs its own body by most of a person,
 	# which is the lie `_draw_spread` exists to avoid in the other direction.
@@ -1795,7 +1827,7 @@ func _draw_protest(canvas: CanvasItem = self) -> void:
 ## thing to time a run past, and `can_be_timed()` already says so.
 func _draw_firefight(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	_draw_shadow(canvas, Vector2.ZERO, half)
+	_draw_shape_shadow(canvas, def.shape)
 	var strength := 1.0
 	if def.intensity > 0.0:
 		strength = clampf(current_intensity() / def.intensity, 0.0, 1.0)
@@ -1823,7 +1855,9 @@ const MUZZLE_FLASH := Color("e8b64a")
 func _draw_dog_walker(canvas: CanvasItem = self) -> void:
 	var reach := def.inner_radius * 0.8
 	var to_the_dog := Vector2(-reach if _heading_is_west() else reach, 0.0)
-	_draw_shadow(canvas, Vector2.ZERO, 8.0)
+	_draw_shape_shadow(canvas, def.shape)
+	# The dog's own shadow, not the row's shape — a two-body composite has no single shape to be
+	# either of its bodies, so this one is a per-part point like the abduction's victim.
 	_draw_shadow(canvas, to_the_dog, 9.0)
 	# Slack in the middle, so it reads as a lead rather than as a bar.
 	canvas.draw_line(Vector2(0.0, -26.0), to_the_dog + Vector2(0.0, -6.0), Palette.OUTLINE, 2.0)
@@ -1850,7 +1884,7 @@ func _draw_abduction(canvas: CanvasItem = self) -> void:
 		var at := standing.lerp(Vector2.ZERO, through)
 		_draw_shadow(canvas, at, 8.0)
 		Sprites.draw_standing(canvas, VAN_VICTIM, at, Vector2.ZERO, _heading_is_west())
-	_draw_vehicle(UNMARKED_VAN, UNMARKED_VAN_END, 21.0, canvas)
+	_draw_vehicle(UNMARKED_VAN, UNMARKED_VAN_END, canvas)
 
 ## Another mother with a pram — one picture, two postures. Strolling is what she looks like for the
 ## whole of her beat; talking is what she looks like for exactly the `detain_seconds` of a
@@ -1858,7 +1892,7 @@ func _draw_abduction(canvas: CanvasItem = self) -> void:
 ## because she is a cost rather than a threat and that mark is spoken for. See
 ## `docs/EVENTS.md`, "The visual vocabulary".
 func _draw_chatting_mother(canvas: CanvasItem = self) -> void:
-	_draw_shadow(canvas, Vector2.ZERO, 14.0)
+	_draw_shape_shadow(canvas, def.shape)
 	var texture := CHATTING_MOTHER_TALKING if is_chatting() else CHATTING_MOTHER_WALKING
 	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
@@ -1909,9 +1943,11 @@ func _hut_texture(doorway: Vector2i) -> Texture2D:
 ## never overlap whichever of the four the doorway turns out to be.
 func _draw_checkpoint_hut(canvas: CanvasItem = self) -> void:
 	var doorway := _hut_doorway()
-	_draw_shadow(canvas, Vector2.ZERO, 20.0)
+	_draw_shape_shadow(canvas, def.shape)
 	_draw_at_anchor(canvas, _hut_texture(doorway), _HUT_ANCHOR)
 	var beside := Vector2(0.0, 22.0) if doorway.x == 0 else Vector2(22.0, 0.0)
+	# The guard's own shadow, not the row's shape — a per-part point beside the hut, same as the
+	# dog beside a dog walker.
 	_draw_shadow(canvas, beside, 8.0)
 	_draw_at_anchor(canvas, GUARD_STANDING, _GUARD_ANCHOR, beside)
 
@@ -1930,5 +1966,5 @@ func _draw_checkpoint_gate(canvas: CanvasItem = self) -> void:
 	else:
 		texture = BOOM_GATE_EW_RAISED if raised else BOOM_GATE_EW_LOWERED
 		anchor = _BOOM_EW_ANCHOR
-	_draw_shadow(canvas, Vector2.ZERO, 20.0)
+	_draw_shape_shadow(canvas, def.shape)
 	_draw_at_anchor(canvas, texture, anchor)

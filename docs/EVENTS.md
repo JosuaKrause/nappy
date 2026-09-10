@@ -34,12 +34,13 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `pursues` / `pursue_speed` | Comes after **her** rather than along a path, at a speed strictly between a walk and a run. The one thing running is the answer to — see `Tuning.validate_pursuit` |
 | `pursues_within` | How close she has to come before it takes an interest. `0` is *immediately*, which is a pursuer that is a **moment**; anything else is a pursuer that is a **place** until she walks up to it, and its telegraph and chase are both measured from when it notices |
 | `paces` | Walks its route and turns round at the ends, for ever. The difference between a journey and a **beat** — see `homeless_yeller` |
-| `obstructs_radius` | Radius of solid body (px). **A thing that stands still is solid at the width it is drawn** — see "Solid things are solid" |
+| `obstructs_radius` | The reach (px) of the row's own `shape` — a `GroundShape`, and the body is that shape, not a second number. **A thing that stands still is solid at the width it is drawn** — see "Solid things are solid" |
 | `pavement_side` | Which lane of a two-tile pavement it wants: `ANY`, `AT_THE_KERB`, `AGAINST_THE_BUILDING` |
 | `hard_fail` | Whether contact ends the day immediately |
 | `redetains` | Whether a `detain_seconds` row is armed again once she is released and outside `detain_radius`, rather than spent after one conversation. `false` for everything but `checkpoint_hut`/`checkpoint_post` — see "Checkpoints" |
 | `heat_response` | How the row answers to the resistance: `NONE`, `PRESSES` (more of them, more expensive, and past half way it comes over), `HUNTS` (it stops being a place and starts being a hunter) — see "The heat" |
 | `look` | Which picture it draws. **One per row, and no two rows share one** — see "The visual vocabulary", point 6 |
+| `shape` | The row's own `GroundShape` (`src/ground_shape.gd`) — a point or a segment, independent of the picture — that its shadow and, when it obstructs, its collision body are both derived from. Set by `EventDef.solid(shape)` for anything with `obstructs_radius`, or directly for anything with a `look` that does not obstruct; `null` only for `look == NONE` — see "Solid things are solid" |
 | `act_tag` | Narrative act it belongs to. No game code reads it; `tests/test_acts.gd` holds it consistent with the calendar `first_day` actually gates |
 
 There is no `impulse` field. A "sharp spike" is just a short `duration` at high `intensity`
@@ -196,10 +197,26 @@ It is derived, by one line:
 
 > **Anything that stands still is solid at the width it is drawn.**
 
-The width it is drawn is the whole of it — the number is half the silhouette, not a balance
-value. `EventInstance._draw_spread` draws a blocking object at exactly its `obstructs_radius` for
-the same reason in the other direction: a body that disagrees with the picture is a lie about where
-she can walk, whichever way it lies.
+**The body is the row's own `GroundShape` (`src/ground_shape.gd`) — a point or a segment, in the
+object's own ground frame — and `obstructs_radius` is its `reach()`: the furthest any point of the
+shape lies from its own centre.** A row that obstructs calls `EventDef.solid(shape)`, which sets
+both in the one call that keeps them from disagreeing; `EventDef.validate()` refuses a row whose
+`obstructs_radius` does not equal `shape.reach()`. A row drawn as a spread — a café frontage, a
+roadblock, a protest rank — reduces to a segment (a capsule) of a fixed 24px rounding
+(`GroundShape.BAND_RADIUS`), so a band-shaped picture stands on a band-shaped body rather than the
+disc every shape used to collide as; a narrower row, or a point-drawn one, stays a plain circle.
+The width it is drawn is the whole of it either way — the number is half the silhouette, not a
+balance value — and `EventInstance._draw_spread` draws a blocking object at exactly the width its
+shape reaches, for the same reason in the other direction: a body that disagrees with the picture
+is a lie about where she can walk, whichever way it lies.
+
+**The catalogue is not the only thing carrying this datum.** A building's collision is a rectangle
+built from `shape.collision_shape()` on `GroundShape.rect(footprint * 0.5)` — `src/city/building.gd`
+— the one caller of `GroundShape`'s rectangle kind, since nothing else has a footprint that is not
+already a point or a band; and the crowd's walkers and cars each carry a `shape` of their own
+(`CrowdAgent.shape`) read for their shadow, though neither has a body — a car's lethality stays the
+separate `CAR_STRIKE_HALF_LENGTH`/`CAR_STRIKE_HALF_WIDTH` rectangle `will_be_lethal()` reads, on the
+player's own *"lethal != noise"*.
 
 **Three exemptions, each for its own reason.**
 

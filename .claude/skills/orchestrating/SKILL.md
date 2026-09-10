@@ -154,6 +154,13 @@ merging is what collides — so parallelism is planned at the file level, before
 
 - **The queue and the archive.** Agents never tick, prune or archive; two writers on `TODO.md` is
   how a queue lies.
+- **The queue as it stands on `origin/main`, not as it stood when the session started.** More
+  than one session works this repository at once, and a design entry can be rewritten and merged
+  while a brief is being written from the older text. Before briefing a milestone, `git fetch` and
+  read its `TODO.md` entry on `origin/main`; a brief built from a stale entry produces work that
+  contradicts a decision the player has already recorded, and the contradiction is only found at
+  review. If `main` has moved, merge it into the branch before the next agent commit rather than
+  after the last one.
 - **The merge order** when agents run in parallel — overlapping areas run sequentially instead;
   disjoint file sets are what makes parallel safe in a single repo.
 - **The player's questions.** An agent's fork, silent choice, or measurement lands back with the

@@ -117,6 +117,21 @@ enum SpawnMode {
 @export var look := Look.NONE
 @export var ambient_source := AmbientSource.NONE
 
+## This row's own ground shape — the datum its shadow and its solid body (when it has one) are
+## both derived from. A plain `var` rather than `@export`: `GroundShape` is a `RefCounted`, not a
+## `Resource`, so it cannot export. `null` for every row whose `look` is `NONE` — nothing draws it,
+## so nothing needs a shape — and set by every other row. See `solid()` below for the obstructing
+## case, and `docs/EVENTS.md`, "Solid things are solid".
+var shape: GroundShape = null
+
+## Sets `shape` and derives `obstructs_radius` from it in the one call that keeps them from
+## disagreeing: **the body is the shape, always**, so `obstructs_radius` becomes `shape.reach()`
+## rather than a second number chosen to match it. Every obstructing row calls this instead of
+## setting `obstructs_radius` by hand; a row with a look that does not obstruct sets `shape` alone.
+func solid(new_shape: GroundShape) -> void:
+	shape = new_shape
+	obstructs_radius = new_shape.reach()
+
 ## Day gating, 1-based and inclusive. `last_day = 0` means it never expires.
 @export var first_day := 1
 @export var last_day := 0
@@ -301,6 +316,12 @@ enum HeatResponse {
 ## not politely step aside, and being *forced* to reroute is a different pressure from
 ## choosing to.
 ##
+## **This is `shape.reach()`, not a second number chosen to match it.** The body is `shape` — a
+## `GroundShape`, the same datum the shadow is drawn from — and this field is what every planner
+## still reads: the disc bound the reachability and sealing guarantees are stated over, which holds
+## for a capsule shape too, since every point of a capsule of a given reach lies inside the disc of
+## the same reach. `solid(shape)` sets both together; `validate()` refuses the two disagreeing.
+##
 ## **Anything that stands still is solid at the width it is drawn.** It is a rule rather than a
 ## list, because the moment it is a list a delivery van is scenery and a man standing in a
 ## courtyard can be walked through. And the number is not a balance value: it is half of the
@@ -415,6 +436,11 @@ func at_heat(level: int) -> EventDef:
 		return self
 	var through := clampf(float(level) / float(Tuning.RESISTANCE_GOAL), 0.0, 1.0)
 	var hot := duplicate() as EventDef
+	# `Resource.duplicate()` only copies properties with storage usage, and a plain `var` typed as
+	# a `RefCounted` (not a `Resource`) does not get that usage — it cannot round-trip through a
+	# `.tres`, so Godot excludes it. `shape` is never mutated in place, so sharing the reference
+	# with the original is exactly as safe as `duplicate()`'s own shallow copy of anything else.
+	hot.shape = shape
 	match heat_response:
 		HeatResponse.PRESSES:
 			# More of them, and more expensive to be near. Population is the axis that changes the
@@ -472,6 +498,17 @@ func available_on(day: int) -> bool:
 ## playgrounds are on day 1 and that knowledge holds for the rest of the run — which is the
 ## whole point of a city that does not change.
 func validate() -> bool:
+	# **The body is the shape, always.** A row that draws something has a shape to draw it from,
+	# and a row whose shape claims a reach has to claim the same one `obstructs_radius` does — the
+	# two are one datum read two ways, not two numbers that happen to agree today.
+	if look != Look.NONE and shape == null:
+		push_error("event '%s' has a look but no shape to draw its shadow and body from" % id)
+		return false
+	if obstructs_radius > 0.0 and (shape == null or not is_equal_approx(shape.reach(), obstructs_radius)):
+		push_error(("event '%s' obstructs %.1fpx but its shape reaches %.1fpx: the body and the "
+				% [id, obstructs_radius, shape.reach() if shape else -1.0])
+				+ "picture would disagree about where she can walk")
+		return false
 	if kind == GameEnums.EventKind.AMBIENT:
 		return true
 	# A city-wide event has no edge to walk out of, so the escape-distance rule is

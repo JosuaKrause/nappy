@@ -92,6 +92,17 @@ enum Alert {
 @onready var _baby: Baby = get_node_or_null("Baby")
 
 var facing := Vector2.DOWN
+
+## Her own ground shape and the pram's, read by `_draw()` for their shadows — 9px and 12px, the
+## same two numbers the shadow always used. Fixed rather than computed in a `setup()`, since
+## neither figure changes size. **Not the same datum as the scene's own collision body**: the
+## `CircleShape2D` on `scenes/player/stroller.tscn`'s `CollisionShape2D` is one combined physics
+## radius for the whole rig, `Tuning.PLAYER_BODY_RADIUS` (14px) — already checked against the
+## scene by `tests/test_events.gd`'s `_test_the_pram_is_the_size_the_rules_think_it_is` — and nothing
+## here touches it. The pram itself has no body of its own — M100's, not this commit's.
+var shape := GroundShape.point(9.0)
+var pram_shape := GroundShape.point(12.0)
+
 ## The current eight-direction projection, shared by both draw calls so mother and pram cannot
 ## disagree about which way the rig faces. Starts south to match the default `facing`.
 var _view_direction := 2
@@ -426,8 +437,8 @@ func _draw() -> void:
 	var pram_offset := Vector2(facing.x, facing.y * OBLIQUE_Y) * PRAM_DISTANCE
 
 	# Shadows belong to the ground plane, so they always go underneath both figures.
-	Sprites.draw_shadow(self, Vector2.ZERO, 9.0)
-	Sprites.draw_shadow(self, pram_offset, 12.0)
+	shape.draw_shadow(self, Vector2.ZERO)
+	pram_shape.draw_shadow(self, pram_offset)
 	var gait := clampf(velocity.length() / Tuning.WALK_SPEED, 0.0, 1.6)
 	if facing.y < 0.0:
 		_draw_pram(pram_offset)
