@@ -1,12 +1,26 @@
-<!-- leaf blower front authored upright projection. Canvas 34x42; bottom-centre ground anchor (17,42). -->
+<!-- Yellow groundskeeper with blower aimed front. The rear view occludes the nozzle behind the torso. Ground anchor (17,42). -->
 <svg xmlns="http://www.w3.org/2000/svg" width="34" height="42" viewBox="0 0 34 42" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-<circle cx="9" cy="7" r="6" fill="#d9a878"/>
-  <path d="M3 7 A6 6 0 0 1 15 7 Z" fill="#3a2b26"/>
-  <circle cx="7" cy="7" r="0.8" fill="#221f28"/><circle cx="11" cy="7" r="0.8" fill="#221f28"/>
-  <path d="M2 12 L16 12 L15 30 Q9 33 3 30 Z" fill="#e8b64a"/>
-  <path d="M2 24 Q9 27 16 24 L15 30 Q9 33 3 30 Z" fill="#c99a34"/>
-  <path d="M1 14 L4 13 L5 25 L2 26 Z M14 13 L17 14 L16 26 L13 25 Z" fill="#e8b64a"/>
-  <path d="M5 29 L8 29 L8 40 L4 40 Z M10 29 L14 29 L14 40 L10 40 Z" fill="#46506b"/>
-  <path d="M3 39 L9 39 L8 42 L2 42 Z M10 39 L16 39 L17 42 L10 42 Z" fill="#221f28"/>
-  <path d="M14 19 L27 21 L33 19 L33 26 L27 24 L14 23 Z" fill="#3b3f4a"/><rect x="27" y="19" width="6" height="7" fill="#58524d"/>
+  <g transform="translate(17 0)">
+  <path d="M-5 29 L-1 29 L-2 40 L-6 40Z M1 29 L5 29 L7 40 L2 40Z" fill="#4a4a3c"/>
+  <path d="M-7 40 L-1 40 L-1 42 L-8 42Z M1 40 L8 40 L9 42 L1 42Z" fill="#221f28"/>
+  </g>
+  <g transform="translate(17 0)">
+  <path d="M-7 12 L7 12 L7 30 L-7 30Z" fill="#e8b64a"/>
+  <path d="M-6 24 L6 24 L6 30 L-6 30Z" fill="#c99a34"/>
+  </g>
+  <path d="M21 18 L25 21 L24 25 L19 23Z" fill="#3b3f4a"/>
+  <path d="M21 22 L24 22 L25 31 L20 31Z" fill="#3b3f4a"/>
+  <ellipse cx="22.5" cy="32" rx="4" ry="2.5" fill="#58524d"/>
+  <ellipse cx="22.5" cy="32" rx="2.2" ry="1.2" fill="#26232a"/>
+  <g transform="translate(17 0)">
+  <path d="M-6 15 L-6 22 L2 26 L5 23 L-2 20 L-2 15Z" fill="#e8b64a"/>
+  <circle cx="5" cy="23" r="1.6" fill="#d9a878"/>
+  </g>
+  <g transform="translate(17 7)">
+  <ellipse cx="0" cy="0" rx="6" ry="6.5" fill="#d9a878"/>
+  <path d="M-6 0 Q-6 -7 0 -7 Q6 -7 6 0 Q3 -2 0 -2 Q-3 -2 -6 0Z" fill="#c99a34"/>
+  </g>
+  <g transform="translate(17 7)">
+  <path d="M-6 -1 Q-6 -7 0 -7 Q6 -7 6 -1Z" fill="#e8b64a"/>
+  </g>
 </svg>
