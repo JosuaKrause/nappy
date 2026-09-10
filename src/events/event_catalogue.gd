@@ -1523,9 +1523,13 @@ static func _collapsed_frontage() -> EventDef:
 ## The hut at a region door. Detains rather than blocking outright — M62's own words: *"the player
 ## walks to the hut gets detained inside and then spawns on the other side."* `detain_radius`
 ## (48px) sits inside `inner_radius` (52px), the way every detainer's does, and the ambient field
-## is the milestone's own "a bit of excitement": a token `intensity` over a tight band, because the
-## real price is the flat `Tuning.CHAT_EXCITEMENT` the detention charges through the ordinary chat
-## mechanism, and standing still on its own pays nothing back (`EXCITEMENT_DECAY_IDLE`). `redetains`
+## is the milestone's own "a bit of excitement": a small `intensity` over a tight band, small
+## enough that the real price stays the flat `Tuning.CHAT_EXCITEMENT` the detention charges through
+## the ordinary chat mechanism, and standing still on its own pays nothing back
+## (`EXCITEMENT_DECAY_IDLE`) — but not so small that walking through the field for free undercuts
+## `tests/test_events.gd`'s own catalogue-wide rule that nothing is cheaper to walk through than
+## around: with most of the 52-66px band held at peak against `EXCITEMENT_DECAY_WALKING` (3.5/s),
+## 6.0 is the smallest round number that clears it with a margin rather than by luck. `redetains`
 ## is what tells `EventManager` this instance is armed again once she is outside `detain_radius`,
 ## in either direction, rather than spent after one conversation like `chatting_mother`.
 static func _checkpoint_hut() -> EventDef:
@@ -1536,7 +1540,7 @@ static func _checkpoint_hut() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.CHECKPOINT_HUT
 	def.act_tag = 2
-	def.intensity = 3.0
+	def.intensity = 6.0
 	def.inner_radius = 52.0
 	def.outer_radius = 66.0
 	def.telegraph_time = 1.0
@@ -1580,7 +1584,7 @@ static func _checkpoint_post() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.CHECKPOINT_POST
 	def.act_tag = 2
-	def.intensity = 3.0
+	def.intensity = 6.0
 	def.inner_radius = 52.0
 	def.outer_radius = 66.0
 	def.telegraph_time = 1.0
