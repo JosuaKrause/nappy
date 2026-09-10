@@ -85,6 +85,11 @@ extends RefCounted
 ## `Tuning.ALLEY_MOUTH_SEAL_CHANCE` rolls each qualifying alley rather than sealing every one of
 ## them every day, so the alley reads as an occasional exception rather than a wall of its own. See
 ## `_seal_alley_mouths`.
+##
+## **A crossing alley — one whose two mouths open onto two different regions' ground — is never one
+## of these candidates**, whichever way the tree runs. `RegionPlanner` already decides it as a door
+## or a wall of its own, from `Tuning.REGION_WALL_FIRST_DAY` on, and hands its rect's `position` to
+## `skip` so this pass never rolls for it too. See `docs/CITY.md`, "Regions and the wall".
 
 enum Strength { HARD, SOFT }
 
@@ -139,14 +144,17 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 ## neither end. Returned as `EventScheduler.Planned` so the caller (`EventManager.start_day`) can
 ## simply append them to the day's plan.
 ##
-## `skip` is a set of segment keys to leave alone on top of the ordinary exclusions — today's
-## region boundary, both wall and door, from `Tuning.REGION_WALL_FIRST_DAY` on. **The wall is
-## already the seal**, placed as its own hard band by `RegionPlanner.plan_day` from the checkpoint
-## row rather than from this candidate list, and a door is meant to stay a fully open crossing for
-## the structure the milestone's second half places there — either would be two things standing in
-## the same spot if this pass also sealed it. A `Dictionary` parameter rather than a reach into
-## `_city` from here: `SealPlanner` stays a pure function of what it is handed, the same as every
-## other call in this file.
+## `skip` is a set of keys to leave alone on top of the ordinary exclusions — today's region
+## boundary, both wall and door, from `Tuning.REGION_WALL_FIRST_DAY` on. It carries two kinds of
+## key in one `Dictionary`, never colliding since they are different `Variant` types: a
+## `StreetNetwork.Segment.key()` (`Vector3i`) for a boundary segment, checked in the loop below, and
+## an alley rect's own `position` (`Vector2i`) for a **crossing alley**, checked by
+## `_seal_alley_mouths`. **The wall is already the seal**, placed as its own hard band or alley-
+## mouth pair by `RegionPlanner.plan_day` from the checkpoint row rather than from this candidate
+## list, and a door is meant to stay a fully open crossing for the structure the milestone's second
+## half places there — either would be two things standing in the same spot if this pass also
+## sealed it. A `Dictionary` parameter rather than a reach into `_city` from here: `SealPlanner`
+## stays a pure function of what it is handed, the same as every other call in this file.
 static func plan_day(map: CityMap, day: int, tree: RouteTree,
 		rng: RandomNumberGenerator, skip: Dictionary = {}) -> Array[EventScheduler.Planned]:
 	var planned: Array[EventScheduler.Planned] = []
@@ -173,7 +181,7 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree,
 		else:
 			planned.append_array(placed)
 	planned.append_array(_thin_soft_pairs(soft_pairs, rng))
-	planned.append_array(_seal_alley_mouths(map, tree, day, rng))
+	planned.append_array(_seal_alley_mouths(map, tree, day, rng, skip))
 	return planned
 
 ## Whether `segment` is the main road. See the class doc: never a seal candidate, because
@@ -228,13 +236,29 @@ static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
 		planned.append(EventScheduler.Planned.new(def, at))
 	return planned
 
-## The public entry point to the same placement, for a caller outside the candidate list above.
+## The public entry point to a **mouth** placement, for a caller outside the candidate list above.
 ## `RegionPlanner` uses this to build the region wall's own bodies from the `checkpoint` row, which
 ## is not one of this file's eight seal pictures — the wall is a fact about where a region's
 ## perimeter runs, not a candidate this pass ever rolls for itself.
-static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment,
-		def_id: String) -> Array[EventScheduler.Planned]:
-	return _place_hard(map, segment, def_id)
+##
+## **One tile deep, at `at_a`'s end, not the segment's midpoint** — the region wall's own geometry,
+## different from `_place_hard`'s: a region boundary is not met the way an ordinary seal is, it
+## bounds two regions from one end, and the whole of the segment's ground on the far side of the
+## wall stays walkable right up to the one-tile band the wall itself occupies. `def.obstructs_
+## radius` is overridden to `Tuning.TILE_SIZE` (32px) for the same reason — the catalogue row's own
+## 60px reaches roughly two tiles along the street each way, which reaches clean over a through-
+## alley's mouth at the next street along if the wall's body sits at the row's own width. The copy
+## count across the street's `STREET_WIDTH` is still derived from the radius (`_hard_positions_in`)
+## rather than chosen by hand; at 32px it comes out at three.
+static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: String,
+		at_a: bool) -> Array[EventScheduler.Planned]:
+	var def := _sealed_variant(EventCatalogue.by_id(def_id), true)
+	def.obstructs_radius = Tuning.TILE_SIZE
+	var planned: Array[EventScheduler.Planned] = []
+	var world := map.tile_rect_to_world(segment.mouth_rect(at_a))
+	for at in _hard_positions_in(world, segment.horizontal, def):
+		planned.append(EventScheduler.Planned.new(def, at))
+	return planned
 
 ## A soft seal: one body per pavement, at the lane nearest the kerb — which is where a kerbed row
 ## like `delivery_van` already wants to be, and where any other row's own auto-centring
@@ -328,13 +352,19 @@ static func _cross_section_tiles(segment: StreetNetwork.Segment) -> Array[Vector
 ## close.
 static func _hard_positions(map: CityMap, segment: StreetNetwork.Segment,
 		def: EventDef) -> Array[Vector2]:
-	var world := map.tile_rect_to_world(segment.tile_rect())
-	var width: float = world.size.y if segment.horizontal else world.size.x
+	return _hard_positions_in(map.tile_rect_to_world(segment.tile_rect()), segment.horizontal, def)
+
+## The same spacing arithmetic as `_hard_positions`, generalised to any world rect rather than a
+## segment's own whole `tile_rect()` — `place_hard_on` hands it a one-tile-deep mouth rect instead,
+## which is otherwise identical geometry: cover `world`'s cross-axis edge to edge with the fewest
+## bodies whose circles still touch, centred on `world`'s own along-axis midpoint.
+static func _hard_positions_in(world: Rect2, horizontal: bool, def: EventDef) -> Array[Vector2]:
+	var width: float = world.size.y if horizontal else world.size.x
 	var radius := maxf(1.0, def.obstructs_radius)
 	var copies := 1 if 2.0 * radius >= width else ceili(width / (2.0 * radius))
 	var spacing := width / float(copies)
 	var positions: Array[Vector2] = []
-	if segment.horizontal:
+	if horizontal:
 		var along := world.position.x + world.size.x * 0.5
 		for i in copies:
 			positions.append(Vector2(along, world.position.y + spacing * (i + 0.5)))
@@ -356,7 +386,7 @@ static func _hard_positions(map: CityMap, segment: StreetNetwork.Segment,
 ## walling every one of them, every day, is what made an alley read as closed off wholesale rather
 ## than as the occasional exception the design wants.
 static func _seal_alley_mouths(map: CityMap, tree: RouteTree,
-		day: int, rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
+		day: int, rng: RandomNumberGenerator, skip: Dictionary = {}) -> Array[EventScheduler.Planned]:
 	var planned: Array[EventScheduler.Planned] = []
 	var def_id := _best_alley_mouth_def(day)
 	if def_id == "":
@@ -367,6 +397,12 @@ static func _seal_alley_mouths(map: CityMap, tree: RouteTree,
 		# _make_the_pair_solid`), which does not retract it from `alley_rects` — so the ground is
 		# checked rather than trusted.
 		if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
+			continue
+		# A crossing alley — one whose two mouths open onto two different regions' ground — is
+		# `RegionPlanner`'s and nobody else's: it is already a door or a wall in today's region
+		# plan, and `skip` is how the caller says so. See `SealPlanner.plan_day`'s own doc on the
+		# two kinds of key `skip` carries.
+		if skip.has(rect.position):
 			continue
 		var vertical := rect.size.x < rect.size.y
 		var block := map.block_at(map.tile_rect_to_world(rect).get_center())
@@ -387,16 +423,29 @@ static func _seal_alley_mouths(map: CityMap, tree: RouteTree,
 		planned.append(_alley_mouth_plan(map, rect, vertical, false, mouth_def))
 	return planned
 
-static func _alley_mouth_plan(map: CityMap, rect: Rect2i, vertical: bool, at_start: bool,
-		def: EventDef) -> EventScheduler.Planned:
-	var mouth: Rect2i
+## The one-tile-deep rect at one end of a through-alley — the mouth a barrier, hard or soft, always
+## stands at. Public because `RegionPlanner`'s own crossing-alley wall and `tests/test_regions.gd`'s
+## flood check both need the rect itself rather than only the `Planned` `_alley_mouth_plan` builds
+## from it.
+static func alley_mouth_rect(rect: Rect2i, vertical: bool, at_start: bool) -> Rect2i:
 	if vertical:
 		var y := rect.position.y if at_start else rect.end.y - 1
-		mouth = Rect2i(Vector2i(rect.position.x, y), Vector2i(rect.size.x, 1))
-	else:
-		var x := rect.position.x if at_start else rect.end.x - 1
-		mouth = Rect2i(Vector2i(x, rect.position.y), Vector2i(1, rect.size.y))
+		return Rect2i(Vector2i(rect.position.x, y), Vector2i(rect.size.x, 1))
+	var x := rect.position.x if at_start else rect.end.x - 1
+	return Rect2i(Vector2i(x, rect.position.y), Vector2i(1, rect.size.y))
+
+static func _alley_mouth_plan(map: CityMap, rect: Rect2i, vertical: bool, at_start: bool,
+		def: EventDef) -> EventScheduler.Planned:
+	var mouth := alley_mouth_rect(rect, vertical, at_start)
 	return EventScheduler.Planned.new(def, map.tile_rect_to_world(mouth).get_center())
+
+## The public entry point to the same alley-mouth placement, for `RegionPlanner`'s own crossing-
+## alley wall — one body per mouth, from the checkpoint row rather than from this file's own
+## candidate list, the same relationship `place_hard_on` has to `_place_hard`.
+static func alley_mouth_wall(map: CityMap, rect: Rect2i, vertical: bool, at_start: bool,
+		def_id: String) -> EventScheduler.Planned:
+	var def := _sealed_variant(EventCatalogue.by_id(def_id), true)
+	return _alley_mouth_plan(map, rect, vertical, at_start, def)
 
 ## The soft candidate whose single row best fills a two-tile alley mouth today — the widest
 ## `obstructs_radius` among today's eligible soft rows, since a wider body leaves less of the

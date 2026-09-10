@@ -66,13 +66,19 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# Off the catalogue's own budget on purpose — see `SealPlanner`'s own doc. It seals everything
 	# `EventScheduler` was not permitted to touch: every street off `tree`, hard or soft, plus the
 	# mouths of any through-alley that never reaches it — except today's region boundary, wall or
-	# door, which is skipped here: the wall already carries its own hard seal below, and a door is
-	# meant to stay open for the structure the milestone's second half places there.
+	# door, and any crossing alley, both skipped here: the wall already carries its own hard seal
+	# below, and a door or a crossing alley's own door is meant to stay open for the structure the
+	# milestone's second half places there. Segment keys (`Vector3i`) and alley rect positions
+	# (`Vector2i`) share one `Dictionary` without colliding — see `SealPlanner.plan_day`'s own doc.
 	var boundary := {}
 	for segment in region_plan.walls:
 		boundary[segment.key()] = true
 	for segment in region_plan.doors:
 		boundary[segment.key()] = true
+	for rect in region_plan.alley_walls:
+		boundary[rect.position] = true
+	for rect in region_plan.alley_doors:
+		boundary[rect.position] = true
 	_plans.append_array(
 			SealPlanner.plan_day(_map, day, tree, GameState.day_rng(day, "seals"), boundary))
 	# The wall's own bodies — hard seals of the checkpoint row, one region boundary at a time. Kept

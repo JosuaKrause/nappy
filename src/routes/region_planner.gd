@@ -18,11 +18,20 @@ extends RefCounted
 ## can never affect a path". `plan_day` only ever reads a finished tree; it never feeds back into
 ## growing one.
 ##
-## **Atoms.** A calm area's access segments, a through-alley's two segments, the home street, and
-## a precinct span's own corridor are each unioned into one atom before growth, so no boundary
-## segment ever borders calm ground, crosses an alley, is the home street, or cuts a precinct — by
-## construction, the same way `SealPlanner` and `ClosurePlanner` already keep those four kinds of
-## ground whole rather than checking for a violation afterwards.
+## **Atoms.** A calm area's access segments, a commercial square's own frontage, the home street,
+## and a precinct span's own corridor are each unioned into one atom before growth, so no boundary
+## segment ever borders calm ground or a square, is the home street, or cuts a precinct — by
+## construction, the same way `SealPlanner` and `ClosurePlanner` already keep that ground whole
+## rather than checking for a violation afterwards. A square is atomised for the same reason a calm
+## area is and by the same mechanism (`_union_touch_points`): open, non-street ground that can
+## border more than one street is exactly the shape of bypass the wall's mouth placement cannot
+## see, whether or not the ground itself is calm.
+##
+## **An alley is not an atom; it is a second kind of crossing.** Unioning an alley's two bordering
+## streets does not scale: an alley touches all four corners of its own block, so a city's worth of
+## them chains into one atom spanning much of the lattice, which can degenerate the partition to a
+## single region holding every calm area on an unlucky seed. See `ground_region_of` for what a
+## crossing alley is instead.
 ##
 ## **Growth.** `Tuning.REGION_COUNT` seed junctions, spread by farthest-point sampling over the
 ## real-segment graph (`absent_segments` — both the zone-absorbed and the built-over kind — is
@@ -31,22 +40,31 @@ extends RefCounted
 ## whole atom** on every claim. The round-robin is what keeps the regions comparable in size
 ## rather than the first seed eating the map before the others start.
 ##
-## **The wall is the day's, not `absent_segments`.** From `Tuning.REGION_WALL_FIRST_DAY` a boundary
-## segment the day's tree uses is a door; every other boundary segment is wall — refined by two
-## rules stated in the class doc of `plan_day`.
+## **The wall stands at a boundary crossing's mouth, one tile deep, never its midpoint.** A segment
+## has two mouths and the wall stands at one of them (`CityMap.boundary_wall_at_a`, decided at
+## generation); an alley has two mouths and, when it is a crossing, both are walled. A midpoint
+## band reaches roughly two tiles either way at the checkpoint row's own radius, wide enough to
+## cover a nearby alley's mouth outright — the mouth is one tile deep and never bleeds sideways.
+##
+## **The wall is the day's, not `absent_segments`.** From `Tuning.REGION_WALL_FIRST_DAY`, every
+## boundary crossing — a segment or a crossing alley — the day's tree uses is a **door**; every
+## other one is **wall**. That is the whole rule: the tree wins. A region with no calm area
+## therefore gets no doors on every day its own boundary is off the tree, which is every day unless
+## the tree genuinely has to cross it to reach calm ground the milestone's own decree says a region
+## edge may never affect — in which case the crossing is a door and the decree is why.
 ##
 ## **The main road is ordinary ground to the partition.** Nothing here excludes it: a boundary may
 ## cut it, and the checkpoint that results is the one place the milestone's gate over the roadway
 ## means anything.
 
-## How many regions the lattice's junctions are partitioned into. Four, the milestone's own
-## recommendation: two is a single dividing line and eight or nine — one per calm area — puts most
-## of the lattice's 264 segments behind a wall and never lets "a region with no calm area gets no
-## doors" fire, since almost every region would have exactly one.
+## The catalogue row the wall's bodies are hard seals of. Currently the existing `checkpoint`
+## row — the barrier that closes a street outright, not the milestone's new structure, which has
+## taken the name and has not landed yet. **Whoever renames that row updates this string in the
+## same commit**, or the wall silently starts sealing nothing.
 const _WALL_DEF_ID := "checkpoint"
 
-## One region growth's result: which region a segment's boundary status resolves to, and the
-## day's wall/door split built from it.
+## One region growth's result: which crossings are wall today and which are doors, plus the
+## bodies the wall stands as.
 class RegionPlan extends RefCounted:
 	## Boundary segments that are wall today — the whole day if before `Tuning.REGION_WALL_
 	## FIRST_DAY`, since nothing is drawn before then.
@@ -54,10 +72,16 @@ class RegionPlan extends RefCounted:
 	## Boundary segments the day's tree crosses — an open segment, structure-free in this half of
 	## the build. The second agent places the hut, the gate and the guards here.
 	var doors: Array[StreetNetwork.Segment] = []
-	## The wall's own bodies, as `EventScheduler.Planned` — hard seals of the `checkpoint` row,
-	## edge to edge across each wall segment's midpoint. Kept as its own list, appended to
-	## `EventManager._plans` by the caller, rather than merged anywhere: a caller that only wants
-	## to know where the wall runs never has to filter it back out of the day's whole plan.
+	## Through-alley rects that are **crossings** (`ground_region_of` differs at their two mouths)
+	## and wall today — both mouths walled, the alley equivalent of `walls`.
+	var alley_walls: Array[Rect2i] = []
+	## Crossing alley rects the day's tree uses — the alley equivalent of `doors`.
+	var alley_doors: Array[Rect2i] = []
+	## The wall's own bodies, as `EventScheduler.Planned` — hard seals of the checkpoint row, one
+	## tile deep at a boundary segment's mouth or an alley's two mouths. Kept as its own list,
+	## appended to `EventManager._plans` by the caller, rather than merged anywhere: a caller that
+	## only wants to know where the wall runs never has to filter it back out of the day's whole
+	## plan.
 	var wall_bodies: Array[EventScheduler.Planned] = []
 
 # ------------------------------------------------------------------- generation ---
@@ -83,34 +107,39 @@ static func assign(map: CityMap, rng: RandomNumberGenerator) -> void:
 	var seeds := _pick_seeds(adjacency, real, dsu, rng)
 	map.region_of_junction = _grow_regions(total, adjacency, dsu, seeds)
 	map.region_has_calm = _compute_region_has_calm(map, map.region_of_junction)
+	map.boundary_wall_at_a = _assign_wall_ends(map)
 
 ## Unions every atom's junctions together before growth, so a claim can never split one across a
 ## boundary. See the class doc, "Atoms".
+##
+## **An alley is not unioned into anything here.** Unioning all four corners of its own block, so
+## its two bordering streets could never end up in different regions, would make every alley bridge
+## whichever two calm areas its own block happens to sit between — a city's worth of alleys chains
+## into one atom spanning most of the lattice, which can put every calm area in a single region on
+## an unlucky seed. An alley is a second kind of **crossing** instead — see `ground_region_of` and
+## `plan_day` — so it needs no atom of its own; a route through one is a boundary crossing like any
+## other, decided the same way a segment's is.
 static func _union_atoms(map: CityMap, dsu: _DSU) -> void:
 	for area in ClosurePlanner.calm_areas(map):
 		_union_touch_points(map, area.rect, dsu)
+	# A commercial square is the same shape of problem a calm area is — open, non-street ground
+	# that can border more than one street — and is not itself calm, so `ClosurePlanner.calm_areas`
+	# never offers it. A square touching two streets the growth put in different regions is exactly
+	# as unguarded a bypass as an unatomised calm area would be, since nothing about the wall's
+	# mouth placement (see `ground_region_of`) stops a walk that never sets foot on the segment the
+	# wall actually stands on.
+	for rect in map.square_rects:
+		_union_touch_points(map, rect, dsu)
 	var home := ClosurePlanner.home_street(map)
 	if home:
 		dsu.union(StreetNetwork.node_of(home.a), StreetNetwork.node_of(home.b))
-	for rect in map.alley_rects:
-		# A through-alley can be built over by a later generation pass, which does not retract it
-		# from `alley_rects` — the same check `SealPlanner._seal_alley_mouths` makes for the same
-		# reason: the ground is checked rather than trusted.
-		if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
-			continue
-		# `_area_touch_points`, not a direct `beside_block` at each of the alley's two sides: a hard
-		# blocker can take either of them independently of the alley itself, and its still-walkable
-		# stub then needs the same treatment a calm area's own stub-adjacency does — see that
-		# function's doc. An alley is two tiles wide and one block long, so this walk from its own
-		# rect finds exactly its two bordering streets when both are real, the ordinary case.
-		_union_touch_points(map, rect, dsu)
 	for span: Vector4i in map.precinct_spans:
 		var junctions := _precinct_span_junctions(span)
 		for i in range(1, junctions.size()):
 			dsu.union(StreetNetwork.node_of(junctions[0]), StreetNetwork.node_of(junctions[i]))
 
-## Unions every junction `_area_touch_points(map, rect)` finds into one atom. Shared by the
-## calm-area and the alley loops above, which differ only in which rect they walk outward from.
+## Unions every junction `_area_touch_points(map, rect)` finds into one atom — a calm area's or a
+## commercial square's own rect.
 static func _union_touch_points(map: CityMap, rect: Rect2i, dsu: _DSU) -> void:
 	var first := -1
 	for pair in _area_touch_points(map, rect):
@@ -134,8 +163,7 @@ static func _union_touch_points(map: CityMap, rect: Rect2i, dsu: _DSU) -> void:
 ## otherwise each keep their own near junction out of the atom, and if growth ever put those two
 ## junctions in different regions, the calm ground between their stubs becomes a walkable bypass no
 ## boundary segment was ever placed to guard, because neither dead end is a real segment
-## `boundary_segments()` can even see. Found by the flood-over-cells test in `tests/test_regions.gd`
-## rather than reasoned out in advance — the exact class of bug that check exists to catch.
+## `boundary_segments()` can even see.
 ##
 ## Same walk `_access_segments` uses — flood the area's own tiles outward through non-street
 ## ground — except every segment the walk meets is recorded (its own two junctions, to union
@@ -178,6 +206,133 @@ static func _precinct_span_junctions(span: Vector4i) -> Array[Vector2i]:
 		for x in range(span.z, span.w + 2):
 			junctions.append(Vector2i(x, corridor))
 	return junctions
+
+## The two streets a through-alley's rect borders, as `[segment_a, segment_b, vertical]`, or an
+## empty array when the alley is built over or either side falls outside the lattice entirely.
+## **Either or both may be absent** — a hard blocker can take either side independently of the
+## alley — so a caller that needs a real street on both sides (`_assign_wall_ends`'s own nudge)
+## checks `map.has_street()` itself; a caller asking what ground a mouth touches wants
+## `alley_mouth_ground_region` instead, which already knows what to do with an absent one.
+static func _alley_border_segments(map: CityMap, rect: Rect2i) -> Array:
+	if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
+		return []
+	var vertical := rect.size.x < rect.size.y
+	var block := map.block_at(map.tile_rect_to_world(rect).get_center())
+	var side_a: int = StreetNetwork.Side.NORTH if vertical else StreetNetwork.Side.WEST
+	var side_b: int = StreetNetwork.Side.SOUTH if vertical else StreetNetwork.Side.EAST
+	var segment_a := StreetNetwork.beside_block(block, side_a)
+	var segment_b := StreetNetwork.beside_block(block, side_b)
+	if not segment_a or not segment_b:
+		return []
+	return [segment_a, segment_b, vertical]
+
+## The region the ground at one of an alley's mouths belongs to — `ground_region_of` for a real
+## bordering street, and a dead end's or a big building's own surviving stub read directly for an
+## absent one. **Without the second half, a dead-end-adjacent alley is invisible to the crossing
+## machinery and can bridge two regions the wall never learns to guard**: `beside_block` still
+## names the absent segment and `_alley_border_segments` still returns it, but a caller that only
+## asks `ground_region_of` never learns what region its own still-walkable ground belongs to.
+## `-1` when neither end is unambiguously the open one (a big building leaves
+## no stub at all; the two are told apart by which single end, if either, is still walkable) — an
+## alley that cannot be read this way is left to the ordinary M64 sealing pass, exactly as one with
+## fewer than two bordering streets already was.
+static func alley_mouth_ground_region(map: CityMap, segment: StreetNetwork.Segment) -> int:
+	if map.has_street(segment.key()):
+		return ground_region_of(map, segment)
+	return _dead_end_ground_region(map, segment)
+
+## Which region a dead end's (or a big building's) own street reaches, read off the one end that
+## is still walkable — the near tile of each end says which, since a dead end builds over only the
+## *far* one and a big building takes both, leaving neither walkable at all.
+static func _dead_end_ground_region(map: CityMap, segment: StreetNetwork.Segment) -> int:
+	var rect := segment.tile_rect()
+	var near_a: Vector2i
+	var near_b: Vector2i
+	if segment.horizontal:
+		var mid_y := rect.position.y + rect.size.y / 2
+		near_a = Vector2i(rect.position.x, mid_y)
+		near_b = Vector2i(rect.end.x - 1, mid_y)
+	else:
+		var mid_x := rect.position.x + rect.size.x / 2
+		near_a = Vector2i(mid_x, rect.position.y)
+		near_b = Vector2i(mid_x, rect.end.y - 1)
+	var a_open := map.is_walkable(near_a)
+	var b_open := map.is_walkable(near_b)
+	if a_open and not b_open:
+		return region_of_junction(map, segment.a)
+	if b_open and not a_open:
+		return region_of_junction(map, segment.b)
+	return -1
+
+## Which end of every boundary segment carries the wall, keyed by segment key: `true` for `a`.
+## Default is deterministic and arbitrary — the lower region id's end — then a greedy pass over
+## alleys nudges it so that as few through-alleys as possible end up as crossings, per the
+## milestone's own words. See `ground_region_of` for how this is read back.
+##
+## **The pass is greedy and never repairs a conflict.** An alley demanding a ground a previous
+## alley already set differently for the same segment leaves that segment at its default rather
+## than fighting over it — `_demand` records the conflict once and every later demand for that
+## segment is then ignored, so the order alleys are visited in never has to be undone.
+static func _assign_wall_ends(map: CityMap) -> Dictionary:
+	var wall_at_a := {}
+	for segment in boundary_segments(map):
+		var ra := region_of_junction(map, segment.a)
+		var rb := region_of_junction(map, segment.b)
+		wall_at_a[segment.key()] = ra < rb
+	var demanded := {}
+	for rect in map.alley_rects:
+		var info := _alley_border_segments(map, rect)
+		if info.is_empty():
+			continue
+		var segment_a: StreetNetwork.Segment = info[0]
+		var segment_b: StreetNetwork.Segment = info[1]
+		if not map.has_street(segment_a.key()) or not map.has_street(segment_b.key()):
+			continue   # nothing to nudge without a real street on both sides to compare
+		var a_region := region_of_segment(map, segment_a)
+		var b_region := region_of_segment(map, segment_b)
+		if a_region >= 0 and b_region >= 0:
+			continue   # both interior; nothing to nudge, and no crossing either
+		if a_region >= 0 and b_region < 0:
+			_demand_ground(demanded, segment_b, a_region)
+		elif b_region >= 0 and a_region < 0:
+			_demand_ground(demanded, segment_a, b_region)
+		else:
+			# Both boundary segments: if their four ends share one region, that region is the
+			# alley's own side and both segments' ground is set to it, so the alley opens onto the
+			# same ground from either bordering street and is never a crossing.
+			var a_ends := [region_of_junction(map, segment_a.a), region_of_junction(map, segment_a.b)]
+			var b_ends := [region_of_junction(map, segment_b.a), region_of_junction(map, segment_b.b)]
+			var shared := -1
+			for r in a_ends:
+				if b_ends.has(r):
+					shared = r
+					break
+			if shared < 0:
+				continue
+			_demand_ground(demanded, segment_a, shared)
+			_demand_ground(demanded, segment_b, shared)
+	for key: Vector3i in demanded:
+		var wanted: int = demanded[key]
+		if wanted < 0:
+			continue   # a conflict was recorded; keep the default
+		var segment := StreetNetwork.by_key(key)
+		var ra := region_of_junction(map, segment.a)
+		var rb := region_of_junction(map, segment.b)
+		if ra == wanted:
+			wall_at_a[key] = false   # wall at b, ground (the far end) is a
+		elif rb == wanted:
+			wall_at_a[key] = true    # wall at a, ground (the far end) is b
+	return wall_at_a
+
+## Records that `segment`'s ground should be `region`, or marks it a conflict (`-1`) if an earlier
+## demand for the same segment wanted a different one — see `_assign_wall_ends`'s own doc.
+static func _demand_ground(demanded: Dictionary, segment: StreetNetwork.Segment,
+		region: int) -> void:
+	var key := segment.key()
+	if not demanded.has(key):
+		demanded[key] = region
+	elif demanded[key] != region:
+		demanded[key] = -1
 
 ## Junction adjacency over real segments only — `absent_segments` is never traversed, so a region
 ## can never grow across ground that is not there to cross. Built fresh per call: this only ever
@@ -354,6 +509,26 @@ static func region_of_segment(map: CityMap, segment: StreetNetwork.Segment) -> i
 	var rb := region_of_junction(map, segment.b)
 	return ra if ra == rb else -1
 
+## The region a segment's whole **ground** belongs to — the question the wall's mouth placement
+## makes meaningful where `region_of_segment` cannot answer at all. An interior segment's ground is
+## simply its own region, the same answer either function gives. A boundary segment's wall stands
+## one tile deep at one mouth (`CityMap.boundary_wall_at_a`), so the rest of its length — right up
+## to that one-tile band — is walkable from the **far** end and unreachable from the near one; this
+## returns the far end's region. `-1` for an absent segment, same as `region_of_segment`.
+##
+## This is also what a through-alley's two mouths are compared against to decide whether it is a
+## **crossing**: `plan_day` calls this on the real street at each end, and the alley is a crossing
+## exactly when the two answers differ.
+static func ground_region_of(map: CityMap, segment: StreetNetwork.Segment) -> int:
+	if not segment or not map.has_street(segment.key()):
+		return -1
+	var ra := region_of_junction(map, segment.a)
+	var rb := region_of_junction(map, segment.b)
+	if ra == rb:
+		return ra
+	var wall_at_a: bool = map.boundary_wall_at_a.get(segment.key(), ra < rb)
+	return rb if wall_at_a else ra
+
 ## Every real segment whose two ends disagree about their region — the wall, permanent for the
 ## run and independent of any day's tree.
 static func boundary_segments(map: CityMap) -> Array[StreetNetwork.Segment]:
@@ -386,67 +561,60 @@ static func home_region(map: CityMap) -> int:
 ## **Before `Tuning.REGION_WALL_FIRST_DAY`, nothing is drawn.** The regions exist from generation,
 ## but the milestone's own words are "checkpoints in the later acts" — returns an empty plan.
 ##
-## **From it on, every boundary segment is a door if the day's tree crosses it and wall
-## otherwise** — refined by one rule, applied per segment from each of its two sides:
+## **From it on, a boundary crossing — a segment or a crossing alley — is a door if the day's tree
+## uses it and wall otherwise. The tree wins, unconditionally, over anything the partition alone
+## would say.** Forcing a wall onto a calm-less region's own boundary regardless of the tree, on the
+## reasoning that there is no reason to ever enter a region with nothing in it, breaks the
+## milestone's own decree that a region edge may never affect a path — a segment the tree is
+## actually using would turn into a wall it did not expect. **A region with no calm area still gets
+## no doors on every day its own boundary happens to be off the tree** — which is every day unless
+## the tree has a genuine reason to cross it, and on that day the reason wins, because the decree
+## that a region edge never affects a path is the stronger rule and this is what obeying it looks
+## like.
 ##
-## - **A region with no calm area gets no doors at all**, except the region the home street is
-##   in, which always keeps its doors whatever the tree does. A segment touching a no-calm,
-##   non-home region on one side is forced to wall regardless of the other side, overriding what
-##   the tree would otherwise have made it — the tree is not expected to ever reach such a region
-##   (there is nothing there for it to grow toward), so this rarely has anything to override; see
-##   the milestone report for whether it ever did across the sweep it was measured on.
-##
-## **A segment that touches the home region on either side is never forced**, whatever the other
-## side is — that is the whole of what "the region she starts in always has doors" buys, read
-## literally rather than only as "home is not itself treated as a no-calm region". On a seed where
-## almost every calm area happens to land in the home region's own atom, every other region can be
-## genuinely calm-less at once, and if home's own exits were still subject to the rule on the far
-## side, she could be sealed into her own region with no door out of it at all — a wall standing
-## with nothing behind it to open. Exempting the home side of every one of its own boundary
-## segments is what keeps that from happening: those segments fall through to the ordinary
-## tree rule, door if the tree crosses them and wall otherwise, the same as any other segment
-## touching a region that does hold calm.
-##
-## The home region's own "always keeps its doors" is not enforced by adding one — that would be
-## exactly the repair pass `CLAUDE.md` warns against, resting a guarantee on code nothing checks.
-## It holds because the tree always reaches *some* calm area and the home region's own boundary is
-## never force-walled, so if that area lies outside the home region the branch reaching it has to
-## cross one of the home region's own boundary segments, which is then a door by the ordinary
-## rule. `tests/test_regions.gd` checks the sentence rather than assuming the mechanism — and
-## states the premise the argument above actually rests on: *if some other region holds calm at
-## all.* Where every calm area a city will ever have landed in the home region's own atom (found on
-## the sweep this suite runs, once), the tree has nothing outside home to grow toward, and a
-## boundary can stand with no door in it without contradicting anything above — the argument's own
-## premise never held. This is a property of a specific seed's atoms rather than a repair the
-## code could make; see the milestone report for how often it was seen.
+## No exemption for the home region is needed here either, for the same reason: home's own boundary
+## was never a case the tree-wins rule could get wrong, since the tree door/wall answer only depends
+## on the tree, never on which regions are calm-less. `tests/test_regions.gd` restates "the home
+## region has a door, or every calm area the tree reaches is in the home region" as the
+## unconditional sentence it always was rather than working around a rule that no longer exists.
 static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 	var plan := RegionPlan.new()
 	if day < Tuning.REGION_WALL_FIRST_DAY or not tree:
 		return plan
-	var calm := regions_with_calm(map)
-	var home := home_region(map)
 	for segment in boundary_segments(map):
-		var ra := region_of_junction(map, segment.a)
-		var rb := region_of_junction(map, segment.b)
-		var touches_home := ra == home or rb == home
-		if not touches_home and (_forces_wall(ra, calm) or _forces_wall(rb, calm)):
-			plan.walls.append(segment)
-		elif tree.is_on_the_tree(segment.key()):
+		if tree.is_on_the_tree(segment.key()):
 			plan.doors.append(segment)
 		else:
 			plan.walls.append(segment)
+	for rect in map.alley_rects:
+		var info := _alley_border_segments(map, rect)
+		if info.is_empty():
+			continue
+		var ground_a := alley_mouth_ground_region(map, info[0])
+		var ground_b := alley_mouth_ground_region(map, info[1])
+		if ground_a < 0 or ground_b < 0 or ground_a == ground_b:
+			continue   # not a (detectable) crossing; the ordinary M64 sealing pass handles it
+		var on_tree := false
+		for tile in map.rect_tiles(rect):
+			if not tree.branches_on(tile).is_empty():
+				on_tree = true
+				break
+		if on_tree:
+			plan.alley_doors.append(rect)
+		else:
+			plan.alley_walls.append(rect)
 	for segment in plan.walls:
-		plan.wall_bodies.append_array(SealPlanner.place_hard_on(map, segment, _WALL_DEF_ID))
+		var default_at_a := region_of_junction(map, segment.a) < region_of_junction(map, segment.b)
+		var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
+		plan.wall_bodies.append_array(SealPlanner.place_hard_on(map, segment, _WALL_DEF_ID, at_a))
+	for rect in plan.alley_walls:
+		var info := _alley_border_segments(map, rect)
+		if info.is_empty():
+			continue
+		var vertical: bool = info[2]
+		plan.wall_bodies.append(SealPlanner.alley_mouth_wall(map, rect, vertical, true, _WALL_DEF_ID))
+		plan.wall_bodies.append(SealPlanner.alley_mouth_wall(map, rect, vertical, false, _WALL_DEF_ID))
 	return plan
-
-## Whether `region` is a genuine reason to force a wall — real and holding no calm area. The
-## caller decides the home exemption itself (`plan_day`'s own `touches_home` guard), because that
-## exemption is about the *segment*, not the region: a segment touching home is never forced even
-## when its far side is a calm-less region, so home cannot be checked here in isolation.
-static func _forces_wall(region: int, calm: PackedByteArray) -> bool:
-	if region < 0:
-		return false
-	return region >= calm.size() or calm[region] == 0
 
 # --------------------------------------------------------------------------------- dsu ---
 

@@ -74,9 +74,18 @@ func is_hard_blocker(key: Vector3i) -> bool:
 var region_of_junction := PackedInt32Array()
 ## Which regions held a calm area on the morning generation decided the partition — one byte per
 ## region, `1` or `0`. A generation-time fact and not a per-day one: which region a calm *area* is
-## in never changes, only whether today's tree can still reach it, and only the former governs
-## whether a region gets doors at all. See `RegionPlanner.regions_with_calm()`.
+## in never changes, only whether today's tree can still reach it. See `RegionPlanner.
+## regions_with_calm()`, and its own doc for why this no longer decides which boundary segments get
+## doors — the day's tree does, unconditionally.
 var region_has_calm := PackedByteArray()
+
+## Which end of a boundary segment the wall stands at, keyed by `StreetNetwork.Segment.key()`:
+## `true` for the `a` end, `false` for `b`. Decided once at generation
+## (`RegionPlanner._assign_wall_ends`) so that as few through-alleys as possible end up as
+## **crossings** — see `RegionPlanner.ground_region_of()`, which reads this to say which region a
+## boundary segment's whole ground belongs to. Absent for an interior segment, which has no wall
+## and therefore no end to choose.
+var boundary_wall_at_a := {}
 
 ## The corridor index of the one main road, which runs north to south. `-1` before generation.
 ##
