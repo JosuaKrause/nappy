@@ -55,6 +55,14 @@ func setup(events: EventManager, crowd: Crowd, city: City, player: Stroller) -> 
 	_city = city
 	_player = player
 
+## Sets which layers start on — `1` fields, `2` shadows, `3` bounding boxes — from
+## `DevFlags.layers_override()`. Pulled out from `main._add_debug_layers()` so a test can drive it
+## directly without a real command line to read: see `DevFlags.parse_layers()` for the same split.
+func apply_initial_state(indices: Array[int]) -> void:
+	fields_on = 1 in indices
+	shadows_on = 2 in indices
+	bodies_on = 3 in indices
+
 ## `1` fields, `2` shadows, `3` bounding boxes — a number key's own numbering once `main.gd`
 ## wires one to each; `4` (the readout) lives on its own pre-existing layer and never reaches here.
 func set_layer(index: int, on: bool) -> void:

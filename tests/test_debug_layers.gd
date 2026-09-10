@@ -1,6 +1,7 @@
 extends RefCounted
-## `DebugLayers` (M104, "the debug view") and `GroundShape.shadow_outline()`, the geometry helper
-## `draw_shadow()` now draws from directly.
+## `DebugLayers` (M104, "the debug view") and the two pieces of it that sit outside that one class:
+## `GroundShape.shadow_outline()`, which `draw_shadow()` now draws from directly, and
+## `DevFlags.parse_layers()`, the `--layers`/`?layers=` parsing.
 ##
 ## The tree-presence and key-toggle tests build `main` the way `tests/test_main.gd` already does
 ## for the readout — a script-only instance, `_ready()` never run, its handful of dependencies
@@ -13,6 +14,9 @@ func run(t) -> void:
 	_test_shadow_outline_matches_a_points_ellipse(t)
 	_test_shadow_outline_matches_a_segments_hull(t)
 	_test_shadow_outline_matches_a_rectangles_squashed_corners(t)
+	_test_parse_layers_reads_a_comma_list(t)
+	_test_parse_layers_drops_malformed_entries_without_crashing(t)
+	_test_apply_initial_state_sets_only_the_listed_layers(t)
 	_test_no_layer_node_exists_outside_a_debug_build(t)
 	_test_a_debug_build_builds_the_layers_off_by_default(t)
 	_test_the_layer_keys_resolve_to_their_own_index(t)
@@ -61,6 +65,30 @@ func _test_shadow_outline_matches_a_rectangles_squashed_corners(t) -> void:
 	t.close_to(bounds.size.x, 60.0, "unrotated, the outline is as wide as the footprint", 0.5)
 	t.close_to(bounds.size.y, 20.0 * GroundShape.SHADOW_SQUASH,
 			"and squashed on Y by SHADOW_SQUASH, applied after the rotation", 0.5)
+
+# ------------------------------------------------------------------ DevFlags.parse_layers ---
+
+func _test_parse_layers_reads_a_comma_list(t) -> void:
+	var result := DevFlags.parse_layers("1,3")
+	t.check(result == [1, 3], "the two named layers, in the order given")
+	t.check(DevFlags.parse_layers("") == [], "an empty value asks for nothing")
+
+func _test_parse_layers_drops_malformed_entries_without_crashing(t) -> void:
+	t.check(DevFlags.parse_layers("1,x,2") == [1, 2],
+			"a non-numeric entry is dropped, not a crash or an empty result")
+	t.check(DevFlags.parse_layers("1,9,0") == [1],
+			"an out-of-range entry (there is no layer 9 or 0 to set) is dropped the same way")
+	t.check(DevFlags.parse_layers("2,2") == [2], "a repeated entry is not added twice")
+
+func _test_apply_initial_state_sets_only_the_listed_layers(t) -> void:
+	var layers := DebugLayers.new()
+	layers.apply_initial_state([1, 3])
+	t.check(layers.layer_on(1) and not layers.layer_on(2) and layers.layer_on(3),
+			"only the flagged layers start on")
+	layers.apply_initial_state([])
+	t.check(not layers.layer_on(1) and not layers.layer_on(2) and not layers.layer_on(3),
+			"and an empty list turns every geometry layer back off")
+	layers.free()
 
 # ------------------------------------------------------------------ tree presence ---
 

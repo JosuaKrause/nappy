@@ -342,7 +342,8 @@ func _add_excitement_halo() -> void:
 ## `z_index = 3` puts it above `Entities` (2, the y-sorted layer everything on the ground lives on)
 ## — above everything else in the world, unlike the halo's own `z_index = 1`, because a bounding
 ## box drawn under the thing it outlines would be the one cue in the game nobody could read.
-## Every layer starts off — see `_toggle_debug_layer()` for the number key that turns one on.
+## Every layer starts off, unless `-- --layers 1,3` (or the page's own `?layers=1,3`) says
+## otherwise — see `_toggle_debug_layer()` for the number key that turns one on by hand.
 func _add_debug_layers() -> void:
 	if not _debug:
 		return
@@ -350,6 +351,7 @@ func _add_debug_layers() -> void:
 	_debug_layers.name = "DebugLayers"
 	_debug_layers.z_index = 3
 	_debug_layers.setup(_city.events, _city.crowd, _city, _player)
+	_debug_layers.apply_initial_state(DevFlags.layers_override())
 	add_child(_debug_layers)
 	_pauses_with_the_game(_debug_layers)
 	print("[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout")

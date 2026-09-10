@@ -151,9 +151,10 @@ windowed, saves the viewport after N frames and quits.
 ### Dev flags and release builds
 
 `DevFlags` (`src/dev/dev_flags.gd`) parses `--seed`, `--day`, `--spawn`, `--follow`, `--meters`,
-`--overview`, `--day-length`, `--ending` and `--controls`; `src/dev/auto_screenshot.gd` parses `--screenshot`
-and the flags nested under it (`--after`, `--walk`, `--flee`, `--press`, `--tap`) itself, and gates its own
-entry point the same way rather than moving that parsing out. Both read `OS.is_debug_build()`,
+`--overview`, `--day-length`, `--ending`, `--controls` and `--layers`; `src/dev/auto_screenshot.gd`
+parses `--screenshot` and the flags nested under it (`--after`, `--walk`, `--flee`, `--press`,
+`--tap`) itself, and gates its own entry point the same way rather than moving that parsing out.
+Both read `OS.is_debug_build()`,
 which is `false` for an exported release template, so none of this furniture — nor the snapshot
 key `main.gd` reads directly — can be reached from a public build regardless of what is on the
 command line. `--no-telemetry` is not part of this: it is a documented player-facing opt-out (see
@@ -170,8 +171,10 @@ state — a field's inner and outer falloff boundary, the ground extent a shadow
 every collision body's own outline — read from `EventInstance`, `CrowdAgent`, `Building`, `Prop`
 and `Stroller` rather than drawn by any of them. Each of the three, plus the readout, is a numbered
 layer (`1`-`4`) `main._unhandled_input()` toggles on raw keycodes rather than an input-map action,
-so `project.godot` carries no binding a release build could ever reach. See docs/TELEMETRY.md,
-"The debug view", for the key mapping and what each layer draws.
+so `project.godot` carries no binding a release build could ever reach. `DevFlags.layers_override()`
+(`--layers 1,3` or the page's own `?layers=1,3`) sets which of the three geometry layers start on;
+the readout defaults on regardless, so an unflagged debug run looks exactly as it always has. See
+docs/TELEMETRY.md, "The debug view", for the key mapping and what each layer draws.
 
 ### Quitting on the web
 

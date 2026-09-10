@@ -376,9 +376,12 @@ build has nothing in `project.godot` to reach:
   right, now toggleable like the other three: off, the string is not assembled, not merely hidden
   behind an invisible label, the same rule `_debug` itself already applied to the whole thing.
 
-The mapping above is printed once on boot in a debug build. With no flag, a run opens with the
-readout on and the three geometry layers off, so an unflagged debug run looks exactly as it did
-before this existed.
+The mapping above is printed once on boot in a debug build. With no `--layers` flag, a run opens
+with the readout on and the three geometry layers off, so an unflagged debug run looks exactly as
+it did before this existed. `--layers 1,3` (or the page's own `?layers=1,3`) sets which of the
+three geometry layers start on instead, so a rig screenshot of a particular disagreement is
+reproducible without a keypress; a malformed entry is dropped with a printed note rather than
+failing the whole flag. `4` is not part of that list — it defaults on already.
 
 ## The city grid
 
