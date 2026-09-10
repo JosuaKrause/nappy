@@ -1,0 +1,9 @@
+<!-- Basement steam field: a pipe and plume, bottom-centre anchored. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="48" viewBox="0 0 32 48" shape-rendering="geometricPrecision" stroke="#3b3034" stroke-linejoin="round" stroke-linecap="round">
+  <!-- Ground anchor is the canvas bottom centre. The plume remains separate from sound arcs. -->
+  <path d="M3 45H29L27 48H5Z" fill="#221f28" fill-opacity="0.24" stroke="none"/>
+  <path d="M5 44V33H14V27H20V44Z" fill="#555c60" stroke-width="1"/>
+  <path d="M14 34V29H20V34" fill="none" stroke="#8b8e8b" stroke-width="1"/>
+  <path d="M8 26C3 22 8 18 12 20C9 15 13 11 17 14C16 8 22 7 24 12C29 12 30 18 26 21C31 25 25 30 21 27C19 33 12 33 10 28" fill="#d5d7cf" fill-opacity="0.72" stroke="#777d7e" stroke-width="1"/>
+  <path d="M11 22C15 24 18 21 21 23" fill="none" stroke="#f0eee3" stroke-width="1" stroke-linecap="round"/>
+</svg>
