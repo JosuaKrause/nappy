@@ -222,6 +222,7 @@ static func _cat_dash() -> EventDef:
 	def.id = "cat_dash"
 	def.display_name = "Cat"
 	def.look = EventDef.Look.CAT
+	def.shape = GroundShape.point(7.0)
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
 	def.intensity = 17.0
@@ -262,6 +263,7 @@ static func _homeless_yeller() -> EventDef:
 	def.id = "homeless_yeller"
 	def.display_name = "Man shouting"
 	def.look = EventDef.Look.YELLER
+	def.shape = GroundShape.point(9.0)
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.intensity = 14.0
 	def.inner_radius = 45.0
@@ -298,6 +300,10 @@ static func _dog_walker() -> EventDef:
 	def.id = "dog_walker"
 	def.display_name = "Dog walker"
 	def.look = EventDef.Look.DOG_WALKER
+	# The walker's own point, not the dog's — the dog on its lead is a per-part shadow drawn at
+	# its own literal radius directly, the same as the abduction's victim or the checkpoint hut's
+	# guard, since a two-body composite has no single shape to be either of its bodies.
+	def.shape = GroundShape.point(8.0)
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.intensity = 26.0
 	def.inner_radius = 26.0
@@ -351,7 +357,9 @@ static func _cafe_tables() -> EventDef:
 	def.outer_radius = 90.0
 	def.telegraph_time = 1.6
 	def.pulse_period = 6.0
-	def.obstructs_radius = 24.0
+	# 24 does not clear `GroundShape.BAND_RADIUS`, so the body it derives stays a point — a café
+	# frontage this narrow has no spine to be a capsule about.
+	def.solid(GroundShape.band(24.0))
 	# Raised with `dog_walker` and for the same reason — see the note there.
 	def.weight = 4.0
 	# Only what is inside `EVENT_STREAM_RADIUS` ever exists, which is a fraction of the map — so a
@@ -384,7 +392,9 @@ static func _delivery_van() -> EventDef:
 	def.inner_radius = 40.0
 	def.outer_radius = 150.0
 	def.telegraph_time = 1.3
-	def.obstructs_radius = VEHICLE_BODY
+	# Under `GroundShape.BAND_RADIUS`, so the stationary-vehicle segment rule still reduces it to
+	# a point — see `GroundShape.band()`.
+	def.solid(GroundShape.band(VEHICLE_BODY))
 	def.weight = 2.0
 	def.max_per_day = 18
 	return def
@@ -403,7 +413,7 @@ static func _busker() -> EventDef:
 	def.outer_radius = 190.0
 	def.telegraph_time = 1.7
 	def.pulse_period = 7.0
-	def.obstructs_radius = PERSON_BODY
+	def.solid(GroundShape.point(PERSON_BODY))
 	def.weight = 2.0
 	# Kept the lowest of the raised act I caps on purpose: a busker is placed on PARK or SQUARE,
 	# which is the only calm ground there is, and `_ensure_one_usable_park` pays for every one
@@ -433,7 +443,7 @@ static func _construction() -> EventDef:
 	def.telegraph_time = 1.8
 	# `SIDEWALK_SPREAD_MAX`, capped from 34: the widest silhouette that reads as roadworks is 2px
 	# over the full pavement band, `EventInstance.setup()` centres it on.
-	def.obstructs_radius = SIDEWALK_SPREAD_MAX
+	def.solid(GroundShape.band(SIDEWALK_SPREAD_MAX))
 	def.weight = 1.5
 	def.max_per_day = 15
 	def.cost = 2
@@ -448,6 +458,7 @@ static func _fire_truck() -> EventDef:
 	def.display_name = "Fire engine"
 	def.kind = GameEnums.EventKind.ONE_SHOT
 	def.look = EventDef.Look.FIRE_ENGINE
+	def.shape = GroundShape.point(26.0)
 	def.first_day = 3
 	def.last_day = 3
 	def.placement = [GameEnums.TileType.ROAD]
@@ -481,7 +492,7 @@ static func _burning_building() -> EventDef:
 	def.pulse_period = 3.0
 	# Five flames spanning ±31px, and you do not walk through a burning building. Not lethal by
 	# decision — what ends a day is in act III — so the body is simply the fire.
-	def.obstructs_radius = 30.0
+	def.solid(GroundShape.point(30.0))
 	def.scar_id = "burnt_shell"
 	return def
 
@@ -505,7 +516,7 @@ static func _burnt_shell() -> EventDef:
 	def.inner_radius = 30.0
 	def.outer_radius = 90.0
 	def.telegraph_time = 0.7
-	def.obstructs_radius = 36.0
+	def.solid(GroundShape.band(36.0))
 	return def
 
 # ----------------------------------------- Act I: variety, and two with teeth ---
@@ -549,6 +560,7 @@ static func _loose_dog() -> EventDef:
 	def.id = "loose_dog"
 	def.display_name = "Loose dog"
 	def.look = EventDef.Look.LOOSE_DOG
+	def.shape = GroundShape.point(9.0)
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
 	def.intensity = 32.0
@@ -590,7 +602,7 @@ static func _market_stall() -> EventDef:
 	def.outer_radius = 95.0
 	def.telegraph_time = 1.7
 	def.pulse_period = 8.0
-	def.obstructs_radius = 28.0
+	def.solid(GroundShape.band(28.0))
 	def.weight = 1.6
 	def.max_per_day = 13
 	def.cost = 2
@@ -615,7 +627,7 @@ static func _leaf_blower() -> EventDef:
 	# Swept in bursts rather than held, so there is a rhythm to time a pass through — the same
 	# counterplay `homeless_yeller` has, at a scale that makes a whole corner of a park unusable.
 	def.pulse_period = 4.0
-	def.obstructs_radius = PERSON_BODY
+	def.solid(GroundShape.point(PERSON_BODY))
 	# **A wall row, and on day 1 it is half of the entire wall pool** — so its weight and its cap are
 	# most of what *"leaving the path should be lethal or very expensive"* is built out of on the one
 	# day with nothing lethal in it.
@@ -678,6 +690,12 @@ static func _pigeon_flock() -> EventDef:
 	def.id = "pigeon_flock"
 	def.display_name = "Pigeons"
 	def.look = EventDef.Look.BIRDS
+	# A flock has no single body — each bird casts its own shadow at its own faded radius (see
+	# `EventInstance._draw_birds`) — so this is a nominal point at one bird's own base radius
+	# (5.0, before the height fade), carried only to satisfy "a row with a look has a shape".
+	# Chosen where the design was silent: nothing reads this row's own `shape` elsewhere, since
+	# it never obstructs.
+	def.shape = GroundShape.point(5.0)
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE,
 			GameEnums.TileType.PARK]
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
@@ -756,6 +774,7 @@ static func _cyclist() -> EventDef:
 	def.id = "cyclist"
 	def.display_name = "Cyclist"
 	def.look = EventDef.Look.CYCLIST
+	def.shape = GroundShape.point(12.0)
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
@@ -803,7 +822,7 @@ static func _ice_cream_van() -> EventDef:
 	# The jingle is a loop, so the meter cost comes and goes on the same period it does.
 	def.pulse_period = 11.0
 	# `ice_cream_van.svg` is 50px across.
-	def.obstructs_radius = 24.0
+	def.solid(GroundShape.point(24.0))
 	def.weight = 1.5
 	def.max_per_day = 5
 	def.cost = 2
@@ -844,7 +863,7 @@ static func _reversing_lorry() -> EventDef:
 	# `lorry.svg` is 62px across, and 28 + her own 14 is inside the 46 that ends the day — so the
 	# metal is solid and touching it is still fatal. See `EventDef.validate()`, which is where
 	# that arithmetic is a rule rather than a coincidence.
-	def.obstructs_radius = 28.0
+	def.solid(GroundShape.point(28.0))
 	def.hard_fail = true
 	def.weight = 1.2
 	# A lethal wall row, capped like `cyclist` and for the same reason: the deep band off the
@@ -895,6 +914,7 @@ static func _chatting_mother() -> EventDef:
 	def.id = "chatting_mother"
 	def.display_name = "Another mother"
 	def.look = EventDef.Look.CHATTING_MOTHER
+	def.shape = GroundShape.point(14.0)
 	def.first_day = 1
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.intensity = 4.5
@@ -956,6 +976,7 @@ static func _charging_dog() -> EventDef:
 	def.id = "charging_dog"
 	def.display_name = "Charging dog"
 	def.look = EventDef.Look.CHARGING_DOG
+	def.shape = GroundShape.point(13.0)
 	def.first_day = Tuning.RUN_TAUGHT_DAY
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
@@ -1009,6 +1030,7 @@ static func _police_patrol() -> EventDef:
 	def.id = "police_patrol"
 	def.display_name = "Patrol"
 	def.look = EventDef.Look.POLICE_CAR
+	def.shape = GroundShape.point(19.0)
 	def.first_day = 4
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
@@ -1038,7 +1060,7 @@ static func _poster_crew() -> EventDef:
 	def.inner_radius = 30.0
 	def.outer_radius = 110.0
 	def.telegraph_time = 1.0
-	def.obstructs_radius = PERSON_BODY
+	def.solid(GroundShape.point(PERSON_BODY))
 	def.weight = 2.5
 	def.max_per_day = 12
 	return def
@@ -1102,7 +1124,7 @@ static func _roadblock() -> EventDef:
 	def.inner_radius = 52.0
 	def.outer_radius = 215.0
 	def.telegraph_time = 1.8
-	def.obstructs_radius = 60.0
+	def.solid(GroundShape.band(60.0))
 	def.weight = 2.0
 	def.max_per_day = 6
 	def.cost = 2
@@ -1146,7 +1168,7 @@ static func _abduction() -> EventDef:
 	# body only ever stops her during the idling, which is the phase where it has not happened yet.
 	# Once it hunts, `EventInstance` drops this body the moment it stops waiting — a moving wall on
 	# a two-tile pavement pins her against a building, the same reason a pursuer never carries one.
-	def.obstructs_radius = VEHICLE_BODY
+	def.solid(GroundShape.point(VEHICLE_BODY))
 	def.hard_fail = true
 	def.weight = 2.0
 	# The `hard_fail` caps rise with the rest, but by half as much: at one event per block the
@@ -1183,6 +1205,7 @@ static func _alley_robbery() -> EventDef:
 	def.id = "alley_robbery"
 	def.display_name = "Robbery"
 	def.look = EventDef.Look.ROBBER
+	def.shape = GroundShape.point(9.0)
 	def.first_day = 8
 	def.act_tag = 3
 	def.placement = [GameEnums.TileType.ALLEY]
@@ -1255,7 +1278,7 @@ static func _night_raid() -> EventDef:
 	def.outer_radius = 330.0
 	def.telegraph_time = 3.0
 	def.pulse_period = 6.0
-	def.obstructs_radius = 44.0
+	def.solid(GroundShape.point(44.0))
 	def.cost = 4
 	def.heat_response = EventDef.HeatResponse.HUNTS
 	return def
@@ -1269,6 +1292,7 @@ static func _military_convoy() -> EventDef:
 	def.id = "military_convoy"
 	def.display_name = "Convoy"
 	def.look = EventDef.Look.ARMY_TRUCK
+	def.shape = GroundShape.point(26.0)
 	def.first_day = 12
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.ROAD]
@@ -1303,7 +1327,7 @@ static func _barricade() -> EventDef:
 	def.inner_radius = 40.0
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
-	def.obstructs_radius = 62.0
+	def.solid(GroundShape.band(62.0))
 	def.scar_id = "barricade"
 	return def
 
@@ -1332,7 +1356,7 @@ static func _protest() -> EventDef:
 	# Under the 70px inner radius on purpose: the loudest part of a protest is still something you
 	# stand in rather than bump into, and being stopped at the edge of it would take the choice of
 	# how close to cut past away from the player.
-	def.obstructs_radius = 55.0
+	def.solid(GroundShape.band(55.0))
 	def.weight = 2.5
 	# A wall row, capped with the rest of them. Act IV only, so this is the late city's share of the
 	# blocking events that make the ground off the paths expensive.
@@ -1358,7 +1382,7 @@ static func _firefight() -> EventDef:
 	def.telegraph_time = 6.5
 	def.pulse_period = 2.5
 	# The same five flames as a burning building, and far inside the 90 that ends the day.
-	def.obstructs_radius = 30.0
+	def.solid(GroundShape.band(30.0))
 	def.hard_fail = true
 	def.cost = 5
 	return def
@@ -1393,7 +1417,7 @@ static func _fallen_tree() -> EventDef:
 	def.inner_radius = 40.0
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
-	def.obstructs_radius = 96.0
+	def.solid(GroundShape.band(96.0))
 	return def
 
 ## A hard seal: two cars locked together across the carriageway, debris between them and an
@@ -1411,7 +1435,7 @@ static func _car_accident() -> EventDef:
 	def.inner_radius = 40.0
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
-	def.obstructs_radius = 96.0
+	def.solid(GroundShape.band(96.0))
 	return def
 
 ## Half of a soft seal: a skip at the kerb, facing `scaffolding` on the other pavement. Kerb-pinned
@@ -1430,7 +1454,7 @@ static func _skip() -> EventDef:
 	def.inner_radius = 40.0
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
-	def.obstructs_radius = VEHICLE_BODY
+	def.solid(GroundShape.point(VEHICLE_BODY))
 	return def
 
 ## The other half of the same soft seal: boards over the far footway. `pavement_side` stays `ANY`
@@ -1448,7 +1472,7 @@ static func _scaffolding() -> EventDef:
 	def.inner_radius = 40.0
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
-	def.obstructs_radius = SIDEWALK_SPREAD_MAX
+	def.solid(GroundShape.band(SIDEWALK_SPREAD_MAX))
 	return def
 
 ## A hard seal: a crater with water across the asphalt and a municipal barrier at each kerb — "the
@@ -1467,7 +1491,7 @@ static func _burst_water_main() -> EventDef:
 	def.inner_radius = 40.0
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
-	def.obstructs_radius = 96.0
+	def.solid(GroundShape.band(96.0))
 	return def
 
 ## A soft seal, both bodies the same row: a moving van with its ramp down on each pavement —
@@ -1491,7 +1515,9 @@ static func _moving_van() -> EventDef:
 	def.inner_radius = 40.0
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
-	def.obstructs_radius = 28.0
+	# Over `GroundShape.BAND_RADIUS`, so it is the one stationary-vehicle row whose shape is a
+	# segment rather than a point — see `EventInstance._solid_axis()`.
+	def.solid(GroundShape.band(28.0))
 	return def
 
 ## A hard seal, acts II-IV: a car burnt to the shell, `BURNT_SHELL`'s charred palette moved onto a
@@ -1511,7 +1537,7 @@ static func _burnt_out_car() -> EventDef:
 	def.inner_radius = 40.0
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
-	def.obstructs_radius = 24.0
+	def.solid(GroundShape.band(24.0))
 	return def
 
 ## A hard seal, acts II-IV: rubble spilled frontage to frontage. Single-copy geometry like
@@ -1531,7 +1557,7 @@ static func _collapsed_frontage() -> EventDef:
 	def.inner_radius = 40.0
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
-	def.obstructs_radius = 96.0
+	def.solid(GroundShape.band(96.0))
 	return def
 
 # ------------------------------------------------------ the region door's own structure ---
@@ -1567,7 +1593,7 @@ static func _checkpoint_hut() -> EventDef:
 	def.inner_radius = 52.0
 	def.outer_radius = 66.0
 	def.telegraph_time = 1.0
-	def.obstructs_radius = 32.0
+	def.solid(GroundShape.point(32.0))
 	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
 	def.detain_radius = 48.0
 	def.redetains = true
@@ -1592,7 +1618,7 @@ static func _checkpoint_gate() -> EventDef:
 	def.inner_radius = 40.0
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
-	def.obstructs_radius = 32.0
+	def.solid(GroundShape.point(32.0))
 	return def
 
 ## The alley half of a door: a single guard where a through-alley crosses a region boundary,
@@ -1611,7 +1637,7 @@ static func _checkpoint_post() -> EventDef:
 	def.inner_radius = 52.0
 	def.outer_radius = 66.0
 	def.telegraph_time = 1.0
-	def.obstructs_radius = 32.0
+	def.solid(GroundShape.point(32.0))
 	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
 	def.detain_radius = 48.0
 	def.redetains = true

@@ -2,7 +2,9 @@ extends RefCounted
 ## Focused contracts for default PNG style transfer textures and explicit SVG fallback.
 
 const MOTHER: Texture2D = preload("res://assets/rig/mother_side_a.svg")
-const SHADOW: Texture2D = preload("res://assets/props/shadow.svg")
+## An SVG with no PNG transfer under `assets/illustrated/svg-transfer/`, for the fallback check:
+## only the rig has transfers, so any prop is one.
+const UNTRANSFERRED: Texture2D = preload("res://assets/props/bollard.svg")
 const SOURCES: Array[Texture2D] = [
 	preload("res://assets/rig/mother_front_a.svg"), preload("res://assets/rig/mother_front_b.svg"),
 	preload("res://assets/rig/mother_back_a.svg"), preload("res://assets/rig/mother_back_b.svg"),
@@ -35,7 +37,7 @@ func run(t) -> void:
 						transfer_image.get_pixel(x, y).a):
 					alpha_matches = false
 		t.check(alpha_matches, "transfer retains the SVG alpha mask")
-	t.check(TextureResolver.resolve(SHADOW) == SHADOW,
+	t.check(TextureResolver.resolve(UNTRANSFERRED) == UNTRANSFERRED,
 		"a missing PNG transfer falls back to the authored SVG")
 	t.check(TextureResolver.resolve(resolved) == resolved,
 		"a resolved PNG is idempotent and does not construct a second transfer path")
