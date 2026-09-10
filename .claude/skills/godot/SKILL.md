@@ -91,7 +91,9 @@ leaks. `RefCounted` doubles do not.
 and every typed reference fails to parse until `check.sh` runs the import pass.
 
 **Texture `.import` sidecars are repository files; `.godot/imported/` is the cache.** Preserve
-game-asset sidecars. Evidence under `docs/` has none because `docs/.gdignore` excludes that folder.
+game-asset sidecars. A folder excluded by `.gdignore`, including all its descendants, keeps no
+`.import` sidecars; remove obsolete sidecars when moving assets into such a folder. Both `docs/`
+and `tools/` are excluded this way.
 After checking out an asset branch, run
 `check.sh` in the actual test folder: a worktree's imported textures do not travel with commits.
 `run.sh` checks for missing global classes and for `.import` sidecars whose imported copy is

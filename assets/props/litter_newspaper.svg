@@ -1,0 +1,8 @@
+<!-- Folded newspaper litter decal, centre anchored. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <g transform="translate(9.6 9.6) scale(0.4)">
+    <path d="M6 11L25 8L27 21L8 24Z" fill="#d5c8a9" stroke="#3b3034" stroke-width="0.9"/>
+    <path d="M9 13L23 11 M10 16L20 14 M11 19L24 17 M14 21L22 20" stroke="#77716d" stroke-width="0.7"/>
+    <path d="M18 9L21 22" stroke="#a28f75" stroke-width="0.7"/>
+  </g>
+</svg>

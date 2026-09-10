@@ -1,0 +1,83 @@
+source,native_width,native_height,anchor,alpha_bounds_1x,usage,work_item,intended_consumer,intended_use
+assets/buildings/fire_escape_a.svg,48,64,bottom centre,1;3;46;59,prepared unbound,M106,Building facade renderer,Two opposed lateral flights parallel to facade; transparent gaps reveal windows; anchor 24;64
+assets/buildings/fire_escape_b.svg,48,64,bottom centre,1;3;46;59,prepared unbound,M106,Building facade renderer,Opposite-handed lateral flights parallel to facade; transparent gaps reveal windows; anchor 24;64
+assets/buildings/storefront_a.svg,32,32,tile origin,0;0;32;32,prepared unbound,M106/M105,Building facade renderer,Shop a plain state at wall base; preserve door alignment
+assets/buildings/storefront_a_awning.svg,32,32,tile origin,0;0;32;32,prepared unbound,M106/M105,Building facade renderer,Shop a awning state at wall base; preserve door alignment
+assets/buildings/storefront_a_shuttered.svg,32,32,tile origin,0;0;32;32,prepared unbound,M106/M105,Building facade renderer,Shop a shuttered state at wall base; preserve door alignment; M105 selects for boarded/degraded blocks
+assets/buildings/storefront_b.svg,32,32,tile origin,0;0;32;32,prepared unbound,M106/M105,Building facade renderer,Shop b plain state at wall base; preserve door alignment
+assets/buildings/storefront_b_awning.svg,32,32,tile origin,0;0;32;32,prepared unbound,M106/M105,Building facade renderer,Shop b awning state at wall base; preserve door alignment
+assets/buildings/storefront_b_shuttered.svg,32,32,tile origin,0;0;32;32,prepared unbound,M106/M105,Building facade renderer,Shop b shuttered state at wall base; preserve door alignment; M105 selects for boarded/degraded blocks
+assets/buildings/storefront_c.svg,32,32,tile origin,0;0;32;32,prepared unbound,M106/M105,Building facade renderer,Shop c plain state at wall base; preserve door alignment
+assets/buildings/storefront_c_awning.svg,32,32,tile origin,0;0;32;32,prepared unbound,M106/M105,Building facade renderer,Shop c awning state at wall base; preserve door alignment
+assets/buildings/storefront_c_shuttered.svg,32,32,tile origin,0;0;32;32,prepared unbound,M106/M105,Building facade renderer,Shop c shuttered state at wall base; preserve door alignment; M105 selects for boarded/degraded blocks
+assets/buildings/storefront_d.svg,32,32,tile origin,0;0;32;32,prepared unbound,M106/M105,Building facade renderer,Shop d plain state at wall base; preserve door alignment
+assets/buildings/storefront_d_awning.svg,32,32,tile origin,0;0;32;32,prepared unbound,M106/M105,Building facade renderer,Shop d awning state at wall base; preserve door alignment
+assets/buildings/storefront_d_shuttered.svg,32,32,tile origin,0;0;32;32,prepared unbound,M106/M105,Building facade renderer,Shop d shuttered state at wall base; preserve door alignment; M105 selects for boarded/degraded blocks
+assets/buildings/window_shuttered_dark.svg,32,32,tile origin,6;6;26;27,prepared unbound,M106,Building facade renderer,shuttered window dark state; same registration as paired light state
+assets/buildings/window_shuttered_lit.svg,32,32,tile origin,6;6;26;27,prepared unbound,M106,Building facade renderer,shuttered window lit state; same registration as paired light state
+assets/buildings/window_tall_dark.svg,32,32,tile origin,5;3;27;30,prepared unbound,M106,Building facade renderer,tall window dark state; same registration as paired light state
+assets/buildings/window_tall_lit.svg,32,32,tile origin,5;3;27;30,prepared unbound,M106,Building facade renderer,tall window lit state; same registration as paired light state
+assets/events/explosion_preview.svg,40,40,bottom centre,0;1;40;40,prepared unbound,M102,Finale event drawing,Optional visible burst for review; off-screen explosion design may leave this unused
+assets/events/steam.svg,32,48,bottom centre,3;8;29;48,prepared unbound,M102,Finale event drawing,Pulse plume at a basement vent; keep pipe anchored
+assets/interior/basement_floor.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Interior ground TileSet,Repeat dark basement ground; choose cardinal edges at boundaries
+assets/interior/basement_floor_edge_e.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Interior ground TileSet,basement floor boundary facing E; retain base floor registration
+assets/interior/basement_floor_edge_n.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Interior ground TileSet,basement floor boundary facing N; retain base floor registration
+assets/interior/basement_floor_edge_s.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Interior ground TileSet,basement floor boundary facing S; retain base floor registration
+assets/interior/basement_floor_edge_w.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Interior ground TileSet,basement floor boundary facing W; retain base floor registration
+assets/interior/basement_wall_brick.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Interior north-wall renderer,Repeat upright raw brick wall in basement
+assets/interior/chandelier.svg,32,48,bottom centre,0;0;32;43,prepared unbound,M102,Interior lighting/prop renderer,Hang above hallway with source light pool; avoid duplicate pool
+assets/interior/emergency_exit_door.svg,24,42,bottom centre,0;1;24;42,prepared unbound,M102,Interior doorway renderer,Basement service exit used for transition to city
+assets/interior/entrance_barricade.svg,48,30,bottom centre,2;0;46;30,prepared unbound,M102,Interior prop renderer,Layer improvised furniture in front of blocked main entrance
+assets/interior/entrance_door.svg,42,44,bottom centre,0;1;42;44,prepared unbound,M102,Interior doorway renderer,Main entrance behind separate furniture barricade
+assets/interior/hallway_floor.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Interior ground TileSet,Repeat as hallway ground; choose cardinal edge modules at room boundaries
+assets/interior/hallway_floor_edge_e.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Interior ground TileSet,hallway floor boundary facing E; retain base floor registration
+assets/interior/hallway_floor_edge_n.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Interior ground TileSet,hallway floor boundary facing N; retain base floor registration
+assets/interior/hallway_floor_edge_s.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Interior ground TileSet,hallway floor boundary facing S; thresholds imply doors below view
+assets/interior/hallway_floor_edge_w.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Interior ground TileSet,hallway floor boundary facing W; retain base floor registration
+assets/interior/hallway_wall.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Interior north-wall renderer,Repeat upright plaster wall along hallway north edges
+assets/interior/hallway_wall_window.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Interior north-wall renderer,Normal window state; share placement with flash state
+assets/interior/hallway_wall_window_flash.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Finale explosion presentation,Brief illuminated window state from off-screen explosion; retain normal-state placement
+assets/interior/lift_door_dead.svg,34,42,bottom centre,0;1;34;42,prepared unbound,M102,Interior doorway renderer,Closed inactive lift beside hallway
+assets/interior/puddle.svg,32,32,canvas centre,3;13;29;25,prepared unbound,M102,Interior ground overlay,Place flat on basement floor beneath actors; may accompany steam
+assets/interior/stair_down.svg,64,64,bottom centre,1;1;62;63,prepared unbound,M102,Interior stair renderer,Two sideways flights; anchor 32;64; mirror at left hallway end and leave unmirrored at right; floor-transition trigger is separate
+assets/interior/stairwell_door.svg,28,40,bottom centre,1;1;27;40,prepared unbound,M102,Interior doorway renderer,Hallway door visible only from inside stairwell
+assets/interior/stairwell_floor.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Interior ground TileSet,Repeat mechanical floor in stairwell
+assets/props/chalk_mark.svg,32,32,canvas centre,4;4;28;28,prepared unbound,M100,ContactPoint chalk drawing,Untouched mark ground decal; preserve existing encounter visibility rules
+assets/props/chalk_mark_touched.svg,32,32,canvas centre,4;4;31;28,prepared unbound,M100,ContactPoint chalk drawing,After counted contact show her added acknowledgement tick
+assets/props/garbage_sack.svg,28,34,bottom centre,3;4;25;33,prepared unbound,M105,Degradation prop renderer,Single wall-side sack in alleys then alongside facades
+assets/props/garbage_sacks_pile.svg,42,34,bottom centre,2;10;40;33,prepared unbound,M105,Degradation prop renderer,Heaped sacks in alleys; obstruction remains the owner task decision
+assets/props/industrial_vent.svg,32,32,bottom centre,4;3;30;30,"live source, rotor A",M106,Building roof renderer,Fixed roof vent with rotor phase A
+assets/props/industrial_vent_b.svg,32,32,bottom centre,4;3;30;30,prepared unbound,M106,Building roof renderer,Alternate rotor phase B at same placement without moving housing
+assets/props/litter_apple.svg,32,32,canvas centre,13;11;20;20,prepared unbound,M105,Degradation ground overlay,Flat apple litter under actors; centre canvas and retain tiny visible size; no collision or shadow
+assets/props/litter_bag.svg,32,32,canvas centre,12;12;21;19,prepared unbound,M105,Degradation ground overlay,Flat bag litter under actors; centre canvas and retain tiny visible size; no collision or shadow
+assets/props/litter_can.svg,32,32,canvas centre,13;13;20;19,prepared unbound,M105,Degradation ground overlay,Flat can litter under actors; centre canvas and retain tiny visible size; no collision or shadow
+assets/props/litter_cup.svg,32,32,canvas centre,11;12;20;19,prepared unbound,M105,Degradation ground overlay,Flat cup litter under actors; centre canvas and retain tiny visible size; no collision or shadow
+assets/props/litter_newspaper.svg,32,32,canvas centre,11;12;21;20,prepared unbound,M105,Degradation ground overlay,Flat newspaper litter under actors; centre canvas and retain tiny visible size; no collision or shadow
+assets/props/roof_duct_corner.svg,32,32,bottom centre,0;0;30;32,prepared unbound,M106,Building roof renderer,Roof duct elbow; align its two entrance sections with straight run
+assets/props/roof_duct_straight.svg,64,32,bottom centre,3;6;61;29,prepared unbound,M106,Building roof renderer,Straight roof duct segment; join projected ends to elbow
+assets/props/roof_hvac_unit.svg,32,32,bottom centre,4;6;29;29,prepared unbound,M106,Building roof renderer,Condenser variation A within roof interior
+assets/props/roof_hvac_unit_b.svg,32,32,bottom centre,4;6;29;29,prepared unbound,M106,Building roof renderer,Condenser variation B within roof interior
+assets/props/roof_skylight.svg,32,32,bottom centre,4;6;29;29,prepared unbound,M106,Building roof renderer,Raised skylight variation A within roof interior
+assets/props/roof_skylight_b.svg,32,32,bottom centre,4;6;29;29,prepared unbound,M106,Building roof renderer,Raised skylight variation B within roof interior
+assets/props/roof_vent_stack.svg,32,32,bottom centre,5;7;28;29,prepared unbound,M106,Building roof renderer,Small capped pipe within roof interior
+assets/props/roof_water_tank.svg,32,48,bottom centre,4;5;30;47,prepared unbound,M106,Building roof renderer,Tall supported tank within roof interior; retain open supports
+assets/props/tree_pit.svg,32,32,canvas centre,0;0;32;32,prepared unbound,M106,Street tree ground renderer,Centre on pavement underneath existing tree_a or tree_b
+assets/tiles/alley_cracked_broken_a.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,alley damage level broken pattern a; seeded degradation variant preserving base tile semantics
+assets/tiles/alley_cracked_broken_b.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,alley damage level broken pattern b; seeded degradation variant preserving base tile semantics
+assets/tiles/alley_cracked_cracked_a.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,alley damage level cracked pattern a; seeded degradation variant preserving base tile semantics
+assets/tiles/alley_cracked_cracked_b.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,alley damage level cracked pattern b; seeded degradation variant preserving base tile semantics
+assets/tiles/alley_cracked_hairline_a.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,alley damage level hairline pattern a; seeded degradation variant preserving base tile semantics
+assets/tiles/alley_cracked_hairline_b.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,alley damage level hairline pattern b; seeded degradation variant preserving base tile semantics
+assets/tiles/alley_draft.svg,32,32,tile origin,0;0;32;32,prepared unbound,M100,GroundTiles/ground TileSet,Compare with live alley in play; replace only if selected by review
+assets/tiles/road_cracked_broken_a.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,road damage level broken pattern a; seeded degradation variant preserving base tile semantics
+assets/tiles/road_cracked_broken_b.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,road damage level broken pattern b; seeded degradation variant preserving base tile semantics
+assets/tiles/road_cracked_cracked_a.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,road damage level cracked pattern a; seeded degradation variant preserving base tile semantics
+assets/tiles/road_cracked_cracked_b.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,road damage level cracked pattern b; seeded degradation variant preserving base tile semantics
+assets/tiles/road_cracked_hairline_a.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,road damage level hairline pattern a; seeded degradation variant preserving base tile semantics
+assets/tiles/road_cracked_hairline_b.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,road damage level hairline pattern b; seeded degradation variant preserving base tile semantics
+assets/tiles/sidewalk_cracked_broken_a.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,sidewalk damage level broken pattern a; seeded degradation variant preserving base tile semantics
+assets/tiles/sidewalk_cracked_broken_b.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,sidewalk damage level broken pattern b; seeded degradation variant preserving base tile semantics
+assets/tiles/sidewalk_cracked_cracked_a.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,sidewalk damage level cracked pattern a; seeded degradation variant preserving base tile semantics
+assets/tiles/sidewalk_cracked_cracked_b.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,sidewalk damage level cracked pattern b; seeded degradation variant preserving base tile semantics
+assets/tiles/sidewalk_cracked_hairline_a.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,sidewalk damage level hairline pattern a; seeded degradation variant preserving base tile semantics
+assets/tiles/sidewalk_cracked_hairline_b.svg,32,32,tile origin,0;0;32;32,prepared unbound,M105,GroundTiles/ground TileSet,sidewalk damage level hairline pattern b; seeded degradation variant preserving base tile semantics

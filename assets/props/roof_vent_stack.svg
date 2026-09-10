@@ -1,0 +1,9 @@
+<!-- Short rooftop vent stack with a hollow cowl. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round">
+  <path d="M5 26L23 26L28 29L10 29Z" fill="#221f28" fill-opacity="0.2" stroke="none"/>
+  <path d="M12 25V11H21V25Z" fill="#727879"/>
+  <path d="M10 11H23L26 14H13Z" fill="#a6a39a"/>
+  <path d="M13 14H26L23 17H13Z" fill="#5c6263"/>
+  <path d="M15 17V25" stroke="#454d51" stroke-width="1"/>
+  <path d="M14 8H22L25 11H11Z" fill="#a09e96"/>
+</svg>

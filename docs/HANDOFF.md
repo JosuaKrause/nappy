@@ -174,7 +174,7 @@ M88.
 replacements where available; `--svg`, or `?svg=1` on the web, forces original SVGs.
 The existing drawing transforms and animation remain in charge. Other families use SVGs.
 Read [VISUALS.md](VISUALS.md) for reference roles and the replacement contract, and
-M108, eight-direction entity graphics, then M109, convert the SVG catalogue to PNG, in
+M108, eight-direction entity graphics, M111, cars follow their turns, then M109, convert the SVG catalogue to PNG, in
 [TODO.md](TODO.md) for the remaining work. Every PNG asset needs a corresponding SVG authored first.
 
 **M76 is also built and released, on top of it.** Both the pause screen and the day summary carry a
@@ -287,8 +287,10 @@ run clock, hidden until an ending) placed in that batch provisionally, since the
 for them on 2026-09-10 without placing them.
 Reaching act III — which M56's measurement against the nerves needs — waits until
 that batch is done, and M101, the fire found before the engine, comes after that. SVG-to-PNG
-style transfer is Codex's parallel track. **M103, the drawings the queue owes, runs beside all of it**:
-one list of every picture an open item needs, drawn ahead so no milestone waits on one.
+style transfer is Codex's parallel track. Prepared artwork and its source-review sheets are listed
+in `GRAPHICS.md`; the integration table in `TODO.md` assigns each family to its gameplay owner.
+M110, the crowd goes round a seal, owns crowd blockage at seals; M111, cars follow their turns,
+owns continuous turn paths and diagonal presentation. Coordinate them in the shared traffic code.
 
 ## What to distrust
 

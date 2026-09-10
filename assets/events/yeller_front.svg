@@ -1,0 +1,19 @@
+<!-- Bearded yeller in long brown coat, front. Raised arm and solid coat silhouette carry the event identity. Ground anchor (13,44). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="26" height="44" viewBox="0 0 26 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M8 37 L12 37 L11 42 L7 42Z M13 37 L17 37 L18 42 L13 42Z" fill="#3b3630"/>
+  <path d="M6 42 L12 42 L12 44 L5 44Z M13 42 L19 42 L20 44 L13 44Z" fill="#221f28"/>
+  <path d="M4 14 L21 14 L21 38 L4 38Z" fill="#6b5b4a"/>
+  <path d="M4 32 L21 32 L21 38 L4 38Z" fill="#584a3c"/>
+  <path d="M19 17 L24 17 L24 6 L20 6Z" fill="#6b5b4a"/>
+  <circle cx="22" cy="4" r="2" fill="#d9a878"/>
+  <g transform="translate(12 0)">
+  <path d="M-7 16 L-8 28 L-4 30 L-2 17Z" fill="#584a3c"/>
+  </g>
+  <path d="M12 18 L12 37" fill="none" stroke="#584a3c" stroke-width="2"/>
+  <g transform="translate(12 8)">
+  <ellipse cx="0" cy="0" rx="6" ry="6.5" fill="#d9a878"/>
+  <path d="M-6 0 Q-6 -7 0 -7 Q6 -7 6 0 Q3 -2 0 -2 Q-3 -2 -6 0Z" fill="#4a423a"/>
+  </g>
+  <path d="M8 11 L17 11 L16 16 L9 16Z" fill="#8c8377"/>
+  <ellipse cx="12" cy="11.5" rx="1.8" ry="0.9" fill="#3a2b26"/>
+</svg>

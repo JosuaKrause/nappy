@@ -103,9 +103,15 @@ file is valid. Link a current rendered preview rather than repeatedly altering v
 Update `docs/GRAPHICS.md` with file paths, registration and actual current use. A prepared asset
 stays unbound in the catalogue until code or a resource uses it. In graphics-dependent milestones,
 name the files and intended states to reuse without closing outstanding gameplay decisions.
-Record rejected approaches and visual evidence in `docs/DECISIONS.md`; preserve the player's words
-in the playtest record. PR image links use a commit containing the image, as `committing` requires.
+Keep drafts rejected only internally by an assistant outside the repository. Preserve artwork
+rejected by a human or suggested for human review, with the review outcome in
+`docs/DECISIONS.md`; preserve the player's words in the playtest record. PR image links use a
+commit containing the image, as `committing` requires.
 
 Run import/boot and XML/doc lint. Add focused tests only for behavior a picture cannot verify,
 such as axis selection or grounding. Test the drawing path the runtime actually takes; do not
 re-derive repetition arithmetic for a whole-scene renderer that never repeats a texture.
+
+Commit each finished image promptly after visual review and validation, with its `.import`
+sidecar. Do not wait for the whole family. Keep inseparable body/trim layers together so a
+commit still contains a reviewable image.

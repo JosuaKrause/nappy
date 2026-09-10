@@ -1,0 +1,22 @@
+<!-- Thrown-together furniture heap in front of the main entrance. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="30" viewBox="0 0 48 30" shape-rendering="geometricPrecision" stroke="#3b3034" stroke-width="1" stroke-linejoin="round">
+  <!-- Ground anchor is the canvas bottom centre. -->
+  <path d="M2 25H46L44 29H4Z" fill="#221f28" fill-opacity="0.28" stroke="none"/>
+  <!-- Tilted wardrobe: its tall silhouette remains visible above the other furniture. -->
+  <path d="M5 23L8 3L21 5L20 24Z" fill="#796356"/>
+  <path d="M9 6L18 7L17 20L7 19Z" fill="#9a816c"/>
+  <path d="M11 8L16 9L15 17L10 16Z" fill="#7f6859" stroke="#5d4948" stroke-width="0.8"/>
+  <circle cx="16" cy="14" r="1" fill="#d1ae6d"/>
+  <path d="M8 4L4 1 M8 4L9 1" fill="none" stroke="#3b3034" stroke-width="1"/>
+  <!-- Mattress leaning across the door. -->
+  <path d="M18 24L24 7C25 6 27 7 29 8L33 9L28 27C25 28 21 27 18 24Z" fill="#aa8c79"/>
+  <path d="M21 22L26 10L31 11L27 24Z" fill="#c1a28a"/>
+  <path d="M24 15L29 16 M22 20L28 21 M26 10L30 11" fill="none" stroke="#796155" stroke-width="1"/>
+  <!-- Chair with a back and legs protruding from the pile. -->
+  <path d="M32 24L33 13L40 12L42 25Z" fill="#6d5954"/>
+  <path d="M34 14L39 14L39 20L34 20Z" fill="#90725e"/>
+  <path d="M35 14V20 M38 14V20" fill="none" stroke="#c09a6f" stroke-width="0.8"/>
+  <path d="M33 24L30 30 M40 24L44 30" fill="none" stroke="#3b3034" stroke-width="2"/>
+  <path d="M30 24H43" fill="none" stroke="#3b3034" stroke-width="2"/>
+  <path d="M5 27H45" fill="none" stroke="#3b3034" stroke-width="2"/>
+</svg>

@@ -1,0 +1,9 @@
+<!-- Prepared alley alternative for review: wet paving and a drain line distinguish it from a roof. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" fill="#4b4850"/>
+  <path d="M0 8H32 M0 16H32 M0 24H32" stroke="#343139" stroke-width="1"/>
+  <path d="M4 0V8 M20 0V8 M12 8V16 M28 8V16 M4 16V24 M20 16V24 M12 24V32" stroke="#5e5960" stroke-width="1"/>
+  <path d="M0 29H32" stroke="#25272d" stroke-width="2"/>
+  <path d="M4 28H8 M14 28H18 M24 28H28" stroke="#81796b" stroke-width="1"/>
+  <path d="M2 4L6 3 M25 12L29 13 M6 20L9 19" stroke="#77716d" stroke-width="1"/>
+</svg>

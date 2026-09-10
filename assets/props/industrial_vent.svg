@@ -7,5 +7,6 @@
   <rect x="19" y="5" width="6" height="10" rx="1" fill="#777c7e"/>
   <path d="M17 4 H27 L25 7 H19 Z" fill="#9a9b96"/>
   <path d="M11 17 V24 M15 17 V24 M19 17 V24" fill="none" stroke="#3f4447"/>
-  <circle cx="24" cy="22" r="1.5" fill="#b58a4a"/>
+  <circle cx="24" cy="22" r="2.2" fill="#b58a4a"/>
+  <path d="M24 20V24 M22 22H26" stroke="#3f4447" stroke-width="0.7"/>
 </svg>

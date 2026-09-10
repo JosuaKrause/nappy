@@ -1,0 +1,18 @@
+<!-- Storefront d: sloped fabric canopy and hanging valance extend beyond their wall mounts. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" fill="#9a7659"/>
+  <rect x="14" y="10" width="13" height="12" fill="#483d43" stroke="#3b3034" stroke-width="1"/>
+  <rect x="16" y="12" width="9" height="8" fill="#756e77"/>
+  <path d="M17 14H24 M17 18H24" stroke="#b7ada0" stroke-width="1"/>
+  <rect x="3" y="9" width="9" height="22" fill="#513a38" stroke="#3b3034" stroke-width="1"/>
+  <rect x="5" y="11" width="5" height="6" fill="#756e77"/>
+  <circle cx="10" cy="26" r="0.9" fill="#d4b26e"/>
+  <rect y="29" width="32" height="3" fill="#4e3a3b"/>
+
+  <path d="M2 11 L30 11 L28 14 L4 14 Z" fill="#3b3034" fill-opacity="0.65"/>
+  <path d="M3 4 H29 L31 11 H1 Z" fill="#d4a04e" stroke="#3b3034" stroke-width="0.8"/>
+  <path d="M5 4 H8 L7 11 H3 Z M11 4 H14 L13.5 11 H9.5 Z M17 4 H20 L20.5 11 H16.5 Z M23 4 H26 L28 11 H24 Z" fill="#a65d4e"/>
+  <path d="M1 11 H31 V13 L28 14 L25 13 L22 14 L19 13 L16 14 L13 13 L10 14 L7 13 L4 14 L1 13 Z" fill="#d4a04e" stroke="#3b3034" stroke-width="0.7"/>
+  <path d="M3 11 H7 V13 L4 14 L3 13 Z M9.5 11 H13.5 V13 L13 13 L10 14 L9.5 13 Z M16.5 11 H20.5 V13 L19 13 L17 13.7 Z M24 11 H28 V14 L25 13 L24 13.3 Z" fill="#a65d4e"/>
+  <path d="M3 4 H29" stroke="#e0d4ad" stroke-width="0.6"/>
+</svg>

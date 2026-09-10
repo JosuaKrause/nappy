@@ -1,0 +1,8 @@
+<!-- West basement floor edge against the raw brick side wall. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" fill="#4d5051"/>
+  <path d="M0 10H32 M0 21H32 M11 0V10 M26 10V21 M5 21V32 M20 21V32" stroke="#3d4144" stroke-width="1"/>
+  <path d="M3 5L8 4 M17 15L21 14 M24 27L29 28 M8 25L10 27" stroke="#71685d" stroke-width="1"/>
+  <rect width="3" height="32" fill="#30292f"/>
+  <path d="M3 0V32" stroke="#a08d70" stroke-width="1"/>
+</svg>
