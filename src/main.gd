@@ -36,6 +36,10 @@ var _edge_layer: CanvasLayer
 ## What is currently charging the meter, drawn under the world rather than over it — see
 ## `_add_excitement_halo()`.
 var _halo: ExcitementHalo
+## The fields, shadows and bounding-box overlays — `null` outside a debug build, so "is a layer
+## node in the tree" is a release-build test's own question rather than one this class has to
+## remember to ask of `_debug` separately. See `_add_debug_layers()`.
+var _debug_layers: DebugLayers
 ## The pointer controls, on their own layer for the same reason the danger edge is: they have to
 ## sit above the world they are drawn over. Built in `_ready()`, alongside `_touch_layer`.
 var _touch_controls: TouchControls
@@ -102,6 +106,7 @@ func _ready() -> void:
 	add_child(_hud)
 	_add_danger_edge()
 	_add_excitement_halo()
+	_add_debug_layers()
 	_add_touch_controls()
 	_summary = DAY_SUMMARY.instantiate()
 	add_child(_summary)
@@ -321,6 +326,25 @@ func _add_excitement_halo() -> void:
 	_halo.setup(_city.events, _city.crowd, _player)
 	add_child(_halo)
 	_pauses_with_the_game(_halo)
+
+## The fields, shadows and bounding-box overlays — see `DebugLayers`. **Absent from the tree
+## outside a debug build**, not merely built and left invisible: `_debug_layers` stays `null`, so
+## nothing here is queried, nothing is drawn and a release build pays for none of it.
+##
+## `z_index = 3` puts it above `Entities` (2, the y-sorted layer everything on the ground lives on)
+## — above everything else in the world, unlike the halo's own `z_index = 1`, because a bounding
+## box drawn under the thing it outlines would be the one cue in the game nobody could read.
+## Every layer starts off (`DebugLayers.fields_on`/`shadows_on`/`bodies_on` all default `false`);
+## a number key to turn one on is the next milestone slice.
+func _add_debug_layers() -> void:
+	if not _debug:
+		return
+	_debug_layers = DebugLayers.new()
+	_debug_layers.name = "DebugLayers"
+	_debug_layers.z_index = 3
+	_debug_layers.setup(_city.events, _city.crowd, _city, _player)
+	add_child(_debug_layers)
+	_pauses_with_the_game(_debug_layers)
 
 ## The one control scheme, in its own layer for the same reason the danger edge gets one: it has to
 ## sit above the world it overlays. One node goes into the tree rather than a choice between two —

@@ -99,6 +99,7 @@ src/
   dev/
 	auto_screenshot.gd    render N frames, save a PNG, quit
 	dev_flags.gd          every dev command-line flag, gated behind OS.is_debug_build()
+	debug_layers.gd       world-space overlays over the live game: fields, shadows, bounding boxes
   palette.gd              colours the code still chooses; the art's own are in the SVGs
   sprites.gd              feet-anchored draw helpers (standing sprite, contact shadow)
   ground_shape.gd         one ground shape per object (point, segment or rectangle); the shadow and the body are derived from it
