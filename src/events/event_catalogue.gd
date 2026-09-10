@@ -877,7 +877,7 @@ static func _reversing_lorry() -> EventDef:
 ## cost model in the same sentence: *"getting too close one gets caught up in a conversation that
 ## takes 5s and consumes 25% excitement. if the baby is already sleeping it's a pure time loss if
 ## it's not it bears overstimulation risk."* The readings taken from that sentence are recorded in
-## `docs/PLAYTEST-18.md` finding 4.
+## `docs/playtests/PLAYTEST-18.md` finding 4.
 ##
 ## **A paced pavement fixture, like `homeless_yeller`** — she is *at* a place rather than passing
 ## through it, and pacing is what guarantees streaming actually meets her rather than her running

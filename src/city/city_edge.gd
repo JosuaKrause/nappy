@@ -129,7 +129,7 @@ func _roof_the_tunnel() -> void:
 	var left := -columns * tile * 0.5
 	for row in range(portal_rows, City.OUTSIDE_DEPTH_TILES):
 		for column in columns:
-			draw_texture_rect(MOUNTAIN,
+			draw_texture_rect(TextureResolver.resolve(MOUNTAIN),
 					Rect2(left + column * tile, -tile * float(row + 1), tile, tile), false)
 
 ## Draws a texture at the node's own origin, with `anchor` saying which of its corners that origin
@@ -138,4 +138,4 @@ func _roof_the_tunnel() -> void:
 ## case: an exit that leaves eastward is anchored on its side, not on its base.
 func _blit(texture: Texture2D, anchor: Vector2) -> void:
 	var extent := texture.get_size()
-	draw_texture_rect(texture, Rect2(extent * anchor, extent), false)
+	draw_texture_rect(TextureResolver.resolve(texture), Rect2(extent * anchor, extent), false)

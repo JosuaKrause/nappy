@@ -1,30 +1,12 @@
 extends RefCounted
-## `Stroller`'s legacy SVG presentation, and the one thing the illustrated opt-in owes the baseline.
-##
-## **The hysteresis half of this suite runs only while the legacy presentation is the live one**
-## (`not DevFlags.illustrated_requested()`, which a headless test process is unless `--illustrated`
-## is passed). `_update_view()` and the `_side_view` member it writes decide which family of
-## drawing `_draw_mother()` and `_draw_pram()` show, and they exist for the legacy sprites alone —
-## the illustrated compositor poses a body from displacement and has no such decision to make. So
-## the contracts below are stated against the presentation that owns them rather than against
-## whichever one happens to be running, and `_test_the_illustrated_compositor_is_opt_in()` is the
-## one check that holds either way.
-##
-## The decision the two draw functions must never disagree about is *whether she is drawn side-on
-## or front-or-back*. `Stroller._update_view()` makes it once a frame, with hysteresis rather than
-## a single switching angle, into the shared `_side_view` member both read — this suite drives
-## `facing` and calls `_update_view()` directly, the way `_physics_process()` does, without
-## stepping physics or a canvas.
+## Direction quantisation for the player rig, including its boundary hold.
 
 func run(t) -> void:
-	_test_the_illustrated_compositor_is_opt_in(t)
-	if DevFlags.illustrated_requested():
-		return
-	_test_the_default_facing_is_front_or_back(t)
-	_test_a_slow_sweep_up_through_the_diagonal_switches_once(t)
-	_test_a_slow_sweep_down_through_the_diagonal_switches_once(t)
-	_test_wobbling_inside_the_band_never_switches(t)
-	_test_reset_at_settles_the_view_for_the_new_facing(t)
+	_test_all_eight_facings(t)
+	_test_live_draw_selection(t)
+	_test_boundary_hysteresis(t)
+	_test_reset_settles_direction(t)
+	_test_wrap_boundary_holds(t)
 
 func _rig(t) -> Stroller:
 	var rig := Stroller.new()
@@ -35,106 +17,82 @@ func _rig(t) -> Stroller:
 	rig.set_physics_process(false)
 	return rig
 
-## The baseline is the legacy presentation, and nothing but an explicit `--illustrated` or
-## `?illustrated=1` changes that — so a rig built with neither carries no `ModularPerson` child at
-## all. The one check here that is asserted under both presentations, since it is the gate itself
-## rather than anything downstream of it.
-func _test_the_illustrated_compositor_is_opt_in(t) -> void:
-	var rig := _rig(t)
-	rig.reset_at(Vector2(80.0, 120.0))
-	t.check(rig.facing == Vector2.DOWN, "reset keeps the default south-facing owner heading")
-	t.check((rig.get_node_or_null("ModularPerson") != null)
-			== DevFlags.illustrated_requested(),
-		"the illustrated compositor exists exactly when it was opted into")
-	rig.free()
-
-## Before she has moved, `facing` is `Vector2.DOWN` — 90° off the horizontal axis, squarely
-## inside the front-or-back half of the band — so there is nothing to settle before the first
-## frame runs.
-func _test_the_default_facing_is_front_or_back(t) -> void:
-	var rig := _rig(t)
-	t.check(not rig._side_view, "the rig starts front-or-back, matching the default facing")
-	rig.free()
-
-## A monotonic turn from due east (0°, side-on) to due south (90°, front-or-back — `facing.y > 0`
-## is toward the viewer, per `_draw_mother()`) crosses the whole hysteresis band once. **The
-## drawing choice must change exactly once**, and the change must land past the band's high edge
-## rather than at the old single 45° cutover.
-func _test_a_slow_sweep_up_through_the_diagonal_switches_once(t) -> void:
-	var rig := _rig(t)
-	# Settle the starting facing first, so the sweep below counts only the crossing it is
-	# testing rather than the rig's default `_side_view` catching up to where the sweep begins.
-	rig.facing = Vector2.RIGHT
+func _face(rig: Stroller, degrees: float) -> void:
+	rig.facing = Vector2.from_angle(deg_to_rad(degrees))
 	rig._update_view()
-	var flips := 0
-	var degrees_at_flip := 0.0
-	var degrees := 0.5
-	while degrees <= 90.0:
-		rig.facing = Vector2(cos(deg_to_rad(degrees)), sin(deg_to_rad(degrees)))
-		var before := rig._side_view
-		rig._update_view()
-		if rig._side_view != before:
-			flips += 1
-			degrees_at_flip = degrees
-		degrees += 0.5
-	t.check(flips == 1, "a slow sweep from side-on to front-or-back changes the drawing once")
-	t.check(degrees_at_flip > Stroller.FRONT_OR_BACK_VIEW_ABOVE_DEGREES,
-			"the switch lands past the band's high edge, not at the old 45° cutover")
-	t.check(not rig._side_view, "and she ends up front-or-back, facing due south")
+
+func _test_all_eight_facings(t) -> void:
+	var rig := _rig(t)
+	for direction in range(8):
+		_face(rig, direction * 45.0)
+		t.check(rig._view_direction == direction, "facing %d degrees selects direction %d" % [direction * 45, direction])
 	rig.free()
 
-## The same sweep run backwards: front-or-back down to side-on, switching once past the band's
-## low edge.
-func _test_a_slow_sweep_down_through_the_diagonal_switches_once(t) -> void:
+func _test_live_draw_selection(t) -> void:
 	var rig := _rig(t)
-	rig.facing = Vector2.DOWN
-	rig._update_view()
-	var flips := 0
-	var degrees_at_flip := 90.0
-	var degrees := 89.5
-	while degrees >= 0.0:
-		rig.facing = Vector2(cos(deg_to_rad(degrees)), sin(deg_to_rad(degrees)))
-		var before := rig._side_view
-		rig._update_view()
-		if rig._side_view != before:
-			flips += 1
-			degrees_at_flip = degrees
-		degrees -= 0.5
-	t.check(flips == 1, "a slow sweep from front-or-back to side-on changes the drawing once")
-	t.check(degrees_at_flip < Stroller.SIDE_VIEW_BELOW_DEGREES,
-			"the switch lands past the band's low edge, not at the old 45° cutover")
-	t.check(rig._side_view, "and she ends up side-on, facing due east")
+	var mother_first_frames: Array[Texture2D] = [
+		Stroller.MOTHER_SIDE[0], Stroller.MOTHER_FRONT_DIAGONAL[0], Stroller.MOTHER_FRONT[0],
+		Stroller.MOTHER_FRONT_DIAGONAL[0], Stroller.MOTHER_SIDE[0],
+		Stroller.MOTHER_BACK_DIAGONAL[0], Stroller.MOTHER_BACK[0],
+		Stroller.MOTHER_BACK_DIAGONAL[0],
+	]
+	var mother_second_frames: Array[Texture2D] = [
+		Stroller.MOTHER_SIDE[1], Stroller.MOTHER_FRONT_DIAGONAL[1], Stroller.MOTHER_FRONT[1],
+		Stroller.MOTHER_FRONT_DIAGONAL[1], Stroller.MOTHER_SIDE[1],
+		Stroller.MOTHER_BACK_DIAGONAL[1], Stroller.MOTHER_BACK[1],
+		Stroller.MOTHER_BACK_DIAGONAL[1],
+	]
+	var pram_textures: Array[Texture2D] = [
+		Stroller.PRAM_SIDE, Stroller.PRAM_FRONT_DIAGONAL, Stroller.PRAM_FRONT,
+		Stroller.PRAM_FRONT_DIAGONAL, Stroller.PRAM_SIDE, Stroller.PRAM_BACK_DIAGONAL,
+		Stroller.PRAM_BACK, Stroller.PRAM_BACK_DIAGONAL,
+	]
+	var mirrored: Array[bool] = [false, false, false, true, true, true, false, false]
+	for direction in range(8):
+		rig._view_direction = direction
+		t.check(rig._mother_texture(0) == mother_first_frames[direction],
+				"mother draw selects the authored texture for direction %d" % direction)
+		t.check(rig._mother_texture(1) == mother_second_frames[direction],
+				"mother draw selects gait frame B for direction %d" % direction)
+		t.check(rig._pram_texture() == pram_textures[direction],
+				"pram draw selects the authored texture for direction %d" % direction)
+		t.check(rig._mother_is_mirrored() == mirrored[direction],
+				"mother mirror matches direction %d" % direction)
+		t.check(rig._pram_is_mirrored() == mirrored[direction],
+				"pram mirror matches direction %d" % direction)
 	rig.free()
 
-## The reported bug: a facing that drifts by float noise across the old single 45° switching
-## angle. Simulated as an oscillation entirely inside the 40°-50° hysteresis band — the drawing
-## must never change, which a strict `absf(facing.x) > absf(facing.y)` comparison could not
-## promise.
-func _test_wobbling_inside_the_band_never_switches(t) -> void:
+func _test_boundary_hysteresis(t) -> void:
 	var rig := _rig(t)
-	rig.facing = Vector2(cos(deg_to_rad(30.0)), sin(deg_to_rad(30.0)))
-	rig._update_view()
-	t.check(rig._side_view, "starts side-on, approaching the band from below")
-	var settled := rig._side_view
-	for degrees in [43.0, 47.0, 44.2, 46.8, 45.0, 43.9, 46.1, 40.1, 49.9]:
-		rig.facing = Vector2(cos(deg_to_rad(degrees)), sin(deg_to_rad(degrees)))
-		rig._update_view()
-		t.check(rig._side_view == settled,
-				"wobbling inside the 40°-50° band at %.1f° does not change the drawing" % degrees)
+	_face(rig, 0.0)
+	_face(rig, 26.0)
+	t.check(rig._view_direction == 0, "five degree hold keeps east just past the 22.5 degree boundary")
+	_face(rig, 28.0)
+	t.check(rig._view_direction == 1, "east changes to southeast after the hysteresis margin")
+	_face(rig, 24.0)
+	t.check(rig._view_direction == 1, "southeast holds while turning back inside the margin")
+	_face(rig, 16.0)
+	t.check(rig._view_direction == 0, "southeast returns to east below the margin")
 	rig.free()
 
-## `reset_at()` puts her back on the doorstep, and the view has to settle for the new facing
-## rather than carry a previous day's hysteresis across the teleport — there is no "last frame"
-## of a day that was rewound or never started.
-func _test_reset_at_settles_the_view_for_the_new_facing(t) -> void:
+func _test_reset_settles_direction(t) -> void:
 	var rig := _rig(t)
-	rig.facing = Vector2.RIGHT
-	rig._update_view()
-	t.check(rig._side_view, "side-on before the reset")
-
+	_face(rig, 0.0)
 	rig.reset_at(Vector2.ZERO)
-	t.check(not rig._side_view, "the default reset look (due south) settles front-or-back")
-
+	t.check(rig._view_direction == 2, "default reset look settles south")
 	rig.reset_at(Vector2.ZERO, Vector2.LEFT)
-	t.check(rig._side_view, "an explicit side-on look settles side-on immediately, not held over")
+	t.check(rig._view_direction == 4, "explicit reset look settles west")
+	rig.reset_at(Vector2.ZERO, Vector2.from_angle(deg_to_rad(66.0)))
+	t.check(rig._view_direction == 1, "reset at 66 degrees chooses southeast without prior-view hold")
+	rig.reset_at(Vector2.ZERO, Vector2.from_angle(deg_to_rad(114.0)))
+	t.check(rig._view_direction == 3, "reset at 114 degrees chooses southwest without prior-view hold")
+	rig.free()
+
+func _test_wrap_boundary_holds(t) -> void:
+	var rig := _rig(t)
+	_face(rig, 330.0)
+	_face(rig, 340.0)
+	t.check(rig._view_direction == 7, "north-east holds through the zero degree wrap")
+	_face(rig, 345.0)
+	t.check(rig._view_direction == 0, "east wins after crossing the wrapped boundary")
 	rig.free()

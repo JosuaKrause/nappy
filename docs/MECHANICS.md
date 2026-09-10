@@ -573,7 +573,7 @@ a run costs another 0.37s on top. A player answers during the **telegraph**, whe
 visible and closing for two and a half seconds, so the lunge is the worst case rather than the
 expected one — but the worst case is what a contract is for. Widening it means widening the
 stand-off, and a stand-off much past 180px is a dog that visibly reverses away from her through its
-own telegraph, which a player has watched and called nonsense. See `docs/PLAYTEST-10.md`, section C.
+own telegraph, which a player has watched and called nonsense. See `docs/playtests/PLAYTEST-10.md`, section C.
 
 ### A pursuer can be a place before it is a moment
 

@@ -1,0 +1,10 @@
+nappy rig log  2026-09-10T08:39:50  version v0.8.2-114-gafda953
+
+day 1  act 1  run seed 4242  city seed 4242  length 180.0s
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  plan     closed: roadworks h(6,5)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: burst_water_main x22, cafe_tables x66, car_accident x21, cat_dash x8, chatting_mother x2, delivery_van x40, dog_walker x20, fallen_tree x16, homeless_yeller x9, leaf_blower x23, loose_dog x10, market_stall x38, moving_van x34, pigeon_flock x5, playground x2, scaffolding x26, skip x23
+   0.0  start    doorstep (80,84), facing 180°
+   0.6  cross    stepped into the road at (80,86), mid-block
+   0.9  near     scaffolding at (79,90), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0

@@ -1,0 +1,286 @@
+# Playtest 16
+
+Played on `main` at M50 — `5d2a276`, seed `374709573` (both screenshots) — with M51's seven
+findings in the build. Reported mid-run, in five messages, three of them with a screenshot
+attached. The wording below is the player's, verbatim.
+
+**Ten findings, in four groups.**
+
+**Four of them are one complaint**: the city draws a lattice it does not have, and the crowd walks
+it. It goes onto a bridge with no footway, off a bulkhead into the sea, and through crossroads whose
+arms are grass or a wall — and in every case it then vanishes where somebody is looking at it.
+
+**Two are the first report anybody has ever made about the back half of the game**, and both are
+`docs/TODO.md` entries that have been sitting under "Known-shaky ground" waiting for exactly this.
+The robber works — *"very good and effective… the timing is good"* — and walks through walls. The
+resistance is invisible: the player reached a chalk mark and could not tell that anything had
+happened, which is the deliberate risk that file has named since the beginning finally being run.
+
+**One is about aim**: the bike, the loose dog and the cat are the three rows whose whole content is
+a moving thing meeting her, and none of them ever does — two are sited at dawn on a street she does
+not walk, and the third crosses behind her. It comes with a design.
+
+**And the last is a different kind of finding and the more uncomfortable one**: calm areas at the
+edge of the map, *"which should be impossible"* — and the rule saying so is already written down,
+unbuilt, in `docs/TODO.md`'s M47, along with its measurement. Together with M41's T-junction item
+and M51's cul-de-sac, that is **three findings in one session that the project had recorded and not
+built**, plus the same M47 entry answering M52's *"2x2 courtyard and rectangular calm zones"*
+verbatim. Writing a finding down is only half of the rule; the other half is reading the file
+before designing against it.
+
+**The through-line is the edge of the world and the edges inside it.** M51 was about the city
+drawing things it does not mean; this is the same sentence one scale out, and about a specific
+thing: **the lattice draws a full crossroads wherever two corridors cross, whether or not the arms
+of it are streets.** At the shore that produces a junction whose southern arm is the sea. Beside a
+precinct or a park it produces a crossroads whose arms are paving and grass. Both are the same
+missing rule — *a junction should be the junction of the streets that actually meet there* — and
+both were already half-known: `docs/TODO.md`'s M41 has carried **"T-intersections everywhere else
+on the edge — the lattice currently runs into the boundary and stops"** as an unbuilt item since
+M41, and M51 finding 1 was the same defect on a cul-de-sac.
+
+---
+
+## 1. Cars and people still go off the map
+
+> "cars and people still go off the map"
+
+Sent with a screenshot of the **southern shore**: a full four-way intersection with zebras, its
+southern arm running straight into the water, and pedestrians and a car on it walking off the
+bulkhead and disappearing.
+
+**"Still" is the important word.** M51 finding 7 fixed a car reaching the **bridge** and blinking
+out, and the fix was deliberately narrow — *"outside the map is water, forest and mountainside, so
+letting every agent overrun the boundary would drive cars into the sea at every corridor"* — so
+overrunning was allowed for a **car on the main road going north or south** and nobody else.
+Everybody else "keeps the tile of slack they had". This report is that the tile of slack is
+visible, at an edge with nothing beyond it, and that it is people as well as cars.
+
+Two things it could be and they want different fixes:
+
+- The agent is **recycled on screen** at the boundary, which is M35's *"nothing vanishes while you
+  are looking at it"* not reaching the crowd anywhere except the three holes in the border.
+- The junction should not be there at all. The southern arm of that crossroads is not a street —
+  it is the bulkhead — so an agent aiming down it is aiming at something the map does not have,
+  which is finding 2 and M41's unbuilt T-junction item.
+
+## 2. Intersections where there should be a pedestrian street or a T-junction
+
+> "here are two examples of intersections in places that should be pedestrian street or t-junction"
+
+Sent with a screenshot of an ordinary asphalt crossroads — full zebras on all arms, cars stopped at
+it — where the ground to the **east** is an unbroken paved precinct and the ground to the **south**
+is park. So the crossroads has arms that no vehicle can use and the paint promises a road that is
+not there.
+
+**The player names both answers rather than one**, and the difference is which thing is wrong:
+
+- **A pedestrian street.** Where the corridor beyond is precinct, the junction is part of a
+  pedestrianised stretch and should be laid as one — `CityGenerator._street_tile` already lays a
+  precinct `SIDEWALK` from frontage to frontage, so what is missing is that the *junction* between
+  two precinct arms is still asphalt with zebras on it.
+- **A T-junction.** Where the arm beyond is not a street at all — a park, a calm zone's absorbed
+  corridor, the shore — the junction has three arms and should be drawn with three.
+
+**This is one rule with two outcomes, not two features**, and it is the same rule finding 1 needs:
+*what a junction is made of is decided by the streets that actually meet at it.* Today it is
+decided by the lattice, which has an entry at every crossing whether or not there is a street on
+the other side of it.
+
+## 3. People walk over the bridge, and only cars should
+
+> "also people are walking over the bridge (and disappearing) when only cars should be able to"
+
+**This is M51 finding 7's fix read back**, and it says the fix answered half of its own sentence.
+M51 wrote the bridge, the tunnel and the road out as *"a stretch of carriageway with no pavement
+beside it"* — that is the whole design, and it is why the player may walk out of the world there
+and be run over rather than be stopped by a wall. `City._paint_outside_the_map` lays carriageway at
+the spine's width and nothing else, and the overrun was granted to **a car on the main road going
+north or south**.
+
+So there are two things wrong and the second is the interesting one:
+
+- A **pedestrian** is walking onto a deck that has no footway on it. The overrun permission was
+  narrowed correctly and the *lane* was not: a walker's lanes still run the length of the corridor,
+  and at the boundary the corridor is a bridge.
+- And the walker **disappears**, which is finding 1 again — an agent recycled where somebody is
+  looking at it.
+
+Note what is *not* being asked for: the bridge is not to be made safe. The player's own design has
+her able to walk onto it and be killed by the traffic. What may not happen is the **crowd**
+strolling across it as though it were a street with pavements.
+
+## 4. Calm areas at the edge of the map
+
+> "this map shows multiple calm zones at the edge of the map which should be impossible"
+
+Sent with one of the new telemetry maps: three of its green outlines are in the outermost block
+column, two on the west edge and one on the east.
+
+**"Should be impossible" is right and the repo already agrees with it.** `docs/TODO.md`'s M47
+carries the rule, unbuilt, in the player's own earlier words: *"another way to get density is to
+make a rule to not have a calm area at the edge of the map or next to the main road."* The entry
+even states why it was never true — `_assign_purposes` constrains a single calm block three ways
+and none of them is about the edge, and `_zone_fits` only refuses a footprint that would *absorb*
+the arterial, which is about swallowing the street rather than being beside it.
+
+**So this is the third thing in one session that the project had already written down and not
+built**, after M41's T-junctions and M51's cul-de-sac. It is also the second time the *same* M47
+entry has come back: M52's *"2x2 courtyard and rectangular calm zones"*, asked for earlier in this
+same session, is verbatim the request sitting two lines above it — *"an inner courtyard (surrounded
+by buildings) should have a footprint of 2x2 blocks (apartment complex) — this never got
+implemented… also, add calm varieties that take up 2x1 non-square shapes."*
+
+Which answers, from the record rather than from the player, two of the four questions M52 was
+recorded with. That is the lesson worth more than the fix: **the answer to "what exactly did you
+mean" was on disk, and asking again is the cost of a to-do that was filed and not read.**
+
+## 5. The back of a cul-de-sac still has a pedestrian crossing on it
+
+> "the backside of a cul-de-sac should not have a pedestrian crossing"
+
+Sent with a screenshot of a junction whose **northern arm is built over** — the dead end's plug is
+right there in the picture, a building where the street would have continued — and a full zebra
+still painted across it, with a traffic light beside it.
+
+**This is finding 2 again and it is the clearest statement of it**, because here there is no
+argument about what the arm *is*: `CityMap.built_over` names those exact tiles. The junction is
+drawn with four arms because the lattice has four entries at that crossing, and nothing that lays
+paint asks whether the street on the other side exists. A crossing marks *where to cross to*, so a
+zebra onto a wall is the city promising something it does not have — M51's own sentence, in the one
+place M51 was already looking.
+
+## 6. The run hint comes back after the tutorial has taught it
+
+> "hold SHIFT to run randomly shows up sometimes after the running tutorial. it should only show up
+> for the tutorial"
+
+Stated as a rule rather than as a bug, and the rule is the useful half: **the hint belongs to the
+lesson, not to the mechanic.** Once day 3 has taught the run, a line telling her to hold shift is
+the game explaining something she has already been made to do — which is the "a cue that marks
+everything says nothing" problem arriving in the HUD.
+
+## 7. The resistance never announced itself
+
+> "I'm not sure if I ever did the resistance. I walked on one chalk symbol once but there was no
+> indication at the end of the day or any guidance what to do next. during the day brief there
+> should be instructions from the chalk marks to tell me what the next task is. only the first
+> encounter (the chalk mark) should come without hint (yes, no hint even at the bottom left). the
+> chalk mark has to be placed dynamically alongside a route"
+
+**The first playtest ever to reach the resistance, and it reports that reaching it is invisible.**
+`docs/TODO.md` has carried this as a deliberate risk since the beginning — *"no quest log or marker
+for the resistance… this is a deliberate risk: a player may finish a run never knowing the good
+ending existed"* — and listed it as an open question for playtesting. This is the answer to that
+question, and it is that the risk did not pay off.
+
+Four separate instructions, and they are not the same instruction:
+
+1. **The day brief carries the resistance's own words.** *"During the day brief there should be
+   instructions from the chalk marks to tell me what the next task is."* So the between-days screen
+   gains a line, in the fiction's voice, saying what the next step is.
+2. **The first chalk mark is the one exception and it is absolute.** *"Only the first encounter (the
+   chalk mark) should come without hint (yes, no hint even at the bottom left)."* The parenthesis is
+   the player pre-empting the obvious half-measure: the HUD line that exists today does not count as
+   "no hint", and it is to be gone for that first encounter.
+3. **A chalk mark is placed against a route.** *"The chalk mark has to be placed dynamically
+   alongside a route."* This is M50's set-piece machinery applied to the thing `docs/TODO.md`
+   already names as its second caller — the item under step 2 that says `ResistanceDirector` places
+   a contact rather than an event and so does not simply inherit the covering set.
+4. And implicitly: **the end of a day has to say whether anything happened.** *"There was no
+   indication at the end of the day."*
+
+## 8. The robber runs through walls
+
+> "the robber is very good and effective only thing is that he can run through walls other than
+> that the timing is good"
+
+**A verdict and a bug, and the verdict is the rarer thing.** `docs/TODO.md`'s "Known-shaky ground"
+has said since M36 that *"the robber has never been met and act III has never been reached — every
+number on him is a rig's, and the row is now the most mechanically complicated in the catalogue"*.
+He has now been met and the timing is right, so that entry can close on everything except the walls.
+
+The bug is precise: a pursuing `EventInstance` moves by setting its own position, and nothing in the
+event system has ever collided with the city — which was harmless while every mobile row travelled a
+route the scheduler had already checked, and stops being harmless the moment something steers at the
+player.
+
+## 9. The bike, the running dog and the cat never have an impact
+
+> "the bike, the running dog (which is running a direction *not* the pursuing one), the cat never
+> have an impact. bike and running dog are always somewhere else (I can see the offscreen indicators
+> but they're going somewhere else). the cat always aims in a way that by normal walking she runs
+> behind me instead of in front of me. these issues can be solved by dynamically placing those
+> obstacles when getting close -- the biker should always be positioned on the sidewalk the player
+> walks coming towards the player (in a way like the placement of the pursuing dog) so the player
+> *has* to deal with the biker (by changing the side of the road or make a turn). since there is an
+> offscreen hint for the bike there is enough indication that the player doesn't need to run and has
+> enough time to plan the route change."
+
+**Three rows, two different failures, and one proposed mechanism** — kept apart here because the
+sentence names them apart.
+
+- **`cyclist` and `loose_dog` are `MAP` rows**, sited at dawn on a street somewhere and given a
+  26- and 24-tile route to travel down it. So the day decides where they go before it knows where
+  she goes, and the offscreen badge — which is working, and is what makes the miss legible —
+  announces something that was never aimed at her. The parenthesis *"which is running a direction
+  **not** the pursuing one"* is a second report inside the first: the loose dog is not a chase, it
+  is a mobile row that happens to be running, and it runs away as readily as toward.
+- **`cat_dash` is already `AHEAD_OF_PLAYER`** and its failure is different in kind: it is aimed at
+  her and it is aimed **late**. At 240px/s across the street it crosses *behind* her at a walk,
+  which means the director's lead is measured from where she is rather than from where she will be.
+
+**The design, and it is specific enough to build from:**
+
+1. **Place them dynamically when she gets close**, rather than at dawn.
+2. **The biker is on the pavement she is walking on, coming toward her** — explicitly *"in a way
+   like the placement of the pursuing dog"*, which is `EventDirector`'s siting of `charging_dog`.
+3. **So that she *has* to deal with it** — *"by changing the side of the road or make a turn"*. The
+   answer is a route change, not a reaction: this is a routing problem delivered at walking speed,
+   which is what the whole game is about.
+4. **And the fairness is already paid for by the badge.** *"Since there is an offscreen hint for the
+   bike there is enough indication that the player doesn't need to run and has enough time to plan
+   the route change."* That is the player pre-empting the objection: an `AHEAD_OF_PLAYER` row has no
+   telegraph phase she can see coming, so `EventDef.validate()` makes it pay the contract in
+   geometry instead — and here the player is saying the screen-edge badge is the notice, and a
+   *plan-able* one rather than a reflex one.
+
+**What this collides with, named rather than resolved.** `AHEAD_OF_PLAYER` is documented in
+`CLAUDE.md` as being *"for the small number whose entire content is the moment it happens to you —
+three seconds of cat is not a place"*, and `MAP` as right *"for anything the player could plan
+around: it is a place, and finding out it is there is what walking a street is for."* A bike aimed
+at her that she answers by **planning a turn** is neither of those, and it may be a third mode
+rather than a reassignment of one row. It also may not obstruct — `validate()` refuses an
+`AHEAD_OF_PLAYER` row with a body — which is fine for a moving bike and is a rule to check rather
+than assume.
+
+## 10. The calm rates, and the traffic lights, clarified
+
+> "first, calm zones need to fill up the sleep meter faster in general. second, the size of the
+> calm zone increases the speed even further if it is small. that was exactly what I wrote before.
+> I don't see any ambiguity there. also, what is your problem with understanding the traffic light
+> issue? currently the traffic lights are next to the building and not the street."
+
+> "2x1 calm zones have a proportional multiplier. the base is 2x2"
+
+> "or maybe redefine the base to 1x1 and divide by the number of blocks"
+
+**"That was exactly what I wrote before" is correct**, and the thing it was written in is
+`docs/playtests/PLAYTEST-14.md`, finding 11: *"x1.5 the sleepiness effect of calm zones and double it for 1x1
+calm zones."* This is the fourth item in one session that the project had already recorded — see
+finding 4 — and the first where the re-report was caused by this side asking a question the file
+answers.
+
+**The traffic lights were never a design question.** They stand **next to the building instead of
+the street**: `City._spawn_signal_heads` offset each head `half - inset` from the corridor's centre,
+which is 80px of a 192px street, so every one of them stood on the *outer* tile of the footway
+against the frontage. The doc comment above that line already said the head belongs "on the kerb
+beside the carriageway it stops" — the intent was written down and the arithmetic did something
+else.
+
+**And the curve over the sizes had one real ambiguity, which is arithmetic rather than design.** The
+two phrasings do not agree. Three anchors were given — a 2x2 is the base, a 1x1 is double it, a 2x1
+is proportionally between — and dividing by the **number of blocks** cannot hold the first two at
+once: from a 2x2 base it makes a 1x1 four times as fast, and from a 1x1 base it makes a 2x2 half of
+what it is today. Dividing by the **side** holds all three, because a 1x1 against a 2x2 is a factor
+of two in width and four in area while the rate asked for doubles. `1 / sqrt(blocks)` is what
+shipped, and it is also what the design says in words: *a lap is a length, not an area.*

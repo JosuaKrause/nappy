@@ -90,7 +90,7 @@ is the moment somebody is about to touch the file.
 | `src/autoload/tuning.gd` | **balance** |
 | `tools/*.py`, `pyproject.toml`, `uv.lock`, `.python-version` | **python-tooling** |
 | `tests/**` | **verify** |
-| `docs/PLAYTEST-*.md`, `docs/TODO.md` | **feedback** |
+| `docs/playtests/PLAYTEST-*.md`, `docs/TODO.md` | **feedback** |
 | any `*.gd` | **godot** |
 | any `*.svg` | **svg-art** |
 | spawning a sub-agent (the `Agent`/`Task` tool — a tool, not a path) | **orchestrating** |
@@ -156,7 +156,7 @@ log wherever it stands: `TODO.md` holds open work only, `HANDOFF.md` holds the p
 and what was done — with its measurement and its rejected options — is retrievable on demand from
 `DECISIONS.md` and nowhere else.
 
-The playtest files are the exception and are never rewritten. `docs/PLAYTEST-NN.md` are primary
+The playtest files are the exception and are never rewritten. `docs/playtests/PLAYTEST-NN.md` are primary
 sources: a player's own words on a date.
 
 **Run the session-cleanup skill at the end of every session**, so this stays true by maintenance

@@ -11,7 +11,7 @@
 #   tools/lint.sh a.md b.md    # just these files (how the PostToolUse hook calls it)
 #
 # Governed: AGENTS.md, CLAUDE.md, .claude/skills/*/SKILL.md, README.md and docs/*.md — except
-# docs/DECISIONS.md and docs/PLAYTEST-*.md, which are history and primary sources and are
+# docs/DECISIONS.md and docs/playtests/PLAYTEST-*.md, which are history and primary sources and are
 # allowed to say what was true then, and docs/evidence/README.md, whose job is filenames that
 # embed hashes.
 #
@@ -102,7 +102,7 @@ lint_heading_status() {
 
 for f in "${files[@]}"; do
     case "$f" in
-        docs/DECISIONS.md|docs/PLAYTEST-*.md|docs/evidence/README.md)
+        docs/DECISIONS.md|docs/playtests/PLAYTEST-*.md|docs/evidence/README.md)
             continue
             ;;
     esac

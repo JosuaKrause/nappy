@@ -98,7 +98,7 @@ jobs:
       # RELEASE_TAG names the build/web/<tag>/ directory tools/export-web.sh moves index.js,
       # index.wasm and index.pck into, so their URLs change with every release and GitHub
       # Pages' Cache-Control: max-age=600 — which nothing in this repo can turn off — can no
-      # longer serve a stale or, worse, mixed build inside that window (docs/PLAYTEST-27.md
+      # longer serve a stale or, worse, mixed build inside that window (docs/playtests/PLAYTEST-27.md
       # finding 1). github.ref_name is the tag itself on a tag push (e.g. "v1.2.3"), the same
       # value the version-writing step above already uses.
       - name: Export the Web build
@@ -108,7 +108,7 @@ jobs:
       # as a loose file. og:image/twitter:image in export_presets.cfg's html/head_include point
       # at social-card.png beside index.html, and this is what puts it there — assets/social-card.png,
       # a copy of the assets/logo.png wordmark already flattened onto an opaque background
-      # (docs/PLAYTEST-27.md finding 5: logo.png's transparent pixels carry RGB (0,0,0), so a
+      # (docs/playtests/PLAYTEST-27.md finding 5: logo.png's transparent pixels carry RGB (0,0,0), so a
       # client that ignores alpha paints the card black rather than showing nothing). Copied
       # rather than flattened here so the workflow needs no image-processing tool of its own.
       - name: Publish the social card image

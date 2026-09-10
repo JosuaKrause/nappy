@@ -129,7 +129,6 @@ var _junction := -1
 var _picture := Vector2i(-1, -1)
 ## Whether this car's own caret was up last frame, so it gets one redraw to come off with.
 var _was_marked := false
-var walker_visual: ModularWalker
 
 ## Built lazily on this agent's own first non-zero glow, and freed once it has faded all the way
 ## back out — see `set_halo_strength()`. A halo built for every agent in a crowd of a couple of
@@ -215,12 +214,6 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 		axis_roll = _rng.randf()
 	_settle_junction()
 	colour = _colour()
-	if kind == Kind.WALKER and DevFlags.illustrated_requested():
-		walker_visual = ModularWalker.new()
-		walker_visual.name = "ModularWalker"
-		add_child(walker_visual)
-		walker_visual.set_variant("rust_curls" if abs(seed_value) % 3 == 0 else "mustard_bob")
-		walker_visual.reset_at(position, heading())
 
 ## Marks the junction this agent is standing in, if it is standing in one, so that it does not
 ## roll a turn on its very first frame.
@@ -282,8 +275,6 @@ func _process(delta: float) -> void:
 	if _has_left_the_field():
 		_recycle()
 		recycled = true
-	if walker_visual and not recycled:
-		walker_visual.apply_displacement(position - before_position, position, delta, heading())
 	# Moving a Node2D does not invalidate its draw list — the transform is applied when it
 	# is replayed — so an agent only redraws when its picture actually changes. At this
 	# population that is the difference between five hundred redraws a frame and a handful.
@@ -1192,8 +1183,6 @@ func _recycle() -> void:
 		# `world_to_tile` always floors away — so the clamp's own top has to give up a whole
 		# pixel or it can land exactly on the line and read as out of bounds again.
 		_set_along(clampf(_along(), 0.0, limit - 1.0))
-	if walker_visual:
-		walker_visual.recycle_at(position, heading())
 
 ## However the rolls above landed, an entry point may not sit further past the map's true edge
 ## than this agent is allowed to travel before it is recycled again — the same room
@@ -1280,11 +1269,8 @@ func _draw() -> void:
 	if kind == Kind.CAR:
 		_draw_mark()
 
-## Draws this agent's own body onto `canvas` — the plain SVG sprite only, never the illustrated
-## `walker_visual` presentation, which draws itself as a separate child node with its own
-## `_draw()` and needs nothing from here. `EntityHalo` calls this once per ring offset to trace
-## whichever silhouette the sprite actually is; the ordinary frame above draws it once, at
-## `canvas == self`.
+## Draws this agent's own body onto `canvas`. `EntityHalo` calls this once per ring offset to
+## trace whichever silhouette the sprite actually is; the ordinary frame draws it once at self.
 func _draw_body(canvas: CanvasItem) -> void:
 	var frame := _frame()
 	var flip := _flipped()
@@ -1293,10 +1279,9 @@ func _draw_body(canvas: CanvasItem) -> void:
 		Sprites.draw_standing(canvas, CAR_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
 		Sprites.draw_standing(canvas, CAR_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
 		return
-	var at := Vector2(ModularWalker.COMPARISON_OFFSET, 0.0) if walker_visual else Vector2.ZERO
 	_draw_shadow(canvas, Vector2.ZERO, 7.0)
-	Sprites.draw_standing(canvas, WALKER_BODY[frame], at, Vector2.ZERO, flip, colour)
-	Sprites.draw_standing(canvas, WALKER_TRIM[frame], at, Vector2.ZERO, flip)
+	Sprites.draw_standing(canvas, WALKER_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
+	Sprites.draw_standing(canvas, WALKER_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
 
 ## A car's own shadow shape — a capsule along its travel axis, read off its own two textures
 ## rather than a hand-picked radius: the side view's width is the car's along-track length, the

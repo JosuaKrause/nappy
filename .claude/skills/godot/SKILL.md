@@ -63,7 +63,7 @@ policy built on it are separate, so `--touch` can render a touch-only screen on 
 touchscreen, and a screenshot rig can photograph it.
 
 **Why it is a rule rather than a preference: a hard-tied gate makes a whole branch unreachable from
-every test you own.** The invincibility bug in `docs/PLAYTEST-25.md` is the case that earned this
+every test you own.** The invincibility bug in `docs/playtests/PLAYTEST-25.md` is the case that earned this
 entry — `Telemetry` returns early on `OS.has_feature("web")`, so no test and no desktop session
 could ever run the day-ending path with the observer absent, and a runtime type error sat on the
 live site through a full CI suite and a hundred plays. **The gate did not cause the bug; it made the

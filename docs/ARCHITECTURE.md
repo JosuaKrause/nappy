@@ -17,7 +17,6 @@ scenes/
   ui/title_screen.tscn    the screen a run opens on
   ui/pause_screen.tscn    the pause
   ui/touch_controls.tscn  the pointer scheme's overlay
-  dev/*.tscn              the three illustrated review sheets (src/visuals/illustrated_*_review.gd)
 src/
   main.gd                 boot: generate the city, drop the player on the doorstep, then the HUD
   game_enums.gd           shared enums (see below)
@@ -95,16 +94,11 @@ src/
 	touch_input.gd        whether this device has a touchscreen, answered once
 	screen_orientation.gd the one rotation applied when the window is portrait
 	quit_option.gd        whether the game can quit itself, answered once
-  visuals/                the opt-in illustrated presentation (`--illustrated`); see the illustrated-png skill
-	directional_parts.gd  per-facing PNG-sheet registrations and the direction selector
-	modular_person.gd     measured PNG assembly for the mother and the pram
-	modular_walker.gd     the same for a crowd walker; consumes movement, never owns it
-	planted_gait.gd       distance-driven two-foot gait for a feet-anchored assembly
-	illustrated_*_review.gd  the three review sheets under scenes/dev/: actor, motion, street
+  visuals/                PNG selection with SVG override; see the illustrated-png skill
+	texture_resolver.gd   cached same-size PNG selection, with SVG fallback
   dev/
 	auto_screenshot.gd    render N frames, save a PNG, quit
 	dev_flags.gd          every dev command-line flag, gated behind OS.is_debug_build()
-	illustrated_downsample.gdshader  the same-view render-scale experiment's averaging pass
   palette.gd              colours the code still chooses; the art's own are in the SVGs
   sprites.gd              feet-anchored draw helpers (standing sprite, contact shadow)
   ground_shape.gd         one ground shape per object; the shadow and the body are derived from it
@@ -118,7 +112,7 @@ assets/
   crowd/                  walkers and cars, body plus colour trim
   ui/                     the title's two mode discs, continue, restart, pause
   shaders/                the excitement halo's silhouette rim
-  illustrated/            the PNG art the illustrated presentation draws; manifests beside the sheets
+  illustrated/svg-transfer/  native-size PNG replacements, mirroring SVG family paths
   ground_tileset.tres     one TileSetAtlasSource per ground tile
   logo.*, icon_stroller*, social-card.png  the wordmark and the stroller on its own: the README
                           header, the social card the deploy publishes, store and social-media

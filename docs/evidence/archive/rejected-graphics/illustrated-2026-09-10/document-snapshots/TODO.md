@@ -1,0 +1,1552 @@
+# TODO
+
+**The queue. Open work only.** A ticked item is history the moment it is ticked, so completed
+entries live in [DECISIONS.md](DECISIONS.md) with their measurements and rejected options intact —
+search it for the noun before designing anything. Progress-tracking lives only there: no ticked
+boxes, no "Done:" paragraphs, no branch names or status words in headings here.
+
+Read [HANDOFF.md](HANDOFF.md) first for the state of the tree.
+
+Each milestone is one git branch, merged to `main` with `--no-ff`. `[~]` marks an item somebody is
+mid-way through.
+
+---
+
+## The order
+
+### SVG-to-PNG style-transfer experiment
+
+[PLAYTEST-51.md](playtests/PLAYTEST-51.md) specifies a texture replacement experiment using the existing
+SVGs as the geometry source and the supplied diagonal and cardinal gameplay illustrations as
+style references, excluding their interface and debug annotations.
+
+- [ ] Generate and inspect representative PNG transfers with the exact SVG canvas, placement,
+      direction, pose and transparent gaps. Preserve generation inputs and prompts.
+- [ ] Archive the previous illustrated outputs and replace its runtime compositors with texture
+      selection through the existing illustrated flag. Preserve existing drawing transforms,
+      animation, collision, cues and gameplay. Verify both flag states and gameplay-scale alignment.
+- [ ] Review the experiment's visual result before extending it. If it works, adopt SVG authoring
+      followed by PNG style transfer as the standard graphics pipeline.
+
+The actor-assembly work below describes the implementation being replaced; its outstanding
+repair brief moves to the historical record with the replacement, as requested in PLAYTEST-51.
+
+### Illustrated actor registration and assembly
+
+**This is Codex's parallel track, worked beside the gameplay queue rather than ahead of it.**
+*(2026-09-09: "illustrated actors is currently a sidearm for codex to work on".)* The SVG drawings
+are the game's graphics until the illustrated presentation passes its visual gates, so a drawing
+item in the gameplay queue is drawn as SVG.
+
+The repair follows [ILLUSTRATED-GAMEPLAY-FIXES.md](ILLUSTRATED-GAMEPLAY-FIXES.md),
+PLAYTEST-32's connected-body and legacy comparison requirements, and the M84 record in
+DECISIONS.md. Keep the illustrated renderer opt-in. The supplied urban/mother illustrations
+define style; `docs/reference/` supplies real-world structure and posture.
+
+- [ ] Finish the modular source-art gate with eight complete views, clean alpha and isolated
+      anatomy. The manifests identify same-facing arm/profile-leg reuse, shared diagonal walker
+      edge pixels and the mustard SW facing ambiguity. Replace those source limitations while
+      preserving interchangeable parts; flattened cards do not satisfy layered animation.
+      Preserve PLAYTEST-44's selected transparent v3 pram. See DECISIONS.md under Illustrated
+      registration audit and Limb attachment repair for the source findings and implemented fit.
+- [ ] Review the registered actors at gameplay scale before expanding variants. Inspect all eight
+      facings and smooth walk, run, stop, turn and reset, including the corrected resting knees.
+      The static contact review in DECISIONS.md predates the resting-knee correction. Headless
+      attachment and displacement checks do not establish motion quality or visual acceptance.
+      Keep the legacy drawings at their fixed horizontal comparison offset.
+- [ ] Resolve [PLAYTEST-45](playtests/PLAYTEST-45.md)'s directional posture and pram-quality findings within
+      the connected-body repair: mustard and red legs slant during east/west travel and spread
+      outward during north/south travel. Review knee bend, ground stride, projected lift and
+      source rest axes independently; matching endpoints alone is insufficient. Fit per-facing
+      mother-to-handle spacing to natural arm reach, preserving the selected v3 pram and logical
+      collision. Trace the pixelated pram to the actual visible binding, source alpha, complete
+      assembly scale and inherited filtering before choosing a repair. Confirm the illustrated
+      player loads in the actual test checkout after imports. Use the repeatable procedure in
+      the illustrated-png skill; see DECISIONS.md under Texture integration process.
+- [ ] Resolve [PLAYTEST-42](playtests/PLAYTEST-42.md)'s additional anatomy and pram compositing defects.
+      Inspect the preserved timed PNG sequence: each leg must read as one hip–knee–ankle chain,
+      without a painted bend plus a second solver bend. The baby must sit within the seat and
+      its facing-specific occlusion, not appear pasted over the stroller. Reconcile these with
+      PLAYTEST-45's existing natural-reach and directional-gait repair; keep both reports intact.
+- [ ] Implement and review [PLAYTEST-42](playtests/PLAYTEST-42.md)'s higher-resolution rendering of the
+      **current view**, preserving visible world extent, actor size, HUD size and physical window.
+      Render more pixels and downsample them; do not zoom out or merely enlarge logical coordinates.
+      Compare actual render-target dimensions and the same scene framing, input mapping, resize
+      behavior and screenshot/burst capture. Inspect filtering and retained detail without declaring
+      anatomy or animation fixed by resolution. The wider-view interpretation is rejected; its
+      history is in DECISIONS.md under Animation anatomy and camera experiment. The debug
+      `--illustrated-render-scale 2` experiment is in the tree and unverified; its open checks are
+      in HANDOFF.md. Preserve legacy presentation and the illustrated opt-in while it is reviewed.
+- [ ] Review whole-actor sorting in live overlaps and integrate roof reveal, then a representative
+      illustrated live street.
+      Preserve current joystick/tap choice and the event and crowd silhouette halos, including
+      their attributed contribution and easing. Connect crowd halos to the animated PNG assembly;
+      the current callback traces the offset legacy comparison. Extend vehicles, authored events,
+      environment and screens only
+      after their prerequisite visual gates.
+
+### Gameplay queue
+
+**Upcoming SVG parts are listed with their owning milestones below:** the lunging guard,
+directional pointing poses, district accents and discrete sound arcs. Reuse the available
+assets when implementing those systems; their placement, timing and gameplay decisions remain
+open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the visual review.
+
+Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
+
+0. **M103** — every drawing the open queue owes, in one list, drawn ahead of the milestones that
+   bind them. *(2026-09-10: "create a comprehensive list of graphics that need to be generated for
+   *all* open items. create a new todo item with the list so it can be picked up independently and
+   the graphics will be ready before implementation of any of the functionalities start.")* It
+   runs beside the queue rather than in it: any item below that needs a picture finds it prepared.
+1. **M56**'s build item, the other rows that hunt. *("M56 is also related to the other items to
+   work on right now.")* Its measurement against the nerves waits, because reaching act III
+   waits: *"I wanna wait reaching act III until those things are done."*
+2. **M104** — the debug view: fields, shadows and bounding boxes as toggleable layers, and the
+   existing readout made toggleable with them. *(2026-09-10: "create a debug view to show the
+   fields and the shadows and the bounding boxes. make each layer toggleable (maybe number keys?)
+   also make other debug information toggleable.")* Ahead of M61 because it is how M61 is
+   checked.
+3. **M61** — one shape per object, from which the field (the Minkowski sum of the body and a
+   kernel), the shadow and the collision body are all derived. *("M61 is kind of important but not
+   the immediate next item.")*
+4. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
+   revisit after M62.")* Revisited rather than built as written: the regions and their
+   checkpoints (`DECISIONS.md`, M62) may change what finding a mark is like, and the entry is
+   re-read before the prepared poses are bound to objectives.
+5. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
+   the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
+   2026-09-09 from an older milestone after checking which of its items the code had already
+   answered; the record of what was found built is in `DECISIONS.md` under "The queue
+   reprioritised". **M105, the city degrades, M106, roofs, fronts and street trees, and M107, the run
+   clock, sit in this batch provisionally** — they were asked for on 2026-09-10 and not placed,
+   so this is the orchestrator's guess at where work that needs no route decision belongs, open
+   to the player moving it.
+6. **Reaching act III**, which M56's measurement against the nerves needs.
+7. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
+
+**The regions, their walls and their checkpoints are built and nobody has walked through one.**
+The record, with its measurements and the choices open to overturn, is in `DECISIONS.md` under
+M62. What only a played day answers: whether a wall at a street's mouth reads as a district edge
+or as one more closure, whether being held six seconds at a hut and let out the far side reads as
+a toll or as a bug, and whether the day's doors leave the route decision standing — two doors is
+a choice, one door is a corridor with a toll booth.
+
+**Nothing in this queue is held back for being a drawing.** *(2026-09-07: "let's remove the note
+about not working on graphics because it causes much confusion.")* Every item is ordered on what it
+does to the route decision, the same as everything else. Prepared drawings remain available
+while their owning milestones settle placement and behavior.
+
+Use [GRAPHICS.md](GRAPHICS.md) for the asset catalogue, current runtime bindings and prepared
+parts. The assignments below name the assets each graphics-dependent milestone should use.
+The impact-crater decals `assets/props/impact_crater_1x1.svg`,
+`impact_crater_2x2.svg` and `impact_crater_3x3.svg` (32×32, 64×64 and 96×96 footprints) are the
+finale's: the marks its off-screen explosions leave on the street. M102 also owns the prepared `assets/rig/mother_carrying_{front,back,side}_{a,b}.svg`
+set, documented in GRAPHICS.md; nothing binds it until that milestone is built.
+
+**A milestone still holds either drawings or not**, so that ordering one never parks work that needs
+no artist.
+
+**M79 is tabled rather than queued.** It is the city seen at an angle — a presentation change with
+the lattice left cardinal — and it is written down so that whoever chooses the projection does it
+with the code's constraints in hand. It is not queued and it is not rejected.
+
+**M102, the finale, is planned and not queued.** *(2026-09-09: "this is just a plan for now — we
+probably won't actually implement it for a while (there are a lot of milestones before that)".)* It
+is the good ending's last scene — out of the apartment, out of the city — written down in full so
+that the milestones before it can be built knowing what they are building towards. Its four
+collisions with the good ending as written today were asked and answered the same day, and the
+entry records the answers in the player's words.
+
+**[PLAYTEST-50.md](playtests/PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
+Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
+touch that shows only a colour change and no confirmation on a lost day's summary. The artwork
+review and the player's directional corrections are recorded in `DECISIONS.md`.
+
+**[PLAYTEST-49.md](playtests/PLAYTEST-49.md) is the session before it and it is the prioritisation above**, plus
+one bug — events spawning inside a fully blocked street — filed at the top of M100's defects,
+one correction, that the non-adjacency rule does not cover parks yet, filed in M97, and one design
+instruction, the fire found before the engine, filed as M101.
+
+**[PLAYTEST-48.md](playtests/PLAYTEST-48.md) is the newest gameplay session, and its one note is built**:
+the signal head north of a junction, which faces up the screen, shows its back and no lamp. The
+record is in `DECISIONS.md` under M95.
+
+**[PLAYTEST-47.md](playtests/PLAYTEST-47.md)'s two notes are built**: a car comes out of the tunnel and off
+the bridge as well as going in, and `tools/run.sh` runs the import pass when a pulled checkout is
+missing an imported texture. The record is in `DECISIONS.md` under M94.
+
+**[PLAYTEST-39.md](playtests/PLAYTEST-39.md)'s one finding, the tunnel, is built.** The fade is inside the
+portal's opening, the mountain stands above it, and the road into the mouth is asphalt rather than
+a crossing; the record is in `DECISIONS.md` under "The tunnel swallows the road". Half of it was a
+re-report of playtest 24's fifth finding.
+
+The halo's design and playtest reasoning are in `DECISIONS.md` under M92.
+
+**[PLAYTEST-45](playtests/PLAYTEST-45.md) covers illustrated texture integration; the connected-body
+review also includes [PLAYTEST-43](playtests/PLAYTEST-43.md).** The open repairs are listed above.
+
+**[PLAYTEST-37.md](playtests/PLAYTEST-37.md) finding 5, the caret inconsistency, is built as M93 and recorded
+in `DECISIONS.md`.** Its junction
+and border findings are recorded in `DECISIONS.md` under M53.
+
+**[PLAYTEST-35.md](playtests/PLAYTEST-35.md)'s seven findings are all built.** Six of them landed inside M90
+and M89 rather than being filed against them, because those milestones had not merged when the
+findings were reported — **nothing merges carrying a defect that was already found**. The seventh,
+the buttons that were rounded rectangles rather than circles, was parked by the player on sight and
+then turned out to be a two-line fix; the record is in `DECISIONS.md` under "The disc is a circle
+at whatever size the container gives it".
+
+**[PLAYTEST-34.md](playtests/PLAYTEST-34.md)'s ten findings are all built** — seven as M90 and three as M91.
+It is the played answer M88 and M87 were waiting for, and it is mostly a report of things that do
+not respond: a button that never changes under a press, a stop circle at twice its drawn size, and
+a joystick drag whose reference point walks away with the camera. **Two of its findings are
+re-reports** — the pressed button was asked for in playtest 33 and the dog's short notice was
+measured in playtest 20 — and each entry says so rather than designing it a second time.
+
+**[PLAYTEST-33.md](playtests/PLAYTEST-33.md)'s thirteen findings are all built.** It is the report M83 asked
+for: the two focal points a touch aims from were built and drawn as nothing, and the answer is that
+they moved outward and downward and are drawn. Eight of the thirteen were M85, four raised and
+extended M77, and the one question in it was M86; all three are recorded in `DECISIONS.md`. **What
+playtest 34 says about it is that the pressed-button fix reached the colour and never reached the
+draw state** — see M90's own item.
+
+**[PLAYTEST-29.md](playtests/PLAYTEST-29.md)'s seven findings are all built.** Three of them were instructions
+the project already had and had read as repealed by something else, and the file is worth reading for
+that alone — two of its sentences are the player saying so. The record is in `DECISIONS.md` under
+M83.
+
+**[PLAYTEST-28.md](playtests/PLAYTEST-28.md)'s four findings are built** — the game has one control scheme
+and no question about which: a press sets a direction she walks until the next press, a press on
+her stops her, a double press runs, and the pause button in the top right is the only thing drawn.
+The ending screen's own continue button, which meant nothing there, is gone too. The record is in
+`DECISIONS.md` under M82.
+
+**[PLAYTEST-27.md](playtests/PLAYTEST-27.md) is the second session on the released page and the first played
+on both a laptop browser and a phone, and every one of its six findings is built.** The release
+arrives under versioned URLs, the shared link carries an opaque card, the continue and restart
+buttons are on both screens, a press acknowledges itself before the day it starts blocks the frame,
+and the two findings about the controls themselves — tap mode dead on a laptop, and the drag stick
+— are answered the same way M82 answers playtest 28: one scheme, chosen nowhere, that a mouse
+click drives on every build. The record is in `DECISIONS.md` under M76, M80 and M82.
+
+**[PLAYTEST-26.md](playtests/PLAYTEST-26.md) is the one before it and every finding in it is built**, across
+the two halves of M76 and M82's own deletion of the title screen's two circular mode buttons.
+
+**[PLAYTEST-25.md](playtests/PLAYTEST-25.md)'s nine findings are built** — the
+first phone session on the built mobile game and the first human verdict on the sealed city. The
+record is in `DECISIONS.md` under M73, M74 and M75. **What it leaves open is a played question and
+a shaped one.** Played: the barrier rows are silent and the two ambient radii are tight, and nobody
+has walked a city that costs what this one now costs. Shaped: **M61**, which is what the tightened
+radii are a stopgap for — the player's *"that number was so big because it was a point source
+before"* is the reason those numbers move again once a field takes the shape of its body.
+
+**The instrument they are read with now exists.** The dusk map draws the walk over the plan — where
+she went, where she ran, and which events actually reached her — so *did the corridor have to be
+walked* and *what did a day cost* are questions a picture can answer. See `DECISIONS.md` under M66,
+and `docs/TELEMETRY.md` for what the map draws. This is also the instrument playtest 20 was read
+with — a full seven-day run's fourteen maps, copied into `docs/evidence/`.
+
+**Playtest 22's findings are every one of them built** — the two
+barrier-placement defects, the doorstep that could be sealed in, the winnability check that proved
+reachability rather than survivability, the route that ran alongside the main road, and the seals
+thinned so the guidance stops reading as guardrails. The record is in `DECISIONS.md` under M64.
+**Playtest 21** is the one before it — *"the city feels way empty now"*, answered by the sealing.
+Read [PLAYTEST-22.md](playtests/PLAYTEST-22.md) and [PLAYTEST-21.md](playtests/PLAYTEST-21.md) before changing the
+sealing: what they asked for is built and unplayed, so the next report on it is the thing that
+matters.
+
+**Playtest 20's four findings** went to M69 (a reachability gap, now built), M65 (a chalk-mark idea),
+M97 (a calm-area spoiling inconsistency) and M96 (a measured lead-time gap on the post-tutorial
+`charging_dog`).
+
+**Playtest 19's graphics and placement findings have separate owners.** The protester objective
+work belongs to M65, a protester points at the objective. The seal and barrier records are in
+`DECISIONS.md` under M64, eight seal pictures, and M48, the barriers; the remaining north-edge,
+junction-paint and robber-placement records are filed there under M49 and the small items.
+
+Everything below is in the order the gameplay queue above gives it, and was reassessed on
+2026-09-09.
+
+---
+
+## M103 — The drawings the queue owes · asked for 2026-09-10
+
+> "create a comprehensive list of graphics that need to be generated for *all* open items. create a
+> new todo item with the list so it can be picked up independently and the graphics will be ready
+> before implementation of any of the functionalities start"
+
+**One list, every open item, so a picture is never the thing an implementation waits on.** Each
+entry names the owning milestone, the file it becomes, the family it joins and the contract the
+code will hold it to — canvas, anchor, projection — so it can be drawn cold, reviewed with the
+**svg-art** skill, and filed in `GRAPHICS.md` as *prepared* until its milestone binds it. Drawn as
+SVG: the SVG set is the game's graphics until the illustrated presentation passes its gates, and the
+illustrated PNG track has its own list at the top of this file. **A prepared picture is not a
+binding**: nothing here changes what the game does, and the milestone that owns each one still
+decides placement, timing and rules. **Anything that repeats along a street comes in a few
+variations** *(2026-09-10: "we need a few variations for some of these items (like store
+fronts)")*: the entry says how many, and a family is named by a glob only when the glob names
+every member.
+
+The families and their contracts are in `GRAPHICS.md`: standing things are bottom-centre anchored
+through `Sprites.draw_standing()` and mirror about that point; a vehicle that travels has a side
+view (east, mirrored for west) and an end view (north or south, one picture, authored proportions);
+a seal or scene that follows a street has an east–west picture and a `_vertical` sibling rather
+than a rotation; ground tiles are 32×32 in `assets/tiles/` and reach the game through
+`assets/ground_tileset.tres`; the checkpoint kit keeps its own off-centre anchors in SVG comments.
+
+**To draw** — nothing in this list exists yet:
+
+- [ ] **M56 — `assets/events/riot_van_end.svg`.** The night raid's van seen end-on, for the frames
+      it hunts north or south. Matches `riot_van.svg` (54×38, side view) the way
+      `unmarked_van_end.svg` (32×48) matches `unmarked_van.svg` (50×32): narrower than the side
+      view, taller, authored proportions, not mirrored. Bound by M56's riot-van item through
+      `EventInstance._draw_vehicle`, which selects side or end from the heading
+- [ ] **M100 — `assets/tiles/alley.svg`, revised so an alley does not read as a roof.** Playtest
+      50 read the two-tile alley behind a building as its roof (*"the robber is stuck inside the
+      roof"*). Conditional on that reading persisting in the next played session — the item is
+      filed under M100's open design questions — but the picture can be drafted now: same 32×32
+      tile contract, distinct at a glance from `roof.svg` and from the pavement, and it must still
+      tile seamlessly with its own neighbours. Draft it, put it beside the current tile in the
+      review render, and let the played verdict choose
+- [ ] **M100 — the chalk mark, made unmistakable, as one option among four.** Playtest 50 could not
+      tell a mark had been touched (*"how do I know I stepped on the chalk"*). Today the touch is a
+      colour change from `Palette.CHALK` to `CHALK_DONE`, both code-drawn. If the player's answer to
+      that open question is *the mark's colour made unmistakable*, that is a palette pair rather
+      than an SVG; if it is a touched-mark picture, it is a ground decal in the crater family
+      (centre-anchored, one tile). Drawn only once the question is answered, and listed so the
+      answer is not waited on twice
+**The interior, for M102** — the apartment section is a second small map drawn with the ground
+`TileMapLayer` and the same oblique view as the city: floors are 32×32 tiles chosen by type and
+exposed edge, walls stand along a room's north edge in elevation the way a building's front does,
+and props are bottom-centre anchored on the floor. The room list is the player's, 2026-09-10:
+
+- [ ] **M102 — the hallway.** *("we need a hallway with windows that can flash (from the implied
+      bombs) we need a hallway floor … doors to the stairway (only visible from inside the stairway
+      -- in the hallway the doors are at the bottom and can be implied by the edge of the
+      flooring.")* `assets/interior/hallway_floor.svg`, edge-aware like the street tiles;
+      `hallway_wall.svg` and `hallway_wall_window.svg` for its north wall, plus
+      `hallway_wall_window_flash.svg`, the same window lit white for the one or two frames an
+      off-screen explosion throws light through it — the flash is the explosion row's cue indoors,
+      where no crater can be seen; and `hallway_floor_edge_s.svg`, the hallway's south edge with
+      the apartment doors' thresholds drawn into the floor's edge, since the doors themselves are
+      below the view and never drawn
+- [ ] **M102 — the stairwell.** *("we need a staircase, a mechanical looking floor for the
+      staircase shaft.")* `stair_down.svg`, a flight one tile wide that reads as *down* at a glance
+      — going onto it is going to the next floor's map; `stairwell_floor.svg`, checker plate or
+      grating, so the shaft reads as the building's machinery rather than another corridor; and
+      `stairwell_door.svg`, the door back onto a floor's hallway, in the stairwell's north wall and
+      seen only from inside the stairwell, which is the player's rule
+- [ ] **M102 — the entrance, blocked.** *("we need a main entrance door and thrown together
+      furniture that blocks it.")* `entrance_door.svg`, a double door wider than `door.svg`, and
+      `entrance_barricade.svg`, the furniture heaped against it — a wardrobe, chairs, a mattress —
+      drawn so it reads as *thrown together* rather than built, and as *not this way* from across
+      the hallway. Two pictures rather than one, so the door can be seen behind the pile
+- [ ] **M102 — `assets/interior/chandelier.svg`.** *("maybe chandeliers for lightning inside the
+      building.")* A hanging fixture drawn over the hallway with a pool of light on the floor
+      beneath it, the interior's one light source; whether it swings under the explosions is the
+      milestone's call, and a second frame is cheap if it does
+- [ ] **M102 — the basement.** *("a gloomy floor for the basement and raw brick walls. a puddle
+      tile.")* `basement_floor.svg`, dark and stained, edge-aware; `basement_wall_brick.svg` for
+      its north walls, raw brick where the hallway is plaster; and `puddle.svg`, a floor overlay
+      tile the corridor is dotted with, which the steam row stands beside
+- [ ] **M102 — `assets/interior/emergency_exit_door.svg`.** *("an emergency exit door (the service
+      entrance).")* The push-bar door at the end of the basement corridor, the finale's way out
+      onto the city; plainer and narrower than the home door so the two are never confused
+- [ ] **M102 — `assets/interior/lift_door_dead.svg`.** The non-functioning lift on the hallway: a
+      closed door pair, dark, with whatever says *dead* at a glance — no lamp, or a hand-written
+      notice
+- [ ] **M102 and M100 — `assets/events/mouse.svg`.** The apartment's own small event, and an
+      alley's *("btw we can reuse the mouse for alleyways as well", 2026-09-10 — the row is
+      M100's)*: a moving picture in the `cat_running.svg` family, tiny, side view mirrored for
+      west. One picture is enough; a mouse that startles is a short pulse and does not need a
+      second pose, and one drawing serves both rows
+- [ ] **M102 — `assets/events/steam.svg`.** A stationary field in a basement corridor: a vent or a
+      burst pipe with a plume, bottom-centre anchored, drawn so the pulse animation can scale the
+      plume the way `flame.svg` is scaled by the fire animation. The plume is the field's picture
+      and must not be mistaken for the sound-pulse arcs
+- [ ] **M102 — an explosion picture, only if wanted.** The brief's explosions are off screen: their
+      sound is `sound_pulse.svg`'s arcs once M100's sound lines bind them, and their mark is one of
+      the three prepared craters. A flash or a smoke column at the screen's edge is optional and the
+      milestone decides; listed so that decision is taken with the option drawn rather than
+      imagined
+
+**The city degrading, for M105** — *(2026-09-10: "we need cracked street/sidewalk tiles to be able
+to deteriorate the city. we need loose garbage (eg eaten apple, newspaper, etc) that can be spread
+around throughout the city to show basic services failing towards the later acts … we need garbage
+sacks that can be placed in alleyways at first and at the side of buildings later on as the city
+degrades.")*
+
+- [ ] **M105 — cracked ground, in `assets/tiles/`, at several levels.** *(2026-09-10: "floor tiles
+      of the city need different levels of cracks … so we can add variety and gradient.")* Levels
+      are the gradient and patterns within a level are the variety. For the road tile, the pavement tile, and
+      the alley if it reads differently: a ladder of three variants — hairline, cracked, broken
+      (a chunk missing, weeds through it) — each a drop-in for its base tile in
+      `assets/ground_tileset.tres`, same 32×32 and same edge behaviour, so `GroundTiles` can swap
+      one for the other per tile without a new type, and so the level a tile shows can rise with
+      the day. Two patterns per level so a run of them does not repeat visibly
+- [ ] **M106 — street trees.** *(2026-09-10: "we could also add trees that can be placed in the
+      street. right now the fallen tree doesn't make that much sense.")* `assets/props/tree_pit.svg`,
+      a square grate or bare-earth pit one tile wide, centre-anchored on the pavement, with the
+      existing `tree_a.svg` / `tree_b.svg` standing in it — the canopy is reused, so the new
+      drawing is only the ground it grows from. Whether a street tree wants a slimmer canopy than a
+      park's is the review's call
+- [ ] **M105 — loose litter, in `assets/props/`.** A family of small ground decals, centre-anchored
+      like the craters: `litter_apple.svg`, `litter_newspaper.svg`, `litter_cup.svg`,
+      `litter_bag.svg`, `litter_can.svg` — five or six, each under a third of a tile, drawn flat
+      on the ground so they never stand up or cast a shadow
+- [ ] **M105 — garbage sacks, in `assets/props/`.** `garbage_sack.svg`, one tied black sack,
+      bottom-centre anchored, and `garbage_sacks_pile.svg`, three or four heaped, the alley's
+      version; both stand against a wall the way `door.svg` does and both get a shape under M61
+
+**Roofs and fronts, for M106** — *(2026-09-10: "we need stuff on top of roofs -- we have an air
+duct already -- it needs to be animated. but we need other things on roofs as well (there are
+reference photos to draw ideas from). we need more varied building fronts. storefronts, fire
+escapes.")* The reference photos are in `docs/reference/`: `rooftop-hvac-units-01.jpg`,
+`rooftop-duct-run-01.jpg`, `rooftop-skylights-01.jpg`, `rooftop-vents-fire-escape-01.jpg`,
+`rooftop-flat-brick-01.jpg`, the two `rooftop-parapet-*` pictures and `rooftop-hvac-ducts-01.mp4`
+for the roofs; `storefront-row-awnings-01.jpg`, `storefront-row-souvenirs-01.jpg`, the three
+`storefront-row-taco-bell-*.jpg` and `street-fire-escape-yellow-cab-01.jpg` for the fronts.
+
+- [ ] **M106 — the vent, animated.** `assets/props/industrial_vent.svg` (32×32 roof unit) becomes
+      frame `a` of a pair, and `industrial_vent_b.svg` is the same unit with the fan a quarter turn
+      on, so alternating them at a walk's cadence reads as turning
+- [ ] **M106 — roof furniture, in `assets/props/`, each a 32×32 or 64×32 roof unit like the
+      vent.** `roof_hvac_unit.svg` (a boxed condenser with a grille), `roof_duct_straight.svg` and
+      `roof_duct_corner.svg` (a run that can be laid along a roof), `roof_skylight.svg` (a raised
+      glazed pitch), `roof_vent_stack.svg` (a short pipe with a cowl), and `roof_water_tank.svg` (a
+      tank on legs, the tallest of them, which sets whether a roof unit may cast a shadow onto the
+      roof at all). Seen from the same oblique angle as the roof tiles, so a unit's south face
+      shows and its north does not. The HVAC unit and the skylight come in two variations each,
+      since they are the ones a roof repeats
+- [ ] **M106 — fronts, in `assets/buildings/`, in variations.** Ground-floor facade tiles that
+      stand where `wall_base.svg` does, **four storefronts** — `storefront_{a,b,c,d}.svg`, a
+      grocer, a café, a pharmacy, a shop with a sign — each in three states: plain, under an
+      awning (`storefront_a_awning.svg`, which overhangs the pavement by a few pixels and is the
+      one front that is not flush), and shuttered (`storefront_a_shuttered.svg`, behind a rolled
+      steel shutter, for M105's later acts) — twelve tiles that share one door position so a
+      street of them lines up. **Two fire escapes**, `fire_escape_{a,b}.svg`, overlays the height
+      of two wall cells with a ladder to the ground, drawn over `wall.svg` cells rather than
+      replacing them, so a facade keeps its windows behind it. And **two more window pairs** in
+      the `window_{dark,lit}.svg` family — a taller sash and a shuttered one — so a residential
+      facade is not one window repeated
+
+**Already drawn — nothing to do, listed so the list is complete.** M56's roadblock guards use
+the prepared `assets/checkpoints/guard_standing.svg` and `guard_lunging.svg` pair. M65's eight
+`protester_point_*.svg` poses. M100's `industrial_vent.svg`, `civic_portico.svg`, `sound_pulse.svg`,
+and `tree_{a,b}.svg`. M101's `flame.svg`, `rubble.svg`, `fire_engine.svg` and `fire_engine_end.svg`.
+M102's six carrying frames, three craters, and every truck, van, seal, guard and flame it reuses
+from the live tables; the baby-state cue over the bundle is the existing `baby_{zzz,fuss,cry}.svg`.
+
+**Needs no picture.** M61's shape-derived shadows and the field's visibility are code-drawn from
+the shape, and `shadow.svg` is retired by it rather than replaced. M96 to M99 own no drawing;
+M99's building type that closes four streets composes from the existing wall and roof tiles unless
+its milestone decides it should read differently from a big building, which is a question for
+then. M100's accessibility, controller, save and audio items own none. M79 is tabled and its facade
+art is not owed until it is picked up.
+
+---
+
+## M56 — The resistance is noticed
+
+The city gets more dangerous the further into the subquest you are. **A task may not cost a nerve**
+— a nerve is a rewind, not a resource, so there is nothing to trade.
+
+**The raid hunts; what is left of "and other dangers like this" is the roadblock, which needs a
+drawing, and the measurement waits until act III is reached**, which the queue puts after M96 to
+M100. *(2026-09-09: "M56 is also related to the other items to work on right now. I wanna wait
+reaching act III until those things are done.")* The raid's record is in `DECISIONS.md` under M56.
+
+**What the remaining items are stated against**, since the machinery under them exists: a row says
+how it answers to the resistance with `EventDef.heat_response` — `NONE`, `PRESSES` or `HUNTS` —
+`EventCatalogue.heated()` derives that row's shape at a progress level, and every one of those
+shapes is validated on boot. The ladder has three rungs a player can name and both its upper ones
+are built: `police_patrol` is **denser and then interested**, and `abduction` is **hunted**, taking
+a bystander of its own while she watches and coming after her instead past three of four, with
+`night_raid` on the same rung from day 10 — cold it closes a block, hot it comes for her. The
+reasoning, and what was rejected on the way, is in `DECISIONS.md` under M56.
+
+**Guard artwork is available for the hut interaction:** `assets/checkpoints/guard_standing.svg`
+and `guard_lunging.svg` share the person's scale and keep their ground anchors in the SVG comments.
+The lunging pose faces east and can be mirrored for west. These are the stationary and departing
+poses for the drawing discussed below; the heat-response decision and runtime binding remain here.
+Use `assets/events/riot_van.svg` for the existing night-raid vehicle;
+use the guard pair for a guard departure if that proposed response is accepted.
+
+- [ ] **The roadblock's guards leave their post.** The other half of *"and other dangers like
+      this"*, filed after the raid on the draft's own recommendation — *the raid now, the roadblock
+      later* — because it is a drawing where the raid was one line. What `HUNTS` does to a row is
+      fixed by `EventDef.at_heat()`: at `Tuning.HEAT_HUNTS_LEVEL` (3 of the 4 performs that
+      qualify) and above, the derived copy `pursues` at 130px/s, notices her within 180px, chases
+      for `PURSUIT_TIME`, and is `hard_fail`. `roadblock` cannot simply switch that on: it is a
+      spread — `Look.ROADBLOCK` draws a 120px band across the road through `_draw_spread`,
+      intensity 13 over 52/215px, from day 7 — and a band does not chase. A hunting roadblock is
+      *guards leaving their post*, a second posture like the robber's waiting/lunging pair, so the
+      item is the drawing (the prepared `guard_standing.svg` / `guard_lunging.svg` pair above is
+      the candidate), the `heat_response` line, a rule for what the band does while its guards
+      are away, and the same named test the raid has in `tests/test_heat.gd`. The region
+      checkpoints (`checkpoint_hut`, `checkpoint_gate`, `checkpoint_post`) are a separate thing
+      and are never rolled by the scheduler, so they are not candidates; neither is
+      `police_patrol`, the `PRESSES` rung that *"never gains `hard_fail`, whatever the heat"* —
+      the player's own instruction, 2026-09-01
+- [ ] **The riot van has no end-on view, and now it drives.** `Look.RIOT_VAN` is drawn by
+      `EventInstance._draw_simple` — one side view, mirrored for west — so a hunting raid van
+      chasing her north or south is drawn side-on. The unmarked van earned `unmarked_van_end.svg`
+      for exactly that moment when it began to hunt; the raid owes the same picture, drawn to
+      `riot_van.svg`'s scale under M103 and bound here through `_draw_vehicle` the way the
+      abduction's pair is
+- [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
+      doing well at the optional path, and nobody has reached act III
+
+---
+
+## M104 — The debug view · asked for 2026-09-10
+
+> "create a debug view to show the fields and the shadows and the bounding boxes. make each layer
+> toggleable (maybe number keys?) also make other debug information toggleable."
+
+**A set of world-space overlays, each one a layer with a key, in a debug build only.** Today the
+only developer furniture drawn over the game is the readout in the top right — the seed, the frame
+rate, the meter's breakdown by source, whether she stands on calm ground and what the closest live
+event is doing — assembled in `main.gd` behind `DevFlags.enabled()` and never toggled: it is on for
+the whole of every debug run and absent from a release. Everything else a developer looks at is
+after the fact, in the run log and the dusk map. Nothing draws a field, a shadow's extent or a
+collision body while the game runs, which is why M61 cannot be checked by eye until this exists.
+
+- [ ] **Three geometry layers, drawn from the objects' own data rather than a second copy of it.**
+      **Fields**: every emitter's falloff footprint — inner and outer boundaries — for events,
+      walkers and cars alike, since all three run `Tuning.falloff`, tinted so a lethal field is told
+      from a costly one. **Shadows**: the ground extent each shadow is drawn over. **Bounding
+      boxes**: every collision body — event obstructions, buildings, her own circle, the car strike
+      box — as its outline. Before M61 lands these show circles and hand-set ovals, which is the
+      point: the view is what makes the disagreement M61 fixes visible, and after M61 all three
+      layers trace one rectangle each
+- [ ] **The readout becomes a layer too**, and so does anything else that is currently always-on
+      in a debug build. *("also make other debug information toggleable.")* Each layer has a
+      number key, `1` to `n`, and the mapping is printed once on boot and in `docs/TELEMETRY.md`,
+      which already documents the developer surface. Keys are debug-only, gated by
+      `DevFlags.enabled()` the way the snapshot key is, so a release build neither draws nor listens
+- [ ] **Each layer is a `CanvasItem` that draws in `_draw()` from a query of the live objects**,
+      never a change to the objects' own drawing, so a layer can be added or removed without
+      touching `EventInstance`, `CrowdAgent` or `Stroller`. The halo already has this shape — a
+      duplicate drawing over the source — and the layers go the other way, reading positions and
+      numbers and drawing outlines. Nothing here changes what the game does; a test asserts that
+      every layer is absent from the tree when `DevFlags.enabled()` is false
+- [ ] **A `--layers 1,3` flag** sets the initial state, so a rig screenshot can be taken with the
+      fields on and nothing else, and the M61 evidence pictures are reproducible
+
+---
+
+## M61 — One shape per object: the field, the shadow and the body · asked for 2026-09-02, widened 2026-09-10
+
+> "fields should be ellipses, not circles. the excentricity should be determined by movement speed.
+> the rationale is that an entity moving towards you has more of an effect than if it moves away or
+> orthogonal. the entity itself lives in one of the focus points"
+
+**Widened on 2026-09-10 into one datum with three consumers.** *("for minkowski sum would it make
+sense to combine this with non-oval shadows as well? right now all shadows are ovals below the
+sprite which looks odd for a lot of objects. both the shadow and the influence field (and the
+bounding boxes) could be derived from the same shape associated with an object (that is independent
+of its graphics). let's structure it in that way and we'll get three wins out of it.")*
+
+- [ ] **Every object carries one ground shape, independent of its picture, and three things are
+      derived from it.** Today the three are set separately and none of them agrees with the
+      drawing. **The shadow** is `Sprites.draw_shadow()`: `assets/props/shadow.svg`, an ellipse,
+      stretched to twice a radius wide and 0.8 of it tall, with the radius hand-picked at every
+      call site — 9px for her and 12 for the pram in `Stroller`, 18 for a car and 7 for a walker in
+      `CrowdAgent`, 19 for a tree and a fraction of the sprite's width for the other props in
+      `Prop`, and a per-look number in `EventInstance` — so a 120px roadblock band and a four-car
+      seal both stand on an oval. **The body** is a `CircleShape2D` of `obstructs_radius` under
+      every event that obstructs, whatever it is drawn as, which is why a spread drawn
+      `obstructs_radius` either side of centre is solid as a disc rather than as the band it shows;
+      a building is a `RectangleShape2D` of its footprint and she is one circle. **The field** is a
+      point falloff, which the bullets below already replace with `body ⊕ kernel`. The shape is the
+      body operand of that sum, stated once: a rectangle in the object's own ground frame, rotated
+      with its facing (the decision below). Then the field is the rectangle offset by the kernel,
+      the shadow is the rectangle drawn on the ground — squashed on Y by the oblique view's own
+      0.8, the way the oval is today — and the body is a `RectangleShape2D` of it. Two numbers to
+      tune per object and three places that stop disagreeing.
+
+      **What has to survive the change.** The halo skips the shadow (playtest 35: *"the halo should
+      not include the shadow"*), and a shape-drawn shadow is skipped the same way. The rule that a
+      moving pursuer keeps no body is about *whether* there is a body, not its shape, and stands.
+      `EventDef.validate()`'s reachability rule — body plus her 14px inside `inner_radius` — is
+      restated over the shape's reach along its worst axis, the same restatement the telegraph
+      bullet below asks for. And the illustrated presentation is a picture, not a shape: the shape
+      is the same under either drawing, which is the point of keeping it off the graphics.
+
+      **This closes M100's "vehicle collision and silhouette agreement" item from here**, since a
+      body derived from the same shape as the picture's footprint is the whole of that ask; its
+      text moved under this bullet rather than being designed twice.
+
+      **Three decisions, 2026-09-10, in the player's words.**
+
+      - **Everything gets a shape.** *("everything gets a shape even if the shape ends up not being
+        used by the field.")* Walkers, cars, props, buildings, the player and the pram, every
+        event: no object without one, whether or not it emits.
+      - **Shapes are rectangles.** *("we can restrict bounding boxes to be rectangles which then
+        defines the shadow and minkowski influences as stretched rounded rectangles.")* A shape is
+        an axis-aligned rectangle in the object's own frame, rotated with its facing — a point is a
+        square, a person is a small one, a van is a long one, a spread is the band it draws. The
+        body is a `RectangleShape2D`; the shadow is that rectangle drawn on the ground, squashed
+        on Y by the oblique view's 0.8; the field is the rectangle ⊕ the kernel, a rounded
+        rectangle whose corner radius is the kernel's — stretched further ahead when the kernel is
+        the ellipse of a moving thing. No capsules, no polygons, and the general Minkowski sum is
+        never needed: a rectangle offset by a disc or an ellipse is closed-form.
+      - **Lethal is not noise, and the crowd is not a different mechanism.** *("lethal != noise.
+        lethal is when you get hit by a car. but the car itself produces noise which is what the
+        purpose of the field is.")* The queue said on 2026-09-10 that a crowd car has no field and
+        is lethal instead, and that was wrong: `CrowdAgent.contribution_at()` runs the same
+        `Tuning.falloff` an event does — a car is 5.4 over 38/104px plus an 18-point horn jolt, a
+        walker 4.2 — and `Crowd.total_excitement_at()` sums it into the meter beside the events,
+        which is what `docs/MECHANICS.md` calls the emergent noise floor. Being hit is separate: a
+        moving car's strike box is already a rectangle, `CAR_STRIKE_HALF_LENGTH` 26 by
+        `CAR_STRIKE_HALF_WIDTH` 14, read by `will_be_lethal()`. So the noise shape and the strike
+        shape are one rectangle read twice, which is the shape doing its job; what the crowd does
+        not have is a physics body (walkers are shoved apart by `Crowd`'s bump mechanism, not by
+        collision), and whether a rectangle body replaces that is a build question, not a design
+        one. The mechanism is the same falloff; only the class holding it differs.
+
+      **M104's debug view is built first**, because none of the three derivations can be checked
+      by a rig alone: a shadow that is the wrong shape, a field that reaches further than the
+      body it is drawn around, and a body that does not match the picture are all things a person
+      sees in one frame with the layers on.
+
+**A change to the emission model itself, and it is the first one since the falloff shape.** Today
+every field is a disc: `Tuning.falloff(distance, intensity, inner, outer)` prices being near a thing
+by distance alone, so a fire engine bearing down on her and one that has just gone past cost exactly
+the same at the same range. The instruction says the direction of travel is part of the price, and
+gives the geometry to say it with — an ellipse whose eccentricity is a function of speed, with the
+entity standing at a focus rather than at the centre, so the field reaches further ahead of a moving
+thing than behind it.
+
+- [ ] **Where the shape lives.** `contribution_at()` on `EventInstance` is one function and the
+      falloff is one function in `Tuning`, so the arithmetic has one home. What has more than one
+      home is everything that *reasons* about a radius — the telegraph contract
+      (`Tuning.required_telegraph_time`, stated over the gap between the inner and outer radii),
+      the placement spacing (`EVENT_SPACING_ANY` / `EVENT_SPACING_SAME`), the clearance a lethal
+      row keeps, the streaming radius, and the denial radius a park spoiler is measured by. **Each
+      of those is a question about "how far", and an ellipse has two answers.** Decide per rule
+      whether it takes the long axis (safe, and it widens every clearance in the game) or the short
+      one, before writing any of it
+- [ ] **The contract has to be restated over the worst direction.** A player who starts walking away
+      the instant an event becomes visible must get clear before it hurts. Against an ellipse
+      pointed at her that is a different sum, and a version stated over the mean radius would pass
+      while the encounter it describes is unfair — the same failure `Tuning.pursuit_standoff()`
+      exists to stop, one system over
+- [ ] **A field is the Minkowski sum of the body and a disc.** *(2026-09-05: "horizontal barriers
+      need a combination of rectangular and circular fields ... a rounded rectangle if you will ...
+      since they are not point sources", and then the general form: "basically for every base shape
+      the minkowsky sum of a circle and the shape should be the influence field".)*
+
+      **One rule, and every shape falls out of it**: the falloff is a function of the distance to
+      the **body**, not to a point. A point body gives the circle every field in the game already
+      has and nothing moves; a line segment gives a capsule — the "rounded rectangle"; a rectangle
+      gives a rectangle with rounded corners; any polygon gives itself offset outward.
+
+      **And the other operand is what folds this milestone's original instruction into the same
+      rule** *(2026-09-05: "that's for static objects. for moving objects one side of the sum is an
+      oval")*. The field is always `body ⊕ kernel`; only the kernel changes — a **disc** standing
+      still, an **ellipse** moving, eccentricity from speed. So the ellipse this milestone was
+      opened for is the second half of one sum rather than a system of its own, and a capsule that
+      is also eccentric is composition rather than a special case.
+
+      **Nobody has to compute a general Minkowski sum of two convex shapes** *(2026-09-05: "but most
+      moving objects are small enough to be a point")*. The two cases are disjoint in practice and
+      each collapses: a static body ⊕ a disc is a capsule, and a moving point ⊕ an ellipse is just
+      the ellipse. The cat, the loose dog, the cyclist, the flock and every pursuer are points. Only
+      something both large and moving — a vehicle — would want the general form, and whether any row
+      is worth it is a question for then rather than a reason to build it now.
+
+      **Keep M61's own offset when the kernel is an ellipse.** The original instruction says *"the
+      entity itself lives in one of the focus points"*, not at the centre, and that is load-bearing:
+      a kernel centred on the body is symmetric front to back and delivers none of the rationale it
+      was asked for — *"an entity moving towards you has more of an effect than if it moves away or
+      orthogonal"*. The offset buys the asymmetry; eccentricity alone does not.
+
+      The rows it changes are the ones drawn as a spread along a pavement — `cafe_tables` through
+      `EventInstance._draw_cafe`, and `construction`, `market_stall`, `barricade` and `delivery_van`
+      through `_draw_spread`. A café frontage currently prices somebody across the street exactly as
+      it prices somebody standing at the tables, reaching far perpendicular to itself and falling
+      short along its own length.
+
+      **The bodies, so this is not sized off a guess.** A spread is drawn `obstructs_radius` either
+      side of centre (`_draw_spread` and `_draw_cafe` both take `half = max(11, obstructs_radius)`),
+      so the frontages are 48px for `cafe_tables`, 56px for `market_stall`, 64px for `construction`,
+      44px for `delivery_van` and 124px for `barricade`.
+
+      **Only two of those five still emit**, and they are the two this bullet is really about:
+      `cafe_tables` carries 12.0 over 40/90px and `market_stall` 14.0 over 44/95px, so each is a
+      short body wearing a circle a little under twice its own length. `construction`,
+      `delivery_van` and `barricade` are at intensity 0 — their radii are dead numbers that price
+      nothing, and giving one of them a shape means first deciding it should emit again, which is a
+      separate question and one the player has already answered no to.
+
+      **The radii change meaning, and that has to be settled before any code**: `inner_radius` and
+      `outer_radius` stop meaning *distance from the centre* and start meaning *distance from the
+      body*. Identical for a point, not for a spread — so **carrying a number across unchanged
+      silently inflates it**: 90px kept as-is stops meaning 90px from the café's centre and starts
+      meaning 90px beyond the whole 48px frontage, a wider field than the one standing there today.
+      M75 tightened those radii *for* this change, and this is the way to undo its work by
+      accident — the number has to be re-derived from the body, not reused.
+
+      **Which way they should actually move is the player's own point** *(2026-09-05: "that number
+      was so big because it was a point source before")*: a field computed from one point has to be
+      wide enough to stand in for a thing that is not a point, so the radius was doing the body's
+      job. Once the shape carries the body, that job goes away and the number comes **down** — by
+      at least what the body was worth, and further wherever the reach was never justified. Every
+      row with a body gets its radii **derived**, never carried over. This is not the refactor it
+      looks like.
+
+      **This overturns the bullet that used to stand here** — *"a stationary thing keeps its circle,
+      by construction: eccentricity from speed means zero speed is a disc"*, and with it the
+      conclusion that this milestone touches only the mobile rows. *Overturned on 2026-09-05 by the
+      player, because a body's shape and a body's motion are two independent sources of shape, and
+      only the second one goes to zero when the thing stands still.* Whether the two compose — a
+      capsule that is also eccentric — is open, and nothing needs it answered while every capsule
+      row is stationary.
+
+      **It is M75's "close only" item seen from the other side, and that item has landed.**
+      `cafe_tables` went from a 170px reach to 90 and `market_stall` from 185 to 95, on the
+      reasoning that a café should bill somebody at the tables and not somebody across the street.
+      That is the stopgap; this is the fix. **The stopgap is now the thing to beat**: a 90px circle
+      still over-reaches perpendicular to a 48px frontage and under-reaches along it, so the number
+      to derive is not a shrink of 170 but a fresh answer measured from the body. The two rows'
+      catalogue docstrings say so where the numbers are, and expect both to move again when this
+      lands
+- [ ] **And it has to be visible.** The falloff is invisible today and that is fine because it is
+      symmetric; a field that is stronger in front of a van is a routing fact the player can only
+      learn by being told or by dying. Ask what draws it before deciding it is free
+
+---
+
+## M65 — A protester points at the objective · asked for 2026-09-03
+
+**The pointing poses are available; objective binding and density remain open.**
+`assets/events/protester_point_n.svg`, `protester_point_ne.svg`, `protester_point_e.svg`,
+`protester_point_se.svg`, `protester_point_s.svg`, `protester_point_sw.svg`,
+`protester_point_w.svg` and `protester_point_nw.svg` keep an upright body and a shared feet anchor
+at (22, 52) in a 44×52 canvas. Reuse them for the objective-bearing selection after the design
+review below. See DECISIONS.md, "SVG artwork and upcoming milestone assets". The two findings this milestone was
+opened for — the first mark being announced, and a mark that was never on screen — are built; the
+record is in `DECISIONS.md` under M78, and the played question it leaves is whether a mark that
+follows her until seen is now findable at all.
+
+**Revisited after M62 rather than built as written.** *(2026-09-09: "M65 we need to revisit after
+M62.")* A walled city with checkpoints may change what finding a mark is like, so this entry is
+re-read against that city before the prepared poses are bound to objectives or the density moved.
+
+**Half of this item needs no drawing at all**, and is worth doing on its own if the mark is still
+hard to find now that it follows her: raising how often a protester appears is a density
+change, and the player's own reason it is cheap is that a protester obstructs nothing and pursues
+nothing, so it does not compete for the catalogue's placement budget.
+
+- [ ] **A protester points at the objective, and there are more of them.** *(2026-09-03, playtest
+      20: "the chalk is currently unfindable I spent almost a full day searching for it. let's make
+      the protesters point into the direction (with their arms or something) of the current
+      objectives (not only chalk marks). and make the protesters more common. they're not really an
+      obstacle/event anyway so they can be placed independently.")* Still the same complaint as the
+      two items above it — the mark cannot be found — with a mechanism attached rather than only a
+      placement fix: give the `protest` row (`EventDef.Look.PROTEST`, drawn in
+      `src/events/event_instance.gd` from `assets/events/protester.svg`) one of the eight
+      `protester_point_*.svg` poses listed above, aimed at whatever the
+      current objective is, and raise how often it appears. The player's own reason the density
+      change is cheap: a protester obstructs nothing and pursues nothing, so it does not compete
+      with the rest of the catalogue's placement budget the way raising an obstacle's density would.
+
+      **Measured, the same run:** a chalk mark is rolled and guarded by a nearby robber on every one
+      of the four days it becomes eligible
+      (`docs/evidence/archive/session-captures/2026-09-03/run-2026-09-03T002310-seed4070543669-5d342c9.log:240`, `:364`, `:546`, `:602`),
+      and the run ends *"bad on day 7 — resistance 0/4, sabotage not done"* (`:701`) — not found once
+      across the whole run, on every day one existed to find
+
+---
+
+## M96 — The teaching day, and the dog after it · rewritten 2026-09-09
+
+Rewritten from M43. Two of M43's items turned out to be built when checked — the pause lesson no
+longer fires while she is detained or while the tree is paused, and the run lesson's once-per-run
+flag is reset on every attempt at the teaching day — and the record is in `DECISIONS.md` under "The
+queue reprioritised". What is left is one decision nobody implemented and one measurement.
+
+- [ ] **The tutorial dog recurs but is not sited ahead of her after day 3.** `charging_dog` has
+      `first_day = Tuning.RUN_TAUGHT_DAY` (3), `spawn_mode = AHEAD_OF_PLAYER` and no last day, so on
+      every day after the lesson it is still put in front of her on her own line. **Decided, and
+      confirmed 2026-09-09:** *"the tutorial dog may appear later but not as tutorial."* Day 3
+      keeps the placement it has, because the lesson depends on being unavoidable; from day 4 it
+      becomes a thing that is *somewhere*, placed on the map the way `alley_robbery` is, and met by
+      routing into it — no siting on her heading, and no lesson line, which the HUD already
+      restricts to the teaching day. The row needs a day-dependent spawn mode or a second row for the later days;
+      `EventDirector._teach_the_run()`, which moves a pursuit to the head of the owed list on the
+      teaching day only, is unaffected either way. A test asserts that a day-4 `charging_dog` is
+      never sited on her heading.
+
+      **Measured, playtest 20** *(2026-09-03: "for some reason pursuing dogs after the run tutorial
+      have a shorter lead up time making them much harder to react to.")*: across five
+      `charging_dog` encounters in one seven-day run
+      (`docs/evidence/archive/session-captures/2026-09-03/run-2026-09-03T002310-seed4070543669-5d342c9.log`),
+      the day 3 tutorial encounter and every encounter afterward that ended in evasion ran **1.5
+      seconds** from the `chase` starting to the dog giving up. The two encounters that instead
+      killed her — one on day 4, one on a day 5 retry — ran **0.8 and 0.9 seconds**, roughly half,
+      with the dog closing distance far faster once its telegraph appeared: the tutorial encounter's
+      telegraph closed 20px in 1.1s, the day 4 encounter's closed roughly 70px in 0.3s. The row
+      carries one `inner_radius` (26px) and one `outer_radius` (150px) for every day, so nothing in
+      the row itself shortens the lead time — the gap is a placement effect, and this item is the
+      first thing to check before treating it as a row-tuning question. M77 has since moved every
+      pursuer's siting to past the edge of the view along her heading, so re-measure on the current
+      tree before assuming the gap is still there
+**The run is taught on day 3, and stays there.** *Asked for as `RUN_TAUGHT_DAY` 3 → 2 · overturned
+on 2026-09-09: "run taught goes to 3 not 2."* The constant gates everything that pursues, and day 3
+is where act I stops being a nice neighbourhood; the options weighed when the move was first
+proposed are in `DECISIONS.md` under M49, in the item "Day 3 carries act I's whole payload".
+
+- [ ] **Dying at high excitement on a quiet street: is one contact at 90 a cliff?** A bump is about
+      10.8 points, so above 89 a single one ends the day on an empty street. Two cheap checks:
+      whether the pram's `EXCITEMENT_NEARLY_CRYING` cue, which the baby shows from 80 of the
+      100-point meter, is drawn and actually read; and a rig walking an empty street at 90 into one
+      walker, to say whether the day ends. If it does, the fix is a rule about the last ten points,
+      not a density change
+
+---
+
+## M97 — Calm areas that hold · rewritten 2026-09-09
+
+Rewritten from M47. Its apartment complex — a courtyard lot four blocks across with frontages
+around the outside — is built as `_place_apartment_complexes`, and the non-adjacency rule covers
+courtyards as well as open calm at generation. The multi-block count was re-derived for the
+121-block city: `MIN_CALM_ZONES` 1 and `MAX_CALM_ZONES` 2, with the remainder single-block on
+purpose so that *which* calm area to head for stays a real question. The record is in
+`DECISIONS.md` under "The queue reprioritised". What is left is one measurement, one later tweak
+and one re-check.
+
+- [ ] **The non-adjacency rule does not cover parks yet.** *(2026-09-09: "non -adjacency rule
+      doesn't cover parks yet -- that's something we might want to tweak later.")* Later, by the
+      player's own word. What the code says, for whoever picks it up: `_has_calm_neighbour` asks the
+      one-block ring around a footprint for every purpose in `_CALM_PURPOSES` — park, forest, quiet
+      square and courtyard — and both zone placement and single-block calm placement refuse a
+      footprint that has one. So the case the player has seen is not the ring test failing on its
+      own terms, and the first task is a seed showing two parks side by side, to say whether a zone
+      absorbing its inner streets, the border forest, or something after generation is what puts
+      them there
+
+- [ ] **Spoiling a returned-to calm area is not consistently effective.** *(2026-09-03, playtest 20:
+      "the spoilage of a clam area is not always effective I went to the same park 4 times and only
+      the last time had a high enough density of events to actually prevent me from using it. the
+      previous time I could just walk at the edge of it. and the time before that didn't have any
+      spoilage at all even though it was the second visit.")* `docs/playtests/PLAYTEST-02.md` records the
+      intended shape — *"the scheduler biases a spoiling event toward a calm area the player settled
+      in on day N−1"* — a bias toward, not a guaranteed minimum, which is consistent with a roll
+      landing low enough some days to leave a walkable edge and high enough on others to deny the
+      area outright. The run attached to playtest 20 does not carry the exact four-visit sequence
+      the player describes — its own biased parks (`(1,1)` and `(4,8)`) were dense on every biased
+      day the log shows. **First task:** reproduce a zero-density biased visit on a rig, reading the
+      `roll` telemetry line that says *"in the park she used yesterday"*, before deciding whether the
+      bias roll's spread is the cause or something else is. The fix follows the reproduction
+**The main road is not made a soft block.** *Asked for on 2026-09-01 as a toll on crossing the
+spine · overturned on 2026-09-09: "M47's toll already exists — it's timing the traffic lights. we
+don't need to penalize routing through it just yet — it naturally happens that only some routes
+cross it."* Waiting for a green is the crossing's price, and the route tree already puts only some
+of a day's routes across the spine; nothing prices the crossing on top of that. The record is in
+`DECISIONS.md` under "The queue reprioritised".
+
+- [ ] **Re-check `MIN_CALM_BLOCKS` (5 to 7) and `MIN_HOME_TO_PARK_TILES` at the end, not the
+      start** — now that the region walls stand from day 7, since a region that holds no calm
+      area gets no door and the count of places to go is what the wall divides
+
+---
+
+## M98 — Pressure in the empty acts · rewritten 2026-09-09
+
+Rewritten from M25 and M26. All of M26 is built: day 1 says how to walk, the run is taught by the
+first pursuit on `RUN_TAUGHT_DAY`, with one wording on every device and no key named, and the
+scripted event that requires a short run is the charging dog itself — *(2026-09-09: "this is what
+became the charging dog")* — sited on her line on day 3 so the lesson is unavoidable, which is the
+"safe place" playtest 02 asked for, moved to the day running becomes right. What remains is M25.
+
+- [ ] **Patrols for acts III and IV, built around encounter cost.** The crowd table in `Tuning`
+      empties the streets from act III on purpose — *"the cruellest number in the game: from act III
+      the streets are quieter, because there is nobody left going out on them"* — and the return
+      phase (`DayPhase.RETURNING`, entered when the day's clock runs low) was measured in playtest
+      03 as a formality: 26s, five crossings, zero encounters, 42% of the day left. Pressure goes
+      back into those streets as things she **meets**, not as an ambient band she cannot see. The
+      mechanism to start from is M56's heated `police_patrol`, which is already denser and then
+      interested as resistance progress rises; what this item adds is a return-phase shape in acts
+      III and IV. Measure the return phase on a rig across the four acts — encounters per return,
+      and how much of the day's clock the return actually spends — before and after
+
+---
+
+## M99 — The corridor's density after the sealing · rewritten 2026-09-09
+
+Rewritten from M50. M64 superseded M50's gradient at both ends — off the path is *closed*, on it the
+density is *normal* and playtest 21's verdict on it was that it is already right — so what is left
+here is what the sealing did not answer.
+
+- [ ] **The corridor's own obstacle density, measured rather than raised.** M50's *"blocking events
+      all over"* asked to raise the caps on the expensive rows, which is a catalogue question.
+      Under the sealed city the corridor carries 0.82 events per street a day, measured with
+      `tests/probes/m64_density.gd`, and the player's sentence on it was *"on the path there should
+      be a normal amount of events that remain passable — that looks like it is the case here"*. So
+      the item is a re-measurement on the current tree with the same probe, and a cap moves only if
+      a played day says the corridor is bare
+- [ ] **`cyclist` and `loose_dog`'s caps no longer mean what they say.** Both rows carry
+      `max_per_day` of 14 and 24 and arrive via the director's single queue at its 11–26s pacing
+      rather than being map-placed, so a day fields far fewer than the cap reads as promising — the
+      caps' meaning changed while the numbers stood still. Measure encounters per day on a rig
+      across the acts; the record is in `DECISIONS.md` under M54
+- [ ] **Placeholders — step 3.** The budget is a **variety ledger, not a density cap**: the count of
+      sites is the density, the budget decides what fills them, and resolving late means variety is
+      measured over the encounters that happen rather than over a city she never saw. Read the
+      entry in `DECISIONS.md` under "The milestone log, as it stood on 2026-09-01" before starting;
+      the first reading of this was wrong and the wrong reading is recorded there
+- [ ] **A building type that closes all four of its streets.** Recorded, not built, and a
+      **different type rather than a bigger one** — a big building joins two blocks and closes one
+      street; this removes four and makes an island in the lattice, so it needs its own name, its
+      own count, and its own answer to how many a city can take. The reasoning is in `DECISIONS.md`
+      under M50
+
+---
+
+## M100 — Small, real, and nobody's · consolidated 2026-09-09
+
+The small items, the polish list and the open design questions, consolidated into one milestone on
+2026-09-09 *("consolidate into a current new milestone")*. Each was checked against the code that
+day: the `burning_building` now finishes where the fire belongs rather than where the engine
+stopped, and the seed-retry fact is stated in `docs/CITY.md`, so neither is here. Everything else
+is still true.
+
+**Defects, each a few lines once found:**
+
+- [ ] **A rig driving `EventManager` before `City.start_day` seals nothing.** `EventManager.
+      start_day` reads the day's tree as `_city.route_tree()` when it has a city, and that
+      answers `null` until `City.start_day` has grown one — so a rig that starts the events first
+      hands `SealPlanner.plan_day` and `RegionPlanner.plan_day` no tree, both return empty, and
+      `EventScheduler.build_day` grows a tree of its own for the catalogue's placements: two
+      trees for one day and no seals or walls at all. Found building M62 and not fixed there;
+      the fix is one fallback — grow the tree when the city has none yet — and a test that a
+      day started through `EventManager` alone still carries seals
+- [ ] **Events spawn inside a fully blocked street.** *(2026-09-09, playtest 49: "a definite bug
+      is that inside fully blocked streets (eg tree) restaurants etc can still spawn which is
+      silly".)* The scheduler's own rule is the right one — *"a closed street is not somewhere
+      anyone can get to, so it is not somewhere an event can usefully happen"* — and it is enforced
+      by refusing any candidate tile in `closed_tiles`. Two things put a café behind a fallen tree
+      anyway. `CityMap.close_streets` fills `closed_tiles` with only the tiles a flood from the
+      doorstep cannot reach once the barrier tiles at both mouths are down, so a closed street with
+      an alley mouth or a courtyard archway opening onto its middle keeps its ground open, on
+      purpose, and the scheduler then places on it. And a **hard seal** is not a closure at all: it
+      is `barricade` bodies standing across the middle of the segment, placed by `SealPlanner`, so
+      neither half of that street is in `closed_tiles` and the whole of it is open to the catalogue.
+      **The fix is at placement, keyed on the segment rather than on the tile**: no catalogue row is
+      offered a tile on a segment that carries a closure or a hard seal, with the seal's own bodies
+      and the closure marker the only things allowed to stand there. A soft seal is not covered — the
+      street is still walkable down the carriageway and a café on it is the price of going that way.
+      A test plans several seeds and days and asserts that nothing planned stands on a closed or
+      hard-sealed segment. Placed here rather than ahead of the queue by the player: *"blocked
+      street can go behind actual important things"*
+- [ ] **A queued car grazes a big building's footprint, and the M53 assertion was loosened to let
+      it.** `tests/test_crowd.gd`'s *"nothing walks into a hard blocker"* asked for exactly zero
+      agents ever standing inside one; it now tolerates one agent on under 5% of frames, measured at
+      1.1% — one car on 27 of 2400 frames. The cause is a crawl-forward step in a traffic queue
+      stepping one tile into a footprint, in `src/crowd/`. Fix that and the assertion goes back to
+      zero, which is the only acceptable end state: a car standing inside a building is visible, and
+      the test's own name is a promise
+- [ ] **The guard robber is placed inside a building, where he is stuck for ever.** *(2026-09-02:
+      "the robber can be placed inside buildings which makes him unable to move at all."; 2026-09-09,
+      playtest 50: "the robber is stuck inside the roof".)* **Reproduced, with the cause.** Seed
+      2295276695, day 5: the chalk mark is at tile (69,79), an `ALLEY` tile in a two-tile alley,
+      and the robber at (67,80) is `BUILDING`, one tile south of it; the run log has him at that
+      tile before, during and after his chase while she moved, since a chase step is clamped to
+      walkable ground. The scheduler's own `alley_robbery` placement is not the path — the
+      guard is: `ResistanceDirector._maybe_set_a_trap()` stands him at a random bearing from the
+      mark, 66 to 176px out, and never asks whether that point is walkable, and an alley is 64px
+      wide. His lethal radius travels with him, which makes an invisible fatal spot inside a wall.
+      **Fix it where he is placed**: draw the bearing until the point is walkable ground (an
+      alley tile by preference, since the row's own placement is `ALLEY`), rejecting rather than
+      repairing, and keep the band. The evidence is [PLAYTEST-50.md](playtests/PLAYTEST-50.md), section 2
+- [ ] **The pram has no collision of its own.** `scenes/player/stroller.tscn` carries one circle
+      for her, so the pram clips into walls when she hugs a corner. A second body that trails her,
+      or a capsule that rotates with `facing`
+- [ ] **A pursuer streamed out mid-chase comes back having forgotten it.** `EventInstance.resume()`
+      restores the age and the distance travelled but not `_noticed_at`, and a fresh instance starts
+      with that at `INF` — so a `pursues_within` row streamed out after it has noticed her returns
+      waiting, standing where the day planted it. Not currently dangerous: `alley_robbery` has had
+      it since the mechanic was built, and the heated patrol that surfaced it can never be
+      `hard_fail`. `tests/test_heat.gd` pins the behaviour rather than the one the field name
+      implies, so a fix fails there first. The fix is `resume()` carrying the notice, checked against
+      every `pursues_within` row rather than the one that found it
+- [ ] **A big building can be built over a precinct's own pavement.** Measured on seed 24757: two
+      tiles inside a precinct span are not walkable, because a footprint was placed across the
+      corridor the span runs down. `CityGenerator._place_hard_blockers` never reads
+      `precinct_spans`, so nothing asks whether a footprint lands on one. A precinct's whole design
+      is *paving frontage to frontage*, and the fix is a constraint where big buildings and calm
+      zones choose their ground, not a repair pass afterwards
+- [ ] **`chat` is written and undocumented.** `EventManager` logs a `chat` entry when
+      `chatting_mother` starts a conversation, and the table of entry kinds in `docs/TELEMETRY.md`
+      has no row for it. One row, plus the check that would have caught it: something asserting the
+      two lists agree
+- [ ] **`--spawn event:<id>` stands the rig in the carriageway on an east–west street.** The
+      offset `main.gd` applies to the found event's position is along local X whatever the street's
+      orientation, so beside a spread that faces an east–west street she is put on the road rather
+      than the pavement, and a screenshot rig can lose the day before the frame is taken. Found while
+      photographing the seal pictures; the fix is to offset across the street's own axis, which
+      `EventInstance._spread_is_vertical()` already answers
+- [ ] **What is still dev-only inside `main.gd`.** `DevFlags` took the flag parsing out; what stayed
+      is the code that acts on it — `_first_event_position` and the `--spawn` target lookup, both of
+      which read the live city. Worth finishing the next time the file is opened for another reason
+
+**Drawings, as SVG:**
+
+**Vehicle collision and silhouette agreement moved to M61 on 2026-09-10**, where one shape per
+object gives the body, the shadow and the field together: the circular obstructions under the skip,
+the moving vans and the burnt-out cars leave apparent gaps that cannot be walked through, and the
+fix is the body following the picture's footprint rather than a per-row adjustment. The directional
+artwork, the player's perpendicular burnt-car correction and the rendered evidence are in
+`DECISIONS.md`, "SVG artwork and upcoming milestone assets".
+
+- [ ] **A mouse in the alley.** *(2026-09-10: "we can reuse the mouse for alleyways as well.")* A
+      new catalogue row placed on `ALLEY` tiles: a mouse that darts across the alley when she comes
+      near, the `cat_dash` shape — a short pulse, no body, nothing lethal — at a lower intensity,
+      since it is a startle rather than a threat, and the alley's own `+3.0` a second of dread is
+      already the row's setting. The picture is `assets/events/mouse.svg`, drawn once under M103
+      for M102's apartment and reused here. Which acts it appears in and its cap are the build's
+      to derive from the cat's, and its dash is aimed across the alley's short axis so it crosses
+      her path rather than running down it
+- [ ] **Park trees clump.** `City` places them by rejection sampling inside the lot with no
+      spacing test. Add a minimum-spacing check while retaining `assets/props/tree_a.svg` and
+      `tree_b.svg`, the two existing variants drawn by `Prop`.
+**The `INDUSTRIAL` and `CIVIC` districts reading differently moved to M106 on 2026-09-10**, where
+the roof furniture and the fronts are placed per district; the prepared `industrial_vent.svg` and
+`civic_portico.svg` are its first two pieces.
+
+**Polish, after the playtest work**, since there is no point polishing a loop that is about to be
+re-pitched:
+
+- [ ] **Sound lines** — concentric arcs off a source on a pulse's rising edge, the visual form of a
+      discrete noise. `assets/events/sound_pulse.svg` supplies three open arcs in a 48×32 canvas,
+      anchored at (24, 32); pulse timing, orientation and runtime binding remain. The last gap in
+      the visual channel comes **before** audio.
+- [ ] **Audio**, once the above is done and judged on its own: per-act beds, per-event cues, the
+      baby's breathing as the diegetic version of the meters. Additive by design
+- [ ] Save and continue a run (`GameState` is already shaped for it, so this is serialisation
+      rather than design); there is a title screen and no menu, on purpose
+- [ ] Accessibility: colourblind-safe meters, a telegraph-time multiplier, reduced motion
+- [ ] Controller support
+- [ ] **The web build measured on a machine that did not build it.** Playtests 27 onward have
+      played the live address on a laptop browser and a phone, so *it boots and takes input* is
+      answered. What is not is frame rate at the game's scale on somebody else's machine, and
+      whether a stranger arriving at the page understands what it is. itch.io stays the fallback
+      host, since it sets the isolation headers a threaded build would need
+
+**Open design questions**, each answered by a played run rather than by more arithmetic:
+
+- [ ] **A touch on a chalk mark shows nothing at the moment but a colour change, and nothing at
+      all if the day is then lost.** *(2026-09-09, playtest 50: "how do I know I stepped on the
+      chalk", then "I walked over the chalk why didn't it count?" — it had.)* A touch turns the
+      mark from chalk white to pale green (`Palette.CHALK` to `CHALK_DONE`) under her feet; the
+      `resistance ....` dots are performs only, so a pick-up moves none; and the mark's own words
+      (`GameState.pending_resistance_brief`) are appended by `DaySummary._resistance_line()` on
+      the **won** branch of the summary only, so a mark touched on a day she then loses says
+      nothing until the end of the next won day, while the touch itself survives the nerve. The
+      design's own rule is no quest log — *the first encounter comes with no hint at all* — so how
+      much a touch may say is the player's call: nothing more; the mark's colour made
+      unmistakable; the brief shown on a lost day's summary too; or a one-line status change on
+      the pick-up itself
+- [ ] **Three cues on one screen needed asking about, and an alley read as a roof.** *(2026-09-09,
+      playtest 50: "what is shown here?", and "the robber is stuck inside the roof" of a robber
+      standing beside an alley.)* The baby's unsettled cue over the pram, the alert over her and a
+      honking car's halo were all up at once on `asked/016s-attempt1-asked.png` of playtest 50's
+      run, and none of them named itself; the two-tile alley behind a building read as its roof.
+      Whether each mark is told apart on sight is not a rig question; the alley's own tile picture
+      is a drawing item if the reading persists
+
+- [ ] **Does a picked-up-but-unperformed resistance instruction expire at the end of its day, or
+      wait?** Left open by decision until the pairs can be walked. The code currently **waits** —
+      an incomplete perform step is re-offered each subsequent day; the only expiries are the
+      poster wall's `deadline_fraction` and a rider event finishing, both inside one day
+- [ ] **Is the nerve economy right?** Five since M35, and **asked for rather than derived** — the
+      thing that made three too few was a defect rather than a difficulty, so if act I now reads as
+      fair, five may be generous. The other side is still open: with five attempts and a retry
+      costing only time, **is a lost day a punishment at all?**
+- [ ] **Is the balance right?** Needs a run and a trace. *"The arterial is for crossing"* is still a
+      claim about a player rather than about a probe
+- [ ] **Is 14 days the right run length?** Act I is only 3 days, which may be too little time to
+      learn a city before it starts changing
+- [ ] **Is the main-road arc emergent or authored?** The design says she exhausts her own side of
+      the spine before being forced across. Either calm areas exist on both sides and spoiling
+      burns the near ones over an act, which needs no new code, or something has to withhold the
+      far side early and steer her across late, which is a mechanism nobody has designed. The
+      regions may settle it, since a region with nothing left in it gets no door unless the
+      day's route passes through it
+- [ ] **Could the meter bars be turned off entirely** — deferred, not open. *(2026-09-02: "we can
+      keep the bar for now and think about the diegetic face later on.")* The minimal HUD keeps the
+      bars and drops the status line beside them, so what gets tested first is whether the pram
+      alone can carry the baby's state on the half that was cut. **What comes back with it is a
+      face**, the meter read off the baby rather than off a strip at the bottom of the screen — the
+      same shape as the audio item's *breathing as the diegetic version of the meters*. Not
+      designed, and it needs the playing that the status-line cut is about to produce
+
+---
+
+## M101 — The fire is found before the engine · asked for 2026-09-09
+
+**The SVG pictures are available:** `assets/events/flame.svg` supplies curling flames and
+`rubble.svg` the charred facade; `fire_engine.svg` and `fire_engine_end.svg` supply the engine's
+street-axis views. The remaining work below is placement and sequencing, with these textures
+already bound to the existing rows. See DECISIONS.md, "SVG artwork and upcoming milestone assets".
+
+> "the player should encounter the burning building before the fire truck. basically the fire
+> truck should spawn when the player sees the burning building not the other way around"
+
+**Today the engine is the event and the fire is what it leaves behind.** `fire_truck` is act I's
+one-shot — day 3 only, `ONE_SHOT`, a mobile row at 190px/s along a 60-tile street route with a
+4-second telegraph, because a truck outruns a walk and the fairness rule wants the full 340px of
+clearance — and `burning_building` is a `SCRIPTED` row that is never scheduled on its own:
+`EventManager._successor_of()` creates it where the engine's run ends, and
+`EventInstance._be_done()` makes an event with a `spawns_on_finish` stop where it stands rather
+than drive off, so the fire is at the building and not two streets past it. The engine is the
+thing she meets; the fire is a consequence she may never see.
+
+**The instruction reverses the two, and the reason is legibility.** A fire engine bearing down a
+street is a loud thing with no visible cause; a burning building she has already found is the
+cause, and the engine arriving *at it* is the answer. Seen in that order the set piece reads as
+one story rather than a truck and, later, a fire.
+
+**The seen predicate exists.** `DangerEdge.is_on_screen()` answers whether a world point is inside
+the view, and `ResistanceDirector.set_sight()` already takes it so a chalk mark can follow her
+until it has been on screen once (M78's rule). The same callable is what the fire wants.
+
+- [ ] **The burning building is the day's one-shot; the engine is spawned on sight of it.**
+      `burning_building` takes over `fire_truck`'s `ONE_SHOT` slot — day 3, sited by the director
+      the way the one-shot is sited today — placed *in* a building rather than on the road. When
+      it first comes on screen, `fire_truck` is created with a route that **ends at the fire**,
+      entering along the burning building's own street from off screen. The link is a field on the
+      def in the opposite direction from `spawns_on_finish` — a row that names what arrives once
+      this one has been seen — and `EventManager` owns the trigger, since it already owns the
+      successor mechanism and the player's position. Whether `spawns_on_finish` survives on any
+      other row, or goes, is a question for the build: today only the engine uses it
+- [ ] **The engine's fairness contract does not change and has to be re-proven for the new
+      siting.** Its telegraph is its approach, so the route's start has to be far enough up the
+      street that the full 4 seconds pass before its field reaches her — M77's off-screen arrival
+      rule applied to a thing driving at the building rather than at her. If she stands on that
+      street between the engine's entry and the fire, she is in its path; the row's own contract
+      (walk away the instant it is visible and be clear before it hurts) is what the test asserts,
+      and it is asserted from the worst position on the street. The `hard_fail`-style further
+      siting is not needed, since the engine is not lethal
+- [ ] **The fire's own telegraph and pulse are re-read for a thing she finds rather than one that
+      arrives.** `burning_building` carries a 2.2s telegraph and a 3-second pulse, both written
+      for a fire that begins in front of her when the engine stops. A fire that was already burning
+      when she turned the corner has no arrival to telegraph; what it keeps is the pulse, the
+      obstruction (30px, five flames) and the `burnt_shell` scar. Decide whether the telegraph
+      becomes zero or stays as the moment the fire is *noticed*, and say which in the row's doc
+- [ ] **Day 3 is re-measured.** Day 3 carries act I's whole payload — the run lesson's dog, the
+      cyclist's first day and the set piece — and the balance suite prices the day with the engine
+      as the expensive row. The engine still comes, but later and only if the fire is seen, so a
+      day on which she never finds the fire costs less than the day the suite describes. Run
+      `tests/test_balance.gd` and the day-3 rig before and after, and record both numbers in
+      `DECISIONS.md`
+- [ ] **`docs/EVENTS.md` follows.** Its one-shot example is the fire truck, its route sentence says
+      *a fire engine is in the world before its mark*, and its finishing-position paragraph
+      describes the engine leaving the fire behind. All three move in the same commit as the rows
+
+---
+
+## M107 — The run clock · asked for 2026-09-10
+
+> "can you add an in-game timer that counts up during gameplay (and stops when paused or between
+> days). for now let's keep it hidden and only show it on the win screen"
+> "all endings show the game timer -- with millisecond precision"
+
+**One number per run: seconds actually played.** Not the day's countdown, which `HUD` already shows
+as `%d:%02d` off `DAY_LENGTH_SECONDS` and which resets every day, and not wall time: the sum over
+the run of the time the world was moving. It runs while a day is `WALKING` or `RETURNING` and the
+tree is not paused, and stops for everything else — the pause screen (`get_tree().paused`), the day
+summary, the title screen, a lost day's restart, and the moment `main.gd` pauses the tree at a
+day's end. So a retried day's first attempt still counts (it was played), and a minute spent on the
+summary does not.
+
+- [ ] **`GameState.play_seconds`**, reset in `start_run()` with the rest of the run, and advanced
+      by one owner — the same `_process` in `main.gd` that already knows the phase and the pause
+      state — rather than by the HUD or the day loop, so there is one place it can be wrong. It
+      is run state, so it goes with the run into a save the day M100's save item is built
+- [ ] **Hidden during play, shown on every ending, to the millisecond.** *"for now let's keep it
+      hidden"*, then *(2026-09-10: "all endings show the game timer -- with millisecond
+      precision")*: no HUD, no pause screen, no day summary. `DaySummary.show_ending()` appends
+      one line for every `GameEnums.Ending` — bad, neutral and good alike — the time played as
+      `%d:%02d.%03d`, under the ending's body. The millisecond format is the one M102's finale
+      clock uses, so the two share a formatter rather than each carrying a string
+- [ ] **A test that the clock only moves when the world does.** Drive `main` through a walking
+      frame, a paused frame, a summary frame and a title-screen frame with a fixed delta and
+      assert which ones advanced it; and that `start_run()` zeroes it. One `run.log` line at the
+      run's end carries the total, since the run's own record is the place a number like this is
+      read from later
+
+---
+
+## M105 — The city degrades · asked for 2026-09-10
+
+> "we need cracked street/sidewalk tiles to be able to deteriorate the city. we need loose garbage
+> (eg eaten apple, newspaper, etc) that can be spread around throughout the city to show basic
+> services failing towards the later acts (it can be defined by a density factor for placement
+> which can increase with the days starting at day 4 or 5). we need garbage sacks that can be
+> placed in alleyways at first and at the side of buildings later on as the city degrades."
+> "floor tiles of the city need different levels of cracks"
+
+**What the street looks like is the act, told without a word.** The acts are already narrative —
+the crowd thins from act III because *"there is nobody left going out on them"*, blocks go
+`BOARDED_UP` and `BURNT_OUT` — and the ground under her feet says none of it. This milestone gives
+the city a visible decline that rises with the day: cracks in the road, litter on the pavement,
+sacks in the alleys and then against the buildings. **None of it changes what a route costs**, on
+purpose: it is presentation, and the one exception — a sack pile that stands in the way — is stated
+below rather than smuggled in. The pictures are M103's; this milestone places them.
+
+- [ ] **One degradation curve, in `Tuning`.** A density per tile that is zero through the early
+      days and rises from `DEGRADATION_FIRST_DAY` — *"day 4 or 5"*, the player's range, and the
+      build picks one and says why — to the last day, the way `budget_for(day)` rises. Everything
+      below reads that one number, so the city degrades as one thing rather than as three
+      unrelated ones; a per-block factor can sit on top of it later (a `BURNT_OUT` block is
+      further gone than a residential one) but is not the first version
+- [ ] **Cracked ground, by level — variety and gradient.** *("different levels of cracks … so we
+      can add variety and gradient.")* `GroundTiles` chooses a tile's crack level from the curve
+      and a per-tile hash, so the same tile shows the same crack every day and more tiles show
+      worse cracks as the run goes on: hairline first, cracked, then broken. That is the gradient
+      in time; the gradient across the map — a block further gone than its neighbour, the
+      industrial edge worse than the residential middle — is the per-block factor the first item
+      leaves for later, and the levels are what make it expressible. The patterns within a level
+      are the variety, picked by the same hash. Pavement before road, since it is what she walks
+      on and what she sees. A crack changes nothing about the tile — not its type, not its cost,
+      not the crowd's lanes
+- [ ] **Loose litter, spread by the curve.** Small ground decals placed at generation each day from
+      the curve and a seeded roll, on pavements, alleys and squares, never on the road's lanes
+      (where a decal under a car reads as a bug) and never inside a calm area (a park with litter
+      in it is a spoiled park, and spoiling has its own mechanism). Decals only: no body, no
+      field, no y-sort — they lie under everything
+- [ ] **Garbage sacks, alleys first.** Sacks stand in alleys from the first degraded day and beside
+      building fronts later, the second threshold another day or two on: *"in alleyways at first
+      and at the side of buildings later on"*. A single sack is decoration with a shape under M61
+      and no body; **a pile may carry a body** — an alley narrowed by rubbish is the one place this
+      milestone could touch a route, and whether it should is decided when a pile is seen in an
+      alley she has to use, not before. The mouse in the alley (M100) is placed by preference
+      beside a pile once both exist
+- [ ] **The storefronts shutter.** M106's `storefront_shuttered.svg` replaces a block's storefronts
+      when the block goes `BOARDED_UP`, and from a later point on the curve for any commercial
+      block, so the degrading city and the block purposes tell one story rather than two
+- [ ] **A rig picture per act.** Four screenshots of the same seed on days 1, 5, 9 and 13 from the
+      same doorstep, so the curve is judged as a sequence; the record goes to `DECISIONS.md`
+
+---
+
+## M106 — Roofs, fronts and street trees · asked for 2026-09-10
+
+> "we need stuff on top of roofs -- we have an air duckt already -- it needs to be animated. but we
+> need other things on roofs as well (there are reference photos to draw ideas from). we need more
+> varied building fronts. storefronts, fire escapes."
+> "we could also add trees that can be placed in the street. right now the fallen tree doesn't make
+> that much sense"
+
+**The buildings are the same wall and roof repeated, and the districts are told apart by nothing
+but height.** `Building` composes every facade from `wall.svg`, `wall_base.svg`, the two window
+tiles and the edge tiles, and every roof from `roof.svg` and its edges; `INDUSTRIAL` and `CIVIC`
+differ only in storeys (this is M100's district item, moved here). The pictures are M103's; this
+milestone places them so a street reads as a place, and a district as a district, at a glance.
+
+- [ ] **Roof furniture, placed per building at generation.** A seeded pick from the roof units by
+      district — vents, ducts and HVAC boxes on `INDUSTRIAL`, skylights on `CIVIC`, water tanks and
+      the odd vent on `RESIDENTIAL` and `COMMERCIAL` — sited on the roof's interior cells so
+      nothing overhangs an edge, a count that scales with the footprint, and a duct run laid as a
+      straight-and-corner chain. The vent animates by alternating its two frames on the building's
+      own timer, and nothing else on a roof moves. Drawn by `Building` above its roof tiles, so a
+      roof unit is never y-sorted against anything on the street
+- [ ] **Fronts, per district and block purpose.** `COMMERCIAL` ground floors take storefronts, with
+      an awning on a seeded share of them; `CIVIC` takes `civic_portico.svg` at its entrance; fire
+      escapes go on `RESIDENTIAL` facades at a seeded share, two cells tall over the existing
+      windows. A storefront is a `wall_base` replacement and a fire escape is an overlay, so
+      `Building`'s composition changes in two places and the tint rules stay. The awning is the
+      one piece that leaves the facade plane, and it stays out of the pavement's walkable band
+- [ ] **Street trees.** Trees on the pavement, in pits, along `RESIDENTIAL` and `COMMERCIAL`
+      streets at a seeded spacing — never on a crossing, never within a tile of a door or a
+      checkpoint, and never on the main road's pavements where the crowd's lanes are densest. A
+      street tree is a `Prop` like a park tree, feet-anchored so she passes behind its canopy, and
+      it carries a shape under M61 with a small body, since a trunk is something you walk around.
+      **This is what makes the fallen tree make sense**: a street with trees on it can have one
+      down across it. `fallen_tree`'s own placement then prefers a street that has standing trees,
+      and the closure marker's picture is checked against the standing drawing so the two read as
+      the same tree
+- [ ] **The district comparison.** One rig screenshot per district at gameplay scale, side by
+      side, so *reads differently at a glance* is judged by a person rather than by the count of
+      units placed; the record goes to `DECISIONS.md`
+
+---
+
+## M102 — The finale: out of the apartment, out of the city · asked for 2026-09-09
+
+**Planned and not queued.** *("this is just a plan for now — we probably won't actually implement
+it for a while (there are a lot of milestones before that).")* Written down now so that M62
+(checkpoints that divide the map), M56 (the resistance is noticed), M100's sound lines and M101 (the
+fire found before the engine) are built knowing they are also the finale's parts.
+
+**The brief, in the player's words:**
+
+> "for the good ending. after completing all tasks. after the last day ends the next scene is the
+> hallway in front of the apartment at night with the player holding the sleeping baby (sleep bar
+> is full) the goal is to escape. masked men are trying to capture the player, army trucks are
+> driving on the streets, explosions happen off screen (but loud enough to cause excitement)
+> leaving craters on the street. burnt cars, blockades, craters, etc. block paths through the city.
+> but before reaching the city we need to get out of the house. elevator is non-functioning so we
+> need to take the staircase down a few floors (not excessively many). the main entrance of the
+> building is barricaded so we need to go to the basement walk through the basement corridors to
+> the service entrance. we can keep the events inside the house relatively minimal. maybe some
+> mice. some masked pursuers that run up the stairs that can be avoided by going into a corridor
+> and letting them pass. there might be a fire on one staircase forcing us to use the other
+> staircase (all buildings have two egresses). maybe some steam in the basement etc. once back on
+> the street grid (emerging from the service exit on the side of the main building). no regular
+> cars or regular people on the street. there is a single path through the city that crosses three
+> parks (the player can use them to calm down or get the baby back to sleep if it wakes up) ending
+> at the tunnel or bridge (or maybe one path for each and the player can choose). this is the
+> climax of the story with lots of lethal and dangerous events. help messages show "escape the
+> apartment" and "exit the city" in the appropriate places (only in the beginning of each section
+> like normal tutorial hints). the timer shows milli second precision for dramatic effect (instead
+> of the regular second precision of the main game)"
+
+**What it is, in the game's own terms.** A fifteenth walk that is not a day: no route to a calm
+area and home, but one way out, played in two sections that each open with one hint line and share
+one clock. The verb is unchanged — *where do I walk* — and the pressure is the same two meters: the
+baby starts asleep with sleepiness full, and everything on the way is a reason for her to wake.
+
+**Section one — the apartment.** *"escape the apartment"*, said once at the start, the way the
+HUD's `_say()` teaches tapping and running on day 1 and then never again. The building is the
+home lot's own block, seen from inside for the first and only time in the run: the hallway outside
+the door at night, a dead lift, and two staircases (*"all buildings have two egresses"*) down a few
+floors — three or four, *"not excessively many"*. The main entrance is barricaded, so the way out
+is down past the ground floor into the basement, along its corridors to the service entrance on
+the side of the building. Events here are *"relatively minimal"*: mice; masked pursuers who run up
+a staircase and can be let past by stepping into a corridor, a moving wall she avoids by not being
+on its line; a fire on one staircase that closes it and forces the other; steam in the basement.
+Each is the existing vocabulary indoors — a pursuer is a mobile row on a path, a fire is
+`burning_building`'s flame at a stairwell, steam is a stationary field on a corridor — and the
+section wants at most one of each.
+
+**Section two — the city.** *"exit the city"*, said once at the service exit. The city she knows,
+with nobody in it: `CROWD_PEDESTRIANS_PER_ACT` and `CROWD_CARS_PER_ACT` give act IV 70 walkers and
+16 cars, and this scene has zero of both — *"no regular cars or regular people on the street"*. In
+their place, army trucks on the carriageways, masked men on foot and in vans trying to take her,
+and explosions off screen, loud enough to reach the meter, each leaving a crater on a street. Off
+the one open route everything is sealed with the finale's own pictures — burnt cars, blockades,
+craters — which is `SealPlanner`'s existing job with a different candidate list: it already seals
+every street off the day's tree. **But the finale's route is not a tree.** *(2026-09-09: "the
+finale route is *not* a tree any more. it's a single path going to the first park, then the second,
+then the third, then the exit. no overlapping routes".)* A day grows several strands to several
+calm areas and counts two distinct routes to each as a max flow; the finale has one ordered chain
+— service exit, first park, second park, third park, edge — with no branch, no second way to any
+of them, and everything off the chain sealed. The parks are the only calm on the way and are for
+*"calm down or get the baby back to sleep if it wakes up"*; the edge is the tunnel at the north
+end of the main road or the bridge at its south end, the two exits `CityEdge` already draws and
+already lets her walk into.
+*"Lots of lethal and dangerous events"*: this is the climax, and the density rules that keep a day
+fair (`_room_around`, the telegraph contract, off-corridor exemption) still hold — lethal things
+are dense, not unfair.
+
+**The clock shows milliseconds** — `HUD._on_day_time_changed()` formats `%d:%02d` today and the
+finale formats `%d:%02d.%03d` — *"for dramatic effect"*, and nothing else about it changes.
+
+**The parts that already exist, so nobody draws or builds them twice.** The impact craters at
+three sizes, `assets/props/impact_crater_1x1.svg`, `_2x2` and `_3x3` (32, 64 and 96px, ground-centred,
+catalogued in `GRAPHICS.md` as prepared with no owner), are the explosions' marks and this
+milestone is their owner. `burnt_out_car.svg` with its vertical sibling, `barricade_pile.svg` and
+`checkpoint_block.svg` are the finale's seals and are already seal candidates or barrier rows.
+`army_truck.svg` and `army_truck_end.svg` are the trucks; `unmarked_van.svg`, `unmarked_van_end.svg`
+and the `abduction` row are the masked men in vans; `guard_standing.svg` and `guard_lunging.svg`
+are masked men on foot; `flame.svg` is the staircase fire; `sound_pulse.svg` is the arc an
+off-screen explosion draws, once M100's sound lines bind it. The player herself is drawn:
+`assets/rig/mother_carrying_{front,back,side}_{a,b}.svg` are the existing mother's six frames with
+the baby in her arms and no pram, on the same canvases and feet anchors as the walking set, so
+`Stroller` can swap them in facing for facing. New drawings, each listed with its contract under
+M103: the hallway with its flashing windows and its floor edge that implies the apartment doors,
+the stairwell with its mechanical floor and its door seen only from inside, the entrance and the
+furniture heaped against it, a chandelier, the basement's gloomy floor, brick walls and puddles, the
+emergency exit, a dead lift door, mice, steam, and an explosion row's own picture if one is wanted
+beyond the arc and the crater. *(2026-09-10, the player's room list — see M103.)*
+
+**What is genuinely new, and the order to build it in:**
+
+- [ ] **An interior map.** Nothing in the game has an inside; `CityMap` is one lattice and every
+      guarantee is stated over it. The apartment is a second, small, hand-shaped map — a floor is a
+      corridor with a stair at each end, going down a stair is going to the next floor's map, the
+      basement is the last floor with the service door on it — reached from day 14's summary
+      rather than from the doorstep, and left through that door onto the city map at the home
+      lot's side. What the interior does not need is any of the city's planners; a floor is small
+      enough to place by hand. **What it is drawn with**, 2026-09-10: a hallway whose north wall
+      carries windows that **flash** when an off-screen explosion goes off — the explosion row's
+      cue indoors, one or two frames of the lit variant — and whose apartment doors are never
+      drawn, only implied by the floor's south edge; a stairwell with a mechanical floor whose
+      doors back onto the hallway are seen only from inside it; the main entrance with furniture
+      heaped against it; a chandelier as the hallway's light; a gloomy basement with raw brick
+      walls, puddles and the emergency exit at the end. Every picture is listed under M103 with
+      its contract
+- [ ] **A finale plan for the city map.** An ordered chain, not a `RouteTree`: service exit to
+      first park to second to third to the edge, one street-walk between each pair and nothing
+      else open. `RouteTree.for_day` and its redundancy guarantee (two distinct routes to each calm
+      area, counted as a max flow) are exactly what the finale must *not* do, so the chain is its
+      own small planner that reuses the reachability grid and hands `SealPlanner` the set of open
+      cells — a route *out* must never count as a route to a calm area, which is the rule
+      `CityEdge` and `tests/test_blocks.gd` already keep. Crowd at zero, and a scheduler budget of
+      army trucks, abductions and explosions rather than the act's ordinary catalogue
+- [ ] **An explosion row.** Off screen, a short burst of intensity high enough to reach her from
+      out of view, a sound arc when M100's sound lines exist, and a crater left behind as a scar
+      the way `barricade` leaves one — `spawns_on_finish` naming a crater row whose picture is one
+      of the three prepared sizes, obstructing at the size it is drawn
+- [ ] **She carries the baby.** `Stroller` draws the carrying frames instead of the mother-and-pram
+      pair for the whole finale, with the pram's own collision gone with it (the pram has no
+      collision of its own today, so this is the sprite alone). The baby-state cue over the pram
+      moves to over the bundle
+- [ ] **The two hint lines, the millisecond clock and the section restart**, each a small change
+      to `HUD` and `DayController`: the clock formats milliseconds, and the day-lost path restarts
+      the section rather than ending a day
+- [ ] **The summary after it**, which is the good ending's epilogue: the tunnel or the bridge
+      behind her, and nothing triumphant
+
+**Four things the brief collided with in the finale as `docs/NARRATIVE.md` writes it today, each
+asked and each answered by the player on 2026-09-09:**
+
+1. **The sabotage stays, and the escape is what it causes.** *("yes, the sabotage is the cause of
+   the brutal crackdown.")* Today the good ending is `RESISTANCE_GOAL` reached *and* the day-14
+   step "The last night" touched (`ResistanceSteps._finale`, a civic-district contact that sets
+   `sabotage_done`), and its reward is mechanical quiet: every `city_wide` source is silenced and
+   she walks home on the easiest ground in the run. That stands. The quiet walk home is the breath
+   before the climax; the hallway scene follows it the same night, and the trucks and the masked
+   men are the regime's answer to what she did. *"No triumphalism"* still governs what is shown
+   after the tunnel.
+2. **Losing the finale restarts the section, at no Nerve cost.** *("sounds good at that point you
+   earned it.")* A day lost costs one Nerve and the day is over; the finale has no next day, and
+   the run is already won on paper. Capture, the meter reaching 100, or the clock running out each
+   put her back at the start of the section she was in — the hallway, or the service exit — with
+   Nerves untouched. A fourteen-day run is never thrown by one wrong turn in the last minutes.
+3. **The clock is a day's clock with milliseconds on it, and zero loses.** *("the timer for the
+   sequence is the same length and running out loses (the bridge/tunnel collapses or something
+   like that). the only change is that in addition to minutes and seconds the timer also shows
+   milliseconds. this makes the timer appear faster than just the seconds alone which adds
+   additional tension.")* So: one clock for the whole sequence, `DAY_LENGTH_SECONDS` (180s) long
+   like any day, counting down through both sections; at zero the way out is gone — the bridge or
+   the tunnel collapses, or something of that shape — and the section restarts as in 2. The only
+   change to the clock itself is the format, `%d:%02d.%03d` in place of `%d:%02d`, because
+   milliseconds ticking make the same countdown read as faster.
+4. **Two paths.** *("two paths it is.")* Two chains of the shape above, one ending at the tunnel
+   at the north end of the main road and one at the bridge at its south end, each through its own
+   three parks. They part at the service exit, or as near it as the lattice allows, and do not
+   overlap after that — *"no overlapping routes"* — so the choice is made once, at the door, and
+   is the game's verb; the home lot sits between the two ends of the main road so neither exit is
+   trivially nearer.
+
+**And what the finale is not.** No fighting, no button — the tone rules stand: the danger is
+noise, the men are the same masked men as act III's abductions, and the baby is never threatened by
+anything but being woken.
+
+---
+
+## M79 — The city seen at an angle · tabled 2026-09-06
+
+**Tabled, and the reason is sequencing rather than doubt.** *(2026-09-06: "let's write down the
+findings about the diagonal grid but table it for now".)* Nothing here is rejected; it is written
+down so the graphics overhaul can decide the projection with the code's constraints in front of it
+rather than after committing to art. **What would make it worth picking up**: the overhaul reaching
+the point where it chooses a projection, and somebody confirming the existing rotated presentation
+on a real phone — not a complaint about how the city looks today.
+
+The reference the player gave is `docs/evidence/reference-isometric-street-2026-09-06.jpeg`: a 2:1
+isometric street with buildings as tall volumes, pedestrians, cars and a pram. **Its HUD is not part
+of this.** *(2026-09-06: "ignore the hud in the image".)* That picture's bottom bar carries verbs —
+Feed, Soothe, Order Pizza — and this game has one verb, which is where you walk.
+
+**The instruction is a presentation change and nothing else.** *(2026-09-06: "the logical layout
+would stay the same only the presentation would rotate".)*
+
+- [ ] **Only the world-to-screen transform changes; the lattice does not.** The tile grid stays
+      cardinal `Vector2i`, so the lattice, `RouteTree`, `ClosurePlanner`, `SealPlanner`, the crowd's
+      lanes and every test are untouched. **This is the whole reason a diagonal *lattice* is not
+      what is being asked for**, and it is worth stating why that alternative is closed: `CityMap`'s
+      layout is a modulo — its own comment, *"a coordinate's position within its period tells you
+      which it is"*, over a period of `BLOCK_SIZE + STREET_WIDTH` tiles — and a 45° street has no
+      period in tile coordinates. Every segment is horizontal or vertical down to the vocabulary
+      (`closure.segment.horizontal`, logged as `h(7,4)` and `v(8,6)`), the crowd is built on
+      `travelling_vertically()` and `make_lane_key(vertical, corridor, lane, direction)`, and
+      `TrafficLight.arm_is_vertical` even picks a different sprite. A diagonal lattice is a rewrite
+      of the city that buys nothing the route decision can feel — she still chooses between streets
+
+- [ ] **The buildings are already 2.5D, which is what makes this cheap.** `Building` is *"a 2.5D
+      extruded block, assembled from 32px facade and roof tiles"* — a front wall in elevation plus a
+      roof, from `wall.svg`, `wall_edge_w/e.svg`, `roof.svg` and `roof_edge_n.svg`, and each one is
+      its own `StaticBody2D` node in `City._spawn_buildings()`. So the facade vocabulary exists and
+      is not top-down art to re-author, and per-building translucency is `modulate` on one node
+      rather than a restructure
+
+- [ ] **What rotation destroys is a guarantee, and replacing it is the actual work.** `Building`'s
+      class doc: *"nothing can ever legitimately be **behind** a building, so nothing sorts against
+      one."* The layout guarantees there is no walkable ground behind a building's mass, so occlusion
+      never has to be solved and no real y-sorting is needed. **Rotate and that is gone** — a rotated
+      lot puts its own pavement behind its own wall. So this item is: replace a layout guarantee with
+      a runtime rule, and add the y-sorting nothing does today
+
+- [ ] **Buildings in front fade or vanish, and "when necessary" is wider than the player.**
+      *(2026-09-06: "buildings in front could become translucent or disappear when it becomes
+      necessary".)* The standard answer is *"when it hides the character"*, and that is too narrow
+      here: the route decision depends on seeing the things you route around. The must-see set is the
+      player, any event carrying a mark (`EventInstance.wants_a_mark()`), anything `DangerEdge` would
+      badge if it were off screen — an occluded thing is that same question in a new form — and the
+      home arrow's target during the return. Cost is a per-frame test of a few dozen buildings
+      against a handful of points, the same order as the event scan `CLAUDE.md` already calls free.
+
+      Two calls inside it: **fade or vanish** — fade keeps a street legible as a street, vanishing is
+      unambiguous but flickers at the threshold — and **whether a fading building is itself a cue**.
+      If you learn *something is there* because a wall went translucent, the **cues** rules govern it
+      and it owes the same discipline as the rest of the danger vocabulary
+
+- [ ] **It must be a real camera transform, not faked in `_draw()`.** `TouchControls._on_tap()` maps a
+      tap to a world point through `get_viewport().get_canvas_transform().affine_inverse()`, and
+      `DangerEdge` and `HomeArrow` both go the other way every frame from the same transform. A real
+      transform keeps all three working; a fake one breaks every one of them. Two more that follow:
+      `main.gd`'s camera fit sets zoom from an axis-aligned bound and would be fitting a diamond, and
+      `city.gd` draws kerbs, centre lines and zebras as axis-aligned rects off `STREET_WIDTH`
+
+- [ ] **The gameplay cost is the keyboard, and it is the one real objection.** *(2026-09-06: "what
+      would be the implication on gameplay? if down the line tap becomes the default it's fine. but
+      keyboard controls become clunky in diagonal".)*
+
+      **The collision and the physics do not change at all** — the world stays cardinal and only the
+      camera turns, so pavements, lanes, bodies and every fairness contract are untouched. What
+      changes is that `Stroller` reads `Input.get_vector("move_left", "move_right", "move_up",
+      "move_down")`, a normalised vector **in world space**, so a key press stops pointing where she
+      visibly goes. There is no arrangement that avoids this, only a choice of which way it hurts:
+
+      - **Keys on world axes** (one key follows a street exactly, and on screen she sets off at 45°
+        to the key pressed). Correct for the game — a street is the thing you walk — and it is what
+        most isometric games do, but it is exactly the clunkiness named above.
+      - **Keys rotated to the screen** (up walks up the screen). Reads right for one second and then
+        walks her diagonally into buildings, since up-the-screen is a world diagonal and no street
+        goes that way. She would slide along walls constantly.
+
+      **And it inverts what two keys mean.** Today holding two gives a true diagonal along open
+      ground. Rotated, with keys on world axes, a single key follows a street and **two keys point
+      between buildings** — so the combination a player reaches for becomes the useless one.
+
+      **The pointer scheme has none of this.** `TouchControls._on_tap()` already maps a screen point
+      to a world point through `get_viewport().get_canvas_transform().affine_inverse()`, so a
+      rotated camera is handled by the transform and costs the design nothing: a press already
+      means *go there*, in world space, whatever the camera's own angle.
+
+      **So the objection is the keyboard alone, now that there is one control scheme rather than a
+      choice between two** (M82 deleted the drag stick and the title screen's own question). A
+      fresh install has nothing to default to any more — every device gets the same pointer scheme,
+      and the keyboard sits beside it as arrows/WASD always have. **Settle whether the diagonal
+      clunkiness above is acceptable on a keyboard before this is scheduled**, because that is now
+      the whole of what standing in the way of a rotated presentation.
+
+- [ ] **Spike the transform alone on the existing square art before anybody draws anything** —
+      proving tap-to-world, the edge cues, the zoom fit and y-sorting survive, with no new art,
+      because that is what de-risks the expensive half.
+
+      **The rotation it composes with is already one rotation**, which is what makes the spike
+      worth doing rather than doomed: `ScreenOrientation` carries a single transform applied to
+      every `CanvasLayer`, `main._process()` re-asks `wants_rotation()` every frame and reapplies
+      only on change, and `TouchControls` no longer turns itself. **What is not settled is a sign
+      error the world and the drawing could share**, which `tests/test_orientation.gd` says outright
+      it cannot catch — so the spike is looked at in a portrait window with `tools/shot.sh`'s
+      resolution argument, not judged from a passing suite

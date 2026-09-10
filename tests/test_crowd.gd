@@ -84,21 +84,16 @@ func _test_population_follows_the_act(t) -> void:
 
 func _test_walkers_follow_the_selected_presentation(t) -> void:
 	_city.crowd.start_day(1, _rng(1))
-	var illustrated := DevFlags.illustrated_requested()
 	var walkers := 0
 	var cars := 0
 	for agent: CrowdAgent in _city.crowd.agents():
 		if agent.kind == CrowdAgent.Kind.WALKER:
 			walkers += 1
-			t.check((agent.walker_visual != null) == illustrated,
-				"walker presentation follows the explicit graphics selection")
-			if illustrated:
-				t.check(agent.walker_visual.global_position == agent.global_position and
-					agent.walker_visual.position == Vector2.ZERO,
-					"illustrated walker presentation shares owner coordinates without an offset")
+			t.check(not agent.has_node("ModularWalker"),
+				"walkers use the same feet-anchored drawing path in every presentation")
 		else:
 			cars += 1
-			t.check(agent.walker_visual == null and not agent.has_node("ModularWalker"),
+			t.check(not agent.has_node("ModularWalker"),
 				"car retains its legacy presentation")
 	t.check(walkers > 0 and cars > 0, "walker presentation invariant covers both live kinds")
 
