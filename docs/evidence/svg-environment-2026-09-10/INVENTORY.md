@@ -9,7 +9,10 @@ The set contains 81 new SVGs and the revised existing industrial vent source.
 Every game source has its import sidecar. New sources remain prepared until their owning
 milestone adds the caller or resource entry.
 
-The contact sheets show each source at native size and 3× using Godot's SVG parser. Images keep
+The contact sheets show sources at native size and 3× using Godot's SVG parser. The stair cells
+in `interior-review.png`, `fire-escapes-review.png` and `fire-escape-wall-review.png` are preserved
+human-review history; current stair geometry follows the sideways-flight references and is
+reviewed separately in `docs/evidence/svg-sideways-stairs-2026-09-10/`. Images keep
 their authored dimensions; they are not fitted to a common object size. Labels use a readable
 font over an opaque neutral background. The background is presentation, not part of an asset.
 
@@ -65,6 +68,12 @@ Floor and wall modules are 32×32. Damage tiles preserve the matching base fill 
 drainage seams; cracks and cuts stay inside their tile. The hallway south edge includes door
 thresholds because hallway doors lie below the view. Other cardinal edges provide wall-side trim.
 The alley alternative tiles beside its own neighbours and leaves the live alley source intact.
+
+`stair_down.svg` is a transparent 64×64 projected stair module with two sideways flights and an
+intermediate landing, registered at (32,64). It is separate from the repeating floor tile and
+the runtime floor-transition trigger. Upper/lower landing centres (8,10)/(8,58) face the hallway
+when unmirrored on its right; mirror across x=32 for the left stairwell. The intermediate landing
+is (56,34), or (8,34) when mirrored. `GRAPHICS.md` carries this placement contract.
 
 Ground decals use the canvas centre: puddle, tree pit, litter and chalk. Every litter source
 uses a 32×32 transparent canvas and visible geometry at most ten native pixels wide or high,

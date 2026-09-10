@@ -1174,7 +1174,10 @@ milestone places them so a street reads as a place, and a district as a district
       escapes go on `RESIDENTIAL` facades at a seeded share, two cells tall over the existing
       windows. A storefront is a `wall_base` replacement and a fire escape is an overlay, so
       `Building`'s composition changes in two places and the tint rules stay. The awning is the
-      one piece that leaves the facade plane, and it stays out of the pavement's walkable band
+      one piece that leaves the facade plane, and it stays out of the pavement's walkable band.
+      Fire-escape flights run sideways parallel to the facade and reverse direction at landings;
+      retain their transparent treads and rail gaps over windows. Use PLAYTEST-53's exterior
+      reference for that construction, with the prepared SVG's native placement contract.
 - [ ] **Street trees.** Trees on the pavement, in pits, along `RESIDENTIAL` and `COMMERCIAL`
       streets at a seeded spacing — never on a crossing, never within a tile of a door or a
       checkpoint, and never on the main road's pavements where the crowd's lanes are densest. A
@@ -1230,7 +1233,8 @@ HUD's `_say()` teaches tapping and running on day 1 and then never again. The bu
 home lot's own block, seen from inside for the first and only time in the run: the hallway outside
 the door at night, a dead lift, and two stairwells: one at the building's left side and one at its
 right side. Within each stairwell, flights zigzag sideways across the view with landings between
-them, as shown in the references linked from PLAYTEST-53. They do not recede front-to-back.
+them, as shown in the [supplied stair references](evidence/stair-layout-reference-2026-09-10/README.md).
+They do not recede front-to-back.
 The two egresses (*"all buildings have two egresses"*) lead down a few
 floors — three or four, *"not excessively many"*. The main entrance is barricaded, so the way out
 is down past the ground floor into the basement, along its corridors to the service entrance on
@@ -1299,14 +1303,15 @@ M103, the drawings the queue owes.
       heaped against it; a chandelier as the hallway's light; a gloomy basement with raw brick
       walls, puddles and the emergency exit at the end. Every picture is listed in `GRAPHICS.md` with
       its contract
-- [ ] **Sideways stair artwork and its traversal contract.** Revise `assets/interior/stair_down.svg`
-      and `assets/buildings/fire_escape_{a,b}.svg` from front-to-back ladders to lateral switchback
-      flights with visible treads, side rails and intermediate landings, using PLAYTEST-53's two
-      supplied references. The interior module must support the left and right stairwells; its
-      projected picture is distinct from the floor-transition trigger. Bind the landings and
-      transitions in the interior map so changing floors preserves the selected stairwell side.
-      In M106, roofs, fronts and street trees, place the exterior overlays parallel to the facade,
-      keeping windows visible between rails. Review native size and the assembled stairwell/front.
+- [ ] **Bind sideways stair modules and floor transitions.** Place the prepared 64×64
+      `assets/interior/stair_down.svg` once per building side: mirrored on the left, unmirrored
+      on the right, so upper/lower landings face the hallway. Use the anchors and landing points
+      in [GRAPHICS.md](GRAPHICS.md), keeping the projected picture separate from the
+      floor-transition trigger. Bind landings and transitions so changing floors preserves the
+      selected stairwell side. Review the assembled hallway at native size and traverse both
+      sides through every floor. The construction decision is recorded under “Sideways stair
+      flights and two building-side stairwells” in [DECISIONS.md](DECISIONS.md); exterior overlay
+      placement belongs to M106, roofs, fronts and street trees.
 - [ ] **A finale plan for the city map.** An ordered chain, not a `RouteTree`: service exit to
       first park to second to third to the edge, one street-walk between each pair and nothing
       else open. `RouteTree.for_day` and its redundancy guarantee (two distinct routes to each calm

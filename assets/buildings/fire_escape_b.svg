@@ -1,12 +1,19 @@
-<!-- Second fire escape overlay with an offset landing and zig-zag descent. -->
+<!-- Side-on fire escape: right upper landing, left turn, right lower landing.
+     Transparent 48x64 facade overlay; drawing anchor (24,64), lower landing (41,59).
+     This opposite layout keeps the same constant-depth treads and registration. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="64" viewBox="0 0 48 64" shape-rendering="geometricPrecision" stroke="#3b3034" stroke-linejoin="round" stroke-linecap="round">
-  <!-- Ground anchor is the canvas bottom centre. It overlays wall/window cells. -->
-  <path d="M7 18H38L43 22L12 25Z" fill="#586065" stroke-width="1"/>
-  <path d="M12 25L18 28L37 24L38 20" fill="#747b7b" stroke-width="1"/>
-  <path d="M14 24L20 58 M37 22L31 58" fill="none" stroke-width="2"/>
-  <path d="M17 32H35 M16 39H34 M15 46H33 M14 53H32" fill="none" stroke-width="1.5"/>
-  <path d="M10 20V9 M41 21V6" fill="none" stroke-width="2"/>
-  <path d="M9 9H42" fill="none" stroke-width="2"/>
-  <path d="M9 9L13 6 M42 6L39 3" fill="none" stroke-width="1.2"/>
-  <path d="M12 60H32" fill="none" stroke="#221f28" stroke-width="2"/>
+  <g transform="translate(48 0) scale(-1 1)">
+    <!-- The wall remains visible between landings and through the open risers. -->
+    <path d="M2 12L4 10H12L10 12Z M36 35L38 33H46V35Z M2 59L4 57H12L10 59Z" fill="#7c807b" stroke-width="0.7"/>
+    <path d="M2 12H10V14H2Z M36 35H46V37H36Z M2 59H10V61H2Z" fill="#586065" stroke-width="0.8"/>
+    <path d="M10 13L38 36 M38 36L10 60" fill="none" stroke="#3b3034" stroke-width="2"/>
+    <path d="M10 12L38 35 M38 35L10 59" fill="none" stroke="#7c807b" stroke-width="0.7"/>
+    <!-- Horizontal tread noses, with equal short depth faces on every step. -->
+    <path d="M10 15H16L14 13H10Z M15 19H21L19 17H15Z M20 23H26L24 21H20Z M25 27H31L29 25H25Z M30 31H36L34 29H30Z M35 35H41L39 33H35Z M30 39H36L34 37H30Z M25 43H31L29 41H25Z M20 47H26L24 45H20Z M15 51H21L19 49H15Z M10 55H16L14 53H10Z" fill="#96988b" stroke-width="0.55"/>
+    <!-- Balusters and opposing handrail slopes define the side-on flights. -->
+    <path d="M3 12V4 M10 12V4 M20 22V12 M30 30V20 M38 35V27 M45 35V27 M30 43V35 M20 51V43 M10 59V51 M3 59V51" fill="none" stroke-width="1"/>
+    <path d="M3 4H10L38 27H45 M3 51H10L38 27" fill="none" stroke-width="1.6"/>
+    <path d="M3 3.7H10L38 26.7H45 M3 50.7H10L38 26.7" fill="none" stroke="#7c807b" stroke-width="0.5"/>
+    <path d="M3 14L8 18V14 M45 37L39 43V37 M3 61H11" fill="none" stroke-width="1"/>
+  </g>
 </svg>

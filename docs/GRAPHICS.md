@@ -131,6 +131,17 @@ The [environment source review](evidence/svg-environment-2026-09-10/INVENTORY.md
 prepared interior, ground, roof, frontage and prop source in `sources.csv`, with native canvases,
 anchors and alpha bounds. It includes tile repetition, facade overlays and chalk on pavement.
 
+Stair construction follows the [supplied lateral-flight references](evidence/stair-layout-reference-2026-09-10/README.md).
+The interior has one stairwell on the building's left and one on its right; each contains sideways
+switchback flights. `assets/interior/stair_down.svg` is a 64×64 projected module, anchored at
+(32,64), separate from its eventual floor-transition trigger. Its unmirrored upper, intermediate
+and lower landings are (8,10), (56,34) and (8,58); mirror around the canvas centre for the other
+side. For a hallway between the stairwells, use the mirrored module on the left and unmirrored
+module on the right so their upper/lower landings face the hallway. Exterior
+`fire_escape_{a,b}.svg` stays 48×64, with alternating lateral flights parallel to the facade.
+The [stair source and assembly review](evidence/svg-sideways-stairs-2026-09-10/README.md)
+shows native/3× sources, the two hallway ends and transparent facade overlays.
+
 The [people source matrix](evidence/svg-people-2026-09-10/PEOPLE-MATRIX.md) names every body,
 trim, gait and action source, its registration and intended live or prepared use. Native/3×
 sheets show each layer and all eight composed facings. A pointing pose's suffix describes the

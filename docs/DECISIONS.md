@@ -15,6 +15,18 @@ The human-rejected `stair_down.svg` and both `fire_escape_*.svg` sources from `2
 preserved in `docs/evidence/archive/rejected-graphics/stairs-front-to-back-2026-09-10/`, without
 import sidecars. Original recommended review sheets remain available as the rejection record.
 
+The three replacement SVGs show opposed lateral flights with an intermediate landing. The
+interior module uses a transparent 64×64 canvas anchored at (32,64), rather than treating the
+picture as a floor tile or transition trigger. Its upper/middle/lower landing points are
+(8,10), (56,34) and (8,58). The left stairwell mirrors the module; the right uses it unmirrored,
+so the upper/lower landings face the connecting hallway. Both 48×64 facade variants retain
+transparent tread and rail gaps. These projection and registration choices are reviewable
+implementation details; floor traversal and facade placement remain queued with their owners.
+
+Native/3× Godot source renders, the two-stairwell hallway assembly and facade overlays are
+preserved in `docs/evidence/svg-sideways-stairs-2026-09-10/`. Each revised graphic has its own
+commit. Visual review confirms lateral switchbacks and the opposite hallway-facing placements.
+
 ## Main reconciled with prepared SVG authoring — 2026-09-10
 
 The main update uses common ancestor `f27860dda82b3f950e5814d0d59a5366f180e0c7`, incoming
@@ -54,8 +66,8 @@ is a capsule, while skip and burnt-out-car obstructions remain circles; live sil
 agreement remains a debug-view review, not a claim established by adding the shape datum.
 
 Merge verification passes in the actual checkout: import/boot, focused shapes/visuals/events/crowd
-suites, documentation/XML lint and whitespace checks. The focused run reports 85,511 checks and
-zero failures. Both playtest bodies are compared to their recorded tips; only the graphics title's
+suites, documentation/XML lint and whitespace checks. The focused run has no failures.
+Both playtest bodies are compared to their recorded tips; only the graphics title's
 identity changes. Runtime sources and tests match incoming main exactly. No additional gameplay
 capture is needed for this merge because the branch adds no runtime selection or behavior.
 

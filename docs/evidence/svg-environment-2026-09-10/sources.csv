@@ -1,6 +1,6 @@
 source,native_width,native_height,anchor,alpha_bounds_1x,usage,work_item,intended_consumer,intended_use
-assets/buildings/fire_escape_a.svg,48,64,bottom centre,4;3;44;61,prepared unbound,M106,Building facade renderer,Fire escape variation a over two wall rows; transparent gaps reveal windows
-assets/buildings/fire_escape_b.svg,48,64,bottom centre,6;2;44;61,prepared unbound,M106,Building facade renderer,Fire escape variation b over two wall rows; transparent gaps reveal windows
+assets/buildings/fire_escape_a.svg,48,64,bottom centre,1;3;46;59,prepared unbound,M106,Building facade renderer,Two opposed lateral flights parallel to facade; transparent gaps reveal windows; anchor 24;64
+assets/buildings/fire_escape_b.svg,48,64,bottom centre,1;3;46;59,prepared unbound,M106,Building facade renderer,Opposite-handed lateral flights parallel to facade; transparent gaps reveal windows; anchor 24;64
 assets/buildings/storefront_a.svg,32,32,tile origin,0;0;32;32,prepared unbound,M106/M105,Building facade renderer,Shop a plain state at wall base; preserve door alignment
 assets/buildings/storefront_a_awning.svg,32,32,tile origin,0;0;32;32,prepared unbound,M106/M105,Building facade renderer,Shop a awning state at wall base; preserve door alignment
 assets/buildings/storefront_a_shuttered.svg,32,32,tile origin,0;0;32;32,prepared unbound,M106/M105,Building facade renderer,Shop a shuttered state at wall base; preserve door alignment; M105 selects for boarded/degraded blocks
@@ -39,7 +39,7 @@ assets/interior/hallway_wall_window.svg,32,32,tile origin,0;0;32;32,prepared unb
 assets/interior/hallway_wall_window_flash.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Finale explosion presentation,Brief illuminated window state from off-screen explosion; retain normal-state placement
 assets/interior/lift_door_dead.svg,34,42,bottom centre,0;1;34;42,prepared unbound,M102,Interior doorway renderer,Closed inactive lift beside hallway
 assets/interior/puddle.svg,32,32,canvas centre,3;13;29;25,prepared unbound,M102,Interior ground overlay,Place flat on basement floor beneath actors; may accompany steam
-assets/interior/stair_down.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Interior transition renderer,Mark descending stair footprint leading to next floor map
+assets/interior/stair_down.svg,64,64,bottom centre,1;1;62;63,prepared unbound,M102,Interior stair renderer,Two sideways flights; anchor 32;64; mirror at left hallway end and leave unmirrored at right; floor-transition trigger is separate
 assets/interior/stairwell_door.svg,28,40,bottom centre,1;1;27;40,prepared unbound,M102,Interior doorway renderer,Hallway door visible only from inside stairwell
 assets/interior/stairwell_floor.svg,32,32,tile origin,0;0;32;32,prepared unbound,M102,Interior ground TileSet,Repeat mechanical floor in stairwell
 assets/props/chalk_mark.svg,32,32,canvas centre,4;4;28;28,prepared unbound,M100,ContactPoint chalk drawing,Untouched mark ground decal; preserve existing encounter visibility rules
