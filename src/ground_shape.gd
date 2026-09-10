@@ -9,9 +9,16 @@ extends RefCounted
 ## spine) and a capsule (segment spine). **A third kind, a rectangle, exists only because a
 ## building's footprint is one** — `half_extents`, an axis-aligned box in the object's own frame —
 ## and nothing else in the game uses it: every other obstructing thing reduces to a point or a
-## band, which is why `band()` below still hands out only those two. There is still no polygon: the
-## general Minkowski-sum case (a shape offset outward by a kernel, which is what the excitement
-## field becomes) is composition over this datum for a later slice, not a reason to widen this one.
+## band, which is why `band()` below still hands out only those two. There is still no polygon.
+##
+## **The excitement field is the Minkowski sum of this datum and a kernel** — `field_distance()`
+## and `field_outline()` below, read by `EventInstance.contribution_at()`,
+## `CrowdAgent.contribution_at()` and the debug view's fields layer. A disc kernel for a stationary
+## body (`distance_to_spine()`, the ordinary case) and an ellipse for a moving one
+## (`eccentric_distance()`, eccentricity from speed) are the only two kernels built: nobody
+## computes the general capsule-and-ellipse sum, because every emitting segment row in the
+## catalogue is stationary and everything that moves is small enough to be a point. See
+## docs/EVENTS.md, "The emission model".
 
 ## Which of the three kinds this shape is. A point and a segment could still be told apart by
 ## `half_length` being positive, the way this file did before the rectangle existed, but a
@@ -95,9 +102,10 @@ func across() -> float:
 ## Distance from a local point to the spine: zero on the spine itself, the perpendicular distance
 ## beside a segment's middle, and the Euclidean distance to the nearer end once `local` is past
 ## it. Zero for a point shape, whose spine is the origin. Zero anywhere inside a rectangle, and the
-## ordinary point-to-box distance outside it. Not read by anything in this slice — the field a
-## later slice adds is stated over exactly this function, so it is written and tested now rather
-## than invented alongside the field.
+## ordinary point-to-box distance outside it. What `field_distance()` below prices a stationary
+## emitter's field over — a point body's field is exactly the circle this always gave, and a
+## segment's is the capsule it always gave, `inner_radius`/`outer_radius` now meaning distance from
+## the spine rather than from the centre.
 func distance_to_spine(local: Vector2) -> float:
 	match kind:
 		Kind.RECT:
@@ -109,6 +117,107 @@ func distance_to_spine(local: Vector2) -> float:
 			return local.distance_to(Vector2(clamped_x, 0.0))
 		_:
 			return local.length()
+
+# ---------------------------------------------------------------------- the field ---
+# The excitement field is `body ⊕ kernel` — this shape (the body) offset outward by a disc
+# standing still or an ellipse moving, eccentricity from speed. See docs/EVENTS.md, "The emission
+# model", and docs/MECHANICS.md, "Excitement falloff".
+
+## The distance `Tuning.falloff()` prices this shape's field at, from `at` (its own centre, in
+## world space) to `point`, given the emitter's current `velocity` — zero for a stationary body, in
+## which case this is `distance_to_spine()` in the shape's own frame (rotated by `axis`, the same
+## one the shadow and the collision body use): a point body's field is the circle it always was,
+## and a segment's is a capsule about the spine. Nonzero, and the body is set aside — **moving
+## objects are points** (see the class doc) — and this is `eccentric_distance()` instead, the
+## emitter itself at one focus of an ellipse rather than at its centre.
+func field_distance(at: Vector2, axis: Vector2, velocity: Vector2, point: Vector2) -> float:
+	if velocity.is_zero_approx():
+		return distance_to_spine((point - at).rotated(-axis.angle()))
+	return eccentric_distance(at, velocity, point)
+
+## The effective distance under a moving emitter's own field: a conic with its **focus at `from`**
+## — *"the entity itself lives in one of the focus points"* — rather than its centre, so the field
+## reaches further ahead of the emitter than behind it. `e` is `Tuning.field_eccentricity()` of
+## `velocity`'s own speed; `θ` is the angle between `velocity` and the vector to `point`.
+##
+## `d_eff = r · (1 − e·cosθ) / (1 − e)` is the polar form of a conic from its focus: at `θ = 0`
+## (dead ahead) `d_eff = r`, so a field's forward reach is exactly its catalogued radius, unchanged
+## from a disc's; behind (`θ = π`) it is `r · (1−e)/(1+e)`, and abeam (`θ = π/2`) it is `r · (1−e)`
+## — both smaller, which is the whole point. Zero `velocity` (or a `point` sitting on `from`) falls
+## back to the plain Euclidean distance a disc always used.
+static func eccentric_distance(from: Vector2, velocity: Vector2, point: Vector2) -> float:
+	if velocity.is_zero_approx():
+		return from.distance_to(point)
+	var to_point := point - from
+	var r := to_point.length()
+	if is_zero_approx(r):
+		return 0.0
+	var e := Tuning.field_eccentricity(velocity.length())
+	var cos_theta := velocity.normalized().dot(to_point) / r
+	return r * (1.0 - e * cos_theta) / (1.0 - e)
+
+## The level set `field_distance()` reaches `level` at — the actual boundary `Tuning.falloff()`
+## draws for this shape, read by the debug view's fields layer (`DebugLayers`, see
+## docs/TELEMETRY.md, "The debug view") so a screenshot cannot disagree with the arithmetic. Same
+## split as `field_distance()`: stationary is this shape's own boundary (a circle for a point, a
+## stadium for a segment, both at radius `level`); moving sets the shape aside and traces the polar
+## ellipse `eccentric_distance()` inverts, focus at `at`, forward reach `level` along `velocity`.
+func field_outline(at: Vector2, axis: Vector2, velocity: Vector2, level: float,
+		samples: int = _ELLIPSE_SAMPLES) -> PackedVector2Array:
+	if not velocity.is_zero_approx():
+		return _eccentric_field_outline(at, velocity, level, samples)
+	if kind == Kind.SEGMENT:
+		return _stadium_field_outline(at, axis, level, samples)
+	return _circle_field_outline(at, level, samples)
+
+## The field boundary for a point or a moving emitter at `at`, without a body of its own to be
+## offset by — the shape `DebugLayers` reads for a crowd agent (always a point in field terms) and
+## for one bird of a flock (its own position, its own velocity), neither of which owns a
+## `GroundShape` worth asking.
+static func field_outline_at(at: Vector2, velocity: Vector2, level: float,
+		samples: int = _ELLIPSE_SAMPLES) -> PackedVector2Array:
+	return GroundShape.point(0.0).field_outline(at, Vector2.RIGHT, velocity, level, samples)
+
+func _circle_field_outline(centre: Vector2, level: float, samples: int) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for i in samples:
+		var angle := TAU * float(i) / float(samples)
+		points.append(centre + Vector2(cos(angle), sin(angle)) * level)
+	return points
+
+## A stadium at radius `level` about this shape's own spine — the same two-cap-and-two-sides
+## construction `DebugLayers._capsule_outline` draws for a body, at the field's `level` instead of
+## the body's own `radius`.
+func _stadium_field_outline(at: Vector2, axis: Vector2, level: float, samples: int
+		) -> PackedVector2Array:
+	var along := axis.normalized()
+	var base := along.angle()
+	var lead := at + along * half_length
+	var trail := at - along * half_length
+	var half_samples := maxi(2, samples / 2)
+	var points := PackedVector2Array()
+	for i in half_samples + 1:
+		var a := base - PI * 0.5 + PI * float(i) / float(half_samples)
+		points.append(lead + Vector2(cos(a), sin(a)) * level)
+	for i in half_samples + 1:
+		var a := base + PI * 0.5 + PI * float(i) / float(half_samples)
+		points.append(trail + Vector2(cos(a), sin(a)) * level)
+	return points
+
+## The polar ellipse `eccentric_distance()` inverts: `r(θ) = level · (1−e)/(1−e·cosθ)`, sampled at
+## `samples` angles `θ` around `velocity`'s own heading, so the drawn boundary is the exact level
+## set the falloff prices rather than a circle standing in for it.
+func _eccentric_field_outline(at: Vector2, velocity: Vector2, level: float, samples: int
+		) -> PackedVector2Array:
+	var e := Tuning.field_eccentricity(velocity.length())
+	var heading_angle := velocity.angle()
+	var points := PackedVector2Array()
+	for i in samples:
+		var theta := TAU * float(i) / float(samples)
+		var r := level * (1.0 - e) / (1.0 - e * cos(theta))
+		var world_angle := heading_angle + theta
+		points.append(at + Vector2(cos(world_angle), sin(world_angle)) * r)
+	return points
 
 ## This shape's own collision resource: a `CircleShape2D` for a point, a `CapsuleShape2D`
 ## (`radius`, `height = 2 * reach()`) for a segment, a `RectangleShape2D` (`size = 2 *
