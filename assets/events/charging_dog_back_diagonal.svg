@@ -1,0 +1,4 @@
+<!-- charging dog back diagonal; ears, spine and tail viewed from behind. Bottom-centre ground anchor; prepared and unbound. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="38" height="28" viewBox="0 0 38 28" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M22 8 L22 3 L25 5 L29 5 L31 9 L28 14 L23 13 Z" fill="#5c4632" />  <path d="M7 19 L9 11 L24 8 L28 14 L15 23 Z" fill="#5c4632" />  <path d="M10 18 L3 20 L1 23 M15 20 L12 25 M26 13 L31 11 L34 13" fill="none" stroke="#3b2f26" stroke-width="2.5"/>  <path d="M10 17 L5 17 L2 14" fill="none" stroke="#4a3a2c" stroke-width="2"/>
+</svg>
