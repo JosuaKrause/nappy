@@ -14,59 +14,76 @@ mid-way through.
 
 ## The order
 
-### Illustrated actor registration and assembly
+### M108 — Eight-direction entity graphics
 
-**This is Codex's parallel track, worked beside the gameplay queue rather than ahead of it.**
-*(2026-09-09: "illustrated actors is currently a sidearm for codex to work on".)* The SVG drawings
-are the game's graphics until the illustrated presentation passes its visual gates, so a drawing
-item in the gameplay queue is drawn as SVG.
+This graphics track runs beside the gameplay queue. [PLAYTEST-51](playtests/PLAYTEST-51.md)
+approves the SVG-to-PNG workflow and requests eight-direction movement graphics for all entities
+before catalogue-wide conversion. See `DECISIONS.md` under Eight-direction style transfer.
+Author SVGs first, with N, NE, E, SE, S, SW, W, NW coverage and the existing animation/state
+variants. Preserve native scale, ground anchors, actor identity and gameplay. Document genuine
+mirror symmetry explicitly; front, back and diagonal projections must be authored rather than
+made by rotating an upright picture.
 
-The repair follows [ILLUSTRATED-GAMEPLAY-FIXES.md](ILLUSTRATED-GAMEPLAY-FIXES.md),
-PLAYTEST-32's connected-body and legacy comparison requirements, and the M84 record in
-DECISIONS.md. Keep the illustrated renderer opt-in. The supplied urban/mother illustrations
-define style; `docs/reference/` supplies real-world structure and posture.
+- [ ] Audit every entity drawing and its runtime caller against `GRAPHICS.md`, the event looks,
+      crowd families and prepared artwork in M103, the drawings the queue owes. Record a matrix
+      of eight facings, movement/idle/action states, native canvases, anchors, layer order and
+      permitted symmetry. Include stationary actors' directional action poses; a stationary
+      prop or building is not movement artwork. Keep prepared assets separate from live bindings.
+- [ ] Complete people: crowd walker body/trim layers, mother carrying the baby for M102, the finale,
+      chatting mother walking/talking, dog walker, yeller, busker, poster crew, café sitters,
+      guards standing/lunging, van victim, robber waiting/lunging, protesters and gunmen.
+      Reuse the eight protester pointing poses where appropriate. Preserve authored event identity,
+      carried objects and untinted overlays; do not substitute a generic walker for each event.
+- [ ] Complete animals and riders: crouched/running cat, dogs including charging posture,
+      pigeons with both wing phases, and cyclist. Preserve leads, contact shadows and state-specific
+      silhouettes while adding directional frames.
+- [ ] Complete vehicles: crowd cars with body/trim layers, delivery van, fire engine, ice-cream
+      van, lorry, police car, unmarked van, riot van, army truck and moving vans. Include vehicles
+      prepared by open gameplay items. Distinguish front from rear and keep wheels/footprints
+      grounded; eight facings do not authorize new traffic paths or moving stationary vehicles.
+- [ ] Bind live families to their actual heading with stable direction selection. Preserve
+      movement, collision, animation timing, sorting, tinting, cues and halo silhouettes. Leave
+      prepared families unbound until their owning gameplay item needs them. Verify all facings,
+      turns, idle and moving states with rendered SVG sheets and focused runtime checks; update
+      `GRAPHICS.md` with each family's actual binding and registration.
 
-- [ ] Finish the modular source-art gate with eight complete views, clean alpha and isolated
-      anatomy. The manifests identify same-facing arm/profile-leg reuse, shared diagonal walker
-      edge pixels and the mustard SW facing ambiguity. Replace those source limitations while
-      preserving interchangeable parts; flattened cards do not satisfy layered animation.
-      Preserve PLAYTEST-44's selected transparent v3 pram. See DECISIONS.md under Illustrated
-      registration audit and Limb attachment repair for the source findings and implemented fit.
-- [ ] Review the registered actors at gameplay scale before expanding variants. Inspect all eight
-      facings and smooth walk, run, stop, turn and reset, including the corrected resting knees.
-      The static contact review in DECISIONS.md predates the resting-knee correction. Headless
-      attachment and displacement checks do not establish motion quality or visual acceptance.
-      Keep the legacy drawings at their fixed horizontal comparison offset.
-- [ ] Resolve [PLAYTEST-45](playtests/PLAYTEST-45.md)'s directional posture and pram-quality findings within
-      the connected-body repair: mustard and red legs slant during east/west travel and spread
-      outward during north/south travel. Review knee bend, ground stride, projected lift and
-      source rest axes independently; matching endpoints alone is insufficient. Fit per-facing
-      mother-to-handle spacing to natural arm reach, preserving the selected v3 pram and logical
-      collision. Trace the pixelated pram to the actual visible binding, source alpha, complete
-      assembly scale and inherited filtering before choosing a repair. Confirm the illustrated
-      player loads in the actual test checkout after imports. Use the repeatable procedure in
-      the illustrated-png skill; see DECISIONS.md under Texture integration process.
-- [ ] Resolve [PLAYTEST-42](playtests/PLAYTEST-42.md)'s additional anatomy and pram compositing defects.
-      Inspect the preserved timed PNG sequence: each leg must read as one hip–knee–ankle chain,
-      without a painted bend plus a second solver bend. The baby must sit within the seat and
-      its facing-specific occlusion, not appear pasted over the stroller. Reconcile these with
-      PLAYTEST-45's existing natural-reach and directional-gait repair; keep both reports intact.
-- [ ] Implement and review [PLAYTEST-42](playtests/PLAYTEST-42.md)'s higher-resolution rendering of the
-      **current view**, preserving visible world extent, actor size, HUD size and physical window.
-      Render more pixels and downsample them; do not zoom out or merely enlarge logical coordinates.
-      Compare actual render-target dimensions and the same scene framing, input mapping, resize
-      behavior and screenshot/burst capture. Inspect filtering and retained detail without declaring
-      anatomy or animation fixed by resolution. The wider-view interpretation is rejected; its
-      history is in DECISIONS.md under Animation anatomy and camera experiment. The debug
-      `--illustrated-render-scale 2` experiment is in the tree and unverified; its open checks are
-      in HANDOFF.md. Preserve legacy presentation and the illustrated opt-in while it is reviewed.
-- [ ] Review whole-actor sorting in live overlaps and integrate roof reveal, then a representative
-      illustrated live street.
-      Preserve current joystick/tap choice and the event and crowd silhouette halos, including
-      their attributed contribution and easing. Connect crowd halos to the animated PNG assembly;
-      the current callback traces the offset legacy comparison. Extend vehicles, authored events,
-      environment and screens only
-      after their prerequisite visual gates.
+### M109 — Convert the SVG catalogue to PNG
+
+Follows M108, eight-direction entity graphics. Use the approved SVG-first workflow in
+[VISUALS.md](VISUALS.md) and the illustrated-png skill. The supplied diagonal urban and cardinal
+gameplay references define style only; each SVG defines content, geometry and placement.
+**Every PNG asset must have a corresponding SVG asset, authored and reviewed first.** This is
+a permanent authoring requirement, not only a conversion step. Audit existing PNG-only assets
+and author their source SVG before generating a replacement; never backfill an SVG from a PNG
+and call that SVG-first creation.
+The approval and request are recorded in PLAYTEST-51 and `DECISIONS.md` under Eight-direction
+style transfer.
+
+- [ ] Inventory every current tracked SVG, including M103's prepared graphics and the new
+      directional families, into a conversion manifest with source path, PNG destination,
+      dimensions, anchor, usage and review evidence. Include root application/identity SVGs;
+      exclude the historical archive. Reconcile newly added SVGs before closing the item.
+- [ ] Add an asset-pairing check covering every PNG asset and its source SVG, with explicit
+      mappings for non-mirrored paths. Keep raw generator outputs and captures in evidence.
+      Record SVG review and generation provenance so ordering is reviewable; reject PNG-only
+      additions instead of accepting a later placeholder SVG.
+- [ ] Transfer all entity SVGs and every directional/animation/state layer. Preserve native
+      canvases and exact SVG alpha, and keep tintable body/trim separation and authored identities.
+      Save original generation outputs, exact prompts, reference roles and reproducible extraction
+      and registration inputs. Inspect detail and animation consistency at gameplay scale.
+- [ ] Transfer terrain, building tiles, props, closures, checkpoint structures and whole-street
+      scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
+      alignment. Convert prepared assets too without prematurely binding their gameplay.
+- [ ] Convert UI, cue and identity SVGs while preserving their symbols, text, legibility and
+      exact geometry. Keep code-drawn graphics and shader behavior under their current owners.
+- [ ] Audit all loading paths: shared drawing helpers, direct textures, TileSets, scenes/resources,
+      UI buttons, the application icon and identity/export consumers. Provide registered PNG
+      bindings for every live SVG without altering draw transforms; verify both flag states and
+      missing/mismatched fallback. The SVG override remains the comparison control during review.
+- [ ] Review catalogue completeness, native-size quality, alpha, seams, tinting, cues, all eight
+      facings and moving-state consistency. Publish SVG/PNG comparisons and purposeful gameplay
+      evidence in the PR; document actual bindings and make SVG-first followed by transfer the
+      graphics authoring procedure. Archive superseded outputs with their import metadata.
 
 ### Gameplay queue
 
@@ -88,11 +105,11 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 2. **M104** — the debug view: fields, shadows and bounding boxes as toggleable layers, and the
    existing readout made toggleable with them. *(2026-09-10: "create a debug view to show the
    fields and the shadows and the bounding boxes. make each layer toggleable (maybe number keys?)
-   also make other debug information toggleable.")* Ahead of M61 because it is how M61 is
-   checked.
+   also make other debug information toggleable.")* Ahead of M61's field because it is how M61
+   is checked.
 3. **M61** — one shape per object, from which the field (the Minkowski sum of the body and a
-   kernel), the shadow and the collision body are all derived. *("M61 is kind of important but not
-   the immediate next item.")*
+   kernel) is derived the way the shadow and the collision body already are. *("M61 is kind of
+   important but not the immediate next item.")*
 4. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
    don't stop/redirect traffic or pedestrians.")* Placed here by the orchestrator, behind M61
    because the two share `src/crowd/crowd_agent.gd` and ahead of M65 because a sealed street the
@@ -169,9 +186,6 @@ a crossing; the record is in `DECISIONS.md` under "The tunnel swallows the road"
 re-report of playtest 24's fifth finding.
 
 The halo's design and playtest reasoning are in `DECISIONS.md` under M92.
-
-**[PLAYTEST-45](playtests/PLAYTEST-45.md) covers illustrated texture integration; the connected-body
-review also includes [PLAYTEST-43](playtests/PLAYTEST-43.md).** The open repairs are listed above.
 
 **[PLAYTEST-37.md](playtests/PLAYTEST-37.md) finding 5, the caret inconsistency, is built as M93 and recorded
 in `DECISIONS.md`.** Its junction
@@ -267,8 +281,8 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 entry names the owning milestone, the file it becomes, the family it joins and the contract the
 code will hold it to — canvas, anchor, projection — so it can be drawn cold, reviewed with the
 **svg-art** skill, and filed in `GRAPHICS.md` as *prepared* until its milestone binds it. Drawn as
-SVG: the SVG set is the game's graphics until the illustrated presentation passes its gates, and the
-illustrated PNG track has its own list at the top of this file. **A prepared picture is not a
+SVG first: every PNG needs an authored SVG source, and M108, eight-direction entity graphics,
+and M109, convert the SVG catalogue to PNG, cover direction and transfer work. **A prepared picture is not a
 binding**: nothing here changes what the game does, and the milestone that owns each one still
 decides placement, timing and rules. **Anything that repeats along a street comes in a few
 variations** *(2026-09-10: "we need a few variations for some of these items (like store
@@ -425,8 +439,8 @@ and `tree_{a,b}.svg`. M101's `flame.svg`, `rubble.svg`, `fire_engine.svg` and `f
 M102's six carrying frames, three craters, and every truck, van, seal, guard and flame it reuses
 from the live tables; the baby-state cue over the bundle is the existing `baby_{zzz,fuss,cry}.svg`.
 
-**Needs no picture.** M61's shape-derived shadows and the field's visibility are code-drawn from
-the shape, and `shadow.svg` is retired by it rather than replaced. M96 to M99 own no drawing;
+**Needs no picture.** M61's shadows and the field's visibility are code-drawn from the shape, and
+there is no shadow SVG to draw. M96 to M99 own no drawing;
 M99's building type that closes four streets composes from the existing wall and roof tiles unless
 its milestone decides it should read differently from a big building, which is a question for
 then. M100's accessibility, controller, save and audio items own none. M79 is tabled and its facade
@@ -536,68 +550,31 @@ sprite which looks odd for a lot of objects. both the shadow and the influence f
 bounding boxes) could be derived from the same shape associated with an object (that is independent
 of its graphics). let's structure it in that way and we'll get three wins out of it.")*
 
-- [ ] **Every object carries one ground shape, independent of its picture, and three things are
-      derived from it.** Today the three are set separately and none of them agrees with the
-      drawing. **The shadow** is `Sprites.draw_shadow()`: `assets/props/shadow.svg`, an ellipse,
-      stretched to twice a radius wide and 0.8 of it tall, with the radius hand-picked at every
-      call site — 9px for her and 12 for the pram in `Stroller`, 18 for a car and 7 for a walker in
-      `CrowdAgent`, 19 for a tree and a fraction of the sprite's width for the other props in
-      `Prop`, and a per-look number in `EventInstance` — so a 120px roadblock band and a four-car
-      seal both stand on an oval. **The body** is a `CircleShape2D` of `obstructs_radius` under
-      every event that obstructs, whatever it is drawn as, which is why a spread drawn
-      `obstructs_radius` either side of centre is solid as a disc rather than as the band it shows;
-      a building is a `RectangleShape2D` of its footprint and she is one circle. **The field** is a
-      point falloff, which the bullets below already replace with `body ⊕ kernel`. The shape is the
-      body operand of that sum, stated once: a rectangle in the object's own ground frame, rotated
-      with its facing (the decision below). Then the field is the rectangle offset by the kernel,
-      the shadow is the rectangle drawn on the ground — squashed on Y by the oblique view's own
-      0.8, the way the oval is today — and the body is a `RectangleShape2D` of it. Two numbers to
-      tune per object and three places that stop disagreeing.
+**The datum and two of its three consumers exist; the field is what is left.** Every object
+carries a `GroundShape` (`src/ground_shape.gd`): a point or a segment with a rounding radius — a
+disc or a capsule — and, for a building's footprint alone, a rectangle. Every event row, walker,
+car, prop, building, she and the pram carry one; the shadow is drawn from it, and where a thing has
+a body the body is its `collision_shape()`, with `obstructs_radius` equal to the shape's `reach()`
+and `EventDef.validate()` refusing the two disagreeing. *Asked for as rectangles on 2026-09-10
+("we can restrict bounding boxes to be rectangles") · overturned the same day to the point, segment
+and rectangle datum: "I said rectangle because it's easier. If you can do more complex things to
+it that way".* The record, with every row's shape, is in `DECISIONS.md` under M61.
 
-      **What has to survive the change.** The halo skips the shadow (playtest 35: *"the halo should
-      not include the shadow"*), and a shape-drawn shadow is skipped the same way. The rule that a
-      moving pursuer keeps no body is about *whether* there is a body, not its shape, and stands.
-      `EventDef.validate()`'s reachability rule — body plus her 14px inside `inner_radius` — is
-      restated over the shape's reach along its worst axis, the same restatement the telegraph
-      bullet below asks for. And the illustrated presentation is a picture, not a shape: the shape
-      is the same under either drawing, which is the point of keeping it off the graphics.
+**The field is still a point falloff**, and the shape is the body operand of the sum the bullets
+below describe: `GroundShape.distance_to_spine()` is the function the field is to be stated over —
+zero on a point, a segment or inside a rectangle, the ordinary distance outside — and nothing reads
+it yet. **Lethal is not noise, and the crowd is not a different mechanism** *(2026-09-10: "lethal
+!= noise. lethal is when you get hit by a car. but the car itself produces noise which is what the
+purpose of the field is.")*: `CrowdAgent.contribution_at()` runs the same `Tuning.falloff` an event
+does — a car is 5.4 over 38/104px plus an 18-point horn jolt, a walker 4.2 — and
+`Crowd.total_excitement_at()` sums it into the meter beside the events, so the field work below
+covers the crowd's sources on the same terms. Being hit is separate: a moving car's strike box,
+`CAR_STRIKE_HALF_LENGTH` 26 by `CAR_STRIKE_HALF_WIDTH` 14, read by `will_be_lethal()`, is not the
+car's shape and a test holds the shape never smaller than it.
 
-      **This closes M100's "vehicle collision and silhouette agreement" item from here**, since a
-      body derived from the same shape as the picture's footprint is the whole of that ask; its
-      text moved under this bullet rather than being designed twice.
-
-      **Three decisions, 2026-09-10, in the player's words.**
-
-      - **Everything gets a shape.** *("everything gets a shape even if the shape ends up not being
-        used by the field.")* Walkers, cars, props, buildings, the player and the pram, every
-        event: no object without one, whether or not it emits.
-      - **Shapes are rectangles.** *("we can restrict bounding boxes to be rectangles which then
-        defines the shadow and minkowski influences as stretched rounded rectangles.")* A shape is
-        an axis-aligned rectangle in the object's own frame, rotated with its facing — a point is a
-        square, a person is a small one, a van is a long one, a spread is the band it draws. The
-        body is a `RectangleShape2D`; the shadow is that rectangle drawn on the ground, squashed
-        on Y by the oblique view's 0.8; the field is the rectangle ⊕ the kernel, a rounded
-        rectangle whose corner radius is the kernel's — stretched further ahead when the kernel is
-        the ellipse of a moving thing. No capsules, no polygons, and the general Minkowski sum is
-        never needed: a rectangle offset by a disc or an ellipse is closed-form.
-      - **Lethal is not noise, and the crowd is not a different mechanism.** *("lethal != noise.
-        lethal is when you get hit by a car. but the car itself produces noise which is what the
-        purpose of the field is.")* The queue said on 2026-09-10 that a crowd car has no field and
-        is lethal instead, and that was wrong: `CrowdAgent.contribution_at()` runs the same
-        `Tuning.falloff` an event does — a car is 5.4 over 38/104px plus an 18-point horn jolt, a
-        walker 4.2 — and `Crowd.total_excitement_at()` sums it into the meter beside the events,
-        which is what `docs/MECHANICS.md` calls the emergent noise floor. Being hit is separate: a
-        moving car's strike box is already a rectangle, `CAR_STRIKE_HALF_LENGTH` 26 by
-        `CAR_STRIKE_HALF_WIDTH` 14, read by `will_be_lethal()`. So the noise shape and the strike
-        shape are one rectangle read twice, which is the shape doing its job; what the crowd does
-        not have is a physics body (walkers are shoved apart by `Crowd`'s bump mechanism, not by
-        collision), and whether a rectangle body replaces that is a build question, not a design
-        one. The mechanism is the same falloff; only the class holding it differs.
-
-      **M104's debug view is built first**, because none of the three derivations can be checked
-      by a rig alone: a shadow that is the wrong shape, a field that reaches further than the
-      body it is drawn around, and a body that does not match the picture are all things a person
-      sees in one frame with the layers on.
+**M104's debug view is how the field is checked**, because a field that reaches further than the
+body it is drawn around is a thing a person sees in one frame with the layers on and a rig cannot.
+The shadow and the body landed before it and are checked by eye once it exists.
 
 **A change to the emission model itself, and it is the first one since the falloff shape.** Today
 every field is a disc: `Tuning.falloff(distance, intensity, inner, outer)` prices being near a thing

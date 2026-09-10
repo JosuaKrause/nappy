@@ -47,6 +47,8 @@ func _draw() -> void:
 			var texture: Texture2D = CAUSES.get(kind)
 			if not texture:
 				return
+			# `texture.get_size().x * 0.32` is this cause's own point shape's radius, read off its
+			# own picture the same way a tree's is.
 			Sprites.draw_shadow(self, Vector2.ZERO, texture.get_size().x * 0.32)
 			Sprites.draw_standing(self, texture, Vector2.ZERO)
 		_:

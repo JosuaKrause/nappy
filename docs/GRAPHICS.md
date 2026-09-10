@@ -5,16 +5,19 @@ uses it. A file is **live** only when a runtime source or scene binds it. **Prep
 has the size and registration needed by an open design, but no runtime caller yet. A filename or a
 mention in a design document is not evidence that a picture appears in the game.
 
-The default presentation is the SVG set below. The illustrated PNG presentation remains an opt-in
-comparison; its active manifests are linked separately rather than mixing generated source sheets
-into the SVG inventory.
+The SVG set below supplies the editable source graphics. Registered PNG replacements are used
+by default where available; `--svg` or `?svg=1` forces SVGs. Every PNG asset needs an SVG first.
 
 ## Shared drawing contract
 
 `src/sprites.gd` owns the ground-plane contract used by the player, crowd, events and props:
 `draw_standing()` puts the bottom centre of a texture at the node's world position and mirrors
-about that point, while `draw_shadow()` stretches `assets/props/shadow.svg` along the ground.
-Unless a row below says otherwise, an actor or prop SVG is bottom-centre anchored by this helper.
+about that point, while `draw_shadow()` draws the contact-shadow ellipse every point-shaped object
+casts. There is no shadow SVG any more: `GroundShape` (`src/ground_shape.gd`) draws every shadow in
+code, from the object's own ground shape — a point everywhere the object's shape is a point, and a
+capsule (a rotated ellipse at each end of the object's spine, hulled together) wherever it is a
+spread or a wide vehicle. Unless a row below says otherwise, an actor or prop SVG is bottom-centre
+anchored by `draw_standing()`.
 
 Some visible graphics are code rather than image files:
 
@@ -47,8 +50,8 @@ Some visible graphics are code rather than image files:
 
 | Assets | Runtime binding and behaviour |
 |---|---|
-| `assets/rig/mother_{front,back,side}_{a,b}.svg` | `src/player/stroller.gd` chooses a facing and alternates the two gait frames. The side pair mirrors for west. |
-| `assets/rig/pram_{front,back,side}.svg` | `src/player/stroller.gd` chooses a facing; the side view mirrors with the mother. |
+| `assets/rig/mother_{front,back,side}_{a,b}.svg`, `mother_{front,back}_diagonal_{a,b}.svg` | `src/player/stroller.gd` chooses among eight upright views and alternates the two gait frames. East-authored side and diagonal views mirror explicitly for west. Mother canvases are 24×46 cardinal front/back, 26×46 side/diagonal, all bottom-centre grounded. |
+| `assets/rig/pram_{front,back,side}.svg`, `pram_{front,back}_diagonal.svg` | `src/player/stroller.gd` chooses the matching eight-direction pram view; east-authored side and diagonal views mirror explicitly for west. Pram canvases are 30×30 cardinal and 36×30 side/diagonal, bottom-centre grounded. |
 | `assets/props/baby_{zzz,fuss,cry}.svg` | `src/player/stroller.gd` chooses sleeping, awake/fussing or crying state above the pram. |
 | `assets/props/alert.svg`, `assets/props/alert_close.svg` | `src/player/stroller.gd` draws the exclamation over the player when an event is about her, using the close variant at the nearer threshold. |
 | `assets/crowd/walker_{front,back,side}_{body,trim}.svg` | `src/crowd/crowd_agent.gd` chooses a facing, tints the body per walker and overlays the untinted trim. Side views mirror. |
@@ -131,22 +134,23 @@ The exact tracked SVGs outside the live and prepared tables are `assets/icon_str
 art counterparts: the active application icon is root `icon.svg`, while the README displays
 `assets/logo.png` and the web metadata publishes `assets/social-card.png`.
 
-## Illustrated opt-in
+## PNG replacements
 
-The legacy SVG presentation remains the default. With `--illustrated`, or `?illustrated=1` on the
-web, `src/player/stroller.gd` adds `ModularPerson` and `src/crowd/crowd_agent.gd` adds
-`ModularWalker`. The active player sheets and registration data are
-`assets/illustrated/modular/mother-parts-v3.png` with
-`mother-parts-v3.manifest.json`, and `pram-layered-v3-draft-transparent.png` with
-`pram-layered-v3.manifest.json`. The active walker set is the three PNGs named by
-`assets/illustrated/walkers/MANIFEST.json`. These manifests own crops, pivots, anchors, layer order
-and attachment data; the SVG inventory does not duplicate them.
+`TextureResolver` selects a same-size PNG by default at
+`assets/illustrated/svg-transfer/<family>/<name>.png` for a corresponding SVG. Missing or
+differently sized PNGs fall back to the SVG. Existing draw transforms and animation still apply.
 
-`src/visuals/illustrated_street_review.gd` uses the four `assets/illustrated/street/*-v2.png`
-layers only in the dedicated street review scene. It is not a live replacement for the TileSet or
-building renderer. The remaining generated sheets, contact images, source pictures and generation
-records are inputs and review evidence catalogued by the README or generation record in their own
-`assets/illustrated/` folder, rather than alternate runtime bindings.
+The live replacement family is `assets/illustrated/svg-transfer/rig/`: `mother_front_a.png`,
+`mother_front_b.png`, `mother_back_a.png`, `mother_back_b.png` (24×46), `mother_side_a.png` and
+`mother_side_b.png` (26×46), `pram_front.png` and `pram_back.png` (30×30), and `pram_side.png`
+(36×30). `mother_{front,back}_diagonal_{a,b}.png` (26×46) and
+`pram_{front,back}_diagonal.png` (36×30) supply the diagonal views; west views mirror their
+east-authored partners. Each preserves native SVG alpha. Other families retain SVG textures.
+
+[VISUALS.md](VISUALS.md) defines reference authority and the visual acceptance gate.
+[The generation record](evidence/style-transfer-2026-09-10/GENERATION.md) preserves raw outputs,
+registration measurements and reproduction commands. The rejected graphics archive holds
+historical evidence only; it does not supply runtime textures or style guidance.
 
 ## Keeping the catalogue true
 

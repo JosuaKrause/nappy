@@ -1,0 +1,182 @@
+[
+  {
+    "name": "mother_front_a",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      96,
+      81,
+      287,
+      463
+    ],
+    "svg_8x_bounds": [
+      4,
+      4,
+      188,
+      368
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "mother_front_b",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      97,
+      79,
+      284,
+      463
+    ],
+    "svg_8x_bounds": [
+      4,
+      0,
+      188,
+      368
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "pram_front",
+    "size": [
+      30,
+      30
+    ],
+    "generated_cell_bounds": [
+      80,
+      218,
+      300,
+      468
+    ],
+    "svg_8x_bounds": [
+      12,
+      12,
+      228,
+      240
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "mother_back_a",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      97,
+      93,
+      290,
+      479
+    ],
+    "svg_8x_bounds": [
+      4,
+      4,
+      188,
+      368
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "mother_back_b",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      92,
+      92,
+      288,
+      477
+    ],
+    "svg_8x_bounds": [
+      4,
+      0,
+      188,
+      368
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "pram_back",
+    "size": [
+      30,
+      30
+    ],
+    "generated_cell_bounds": [
+      78,
+      233,
+      301,
+      482
+    ],
+    "svg_8x_bounds": [
+      12,
+      12,
+      228,
+      240
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "mother_side_a",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      100,
+      76,
+      304,
+      458
+    ],
+    "svg_8x_bounds": [
+      12,
+      4,
+      208,
+      368
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "mother_side_b",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      109,
+      73,
+      302,
+      458
+    ],
+    "svg_8x_bounds": [
+      28,
+      0,
+      208,
+      368
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "pram_side",
+    "size": [
+      36,
+      30
+    ],
+    "generated_cell_bounds": [
+      49,
+      199,
+      310,
+      450
+    ],
+    "svg_8x_bounds": [
+      4,
+      0,
+      252,
+      236
+    ],
+    "alpha_identical_to_native_svg": true
+  }
+]

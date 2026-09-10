@@ -1,0 +1,32 @@
+[
+  {
+    "svg": "assets/rig/mother_front_diagonal_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_front_diagonal_a.png",
+    "svg_sha256": "d1bf65e8b3d7af4074f7293aff500e1ba1f01416727d02772ba1ffd0be6ebb8f"
+  },
+  {
+    "svg": "assets/rig/mother_front_diagonal_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_front_diagonal_b.png",
+    "svg_sha256": "3fbad070c124ae05b4b69709f3ebde5030755e9d515aeb86d1984df7103c0224"
+  },
+  {
+    "svg": "assets/rig/pram_front_diagonal.svg",
+    "png": "assets/illustrated/svg-transfer/rig/pram_front_diagonal.png",
+    "svg_sha256": "97794870723c51735dd7660d71d02e6d9dd799b8304aa7facebbd04fd565a32a"
+  },
+  {
+    "svg": "assets/rig/mother_back_diagonal_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_back_diagonal_a.png",
+    "svg_sha256": "006440076808db05b40f2d65b9227bd5f490845704f72d1cb19dcc90ad33f934"
+  },
+  {
+    "svg": "assets/rig/mother_back_diagonal_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_back_diagonal_b.png",
+    "svg_sha256": "8a31da04a1d3c40ad51ab9a7c901ee4ef0cbe6c7d87a0fcbaa6267d8ea4214ce"
+  },
+  {
+    "svg": "assets/rig/pram_back_diagonal.svg",
+    "png": "assets/illustrated/svg-transfer/rig/pram_back_diagonal.png",
+    "svg_sha256": "b60a4f9ba3d5dd3dd18f0136932613049876cf42f59448c24c0808839d938663"
+  }
+]

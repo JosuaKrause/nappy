@@ -58,6 +58,15 @@ const MARK_WIDTH := 15.0
 var kind := Kind.WALKER
 var colour := Color.WHITE
 
+## This agent's own ground shape, set once in `setup()`: a point for a walker, a capsule along the
+## travel axis for a car (`_car_shadow_shape()`). Read by `_draw_body()` for the shadow; there is
+## no body for either — see `_car_shadow_shape()`'s own docstring for why a car gets none, and
+## `CAR_STRIKE_HALF_LENGTH`/`CAR_STRIKE_HALF_WIDTH` in `tuning.gd` for the lethal rectangle this
+## shape is not: *"lethal != noise"* (the player, 2026-09-10) — this datum is the noise (and the
+## shadow) a car makes, `will_be_lethal()`'s strike box is what it hits, and this commit leaves
+## the strike box exactly where it stands.
+var shape: GroundShape
+
 ## The box this agent lives in, held by reference and moved by `Crowd`. Leaving the box is what
 ## recycles an agent — not leaving the map. See `CrowdField`.
 var field: CrowdField
@@ -129,7 +138,6 @@ var _junction := -1
 var _picture := Vector2i(-1, -1)
 ## Whether this car's own caret was up last frame, so it gets one redraw to come off with.
 var _was_marked := false
-var walker_visual: ModularWalker
 
 ## Built lazily on this agent's own first non-zero glow, and freed once it has faded all the way
 ## back out — see `set_halo_strength()`. A halo built for every agent in a crowd of a couple of
@@ -182,6 +190,7 @@ var _yield_left := 0.0
 func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: int,
 		axis_roll: float) -> void:
 	kind = agent_kind
+	shape = GroundShape.point(7.0) if kind == Kind.WALKER else _car_shadow_shape()
 	_map = map
 	field = crowd_field
 	_rng.seed = seed_value
@@ -215,12 +224,6 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 		axis_roll = _rng.randf()
 	_settle_junction()
 	colour = _colour()
-	if kind == Kind.WALKER and DevFlags.illustrated_requested():
-		walker_visual = ModularWalker.new()
-		walker_visual.name = "ModularWalker"
-		add_child(walker_visual)
-		walker_visual.set_variant("rust_curls" if abs(seed_value) % 3 == 0 else "mustard_bob")
-		walker_visual.reset_at(position, heading())
 
 ## Marks the junction this agent is standing in, if it is standing in one, so that it does not
 ## roll a turn on its very first frame.
@@ -282,8 +285,6 @@ func _process(delta: float) -> void:
 	if _has_left_the_field():
 		_recycle()
 		recycled = true
-	if walker_visual and not recycled:
-		walker_visual.apply_displacement(position - before_position, position, delta, heading())
 	# Moving a Node2D does not invalidate its draw list — the transform is applied when it
 	# is replayed — so an agent only redraws when its picture actually changes. At this
 	# population that is the difference between five hundred redraws a frame and a handful.
@@ -1192,8 +1193,6 @@ func _recycle() -> void:
 		# `world_to_tile` always floors away — so the clamp's own top has to give up a whole
 		# pixel or it can land exactly on the line and read as out of bounds again.
 		_set_along(clampf(_along(), 0.0, limit - 1.0))
-	if walker_visual:
-		walker_visual.recycle_at(position, heading())
 
 ## However the rolls above landed, an entry point may not sit further past the map's true edge
 ## than this agent is allowed to travel before it is recycled again — the same room
@@ -1280,31 +1279,47 @@ func _draw() -> void:
 	if kind == Kind.CAR:
 		_draw_mark()
 
-## Draws this agent's own body onto `canvas` — the plain SVG sprite only, never the illustrated
-## `walker_visual` presentation, which draws itself as a separate child node with its own
-## `_draw()` and needs nothing from here. `EntityHalo` calls this once per ring offset to trace
-## whichever silhouette the sprite actually is; the ordinary frame above draws it once, at
-## `canvas == self`.
+## Draws this agent's own body onto `canvas`. `EntityHalo` calls this once per ring offset to
+## trace whichever silhouette the sprite actually is; the ordinary frame draws it once at self.
 func _draw_body(canvas: CanvasItem) -> void:
 	var frame := _frame()
 	var flip := _flipped()
 	if kind == Kind.CAR:
-		_draw_shadow(canvas, Vector2.ZERO, 18.0)
+		_draw_shape_shadow(canvas, shape, Vector2.ZERO, _travel_axis())
 		Sprites.draw_standing(canvas, CAR_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
 		Sprites.draw_standing(canvas, CAR_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
 		return
-	var at := Vector2(ModularWalker.COMPARISON_OFFSET, 0.0) if walker_visual else Vector2.ZERO
-	_draw_shadow(canvas, Vector2.ZERO, 7.0)
-	Sprites.draw_standing(canvas, WALKER_BODY[frame], at, Vector2.ZERO, flip, colour)
-	Sprites.draw_standing(canvas, WALKER_TRIM[frame], at, Vector2.ZERO, flip)
+	_draw_shape_shadow(canvas, shape, Vector2.ZERO, Vector2.RIGHT)
+	Sprites.draw_standing(canvas, WALKER_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
+	Sprites.draw_standing(canvas, WALKER_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
 
-## The drop shadow under this agent, skipped for its own halo ring — the same shape
-## `EventInstance._draw_shadow` has, for the same reason: the shadow is the ground under the
+## A car's own shadow shape — a capsule along its travel axis, read off its own two textures
+## rather than a hand-picked radius: the side view's width is the car's along-track length, the
+## end view's is its across-track width, so `radius` is half the across and `half_length` is what
+## is left of half the along once the two end caps are accounted for.
+##
+## **No body for a car.** A car's lethality is `TrafficIndex`'s, not a field's, and a `StaticBody2D`
+## here would change the crowd's own collision rules rather than only how it looks — see
+## docs/EVENTS.md and the **crowd-traffic** skill on why separation between bodies is positional,
+## never a shape a car could get pinned against. This shape exists for the shadow alone.
+static func _car_shadow_shape() -> GroundShape:
+	var along := CAR_BODY[1].get_size().x
+	var across := CAR_BODY[0].get_size().x
+	var radius := across * 0.5
+	return GroundShape.segment(along * 0.5 - radius, radius)
+
+## Which way this car is travelling, on the ground plane — the axis its shadow's capsule sweeps
+## along. `_vertical` is the same flag `_frame()` reads to choose a side-on or end-on sprite.
+func _travel_axis() -> Vector2:
+	return Vector2.DOWN if _vertical else Vector2.RIGHT
+
+## The drop shadow under this agent's own `shape`, skipped for its own halo ring — the same rule
+## `EventInstance._draw_shape_shadow` has, for the same reason: the shadow is the ground under the
 ## thing, not the thing, and a cue for what is charging her right now has nothing to say about it.
-func _draw_shadow(canvas: CanvasItem, at: Vector2, radius: float) -> void:
+func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2, axis: Vector2) -> void:
 	if canvas == _halo:
 		return
-	Sprites.draw_shadow(canvas, at, radius)
+	shape.draw_shadow(canvas, at, axis)
 
 ## The caret's own answer for this car, 0 (none), 1 (amber) or 2 (doubled red), cached against
 ## `_clock` for the same reason `EventInstance._caret_strength()` caches against `age`: `_draw()`

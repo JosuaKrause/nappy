@@ -244,9 +244,9 @@ static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
 ## **One tile deep, at `at_a`'s end, not the segment's midpoint** — the region wall's own geometry,
 ## different from `_place_hard`'s: a region boundary is not met the way an ordinary seal is, it
 ## bounds two regions from one end, and the whole of the segment's ground on the far side of the
-## wall stays walkable right up to the one-tile band the wall itself occupies. `def.obstructs_
-## radius` is overridden to `Tuning.TILE_SIZE` (32px) for the same reason — the catalogue row's own
-## 60px reaches roughly two tiles along the street each way, which reaches clean over a through-
+## wall stays walkable right up to the one-tile band the wall itself occupies. The row's own shape
+## is overridden to a point of `Tuning.TILE_SIZE` (32px) for the same reason — the catalogue row's
+## own 60px reaches roughly two tiles along the street each way, which reaches clean over a through-
 ## alley's mouth at the next street along if the wall's body sits at the row's own width. The copy
 ## count across the street's `STREET_WIDTH` is still derived from the radius (`positions_across`)
 ## rather than chosen by hand; at 32px it comes out at three — the same three positions the
@@ -254,7 +254,10 @@ static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
 static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: String,
 		at_a: bool) -> Array[EventScheduler.Planned]:
 	var def := sealed_variant(EventCatalogue.by_id(def_id), true)
-	def.obstructs_radius = Tuning.TILE_SIZE
+	# Overrides the row's own shape too, not only its `obstructs_radius`: `EventDef.validate()`
+	# requires the two to agree, and a point of `Tuning.TILE_SIZE` is what a body this narrow
+	# actually is here, whatever shape the row carries as a catalogue candidate.
+	def.solid(GroundShape.point(Tuning.TILE_SIZE))
 	var planned: Array[EventScheduler.Planned] = []
 	var world := map.tile_rect_to_world(segment.mouth_rect(at_a))
 	for at in positions_across(world, segment.horizontal, def.obstructs_radius):
@@ -321,6 +324,11 @@ static func _thin_soft_pairs(pairs: Array, rng: RandomNumberGenerator) -> Array[
 ## `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies` for the new callers.
 static func sealed_variant(def: EventDef, suppress_recenter: bool) -> EventDef:
 	var variant: EventDef = def.duplicate()
+	# `shape` is a plain `var` typed as a `RefCounted`, not a `Resource`, so it carries no storage
+	# usage and `Resource.duplicate()` does not copy it — carried across by hand instead. Safe to
+	# share the reference: `shape` is never mutated in place. See `EventDef.at_heat()` for the same
+	# note against the other caller of `duplicate()`.
+	variant.shape = def.shape
 	variant.scar_id = ""
 	variant.spawns_on_finish = ""
 	if suppress_recenter and variant.pavement_side == EventDef.Pavement.ANY:

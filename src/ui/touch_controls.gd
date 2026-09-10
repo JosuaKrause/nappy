@@ -732,7 +732,7 @@ func _draw_pause_button() -> void:
 	if held:
 		draw_circle(PAUSE_CENTRE, PAUSE_RADIUS, Palette.BUTTON_PRESSED)
 	var size := Vector2(PAUSE_RADIUS, PAUSE_RADIUS) * 2.0
-	draw_texture_rect(_PAUSE_ICON, Rect2(PAUSE_CENTRE - size * 0.5, size), false,
+	draw_texture_rect(TextureResolver.resolve(_PAUSE_ICON), Rect2(PAUSE_CENTRE - size * 0.5, size), false,
 			Color(1.0, 1.0, 1.0, 1.0 if held else 0.7))
 
 ## Both focal points, always, in `Mode.JOYSTICK` — M83 drew nothing for them and left *whether they
