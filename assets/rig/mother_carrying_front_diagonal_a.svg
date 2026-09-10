@@ -1,0 +1,14 @@
+<!-- Mother carrying baby front diagonal gait frame a; authored upright projection. Canvas 26x46; bottom-centre ground anchor (13,46). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="26" height="46" viewBox="0 0 26 46" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+<path d="M6 31 L11 31 L10 43 L5 43 Z M13 31 L18 31 L19 43 L14 43 Z" fill="#3c4560"/>
+  <path d="M4 43 L11 43 L10 46 L3 46 Z M13 43 L19 43 L21 46 L13 46 Z" fill="#2f2a2c"/>
+  <path d="M5 13 Q12 10 19 13 L21 28 Q19 33 12 34 Q5 33 3 28 Z" fill="#b0574f"/>
+  <path d="M4 27 Q12 30 20 27 L20 33 Q12 36 4 32 Z" fill="#8e433d"/>
+  <path d="M12 1 Q19 1 19 8 Q19 14 12 15 Q5 14 5 8 Q5 1 12 1 Z" fill="#d9a878"/>
+  <path d="M5 7 Q6 1 12 1 Q18 1 19 7 Q16 5 12 5 Q8 5 5 7 Z" fill="#3a2b26"/>
+  <circle cx="9" cy="8" r="1" fill="#221f28"/><circle cx="15" cy="8" r="1" fill="#221f28"/>
+  <path d="M8 16 Q6 19 11 22 L19 21 L22 24 L14 27 Q7 25 6 20 Z" fill="#b0574f"/>
+  <path d="M10 18 Q16 16 22 19 Q25 21 22 24 Q16 27 10 22 Z" fill="#617087"/>
+  <circle cx="21" cy="19" r="2.1" fill="#d9a878"/>
+  <path d="M12 20 Q17 21 20 24" fill="none" stroke="#c4b79c" stroke-width="1"/>
+</svg>
