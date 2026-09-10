@@ -497,10 +497,34 @@ blind spot M69 found in block-level reachability.
   area she can use is reached; and the home region has at least one door on every day. Sized like
   `tests/test_route_tree.gd` and `tests/test_seals.gd`, over several seeds and the days of each act.
 
-**What is the player's to decide before an agent gets this**: that a region is segments rather
-than blocks; that the main road may be cut by a boundary rather than be one; the count; and that
-the wall is planned daily rather than being permanent structure — the last of which narrows M45's
-own wording and is asked rather than assumed.
+**The four decisions above were put to the player on 2026-09-09 and taken as drafted** *("go")*:
+a region is segments rather than blocks; the main road may be cut by a boundary rather than be
+one; four regions; and the wall is planned daily rather than being permanent structure, which
+narrows M45's own wording with the player's agreement.
+
+**The concrete form the build takes, chosen on 2026-09-09 where the draft was silent, and each
+open to overturn:**
+
+- **The partition is stated over junctions, and a segment follows its two ends.** Every junction
+  belongs to exactly one region. A segment whose two ends share a region is that region's; one
+  whose ends differ is a **boundary segment** and belongs to the wall. This is the draft's
+  "boundary is a junction where two regions' segments meet" made exact: a route crosses from one
+  region to another if and only if it walks a boundary segment, so *every crossing passes exactly
+  one barrier* is true by construction rather than by a rule about which side of a junction the
+  barrier stands on. The barrier stands across the segment's **midpoint**, sidewalk to sidewalk,
+  which is the hard seal's own geometry (`SealPlanner._hard_positions`) and the picture the
+  player drew — guards on the pavements, a hut, a gate over the road.
+- **Atoms are stated over junctions too.** A calm area's atom is every junction at either end of
+  one of its access segments; an alley's atom is the four junctions of the two segments it joins;
+  the home street's atom is its two junctions; a precinct span's atom is every junction along it.
+  A flood claims a junction and everything in its atom at once, so no boundary segment ever
+  borders calm ground, crosses an alley, is the home street or cuts a precinct.
+- **The wall stands from day 7**, one `Tuning` constant, because the player's words are
+  *"checkpoints in the later acts"* and 7 is the existing barrier row's own first day. Before it
+  the regions exist and nothing is drawn.
+- **Planned beside the closures and before the seals.** Boundary segments are refused as closure
+  candidates (a closure on a wall is two things in one place), and `SealPlanner` skips them
+  (the wall is the seal). A boundary segment on the day's tree is a door; every other is wall.
 
 ---
 
