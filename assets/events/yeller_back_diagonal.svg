@@ -1,12 +1,16 @@
-<!-- yeller back diagonal authored upright projection. Canvas 26x44; bottom-centre ground anchor (13,44). -->
+<!-- Bearded yeller in long brown coat, back diagonal. Raised arm and solid coat silhouette carry the event identity. Ground anchor (13,44). -->
 <svg xmlns="http://www.w3.org/2000/svg" width="26" height="44" viewBox="0 0 26 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-<circle cx="10" cy="7" r="6" fill="#3a2b26"/>
-  <path d="M5 5 Q10 0 15 5 L14 10 Q10 12 6 10 Z" fill="#654039"/>
-  <path d="M6 10 Q10 12 14 10" fill="none" stroke="#5b3933" stroke-width="1.1"/>
-  <path d="M3 12 L17 12 L16 30 Q10 33 4 30 Z" fill="#6b5b4a"/>
-  <path d="M3 24 Q10 27 17 24 L16 30 Q10 33 4 30 Z" fill="#584a3c"/>
-  <path d="M2 14 L5 13 L6 25 L3 26 Z M15 13 L18 14 L17 26 L14 25 Z" fill="#6b5b4a"/>
-  <path d="M6 29 L9 29 L9 40 L5 40 Z M11 29 L15 29 L15 40 L11 40 Z" fill="#46506b"/>
-  <path d="M4 39 L10 39 L9 42 L3 42 Z M11 39 L17 39 L18 42 L11 42 Z" fill="#221f28"/>
-  <path d="M18 16 L23 7" stroke="#6b5b4a" stroke-width="3"/><circle cx="23" cy="7" r="2" fill="#d9a878"/><rect x="8" y="12" width="9" height="4" fill="#8c8377"/>
+  <path d="M8 37 L12 37 L11 42 L7 42Z M13 37 L17 37 L18 42 L13 42Z" fill="#3b3630"/>
+  <path d="M6 42 L12 42 L12 44 L5 44Z M13 42 L19 42 L20 44 L13 44Z" fill="#221f28"/>
+  <path d="M17 17 L23 12 L24 4 L20 4 L20 10 L16 12Z" fill="#6b5b4a"/>
+  <circle cx="21.5" cy="4" r="2" fill="#d9a878"/>
+  <path d="M6 15 L13 12 L20 16 L20 37 L13 40 L5 37Z" fill="#6b5b4a"/>
+  <path d="M5 32 L13 35 L20 32 L20 38 L13 40 L5 37Z" fill="#584a3c"/>
+  <g transform="translate(12 0)">
+  <path d="M-5 16 L-7 24 L-6 31 L-2 31 L-1 19Z" fill="#584a3c"/>
+  </g>
+  <g transform="translate(12 8)">
+  <path d="M2 -5 Q6 -4 6 0 L7 1 L5 3 L4 5 L1 4Z" fill="#d9a878"/>
+  <path d="M-6 0 Q-6 -7 0 -7 Q5 -7 5 -3 L4 2 Q3 6 -1 6 Q-6 5 -6 0Z" fill="#4a423a"/>
+  </g>
 </svg>
