@@ -20,6 +20,20 @@ mark to indicate that she has seen it". The prepared picture preserves the origi
 crossing strokes and adds her acknowledgement. M100, small, real, and nobody's, owns the eventual
 feedback binding; this does not introduce a quest marker before the first encounter.
 
+The player also requested cleanup of the previous PNG run and asked whether `docs/.gdignore`
+landed. It is tracked; the 20 `.import` files found beneath `docs/` were copied into the rejected
+illustrated archive with former runtime textures. They were removed because documentation
+evidence is excluded from Godot import and those sidecars point to obsolete runtime paths.
+The follow-up broadens cleanup to every folder excluded by `.gdignore`. A filesystem scan
+finds `docs/`, `tools/` and the generated `.godot/` cache excluded; no `.import` files remain
+under any of them. Active game-asset import settings remain tracked.
+
+The three rejected diagonal draft sets from the preceding PNG run were removed from the current
+tree: `diagonal-svg-2026-09-10-v1`, `-v2` and `-v3`, including 40 preview PNGs and the third set's
+source manifest. The player confirmed this scope by naming the `-v2` folder. They remain
+recoverable from Git history. Accepted runtime textures and their generation and comparison
+evidence remain available.
+
 ## Eight-direction style transfer — 2026-09-10
 
 Final integrated verification on 2026-09-10: import/boot passed; focused stroller, visuals,
@@ -51,12 +65,12 @@ under `docs/evidence/style-transfer-eight-directions-2026-09-10/`. Its compariso
 SVG left and PNG right. The eight-view sheet assembles textures with runtime offsets at 3×;
 it is a source comparison, not a gameplay capture or a smooth-animation measurement.
 
-Three SVG drafts were reviewed before PNG generation: the first kept cardinal silhouettes and
-changed facial features between gait frames; the second still changed faces and barely changed
-the legs. Their rendered source evidence is preserved under
-`docs/evidence/archive/rejected-graphics/diagonal-svg-2026-09-10-v1/` and `-v2/`. The `-v3/`
-snapshot preserves the subsequent frame-consistent draft before the front/back art distinction
-was completed with the visible baby and a rear three-quarter cheek/arm/coat plane.
+Three SVG drafts were reviewed internally before PNG generation: the first kept cardinal
+silhouettes and changed facial features between gait frames; the second still changed faces
+and barely changed the legs. A third draft made frames consistent before the front/back art
+distinction was completed with the visible baby and a rear three-quarter cheek/arm/coat plane.
+Their preview files were removed during PLAYTEST-52's selective-retention cleanup and remain
+recoverable from Git history rather than occupying the current rejected-art archive.
 The correction requires consistent upper bodies across gait frames, distinct leg/shoe geometry,
 true three-quarter pram planes and a reset that selects the nearest view without inherited
 hysteresis. These are source-art/runtime defects, not things a style transfer should conceal.

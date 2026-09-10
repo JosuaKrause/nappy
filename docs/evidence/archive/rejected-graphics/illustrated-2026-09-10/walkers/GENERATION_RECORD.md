@@ -3,7 +3,7 @@
 The three runtime PNGs are built-in image generation outputs with genuine RGBA alpha. The runtime maps
 the authored N, NE, E, SE, S, SW, W and NW views explicitly; it does not mirror a facing.
 
-`../source/lower-denim-sneakers-v1.png` and its import sidecar preserve an unused source draft for
+`../source/lower-denim-sneakers-v1.png` preserves an unused source draft for
 the prompt below, kept out of this folder because nothing here ships unbound. Its joined
 trouser-and-shoe silhouettes are not the separate articulated cutouts registered by
 `MANIFEST.json`. It has no runtime binding and is not an approved replacement for

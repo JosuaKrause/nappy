@@ -22,3 +22,11 @@ the artwork; its gameplay binding remains with M100, small, real, and nobody's.
 > the narrative can be that she adds something to the mark to indicate that she has seen it
 
 The touched picture preserves the existing chalk mark and adds her acknowledgement to it.
+
+## Clean up the previous graphics run
+
+> let's remove all those pictures from the last png creation run. one thing did the gdignore land for the doc folder I see .import files there
+
+> remove all .import files in folders that are gdignored
+
+> things like this folder docs/evidence/archive/rejected-graphics/diagonal-svg-2026-09-10-v2/
