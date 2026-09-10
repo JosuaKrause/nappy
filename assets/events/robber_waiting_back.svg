@@ -1,0 +1,14 @@
+<!-- Hooded robber waiting, back. Hands stay within the coat; the rear hood hides the face opening. Ground anchor (11,44). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="44" viewBox="0 0 22 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <rect x="6" y="34" width="4" height="8" fill="#26262e"/>
+  <rect x="12" y="34" width="4" height="8" fill="#26262e"/>
+  <rect x="5" y="42" width="5" height="2" fill="#17171c"/>
+  <rect x="12" y="42" width="5" height="2" fill="#17171c"/>
+  <rect x="4" y="15" width="14" height="21" fill="#353a46"/>
+  <rect x="4" y="29" width="14" height="7" fill="#2b303a"/>
+  <rect x="3" y="14" width="16" height="6" fill="#2b303a"/>
+  <g transform="translate(11 9)">
+  <ellipse cx="0" cy="0" rx="7" ry="7" fill="#2b303a"/>
+  <path d="M-4 3 Q0 6 4 3" fill="none" stroke="#353a46" stroke-width="0.8"/>
+  </g>
+</svg>

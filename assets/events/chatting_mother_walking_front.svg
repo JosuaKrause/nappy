@@ -1,0 +1,35 @@
+<!-- Sage mother walking with tan pram, front. Wheel contact and handle join follow the pram heading. Ground anchor (27,46). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="54" height="46" viewBox="0 0 54 46" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <g transform="translate(20 0)">
+  <path d="M-5 31 L-1 31 L-2 41 L-7 41Z M1 31 L5 31 L7 41 L2 41Z" fill="#665f50"/>
+  <path d="M-8 41 L-1 41 L-1 43 L-9 43Z M1 41 L8 41 L9 43 L1 43Z" fill="#2f2a2c"/>
+  </g>
+  <g transform="translate(20 0)">
+  <path d="M-7 13 L7 13 L8 33 L-8 33Z" fill="#5c7a52"/>
+  <path d="M-7 27 L7 27 L7 33 L-7 33Z" fill="#455e3d"/>
+  </g>
+  <g transform="translate(20 0)">
+  <path d="M-6 16 L-9 21 L-4 27 L0 26 L-4 20 L-2 17Z" fill="#5c7a52"/>
+  </g>
+  <path d="M25 16 L29 19 L29 24 L23 21Z" fill="#5c7a52"/>
+  <circle cx="29" cy="23" r="1.8" fill="#d9a878"/>
+  <g transform="translate(20 8) scale(1.08 1.03)">
+  <g transform="translate(0 0)">
+  <ellipse cx="0" cy="0" rx="6" ry="6.5" fill="#d9a878"/>
+  <path d="M-6 0 Q-6 -7 0 -7 Q6 -7 6 0 Q3 -2 0 -2 Q-3 -2 -6 0Z" fill="#2f2a20"/>
+  </g>
+  </g>
+  <g transform="translate(12 16)">
+  <path d="M4 7 Q15 -3 26 7 L26 11 L4 11 Z" fill="#cbb98f"/>
+  <path d="M6 7 Q15 0 24 7 L24 10 L6 10 Z" fill="#b8a67c"/>
+  <path d="M3 10 Q15 7 27 10 L26 20 Q15 23 4 20 Z" fill="#6b5a42"/>
+  <path d="M4 17 Q15 20 26 17 L26 21 Q15 24 4 21 Z" fill="#4a3f2f"/>
+  <circle cx="15" cy="8" r="3.5" fill="#d9a878"/>
+  <circle cx="13.8" cy="8" r="0.7" fill="#221f28"/>
+  <circle cx="16.2" cy="8" r="0.7" fill="#221f28"/>
+  <circle cx="7" cy="25" r="5" fill="#26232a"/>
+  <circle cx="23" cy="25" r="5" fill="#26232a"/>
+  <circle cx="7" cy="25" r="2" fill="#4a464f"/>
+  <circle cx="23" cy="25" r="2" fill="#4a464f"/>
+</g>
+</svg>
