@@ -127,7 +127,7 @@ out has to be long enough to matter, and at 7×7 both cannot hold.
 
 At 9×9 they can. The cost is that a 9×9 city is **65% more blocks**, and since M28 the events are one
 per block and since M27 the crowd is a field around the player — so every density number in
-`docs/PLAYTEST-04.md` is re-measured, and the budget with them. That is the milestone, and it is why
+`docs/playtests/PLAYTEST-04.md` is re-measured, and the budget with them. That is the milestone, and it is why
 it is a milestone rather than a constant.
 
 **Main roads, and the two kinds of street (7).** This has been open by decision since M21, where

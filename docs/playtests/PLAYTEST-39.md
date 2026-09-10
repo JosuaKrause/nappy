@@ -2,7 +2,7 @@
 
 One note with a screenshot, from a run on `main` after M92 merged (`v0.8.0`, seed 435159537, day
 1, standing on the pavement beside the tunnel). The run is copied whole to
-[evidence/run-224434-seed435159537-v0.8.0/](evidence/run-224434-seed435159537-v0.8.0/); the
+[evidence/run-224434-seed435159537-v0.8.0/](../evidence/run-224434-seed435159537-v0.8.0/); the
 picture the note came with is `asked/059s-attempt4-asked.png` inside it.
 
 ---
@@ -57,4 +57,4 @@ What the note asks for, restated: **the shading is a gradient inside the mouth t
 has, and a car driving in gets darker as it goes** — and the evidence has to show a car doing it.
 
 **Built in the same session.** The record, with the numbers and what was rejected, is in
-[DECISIONS.md](DECISIONS.md) under "The tunnel swallows the road".
+[DECISIONS.md](../DECISIONS.md) under "The tunnel swallows the road".

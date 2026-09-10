@@ -26,7 +26,7 @@ esac
 
 # History and primary sources are exempt — they are allowed to say what was true then.
 case "$path" in
-	"$root"/docs/DECISIONS.md|"$root"/docs/PLAYTEST-*.md|"$root"/docs/evidence/README.md)
+	"$root"/docs/DECISIONS.md|"$root"/docs/playtests/PLAYTEST-*.md|"$root"/docs/evidence/README.md)
 		exit 0
 		;;
 esac

@@ -161,7 +161,7 @@ hold fills the disc itself as a radial sweep rather than a bar beside it, and th
 `.tscn` defaults were cleared too so a scene file does not say one either. Quitting has no in-game
 button on purpose — the window's own close button is its pointer route, and the web build has no
 quit at all. The record for all of this is in `DECISIONS.md` under M83, and the session it came from
-is [PLAYTEST-29.md](PLAYTEST-29.md).
+is [PLAYTEST-29.md](playtests/PLAYTEST-29.md).
 
 **What is gone and is not coming back is the two *mechanisms* M82 deleted**, as opposed to the
 choice between schemes, which M88 gave back: the drag stick, the aimed joystick playtest 27
@@ -213,9 +213,9 @@ the legacy binding without the flag. The dated contact review and its build prov
 DECISIONS.md; that image predates the tested resting-knee correction. Visual acceptance of the
 current pose and smooth motion remains open.
 
-[PLAYTEST-45](PLAYTEST-45.md) specifies the next actor defects: slanted east/west legs,
+[PLAYTEST-45](playtests/PLAYTEST-45.md) specifies the next actor defects: slanted east/west legs,
 outward north/south leg movement, excessive mother-to-pram spacing and pixelated pram rendering.
-[PLAYTEST-42](PLAYTEST-42.md) supplies a preserved timed PNG burst and MP4, with additional
+[PLAYTEST-42](playtests/PLAYTEST-42.md) supplies a preserved timed PNG burst and MP4, with additional
 double-bend leg anatomy and baby-over-seat compositing findings. Its resolution experiment requires
 more rendered pixels for the **same view**, actor size, HUD and window. Zooming out was an incorrect
 interpretation; it does not meet the request. Supersampling and anatomy need independent checks.
@@ -291,8 +291,8 @@ road, and the thinning that leaves a wrong turn open. Its questions are the kind
 answers: *does a walled city read as a route decision or as a maze*, *is a thinned wall an
 invitation or a mistake*.
 
-**Read [PLAYTEST-25.md](PLAYTEST-25.md) first, then [PLAYTEST-22.md](PLAYTEST-22.md),
-[PLAYTEST-21.md](PLAYTEST-21.md) and [PLAYTEST-20.md](PLAYTEST-20.md).** Playtest 25 is the first
+**Read [PLAYTEST-25.md](playtests/PLAYTEST-25.md) first, then [PLAYTEST-22.md](playtests/PLAYTEST-22.md),
+[PLAYTEST-21.md](playtests/PLAYTEST-21.md) and [PLAYTEST-20.md](playtests/PLAYTEST-20.md).** Playtest 25 is the first
 phone session on the built mobile game and the first human verdict on the sealed city. Playtest 21
 is a brief run whose complaint — the city *"feels way empty"* — the sealing answers. Playtest 20 is
 the full seven-day run behind them, and its findings are filed against the milestones that own them.
@@ -341,12 +341,17 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 ## The queue, as prioritised on 2026-09-09
 
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56's
-remaining hunting row, the roadblock, is next, on its own branch, and it is a drawing. M61, one
-shape per object from which the field, the shadow and the collision body are derived, follows; M65, the protester who points, is revisited against the walled city rather than
+remaining hunting row, the roadblock, is next, on its own branch, and it is a drawing. M104, the
+debug view with fields, shadows and bounding boxes as toggleable layers, comes next because it is
+how M61 is checked; M61, one rectangle per object from which the field, the shadow and the
+collision body are derived, follows; M65, the protester who points, is revisited against the walled city rather than
 built as written. Behind those, unordered: M96 (the teaching day and
 the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's
 density after the sealing) and M100 (the small work, the polish and the open design questions,
-consolidated). Reaching act III — which M56's measurement against the nerves needs — waits until
+consolidated), with M105 (the city degrades), M106 (roofs, fronts and street trees) and M107 (the
+run clock, hidden until an ending) placed in that batch provisionally, since the player asked
+for them on 2026-09-10 without placing them.
+Reaching act III — which M56's measurement against the nerves needs — waits until
 that batch is done, and M101, the fire found before the engine, comes after that. The illustrated
 actor work is Codex's parallel track. **M103, the drawings the queue owes, runs beside all of it**:
 one list of every picture an open item needs, drawn ahead so no milestone waits on one.

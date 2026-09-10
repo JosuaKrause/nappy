@@ -6,7 +6,7 @@
 # A Godot Web export cannot be opened from file:// — the browser refuses the WASM and pack
 # fetches — and nothing else in tools/ serves anything, so there was previously no way to run
 # this project's web build locally at all, on any build type. That gap is almost certainly why a
-# runtime error in the web build reached the live site before anyone met it (docs/PLAYTEST-25.md).
+# runtime error in the web build reached the live site before anyone met it (docs/playtests/PLAYTEST-25.md).
 #
 # A **separate** script from tools/export-web.sh rather than another mode of it: exporting and
 # serving are two different jobs — export-web.sh's job is done the moment build/web/ exists, and

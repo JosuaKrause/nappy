@@ -68,7 +68,7 @@ fi
 # GitHub Pages sends Cache-Control: max-age=600 on every file with no way to turn it off from
 # this repo, and index.html/.js/.wasm/.pck all keep fixed names between releases, so each file's
 # ten minutes starts independently and a reload mid-window can pair a fresh index.html against a
-# previous release's index.pck — not stale, mixed (docs/PLAYTEST-27.md finding 1). The fix has
+# previous release's index.pck — not stale, mixed (docs/playtests/PLAYTEST-27.md finding 1). The fix has
 # to be in the names: index.js, index.wasm and index.pck move into a directory named for the
 # release, and index.html stays at the root and unversioned, since it is 6 KB and always fetched
 # before anything else names a path.
@@ -124,7 +124,7 @@ html = replace_once(html, '"index.wasm"', f'"{tag}/index.wasm"', 'fileSizes inde
 
 # Godot's own shell writes <title>Nappy</title> before html/head_include's longer, descriptive
 # one is appended (export_presets.cfg) -- two <title> elements, so a scraper reading the first
-# gets the short one (docs/PLAYTEST-27.md finding 5). Removed here, from the shell's side,
+# gets the short one (docs/playtests/PLAYTEST-27.md finding 5). Removed here, from the shell's side,
 # rather than from head_include, since head_include's title is the one meant to survive.
 html = replace_once(html, '<title>Nappy</title>', '', 'Godot shell <title>Nappy</title>')
 

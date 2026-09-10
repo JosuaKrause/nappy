@@ -428,7 +428,7 @@ block within one of the centre, over 200 seeds) and it touches nothing else, bec
 in the generator is already stated over the lattice rather than over its size.
 
 **Recommendation: defer it, and do it as its own milestone**, because it invalidates every measured
-density number in `docs/PLAYTEST-04.md` — the crowd is a field around the player and the events are
+density number in `docs/playtests/PLAYTEST-04.md` — the crowd is a field around the player and the events are
 one per block, so a 9×9 city is 65% more blocks, 65% more events per day, and a completely re-measured
 budget. It is not a change to make in a milestone that is also moving the danger cues and the pursuit
 contract.

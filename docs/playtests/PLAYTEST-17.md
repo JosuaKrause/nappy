@@ -4,7 +4,7 @@ Reported on 2026-08-31 and 2026-09-01, in five messages, during the session that
 shapes. Not a played run: the player was reading **this session's own telemetry map** — seed 8000,
 day 1, on `feature/the-calm-has-a-shape` at `7367ab0` — plus answers carried over from playtest 16's
 build. The map is in the repo at
-[evidence/archive/session-captures/2026-08-31/run-2026-08-31T205921-seed8000-7367ab0-dirty-map-day01.png](evidence/archive/session-captures/2026-08-31/run-2026-08-31T205921-seed8000-7367ab0-dirty-map-day01.png),
+[evidence/archive/session-captures/2026-08-31/run-2026-08-31T205921-seed8000-7367ab0-dirty-map-day01.png](../evidence/archive/session-captures/2026-08-31/run-2026-08-31T205921-seed8000-7367ab0-dirty-map-day01.png),
 which is finding 10's rule applied to finding 1 on the way in.
 
 **The wording below is the player's, verbatim.** Everything under a *"What this side reads into it"*
@@ -202,7 +202,7 @@ built.
 carried home, the checkpoint, the poster crew's wall, the protest) and one was not. The design that
 came back with them is larger than the list: **the hold is gone** — a step is *touching* a mark
 rather than pressing `E` at it — and **a task is two steps**, pick up the instruction and perform it
-the next day. See M55's "The answers" in [TODO.md](TODO.md).
+the next day. See M55's "The answers" in [TODO.md](../TODO.md).
 
 ## 9. The robber beside the chalk mark was good
 
@@ -250,7 +250,7 @@ moment they do.
 
 **Checked while writing this, and the cost is already paid**: of the three telemetry files the docs
 currently reference, **none is still on disk**, against 163 runs that are. They are listed in
-[evidence/README.md](evidence/README.md). They cannot be regenerated, because a run log records
+[evidence/README.md](../evidence/README.md). They cannot be regenerated, because a run log records
 what a *player* did and is not a function of the seed — replaying it gives a different run. The
 numbers the docs quote from them stand; the files behind the numbers are gone.
 
@@ -274,7 +274,7 @@ answer — the mountain keeps being mountain round the corner and the sea keeps 
 whichever side it was further out of, and *further out of* is a comparison between two distances,
 so the tie ran down a 45° line — the diagonal was the tie-break rather than a decision anybody
 took. North and south own the corners now, so each band runs the full width of the map. Pictures
-either side of it are in [evidence/README.md](evidence/README.md), taken with the `--spawn corner`
+either side of it are in [evidence/README.md](../evidence/README.md), taken with the `--spawn corner`
 flag this needed and did not have.
 
 ## 12. Leaving the path is supposed to be lethal, and it is the opposite

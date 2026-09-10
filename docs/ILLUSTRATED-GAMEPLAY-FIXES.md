@@ -5,7 +5,7 @@ The capture is dated evidence, not an approved art reference. These are implemen
 instructions from inspection of that frame, its source sheets and the current compositors;
 they are not a claim that repairs are implemented or visually accepted.
 
-[PLAYTEST-45](PLAYTEST-45.md) adds directional leg posture, natural mother-to-handle reach,
+[PLAYTEST-45](playtests/PLAYTEST-45.md) adds directional leg posture, natural mother-to-handle reach,
 pram image quality and actual-checkout loading to this repair. Follow the illustrated-png
 skill's [texture integration procedure](../.claude/skills/illustrated-png/references/texture-integration.md)
 for repeatable source, import, registration and acceptance steps.

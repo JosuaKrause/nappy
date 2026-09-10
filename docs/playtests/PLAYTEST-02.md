@@ -453,7 +453,7 @@ A per-day trace written to a local file: where the time went, whether the route 
 what was near and how near, whether running ever happened, which calm zone was used. Every
 field answers a question that is currently open in this document.
 
-The implementation and the full entry table are in [docs/TELEMETRY.md](TELEMETRY.md); read a
+The implementation and the full entry table are in [docs/TELEMETRY.md](../TELEMETRY.md); read a
 run back with `./tools/telemetry.sh`. Three things came out of building it that the sketch
 below did not have:
 

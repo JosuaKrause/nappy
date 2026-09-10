@@ -33,7 +33,7 @@ it is not.
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Code layout, autoloads, signals |
 | [docs/TELEMETRY.md](docs/TELEMETRY.md) | What a run writes down, and how to read it |
 | [docs/TODO.md](docs/TODO.md) | The queue: open work only |
-| `docs/PLAYTEST-NN.md` | One per playtest, a player's own words on a date. Primary sources, never rewritten |
+| `docs/playtests/PLAYTEST-NN.md` | One per playtest, a player's own words on a date. Primary sources, never rewritten |
 
 ## Running
 

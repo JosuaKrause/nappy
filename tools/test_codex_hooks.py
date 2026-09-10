@@ -163,7 +163,7 @@ class CodexHooksTest(unittest.TestCase):
         self.assertIn("GUIDE.md", text)
 
     def test_history_exemptions_and_deleted_files_are_ignored(self) -> None:
-        names = ("docs/DECISIONS.md", "docs/PLAYTEST-01.md", "docs/evidence/README.md")
+        names = ("docs/DECISIONS.md", "docs/playtests/PLAYTEST-01.md", "docs/evidence/README.md")
         for name in names:
             self.write(name)
         patch = "".join(f"*** Update File: {name}\n" for name in names)
