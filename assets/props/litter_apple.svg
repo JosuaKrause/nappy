@@ -1,0 +1,8 @@
+<!-- Eaten apple core lying on the paving; small centre-anchored decal without a shadow. Bottom-centre ground anchor; prepared and unbound. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+
+  <path d="M13 12 Q16 11 19 13 L17 14 Q15 15 18 18 L20 19 Q17 21 14 19 L15 17 Q16 16 13 14 Z" fill="#e3d8b8" stroke-width="0.55"/>
+  <path d="M13 12 Q16 11 19 13 L18 14 L14 13 Z M14 19 L16 18.5 L20 19 Q17 21 14 19 Z" fill="#b4553f" stroke-width="0.45"/>
+  <path d="M16 12 L16 10.8" fill="none" stroke="#76513d" stroke-width="0.6"/>
+  <path d="M16.5 15.5 L17 16.5" stroke="#76513d" stroke-width="0.5"/>
+</svg>
