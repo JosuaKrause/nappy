@@ -938,51 +938,62 @@ asserting it at runtime.
 
 **Every junction in the lattice belongs to exactly one of `Tuning.REGION_COUNT` regions**, decided
 once at generation from the city's own seed and stored on `CityMap`. A segment whose two ends share
-a region is that region's interior; one whose ends differ is a **boundary segment**, and a route
-crosses from one region to another exactly when it walks a boundary segment. The main road is
+a region is that region's interior; one whose ends differ is a **boundary segment**. The main road is
 ordinary ground to the partition — a boundary may cut it, which is the one place the gate over the
 roadway means anything. Regions are decided before any day's routes are, and a day's `RouteTree`
 grows with no knowledge of them, so a boundary can never make a route worse; it only decides,
-afterwards, which of the routes already grown pass through a door and which pass through nothing at
-all.
+afterwards, which of the crossings already on a grown route are doors and which are wall.
 
 **Atoms keep the boundary off ground a route has to reach or use whole.** Before growth, every
-junction at either end of a calm area's own access segments is unioned into one atom; so is the
-near, still-walkable junction of any dead end or built-over street a calm area's buffer touches,
-because a cul-de-sac's stub is real tile-level ground even though its street is not in the lattice.
-The same union covers a through-alley's own two bordering streets and their equivalent stubs, the
-home street's two junctions, and every junction along a precinct span's own corridor. A claim during
-growth always takes a whole atom at once, so no boundary segment ever borders calm ground, crosses
-an alley, is the home street, or cuts a precinct.
+junction at either end of a calm area's own access segments is unioned into one atom, and so is a
+commercial square's own frontage — open, non-street ground that can border more than one street is
+the same shape of bypass whether or not it is calm. The same union covers the near, still-walkable
+junction of any dead end or built-over street either kind of ground's buffer touches, because a
+cul-de-sac's stub is real tile-level ground even though its street is not in the lattice, plus the
+home street's two junctions and every junction along a precinct span's own corridor. A claim during
+growth always takes a whole atom at once, so no boundary segment ever borders calm ground or a
+square, is the home street, or cuts a precinct.
 
 **Regions are grown by a round-robin flood.** `Tuning.REGION_COUNT` seed junctions are chosen by
 farthest-point sampling over the real-segment graph — `absent_segments`, both the zone-absorbed and
-the built-over kind, is never traversed — with the graph's own seed deciding only the first pick.
-Growth then proceeds one step per region in turn, each claim taking a junction's whole atom, so the
-regions come out comparable in size rather than the first seed's flood eating the map before the
-others start.
+the built-over kind, is never traversed — with the graph's own seed deciding only the first pick and
+never choosing two seeds from the same atom. Growth then proceeds one step per region in turn, each
+claim taking a junction's whole atom, so the regions come out comparable in size rather than the
+first seed's flood eating the map before the others start.
+
+**An alley is not an atom; it is a second kind of crossing.** Its two bordering streets are not
+unioned together — a city's worth of alleys chained that way collapses the partition toward one
+giant region holding every calm area, since an alley touches all four corners of its own block. An
+alley is a **crossing** instead when the ground at its two mouths (see below) belongs to two
+different regions; one whose two mouths agree is left untouched, exactly as it always was.
+
+**The wall stands at a crossing's mouth, one tile deep, never a segment's midpoint.** A boundary
+segment's wall stands at one of its two ends (`CityMap.boundary_wall_at_a`, decided at generation);
+a crossing alley's wall stands at both of its mouths. One tile deep is deliberate: the checkpoint
+row's own width reaches roughly two tiles along a street each way, wide enough to cover a nearby
+alley's mouth outright from a segment's midpoint, and the mouth is where a barrier already stands for
+every other closure in the game. The whole of a boundary segment's ground therefore belongs to the
+region at its **far** end, away from the wall — which end carries it is nudged at generation so that
+matching an alley's other, real bordering street's ground keeps as many alleys as possible from
+becoming crossings at all.
 
 **The wall is the day's, not `absent_segments`.** From `Tuning.REGION_WALL_FIRST_DAY` every morning,
-a boundary segment the day's `RouteTree` uses is a **door**; every other boundary segment is
-**wall**, placed as a hard seal of the checkpoint row across the segment's midpoint, sidewalk to
-sidewalk, the same edge-to-edge geometry a hard seal always has. Before that day nothing is drawn at
-all — the partition exists from generation, but the milestone's own words are "checkpoints in the
-later acts."
+a crossing — a boundary segment or a crossing alley — the day's `RouteTree` uses is a **door**;
+every other crossing is **wall**, placed as hard seals of the checkpoint row. Before that day nothing
+is drawn at all — the partition exists from generation, but the milestone's own words are
+"checkpoints in the later acts."
 
-Two rules refine that split:
+**The tree wins, unconditionally, over the partition.** A region holding no calm area gets no doors
+on every day its own boundary happens to be off the tree — which is every day unless the tree
+genuinely has to cross it to reach calm ground elsewhere, and on that day the crossing is a door
+regardless of what the region holds. A region edge may never affect a path is the stronger rule, so
+nothing here may override what the tree already decided; there is no separate exemption for the
+home region either; a door is exactly a boundary crossing the tree uses and nothing else changes
+that.
 
-- **A region holding no calm area gets no doors at all**, its boundary wall the whole way round.
-  The tree is not expected to ever reach such a region — there is nothing there for it to grow
-  toward — so this is stated as a backstop rather than something the tree is seen to need.
-- **A segment touching the home region on either side is never forced to wall by the rule above**,
-  whatever its far side is. That is the literal reading of "the region she starts in always has
-  doors": home's own boundary always falls through to the ordinary door-if-on-the-tree rule, so a
-  city where every calm area happened to land in the home region's own atom still leaves her free to
-  walk out rather than sealed in with a wall and nothing behind it to open.
-
-**Doors get no structure in this half of the build.** A door is an open boundary segment; the hut,
-the gate and the guards are the checkpoint structure the detention and teleport half of the
-milestone places there.
+**Doors get no structure in this half of the build.** A door is an open crossing — a segment or a
+through-alley — with nothing standing in it; the hut, the gate and the guards are the checkpoint
+structure the detention and teleport half of the milestone places there.
 
 ## Block purposes
 
