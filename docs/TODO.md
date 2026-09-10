@@ -1159,10 +1159,15 @@ their place, army trucks on the carriageways, masked men on foot and in vans try
 and explosions off screen, loud enough to reach the meter, each leaving a crater on a street. Off
 the one open route everything is sealed with the finale's own pictures — burnt cars, blockades,
 craters — which is `SealPlanner`'s existing job with a different candidate list: it already seals
-every street off the day's tree, and here the tree is a single strand. That strand crosses three
-parks, which are the only calm on the way and are for *"calm down or get the baby back to sleep if
-it wakes up"*, and ends at the edge of the map: the tunnel at the north end of the main road or the
-bridge at its south end, the two exits `CityEdge` already draws and already lets her walk into.
+every street off the day's tree. **But the finale's route is not a tree.** *(2026-09-09: "the
+finale route is *not* a tree any more. it's a single path going to the first park, then the second,
+then the third, then the exit. not overlapping routes".)* A day grows several strands to several
+calm areas and counts two distinct routes to each as a max flow; the finale has one ordered chain
+— service exit, first park, second park, third park, edge — with no branch, no second way to any
+of them, and everything off the chain sealed. The parks are the only calm on the way and are for
+*"calm down or get the baby back to sleep if it wakes up"*; the edge is the tunnel at the north
+end of the main road or the bridge at its south end, the two exits `CityEdge` already draws and
+already lets her walk into.
 *"Lots of lethal and dangerous events"*: this is the climax, and the density rules that keep a day
 fair (`_room_around`, the telegraph contract, off-corridor exemption) still hold — lethal things
 are dense, not unfair.
@@ -1194,11 +1199,14 @@ beyond the arc and the crater.
       rather than from the doorstep, and left through that door onto the city map at the home
       lot's side. What the interior does not need is any of the city's planners; a floor is small
       enough to place by hand
-- [ ] **A finale plan for the city map.** One `RouteTree` strand from the service exit through
-      three parks to the edge — a route *out* must never count as a route to a calm area, which is
-      the rule `CityEdge` and `tests/test_blocks.gd` already keep — sealed off with the finale's
-      candidate list, crowd at zero, and a scheduler budget of army trucks, abductions and
-      explosions rather than the act's ordinary catalogue
+- [ ] **A finale plan for the city map.** An ordered chain, not a `RouteTree`: service exit to
+      first park to second to third to the edge, one street-walk between each pair and nothing
+      else open. `RouteTree.for_day` and its redundancy guarantee (two distinct routes to each calm
+      area, counted as a max flow) are exactly what the finale must *not* do, so the chain is its
+      own small planner that reuses the reachability grid and hands `SealPlanner` the set of open
+      cells — a route *out* must never count as a route to a calm area, which is the rule
+      `CityEdge` and `tests/test_blocks.gd` already keep. Crowd at zero, and a scheduler budget of
+      army trucks, abductions and explosions rather than the act's ordinary catalogue
 - [ ] **An explosion row.** Off screen, a short burst of intensity high enough to reach her from
       out of view, a sound arc when M100's sound lines exist, and a crater left behind as a scar
       the way `barricade` leaves one — `spawns_on_finish` naming a crater row whose picture is one
@@ -1238,10 +1246,12 @@ asked and each answered by the player on 2026-09-09:**
    the tunnel collapses, or something of that shape — and the section restarts as in 2. The only
    change to the clock itself is the format, `%d:%02d.%03d` in place of `%d:%02d`, because
    milliseconds ticking make the same countdown read as faster.
-4. **Two paths.** *("two paths it is.")* Two strands sharing the first stretch from the service
-   exit and forking, one to the tunnel at the north end of the main road and one to the bridge at
-   its south end, each crossing three parks. The choice is the game's verb, and the home lot sits
-   between the two ends of the main road so neither exit is trivially nearer.
+4. **Two paths.** *("two paths it is.")* Two chains of the shape above, one ending at the tunnel
+   at the north end of the main road and one at the bridge at its south end, each through its own
+   three parks. They part at the service exit, or as near it as the lattice allows, and do not
+   overlap after that — *"not overlapping routes"* — so the choice is made once, at the door, and
+   is the game's verb; the home lot sits between the two ends of the main road so neither exit is
+   trivially nearer.
 
 **And what the finale is not.** No fighting, no button — the tone rules stand: the danger is
 noise, the men are the same masked men as act III's abductions, and the baby is never threatened by
