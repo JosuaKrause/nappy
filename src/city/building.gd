@@ -85,13 +85,19 @@ enum Condition {
 ## The tile rect this building stands on, so the city can find its block again.
 var lot := Rect2i()
 
+## This building's own ground shape — a rectangle of half `footprint`, the one place `GroundShape`
+## is a rectangle rather than a point or a band: nothing else in the game has a footprint that
+## is not already one of those two. Kept in step with `footprint` in `_rebuild()`, since the
+## `@export` setter can still reassign it. Buildings draw no shadow, so this is read for its body
+## alone today.
+var shape: GroundShape
+
 var _collision: CollisionShape2D
 ## One entry per wall cell, row-major from the ground up: true where the light is on.
 var _windows: Array[bool] = []
 
 func _ready() -> void:
 	_collision = CollisionShape2D.new()
-	_collision.shape = RectangleShape2D.new()
 	add_child(_collision)
 	_rebuild()
 
@@ -99,8 +105,10 @@ func _rebuild() -> void:
 	if not is_inside_tree():
 		return
 	# Collision is the whole lot, including the strip the roof is drawn over, so the player
-	# can never walk into the space the building's mass occupies on screen.
-	(_collision.shape as RectangleShape2D).size = footprint
+	# can never walk into the space the building's mass occupies on screen. Built from `shape`
+	# rather than a `RectangleShape2D` sized separately, so the body and the shape cannot disagree.
+	shape = GroundShape.rect(footprint * 0.5)
+	_collision.shape = shape.collision_shape()
 	_collision.position = Vector2(0.0, -footprint.y * 0.5)
 	_build_windows()
 	queue_redraw()

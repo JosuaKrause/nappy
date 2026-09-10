@@ -210,6 +210,14 @@ balance value — and `EventInstance._draw_spread` draws a blocking object at ex
 shape reaches, for the same reason in the other direction: a body that disagrees with the picture
 is a lie about where she can walk, whichever way it lies.
 
+**The catalogue is not the only thing carrying this datum.** A building's collision is a rectangle
+built from `shape.collision_shape()` on `GroundShape.rect(footprint * 0.5)` — `src/city/building.gd`
+— the one caller of `GroundShape`'s rectangle kind, since nothing else has a footprint that is not
+already a point or a band; and the crowd's walkers and cars each carry a `shape` of their own
+(`CrowdAgent.shape`) read for their shadow, though neither has a body — a car's lethality stays the
+separate `CAR_STRIKE_HALF_LENGTH`/`CAR_STRIKE_HALF_WIDTH` rectangle `will_be_lethal()` reads, on the
+player's own *"lethal != noise"*.
+
 **Three exemptions, each for its own reason.**
 
 - **Anything mobile.** A moving wall on a two-tile pavement pins her against a building, which is

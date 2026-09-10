@@ -78,6 +78,8 @@ func _lamp() -> int:
 	return 0
 
 func _draw() -> void:
+	# The 5.0 here is the signal head's own shape, a point — small enough that a `GroundShape`
+	# instance bought nothing over the literal `Sprites.draw_shadow` already took.
 	Sprites.draw_shadow(self, Vector2.ZERO, 5.0)
 	if arm_is_vertical and _faces_away:
 		Sprites.draw_standing(self, HEAD_BACK, Vector2.ZERO)

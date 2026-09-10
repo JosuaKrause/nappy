@@ -1,9 +1,9 @@
 extends RefCounted
 ## `GroundShape`: the datum a shadow and a solid body are both derived from — M61, "one shape per
-## object". `reach()`, `across()` and `distance_to_spine()` over a point and a segment;
-## `collision_shape()`'s two resource types; and the invariant every obstructing catalogue row now
-## carries, `shape.reach() == obstructs_radius`, checked over the whole catalogue, every heated
-## copy of every row, and every seal candidate's `sealed_variant()`.
+## object". `reach()`, `across()` and `distance_to_spine()` over a point, a segment and a
+## rectangle; `collision_shape()`'s three resource types; and the invariant every obstructing
+## catalogue row now carries, `shape.reach() == obstructs_radius`, checked over the whole
+## catalogue, every heated copy of every row, and every seal candidate's `sealed_variant()`.
 
 func run(t) -> void:
 	_test_reach_and_across(t)
@@ -16,6 +16,10 @@ func run(t) -> void:
 	_test_every_seal_candidate_agrees_with_its_shape(t)
 	_test_every_spread_row_still_fills_the_pavement_it_blocked(t)
 	_test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t)
+	_test_rect_reach_across_and_distance_to_spine(t)
+	_test_rect_collision_shape(t)
+	_test_a_built_building_carries_its_own_footprint_as_its_body(t)
+	_test_a_crowd_car_shape_is_not_smaller_than_its_strike_box(t)
 
 # ------------------------------------------------------------------ the datum ---
 
@@ -229,3 +233,67 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t) -> void:
 					("on a %s street, the built capsule's own spine (%s) matches _solid_axis() (%s)"
 							% [street_kind, spine, axis]))
 		instance.free()
+
+# ---------------------------------------------------------------- the rectangle ---
+# A building's footprint is the one shape in the game that is not already a point or a band — see
+# `GroundShape.rect()`'s own docstring for why nothing else needs one.
+
+func _test_rect_reach_across_and_distance_to_spine(t) -> void:
+	var shape := GroundShape.rect(Vector2(30.0, 10.0))
+	t.check(is_equal_approx(shape.reach(), Vector2(30.0, 10.0).length()),
+			"a rectangle's reach is its half-diagonal, the corner rather than an edge")
+	t.check(is_equal_approx(shape.across(), 10.0),
+			"a rectangle's across is its smaller half-extent")
+
+	t.check(is_equal_approx(shape.distance_to_spine(Vector2.ZERO), 0.0),
+			"the centre is inside, so the distance is zero")
+	t.check(is_equal_approx(shape.distance_to_spine(Vector2(20.0, 5.0)), 0.0),
+			"anywhere inside the box is zero, not only its exact centre")
+	t.check(is_equal_approx(shape.distance_to_spine(Vector2(30.0, 5.0)), 0.0),
+			"on the boundary counts as inside")
+	t.check(is_equal_approx(shape.distance_to_spine(Vector2(40.0, 5.0)), 10.0),
+			"beside an edge (past it in X, still within Y) is the plain perpendicular distance")
+	t.check(is_equal_approx(shape.distance_to_spine(Vector2(40.0, 20.0)),
+					Vector2(10.0, 10.0).length()),
+			"past a corner is the Euclidean distance to that corner, not to either edge alone")
+
+func _test_rect_collision_shape(t) -> void:
+	var shape := GroundShape.rect(Vector2(48.0, 32.0))
+	var collision := shape.collision_shape()
+	t.check(collision is RectangleShape2D, "a rectangle shape's collision resource is a RectangleShape2D")
+	t.check((collision as RectangleShape2D).size.is_equal_approx(Vector2(96.0, 64.0)),
+			"and its size is 2 * half_extents, the building's own full footprint")
+
+func _test_a_built_building_carries_its_own_footprint_as_its_body(t) -> void:
+	var footprint := Vector2(96.0, 160.0)
+	var building := Building.new()
+	building.footprint = footprint
+	t.add_child(building)
+	t.check(building.shape != null and building.shape.kind == GroundShape.Kind.RECT,
+			"a built building's own shape is a rectangle")
+	t.check(building.shape.half_extents.is_equal_approx(footprint * 0.5),
+			"sized off its own footprint, halved")
+	var collision := building._collision
+	t.check(collision != null and collision.shape is RectangleShape2D,
+			"the building's own collision body is a RectangleShape2D")
+	if collision and collision.shape is RectangleShape2D:
+		t.check((collision.shape as RectangleShape2D).size.is_equal_approx(footprint),
+				"and its size is exactly the footprint — the body derived from the shape rather "
+				+ "than sized separately")
+	building.free()
+
+# -------------------------------------------------------------- the strike box ---
+
+## `Tuning.CAR_STRIKE_HALF_LENGTH`/`CAR_STRIKE_HALF_WIDTH` is the lethal rectangle
+## `CrowdAgent.will_be_lethal()` reads — a different mechanism from this shape, on the player's own
+## "lethal != noise" — but the noise shape still has to be at least as big as what it stands next
+## to, or a car would read (and cast a shadow) smaller than the box that actually kills. If this
+## fails, the strike box is not this commit's to change — report it instead.
+func _test_a_crowd_car_shape_is_not_smaller_than_its_strike_box(t) -> void:
+	var shape: GroundShape = CrowdAgent._car_shadow_shape()
+	t.check(shape.reach() >= Tuning.CAR_STRIKE_HALF_LENGTH,
+			"a car's noise shape reaches at least as far as its strike box's half-length (%.1f >= %.1f)"
+			% [shape.reach(), Tuning.CAR_STRIKE_HALF_LENGTH])
+	t.check(shape.across() >= Tuning.CAR_STRIKE_HALF_WIDTH,
+			"and across at least as far as its strike box's half-width (%.1f >= %.1f)"
+			% [shape.across(), Tuning.CAR_STRIKE_HALF_WIDTH])

@@ -17,16 +17,37 @@ const BOLLARD := preload("res://assets/props/bollard.svg")
 @export var variant := 0
 @export var scale_factor := 1.0
 
+## This prop's own ground shape — a point for a tree or the bollard, sized off the same texture
+## fraction the shadow always used; a capsule for the swing frame (`_playground_frame_shape()`).
+## Computed once `_ready()` fires, by which point `city.gd` has already set `kind`, `variant` and
+## `scale_factor` on the new node (`Prop.new()` then the three exports, then `add_child()`), and
+## read by `_draw()` for the shadow — nothing here has a body.
+var shape: GroundShape
+
+func _ready() -> void:
+	shape = _compute_shape()
+
+func _compute_shape() -> GroundShape:
+	match kind:
+		Kind.TREE:
+			var size := TREES[absi(variant) % TREES.size()].get_size() * scale_factor
+			return GroundShape.point(size.x * 0.28)
+		Kind.PLAYGROUND_FRAME:
+			return _playground_frame_shape()
+		Kind.BOLLARD:
+			return GroundShape.point(BOLLARD.get_size().x * 0.4)
+		_:
+			return GroundShape.point(0.0)
+
 func _draw() -> void:
 	match kind:
 		Kind.TREE:
 			_draw_tree()
 		Kind.PLAYGROUND_FRAME:
-			_playground_frame_shape().draw_shadow(self, Vector2.ZERO)
+			shape.draw_shadow(self, Vector2.ZERO)
 			Sprites.draw_standing(self, SWING_FRAME, Vector2.ZERO)
 		Kind.BOLLARD:
-			var size := BOLLARD.get_size()
-			Sprites.draw_shadow(self, Vector2.ZERO, size.x * 0.4)
+			shape.draw_shadow(self, Vector2.ZERO)
 			Sprites.draw_standing(self, BOLLARD, Vector2.ZERO)
 
 ## The swing frame's own shadow shape — a capsule along its width, read off its own texture the
@@ -41,5 +62,5 @@ static func _playground_frame_shape() -> GroundShape:
 func _draw_tree() -> void:
 	var texture: Texture2D = TREES[absi(variant) % TREES.size()]
 	var size := texture.get_size() * scale_factor
-	Sprites.draw_shadow(self, Vector2.ZERO, size.x * 0.28)
+	shape.draw_shadow(self, Vector2.ZERO)
 	Sprites.draw_standing(self, texture, Vector2.ZERO, size, absi(variant) % 4 < 2)

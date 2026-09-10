@@ -101,7 +101,7 @@ src/
 	dev_flags.gd          every dev command-line flag, gated behind OS.is_debug_build()
   palette.gd              colours the code still chooses; the art's own are in the SVGs
   sprites.gd              feet-anchored draw helpers (standing sprite, contact shadow)
-  ground_shape.gd         one ground shape per object; the shadow and the body are derived from it
+  ground_shape.gd         one ground shape per object (point, segment or rectangle); the shadow and the body are derived from it
 assets/
   tiles/                  ground tiles, 32x32 SVG
   buildings/              facade and roof tiles, 32x32 SVG
