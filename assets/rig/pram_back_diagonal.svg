@@ -1,5 +1,5 @@
 <!-- Three-quarter rear, travelling northeast; rear and right side planes are distinct. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="36" height="30" viewBox="0 0 36 30" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round">
-<path d="M5 4L10 4L7 13L3 13Z" fill="#202733"/><path d="M8 4Q16 -4 25 4V10H8Z" fill="#b9b29f"/><path d="M10 5Q16 0 23 5V9H10Z" fill="#a49d8c"/>
-<path d="M4 9L24 8L32 11V20L17 24L4 20Z" fill="#354354"/><path d="M4 9L17 12V24L4 20Z" fill="#3e5062"/><path d="M17 12L32 11V20L17 24Z" fill="#293543"/><path d="M8 12L27 10L31 12" fill="none" stroke="#53657b"/>
+<path d="M5 4L10 4L7 14L3 14Z" fill="#202733"/><path d="M7 4Q16 -5 27 4V12H7Z" fill="#b9b29f"/><path d="M9 5Q16 -1 25 5V11H9Z" fill="#a49d8c"/>
+<path d="M4 10L22 8L32 12V20L17 25L4 21Z" fill="#354354"/><path d="M4 10L17 13V25L4 21Z" fill="#3e5062"/><path d="M17 13L32 12V20L17 25Z" fill="#293543"/><path d="M7 12L17 14L29 12L29 16L17 19L7 16Z" fill="#202733"/><path d="M8 17L17 20L28 17" fill="none" stroke="#53657b"/>
 <circle cx="10" cy="24" r="5" fill="#202027"/><circle cx="27" cy="24" r="4" fill="#202027"/><circle cx="10" cy="24" r="2" fill="#3d4650"/><circle cx="27" cy="24" r="1.5" fill="#3d4650"/></svg>
