@@ -1,7 +1,12 @@
-<!-- Robber waiting side authored action projection. Canvas 22x44; bottom-centre ground anchor (11,44). -->
+<!-- Hooded robber waiting, side. Hands stay within the coat; the rear hood hides the face opening. Ground anchor (11,44). -->
 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="44" viewBox="0 0 22 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-<circle cx="11" cy="9" r="7" fill="#2b303a"/><circle cx="11" cy="10" r="4" fill="#141419"/>
-  <path d="M4 15 L18 15 L18 36 Q11 39 4 36 Z" fill="#353a46"/><path d="M4 29 L18 29 L18 36 Q11 39 4 36 Z" fill="#2b303a"/>
-  <path d="M6 34 L10 34 L10 42 L6 42 M12 34 L16 34 L16 42 L12 42" stroke="#26262e" stroke-width="4"/>
-  <path d="M5 42 L10 42 L10 44 L5 44 M12 42 L17 42 L17 44 L12 44" fill="#17171c"/>
+  <path d="M7 33 L11 34 L10 42 L6 42Z M12 33 L16 33 L18 42 L13 42Z" fill="#26262e"/>
+  <path d="M5 41 L11 41 L11 44 L4 44Z M12 41 L18 41 L20 44 L13 44Z" fill="#17171c"/>
+  <path d="M7 15 L13 13 L17 17 L16 35 L7 36 L5 31Z" fill="#353a46"/>
+  <path d="M5 28 L11 31 L18 29 L18 35 L12 37 L5 34Z" fill="#2b303a"/>
+  <path d="M7 17 L11 18 L12 26 L16 26 L16 30 L9 31 L6 26Z" fill="#2b303a"/>
+  <g transform="translate(12 9)">
+  <ellipse cx="0" cy="0" rx="7" ry="7" fill="#2b303a"/>
+  <path d="M3 -3 Q8 -2 7 2 L4 5 L2 3Z" fill="#141419"/>
+  </g>
 </svg>
