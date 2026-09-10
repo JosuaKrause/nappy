@@ -274,12 +274,11 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 ## The queue, as prioritised on 2026-09-09
 
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56's
-remaining hunting row, the roadblock, is next, on its own branch, and it is a drawing. M61, one
-shape per object, follows with its field half — the shape, the shadow and the collision body are
-built and the field is still a point falloff — and it is checked by eye with the debug view (`1`
-to `4` in a debug build, `--layers 1,3` for a rig; `docs/TELEMETRY.md`, "The debug view"). M110,
-the crowd goes round a seal, sits behind it; M65, the protester who points, is revisited against
-the walled city rather than built as written. Behind those, unordered: M96 (the teaching day and
+remaining hunting row, the roadblock, is next, on its own branch, and it is a drawing. M110, the
+crowd goes round a seal, follows; M65, the protester who points, is revisited against the walled
+city rather than built as written. The debug view (`1` to `4` in a debug build, `--layers 1,3` for
+a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow or a body is checked by
+eye, and every one of the three is now derived from the object's one `GroundShape`. Behind those, unordered: M96 (the teaching day and
 the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's
 density after the sealing) and M100 (the small work, the polish and the open design questions,
 consolidated), with M105 (the city degrades), M106 (roofs, fronts and street trees) and M107 (the
@@ -296,6 +295,20 @@ owns continuous turn paths and diagonal presentation. Coordinate them in the sha
 
 What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
 
+- **Every field has a shape now, and nobody has felt one.** A stationary body's field is a capsule
+  about its own spine rather than a disc about its centre, and a moving thing's is an ellipse with
+  the emitter at the rear focus: it reaches exactly as far ahead as its catalogued outer radius
+  always did and less far behind and beside — a car at cruising speed (`e` 0.5) reaches a third of
+  that behind it and half of it abeam. The café and the market stall bill from the tables to the
+  middle of the carriageway (`inner_radius` 38, `outer_radius` 64, both measured from the spine) and
+  no further; the roadblock, the protest, the burnt shell and the firefight lost their segment's
+  half-length from both radii. The two eccentricity constants (`Tuning.FIELD_ECCENTRICITY_MAX` 0.7,
+  `FIELD_ECCENTRICITY_SPEED` 260px/s) were set by design and checked against one rig picture,
+  `docs/evidence/m61-field-after.png`. Whether a car going *past* still costs enough to notice,
+  and whether a café at 64px still forces the crossing it was built to force, are played questions;
+  `tests/test_balance.gd`'s relationships hold and the per-street probes moved within noise, but
+  *is the day still losable on the meter* is asked by a rig only. The record is in `DECISIONS.md`
+  under M61, the field.
 - **Every shadow is drawn from a shape and every spread stands on a capsule, and nobody has looked
   at one in play.** A band-shaped shadow under a roadblock, a car's shadow along its own length, a
   swing frame's along its width; and a barricade, a roadblock or a construction band is solid as a
