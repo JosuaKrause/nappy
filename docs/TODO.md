@@ -93,11 +93,15 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 3. **M61** — one shape per object, from which the field (the Minkowski sum of the body and a
    kernel), the shadow and the collision body are all derived. *("M61 is kind of important but not
    the immediate next item.")*
-4. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
+4. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
+   don't stop/redirect traffic or pedestrians.")* Placed here by the orchestrator, behind M61
+   because the two share `src/crowd/crowd_agent.gd` and ahead of M65 because a sealed street the
+   crowd walks through is the sealing's own legibility failing — open to the player moving it.
+5. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
    revisit after M62.")* Revisited rather than built as written: the regions and their
    checkpoints (`DECISIONS.md`, M62) may change what finding a mark is like, and the entry is
    re-read before the prepared poses are bound to objectives.
-5. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
+6. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
@@ -105,8 +109,8 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    clock, sit in this batch provisionally** — they were asked for on 2026-09-10 and not placed,
    so this is the orchestrator's guess at where work that needs no route decision belongs, open
    to the player moving it.
-6. **Reaching act III**, which M56's measurement against the nerves needs.
-7. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
+7. **Reaching act III**, which M56's measurement against the nerves needs.
+8. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
 The record, with its measurements and the choices open to overturn, is in `DECISIONS.md` under
@@ -700,6 +704,61 @@ thing than behind it.
 - [ ] **And it has to be visible.** The falloff is invisible today and that is fine because it is
       symmetric; a field that is stronger in front of a van is a routing fact the player can only
       learn by being told or by dying. Ask what draws it before deciding it is free
+
+---
+
+## M110 — The crowd goes round a seal · asked for 2026-09-10
+
+> "also I noticed that objects like fallen trees don't stop/redirect traffic or pedestrians"
+
+**The crowd knows about closures and about nothing else that stands in a street.** A walker or a
+car looks `LOOKAHEAD_TILES` ahead along its lane and turns off at the last junction when
+`CrowdAgent._cannot_go_on()` says the way is shut — and that predicate knows three things: a tile
+outside the map, a tile that is not street (or not driveable, for a car), and a tile in
+`CityMap.closed_tiles`. That set holds only what `ClosurePlanner` closes: `close_streets` floods
+the day's ground from the doorstep with the closure barriers down and files whatever a closed
+street's own ground the flood never reaches. **A seal is not a closure.** A hard seal — the fallen
+tree, the car accident, the burst main, the burnt-out car, the collapsed frontage, the stacked
+barricade — is `SealPlanner._place_hard` standing one row's bodies across the middle of a segment,
+spaced so their shapes cover it kerb to kerb; a soft seal is `_place_soft` standing one body on
+each pavement with the carriageway left open, and the thinning pass drops one body of some pairs.
+None of it touches `closed_tiles`, so every seal stands on ground the crowd reads as open, and
+walkers and cars pass through the bodies because an agent has no physics against an event body at
+all. The `delivery_van` row's docstring says as much of every solid body: on the carriageway it
+stands *"in a traffic lane the crowd knows nothing about and drives straight through"*.
+
+**Why it matters more for a seal than for a café**: traffic going round a closure is half of what
+makes one legible — `_divert()`'s own docstring: *"the street with nobody on it is the street that
+is shut, which reads from a block away — further than the barrier itself does."* A hard seal is
+meant to read as a closed street and gets none of that tell; worse, a stream of walkers passing
+through a fallen tree says the street is open when it is not.
+
+- [ ] **A hard seal shuts its street to the crowd the way a closure does.** The map carries a
+      second, crowd-facing record of the day's sealed ground — the cross-section tiles of every
+      segment `SealPlanner` sealed hard, at the seal's position — and `_cannot_go_on()` treats them
+      as shut, so the look-ahead sees the seal from seven tiles off and both walkers and cars turn
+      off at the last junction. Not `closed_tiles` itself: that set is computed by flood and is read
+      by the scheduler's placement and by the reachability picture, and a seal's ground is still
+      walkable for her (the guarantee the seal body already respects). Keyed on the segment rather
+      than the tile, because M100's *"events spawn inside a fully blocked street"* defect wants the
+      same fact — no catalogue row placed on a hard-sealed segment — and one record should serve
+      both. A test in `tests/test_crowd.gd` in the shape of *"nothing walks into a hard blocker"*:
+      on a day with hard seals, no agent stands inside a hard seal body's footprint on any frame,
+      and the sealed segment carries no through traffic
+- [ ] **A soft seal takes both pavements from the walkers and leaves the carriageway to the cars.**
+      The tiles under each soft body are shut to walkers only; a car on the road passes. A thinned
+      pair leaves its open pavement open, and the walkers still using it become the tell that the
+      wrong turn is takeable — which is the thinning's whole point *(playtest 22: "this makes the
+      actual path the player takes feel more organic, self-chosen, and earned")*, now visible from a
+      block away rather than only on arrival
+- [ ] **Open question, the player's: does every other solid body divert the crowd too?** A café, a
+      construction band, a kerbed van are walked through the same way. Diverting the crowd at every
+      pavement obstacle spends the tell closures rely on — every obstructed street would read as
+      shut — and a walker stepping *round* a body within its pavement is a behaviour the lanes do
+      not have (`CrowdLanes` gives a walker one of four fixed lanes per corridor). The
+      recommendation is seals only in this milestone, with ordinary bodies asked about against a
+      played day; the alternative, treating any body that covers a whole lane as shut for that lane,
+      is one predicate more and is cheap to add if the player wants it
 
 ---
 
