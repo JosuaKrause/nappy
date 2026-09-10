@@ -99,7 +99,7 @@ src/
   dev/
 	auto_screenshot.gd    render N frames, save a PNG, quit
 	dev_flags.gd          every dev command-line flag, gated behind OS.is_debug_build()
-	debug_layers.gd       world-space overlays over the live game: fields, shadows, bounding boxes
+	debug_layers.gd       the fields, shadows and bounding-box overlays, one number key apiece
   palette.gd              colours the code still chooses; the art's own are in the SVGs
   sprites.gd              feet-anchored draw helpers (standing sprite, contact shadow)
   ground_shape.gd         one ground shape per object (point, segment or rectangle); the shadow and the body are derived from it
@@ -162,6 +162,16 @@ right-hand readout (seed, frame rate, the meter's incoming/decay/net arithmetic)
 way, into a member (`_debug`) rather than asked of the OS inside `_process()` every frame, so the
 string is never assembled outside a debug build rather than merely hidden behind an invisible
 label.
+
+### The debug view
+
+`DebugLayers` (`src/dev/debug_layers.gd`) draws three world-space overlays over the live game
+state — a field's inner and outer falloff boundary, the ground extent a shadow is drawn over, and
+every collision body's own outline — read from `EventInstance`, `CrowdAgent`, `Building`, `Prop`
+and `Stroller` rather than drawn by any of them. Each of the three, plus the readout, is a numbered
+layer (`1`-`4`) `main._unhandled_input()` toggles on raw keycodes rather than an input-map action,
+so `project.godot` carries no binding a release build could ever reach. See docs/TELEMETRY.md,
+"The debug view", for the key mapping and what each layer draws.
 
 ### Quitting on the web
 

@@ -40,6 +40,11 @@ var _halo: ExcitementHalo
 ## node in the tree" is a release-build test's own question rather than one this class has to
 ## remember to ask of `_debug` separately. See `_add_debug_layers()`.
 var _debug_layers: DebugLayers
+## Whether the developer readout (`_status`) is showing, independent of `_debug`: the fourth
+## layer `_toggle_debug_layer()` owns, on `_status`'s own pre-existing `CanvasLayer` rather than
+## under `_debug_layers`, which is not a `CanvasLayer` this label could join. Starts `true`, so an
+## unflagged debug run reads exactly as it did before this milestone.
+var _layer_readout_on := true
 ## The pointer controls, on their own layer for the same reason the danger edge is: they have to
 ## sit above the world they are drawn over. Built in `_ready()`, alongside `_touch_layer`.
 var _touch_controls: TouchControls
@@ -79,7 +84,9 @@ func _ready() -> void:
 	# Starts in the shape it should have on this build rather than trusting the scene file's own
 	# default (`true`): every later flip of it is relative to whichever screen is up, and a boot
 	# path that never reaches one of them should still open with the right answer.
-	_status.visible = _debug
+	# `_layer_readout_on` defaults `true`, so this is `_debug` alone on an unflagged run — the
+	# fourth debug layer starts on, the same as it always has.
+	_status.visible = _debug and _layer_readout_on
 	GameState.start_run(DevFlags.seed_override())
 	# After the run seed is settled and before anything is generated, so the log opens on the
 	# seed it is a trace of. Off with `-- --no-telemetry`; on otherwise, because a trace
@@ -282,8 +289,9 @@ func _on_title_start(mode: ControlsMode.Mode) -> void:
 	_edge_layer.visible = true
 	# Not an unconditional `true`: this is the one place the readout was coming back regardless
 	# of build, since `_open_the_title()` always turns it off and this was the only place that
-	# turned it back on.
-	_status.visible = _debug
+	# turned it back on. `and _layer_readout_on` so a `4`-toggled-off readout stays off across a
+	# trip through the title rather than snapping back on underneath it.
+	_status.visible = _debug and _layer_readout_on
 	if is_inside_tree():
 		get_tree().paused = false
 
@@ -334,8 +342,7 @@ func _add_excitement_halo() -> void:
 ## `z_index = 3` puts it above `Entities` (2, the y-sorted layer everything on the ground lives on)
 ## — above everything else in the world, unlike the halo's own `z_index = 1`, because a bounding
 ## box drawn under the thing it outlines would be the one cue in the game nobody could read.
-## Every layer starts off (`DebugLayers.fields_on`/`shadows_on`/`bodies_on` all default `false`);
-## a number key to turn one on is the next milestone slice.
+## Every layer starts off — see `_toggle_debug_layer()` for the number key that turns one on.
 func _add_debug_layers() -> void:
 	if not _debug:
 		return
@@ -345,6 +352,7 @@ func _add_debug_layers() -> void:
 	_debug_layers.setup(_city.events, _city.crowd, _city, _player)
 	add_child(_debug_layers)
 	_pauses_with_the_game(_debug_layers)
+	print("[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout")
 
 ## The one control scheme, in its own layer for the same reason the danger edge gets one: it has to
 ## sit above the world it overlays. One node goes into the tree rather than a choice between two —
@@ -624,7 +632,9 @@ func _process(_delta: float) -> void:
 	# The developer readout, gated rather than merely hidden: it is a seed, a frame rate and a
 	# meter breakdown, which a released build has no business assembling every frame even behind
 	# a label nobody can see — and `_nearest_event_text()` below is a scan of every live event.
-	if not _debug:
+	# `_layer_readout_on` is this layer's own `4` key: off, the string is not assembled either,
+	# the same "gated rather than merely hidden" rule `_debug` already gets.
+	if not _debug or not _layer_readout_on:
 		return
 	var tile := _city.map.world_to_tile(_player.global_position)
 	_status.text = "\n".join([
@@ -966,6 +976,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		_snapshot_now()
 		return
+	# `1`..`4` toggle the debug view's own four layers — raw keycodes rather than input-map
+	# actions, the same choice `KEY_R`/`KEY_Q` make on the pause and title screens, so
+	# `project.godot` carries no binding a release build could ever reach anyway.
+	var layer_key := _debug_layer_key(event) if _debug else 0
+	if layer_key > 0:
+		get_viewport().set_input_as_handled()
+		_toggle_debug_layer(layer_key)
+		return
 	if not event.is_action_pressed("pause"):
 		return
 	if _pause.is_open() or _title.is_open():
@@ -983,6 +1001,32 @@ static func _debug_snapshot_action(event: InputEvent) -> StringName:
 	if event.is_action_pressed("snapshot"):
 		return &"snapshot"
 	return &""
+
+## `1` fields, `2` shadows, `3` bounding boxes, `4` the readout — or `0` for anything else. The
+## same echo guard `_debug_snapshot_action()` carries, for the same reason: a held key is one
+## request, not a flood of toggles for as long as it stays down.
+static func _debug_layer_key(event: InputEvent) -> int:
+	if not (event is InputEventKey and (event as InputEventKey).pressed):
+		return 0
+	if (event as InputEventKey).echo:
+		return 0
+	match (event as InputEventKey).keycode:
+		KEY_1: return 1
+		KEY_2: return 2
+		KEY_3: return 3
+		KEY_4: return 4
+		_: return 0
+
+## `4` is the readout's own key, answered here rather than on `_debug_layers` because the readout
+## lives on `_status`'s pre-existing `CanvasLayer` rather than under that node — see
+## `_layer_readout_on`'s own doc. `1`-`3` forward straight to it.
+func _toggle_debug_layer(layer: int) -> void:
+	if layer == 4:
+		_layer_readout_on = not _layer_readout_on
+		_status.visible = _debug and _layer_readout_on
+		return
+	if _debug_layers:
+		_debug_layers.set_layer(layer, not _debug_layers.layer_on(layer))
 
 ## `P` (or `F9`) writes a screenshot into the telemetry folder and a line of trace beside it. It is
 ## a debugging aid rather than a game feature.

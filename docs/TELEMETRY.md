@@ -343,6 +343,43 @@ The scan skips active captures and existing videos; ended partial sequences with
 eligible too. Pass a burst folder to select one sequence. If there is nothing to convert, the
 command reports that and succeeds.
 
+## The debug view
+
+A trace and a snapshot both answer "what happened"; this answers "what does the game currently
+think is true about this spot" — a field's own falloff boundary, the ground a shadow is drawn
+over, and a collision body's own outline, all drawn in world space over the running game rather
+than read back from a log afterwards. `DebugLayers` (`src/dev/debug_layers.gd`) queries the live
+`EventInstance`s, `CrowdAgent`s, `Building`s, `Prop`s and the `Stroller` each frame and draws
+outlines from what they answer; nothing about how any of them draws itself changes.
+
+Four layers, each a number key, read as a raw keycode rather than an input-map action so a release
+build has nothing in `project.godot` to reach:
+
+- **`1` fields** — every emitter's falloff footprint, inner and outer radius, for events, walkers
+  and cars alike, since all three run `Tuning.falloff()`. A flock draws one pair per bird rather
+  than one for the whole event. Amber (`Palette.MARK_COSTLY`) for a merely costly field, deep red
+  (`Palette.MARK_LETHAL`) for a `hard_fail` event's — the same two colours the caret already uses,
+  so this view speaks the vocabulary the game already has. A car's own noise field is always amber;
+  its strike box, which is what actually ends the day, is in the bounding-box layer instead.
+  **Every field is drawn as a circle today**, because `Tuning.falloff()` still prices distance
+  alone regardless of what `GroundShape` says the same object's shape is — see docs/TODO.md, M61,
+  "one shape per object": this layer is what makes that disagreement visible in a screenshot.
+- **`2` shadows** — the ground extent every `GroundShape` shadow is drawn over: events, crowd
+  agents, props, her and the pram. Buildings draw no shadow, so none is drawn for one here either.
+  Traced from `GroundShape.shadow_outline()`, the same polygon `draw_shadow()` itself now fills, so
+  the layer and the shadow cannot disagree.
+- **`3` bounding boxes** — every collision body's own outline: an event's obstruction, a building's
+  footprint, her own circle. A moving car's strike box is drawn here too, in the lethal colour,
+  because it is not a body but is exactly what ends the day on contact. Walkers and cars have no
+  body of their own, and none is invented for them.
+- **`4` the readout** — the seed, frame rate and meter breakdown `main.gd` has always drawn top
+  right, now toggleable like the other three: off, the string is not assembled, not merely hidden
+  behind an invisible label, the same rule `_debug` itself already applied to the whole thing.
+
+The mapping above is printed once on boot in a debug build. With no flag, a run opens with the
+readout on and the three geometry layers off, so an unflagged debug run looks exactly as it did
+before this existed.
+
 ## The city grid
 
 **A trace says where she was and cannot say what she was walking around.** Most questions asked of
