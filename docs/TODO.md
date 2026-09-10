@@ -77,11 +77,17 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
+0. **M103** — every drawing the open queue owes, in one list, drawn ahead of the milestones that
+   bind them. *(2026-09-10: "create a comprehensive list of graphics that need to be generated for
+   *all* open items. create a new todo item with the list so it can be picked up independently and
+   the graphics will be ready before implementation of any of the functionalities start.")* It
+   runs beside the queue rather than in it: any item below that needs a picture finds it prepared.
 1. **M56**'s build item, the other rows that hunt. *("M56 is also related to the other items to
    work on right now.")* Its measurement against the nerves waits, because reaching act III
    waits: *"I wanna wait reaching act III until those things are done."*
-2. **M61** — a field is the Minkowski sum of the body and a kernel. *("M61 is kind of important
-   but not the immediate next item.")*
+2. **M61** — one shape per object, from which the field (the Minkowski sum of the body and a
+   kernel), the shadow and the collision body are all derived. *("M61 is kind of important but not
+   the immediate next item.")*
 3. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
    revisit after M62.")* Revisited rather than built as written: the regions and their
    checkpoints (`DECISIONS.md`, M62) may change what finding a mark is like, and the entry is
@@ -239,6 +245,94 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
+## M103 — The drawings the queue owes · asked for 2026-09-10
+
+> "create a comprehensive list of graphics that need to be generated for *all* open items. create a
+> new todo item with the list so it can be picked up independently and the graphics will be ready
+> before implementation of any of the functionalities start"
+
+**One list, every open item, so a picture is never the thing an implementation waits on.** Each
+entry names the owning milestone, the file it becomes, the family it joins and the contract the
+code will hold it to — canvas, anchor, projection — so it can be drawn cold, reviewed with the
+**svg-art** skill, and filed in `GRAPHICS.md` as *prepared* until its milestone binds it. Drawn as
+SVG: the SVG set is the game's graphics until the illustrated presentation passes its gates, and the
+illustrated PNG track has its own list at the top of this file. **A prepared picture is not a
+binding**: nothing here changes what the game does, and the milestone that owns each one still
+decides placement, timing and rules.
+
+The families and their contracts are in `GRAPHICS.md`: standing things are bottom-centre anchored
+through `Sprites.draw_standing()` and mirror about that point; a vehicle that travels has a side
+view (east, mirrored for west) and an end view (north or south, one picture, authored proportions);
+a seal or scene that follows a street has an east–west picture and a `_vertical` sibling rather
+than a rotation; ground tiles are 32×32 in `assets/tiles/` and reach the game through
+`assets/ground_tileset.tres`; the checkpoint kit keeps its own off-centre anchors in SVG comments.
+
+**To draw** — nothing in this list exists yet:
+
+- [ ] **M56 — `assets/events/riot_van_end.svg`.** The night raid's van seen end-on, for the frames
+      it hunts north or south. Matches `riot_van.svg` (54×38, side view) the way
+      `unmarked_van_end.svg` (32×48) matches `unmarked_van.svg` (50×32): narrower than the side
+      view, taller, authored proportions, not mirrored. Bound by M56's riot-van item through
+      `EventInstance._draw_vehicle`, which selects side or end from the heading
+- [ ] **M100 — `assets/tiles/alley.svg`, revised so an alley does not read as a roof.** Playtest
+      50 read the two-tile alley behind a building as its roof (*"the robber is stuck inside the
+      roof"*). Conditional on that reading persisting in the next played session — the item is
+      filed under M100's open design questions — but the picture can be drafted now: same 32×32
+      tile contract, distinct at a glance from `roof.svg` and from the pavement, and it must still
+      tile seamlessly with its own neighbours. Draft it, put it beside the current tile in the
+      review render, and let the played verdict choose
+- [ ] **M100 — the chalk mark, made unmistakable, as one option among four.** Playtest 50 could not
+      tell a mark had been touched (*"how do I know I stepped on the chalk"*). Today the touch is a
+      colour change from `Palette.CHALK` to `CHALK_DONE`, both code-drawn. If the player's answer to
+      that open question is *the mark's colour made unmistakable*, that is a palette pair rather
+      than an SVG; if it is a touched-mark picture, it is a ground decal in the crater family
+      (centre-anchored, one tile). Drawn only once the question is answered, and listed so the
+      answer is not waited on twice
+- [ ] **M102 — interior ground tiles, in `assets/tiles/`.** The apartment section is a second small
+      map drawn with the ground `TileMapLayer`, so it needs its own tile family at 32×32: a hallway
+      floor, a corridor floor, a basement floor, a stair tile (a flight going down, one tile wide,
+      readable as *down*), and interior wall and wall-edge tiles for the rooms' bounds — the
+      exterior `wall.svg` / `roof.svg` set is an elevation seen from outside and does not read as a
+      corridor's inside. `GroundTiles` chooses by tile type and exposed edge, so each floor tile
+      wants the same edge-aware variants the street tiles have
+- [ ] **M102 — `assets/props/lift_door_dead.svg`.** The non-functioning lift on the hallway: a
+      closed door pair in the `door.svg` family (bottom-centre anchored, stands against a wall
+      tile), dark, with whatever says *dead* at a glance — no lamp, or a hand-written notice
+- [ ] **M102 — `assets/props/door_barricaded.svg`.** The building's main entrance, boarded shut,
+      the reason the way out is the basement. Same family and anchor as `door.svg`; it has to read
+      as *this was a door* and *not this way* from across the hallway
+- [ ] **M102 — `assets/props/door_service.svg`.** The service exit on the building's side, the
+      door the finale's city section starts at. Same family as `door.svg`, plainer and narrower
+      than the home door so the two are never confused on the summary or the map
+- [ ] **M102 — `assets/events/mouse.svg`.** The apartment's own small event: a moving picture in
+      the `cat_running.svg` family, tiny, side view mirrored for west. One picture is enough; a
+      mouse that startles is a short pulse and does not need a second pose
+- [ ] **M102 — `assets/events/steam.svg`.** A stationary field in a basement corridor: a vent or a
+      burst pipe with a plume, bottom-centre anchored, drawn so the pulse animation can scale the
+      plume the way `flame.svg` is scaled by the fire animation. The plume is the field's picture
+      and must not be mistaken for the sound-pulse arcs
+- [ ] **M102 — an explosion picture, only if wanted.** The brief's explosions are off screen: their
+      sound is `sound_pulse.svg`'s arcs once M100's sound lines bind them, and their mark is one of
+      the three prepared craters. A flash or a smoke column at the screen's edge is optional and the
+      milestone decides; listed so that decision is taken with the option drawn rather than
+      imagined
+
+**Already drawn — nothing to do, listed so the list is complete.** M56's roadblock guards use
+the prepared `assets/checkpoints/guard_standing.svg` and `guard_lunging.svg` pair. M65's eight
+`protester_point_*.svg` poses. M100's `industrial_vent.svg`, `civic_portico.svg`, `sound_pulse.svg`,
+and `tree_{a,b}.svg`. M101's `flame.svg`, `rubble.svg`, `fire_engine.svg` and `fire_engine_end.svg`.
+M102's six carrying frames, three craters, and every truck, van, seal, guard and flame it reuses
+from the live tables; the baby-state cue over the bundle is the existing `baby_{zzz,fuss,cry}.svg`.
+
+**Needs no picture.** M61's shape-derived shadows and the field's visibility are code-drawn from
+the shape, and `shadow.svg` is retired by it rather than replaced. M96 to M99 own no drawing;
+M99's building type that closes four streets composes from the existing wall and roof tiles unless
+its milestone decides it should read differently from a big building, which is a question for
+then. M100's accessibility, controller, save and audio items own none. M79 is tabled and its facade
+art is not owed until it is picked up.
+
+---
+
 ## M56 — The resistance is noticed
 
 The city gets more dangerous the further into the subquest you are. **A task may not cost a nerve**
@@ -285,17 +379,60 @@ use the guard pair for a guard departure if that proposed response is accepted.
       `EventInstance._draw_simple` — one side view, mirrored for west — so a hunting raid van
       chasing her north or south is drawn side-on. The unmarked van earned `unmarked_van_end.svg`
       for exactly that moment when it began to hunt; the raid owes the same picture, drawn to
-      `riot_van.svg`'s scale and bound through `_draw_vehicle` the way the abduction's pair is
+      `riot_van.svg`'s scale under M103 and bound here through `_draw_vehicle` the way the
+      abduction's pair is
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
 
 ---
 
-## M61 — A field is an ellipse · asked for 2026-09-02
+## M61 — One shape per object: the field, the shadow and the body · asked for 2026-09-02, widened 2026-09-10
 
 > "fields should be ellipses, not circles. the excentricity should be determined by movement speed.
 > the rationale is that an entity moving towards you has more of an effect than if it moves away or
 > orthogonal. the entity itself lives in one of the focus points"
+
+**Widened on 2026-09-10 into one datum with three consumers.** *("for minkowski sum would it make
+sense to combine this with non-oval shadows as well? right now all shadows are ovals below the
+sprite which looks odd for a lot of objects. both the shadow and the influence field (and the
+bounding boxes) could be derived from the same shape associated with an object (that is independent
+of its graphics). let's structure it in that way and we'll get three wins out of it.")*
+
+- [ ] **Every object carries one ground shape, independent of its picture, and three things are
+      derived from it.** Today the three are set separately and none of them agrees with the
+      drawing. **The shadow** is `Sprites.draw_shadow()`: `assets/props/shadow.svg`, an ellipse,
+      stretched to twice a radius wide and 0.8 of it tall, with the radius hand-picked at every
+      call site — 9px for her and 12 for the pram in `Stroller`, 18 for a car and 7 for a walker in
+      `CrowdAgent`, 19 for a tree and a fraction of the sprite's width for the other props in
+      `Prop`, and a per-look number in `EventInstance` — so a 120px roadblock band and a four-car
+      seal both stand on an oval. **The body** is a `CircleShape2D` of `obstructs_radius` under
+      every event that obstructs, whatever it is drawn as, which is why a spread drawn
+      `obstructs_radius` either side of centre is solid as a disc rather than as the band it shows;
+      a building is a `RectangleShape2D` of its footprint and she is one circle. **The field** is a
+      point falloff, which the bullets below already replace with `body ⊕ kernel`. The shape is the
+      body operand of that sum, stated once: a point with a radius, a segment with a radius (the
+      capsule), an axis-aligned rectangle, or a convex polygon, in the object's own ground frame,
+      rotated with its facing. Then the field is the shape offset by the kernel, the shadow is the
+      shape drawn on the ground — squashed on Y by the oblique view's own 0.8, the way the oval is
+      today — and the body is the shape as its collision resource (`CircleShape2D`,
+      `CapsuleShape2D`, `RectangleShape2D`, `ConvexPolygonShape2D`). One number to tune per object
+      and three places that stop disagreeing.
+
+      **What has to survive the change.** The halo skips the shadow (playtest 35: *"the halo should
+      not include the shadow"*), and a shape-drawn shadow is skipped the same way. The rule that a
+      moving pursuer keeps no body is about *whether* there is a body, not its shape, and stands.
+      `EventDef.validate()`'s reachability rule — body plus her 14px inside `inner_radius` — is
+      restated over the shape's reach along its worst axis, the same restatement the telegraph
+      bullet below asks for. And the illustrated presentation is a picture, not a shape: the shape
+      is the same under either drawing, which is the point of keeping it off the graphics.
+
+      **This closes M100's "vehicle collision and silhouette agreement" item from here**, since a
+      body derived from the same shape as the picture's footprint is the whole of that ask; its
+      text moved under this bullet rather than being designed twice. Whether a car in the crowd
+      gets a shape too — it has no body today and its shadow is an 18px oval — is the first
+      question for the build, since the crowd's cars are lethal through `TrafficIndex` rather than
+      through a field, and a shape on them changes what a shadow says without changing what they
+      cost.
 
 **A change to the emission model itself, and it is the first one since the falloff shape.** Today
 every field is a disc: `Tuning.falloff(distance, intensity, inner, outer)` prices being near a thing
@@ -681,13 +818,12 @@ is still true.
 
 **Drawings, as SVG:**
 
-- [ ] **Vehicle collision and silhouette agreement.** The skip and side-view van widths fit their
-      solid bodies; authored end views preserve narrower vehicle proportions. Check whether the
-      circular obstructions leave apparent gaps that cannot be walked through, and reconcile
-      collision with the pictures without stretching the cars or breaking seal reachability.
-      See DECISIONS.md, "SVG artwork and upcoming milestone assets", for the directional artwork,
-      the player's perpendicular burnt-car correction and the rendered evidence. Use the existing
-      `assets/events/moving_van*.svg` and `burnt_out_car*.svg` projections listed in GRAPHICS.md.
+**Vehicle collision and silhouette agreement moved to M61 on 2026-09-10**, where one shape per
+object gives the body, the shadow and the field together: the circular obstructions under the skip,
+the moving vans and the burnt-out cars leave apparent gaps that cannot be walked through, and the
+fix is the body following the picture's footprint rather than a per-row adjustment. The directional
+artwork, the player's perpendicular burnt-car correction and the rendered evidence are in
+`DECISIONS.md`, "SVG artwork and upcoming milestone assets".
 
 - [ ] **Park trees clump.** `City` places them by rejection sampling inside the lot with no
       spacing test. Add a minimum-spacing check while retaining `assets/props/tree_a.svg` and
@@ -912,9 +1048,10 @@ are masked men on foot; `flame.svg` is the staircase fire; `sound_pulse.svg` is 
 off-screen explosion draws, once M100's sound lines bind it. The player herself is drawn:
 `assets/rig/mother_carrying_{front,back,side}_{a,b}.svg` are the existing mother's six frames with
 the baby in her arms and no pram, on the same canvases and feet anchors as the walking set, so
-`Stroller` can swap them in facing for facing. New drawings: the hallway, stair, corridor and
-basement tiles, a dead lift door, mice, steam, and an explosion row's own picture if one is wanted
-beyond the arc and the crater.
+`Stroller` can swap them in facing for facing. New drawings, each listed with its contract under
+M103: the hallway, stair, corridor and basement tiles, a dead lift door, the barricaded entrance
+and the service door, mice, steam, and an explosion row's own picture if one is wanted beyond the
+arc and the crater.
 
 **What is genuinely new, and the order to build it in:**
 
