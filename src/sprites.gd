@@ -16,6 +16,7 @@ const SHADOW := preload("res://assets/props/shadow.svg")
 ## is emitting and a tree scales with its variant.
 static func draw_standing(canvas: CanvasItem, texture: Texture2D, at: Vector2,
 		size := Vector2.ZERO, flip_h := false, modulate := Color.WHITE) -> void:
+	texture = TextureResolver.resolve(texture)
 	var extent := size if size != Vector2.ZERO else texture.get_size()
 	if not flip_h:
 		canvas.draw_texture_rect(texture,
@@ -51,5 +52,5 @@ static func draw_caret(canvas: CanvasItem, at: Vector2, width: float, colour: Co
 ## the rest of the oblique view is, so it reads as lying on the pavement.
 static func draw_shadow(canvas: CanvasItem, at: Vector2, radius: float) -> void:
 	var extent := Vector2(radius * 2.0, radius * 0.8)
-	canvas.draw_texture_rect(SHADOW,
+	canvas.draw_texture_rect(TextureResolver.resolve(SHADOW),
 			Rect2(at - extent * 0.5, extent), false, Palette.SHADOW)

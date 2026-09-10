@@ -155,31 +155,31 @@ func _draw() -> void:
 	for row in wall_rows:
 		for col in cols:
 			var at := _cell(col, row)
-			draw_texture(WALL, at, wall_colour)
+			draw_texture(TextureResolver.resolve(WALL), at, wall_colour)
 			var index := row * cols + col
-			draw_texture(WINDOW_LIT if _lit(index) else WINDOW_DARK, at)
+			draw_texture(TextureResolver.resolve(WINDOW_LIT if _lit(index) else WINDOW_DARK), at)
 			if col == 0:
-				draw_texture(WALL_EDGE_W, at)
+				draw_texture(TextureResolver.resolve(WALL_EDGE_W), at)
 			if col == cols - 1:
-				draw_texture(WALL_EDGE_E, at)
+				draw_texture(TextureResolver.resolve(WALL_EDGE_E), at)
 			if row == 0:
-				draw_texture(WALL_BASE, at)
+				draw_texture(TextureResolver.resolve(WALL_BASE), at)
 			# With no roof at all, the parapet is what stops the wall.
 			if roof_rows == 0 and row == wall_rows - 1:
-				draw_texture(ROOF_EDGE_N, at)
+				draw_texture(TextureResolver.resolve(ROOF_EDGE_N), at)
 
 	for row in roof_rows:
 		for col in cols:
 			var at := _cell(col, wall_rows + row)
-			draw_texture(ROOF, at, roof_colour)
+			draw_texture(TextureResolver.resolve(ROOF), at, roof_colour)
 			if row == 0:
-				draw_texture(ROOF_EDGE_S, at)
+				draw_texture(TextureResolver.resolve(ROOF_EDGE_S), at)
 			if row == roof_rows - 1:
-				draw_texture(ROOF_EDGE_N, at)
+				draw_texture(TextureResolver.resolve(ROOF_EDGE_N), at)
 			if col == 0:
-				draw_texture(ROOF_EDGE_W, at)
+				draw_texture(TextureResolver.resolve(ROOF_EDGE_W), at)
 			if col == cols - 1:
-				draw_texture(ROOF_EDGE_E, at)
+				draw_texture(TextureResolver.resolve(ROOF_EDGE_E), at)
 
 ## Top-left corner of a cell, counting rows northward from the ground line.
 func _cell(col: int, row: int) -> Vector2:
