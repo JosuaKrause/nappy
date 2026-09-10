@@ -16,6 +16,12 @@ mid-way through.
 
 ### SVG-to-PNG style transfer
 
+- [ ] Add eight-direction mother/pram drawing, authoring the diagonal SVG views before PNG
+      transfer. Preserve the existing cardinal artwork, two-frame gait, native ground anchors
+      and pram spacing. Use explicit east/west mirror symmetry for this family. Verify direction
+      selection and compare all eight views in SVG and PNG. PLAYTEST-51 supplies the request;
+      the spacing comparison is recorded in DECISIONS.md under Eight-direction style transfer.
+
 [PLAYTEST-51.md](playtests/PLAYTEST-51.md) specifies texture replacement using the existing
 SVGs as the geometry source and the supplied diagonal and cardinal gameplay illustrations as
 style references, excluding their interface and debug annotations.

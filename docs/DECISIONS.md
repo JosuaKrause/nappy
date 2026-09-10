@@ -1,5 +1,13 @@
 # Decisions
 
+## Eight-direction style transfer — 2026-09-10
+
+PLAYTEST-51 accepts the conversion examples and requests eight directions, with SVG artwork first.
+The player accepts the hand-to-pram gap if it predates the transfer. Comparing `660647a` with
+the transferred version confirms the same 34px PRAM_DISTANCE, projected Y offset and source
+SVG silhouettes. The gap is inherited and spacing is preserved. New diagonal views use the
+same explicit east/west mirror symmetry as the cardinal side views; art direction stays upright.
+
 ## SVG-to-PNG experiment: main integration — 2026-09-10
 
 **Verification and capture.** On the merged tree, `./tools/check.sh`, focused

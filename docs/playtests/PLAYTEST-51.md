@@ -30,3 +30,7 @@ The repository's `tools/remove-checkerboard.py` supplies the existing extraction
 > create a pr
 
 > can I see some conversion? maybe in the pr?
+
+## Eight directions
+
+> perfect. one note -- was the stroller always so far away from the player? there is a big gap between her hand and the stroller -- if it was always like this it's fine. another thing -- can we make 8 directions? would need a svg version first
