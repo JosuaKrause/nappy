@@ -16,6 +16,10 @@ mid-way through.
 
 ### M108 — Eight-direction entity graphics
 
+The current SVG-only authoring request is recorded in [PLAYTEST-52](playtests/PLAYTEST-52.md).
+Internal drafts stay outside the repository; retain rejected artwork only when it was suggested
+for human review.
+
 This graphics track runs beside the gameplay queue. [PLAYTEST-51](playtests/PLAYTEST-51.md)
 approves the SVG-to-PNG workflow and requests eight-direction movement graphics for all entities
 before catalogue-wide conversion. See `DECISIONS.md` under Eight-direction style transfer.
@@ -268,6 +272,9 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 ---
 
 ## M103 — The drawings the queue owes · asked for 2026-09-10
+
+[PLAYTEST-52](playtests/PLAYTEST-52.md) authorizes completing the missing SVG artwork now;
+PNG conversion remains in M109, convert the SVG catalogue to PNG.
 
 > "create a comprehensive list of graphics that need to be generated for *all* open items. create a
 > new todo item with the list so it can be picked up independently and the graphics will be ready
