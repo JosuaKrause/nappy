@@ -87,6 +87,12 @@ var leader_speed := 0.0
 ## whose turn it is at a box is a question about the pair of them and not about either one.
 var junction_hold := INF
 
+## Distance to the stop line of a checkpoint gate this car has to give way at, or `INF` when there
+## is none ahead or it is raised. Written once per physics frame by `Crowd._stop_for_gates()`,
+## the same shape `junction_hold` already is — see `_give_way()` for why the two, and the zebra's
+## own stop line, all compose by taking the lowest speed rather than each owning a brake.
+var gate_hold := INF
+
 ## True while the player is touching this agent. Owned by `Crowd`, and the reason it exists is
 ## that a contact is not instantaneous: she walks faster than a pedestrian does, so a person
 ## bumped from behind stays inside the contact radius for the better part of a second. Without
@@ -714,15 +720,17 @@ func _axis_weight(vertical: bool) -> float:
 ## be *visible* from the kerb: a player deciding whether to step off needs to see the car slowing,
 ## not discover afterwards that it would have.
 ##
-## It is also where a car decides not to drive through the one in front, and where it waits its turn
-## at a junction. **The three wants compose by taking the lowest**, which is the whole trick: a car
-## held at a box and a car behind another car are the same behaviour asked for by two different
-## things, and giving the junction its own brake would be a second answer to a question that already
-## has one.
+## It is also where a car decides not to drive through the one in front, waits its turn at a
+## junction, or stops for a checkpoint gate. **The four wants compose by taking the lowest**, which
+## is the whole trick: a car held at a box, a car held at a gate, and a car behind another car are
+## the same behaviour asked for by different things, and giving any one of them its own brake would
+## be a second answer to a question that already has one.
 func _give_way(delta: float) -> void:
 	var wanted := _cruise
 	if junction_hold < INF:
 		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * junction_hold))
+	if gate_hold < INF:
+		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * gate_hold))
 	var to_line := _distance_to_stop_line()
 	if to_line < INF:
 		# The speed that runs out exactly at the line at the *approach* rate. **Braking toward a
@@ -1166,6 +1174,7 @@ func _recycle() -> void:
 	_claim_the_road_here()
 	gap_ahead = INF
 	junction_hold = INF
+	gate_hold = INF
 	_keep_within_the_room_beyond_the_map()
 	# The loop above only ever *tries* for `_stands_on_a_street`; six misses in a row near a true
 	# edge leave whatever the last roll was, which `_keep_within_the_room_beyond_the_map` still

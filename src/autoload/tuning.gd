@@ -647,6 +647,24 @@ const CHECKPOINT_DETAIN_SECONDS := 6.0
 ## `EventManager._release_finished_door_detentions()`.
 const CHECKPOINT_RELEASE_MARGIN := 8.0
 
+## Seconds a car has to have been stopped, dead level with a closed checkpoint gate, before it
+## opens for it. *(2026-09-02, the player: "cars need to slow down to a full stop before the gate
+## opens and they can go ahead again.")* See `Crowd._stop_for_gates()`.
+const GATE_STOP_SECONDS := 1.2
+
+## Below this speed a car counts as actually stopped rather than still easing toward the line —
+## `Crowd._stop_for_gates()`'s own clock for `GATE_STOP_SECONDS` only runs while a car is this
+## slow, or a car that merely eased off on its approach would bank wait time it never spent
+## waiting.
+const CAR_STOPPED_SPEED := 5.0
+
+## How far to either side of a checkpoint gate's own line a car may sit and still count as *in its
+## lane*, so `Crowd._stop_for_gates()` can tell a car on the gate's own street from one on a
+## different, unrelated corridor. Half the carriageway (`STREET_WIDTH - 2*SIDEWALK_WIDTH` tiles,
+## 64px, so 32px each side of the centre line) plus a small margin for the two lanes either side of
+## it.
+const GATE_LANE_TOLERANCE := 40.0
+
 # --------------------------------------------------------------- the crowd ---
 # The crowd is why a street is loud and a park is quiet, and it is the base noise floor a day needs
 # so that standing in one place cannot work. It is emergent rather than a city-wide constant,
