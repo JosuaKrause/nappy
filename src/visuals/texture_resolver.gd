@@ -1,21 +1,21 @@
 class_name TextureResolver
 extends RefCounted
-## Selects an optional same-sized PNG transfer for an authored SVG texture.
+## Selects a same-sized PNG transfer for an authored SVG texture, unless SVG is forced.
 
 const TRANSFER_ROOT := "res://assets/illustrated/svg-transfer/"
 
-static var _illustrated_requested := false
+static var _svg_requested := false
 static var _initialized := false
 static var _cache: Dictionary = {}
 
-## Returns a cached PNG transfer when the opt-in is active and the replacement is valid.
+## Returns a cached PNG transfer by default when the replacement is valid.
 ## Missing or mismatched transfers preserve the original SVG so an incomplete art drop cannot
 ## change the simulation's presentation geometry.
 static func resolve(texture: Texture2D) -> Texture2D:
 	if not _initialized:
-		_illustrated_requested = DevFlags.illustrated_requested()
+		_svg_requested = DevFlags.svg_requested()
 		_initialized = true
-	if not _illustrated_requested or texture == null:
+	if _svg_requested or texture == null:
 		return texture
 	var source_path := texture.resource_path
 	if source_path.is_empty() or not source_path.begins_with("res://assets/") \
@@ -42,6 +42,6 @@ static func transfer_path_for(texture: Texture2D) -> String:
 	return TRANSFER_ROOT + texture.resource_path.trim_prefix("res://assets/").trim_suffix(".svg") + ".png"
 
 static func reset_for_tests(requested: bool) -> void:
-	_illustrated_requested = requested
+	_svg_requested = requested
 	_initialized = true
 	_cache.clear()
