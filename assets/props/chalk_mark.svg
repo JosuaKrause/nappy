@@ -1,0 +1,7 @@
+<!-- Prepared ground counterpart of ContactPoint._draw_chalk; centre anchor is (16,16). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <g fill="none" stroke="#eaeae0" stroke-opacity="0.78" stroke-width="2" stroke-linecap="round">
+    <circle cx="16" cy="16" r="11"/>
+    <path d="M9 20L23 11 M10 11L18 22"/>
+  </g>
+</svg>
