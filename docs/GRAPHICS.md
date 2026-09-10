@@ -34,8 +34,8 @@ Some visible graphics are code rather than image files:
 
 | Assets | Runtime binding and behaviour |
 |---|---|
-| `assets/tiles/*.svg` | Every SVG in this folder is an external texture in `assets/ground_tileset.tres`. `scenes/world/city.tscn` binds that TileSet to the `Ground` layer, and `GroundTiles` chooses the source for roads, main-road lines, crossings, pavements and kerbs, alleys, open grounds, water edges and the city boundary. This indirect resource binding is why the tile filenames do not appear in the caller. `mountain.svg` is also repeated directly by `src/city/city_edge.gd` above the north edge. |
-| `assets/buildings/*.svg` | `src/city/building.gd` uses the complete folder: `wall.svg`, `wall_base.svg`, `wall_edge_{e,w}.svg`, `roof.svg`, `roof_edge_{n,s,e,w}.svg` and `window_{dark,lit}.svg`. The code composes and tints them; no complete-building sprite exists. |
+| The textures listed in `assets/ground_tileset.tres` | `scenes/world/city.tscn` binds this TileSet to the `Ground` layer, and `GroundTiles` chooses the source for roads, main-road lines, crossings, pavements and kerbs, alleys, open grounds, water edges and the city boundary. This indirect resource binding is why the tile filenames do not appear in the caller. `assets/tiles/mountain.svg` is also repeated directly by `src/city/city_edge.gd` above the north edge. Prepared alternatives are catalogued separately below. |
+| `assets/buildings/wall.svg`, `wall_base.svg`, `wall_edge_{e,w}.svg`, `roof.svg`, `roof_edge_{n,s,e,w}.svg`, `window_{dark,lit}.svg` | `src/city/building.gd` composes and tints these wall, roof and window textures; no complete-building sprite exists. Prepared facade alternatives are catalogued separately below. |
 | `assets/props/tree_{a,b}.svg` | `src/city/prop.gd` chooses a tree variant, scales it and may mirror it for park and forest props. |
 | `assets/props/{swing_frame,bollard}.svg` | `src/city/prop.gd` draws playground swing frames and perimeter bollards. |
 | `assets/props/{tunnel_mouth,bridge_deck,road_on}.svg` | `src/city/city_edge.gd` draws the tunnel, bridge and road continuation where a street meets the map boundary. |
