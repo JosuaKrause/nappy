@@ -1,8 +1,14 @@
-<!-- Robber lunging back authored action projection. Canvas 34x44; bottom-centre ground anchor (17,44). -->
+<!-- Hooded robber reaching back. Projected stride and arm distinguish the attack from waiting. Ground anchor (17,44). -->
 <svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 34 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-<circle cx="16" cy="9" r="7" fill="#2b303a"/><circle cx="16" cy="10" r="4" fill="#141419"/>
-  <path d="M10 17 Q16 13 23 18 L23 34 Q17 37 10 33 Z" fill="#353a46"/>
-  <path d="M11 20 L7 14 L8 12 L15 19 M21 20 L25 14 L24 12 L17 19" fill="#2b303a"/>
-  <path d="M10 32 L16 32 L13 42 L7 42 M17 34 L23 34 L28 39 L22 39" stroke="#26262e" stroke-width="4"/>
-  <path d="M6 42 L13 42 L12 44 L5 44 M22 39 L29 39 L30 41 L22 41" fill="#17171c"/>
+  <path d="M11 31 L16 33 L13 40 L8 39Z M18 31 L22 32 L24 42 L18 43Z" fill="#26262e"/>
+  <path d="M7 38 L14 39 L14 42 L6 41Z M17 41 L25 41 L26 44 L17 44Z" fill="#17171c"/>
+  <path d="M21 19 L22 13 L27 11 L28 14 L26 21Z" fill="#2b303a"/>
+  <ellipse cx="27" cy="12" rx="2.2" ry="1.8" fill="#d9a878"/>
+  <path d="M9 18 Q17 13 25 18 L24 34 L9 34Z" fill="#353a46"/>
+  <path d="M9 28 L24 28 L24 34 L9 34Z" fill="#2b303a"/>
+  <path d="M10 19 L5 26 L7 31 L12 27 L14 21Z" fill="#2b303a"/>
+  <g transform="translate(17 12)">
+  <ellipse cx="0" cy="0" rx="7" ry="7" fill="#2b303a"/>
+  <path d="M-4 3 Q0 6 4 3" fill="none" stroke="#353a46" stroke-width="0.8"/>
+  </g>
 </svg>
