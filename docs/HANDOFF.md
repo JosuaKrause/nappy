@@ -348,8 +348,9 @@ collision body are derived, follows; M65, the protester who points, is revisited
 built as written. Behind those, unordered: M96 (the teaching day and
 the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's
 density after the sealing) and M100 (the small work, the polish and the open design questions,
-consolidated), with M105 (the city degrades) and M106 (roofs, fronts and street trees) placed in
-that batch provisionally, since the player asked for them on 2026-09-10 without placing them.
+consolidated), with M105 (the city degrades), M106 (roofs, fronts and street trees) and M107 (the
+run clock, hidden until the win screen) placed in that batch provisionally, since the player asked
+for them on 2026-09-10 without placing them.
 Reaching act III — which M56's measurement against the nerves needs — waits until
 that batch is done, and M101, the fire found before the engine, comes after that. The illustrated
 actor work is Codex's parallel track. **M103, the drawings the queue owes, runs beside all of it**:

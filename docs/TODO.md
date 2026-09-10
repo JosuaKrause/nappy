@@ -101,10 +101,10 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
-   reprioritised". **M105, the city degrades, and M106, roofs, fronts and street trees, sit in
-   this batch provisionally** — they were asked for on 2026-09-10 and not placed, so this is the
-   orchestrator's guess at where presentation work that needs no route decision belongs, open to
-   the player moving it.
+   reprioritised". **M105, the city degrades, M106, roofs, fronts and street trees, and M107, the run
+   clock, sit in this batch provisionally** — they were asked for on 2026-09-10 and not placed,
+   so this is the orchestrator's guess at where work that needs no route decision belongs, open
+   to the player moving it.
 6. **Reaching act III**, which M56's measurement against the nerves needs.
 7. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
 
@@ -266,7 +266,10 @@ code will hold it to — canvas, anchor, projection — so it can be drawn cold,
 SVG: the SVG set is the game's graphics until the illustrated presentation passes its gates, and the
 illustrated PNG track has its own list at the top of this file. **A prepared picture is not a
 binding**: nothing here changes what the game does, and the milestone that owns each one still
-decides placement, timing and rules.
+decides placement, timing and rules. **Anything that repeats along a street comes in a few
+variations** *(2026-09-10: "we need a few variations for some of these items (like store
+fronts)")*: the entry says how many, and a family is named by a glob only when the glob names
+every member.
 
 The families and their contracts are in `GRAPHICS.md`: standing things are bottom-centre anchored
 through `Sprites.draw_standing()` and mirror about that point; a vehicle that travels has a side
@@ -397,14 +400,19 @@ for the roofs; `storefront-row-awnings-01.jpg`, `storefront-row-souvenirs-01.jpg
       glazed pitch), `roof_vent_stack.svg` (a short pipe with a cowl), and `roof_water_tank.svg` (a
       tank on legs, the tallest of them, which sets whether a roof unit may cast a shadow onto the
       roof at all). Seen from the same oblique angle as the roof tiles, so a unit's south face
-      shows and its north does not
-- [ ] **M106 — fronts, in `assets/buildings/`.** Ground-floor facade tiles that stand where
-      `wall_base.svg` does: `storefront.svg` (a window and a door), `storefront_awning.svg` (the
-      same under an awning, which overhangs the pavement by a few pixels and is the one front that
-      is not flush), and `storefront_shuttered.svg` (the same behind a rolled steel shutter, for
-      M105's later acts). And `fire_escape.svg`, an overlay the height of two wall cells with a
-      ladder to the ground, drawn over `wall.svg` cells rather than replacing them, so a facade
-      keeps its windows behind it
+      shows and its north does not. The HVAC unit and the skylight come in two variations each,
+      since they are the ones a roof repeats
+- [ ] **M106 — fronts, in `assets/buildings/`, in variations.** Ground-floor facade tiles that
+      stand where `wall_base.svg` does, **four storefronts** — `storefront_{a,b,c,d}.svg`, a
+      grocer, a café, a pharmacy, a shop with a sign — each in three states: plain, under an
+      awning (`storefront_a_awning.svg`, which overhangs the pavement by a few pixels and is the
+      one front that is not flush), and shuttered (`storefront_a_shuttered.svg`, behind a rolled
+      steel shutter, for M105's later acts) — twelve tiles that share one door position so a
+      street of them lines up. **Two fire escapes**, `fire_escape_{a,b}.svg`, overlays the height
+      of two wall cells with a ladder to the ground, drawn over `wall.svg` cells rather than
+      replacing them, so a facade keeps its windows behind it. And **two more window pairs** in
+      the `window_{dark,lit}.svg` family — a taller sash and a shuttered one — so a residential
+      facade is not one window repeated
 
 **Already drawn — nothing to do, listed so the list is complete.** M56's roadblock guards use
 the prepared `assets/checkpoints/guard_standing.svg` and `guard_lunging.svg` pair. M65's eight
@@ -1122,6 +1130,37 @@ until it has been on screen once (M78's rule). The same callable is what the fir
 - [ ] **`docs/EVENTS.md` follows.** Its one-shot example is the fire truck, its route sentence says
       *a fire engine is in the world before its mark*, and its finishing-position paragraph
       describes the engine leaving the fire behind. All three move in the same commit as the rows
+
+---
+
+## M107 — The run clock · asked for 2026-09-10
+
+> "can you add an in-game timer that counts up during gameplay (and stops when paused or between
+> days). for now let's keep it hidden and only show it on the win screen"
+
+**One number per run: seconds actually played.** Not the day's countdown, which `HUD` already shows
+as `%d:%02d` off `DAY_LENGTH_SECONDS` and which resets every day, and not wall time: the sum over
+the run of the time the world was moving. It runs while a day is `WALKING` or `RETURNING` and the
+tree is not paused, and stops for everything else — the pause screen (`get_tree().paused`), the day
+summary, the title screen, a lost day's restart, and the moment `main.gd` pauses the tree at a
+day's end. So a retried day's first attempt still counts (it was played), and a minute spent on the
+summary does not.
+
+- [ ] **`GameState.play_seconds`**, reset in `start_run()` with the rest of the run, and advanced
+      by one owner — the same `_process` in `main.gd` that already knows the phase and the pause
+      state — rather than by the HUD or the day loop, so there is one place it can be wrong. It
+      is run state, so it goes with the run into a save the day M100's save item is built
+- [ ] **Hidden for now, shown on the win screen.** *"for now let's keep it hidden"*: no HUD, no
+      pause screen, no day summary. `DaySummary.show_ending()` appends one line for
+      `GameEnums.Ending.GOOD` only — the time played, `%d:%02d` like the day clock, or `%d:%02d.%03d`
+      if the finale's millisecond clock has landed by then — under the ending's body. Neither the
+      bad nor the neutral ending shows it, which is the player's *win screen* read narrowly; if
+      the neutral ending should too, that is one branch and the player's call
+- [ ] **A test that the clock only moves when the world does.** Drive `main` through a walking
+      frame, a paused frame, a summary frame and a title-screen frame with a fixed delta and
+      assert which ones advanced it; and that `start_run()` zeroes it. One `run.log` line at the
+      run's end carries the total, since the run's own record is the place a number like this is
+      read from later
 
 ---
 
