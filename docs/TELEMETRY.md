@@ -355,15 +355,16 @@ outlines from what they answer; nothing about how any of them draws itself chang
 Four layers, each a number key, read as a raw keycode rather than an input-map action so a release
 build has nothing in `project.godot` to reach:
 
-- **`1` fields** — every emitter's falloff footprint, inner and outer radius, for events, walkers
-  and cars alike, since all three run `Tuning.falloff()`. A flock draws one pair per bird rather
-  than one for the whole event. Amber (`Palette.MARK_COSTLY`) for a merely costly field, deep red
-  (`Palette.MARK_LETHAL`) for a `hard_fail` event's — the same two colours the caret already uses,
-  so this view speaks the vocabulary the game already has. A car's own noise field is always amber;
-  its strike box, which is what actually ends the day, is in the bounding-box layer instead.
-  **Every field is drawn as a circle today**, because `Tuning.falloff()` still prices distance
-  alone regardless of what `GroundShape` says the same object's shape is — see docs/TODO.md, M61,
-  "one shape per object": this layer is what makes that disagreement visible in a screenshot.
+- **`1` fields** — every emitter's actual falloff boundary, inner and outer level, for events,
+  walkers and cars alike, since all three run `Tuning.falloff()` through the same
+  `GroundShape.field_outline()`/`field_outline_at()` arithmetic the falloff itself uses: a capsule
+  about a stationary body's own spine, an ellipse (the emitter at one focus) about a moving one, a
+  plain circle at zero speed — so this layer cannot disagree with what the meter does. A flock
+  draws one pair per bird, at its own position and its own velocity, rather than one for the whole
+  event. Amber (`Palette.MARK_COSTLY`) for a merely costly field, deep red (`Palette.MARK_LETHAL`)
+  for a `hard_fail` event's — the same two colours the caret already uses, so this view speaks the
+  vocabulary the game already has. A car's own noise field is always amber; its strike box, which
+  is what actually ends the day, is in the bounding-box layer instead.
 - **`2` shadows** — the ground extent every `GroundShape` shadow is drawn over: events, crowd
   agents, props, her and the pram. Buildings draw no shadow, so none is drawn for one here either.
   Traced from `GroundShape.shadow_outline()`, the same polygon `draw_shadow()` itself now fills, so

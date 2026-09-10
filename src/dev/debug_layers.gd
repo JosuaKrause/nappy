@@ -17,12 +17,11 @@ extends Node2D
 ## readout) on its own pre-existing `CanvasLayer`, which is not a `CanvasItem` this class could
 ## parent anyway.
 ##
-## **Today every field is a circle**, inner and outer, centred on the emitter — because
-## `Tuning.falloff()` still prices distance alone, whatever shape `GroundShape` now says the same
-## object is. Drawing exactly that, rather than a shape-aware guess, is the point: M61's Minkowski
-## field is the next slice, and this view is what makes the disagreement between a field's circle
-## and a body's rectangle visible in one frame, for a screenshot that gets retaken once the two
-## agree.
+## **Every field is the real level set**, not a circle standing in for it —
+## `GroundShape.field_outline()` and `field_outline_at()`, the same effective-distance arithmetic
+## `Tuning.falloff()` prices, so this layer cannot disagree with what the meter does: a capsule
+## about a stationary body's own spine, an ellipse (the emitter at one focus) about a moving one.
+## `_draw_fields()` is where the shape-per-emitter decision is made.
 
 ## The falloff's own outline colour for a merely costly field — `Palette.MARK_COSTLY`, the same
 ## amber the caret already uses for "worth going round", so this view speaks the vocabulary the
@@ -93,10 +92,15 @@ func _draw() -> void:
 
 # ------------------------------------------------------------------ fields ---
 
-## Every emitter's falloff footprint. **Skips `city_wide`** — it has no position to stand a circle
-## on, the same exemption `ExcitementHalo.select_sources()` already makes. A flock draws one pair
-## per bird, at `flock_outer_radius()`, the same radius `_flock_contribution_at()` sums over —
-## drawing `def.outer_radius` instead would show a field wider than what the birds actually emit.
+## Every emitter's actual falloff boundary — `GroundShape.field_outline()`, the same effective-
+## distance arithmetic `Tuning.falloff()` prices, so this layer cannot disagree with what the
+## meter does: a capsule about a stationary body's own spine, an ellipse (focus at the emitter)
+## about a moving one, and a plain circle at zero speed, exactly as it always drew. **Skips
+## `city_wide`** — it has no position to stand a boundary on, the same exemption
+## `ExcitementHalo.select_sources()` already makes. A flock draws one pair per bird, at its own
+## position and its own `heading * speed`, and `flock_outer_radius()` rather than `outer_radius` —
+## the same radius `_flock_contribution_at()` sums over, so drawing the flat number instead would
+## show a field wider than what the birds actually emit.
 func _draw_fields() -> void:
 	for instance in _events.instances():
 		if instance.is_finished or instance.def.city_wide:
@@ -104,27 +108,46 @@ func _draw_fields() -> void:
 		var colour := FIELD_LETHAL if instance.def.hard_fail else FIELD_COSTLY
 		var offsets := instance.flock_offsets()
 		if offsets.is_empty():
-			_draw_field_pair(instance.global_position, instance.def.inner_radius,
+			var axis := instance.solid_axis()
+			var velocity := instance.travel_velocity()
+			_draw_field_boundary(instance.def.shape, instance.global_position, axis, velocity,
+					instance.def.inner_radius, colour)
+			_draw_field_boundary(instance.def.shape, instance.global_position, axis, velocity,
 					instance.def.outer_radius, colour)
 			continue
 		var outer := instance.flock_outer_radius()
-		for offset in offsets:
-			_draw_field_pair(instance.global_position + offset, instance.def.inner_radius,
-					outer, colour)
+		var velocities := instance.flock_velocities()
+		for i in offsets.size():
+			var at := instance.global_position + offsets[i]
+			_draw_field_boundary(null, at, Vector2.RIGHT, velocities[i], instance.def.inner_radius,
+					colour)
+			_draw_field_boundary(null, at, Vector2.RIGHT, velocities[i], outer, colour)
 	for agent in _crowd.agents():
 		var is_car := agent.kind == CrowdAgent.Kind.CAR
 		var inner := Tuning.CAR_INNER_RADIUS if is_car else Tuning.PEDESTRIAN_INNER_RADIUS
 		var outer := Tuning.CAR_OUTER_RADIUS if is_car else Tuning.PEDESTRIAN_OUTER_RADIUS
 		# Noise, never lethal — a car's strike box is drawn in the bounding-box layer instead, in
-		# the same lethal colour, because being hit is a body question and this is a field one.
-		_draw_field_pair(agent.global_position, inner, outer, FIELD_COSTLY)
+		# the same lethal colour, because being hit is a body question and this is a field one. A
+		# crowd body is always a point in field terms (see `CrowdAgent.contribution_at()`'s own
+		# doc), so `shape` is null here whatever the agent's own shadow shape says.
+		var velocity := agent.velocity()
+		_draw_field_boundary(null, agent.global_position, Vector2.RIGHT, velocity, inner, FIELD_COSTLY)
+		_draw_field_boundary(null, agent.global_position, Vector2.RIGHT, velocity, outer, FIELD_COSTLY)
 		if agent.is_startled():
 			var jolt := agent.jolt_radii()
-			_draw_field_pair(agent.global_position, jolt.x, jolt.y, FIELD_COSTLY)
+			_draw_field_boundary(null, agent.global_position, Vector2.RIGHT, velocity, jolt.x,
+					FIELD_COSTLY)
+			_draw_field_boundary(null, agent.global_position, Vector2.RIGHT, velocity, jolt.y,
+					FIELD_COSTLY)
 
-func _draw_field_pair(at: Vector2, inner: float, outer: float, colour: Color) -> void:
-	draw_arc(at, inner, 0.0, TAU, _CIRCLE_SEGMENTS, colour, LINE_WIDTH, true)
-	draw_arc(at, outer, 0.0, TAU, _CIRCLE_SEGMENTS, colour, LINE_WIDTH, true)
+## One level of one field's boundary — `shape.field_outline()` when there is a shape to offset,
+## `GroundShape.field_outline_at()`'s plain-point form otherwise (a crowd agent or one bird of a
+## flock, neither of which owns a body in field terms).
+func _draw_field_boundary(shape: GroundShape, at: Vector2, axis: Vector2, velocity: Vector2,
+		level: float, colour: Color) -> void:
+	var points := shape.field_outline(at, axis, velocity, level) if shape != null \
+			else GroundShape.field_outline_at(at, velocity, level)
+	_draw_closed_polyline(points, colour)
 
 # ----------------------------------------------------------------- shadows ---
 

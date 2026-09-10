@@ -523,7 +523,7 @@ All implemented.
 | `playground` | AMBIENT | 1 | Static aura in every park. The reason parks are not free wins. Sized (150px outer against a 256px park block) to dominate the middle and leave the far side genuinely calm. |
 | `cat_dash` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | Crouches (telegraph), then bolts across the traffic. Intensity 17, tiny radius, 1.8s duration — long enough to carry it the whole way across the street it starts at the edge of, and raised from 15 for a sharper startle spike once the barrier fields it used to be judged against went quiet. Its dash, driven straight at a standing player, still projects under `Tuning.EXPECTED_IMPACT_POINTS`, so the crouch's own silhouette carries the warning rather than a caret. Sited at `EventDef.ahead_of_player_lead()` rather than the flat `AHEAD_LEAD_DISTANCE`, which prices in the ground she covers while it holds its crouch, so it crosses where she actually is by the time it moves rather than behind her. The tutorial obstacle. |
 | `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Intensity 26 on a tight radius, barking on a 3.5s pulse: it owns the pavement it is on, so walking straight through it is never the cheap option. Deliberately given no `obstructs_radius` — a moving wall on a two-tile pavement pins the player against a building. |
-| `cafe_tables` | RECURRING | 1 | A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and the thing that forces a crossing. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. The people at the tables are drawn as well as the tables, because the tables are what obstructs and the conversation is what it emits — a real source, but tightened to a 90px reach so only somebody actually near the tables is billed for them. |
+| `cafe_tables` | RECURRING | 1 | A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and the thing that forces a crossing. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. The people at the tables are drawn as well as the tables, because the tables are what obstructs and the conversation is what it emits — a real source, derived from the body itself: `inner_radius` 38px (touching the tables), `outer_radius` 64px (the pavement band's own centre to the carriageway's), so it bills somebody at the tables and not somebody across the street. |
 | `homeless_yeller` | RECURRING | 1 | Intensity 14 over a 210px field, yelling on a 5s **pulse**, and **pacing** eight tiles of pavement (`EventDef.paces`). A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. Mobile, so he has no body. His silhouette is his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. |
 | `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Silent: standing in the way is its entire price, and `obstructs_radius` already charges it — see "Solid things are solid". At the kerb rather than on the carriageway, and solid at `VEHICLE_BODY`: 44px of van across a 64px footway is a street that costs the other side. |
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
@@ -537,7 +537,7 @@ neighbourhood's own rather than a patrol's.
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `loose_dog` | RECURRING (`TOWARD_PLAYER`) | 1 | A dog whose owner has dropped the leash, sited on her own pavement when she gets close and running straight down it toward her. The counterpart to `dog_walker` and the reason both exist — that one is a **span** you decide whether to cross the street to avoid, this one is a **thing coming at you** that you cannot out-walk. 132px/s, so it earns a badge at the screen edge and pays the whole-radius telegraph. Not lethal, which is what separates it from `charging_dog`: this one is answered by getting out of the way, not by running. Intensity 32, raised from 24 for a bigger impact once a real meeting is priced against the fixed baseline rather than the barrier fields that used to pin it near the top of the meter regardless. |
-| `market_stall` | RECURRING | 1 | The second thing on day 1 that forces a crossing, and it exists because one obstacle repeated eighteen times is a rule rather than a decision. Wider, louder, and on the other side of pleasant than `cafe_tables`: a café you squeeze past is a nuisance, a market is a crowd. A real source too, tightened to a 95px reach so it bills the crowd at the stall rather than the whole block. |
+| `market_stall` | RECURRING | 1 | The second thing on day 1 that forces a crossing, and it exists because one obstacle repeated eighteen times is a rule rather than a decision. Wider, louder, and on the other side of pleasant than `cafe_tables`: a café you squeeze past is a nuisance, a market is a crowd. A real source too, derived from the body the same way `cafe_tables` is — 38px/64px, the same pair, since both bodies share the same 24px rounding. |
 | `leaf_blower` | RECURRING | 1 | The loudest thing in act I, and it is a man tidying a park. Allowed on `PARK` on purpose — a calm block with a leaf blower in it is calm ground she cannot use. Swept in bursts, so there is a rhythm to time a pass through. |
 | `pigeon_flock` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | The second thing that happens *to* her, and the reason to have one is that a director with a single trick makes every moment a cat. It is on the pavement for its whole telegraph, then up, then *away* — and it is **eleven birds**, each with its own heading, height and wingbeat, and each an emitter, so the middle of a flock stacks four or five fields and the rim stacks one. The only row in the game that is more than one source. |
 | `cyclist` **`hard_fail`** | RECURRING (`TOWARD_PLAYER`) | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement she is walking, bell going, coming toward her, down her own side of the road — sited when she gets close rather than on a street the day chose at dawn, so she answers it with a route decision (cross, or turn) instead of finding out too late it was never on her way. Everything about it is ordinary, which is the point: act I does not become sinister, it becomes a real street. The bell rings for 2.0s, what the doubled margin costs at a 90px field — smaller than the fairness contract alone would allow, so the wait before it arrives stays a real reaction window rather than several seconds of watching it close from off screen. Its lethal `inner_radius` is 33px, widened from 26 so the far lane of her own pavement no longer clears it by construction — the same overturn `chatting_mother`'s `detain_radius` went through first. |
@@ -623,13 +623,38 @@ An event never pushes a value at the baby. Each frame the baby asks the world fo
 stimulus at its position, and the world sums `contribution_at()` over the live instances:
 
 ```gdscript
-func contribution_at(world_position: Vector2) -> float:
-    return Tuning.falloff(global_position.distance_to(world_position),
+func contribution_at(world_position: Vector2, ...) -> float:
+    var velocity := travel_velocity()  # or the override expected_impact_at() passes
+    return Tuning.falloff(_field_distance(world_position, velocity),
             current_intensity(), def.inner_radius, def.outer_radius)
 ```
 
 Because it is a pure query there is no ordering to get wrong, events compose by simple
 addition, and an instance can be tested without a scene.
+
+**The field is the Minkowski sum of the body and a kernel.** `Tuning.falloff()` is still the one
+arithmetic home and still prices a plain distance `d` — what changed is what `d` means.
+`GroundShape.field_distance()` supplies it: `distance_to_spine()` in the emitter's own frame for
+a stationary body (a point's field is exactly the circle it always was; a segment's is a capsule
+about the spine, so `inner_radius`/`outer_radius` mean distance *from the spine*, not from the
+centre), or `eccentric_distance()` for a moving one — a conic with the emitter at one focus rather
+than at the centre, per the player's own *"the entity itself lives in one of the focus points"*.
+`GroundShape.eccentric_distance()`'s docstring carries the polar form and the derivation;
+`Tuning.field_eccentricity()` turns a speed into the conic's own eccentricity, capped at
+`FIELD_ECCENTRICITY_MAX` so nothing flattens to a line.
+
+**Moving objects are points.** The two kernels compose — body ⊕ disc standing still, point ⊕
+ellipse moving — without ever building the general capsule-and-ellipse sum, because every emitting
+segment row in the catalogue is stationary (`tests/test_shapes.gd` holds this as a regression
+guard) and everything that moves in the catalogue is small enough to be a point already: the cat,
+the loose dog, the cyclist, a flock's own birds and every pursuer. `CrowdAgent`'s walkers and cars
+are the same — always points in field terms, moving or not, off `velocity()` rather than a shape of
+their own — which is what keeps a car's horn jolt and a walker's bump jolt reading as the same
+source being louder rather than a second falloff with its own idea of where the source is.
+
+The debug view's fields layer (`DebugLayers`, `1`) traces the exact boundary
+`GroundShape.field_outline()` computes from the same arithmetic, so a screenshot of a field cannot
+disagree with what the meter does — see docs/TELEMETRY.md, "The debug view".
 
 The lookup is a **linear scan**, not a spatial hash. A late day has around 26 events
 instantiated at once — the whole day is four times that, but only what is inside
@@ -655,10 +680,19 @@ map, so there is no moment at which they appear and nothing to warn about. The p
 learns where the playgrounds are on day 1 and that knowledge holds for the whole run, which
 is the point of a city that does not change.
 
+**The contract is stated over the spine-measured band and the forward reach, so the field's own
+Minkowski sum does not change this arithmetic.** `outer_radius − inner_radius` is a band width, and
+subtracting a segment's `half_length` from both radii (see "Solid things are solid") leaves that
+width untouched; a moving row's forward reach is exactly `outer_radius` under
+`GroundShape.eccentric_distance()`, the same number this contract was always stated over. What
+*does* change for a "how far" rule that reads `outer_radius` alone rather than a band width — the
+lethal clearance a placement keeps, the streaming radius, `expected_impact_at()`'s early-out — is
+`EventDef.field_reach()`, `outer_radius` plus a segment's own `half_length`.
+
 ### The contract is per event, and the player experiences the sum
 
 `validate_event()` checks each row in isolation. At one event per block the outer radii routinely
-overlap — `cafe_tables` alone is 170px against a 448px block period — so **walking out of one
+overlap — `firefight` alone reaches 374px against a 448px block period — so **walking out of one
 field can mean walking into another**, and nothing in the catalogue can see that. This is how the
 density breaks quietly, and which half of it is a problem is worth being exact about:
 
@@ -739,12 +773,12 @@ alone is answering a narrower question than it thinks.
 | `construction` | −15.2 | +32.1 |
 | `delivery_van` | −11.4 | +24.1 |
 | `barricade` | −9.1 | +19.3 |
-| `burnt_shell` | −3.0 | +16.5 |
+| `burnt_shell` | −2.7 | +14.3 |
 | `poster_crew` | +0.7 | +22.6 |
-| `cafe_tables` | +12.3 | +24.9 |
+| `cafe_tables` | +9.6 | +18.2 |
+| `market_stall` | +12.0 | +19.5 |
 | `busker` | +13.3 | +45.7 |
 | `police_patrol` | +15.9 | +46.2 |
-| `market_stall` | +16.5 | +28.3 |
 | `charging_dog` * | +16.9 | — |
 | `cyclist` * | +20.9 | +29.7 |
 | `cat_dash` | +24.1 | +37.5 |
@@ -755,8 +789,8 @@ alone is answering a narrower question than it thinks.
 | `reversing_lorry` * | +32.6 | +53.3 |
 | `alley_robbery` * | +34.6 | — |
 | `dog_walker` | +36.5 | +41.2 |
+| `protest` | +42.3 | +77.6 |
 | `leaf_blower` | +48.6 | +67.1 |
-| `protest` | +50.0 | +88.1 |
 | `pigeon_flock` † | +54.1 | +63.6 |
 | `burning_building` | +55.9 | +83.2 |
 | `loose_dog` | +61.2 | +61.9 |
@@ -764,7 +798,7 @@ alone is answering a narrower question than it thinks.
 | `military_convoy` | +84.9 | +107.2 |
 | `night_raid` | +101.8 | +122.6 |
 | `fire_truck` | +115.4 | +132.0 |
-| `firefight` * | +155.9 | +162.3 |
+| `firefight` * | +152.4 | +159.2 |
 
 **No column says which rows carry a caret, because no row does.** The caret is decided in play
 from a source's own projected course at wherever she is standing — `expected_impact_at()`
