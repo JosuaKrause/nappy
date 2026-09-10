@@ -37,6 +37,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `obstructs_radius` | Radius of solid body (px). **A thing that stands still is solid at the width it is drawn** — see "Solid things are solid" |
 | `pavement_side` | Which lane of a two-tile pavement it wants: `ANY`, `AT_THE_KERB`, `AGAINST_THE_BUILDING` |
 | `hard_fail` | Whether contact ends the day immediately |
+| `redetains` | Whether a `detain_seconds` row is armed again once she is released and outside `detain_radius`, rather than spent after one conversation. `false` for everything but `checkpoint_hut`/`checkpoint_post` — see "Checkpoints" |
 | `heat_response` | How the row answers to the resistance: `NONE`, `PRESSES` (more of them, more expensive, and past half way it comes over), `HUNTS` (it stops being a place and starts being a hunter) — see "The heat" |
 | `look` | Which picture it draws. **One per row, and no two rows share one** — see "The visual vocabulary", point 6 |
 | `act_tag` | Narrative act it belongs to. No game code reads it; `tests/test_acts.gd` holds it consistent with the calendar `first_day` actually gates |
@@ -215,6 +216,23 @@ arriving silently, in the one place the game cannot afford one. `EventDef.valida
 arrangement on load. It is why `alley_robbery`'s inner radius is 30 rather than the 22 a man's own
 width would suggest: a man is 11px wide and she is 14, so at 22 the pram is held three pixels
 *outside* the radius that takes the baby.
+
+### Checkpoints
+
+A region door is solid, like anything else that stands still — `checkpoint_hut` and
+`checkpoint_post` at 32px, `checkpoint_gate` at 32px — but it is not a closure. **A door is passable
+only by detention, and the toll is the same both ways.** She walks up to a hut or a post, is held
+for `Tuning.CHECKPOINT_DETAIN_SECONDS`, and comes out the other side of the crossing, on the same
+pavement lane she went in on: `EventManager` reflects her release position through the crossing's
+own cross-street line, pushed clear of `detain_radius`, and teleports her there — see
+`Stroller.teleport_to()`. Walking round a hut into its own solid body does not open it; the only
+way through is the conversation. `checkpoint_hut` and `checkpoint_post` both set `redetains`, so
+the same body detains her again on the next approach, from either side — unlike `chatting_mother`,
+who is spent after her one conversation.
+
+The gate over the road between a door's two huts costs her nothing at all: it detains no one and
+carries no field, and it only ever stops a car — see `docs/CITY.md`, "Regions and the wall", and
+`Crowd._stop_for_gates()`.
 
 ### Which way a spread lies
 

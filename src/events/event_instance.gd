@@ -445,7 +445,12 @@ func _process(delta: float) -> void:
 		# `Stroller.detain()`, called the frame `start_chat()` fires; here it is only a clock, held
 		# apart from `_has_expired()` because `duration` means something else for every other row.
 		_chat_seconds_left = maxf(0.0, _chat_seconds_left - delta)
-		if _chat_seconds_left <= 0.0:
+		# `redetains` is the one thing that skips `_be_done()` here: a checkpoint's hut or post
+		# stays exactly where it is, still solid, ready for `EventManager` to arm it again the
+		# instant she is released and clear of `detain_radius` — see `EventDef.redetains`.
+		# `chatting_mother` has none of this: her conversation ending is what starts her own
+		# departure, `_be_done()`'s ordinary meaning for anything that is not a fixture.
+		if _chat_seconds_left <= 0.0 and not def.redetains:
 			_be_done()
 		queue_redraw()
 		return
@@ -700,6 +705,15 @@ func _caret_velocity() -> Vector2:
 			return Vector2.ZERO
 		return _heading * def.pursue_speed
 	return travel_velocity()
+
+## Which way this instance was sited facing (`setup()`'s own `face`), unmoved for anything
+## stationary that never turns. A door body's own facing is the street's along-axis rather than
+## the direction it is drawn — `RegionPlanner` sites every `checkpoint_hut`/`checkpoint_gate`/
+## `checkpoint_post` at a crossing facing the same way — so `EventManager`'s detention teleport can
+## read this back as which side of the crossing she is on, whichever of the three bodies actually
+## detained her.
+func facing_now() -> Vector2:
+	return _heading
 
 ## Puts an instance back where a previous incarnation of the same plan had got to. Restores the
 ## age as well as the distance, so the telegraph, the pulse phase and the duration all continue

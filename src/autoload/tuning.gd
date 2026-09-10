@@ -635,6 +635,18 @@ const REGION_COUNT := 4
 ## already uses.
 const REGION_WALL_FIRST_DAY := 7
 
+## Seconds a `checkpoint_hut`/`checkpoint_post` detention holds her — a beat longer than
+## `chatting_mother`'s 5s, since a toll should read as heavier than a chat even though both take
+## the controls the same way. See `EventDef.detain_seconds`.
+const CHECKPOINT_DETAIN_SECONDS := 6.0
+
+## How far clear of a door body's own solid edge the released side of a detention pushes her,
+## beyond `obstructs_radius + PLAYER_BODY_RADIUS` — the smallest amount that reliably lands her
+## outside `checkpoint_hut`/`checkpoint_post`'s own 48px `detain_radius` (32 + 14 + 8 = 54 > 48),
+## so the same approach cannot re-trigger the instant she is released. See
+## `EventManager._release_finished_door_detentions()`.
+const CHECKPOINT_RELEASE_MARGIN := 8.0
+
 # --------------------------------------------------------------- the crowd ---
 # The crowd is why a street is loud and a park is quiet, and it is the base noise floor a day needs
 # so that standing in one place cannot work. It is emergent rather than a city-wide constant,
