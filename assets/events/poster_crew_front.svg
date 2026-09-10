@@ -1,0 +1,12 @@
+<!-- poster crew front authored upright projection. Canvas 30x44; bottom-centre ground anchor (15,44). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="44" viewBox="0 0 30 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+<circle cx="9" cy="7" r="6" fill="#d9a878"/>
+  <path d="M3 7 A6 6 0 0 1 15 7 Z" fill="#3a2b26"/>
+  <circle cx="7" cy="7" r="0.8" fill="#221f28"/><circle cx="11" cy="7" r="0.8" fill="#221f28"/>
+  <path d="M2 12 L16 12 L15 30 Q9 33 3 30 Z" fill="#5c6b5c"/>
+  <path d="M2 24 Q9 27 16 24 L15 30 Q9 33 3 30 Z" fill="#4c5a4c"/>
+  <path d="M1 14 L4 13 L5 25 L2 26 Z M14 13 L17 14 L16 26 L13 25 Z" fill="#5c6b5c"/>
+  <path d="M5 29 L8 29 L8 40 L4 40 Z M10 29 L14 29 L14 40 L10 40 Z" fill="#46506b"/>
+  <path d="M3 39 L9 39 L8 42 L2 42 Z M10 39 L16 39 L17 42 L10 42 Z" fill="#221f28"/>
+  <rect x="20" y="2" width="9" height="13" fill="#e0d8c4"/><path d="M21 5 L28 5 M21 9 L27 9" stroke="#c4503c" stroke-width="1.5"/><rect x="2" y="28" width="6" height="3" fill="#8a6f52"/>
+</svg>

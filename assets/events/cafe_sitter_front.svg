@@ -1,0 +1,5 @@
+<!-- Cafe sitter front seated authored projection. Canvas 16x30; bottom-centre ground anchor (8,30). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="30" viewBox="0 0 16 30" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+<circle cx="8" cy="6" r="5" fill="#d9a878"/><path d="M3 6 A5 5 0 0 1 13 6 Z" fill="#4a3a2c"/>
+  <path d="M3 11 L13 11 L13 23 L3 23 Z" fill="#8a5f6b"/><path d="M2 20 L14 20 L14 28 L2 28 Z" fill="#46506b"/>
+</svg>

@@ -1,0 +1,10 @@
+<!-- Chatting mother talking side authored composite projection. Canvas 54x46; bottom-centre ground anchor (27,46). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="54" height="46" viewBox="0 0 54 46" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+<path d="M26 20 L31 20 L26 29 L23 29 Z" fill="#4a3f2f"/><path d="M26 19 A9 9 0 0 1 44 19 L44 24 L26 24 Z" fill="#cbb98f"/><rect x="25" y="24" width="27" height="11" fill="#6b5a42"/>
+  <circle cx="9" cy="8" r="6" fill="#d9a878"/><path d="M3 8 A6 6 0 0 1 15 8 Z" fill="#718064"/>
+  <path d="M3 14 Q9 11 15 14 L16 31 Q9 34 2 31 Z" fill="#8ca18b"/>
+  <path d="M3 27 Q9 30 16 27 L16 34 Q9 36 3 32 Z" fill="#6b7f6b"/>
+  <path d="M4 31 L8 31 L8 42 L4 42 M10 31 L14 31 L14 42 L10 42" fill="#46506b"/>
+  <path d="M3 41 L9 41 L8 44 L2 44 M10 41 L16 41 L17 44 L10 44" fill="#221f28"/>
+  <path d="M13 16 Q20 10 23 16" fill="none" stroke="#8ca18b" stroke-width="3"/><path d="M7 10 Q9 13 11 10" fill="none" stroke="#3b2d32" stroke-width="1"/>
+</svg>

@@ -1,0 +1,8 @@
+<!-- Robber lunging front authored action projection. Canvas 34x44; bottom-centre ground anchor (17,44). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 34 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+<circle cx="11" cy="9" r="7" fill="#2b303a"/><circle cx="11" cy="10" r="4" fill="#141419"/>
+  <path d="M4 17 Q11 13 20 18 L20 34 Q11 37 3 33 Z" fill="#353a46"/>
+  <path d="M20 19 L31 22 L31 25 L20 25 Z" fill="#2b303a"/>
+  <path d="M4 32 L10 32 L10 42 L4 42 M15 34 L23 34 L23 39 L15 39" stroke="#26262e" stroke-width="4"/>
+  <path d="M3 42 L10 42 L9 44 L2 44 M20 39 L27 39 L27 41 L20 41" fill="#17171c"/>
+</svg>

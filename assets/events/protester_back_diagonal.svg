@@ -1,0 +1,12 @@
+<!-- protester back diagonal authored upright projection. Canvas 22x52; bottom-centre ground anchor (11,52). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="52" viewBox="0 0 22 52" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+<circle cx="10" cy="7" r="6" fill="#3a2b26"/>
+  <path d="M5 5 Q10 0 15 5 L14 10 Q10 12 6 10 Z" fill="#654039"/>
+  <path d="M6 10 Q10 12 14 10" fill="none" stroke="#5b3933" stroke-width="1.1"/>
+  <path d="M3 12 L17 12 L16 30 Q10 33 4 30 Z" fill="#7a6a58"/>
+  <path d="M3 24 Q10 27 17 24 L16 30 Q10 33 4 30 Z" fill="#665849"/>
+  <path d="M2 14 L5 13 L6 25 L3 26 Z M15 13 L18 14 L17 26 L14 25 Z" fill="#7a6a58"/>
+  <path d="M6 29 L9 29 L9 40 L5 40 Z M11 29 L15 29 L15 40 L11 40 Z" fill="#46506b"/>
+  <path d="M4 39 L10 39 L9 42 L3 42 Z M11 39 L17 39 L18 42 L11 42 Z" fill="#221f28"/>
+  <path d="M14 16 L17 4" stroke="#6b543f" stroke-width="2"/><rect x="10" y="1" width="12" height="10" fill="#e0d8c4"/><path d="M12 5 L20 5 M12 8 L18 8" stroke="#c4503c" stroke-width="1"/>
+</svg>
