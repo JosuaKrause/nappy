@@ -1,8 +1,13 @@
-<!-- Robber lunging front authored action projection. Canvas 34x44; bottom-centre ground anchor (17,44). -->
+<!-- Hooded robber reaching front. Projected stride and arm distinguish the attack from waiting. Ground anchor (17,44). -->
 <svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 34 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-<circle cx="11" cy="9" r="7" fill="#2b303a"/><circle cx="11" cy="10" r="4" fill="#141419"/>
-  <path d="M4 17 Q11 13 20 18 L20 34 Q11 37 3 33 Z" fill="#353a46"/>
-  <path d="M20 19 L31 22 L31 25 L20 25 Z" fill="#2b303a"/>
-  <path d="M4 32 L10 32 L10 42 L4 42 M15 34 L23 34 L23 39 L15 39" stroke="#26262e" stroke-width="4"/>
-  <path d="M3 42 L10 42 L9 44 L2 44 M20 39 L27 39 L27 41 L20 41" fill="#17171c"/>
+  <path d="M11 31 L16 33 L13 40 L8 39Z M18 31 L22 32 L24 42 L18 43Z" fill="#26262e"/>
+  <path d="M7 38 L14 39 L14 42 L6 41Z M17 41 L25 41 L26 44 L17 44Z" fill="#17171c"/>
+  <path d="M9 18 Q17 13 25 18 L24 34 L9 34Z" fill="#353a46"/>
+  <path d="M9 28 L24 28 L24 34 L9 34Z" fill="#2b303a"/>
+  <path d="M10 19 L6 25 L9 29 L14 22Z M22 19 L25 24 L23 33 L18 33 L18 25 L18 21Z" fill="#2b303a"/>
+  <ellipse cx="20.5" cy="34" rx="3" ry="2.5" fill="#d9a878"/>
+  <g transform="translate(17 12)">
+  <ellipse cx="0" cy="0" rx="7" ry="7" fill="#2b303a"/>
+  <ellipse cx="0" cy="1" rx="4" ry="4" fill="#141419"/>
+  </g>
 </svg>
