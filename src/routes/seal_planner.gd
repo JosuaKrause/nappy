@@ -134,12 +134,21 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 
 # ------------------------------------------------------------------- planning ---
 
-## Every seal for the day: one per off-tree, real, non-home, non-spine street, thinned by a small
-## fraction, plus the mouths of any through-alley that rejoins the corridor at neither end.
-## Returned as `EventScheduler.Planned` so the caller (`EventManager.start_day`) can simply append
-## them to the day's plan.
+## Every seal for the day: one per off-tree, real, non-home, non-spine, non-boundary street,
+## thinned by a small fraction, plus the mouths of any through-alley that rejoins the corridor at
+## neither end. Returned as `EventScheduler.Planned` so the caller (`EventManager.start_day`) can
+## simply append them to the day's plan.
+##
+## `skip` is a set of segment keys to leave alone on top of the ordinary exclusions — today's
+## region boundary, both wall and door, from `Tuning.REGION_WALL_FIRST_DAY` on. **The wall is
+## already the seal**, placed as its own hard band by `RegionPlanner.plan_day` from the checkpoint
+## row rather than from this candidate list, and a door is meant to stay a fully open crossing for
+## the structure the milestone's second half places there — either would be two things standing in
+## the same spot if this pass also sealed it. A `Dictionary` parameter rather than a reach into
+## `_city` from here: `SealPlanner` stays a pure function of what it is handed, the same as every
+## other call in this file.
 static func plan_day(map: CityMap, day: int, tree: RouteTree,
-		rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
+		rng: RandomNumberGenerator, skip: Dictionary = {}) -> Array[EventScheduler.Planned]:
 	var planned: Array[EventScheduler.Planned] = []
 	if not tree:
 		return planned
@@ -149,7 +158,7 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree,
 	var soft_pairs: Array = []
 	for segment in StreetNetwork.segments():
 		var key := segment.key()
-		if not map.has_street(key) or tree.is_on_the_tree(key):
+		if not map.has_street(key) or tree.is_on_the_tree(key) or skip.has(key):
 			continue
 		if home and key == home.key():
 			continue
@@ -218,6 +227,14 @@ static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
 	for at in _hard_positions(map, segment, def):
 		planned.append(EventScheduler.Planned.new(def, at))
 	return planned
+
+## The public entry point to the same placement, for a caller outside the candidate list above.
+## `RegionPlanner` uses this to build the region wall's own bodies from the `checkpoint` row, which
+## is not one of this file's eight seal pictures — the wall is a fact about where a region's
+## perimeter runs, not a candidate this pass ever rolls for itself.
+static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment,
+		def_id: String) -> Array[EventScheduler.Planned]:
+	return _place_hard(map, segment, def_id)
 
 ## A soft seal: one body per pavement, at the lane nearest the kerb — which is where a kerbed row
 ## like `delivery_van` already wants to be, and where any other row's own auto-centring

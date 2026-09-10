@@ -186,7 +186,7 @@ name the question it answers, or it is a metric and does not belong.
 
 | Kind | Written by | Answers |
 | --- | --- | --- |
-| `plan` | `main.gd` | What today is: what is shut, where the calm is, what is out |
+| `plan` | `main.gd`, `City`, `ClosurePlanner` | What today is: what is shut, where the calm is, what is out, and the region wall's own shape — how many boundary segments, walls and doors, and which regions hold calm |
 | `roll` | `EventScheduler`, `ResistanceDirector` | Which way a run-branching roll went, with the number and the threshold |
 | `arc` | `CityState` | Which block became something else, and what caused it |
 | `scar` | `EventManager` | Where the city stopped being recomputable |

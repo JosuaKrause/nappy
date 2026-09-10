@@ -53,12 +53,33 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# rather than re-read from `_city` below, for the same reason — `SealPlanner` needs the same
 	# tree the catalogue's own placements were just stated against.
 	var tree := _city.route_tree() if _city else RouteTree.for_day(_map, day)
+	# Grown the same way `tree` was, so the two never answer for two different days — see
+	# `City._close_streets`. `_city.region_plan()` can itself be null on a live `_city` whose own
+	# `start_day` was never called for this day (a rig that drives `EventManager` directly, the
+	# same shape `tree` above already has to tolerate) — the explicit null check falls through to
+	# growing one, the same way `RegionPlanner.plan_day` grows its own tree when handed none.
+	var region_plan: RegionPlanner.RegionPlan = _city.region_plan() if _city else null
+	if not region_plan:
+		region_plan = RegionPlanner.plan_day(_map, day, tree)
 	_plans = EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars,
 			GameState.settled_this_act(), tree, GameState.resistance_progress)
 	# Off the catalogue's own budget on purpose — see `SealPlanner`'s own doc. It seals everything
 	# `EventScheduler` was not permitted to touch: every street off `tree`, hard or soft, plus the
-	# mouths of any through-alley that never reaches it.
-	_plans.append_array(SealPlanner.plan_day(_map, day, tree, GameState.day_rng(day, "seals")))
+	# mouths of any through-alley that never reaches it — except today's region boundary, wall or
+	# door, which is skipped here: the wall already carries its own hard seal below, and a door is
+	# meant to stay open for the structure the milestone's second half places there.
+	var boundary := {}
+	for segment in region_plan.walls:
+		boundary[segment.key()] = true
+	for segment in region_plan.doors:
+		boundary[segment.key()] = true
+	_plans.append_array(
+			SealPlanner.plan_day(_map, day, tree, GameState.day_rng(day, "seals"), boundary))
+	# The wall's own bodies — hard seals of the checkpoint row, one region boundary at a time. Kept
+	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that
+	# wants to know where the wall stands reads `region_plan.wall_bodies` directly rather than
+	# filtering it back out of the whole day's plan.
+	_plans.append_array(region_plan.wall_bodies)
 	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"))
 	stream_around(focus)
 
