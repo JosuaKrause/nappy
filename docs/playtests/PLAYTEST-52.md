@@ -44,3 +44,7 @@ The touched picture preserves the existing chalk mark and adds her acknowledgeme
 > hmm, I don't see your PR?
 
 > liking what I'm seeing so far
+
+## Use the prepared graphics and turn cars properly
+
+> write work items on how to make use of the new graphics (where an extra work item is necessary). especially how to start making use of the 8-direction graphics. one thing that immediately makes it important is when a car turns or turns around it should make a proper turn (using also diagonal sprites)

@@ -45,11 +45,69 @@ made by rotating an upright picture.
       van, lorry, police car, unmarked van, riot van, army truck and moving vans. Include vehicles
       prepared by open gameplay items. Distinguish front from rear and keep wheels/footprints
       grounded; eight facings do not authorize new traffic paths or moving stationary vehicles.
-- [ ] Bind live families to their actual heading with stable direction selection. Preserve
-      movement, collision, animation timing, sorting, tinting, cues and halo silhouettes. Leave
-      prepared families unbound until their owning gameplay item needs them. Verify all facings,
-      turns, idle and moving states with rendered SVG sheets and focused runtime checks; update
-      `GRAPHICS.md` with each family's actual binding and registration.
+- [ ] **Bind crowd walkers first.** Add a shared eight-sector heading selector and explicit
+      family tables for source paths, mirrors, canvases and anchors. Reuse the stroller's stable
+      sector-selection behavior where appropriate: retain facing at rest, avoid chatter at sector
+      boundaries, reset cleanly on placement/recycle. Drive walking facing from applied travel,
+      keeping authored action aim separate. Bind matching walker body/trim views with one transform
+      and preserve tint, gait timing, sorting and foot registration. Verify all eight headings,
+      boundary crossings, stops, blocked movement and recycle with a focused rig and rendered
+      native-size movement evidence.
+- [ ] **Bind live event people, animals and riders.** Extend the same selector to each actual
+      drawing path in `EventInstance`, including composed actors, leads, prams, held tools and
+      weapons. Keep idle/moving, waiting/lunging, talking/walking and wing/gait phases distinct;
+      an action's target supplies its aim even when its actor is stationary. Preserve event
+      identity, timing, collision, cues and halo silhouettes. Exercise state transitions as well
+      as every facing; a source sheet alone does not verify the runtime composite.
+- [ ] **Bind vehicle views.** Use each family's explicit front/back/side/diagonal table, including
+      its documented side-facing convention, rather than assuming every side source faces east.
+      Keep crowd car body/trim and police overlays registered together. Straight-moving event
+      vehicles use their existing travel heading. Crowd cars consume the continuous turn heading
+      supplied by M110, cars follow their turns; changing the picture alone does not close that
+      item. Preserve native scale, contact point, sorting and per-view halo geometry.
+- [ ] **Verify and document each binding increment.** Update `GRAPHICS.md` from prepared to live
+      only for callers actually wired. Check SVG override and illustrated fallback so an available
+      cardinal PNG cannot replace a newly selected diagonal SVG or lose its state/registration.
+      PNG generation stays with M109, convert the SVG catalogue to PNG. Use focused selector and
+      caller tests, import/boot checks and movement evidence; keep prepared families unbound until
+      their gameplay owner needs them. M56, the resistance is noticed, owns guard/riot-van states;
+      M65, a protester points at the objective, owns objective-directed pointing; M102, the finale,
+      owns the carrying mother and interior sequence.
+
+### M110 — Cars follow their turns
+
+[PLAYTEST-52](playtests/PLAYTEST-52.md) asks for proper turns and turnarounds using diagonal
+sprites. This is the motion work needed alongside M108, eight-direction entity graphics.
+`CrowdAgent._divert()` immediately swaps the travel axis and lane, and `_turn_round()` immediately
+reverses direction before steering to the opposite lane. The heading exposed to drawing remains
+cardinal. A continuous turn must change the travelled path and the body facing together.
+
+- [ ] **Plan a continuous path before entering a turn.** Cover left/right junction diversions
+      and 180-degree returns at dead ends, closures and precinct boundaries from both road axes.
+      Join the incoming and correct outgoing lane with continuous position and heading; the car
+      follows the curve and its sprite follows the tangent through diagonal sectors. No instant
+      reversal, lateral lane jump, rotation of an upright side sprite or cosmetic diagonal frame
+      over unchanged right-angle movement. Keep current route choices and straight-through travel.
+- [ ] **Fit the manoeuvre to legal road space.** Validate the swept vehicle footprint against
+      pavement, closures, walls and other cars before committing. Check destination room and
+      reserve conflicting turn space, including same-frame claims. If a turnaround cannot fit,
+      stop safely before the obstruction and choose a feasible earlier turning place; never drive
+      through a barrier or use separation to repair a knowingly invalid turn. Document any space
+      constraint that needs a different manoeuvre before broadening the driving behavior.
+- [ ] **Keep traffic rules coherent throughout the curve.** Adapt lane indexing, box occupancy,
+      following gaps and conflict tests that currently assume a cardinal axis. Keep a turning
+      car claimed until its tail clears; do not enter a junction without room to leave. Preserve
+      signal/amber clearance, zebra stopping, right-of-way, horn warning and lethal carriageway
+      contracts. Derive velocity from actual motion for collision and approach calculations.
+      Measure any required turn-speed/radius choices under the balance rules; do not retune
+      population, light timing or cruise speeds as an incidental graphics change.
+- [ ] **Prove movement and presentation together.** Step the whole crowd with `Crowd.step()` in
+      focused traffic rigs: left/right turns and U-turns from every approach, a blocked exit,
+      simultaneous arrivals, queues, signals, zebras and boundary closures. Assert continuous
+      travel, legal swept space, correct exit lanes, no overlaps/deadlock and finite completion
+      when the path is free. Capture native-scale turns showing intermediate diagonal views,
+      including body/trim and police markings, and inspect grounding and heading at entry/apex/exit.
+      Update traffic documentation and `GRAPHICS.md` with the resulting motion/binding contract.
 
 ### M109 — Convert the SVG catalogue to PNG
 
