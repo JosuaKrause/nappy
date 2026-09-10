@@ -2,7 +2,7 @@
 
 ## SVG completion and selective rejection retention — 2026-09-10
 
-PLAYTEST-52 requests all missing graphics, limited to SVG authoring for this pass. The work
+PLAYTEST-53 requests all missing graphics, limited to SVG authoring for this pass. The work
 covers M103, the drawings the queue owes, and the source-art portion of M108, eight-direction
 entity graphics. Runtime integration remains a separate M108 item; M109, convert the SVG
 catalogue to PNG, retains the later transfer work. Prepared environment assets do not implement

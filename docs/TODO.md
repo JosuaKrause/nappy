@@ -16,7 +16,7 @@ mid-way through.
 
 ### M108 — Eight-direction entity graphics
 
-The current SVG-only authoring request is recorded in [PLAYTEST-52](playtests/PLAYTEST-52.md).
+The current SVG-only authoring request is recorded in [PLAYTEST-53](playtests/PLAYTEST-53.md).
 Drafts rejected only internally by an assistant stay outside the repository; retain artwork
 suggested for human review or rejected by a human.
 
@@ -63,7 +63,7 @@ made by rotating an upright picture.
       its documented side-facing convention, rather than assuming every side source faces east.
       Keep crowd car body/trim and police overlays registered together. Straight-moving event
       vehicles use their existing travel heading. Crowd cars consume the continuous turn heading
-      supplied by M110, cars follow their turns; changing the picture alone does not close that
+      supplied by M111, cars follow their turns; changing the picture alone does not close that
       item. Preserve native scale, contact point, sorting and per-view halo geometry.
 - [ ] **Verify and document each binding increment.** Update `GRAPHICS.md` from prepared to live
       only for callers actually wired. Check SVG override and illustrated fallback so an available
@@ -74,9 +74,9 @@ made by rotating an upright picture.
       M65, a protester points at the objective, owns objective-directed pointing; M102, the finale,
       owns the carrying mother and interior sequence.
 
-### M110 — Cars follow their turns
+### M111 — Cars follow their turns
 
-[PLAYTEST-52](playtests/PLAYTEST-52.md) asks for proper turns and turnarounds using diagonal
+[PLAYTEST-53](playtests/PLAYTEST-53.md) asks for proper turns and turnarounds using diagonal
 sprites. This is the motion work needed alongside M108, eight-direction entity graphics.
 `CrowdAgent._divert()` immediately swaps the travel axis and lane, and `_turn_round()` immediately
 reverses direction before steering to the opposite lane. The heading exposed to drawing remains
@@ -347,7 +347,7 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ## M103 — The drawings the queue owes · asked for 2026-09-10
 
-[PLAYTEST-52](playtests/PLAYTEST-52.md) authorizes completing the missing SVG artwork now;
+[PLAYTEST-53](playtests/PLAYTEST-53.md) authorizes completing the missing SVG artwork now;
 PNG conversion remains in M109, convert the SVG catalogue to PNG.
 
 > "create a comprehensive list of graphics that need to be generated for *all* open items. create a
@@ -392,7 +392,7 @@ than a rotation; ground tiles are 32×32 in `assets/tiles/` and reach the game t
       colour change from `Palette.CHALK` to `CHALK_DONE`, both code-drawn. If the player's answer to
       that open question is *the mark's colour made unmistakable*, that is a palette pair rather
       than an SVG; if it is a touched-mark picture, it is a ground decal in the crater family
-      (centre-anchored, one tile). PLAYTEST-52 authorizes preparing a distinct touched-mark SVG
+      (centre-anchored, one tile). PLAYTEST-53 authorizes preparing a distinct touched-mark SVG
       for review now: `assets/props/chalk_mark_touched.svg`, 32×32, centre anchor (16, 16).
       Preserve the existing mark and add her acknowledgement: "the narrative can be that she
       adds something to the mark to indicate that she has seen it". Compare it with the current
@@ -1131,7 +1131,7 @@ re-pitched:
       design's own rule is no quest log — *the first encounter comes with no hint at all* — so how
       much a touch may say is the player's call: nothing more; the mark's colour made
       unmistakable; the brief shown on a lost day's summary too; or a one-line status change on
-      the pick-up itself. PLAYTEST-52 requests a distinct touched-mark SVG for review: she adds
+      the pick-up itself. PLAYTEST-53 requests a distinct touched-mark SVG for review: she adds
       something to the existing mark to indicate she has seen it. M103, the drawings the queue
       owes, prepares that acknowledgement; selecting and binding the feedback remains here
 - [ ] **Three cues on one screen needed asking about, and an alley read as a roof.** *(2026-09-09,
