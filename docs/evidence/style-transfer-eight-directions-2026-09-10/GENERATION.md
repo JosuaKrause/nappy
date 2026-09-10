@@ -19,6 +19,17 @@ Both run through `uv run python`. Registration reuses the previous transfer's sa
 The output includes six `rig/*.png`, measurements and a comparison with SVG left / PNG right.
 Equal alpha guarantees silhouette registration, not exact positions of every interior detail.
 
+Reproduce extraction and registration into a new directory:
+
+```sh
+uv run python docs/evidence/style-transfer-eight-directions-2026-09-10/convert.py register /tmp/nappy-diagonal-reproduction
+```
+
+The `directions <new-image-path>` mode builds the eight-direction SVG/PNG comparison from the
+saved native rasters and runtime PNGs at 3×, using the runtime's 34px pram offset and 0.7 Y
+projection. It is an assembled source comparison rather than a gameplay capture. Two actual
+gameplay captures and their whole telemetry runs are indexed in `docs/DECISIONS.md`.
+
 Generator: built-in `image_gen.imagegen`. Inputs in order: the diagonal SVG sheet as edit target;
 `graphics-reference-urban-01.jpeg` and `graphics-reference-cardinal.jpeg` as style references;
 the accepted cardinal `rig-sheet-generated.png` as matching-family rendering reference.
