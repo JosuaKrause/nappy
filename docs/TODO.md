@@ -105,12 +105,10 @@ while their owning milestones settle placement and behavior.
 
 Use [GRAPHICS.md](GRAPHICS.md) for the asset catalogue, current runtime bindings and prepared
 parts. The assignments below name the assets each graphics-dependent milestone should use.
-Reusable impact-crater decals are `assets/props/impact_crater_1x1.svg`,
-`impact_crater_2x2.svg` and `impact_crater_3x3.svg` for 32×32, 64×64 and 96×96 footprints.
-They are unbound art; no current milestone specifies crater placement or collision behavior.
-The possible finale also has a prepared `assets/rig/mother_carrying_{front,back,side}_{a,b}.svg`
-set, documented in GRAPHICS.md. The finale's design is unspecified; these assets have no runtime
-binding or milestone behavior assigned.
+The impact-crater decals `assets/props/impact_crater_1x1.svg`,
+`impact_crater_2x2.svg` and `impact_crater_3x3.svg` (32×32, 64×64 and 96×96 footprints) are the
+finale's: the marks its off-screen explosions leave on the street. M102 also owns the prepared `assets/rig/mother_carrying_{front,back,side}_{a,b}.svg`
+set, documented in GRAPHICS.md; nothing binds it until that milestone is built.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
 no artist.
@@ -118,6 +116,13 @@ no artist.
 **M79 is tabled rather than queued.** It is the city seen at an angle — a presentation change with
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
 with the code's constraints in hand. It is not queued and it is not rejected.
+
+**M102, the finale, is planned and not queued.** *(2026-09-09: "this is just a plan for now — we
+probably won't actually implement it for a while (there are a lot of milestones before that)".)* It
+is the good ending's last scene — out of the apartment, out of the city — written down in full so
+that the milestones before it can be built knowing what they are building towards. Its four
+collisions with the good ending as written today were asked and answered the same day, and the
+entry records the answers in the player's words.
 
 **[PLAYTEST-50.md](PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
@@ -1096,6 +1101,161 @@ until it has been on screen once (M78's rule). The same callable is what the fir
 - [ ] **`docs/EVENTS.md` follows.** Its one-shot example is the fire truck, its route sentence says
       *a fire engine is in the world before its mark*, and its finishing-position paragraph
       describes the engine leaving the fire behind. All three move in the same commit as the rows
+
+---
+
+## M102 — The finale: out of the apartment, out of the city · asked for 2026-09-09
+
+**Planned and not queued.** *("this is just a plan for now — we probably won't actually implement
+it for a while (there are a lot of milestones before that).")* Written down now so that M62
+(checkpoints that divide the map), M56 (the resistance is noticed), M100's sound lines and M101 (the
+fire found before the engine) are built knowing they are also the finale's parts.
+
+**The brief, in the player's words:**
+
+> "for the good ending. after completing all tasks. after the last day ends the next scene is the
+> hallway in front of the apartment at night with the player holding the sleeping baby (sleep bar
+> is full) the goal is to escape. masked men are trying to capture the player, army trucks are
+> driving on the streets, explosions happen off screen (but loud enough to cause excitement)
+> leaving craters on the street. burnt cars, blockades, craters, etc. block paths through the city.
+> but before reaching the city we need to get out of the house. elevator is non-functioning so we
+> need to take the staircase down a few floors (not excessively many). the main entrance of the
+> building is barricaded so we need to go to the basement walk through the basement corridors to
+> the service entrance. we can keep the events inside the house relatively minimal. maybe some
+> mice. some masked pursuers that run up the stairs that can be avoided by going into a corridor
+> and letting them pass. there might be a fire on one staircase forcing us to use the other
+> staircase (all buildings have two egresses). maybe some steam in the basement etc. once back on
+> the street grid (emerging from the service exit on the side of the main building). no regular
+> cars or regular people on the street. there is a single path through the city that crosses three
+> parks (the player can use them to calm down or get the baby back to sleep if it wakes up) ending
+> at the tunnel or bridge (or maybe one path for each and the player can choose). this is the
+> climax of the story with lots of lethal and dangerous events. help messages show "escape the
+> apartment" and "exit the city" in the appropriate places (only in the beginning of each section
+> like normal tutorial hints). the timer shows milli second precision for dramatic effect (instead
+> of the regular second precision of the main game)"
+
+**What it is, in the game's own terms.** A fifteenth walk that is not a day: no route to a calm
+area and home, but one way out, played in two sections that each open with one hint line and share
+one clock. The verb is unchanged — *where do I walk* — and the pressure is the same two meters: the
+baby starts asleep with sleepiness full, and everything on the way is a reason for her to wake.
+
+**Section one — the apartment.** *"escape the apartment"*, said once at the start, the way the
+HUD's `_say()` teaches tapping and running on day 1 and then never again. The building is the
+home lot's own block, seen from inside for the first and only time in the run: the hallway outside
+the door at night, a dead lift, and two staircases (*"all buildings have two egresses"*) down a few
+floors — three or four, *"not excessively many"*. The main entrance is barricaded, so the way out
+is down past the ground floor into the basement, along its corridors to the service entrance on
+the side of the building. Events here are *"relatively minimal"*: mice; masked pursuers who run up
+a staircase and can be let past by stepping into a corridor, a moving wall she avoids by not being
+on its line; a fire on one staircase that closes it and forces the other; steam in the basement.
+Each is the existing vocabulary indoors — a pursuer is a mobile row on a path, a fire is
+`burning_building`'s flame at a stairwell, steam is a stationary field on a corridor — and the
+section wants at most one of each.
+
+**Section two — the city.** *"exit the city"*, said once at the service exit. The city she knows,
+with nobody in it: `CROWD_PEDESTRIANS_PER_ACT` and `CROWD_CARS_PER_ACT` give act IV 70 walkers and
+16 cars, and this scene has zero of both — *"no regular cars or regular people on the street"*. In
+their place, army trucks on the carriageways, masked men on foot and in vans trying to take her,
+and explosions off screen, loud enough to reach the meter, each leaving a crater on a street. Off
+the one open route everything is sealed with the finale's own pictures — burnt cars, blockades,
+craters — which is `SealPlanner`'s existing job with a different candidate list: it already seals
+every street off the day's tree. **But the finale's route is not a tree.** *(2026-09-09: "the
+finale route is *not* a tree any more. it's a single path going to the first park, then the second,
+then the third, then the exit. no overlapping routes".)* A day grows several strands to several
+calm areas and counts two distinct routes to each as a max flow; the finale has one ordered chain
+— service exit, first park, second park, third park, edge — with no branch, no second way to any
+of them, and everything off the chain sealed. The parks are the only calm on the way and are for
+*"calm down or get the baby back to sleep if it wakes up"*; the edge is the tunnel at the north
+end of the main road or the bridge at its south end, the two exits `CityEdge` already draws and
+already lets her walk into.
+*"Lots of lethal and dangerous events"*: this is the climax, and the density rules that keep a day
+fair (`_room_around`, the telegraph contract, off-corridor exemption) still hold — lethal things
+are dense, not unfair.
+
+**The clock shows milliseconds** — `HUD._on_day_time_changed()` formats `%d:%02d` today and the
+finale formats `%d:%02d.%03d` — *"for dramatic effect"*, and nothing else about it changes.
+
+**The parts that already exist, so nobody draws or builds them twice.** The impact craters at
+three sizes, `assets/props/impact_crater_1x1.svg`, `_2x2` and `_3x3` (32, 64 and 96px, ground-centred,
+catalogued in `GRAPHICS.md` as prepared with no owner), are the explosions' marks and this
+milestone is their owner. `burnt_out_car.svg` with its vertical sibling, `barricade_pile.svg` and
+`checkpoint_block.svg` are the finale's seals and are already seal candidates or barrier rows.
+`army_truck.svg` and `army_truck_end.svg` are the trucks; `unmarked_van.svg`, `unmarked_van_end.svg`
+and the `abduction` row are the masked men in vans; `guard_standing.svg` and `guard_lunging.svg`
+are masked men on foot; `flame.svg` is the staircase fire; `sound_pulse.svg` is the arc an
+off-screen explosion draws, once M100's sound lines bind it. The player herself is drawn:
+`assets/rig/mother_carrying_{front,back,side}_{a,b}.svg` are the existing mother's six frames with
+the baby in her arms and no pram, on the same canvases and feet anchors as the walking set, so
+`Stroller` can swap them in facing for facing. New drawings: the hallway, stair, corridor and
+basement tiles, a dead lift door, mice, steam, and an explosion row's own picture if one is wanted
+beyond the arc and the crater.
+
+**What is genuinely new, and the order to build it in:**
+
+- [ ] **An interior map.** Nothing in the game has an inside; `CityMap` is one lattice and every
+      guarantee is stated over it. The apartment is a second, small, hand-shaped map — a floor is a
+      corridor with a stair at each end, going down a stair is going to the next floor's map, the
+      basement is the last floor with the service door on it — reached from day 14's summary
+      rather than from the doorstep, and left through that door onto the city map at the home
+      lot's side. What the interior does not need is any of the city's planners; a floor is small
+      enough to place by hand
+- [ ] **A finale plan for the city map.** An ordered chain, not a `RouteTree`: service exit to
+      first park to second to third to the edge, one street-walk between each pair and nothing
+      else open. `RouteTree.for_day` and its redundancy guarantee (two distinct routes to each calm
+      area, counted as a max flow) are exactly what the finale must *not* do, so the chain is its
+      own small planner that reuses the reachability grid and hands `SealPlanner` the set of open
+      cells — a route *out* must never count as a route to a calm area, which is the rule
+      `CityEdge` and `tests/test_blocks.gd` already keep. Crowd at zero, and a scheduler budget of
+      army trucks, abductions and explosions rather than the act's ordinary catalogue
+- [ ] **An explosion row.** Off screen, a short burst of intensity high enough to reach her from
+      out of view, a sound arc when M100's sound lines exist, and a crater left behind as a scar
+      the way `barricade` leaves one — `spawns_on_finish` naming a crater row whose picture is one
+      of the three prepared sizes, obstructing at the size it is drawn
+- [ ] **She carries the baby.** `Stroller` draws the carrying frames instead of the mother-and-pram
+      pair for the whole finale, with the pram's own collision gone with it (the pram has no
+      collision of its own today, so this is the sprite alone). The baby-state cue over the pram
+      moves to over the bundle
+- [ ] **The two hint lines, the millisecond clock and the section restart**, each a small change
+      to `HUD` and `DayController`: the clock formats milliseconds, and the day-lost path restarts
+      the section rather than ending a day
+- [ ] **The summary after it**, which is the good ending's epilogue: the tunnel or the bridge
+      behind her, and nothing triumphant
+
+**Four things the brief collided with in the finale as `docs/NARRATIVE.md` writes it today, each
+asked and each answered by the player on 2026-09-09:**
+
+1. **The sabotage stays, and the escape is what it causes.** *("yes, the sabotage is the cause of
+   the brutal crackdown.")* Today the good ending is `RESISTANCE_GOAL` reached *and* the day-14
+   step "The last night" touched (`ResistanceSteps._finale`, a civic-district contact that sets
+   `sabotage_done`), and its reward is mechanical quiet: every `city_wide` source is silenced and
+   she walks home on the easiest ground in the run. That stands. The quiet walk home is the breath
+   before the climax; the hallway scene follows it the same night, and the trucks and the masked
+   men are the regime's answer to what she did. *"No triumphalism"* still governs what is shown
+   after the tunnel.
+2. **Losing the finale restarts the section, at no Nerve cost.** *("sounds good at that point you
+   earned it.")* A day lost costs one Nerve and the day is over; the finale has no next day, and
+   the run is already won on paper. Capture, the meter reaching 100, or the clock running out each
+   put her back at the start of the section she was in — the hallway, or the service exit — with
+   Nerves untouched. A fourteen-day run is never thrown by one wrong turn in the last minutes.
+3. **The clock is a day's clock with milliseconds on it, and zero loses.** *("the timer for the
+   sequence is the same length and running out loses (the bridge/tunnel collapses or something
+   like that). the only change is that in addition to minutes and seconds the timer also shows
+   milliseconds. this makes the timer appear faster than just the seconds alone which adds
+   additional tension.")* So: one clock for the whole sequence, `DAY_LENGTH_SECONDS` (180s) long
+   like any day, counting down through both sections; at zero the way out is gone — the bridge or
+   the tunnel collapses, or something of that shape — and the section restarts as in 2. The only
+   change to the clock itself is the format, `%d:%02d.%03d` in place of `%d:%02d`, because
+   milliseconds ticking make the same countdown read as faster.
+4. **Two paths.** *("two paths it is.")* Two chains of the shape above, one ending at the tunnel
+   at the north end of the main road and one at the bridge at its south end, each through its own
+   three parks. They part at the service exit, or as near it as the lattice allows, and do not
+   overlap after that — *"no overlapping routes"* — so the choice is made once, at the door, and
+   is the game's verb; the home lot sits between the two ends of the main road so neither exit is
+   trivially nearer.
+
+**And what the finale is not.** No fighting, no button — the tone rules stand: the danger is
+noise, the men are the same masked men as act III's abductions, and the baby is never threatened by
+anything but being woken.
 
 ---
 
