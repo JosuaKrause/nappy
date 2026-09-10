@@ -52,3 +52,15 @@ The touched picture preserves the existing chalk mark and adds her acknowledgeme
 > main has updated and has conflicts use the merge main skill
 
 > make sure it is documented how each graphic should be used and queue up work items to make them being used
+
+## Sideways switchback stairs
+
+> one note on the stairs. they should zig zag sideways not back to front. like this [Image #1] and [Image #2] . the two staircases in the building are just one on the left side and one on the right side
+
+> the images you created for the stairs need to be adjusted
+
+> store the reference images
+
+The supplied generated illustrations show a side-on interior switchback staircase and exterior
+fire-escape flights along a facade. They guide stair geometry and direction, not the game's camera,
+characters or sign text. Originals are retained in `docs/evidence/stair-layout-reference-2026-09-10/`.
