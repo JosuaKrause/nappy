@@ -1,8 +1,11 @@
 # Environment SVG source review
 
 This folder contains the reviewed source artwork for M103, the drawings the queue owes.
-[sources.csv](sources.csv) lists the native canvas, anchor convention, alpha bounds and usage of
-every source. The set contains 81 new SVGs and the revised existing industrial vent source.
+[sources.csv](sources.csv) lists the native canvas, anchor convention, alpha bounds, intended
+consumer, exact use and queued work item for every source. M100, small, real, and nobody's,
+owns chalk/alley choices; M102, the finale, owns interior use; M105, the city degrades, owns
+damage/litter/sacks; M106, roofs, fronts and street trees, owns roof/facade/tree placement.
+The set contains 81 new SVGs and the revised existing industrial vent source.
 Every game source has its import sidecar. New sources remain prepared until their owning
 milestone adds the caller or resource entry.
 

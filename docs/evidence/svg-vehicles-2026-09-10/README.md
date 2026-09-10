@@ -6,7 +6,10 @@ selection, collision, tinting, animation, shadows and traffic paths retain their
 No illustrated PNG derivative is part of this set.
 
 [facings.csv](facings.csv) gives every N, NE, E, SE, S, SW, W and NW source, mirror operation,
-native canvas, bottom-centre canvas anchor, alpha bounds, layer order and review sheet.
+native canvas, bottom-centre canvas anchor, alpha bounds, layer order, review sheet, intended
+consumer/use and owning work item. M108, eight-direction entity graphics, binds the live actors;
+M111, cars follow their turns, supplies curved crowd-car motion; M56, the resistance is noticed,
+owns raid states; M100, small, real, and nobody's, and M102, the finale, own mouse use.
 Its 144 rows cover eighteen family/state combinations. The source addition contains 78 SVGs:
 eight crowd-car layers, thirty-six event-vehicle views, thirty-two animal/rider views, and the
 mouse side and riot-van end sources. Each game source has its import sidecar.

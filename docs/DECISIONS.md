@@ -245,6 +245,36 @@ art is not owed until it is picked up.
 
 ### Source-art scope and retention decisions
 
+The completed SVG-only pass adds 242 source assets: 81 environment/interior sources, 78 vehicle,
+animal and rider sources, and 83 directional people sources. The existing unbound industrial vent
+receives its first visible rotor phase. The people inventory is
+`docs/evidence/svg-people-2026-09-10/PEOPLE-MATRIX.md`; the vehicle/animal `facings.csv` specifies
+all eight headings, layer order and permitted mirrors. Native/3× source and composite sheets
+cover every authored direction and state. Existing canonical event sources remain live, and
+the added directional sources remain unbound pending M108, eight-direction entity graphics.
+
+The people review uses authored body planes, limb placement and prop occlusion rather than
+head-only changes. The tan chatting prams reuse the matching player-pram geometry with the
+event palette; west mirrors also mirror held props. The guard's lunging anchor remains (17,44)
+within its 36×44 canvas. Existing protester pointing directions are arm directions while their
+body faces the viewer; they remain separate from the new movement-facing protester sources.
+These symmetry and composition choices are recorded for human review, open to overturn.
+
+M108's source checklist was: audit every entity drawing and caller with a complete facing/state
+matrix; complete crowd layers and people, including carrying/talking/attack poses; complete
+animals and riders, including wing phases; complete crowd and event vehicles with real front,
+rear and diagonal projections. Each group preserves native scale, anchors and event identity.
+That source checklist is fulfilled by the three inventories. Runtime use remains open in the
+expanded binding tasks, including the player's requested M111, cars follow their turns.
+
+Final integrated source verification: all 242 new SVG paths are covered by the intended-use
+inventories and family mappings, every new source parses as XML and has its import sidecar,
+and import/boot plus documentation lint pass in the main checkout. No `.import` files remain
+below its `.gdignore` folders. Runtime sources, tests and the ground TileSet match the merged
+main tip; the focused merge tests above remain the behavior check. Native/3× rendered review
+evidence establishes source geometry, not runtime integration. The PR proposes these candidates
+for human review and does not include illustrated PNG conversion.
+
 PLAYTEST-53 requests all missing graphics, limited to SVG authoring for this pass. The work
 covers M103, the drawings the queue owes, and the source-art portion of M108, eight-direction
 entity graphics. Runtime integration remains a separate M108 item; M109, convert the SVG

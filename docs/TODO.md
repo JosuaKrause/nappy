@@ -16,35 +16,21 @@ mid-way through.
 
 ### M108 — Eight-direction entity graphics
 
-The current SVG-only authoring request is recorded in [PLAYTEST-53](playtests/PLAYTEST-53.md).
+The SVG-only authoring and subsequent integration requests are recorded in [PLAYTEST-53](playtests/PLAYTEST-53.md).
 Drafts rejected only internally by an assistant stay outside the repository; retain artwork
 suggested for human review or rejected by a human.
 
 This graphics track runs beside the gameplay queue. [PLAYTEST-51](playtests/PLAYTEST-51.md)
 approves the SVG-to-PNG workflow and requests eight-direction movement graphics for all entities
 before catalogue-wide conversion. See `DECISIONS.md` under Eight-direction style transfer.
-Author SVGs first, with N, NE, E, SE, S, SW, W, NW coverage and the existing animation/state
-variants. Preserve native scale, ground anchors, actor identity and gameplay. Document genuine
-mirror symmetry explicitly; front, back and diagonal projections must be authored rather than
-made by rotating an upright picture.
+Use the reviewed N, NE, E, SE, S, SW, W, NW source coverage and existing animation/state variants.
+Preserve native scale, ground anchors, actor identity and gameplay. Follow the documented mirror
+symmetry; choose an authored projection rather than rotating an upright picture.
 
-- [ ] Audit every entity drawing and its runtime caller against `GRAPHICS.md`, the event looks,
-      crowd families and prepared artwork in M103, the drawings the queue owes. Record a matrix
-      of eight facings, movement/idle/action states, native canvases, anchors, layer order and
-      permitted symmetry. Include stationary actors' directional action poses; a stationary
-      prop or building is not movement artwork. Keep prepared assets separate from live bindings.
-- [ ] Complete people: crowd walker body/trim layers, mother carrying the baby for M102, the finale,
-      chatting mother walking/talking, dog walker, yeller, busker, poster crew, café sitters,
-      guards standing/lunging, van victim, robber waiting/lunging, protesters and gunmen.
-      Reuse the eight protester pointing poses where appropriate. Preserve authored event identity,
-      carried objects and untinted overlays; do not substitute a generic walker for each event.
-- [ ] Complete animals and riders: crouched/running cat, dogs including charging posture,
-      pigeons with both wing phases, and cyclist. Preserve leads, contact shadows and state-specific
-      silhouettes while adding directional frames.
-- [ ] Complete vehicles: crowd cars with body/trim layers, delivery van, fire engine, ice-cream
-      van, lorry, police car, unmarked van, riot van, army truck and moving vans. Include vehicles
-      prepared by open gameplay items. Distinguish front from rear and keep wheels/footprints
-      grounded; eight facings do not authorize new traffic paths or moving stationary vehicles.
+The prepared source families and their complete facing/state matrices are in `GRAPHICS.md` and
+its linked people, vehicle/animal and environment inventories. The source-art record is in
+`DECISIONS.md` under SVG completion and selective rejection retention. Work below binds those
+pictures to their actual runtime consumers.
 - [ ] **Bind crowd walkers first.** Add a shared eight-sector heading selector and explicit
       family tables for source paths, mirrors, canvases and anchors. Reuse the stroller's stable
       sector-selection behavior where appropriate: retain facing at rest, avoid chatter at sector
@@ -225,7 +211,7 @@ anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified 
 
 The impact-crater decals `assets/props/impact_crater_1x1.svg`,
 `impact_crater_2x2.svg` and `impact_crater_3x3.svg` (32×32, 64×64 and 96×96 footprints) are the
-finale's: the marks its off-screen explosions leave on the street. M102 also owns the prepared `assets/rig/mother_carrying_{front,back,side}_{a,b}.svg`
+finale's: the marks its off-screen explosions leave on the street. M102 also owns the prepared `assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b}.svg`
 set, documented in GRAPHICS.md; nothing binds it until that milestone is built.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
@@ -1284,7 +1270,7 @@ milestone is their owner. `burnt_out_car.svg` with its vertical sibling, `barric
 and the `abduction` row are the masked men in vans; `guard_standing.svg` and `guard_lunging.svg`
 are masked men on foot; `flame.svg` is the staircase fire; `sound_pulse.svg` is the arc an
 off-screen explosion draws, once M100's sound lines bind it. The player herself is drawn:
-`assets/rig/mother_carrying_{front,back,side}_{a,b}.svg` are the existing mother's six frames with
+`assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b}.svg` are the mother's ten sources with
 the baby in her arms and no pram, on the same canvases and feet anchors as the walking set, so
 `Stroller` can swap them in facing for facing. Prepared drawings, each listed with its contract in
 `GRAPHICS.md`: the hallway with its flashing windows and its floor edge that implies the apartment doors,
