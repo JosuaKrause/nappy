@@ -1,0 +1,7 @@
+<!-- Flattened torn paper bag on the ground; centre anchored without upright handles or a shadow. Bottom-centre ground anchor; prepared and unbound. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+
+  <path d="M11.5 14 L14 12.5 L16 13.5 L20 12 L19.5 15 L21 18 L16.5 19.5 L12 18 Z" fill="#a8845d" stroke-width="0.55"/>
+  <path d="M11.5 14 L16 15 L20 12 L18 16 L21 18 L16 17 Z" fill="#c6a477" stroke="none"/>
+  <path d="M12 18 L16 17 L16.5 19.5 M16 15 L16 17 M19.5 15 L18 16" fill="none" stroke="#765944" stroke-width="0.5"/>
+</svg>
