@@ -46,8 +46,8 @@ Some visible graphics are code rather than image files:
 
 | Assets | Runtime binding and behaviour |
 |---|---|
-| `assets/rig/mother_{front,back,side}_{a,b}.svg` | `src/player/stroller.gd` chooses a facing and alternates the two gait frames. The side pair mirrors for west. |
-| `assets/rig/pram_{front,back,side}.svg` | `src/player/stroller.gd` chooses a facing; the side view mirrors with the mother. |
+| `assets/rig/mother_{front,back,side}_{a,b}.svg`, `mother_{front,back}_diagonal_{a,b}.svg` | `src/player/stroller.gd` chooses among eight upright views and alternates the two gait frames. East-authored side and diagonal views mirror explicitly for west. Mother canvases are 24×46 cardinal front/back, 26×46 side/diagonal, all bottom-centre grounded. |
+| `assets/rig/pram_{front,back,side}.svg`, `pram_{front,back}_diagonal.svg` | `src/player/stroller.gd` chooses the matching eight-direction pram view; east-authored side and diagonal views mirror explicitly for west. Pram canvases are 30×30 cardinal and 36×30 side/diagonal, bottom-centre grounded. |
 | `assets/props/baby_{zzz,fuss,cry}.svg` | `src/player/stroller.gd` chooses sleeping, awake/fussing or crying state above the pram. |
 | `assets/props/alert.svg`, `assets/props/alert_close.svg` | `src/player/stroller.gd` draws the exclamation over the player when an event is about her, using the close variant at the nearer threshold. |
 | `assets/crowd/walker_{front,back,side}_{body,trim}.svg` | `src/crowd/crowd_agent.gd` chooses a facing, tints the body per walker and overlays the untinted trim. Side views mirror. |
