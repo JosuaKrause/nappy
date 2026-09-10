@@ -1,0 +1,12 @@
+<!-- A charred car in profile: warped bonnet, empty window holes, bare pillars and exposed rims. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="28" viewBox="0 0 48 28" shape-rendering="geometricPrecision" stroke="#221f28" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M2 14 L5 10 L12 9 L16 4 Q24 2 34 5 L39 10 L45 11 L47 15 L45 21 L3 21 Z" fill="#3e3a38"/>
+  <path d="M14 9 L18 5 L24 4 L24 10 Z M27 4 L33 6 L37 10 L27 10 Z" fill="#141416"/>
+  <path d="M25 4 L25 11 M13 9 L11 14 M38 10 L40 15" fill="none" stroke="#514a45" stroke-width="1.4"/>
+  <path d="M2 15 L8 13 L11 16 L16 14 L25 17 L32 14 L39 16 L46 13 L45 21 L3 21 Z" fill="#353230"/>
+  <path d="M2 14 L6 11 L10 12 L8 16 L3 17 M40 11 L46 12 L44 16 L47 18" fill="#514a45"/>
+  <circle cx="12" cy="22" r="5" fill="#171719"/><circle cx="36" cy="22" r="5" fill="#171719"/>
+  <circle cx="12" cy="22" r="2.5" fill="#665f58"/><circle cx="36" cy="22" r="2.5" fill="#665f58"/>
+  <path d="M10 22 h4 M12 20 v4 M34 22 h4 M36 20 v4" stroke="#2c2a2a" stroke-width="0.8"/>
+  <path d="M18 13 l4 2 l3 -2 l4 2" fill="none" stroke="#7a6c60"/>
+</svg>

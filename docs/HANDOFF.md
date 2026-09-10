@@ -13,7 +13,7 @@ Claude Code and Codex share `CLAUDE.md` and `.claude/skills/`; Codex reads `CLAU
 through `project_doc_fallback_filenames` in `.codex/config.toml`, and finds the skills through the
 `.agents/skills` link. Its repository hooks need review through `/hooks` before they execute.
 
-**Every branch is work in progress; nothing is parked on one.** M64's measurement probes,
+**Every branch is work in progress; nothing is parked on one.** The sealing measurement probes,
 `tests/probes/m64_measure.gd` and `tests/probes/m64_density.gd`, live under `tests/probes/`, where
 the runner does not discover them: they print rather than assert, they are the instrument the
 per-street density figures in `TODO.md` were read with, and `tools/test.sh probes/m64_density.gd`
@@ -304,35 +304,16 @@ day's route tree grows on it, and `ClosurePlanner` refuses a calm area's access 
 `StreetNetwork` is still there and still owns the lattice and the structural route count; it is no
 longer what answers *can she get there today*.
 
-Three of the queue's milestones carry state worth knowing before picking them up; their place in the
+Two of the queue's milestones carry state worth knowing before picking them up; their place in the
 order is `TODO.md`'s.
 
-- **M64 — off the path is closed, not dear.** **Its sealing is built**: `SealPlanner` puts a seal on
-   every real street off the day's route tree, so the city can say *not this way at all* for the
-   first time and the route decision stops having one correct answer. Off-path density measures
-   0.330 events per street before and 2.173 after, with the on-tree figure unmoved; the record is in
-   `DECISIONS.md` under M64.
-
-   **Its fairness is now checked rather than hoped for.** The day's tree grows a trunk from the
-   doorstep out to the nearest cell already on it, so the join between home and the corridor is tree
-   ground and cannot be sealed; no branch is ever planned *along* the main road, though crossing it
-   is free; and `tests/test_seals.gd` asks whether a calm area is reachable **with the whole main
-   road removed**, because reachable along the spine — 0.6 excitement decay against an ordinary
-   street's 1.0 — is not survivable. A fraction of the soft seals is dropped one body at a time so
-   the guidance stops reading as guardrails. The record is in `DECISIONS.md` under M64.
-
-   What is left is the eight seal pictures — variety, so no single barrier becomes the city's
-   signature, each costing one appended candidate and no code.
-
-   **Hard seals are act IV only**, because `barricade` is the sole catalogue row wide enough to span
-   a street; days 1–11 seal soft, both pavements taken with the carriageway still walkable. Three of
-   the eight pictures are act-I hard seals and are what closes that.
 - **M65 — the protester points at the objective, revisited after M62.** Playtest 19's two-part gap — the first mark
    announced before it is found, and unfindable once it is — is built and unwalked: the status line
    is silent until the first mark has been touched, and a mark that has never been on screen
    follows her to the next alley she comes near, guard and all (the record is in `DECISIONS.md`
    under M78). What remains is playtest 20's item: a protester pointing toward the current
-   objective, and made more common since a protester obstructs nothing.
+   objective, and made more common since a protester obstructs nothing. Its milestone lists
+   the available directional SVG poses; objective binding and density remain open.
 - **M56 — the resistance is noticed.** Its remaining hunting rows are built alongside M62; its
   measurement against the nerves waits until act III is reached.
 
@@ -360,7 +341,8 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M62 is next
 — checkpoints that divide the map into regions, with M45 folded into it. Alongside it, each on its
-own branch: M64's eight seal pictures as SVG and M56's remaining hunting rows. M61, the field as a Minkowski sum of body and kernel, follows M62; M65 is
+own branch: M56's remaining hunting rows. M61, the field as a Minkowski sum of body and kernel,
+follows M62; M65 is
 revisited after M62 rather than built as written. Behind those, unordered: M96 (the teaching day and
 the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's
 density after the sealing) and M100 (the small work, the polish and the open design questions,
@@ -457,8 +439,8 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   `construction` genuinely blocks a 64px pavement — she needs 46px of clearance and the band gives 32
   — where before it left a free lane. That is the intent and it is also the first time an act I
   obstacle has been physically impassable in play. **Whether it reads as *cross the street* or as a
-  wall dropped on the pavement is a played question**, and it is the one M64 is about to place a
-  hundred and fifty of a day.
+  wall dropped on the pavement is a played question**, and it is the one the sealing places about a
+  hundred and fifty of a day, in eight kinds that nobody has walked past either.
 - **A street that is solid has been walked by a rig and by nobody.** About two thirds of the
   catalogue has a body. The open question is not density but whether being stopped reads as *cross
   the street* or as an obstacle course. The gap between a kerbed van and the frontage is smaller

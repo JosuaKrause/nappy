@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-linejoin="round" stroke-linecap="round">
+  <!-- Ground anchor is the canvas centre (48,48); the chipped excavation is centred on that point. -->
+  <path d="M15 37 L19 22 L30 14 L39 16 L48 10 L58 14 L65 13 L79 26 L82 35 L88 41 L81 48 L85 57 L76 66 L72 75 L60 78 L54 86 L43 83 L35 87 L24 76 L18 74 L13 62 L10 55 L13 47 L11 41 Z" fill="#46464f" stroke-width="2"/>
+  <path d="M20 38 L25 25 L35 19 L42 22 L50 16 L59 20 L65 19 L75 30 L77 38 L81 43 L75 49 L78 56 L69 64 L66 71 L56 74 L51 80 L42 76 L35 81 L27 71 L21 69 L18 59 L16 52 L19 46 L17 42 Z" fill="#806456" stroke-width="1.6"/>
+  <path d="M25 40 L29 30 L38 25 L45 28 L52 22 L61 26 L67 25 L72 34 L73 42 L77 47 L70 52 L73 57 L64 65 L57 69 L51 73 L42 69 L35 73 L29 64 L24 60 L22 51 L25 46 Z" fill="#252a33" stroke-width="1.45"/>
+  <!-- concave shading: dark upper wall, with the lower break catching muted earth light -->
+  <path d="M28 39 L33 30 L42 27 L50 30 L58 25 L66 29 L70 37 L67 42 L57 38 L47 40 L38 37 Z" fill="#171c24" stroke="none"/>
+  <path d="M29 55 L37 62 L45 65 L53 62 L60 65 L55 69 L50 73 L42 69 L35 73 L30 64 Z" fill="#9a745d" stroke="none"/>
+  <path d="M20 30 L15 25 L13 29 M31 18 L34 12 L39 16 M58 17 L64 11 L65 18 M73 29 L82 24 L78 32 M79 45 L88 42 L82 48 M74 63 L84 68 L77 70 M61 75 L68 85 L59 79 M47 77 L43 88 L39 82 M30 72 L24 83 L25 73 M18 59 L10 66 L15 55 M18 45 L9 42 L16 39" fill="none" stroke="#3b2d32" stroke-width="1.35"/>
+  <path d="M28 46 L19 45 L15 49 M29 55 L22 60 L19 66 M36 65 L33 74 M45 69 L44 78 M56 67 L61 76 M64 58 L74 62 M65 48 L78 50 M63 38 L74 34 M54 28 L57 19 M42 31 L35 23 M34 40 L25 34" fill="none" stroke="#171c24" stroke-width="1.35"/>
+  <path d="M23 37 L28 31 L33 32 M32 68 L38 72 M57 73 L62 69 M70 32 L75 35 M68 22 L73 27" fill="none" stroke="#b08a6b" stroke-width="1.5"/>
+  <path d="M33 43 Q42 35 52 37 Q63 38 68 46" fill="none" stroke="#4c5058" stroke-width="1.1"/>
+  <path d="M38 64 L34 57 M55 65 L62 57 M27 51 L35 50" fill="none" stroke="#10151d" stroke-width="1.2"/>
+</svg>

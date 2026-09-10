@@ -1,0 +1,15 @@
+<!-- Lowered boom across a north-south roadway; the arm spans east-west between grounded posts.
+     This state shares its canvas and placement anchors with boom_gate_ns_raised.svg.
+     viewBox 0 0 92 62; ground anchor=(84,59); pivot=(82,47). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="92" height="62" viewBox="0 0 92 62" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M4 51 L84 51 L89 56 L9 56 Z" fill="#221f28" stroke="none" opacity="0.35"/>
+  <path d="M4 43 L83 43 L83 50 L4 50 Z" fill="#e0d8c4"/>
+  <path d="M10 43 L21 43 L17 50 L6 50 Z M34 43 L45 43 L41 50 L30 50 Z M58 43 L69 43 L65 50 L54 50 Z" fill="#c4503c" stroke="none"/>
+  <rect x="1" y="40" width="8" height="15" rx="1" fill="#5f6b47"/>
+  <path d="M2 41 L8 41 L8 45 L2 45 Z" fill="#858a70"/>
+  <path d="M0 55 L10 55 L12 59 L0 59 Z" fill="#3a4035"/>
+  <rect x="77" y="40" width="11" height="19" rx="1" fill="#5f6b47"/>
+  <path d="M79 41 L86 41 L86 45 L79 45 Z" fill="#858a70"/>
+  <circle cx="82" cy="47" r="3" fill="#c9a86a"/>
+  <path d="M75 59 L90 59 L88 62 L73 62 Z" fill="#3a4035"/>
+</svg>

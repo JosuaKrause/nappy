@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-linejoin="round" stroke-linecap="round">
+  <!-- Ground anchor is the canvas centre (32,32); the broken decal is centred on that point. -->
+  <path d="M10 25 L14 15 L24 9 L31 11 L37 8 L47 14 L52 22 L55 27 L52 33 L55 38 L47 48 L39 51 L35 56 L26 52 L21 55 L13 46 L9 39 L8 32 Z" fill="#46464f" stroke-width="1.6"/>
+  <path d="M14 26 L19 17 L27 13 L32 16 L38 12 L47 18 L49 25 L46 29 L51 34 L47 39 L41 44 L35 48 L29 45 L23 48 L16 41 L13 35 Z" fill="#806456" stroke-width="1.25"/>
+  <path d="M17 27 L23 20 L29 18 L34 21 L40 17 L46 24 L44 29 L47 34 L41 40 L35 44 L29 41 L24 44 L19 37 Z" fill="#252a33" stroke-width="1.2"/>
+  <path d="M15 21 L12 17 L10 19 M22 13 L23 9 L27 10 M42 13 L48 10 L47 15 M51 28 L57 27 L54 31 M47 44 L53 49 L49 50 M30 49 L28 56 L25 52 M17 43 L11 46 L13 40" fill="none" stroke="#3b2d32" stroke-width="1.1"/>
+  <path d="M19 31 L14 30 L11 33 M21 37 L17 40 L16 44 M27 41 L25 47 M35 41 L38 47 L41 49 M41 34 L47 37 L50 37 M40 27 L46 25 L49 22 M33 22 L35 16 M26 24 L22 20" fill="none" stroke="#171c24" stroke-width="1.05"/>
+  <path d="M17 27 L20 24 L23 25 M44 19 L47 21 M39 43 L42 41 M21 44 L24 45" fill="none" stroke="#b08a6b" stroke-width="1"/>
+</svg>

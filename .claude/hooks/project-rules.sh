@@ -54,6 +54,9 @@ esac
 # Path -> skills that govern it. A file may match several; all of them fire.
 wanted=()
 case "$path" in
+	*.svg)                    wanted+=(svg-art) ;;
+esac
+case "$path" in
 	*/src/events/*)            wanted+=(events) ;;
 esac
 case "$path" in

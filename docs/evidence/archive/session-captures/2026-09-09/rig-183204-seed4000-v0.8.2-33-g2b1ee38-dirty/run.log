@@ -1,0 +1,13 @@
+nappy rig log  2026-09-09T18:32:04  version v0.8.2-33-g2b1ee38-dirty
+
+day 5  act 2  run seed 4000  city seed 4000  length 180.0s
+   0.0  contact  step 1 on offer at (20,22)
+   0.0  roll     chalk mark guarded: robber 102px away (band 66-176)
+   0.0  plan     closed: cordoned off v(3,8), fallen tree v(7,3)
+   0.0  plan     calm: 1 park, 2 quiet_square, 3 forest, 4 courtyard
+   0.0  plan     events: burnt_out_car x64, burst_water_main x22, busker x9, cafe_tables x40, car_accident x14, cat_dash x8, charging_dog x3, chatting_mother x2, collapsed_frontage x18, construction x35, cyclist x3, delivery_van x21, dog_walker x15, fallen_tree x15, homeless_yeller x8, ice_cream_van x5, leaf_blower x16, loose_dog x10, market_stall x29, moving_van x23, pigeon_flock x5, playground, police_patrol x12, poster_crew x12, reversing_lorry x6, scaffolding x13, skip x13
+   0.0  start    doorstep (24,3), facing 180°
+   0.2  near     burnt_out_car (telegraph) at (56,10), 76px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0
+   0.2  near     burnt_out_car (telegraph) at (58,10), 28px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0
+   0.2  near     burnt_out_car (telegraph) at (59,10), 20px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0
+   0.2  near     burnt_out_car (telegraph) at (61,10), 68px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0

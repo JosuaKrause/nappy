@@ -522,7 +522,7 @@ func _resettle_the_tails() -> void:
 
 ## Guarantees the join between the doorstep and the rest of the tree, regardless of which street a
 ## branch's own random walk happened to reach home through. See the class doc, "The trunk", and
-## `docs/TODO.md`, M64: "grow the day's tree from the doorstep and exempt the trunk with it, so
+## `docs/DECISIONS.md`, M64: "grow the day's tree from the doorstep and exempt the trunk with it, so
 ## home-to-corridor is tree ground like any other."
 ##
 ## A no-op when nothing grew at all — there is no tree to join home to, and that day's walkability

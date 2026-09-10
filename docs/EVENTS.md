@@ -229,6 +229,11 @@ answers it for a `SIDEWALK` one, with no second lookup for either. A junction (b
 coordinates inside a corridor band) and ground off any corridor at all (a square, a park, a
 courtyard) both keep the default lay along local X: neither has one street to be wrong about.
 
+The fallen tree, car accident and burst water main each use one complete street scene.
+`EventInstance._draw_wide_scene()` fits the scene to the obstructed span. On an east–west street,
+its vertical image and shadow are centred on the event's ground point; the bottom-centred anchor
+used for an upright person would shift the whole scene onto the northern pavement.
+
 ### Which lane of the pavement
 
 A corridor is sidewalk | road | sidewalk, so a pavement tile has a kerb on one side and a frontage
@@ -526,6 +531,26 @@ neighbourhood's own rather than a patrol's.
 The day-14 sabotage is not a catalogue row: it is `GameState` logic (`sabotage_done`,
 `sabotage_available()`), gated on the resistance goal rather than sited or scheduled like an
 `EventDef`. `docs/NARRATIVE.md` and `docs/DESIGN.md` describe what completing it does.
+
+### Seal pictures — off the day's route tree
+
+Eight pictures so no single barrier is the city's signature (`docs/DECISIONS.md`, M64). Every row below
+is `SCRIPTED` with `scripted_day` 0, so — like `barricade` above — the ordinary catalogue roll never
+schedules one; `SealPlanner` places each fresh every morning on a street off the day's route tree,
+reading `act_tag` for the first day it may. All eight are silent (`intensity` 0): *"static blockages
+in general shouldn't increase excitement."*
+
+| id | kind | from | Behaviour |
+| --- | --- | --- | --- |
+| `fallen_tree` | SCRIPTED | day 1 | Placed fresh every morning as a **hard seal**: a tapered trunk down kerb to kerb, branching roots at one end and an irregular crown at the other. `obstructs_radius` 96, exactly half the 192px street, so `SealPlanner._hard_positions` places one body spanning it edge to edge. Each street axis has its own continuous scene, selected by `EventInstance._wide_scene_texture`. The picture spans equally to either side of the ground point across the street. On an east–west street its vertical extent is centred on that point too; on a north–south street its bottom edge meets the ground point. |
+| `car_accident` | SCRIPTED | day 1 | A **hard seal**: two cars locked together across the carriageway, glass between them and an onlooker on each pavement. The cars follow the street: end views next to one another on a north–south street, side views arranged across an east–west street. Both pictures keep the people upright. Separate shadows ground each car and onlooker without darkening the space between them. The whole scene uses the same single-body geometry as `fallen_tree`. |
+| `skip` / `scaffolding` | SCRIPTED | day 1 | A **soft seal**: a skip at the kerb facing scaffolding boards over the far footway — the two-obstacles-facing-each-other reading of a soft seal, drawn as two different pictures rather than one row twice. `skip` is kerb-pinned like `delivery_van`; `scaffolding` fills the whole pavement band like `construction`. |
+| `burst_water_main` | SCRIPTED | day 1 | A **hard seal**: broken asphalt, an exposed pipe and water across the carriageway, with an upright municipal barrier at each kerb. The directional pictures place the damage across the street while retaining the barriers' standing projection. Same single-body geometry as `fallen_tree`. |
+| `moving_van` | SCRIPTED | day 1 | A **soft seal**: a lorry at the kerb with its ramp down, the same body on each pavement. Its own side and end views show the cab, cargo box, open loading doors and ramp, with the view chosen from the street axis even while the vehicle is stationary. The picture stays distinct from the reversing lorry. |
+| `burnt_out_car` | SCRIPTED | day 4 | A **hard seal**, from act II onward: a damaged car shell in the charred palette of `burnt_shell`. The cars lie perpendicular to the road: the side view serves north–south streets and the authored vertical view serves east–west streets. Vehicle-scale `obstructs_radius` lets `SealPlanner._hard_positions` place the individual wrecks across the street as a pile-up. |
+| `collapsed_frontage` | SCRIPTED | day 4 | A **hard seal**, from act II onward: rubble spilled frontage to frontage, drawn the way `_burnt_shell` draws `rubble.svg` — a small debris segment repeated by `_draw_spread` — but its own picture, styled beside `rubble.svg` rather than sharing it. |
+
+
 
 ## Permanent marks
 
@@ -897,9 +922,9 @@ Three rules underneath the table, in the order they matter:
 
    **The trap it is written against** is a rule like *danger that changes over time* — lethal,
    telegraphing, swelling, or pulsing fast enough to be timed. Every clause of that is a true
-   statement about a thing and **none of them is a statement about how bad it is**: a fire engine
-   on a course that misses her carries nothing while a burning building half its declared price
-   carries a caret the moment its own field reaches her.
+   statement about a thing and **none alone says what it will do to a standing player**. A fire
+   engine on a course that misses her may carry nothing; a stationary burning building uses its
+   silhouette and active-cost halo, not an approach caret.
 
    **A cue that marks everything says nothing**, so the ordinary crowd at ordinary density is left
    alone — measured on the arterial, not argued: a crowd at ordinary busyness around a standing

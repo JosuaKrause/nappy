@@ -1,0 +1,14 @@
+<!-- A hard seal: a tree down kerb to kerb, root plate at one end and crown at the other. Native
+     width 200 — over the 192px a hard seal spans at this row's own `obstructs_radius` (96) — so
+     `_draw_wide_scene` draws exactly one copy stretched to the obstruction, not several repeated
+     trees: this is one continuous scene, not a repeatable segment. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="50" viewBox="0 0 200 50" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M17 27 L10 18 L13 31 L3 28 L11 37 L2 43 L15 41 L11 49 L23 41 Z" fill="#4a382a"/>
+  <path d="M16 30 C45 28 71 31 98 27 C123 24 144 25 166 20 L169 35 C145 36 122 34 98 38 C69 42 43 39 16 42 Z" fill="#5b4433"/>
+  <path d="M20 31 C53 31 75 34 101 29 C124 26 143 28 162 23" fill="none" stroke="#7a5c43" stroke-width="2"/>
+  <path d="M65 31 L73 20 L79 18 L75 31 M111 28 L120 17 L125 18 L119 29 M137 26 L145 14 L150 12 L147 25" fill="#5b4433"/>
+  <path d="M70 22 L67 16 M120 18 L121 11 M145 15 L141 9" fill="none" stroke="#4a382a" stroke-width="2"/>
+  <path d="M149 22 C148 12 157 5 167 8 C172 2 185 3 187 12 C196 14 201 23 195 31 C197 40 186 46 178 42 C170 48 158 43 158 36 C149 35 143 28 149 22 Z" fill="#4f7a44"/>
+  <path d="M154 18 C157 10 166 8 173 13 C178 7 188 10 189 19 C184 24 176 25 169 22 C164 26 157 24 154 18 Z" fill="#649256"/>
+  <path d="M161 31 C168 24 178 27 180 34 C187 29 195 35 192 42 C183 47 174 44 171 39 C165 42 159 37 161 31 Z" fill="#456b3b"/>
+</svg>
