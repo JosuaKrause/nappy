@@ -28,9 +28,9 @@ projection or composition. Archived experiments and unapproved outputs are not s
 
 - Read the imagegen skill and use the built-in generator for raster generation or editing.
   Inspect local inputs with `view_image` first. State each input's role in the exact saved prompt.
-- Preserve SVGs and raw generated outputs for accepted assets and candidates suggested for human
-  review. Keep internal discarded attempts outside the repository; only human-review candidates
-  enter the rejected archive. Record extraction commands, tool versions, source dimensions and
+- Preserve SVGs and raw generated outputs for accepted assets, candidates suggested for human
+  review and artwork rejected by a human. Keep drafts rejected only internally by an assistant
+  outside the repository. Record extraction commands, tool versions, source dimensions and
   registration measurements for retained derivatives.
 - Runtime PNGs use `assets/illustrated/svg-transfer/<family>/<name>.png`, corresponding to
   `assets/<family>/<name>.svg`. Match native canvas dimensions and rasterized SVG alpha exactly.

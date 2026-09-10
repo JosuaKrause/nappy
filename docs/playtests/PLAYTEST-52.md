@@ -30,3 +30,7 @@ The touched picture preserves the existing chalk mark and adds her acknowledgeme
 > remove all .import files in folders that are gdignored
 
 > things like this folder docs/evidence/archive/rejected-graphics/diagonal-svg-2026-09-10-v2/
+
+> Remove rejected drafts; keep accepted generation/review evidence
+
+> also keep if a human has rejected them. only if you reject them don't store them

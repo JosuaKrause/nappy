@@ -4,7 +4,8 @@
 
 Read `docs/VISUALS.md` for reference roles. Preserve the SVG, its native and enlarged raster,
 the exact prompt and reference paths, and the actual generated output for accepted assets and
-candidates suggested for human review. Internal discarded attempts stay outside the repository.
+candidates suggested for human review or rejected by a human. Drafts rejected only internally
+by an assistant stay outside the repository.
 Generation need not reproduce identical pixels; extraction must be reproducible from the saved
 output.
 

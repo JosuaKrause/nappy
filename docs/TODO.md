@@ -17,8 +17,8 @@ mid-way through.
 ### M108 — Eight-direction entity graphics
 
 The current SVG-only authoring request is recorded in [PLAYTEST-52](playtests/PLAYTEST-52.md).
-Internal drafts stay outside the repository; retain rejected artwork only when it was suggested
-for human review.
+Drafts rejected only internally by an assistant stay outside the repository; retain artwork
+suggested for human review or rejected by a human.
 
 This graphics track runs beside the gameplay queue. [PLAYTEST-51](playtests/PLAYTEST-51.md)
 approves the SVG-to-PNG workflow and requests eight-direction movement graphics for all entities
@@ -87,8 +87,9 @@ style transfer.
 - [ ] Review catalogue completeness, native-size quality, alpha, seams, tinting, cues, all eight
       facings and moving-state consistency. Publish SVG/PNG comparisons and purposeful gameplay
       evidence in the PR; document actual bindings and make SVG-first followed by transfer the
-      graphics authoring procedure. Archive rejected outputs with their import metadata only when
-      they were suggested for human review; keep internal discarded attempts outside the repo.
+      graphics authoring procedure. Archive outputs suggested for human review or rejected by a
+      human; keep drafts rejected only internally by an assistant outside the repo. Keep import
+      metadata only outside folders excluded by `.gdignore`.
 
 ### Gameplay queue
 

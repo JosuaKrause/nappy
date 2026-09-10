@@ -103,8 +103,8 @@ file is valid. Link a current rendered preview rather than repeatedly altering v
 Update `docs/GRAPHICS.md` with file paths, registration and actual current use. A prepared asset
 stays unbound in the catalogue until code or a resource uses it. In graphics-dependent milestones,
 name the files and intended states to reuse without closing outstanding gameplay decisions.
-Keep internal drafts and rejected intermediate attempts outside the repository. Preserve rejected
-artwork only when it was suggested for human review, with the review outcome in
+Keep drafts rejected only internally by an assistant outside the repository. Preserve artwork
+rejected by a human or suggested for human review, with the review outcome in
 `docs/DECISIONS.md`; preserve the player's words in the playtest record. PR image links use a
 commit containing the image, as `committing` requires.
 

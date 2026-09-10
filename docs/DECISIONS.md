@@ -34,6 +34,11 @@ source manifest. The player confirmed this scope by naming the `-v2` folder. The
 recoverable from Git history. Accepted runtime textures and their generation and comparison
 evidence remain available.
 
+The player clarifies retention: "also keep if a human has rejected them. only if you reject
+them don't store them". A human rejection is preserved whether or not an assistant recommended
+the candidate first. Only drafts rejected internally by the assistant before human review are
+discarded. The graphics skills state this distinction explicitly.
+
 ## Eight-direction style transfer — 2026-09-10
 
 Final integrated verification on 2026-09-10: import/boot passed; focused stroller, visuals,

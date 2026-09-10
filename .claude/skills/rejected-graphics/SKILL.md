@@ -5,9 +5,9 @@ description: Guard the rejected graphics archive; load when inspecting or editin
 
 # Rejected graphics archive
 
-Only artwork suggested for human review belongs in this archive when rejected. Keep internal
-drafts and discarded intermediate attempts outside the repository. This retention rule applies
-to both SVG authoring and PNG transfer; it does not call for deleting existing historical records.
+Preserve artwork rejected by a human, and artwork suggested for human review. Keep drafts
+rejected only internally by an assistant outside the repository. This retention rule applies
+to both SVG authoring and PNG transfer; it does not call for deleting human rejection records.
 
 Everything under `docs/evidence/archive/rejected-graphics/` is preserved for posterity only. These
 are rejected experiments, not visual guidance, style references, prompt inputs, or implementation
