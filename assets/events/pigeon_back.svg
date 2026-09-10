@@ -1,0 +1,4 @@
+<!-- pigeon back; shared flight registration across wing phases. Bottom-centre ground anchor; prepared and unbound. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="18" viewBox="0 0 22 18" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M8 12 L7 17 L15 17 L14 12 Z" fill="#5c697a" />  <path d="M9 10 L3 1 L2 4 L6 13 Z M13 10 L19 1 L20 4 L16 13 Z" fill="#8a97a8" />  <path d="M8 8 Q11 5 14 8 L15 12 Q11 16 7 12 Z" fill="#6b7a8c" /><circle cx="11" cy="6" r="2.8" fill="#6b7a8c"/>
+</svg>
