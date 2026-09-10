@@ -14,6 +14,23 @@ mid-way through.
 
 ## The order
 
+### SVG-to-PNG style-transfer experiment
+
+[PLAYTEST-51.md](playtests/PLAYTEST-51.md) specifies a texture replacement experiment using the existing
+SVGs as the geometry source and the supplied diagonal and cardinal gameplay illustrations as
+style references, excluding their interface and debug annotations.
+
+- [ ] Generate and inspect representative PNG transfers with the exact SVG canvas, placement,
+      direction, pose and transparent gaps. Preserve generation inputs and prompts.
+- [ ] Archive the previous illustrated outputs and replace its runtime compositors with texture
+      selection through the existing illustrated flag. Preserve existing drawing transforms,
+      animation, collision, cues and gameplay. Verify both flag states and gameplay-scale alignment.
+- [ ] Review the experiment's visual result before extending it. If it works, adopt SVG authoring
+      followed by PNG style transfer as the standard graphics pipeline.
+
+The actor-assembly work below describes the implementation being replaced; its outstanding
+repair brief moves to the historical record with the replacement, as requested in PLAYTEST-51.
+
 ### Illustrated actor registration and assembly
 
 **This is Codex's parallel track, worked beside the gameplay queue rather than ahead of it.**
