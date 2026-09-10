@@ -2,6 +2,24 @@
 
 ## SVG-to-PNG experiment: main integration — 2026-09-10
 
+**Verification and capture.** On the merged tree, `./tools/check.sh`, focused
+`visuals stroller crowd presentation_mode orientation --illustrated`, `./tools/lint.sh` and
+`./tools/pycheck.sh` pass. The agent also runs the focused `events` suite without failures;
+the subsequent incoming main changes no event behavior. The visual suite requires every one of
+the nine PNGs to load, match its SVG dimensions and alpha, and preserve missing-art fallback
+and idempotent resolution. The invalid-size warning path is inspected in code rather than
+covered by a malformed-asset fixture. The local suite is partial; full verification belongs to CI.
+
+Two bounded windowed captures at commit `468718d`, clean code/assets, seed 4242, 1280×720,
+`--walk 1s3e`, after 2.5 seconds compare the same crossing in ordinary mode and with
+`--illustrated`. They are `docs/evidence/archive/session-captures/2026-09-10/`
+`svg-transfer-gameplay-svg.png` and `svg-transfer-gameplay-png.png`. The mother and pram
+keep their framing, scale, ground contacts and drawing placement; the PNG version adds face,
+fabric and wheel detail with no visible checkerboard. The same HUD, shadows and surrounding
+SVG world remain visible. These are stills of an eastward walk, not proof of smooth animation
+in every direction or player acceptance. Complete telemetry runs are preserved under
+`docs/evidence/style-transfer-2026-09-10/runtime/` with their original run names.
+
 The experiment's pre-merge tip was `353030cf56e305de25044527cfe4dfe16d569e9e`, incoming main
 was `7f783640a00ff0b18f1f1f7babe31c49d4481399`, and their sole merge base was
 `660647a429793939475e9e52b722c088669eb528`. The merge was held with `--no-ff --no-commit`
