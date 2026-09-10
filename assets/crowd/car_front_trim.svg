@@ -1,4 +1,6 @@
 <!-- Car front trim; glass, tires and lamps remain untinted. Bottom-centre ground anchor; prepared and unbound. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="46" viewBox="0 0 30 46" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+<g transform="translate(0 4)">
   <path d="M6 12 L24 12 L24 18 L6 18 Z" fill="#2f3742" />  <path d="M8 19 L22 19 L23 28 L7 28 Z" fill="#556779" />  <path d="M7 29 L23 29 L25 34 L5 34 Z" fill="#2f3742" />  <path d="M1 15 L4 15 L4 22 L1 22 Z M26 15 L29 15 L29 22 L26 22 Z M1 31 L4 31 L4 39 L1 39 Z M26 31 L29 31 L29 39 L26 39 Z" fill="#26232a" />  <path d="M5 35 L10 35 L10 38 L5 38 Z M20 35 L25 35 L25 38 L20 38 Z" fill="#f0d99a" />  <path d="M12 37 L18 37" fill="none" stroke="#59616c"/>
+</g>
 </svg>
