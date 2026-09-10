@@ -102,7 +102,7 @@ static func icon_for(look: EventDef.Look) -> Texture2D:
 		EventDef.Look.CHATTING_MOTHER: return CHATTING_MOTHER_WALKING
 		EventDef.Look.POLICE_CAR: return POLICE_CAR
 		EventDef.Look.POSTER_CREW: return POSTER_CREW
-		EventDef.Look.CHECKPOINT: return CHECKPOINT_BLOCK
+		EventDef.Look.ROADBLOCK: return CHECKPOINT_BLOCK
 		EventDef.Look.UNMARKED_VAN: return UNMARKED_VAN
 		EventDef.Look.ROBBER: return ROBBER_LUNGING
 		EventDef.Look.RIOT_VAN: return RIOT_VAN
@@ -142,7 +142,7 @@ static func icon_for(look: EventDef.Look) -> Texture2D:
 static func has_a_spread(def: EventDef) -> bool:
 	match def.look:
 		EventDef.Look.ROADWORKS, EventDef.Look.BURNT_SHELL, EventDef.Look.STALL, \
-				EventDef.Look.CHECKPOINT, EventDef.Look.BARRICADE, EventDef.Look.CAFE, \
+				EventDef.Look.ROADBLOCK, EventDef.Look.BARRICADE, EventDef.Look.CAFE, \
 				EventDef.Look.FALLEN_TREE, EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN, \
 				EventDef.Look.SCAFFOLDING, EventDef.Look.COLLAPSED_FRONTAGE:
 			return true
@@ -1453,7 +1453,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			_draw_vehicle(POLICE_CAR, POLICE_CAR_END, 19.0, canvas)
 		EventDef.Look.POSTER_CREW:
 			_draw_simple(POSTER_CREW, 9.0, canvas)
-		EventDef.Look.CHECKPOINT:
+		EventDef.Look.ROADBLOCK:
 			_draw_spread(CHECKPOINT_BLOCK, null, canvas)
 		EventDef.Look.UNMARKED_VAN:
 			_draw_abduction(canvas)

@@ -395,7 +395,7 @@ func _test_no_single_street_closure_isolates_the_parks(t) -> void:
 				% [_seed(i), worst])
 
 ## Each stretch of corridor running alongside one block, in both orientations — the unit a
-## barricade or a checkpoint would close.
+## barricade or a roadblock would close.
 func _street_segments(map: CityMap) -> Array[Rect2i]:
 	var segments: Array[Rect2i] = []
 	var period := CityMap.period()

@@ -1079,11 +1079,19 @@ static func _curfew_announce() -> EventDef:
 
 ## Closes a street and is loud about it. The first event that takes a route away rather
 ## than making it expensive.
-static func _checkpoint() -> EventDef:
+##
+## **Named `roadblock`, not `checkpoint`.** M62's region door took the word — a hut, a gate and
+## guards on the sidewalks you can pass at a price — and this row means the opposite: a street you
+## cannot pass at all. Two rows drawing armed men across a street and meaning opposite things about
+## whether you can get through cannot share a name, and one picture per row fails at the name
+## exactly the way it fails at a shared silhouette. Its numbers, its intent and its picture are
+## unchanged — `assets/events/checkpoint_block.svg` keeps its filename, since the milestone that
+## renamed the row left the art alone.
+static func _roadblock() -> EventDef:
 	var def := EventDef.new()
-	def.id = "checkpoint"
-	def.display_name = "Checkpoint"
-	def.look = EventDef.Look.CHECKPOINT
+	def.id = "roadblock"
+	def.display_name = "Roadblock"
+	def.look = EventDef.Look.ROADBLOCK
 	def.first_day = 7
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]

@@ -117,7 +117,7 @@ static func _build() -> Array[Step]:
 				0.0, true),
 		# D · walk through the checkpoint. Not round it — through.
 		_mark(5, "Another mark", 8, "Don't go around it this time. Go through."),
-		_perform(6, "The checkpoint", 9, "checkpoint",
+		_perform(6, "The checkpoint", 9, "roadblock",
 				[GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]),
 		# B · beat the poster crew to the wall. Keeps the old step 4's deadline fraction —
 		# a window that closes rather than a clock she can watch.

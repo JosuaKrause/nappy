@@ -969,7 +969,7 @@ different regions; one whose two mouths agree is left untouched, exactly as it a
 
 **The wall stands at a crossing's mouth, one tile deep, never a segment's midpoint.** A boundary
 segment's wall stands at one of its two ends (`CityMap.boundary_wall_at_a`, decided at generation);
-a crossing alley's wall stands at both of its mouths. One tile deep is deliberate: the checkpoint
+a crossing alley's wall stands at both of its mouths. One tile deep is deliberate: the roadblock
 row's own width reaches roughly two tiles along a street each way, wide enough to cover a nearby
 alley's mouth outright from a segment's midpoint, and the mouth is where a barrier already stands for
 every other closure in the game. The whole of a boundary segment's ground therefore belongs to the
@@ -979,7 +979,7 @@ becoming crossings at all.
 
 **The wall is the day's, not `absent_segments`.** From `Tuning.REGION_WALL_FIRST_DAY` every morning,
 a crossing — a boundary segment or a crossing alley — the day's `RouteTree` uses is a **door**;
-every other crossing is **wall**, placed as hard seals of the checkpoint row. Before that day nothing
+every other crossing is **wall**, placed as hard seals of the roadblock row. Before that day nothing
 is drawn at all — the partition exists from generation, but the milestone's own words are
 "checkpoints in the later acts."
 

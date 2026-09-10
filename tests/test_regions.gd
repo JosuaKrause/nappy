@@ -415,7 +415,7 @@ func _test_crossing_alleys_are_consistent(t) -> void:
 			% [crossing_alleys, total_alleys])
 
 ## The wall's own mouth bodies never reach an alley's mouth tiles — the defect a midpoint band had
-## (a checkpoint's 60px reaches roughly two tiles along the street, wide enough to cover an alley
+## (a roadblock's 60px reaches roughly two tiles along the street, wide enough to cover an alley
 ## mouth at offset 4 outright). Checked against **every** alley, not only crossings, since the
 ## concern is a segment wall body bleeding sideways into unrelated ground.
 func _test_wall_bodies_never_cover_an_alley_mouth(t) -> void:

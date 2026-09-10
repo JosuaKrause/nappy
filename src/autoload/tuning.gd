@@ -630,7 +630,7 @@ const REGION_COUNT := 4
 
 ## The day the region wall starts standing. Before it the regions exist — the partition is a fact
 ## about the city from generation on — but nothing is drawn: `RegionPlanner.plan_day` returns no
-## walls and no doors. Set to the existing `checkpoint` row's own `first_day`, since the player's
+## walls and no doors. Set to the existing `roadblock` row's own `first_day`, since the player's
 ## words are "checkpoints in the later acts" and this is the day the milestone that introduced them
 ## already uses.
 const REGION_WALL_FIRST_DAY := 7

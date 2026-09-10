@@ -50,7 +50,7 @@ enum Look {
 	# ---- acts II-IV ----
 	POLICE_CAR,   ## Low and pale where everything else in act II is a tall dark box.
 	POSTER_CREW,  ## The poster is the event; the man holding it is scenery.
-	CHECKPOINT,   ## Poured concrete and a hazard stripe. A street being *held*.
+	ROADBLOCK,    ## Poured concrete and a hazard stripe. A street being *held*.
 	UNMARKED_VAN, ## No windows, no livery, a door standing open. The one with a hole in it.
 	ROBBER,       ## Two postures — waiting in the hood, and coming.
 	RIOT_VAN,     ## The same dark box as the unmarked van, with mesh over every window.
