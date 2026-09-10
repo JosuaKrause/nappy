@@ -274,11 +274,12 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 ## The queue, as prioritised on 2026-09-09
 
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56's
-remaining hunting row, the roadblock, is next, on its own branch, and it is a drawing. M104, the
-debug view with fields, shadows and bounding boxes as toggleable layers, comes next because it is
-how M61 is checked; M61, one shape per object, follows with its field half — the shape, the shadow
-and the collision body are built and the field is still a point falloff; M65, the protester who points, is revisited against the walled city rather than
-built as written. Behind those, unordered: M96 (the teaching day and
+remaining hunting row, the roadblock, is next, on its own branch, and it is a drawing. M61, one
+shape per object, follows with its field half — the shape, the shadow and the collision body are
+built and the field is still a point falloff — and it is checked by eye with the debug view (`1`
+to `4` in a debug build, `--layers 1,3` for a rig; `docs/TELEMETRY.md`, "The debug view"). M110,
+the crowd goes round a seal, sits behind it; M65, the protester who points, is revisited against
+the walled city rather than built as written. Behind those, unordered: M96 (the teaching day and
 the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's
 density after the sealing) and M100 (the small work, the polish and the open design questions,
 consolidated), with M105 (the city degrades), M106 (roofs, fronts and street trees) and M107 (the
@@ -299,7 +300,8 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   48px-thick capsule rather than the disc it used to be, so she can stand closer to it along the
   street than before. The sealing and pavement guarantees are asserted over the capsule in
   `tests/test_shapes.gd`; whether a thinner body reads as *right* or as *a wall she can lean
-  through* is a played question, and M104, the debug view, is the instrument to answer it with.
+  through* is a played question, and the debug view's bounding-box layer (`3` in a debug build)
+  is the instrument to answer it with.
 - **The city is walled off the path and nobody has walked it.** About 369 seal bodies a day stand on
   the 187 streets the day's tree does not use, and a day now plans four to five hundred events where
   it used to plan a hundred and thirty. Everything about it is measured and none of it is felt.
