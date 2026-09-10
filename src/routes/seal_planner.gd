@@ -35,7 +35,7 @@ extends RefCounted
 ## pictures". `homeless_yeller` is excluded because it carries no `obstructs_radius`, so it
 ## obstructs nothing and a pavement with only that on it is not sealed, soft or otherwise.
 ##
-## **A sealed street's def is never the catalogue's own row.** `_sealed_variant` duplicates it and
+## **A sealed street's def is never the catalogue's own row.** `sealed_variant` duplicates it and
 ## strips `scar_id`: the catalogue's `barricade` leaves a permanent scar and moves a block's arc
 ## (`EventManager._mark_the_block`) because *that* barricade is the aftermath of something that
 ## happened. A seal is a fact about *today's* tree — tomorrow's may run straight down this same
@@ -230,14 +230,14 @@ static func _place(map: CityMap, segment: StreetNetwork.Segment,
 ## is a function of the row's own `obstructs_radius` rather than a fixed number.
 static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
 		def_id: String) -> Array[EventScheduler.Planned]:
-	var def := _sealed_variant(EventCatalogue.by_id(def_id), true)
+	var def := sealed_variant(EventCatalogue.by_id(def_id), true)
 	var planned: Array[EventScheduler.Planned] = []
 	for at in _hard_positions(map, segment, def):
 		planned.append(EventScheduler.Planned.new(def, at))
 	return planned
 
 ## The public entry point to a **mouth** placement, for a caller outside the candidate list above.
-## `RegionPlanner` uses this to build the region wall's own bodies from the `checkpoint` row, which
+## `RegionPlanner` uses this to build the region wall's own bodies from the `roadblock` row, which
 ## is not one of this file's eight seal pictures — the wall is a fact about where a region's
 ## perimeter runs, not a candidate this pass ever rolls for itself.
 ##
@@ -248,15 +248,16 @@ static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
 ## radius` is overridden to `Tuning.TILE_SIZE` (32px) for the same reason — the catalogue row's own
 ## 60px reaches roughly two tiles along the street each way, which reaches clean over a through-
 ## alley's mouth at the next street along if the wall's body sits at the row's own width. The copy
-## count across the street's `STREET_WIDTH` is still derived from the radius (`_hard_positions_in`)
-## rather than chosen by hand; at 32px it comes out at three.
+## count across the street's `STREET_WIDTH` is still derived from the radius (`positions_across`)
+## rather than chosen by hand; at 32px it comes out at three — the same three positions the
+## checkpoint's own door structure stands its hut/gate/hut on, see `RegionPlanner`.
 static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: String,
 		at_a: bool) -> Array[EventScheduler.Planned]:
-	var def := _sealed_variant(EventCatalogue.by_id(def_id), true)
+	var def := sealed_variant(EventCatalogue.by_id(def_id), true)
 	def.obstructs_radius = Tuning.TILE_SIZE
 	var planned: Array[EventScheduler.Planned] = []
 	var world := map.tile_rect_to_world(segment.mouth_rect(at_a))
-	for at in _hard_positions_in(world, segment.horizontal, def):
+	for at in positions_across(world, segment.horizontal, def.obstructs_radius):
 		planned.append(EventScheduler.Planned.new(def, at))
 	return planned
 
@@ -269,8 +270,8 @@ static func _place_soft(map: CityMap, segment: StreetNetwork.Segment,
 	var tiles := _cross_section_tiles(segment)
 	var side_a := tiles[Tuning.SIDEWALK_WIDTH - 1]
 	var side_b := tiles[Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH]
-	var def_a := _sealed_variant(EventCatalogue.by_id(def_ids[0]), false)
-	var def_b := _sealed_variant(EventCatalogue.by_id(def_ids[1]), false)
+	var def_a := sealed_variant(EventCatalogue.by_id(def_ids[0]), false)
+	var def_b := sealed_variant(EventCatalogue.by_id(def_ids[1]), false)
 	var planned: Array[EventScheduler.Planned] = []
 	planned.append(EventScheduler.Planned.new(def_a, map.tile_to_world(side_a)))
 	planned.append(EventScheduler.Planned.new(def_b, map.tile_to_world(side_b)))
@@ -313,7 +314,12 @@ static func _thin_soft_pairs(pairs: Array, rng: RandomNumberGenerator) -> Array[
 ## doc for why the scar and the finish-spawn are stripped unconditionally, on every candidate,
 ## rather than only on the ones known to carry one today — a ninth candidate gets the same
 ## protection without anybody having to remember to ask for it.
-static func _sealed_variant(def: EventDef, suppress_recenter: bool) -> EventDef:
+##
+## **Public rather than the file-private helper it started as**, because `RegionPlanner` needs the
+## same protection for the region door's own hut/gate/post bodies, which are not one of this
+## file's own candidates — see `place_hard_on` and `alley_mouth_wall` for the precedent, and
+## `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies` for the new callers.
+static func sealed_variant(def: EventDef, suppress_recenter: bool) -> EventDef:
 	var variant: EventDef = def.duplicate()
 	variant.scar_id = ""
 	variant.spawns_on_finish = ""
@@ -347,20 +353,25 @@ static func _cross_section_tiles(segment: StreetNetwork.Segment) -> Array[Vector
 ## candidate list" asks for here.
 ##
 ## Positioned in world space directly rather than snapped to a tile, and paired with
-## `_sealed_variant`'s pavement-side override: `EventInstance`'s own auto-centring would otherwise
+## `sealed_variant`'s pavement-side override: `EventInstance`'s own auto-centring would otherwise
 ## collapse two of these onto the same pavement-band midpoint and reopen the gap this exists to
 ## close.
 static func _hard_positions(map: CityMap, segment: StreetNetwork.Segment,
 		def: EventDef) -> Array[Vector2]:
-	return _hard_positions_in(map.tile_rect_to_world(segment.tile_rect()), segment.horizontal, def)
+	return positions_across(map.tile_rect_to_world(segment.tile_rect()), segment.horizontal,
+			def.obstructs_radius)
 
 ## The same spacing arithmetic as `_hard_positions`, generalised to any world rect rather than a
-## segment's own whole `tile_rect()` — `place_hard_on` hands it a one-tile-deep mouth rect instead,
-## which is otherwise identical geometry: cover `world`'s cross-axis edge to edge with the fewest
-## bodies whose circles still touch, centred on `world`'s own along-axis midpoint.
-static func _hard_positions_in(world: Rect2, horizontal: bool, def: EventDef) -> Array[Vector2]:
+## segment's own whole `tile_rect()`, and to a radius alone rather than one def's own
+## `obstructs_radius` — `place_hard_on` hands it a one-tile-deep mouth rect, and `RegionPlanner`'s
+## door structure hands it the same rect again to place three *different* defs (two huts and a
+## gate) at the wall's own three-body spacing, which a def-typed signature could not do without a
+## dummy def to carry the radius. Otherwise identical geometry either way: cover `world`'s
+## cross-axis edge to edge with the fewest bodies whose circles still touch, centred on `world`'s
+## own along-axis midpoint.
+static func positions_across(world: Rect2, horizontal: bool, radius_in: float) -> Array[Vector2]:
 	var width: float = world.size.y if horizontal else world.size.x
-	var radius := maxf(1.0, def.obstructs_radius)
+	var radius := maxf(1.0, radius_in)
 	var copies := 1 if 2.0 * radius >= width else ceili(width / (2.0 * radius))
 	var spacing := width / float(copies)
 	var positions: Array[Vector2] = []
@@ -391,7 +402,7 @@ static func _seal_alley_mouths(map: CityMap, tree: RouteTree,
 	var def_id := _best_alley_mouth_def(day)
 	if def_id == "":
 		return planned
-	var mouth_def := _sealed_variant(EventCatalogue.by_id(def_id), true)
+	var mouth_def := sealed_variant(EventCatalogue.by_id(def_id), true)
 	for rect in map.alley_rects:
 		# A through-alley can be built over by a later generation pass (`CityGenerator.
 		# _make_the_pair_solid`), which does not retract it from `alley_rects` — so the ground is
@@ -440,11 +451,11 @@ static func _alley_mouth_plan(map: CityMap, rect: Rect2i, vertical: bool, at_sta
 	return EventScheduler.Planned.new(def, map.tile_rect_to_world(mouth).get_center())
 
 ## The public entry point to the same alley-mouth placement, for `RegionPlanner`'s own crossing-
-## alley wall — one body per mouth, from the checkpoint row rather than from this file's own
+## alley wall — one body per mouth, from the roadblock row rather than from this file's own
 ## candidate list, the same relationship `place_hard_on` has to `_place_hard`.
 static func alley_mouth_wall(map: CityMap, rect: Rect2i, vertical: bool, at_start: bool,
 		def_id: String) -> EventScheduler.Planned:
-	var def := _sealed_variant(EventCatalogue.by_id(def_id), true)
+	var def := sealed_variant(EventCatalogue.by_id(def_id), true)
 	return _alley_mouth_plan(map, rect, vertical, at_start, def)
 
 ## The soft candidate whose single row best fills a two-tile alley mouth today — the widest

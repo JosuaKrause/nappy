@@ -20,6 +20,11 @@ class Planned extends RefCounted:
 	## street the yard is on.
 	var facing := Vector2.RIGHT
 
+	## The shared boom state a `checkpoint_gate` plan's instance draws raised or lowered from —
+	## `RegionPlanner.GateState`, built once per street door and carried here by
+	## `RegionPlanner._add_door_bodies`. `null` for every plan but a gate's own.
+	var gate_state: RegionPlanner.GateState = null
+
 	func _init(definition: EventDef, at: Vector2,
 			route := PackedVector2Array()) -> void:
 		def = definition

@@ -70,6 +70,24 @@ const CAR_ACCIDENT_VERTICAL := preload("res://assets/events/car_accident_vertica
 const CAR_ACCIDENT_VERTICAL_SHADOW := preload(
 		"res://assets/events/car_accident_vertical_shadow.svg")
 const BURST_MAIN_VERTICAL := preload("res://assets/events/burst_water_main_vertical.svg")
+## The region door's own kit — see `RegionPlanner` and `docs/CITY.md`, "Regions and the wall".
+const HUT_NORTH := preload("res://assets/checkpoints/hut_north.svg")
+const HUT_SOUTH := preload("res://assets/checkpoints/hut_south.svg")
+const HUT_EAST := preload("res://assets/checkpoints/hut_east.svg")
+const HUT_WEST := preload("res://assets/checkpoints/hut_west.svg")
+const GUARD_STANDING := preload("res://assets/checkpoints/guard_standing.svg")
+const BOOM_GATE_NS_LOWERED := preload("res://assets/checkpoints/boom_gate_ns_lowered.svg")
+const BOOM_GATE_NS_RAISED := preload("res://assets/checkpoints/boom_gate_ns_raised.svg")
+const BOOM_GATE_EW_LOWERED := preload("res://assets/checkpoints/boom_gate_ew_lowered.svg")
+const BOOM_GATE_EW_RAISED := preload("res://assets/checkpoints/boom_gate_ew_raised.svg")
+## Each asset's own documented ground anchor, read out of the SVG's own comment rather than
+## assumed — none of the four is `Sprites.draw_standing`'s bottom-centre: the hut's doorway sits a
+## few pixels short of the canvas's own bottom edge, and a boom gate's anchor is off to one side,
+## at the post nearest the camera. See `_draw_at_anchor`.
+const _HUT_ANCHOR := Vector2(28.0, 52.0)
+const _GUARD_ANCHOR := Vector2(11.0, 44.0)
+const _BOOM_NS_ANCHOR := Vector2(84.0, 59.0)
+const _BOOM_EW_ANCHOR := Vector2(21.0, 88.0)
 
 ## The one silhouette that stands for a look, at any size.
 ##
@@ -118,12 +136,15 @@ static func icon_for(look: EventDef.Look) -> Texture2D:
 		EventDef.Look.MOVING_VAN: return MOVING_VAN
 		EventDef.Look.BURNT_OUT_CAR: return BURNT_OUT_CAR
 		EventDef.Look.COLLAPSED_FRONTAGE: return COLLAPSED_FRONTAGE
+		EventDef.Look.CHECKPOINT_HUT: return HUT_SOUTH
+		EventDef.Look.CHECKPOINT_GATE: return BOOM_GATE_NS_LOWERED
+		EventDef.Look.CHECKPOINT_POST: return GUARD_STANDING
 		_: return null
 
 ## Whether a def's instance draws itself as a **spread** — segments or a whole scene fitted
 ## across `def.obstructs_radius`, laid along whichever axis `_spread_is_vertical` picks for the
 ## street it stands on. That is `_draw_spread`, `_draw_cafe` or `_draw_wide_scene`, nothing else in
-## `_draw_body`'s dispatch: `ROADWORKS`, `BURNT_SHELL`, `STALL`, `CHECKPOINT`, `BARRICADE`,
+## `_draw_body`'s dispatch: `ROADWORKS`, `BURNT_SHELL`, `STALL`, `ROADBLOCK`, `BARRICADE`,
 ## `SCAFFOLDING` and `COLLAPSED_FRONTAGE` go to the first, `CAFE` to the second. The three seal
 ## pictures wide enough to span the whole street (`FALLEN_TREE`, `CAR_ACCIDENT`, `BURST_MAIN`) use
 ## `_draw_wide_scene`, which fits one scene to the obstruction and anchors vertical scenes at the
@@ -233,6 +254,12 @@ var player_running := false
 ## excitement stays a pure query. `true` with nobody to ask, which is the harmless default a
 ## data-level test gets.
 var baby_awake := true
+
+## The shared boom state a `checkpoint_gate` draws raised or lowered from — `RegionPlanner.
+## GateState`, set by `EventManager._stream_in` from `Planned.gate_state`. `null` for every look
+## but `CHECKPOINT_GATE`, and read as lowered while it is: a gate that has not been wired to
+## `Crowd` yet (or a data-level rig with no crowd at all) draws exactly the safe default.
+var gate_state: RegionPlanner.GateState = null
 
 ## Facing, for art with a front and a back. Only a mobile event ever changes it.
 var _heading := Vector2.RIGHT
@@ -1487,6 +1514,13 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.BURNT_OUT_CAR:
 			_draw_stationary_vehicle(
 					EventDef.Look.BURNT_OUT_CAR, def.obstructs_radius * 2.0, 14.0, canvas)
+		EventDef.Look.CHECKPOINT_HUT:
+			_draw_checkpoint_hut(canvas)
+		EventDef.Look.CHECKPOINT_GATE:
+			_draw_checkpoint_gate(canvas)
+		EventDef.Look.CHECKPOINT_POST:
+			_draw_shadow(canvas, Vector2.ZERO, 8.0)
+			_draw_at_anchor(canvas, GUARD_STANDING, _GUARD_ANCHOR)
 		EventDef.Look.NONE:
 			pass
 
@@ -1818,3 +1852,68 @@ func _draw_chatting_mother(canvas: CanvasItem = self) -> void:
 ## stationary event never flips.
 func _heading_is_west() -> bool:
 	return _heading.x < 0.0
+
+# ------------------------------------------------------------- the region door ---
+# The checkpoint kit: `docs/GRAPHICS.md` binds each row to the file it draws. See `RegionPlanner`
+# for where the bodies stand and `EventManager` for the detention and the teleport.
+
+## Draws `texture` so its own documented ground anchor lands at `at` (local space, default the
+## body's own origin) — `Sprites.draw_standing`'s bottom-centre assumption is wrong for this kit:
+## a boom gate's anchor sits at one post, not the middle of the canvas, and the hut's doorway is a
+## few pixels short of the canvas's own bottom edge. No mirroring, unlike `Sprites.draw_standing` —
+## nothing in the kit that draws this way ever needs to flip.
+func _draw_at_anchor(canvas: CanvasItem, texture: Texture2D, anchor: Vector2,
+		at: Vector2 = Vector2.ZERO) -> void:
+	canvas.draw_texture_rect(texture, Rect2(at - anchor, texture.get_size()), false)
+
+## The hut's own doorway direction, read off `CityMap.pavement_inward()` at the tile it actually
+## stands on rather than stored: the placement never turns, so there is nothing to cache, and this
+## is the same geometry every other row that cares which way a pavement faces already asks —
+## `EventDef.Pavement.AGAINST_THE_BUILDING`'s own facing is `-pavement_inward`, and the doorway
+## faces the carriageway for the same reason a lorry backing into a yard faces out of the wall
+## behind it. `Vector2i.DOWN` (south) with no map, the harmless default a data-level rig gets.
+func _hut_doorway() -> Vector2i:
+	if _map:
+		var tile := _map.world_to_tile(global_position)
+		var inward := _map.pavement_inward(tile)
+		if inward != Vector2i.ZERO:
+			return -inward
+	return Vector2i.DOWN
+
+func _hut_texture(doorway: Vector2i) -> Texture2D:
+	if doorway == Vector2i.UP:
+		return HUT_NORTH
+	if doorway == Vector2i.LEFT:
+		return HUT_WEST
+	if doorway == Vector2i.RIGHT:
+		return HUT_EAST
+	return HUT_SOUTH
+
+## The hut, doorway facing the carriageway, with a guard posted beside it on the pavement rather
+## than in the doorway itself — offset along whichever axis the doorway does not face, so the two
+## never overlap whichever of the four the doorway turns out to be.
+func _draw_checkpoint_hut(canvas: CanvasItem = self) -> void:
+	var doorway := _hut_doorway()
+	_draw_shadow(canvas, Vector2.ZERO, 20.0)
+	_draw_at_anchor(canvas, _hut_texture(doorway), _HUT_ANCHOR)
+	var beside := Vector2(0.0, 22.0) if doorway.x == 0 else Vector2(22.0, 0.0)
+	_draw_shadow(canvas, beside, 8.0)
+	_draw_at_anchor(canvas, GUARD_STANDING, _GUARD_ANCHOR, beside)
+
+## The boom, raised or lowered from `gate_state` (`null` reads as lowered, the safe default before
+## `Crowd` has ever touched it), over whichever axis of road `facing_now()` says this door's street
+## runs — `_heading` is the street's own along-axis here, not a direction this stationary body ever
+## turns to face, see `facing_now()`'s own doc.
+func _draw_checkpoint_gate(canvas: CanvasItem = self) -> void:
+	var raised: bool = gate_state != null and gate_state.raised
+	var runs_north_south := absf(_heading.y) > absf(_heading.x)
+	var texture: Texture2D
+	var anchor: Vector2
+	if runs_north_south:
+		texture = BOOM_GATE_NS_RAISED if raised else BOOM_GATE_NS_LOWERED
+		anchor = _BOOM_NS_ANCHOR
+	else:
+		texture = BOOM_GATE_EW_RAISED if raised else BOOM_GATE_EW_LOWERED
+		anchor = _BOOM_EW_ANCHOR
+	_draw_shadow(canvas, Vector2.ZERO, 20.0)
+	_draw_at_anchor(canvas, texture, anchor)

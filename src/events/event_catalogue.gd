@@ -114,7 +114,10 @@ static func _build() -> Array[EventDef]:
 		_poster_crew(),
 		_loudspeaker(),
 		_curfew_announce(),
-		_checkpoint(),
+		_roadblock(),
+		_checkpoint_hut(),
+		_checkpoint_gate(),
+		_checkpoint_post(),
 
 		# Act III - vans.
 		_abduction(),
@@ -1506,4 +1509,83 @@ static func _collapsed_frontage() -> EventDef:
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
 	def.obstructs_radius = 96.0
+	return def
+
+# ------------------------------------------------------ the region door's own structure ---
+# Three bodies `RegionPlanner` stands at every open crossing of today's region wall, from
+# `Tuning.REGION_WALL_FIRST_DAY` — a hut on each pavement and a gate over the road at a street
+# door, a single guard at each mouth of an alley door. All three are `SCRIPTED`, `scripted_day 0`,
+# like the seal pictures above: the ordinary catalogue roll never schedules one, and
+# `RegionPlanner.plan_day` places each fresh every morning at the door geometry decides, not at a
+# tile the scheduler chose. See docs/CITY.md, "Regions and the wall", and docs/EVENTS.md,
+# "Checkpoints".
+
+## The hut at a region door. Detains rather than blocking outright — M62's own words: *"the player
+## walks to the hut gets detained inside and then spawns on the other side."* `detain_radius`
+## (48px) sits inside `inner_radius` (52px), the way every detainer's does, and the ambient field
+## is the milestone's own "a bit of excitement": a token `intensity` over a tight band, because the
+## real price is the flat `Tuning.CHAT_EXCITEMENT` the detention charges through the ordinary chat
+## mechanism, and standing still on its own pays nothing back (`EXCITEMENT_DECAY_IDLE`). `redetains`
+## is what tells `EventManager` this instance is armed again once she is outside `detain_radius`,
+## in either direction, rather than spent after one conversation like `chatting_mother`.
+static func _checkpoint_hut() -> EventDef:
+	var def := EventDef.new()
+	def.id = "checkpoint_hut"
+	def.display_name = "Checkpoint hut"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.CHECKPOINT_HUT
+	def.act_tag = 2
+	def.intensity = 3.0
+	def.inner_radius = 52.0
+	def.outer_radius = 66.0
+	def.telegraph_time = 1.0
+	def.obstructs_radius = 32.0
+	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
+	def.detain_radius = 48.0
+	def.redetains = true
+	return def
+
+## The boom over the roadway between a door's two huts. No detention and no field of its own — the
+## toll is paid at the hut, never at the gate, so a car passing under it costs her nothing whether
+## or not she is anywhere near it. Drawn raised or lowered from the shared `RegionPlanner.
+## GateState` `Crowd` keeps current for the day's cars; see `docs/TODO.md`, M62, "cars need to slow
+## down to a full stop." Placed with `Planned.facing` set along the street's own axis, which is
+## both what tells the drawing a north-south road from an east-west one and what
+## `EventManager`'s detention teleport reads back from a hut or a post at the same crossing.
+static func _checkpoint_gate() -> EventDef:
+	var def := EventDef.new()
+	def.id = "checkpoint_gate"
+	def.display_name = "Checkpoint gate"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.CHECKPOINT_GATE
+	def.act_tag = 2
+	def.intensity = 0.0
+	def.inner_radius = 40.0
+	def.outer_radius = 120.0
+	def.telegraph_time = 0.9
+	def.obstructs_radius = 32.0
+	return def
+
+## The alley half of a door: a single guard where a through-alley crosses a region boundary,
+## standing in for the hut and gate a full street gets — the alley is one lane wide, so one body
+## covers its whole 64px mouth. Detains exactly like `checkpoint_hut`, same numbers and the same
+## `redetains`, because the toll is the crossing itself, not the width of the street it stands on.
+static func _checkpoint_post() -> EventDef:
+	var def := EventDef.new()
+	def.id = "checkpoint_post"
+	def.display_name = "Checkpoint guard"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.CHECKPOINT_POST
+	def.act_tag = 2
+	def.intensity = 3.0
+	def.inner_radius = 52.0
+	def.outer_radius = 66.0
+	def.telegraph_time = 1.0
+	def.obstructs_radius = 32.0
+	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
+	def.detain_radius = 48.0
+	def.redetains = true
 	return def

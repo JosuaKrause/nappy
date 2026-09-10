@@ -509,7 +509,10 @@ neighbourhood's own rather than a patrol's.
 | `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. |
 | `loudspeaker` | SCRIPTED | 5 | **City-wide**: no falloff, no edge, nowhere in the city it does not reach. The first event the player cannot walk away from. Pitched under the walking decay, so like a back street it does not raise the meter — it stops you clearing it. |
 | `curfew_announce` | SCRIPTED | 6 | City-wide, brief, and fading (`intensity_ramp` 0.2). The mechanical bite is in `Tuning.day_length`, which shortens every day from 6 onward; this is the moment you are told. |
-| `checkpoint` | RECURRING | 7 | Loud, and **physically closes a street** (`obstructs_radius` 60). The first event that takes a route away rather than making it expensive. |
+| `roadblock` | RECURRING | 7 | Loud, and **physically closes a street** (`obstructs_radius` 60). The first event that takes a route away rather than making it expensive. Named `roadblock` rather than `checkpoint` because the region wall's own door structure — a hut, a gate and guards you can pass at a price — took that word; the two rows mean opposite things about whether a street can be crossed. |
+| `checkpoint_hut` | SCRIPTED | 7 | `RegionPlanner`'s own structure, not a catalogue roll: two stand at every open region-boundary street crossing, one on each pavement, doorway facing the carriageway. Detains — `detain_radius` 48px inside `inner_radius` 52px — for `Tuning.CHECKPOINT_DETAIN_SECONDS` (6s), and `redetains`, so the same hut tolls her again on a later approach from either side. A token `intensity` (3.0) over a tight 52/66px band is the milestone's own "a bit of excitement" on top of the flat `Tuning.CHAT_EXCITEMENT` the detention charges — see "Checkpoints". |
+| `checkpoint_gate` | SCRIPTED | 7 | The boom over the road between a door's two huts. No detention, no field — it only ever stops a car, never her. Drawn raised or lowered from the shared `RegionPlanner.GateState` `Crowd` keeps current. |
+| `checkpoint_post` | SCRIPTED | 7 | The alley half of a door: one guard at each mouth of a through-alley that crosses a region boundary. Detains exactly like `checkpoint_hut`, same numbers and the same `redetains`. |
 
 ### Act III — Disappearances (days 8–11)
 

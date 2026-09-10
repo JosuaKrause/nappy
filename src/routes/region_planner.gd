@@ -57,32 +57,59 @@ extends RefCounted
 ## cut it, and the checkpoint that results is the one place the milestone's gate over the roadway
 ## means anything.
 
-## The catalogue row the wall's bodies are hard seals of. Currently the existing `checkpoint`
-## row — the barrier that closes a street outright, not the milestone's new structure, which has
-## taken the name and has not landed yet. **Whoever renames that row updates this string in the
-## same commit**, or the wall silently starts sealing nothing.
-const _WALL_DEF_ID := "checkpoint"
+## The catalogue row the wall's bodies are hard seals of: `roadblock`, the barrier that closes a
+## street outright — renamed from `checkpoint` once the milestone's own door structure took that
+## word for the passable one. **Whoever renames the row again updates this string in the same
+## commit**, or the wall silently starts sealing nothing.
+const _WALL_DEF_ID := "roadblock"
+
+## The shared state of one checkpoint gate: its own ground point and whether the boom is up right
+## now. Built once per street door in `_add_door_bodies`, held by the `checkpoint_gate` instance
+## through `EventScheduler.Planned.gate_state` (which is what it draws raised or lowered from) and
+## by `Crowd` through `RegionPlan.gates` (which is what actually raises and lowers it — see
+## `Crowd._stop_for_gates()`). A `RefCounted` rather than two separate copies, so the two systems
+## can never disagree about whether a boom is up.
+class GateState extends RefCounted:
+	## The gate's own ground point, in world space — the same position its `checkpoint_gate`
+	## instance stands at, and what `Crowd` measures a car's distance from.
+	var position := Vector2.ZERO
+	## Whether the boom is up. `Crowd._stop_for_gates()` is the only writer; the instance only
+	## reads it, once a frame, to choose which of the four boom textures to draw.
+	var raised := false
+	## Seconds the car at the front of this gate's queue has been held at the stop line —
+	## `Crowd`'s own clock for `Tuning.GATE_STOP_SECONDS`, reset the moment nobody is held here.
+	var stopped_for := 0.0
 
 ## One region growth's result: which crossings are wall today and which are doors, plus the
-## bodies the wall stands as.
+## bodies the wall and the doors stand as.
 class RegionPlan extends RefCounted:
 	## Boundary segments that are wall today — the whole day if before `Tuning.REGION_WALL_
 	## FIRST_DAY`, since nothing is drawn before then.
 	var walls: Array[StreetNetwork.Segment] = []
-	## Boundary segments the day's tree crosses — an open segment, structure-free in this half of
-	## the build. The second agent places the hut, the gate and the guards here.
+	## Boundary segments the day's tree crosses — a hut on each pavement and a gate over the road,
+	## from `Tuning.REGION_WALL_FIRST_DAY`. See `door_bodies`.
 	var doors: Array[StreetNetwork.Segment] = []
 	## Through-alley rects that are **crossings** (`ground_region_of` differs at their two mouths)
 	## and wall today — both mouths walled, the alley equivalent of `walls`.
 	var alley_walls: Array[Rect2i] = []
-	## Crossing alley rects the day's tree uses — the alley equivalent of `doors`.
+	## Crossing alley rects the day's tree uses — a single guard at each of its two mouths, from
+	## `Tuning.REGION_WALL_FIRST_DAY`. See `door_bodies`.
 	var alley_doors: Array[Rect2i] = []
-	## The wall's own bodies, as `EventScheduler.Planned` — hard seals of the checkpoint row, one
+	## The wall's own bodies, as `EventScheduler.Planned` — hard seals of the roadblock row, one
 	## tile deep at a boundary segment's mouth or an alley's two mouths. Kept as its own list,
 	## appended to `EventManager._plans` by the caller, rather than merged anywhere: a caller that
 	## only wants to know where the wall runs never has to filter it back out of the day's whole
 	## plan.
 	var wall_bodies: Array[EventScheduler.Planned] = []
+	## The door structure's own bodies: two `checkpoint_hut`s and a `checkpoint_gate` at every
+	## street door's mouth, one `checkpoint_post` at each mouth of every alley door. Kept apart
+	## from `wall_bodies` for the same reason that list is kept apart from everything else — a
+	## caller that wants the wall alone never has to filter the doors back out, and vice versa.
+	var door_bodies: Array[EventScheduler.Planned] = []
+	## One `GateState` per street door, in the same order as `doors` — `Crowd` reads this to know
+	## where today's gates are and to raise and lower them; the `checkpoint_gate` `Planned` at the
+	## same crossing carries the identical object. Empty for an alley door, which has no gate.
+	var gates: Array[GateState] = []
 
 # ------------------------------------------------------------------- generation ---
 
@@ -614,7 +641,60 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 		var vertical: bool = info[2]
 		plan.wall_bodies.append(SealPlanner.alley_mouth_wall(map, rect, vertical, true, _WALL_DEF_ID))
 		plan.wall_bodies.append(SealPlanner.alley_mouth_wall(map, rect, vertical, false, _WALL_DEF_ID))
+	for segment in plan.doors:
+		_add_door_bodies(map, segment, plan)
+	for rect in plan.alley_doors:
+		_add_alley_door_bodies(map, rect, plan)
 	return plan
+
+## The along-street axis a door's own bodies share: `RIGHT` for a segment/alley that runs
+## east-west (`horizontal`), `DOWN` for one that runs north-south. Carried on every door body's own
+## `Planned.facing`, which is what lets a stationary instance answer "which side of the crossing is
+## she on" without a second lookup — see `EventManager`'s detention teleport.
+static func _along_axis(horizontal: bool) -> Vector2:
+	return Vector2.RIGHT if horizontal else Vector2.DOWN
+
+## The three bodies a street door stands at its mouth: a `checkpoint_hut` on each pavement lane and
+## a `checkpoint_gate` on the road between them — the same three positions `place_hard_on` would
+## give the wall, `SealPlanner.positions_across` at `Tuning.TILE_SIZE`, which comes out at three
+## across the street's own `STREET_WIDTH` (sidewalk, road, sidewalk, each exactly two tiles).
+##
+## `sealed_variant(..., true)` is what keeps `EventInstance.setup()`'s pavement auto-centring from
+## re-deriving a position these three already sit exactly on — see that function's own doc on why a
+## continuous, non-tile-aligned position disagrees with what the recentring assumes.
+static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan) -> void:
+	var default_at_a := region_of_junction(map, segment.a) < region_of_junction(map, segment.b)
+	var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
+	var world := map.tile_rect_to_world(segment.mouth_rect(at_a))
+	var positions := SealPlanner.positions_across(world, segment.horizontal, Tuning.TILE_SIZE)
+	if positions.is_empty():
+		return
+	var axis := _along_axis(segment.horizontal)
+	var road_index := positions.size() / 2
+	var gate := GateState.new()
+	gate.position = positions[road_index]
+	plan.gates.append(gate)
+	for i in positions.size():
+		var def_id := "checkpoint_gate" if i == road_index else "checkpoint_hut"
+		var def := SealPlanner.sealed_variant(EventCatalogue.by_id(def_id), true)
+		var body := EventScheduler.Planned.new(def, positions[i])
+		body.facing = axis
+		if i == road_index:
+			body.gate_state = gate
+		plan.door_bodies.append(body)
+
+## The two bodies an alley door stands, one `checkpoint_post` at each of its two mouths — the same
+## mouths `_seal_alley_mouths` would wall, read through the same `SealPlanner.alley_mouth_rect` a
+## wall's own crossing-alley bodies use.
+static func _add_alley_door_bodies(map: CityMap, rect: Rect2i, plan: RegionPlan) -> void:
+	var vertical := rect.size.x < rect.size.y
+	var axis := _along_axis(not vertical)
+	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("checkpoint_post"), true)
+	for at_start in [true, false]:
+		var mouth := SealPlanner.alley_mouth_rect(rect, vertical, at_start)
+		var body := EventScheduler.Planned.new(def, map.tile_rect_to_world(mouth).get_center())
+		body.facing = axis
+		plan.door_bodies.append(body)
 
 # --------------------------------------------------------------------------------- dsu ---
 

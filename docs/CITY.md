@@ -991,9 +991,13 @@ nothing here may override what the tree already decided; there is no separate ex
 home region either; a door is exactly a boundary crossing the tree uses and nothing else changes
 that.
 
-**Doors get no structure in this half of the build.** A door is an open crossing — a segment or a
-through-alley — with nothing standing in it; the hut, the gate and the guards are the checkpoint
-structure the detention and teleport half of the milestone places there.
+**A door stands the same three-body geometry a wall would, passable instead of held.** A street
+door gets a `checkpoint_hut` on each pavement lane and a `checkpoint_gate` over the road between
+them, at the wall's own three positions (`SealPlanner.positions_across` at `Tuning.TILE_SIZE`,
+which comes out at three across `STREET_WIDTH`); an alley door gets a single `checkpoint_post` at
+each of its two mouths. `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies` build them
+alongside the wall's own bodies, in `RegionPlan.door_bodies`. The toll is paid at a hut or a post —
+see docs/EVENTS.md, "Checkpoints" — the gate only ever stops a car, never her.
 
 ## Block purposes
 

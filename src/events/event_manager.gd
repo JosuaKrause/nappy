@@ -81,11 +81,17 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 		boundary[rect.position] = true
 	_plans.append_array(
 			SealPlanner.plan_day(_map, day, tree, GameState.day_rng(day, "seals"), boundary))
-	# The wall's own bodies — hard seals of the checkpoint row, one region boundary at a time. Kept
+	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
 	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that
 	# wants to know where the wall stands reads `region_plan.wall_bodies` directly rather than
 	# filtering it back out of the whole day's plan.
 	_plans.append_array(region_plan.wall_bodies)
+	# The door structure — a hut on each pavement and a gate over the road at a street door, a
+	# guard at each mouth of an alley door. Same reasoning as `wall_bodies` just above: kept as
+	# its own list on `region_plan` and appended here rather than merged into `SealPlanner`'s, so
+	# `region_plan.door_bodies` stays the one place that answers "where do today's doors stand"
+	# without filtering.
+	_plans.append_array(region_plan.door_bodies)
 	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"))
 	stream_around(focus)
 
@@ -119,6 +125,9 @@ func _stream_in(plan: EventScheduler.Planned) -> void:
 	# The scar is recorded the first time the event is put in the world and never again: walking
 	# back past a burnt-out shell must not re-report the fire that made it.
 	plan.live = _create(plan.def, plan.position, plan.path, not plan.was_live, plan.facing)
+	# The shared boom state, for a `checkpoint_gate` plan only — `null` on every other plan, which
+	# is a harmless no-op assignment rather than a special case here.
+	plan.live.gate_state = plan.gate_state
 	# **An event that has already run picks up where it left off.** Without this a streamed-out
 	# event is rebuilt from `plan.position`, which is the tile the *day* chose at dawn — so a dog
 	# walker that has covered three hundred pixels teleports back to the top of its street every
