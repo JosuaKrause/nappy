@@ -87,7 +87,8 @@ style transfer.
 - [ ] Review catalogue completeness, native-size quality, alpha, seams, tinting, cues, all eight
       facings and moving-state consistency. Publish SVG/PNG comparisons and purposeful gameplay
       evidence in the PR; document actual bindings and make SVG-first followed by transfer the
-      graphics authoring procedure. Archive superseded outputs with their import metadata.
+      graphics authoring procedure. Archive rejected outputs with their import metadata only when
+      they were suggested for human review; keep internal discarded attempts outside the repo.
 
 ### Gameplay queue
 
@@ -318,8 +319,11 @@ than a rotation; ground tiles are 32×32 in `assets/tiles/` and reach the game t
       colour change from `Palette.CHALK` to `CHALK_DONE`, both code-drawn. If the player's answer to
       that open question is *the mark's colour made unmistakable*, that is a palette pair rather
       than an SVG; if it is a touched-mark picture, it is a ground decal in the crater family
-      (centre-anchored, one tile). Drawn only once the question is answered, and listed so the
-      answer is not waited on twice
+      (centre-anchored, one tile). PLAYTEST-52 authorizes preparing a distinct touched-mark SVG
+      for review now: `assets/props/chalk_mark_touched.svg`, 32×32, centre anchor (16, 16).
+      Preserve the existing mark and add her acknowledgement: "the narrative can be that she
+      adds something to the mark to indicate that she has seen it". Compare it with the current
+      mark; binding stays with M100, small, real, and nobody's
 **The interior, for M102** — the apartment section is a second small map drawn with the ground
 `TileMapLayer` and the same oblique view as the city: floors are 32×32 tiles chosen by type and
 exposed edge, walls stand along a room's north edge in elevation the way a building's front does,
@@ -1054,7 +1058,9 @@ re-pitched:
       design's own rule is no quest log — *the first encounter comes with no hint at all* — so how
       much a touch may say is the player's call: nothing more; the mark's colour made
       unmistakable; the brief shown on a lost day's summary too; or a one-line status change on
-      the pick-up itself
+      the pick-up itself. PLAYTEST-52 requests a distinct touched-mark SVG for review: she adds
+      something to the existing mark to indicate she has seen it. M103, the drawings the queue
+      owes, prepares that acknowledgement; selecting and binding the feedback remains here
 - [ ] **Three cues on one screen needed asking about, and an alley read as a roof.** *(2026-09-09,
       playtest 50: "what is shown here?", and "the robber is stuck inside the roof" of a robber
       standing beside an alley.)* The baby's unsettled cue over the pram, the alert over her and a

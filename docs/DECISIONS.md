@@ -1,5 +1,25 @@
 # Decisions
 
+## SVG completion and selective rejection retention — 2026-09-10
+
+PLAYTEST-52 requests all missing graphics, limited to SVG authoring for this pass. The work
+covers M103, the drawings the queue owes, and the source-art portion of M108, eight-direction
+entity graphics. Runtime integration remains a separate M108 item; M109, convert the SVG
+catalogue to PNG, retains the later transfer work. Prepared environment assets do not implement
+their owning gameplay milestones.
+
+The player says: "don't store every rejected attempt in the repo only the ones you suggest
+for human review". The SVG, illustrated-PNG and rejected-graphics skills now preserve rejected
+art only when it was suggested for human review. Internal drafts stay outside the repository.
+This narrows the previous blanket preservation instruction for future attempts; existing
+historical review records are retained.
+
+The chalk-mark question was asked during authoring. The player requested a distinct touched-mark
+SVG for review, then supplied its meaning: "the narrative can be that she adds something to the
+mark to indicate that she has seen it". The prepared picture preserves the original circle and
+crossing strokes and adds her acknowledgement. M100, small, real, and nobody's, owns the eventual
+feedback binding; this does not introduce a quest marker before the first encounter.
+
 ## Eight-direction style transfer — 2026-09-10
 
 Final integrated verification on 2026-09-10: import/boot passed; focused stroller, visuals,
