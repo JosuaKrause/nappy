@@ -15,6 +15,7 @@ func run(t) -> void:
 	_test_every_heated_copy_agrees_with_its_shape(t)
 	_test_every_seal_candidate_agrees_with_its_shape(t)
 	_test_every_spread_row_still_fills_the_pavement_it_blocked(t)
+	_test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t)
 
 # ------------------------------------------------------------------ the datum ---
 
@@ -159,3 +160,72 @@ func _test_every_spread_row_still_fills_the_pavement_it_blocked(t) -> void:
 				+ ("its capsule (%.0fpx across + her %.0fpx) still does" % [def.shape.across(),
 						Tuning.PLAYER_BODY_RADIUS]))
 	t.check(checked >= 6, "and some spread row actually blocked a pavement to check (%d)" % checked)
+
+# ------------------------------------------------------------- the hard-seal axis ---
+# `SealPlanner._hard_positions` spaces a hard seal's bodies to cover a street's whole width with no
+# gap, treating each body's own reach as the distance it covers *across* the street — `positions_
+# across()`'s own `width` is the street's kerb-to-kerb measurement, not its length. That packing
+# arithmetic is only true of a capsule if the capsule's own spine (the long axis, `reach()`) lies
+# across the street too: a capsule laid the other way round reaches `across()` (24px,
+# `GroundShape.BAND_RADIUS`) toward each kerb rather than `reach()`, and a hard seal stops being
+# hard at exactly the kerbs nothing here would have caught. So this is the one fact the whole
+# hard-seal guarantee rests on, checked directly against a real `EventInstance` on a real street of
+# each orientation, rather than trusted from `_spread_is_vertical`'s own reasoning.
+
+const _HARD_SEAL_SEED := 424242
+
+func _real_segment(map: CityMap, horizontal: bool) -> StreetNetwork.Segment:
+	for segment in StreetNetwork.segments():
+		if segment.horizontal == horizontal and map.has_street(segment.key()):
+			return segment
+	return null
+
+## The street's own along-axis in world space: local X for a horizontal (east-west) street, local
+## Y for a north-south one — `StreetNetwork.Segment.horizontal`'s own meaning, read off
+## `tile_rect()`'s shape in `street_network.gd` (wide in X for horizontal, wide in Y otherwise).
+func _along_axis(segment: StreetNetwork.Segment) -> Vector2:
+	return Vector2.RIGHT if segment.horizontal else Vector2.DOWN
+
+func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t) -> void:
+	var map := CityGenerator.generate(_HARD_SEAL_SEED)
+	var def := EventCatalogue.by_id("barricade")
+	t.check(def != null and def.shape != null and def.shape.half_length > 0.0,
+			"'barricade' is a hard seal row whose shape is a real segment, not a point")
+	for horizontal in [true, false]:
+		var segment := _real_segment(map, horizontal)
+		t.check(segment != null,
+				"the map has a real %s street to check" % ("horizontal" if horizontal else "vertical"))
+		if not segment:
+			continue
+		var positions := SealPlanner._hard_positions(map, segment, def)
+		t.check(positions.size() > 0, "the seal places at least one body on this street")
+		if positions.is_empty():
+			continue
+		var instance := EventInstance.new()
+		instance.setup(def, positions[0], PackedVector2Array(), Vector2.RIGHT, map)
+		t.add_child(instance)
+		instance.set_process(false)
+
+		var along := _along_axis(segment)
+		var axis := instance._solid_axis()
+		var street_kind := "horizontal" if horizontal else "vertical"
+		t.check(absf(axis.dot(along)) < 0.05,
+				("on a %s street, _solid_axis() (%s) is perpendicular to the street's own "
+						% [street_kind, axis])
+				+ ("direction (%s), not parallel to it — dot %.3f" % [along, axis.dot(along)]))
+
+		t.check(instance.is_solid(), "the hard seal placement actually builds a body")
+		var collision := instance._obstruction.get_child(0) as CollisionShape2D
+		t.check(collision != null and collision.shape is CapsuleShape2D,
+				"'barricade's built body is a CapsuleShape2D, not a CircleShape2D")
+		if collision and collision.shape is CapsuleShape2D:
+			# A capsule's own long axis stands along local Y before any rotation is applied —
+			# `GroundShape.collision_shape()`'s own docstring — so rotating `Vector2.DOWN` by the
+			# body's `rotation` gives the capsule's actual spine direction in world space; it must
+			# line up with `_solid_axis()` (parallel or anti-parallel, since a capsule is symmetric
+			# end to end), not merely be perpendicular to it.
+			var spine := Vector2.DOWN.rotated(collision.rotation)
+			t.check(absf(spine.dot(axis)) > 0.95,
+					("on a %s street, the built capsule's own spine (%s) matches _solid_axis() (%s)"
+							% [street_kind, spine, axis]))
+		instance.free()
