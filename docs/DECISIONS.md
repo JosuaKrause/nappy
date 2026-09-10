@@ -8878,8 +8878,60 @@ as a street closed on purpose.
 
 ## M56 — The resistance is noticed · `feature/the-city-notices`, partly built
 
-Four of the six items shipped on 2026-09-02. "Other dangers like this" and the measurement against
-the nerves are still queued; the design for both is in `TODO.md`.
+Four of the six items shipped on 2026-09-02, and the fifth — the raid, the half of "other dangers
+like this" that needed no drawing — on 2026-09-10. The roadblock's hunting posture, the riot van's
+end-on view and the measurement against the nerves are still queued; the design for each is in
+`TODO.md`.
+
+### The raid hunts · built 2026-09-10
+
+`night_raid` carries `heat_response = HUNTS`. At `Tuning.HEAT_HUNTS_LEVEL` (3) and above, the
+derived copy pursues at 130px/s, notices her within 180px, chases for `PURSUIT_TIME` and is
+`hard_fail` inside its 70px; below it the row is what it was — a closed block on day 10 that costs
+the meter and nothing more. Population and intensity are unmoved at every level, and
+`tests/test_heat.gd` states the raid's hot shape by name at every level beside the generic `HUNTS`
+loop, so a change to the raid fails under the raid's name. The player took the draft's
+recommendation as it stood on 2026-09-10 — *"let's do the next item"* — the raid now, the roadblock
+later.
+
+**The raid gains lethality rather than keeping it, and that is the one way it differs from the
+precedent.** `abduction` is `hard_fail` cold and stays so; the cold raid has never been able to end
+a day. The draft's phrase *"a `HUNTS` row keeps `hard_fail`"* described the van and not the rung —
+what `EventDef.at_heat()` actually does is *set* it — so a non-lethal row on the `HUNTS` rung becomes
+lethal at the threshold. The agent's first docs said "keeps `hard_fail` throughout" of both rows and
+were corrected before merge; the corrected sentences are in `docs/EVENTS.md` and the row's
+docstring.
+
+**The threshold is shared, not minted, and the calendar is why.** Performs fall on days 5, 7, 9, 11
+and 13, so on day 10 the most progress anybody can hold is 3: sharing `HEAT_HUNTS_LEVEL` is what
+makes the raid hunt only a player who has done every task on time, while a player one task behind
+meets the cold raid. A row-specific constant was rejected as breaking that sentence for no reason
+the row needs.
+
+**The contract was checked by arithmetic before the agent was sent and by boot after.** Running
+opens (168 − 130) × 3.0 = 114px over the chase against a 70px lethal radius; the stand-off is
+70 + 130 × 0.6 = 148px, under the 180px trigger, under the 330px field; the 44px body plus her 14
+is 58, inside 70, so the body is reachable and `EventDef.validate()` accepts the hot copy. The body
+comes down the frame it starts hunting through the generic pursuer rule in
+`EventInstance._process` that the abduction already uses. Nothing in `event_instance.gd`,
+`event_def.gd` or `tuning.gd` changed.
+
+**Choices open to overturn, made where the design was silent.** The test fetches the row through
+`EventCatalogue.by_id` and is a named loop rather than an extension of the generic `HUNTS` test.
+The agent also reworded two `docs/EVENTS.md` sentences beyond the one the brief named — the
+"briefly less dangerous" paragraph and the pursuer-exemption list — which would otherwise have
+undercounted the hunting rows.
+
+**Carried forward rather than fixed, and filed in `TODO.md` under M56:** `Look.RIOT_VAN` is drawn
+by `_draw_simple`, a single side view mirrored for west, so a raid van chasing north or south is
+drawn side-on, where the unmarked van has an end view for exactly that moment. `docs/EVENTS.md`'s
+rule that a vehicle needs two pictures the moment it can face more than one way has the raid as its
+counterexample until that view is drawn.
+
+**The roadblock was not built**, by the draft's own recommendation: a band does not chase, and a
+hunting roadblock is guards leaving their post — a second posture, and so a drawing. The
+`checkpoint_*` rows are never rolled by the scheduler and were never candidates; `police_patrol` is
+the `PRESSES` rung and never gains `hard_fail`, on the player's instruction of 2026-09-01.
 
 ### The van takes somebody, and then it takes you · built 2026-09-02
 

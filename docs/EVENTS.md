@@ -445,18 +445,28 @@ Three things about that shape are the design rather than the implementation:
 level, and `tests/test_heat.gd` asserts that over the response rather than over the row that
 currently carries it.
 
-`abduction` carries `HUNTS`. Below its own threshold, `Tuning.HEAT_HUNTS_LEVEL`, it is untouched —
-population and intensity are `PRESSES`'s axes, not this one's, so the van neither multiplies nor
-gets louder as the resistance progresses. At and above it, the derived copy gains `pursues`, a
-stand-off inside its own field, and a chase-length `duration` in place of its idling one, and it
-keeps `hard_fail` throughout: a pursuer is exempt from the rule that nothing else happens inside a
+`abduction` and `night_raid` both carry `HUNTS`. Below its own threshold, `Tuning.HEAT_HUNTS_LEVEL`,
+each is untouched — population and intensity are `PRESSES`'s axes, not this one's, so neither
+multiplies nor gets louder as the resistance progresses. At and above it, the derived copy gains
+`pursues`, a stand-off inside its own field, and a chase-length `duration` in place of its idling or
+static one, and it is `hard_fail`: the van keeps the lethality it already had, and the raid — a
+closed block that costs the meter and nothing more, cold — **gains** it, because the top rung kills
+by the ladder's own design. A pursuer is exempt from the rule that nothing else happens inside a
 lethal event's field — see "The contract is per event" below.
 
-**A hunting van is briefly less dangerous than a cold one, and that is the escalation working
-rather than a bug.** `EventInstance.is_lethal_at()` returns false for the whole time a
-`pursues_within` row is only `is_waiting()`, so a heated van standing at the kerb can be brushed
-past for free until she comes inside its own trigger — the same shape `alley_robbery` already has,
-arriving in `abduction` now that a second row carries it.
+**`night_raid`'s own threshold is a calendar fact rather than a design one.** Its performs fall on
+days 5, 7, 9, 11 and 13, so on day 10 — the only day the row ever appears — the most progress
+anybody can hold is 3, `Tuning.HEAT_HUNTS_LEVEL` exactly: the raid hunts *only* a player who has
+done every task on time, and a player one task behind meets the cold raid, still a closed block and
+nothing more. Sharing the van's threshold rather than minting a third constant is what makes that
+sentence true.
+
+**A hunting `abduction` or `night_raid` is briefly less dangerous than the encounter it is about to
+become, and that is the escalation working rather than a bug.** `EventInstance.is_lethal_at()`
+returns false for the whole time a `pursues_within` row is only `is_waiting()`, so a heated van
+standing at the kerb, or a heated raid still parked over its block, can be brushed past for free
+until she comes inside its own trigger — the same shape `alley_robbery` already has, now arriving
+in both vans once they hunt.
 
 ### The density, and why it is caps before budget
 
@@ -538,7 +548,7 @@ neighbourhood's own rather than a patrol's.
 | --- | --- | --- | --- |
 | `abduction` **`heat_response HUNTS`** | RECURRING | 8 | An unmarked van idles first — that idling *is* the telegraph, and it runs 4.6s because the inner radius is a `hard_fail`. Getting close does not excite the baby; it takes you. Solid at 22px, comfortably inside the 54 that takes her, so the metal is metal and touching it is still fatal. While she is close enough to watch (`outer_radius`), it draws its own bystander walked to it and taken — a scripted figure rather than a `CrowdAgent`, since the crowd is recycled as she moves and could never be a lasting fact about the world. Below `Tuning.HEAT_HUNTS_LEVEL` that is all it ever does; at or above it, it stops idling for a stranger and starts hunting her instead — 130px/s once she comes within 180px, for the length of the chase rather than the length of the idle, `hard_fail` throughout. |
 | `alley_robbery` **`hard_fail`** | RECURRING | 8 | **A man who is worth crossing the road for, and who comes after you if you do not.** Three numbers for three sentences: intensity 16 over a **200px** field, so the far end of an alley is already expensive and the meter is the only warning a robbery will ever give; `hard_fail` inside 30px; and `pursues_within` 140, inside which he takes 1.8s of visibly coming and then chases at 130px/s. The alley is the warning and it is not the only one — a lethal thing that does nothing at all until it does everything is a thing with no telegraph. |
-| `night_raid` | SCRIPTED | 10 | Enormous, static, pulsing, and it closes the block (`obstructs_radius` 44). |
+| `night_raid` **`heat_response HUNTS`** | SCRIPTED | 10 | Enormous, static, pulsing, and it closes the block (`obstructs_radius` 44). Below `Tuning.HEAT_HUNTS_LEVEL` that is all it ever does; at or above it, it stops closing the block for the night and hunts her instead — 130px/s once she comes within 180px, and `hard_fail` inside 70px, which the cold raid never is. Its performs fall on days 5, 7, 9, 11 and 13, so on day 10 the most progress anybody can hold is 3: the raid hunts only a player who has done every task on time. |
 
 ### Act IV — Open conflict (days 12–14)
 
@@ -652,9 +662,9 @@ be on it, so an overlapping lethal field there is the city saying so rather than
 failure — `EventScheduler._role_for` gives such a placement the `WALL` role, and
 `_keeps_its_field_clear` reads that role directly. **A pursuer**, because it follows her rather
 than sitting on a tile the day chose, so there is no ground for the rule to be stated about —
-`charging_dog`, `alley_robbery` and a hunting `abduction` all carry a lethal radius with them
-wherever she is, and `EventScheduler._keeps_its_field_clear` says so by name rather than leaving it
-to follow from the `WALL` case by coincidence.
+`charging_dog`, `alley_robbery` and a hunting `abduction` or `night_raid` all carry a lethal radius
+with them wherever she is, and `EventScheduler._keeps_its_field_clear` says so by name rather than
+leaving it to follow from the `WALL` case by coincidence.
 
 ## What an event actually costs
 
@@ -1011,7 +1021,9 @@ Three rules underneath the table, in the order they matter:
    mirrored east and west shows a patrol car heading north its own flank. `police_patrol`,
    `fire_truck` and `military_convoy` travel from the moment they are placed and have an `_end`
    picture each; `abduction` earns its own the same way once it hunts, since a pursuer steers
-   straight at her and a parked van never had to face anything but the kerb. Each is *its own*
+   straight at her and a parked van never had to face anything but the kerb. `night_raid` hunts
+   on the same rung and has no end view yet — the one open exception to this rule, filed in
+   `docs/TODO.md` under M56. Each is *its own*
    picture rather than the crowd's (whose cars are end-on because at that angle the front and the
    back of a car are the same shape): the whole content of a vehicle row is which vehicle it is,
    and a van that becomes a generic box the moment it turns north loses the one silhouette the

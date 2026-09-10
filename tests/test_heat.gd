@@ -19,6 +19,7 @@ func run(t) -> void:
 	_test_heat_is_derived_once_and_kept(t)
 	_test_the_ladder_has_a_top(t)
 	_test_a_hunts_row_wakes_up_at_its_own_threshold(t)
+	_test_the_raid_hunts_past_its_own_threshold(t)
 	_test_a_day_is_a_function_of_its_heat(t)
 	_test_the_patrol_presses_more_and_louder(t)
 	_test_the_patrol_investigates_past_the_threshold(t)
@@ -92,6 +93,39 @@ func _test_a_hunts_row_wakes_up_at_its_own_threshold(t) -> void:
 					"'%s' heat %d: stand-off %.0f < trigger %.0f <= field %.0f"
 					% [def.id, level, standoff, hot.pursues_within, hot.outer_radius])
 	t.check(checked > 0, "and there is a HUNTS row to check")
+
+func _cold_raid() -> EventDef:
+	return EventCatalogue.by_id("night_raid")
+
+## The raid's own hot shape, named rather than left to the generic `HUNTS` loop above: untouched
+## below `Tuning.HEAT_HUNTS_LEVEL`, then pursuing and lethal at 3 and 4 with the numbers the row
+## shares with `abduction` — and still `SCRIPTED` for day 10 whatever the heat, since heat moves
+## what a row does and never when it is allowed to appear.
+func _test_the_raid_hunts_past_its_own_threshold(t) -> void:
+	var cold := _cold_raid()
+	t.check(cold.heat_response == EventDef.HeatResponse.HUNTS,
+			"the raid answers to the resistance, the lethal way")
+	t.check(cold.kind == GameEnums.EventKind.SCRIPTED and cold.available_on(10),
+			"the raid is scripted for day 10")
+	for level in EventCatalogue.heat_levels():
+		var hot := EventCatalogue.heated(cold, level)
+		t.check(hot.validate(), "the raid is fair at heat %d" % level)
+		t.check(hot.kind == GameEnums.EventKind.SCRIPTED and hot.available_on(10),
+				"heat %d: the raid still only ever appears on day 10" % level)
+		t.check(hot.max_per_day == cold.max_per_day and hot.intensity == cold.intensity,
+				"heat %d: hunting moves neither population nor intensity" % level)
+		if level < Tuning.HEAT_HUNTS_LEVEL:
+			t.check(not hot.pursues and not hot.hard_fail and hot.duration == cold.duration,
+					"heat %d: below its own threshold the raid is untouched" % level)
+			continue
+		t.check(hot.pursues and hot.hard_fail,
+				"heat %d: at or past its threshold the raid hunts and kills" % level)
+		t.check(hot.pursue_speed == Tuning.HEAT_HUNTS_SPEED,
+				"heat %d: it hunts at the speed the ladder's other pursuers share" % level)
+		t.check(hot.pursues_within == Tuning.HEAT_HUNTS_WITHIN,
+				"heat %d: it notices her at the shared trigger" % level)
+		t.check(hot.duration == Tuning.PURSUIT_TIME,
+				"heat %d: it chases for the shared pursuit length" % level)
 
 # ------------------------------------------------------------- the derivation ---
 
