@@ -1,5 +1,26 @@
 # Decisions
 
+## M100 — Small, real, and nobody's · a precinct's pavement is never built over, 2026-09-11
+
+The defect as queued: on seed 24757 two tiles inside a precinct span were not walkable because a
+footprint had been placed across the corridor the span runs down, and `CityGenerator.
+_place_hard_blockers` never read `precinct_spans`. One agent commit on `feature/precinct-pavement`,
+reviewed here. **The gap was wider than the entry said**: by the time it was built the two tiles
+were eighteen, and the larger share was not a big building at all but an apartment complex —
+`_zone_fits`, the one gate open calm zones and complexes share, had no precinct clause, and a
+complex absorbs its inner streets solid the way a big building's mass does. The fix is the
+constraint the entry asked for, at candidate time on both gates: `_the_pair_is_free` (big
+buildings) and `_zone_fits` (zones and complexes) refuse any footprint overlapping a precinct
+span's own tile rect, the "core" band the existing precinct test already measures rather than the
+widened crossroads tail, before the candidate is accepted — never a repair afterwards. **Left
+alone on purpose**: dead ends, whose existing check on the removed segment's street kind already
+excludes a precinct corridor (a straight segment's tile rect cannot overlap a precinct on the
+crossing axis, since a block interior's tile range excludes every corridor column), and
+single-block calm, which structurally cannot touch precinct ground. Measured over a hundred seeds
+the constraint costs no generation retries — the average stays one attempt per city. The older
+precinct test lost the carve-out that had excused a hard blocker on the band, so both precinct
+tests now assert every tile walkable with nothing excused, and the new one pins seed 24757.
+
 ## M114 — The moving field grows forward · built 2026-09-11
 
 *(2026-09-10, playtest 55: "while the car moves the field gets narrower and oval -- this is good

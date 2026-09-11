@@ -140,9 +140,9 @@ func _test_home_opens_onto_the_street(t) -> void:
 ## is the fix: checked at candidate time, before a pair or a zone's footprint is accepted, so a
 ## precinct's own ground is never offered in the first place rather than repaired once it is taken.
 ##
-## No exemption for a hard blocker here, unlike `_test_nothing_goes_into_a_precinct`: that test
-## carves one out for the pre-existing gap this closes, and every tile in a span's own band is
-## asserted walkable with nothing excused.
+## No exemption for a hard blocker here or in `_test_nothing_goes_into_a_precinct`: every tile in
+## a span's own band is asserted walkable with nothing excused, and this one also pins the seed
+## that showed the gap.
 ##
 ## Guarded against vacuity by counting the precincts and the big buildings actually found across
 ## the seeds checked — a list that happened to roll neither would pass this by having nothing to
@@ -684,19 +684,11 @@ func _test_nothing_goes_into_a_precinct(t) -> void:
 				t.check(type != GameEnums.TileType.ROAD and type != GameEnums.TileType.CROSSING,
 						"seed %d: %s in precinct %s has no carriageway on it (found %s)"
 						% [_seed(i), tile, span, type])
-				# A hard blocker is allowed to take the ground under it anywhere in the lattice —
-				# that is what "built over" means — and one landing on a precinct's own corridor is
-				# a separate, pre-existing gap in where a big building or a zone may sit rather than
-				# anything this fix touches. Walkability is asserted everywhere else in the band.
-				if not _tile_is_hard_blocked(map, tile):
-					t.check(map.is_walkable(tile),
-							"seed %d: %s in precinct %s is still walkable" % [_seed(i), tile, span])
-
-func _tile_is_hard_blocked(map: CityMap, tile: Vector2i) -> bool:
-	for key: Vector3i in map.built_over:
-		if (map.built_over[key] as Rect2i).has_point(tile):
-			return true
-	return false
+				# A big building or a calm zone refuses a footprint on a precinct's own ground
+				# before it is accepted (`_the_pair_is_free`, `_zone_fits`), so every tile of the
+				# band is walkable with nothing excused.
+				t.check(map.is_walkable(tile),
+						"seed %d: %s in precinct %s is still walkable" % [_seed(i), tile, span])
 
 ## Playtest 37: the crossroads at each end of a span loses its arm into the precinct. The spur —
 ## the crossing street's own precinct-side sidewalk, over the precinct corridor's road band — is
@@ -704,9 +696,9 @@ func _tile_is_hard_blocked(map: CityMap, tile: Vector2i) -> bool:
 ## street actually crosses there** — a T for a car to turn at, not a severed one.
 ##
 ## Not every end has one to check: a calm zone can absorb the crossing corridor, a dead end can
-## wall it, or a big building can build over it, all independently of the precinct — the same
-## pre-existing gap `_test_nothing_goes_into_a_precinct` already exempts through
-## `_tile_is_hard_blocked`. Asserted only where `is_street` says the crossing is still there.
+## wall it, or a big building can build over it, all on the crossing street rather than on the
+## precinct's own band, which nothing may take. Asserted only where `is_street` says the crossing
+## is still there.
 func _test_a_precincts_end_is_a_t_junction(t) -> void:
 	var seeds := 25
 	var road_band := Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH * 2
