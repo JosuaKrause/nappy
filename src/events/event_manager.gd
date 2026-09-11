@@ -198,7 +198,11 @@ func _stream_in(plan: EventScheduler.Planned) -> void:
 	# day is planned across the whole city but an event **waits** for her. Ageing it in absentia
 	# would put back exactly the thing streaming exists to fix — a twenty-second event that is over
 	# before anybody could reach it.
-	plan.live.resume(plan.age, plan.travelled)
+	#
+	# `plan.noticed_at` carries the same resume for a `pursues_within` row: without it a pursuer
+	# streamed out mid-chase forgets she was ever noticed and comes back `is_waiting()`, standing
+	# where the day planted it rather than still coming for her.
+	plan.live.resume(plan.age, plan.travelled, plan.noticed_at)
 	plan.was_live = true
 	_instances.append(plan.live)
 	_spend_the_rest_of_the_group(plan)
@@ -230,6 +234,7 @@ func _spend_the_rest_of_the_group(chosen: EventScheduler.Planned) -> void:
 func _stream_out(plan: EventScheduler.Planned) -> void:
 	plan.age = plan.live.age
 	plan.travelled = plan.live.path_travelled()
+	plan.noticed_at = plan.live._noticed_at
 	_instances.erase(plan.live)
 	plan.live.queue_free()
 	plan.live = null
