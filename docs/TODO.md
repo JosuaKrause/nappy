@@ -557,16 +557,6 @@ is still true.
       it — so the argument is always its default and the behaviour is unchanged in play. The fix
       is the field on `Planned`, written when an instance streams out and passed on `resume()`,
       with a test that streams a noticed pursuer out and back through `EventManager` itself
-- [ ] **`chat` is written and undocumented.** `EventManager` logs a `chat` entry when
-      `chatting_mother` starts a conversation, and the table of entry kinds in `docs/TELEMETRY.md`
-      has no row for it. One row, plus the check that would have caught it: something asserting the
-      two lists agree
-- [ ] **`--spawn event:<id>` stands the rig in the carriageway on an east–west street.** The
-      offset `main.gd` applies to the found event's position is along local X whatever the street's
-      orientation, so beside a spread that faces an east–west street she is put on the road rather
-      than the pavement, and a screenshot rig can lose the day before the frame is taken. Found while
-      photographing the seal pictures; the fix is to offset across the street's own axis, which
-      `EventInstance._spread_is_vertical()` already answers
 - [ ] **What is still dev-only inside `main.gd`.** `DevFlags` took the flag parsing out; what stayed
       is the code that acts on it — `_first_event_position` and the `--spawn` target lookup, both of
       which read the live city. Worth finishing the next time the file is opened for another reason
@@ -588,9 +578,6 @@ artwork, the player's perpendicular burnt-car correction and the rendered eviden
       M102, the finale, and its prepared directional family. Which acts it appears in and its cap are the build's
       to derive from the cat's, and its dash is aimed across the alley's short axis so it crosses
       her path rather than running down it
-- [ ] **Park trees clump.** `City` places them by rejection sampling inside the lot with no
-      spacing test. Add a minimum-spacing check while retaining `assets/props/tree_a.svg` and
-      `tree_b.svg`, the two existing variants drawn by `Prop`.
 **The `INDUSTRIAL` and `CIVIC` districts reading differently moved to M106 on 2026-09-10**, where
 the roof furniture and the fronts are placed per district; the prepared `industrial_vent.svg` and
 `civic_portico.svg` are its first two pieces.

@@ -108,6 +108,14 @@ grown past what it is about, split it rather than letting `CLAUDE.md` grow.
 Commit each piece as it is settled; a decision that is only in the working tree is only in the
 session. If a branch is fully merged, delete it — see the **committing** skill.
 
+### 6a. Leave the review list true
+
+`docs/REVIEW.md` holds what waits on a person. Anything this session built that a rig measured
+and nobody felt gets an entry — what to do, where to look, the question — and anything a playtest
+this session covered leaves, with its finding in the playtest file. A run is asked against this
+list, so a stale entry costs the player a look at something already settled, and a missing one
+costs a whole run.
+
 ### 7. Leave the handoff true
 
 `docs/HANDOFF.md` is the last thing to write and the first thing the next session reads. It says the
