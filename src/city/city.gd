@@ -356,6 +356,7 @@ func _spawn_buildings() -> void:
 		building.position = Vector2(world.get_center().x, world.end.y)
 		building.footprint = world.size
 		building.variant = _variant_for(rect)
+		building.district = map.starting_purpose(_block_of(rect))
 		building.height = _height_for(rect, rect.size.y)
 		building.lot = rect
 		# Their own layer, under the entities — see the note at the top of this file. They still
