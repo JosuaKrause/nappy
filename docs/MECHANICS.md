@@ -387,6 +387,15 @@ The relationship, rather than the numbers: **the headway has to outlast the time
 brake from cruise**, or a car cannot physically honour the gap it is keeping and the queue
 resolves by interpenetration again however good the controller is.
 
+**A hard seal, a region wall, and the closed streets a car cannot see through, all read the same
+way to the traffic.** `CrowdAgent._cannot_go_on` treats a tile on a held segment (a hard seal's own
+ground, or a region wall's) exactly like a closed one: both walkers and cars turn off at the last
+junction rather than driving into a barrier they have no physics against. A soft seal takes only
+the pavements, so a car still crosses it while a walker turns away — the street reads quiet on
+foot and ordinary on the road. A region door is carved out of the same check entirely: a car
+brakes and queues for the gate the way it already does at a red light or a zebra, and a walker
+passes the hut.
+
 ## The world near you
 
 Nothing is loaded upfront: the crowd and the events exist in the few blocks around the player and

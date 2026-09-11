@@ -165,6 +165,30 @@ func is_held_at(tile: Vector2i) -> bool:
 func is_on_home_block(tile: Vector2i) -> bool:
 	return lot_rect(home_block).has_point(tile)
 
+## Tiles a soft seal's own body stands on, shut to walkers only for today — the carriageway
+## underneath a soft seal is untouched, so a car still drives straight through it. Deliberately
+## apart from `held_segments`: that record is about which whole *segment* no catalogue row may be
+## offered, and a soft seal's own carriageway is still walkable and still open to a catalogue row,
+## so it was never held there — folding this into it would shut the carriageway too. Keyed on the
+## tile rather than the segment for the same reason: a soft seal takes one pavement or the other,
+## never the whole street, and the thinning pass may drop one body of a pair and leave that
+## pavement's tiles out of this set entirely. Filled by `SealPlanner.plan_day`, which clears and
+## refills it fresh on every call, the same as `held_segments` is cleared and refilled once a day.
+var soft_sealed_tiles := {}
+
+## Clears today's soft seals. See `soft_sealed_tiles`.
+func clear_day_soft_seals() -> void:
+	soft_sealed_tiles.clear()
+
+## Marks one tile as soft-sealed to walkers for today. See `soft_sealed_tiles`.
+func seal_soft_tile(tile: Vector2i) -> void:
+	soft_sealed_tiles[tile] = true
+
+## Whether a tile is shut to walkers by today's soft seals. False for anything a soft seal never
+## stood on, cars included — a soft seal never asks this on their behalf.
+func is_soft_sealed(tile: Vector2i) -> bool:
+	return soft_sealed_tiles.has(tile)
+
 # ------------------------------------------------------------------ layout ---
 
 ## Tiles between the start of one street corridor and the start of the next.

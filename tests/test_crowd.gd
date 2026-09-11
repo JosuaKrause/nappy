@@ -52,6 +52,7 @@ func run(t) -> void:
 	_test_nothing_walks_into_a_hard_blocker(t)
 	_test_a_hard_seal_shuts_its_street_to_the_crowd(t)
 	_test_a_region_wall_is_shut_and_a_door_is_carved_out(t)
+	_test_a_soft_seal_shuts_both_pavements_to_walkers_only(t)
 	_test_only_cars_go_over_the_bridge(t)
 	_test_the_crowd_agrees_a_zone_absorbed_the_corridor(t)
 	_test_agents_do_not_overrun_an_ordinary_edge(t)
@@ -1406,6 +1407,103 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 	walker.free()
 	car.free()
 	city.free()
+
+## M110, item 3: a soft seal takes both pavements from the walkers and leaves the carriageway to
+## the cars. `SealPlanner.plan_day` is driven directly here, off a real tree, since
+## `CityMap.soft_sealed_tiles` and `CrowdAgent._cannot_go_on` are what is being asked about rather
+## than the whole day's pipeline — checked against the predicate directly, for the same reason the
+## door carve-out above is: whether a random walker wanders onto one particular tile inside a short
+## window is a question about the day's population, not about this rule.
+func _test_a_soft_seal_shuts_both_pavements_to_walkers_only(t) -> void:
+	var day := 3
+	var tree := RouteTree.for_day(_city.map, day)
+	var seal_rng := RandomNumberGenerator.new()
+	seal_rng.seed = hash("crowd-soft-seal:%d:%d" % [SEED, day])
+	SealPlanner.plan_day(_city.map, day, tree, seal_rng)
+	t.check(not _city.map.soft_sealed_tiles.is_empty(),
+			"today's tree leaves at least one street soft-sealed (%d tiles)"
+			% _city.map.soft_sealed_tiles.size())
+
+	var both_sealed: StreetNetwork.Segment = null
+	var thinned: StreetNetwork.Segment = null
+	var thinned_open: Array[Vector2i] = []
+	for segment in StreetNetwork.segments():
+		if not _city.map.has_street(segment.key()):
+			continue
+		# Ordinary streets only: a precinct has no pavement/carriageway split for a soft seal to
+		# take one side of, and asking a car to drive across one is a question this test does not
+		# mean to be asking.
+		var road_tile := _cross_section_tiles(segment)[2]
+		if not _city.map.is_driveable_at(not segment.horizontal, road_tile):
+			continue
+		var near := _sidewalk_side_tiles(segment, true)
+		var far := _sidewalk_side_tiles(segment, false)
+		var near_sealed := _all_soft_sealed(near)
+		var far_sealed := _all_soft_sealed(far)
+		if near_sealed and far_sealed and not both_sealed:
+			both_sealed = segment
+		elif near_sealed != far_sealed and not thinned:
+			thinned = segment
+			thinned_open = far if near_sealed else near
+		if both_sealed and thinned:
+			break
+	t.check(both_sealed != null, "at least one street has both pavements soft-sealed today")
+	t.check(thinned != null, "and at least one has only one — the thinning pass's own mark")
+	if not both_sealed or not thinned:
+		return
+
+	var walker := CrowdAgent.new()
+	walker.kind = CrowdAgent.Kind.WALKER
+	walker._map = _city.map
+	var car := CrowdAgent.new()
+	car.kind = CrowdAgent.Kind.CAR
+	car._map = _city.map
+	var vertical := not both_sealed.horizontal
+
+	for tile in _sidewalk_side_tiles(both_sealed, true) + _sidewalk_side_tiles(both_sealed, false):
+		t.check(walker._cannot_go_on(vertical, tile),
+				"a walker turns away from a fully soft-sealed pavement tile %s" % tile)
+		t.check(not car._cannot_go_on(vertical, tile),
+				("and a car still drives straight through the same tile %s — the carriageway is " +
+				"never sealed") % tile)
+
+	for tile in thinned_open:
+		t.check(not walker._cannot_go_on(not thinned.horizontal, tile),
+				"the thinned pair's open pavement stays open to a walker at %s" % tile)
+
+	walker.free()
+	car.free()
+	_city.map.clear_day_soft_seals()
+
+## The street's own cross-section, one tile per lane, at the middle of the block — the same layout
+## `SealPlanner._cross_section_tiles` places a soft seal's bodies against, duplicated here (it is
+## file-private there) rather than reached into.
+func _cross_section_tiles(segment: StreetNetwork.Segment) -> Array[Vector2i]:
+	var rect := segment.tile_rect()
+	var tiles: Array[Vector2i] = []
+	if segment.horizontal:
+		var mid_x := rect.position.x + rect.size.x / 2
+		for row in Tuning.STREET_WIDTH:
+			tiles.append(Vector2i(mid_x, rect.position.y + row))
+	else:
+		var mid_y := rect.position.y + rect.size.y / 2
+		for column in Tuning.STREET_WIDTH:
+			tiles.append(Vector2i(rect.position.x + column, mid_y))
+	return tiles
+
+## Both walker-lane tiles of one pavement side of `segment` — `Tuning.SIDEWALK_WIDTH` of them, the
+## whole footway rather than only the one lane a soft seal's own body happens to stand on.
+func _sidewalk_side_tiles(segment: StreetNetwork.Segment, near: bool) -> Array[Vector2i]:
+	var tiles := _cross_section_tiles(segment)
+	if near:
+		return tiles.slice(0, Tuning.SIDEWALK_WIDTH)
+	return tiles.slice(Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH, Tuning.STREET_WIDTH)
+
+func _all_soft_sealed(tiles: Array[Vector2i]) -> bool:
+	for tile in tiles:
+		if not _city.map.is_soft_sealed(tile):
+			return false
+	return true
 
 ## M53: **the overrun permission was narrowed to a car on the spine, and the lane was not** — the
 ## entry-side fallback (`CrowdAgent._keep_within_the_room_beyond_the_map`) used to hand every kind

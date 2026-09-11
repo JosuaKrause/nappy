@@ -264,6 +264,8 @@ func _stands_on_a_street() -> bool:
 		return false
 	if _segment_is_shut(tile):
 		return false
+	if kind == Kind.WALKER and _map.is_soft_sealed(tile):
+		return false
 	if not _map.in_bounds(tile):
 		return kind == Kind.CAR and _vertical and _corridor == _map.main_road \
 				and (tile.y < 0 or tile.y >= _map.size.y)
@@ -964,6 +966,9 @@ func _cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	# walking or driving through what they cannot see through. A region door is carved out of the
 	# same check: it is a crossing the day means to keep open, not a wall with a picture on it.
 	if _segment_is_shut(tile):
+		return true
+	# A soft seal takes both pavements and leaves the carriageway to the cars — walkers only.
+	if kind == Kind.WALKER and _map.is_soft_sealed(tile):
 		return true
 	if not _map.in_bounds(tile):
 		var leaves_by_the_spine := kind == Kind.CAR and vertical and _corridor == _map.main_road \
