@@ -134,14 +134,28 @@ anchors and alpha bounds. It includes tile repetition, facade overlays and chalk
 Stair construction follows the supplied lateral-flight references,
 `docs/reference/stairwell-switchback-interior-01.jpg` and `fire-escape-switchback-exterior-01.jpg`.
 The interior has one stairwell on the building's left and one on its right; each contains sideways
-switchback flights. `assets/interior/stair_down.svg` is a 64×64 projected module, anchored at
-(32,64), separate from its eventual floor-transition trigger. Its unmirrored upper, intermediate
-and lower landings are (8,10), (56,34) and (8,58); mirror around the canvas centre for the other
-side. For a hallway between the stairwells, use the mirrored module on the left and unmirrored
-module on the right so their upper/lower landings face the hallway. Exterior
-`fire_escape_{a,b}.svg` stays 48×64, with alternating lateral flights parallel to the facade.
-The [stair source and assembly review](evidence/svg-sideways-stairs-2026-09-10/README.md)
-shows native/3× sources, the two hallway ends and transparent facade overlays.
+switchback flights, walked one 32×32 tile at a time rather than drawn as a single picture — the
+player rejected the whole-module `stair_down.svg` in PLAYTEST-54 because a tile is what a
+`TileMapLayer` can make walkable, and one picture cannot be (see
+`docs/evidence/archive/rejected-graphics/stair-down-module-superseded-2026-09-10/README.md`, the
+archived module and the reasoning). The live kit, all 32×32 tile-origin except the newel:
+`stair_flight_e.svg` and `stair_flight_w.svg` are walkable floor tiles whose tread-and-riser motif
+repeats every 32px, so three placed in a row read as one continuous flight descending toward that
+tile's own direction; `stair_landing.svg` is the flat platform between two flights, in
+`stairwell_floor.svg`'s own checker-plate family with a lighter edge frame. `stair_rail_e.svg`,
+`stair_rail_w.svg` and `stair_rail_level.svg` are transparent overlays — a 45° line matching its
+flight's own tread slope, or a level line along a landing — bound in `InteriorScene`'s y-sorted
+layer so she walks behind the rail rather than under it. `stair_newel.svg` is a 16×40 transparent
+canvas, bottom-centre anchored at (8,40), for the post at a landing's turn corner. `InteriorMap`
+(`src/interior/interior_map.gd`) lays a stairwell out as: from the door, three `stair_flight_e`
+(or `_w`, mirrored for the opposite side) tiles descending to a `stair_landing`, then — beyond a
+one-tile gap that keeps the door and the floor-transition tile from ever standing adjacent — a
+second three-tile flight in the opposite direction to the lower landing, which triggers the floor
+transition. Exterior `fire_escape_{a,b}.svg` stays 48×64, with alternating lateral flights
+parallel to the facade; that pair is unaffected by this milestone. The
+[stair source and assembly review](evidence/svg-sideways-stairs-2026-09-10/README.md) documents
+the retired module's own sources; the [M112 stair tile review](evidence/m112-stairs-2026-09-10/)
+shows the live kit at native and 3× scale and one assembled stairwell.
 
 The [people source matrix](evidence/svg-people-2026-09-10/PEOPLE-MATRIX.md) names every body,
 trim, gait and action source, its registration and intended live or prepared use. Native/3×
@@ -150,7 +164,7 @@ arm direction; ordinary movement suffixes describe the body's facing.
 
 | Owning design | Prepared assets, dimensions and registration |
 |---|---|
-| M102 — The finale: out of the apartment, out of the city (interior) | `assets/interior/` contains hallway/basement floors and four cardinal edges, walls and normal/flash windows, stairwell floor/stairs, entrance/stairwell/emergency/lift doors, barricade, chandelier and puddle. Floor/wall modules are 32×32; standing objects have individual bottom-centre anchors listed in the environment inventory. `assets/events/steam.svg` is 32×48; `explosion_preview.svg` is a 40×40 optional burst. None is bound. |
+| M102 — The finale: out of the apartment, out of the city (interior) | `assets/interior/` contains hallway/basement floors and four cardinal edges, walls and normal/flash windows, the stair tile kit (`stairwell_floor`, `stair_flight_{e,w}`, `stair_landing`, `stair_rail_{e,w,level}`, `stair_newel`), entrance/stairwell/emergency/lift doors, barricade, chandelier and puddle. Floor/wall modules are 32×32; standing objects have individual bottom-centre anchors listed in the environment inventory. `assets/events/steam.svg` is 32×48; `explosion_preview.svg` is a 40×40 optional burst. The stair tile kit is bound by M112, the escape scene, walkable, in `src/interior/`; the rest of the row is unbound and stays M102's. |
 | M100 — Small, real, and nobody's (chalk and alley review) | `assets/props/chalk_mark.svg` and `chalk_mark_touched.svg` are 32×32 centre-anchored decals; the touched version keeps the circle/cross and adds her small tick. `assets/tiles/alley_draft.svg` is a 32×32 paving alternative for comparison. Current code-drawn chalk and the live alley tile remain the runtime pictures. |
 | M105 — The city degrades | `assets/tiles/{road,sidewalk,alley}_cracked_{hairline,cracked,broken}_{a,b}.svg` supplies two 32×32 patterns per damage level. `assets/props/litter_{apple,newspaper,cup,bag,can}.svg` uses 32×32 centre-anchored transparent canvases with visible geometry at most 10px wide/high. `garbage_sack.svg` is 28×34 and `garbage_sacks_pile.svg` 42×34, bottom-centre anchored. All placement and TileSet selection remain unbound. |
 | M106 — Roofs, fronts and street trees | `assets/props/industrial_vent{,_b}.svg`, `roof_hvac_unit{,_b}.svg`, `roof_duct_{straight,corner}.svg`, `roof_skylight{,_b}.svg`, `roof_vent_stack.svg`, `roof_water_tank.svg` and `tree_pit.svg` are prepared roof/ground parts. Roof units are 32×32 except straight duct 64×32 and tank 32×48; tree pit is centre-anchored 32×32. `assets/buildings/storefront_{a,b,c,d}{,_awning,_shuttered}.svg` are 32×32 facade states with a shared door position; `fire_escape_{a,b}.svg` are transparent 48×64 overlays; `window_{tall,shuttered}_{dark,lit}.svg` are 32×32 overlays. Registration is detailed in the environment inventory; Building and Prop do not bind these additions. |

@@ -1,0 +1,8 @@
+<!-- Walkable stair flight tile, treads descending toward west — the horizontal mirror of
+     stair_flight_e.svg. Tiles seamlessly with copies of itself the same way. 32x32, tile origin. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" fill="#62656a"/>
+  <path d="M32 2H24V10H16V18H8V26H0V32H32Z" fill="#54575c"/>
+  <path d="M32 2H24 M24 10H16 M16 18H8 M8 26H0" stroke="#b5aea0" stroke-width="1.6"/>
+  <path d="M24 2V10 M16 10V18 M8 18V26 M0 26V32" stroke="#3b3034" stroke-width="1"/>
+</svg>

@@ -1,0 +1,10 @@
+<!-- Walkable stair flight tile, treads descending toward east. Tiles seamlessly with copies of
+     itself along a flight: the same 45-degree tread-and-riser motif repeats every 32px, so three
+     placed in a row read as one continuous run of steps. 32x32, tile origin, in
+     stairwell_floor.svg's mechanical family. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" fill="#62656a"/>
+  <path d="M0 2H8V10H16V18H24V26H32V32H0Z" fill="#54575c"/>
+  <path d="M0 2H8 M8 10H16 M16 18H24 M24 26H32" stroke="#b5aea0" stroke-width="1.6"/>
+  <path d="M8 2V10 M16 10V18 M24 18V26 M32 26V32" stroke="#3b3034" stroke-width="1"/>
+</svg>
