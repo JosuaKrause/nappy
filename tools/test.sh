@@ -26,6 +26,29 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Override for machines with a different CPU or memory budget.
 SHARDS="${TEST_SHARDS:-4}"
 
+usage() {
+    cat <<'EOF'
+usage: tools/test.sh [--help|-h] [--serial|--plan] [suite-name-substring...]
+
+Runs the headless test suite (tests/tests.tscn). With no arguments, runs everything, sharded
+across TEST_SHARDS (default 4) Godot processes. A suite-name-substring argument filters to the
+suites whose file name contains it and runs unfiltered/unsharded, in one process; that filtered
+run also accepts any flag the test scene itself reads off OS.get_cmdline_user_args() (e.g.
+--svg), which is why this script does not reject an argument it does not itself recognise --
+only --serial, --plan, --help and -h are its own.
+  --serial   everything, in one process (what a shard failure is debugged in)
+  --plan     print the shard split and run nothing
+
+  tools/test.sh
+  tools/test.sh crowd balance
+  tools/test.sh --serial
+EOF
+}
+
+case "${1:-}" in
+    --help|-h) usage; exit 0 ;;
+esac
+
 if [[ ! -x "$GODOT" ]]; then
     echo "godot not found at $GODOT (override with GODOT=...)" >&2
     exit 127

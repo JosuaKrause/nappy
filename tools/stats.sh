@@ -25,19 +25,45 @@ case "$(uname -s)" in
     *)      DIR="${XDG_DATA_HOME:-$HOME/.local/share}/godot/app_userdata/Nappy/telemetry" ;;
 esac
 
-if [[ ! -d "$DIR" ]]; then
-    echo "no telemetry yet: $DIR" >&2
-    echo "play a run with tools/run.sh — it is on unless you pass --no-telemetry" >&2
+usage() {
+    cat <<'EOF'
+usage: tools/stats.sh [--help|-h] [--rigs|--all]
+
+Aggregates the run logs. Default: playtest runs only (run-*/ folders). --rigs: rig runs only
+(check.sh, shot.sh, --walk/--flee/--press). --all: both, printed as two groups.
+
+  tools/stats.sh
+  tools/stats.sh --rigs
+EOF
+}
+
+case "${1:-}" in
+    --help|-h) usage; exit 0 ;;
+esac
+
+if [[ $# -gt 1 ]]; then
+    echo "unexpected extra argument(s): ${*:2}" >&2
+    echo >&2
+    usage >&2
     exit 1
 fi
 
+# The argument shape is validated -- usage on anything it does not recognise -- before the
+# telemetry folder is even looked for, so a runner that has never played a run still gets a
+# straight rejection on a bad flag instead of "no telemetry yet".
 mode="playtest"
 case "${1:-}" in
     --rigs) mode="rigs" ;;
     --all)  mode="all" ;;
     "")     ;;
-    *)      echo "usage: stats.sh [--rigs|--all]" >&2; exit 1 ;;
+    *)      echo "unknown option: $1" >&2; echo >&2; usage >&2; exit 1 ;;
 esac
+
+if [[ ! -d "$DIR" ]]; then
+    echo "no telemetry yet: $DIR" >&2
+    echo "play a run with tools/run.sh — it is on unless you pass --no-telemetry" >&2
+    exit 1
+fi
 
 # One group's worth of logs: run count, days won/lost, loss causes, most-met events. Each figure
 # is a straight count of a `kind` column in docs/TELEMETRY.md's table -- `home`, `lost` and
