@@ -23,6 +23,8 @@ func run(t) -> void:
 	_test_the_guard_moves_with_the_mark_and_faces_away_from_her(t)
 	_test_the_guard_never_lands_inside_a_building(t)
 	_test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t)
+	_test_no_alley_robbery_stands_near_the_doorstep(t)
+	_test_playtest_55_seed_has_no_spawn_kill(t)
 	_test_a_perform_contact_is_never_relocated(t)
 	_test_a_perform_step_expires_when_its_rider_is_gone(t)
 	_test_a_timed_step_expires(t)
@@ -549,6 +551,133 @@ func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t) -> void:
 	t.check(guard_at == Vector2.INF,
 			"a band with no walkable ground anywhere in it draws no guard at all")
 	director.free()
+
+## Item 4: the spawn kill named at the top of M100's queue has no fix of its own — items 1
+## through 3 are supposed to make it impossible by construction, and this is what proves it.
+## Nothing named `alley_robbery` — the catalogue's own placement, from `first_day` 8, or the
+## resistance's guard trap, from `TRAP_FIRST_DAY` (4) — ever stands within lethal reach of the
+## doorstep, over several seeds and every day either kind can appear.
+##
+## `reach` is computed from the row's own `inner_radius` (30px, the always-lethal zone around
+## whichever one of them it is) and the trap's own `min_distance` (66px, how close a guard is
+## ever placed to its mark) rather than a literal — the two named constants this bug was always
+## about, added together as a generous rather than exact bound.
+func _test_no_alley_robbery_stands_near_the_doorstep(t) -> void:
+	var robbery := EventCatalogue.by_id("alley_robbery")
+	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
+	var max_distance: float = robbery.pursues_within + ContactPoint.REACH
+	var reach: float = robbery.inner_radius + min_distance
+	var checked := 0
+	for seed_value in [4242, 90210, 2295276695, 291862120, 314159, 555555]:
+		var map := CityGenerator.generate(seed_value)
+		var doorstep := map.doorstep_world_position()
+		var consumed: Array[String] = []
+		for day in range(4, 15):
+			var state := CityState.new()
+			state.begin_day(map.block_plans, day)
+			map.repaint(state)
+			var tree := RouteTree.for_day(map, day)
+			var events_rng := RandomNumberGenerator.new()
+			events_rng.seed = hash("%d:events:%d" % [seed_value, day])
+			for plan in EventScheduler.build_day(day, events_rng, map, consumed, [], [], tree):
+				if plan.def.id != "alley_robbery" or not plan.is_placed():
+					continue
+				checked += 1
+				t.check(plan.position.distance_to(doorstep) > reach,
+						("seed %d day %d: no scheduled alley_robbery stands within lethal reach " +
+						"of the doorstep") % [seed_value, day])
+
+			var director := ResistanceDirector.new()
+			director.setup(null, map)
+			var mark_rng := RandomNumberGenerator.new()
+			mark_rng.seed = hash("%d:mark:%d" % [seed_value, day])
+			var mark_at := director._place(ResistanceSteps.by_index(1), mark_rng)
+			if mark_at != Vector2.INF:
+				checked += 1
+				t.check(mark_at.distance_to(doorstep) > reach,
+						"seed %d day %d: the chalk mark is not within lethal reach of the doorstep"
+						% [seed_value, day])
+				var guard_rng := RandomNumberGenerator.new()
+				guard_rng.seed = hash("%d:guard:%d" % [seed_value, day])
+				var guard_at := director._draw_guard_position(guard_rng, mark_at, Vector2.INF,
+						min_distance, max_distance)
+				if guard_at != Vector2.INF:
+					checked += 1
+					t.check(guard_at.distance_to(doorstep) > reach,
+							"seed %d day %d: the guard trap is not within lethal reach of the doorstep"
+							% [seed_value, day])
+			director.free()
+	t.check(checked > 0, "some (seed, day) actually placed something to check (%d)" % checked)
+
+## The reported run, replayed exactly: seed 291862120, day 7. The chalk mark was offered far from
+## the doorstep, the M78 "never-seen mark follows her" rule (`_track_sight_and_reposition`)
+## relocated it on the very first frame because she starts the day standing at the doorstep, and
+## the guard redrawn for the new mark left five separate attempts dead in under a second. Built
+## through the real pipeline — `City.start_day`, then `EventManager.start_day`, then
+## `ResistanceDirector.start_day` — rather than the data-level sweep above, so the M78 relocation
+## actually runs the way it does in a played day.
+func _test_playtest_55_seed_has_no_spawn_kill(t) -> void:
+	_with_clean_run(func() -> void:
+		var seed_value := 291862120
+		var day := 7
+		var city: City = CITY_SCENE.instantiate()
+		t.add_child(city)
+		city.build(CityGenerator.generate(seed_value))
+		city.events.stream_radius = INF
+
+		var closure_state := CityState.new()
+		closure_state.begin_day(city.map.block_plans, day)
+		var closure_rng := RandomNumberGenerator.new()
+		closure_rng.seed = hash("%d:closures:%d" % [seed_value, day])
+		city.start_day(closure_state, day, closure_rng)
+
+		var doorstep := city.map.doorstep_world_position()
+		var events_rng := RandomNumberGenerator.new()
+		events_rng.seed = hash("%d:events:%d" % [seed_value, day])
+		var consumed: Array[String] = []
+		city.events.start_day(day, events_rng, consumed, doorstep)
+
+		var director := ResistanceDirector.new()
+		t.add_child(director)
+		director.set_process(false)
+		director.setup(city, city.map)
+		var resistance_rng := RandomNumberGenerator.new()
+		resistance_rng.seed = hash("%d:resistance:%d" % [seed_value, day])
+		# No steps completed yet, which is what actually offers step 1's chalk mark on day 7 — a
+		# player who has not yet been near it, exactly the reported run.
+		director.start_day(day, resistance_rng, 300.0)
+		t.check(director.current_step() != null and director.current_step().index == 1,
+				"seed %d day %d: step 1's chalk mark is still on offer, as in the reported run"
+				% [seed_value, day])
+
+		var player := _rig_player(t, doorstep)
+		director._process(STEP)
+
+		var robbery := EventCatalogue.by_id("alley_robbery")
+		var min_distance: float = robbery.inner_radius + ContactPoint.REACH
+		var reach: float = robbery.inner_radius + min_distance
+
+		var mark_at := director.contact_position()
+		if mark_at != Vector2.INF:
+			t.check(mark_at.distance_to(doorstep) > reach,
+					("seed %d day %d: the (possibly relocated) chalk mark is not within lethal " +
+					"reach of the doorstep") % [seed_value, day])
+
+		var robbers_checked := 0
+		for instance in city.events.instances():
+			if instance.def.id != "alley_robbery":
+				continue
+			robbers_checked += 1
+			t.check(instance.global_position.distance_to(doorstep) > reach,
+					("seed %d day %d: no alley_robbery instance (guard or scheduled) stands " +
+					"within lethal reach of the doorstep") % [seed_value, day])
+		t.check(robbers_checked > 0,
+				"seed %d day %d: the reported run's guard exists to check (%d found)"
+				% [seed_value, day, robbers_checked])
+
+		player.free()
+		director.free()
+		city.free())
 
 func _test_a_perform_contact_is_never_relocated(t) -> void:
 	_build_city(t)
