@@ -272,9 +272,8 @@ a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow or a body
 eye, and every one of the three is now derived from the object's one `GroundShape`. Behind those, unordered: M96 (the teaching day and
 the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's
 density after the sealing) and M100 (the small work, the polish and the open design questions,
-consolidated), with M105 (the city degrades), M106 (roofs, fronts and street trees) and M107 (the
-run clock, hidden until an ending) placed in that batch provisionally, since the player asked
-for them on 2026-09-10 without placing them.
+consolidated), with M105 (the city degrades) placed in that batch provisionally, since the player
+asked for it on 2026-09-10 without placing it.
 Reaching act III — which M56's measurement against the nerves needs — waits until
 that batch is done. SVG-to-PNG
 style transfer is Codex's parallel track. Prepared artwork and its source-review sheets are listed

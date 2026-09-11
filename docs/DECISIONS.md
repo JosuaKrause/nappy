@@ -1,5 +1,98 @@
 # Decisions
 
+## M106 — Roofs, fronts and street trees · built 2026-09-11
+
+*(2026-09-10: "we need stuff on top of roofs -- we have an air duckt already -- it needs to be
+animated … we need more varied building fronts. storefronts, fire escapes." and "we could also add
+trees that can be placed in the street. right now the fallen tree doesn't make that much
+sense".)* Four agent commits on `feature/roofs-fronts-trees`, reviewed here. **Roof furniture**:
+`Building` keeps its block's district and seeds a pick per building — vents, HVAC boxes and a
+straight-and-corner duct run on industrial, skylights on civic, water tanks with the odd vent
+elsewhere — on interior roof cells only, drawn above the roof tiles in the buildings layer so
+nothing is y-sorted against the street; the vent alternates its two frames on a 1.4s per-building
+timer and nothing else on a roof moves. **Fronts**: every commercial ground-floor column is one
+of four storefronts, an awning on 35% of them, as a plain base-tile substitution whose opaque art
+covers the window underneath; civic gets its portico at the facade's centre; residential facades
+tall enough take a fire escape on 30%, over the bottom two rows — the portico and the fire escape
+are overlays, the two composition changes the item allowed, and the tint rules stand. The
+shuttered storefront and window variants stay unbound for M105. **Street trees**: a pure function
+of the map, `StreetTrees`, plants pits at the kerb-side tile of ordinary residential and
+commercial streets at 96px minimum spacing and a 55% chance per slot, one tile clear of every
+segment's mouth — which covers crossings, doors and checkpoints at once, since the region wall
+stands at that same mouth — and clear of the home's door. A street tree is the one prop with a
+real body: a 6px trunk kept inside one tile, so the pavement's other tile keeps a full lane of
+her clearance; the crowd never collided with props, so only she needed it. `ClosurePlanner`
+weights `fallen_tree` six times on a segment that has standing trees, from the same function the
+city plants from; the fallen picture's canopy and trunk fills are byte-identical to the standing
+pictures', so no art moved.
+
+**The district comparison, judged here from the four rig pictures** in
+`docs/evidence/m106-districts-2026-09-11/`: commercial reads at a glance (a run of storefronts
+under awnings) and so does residential (a fire escape, a water tank); industrial and civic are
+told apart by their roofs alone — an HVAC box and a duct, three skylights — which are small at
+play scale, and the civic portico was out of frame. Whether those two read as places is the
+`REVIEW.md` question. Taking the pictures cost more than the four shots allowed: two long walks
+ended the day, one on the meter and one under a car, and the civic block on the first seed was a
+hundred tiles from the doorstep, so a nearer seed was used; there is no `--spawn <district>`
+flag, and main.gd was another agent's file. **Chosen where the design was silent**: the shares,
+the spacing, the plant chance, the trunk radius and the closure weight above, none of them in
+`Tuning` since none is a route decision.
+
+## M100 — Small, real, and nobody's · a mouse in the alley, built 2026-09-11
+
+*(2026-09-10: "we can reuse the mouse for alleyways as well.")* Two agent commits on
+`feature/mouse-in-the-alley`, reviewed here. **The row**: `alley_mouse`, named the way
+`alley_robbery` is, placed on `ALLEY` tiles as a map placement rather than sited by the director
+the way `cat_dash` is — an alley is ground she is routed through, where a road tile picked at dawn
+might never be crossed — which also puts it under the scheduler's required-alley refusal for
+free, so it never stands in an alley she has no way round. The cat's shape at half its numbers:
+intensity 9 over a 15/60px field, cap 4 a day, weight shared with the robber's since both draw
+from the alley pool, a 1.4s telegraph against a required 1.09s, a 1.0s duration over a crossing
+that takes a third of that, no body, nothing lethal. **The dash is across the alley by
+construction**: `EventInstance._alley_crossing_path()` reads the alley rect the instance landed in
+and lays a two-point path across its narrower side, since she can only be walking the long axis.
+`PathMode.CROSS_STREET` was rejected because its axis comes from the corridor offset, which
+answers nothing for an alley cut mid-block. One picture, `mouse.svg`, mirrored, as the cat is
+drawn; the directional family stays unbound.
+
+**The review finding, and what it added to the machinery.** As first delivered the mouse was
+never seen: a map placement's clock runs from the frame it streams in, at the 900px stream
+radius, so telegraph and dash were over before she was within the view's 180px short half-extent.
+The fix reuses the robber's waiting state — `is_waiting()`, `_noticed_at`, the telegraph counted
+from the notice — which already keyed off `pursues_within` rather than `pursues`; the one thing
+not general was that only `_chase()` ever set the notice, so `_check_for_notice()` now does it for
+a non-pursuing row, which then runs its own path. `pursues_within` 150px: inside the short
+half-extent with margin and past the row's own 60px field, so the telegraph is on screen before
+the field is felt. **Rejected**: making the mouse `pursues` with a pursue speed, which drags in a
+stand-off, a lunge and the pursuit speed band for a row that never follows her. A test holds both
+halves: still and unclocked with her 400px past the trigger for five seconds, then noticing,
+telegraphing from the notice and crossing the narrow axis. **Chosen where the design was silent**:
+the notice check duplicates four lines of `_chase()` rather than refactoring proven pursuit code;
+the dash direction is rect start to rect end rather than a coin flip, since no RNG reaches
+`setup()` and it is not a fairness matter. Measured: walking through costs about 4 points,
+running through about 15.
+
+## M107 — The run clock · built 2026-09-11
+
+*(2026-09-10: "can you add an in-game timer that counts up during gameplay (and stops when paused
+or between days). for now let's keep it hidden and only show it on the win screen"; then "all
+endings show the game timer -- with millisecond precision".)* Three agent commits on
+`feature/run-clock`, reviewed here. **One number per run, one owner.** `GameState.play_seconds`
+is zeroed in `start_run()` and advanced only by `main.gd`'s `_process`, while the day's phase is
+walking or returning and the tree is not paused — the summary is already excluded because the day
+controller sets the phase to over before it opens, and the pause screen is what the pause check
+catches; the title screen and the interior never reach the block. So a retried day's first
+attempt counts and a minute on the summary does not. **Shown on every ending and nowhere else**:
+`DaySummary.show_ending()` appends one line under the body for bad, neutral and good alike,
+formatted `%d:%02d.%03d` by `GameState.format_clock()`, a static formatter placed there so M102's
+finale clock reaches the same one. The run's total goes into the existing `ending` telemetry
+entry rather than a new kind. **Chosen where the design was silent**: `main` reads the pause
+state through `Engine.get_main_loop()` rather than `get_tree()`, because the main suite drives
+`main._process()` on an instance never added to the tree, where `get_tree()` logs an error and
+answers null — the main loop is the one scene tree either way. The test drives a walking, a
+paused, a summary and a title frame with a fixed delta and asserts only the walking frames move
+it; one capture of the good ending shows the line rendered under the body.
+
 ## M100 — Small, real, and nobody's · the chat entry, the spawn rig's pavement and the park trees, built 2026-09-11
 
 Three defects, three agent commits on `feature/three-small-defects`, reviewed here. **`chat` is
