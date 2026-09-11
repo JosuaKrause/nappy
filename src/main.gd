@@ -730,6 +730,17 @@ func _restart_run() -> void:
 	get_tree().paused = false
 	get_tree().call_deferred("reload_current_scene")
 
+## The scene tree's own pause flag, read through `Engine.get_main_loop()` rather than `get_tree()`
+## so this can be asked whether or not `main` itself is parented. `get_tree()` logs an
+## engine-level error off-tree — the same reason `_on_title_start()` guards it with
+## `is_inside_tree()` — and `tests/test_main.gd` drives `_process()` on a script-only instance with
+## no tree behind it at all. There is exactly one `SceneTree` for the whole process, whether a
+## person is playing or the suite is driving this frame by hand, so asking the engine for it
+## answers the same question either way.
+func _tree_is_paused() -> bool:
+	var loop := Engine.get_main_loop()
+	return loop is SceneTree and (loop as SceneTree).paused
+
 func _process(delta: float) -> void:
 	_update_follow_camera()
 	# Re-asked every frame rather than only on `size_changed` — see `_apply_orientation()`'s own
@@ -751,6 +762,16 @@ func _process(delta: float) -> void:
 		# of her is not placed, because it is placed in front of somebody walking somewhere.
 		_city.events.stream_around(_player.global_position)
 		return
+	# `GameState.play_seconds` has exactly one owner: this branch, which already knows the phase
+	# and (through `_tree_is_paused()`) the pause state. It runs while a day is `WALKING` or
+	# `RETURNING` and the tree is not paused — the pause screen and the day summary both leave
+	# `phase` here but pause the tree, and a day that has just ended has already left `phase` at
+	# `OVER` by the time either one opens, since `DayController._end()` sets it before emitting
+	# the signal that shows the summary. The title screen and the interior both `return` above
+	# this line, so neither ever reaches it either.
+	if _day.phase in [GameEnums.DayPhase.WALKING, GameEnums.DayPhase.RETURNING] \
+			and not _tree_is_paused():
+		GameState.play_seconds += delta
 	_city.set_daylight(_day.fraction_remaining())
 	_hud.set_home_guidance(_day.phase == GameEnums.DayPhase.RETURNING,
 			_city.map.home_world_position())

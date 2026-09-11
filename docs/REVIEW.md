@@ -54,6 +54,11 @@ view").
 - **Walk through an alley in act I.** A mouse waits in some of them and darts across once she is
   within 150px, after a short telegraph. Does it read as a startle rather than a threat, and does
   the dash read as *across her path*? Record is `DECISIONS.md`, M100, the mouse in the alley.
+- **Reach any ending and read the last line.** The run clock is there, to the millisecond, and
+  nowhere else — not the HUD, not the pause screen, not a day summary. It counts only while a day
+  is being walked: a retried day's first attempt counts, a minute on the summary does not. Does
+  the number feel like the run's length, and is *hidden until an ending* still the right call?
+  Record is `DECISIONS.md`, M107.
 - **Look at a park or a forest block.** Trees keep at least a canopy's width apart now. Do the
   lots still read as *wooded*, or has the spacing made them look planted in rows? Record is
   `DECISIONS.md`, M100, the park trees.

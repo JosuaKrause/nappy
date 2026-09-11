@@ -10,6 +10,21 @@ var nerves: int = Tuning.STARTING_NERVES
 var resistance_progress: int = 0
 var ending: GameEnums.Ending = GameEnums.Ending.NONE
 
+## Seconds the world has actually been moving this run — advanced by exactly one owner,
+## `main._process()`'s own day-loop branch, while a day is walking or returning home and the tree
+## is not paused. Never shown during play; the ending screen is the only place it is read, through
+## `format_clock()` below.
+var play_seconds: float = 0.0
+
+## `%d:%02d.%03d` — minutes, seconds, milliseconds — the one format a run's own length is ever
+## shown in, so a second clock reading to the millisecond has this to call rather than a second
+## copy of the string. `DaySummary.show_ending()` is the only caller so far; the finale's own
+## clock is not built yet, and calls this the same way once it is.
+static func format_clock(seconds: float) -> String:
+	var total_ms := int(round(seconds * 1000.0))
+	var total_seconds := total_ms / 1000
+	return "%d:%02d.%03d" % [total_seconds / 60, total_seconds % 60, total_ms % 1000]
+
 ## One-shot event ids already consumed this run, so they never fire twice.
 var consumed_one_shots: Array[String] = []
 ## Resistance steps completed, and steps failed beyond recovery.
@@ -89,6 +104,7 @@ func start_run(seed_value: int = 0) -> void:
 	nerves = Tuning.STARTING_NERVES
 	resistance_progress = 0
 	ending = GameEnums.Ending.NONE
+	play_seconds = 0.0
 	consumed_one_shots.clear()
 	completed_resistance_steps.clear()
 	failed_resistance_steps.clear()
@@ -144,10 +160,13 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 
 func _end_run(which: GameEnums.Ending) -> void:
 	ending = which
-	Telemetry.note("ending", "%s on day %d — resistance %d/%d, sabotage %s" % [
+	# `played` reuses the `ending` kind rather than adding a new one — how the run finished is
+	# exactly the question a run's own length answers alongside, and the telemetry skill's own
+	# "a kind reused from that table, not a synonym for one" does not want a second line for it.
+	Telemetry.note("ending", "%s on day %d — resistance %d/%d, sabotage %s, played %s" % [
 		GameEnums.Ending.keys()[which].to_lower(), day,
 		resistance_progress, Tuning.RESISTANCE_GOAL,
-		"done" if sabotage_done else "not done"])
+		"done" if sabotage_done else "not done", format_clock(play_seconds)])
 	EventBus.run_ended.emit(which)
 
 ## Records a permanent mark, ignoring duplicates from the same spot.

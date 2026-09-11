@@ -169,8 +169,8 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
-   reprioritised". **M105, the city degrades, M106, roofs, fronts and street trees, and M107, the run
-   clock, sit in this batch provisionally** — they were asked for on 2026-09-10 and not placed,
+   reprioritised". **M105, the city degrades, and M106, roofs, fronts and street trees, sit in
+   this batch provisionally** — they were asked for on 2026-09-10 and not placed,
    so this is the orchestrator's guess at where work that needs no route decision belongs, open
    to the player moving it.
 4. **Reaching act III**, which M56's measurement against the nerves needs.
@@ -626,38 +626,6 @@ re-pitched:
       face**, the meter read off the baby rather than off a strip at the bottom of the screen — the
       same shape as the audio item's *breathing as the diegetic version of the meters*. Not
       designed, and it needs the playing that the status-line cut is about to produce
-
----
-
-## M107 — The run clock · asked for 2026-09-10
-
-> "can you add an in-game timer that counts up during gameplay (and stops when paused or between
-> days). for now let's keep it hidden and only show it on the win screen"
-> "all endings show the game timer -- with millisecond precision"
-
-**One number per run: seconds actually played.** Not the day's countdown, which `HUD` already shows
-as `%d:%02d` off `DAY_LENGTH_SECONDS` and which resets every day, and not wall time: the sum over
-the run of the time the world was moving. It runs while a day is `WALKING` or `RETURNING` and the
-tree is not paused, and stops for everything else — the pause screen (`get_tree().paused`), the day
-summary, the title screen, a lost day's restart, and the moment `main.gd` pauses the tree at a
-day's end. So a retried day's first attempt still counts (it was played), and a minute spent on the
-summary does not.
-
-- [ ] **`GameState.play_seconds`**, reset in `start_run()` with the rest of the run, and advanced
-      by one owner — the same `_process` in `main.gd` that already knows the phase and the pause
-      state — rather than by the HUD or the day loop, so there is one place it can be wrong. It
-      is run state, so it goes with the run into a save the day M100's save item is built
-- [ ] **Hidden during play, shown on every ending, to the millisecond.** *"for now let's keep it
-      hidden"*, then *(2026-09-10: "all endings show the game timer -- with millisecond
-      precision")*: no HUD, no pause screen, no day summary. `DaySummary.show_ending()` appends
-      one line for every `GameEnums.Ending` — bad, neutral and good alike — the time played as
-      `%d:%02d.%03d`, under the ending's body. The millisecond format is the one M102's finale
-      clock uses, so the two share a formatter rather than each carrying a string
-- [ ] **A test that the clock only moves when the world does.** Drive `main` through a walking
-      frame, a paused frame, a summary frame and a title-screen frame with a fixed delta and
-      assert which ones advanced it; and that `start_run()` zeroes it. One `run.log` line at the
-      run's end carries the total, since the run's own record is the place a number like this is
-      read from later
 
 ---
 

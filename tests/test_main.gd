@@ -23,6 +23,7 @@ func run(t) -> void:
 	_test_the_summary_and_pause_restart_signals_are_both_connected(t)
 	_test_no_interior_exists_outside_a_debug_build(t)
 	_test_the_pavement_offset_crosses_the_streets_own_axis(t)
+	_test_play_seconds_only_advances_while_the_world_moves(t)
 
 ## `main._debug` is read once from `DevFlags.enabled()` rather than asked of the OS inside
 ## `_process()`, precisely so this can set it directly and check the release shape — the same
@@ -205,3 +206,111 @@ func _test_the_pavement_offset_crosses_the_streets_own_axis(t) -> void:
 	var ew_offset: Vector2 = MAIN_SCRIPT._pavement_offset(map, ew_at, RADIUS)
 	t.check(not is_zero_approx(ew_offset.y) and is_zero_approx(ew_offset.x),
 			"and on an east-west street it crosses local Y instead (got %s)" % ew_offset)
+
+## `GameState.play_seconds` has exactly one owner: the branch of this `_process()` reached only
+## once a day is actually running, walking or returning, with the tree unpaused. Same rig as
+## `_test_the_readout_is_not_assembled_outside_a_debug_build` above — city, stroller, baby, day
+## controller and hud, all built by hand rather than through `_ready()`, since this file's own
+## class doc explains why `main` is never added to the tree here either.
+##
+## `t.get_tree().paused` stands in for the pause screen and the day summary, the way
+## `tests/test_pause.gd` already toggles it against real screens — `main._tree_is_paused()` reads
+## `Engine.get_main_loop()` rather than `main.get_tree()` for exactly this reason: there is one
+## `SceneTree` for the whole process, and `main` not being parented in this rig must not stop the
+## question from being answerable.
+func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
+	var saved_paused: bool = t.get_tree().paused
+	var saved_run_seed := GameState.run_seed
+	var saved_day := GameState.day
+	var saved_nerves := GameState.nerves
+	var saved_progress := GameState.resistance_progress
+	var saved_sabotage := GameState.sabotage_done
+
+	GameState.play_seconds = 42.0
+	GameState.start_run(SEED)
+	t.check(is_zero_approx(GameState.play_seconds), "start_run() zeroes the clock with the rest of the run")
+
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	var stroller := Stroller.new()
+	stroller.add_child(camera)
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+	var baby := Baby.new()
+	baby.name = "Baby"
+	stroller.add_child(baby)
+	baby.set_physics_process(false)
+
+	var day := DayController.new()
+	t.add_child(day)
+	day.set_process(false)
+	day.setup(city.map, stroller)
+	day.phase = GameEnums.DayPhase.WALKING
+
+	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	t.add_child(hud)
+	hud.set_process(false)
+
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._status = Label.new()
+	main._city = city
+	main._player = stroller
+	main._baby = baby
+	main._day = day
+	main._hud = hud
+	main._in_the_title = false
+	main._debug = false
+
+	const DELTA := 0.1
+
+	t.get_tree().paused = false
+	main._process(DELTA)
+	t.check(is_equal_approx(GameState.play_seconds, DELTA),
+			"a walking frame with the tree unpaused advances the clock")
+
+	# The pause screen: phase stays WALKING (a day in progress, Esc pressed), the tree pauses.
+	t.get_tree().paused = true
+	main._process(DELTA)
+	t.check(is_equal_approx(GameState.play_seconds, DELTA), "a paused frame does not")
+
+	# The day summary: `DayController._end()` sets `phase` to `OVER` before the summary ever
+	# pauses the tree, so this is the shape a real day-end frame actually arrives in.
+	day.phase = GameEnums.DayPhase.OVER
+	main._process(DELTA)
+	t.check(is_equal_approx(GameState.play_seconds, DELTA),
+			"the day summary (phase OVER, tree still paused) does not advance it either")
+
+	# The title screen: unpaused, so the phase/pause check alone could not explain a stopped
+	# clock here — `_in_the_title`'s own early return in `_process()` is what has to.
+	day.phase = GameEnums.DayPhase.WALKING
+	t.get_tree().paused = false
+	main._in_the_title = true
+	main._process(DELTA)
+	t.check(is_equal_approx(GameState.play_seconds, DELTA),
+			"the title screen does not advance it, even with the tree unpaused behind it")
+
+	main._in_the_title = false
+	main._process(DELTA)
+	t.check(is_equal_approx(GameState.play_seconds, DELTA * 2),
+			"and a walking frame afterwards resumes rather than having latched off")
+
+	main._status.free()
+	main.free()
+	hud.free()
+	day.free()
+	stroller.free()
+	city.free()
+	# Restored for the same reason `test_day_loop.gd`'s own `GameState.start_run()` caller
+	# restores these five: the suite shares one `GameState` and `t.get_tree()`, so a value this
+	# left behind outlives the function.
+	t.get_tree().paused = saved_paused
+	GameState.run_seed = saved_run_seed
+	GameState.day = saved_day
+	GameState.nerves = saved_nerves
+	GameState.resistance_progress = saved_progress
+	GameState.sabotage_done = saved_sabotage
+	GameState.play_seconds = 0.0

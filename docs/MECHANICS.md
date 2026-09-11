@@ -770,6 +770,19 @@ aimed at being won in about a third of that.
 Running out is a day loss. The timer is shown as a light-level shift rather than a number,
 with an explicit clock in the HUD corner.
 
+## The run clock
+
+`GameState.play_seconds` is a second clock, over the whole run rather than one day: the sum of
+every second a day spent `WALKING` or `RETURNING` with the tree unpaused. Not wall time, and not
+the day timer above, which resets every day — a retried day's first attempt counts toward it, and
+neither the pause screen, the day summary nor the title screen do.
+
+It is hidden throughout play — no HUD, no pause screen, no day summary — and the ending screen is
+the only place it is shown, once, on every ending alike: bad, neutral and good all carry a line
+under their own body text reading the run's length as `%d:%02d.%03d`, to the millisecond.
+`GameState.format_clock()` is the one place that format is written, so a second clock reading to
+the millisecond calls it rather than carrying a second copy of the string.
+
 ## Nerves
 
 The run-level health bar. Starts at 5. Every lost day costs one. At 0 the run ends with the
