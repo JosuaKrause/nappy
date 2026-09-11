@@ -70,6 +70,12 @@ sprites. This is the motion work needed alongside M108, eight-direction entity g
 reverses direction before steering to the opposite lane. The heading exposed to drawing remains
 cardinal. A continuous turn must change the travelled path and the body facing together.
 
+**The full model below is wanted as written**, swept footprint and reserved turn space included —
+a review had offered the smaller reading of an arc with the sprite on its tangent, and the player
+kept this one *(2026-09-10, playtest 54: "the car turn overcommittment that you flagged is good
+and we should do that")*. `CrowdAgent.velocity()` and `EventInstance.travel_velocity()`, built
+under M61, are the actual-motion velocities the third item asks for.
+
 Coordinate implementation with M110, the crowd goes round a seal: it supplies which lanes and
 segments are blocked to each crowd kind; this item supplies how a car physically follows the
 chosen diversion. Preserve its distinction between hard seals and passable soft-seal carriageways,
@@ -154,15 +160,19 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 1. **M56**'s build item, the other rows that hunt. *("M56 is also related to the other items to
    work on right now.")* Its measurement against the nerves waits, because reaching act III
    waits: *"I wanna wait reaching act III until those things are done."*
-2. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
+2. **M112** — the escape scene, walkable: the building's five floors, the stairs as tiles she
+   walks on, and her with the baby in her arms, behind `--start-escape` and with no events.
+   *(2026-09-10, playtest 54: "as a good exercise we could build out the escape scene … can you do
+   that right now".)* At the front because the player started it the same day.
+3. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
    don't stop/redirect traffic or pedestrians.")* Placed here by the orchestrator, ahead of M65
    because a sealed street the crowd walks through is the sealing's own legibility failing — open
    to the player moving it.
-3. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
+4. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
    revisit after M62.")* Revisited rather than built as written: the regions and their
    checkpoints (`DECISIONS.md`, M62) may change what finding a mark is like, and the entry is
    re-read before the prepared poses are bound to objectives.
-4. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
+5. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
@@ -170,8 +180,8 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    clock, sit in this batch provisionally** — they were asked for on 2026-09-10 and not placed,
    so this is the orchestrator's guess at where work that needs no route decision belongs, open
    to the player moving it.
-5. **Reaching act III**, which M56's measurement against the nerves needs.
-6. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
+6. **Reaching act III**, which M56's measurement against the nerves needs.
+7. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
 The record, with its measurements and the choices open to overturn, is in `DECISIONS.md` under
@@ -379,6 +389,83 @@ use the guard pair for a guard departure if that proposed response is accepted.
       Preserve the waiting-to-hunting state change and the van's native ground registration.
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
+
+---
+
+## M112 — The escape scene, walkable · asked for 2026-09-10
+
+> "I like the fire escape stairs but the inner stairs don't work. I think the misunderstanding
+> here is that the inner stairs need to work as tiles and need to be walkable so they need to be
+> actually 2.5D and be separated in handrail and stair tiles and landings."
+
+> "as a good exercise we could build out the escape scene (three floors over ground floor -- top
+> floor is her apartment -- entrance -- basement -- double staircase left and right) without any
+> events just as a special game entry ./tools/run.sh --start-escape or similar to test out the
+> walking and screen transitions and stair walking. graphics are her holding the baby"
+
+**Three of M102's items, built early and empty, so the walking is judged before the pressure is
+put on it.** The interior map, the stairs and the carrying rig come forward from M102, the
+finale; the events, the flashing windows, the hint lines, the millisecond clock and the city half
+stay there. The scene is entered from a debug flag only, `tools/run.sh --start-escape`, and has no
+events, no crowd and no day clock that matters: it is the building, her with the baby in her
+arms, and the way down.
+
+**The building.** Five floors, each its own small map drawn with the ground `TileMapLayer` and
+the same oblique view as the city: the third floor (her apartment's hallway, where the scene
+starts at her door, implied on the hallway's south edge), the second, the first, the ground floor
+(the main entrance in the middle of the north wall — the double door with the furniture heaped
+against it — not passable) and the basement (brick walls, the gloomy floor, puddles, the
+emergency exit at one end; walking into it ends the scene). Every floor has a hallway running
+east–west with its north wall in elevation — windows and the dead lift door — and a stairwell at
+each end, left and right, entered by walking south off the hallway's end; inside, the door back
+to the hallway stands in the stairwell's north wall, seen only from inside, which is the player's
+rule from M102. The prepared pictures in `assets/interior/` are the kit (`GRAPHICS.md` lists
+them); the one that is superseded is `stair_down.svg`.
+
+**The stairs are tiles she walks on.** A stairwell is laid out as sideways switchback flights:
+from the stairwell door a flight of three tiles descends eastward to a landing, and from that
+landing a second flight of three tiles descends westward on the row below to the lower landing,
+which is the floor below. Each flight tile is a 32×32 floor tile whose picture is 2.5D — treads
+and risers seen from the oblique view, descending toward the tile's own direction — and it is
+walkable ground like any other; the handrail is a separate transparent overlay tile drawn *over*
+the flight, in front of her, so she walks behind the rail; a landing is a flat tile. Stepping onto
+the lower landing is the floor transition: fade, load the floor below, place her on that
+stairwell's upper landing at its door. The same on both sides, so the left stairwell and the
+right one both go down on every floor. Nothing moves her vertically within a floor; the descent
+is carried by the pictures and by the row change at the landing, and a per-tread offset that makes
+her visibly drop is an open refinement rather than part of this slice.
+
+- [ ] **The stair tile kit, as SVG.** In `assets/interior/`, 32×32 tiles: `stair_flight_e.svg` and
+      `stair_flight_w.svg` (treads descending toward east and toward west, seen from the oblique
+      view, seamless with the next flight tile), `stair_landing.svg` (flat, in the stairwell's
+      mechanical-floor family), `stair_rail_e.svg`, `stair_rail_w.svg` and `stair_rail_level.svg`
+      (handrail overlays on transparent canvases — the sloped pair follow their flight's descent,
+      the level one runs along a landing) and `stair_newel.svg` (the post where a rail turns,
+      bottom-centre anchored). Drawn under the svg-art rules, rendered at native and 3×, and
+      reviewed as an assembled stairwell before any of it is bound. `stair_down.svg` is retired to
+      the rejected-graphics archive as human-rejected (playtest 54), with its review sheets
+- [ ] **The interior map and its floors.** A new `src/interior/` — a small hand-shaped map class
+      apart from `CityMap`, floor plans as data, walkability from tile type, walls and doors in
+      elevation — and the five floors above, with the stairwell layout laid from the kit on both
+      sides of every floor. Headless tests: every floor builds; every stair and landing tile is
+      walkable; each floor's two stairwells lead to the floor below on the same side; the
+      basement's exit tile and the ground floor's barricaded entrance are what they claim
+- [ ] **`--start-escape`, and her with the baby.** A debug-only `DevFlags` flag that skips the
+      title and starts in the third-floor hallway at her door, with `Stroller` drawing the
+      prepared `assets/rig/mother_carrying_*` frames facing for facing instead of the
+      mother-and-pram pair, the pram gone, and the baby-state cue over the bundle. Both control
+      schemes work as they do outdoors. Absent from a release build, asserted the way the debug
+      view's test asserts its own absence
+- [ ] **Transitions and the way out.** Walking onto a lower landing fades and loads the floor
+      below at the matching stairwell; walking into the emergency exit fades and returns to the
+      title. A test drives a rig down both stairwells from the apartment to the basement exit
+      through every floor
+- [ ] **Evidence.** One capture per floor with `--start-escape`, the debug view's layers where
+      useful, and a burst of her walking a flight, in `docs/evidence/`
+
+**Open after it is walked**: whether the flights read as descending with her drawn at a constant
+height; whether the stairwell door's placement — south off the hallway's end — reads; and whether
+five floors is *"not excessively many"*.
 
 ---
 
@@ -1040,8 +1127,8 @@ HUD's `_say()` teaches tapping and running on day 1 and then never again. The bu
 home lot's own block, seen from inside for the first and only time in the run: the hallway outside
 the door at night, a dead lift, and two stairwells: one at the building's left side and one at its
 right side. Within each stairwell, flights zigzag sideways across the view with landings between
-them, as shown in the [supplied stair references](evidence/stair-layout-reference-2026-09-10/README.md).
-They do not recede front-to-back.
+them, as in the two stair references in `docs/reference/` (`stairwell-switchback-interior-01.jpg`,
+`fire-escape-switchback-exterior-01.jpg`). They do not recede front-to-back.
 The two egresses (*"all buildings have two egresses"*) lead down a few
 floors — three or four, *"not excessively many"*. The main entrance is barricaded, so the way out
 is down past the ground floor into the basement, along its corridors to the service entrance on
@@ -1096,29 +1183,14 @@ M103, the drawings the queue owes.
 
 **What is genuinely new, and the order to build it in:**
 
-- [ ] **An interior map.** Nothing in the game has an inside; `CityMap` is one lattice and every
-      guarantee is stated over it. The apartment is a second, small, hand-shaped map — a floor is a
-      corridor with a stair at each end, going down a stair is going to the next floor's map, the
-      basement is the last floor with the service door on it — reached from day 14's summary
-      rather than from the doorstep, and left through that door onto the city map at the home
-      lot's side. What the interior does not need is any of the city's planners; a floor is small
-      enough to place by hand. **What it is drawn with**, 2026-09-10: a hallway whose north wall
-      carries windows that **flash** when an off-screen explosion goes off — the explosion row's
-      cue indoors, one or two frames of the lit variant — and whose apartment doors are never
-      drawn, only implied by the floor's south edge; a stairwell with a mechanical floor whose
-      doors back onto the hallway are seen only from inside it; the main entrance with furniture
-      heaped against it; a chandelier as the hallway's light; a gloomy basement with raw brick
-      walls, puddles and the emergency exit at the end. Every picture is listed in `GRAPHICS.md` with
-      its contract
-- [ ] **Bind sideways stair modules and floor transitions.** Place the prepared 64×64
-      `assets/interior/stair_down.svg` once per building side: mirrored on the left, unmirrored
-      on the right, so upper/lower landings face the hallway. Use the anchors and landing points
-      in [GRAPHICS.md](GRAPHICS.md), keeping the projected picture separate from the
-      floor-transition trigger. Bind landings and transitions so changing floors preserves the
-      selected stairwell side. Review the assembled hallway at native size and traverse both
-      sides through every floor. The construction decision is recorded under “Sideways stair
-      flights and two building-side stairwells” in [DECISIONS.md](DECISIONS.md); exterior overlay
-      placement belongs to M106, roofs, fronts and street trees.
+- [ ] **The interior map, the stairs and the carrying rig are M112's**, the escape scene,
+      walkable — built empty first, behind `--start-escape`, so the walking is judged on its own.
+      What this milestone adds inside the building on top of it: the entry from day 14's summary
+      rather than from a flag, the exit through the service door onto the city map at the home
+      lot's side, the hallway windows that **flash** when an off-screen explosion goes off (the
+      explosion row's cue indoors, one or two frames of `hallway_wall_window_flash.svg`), the
+      chandelier as the hallway's light, and the events — mice, the pursuers on the stairs, the
+      fire on one stairwell, the steam
 - [ ] **A finale plan for the city map.** An ordered chain, not a `RouteTree`: service exit to
       first park to second to third to the edge, one street-walk between each pair and nothing
       else open. `RouteTree.for_day` and its redundancy guarantee (two distinct routes to each calm
@@ -1131,10 +1203,6 @@ M103, the drawings the queue owes.
       out of view, a sound arc when M100's sound lines exist, and a crater left behind as a scar
       the way `barricade` leaves one — `spawns_on_finish` naming a crater row whose picture is one
       of the three prepared sizes, obstructing at the size it is drawn
-- [ ] **She carries the baby.** `Stroller` draws the carrying frames instead of the mother-and-pram
-      pair for the whole finale, with the pram's own collision gone with it (the pram has no
-      collision of its own today, so this is the sprite alone). The baby-state cue over the pram
-      moves to over the bundle
 - [ ] **The two hint lines, the millisecond clock and the section restart**, each a small change
       to `HUD` and `DayController`: the clock formats milliseconds, and the day-lost path restarts
       the section rather than ending a day

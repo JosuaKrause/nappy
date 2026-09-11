@@ -143,8 +143,12 @@ will say, and it is not built.
 
 PLAYTEST-53 rejects the front-to-back stair projections in the prepared SVG kit and requests
 sideways zigzag flights. The player supplies two generated JPEGs, an interior switchback and an
-exterior fire escape, and explicitly asks to preserve them and adjust the actual images. Original
-bytes and source filenames/hashes are stored in `docs/evidence/stair-layout-reference-2026-09-10/`.
+exterior fire escape, and explicitly asks to preserve them and adjust the actual images. They
+were first committed as the original bytes under an evidence folder named for the generator; on
+the player's instruction the same day (playtest 54, *"properly ingest the reference images with
+proper names instead of who made it"*) they went through `tools/reference.sh` like every other
+reference and live as `docs/reference/stairwell-switchback-interior-01.jpg` and
+`fire-escape-switchback-exterior-01.jpg`.
 The references govern flight direction and landings, not the game's camera, characters or signs.
 
 The building's two staircases mean exactly one stairwell on the left side and one on the right;

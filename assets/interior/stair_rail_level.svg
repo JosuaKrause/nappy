@@ -1,0 +1,7 @@
+<!-- Level handrail overlay for a landing, transparent canvas. Drawn over stair_landing.svg in the
+     y-sorted layer, in front of a walker crossing it. 32x32. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" stroke="#3b3034" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M2 10V16 M10 10V16 M18 10V16 M26 10V16" fill="none" stroke-width="1.3"/>
+  <path d="M2 10H30" fill="none" stroke-width="2"/>
+  <path d="M2 9.6H30" fill="none" stroke="#a3988a" stroke-width="0.6"/>
+</svg>
