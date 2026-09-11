@@ -16,6 +16,8 @@ func run(t) -> void:
 	_test_pavement_cracks_before_road(t)
 	_test_litter_stays_off_roads_and_calm_ground(t)
 	_test_litter_grows_with_the_day(t)
+	_test_sacks_wait_for_the_curve_then_alleys_before_fronts(t)
+	_test_the_mouse_prefers_a_pile(t)
 
 # ---------------------------------------------------------------------- the curve ---
 
@@ -118,3 +120,46 @@ func _test_litter_grows_with_the_day(t) -> void:
 		var count := Litter.placed(map, day).size()
 		t.check(count >= last, "litter count never drops from day to day")
 		last = count
+
+# ---------------------------------------------------------------------- sacks ---
+
+func _test_sacks_wait_for_the_curve_then_alleys_before_fronts(t) -> void:
+	var map := CityGenerator.generate(BASE_SEED)
+	t.check(GarbageSacks.placed(map, Tuning.DEGRADATION_FIRST_DAY - 1).is_empty(),
+			"no sack stands before the curve starts")
+	var at_onset := GarbageSacks.placed(map, Tuning.DEGRADATION_FIRST_DAY)
+	for entry in at_onset:
+		var tile := map.world_to_tile(entry.position)
+		t.check(map.tile_at(tile) == GameEnums.TileType.ALLEY,
+				"on the curve's own first day, every sack stands in an alley")
+	if GarbageSacks.FRONT_DAY <= Tuning.RUN_LENGTH_DAYS:
+		var at_front_day := GarbageSacks.placed(map, GarbageSacks.FRONT_DAY)
+		for entry in at_front_day:
+			var tile := map.world_to_tile(entry.position)
+			var type := map.tile_at(tile)
+			t.check(type == GameEnums.TileType.ALLEY or type == GameEnums.TileType.SIDEWALK,
+					"a sack only ever stands in an alley or on a sidewalk")
+
+func _test_the_mouse_prefers_a_pile(t) -> void:
+	# Search a few seeds for one that actually placed an alley pile by the last day — the roll is
+	# real, not guaranteed on any one seed, and this only tests the weighting once it exists.
+	for i in range(0, 12):
+		var map := CityGenerator.generate(BASE_SEED + i)
+		var day := Tuning.RUN_LENGTH_DAYS
+		var piles := GarbageSacks.alley_pile_tiles(map, day)
+		if piles.is_empty():
+			continue
+		var candidates := _tiles_of(map, GameEnums.TileType.ALLEY)
+		var weighted := EventScheduler._prefer_beside_a_sack_pile(candidates, map, day)
+		t.check(weighted.size() > candidates.size(),
+				"a candidate list gains extra copies once an alley pile exists")
+		var candidate_set := {}
+		for tile in candidates:
+			candidate_set[tile] = true
+		var weighted_set := {}
+		for tile in weighted:
+			weighted_set[tile] = true
+		t.check(candidate_set.size() == weighted_set.size(),
+				"the preference adds copies, never a tile that was not already a candidate")
+		return
+	t.check(true, "no seed in range rolled an alley pile by the last day — nothing to weight")

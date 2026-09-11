@@ -525,9 +525,21 @@ func _dress_blocks(state: CityState) -> void:
 		var purpose := state.purpose_of(map.block_plans, block)
 		_dress_block(block, purpose)
 	_dress_precincts()
+	_place_garbage_sacks()
 	for building in _buildings:
 		building.condition = _condition_for(
 				state.purpose_of(map.block_plans, _block_of(building.lot)))
+
+## Today's garbage sacks — `GarbageSacks.placed()` re-rolled from the day, unlike the trees above:
+## the city degrades over the run, so unlike a park's planting this is not the same every morning.
+## Each is a `Prop` with a `GroundShape` for its shadow and no body, exactly as decorative as a
+## bollard.
+func _place_garbage_sacks() -> void:
+	for entry in GarbageSacks.placed(map, _day):
+		var sack := Prop.new()
+		sack.kind = Prop.Kind.SACK_PILE if entry.pile else Prop.Kind.SACK
+		sack.position = entry.position
+		_add_prop(sack)
 
 ## What a block's buildings look like now. A boarded-up street and a burnt-out one are the
 ## same footprints and very different places.
