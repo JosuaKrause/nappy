@@ -1272,14 +1272,12 @@ func _test_the_arterial_is_the_busiest_street(t) -> void:
 ## probe stood at the front door and reported a clean bill of health on a build that was visibly
 ## broken.
 ##
-## **The tolerance below is not zero, and the gap is a different system than the one this test
-## names.** `CityGenerator._place_hard_blockers` grows one reference `RouteTree` and hands it to
-## both `_place_dead_ends` and `_place_big_buildings`, so a city's big buildings sit wherever that
-## tree left them uncovered, same as its dead ends. Grown over cells, that tree covers different
-## ground than the street-by-street one it replaced, so a fixed seed can now put a big building
-## where a car's crawl-forward step in a traffic queue grazes its footprint by one tile — never the
-## wall this test is named for, and never more than one car at once, but no longer strictly zero
-## either. Measured on this seed: one car, on 27 of 2400 frames (1.1%).
+## **Zero is the only acceptable end state, and it is the one asserted here.** `CrowdAgent.
+## nudge_back()` and `_join_the_back_of_the_queue()` are the two places a traffic queue's own
+## spacing arithmetic moves a car with no notion of the map underneath it, so both refuse a move
+## that would land on ground `_cannot_go_on` refuses — a car grazing a big building's own footprint
+## by one tile was exactly that, an unguarded backward shove across a junction into whatever
+## bordered it.
 func _test_nothing_walks_into_a_hard_blocker(t) -> void:
 	var walls := {}
 	for key: Vector3i in _city.map.built_over:

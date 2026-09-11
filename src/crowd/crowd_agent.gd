@@ -591,8 +591,20 @@ func queue_position() -> float:
 ## Slides this agent back down its own lane. `Crowd` uses it to open a gap that the brake could
 ## not: a car that is recycled into a lane can materialise inside one that is already there, and
 ## from inside there is no speed either of them can choose that separates them.
+##
+## **Never past ground it could not have driven onto itself.** This is pure spacing arithmetic with
+## no notion of the map underneath it, so unguarded it can shove the rearmost car of a queue back
+## across a junction and into whatever borders it on the far side — measured as a car grazing a big
+## building's own footprint by one tile. `_cannot_go_on` is the same predicate `_look_ahead` already
+## trusts for the *forward* direction; asked here for the backward one, a nudge that would cross
+## into blocked ground is simply refused, which leaves that one pair a little closer than
+## `Tuning.CAR_GAP_MIN` for a frame rather than parking either of them in a wall.
 func nudge_back(distance: float) -> void:
-	_set_along(_along() - distance * _direction)
+	var target := _along() - distance * _direction
+	var probe := Vector2(_cross(), target) if _vertical else Vector2(target, _cross())
+	if _cannot_go_on(_vertical, _map.world_to_tile(probe)):
+		return
+	_set_along(target)
 
 ## Somebody she walked into gets out of her way.
 ##
@@ -1284,13 +1296,23 @@ func _keep_within_the_room_beyond_the_map() -> void:
 ##
 ## It may put the car further back than the entry band is deep, which is exactly right: further back
 ## is further off-screen, and the alternative is a car appearing inside another one.
+##
+## **Never past ground it could not have driven onto itself**, for the same reason `nudge_back`
+## checks it: the rearmost car's own position says nothing about what stands behind it, and a queue
+## that has backed up almost to a wall would otherwise place the newcomer inside it. Refusing the
+## move leaves the car wherever `_recycle`'s own loop already found it standing on a street, which
+## is the position this whole fallback exists to improve on rather than one it has to guarantee.
 func _join_the_back_of_the_queue() -> void:
 	if kind != Kind.CAR or not traffic or _has_room_here():
 		return
 	var last := traffic.rearmost(lane_key())
 	if last == INF:
 		return
-	_set_along((last - Tuning.CAR_GAP_MIN) * _direction)
+	var target := (last - Tuning.CAR_GAP_MIN) * _direction
+	var probe := Vector2(_cross(), target) if _vertical else Vector2(target, _cross())
+	if _cannot_go_on(_vertical, _map.world_to_tile(probe)):
+		return
+	_set_along(target)
 
 ## Tells the index this car is here, so that another one recycling or turning later in the same
 ## frame does not choose the same piece of road. See `TrafficIndex.claim()`.
