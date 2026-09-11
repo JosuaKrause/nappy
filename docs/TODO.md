@@ -595,12 +595,6 @@ is still true.
       it — so the argument is always its default and the behaviour is unchanged in play. The fix
       is the field on `Planned`, written when an instance streams out and passed on `resume()`,
       with a test that streams a noticed pursuer out and back through `EventManager` itself
-- [ ] **A big building can be built over a precinct's own pavement.** Measured on seed 24757: two
-      tiles inside a precinct span are not walkable, because a footprint was placed across the
-      corridor the span runs down. `CityGenerator._place_hard_blockers` never reads
-      `precinct_spans`, so nothing asks whether a footprint lands on one. A precinct's whole design
-      is *paving frontage to frontage*, and the fix is a constraint where big buildings and calm
-      zones choose their ground, not a repair pass afterwards
 - [ ] **`chat` is written and undocumented.** `EventManager` logs a `chat` entry when
       `chatting_mother` starts a conversation, and the table of entry kinds in `docs/TELEMETRY.md`
       has no row for it. One row, plus the check that would have caught it: something asserting the
