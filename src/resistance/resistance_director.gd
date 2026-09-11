@@ -61,6 +61,11 @@ var _rng: RandomNumberGenerator
 var _player: Stroller
 
 func setup(city: City, map: CityMap) -> void:
+	# The same self-registration `WorldContext` and `Stroller` use, so anything that needs to ask
+	# this director a read-only question — `pointable_objective()`, for a protester — finds it
+	# with `get_tree().get_first_node_in_group("resistance")` rather than being handed a reference
+	# by whoever built the scene.
+	add_to_group("resistance")
 	_city = city
 	_map = map
 
@@ -362,3 +367,14 @@ func current_step() -> ResistanceSteps.Step:
 
 func contact_position() -> Vector2:
 	return _contact.global_position if _contact else Vector2.INF
+
+## Where a protester should point, or `Vector2.INF` when there is nothing to point at: no step
+## today, or today's step is a chalk-mark pickup. *(2026-09-11, the player: "the mark is
+## findable now -- I don't think we need pointing for that. but the other tasks are not as easy
+## and need pointing.")* A perform step's own contact already sits at the task, so this is
+## `contact_position()` read back, never a placement or a move of its own.
+func pointable_objective() -> Vector2:
+	var step := current_step()
+	if step == null or step.is_pickup:
+		return Vector2.INF
+	return contact_position()
