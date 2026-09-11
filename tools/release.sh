@@ -29,16 +29,49 @@ set -uo pipefail
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_DIR" || exit 1
 
+usage() {
+    cat <<'EOF'
+usage: tools/release.sh [--help|-h] <major|minor|patch> [push]
+
+Bumps the latest version tag by the given part and prints the plan. Add the literal word
+"push" to actually tag and push, once every refusal (dirty tree, wrong branch, main not level
+with origin/main, checks not green) passes.
+
+  tools/release.sh patch
+  tools/release.sh patch push
+EOF
+}
+
+case "${1:-}" in
+    --help|-h) usage; exit 0 ;;
+esac
+
+if [[ $# -gt 2 ]]; then
+    echo "unexpected extra argument(s): ${*:3}" >&2
+    echo >&2
+    usage >&2
+    exit 1
+fi
+
 PART="${1:-}"
 case "$PART" in
     major|minor|patch) ;;
     *)
-        echo "usage: tools/release.sh <major|minor|patch> [push]" >&2
+        usage >&2
         exit 1
         ;;
 esac
 CONFIRMED=0
-[[ "${2:-}" == "push" ]] && CONFIRMED=1
+case "${2:-}" in
+    "") ;;
+    push) CONFIRMED=1 ;;
+    *)
+        echo "unrecognized second argument: '$2' (the only accepted word is 'push')" >&2
+        echo >&2
+        usage >&2
+        exit 1
+        ;;
+esac
 
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 if [[ "$BRANCH" != "main" ]]; then
