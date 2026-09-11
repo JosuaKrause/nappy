@@ -542,6 +542,13 @@ func _process(delta: float) -> void:
 		if is_waiting() and def.mobile and path.size() > 1:
 			_advance_along_path(delta)
 		_chase(delta)
+	elif def.pursues_within > 0.0:
+		# The same waiting state a pursuer gets, for a row that only waits and then runs its own
+		# path rather than turning to chase her once noticed — see `_check_for_notice()` and
+		# `EventDef.pursues_within`'s own note that the field is not only for a pursuer any more.
+		_check_for_notice()
+		if not is_waiting() and def.mobile and path.size() > 1 and not is_telegraphing_still():
+			_advance_along_path(delta)
 	elif def.mobile and path.size() > 1 and not is_telegraphing_still():
 		_advance_along_path(delta)
 
@@ -736,6 +743,24 @@ func _chase(delta: float) -> void:
 	# Ground covered, not ground gained: backing off is still moving, and the bob is driven by
 	# distance so that a thing holding its ground still reads as alive.
 	_path_travelled += moved.length()
+
+## `_chase()`'s own notice check, folded out for anything that waits on `pursues_within` without
+## also `pursues` — a row that runs its own path once noticed rather than turning to chase her.
+## `alley_mouse` is the first: `EventScheduler` places it on an `ALLEY` tile at dawn, well outside
+## `Tuning.VIEW_HALF_EXTENT`, so telegraphing from the moment it exists dashed and finished off
+## screen long before she ever walked into the alley — the review finding this exists to fix.
+##
+## Turns to face her the same way `_chase()` does, which costs nothing here: `_advance_along_path`
+## overwrites `_heading` from the path's own direction the instant it starts moving, so this only
+## shows for whatever is left of the frame it happens on.
+func _check_for_notice() -> void:
+	if player_at == Vector2.INF or not is_waiting():
+		return
+	var toward := player_at - global_position
+	if toward.length() > def.pursues_within:
+		return
+	_noticed_at = age
+	_heading = toward.normalized()
 
 ## Clamps a chase's own step so it can never end standing on ground the city says nobody can. A
 ## pursuing instance moves by setting its own position, and nothing above this function has ever

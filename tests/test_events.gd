@@ -37,6 +37,7 @@ func run(t) -> void:
 	_test_one_shots_fire_once_per_run(t)
 	_test_alley_robbery_never_lands_on_a_required_alley(t)
 	_test_the_mouse_crosses_the_alleys_own_short_axis(t)
+	_test_the_mouse_waits_until_she_is_near(t)
 	_test_one_park_stays_usable(t)
 	_test_calm_she_has_not_used_is_left_alone(t)
 	_test_successors_resolve(t)
@@ -1441,6 +1442,81 @@ func _test_the_mouse_crosses_the_alleys_own_short_axis(t) -> void:
 						and point.y >= world_rect.position.y and point.y <= world_rect.end.y,
 						"seed %d alley %s: the dash stays inside the alley it crosses" % [run_seed, rect])
 	t.check(checked > 0, "some seed generated an alley to check (%d)" % checked)
+
+## The review finding on M100, a mouse in the alley: `alley_mouse` is `MAP`-placed at dawn,
+## `Tuning.EVENT_STREAM_RADIUS` (900px) outside the view and far past `Tuning.VIEW_HALF_EXTENT`, so
+## a row that started telegraphing the moment it existed dashed and finished off screen before she
+## ever walked into the alley — nothing happened, from where she was standing. `pursues_within`
+## without `pursues` (`EventDef.pursues_within`'s own note, `EventInstance._check_for_notice()`) is
+## the fix: this holds the whole sequence end to end, on a real generated alley, rather than only
+## the crossing axis `_test_the_mouse_crosses_the_alleys_own_short_axis` already checks in
+## isolation.
+func _test_the_mouse_waits_until_she_is_near(t) -> void:
+	var def := EventCatalogue.by_id("alley_mouse")
+	t.check(def.pursues_within > 0.0 and not def.pursues,
+			"alley_mouse waits like a pursuer without becoming one")
+
+	var map: CityMap
+	var rect: Rect2i
+	for run_seed in [4242, 2102613802, 90210, 37, 38]:
+		var candidate := CityGenerator.generate(run_seed)
+		if not candidate.alley_rects.is_empty():
+			map = candidate
+			rect = candidate.alley_rects[0]
+			break
+	t.check(map != null, "some seed generated an alley to place the mouse on")
+	if map == null:
+		return
+
+	var at := map.tile_to_world(rect.position + Vector2i(rect.size.x / 2, rect.size.y / 2))
+	var instance := EventInstance.new()
+	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT, map)
+	t.add_child(instance)
+	instance.set_process(false)
+
+	# Far away — well past the trigger, and past where `EventManager` actually streams a `MAP` row
+	# in from (`EVENT_STREAM_RADIUS`, 900px).
+	instance.player_at = at + Vector2(def.pursues_within + 400.0, 0.0)
+	_advance(instance, 5.0)
+	t.check(instance.is_waiting(), "far away, it is still only waiting several seconds later")
+	t.check(not instance.is_telegraphing(), "and has not started telegraphing")
+	t.close_to(instance.global_position.distance_to(at), 0.0, "and has not moved", 0.5)
+	t.check(not instance.is_finished, "and has not finished")
+
+	# She steps inside the trigger: the notice, and the clock, start now.
+	instance.player_at = at + Vector2(def.pursues_within - 10.0, 0.0)
+	instance._process(STEP)
+	t.check(not instance.is_waiting(), "she notices it")
+	t.check(instance.is_telegraphing(), "and it starts telegraphing from the notice, not from dawn")
+
+	_advance(instance, def.telegraph_time + 0.05)
+	t.check(not instance.is_telegraphing(), "the telegraph ends")
+	t.check(not instance.is_finished, "and the dash runs rather than the event already being over")
+
+	# Mid-crossing (half the narrower side's own travel time, not half of `duration`, which
+	# outlasts the physical crossing on purpose — see the row's own docstring): still inside the
+	# alley, and it has actually moved along the axis that alley's short side is on.
+	var world_rect := map.tile_rect_to_world(rect)
+	var vertical := rect.size.y > rect.size.x
+	var narrow_px := float(mini(rect.size.x, rect.size.y)) * Tuning.TILE_SIZE
+	var crossing_time := narrow_px / def.speed
+	_advance(instance, crossing_time * 0.5)
+	t.check(instance.global_position.x >= world_rect.position.x - 1.0
+			and instance.global_position.x <= world_rect.end.x + 1.0
+			and instance.global_position.y >= world_rect.position.y - 1.0
+			and instance.global_position.y <= world_rect.end.y + 1.0,
+			"mid-dash it is still inside the alley it crosses")
+	if vertical:
+		t.check(not is_equal_approx(instance.global_position.x, at.x),
+				"a vertical alley's mouse has moved across X, not Y")
+	else:
+		t.check(not is_equal_approx(instance.global_position.y, at.y),
+				"a horizontal alley's mouse has moved across Y, not X")
+
+	_advance(instance, crossing_time * 0.5 + 0.5)
+	t.check(instance.is_finished or instance.is_leaving,
+			"and the dash finishes once it has crossed")
+	instance.free()
 
 ## The rule that keeps a day winnable: however bad it gets, one calm zone stays usable.
 ##

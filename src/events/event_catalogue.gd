@@ -281,6 +281,20 @@ static func _cat_dash() -> EventDef:
 ## **No body, nothing lethal.** `shape` is set for the shadow alone — `solid()` is never called —
 ## and `hard_fail` stays at its default `false`.
 ##
+## **It waits for her rather than running the moment it exists.** `MAP` places it on its `ALLEY`
+## tile at dawn, well outside `Tuning.EVENT_STREAM_RADIUS` (900px) — far past
+## `Tuning.VIEW_HALF_EXTENT` — so a row that started telegraphing on arrival dashed and finished off
+## screen before she was anywhere near the alley, which read as nothing happening at all: the review
+## finding this field exists to answer. `pursues_within` is not only for a pursuer any more — see its
+## own docstring — so this row sets it (150px) without `pursues`: `EventInstance._check_for_notice()`
+## holds it `is_waiting()`, emitting nothing above the ordinary field and not yet on the clock, until
+## she is within 150px, and only then does the telegraph start and the path run. 150px is inside
+## `VIEW_HALF_EXTENT.y` (180, the shorter axis, so this holds whichever way she is facing) with room
+## to spare, and past the field's own `outer_radius` (60px), so the telegraph is always already on
+## screen by the time she could feel it. `EventDef.validate()`'s ordinary `Tuning.validate_event()`
+## check is unaffected — it is stated over `telegraph_time` against the field's own geometry, not
+## over when the clock starts — and still passes at the same numbers as before this field existed.
+##
 ## **The dash crosses the alley's own short axis by construction, not by luck.** `EventInstance`
 ## reads `map.alley_rects` for the rect this instance landed in and lays its two-point path across
 ## whichever side of that rect is narrower — the width, since `ALLEY_WIDTH_TILES` (2) is always
@@ -313,6 +327,10 @@ static func _alley_mouse() -> EventDef:
 	def.mobile = true
 	def.still_while_telegraphing = true
 	def.speed = 200.0
+	# Waits unclocked until she is this close — inside VIEW_HALF_EXTENT.y (180px) with room to
+	# spare, past outer_radius (60px) — rather than telegraphing from the moment a MAP placement
+	# exists, off screen. See the row's own docstring and EventDef.pursues_within.
+	def.pursues_within = 150.0
 	# Shared with `alley_robbery`'s own weight: the two rows draw from the same `ALLEY`-only pool
 	# and neither should be favoured over the other when both are offered the same tile.
 	def.weight = 1.5

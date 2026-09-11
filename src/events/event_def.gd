@@ -282,6 +282,15 @@ func departure_speed() -> float:
 ## notice the fairness contract owes), then the chase. `telegraph_time` and `duration` are both
 ## measured from the moment it notices, not from the moment it was put in the world — a robbery
 ## that spends its telegraph at dawn, four streets away, has no notice left in it at all.
+##
+## **The name is older than the field's own reach.** `is_waiting()`, `chase_age()`,
+## `current_intensity()`'s undamped notice and `_has_expired()` all read this rather than
+## `pursues`, so a row that sets it without `pursues` gets the same waiting state — standing
+## unclocked until she is within range, then a telegraph that is not quietened either — without the
+## chase that follows for a pursuer. `alley_mouse` is the first: `EventInstance._check_for_notice()`
+## is `_chase()`'s own trigger check, folded out so a `MAP`-placed row that is not a pursuer can use
+## it to wait for her before it runs its ordinary path, rather than a `MAP` row's arrival at dawn —
+## however far outside `Tuning.VIEW_HALF_EXTENT` that turns out to be — starting its clock instead.
 @export var pursues_within := 0.0
 
 ## How this row answers to the resistance.
