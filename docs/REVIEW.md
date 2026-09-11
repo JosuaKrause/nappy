@@ -51,6 +51,11 @@ view").
   as *a dog that was somewhere* or as the lesson again? That is the open question in `TODO.md`,
   M96, whether it should wait to be routed into; a played answer decides it. Record is
   `DECISIONS.md`, M96.
+- **Reach any ending and read the last line.** The run clock is there, to the millisecond, and
+  nowhere else — not the HUD, not the pause screen, not a day summary. It counts only while a day
+  is being walked: a retried day's first attempt counts, a minute on the summary does not. Does
+  the number feel like the run's length, and is *hidden until an ending* still the right call?
+  Record is `DECISIONS.md`, M107.
 - **Look at a park or a forest block.** Trees keep at least a canopy's width apart now. Do the
   lots still read as *wooded*, or has the spacing made them look planted in rows? Record is
   `DECISIONS.md`, M100, the park trees.
