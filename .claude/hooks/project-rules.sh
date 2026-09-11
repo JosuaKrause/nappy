@@ -93,6 +93,11 @@ esac
 case "$path" in
 	*/tools/*.py|*/pyproject.toml|*/uv.lock|*/.python-version) wanted+=(python-tooling) ;;
 esac
+# Every command-line entry point, shell or Python, and the game's own dev-flag parser: help on
+# --help/-h, and rejection of anything unknown before any work starts.
+case "$path" in
+	*/tools/*|*/src/dev/dev_flags.gd) wanted+=(cli-tools) ;;
+esac
 case "$path" in
 	*/tests/*)                 wanted+=(verify) ;;
 esac
