@@ -63,9 +63,19 @@ Asked whether a bar raised for a car also lets her through without a hold:
 > spawns an alley at the home (which shouldn't happen) the robber spawns too leading to a spawn
 > kill every time.
 
-Today the home block may carry a through-alley: the notch is slid sideways off it rather than the
-block being exempt from carving (`docs/CITY.md`, "Place home"). Filed under M100's defects as the
-rule the player names — no alley on the home block — with the spawn kill as its consequence.
+> there was a bug report a while back -- where did it go -- how can the no alley item not exist?
+
+It went into the archive as closed. Playtest 11, finding 1 — *"events/hazards should not spawn on
+the home block"* — is recorded in `DECISIONS.md` as **Nothing is placed on the home block**, but
+what was built is `EventScheduler._the_street_she_starts_on()`: the one street segment outside the
+front door is never offered to the catalogue. An alley carved through the home block is a
+different segment, so it keeps `alley_robbery`, and `ResistanceDirector._maybe_set_a_trap()`
+never asked either. The finding was narrowed from *block* to *street* without anybody saying so,
+which is the silent overturn the feedback rule exists to catch. Reopened under M100 from the old
+finding, in two parts: no alley is carved into the home block at all (today the notch is only
+slid sideways off one, `docs/CITY.md`, "Place home"), and the placement exemption covers the whole
+block's ground — every segment bordering it and anything inside it — for the scheduler and the
+resistance trap alike.
 
 ## The car's dead zone trails the car
 
@@ -87,7 +97,10 @@ This overturns the orchestrator's decision in M61's field record — that the ca
 radius is the moving field's *forward* reach, so the field only shrinks behind and abeam — in
 favour of the player's: the resting disc is the reference and the moving field stretches out of
 it. Filed as M114, the moving field grows forward. "Retain the area" and "the same width" ask for
-slightly different ellipses; the entry states both and the question goes back to the player.
+slightly different ellipses; asked which, the player chose the width:
+
+> if anything the moving size should be bigger than the rest size since moving causes more
+> excitement.
 
 ## The inspection
 

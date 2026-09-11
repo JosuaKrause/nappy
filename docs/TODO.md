@@ -525,13 +525,14 @@ from speed (`Tuning.field_eccentricity`); what changes is the scale `L` the coni
 `r(θ) = L·(1−e)/(1−e·cosθ)`, which today is `L = outer_radius` and becomes a function of `e` that
 reduces to the disc at `e = 0`.
 
-**Two readings of the sentence, and they differ by a fifth.** *"Retain the area"*: the ellipse has
-the resting disc's area, `L = R·(1+e)/(1−e²)^¼` — at a car's `e` 0.5 that is a forward reach of
-1.61R, a rear of 0.54R and an abeam half-width of 0.80R, so the stopped disc is a little *wider*
-than the moving field was. *"The same width with shorter height"*: the abeam half-width stays `R`,
-`L = R/(1−e)` — forward 2R, rear 0.67R, and the area grows by half. The second is what the eye
-checks in the debug view and the first is what the sentence names; the orchestrator's pick is the
-first, with the constant that decides it written where a played verdict can move it.
+**The width is what is kept, and the moving field is the bigger one — decided by the player.**
+The sentence named two ellipses a fifth apart: one with the resting disc's area (forward 1.61R at
+a car's `e` 0.5, abeam 0.80R, so the stopped disc would be a little wider than the moving field)
+and one with the disc's width (abeam stays `R`, `L = R/(1−e)`: forward 2R, rear 0.67R, the area
+up by half). Asked which, the player chose the second and gave the reason *(2026-09-10: "if
+anything the moving size should be bigger than the rest size since moving causes more
+excitement")*. So the abeam half-width is the catalogued radius whatever the speed, and motion
+adds reach ahead — never takes any away — with the disc the field collapses back to on stopping.
 
 **The fairness contract moves with it.** The forward reach is now larger than the catalogued
 number, so `required_telegraph_time` and `validate_pursuit` are stated over `L(e)` at the row's
@@ -539,13 +540,14 @@ own speed rather than over `outer_radius`, and `EventDef.field_reach()` and ever
 consumer take the same. Every moving row is re-validated on boot; a row that fails gets its
 telegraph or its radius re-derived and the change listed in the record, never a silent cap. The
 eccentricity cap (`FIELD_ECCENTRICITY_MAX` 0.7) is re-read against the new forward reach — at 0.7
-the area-preserving `L` is 2.4R and the width-preserving 3.3R — and probably comes down.
+`L` is 3.3R — and comes down, or the speed constant goes up, so a cyclist's field does not reach
+three streets ahead; the number is set against the probes and the debug view, not by taste.
 
 - [ ] **The scale, from the resting disc.** `GroundShape.eccentric_distance()` and
-      `_eccentric_field_outline()` take `L(e)` from one function in `Tuning` beside
-      `field_eccentricity()`, area-preserving unless the player says width; a test asserts the
-      moving ellipse's area (or width) against the resting disc's and that `e = 0` is exactly the
-      disc, and the approaching-costs-more test still holds
+      `_eccentric_field_outline()` take `L(e) = R/(1−e)` from one function in `Tuning` beside
+      `field_eccentricity()`; a test asserts the moving ellipse's abeam half-width equals the
+      resting radius at every speed, that `e = 0` is exactly the disc, that forward reach grows
+      monotonically with speed, and that the approaching-costs-more test still holds
 - [ ] **The contract over the forward reach.** `required_telegraph_time`, `validate_pursuit`,
       `field_reach()` and the halo's early-out over `L(e)`; the catalogue re-validated; any row
       that has to move listed with before and after
@@ -875,16 +877,25 @@ is still true.
       thing; the roadblock wants the same construction — a continuous held-street barrier picture
       that repeats seamlessly, with an end piece — drawn under the svg-art rules and bound in
       `_draw_body`'s `ROADBLOCK` case
-- [ ] **No alley on the home block.** *(2026-09-10, playtest 55: "if there spawns an alley at the
-      home (which shouldn't happen) the robber spawns too leading to a spawn kill every time".)*
+- [ ] **Nothing on the home block — the whole block, as playtest 11 asked, not the doorstep
+      street.** *(Playtest 11, finding 1: "events/hazards should not spawn on the home block";
+      2026-09-10, playtest 55: "if there spawns an alley at the home (which shouldn't happen) the
+      robber spawns too leading to a spawn kill every time … there was a bug report a while back
+      -- where did it go".)* The archive records finding 1 as built, and what was built is
+      `EventScheduler._the_street_she_starts_on()` — the one segment outside the front door is
+      never offered to the catalogue. **Asked for the block · narrowed to the street with nobody
+      saying so**, which is why it is reopened here from the old finding rather than filed as
+      new. Two parts, both by construction. **No alley is carved into the home block**:
       `CityGenerator` carves a through-alley into any non-park, non-commercial block, the middle
       block included, and only slides the home notch sideways off it (`docs/CITY.md`, "Place
-      home"). An alley beside the doorstep is then `alley_robbery`'s ground, and its guard robber
-      stands within his lethal radius of where she appears. The rule is the player's: the middle
-      block is exempt from alley carving the way commercial blocks already are, decided where the
-      alleys are rolled rather than repaired after; the notch-sliding clause then has nothing to
-      slide for and goes. `tests/test_generator.gd` asserts no alley tile on the home block over
-      many seeds. The spawn kill needs no fix of its own once the ground is gone
+      home"); the middle block joins the commercial blocks as exempt where the alleys are rolled,
+      and the notch-sliding clause goes with nothing left to slide for. **And the exemption is the
+      block's ground**: every segment bordering the home block, and anything inside it, is
+      excluded where the scheduler builds candidates — beside `closed_tiles`, the kerb test and
+      the door segments above — and `ResistanceDirector._maybe_set_a_trap()` refuses a bearing
+      that lands there. `tests/test_generator.gd` asserts no alley tile on the home block over
+      many seeds; the scheduler test asserts nothing planned on the block's segments. The spawn
+      kill needs no fix of its own once the ground is gone
 - [ ] **A car's strike box sits half a car behind its picture going north, half a car ahead going
       south.** *(2026-09-10, playtest 55, read off the debug view: "the dead zone of a car is
       trailing the car instead of leading the car?")* `CrowdAgent._draw_body` draws a car with
