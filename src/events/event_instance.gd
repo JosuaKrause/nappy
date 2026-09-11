@@ -39,6 +39,10 @@ const UNMARKED_VAN := preload("res://assets/events/unmarked_van.svg")
 const UNMARKED_VAN_END := preload("res://assets/events/unmarked_van_end.svg")
 const VAN_VICTIM := preload("res://assets/events/van_victim.svg")
 const RIOT_VAN := preload("res://assets/events/riot_van.svg")
+const RIOT_VAN_FRONT := preload("res://assets/events/riot_van_front.svg")
+const RIOT_VAN_BACK := preload("res://assets/events/riot_van_back.svg")
+const RIOT_VAN_FRONT_DIAGONAL := preload("res://assets/events/riot_van_front_diagonal.svg")
+const RIOT_VAN_BACK_DIAGONAL := preload("res://assets/events/riot_van_back_diagonal.svg")
 const ARMY_TRUCK := preload("res://assets/events/army_truck.svg")
 const ARMY_TRUCK_END := preload("res://assets/events/army_truck_end.svg")
 const FLAME := preload("res://assets/events/flame.svg")
@@ -46,6 +50,12 @@ const BARRIER_SEGMENT := preload("res://assets/events/barrier_segment.svg")
 const BARRIER_END := preload("res://assets/events/barrier_end.svg")
 const RUBBLE := preload("res://assets/events/rubble.svg")
 const CHECKPOINT_BLOCK := preload("res://assets/events/checkpoint_block.svg")
+const ROADBLOCK_SEGMENT := preload("res://assets/events/roadblock_segment.svg")
+const ROADBLOCK_END := preload("res://assets/events/roadblock_end.svg")
+## A hunting roadblock's own shadow once it draws as a guard rather than as the band: person-scale,
+## matching `alley_robbery`'s own `GroundShape.point(9.0)` rather than `def.shape` — the band's 60px
+## capsule, which is still what the collision body and the cold picture are built from.
+const _GUARD_SHADOW_RADIUS := 9.0
 const BARRICADE_PILE := preload("res://assets/events/barricade_pile.svg")
 const CAFE_TABLE := preload("res://assets/events/cafe_table.svg")
 const CAFE_SITTER := preload("res://assets/events/cafe_sitter.svg")
@@ -85,6 +95,7 @@ const HUT_SOUTH := preload("res://assets/checkpoints/hut_south.svg")
 const HUT_EAST := preload("res://assets/checkpoints/hut_east.svg")
 const HUT_WEST := preload("res://assets/checkpoints/hut_west.svg")
 const GUARD_STANDING := preload("res://assets/checkpoints/guard_standing.svg")
+const GUARD_LUNGING := preload("res://assets/checkpoints/guard_lunging.svg")
 const BOOM_GATE_NS_LOWERED := preload("res://assets/checkpoints/boom_gate_ns_lowered.svg")
 const BOOM_GATE_NS_RAISED := preload("res://assets/checkpoints/boom_gate_ns_raised.svg")
 const BOOM_GATE_EW_LOWERED := preload("res://assets/checkpoints/boom_gate_ew_lowered.svg")
@@ -1654,13 +1665,13 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.POSTER_CREW:
 			_draw_simple(POSTER_CREW, canvas)
 		EventDef.Look.ROADBLOCK:
-			_draw_spread(CHECKPOINT_BLOCK, null, canvas)
+			_draw_roadblock(canvas)
 		EventDef.Look.UNMARKED_VAN:
 			_draw_abduction(canvas)
 		EventDef.Look.ROBBER:
 			_draw_robber(canvas)
 		EventDef.Look.RIOT_VAN:
-			_draw_simple(RIOT_VAN, canvas)
+			_draw_riot_van(canvas)
 		EventDef.Look.ARMY_TRUCK:
 			_draw_vehicle(ARMY_TRUCK, ARMY_TRUCK_END, canvas)
 		EventDef.Look.BARRICADE:
@@ -1724,6 +1735,46 @@ func _draw_vehicle(side: Texture2D, end: Texture2D, canvas: CanvasItem = self) -
 func _draw_simple(texture: Texture2D, canvas: CanvasItem = self) -> void:
 	_draw_shape_shadow(canvas, def.shape)
 	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+
+## The seed of M108, eight-direction entity graphics, scoped to `Look.RIOT_VAN` alone — the only
+## row that carries it — rather than a general `Look`-keyed table with one entry: front, back,
+## side and the two diagonals, the nearest of the eight to the van's own `_heading`, mirrored for
+## the three headings whose picture is authored facing the other way. The next row that needs more
+## than a side and an end view generalises this octant selection rather than copying it.
+##
+## The waiting-to-hunting state change is untouched — `_process()`'s generic pursuer rule already
+## moves `_heading` and drops the body the frame `night_raid` stops waiting, exactly as it did
+## before this — and so is the van's own ground registration, `def.shape` unchanged beneath it.
+func _draw_riot_van(canvas: CanvasItem = self) -> void:
+	_draw_shape_shadow(canvas, def.shape)
+	# `_heading`'s nearest 45° octant, east at zero and turning clockwise (Godot's Y grows south,
+	# so `Vector2.angle()` already runs that way). `front`/`back` name the direction the authored
+	# asset faces (`riot_van_front.svg` is the south-facing windscreen, `riot_van_back.svg` the
+	# north-facing cargo doors — see docs/GRAPHICS.md), not the octant that selects it.
+	var octant := roundi(_heading.angle() / (PI / 4.0))
+	octant = ((octant % 8) + 8) % 8
+	var texture: Texture2D = RIOT_VAN
+	var mirror := false
+	match octant:
+		1:  # south-east
+			texture = RIOT_VAN_FRONT_DIAGONAL
+		2:  # south
+			texture = RIOT_VAN_FRONT
+		3:  # south-west: mirrors the south-east picture
+			texture = RIOT_VAN_FRONT_DIAGONAL
+			mirror = true
+		4:  # west: the side view, mirrored
+			mirror = true
+		5:  # north-west: mirrors the north-east picture
+			texture = RIOT_VAN_BACK_DIAGONAL
+			mirror = true
+		6:  # north
+			texture = RIOT_VAN_BACK
+		7:  # north-east
+			texture = RIOT_VAN_BACK_DIAGONAL
+		_:  # east (0): the authored side view, unmirrored
+			pass
+	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, mirror)
 
 ## A stationary vehicle projected along the axis of the street it occupies. Its side silhouette
 ## may mirror with its facing; an end-on silhouette keeps its authored proportions and orientation.
@@ -1801,6 +1852,25 @@ func _draw_robber(canvas: CanvasItem = self) -> void:
 	var texture := ROBBER_WAITING if is_waiting() else ROBBER_LUNGING
 	_draw_shape_shadow(canvas, def.shape)
 	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+
+## The band while its guards are still posted, a guard once they leave — `is_waiting()` is the same
+## switch `_draw_robber()` reads above, then `is_telegraphing()` again within that for which of the
+## two guard postures: `guard_standing.svg` while it is closing to its stand-off, `guard_lunging.svg`
+## once it actually gives chase. Below `Tuning.HEAT_HUNTS_LEVEL`, `def.pursues` is always false, so
+## a cold or under-threshold roadblock only ever reaches the band.
+##
+## **The band stays exactly as it is until the guards leave, and nothing is left standing once they
+## have.** `def.shape` — the band's own 60px capsule — is what both the drawn barrier and its
+## collision body (`_build_obstruction()`) are built from; the generic pursuer rule in `_process()`
+## frees that same body the frame `is_waiting()` turns false, so the picture and the physical street
+## agree throughout: manned and solid, then neither.
+func _draw_roadblock(canvas: CanvasItem = self) -> void:
+	if def.pursues and not is_waiting():
+		_draw_shadow(canvas, Vector2.ZERO, _GUARD_SHADOW_RADIUS)
+		var texture := GUARD_STANDING if is_telegraphing() else GUARD_LUNGING
+		Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+		return
+	_draw_spread(ROADBLOCK_SEGMENT, ROADBLOCK_END, canvas)
 
 ## Flames scaled by what the event is currently emitting, so a fire visibly roars.
 func _draw_fire(canvas: CanvasItem = self) -> void:
