@@ -493,14 +493,15 @@ Three things about that shape are the design rather than the implementation:
 level, and `tests/test_heat.gd` asserts that over the response rather than over the row that
 currently carries it.
 
-`abduction` and `night_raid` both carry `HUNTS`. Below its own threshold, `Tuning.HEAT_HUNTS_LEVEL`,
-each is untouched — population and intensity are `PRESSES`'s axes, not this one's, so neither
-multiplies nor gets louder as the resistance progresses. At and above it, the derived copy gains
-`pursues`, a stand-off inside its own field, and a chase-length `duration` in place of its idling or
-static one, and it is `hard_fail`: the van keeps the lethality it already had, and the raid — a
-closed block that costs the meter and nothing more, cold — **gains** it, because the top rung kills
-by the ladder's own design. A pursuer is exempt from the rule that nothing else happens inside a
-lethal event's field — see "The contract is per event" below.
+`abduction`, `night_raid` and `roadblock` all carry `HUNTS`. Below its own threshold,
+`Tuning.HEAT_HUNTS_LEVEL`, each is untouched — population and intensity are `PRESSES`'s axes, not
+this one's, so neither multiplies nor gets louder as the resistance progresses. At and above it, the
+derived copy gains `pursues`, a stand-off inside its own field, and a chase-length `duration` in
+place of its idling or static one, and it is `hard_fail`: the van keeps the lethality it already
+had, and the raid and the roadblock — each a closed block or a closed street that costs the meter
+and nothing more, cold — **gain** it, because the top rung kills by the ladder's own design. A
+pursuer is exempt from the rule that nothing else happens inside a lethal event's field — see "The
+contract is per event" below.
 
 **`night_raid`'s own threshold is a calendar fact rather than a design one.** Its performs fall on
 days 5, 7, 9, 11 and 13, so on day 10 — the only day the row ever appears — the most progress
@@ -509,12 +510,25 @@ done every task on time, and a player one task behind meets the cold raid, still
 nothing more. Sharing the van's threshold rather than minting a third constant is what makes that
 sentence true.
 
-**A hunting `abduction` or `night_raid` is briefly less dangerous than the encounter it is about to
-become, and that is the escalation working rather than a bug.** `EventInstance.is_lethal_at()`
-returns false for the whole time a `pursues_within` row is only `is_waiting()`, so a heated van
-standing at the kerb, or a heated raid still parked over its block, can be brushed past for free
-until she comes inside its own trigger — the same shape `alley_robbery` already has, now arriving
-in both vans once they hunt.
+**`roadblock` cannot simply gain `pursues` on the body it already has — a band does not chase.** Its
+solid picture is a 120px barrier, `_draw_spread` across `GroundShape.band(60.0)`
+(`obstructs_radius` 60), and the row's own `inner_radius` had to move from the M61-derived 24 to 86
+so that same body still leaves a hunting copy's kill reachable: `obstructs_radius` plus her 14px
+`Tuning.PLAYER_BODY_RADIUS` sat over the old 24 by 50px, where `EventDef.validate()` would have
+refused it outright. The hunting posture is therefore *guards leaving their post*: the same
+`guard_standing.svg`/`guard_lunging.svg` pair the checkpoint kit already carries, drawn by
+`EventInstance._draw_roadblock()` the instant the row stops `is_waiting()`, while the band's own
+obstruction is freed the same frame by the generic pursuer rule every other hunting row already
+uses. The band stays exactly as it is until then, and nothing is left behind once the guards go —
+the design says nothing about that interval, and the smaller of the two rules available is to add
+none.
+
+**A hunting `abduction`, `night_raid` or `roadblock` is briefly less dangerous than the encounter it
+is about to become, and that is the escalation working rather than a bug.**
+`EventInstance.is_lethal_at()` returns false for the whole time a `pursues_within` row is only
+`is_waiting()`, so a heated van standing at the kerb, a heated raid still parked over its block, or
+a heated roadblock still manned can be brushed past for free until she comes inside its own trigger
+— the same shape `alley_robbery` already has, now arriving in all three once they hunt.
 
 ### The density, and why it is caps before budget
 
@@ -585,7 +599,7 @@ neighbourhood's own rather than a patrol's.
 | `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. |
 | `loudspeaker` | SCRIPTED | 5 | **City-wide**: no falloff, no edge, nowhere in the city it does not reach. The first event the player cannot walk away from. Pitched under the walking decay, so like a back street it does not raise the meter — it stops you clearing it. |
 | `curfew_announce` | SCRIPTED | 6 | City-wide, brief, and fading (`intensity_ramp` 0.2). The mechanical bite is in `Tuning.day_length`, which shortens every day from 6 onward; this is the moment you are told. |
-| `roadblock` | RECURRING | 7 | Loud, and **physically closes a street** (`obstructs_radius` 60). The first event that takes a route away rather than making it expensive. Named `roadblock` rather than `checkpoint` because the region wall's own door structure — a hut, a gate and guards you can pass at a price — took that word; the two rows mean opposite things about whether a street can be crossed. |
+| `roadblock` **`heat_response HUNTS`** | RECURRING | 7 | Loud, and **physically closes a street** (`obstructs_radius` 60), drawn as one continuous barrier (`roadblock_segment.svg`/`roadblock_end.svg`) rather than a row of blocks. The first event that takes a route away rather than making it expensive. Named `roadblock` rather than `checkpoint` because the region wall's own door structure — a hut, a gate and guards you can pass at a price — took that word; the two rows mean opposite things about whether a street can be crossed. Below `Tuning.HEAT_HUNTS_LEVEL` that is all it ever does; at or above it its guards leave the post — the band cannot chase, so the hunting posture is a guard on foot, `guard_standing.svg` then `guard_lunging.svg`, coming at 130px/s once she comes within 180px, `hard_fail` inside `inner_radius` 86. |
 | `checkpoint_hut` | SCRIPTED | 7 | `RegionPlanner`'s own structure, not a catalogue roll: two stand at every open region-boundary street crossing, one on each pavement, doorway facing the carriageway. Detains — `detain_radius` 48px inside `inner_radius` 52px — for `Tuning.CHECKPOINT_DETAIN_SECONDS` (6s), and `redetains`, so the same hut tolls her again on a later approach from either side. A small `intensity` (6.0) over a tight 52/66px band is the milestone's own "a bit of excitement" on top of the flat `Tuning.CHAT_EXCITEMENT` the detention charges — the smallest value that still clears "nothing is cheaper to walk through than around" against most of that band held at peak — see "Checkpoints". |
 | `checkpoint_gate` | SCRIPTED | 7 | The boom over the road between a door's two huts. No detention, no field — it only ever stops a car, never her. Drawn raised or lowered from the shared `RegionPlanner.GateState` `Crowd` keeps current. |
 | `checkpoint_post` | SCRIPTED | 7 | The alley half of a door: one guard at each mouth of a through-alley that crosses a region boundary. Detains exactly like `checkpoint_hut`, same numbers and the same `redetains`. |
@@ -765,9 +779,9 @@ be on it, so an overlapping lethal field there is the city saying so rather than
 failure — `EventScheduler._role_for` gives such a placement the `WALL` role, and
 `_keeps_its_field_clear` reads that role directly. **A pursuer**, because it follows her rather
 than sitting on a tile the day chose, so there is no ground for the rule to be stated about —
-`charging_dog`, `alley_robbery` and a hunting `abduction` or `night_raid` all carry a lethal radius
-with them wherever she is, and `EventScheduler._keeps_its_field_clear` says so by name rather than
-leaving it to follow from the `WALL` case by coincidence.
+`charging_dog`, `alley_robbery` and a hunting `abduction`, `night_raid` or `roadblock` all carry a
+lethal radius with them wherever she is, and `EventScheduler._keeps_its_field_clear` says so by name
+rather than leaving it to follow from the `WALL` case by coincidence.
 
 ## What an event actually costs
 

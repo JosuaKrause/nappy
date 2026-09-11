@@ -480,6 +480,14 @@ func at_heat(level: int) -> EventDef:
 				hot.pursues = true
 				hot.pursue_speed = Tuning.HEAT_HUNTS_SPEED
 				hot.pursues_within = Tuning.HEAT_HUNTS_WITHIN
+				# The shared trigger is authored once, against the widest cold field in the
+				# catalogue (`abduction`'s 250px) — a row whose own `outer_radius` sits under it
+				# would notice her from outside its own field, which `Tuning.validate_pursuit()`
+				# refuses. Widening only the hunting copy holds the contract for every `HUNTS` row
+				# without asking a row's author to pad its cold field past a constant that belongs
+				# to the ladder rather than to the row; the cold shape, and everything measured
+				# from it (`required_telegraph_time()`, the cost table), is untouched.
+				hot.outer_radius = maxf(outer_radius, hot.pursues_within)
 				# For a pursuer `duration` is the length of the chase, not the length of the idle
 				# — see `pursues_within` above. Cold, this row simply sits for `duration` seconds
 				# and is done.
