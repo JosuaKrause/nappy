@@ -27,8 +27,8 @@ func _test_the_curve(t) -> void:
 	t.check(Tuning.degradation_for(1) == 0.0, "day 1 is before the curve starts")
 	t.check(Tuning.degradation_for(Tuning.DEGRADATION_FIRST_DAY - 1) == 0.0,
 			"the day before DEGRADATION_FIRST_DAY is still zero")
-	t.check(Tuning.degradation_for(Tuning.DEGRADATION_FIRST_DAY) >= 0.0,
-			"the curve's own first day does not go negative")
+	t.check(Tuning.degradation_for(Tuning.DEGRADATION_FIRST_DAY) > 0.0,
+			"the curve's own first day already shows some decline, not the day after")
 	t.check(Tuning.degradation_for(Tuning.RUN_LENGTH_DAYS) == 1.0,
 			"the curve reaches its maximum on the run's last day")
 	var last := -1.0

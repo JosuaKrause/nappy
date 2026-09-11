@@ -1633,8 +1633,11 @@ const DEGRADATION_FIRST_DAY := 5
 func degradation_for(day: int) -> float:
 	if day < DEGRADATION_FIRST_DAY:
 		return 0.0
-	return clampf(float(day - DEGRADATION_FIRST_DAY) / float(RUN_LENGTH_DAYS - DEGRADATION_FIRST_DAY),
-			0.0, 1.0)
+	# +1 on both ends of the fraction, or `DEGRADATION_FIRST_DAY` itself would answer zero — the
+	# day nothing has moved past yet — and the city would first visibly decline on the day after
+	# its own name.
+	return clampf(float(day - DEGRADATION_FIRST_DAY + 1)
+			/ float(RUN_LENGTH_DAYS - DEGRADATION_FIRST_DAY + 1), 0.0, 1.0)
 
 # --------------------------------------------------------------- validation ---
 
