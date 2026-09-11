@@ -1,5 +1,127 @@
 # Decisions
 
+## M96 — The teaching day, and the dog after it · half built, measured 2026-09-11
+
+Three agent commits on `feature/tutorial-dog-later`, reviewed here, with the M100 item on a
+pursuer's memory alongside. **What the queue decided** *(2026-09-09: "the tutorial dog may appear
+later but not as tutorial")*: day 3 keeps the dog on her line, and from day 4 it is placed on the
+map the way `alley_robbery` is and met by routing. **What was built is less than that, and it is
+not the decision**: `EventDirector` keeps `AHEAD_OF_PLAYER` and, past `RUN_TAUGHT_DAY`, sites the
+dog off a bearing rotated 50–110° from her heading to a coin-flipped side, still past the edge of
+the view — never on her line, held by `tests/test_tutorial_dog.gd` over five seeds and four
+headings, with day 3 still on it. The agent went this way because the two shapes the entry named
+were both outside its fence: a second row is blocked by the one-picture-per-row check (no spare dog
+silhouette), and a day-dependent `spawn_mode` lives on the def and in the scheduler; mutating the
+shared `EventDef` singleton at runtime was considered and rejected, since it would persist across a
+replay in the same process and break the day-3 lesson on a second run. The map placement stays in
+the queue with its shape named; the off-heading siting is an interim that already removes the
+"still in front of her" half of the complaint.
+
+**The lead-time gap is closed already.** Playtest 20 measured 1.5s to evade the tutorial dog
+against 0.8–0.9s on the days a later dog killed her. On the current tree, over eight headings, the
+off-screen notice is 0.493s on every heading and an immediate flee evades in 1.517s on every
+heading, zero spread: M77's arrival-from-off-screen rule made the siting heading-independent by
+construction, and the row's radii were never the cause.
+
+**One contact at 89 is a cliff.** A real crowd agent's startle against the baby at excitement 90
+ends at 100 and crying; at 89, the same; at 85 it ends at 96.8 and awake. `tests/test_meters.gd`
+pins the measurement as a measurement, not a requirement. The nearly-crying cue is returned at
+exactly 80 and drawn as the flashing pram cue, confirmed by reading rather than by eye. The rule
+about the last ten points is the player's, in the entry.
+
+**The pursuer's memory, half.** `EventInstance.resume()` takes a third, defaulted argument for the
+notice and restores it, and the heat suite's test that pinned the forgetful behaviour now asserts
+the intended one, for `alley_robbery` as well as the patrol that surfaced it. The caller does not
+pass it yet — `EventManager._stream_in()` has nothing to pass, because `EventScheduler.Planned`
+carries no notice — so play is unchanged; the remaining half is in the M100 item, named exactly.
+||||||| 0f0b755
+
+## M65 — A protester points at the objective · built 2026-09-11
+
+*(2026-09-03, playtest 20: "the chalk is currently unfindable I spent almost a full day searching
+for it. let's make the protesters point into the direction (with their arms or something) of the
+current objectives (not only chalk marks). and make the protesters more common. they're not
+really an obstacle/event anyway so they can be placed independently."; 2026-09-09: "M65 we need
+to revisit after M62"; 2026-09-11, the player, asked whether to build the entry as written now
+that the city has walls: "the mark is findable now -- I don't think we need pointing for that.
+but the other tasks are not as easy and need pointing".)* Two agent commits on
+`feature/protesters-point`, reviewed here. **Protesters never point at a chalk mark**; they point
+at the current objective when it is any other kind of resistance step, and wear the plain pose on
+a mark day or with no step at all. The density raise stood as asked. The two findings the
+milestone was opened for — the first mark announced, a mark never on screen — were M78's, and the
+walled city turned out not to change what finding a mark is like.
+
+**Pointing.** `ResistanceDirector.pointable_objective()` is the one accessor: `Vector2.INF` for a
+mark pickup or no step today, otherwise the contact position read back — never a placement or a
+move of its own, so M78's rules are untouched. `EventInstance._protester_texture()` picks the
+nearest of the eight 45° sectors the `protester_point_*` poses were drawn for, on the compass
+convention the run log already uses; the objective is pulled fresh on every redraw, since the
+instance already redraws every frame, rather than pushed through `EventManager`; the director is
+found through a `"resistance"` node group it now registers itself in, the pattern the baby and the
+stroller already use. Every body in a protest rank shares one pose, from the rank's own bearing.
+`tests/test_protest.gd` holds all eight sectors, off-centre bearings, the plain pose with no
+objective and on a real day-4 mark step, and the pointing pose on a real day-5 perform step, the
+last two through a live director.
+
+**Density.** `protest.max_per_day` 6 → 12. Measured before on nine seed-and-day pairs of days 12
+to 14, the row's own cap bound every time — six of six placed while the day's budget had plenty
+left — and after, nine to twelve, mostly at the new cap. Weight and first day were considered and
+not taken: weight draws against the shared per-attempt pool for no guaranteed gain once cap-bound,
+and first day changes when protests exist rather than how many. Every other row's count is unchanged.
+
+**Unwalked, and one thing not captured.** A screenshot of the pointing pose itself was not
+reachable: a fresh boot's resistance always starts on the day-4 chalk mark whatever `--day` says,
+since no dev flag pre-sets the completed steps and there is no save across processes. The evidence
+capture shows the denser plain rank; the pointing is held by the suite. A dev flag that pre-sets
+resistance progress would make the pointing pose capturable and is a `tools/` item if the
+played verdict wants a picture first.
+
+## M97 — Calm areas that hold · spoilage measured 2026-09-11
+
+*(Playtest 20, 2026-09-03: "the spoilage of a clam area is not always effective I went to the
+same park 4 times and only the last time had a high enough density of events to actually prevent
+me from using it. the previous time I could just walk at the edge of it. and the time before that
+didn't have any spoilage at all even though it was the second visit.")* The entry's first task was
+a reproduction before any fix; `tests/probes/m97_spoilage.gd` is the instrument, on
+`feature/measurements-m97-m99`, and it did not reproduce. Over 8 seeds, settle days 1, 4, 8 and
+12, and every calm block — 243 biased visits — no visit was structurally empty: the spoil roll
+alone denied a mean 95.9% of the lot's open ground, the full day 96.5%, and 234 of 243 visits were
+over two thirds denied. Two visits fell under 15% denied, both the weighted roll drawing one
+low-reach row for a large lot — the "walkable edge" the player described, now a 0.8% tail. The
+day's ordinary fill placed more in the used park than the spoil roll did on 93.4% of visits, so the
+bias is mostly backstopped by incidental placement rather than doing the denying itself. **What
+this leaves open** is a played recurrence: the probe re-runs in seconds, the low-reach draw is the
+suspect, and the fix it points at is a floor on the spoil roll's reach for a lot that size, not a
+density change. Nothing in `src/` changed.
+
+## M98 — Pressure in the empty acts · the return phase measured 2026-09-11
+
+*(2026-09-11, asked whether to design the act III and IV patrol shape or measure first: "measure
+now, design after".)* `tests/probes/m98_return_phase.gd`, 6 seeds, one day per act (2, 5, 9, 13),
+a rig walking the day through: the return leg (`DayPhase.RETURNING`) lasts 45.5s in act I, 35.2s
+in act II, 32.9s in act III and 47.3s in act IV — a quarter, a fifth, a bit under a quarter and a
+third of the day's clock — and meets the director's owed queue 2.17, 1.33, 1.83 and 2.33 times on
+average; 5 of 24 legs met nothing at all. Playtest 03's *"42% of the day left"* was time remaining
+at the turn rather than the leg's own share, so the two figures are not the same statistic, but
+they point the same way: a short return that meets the single queue once or twice, sometimes never.
+These are the before-figures the entry's item asks to compare against; the shape — how many, where,
+at what cost — is the player's question now, in that item.
+
+## M99 — The corridor's density after the sealing · re-measured 2026-09-11
+
+Two measurements the entry asked for, on `feature/measurements-m97-m99`, no code changed. **The
+corridor's density**, `tests/probes/m64_density.gd` unchanged over 8 seeds and days 1, 5, 8, 11 and
+14: 0.65 events per street a day on the tree, against the 0.82 the entry carried from the earlier
+run; the held-ground exclusion (M100, built the same day) and M114's larger forward reach both
+narrow where a row may stand, which is the likely cause and was not isolated. The player's verdict
+on the sealed corridor was that it is right, so a cap moves only on a played day that says it is
+bare. **The caps**, `tests/probes/m99_caps.gd`, 6 seeds, one day per act, a whole day of walking:
+`cyclist` met 0.79 times a day on average (at most 2 on any sampled day) against `max_per_day` 14;
+`loose_dog` 2.71 (at most 5) against 24; both queue-fed at the director's 11–26s pacing, and the
+day's total of ahead-and-toward encounters falls from 9.5 in act I to 6.5 in act IV as the streets
+empty. Neither cap binds anywhere measured. The choice that leaves — drop the cap from queue-fed
+rows, or lower it to the pacing's ceiling — went back to the player in the entry's remaining item.
+
 ## M114 — The moving field grows forward · built 2026-09-11
 
 *(2026-09-10, playtest 55: "while the car moves the field gets narrower and oval -- this is good
