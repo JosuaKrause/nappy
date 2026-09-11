@@ -333,6 +333,12 @@ func _test_a_hut_detains_and_releases_on_the_other_side(t) -> void:
 ## reappear".)* Neither `Stroller.visible` nor `EventInstance._draw()`'s own early return is
 ## reachable from a test that never calls `_draw()` (headless runs never call it — see the
 ## **verify** skill), so the state each of them reads is asserted directly instead.
+##
+## The halo goes with the guard too — the checkpoint's own `EntityHalo` ring stayed up through the
+## hold in an earlier capture, which contradicted "both the guard and the player should disappear."
+## `is_suppressed_by_its_own_hold()` is the one condition `_draw()` and `_draw_body()` (the halo's
+## own re-draw entry point) both gate on, so asserting it here is asserting what the halo actually
+## does without a canvas.
 func _test_she_and_the_guard_are_gone_during_the_hold(t) -> void:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
@@ -344,15 +350,20 @@ func _test_she_and_the_guard_are_gone_during_the_hold(t) -> void:
 	manager._instances.append(hut)
 
 	t.check(stroller.visible, "she is visible before the hold starts")
+	t.check(not hut.is_suppressed_by_its_own_hold(), "and the hut's own halo is not suppressed yet")
 	stroller.global_position = centre + axis * 40.0
 	manager._tell_them_where_she_is()
 	manager._check_detentions()
 	t.check(hut.is_chatting(), "the hold starts")
 	t.check(not stroller.visible, "and she is hidden the instant it does")
+	t.check(hut.is_suppressed_by_its_own_hold(),
+			"and the hut's own halo is suppressed the same instant, with the guard")
 
 	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
 	t.check(not hut.is_chatting(), "the hold ends")
 	t.check(stroller.visible, "and she is visible again the same frame")
+	t.check(not hut.is_suppressed_by_its_own_hold(),
+			"and the halo is no longer suppressed, with the guard")
 
 	hut.free()
 	stroller.free()

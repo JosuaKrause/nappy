@@ -513,6 +513,16 @@ var _chat_seconds_left := 0.0
 func is_chatting() -> bool:
 	return _chat_seconds_left > 0.0
 
+## Whether a checkpoint's own hold is suppressing every drawing of this instance right now — she
+## and the guard both go inside for it, see `Stroller.hide_for_inspection()`. `def.redetains` is
+## the flag only `checkpoint_hut`/`checkpoint_post` carry, so `chatting_mother` — same mechanism,
+## no `redetains` — keeps her ordinary talking posture for the whole of her own conversation
+## instead. Named once and read by `_draw()`, by `_draw_body()` (the halo's own re-draw entry
+## point — see that function's doc for why the halo needs its own guard rather than inheriting
+## `_draw()`'s), and by a test, so the three can never drift apart from each other.
+func is_suppressed_by_its_own_hold() -> bool:
+	return def.redetains and is_chatting()
+
 ## Whether this instance has ever detained anybody. See `_has_chatted`.
 func has_chatted() -> bool:
 	return _has_chatted
@@ -1368,11 +1378,7 @@ func will_be_lethal(player_position: Vector2) -> bool:
 func _draw() -> void:
 	if is_finished:
 		return
-	# A redetaining checkpoint row reads as "gone inside" for the whole of its own hold — the guard
-	# is not drawn any more than she is, see `Stroller.hide_for_inspection()`. `def.redetains` is
-	# the flag only `checkpoint_hut`/`checkpoint_post` carry; `chatting_mother` keeps her ordinary
-	# talking posture (`_draw_chatting_mother`) for the whole of her own conversation.
-	if def.redetains and is_chatting():
+	if is_suppressed_by_its_own_hold():
 		return
 	var bob := _current_bob()
 	draw_set_transform(Vector2(0.0, bob), 0.0, Vector2.ONE)
@@ -1572,7 +1578,17 @@ func _draw_mark() -> void:
 		Sprites.draw_caret(self, at - Vector2(0.0, MARK_WIDTH * scale * 0.85),
 				MARK_WIDTH * scale, mark_colour())
 
+## The single body-drawing entry point `_draw()` calls for the primary render and `EntityHalo`
+## calls, repeatedly at a ring of offsets, for the halo — see `_build_halo()`. Gating it here
+## rather than only in `_draw()` is what actually hides the checkpoint's own halo during a
+## redetaining hold: `EntityHalo` never asks `_draw()`, it re-runs this function directly, and its
+## own alpha fades over `EntityHalo.FADE_OUT_SECONDS` (0.8s) rather than cutting, which would have
+## left a fading ring on screen for most of a two-second hold if this guard lived only in `_draw()`.
+## Drawing nothing is instant either way; the fade timer keeps running underneath, so the ring
+## reappears at whatever brightness it already had rather than fading back in.
 func _draw_body(canvas: CanvasItem = self) -> void:
+	if is_suppressed_by_its_own_hold():
+		return
 	match def.look:
 		EventDef.Look.CAT:
 			_draw_cat(canvas)
