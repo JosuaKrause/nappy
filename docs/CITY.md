@@ -1314,6 +1314,15 @@ Top-down camera with a fake vertical extrusion:
   painted by `Building._draw()` itself, above its own roof tiles and inside the layer of buildings
   under the entities — never the y-sorted layer a street prop or the player draws in — so a unit
   is never compared against anything on the pavement.
+- **A front is district and block purpose, read the same way a roof's furniture is.** Every
+  ground-floor column of a `COMMERCIAL` building is a storefront — one of four, an awning variant
+  on a seeded share — as a plain substitution for the wall's own ground-floor plinth: the
+  storefront's fill is opaque, so it covers the ordinary window drawn under it the same way the
+  plinth always did. A `CIVIC` building's entrance carries `civic_portico.svg`, and a seeded share
+  of `RESIDENTIAL` facades tall enough for one carries a fire escape over their bottom two rows —
+  both drawn as overlays, after the wall, rather than replacing a texture the way a storefront
+  does. The awning is the one piece of a front that leaves the wall plane; it stays inside the
+  wall's own footprint rather than reaching over the pavement's walkable band.
 - Everything is `y_sort_enabled`, so the player passes behind and in front of props
   correctly — with one deliberate exception. **Buildings are a layer of their own, beneath the
   entities, and sort against nothing but each other.** A building's origin is the south edge of its lot and its mass

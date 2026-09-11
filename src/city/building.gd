@@ -47,6 +47,37 @@ const WINDOW_LIT := preload("res://assets/buildings/window_lit.svg")
 ## Share of the wall cells that are lit at all. Fixed at build time, never per frame.
 const LIT_WINDOW_CHANCE := 0.28
 
+# ------------------------------------------------------------------- fronts ---
+# A storefront replaces `WALL_BASE` at the ground row (its own fill is opaque, so it covers the
+# ordinary window drawn under it the same way `WALL_BASE`'s plinth always sat over the wall); a
+# fire escape and a civic portico are overlays drawn after the wall, in front of everything a
+# ground-floor cell already drew. The tint rules are untouched either way: none of these three
+# textures is multiplied by `Palette.building_wall` — they are already-coloured overlays, the
+# same footing `WINDOW_DARK`/`WINDOW_LIT` already stand on.
+
+const STOREFRONT_TEXTURES: Array[Texture2D] = [
+	preload("res://assets/buildings/storefront_a.svg"),
+	preload("res://assets/buildings/storefront_b.svg"),
+	preload("res://assets/buildings/storefront_c.svg"),
+	preload("res://assets/buildings/storefront_d.svg"),
+]
+## The `_shuttered` variants stay unbound — M105, the city's own degradation, owns picking those.
+const STOREFRONT_AWNING_TEXTURES: Array[Texture2D] = [
+	preload("res://assets/buildings/storefront_a_awning.svg"),
+	preload("res://assets/buildings/storefront_b_awning.svg"),
+	preload("res://assets/buildings/storefront_c_awning.svg"),
+	preload("res://assets/buildings/storefront_d_awning.svg"),
+]
+const FIRE_ESCAPE_A := preload("res://assets/buildings/fire_escape_a.svg")
+const FIRE_ESCAPE_B := preload("res://assets/buildings/fire_escape_b.svg")
+const CIVIC_PORTICO := preload("res://assets/props/civic_portico.svg")
+
+## Share of a storefront cell that gets the sloped-awning variant instead of the plain one.
+const STOREFRONT_AWNING_SHARE := 0.35
+## Share of `RESIDENTIAL` buildings tall enough for one (`wall_tiles() >= 2`) that get a fire
+## escape at all.
+const FIRE_ESCAPE_SHARE := 0.3
+
 # ------------------------------------------------------------- roof furniture ---
 # One roof unit per interior cell: never on the perimeter row or column, so nothing overhangs
 # the silhouette the parapet and edge tiles already draw. Drawn by this node, above its own roof
@@ -153,6 +184,14 @@ var shape: GroundShape
 var _collision: CollisionShape2D
 ## One entry per wall cell, row-major from the ground up: true where the light is on.
 var _windows: Array[bool] = []
+## One entry per ground-floor column, index into `STOREFRONT_TEXTURES`/`STOREFRONT_AWNING_
+## TEXTURES` — populated only for a `COMMERCIAL` building, where every column gets one.
+var _storefront_variant: Array[int] = []
+var _storefront_awning: Array[bool] = []
+## The one ground-floor column a `RESIDENTIAL` building's fire escape stands against, or -1 for
+## the share that rolled none.
+var _fire_escape_col := -1
+var _fire_escape_variant_b := false
 ## One entry per roof unit: `{"cell": Vector2i, "kind": _Furniture, "span": int}`. Sorted
 ## north-most (highest row) first at build time, so `_draw_roof_furniture` can paint far units
 ## before near ones without re-sorting every frame — the same back-to-front order a unit taller
@@ -187,6 +226,7 @@ func _rebuild() -> void:
 	_collision.shape = shape.collision_shape()
 	_collision.position = Vector2(0.0, -footprint.y * 0.5)
 	_build_windows()
+	_build_front()
 	_build_roof_furniture()
 	set_process(_has_vent)
 	queue_redraw()
@@ -226,6 +266,27 @@ func _build_windows() -> void:
 	for i in columns() * wall_tiles():
 		_windows.append(rng.randf() < LIT_WINDOW_CHANCE)
 
+## The ground floor's own shops, and the one fire escape a `RESIDENTIAL` facade may carry. A
+## district's own seed, distinct from `_build_windows()`'s, so an awning roll or a fire-escape
+## roll never shifts which windows are lit.
+func _build_front() -> void:
+	_storefront_variant.clear()
+	_storefront_awning.clear()
+	_fire_escape_col = -1
+	var cols := columns()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("front:%d:%d:%d" % [variant, int(global_position.x), int(global_position.y)])
+	if district == GameEnums.BlockPurpose.COMMERCIAL:
+		for col in cols:
+			_storefront_variant.append(rng.randi_range(0, STOREFRONT_TEXTURES.size() - 1))
+			_storefront_awning.append(rng.randf() < STOREFRONT_AWNING_SHARE)
+	elif district == GameEnums.BlockPurpose.RESIDENTIAL and wall_tiles() >= 2 \
+			and rng.randf() < FIRE_ESCAPE_SHARE:
+		# Away from the corner columns where there is room to choose one, so the escape does not
+		# sit on top of `WALL_EDGE_W`/`WALL_EDGE_E`'s own parapet turn.
+		_fire_escape_col = rng.randi_range(1, cols - 2) if cols >= 3 else rng.randi_range(0, cols - 1)
+		_fire_escape_variant_b = rng.randf() < 0.5
+
 # ------------------------------------------------------------------ drawing ---
 
 func _draw() -> void:
@@ -249,10 +310,12 @@ func _draw() -> void:
 			if col == cols - 1:
 				draw_texture(TextureResolver.resolve(WALL_EDGE_E), at)
 			if row == 0:
-				draw_texture(TextureResolver.resolve(WALL_BASE), at)
+				draw_texture(TextureResolver.resolve(_ground_floor_texture(col)), at)
 			# With no roof at all, the parapet is what stops the wall.
 			if roof_rows == 0 and row == wall_rows - 1:
 				draw_texture(TextureResolver.resolve(ROOF_EDGE_N), at)
+
+	_draw_front_overlay()
 
 	for row in roof_rows:
 		for col in cols:
@@ -272,6 +335,27 @@ func _draw() -> void:
 ## Top-left corner of a cell, counting rows northward from the ground line.
 func _cell(col: int, row: int) -> Vector2:
 	return Vector2(-columns() * TILE * 0.5 + col * TILE, -(row + 1) * TILE)
+
+## `WALL_BASE`, unless `col` is a `COMMERCIAL` shopfront — its own fill is opaque, which is what
+## lets this stay a plain substitution rather than a second draw call skipping the window.
+func _ground_floor_texture(col: int) -> Texture2D:
+	if col >= _storefront_variant.size():
+		return WALL_BASE
+	var index: int = _storefront_variant[col]
+	return STOREFRONT_AWNING_TEXTURES[index] if _storefront_awning[col] else STOREFRONT_TEXTURES[index]
+
+## The one piece of a front that leaves the wall plane: a fire escape bolted to a `RESIDENTIAL`
+## facade or a portico at a `CIVIC` entrance, drawn after every ground-floor cell so it stands in
+## front of the shopfront or plinth rather than under it. Anchored at local `y = 0`, the ground
+## line `_cell`'s own row 0 already sits on, so `Sprites.draw_standing()`'s bottom-centre contract
+## needs no offset math here.
+func _draw_front_overlay() -> void:
+	if _fire_escape_col >= 0:
+		var texture := FIRE_ESCAPE_B if _fire_escape_variant_b else FIRE_ESCAPE_A
+		var x := _cell(_fire_escape_col, 0).x + TILE * 0.5
+		Sprites.draw_standing(self, texture, Vector2(x, 0.0))
+	if district == GameEnums.BlockPurpose.CIVIC:
+		Sprites.draw_standing(self, CIVIC_PORTICO, Vector2(0.0, 0.0))
 
 # ------------------------------------------------------------- roof furniture ---
 
