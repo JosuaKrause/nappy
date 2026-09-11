@@ -613,6 +613,9 @@ func _test_a_raised_gate_still_detains_her_at_the_bar(t) -> void:
 
 	car_stand_in.free()
 	gate.free()
+	stroller.free()
+	manager.free()
+
 ## M110, the crowd goes round a seal: *(2026-09-10: "attempting to do that should just start a
 ## regular checkpoint inspection")* — a raised boom is a fact about the car queue, and must not be
 ## a way past her too. `checkpoint_gate` and `checkpoint_hut` share one crossing's `GateState`
