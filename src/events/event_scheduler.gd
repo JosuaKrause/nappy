@@ -946,16 +946,17 @@ static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
 		if not elsewhere:
 			if gap < Tuning.EVENT_SPACING_ANY:
 				return -INF
-			if _keeps_its_field_clear(plan) and gap < plan.def.outer_radius:
+			if _keeps_its_field_clear(plan) and gap < plan.def.field_reach():
 				return -INF
 			if plan.def.id == candidate.def.id:
 				room_same = minf(room_same, gap)
-		if _keeps_its_field_clear(candidate) and gap < candidate.def.outer_radius:
+		if _keeps_its_field_clear(candidate) and gap < candidate.def.field_reach():
 			return -INF
 	return INF if room_same >= Tuning.EVENT_SPACING_SAME else room_same
 
 ## Whether the clearance rule is about this placement: a lethal event with nothing else inside
-## its whole `outer_radius`.
+## its whole field — `EventDef.field_reach()`, not `outer_radius` alone, since a segment's field
+## reaches `half_length` further along its own spine than a disc's would.
 ##
 ## **The rule is now stated over the ground she is being guided along, and off it there is an
 ## exemption**, which was the player's own call when the two collided.
@@ -1276,9 +1277,11 @@ static func _park_is_reachable(map: CityMap, grid: ReachabilityGrid, blockers: A
 			return true
 	return false
 
-## Whether an event's outer radius touches a rect at all.
+## Whether an event's field touches a rect at all — grown by `field_reach()` rather than
+## `outer_radius` alone, so a segment's own `half_length` is not dropped from the streaming
+## question the way it would be from a disc's.
 static func _reaches_rect(plan: Planned, rect: Rect2) -> bool:
-	var grown := rect.grow(plan.def.outer_radius)
+	var grown := rect.grow(plan.def.field_reach())
 	if grown.has_point(plan.position):
 		return true
 	for point in plan.path:

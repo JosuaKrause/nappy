@@ -966,6 +966,15 @@ func flock_offsets() -> Array[Vector2]:
 		offsets.append(bird.at)
 	return offsets
 
+## Each live bird's own `heading * speed`, parallel to `flock_offsets()` — the velocity
+## `_flock_contribution_at()` already reads per bird, exposed so the debug view's fields layer can
+## draw the same eccentric boundary rather than a circle standing in for it.
+func flock_velocities() -> Array[Vector2]:
+	var velocities: Array[Vector2] = []
+	for bird in _flock:
+		velocities.append(bird.heading * bird.speed)
+	return velocities
+
 # --------------------------------------------------------------- going away ---
 # **Nothing vanishes while you are looking at it.** An event that ends by `_finish()` wherever it
 # happens to be standing ends, for the two shortest-lived rows in the game, directly in front of
@@ -1181,7 +1190,16 @@ func _prune_landed_history() -> void:
 ## passes one is `expected_impact_at()`'s own projection, asking for `_caret_intensity()` — the
 ## row's live rate — in place of whatever a telegraph has this one currently damped to; every
 ## other caller gets the answer it always got.
-func contribution_at(world_position: Vector2, intensity_override := -1.0) -> float:
+##
+## `velocity_override` replaces `travel_velocity()` for the field's own kernel, the same way, when
+## given (`Vector2.INF` means "not given"). The only caller is `expected_impact_at()` too, and for
+## the same reason: its projection translates the *sample point* by `_caret_velocity()` rather than
+## moving the source, and the ellipse the translated point is measured against has to be oriented by
+## that same velocity or the two disagree about which way this thing is going. A pursuer holding its
+## telegraph stand-off is the case that matters — `travel_velocity()` is zero there (it is holding
+## still) while `_caret_velocity()` is the lunge it is about to make.
+func contribution_at(world_position: Vector2, intensity_override := -1.0,
+		velocity_override := Vector2.INF) -> float:
 	if is_finished or is_leaving:
 		return 0.0
 	var intensity := intensity_override if intensity_override >= 0.0 else current_intensity()
@@ -1190,8 +1208,18 @@ func contribution_at(world_position: Vector2, intensity_override := -1.0) -> flo
 		return intensity
 	if not _flock.is_empty():
 		return _flock_contribution_at(world_position, intensity)
-	return Tuning.falloff(global_position.distance_to(world_position),
+	var velocity := velocity_override if velocity_override != Vector2.INF else travel_velocity()
+	return Tuning.falloff(_field_distance(world_position, velocity),
 			intensity, def.inner_radius, def.outer_radius)
+
+## The distance `contribution_at()` prices this row's field at — `GroundShape.field_distance()`
+## over this row's own shape (D1's `body ⊕ disc` stationary, D2's `point ⊕ ellipse` moving), or the
+## same kernel with no body at all for the handful of emitting rows with no shape (`playground`,
+## whose look is drawn by the park itself rather than by `EventInstance`).
+func _field_distance(world_position: Vector2, velocity: Vector2) -> float:
+	if def.shape != null:
+		return def.shape.field_distance(global_position, _solid_axis(), velocity, world_position)
+	return GroundShape.eccentric_distance(global_position, velocity, world_position)
 
 ## A flock is its birds, summed.
 ##
@@ -1202,14 +1230,22 @@ func contribution_at(world_position: Vector2, intensity_override := -1.0) -> flo
 ## and the edge of it at a fraction. That gradient is the whole reason to do it this way: the price
 ## of a flock should depend on whether you walked through it or round it, and one disc centred on
 ## nothing in particular cannot say that.
+##
+## **Each bird is its own point kernel**, eccentric by its own `heading * speed` rather than the
+## instance's own `travel_velocity()` (always zero for a flock — it is not itself `mobile` or
+## `pursues`) — a cheap read off `Bird`, already carried for the wheel, so a bird diving toward her
+## costs more than one peeling away exactly as any other moving point in the game does. The bodies
+## stay points either way: a flock's own field was never a capsule, and eleven of them is not where
+## the general capsule-and-ellipse sum earns its cost.
 func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float:
 	var total_intensity := intensity if intensity >= 0.0 else current_intensity()
 	var share := total_intensity / float(_flock.size())
 	var outer := _bird_outer()
 	var total := 0.0
 	for bird in _flock:
-		total += Tuning.falloff((global_position + bird.at).distance_to(world_position),
-				share, def.inner_radius, outer)
+		var d := GroundShape.eccentric_distance(global_position + bird.at, bird.heading * bird.speed,
+				world_position)
+		total += Tuning.falloff(d, share, def.inner_radius, outer)
 	return total
 
 ## True when a point is inside the radius that ends the day, for a hard-fail event that is
@@ -1251,7 +1287,7 @@ func expected_impact_at(player_position: Vector2) -> float:
 	if is_finished or is_leaving or def.city_wide:
 		return 0.0
 	var velocity := _caret_velocity()
-	var reach := velocity.length() * Tuning.EXPECTED_IMPACT_HORIZON + def.outer_radius
+	var reach := velocity.length() * Tuning.EXPECTED_IMPACT_HORIZON + def.field_reach()
 	if global_position.distance_to(player_position) > reach:
 		return 0.0
 	if velocity.is_zero_approx():
@@ -1266,8 +1302,11 @@ func expected_impact_at(player_position: Vector2) -> float:
 		# position is the same number as holding the source still and asking for its field at
 		# `player_position - velocity * t` instead — `contribution_at` is already the query every
 		# other caller uses, translated, so nothing here recomputes a falloff or a flock sum of
-		# its own.
-		landed += contribution_at(player_position - velocity * (float(i + 1) * dt), live_intensity) * dt
+		# its own. `velocity` is passed a second time, as the override, so the ellipse the
+		# translated point is measured against is oriented the same way the translation itself is —
+		# see `contribution_at()`'s own doc for why the two must agree.
+		landed += contribution_at(player_position - velocity * (float(i + 1) * dt), live_intensity,
+				velocity) * dt
 	return landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
 
 ## Whether this event's own current course puts her inside the radius that ends the day at some

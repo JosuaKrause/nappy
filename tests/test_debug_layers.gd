@@ -14,6 +14,9 @@ func run(t) -> void:
 	_test_shadow_outline_matches_a_points_ellipse(t)
 	_test_shadow_outline_matches_a_segments_hull(t)
 	_test_shadow_outline_matches_a_rectangles_squashed_corners(t)
+	_test_field_outline_of_a_stationary_point_is_a_circle(t)
+	_test_field_outline_of_a_stationary_segment_is_a_stadium(t)
+	_test_field_outline_of_a_moving_point_is_the_eccentric_ellipse(t)
 	_test_parse_layers_reads_a_comma_list(t)
 	_test_parse_layers_drops_malformed_entries_without_crashing(t)
 	_test_apply_initial_state_sets_only_the_listed_layers(t)
@@ -65,6 +68,49 @@ func _test_shadow_outline_matches_a_rectangles_squashed_corners(t) -> void:
 	t.close_to(bounds.size.x, 60.0, "unrotated, the outline is as wide as the footprint", 0.5)
 	t.close_to(bounds.size.y, 20.0 * GroundShape.SHADOW_SQUASH,
 			"and squashed on Y by SHADOW_SQUASH, applied after the rotation", 0.5)
+
+# --------------------------------------------------------------------- field_outline ---
+# The fields layer's own geometry — the same `Tuning.falloff()` prices, so a screenshot of this
+# layer cannot disagree with the meter. See docs/TODO.md, M61, "the field, the shadow and the body".
+
+func _test_field_outline_of_a_stationary_point_is_a_circle(t) -> void:
+	var shape := GroundShape.point(9.0)
+	var points := shape.field_outline(Vector2(20.0, 5.0), Vector2.RIGHT, Vector2.ZERO, 50.0)
+	var bounds := _bounds(points)
+	t.close_to(bounds.size.x, 100.0, "a stationary point's field boundary is a circle of radius "
+			+ "'level' — 50 wide however far its own radius (9) reaches", 1.0)
+	t.close_to(bounds.size.y, 100.0, "and the same on the other axis, unsquashed — a field is not a "
+			+ "shadow, so no oblique foreshortening applies", 1.0)
+	t.close_to(bounds.get_center().x, 20.0, "centred on the emitter itself", 1.0)
+	t.close_to(bounds.get_center().y, 5.0, "on both axes", 1.0)
+
+func _test_field_outline_of_a_stationary_segment_is_a_stadium(t) -> void:
+	var shape := GroundShape.segment(40.0, 24.0)
+	var points := shape.field_outline(Vector2.ZERO, Vector2.RIGHT, Vector2.ZERO, 50.0)
+	var bounds := _bounds(points)
+	t.close_to(bounds.size.x, 2.0 * (40.0 + 50.0),
+			"along the spine, the boundary reaches half_length + level past centre (a stadium, not "
+			+ "a circle — the body's own half_length still offsets it)", 1.0)
+	t.close_to(bounds.size.y, 2.0 * 50.0,
+			"across it, only 'level' — no half_length added, which is the capsule's whole point",
+			1.0)
+
+func _test_field_outline_of_a_moving_point_is_the_eccentric_ellipse(t) -> void:
+	var speed := 130.0
+	var velocity := Vector2(speed, 0.0)
+	var level := 100.0
+	var points := GroundShape.field_outline_at(Vector2.ZERO, velocity, level)
+	t.check(points.size() > 0, "the moving boundary actually samples some points")
+	# Sample zero is theta=0 in `_eccentric_field_outline` — dead ahead, along `velocity` — where
+	# the effective distance is exactly `level`, the same forward reach a disc always had.
+	t.close_to(points[0].distance_to(Vector2.ZERO), level,
+			"the foremost sampled point sits exactly 'level' from the emitter (forward reach is "
+			+ "unchanged)", 0.5)
+	t.check(points[0].x > 0.0, "and it lies ahead, in the direction of travel")
+	var bounds := _bounds(points)
+	t.check(bounds.position.x > -level,
+			"the boundary's own rear edge sits closer than 'level' behind the emitter — the "
+			+ "eccentricity actually pulled the field in")
 
 # ------------------------------------------------------------------ DevFlags.parse_layers ---
 

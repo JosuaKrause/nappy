@@ -300,13 +300,18 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 ## Excitement per second this agent contributes at a point. Same falloff as an event, so
-## the crowd and the events are the same kind of quantity to the baby.
+## the crowd and the events are the same kind of quantity to the baby — and the same kernel too:
+## `GroundShape.eccentric_distance()`, eccentric while moving and the plain distance a disc always
+## used the instant it stops, off `velocity()` rather than a shape of its own — a crowd body is
+## always a point in field terms (see `GroundShape`'s class doc on why nobody builds the general
+## capsule-and-ellipse sum), so there is no body to set aside the way a stationary event's is.
 ##
 ## The jolt is added on top of the body's ordinary noise rather than replacing it, and it
 ## fades linearly over its own duration — so a bump is a spike with a tail rather than a step
-## that ends abruptly, and two people bumped in the same second cost twice.
+## that ends abruptly, and two people bumped in the same second cost twice. **The same distance
+## prices both** — the horn or the bump is the same source being louder, not a second one.
 func contribution_at(world_position: Vector2) -> float:
-	var distance := global_position.distance_to(world_position)
+	var distance := GroundShape.eccentric_distance(global_position, velocity(), world_position)
 	var total := 0.0
 	if kind == Kind.CAR:
 		total = Tuning.falloff(distance, Tuning.CAR_INTENSITY,
@@ -324,6 +329,11 @@ func contribution_at(world_position: Vector2) -> float:
 ## (132px) reaches past its ordinary `CAR_OUTER_RADIUS` (104px). What `expected_impact_at()` and
 ## `will_be_lethal()` both compare a projected approach against, so a source mid-jolt is not
 ## skipped early on a reach that no longer describes it.
+##
+## **Not `EventDef.field_reach()`'s business.** That one adds a segment's `half_length` back in for
+## a stationary body; a crowd agent has no body in field terms — see `contribution_at()`'s own
+## doc — so its forward reach is always the plain outer radius, moving or not, under
+## `GroundShape.eccentric_distance()`.
 func _current_reach() -> float:
 	var reach := Tuning.CAR_OUTER_RADIUS if kind == Kind.CAR else Tuning.PEDESTRIAN_OUTER_RADIUS
 	if _jolt > 0.0:

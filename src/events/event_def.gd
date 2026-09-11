@@ -605,6 +605,23 @@ func ahead_of_player_lead() -> float:
 		time_to_middle += telegraph_time
 	return maxf(Tuning.AHEAD_LEAD_DISTANCE, time_to_middle * Tuning.WALK_SPEED)
 
+## The field's own furthest reach from this row's centre — what every "how far" rule needs instead
+## of `outer_radius` alone now that a segment's field is a capsule rather than a disc:
+## `EventScheduler._keeps_its_field_clear`'s clearance, the streaming rect, and
+## `EventInstance.expected_impact_at()`'s early-out. `half_length + outer_radius` for a segment (the
+## along-axis reach, which is exactly the old flat `outer_radius` a row's radii were derived
+## *against* — see the catalogue's own docstrings), `outer_radius` for everything else, since a
+## moving emitter's forward reach is already the catalogued number under
+## `GroundShape.eccentric_distance()`.
+##
+## **Not `is_lethal_at()`'s business.** Lethal is contact, not noise, and stays a plain circle of
+## `inner_radius` about the centre — see docs/EVENTS.md, "Solid things are solid", and
+## `EventInstance.is_lethal_at()`, unchanged by this milestone.
+func field_reach() -> float:
+	if shape != null and shape.kind == GroundShape.Kind.SEGMENT:
+		return shape.half_length + outer_radius
+	return outer_radius
+
 # ------------------------------------------------------------ what a row costs ---
 # The integral behind the cost table in `docs/EVENTS.md` and behind the assertion that nothing is
 # cheaper to walk through than around.

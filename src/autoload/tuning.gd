@@ -1637,7 +1637,28 @@ func required_telegraph_time(inner_radius: float, outer_radius: float,
 	var escape := outer_radius if speed > WALK_SPEED else outer_radius - inner_radius
 	return escape * margin / WALK_SPEED
 
-## Excitement contribution of a source of `intensity` at distance `d`.
+## Eccentricity of a moving emitter's field kernel, from its own speed — the shape the player asked
+## for: *"fields should be ellipses, not circles. the eccentricity should be determined by movement
+## speed ... an entity moving towards you has more of an effect than if it moves away or
+## orthogonal. the entity itself lives in one of the focus points."* Zero at a standstill, which is
+## the plain disc every field always was; rises with speed and is capped at
+## `FIELD_ECCENTRICITY_MAX` so nothing ever flattens to a line. Fed to
+## `GroundShape.eccentric_distance()`, the polar conic this shapes.
+##
+## A car at `CAR_SPEED.x` (130px/s) sits at e = 0.5; a walker (`PEDESTRIAN_SPEED`, 46-74px/s) at
+## 0.18-0.28; the cyclist (165px/s) at 0.63; the cat (240px/s) would be 0.92 uncapped and is held at
+## the ceiling instead.
+const FIELD_ECCENTRICITY_MAX := 0.7
+const FIELD_ECCENTRICITY_SPEED := 260.0
+
+func field_eccentricity(speed: float) -> float:
+	return minf(FIELD_ECCENTRICITY_MAX, speed / FIELD_ECCENTRICITY_SPEED)
+
+## Excitement contribution of a source of `intensity` at distance `d` — `d` is
+## `GroundShape.field_distance()`/`eccentric_distance()` now, distance to a body's spine or to a
+## moving emitter's own elliptical kernel rather than always the plain distance to a centre, but
+## the arithmetic below is unchanged: whatever shape a field's `d` came from, `inner_radius` and
+## `outer_radius` still mean *that* distance's own near and far edge.
 ##
 ## **The shape has a shoulder on it**, because the meter has to go substantially up from some way
 ## off rather than waiting for contact.

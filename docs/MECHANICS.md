@@ -461,6 +461,18 @@ contribution(d) = intensity                              , d <= inner_radius
 **The shape has a shoulder on it, and that is a design decision rather than an implementation
 detail.** The meter has to go substantially up from some way off rather than waiting for contact.
 
+**`d` is a distance to a field, not always to a point.** The field is the Minkowski sum of the
+object's own `GroundShape` and a kernel — a disc while it stands still, an ellipse while it
+moves — so `inner_radius`/`outer_radius` mean distance *from that shape*, not from a fixed centre.
+A point body's field is exactly the circle above; a segment's (a café frontage, a barricade) is a
+capsule about its own spine, `GroundShape.distance_to_spine()`. A moving emitter is a point either
+way — nobody builds the general capsule-and-ellipse sum, because every emitting segment row is
+stationary — and its field is `GroundShape.eccentric_distance()`: a conic with the emitter at one
+focus rather than at the centre, eccentricity from speed (`Tuning.field_eccentricity()`), so the
+field reaches exactly as far ahead of a moving thing as a disc's `outer_radius` always did and less
+far behind and abeam. See docs/EVENTS.md, "The emission model", for the full derivation and the
+debug view (`DebugLayers`, layer `1`) for where the boundary is checked by eye.
+
 **`(1 − t)²` is the shape that looks equally reasonable and inverts the game.** It puts a
 **quarter** of the intensity at the midpoint of the falloff band and six percent three quarters of
 the way out, so a café at 12/s sits under the 3.5/s walking decay across the whole outer 60% of its

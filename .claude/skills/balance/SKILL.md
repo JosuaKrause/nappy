@@ -76,7 +76,7 @@ catalogue.
 between the inner and outer radius, not `(1−t)²`. The squared-complement form puts a quarter of the
 intensity at the midpoint and six percent three quarters of the way out, which makes three quarters
 of every radius in the game free and an event a thing to bump into rather than a thing to route
-around. `dog_walker` is +36.5, `cafe_tables` +20.1, and one row stays negative on purpose —
+around. `dog_walker` is +36.5, `cafe_tables` +9.6, and one row stays negative on purpose —
 `burnt_shell` is a reminder rather than an obstacle. `tests/test_events.gd` names exactly that one
 as the exemption, so a **second** negative event has to be a decision somebody takes rather than a
 number nobody checked.

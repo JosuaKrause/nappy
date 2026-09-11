@@ -154,19 +154,15 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 1. **M56**'s build item, the other rows that hunt. *("M56 is also related to the other items to
    work on right now.")* Its measurement against the nerves waits, because reaching act III
    waits: *"I wanna wait reaching act III until those things are done."*
-2. **M61** — one shape per object, from which the field (the Minkowski sum of the body and a
-   kernel) is derived the way the shadow and the collision body already are. *("M61 is kind of
-   important but not the immediate next item.")* Checked by eye with the debug view's `1` and
-   `3` layers, which exist for exactly that.
-3. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
-   don't stop/redirect traffic or pedestrians.")* Placed here by the orchestrator, behind M61
-   because the two share `src/crowd/crowd_agent.gd` and ahead of M65 because a sealed street the
-   crowd walks through is the sealing's own legibility failing — open to the player moving it.
-4. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
+2. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
+   don't stop/redirect traffic or pedestrians.")* Placed here by the orchestrator, ahead of M65
+   because a sealed street the crowd walks through is the sealing's own legibility failing — open
+   to the player moving it.
+3. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
    revisit after M62.")* Revisited rather than built as written: the regions and their
    checkpoints (`DECISIONS.md`, M62) may change what finding a mark is like, and the entry is
    re-read before the prepared poses are bound to objectives.
-5. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
+4. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
@@ -174,8 +170,8 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    clock, sit in this batch provisionally** — they were asked for on 2026-09-10 and not placed,
    so this is the orchestrator's guess at where work that needs no route decision belongs, open
    to the player moving it.
-6. **Reaching act III**, which M56's measurement against the nerves needs.
-7. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
+5. **Reaching act III**, which M56's measurement against the nerves needs.
+6. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
 The record, with its measurements and the choices open to overturn, is in `DECISIONS.md` under
@@ -298,11 +294,11 @@ the two halves of M76 and M82's own deletion of the title screen's two circular 
 
 **[PLAYTEST-25.md](playtests/PLAYTEST-25.md)'s nine findings are built** — the
 first phone session on the built mobile game and the first human verdict on the sealed city. The
-record is in `DECISIONS.md` under M73, M74 and M75. **What it leaves open is a played question and
-a shaped one.** Played: the barrier rows are silent and the two ambient radii are tight, and nobody
-has walked a city that costs what this one now costs. Shaped: **M61**, which is what the tightened
-radii are a stopgap for — the player's *"that number was so big because it was a point source
-before"* is the reason those numbers move again once a field takes the shape of its body.
+record is in `DECISIONS.md` under M73, M74 and M75. **What it leaves open is a played question.**
+The barrier rows are silent, the café and the market stall now bill from their own body to the
+middle of the carriageway and no further (derived under M61, the field — the player's *"that
+number was so big because it was a point source before"*), and nobody has walked a city that
+costs what this one now costs.
 
 **The instrument they are read with now exists.** The dusk map draws the walk over the plan — where
 she went, where she ran, and which events actually reached her — so *did the corridor have to be
@@ -383,156 +379,6 @@ use the guard pair for a guard departure if that proposed response is accepted.
       Preserve the waiting-to-hunting state change and the van's native ground registration.
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
-
----
-
-## M61 — One shape per object: the field, the shadow and the body · asked for 2026-09-02, widened 2026-09-10
-
-> "fields should be ellipses, not circles. the excentricity should be determined by movement speed.
-> the rationale is that an entity moving towards you has more of an effect than if it moves away or
-> orthogonal. the entity itself lives in one of the focus points"
-
-**Widened on 2026-09-10 into one datum with three consumers.** *("for minkowski sum would it make
-sense to combine this with non-oval shadows as well? right now all shadows are ovals below the
-sprite which looks odd for a lot of objects. both the shadow and the influence field (and the
-bounding boxes) could be derived from the same shape associated with an object (that is independent
-of its graphics). let's structure it in that way and we'll get three wins out of it.")*
-
-**The datum and two of its three consumers exist; the field is what is left.** Every object
-carries a `GroundShape` (`src/ground_shape.gd`): a point or a segment with a rounding radius — a
-disc or a capsule — and, for a building's footprint alone, a rectangle. Every event row, walker,
-car, prop, building, she and the pram carry one. Event and building bodies derive from the shape;
-`obstructs_radius` equals the event shape's `reach()` and `EventDef.validate()` refuses disagreement.
-The player's combined physics circle remains independent of the mother/pram shadow shapes, and
-authored car-accident shadow textures remain in their scene caller. *Asked for as rectangles on 2026-09-10
-("we can restrict bounding boxes to be rectangles") · overturned the same day to the point, segment
-and rectangle datum: "I said rectangle because it's easier. If you can do more complex things to
-it that way".* The record, with every row's shape, is in `DECISIONS.md` under M61.
-
-**The field is still a point falloff**, and the shape is the body operand of the sum the bullets
-below describe: `GroundShape.distance_to_spine()` is the function the field is to be stated over —
-zero on a point, a segment or inside a rectangle, the ordinary distance outside — and nothing reads
-it yet. **Lethal is not noise, and the crowd is not a different mechanism** *(2026-09-10: "lethal
-!= noise. lethal is when you get hit by a car. but the car itself produces noise which is what the
-purpose of the field is.")*: `CrowdAgent.contribution_at()` runs the same `Tuning.falloff` an event
-does — a car is 5.4 over 38/104px plus an 18-point horn jolt, a walker 4.2 — and
-`Crowd.total_excitement_at()` sums it into the meter beside the events, so the field work below
-covers the crowd's sources on the same terms. Being hit is separate: a moving car's strike box,
-`CAR_STRIKE_HALF_LENGTH` 26 by `CAR_STRIKE_HALF_WIDTH` 14, read by `will_be_lethal()`, is not the
-car's shape. A test compares their longitudinal and transverse extents; it does not establish
-containment of the rectangle's corners by the capsule.
-
-**The debug view is how the field is checked** — in a debug build `1` draws every field's inner
-and outer boundary and `3` every body, and `--layers 1,3` puts both on a rig screenshot — because
-a field that reaches further than the body it is drawn around is a thing a person sees in one
-frame and a rig cannot. Today it draws every field as the circle it still is; the record of the
-view is in `DECISIONS.md` under M104.
-
-**A change to the emission model itself, and it is the first one since the falloff shape.** Today
-every field is a disc: `Tuning.falloff(distance, intensity, inner, outer)` prices being near a thing
-by distance alone, so a fire engine bearing down on her and one that has just gone past cost exactly
-the same at the same range. The instruction says the direction of travel is part of the price, and
-gives the geometry to say it with — an ellipse whose eccentricity is a function of speed, with the
-entity standing at a focus rather than at the centre, so the field reaches further ahead of a moving
-thing than behind it.
-
-- [ ] **Where the shape lives.** `contribution_at()` on `EventInstance` is one function and the
-      falloff is one function in `Tuning`, so the arithmetic has one home. What has more than one
-      home is everything that *reasons* about a radius — the telegraph contract
-      (`Tuning.required_telegraph_time`, stated over the gap between the inner and outer radii),
-      the placement spacing (`EVENT_SPACING_ANY` / `EVENT_SPACING_SAME`), the clearance a lethal
-      row keeps, the streaming radius, and the denial radius a park spoiler is measured by. **Each
-      of those is a question about "how far", and an ellipse has two answers.** Decide per rule
-      whether it takes the long axis (safe, and it widens every clearance in the game) or the short
-      one, before writing any of it
-- [ ] **The contract has to be restated over the worst direction.** A player who starts walking away
-      the instant an event becomes visible must get clear before it hurts. Against an ellipse
-      pointed at her that is a different sum, and a version stated over the mean radius would pass
-      while the encounter it describes is unfair — the same failure `Tuning.pursuit_standoff()`
-      exists to stop, one system over
-- [ ] **A field is the Minkowski sum of the body and a disc.** *(2026-09-05: "horizontal barriers
-      need a combination of rectangular and circular fields ... a rounded rectangle if you will ...
-      since they are not point sources", and then the general form: "basically for every base shape
-      the minkowsky sum of a circle and the shape should be the influence field".)*
-
-      **One rule, and every shape falls out of it**: the falloff is a function of the distance to
-      the **body**, not to a point. A point body gives the circle every field in the game already
-      has and nothing moves; a line segment gives a capsule — the "rounded rectangle"; a rectangle
-      gives a rectangle with rounded corners; any polygon gives itself offset outward.
-
-      **And the other operand is what folds this milestone's original instruction into the same
-      rule** *(2026-09-05: "that's for static objects. for moving objects one side of the sum is an
-      oval")*. The field is always `body ⊕ kernel`; only the kernel changes — a **disc** standing
-      still, an **ellipse** moving, eccentricity from speed. So the ellipse this milestone was
-      opened for is the second half of one sum rather than a system of its own, and a capsule that
-      is also eccentric is composition rather than a special case.
-
-      **Nobody has to compute a general Minkowski sum of two convex shapes** *(2026-09-05: "but most
-      moving objects are small enough to be a point")*. The two cases are disjoint in practice and
-      each collapses: a static body ⊕ a disc is a capsule, and a moving point ⊕ an ellipse is just
-      the ellipse. The cat, the loose dog, the cyclist, the flock and every pursuer are points. Only
-      something both large and moving — a vehicle — would want the general form, and whether any row
-      is worth it is a question for then rather than a reason to build it now.
-
-      **Keep M61's own offset when the kernel is an ellipse.** The original instruction says *"the
-      entity itself lives in one of the focus points"*, not at the centre, and that is load-bearing:
-      a kernel centred on the body is symmetric front to back and delivers none of the rationale it
-      was asked for — *"an entity moving towards you has more of an effect than if it moves away or
-      orthogonal"*. The offset buys the asymmetry; eccentricity alone does not.
-
-      The rows it changes are the ones drawn as a spread along a pavement — `cafe_tables` through
-      `EventInstance._draw_cafe`, and `construction`, `market_stall`, `barricade` and `delivery_van`
-      through `_draw_spread`. A café frontage currently prices somebody across the street exactly as
-      it prices somebody standing at the tables, reaching far perpendicular to itself and falling
-      short along its own length.
-
-      **The bodies, so this is not sized off a guess.** A spread is drawn `obstructs_radius` either
-      side of centre (`_draw_spread` and `_draw_cafe` both take `half = max(11, obstructs_radius)`),
-      so the frontages are 48px for `cafe_tables`, 56px for `market_stall`, 64px for `construction`,
-      44px for `delivery_van` and 124px for `barricade`.
-
-      **Only two of those five still emit**, and they are the two this bullet is really about:
-      `cafe_tables` carries 12.0 over 40/90px and `market_stall` 14.0 over 44/95px, so each is a
-      short body wearing a circle a little under twice its own length. `construction`,
-      `delivery_van` and `barricade` are at intensity 0 — their radii are dead numbers that price
-      nothing, and giving one of them a shape means first deciding it should emit again, which is a
-      separate question and one the player has already answered no to.
-
-      **The radii change meaning, and that has to be settled before any code**: `inner_radius` and
-      `outer_radius` stop meaning *distance from the centre* and start meaning *distance from the
-      body*. Identical for a point, not for a spread — so **carrying a number across unchanged
-      silently inflates it**: 90px kept as-is stops meaning 90px from the café's centre and starts
-      meaning 90px beyond the whole 48px frontage, a wider field than the one standing there today.
-      M75 tightened those radii *for* this change, and this is the way to undo its work by
-      accident — the number has to be re-derived from the body, not reused.
-
-      **Which way they should actually move is the player's own point** *(2026-09-05: "that number
-      was so big because it was a point source before")*: a field computed from one point has to be
-      wide enough to stand in for a thing that is not a point, so the radius was doing the body's
-      job. Once the shape carries the body, that job goes away and the number comes **down** — by
-      at least what the body was worth, and further wherever the reach was never justified. Every
-      row with a body gets its radii **derived**, never carried over. This is not the refactor it
-      looks like.
-
-      **This overturns the bullet that used to stand here** — *"a stationary thing keeps its circle,
-      by construction: eccentricity from speed means zero speed is a disc"*, and with it the
-      conclusion that this milestone touches only the mobile rows. *Overturned on 2026-09-05 by the
-      player, because a body's shape and a body's motion are two independent sources of shape, and
-      only the second one goes to zero when the thing stands still.* Whether the two compose — a
-      capsule that is also eccentric — is open, and nothing needs it answered while every capsule
-      row is stationary.
-
-      **It is M75's "close only" item seen from the other side, and that item has landed.**
-      `cafe_tables` went from a 170px reach to 90 and `market_stall` from 185 to 95, on the
-      reasoning that a café should bill somebody at the tables and not somebody across the street.
-      That is the stopgap; this is the fix. **The stopgap is now the thing to beat**: a 90px circle
-      still over-reaches perpendicular to a 48px frontage and under-reaches along it, so the number
-      to derive is not a shrink of 170 but a fresh answer measured from the body. The two rows'
-      catalogue docstrings say so where the numbers are, and expect both to move again when this
-      lands
-- [ ] **And it has to be visible.** The falloff is invisible today and that is fine because it is
-      symmetric; a field that is stronger in front of a van is a routing fact the player can only
-      learn by being told or by dying. Ask what draws it before deciding it is free
 
 ---
 
@@ -1096,7 +942,7 @@ milestone places them.
       field, no y-sort — they lie under everything
 - [ ] **Garbage sacks, alleys first.** Sacks stand in alleys from the first degraded day and beside
       building fronts later, the second threshold another day or two on: *"in alleyways at first
-      and at the side of buildings later on"*. A single sack is decoration with a shape under M61
+      and at the side of buildings later on"*. A single sack is decoration with a `GroundShape`
       and no body; **a pile may carry a body** — an alley narrowed by rubbish is the one place this
       milestone could touch a route, and whether it should is decided when a pile is seen in an
       alley she has to use, not before. The mouse in the alley (M100) is placed by preference
@@ -1143,7 +989,7 @@ milestone places them so a street reads as a place, and a district as a district
       streets at a seeded spacing — never on a crossing, never within a tile of a door or a
       checkpoint, and never on the main road's pavements where the crowd's lanes are densest. A
       street tree is a `Prop` like a park tree, feet-anchored so she passes behind its canopy, and
-      it carries a shape under M61 with a small body, since a trunk is something you walk around.
+      it carries a `GroundShape` with a small body, since a trunk is something you walk around.
       **This is what makes the fallen tree make sense**: a street with trees on it can have one
       down across it. `fallen_tree`'s own placement then prefers a street that has standing trees,
       and the closure marker's picture is checked against the standing drawing so the two read as

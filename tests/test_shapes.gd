@@ -20,6 +20,12 @@ func run(t) -> void:
 	_test_rect_collision_shape(t)
 	_test_a_built_building_carries_its_own_footprint_as_its_body(t)
 	_test_a_crowd_car_shape_is_not_smaller_than_its_strike_box(t)
+	_test_field_distance_of_a_stationary_point_is_unchanged(t)
+	_test_field_distance_of_a_stationary_segment_is_a_capsule(t)
+	_test_field_distance_of_a_moving_point_is_an_ellipse(t)
+	_test_zero_speed_gives_a_disc(t)
+	_test_approaching_costs_more_than_receding(t)
+	_test_no_emitting_segment_row_moves(t)
 
 # ------------------------------------------------------------------ the datum ---
 
@@ -297,3 +303,82 @@ func _test_a_crowd_car_shape_is_not_smaller_than_its_strike_box(t) -> void:
 	t.check(shape.across() >= Tuning.CAR_STRIKE_HALF_WIDTH,
 			"and across at least as far as its strike box's half-width (%.1f >= %.1f)"
 			% [shape.across(), Tuning.CAR_STRIKE_HALF_WIDTH])
+
+# ------------------------------------------------------------------- the field ---
+# `body ⊕ kernel`: a disc kernel standing still (`field_distance()` reduces to `distance_to_spine`,
+# already tested above) and an ellipse moving (`eccentric_distance()`), eccentricity from speed. See
+# docs/EVENTS.md, "The emission model".
+
+func _test_field_distance_of_a_stationary_point_is_unchanged(t) -> void:
+	var shape := GroundShape.point(9.0)
+	for offset in [Vector2(30.0, 0.0), Vector2(0.0, -50.0), Vector2(12.0, 40.0)]:
+		var d := shape.field_distance(Vector2.ZERO, Vector2.RIGHT, Vector2.ZERO, offset)
+		t.check(is_equal_approx(d, offset.length()),
+				("a stationary point's field distance at %s is the plain distance to its centre "
+						% offset) + "(%.1f), exactly the circle every field always was" % offset.length())
+
+func _test_field_distance_of_a_stationary_segment_is_a_capsule(t) -> void:
+	var shape := GroundShape.segment(40.0, 24.0)
+	var outer := 90.0
+	var along_point := Vector2(shape.half_length + outer, 0.0)
+	t.check(is_equal_approx(
+					shape.field_distance(Vector2.ZERO, Vector2.RIGHT, Vector2.ZERO, along_point), outer),
+			"along the spine, the level set at 'outer' sits at half_length + outer from the centre")
+	var across_point := Vector2(0.0, outer)
+	t.check(is_equal_approx(
+					shape.field_distance(Vector2.ZERO, Vector2.RIGHT, Vector2.ZERO, across_point), outer),
+			"across the spine's middle, the level set at 'outer' sits at 'outer' from the centre — "
+			+ "no half_length added, which is the capsule's whole point")
+
+func _test_field_distance_of_a_moving_point_is_an_ellipse(t) -> void:
+	var speed := 130.0
+	var e := Tuning.field_eccentricity(speed)
+	var velocity := Vector2(speed, 0.0)
+	var outer := 100.0
+	var forward := Vector2(outer, 0.0)
+	t.check(is_equal_approx(GroundShape.eccentric_distance(Vector2.ZERO, velocity, forward), outer),
+			"dead ahead, the level set at 'outer' sits at exactly 'outer' — forward reach is unchanged")
+	var rear_r := outer * (1.0 - e) / (1.0 + e)
+	var behind := Vector2(-rear_r, 0.0)
+	t.check(is_equal_approx(GroundShape.eccentric_distance(Vector2.ZERO, velocity, behind), outer),
+			"behind, the level set at 'outer' sits at outer * (1-e)/(1+e) (%.1f), closer than ahead"
+			% rear_r)
+	var abeam_r := outer * (1.0 - e)
+	var abeam := Vector2(0.0, abeam_r)
+	t.check(is_equal_approx(GroundShape.eccentric_distance(Vector2.ZERO, velocity, abeam), outer),
+			"abeam, the level set at 'outer' sits at outer * (1-e) (%.1f)" % abeam_r)
+	t.check(rear_r < abeam_r and abeam_r < outer,
+			"and the three reaches are strictly ordered: behind < abeam < ahead")
+
+func _test_zero_speed_gives_a_disc(t) -> void:
+	var point := Vector2(37.0, -14.0)
+	var d := GroundShape.eccentric_distance(Vector2.ZERO, Vector2.ZERO, point)
+	t.check(is_equal_approx(d, point.length()),
+			"a standing emitter's effective distance is the plain distance — zero speed is a disc")
+
+func _test_approaching_costs_more_than_receding(t) -> void:
+	var velocity := Vector2(150.0, 0.0)
+	var r := 80.0
+	var approaching := GroundShape.eccentric_distance(Vector2.ZERO, velocity, Vector2(r, 0.0))
+	var receding := GroundShape.eccentric_distance(Vector2.ZERO, velocity, Vector2(-r, 0.0))
+	t.check(approaching < receding,
+			("the same %.0fpx ahead of a moving emitter reads as a shorter effective distance " % r)
+			+ ("(%.1f) than the same distance behind it (%.1f) — approaching costs more"
+					% [approaching, receding]))
+
+## D2: nobody builds the general capsule-and-ellipse sum, because every emitting segment row in the
+## catalogue is stationary. If a future row breaks that, `contribution_at()`'s "moving objects are
+## points" simplification quietly drops its own body — this is the regression guard.
+func _test_no_emitting_segment_row_moves(t) -> void:
+	var checked := 0
+	for def in EventCatalogue.all():
+		if def.shape == null or def.shape.kind != GroundShape.Kind.SEGMENT or def.intensity <= 0.0:
+			continue
+		checked += 1
+		t.check(not def.mobile,
+				"'%s' emits and is a segment, so it must not be mobile (D2: moving objects are points)"
+				% def.id)
+		t.check(not def.pursues,
+				"'%s' emits and is a segment, so it must not pursue (D2: moving objects are points)"
+				% def.id)
+	t.check(checked >= 1, "and at least one emitting segment row was actually checked (%d)" % checked)
