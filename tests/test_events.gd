@@ -60,6 +60,7 @@ func run(t) -> void:
 	_test_a_parked_van_is_at_the_kerb(t)
 	_test_a_lorry_has_a_wall_to_back_into(t)
 	_test_nothing_stands_on_the_doorstep_street(t)
+	_test_nothing_the_catalogue_places_stands_on_held_ground(t)
 	_test_no_two_rows_draw_the_same_picture(t)
 	_test_every_look_carries_its_own_silhouette(t)
 	_test_the_day_is_placed_by_role(t)
@@ -2172,6 +2173,104 @@ func _test_nothing_stands_on_the_doorstep_street(t) -> void:
 			"and the exempt street is pavement something could otherwise have stood on (%d tiles)"
 			% pavement)
 	t.check(placed > 14, "and the days it was checked over still place events (%d)" % placed)
+
+## `docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street" and "Nothing on the home block":
+## a catalogue placement is refused a candidate tile whose street segment is held today — a
+## closure, a hard seal, a region wall or door, or a segment bordering the home block
+## (`CityMap.held_segments`) — or that lies inside the home block's own lot
+## (`CityMap.is_on_home_block`). Replicates `EventManager.start_day`'s own ordering: the seals and
+## the region plan are known, and `held_segments` is filled, before `EventScheduler.build_day`
+## rolls a single candidate.
+##
+## **The seals' own bodies, the closure marker and the checkpoint rows are placed by their
+## planners, not by the catalogue roll, so they are unaffected** — asserted directly against a
+## measured baseline rather than trusted, on the same seeds and days the exclusion is checked
+## over: 20 (seed, day) pairs (4 seeds × 5 days, including day 7 and day 10 for the regions) give
+## 48 closures, 456 region-boundary segments (walls plus doors), 396 checkpoint bodies and 5320
+## seal placements, measured with `SealPlanner.plan_day`'s own `held` out-param wired in exactly
+## as `EventManager.start_day` wires it — so a regression here means construction changed, not
+## that this test drifted from it. **Re-measured against the RNG-cadence fix in
+## `CityGenerator._build_block`**, which draws the home block's alley roll and discards it rather
+## than skipping the draw: skipping it reseeded every block built after the home block for this
+## same set of seeds, so the boundary/checkpoint/seal totals a pre-fix run gives (441/384/5119)
+## are a different, incorrect city rather than a looser bound on this one.
+func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
+	const SEEDS := 4
+	const BASE_SEED := 314159
+	const DAYS := [1, 4, 7, 10, 14]
+	var total_closures := 0
+	var total_boundary := 0
+	var total_checkpoints := 0
+	var total_seals := 0
+	var checked := 0
+	for i in SEEDS:
+		var map := CityGenerator.generate(BASE_SEED + i * 137)
+		for day in DAYS:
+			var state := CityState.new()
+			state.begin_day(map.block_plans, day)
+			map.repaint(state)
+			var tree := RouteTree.for_day(map, day)
+			var region_plan := RegionPlanner.plan_day(map, day, tree)
+			var closure_rng := RandomNumberGenerator.new()
+			closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
+			var closures := ClosurePlanner.plan_day(map, day, closure_rng, tree, region_plan)
+			map.close_streets(closures)
+
+			# The same population `EventManager.start_day` performs, before `build_day` runs.
+			map.clear_day_holds()
+			for closure in closures:
+				map.hold_segment(closure.segment.key())
+			for segment in region_plan.walls:
+				map.hold_segment(segment.key())
+			for segment in region_plan.doors:
+				map.hold_segment(segment.key())
+			for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+				map.hold_segment(segment.key())
+
+			var boundary := {}
+			for segment in region_plan.walls:
+				boundary[segment.key()] = true
+			for segment in region_plan.doors:
+				boundary[segment.key()] = true
+			for rect in region_plan.alley_walls:
+				boundary[rect.position] = true
+			for rect in region_plan.alley_doors:
+				boundary[rect.position] = true
+			var seal_rng := RandomNumberGenerator.new()
+			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
+			var seals := SealPlanner.plan_day(map, day, tree, seal_rng, boundary, map.held_segments)
+
+			var consumed: Array[String] = []
+			for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
+				if not plan.is_placed():
+					continue
+				checked += 1
+				var tile := map.world_to_tile(plan.position)
+				t.check(not map.is_closed(tile),
+						"seed %d day %d: '%s' does not stand on a closed tile"
+						% [map.seed_used, day, plan.def.id])
+				t.check(not map.is_held_at(tile),
+						"seed %d day %d: '%s' does not stand on a held segment"
+						% [map.seed_used, day, plan.def.id])
+				t.check(not map.is_on_home_block(tile),
+						"seed %d day %d: '%s' does not stand inside the home block"
+						% [map.seed_used, day, plan.def.id])
+
+			total_closures += closures.size()
+			total_boundary += region_plan.walls.size() + region_plan.doors.size()
+			total_checkpoints += region_plan.door_bodies.size()
+			total_seals += seals.size()
+
+	t.check(checked > 0, "the catalogue placed something to check across every sampled day (%d)"
+			% checked)
+	t.check(total_closures == 48,
+			"the day's closures are unaffected by holding their ground (%d, want 48)" % total_closures)
+	t.check(total_boundary == 456,
+			"the region's walls and doors are unaffected (%d segments, want 456)" % total_boundary)
+	t.check(total_checkpoints == 396,
+			"the region's checkpoint bodies are unaffected (%d, want 396)" % total_checkpoints)
+	t.check(total_seals == 5320,
+			"the day's seal placements are unaffected (%d, want 5320)" % total_seals)
 
 # ------------------------------------------------------- one picture per row ---
 # *(M37, playtest 07 finding 2: "not sure what that person was supposed to be".)* The vocabulary's

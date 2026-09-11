@@ -67,8 +67,28 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	var region_plan: RegionPlanner.RegionPlan = _city.region_plan() if _city else null
 	if not region_plan:
 		region_plan = RegionPlanner.plan_day(_map, day, tree)
-	_plans = EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars,
-			GameState.settled_this_act(), tree, GameState.resistance_progress)
+
+	# Held ground, before `EventScheduler.build_day` rolls a single candidate — see
+	# `CityMap.held_segments`. Closures, the region's own wall and door segments, and the
+	# streets around the home block are all known already; the hard seals are not, which is
+	# why `SealPlanner.plan_day` moved ahead of `build_day` below (see that call's own note).
+	#
+	# A rig driving `EventManager` with no `City` gets no closures held: `_city.closures()` has
+	# nothing to read without one, the same gap `docs/TODO.md`'s "a rig driving EventManager
+	# before City.start_day seals nothing" already names for the tree and the region plan. The
+	# wall, the doors and the home block are still held, because all three come from
+	# `region_plan` and `_map` alone.
+	_map.clear_day_holds()
+	if _city:
+		for closure in _city.closures():
+			_map.hold_segment(closure.segment.key())
+	for segment in region_plan.walls:
+		_map.hold_segment(segment.key())
+	for segment in region_plan.doors:
+		_map.hold_segment(segment.key())
+	for segment in StreetNetwork.around_blocks(Rect2i(_map.home_block, Vector2i.ONE)):
+		_map.hold_segment(segment.key())
+
 	# Off the catalogue's own budget on purpose — see `SealPlanner`'s own doc. It seals everything
 	# `EventScheduler` was not permitted to touch: every street off `tree`, hard or soft, plus the
 	# mouths of any through-alley that never reaches it — except today's region boundary, wall or
@@ -85,8 +105,17 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 		boundary[rect.position] = true
 	for rect in region_plan.alley_doors:
 		boundary[rect.position] = true
-	_plans.append_array(
-			SealPlanner.plan_day(_map, day, tree, GameState.day_rng(day, "seals"), boundary))
+	# **Planned before `build_day` now, not after.** `SealPlanner.plan_day` is a pure function of
+	# `_map`, `day`, `tree` and its own RNG stream (`GameState.day_rng(day, "seals")`, never shared
+	# with the catalogue's), so moving it earlier changes which seals a day gets not at all — only
+	# how soon `build_day` can see where they landed. `held` is `_map.held_segments` itself: a hard
+	# seal's segment is marked there as it is placed, so the catalogue never offers a candidate row
+	# that same ground (`docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street").
+	var seals := SealPlanner.plan_day(_map, day, tree, GameState.day_rng(day, "seals"), boundary,
+			_map.held_segments)
+	_plans = EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars,
+			GameState.settled_this_act(), tree, GameState.resistance_progress)
+	_plans.append_array(seals)
 	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
 	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that
 	# wants to know where the wall stands reads `region_plan.wall_bodies` directly rather than

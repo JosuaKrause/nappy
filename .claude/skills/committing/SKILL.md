@@ -18,6 +18,15 @@ is a specific good reason, documented in the final report. Use a draft PR when t
 unfinished, and include the PR link in the final report. This is standing authorization; no
 separate request to push or open the PR is needed.
 
+**A PR that is ready to merge is armed with auto-merge, never watched.** *(2026-09-11: "don't
+poll CI checks. arm PRs with auto merge".)* `gh pr merge <n> --auto --merge --delete-branch` hands
+the wait to GitHub: the PR merges with a merge commit the moment its `test` check is green, and the
+branch goes with it. Polling the check from a session spends the session's own time on a wait the
+platform already does for free, and a session that stops before the check finishes has left the PR
+unmerged for no reason. Arm it as the last step of proposing, and arm the next PR in a stack the
+same way — a PR whose base was a branch has to be retargeted to `main` (or re-opened against it,
+since GitHub closes a PR whose base branch is deleted) before it can be armed.
+
 **A ready-for-review PR carries the completed work and its verification.** Run `./tools/check.sh`,
 the suites the change touches, and `./tools/lint.sh` if a governed doc moved. An unfinished draft
 may be pushed with failing or outstanding checks, stated in the PR; backing it up does not claim

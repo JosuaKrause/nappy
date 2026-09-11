@@ -155,8 +155,16 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 ## half places there — either would be two things standing in the same spot if this pass also
 ## sealed it. A `Dictionary` parameter rather than a reach into `_city` from here: `SealPlanner`
 ## stays a pure function of what it is handed, the same as every other call in this file.
+##
+## `held`, if given, gets every **hard** seal's segment key marked in it as it is placed —
+## `CityMap.held_segments` itself, in the ordinary caller (`EventManager.start_day`), which passes
+## it in and then plans `EventScheduler.build_day` against it so a hard seal's ground is never
+## also offered to a catalogue row. A soft seal is not marked: its carriageway is still walkable,
+## and a café on it is the price of that route (`docs/TODO.md`, "Events spawn inside a fully
+## blocked street"). Left `{}` for a caller — a test, a rig — that only wants the placements.
 static func plan_day(map: CityMap, day: int, tree: RouteTree,
-		rng: RandomNumberGenerator, skip: Dictionary = {}) -> Array[EventScheduler.Planned]:
+		rng: RandomNumberGenerator, skip: Dictionary = {},
+		held: Dictionary = {}) -> Array[EventScheduler.Planned]:
 	var planned: Array[EventScheduler.Planned] = []
 	if not tree:
 		return planned
@@ -180,6 +188,7 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree,
 			soft_pairs.append(placed)
 		else:
 			planned.append_array(placed)
+			held[key] = true
 	planned.append_array(_thin_soft_pairs(soft_pairs, rng))
 	planned.append_array(_seal_alley_mouths(map, tree, day, rng, skip))
 	return planned

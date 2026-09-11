@@ -765,7 +765,22 @@ static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.Block
 		map.square_rects.append(layout.square)
 		rects = _subtract_all(rects, layout.square)
 
-	if rng.randf() < float(Tuning.ALLEY_CHANCE[purpose]):
+	# The home block is exempt from the through-alley roll, the same way a commercial block's own
+	# `ALLEY_CHANCE` entry is 0 — except the home shares `RESIDENTIAL`'s purpose and its 0.25 with
+	# every other block of it, so the exemption has to be asked here rather than carried by the
+	# table. An alley through it would be a second, unguarded way onto ground playtest 11 asked to
+	# keep clear of every hazard (`docs/DECISIONS.md`, M100, "Nothing on the home block"), and it is asked
+	# before the roll rather than discarded after: `_home_rect` no longer has anything to slide
+	# the notch off of.
+	#
+	# **The roll is still drawn for the home block, and only the result is discarded.** `and`
+	# short-circuits, so `block != home_block() and rng.randf() < ...` would skip the draw
+	# entirely for the one block the whole lattice visits in the middle of its iteration —
+	# reseeding every block built after it with a shifted stream for a reason that has nothing to
+	# do with any of them. Drawing first and gating after costs one throwaway `randf()` on the
+	# home block and leaves everyone else's layout exactly what it already was for this seed.
+	var wants_an_alley := rng.randf() < float(Tuning.ALLEY_CHANCE[purpose])
+	if block != home_block() and wants_an_alley:
 		layout.alley = _alley_rect(lot, rng)
 		map.fill_rect(layout.alley, GameEnums.TileType.ALLEY)
 		map.alley_rects.append(layout.alley)
@@ -897,29 +912,18 @@ static func _subtract(outer: Rect2i, hole: Rect2i) -> Array[Rect2i]:
 ## tiles.
 static func _place_home(map: CityMap, block_rects: Dictionary) -> void:
 	var block := home_block()
-	_carve_home(map, block_rects, block, _home_rect(map, block))
+	_carve_home(map, block_rects, block, _home_rect(block))
 
-## The home notch: `HOME_SIZE_TILES` in the south edge of the lot, slid sideways if that
-## would land it in an alley.
-static func _home_rect(map: CityMap, block: Vector2i) -> Rect2i:
+## The home notch: `HOME_SIZE_TILES` centred on the south edge of the lot.
+##
+## **No longer slid sideways to clear an alley** — the home block is exempt from the through-alley
+## roll (`_build_block`), so every tile of its lot is `BUILDING` here and the centred notch always
+## clears. Checking that and sliding when it did not was a repair for a case the roll no longer
+## creates; removed rather than left standing as dead ground to reason about.
+static func _home_rect(block: Vector2i) -> Rect2i:
 	var lot := CityMap.block_rect(block)
 	var size := Tuning.HOME_SIZE_TILES
-	var top_left := Vector2i(lot.position.x + (lot.size.x - size.x) / 2, lot.end.y - size.y)
-	for shift in range(0, lot.size.x - size.x):
-		# Alternate right and left of centre until the notch clears any alley.
-		var offset: int = (shift + 1) / 2 * (1 if shift % 2 == 0 else -1)
-		var candidate := Rect2i(top_left + Vector2i(offset, 0), size)
-		if not lot.encloses(candidate):
-			continue
-		if _is_all_building(map, candidate):
-			return candidate
-	return Rect2i(top_left, size)
-
-static func _is_all_building(map: CityMap, rect: Rect2i) -> bool:
-	for tile in map.rect_tiles(rect):
-		if map.tile_at(tile) != GameEnums.TileType.BUILDING:
-			return false
-	return true
+	return Rect2i(Vector2i(lot.position.x + (lot.size.x - size.x) / 2, lot.end.y - size.y), size)
 
 static func _carve_home(map: CityMap, block_rects: Dictionary, block: Vector2i,
 		home: Rect2i) -> void:

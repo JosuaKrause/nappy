@@ -337,10 +337,29 @@ so a day's `plan` line reads as *n sited, m ahead*.
 
 ### Where in the city, and why
 
-A placement is a roll over every tile of the right type, weighted by whether the tile is in a
-precinct and by what the day is placing the thing **for** — its **role**, in the vocabulary
-`docs/CITY.md` fixes — against the day's **corridor**, which is the ways from the doorstep to the
-calm areas still worth reaching.
+**The pool is narrower than "every tile of the right type" before a single weight is applied.**
+`EventScheduler._open_ground_for` refuses four kinds of ground outright, by construction rather than
+as a check on what a roll came back with:
+
+- a tile closed today (`CityMap.is_closed`);
+- the street the front door opens onto (`_the_street_she_starts_on` — a notch with one exit is not
+  a route decision, it is a tax);
+- a tile whose street segment is **held** today (`CityMap.is_held_at`) — a hard seal's own segment,
+  a region wall or door, or a segment bordering the home block, all in `CityMap.held_segments`; a
+  soft seal is not held, since its carriageway is still walkable and a café standing on it is the
+  price of that route;
+- a tile inside the home block's own lot (`CityMap.is_on_home_block`), the same exemption stated
+  the other way round.
+
+None of this is a weight: a closed or held street is not somewhere anyone can get to, or is already
+standing for something else, so nothing about the role table below ever sees it. See `docs/CITY.md`,
+"Carve alleys" and "Place home", for why the home block's own ground never has an alley to be a
+candidate in the first place.
+
+A placement is a roll over every tile of the right type that survives the exclusions above, weighted
+by whether the tile is in a precinct and by what the day is placing the thing **for** — its
+**role**, in the vocabulary `docs/CITY.md` fixes — against the day's **corridor**, which is the ways
+from the doorstep to the calm areas still worth reaching.
 
 `EventScheduler._role_for` answers it off the def and nothing else has to be written per row:
 

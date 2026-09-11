@@ -89,6 +89,7 @@ is the moment somebody is about to touch the file.
 | `src/telemetry/**` | **telemetry** |
 | `src/autoload/tuning.gd` | **balance** |
 | `tools/*.py`, `pyproject.toml`, `uv.lock`, `.python-version` | **python-tooling** |
+| `tools/**`, `src/dev/dev_flags.gd` | **cli-tools** |
 | `tests/**` | **verify** |
 | `docs/playtests/PLAYTEST-*.md`, `docs/TODO.md` | **feedback** |
 | any `*.gd` | **godot** |
