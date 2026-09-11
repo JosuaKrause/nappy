@@ -509,12 +509,14 @@ opened for — the first mark being announced, and a mark that was never on scre
 record is in `DECISIONS.md` under M78, and the played question it leaves is whether a mark that
 follows her until seen is now findable at all.
 
-**Revisited after M62 rather than built as written.** *(2026-09-09: "M65 we need to revisit after
-M62.")* A walled city with checkpoints may change what finding a mark is like, so this entry is
-re-read against that city before the prepared poses are bound to objectives or the density moved.
+**Re-read against the walled city on 2026-09-11, and narrowed by the player: a protester never
+points at a chalk mark.** *(2026-09-09: "M65 we need to revisit after M62"; 2026-09-11, asked
+whether to build it as written now: "the mark is findable now -- I don't think we need pointing
+for that. but the other tasks are not as easy and need pointing".)* So the pointing is for every
+objective that is not a mark — a perform step, wherever the current step stands — and a protester
+on a mark day wears the plain pose. The density raise below stands as asked.
 
-**Half of this item needs no drawing at all**, and is worth doing on its own if the mark is still
-hard to find now that it follows her: raising how often a protester appears is a density
+**Half of this item needs no drawing at all**: raising how often a protester appears is a density
 change, and the player's own reason it is cheap is that a protester obstructs nothing and pursues
 nothing, so it does not compete for the catalogue's placement budget.
 
@@ -649,7 +651,10 @@ became the charging dog")* — sited on her line on day 3 so the lesson is unavo
       mechanism to start from is M56's heated `police_patrol`, which is already denser and then
       interested as resistance progress rises; what this item adds is a return-phase shape in acts
       III and IV. Measure the return phase on a rig across the four acts — encounters per return,
-      and how much of the day's clock the return actually spends — before and after
+      and how much of the day's clock the return actually spends — before and after. **The shape
+      is not designed yet, and the measurement comes first** *(2026-09-11: "measure now, design
+      after")*: the before-figures are taken with a probe under `tests/probes/`, and the shape —
+      how many, where, at what cost — is the player's question once they are in hand
 
 ---
 
