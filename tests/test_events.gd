@@ -39,8 +39,10 @@ func run(t) -> void:
 	_test_one_park_stays_usable(t)
 	_test_calm_she_has_not_used_is_left_alone(t)
 	_test_successors_resolve(t)
-	_test_burning_building_is_never_scheduled(t)
-	_test_fire_truck_is_a_day_three_one_shot(t)
+	_test_sighted_successors_resolve(t)
+	_test_fire_truck_is_never_scheduled(t)
+	_test_burning_building_is_a_day_three_one_shot(t)
+	_test_the_fire_engine_is_fair_from_the_worst_position_on_the_street(t)
 	_test_along_street_paths_stay_in_bounds(t)
 	_test_nothing_is_cheaper_to_walk_through_than_around(t)
 	_test_running_is_the_answer_to_exactly_one_kind_of_thing(t)
@@ -1054,7 +1056,12 @@ func _widest_gap_between_birds(instance: EventInstance) -> float:
 	return widest
 
 func _test_mobile_follows_its_path(t) -> void:
-	var def := EventCatalogue.by_id("fire_truck")
+	# `military_convoy` rather than the fire engine: this is about the generic path-following
+	# mechanic, not about fire, and it needs a row whose `_be_done()` finishes immediately rather
+	# than driving on until it is out of sight — `spawns_on_finish` is what does that, which the
+	# fire engine no longer carries now that `burning_building` calls it in rather than the other
+	# way round (`EventDef.spawns_on_sight`).
+	var def := EventCatalogue.by_id("military_convoy")
 	var path := PackedVector2Array([Vector2(0.0, 0.0), Vector2(300.0, 0.0)])
 	var instance := _instance(t, def, Vector2.ZERO, path)
 	t.check(instance.position == Vector2.ZERO, "a mobile event starts at its first waypoint")
@@ -1499,24 +1506,35 @@ func _test_successors_resolve(t) -> void:
 				"'%s' spawns '%s', which exists in the catalogue"
 				% [def.id, def.spawns_on_finish])
 
-## It has no scheduled day at all, so nothing but the fire engine can put one in the world.
-func _test_burning_building_is_never_scheduled(t) -> void:
-	var fire := EventCatalogue.by_id("burning_building")
-	t.check(fire != null, "the burning building exists")
-	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		t.check(not fire.available_on(day),
-				"the burning building is not schedulable on day %d" % day)
+## The opposite direction: `spawns_on_sight` names what arrives once a row has been seen,
+## `spawns_on_finish`'s own check above, mirrored. `burning_building` is the only row that
+## carries one today.
+func _test_sighted_successors_resolve(t) -> void:
+	var checked := 0
+	for def in EventCatalogue.all():
+		if def.spawns_on_sight == "":
+			continue
+		checked += 1
+		t.check(EventCatalogue.by_id(def.spawns_on_sight) != null,
+				"'%s' summons '%s' on sight, which exists in the catalogue"
+				% [def.id, def.spawns_on_sight])
+	t.check(checked > 0, "there is at least one row with a spawns_on_sight ('burning_building')")
 
-func _test_fire_truck_is_a_day_three_one_shot(t) -> void:
+## It has no scheduled day at all, so nothing but `EventManager._summon_the_sighted_row()` can
+## put one in the world — see `EventDef.spawns_on_sight` on `burning_building`.
+func _test_fire_truck_is_never_scheduled(t) -> void:
 	var truck := EventCatalogue.by_id("fire_truck")
-	t.check(truck.kind == GameEnums.EventKind.ONE_SHOT, "the fire engine is a one-shot")
-	t.check(not truck.available_on(2), "the fire engine cannot come on day 2")
-	t.check(truck.available_on(3), "the fire engine can come on day 3")
-	t.check(not truck.available_on(4), "the fire engine never comes again")
+	t.check(truck != null, "the fire engine exists")
+	t.check(truck.kind == GameEnums.EventKind.SCRIPTED, "the fire engine is a SCRIPTED def")
+	t.check(truck.scripted_day == 0, "and its scripted day is none at all")
+	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+		t.check(not truck.available_on(day),
+				"the fire engine is not schedulable on day %d" % day)
 
 	# It outruns a walk, so the fairness rule must demand the full forward reach of clearance — the
 	# row's own catalogued radius grown forward by how fast it moves (M114, the moving field grows
-	# forward), not the plain radius a standing thing would have.
+	# forward), not the plain radius a standing thing would have. Unchanged by no longer being
+	# scheduled: the contract is a property of this geometry and this speed alone.
 	t.check(truck.speed > Tuning.WALK_SPEED, "the fire engine is faster than walking")
 	var truck_scale := Tuning.field_scale(Tuning.field_eccentricity(truck.speed))
 	t.close_to(truck.minimum_telegraph(), truck.outer_radius * truck_scale / Tuning.WALK_SPEED,
@@ -1532,6 +1550,63 @@ func _test_fire_truck_is_a_day_three_one_shot(t) -> void:
 	t.close_to(dog.minimum_telegraph(),
 			(dog.outer_radius - dog.inner_radius) * dog_scale / Tuning.WALK_SPEED,
 			"a slow mover can simply be walked away from")
+
+## `burning_building` took over `fire_truck`'s old ONE_SHOT slot: day 3, and nowhere else —
+## *"the player should encounter the burning building before the fire truck ... the fire truck
+## should spawn when the player sees the burning building not the other way around"*.
+func _test_burning_building_is_a_day_three_one_shot(t) -> void:
+	var fire := EventCatalogue.by_id("burning_building")
+	t.check(fire != null, "the burning building exists")
+	t.check(fire.kind == GameEnums.EventKind.ONE_SHOT, "the burning building is a one-shot")
+	t.check(not fire.available_on(2), "the burning building cannot come on day 2")
+	t.check(fire.available_on(3), "the burning building can come on day 3")
+	t.check(not fire.available_on(4), "the burning building never comes again")
+	t.check(fire.spawns_on_sight == "fire_truck",
+			"and it calls the fire engine in the moment it is seen")
+
+	# She finds it already burning, not arriving, so the telegraph is no longer bought by an
+	# approach — it is stationary, so the ordinary band rule (not the fast-mover one above)
+	# still has to hold: `(outer - inner) / WALK_SPEED`, unstretched, since nothing about the
+	# row moves.
+	t.close_to(fire.minimum_telegraph(), (fire.outer_radius - fire.inner_radius) / Tuning.WALK_SPEED,
+			"a place she finds is cleared by the ordinary stationary rule")
+	t.check(fire.telegraph_time >= fire.minimum_telegraph(),
+			"the burning building gives that much warning once she has noticed it")
+
+## The engine's own contract, re-proven for the new siting. `EventManager._summon_the_sighted_
+## row()` sites it `maxf(Tuning.offscreen_lead(...), summoned.field_reach() + Tuning.
+## VIEW_HALF_EXTENT.length())` up the street from wherever the fire stopped it — the second term
+## is the one this test exists for: the trigger only bounds her distance from the fire to the
+## half diagonal of the view (`ResistanceDirector.NOTICE_RADIUS`'s own reasoning), not to zero,
+## so the siting has to clear the engine's own forward reach from *that* worst case, not just
+## from directly underneath it.
+func _test_the_fire_engine_is_fair_from_the_worst_position_on_the_street(t) -> void:
+	var truck := EventCatalogue.by_id("fire_truck")
+	var heading := Vector2.DOWN
+	var closing := truck.speed + Tuning.WALK_SPEED
+	var reach := truck.field_reach()
+	var worst_sight := Tuning.VIEW_HALF_EXTENT.length()
+	var lead := maxf(Tuning.offscreen_lead(heading, closing, truck.offscreen_notice),
+			reach + worst_sight)
+	t.check(lead >= reach + worst_sight,
+			"the siting clears the engine's own forward reach (%.0fpx) from the worst distance "
+			% reach + "she could already be from the fire when it is first seen (%.0fpx)" % worst_sight)
+
+	# The same construction `EventManager._summon_the_sighted_row()` uses: sited `lead` up the
+	# street from the point the engine stops at, travelling the same line down to it.
+	var road_at := Vector2(2000.0, 2000.0)
+	var entry := road_at + heading * lead
+	var instance := EventInstance.new()
+	instance.setup(truck, entry, PackedVector2Array([entry, road_at]))
+
+	# The worst position on the street: standing exactly `worst_sight` up the street from the
+	# fire, as far as she could be and still have triggered the summons by seeing it — the point
+	# with the least possible head start on the engine's approach.
+	var her := road_at + heading * worst_sight
+	t.check(instance.contribution_at(her) <= 0.001,
+			"the worst position on the street is already inside the engine's field at the "
+			+ "moment it is created, before she has had any warning at all")
+	instance.free()
 
 func _test_along_street_paths_stay_in_bounds(t) -> void:
 	var map := _map()
