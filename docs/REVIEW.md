@@ -51,6 +51,9 @@ view").
   as *a dog that was somewhere* or as the lesson again? That is the open question in `TODO.md`,
   M96, whether it should wait to be routed into; a played answer decides it. Record is
   `DECISIONS.md`, M96.
+- **Look at a park or a forest block.** Trees keep at least a canopy's width apart now. Do the
+  lots still read as *wooded*, or has the spacing made them look planted in rows? Record is
+  `DECISIONS.md`, M100, the park trees.
 
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 

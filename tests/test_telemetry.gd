@@ -20,6 +20,7 @@ func run(t) -> void:
 	_test_a_line_is_a_time_a_kind_and_a_sentence(t)
 	_test_order_is_the_record(t)
 	_test_the_formatting_helpers(t)
+	_test_every_written_kind_is_documented(t)
 	_test_the_commit_is_recorded_or_honestly_unknown(t)
 	_test_tracing_a_day_does_not_change_it(t)
 	_test_tracing_the_arcs_does_not_change_them(t)
@@ -117,6 +118,118 @@ func _test_the_formatting_helpers(t) -> void:
 	t.check(TelemetryLog.compass(Vector2.ZERO) == "nowhere", "and standing still is nowhere")
 	t.check(TelemetryLog.purpose(GameEnums.BlockPurpose.QUIET_SQUARE) == "quiet_square",
 			"a purpose is its enum name, lower case")
+
+## `chat` was written by `EventManager` (`_check_detentions()`) with no row in `docs/TELEMETRY.md`'s
+## "The entry kinds" table for a whole milestone before anybody noticed — nothing checked that the
+## two lists agreed. There is no enumeration of kinds anywhere in the code to check against instead
+## (`TelemetryLog.note()` takes any `String`), so this reads both sides the way a person auditing the
+## drift by hand would: every `Telemetry.note("kind"` call site under `res://src`, by regex, against
+## every `` `kind` `` in the table's own first column, also by regex, and requires the two sets to be
+## exactly equal — a kind written and undocumented, or documented and never written, both fail it.
+func _test_every_written_kind_is_documented(t) -> void:
+	var written := _telemetry_kinds_written()
+	var documented := _telemetry_kinds_documented()
+	t.check(written.size() > 10, "the scan actually found call sites (got %d)" % written.size())
+	t.check(documented.size() > 10, "the scan actually found table rows (got %d)" % documented.size())
+
+	var undocumented: Array = []
+	for kind in written:
+		if not documented.has(kind):
+			undocumented.append(kind)
+	undocumented.sort()
+	t.check(undocumented.is_empty(),
+			"every kind the code writes has a row in docs/TELEMETRY.md (missing: %s)" % [undocumented])
+
+	var unwritten: Array = []
+	for kind in documented:
+		if not written.has(kind):
+			unwritten.append(kind)
+	unwritten.sort()
+	t.check(unwritten.is_empty(),
+			"and the table names no kind nothing under src/ still writes (stale: %s)" % [unwritten])
+
+## Every call site's kind argument, under `res://src` — `Telemetry.note(...)` everywhere it is an
+## autoload, and the bare `note(...)` it becomes inside `src/autoload/telemetry.gd` itself, where
+## `Telemetry` *is* `self`. The kind argument is everything up to the first top-level comma — plain
+## for almost every call, and a ternary of two literals for the one call that picks its own kind at
+## runtime (`"calm" if calm else "left"` in `telemetry_observer.gd`), so both literals in that
+## expression are pulled out rather than only the one nearest the open paren.
+##
+## Scanned **one line at a time**, not as one block of text: `[^,]*` has no bound on a newline, so
+## matched against the whole file it would run on past a call with no comma on its own line — there
+## is one, the definition `func note(kind: String, text: String)` — until it found the next comma
+## anywhere in the doc comments below, which is exactly the kind of over-match a "smallest assertion"
+## is supposed to avoid. A `#` comment line is skipped outright, since `` `note()` `` shows up in
+## the prose here describing this very rule.
+func _telemetry_kinds_written() -> Dictionary:
+	var kinds := {}
+	var qualified := RegEx.new()
+	qualified.compile("Telemetry\\.note\\(([^,]*),")
+	# Not preceded by a word character or a `.`, so `Telemetry.note(` (already covered above) and
+	# `_log.note(` (a real call, but its kind is a variable, not a literal to check) are both left
+	# to the pattern that actually applies to them rather than double-counted here.
+	var bare := RegEx.new()
+	bare.compile("(?<![\\w.])note\\(([^,]*),")
+	var word := RegEx.new()
+	word.compile("\"([a-z_]+)\"")
+	for path in _gd_files_under("res://src"):
+		var file := FileAccess.open(path, FileAccess.READ)
+		if not file:
+			continue
+		while not file.eof_reached():
+			var line := file.get_line()
+			if line.strip_edges().begins_with("#"):
+				continue
+			for call_match in qualified.search_all(line):
+				for word_match in word.search_all(call_match.get_string(1)):
+					kinds[word_match.get_string(1)] = true
+			for call_match in bare.search_all(line):
+				var arg := call_match.get_string(1)
+				if arg.contains(":"):
+					continue  # `func note(kind: String, ...` — a definition, not a call
+				for word_match in word.search_all(arg):
+					kinds[word_match.get_string(1)] = true
+		file.close()
+	return kinds
+
+## Every `.gd` file under `dir_path`, walked by hand since there is no recursive glob in `DirAccess`.
+func _gd_files_under(dir_path: String) -> Array[String]:
+	var found: Array[String] = []
+	var dir := DirAccess.open(dir_path)
+	if not dir:
+		return found
+	dir.list_dir_begin()
+	var entry := dir.get_next()
+	while entry != "":
+		if not entry.begins_with("."):
+			var full := "%s/%s" % [dir_path, entry]
+			if dir.current_is_dir():
+				found.append_array(_gd_files_under(full))
+			elif entry.ends_with(".gd"):
+				found.append(full)
+		entry = dir.get_next()
+	return found
+
+## The table's own first column, `docs/TELEMETRY.md`, "The entry kinds" — read as text since the
+## folder is excluded from the resource filesystem (`docs/.gdignore`) but still sits on disk where
+## `FileAccess` can open it. Restricted to lines that open with `` | `kind` `` so a backtick-quoted
+## word in the "Answers" prose (`` `abduction` ``, `` `charging_dog` ``) is never mistaken for a row.
+func _telemetry_kinds_documented() -> Dictionary:
+	var kinds := {}
+	var file := FileAccess.open("res://docs/TELEMETRY.md", FileAccess.READ)
+	if not file:
+		return kinds
+	var word := RegEx.new()
+	word.compile("`([a-z_]+)`")
+	while not file.eof_reached():
+		var line := file.get_line()
+		if not line.begins_with("| `"):
+			continue
+		var kind_cell := line.split("|")[1]
+		for word_match in word.search_all(kind_cell):
+			kinds[word_match.get_string(1)] = true
+	file.close()
+	return kinds
 
 ## Without a version a trace cannot be checked against anything, and a dirty tree has to say so
 ## rather than claim a build that does not describe what ran. Which of the shapes this machine

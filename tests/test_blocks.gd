@@ -13,6 +13,7 @@ extends RefCounted
 
 const SEEDS := 24
 const BASE_SEED := 90210
+const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
 ## Generated once and shared. Each of these tests wants the same sweep, and generating a
 ## city is the expensive part of this suite by a wide margin.
@@ -29,6 +30,7 @@ func run(t) -> void:
 	_test_a_requisitioned_block_stops_being_calm(t)
 	_test_a_courtyard_can_be_reached(t)
 	_test_the_same_seed_plans_the_same_arcs(t)
+	_test_park_trees_keep_their_distance(t)
 
 func _map(index: int = 0) -> CityMap:
 	return _maps[index]
@@ -178,6 +180,49 @@ func _test_the_same_seed_plans_the_same_arcs(t) -> void:
 					or a.steps[step].cause != b.steps[step].cause:
 				same = false
 	t.check(same, "the same seed plans the same arcs")
+
+## Rejection sampling with no spacing test let two trees land close enough to read as one canopy.
+## `_dress_block` now rejects a candidate within `City.MIN_TREE_SPACING` of one it already planted
+## in the same lot, so this drives the real placement pipeline — a built `City`, a real `start_day`
+## — across a few seeds and checks every pair of trees `CityMap.anchor_of` puts in the same lot,
+## which is what the clump would actually have been caught by rather than a unit test of the
+## rejection alone.
+func _test_park_trees_keep_their_distance(t) -> void:
+	var checked_any_pair := false
+	for seed_value in [BASE_SEED, BASE_SEED + 7, BASE_SEED + 14]:
+		var map := CityGenerator.generate(seed_value)
+		var city: City = CITY_SCENE.instantiate()
+		t.add_child(city)
+		city.build(map)
+		var state := CityState.new()
+		state.begin_day(map.block_plans, 1)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("m100-tree-spacing:%d" % seed_value)
+		city.start_day(state, 1, rng)
+
+		# Grouped by the lot's own anchor (`CityMap.anchor_of`), not by which of a zone's four
+		# blocks a tree happens to sit on — a four-block calm zone is one lot, and `_dress_block`'s
+		# own spacing check only ever compares trees it placed in the same call.
+		var by_lot := {}
+		for prop in city.props():
+			if prop.kind != Prop.Kind.TREE:
+				continue
+			var anchor: Vector2i = map.anchor_of(map.block_at(prop.position))
+			var lot: Array = by_lot.get(anchor, [])
+			lot.append(prop.position)
+			by_lot[anchor] = lot
+
+		for anchor in by_lot:
+			var trees: Array = by_lot[anchor]
+			for i in trees.size():
+				for j in range(i + 1, trees.size()):
+					checked_any_pair = true
+					var apart: float = trees[i].distance_to(trees[j])
+					t.check(apart >= City.MIN_TREE_SPACING,
+							"seed %d lot %s: two trees %.1fpx apart, under the %.1fpx floor"
+							% [seed_value, anchor, apart, City.MIN_TREE_SPACING])
+		city.free()
+	t.check(checked_any_pair, "at least one lot across these seeds had more than one tree to check")
 
 # ------------------------------------------------------------------ helpers ---
 
