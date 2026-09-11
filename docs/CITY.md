@@ -118,11 +118,16 @@ Tile types:
    - `CIVIC` — one big building; later becomes regime infrastructure
 4. **Carve alleys** — each non-park block has a seeded chance of a through-alley bisecting
    it. Commercial blocks are exempt: they already have a plaza carved out, and a second
-   hole through the same lot leaves slivers and an alley opening onto a square.
+   hole through the same lot leaves slivers and an alley opening onto a square. **The middle
+   block is exempt too**, unconditionally rather than through its own `RESIDENTIAL` chance: an
+   alley there is a second, unguarded way onto ground nothing on it may ever threaten. See
+   "The home" below.
 5. **Place playgrounds** — every `PARK` district gets 1 playground, inset from the edge.
-6. **Place home** — a 2×2 notch in the south edge of the **middle block**, slid sideways if the
-   notch would land in an alley. The middle block is claimed as `RESIDENTIAL` before step 3, so
-   nothing calm can be rolled into it and no zone can absorb it. See "The home" below.
+6. **Place home** — a 2×2 notch centred on the south edge of the **middle block**. The middle
+   block is claimed as `RESIDENTIAL` before step 3, so nothing calm can be rolled into it and no
+   zone can absorb it; exempted from step 4, every tile of its lot is still `BUILDING` when the
+   notch is carved, so it is never slid to clear an alley the roll no longer creates. See "The
+   home" below.
 7. **Validate** — see below. On failure, retry with `seed + 1`, up to 64 attempts.
 
 ### Carving is rect subtraction

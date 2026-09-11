@@ -16,6 +16,7 @@ func run(t) -> void:
 	_test_determinism(t)
 	_test_buildings_tile_the_blocks(t)
 	_test_home_opens_onto_the_street(t)
+	_test_no_alley_on_the_home_block(t)
 	_test_the_home_is_in_the_middle_of_a_city_worth_walking(t)
 	_test_calm_zones_are_one_lot_of_one_thing(t)
 	_test_calm_is_never_at_the_edge_or_beside_the_spine(t)
@@ -129,6 +130,25 @@ func _test_home_opens_onto_the_street(t) -> void:
 		var doorstep := Vector2i(map.home_rect.position.x, map.home_rect.end.y)
 		t.check(map.is_walkable(doorstep),
 				"seed %d: the tile outside the front door is walkable" % _seed(i))
+
+## `docs/TODO.md`, "Nothing on the home block": no alley is carved into the home block at all,
+## decided where alleys are rolled (`CityGenerator._build_block`) rather than slid sideways
+## afterwards. Guarded against vacuity — zero on the home block proves nothing if the city rolled
+## none anywhere — by also counting alleys elsewhere.
+func _test_no_alley_on_the_home_block(t) -> void:
+	var on_home_block := 0
+	var elsewhere := 0
+	for i in 60:
+		var map := CityGenerator.generate(_seed(i))
+		var home_lot := map.lot_rect(map.home_block)
+		for alley in map.alley_rects:
+			if home_lot.intersects(alley):
+				on_home_block += 1
+			else:
+				elsewhere += 1
+	t.check(on_home_block == 0,
+			"no alley tile lies inside the home block's lot (%d found)" % on_home_block)
+	t.check(elsewhere > 0, "alleys still exist elsewhere in the city (%d found)" % elsewhere)
 
 ## **The home is in the middle, and the walk out is still long.** *(Playtest 11, finding 4: "I spawn
 ## too often at the edge leaving only a few ways into the rest of the city.")*
