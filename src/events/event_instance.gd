@@ -9,6 +9,9 @@ extends Node2D
 
 const CAT_CROUCHED := preload("res://assets/events/cat_crouched.svg")
 const CAT_RUNNING := preload("res://assets/events/cat_running.svg")
+## The single east-facing picture, mirrored west — see `EventCatalogue._alley_mouse()` for why the
+## prepared directional family (`mouse_{front,back}[_diagonal].svg`) stays unbound here.
+const MOUSE := preload("res://assets/events/mouse.svg")
 ## The only generic here, and it is not a look: it is the *walker* half of a dog walker, which is a
 ## picture of somebody holding a lead rather than a picture of nobody in particular. Every row draws
 ## something of its own.
@@ -120,6 +123,7 @@ const _BOOM_EW_ANCHOR := Vector2(21.0, 88.0)
 static func icon_for(look: EventDef.Look) -> Texture2D:
 	match look:
 		EventDef.Look.CAT: return CAT_RUNNING
+		EventDef.Look.MOUSE: return MOUSE
 		EventDef.Look.YELLER: return YELLER
 		EventDef.Look.DOG_WALKER: return PERSON
 		EventDef.Look.CAFE: return CAFE_TABLE
@@ -343,6 +347,11 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_map = map
 	_spread_vertical = _spread_is_vertical(map, position)
 	_stationary_vehicle_side = _stationary_vehicle_uses_side(definition.look, map, position, face)
+	if definition.look == EventDef.Look.MOUSE:
+		# `alley_mouse` is `MAP`-placed rather than director-sited, so it arrives here with no
+		# route at all (`EventScheduler._build_placement`'s default case) — this is the one place
+		# its own dash gets built, from the alley it actually landed in rather than a flat offset.
+		path = _alley_crossing_path(map, position)
 
 ## **A pavement is one piece of walkable ground, not two lanes a body has to fit inside one of.**
 ## `EventScheduler` places a stationary body at `map.tile_to_world(tile)` — the centre of whichever
@@ -394,6 +403,43 @@ static func _spread_is_vertical(map: CityMap, at: Vector2) -> bool:
 	var on_a_north_south_street := CityMap.corridor_offset(tile.x) >= 0
 	var on_an_east_west_street := CityMap.corridor_offset(tile.y) >= 0
 	return on_an_east_west_street and not on_a_north_south_street
+
+## The `Rect2i` (from `CityMap.alley_rects`) that `at` falls inside, in **world** space, or an
+## empty `Rect2` when it is not inside any of them — a data-level rig with no map, or a placement
+## that has fallen off the lattice. `corridor_offset` cannot answer this the way `_spread_is_vertical`
+## does above: an alley is cut into the middle of a block rather than laid on the periodic street
+## pattern that function reads, so its own tiles are never on a corridor at all.
+static func _alley_rect_at(map: CityMap, at: Vector2) -> Rect2:
+	if not map:
+		return Rect2()
+	var tile := map.world_to_tile(at)
+	for rect in map.alley_rects:
+		if rect.has_point(tile):
+			return map.tile_rect_to_world(rect)
+	return Rect2()
+
+## A two-point dash across the **short** side of the alley `at` sits in, for `alley_mouse` — see
+## `EventCatalogue._alley_mouse()`. `_alley_rect_at` gives the alley's own rect rather than a
+## direction guessed from the street lattice, so the choice of axis is exact: `ALLEY_WIDTH_TILES`
+## (2) is always the narrower side of a real alley, and she can only be walking the longer one, so
+## crossing the narrower side is crossing her path by construction rather than by luck.
+##
+## Falls back to a short fixed dash along local X when there is no rect to ask — `_alley_rect_at`
+## returning empty — which `validate()` and a real `MAP` placement never let happen; this is only
+## for a data-level rig that calls `setup()` with no map at all.
+static func _alley_crossing_path(map: CityMap, at: Vector2) -> PackedVector2Array:
+	var rect := _alley_rect_at(map, at)
+	if rect.size == Vector2.ZERO:
+		return PackedVector2Array([at - Vector2(32.0, 0.0), at + Vector2(32.0, 0.0)])
+	if rect.size.y > rect.size.x:
+		# Narrower in X: a vertical alley, walked along Y, crossed along X.
+		return PackedVector2Array([Vector2(rect.position.x, at.y),
+				Vector2(rect.position.x + rect.size.x, at.y)])
+	# Narrower in Y, or square (never happens at `ALLEY_WIDTH_TILES` 2 against a block-length
+	# alley, but ties go the same way `_spread_is_vertical` ties do): a horizontal alley, walked
+	# along X, crossed along Y.
+	return PackedVector2Array([Vector2(at.x, rect.position.y),
+			Vector2(at.x, rect.position.y + rect.size.y)])
 
 ## Whether a stationary vehicle is seen side-on at this point. The moving van faces along the
 ## street and the burnt car lies perpendicular to it. A junction or ground outside the lattice has
@@ -1624,6 +1670,8 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 	match def.look:
 		EventDef.Look.CAT:
 			_draw_cat(canvas)
+		EventDef.Look.MOUSE:
+			_draw_simple(MOUSE, canvas)
 		EventDef.Look.YELLER:
 			_draw_simple(YELLER, canvas)
 		EventDef.Look.DOG_WALKER:

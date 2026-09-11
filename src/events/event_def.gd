@@ -29,6 +29,8 @@ enum Look {
 	NONE,     ## Invisible — something else already draws it (a park's playground frame).
 	# ---- act I ----
 	CAT,          ## Crouched, then stretched out flat. The crouch is the telegraph.
+	MOUSE,        ## A single side-on silhouette, mirrored east and west. No crouch of its own —
+	              ## it is already still, being small, and the dash is the whole event.
 	YELLER,       ## A long coat, a raised arm, a beard. One shape where a passer-by is two.
 	DOG_WALKER,   ## A person, a dog, and the taut lead between them.
 	CAFE,         ## Tables across the pavement, with people at them.
