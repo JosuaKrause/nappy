@@ -16,6 +16,7 @@ func run(t) -> void:
 	_test_determinism(t)
 	_test_buildings_tile_the_blocks(t)
 	_test_home_opens_onto_the_street(t)
+	_test_a_precincts_own_ground_is_never_built_over(t)
 	_test_no_alley_on_the_home_block(t)
 	_test_the_home_is_in_the_middle_of_a_city_worth_walking(t)
 	_test_calm_zones_are_one_lot_of_one_thing(t)
@@ -130,6 +131,48 @@ func _test_home_opens_onto_the_street(t) -> void:
 		var doorstep := Vector2i(map.home_rect.position.x, map.home_rect.end.y)
 		t.check(map.is_walkable(doorstep),
 				"seed %d: the tile outside the front door is walkable" % _seed(i))
+
+## `docs/DECISIONS.md`, M53, "found and not fixed": seed 24757 had two tiles inside a precinct
+## span built over, because `CityGenerator._place_hard_blockers` never asked whether a big
+## building's footprint landed on a precinct's own paving, and the calm-zone placement never asked
+## either — an apartment complex absorbs its streets *solid*, the same as a big building's mass,
+## which is what actually built over the corridor on that seed. `CityGenerator._touches_a_precinct`
+## is the fix: checked at candidate time, before a pair or a zone's footprint is accepted, so a
+## precinct's own ground is never offered in the first place rather than repaired once it is taken.
+##
+## No exemption for a hard blocker here, unlike `_test_nothing_goes_into_a_precinct`: that test
+## carves one out for the pre-existing gap this closes, and every tile in a span's own band is
+## asserted walkable with nothing excused.
+##
+## Guarded against vacuity by counting the precincts and the big buildings actually found across
+## the seeds checked — a list that happened to roll neither would pass this by having nothing to
+## check.
+func _test_a_precincts_own_ground_is_never_built_over(t) -> void:
+	var seeds := 40
+	var checked := {24757: true}
+	for i in seeds:
+		checked[_seed(i)] = true
+	var precincts_found := 0
+	var big_buildings_found := 0
+	for seed_value: int in checked:
+		var map := CityGenerator.generate(seed_value)
+		precincts_found += map.precinct_spans.size()
+		big_buildings_found += map.big_buildings.size()
+		for span in map.precinct_spans:
+			var vertical := span.x == 1
+			var lo := span.z * CityMap.period() + Tuning.STREET_WIDTH
+			var hi := (span.w + 1) * CityMap.period()
+			var band := span.y * CityMap.period()
+			var rect := Rect2i(Vector2i(band, lo), Vector2i(Tuning.STREET_WIDTH, hi - lo)) \
+					if vertical \
+					else Rect2i(Vector2i(lo, band), Vector2i(hi - lo, Tuning.STREET_WIDTH))
+			for tile in map.rect_tiles(rect):
+				t.check(map.is_walkable(tile),
+						"seed %d: %s in precinct %s is walkable" % [seed_value, tile, span])
+	t.check(precincts_found > 0,
+			"at least one precinct was found across the %d seeds checked" % checked.size())
+	t.check(big_buildings_found > 0,
+			"at least one big building was found across the %d seeds checked" % checked.size())
 
 ## `docs/DECISIONS.md`, M100, "Nothing on the home block": no alley is carved into the home block at all,
 ## decided where alleys are rolled (`CityGenerator._build_block`) rather than slid sideways
