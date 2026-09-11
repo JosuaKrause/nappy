@@ -156,6 +156,15 @@ This settles what the M112 entry had left as an open refinement: she does move v
 flight. A flight is a diagonal run of tiles, and on it a sideways press is redirected along the
 slope, so she visibly descends or climbs.
 
+And how the parts are joined:
+
+> maybe instead of multiple maps have all parts of the house on the same map with enough space
+> inbetween and on transition fade to black, teleport, then fade in again
+
+So the building is one map: the three hallways, the two stairwells, the lobby and the basement
+laid out on it with empty ground between them, and a door is a fade to black, a teleport to the
+counterpart door and a fade in — no map is loaded or unloaded.
+
 ## The inspection
 
 > the checkpoint itself, 2s should be enough -- both the guard and the player should disappear
