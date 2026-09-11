@@ -26,6 +26,17 @@ var _city: City
 var _map: CityMap
 var _player: Node2D
 var _hard_failed := false
+## Today's own day number, kept only for `_summon_the_sighted_row()`'s RNG stream — the
+## direction a summoned row enters from is a coin flip like any other placement, and it has to
+## come from the day's own seed to stay deterministic.
+var _day := 0
+
+## Which planned events have already summoned the row their own `spawns_on_sight` names, so a
+## `burning_building` streamed out and back in — a fresh `EventInstance` every time, unlike the
+## `Planned` it comes from, see `_stream_in()` — does not hand out a second fire engine. Keyed by
+## `Planned` rather than by instance for exactly that reason, and cleared with the rest of the
+## day in `clear()`.
+var _sighted: Dictionary = {}
 
 ## Which side of a redetaining instance's own crossing she was on when its conversation started —
 ## `instance -> signf(...)`, the sign of her offset from the body against `facing_now()`. Present
@@ -52,6 +63,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 		focus := Vector2.ZERO) -> void:
 	clear()
 	_hard_failed = false
+	_day = day
 	# The corridor the city grew this morning, before it placed its closures off it. Passed rather
 	# than grown again so that the walls, the friction and the picture are all stated against one
 	# tree; `RouteTree.for_day` would give the same answer, and two places agreeing by arithmetic
@@ -149,6 +161,7 @@ func clear() -> void:
 		plan.live = null
 	_plans.clear()
 	_door_entry_side.clear()
+	_sighted.clear()
 
 ## Brings into the world everything within reach of a point, and takes away what has gone out
 ## of it. Idempotent, and cheap: one distance check per planned event.
@@ -347,11 +360,100 @@ func _physics_process(delta: float) -> void:
 	if _find_player():
 		stream_around(_player.global_position)
 		_place_what_is_owed_ahead(delta)
+		_summon_what_has_been_sighted()
 		_tell_them_where_she_is()
 		_warn_about_the_ground_she_is_on()
 		_check_detentions()
 	_check_hard_fails()
 	_announce_the_city_wide_sources()
+
+# ------------------------------------------------------- called in on sight ---
+# The opposite of a successor: `_successor_of()` hands the day something the moment a row is
+# *done*; this hands it something the moment a row is first *seen*. `burning_building` is what
+# it exists for — see `EventDef.spawns_on_sight`.
+
+## Whether a live instance whose def names `spawns_on_sight` has been seen yet, and if it just
+## has, creates the row it names entering along its own street. Run every frame there is a
+## player, the same as `_place_what_is_owed_ahead` beside it.
+func _summon_what_has_been_sighted() -> void:
+	for plan in _plans:
+		if not plan.live or plan.def.spawns_on_sight == "" or _sighted.get(plan, false):
+			continue
+		if not _is_on_screen(plan.live.global_position):
+			continue
+		if _summon_the_sighted_row(plan.def, plan.live.global_position):
+			_sighted[plan] = true
+
+## Whether a world point is inside the camera's view of the player — the same
+## `Tuning.VIEW_HALF_EXTENT` box `DangerEdge` measures the screen edge against
+## (`Tuning.offscreen_boundary()`'s own box, and the camera holds her at its centre at a fixed
+## zoom — see docs/DECISIONS.md, "M77 — Everything arrives from off screen"). A direct geometry
+## test rather than `DangerEdge.is_on_screen()` itself: that call needs a live `Control` in the
+## viewport tree, which a headless rig driving `EventManager` alone —
+## `tests/test_event_manager.gd` — has none of, and asks the identical question
+## `ResistanceDirector.set_sight()` is wired to that same `Control` for. Ignores screen rotation,
+## which only a touch layout ever applies: the smaller reading of a silence, since nothing else
+## here is stated per input scheme.
+func _is_on_screen(world_position: Vector2) -> bool:
+	if not _player:
+		return false
+	var offset := world_position - _player.global_position
+	return absf(offset.x) <= Tuning.VIEW_HALF_EXTENT.x and absf(offset.y) <= Tuning.VIEW_HALF_EXTENT.y
+
+## Creates the row `source.spawns_on_sight` names, entering along `at`'s own street from off
+## screen and ending at `at` itself — `at` is a sidewalk point (`burning_building` is placed
+## `AGAINST_THE_BUILDING`), so the along-street axis is `CityMap.pavement_inward()` turned a
+## quarter turn, the construction `EventDirector._onto_her_side()` uses for the same reason: it
+## is the corridor's own axis, not whichever way she happens to be facing. Returns false, and
+## creates nothing, when neither direction along that axis lands in bounds.
+##
+## **Sited by `Tuning.offscreen_lead()`, not `Tuning.outlasting_telegraph_lead()`.** The
+## stricter siting `EventDirector._toward_her()` gives a `hard_fail` row exists to hold the
+## *whole* telegraph in reserve before a lethal thing can reach her; the engine cannot end the
+## day, so the ordinary M77 margin — off screen, plus its own closing notice — is what "far
+## enough up the street" owes on its own. What is still owed is `EventDef.validate()`'s own rule
+## for an ordinary `TOWARD_PLAYER` row (`outer_radius` must sit inside the siting distance, so
+## she can never be found already inside a field that has just become visible) — the row's
+## `minimum_telegraph()` contract then buys the walk clear of it, exactly as it does wherever
+## else in the catalogue a row is met. Both halves are checked from the worst position on the
+## street in `tests/test_events.gd` rather than trusted from the geometry alone.
+##
+## **The margin is measured off `at`, not off her.** Every other caller of `offscreen_lead()`
+## states its siting relative to her own live position, which is exactly where the view is
+## centred, so clearing the view already clears her. This one is triggered by `at` coming on
+## screen, which only bounds her distance from `at` to the half diagonal of the view,
+## `Tuning.VIEW_HALF_EXTENT.length()` (≈367px, `ResistanceDirector.NOTICE_RADIUS`'s own
+## reasoning) — so the siting also has to clear the engine's own forward reach from *that* worst
+## case, not only the screen edge.
+func _summon_the_sighted_row(source: EventDef, at: Vector2) -> bool:
+	var summoned := EventCatalogue.by_id(source.spawns_on_sight)
+	if not summoned:
+		push_error("event '%s' summons unknown '%s' on sight" % [source.id, source.spawns_on_sight])
+		return false
+	var inward := _map.pavement_inward(_map.world_to_tile(at))
+	if inward == Vector2i.ZERO:
+		return false
+	var along := Vector2(inward.y, inward.x)
+	# `pavement_inward` points away from the carriageway, into the block she is walking beside —
+	# see that function's own doc — so the road is the other way, and `AGAINST_THE_BUILDING`
+	# placed `at` on the sidewalk tile touching the building, the far tile of the two-tile band
+	# (`Tuning.SIDEWALK_WIDTH`) from the kerb: the near edge of the carriageway is that many
+	# tiles further in `-inward`.
+	var road_at := at - Vector2(inward) * (Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
+	var closing := summoned.speed + Tuning.WALK_SPEED
+	var lead := maxf(Tuning.offscreen_lead(along, closing, summoned.offscreen_notice),
+			summoned.field_reach() + Tuning.VIEW_HALF_EXTENT.length())
+	var headings: Array[Vector2] = [along, -along]
+	if GameState.day_rng(_day, "sighted:%s" % source.id).randf() < 0.5:
+		headings.reverse()
+	for heading in headings:
+		var entry: Vector2 = road_at + heading * lead
+		if not _map.in_bounds(_map.world_to_tile(entry)):
+			continue
+		var instance := _create(summoned, entry, PackedVector2Array([entry, road_at]))
+		_instances.append(instance)
+		return true
+	return false
 
 ## The one kind of source that cannot be drawn over, told to the HUD instead.
 ##

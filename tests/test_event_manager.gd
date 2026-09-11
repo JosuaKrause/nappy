@@ -73,35 +73,42 @@ func _test_finished_instances_are_dropped(t) -> void:
 ## The bug this exists for: one event finishing and spawning one successor leaves the list
 ## the same LENGTH, so a size comparison concluded nothing had changed — and left a freed
 ## node in the array while never tracking the successor at all.
+##
+## `military_convoy`/`barricade` rather than the fire engine: `fire_truck` no longer sets
+## `spawns_on_finish` — the day the fire is found before the engine reversed that link, so it is
+## `burning_building` that now names something, in the opposite direction
+## (`EventDef.spawns_on_sight`, checked in `tests/test_events.gd`, not here). The convoy is the
+## row `spawns_on_finish` still governs, and the wiring this test exists for is the same either
+## way.
 func _test_successor_replaces_its_parent(t) -> void:
-	_start(3)
-	var truck: EventInstance = null
+	_start(12)
+	var convoy: EventInstance = null
 	for instance in _city.events.instances():
-		if instance.def.id == "fire_truck":
-			truck = instance
+		if instance.def.id == "military_convoy":
+			convoy = instance
 			break
-	if not truck:
-		# The fire engine is a one-shot spread over its eligible days; this seed may not
-		# have rolled it. Spawn one directly rather than skip the check.
-		truck = _city.events._spawn_unplanned(
-				EventCatalogue.by_id("fire_truck"), Vector2(500, 500))
+	if not convoy:
+		# The convoy is a recurring row rather than a one-shot; this seed may not have rolled
+		# one on this day. Spawn one directly rather than skip the check.
+		convoy = _city.events._spawn_unplanned(
+				EventCatalogue.by_id("military_convoy"), Vector2(500, 500))
 
 	var before := _city.events.active_count()
-	var where := truck.global_position
-	truck._finish()
+	var where := convoy.global_position
+	convoy._finish()
 	_city.events._physics_process(0.016)
 
 	t.check(_city.events.active_count() == before,
 			"a one-for-one replacement keeps the count the same")
-	var fire: EventInstance = null
+	var barricade: EventInstance = null
 	for instance in _city.events.instances():
 		t.check(is_instance_valid(instance), "no freed node survives a successor swap")
-		if instance.def.id == "burning_building":
-			fire = instance
-	t.check(fire != null, "the fire engine leaves a fire behind it")
-	if fire:
-		t.close_to(fire.global_position.distance_to(where), 0.0,
-				"the fire starts where the engine stopped", 1.0)
+		if instance.def.id == "barricade":
+			barricade = instance
+	t.check(barricade != null, "the convoy leaves a barricade behind it")
+	if barricade:
+		t.close_to(barricade.global_position.distance_to(where), 0.0,
+				"the barricade starts where the convoy stopped", 1.0)
 
 func _test_excitement_sums_over_instances(t) -> void:
 	_start(5)
