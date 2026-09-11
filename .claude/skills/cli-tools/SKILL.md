@@ -29,5 +29,13 @@ flags were — and the failure is silent until somebody reads the log. On this p
 launch also takes the player's own screen, so the wrong run costs more than a wasted second.
 
 **A new tool ships with a test of both paths**: run it with `--help` and with a flag it does not
-know, and assert that neither did the work. The Python tools have `tools/test_*.py` for this;
-a shell tool gets the same two cases wherever its own test lives.
+know, and assert that neither did the work. `tools/test_cli_help.sh` holds the shell tools' cases
+(with `GODOT` stubbed, so an unwanted launch is a failure rather than a window) and checks that
+`README.md`'s flag section agrees with the game's own table; `tools/test_cli_help.py` holds the
+Python tools' cases and runs under `tools/pycheck.sh`. A new tool adds its two cases to the one
+that matches.
+
+**The dev-flag list is the game's, read live.** `src/dev/dev_flags.gd` declares every flag and its
+arity in one table; `tools/lib_dev_flags.sh` reads that table for `run.sh` and `shot.sh` to
+validate against, so a flag added to the game is accepted by the scripts without a second edit
+and a flag the game does not know is rejected before Godot starts.

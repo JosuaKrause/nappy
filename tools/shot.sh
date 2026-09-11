@@ -21,6 +21,58 @@ set -euo pipefail
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RESOLUTION="${RESOLUTION:-1280x720}"
+# shellcheck source=tools/lib_dev_flags.sh
+source "$PROJECT_DIR/tools/lib_dev_flags.sh"
+
+usage() {
+    cat <<EOF
+usage: RESOLUTION=WxH tools/shot.sh [--help|-h] out.png [seconds-to-wait] [dev flags...]
+
+Render the game to a PNG. RESOLUTION defaults to 1280x720. seconds-to-wait defaults to 1.5.
+Anything after that is forwarded to the game as a dev flag -- gated behind a debug build -- so
+--seed, --day, --spawn, --walk and the rest all work here too. See README.md's "Dev flags"
+section for what each one means; the shapes below are read live out of src/dev/dev_flags.gd's
+own DEV_FLAG_TABLE, so this list cannot go stale on its own.
+
+  tools/shot.sh out.png 8 --seed 4242 --spawn arterial --walk north
+
+flags:
+$(dev_flag_usage_lines)
+EOF
+}
+
+for arg in "$@"; do
+    case "$arg" in
+        --help|-h) usage; exit 0 ;;
+    esac
+done
+
+if [[ $# -lt 1 ]]; then
+    echo "usage: shot.sh out.png [seconds] [dev flags...]" >&2
+    exit 1
+fi
+
+OUT="$1"
+shift
+# The seconds-to-wait positional is optional, so a caller who skips it and goes straight to dev
+# flags (`shot.sh out.png --seed 4242`) must not have "--seed" swallowed into it.
+SECONDS_TO_WAIT="1.5"
+if [[ $# -gt 0 && "$1" != --* ]]; then
+    SECONDS_TO_WAIT="$1"
+    shift
+    if ! [[ "$SECONDS_TO_WAIT" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+        echo "seconds-to-wait must be a non-negative number, got '$SECONDS_TO_WAIT'" >&2
+        echo >&2
+        usage >&2
+        exit 1
+    fi
+fi
+
+if [[ $# -gt 0 ]] && ! validate_dev_flags "$@"; then
+    echo >&2
+    usage >&2
+    exit 1
+fi
 
 if [[ ! -x "$GODOT" ]]; then
     echo "godot not found at $GODOT" >&2
@@ -28,10 +80,6 @@ if [[ ! -x "$GODOT" ]]; then
     echo "  GODOT=/path/to/Godot tools/shot.sh" >&2
     exit 127
 fi
-
-OUT="${1:?usage: shot.sh out.png [seconds] [dev flags...]}"
-SECONDS_TO_WAIT="${2:-1.5}"
-shift $(( $# > 2 ? 2 : $# ))
 
 # Relative paths would resolve against the project dir inside Godot, not the caller's cwd.
 case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac

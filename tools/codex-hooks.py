@@ -15,6 +15,26 @@ SKILLS = ROOT / ".claude/skills"
 
 
 def main() -> None:
+    # Codex's own hooks.json invokes this with no arguments, piping one hook-event JSON payload
+    # to stdin (see .codex/hooks.json). Checked before touching stdin at all: reading it first and
+    # only then discovering an unknown flag would print an error after hanging on a payload nobody
+    # sent -- the exact "help doesn't work, it just starts something that becomes unresponsive"
+    # failure the cli-tools skill exists to rule out, one file over.
+    if len(sys.argv) > 1:
+        if sys.argv[1] in ("--help", "-h"):
+            print("usage: codex-hooks.py")
+            print()
+            print(__doc__)
+            print()
+            print("Reads one Codex hook-event JSON payload from stdin and translates it to the")
+            print("shared Claude hooks under .claude/hooks/, printing any additionalContext JSON")
+            print("Codex should inject. Takes no arguments; .codex/hooks.json invokes it with none.")
+            return
+        print(
+            f"usage: codex-hooks.py -- takes no arguments, got: {' '.join(sys.argv[1:])}",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
     event: dict[str, Any] = json.load(sys.stdin)
     kind = event["hook_event_name"]
     # Separate agents, repositories/worktrees and Claude's markers. Never use raw
