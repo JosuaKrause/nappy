@@ -28,6 +28,7 @@ func run(t) -> void:
 	_test_walking_back_redetains_her(t)
 	_test_the_chatting_mother_still_detains_once(t)
 	_test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t)
+	_test_a_raised_gate_still_detains_her_at_the_bar(t)
 
 # ------------------------------------------------------------------------ setup ---
 
@@ -556,3 +557,60 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t) -> void:
 			% [stopped_seconds, passed_at, elapsed])
 
 	city.free()
+
+## *"A raised bar is not a way past for her, at the bar itself."* Found building M110, the crowd's
+## own seal-avoidance: `checkpoint_gate` carried no `detain_seconds`/`detain_radius` of its own, so
+## stepping onto the boom's own tiles while it stood up for a car started nothing — only the huts
+## detained. *(2026-09-10, the player: "attempting to do that should just start a regular
+## checkpoint inspection".)* The gate now detains exactly like a hut, `redetains` included, so the
+## vanish (`Stroller.hide_for_inspection()`) and the halo suppression
+## (`is_suppressed_by_its_own_hold()`) both apply here too, the same way
+## `_test_she_and_the_guard_are_gone_during_the_hold` above checks them against a hut.
+##
+## `gate_state.raised` is set here and never read anywhere in the detain path — only by the gate's
+## own drawing (`_draw_checkpoint_gate()`) — so triggering the hold with it `true` is the whole of
+## "whatever the bar is doing." A stand-in for a car queued at the line, sited close to where she
+## is walking but far from the gate's own centre and never added to `manager._instances`, is the
+## proof that proximity to it could never matter: `_check_detentions()` only ever measures
+## `instance.global_position.distance_to(body.global_position)` over live `EventInstance`s, so
+## nothing that is not one can ever be examined at all, whatever it is standing in for.
+func _test_a_raised_gate_still_detains_her_at_the_bar(t) -> void:
+	var manager := _manager(t)
+	var stroller := _real_stroller(t)
+	manager._player = stroller
+
+	var axis := Vector2.RIGHT
+	var centre := Vector2(4600.0, 4600.0)
+	var gate := _door_instance(t, "checkpoint_gate", centre, axis)
+	gate.gate_state = RegionPlanner.GateState.new()
+	gate.gate_state.raised = true
+	manager._instances.append(gate)
+
+	var car_stand_in := Node2D.new()
+	car_stand_in.global_position = centre + axis * 300.0
+	t.add_child(car_stand_in)
+
+	stroller.global_position = centre + axis * 200.0
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(not gate.is_chatting(),
+			"well short of the gate's own detain_radius (near the car stand-in instead), nothing "
+			+ "starts")
+
+	stroller.global_position = centre + axis * 20.0
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(gate.is_chatting(), "inside the gate's own detain_radius, the hold starts")
+	t.check(gate.gate_state.raised, "with the bar still reading raised the whole time")
+	t.check(not stroller.visible, "and she is hidden, the same as at a hut")
+	t.check(gate.is_suppressed_by_its_own_hold(), "and the gate's own halo is suppressed too")
+
+	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
+	t.check(not gate.is_chatting(), "the hold ends")
+	t.check(stroller.visible, "and she is visible again")
+	t.check(not gate.is_suppressed_by_its_own_hold(), "with the halo no longer suppressed")
+
+	car_stand_in.free()
+	gate.free()
+	stroller.free()
+	manager.free()

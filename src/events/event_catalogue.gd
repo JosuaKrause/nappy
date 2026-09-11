@@ -1635,12 +1635,21 @@ static func _checkpoint_hut() -> EventDef:
 	def.redetains = true
 	return def
 
-## The boom over the roadway between a door's two huts. No detention and no field of its own — the
-## toll is paid at the hut, never at the gate, so a car passing under it costs her nothing whether
-## or not she is anywhere near it. Drawn raised or lowered from the shared `RegionPlanner.
-## GateState` `Crowd` keeps current for the day's cars; see `docs/TODO.md`, M62, "cars need to slow
-## down to a full stop." Placed with `Planned.facing` set along the street's own axis, which is
-## both what tells the drawing a north-south road from an east-west one and what
+## The boom over the roadway between a door's two huts. No field of its own — a car passing under
+## it costs her nothing whether or not she is anywhere near it — but it detains exactly like a hut
+## now, *(2026-09-10, the player, on stepping onto the gate's own ground while the boom is up for a
+## car: "attempting to do that should just start a regular checkpoint inspection".)* The toll was
+## paid only at the hut before this; a raised bar read as a way past at the bar itself, since
+## nothing stood on the gate's own tiles to catch her. `detain_radius` (48px, the same number the
+## hut uses) and `inner_radius` (52px, raised from a field-only 40px to sit above it) are unchanged
+## from the hut's own arithmetic: `obstructs_radius + PLAYER_BODY_RADIUS` (32 + 14 = 46) is the same
+## solid body's own stop distance, so 48 is still the smallest round number a straight approach can
+## reach before the body would have stopped her outright. `outer_radius` (120px) is untouched — it
+## still comfortably clears `Tuning.required_telegraph_time()` at the new `inner_radius`, and
+## nothing about it ties to the field this row never had. Drawn raised or lowered from the shared
+## `RegionPlanner.GateState` `Crowd` keeps current for the day's cars; see `docs/TODO.md`, M62,
+## "cars need to slow down to a full stop." Placed with `Planned.facing` set along the street's own
+## axis, which is both what tells the drawing a north-south road from an east-west one and what
 ## `EventManager`'s detention teleport reads back from a hut or a post at the same crossing.
 static func _checkpoint_gate() -> EventDef:
 	var def := EventDef.new()
@@ -1651,10 +1660,13 @@ static func _checkpoint_gate() -> EventDef:
 	def.look = EventDef.Look.CHECKPOINT_GATE
 	def.act_tag = 2
 	def.intensity = 0.0
-	def.inner_radius = 40.0
+	def.inner_radius = 52.0
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
 	def.solid(GroundShape.point(32.0))
+	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
+	def.detain_radius = 48.0
+	def.redetains = true
 	return def
 
 ## The alley half of a door: a single guard where a through-alley crosses a region boundary,
