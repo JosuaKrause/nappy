@@ -164,15 +164,19 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    walks on, and her with the baby in her arms, behind `--start-escape` and with no events.
    *(2026-09-10, playtest 54: "as a good exercise we could build out the escape scene … can you do
    that right now".)* At the front because the player started it the same day.
-3. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
+3. **M113** — the inspection reads as one: a two-second hold at a checkpoint during which she and
+   the guard are gone and the camera eases onto the hut. *(2026-09-10, playtest 55.)* Placed here
+   by the orchestrator because it is the first thing act III shows and it was seen once; open to
+   the player moving it.
+4. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
    don't stop/redirect traffic or pedestrians.")* Placed here by the orchestrator, ahead of M65
    because a sealed street the crowd walks through is the sealing's own legibility failing — open
    to the player moving it.
-4. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
+5. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
    revisit after M62.")* Revisited rather than built as written: the regions and their
    checkpoints (`DECISIONS.md`, M62) may change what finding a mark is like, and the entry is
    re-read before the prepared poses are bound to objectives.
-5. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
+6. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
@@ -180,8 +184,8 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    clock, sit in this batch provisionally** — they were asked for on 2026-09-10 and not placed,
    so this is the orchestrator's guess at where work that needs no route decision belongs, open
    to the player moving it.
-6. **Reaching act III**, which M56's measurement against the nerves needs.
-7. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
+7. **Reaching act III**, which M56's measurement against the nerves needs.
+8. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
 The record, with its measurements and the choices open to overturn, is in `DECISIONS.md` under
@@ -469,6 +473,38 @@ five floors is *"not excessively many"*.
 
 ---
 
+## M113 — The inspection reads as one · asked for 2026-09-10
+
+> "the checkpoint itself, 2s should be enough -- both the guard and the player should disappear
+> during the inspection, the camera should center on the hut (use a smooth ease in out for non
+> player caused camera movement if possible) after the inspection the player and the guard should
+> reappear"
+
+**Today a checkpoint hold is six seconds of standing still.** `checkpoint_hut` and
+`checkpoint_post` detain through `chatting_mother`'s mechanism — `Tuning.CHECKPOINT_DETAIN_SECONDS`
+6.0 over a 48px `detain_radius`, `redetains` so a second approach holds again — and while she is
+held nothing else happens: she stands where she was caught, the guard stands where he was drawn,
+the camera stays on her. The record of the regions and their doors is in `DECISIONS.md` under M62.
+
+- [ ] **Two seconds, and both of them gone.** `CHECKPOINT_DETAIN_SECONDS` 6.0 → 2.0. For the
+      hold's duration neither she nor the guard is drawn — they have gone inside — and both
+      reappear when it ends, her on the far side of the hut so being let out reads as being let
+      through, the guard at his post. The pram's cue and the danger caret over her are hidden with
+      her; the meters keep running, since the baby is still there. `EventDef.detain_seconds` and
+      the release margin (`CHECKPOINT_RELEASE_MARGIN`, 8px) are the two numbers to re-check against
+      the shorter hold so she is not re-detained on release; `tests/test_checkpoints.gd` covers it
+- [ ] **The camera eases onto the hut and back.** During the hold the camera centres on the hut
+      rather than on her, and every camera move that is not her walking — this one, and any later
+      one — eases in and out (a smooth-step over a short, tuned duration) rather than cutting or
+      using the walk's own `position_smoothing`. Today the camera is `Camera2D` on
+      `scenes/player/stroller.tscn` with `position_smoothing_speed` 6, plus `main.gd`'s follow
+      camera for rigs; the ease is a small focus-target on the player's camera, not a second camera.
+      A test drives a hold and asserts the camera's target and its return
+- [ ] **Walk it on day 7.** One capture of a hold in progress and one of the release, on the seed
+      playtest 55 was played on (3045005721), in `docs/evidence/`
+
+---
+
 ## M110 — The crowd goes round a seal · asked for 2026-09-10
 
 > "also I noticed that objects like fallen trees don't stop/redirect traffic or pedestrians"
@@ -746,7 +782,25 @@ is still true.
       street is still walkable down the carriageway and a café on it is the price of going that way.
       A test plans several seeds and days and asserts that nothing planned stands on a closed or
       hard-sealed segment. Placed here rather than ahead of the queue by the player: *"blocked
-      street can go behind actual important things"*
+      street can go behind actual important things"*.
+
+      **The same fix covers the region doors** *(2026-09-10, playtest 55: "the barriers are oddly
+      placed. why would they be in front of a checkpoint? … there is no way to actually get to the
+      checkpoint here")*: `roadblock` is placed on any road or crossing tile from day 7 and knows
+      nothing about `RegionPlanner`'s doors, so a band stood across the street south of a hut and
+      a boom gate on seed 3045005721, day 7, and sealed the door it was meant to be the way
+      through. A door segment, and the segment a checkpoint stands on, join the closure and
+      hard-seal segments as ground the catalogue is never offered; the test covers them too
+- [ ] **A roadblock band is a row of blocks, not a barrier.** *(2026-09-10, playtest 55: "the
+      barrier itself also doesn't read as a continuous element. is it using the texture of the
+      other orientation and concatenating that one?")* No: `Look.ROADBLOCK` is drawn by
+      `_draw_spread(CHECKPOINT_BLOCK)`, which repeats `assets/events/checkpoint_block.svg` — one
+      22×30 concrete block with its own frame and hazard panel — along the band with no end cap and
+      no orientation sibling, so the band is identical blocks side by side. `roadworks` already
+      draws as `_draw_spread(BARRIER_SEGMENT, BARRIER_END)`, a rail with caps that reads as one
+      thing; the roadblock wants the same construction — a continuous held-street barrier picture
+      that repeats seamlessly, with an end piece — drawn under the svg-art rules and bound in
+      `_draw_body`'s `ROADBLOCK` case
 - [ ] **A queued car grazes a big building's footprint, and the M53 assertion was loosened to let
       it.** `tests/test_crowd.gd`'s *"nothing walks into a hard blocker"* asked for exactly zero
       agents ever standing inside one; it now tolerates one agent on under 5% of frames, measured at
@@ -756,7 +810,8 @@ is still true.
       the test's own name is a promise
 - [ ] **The guard robber is placed inside a building, where he is stuck for ever.** *(2026-09-02:
       "the robber can be placed inside buildings which makes him unable to move at all."; 2026-09-09,
-      playtest 50: "the robber is stuck inside the roof".)* **Reproduced, with the cause.** Seed
+      playtest 50: "the robber is stuck inside the roof"; 2026-09-10, playtest 55: "the robber is
+      inside the roof as usual".)* **Reproduced, with the cause.** Seed
       2295276695, day 5: the chalk mark is at tile (69,79), an `ALLEY` tile in a two-tile alley,
       and the robber at (67,80) is `BUILDING`, one tile south of it; the run log has him at that
       tile before, during and after his chase while she moved, since a chase step is clamped to
