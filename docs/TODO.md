@@ -59,8 +59,8 @@ pictures to their actual runtime consumers.
       PNG generation stays with M109, convert the SVG catalogue to PNG. Use focused selector and
       caller tests, import/boot checks and movement evidence; keep prepared families unbound until
       their gameplay owner needs them. M56, the resistance is noticed, owns guard/riot-van states;
-      M65, a protester points at the objective, owns objective-directed pointing; M102, the finale,
-      owns the carrying mother and interior sequence.
+      M102, the finale, owns the carrying mother and interior sequence. The protester's eight
+      pointing poses are bound (`DECISIONS.md`, M65).
 
 ### M111 — Cars follow their turns
 
@@ -165,14 +165,10 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    by the orchestrator because it is the first thing act III shows and it was seen once; open to
    the player moving it.
 3. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
-   don't stop/redirect traffic or pedestrians.")* Placed here by the orchestrator, ahead of M65
-   because a sealed street the crowd walks through is the sealing's own legibility failing — open
-   to the player moving it.
-4. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
-   revisit after M62.")* Revisited rather than built as written: the regions and their
-   checkpoints (`DECISIONS.md`, M62) may change what finding a mark is like, and the entry is
-   re-read before the prepared poses are bound to objectives.
-5. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
+   don't stop/redirect traffic or pedestrians.")* Placed here by the orchestrator because a sealed
+   street the crowd walks through is the sealing's own legibility failing — open to the player
+   moving it.
+4. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
@@ -180,8 +176,7 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    clock, sit in this batch provisionally** — they were asked for on 2026-09-10 and not placed,
    so this is the orchestrator's guess at where work that needs no route decision belongs, open
    to the player moving it.
-6. **Reaching act III**, which M56's measurement against the nerves needs.
-7. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
+5. **Reaching act III**, which M56's measurement against the nerves needs.
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
 The record, with its measurements and the choices open to overturn, is in `DECISIONS.md` under
@@ -205,7 +200,6 @@ anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified 
 | Owner | Integration work and acceptance |
 |---|---|
 | M56 — The resistance is noticed | Bind the riot van's directional family and standing/lunging guard poses to the actual waiting, departing and pursuit states. Preserve the waiting silhouette and telegraph; use M108's heading selector rather than a second direction table. |
-| M65 — A protester points at the objective | Aim the eight `protester_point_*.svg` poses at the chosen objective; verify all target octants and no-target behavior without adding a first-encounter quest marker. |
 | M100 — Small, real, and nobody's | Review `chalk_mark.svg` beside `chalk_mark_touched.svg`, then bind the touched state to the acknowledgement she adds when contact counts. Keep the original mark visible and readable on the pavement. Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family with the alley event and the sound arcs with their event timing; source availability does not decide either behavior. |
 | M102 — The finale: out of the apartment, out of the city | Build the interior TileSet/map binding for hallway, stairwell and basement floors/edges/walls. Register doors, barricade, chandelier and puddle separately; retain the south hallway's implied door thresholds. Bind normal/flash windows to explosion timing, steam to its pulse, and carrying-mother facing/gait to actual movement. Reuse mouse, guards, vehicles and crater sources. Decide whether the optional `explosion_preview.svg` is needed; the off-screen explosion brief does not require a visible burst. Check room transitions, foot anchors, layering and state changes in runtime evidence. |
 | M105 — The city degrades | Register the three crack levels and two patterns for each road/sidewalk/alley base in the TileSet, preserving markings, kerbs, seams and tile semantics. Place the five flat litter decals under actors; place single/piled sacks with the milestone's obstruction decision. Select matching `storefront_{a,b,c,d}_shuttered.svg` variants through M106's frontage binding. Compare a fixed seed across acts. |
@@ -238,7 +232,7 @@ review and the player's directional corrections are recorded in `DECISIONS.md`.
 **[PLAYTEST-49.md](playtests/PLAYTEST-49.md) is the session before it and it is the prioritisation above**, plus
 one bug — events spawning inside a fully blocked street — filed at the top of M100's defects,
 one correction, that the non-adjacency rule does not cover parks yet, filed in M97, and one design
-instruction, the fire found before the engine, filed as M101.
+instruction, the fire found before the engine, built (`DECISIONS.md`, M101).
 
 **[PLAYTEST-48.md](playtests/PLAYTEST-48.md) is the newest gameplay session, and its one note is built**:
 the signal head north of a junction, which faces up the screen, shows its back and no lamp. The
@@ -325,12 +319,12 @@ Read [PLAYTEST-22.md](playtests/PLAYTEST-22.md) and [PLAYTEST-21.md](playtests/P
 sealing: what they asked for is built and unplayed, so the next report on it is the thing that
 matters.
 
-**Playtest 20's four findings** went to M69 (a reachability gap, now built), M65 (a chalk-mark idea),
-M97 (a calm-area spoiling inconsistency) and M96 (a measured lead-time gap on the post-tutorial
-`charging_dog`).
+**Playtest 20's four findings** went to M69 (a reachability gap, built), M65 (the pointing
+protesters, built — `DECISIONS.md`, M65), M97 (a calm-area spoiling inconsistency) and M96 (a
+measured lead-time gap on the post-tutorial `charging_dog`).
 
 **Playtest 19's graphics and placement findings have separate owners.** The protester objective
-work belongs to M65, a protester points at the objective. The seal and barrier records are in
+work is built (`DECISIONS.md`, M65). The seal and barrier records are in
 `DECISIONS.md` under M64, eight seal pictures, and M48, the barriers; the remaining north-edge,
 junction-paint and robber-placement records are filed there under M49 and the small items.
 
@@ -497,48 +491,6 @@ through a fallen tree says the street is open when it is not.
 
 ---
 
-## M65 — A protester points at the objective · asked for 2026-09-03
-
-**The pointing poses are available; objective binding and density remain open.**
-`assets/events/protester_point_n.svg`, `protester_point_ne.svg`, `protester_point_e.svg`,
-`protester_point_se.svg`, `protester_point_s.svg`, `protester_point_sw.svg`,
-`protester_point_w.svg` and `protester_point_nw.svg` keep an upright body and a shared feet anchor
-at (22, 52) in a 44×52 canvas. Reuse them for the objective-bearing selection after the design
-review below. See DECISIONS.md, "SVG artwork and upcoming milestone assets". The two findings this milestone was
-opened for — the first mark being announced, and a mark that was never on screen — are built; the
-record is in `DECISIONS.md` under M78, and the played question it leaves is whether a mark that
-follows her until seen is now findable at all.
-
-**Revisited after M62 rather than built as written.** *(2026-09-09: "M65 we need to revisit after
-M62.")* A walled city with checkpoints may change what finding a mark is like, so this entry is
-re-read against that city before the prepared poses are bound to objectives or the density moved.
-
-**Half of this item needs no drawing at all**, and is worth doing on its own if the mark is still
-hard to find now that it follows her: raising how often a protester appears is a density
-change, and the player's own reason it is cheap is that a protester obstructs nothing and pursues
-nothing, so it does not compete for the catalogue's placement budget.
-
-- [ ] **A protester points at the objective, and there are more of them.** *(2026-09-03, playtest
-      20: "the chalk is currently unfindable I spent almost a full day searching for it. let's make
-      the protesters point into the direction (with their arms or something) of the current
-      objectives (not only chalk marks). and make the protesters more common. they're not really an
-      obstacle/event anyway so they can be placed independently.")* Still the same complaint as the
-      two items above it — the mark cannot be found — with a mechanism attached rather than only a
-      placement fix: give the `protest` row (`EventDef.Look.PROTEST`, drawn in
-      `src/events/event_instance.gd` from `assets/events/protester.svg`) one of the eight
-      `protester_point_*.svg` poses listed above, aimed at whatever the
-      current objective is, and raise how often it appears. The player's own reason the density
-      change is cheap: a protester obstructs nothing and pursues nothing, so it does not compete
-      with the rest of the catalogue's placement budget the way raising an obstacle's density would.
-
-      **Measured, the same run:** a chalk mark is rolled and guarded by a nearby robber on every one
-      of the four days it becomes eligible
-      (`docs/evidence/archive/session-captures/2026-09-03/run-2026-09-03T002310-seed4070543669-5d342c9.log:240`, `:364`, `:546`, `:602`),
-      and the run ends *"bad on day 7 — resistance 0/4, sabotage not done"* (`:701`) — not found once
-      across the whole run, on every day one existed to find
-
----
-
 ## M96 — The teaching day, and the dog after it · rewritten 2026-09-09
 
 Rewritten from M43. Two of M43's items turned out to be built when checked — the pause lesson no
@@ -553,36 +505,34 @@ queue reprioritised". What is left is one decision nobody implemented and one me
       keeps the placement it has, because the lesson depends on being unavoidable; from day 4 it
       becomes a thing that is *somewhere*, placed on the map the way `alley_robbery` is, and met by
       routing into it — no siting on her heading, and no lesson line, which the HUD already
-      restricts to the teaching day. The row needs a day-dependent spawn mode or a second row for the later days;
-      `EventDirector._teach_the_run()`, which moves a pursuit to the head of the owed list on the
-      teaching day only, is unaffected either way. A test asserts that a day-4 `charging_dog` is
-      never sited on her heading.
-
-      **Measured, playtest 20** *(2026-09-03: "for some reason pursuing dogs after the run tutorial
-      have a shorter lead up time making them much harder to react to.")*: across five
-      `charging_dog` encounters in one seven-day run
-      (`docs/evidence/archive/session-captures/2026-09-03/run-2026-09-03T002310-seed4070543669-5d342c9.log`),
-      the day 3 tutorial encounter and every encounter afterward that ended in evasion ran **1.5
-      seconds** from the `chase` starting to the dog giving up. The two encounters that instead
-      killed her — one on day 4, one on a day 5 retry — ran **0.8 and 0.9 seconds**, roughly half,
-      with the dog closing distance far faster once its telegraph appeared: the tutorial encounter's
-      telegraph closed 20px in 1.1s, the day 4 encounter's closed roughly 70px in 0.3s. The row
-      carries one `inner_radius` (26px) and one `outer_radius` (150px) for every day, so nothing in
-      the row itself shortens the lead time — the gap is a placement effect, and this item is the
-      first thing to check before treating it as a row-tuning question. M77 has since moved every
-      pursuer's siting to past the edge of the view along her heading, so re-measure on the current
-      tree before assuming the gap is still there
+      restricts to the teaching day. **Half of this is built and the half is not the decision**
+      (`DECISIONS.md`, M96): from day 4 the director sites the dog off her heading — a bearing
+      50–110° to one side, past the edge of the view — so it is never in front of her on her own
+      line, and a test holds that; but it is still sited *near her* by the director, not placed on
+      the map and met by routing. The agent stopped there because the map placement needs a
+      day-dependent `spawn_mode` on the def (`event_def.gd`, then the scheduler reading it), and a
+      second row is blocked by the one-picture-per-row check. **What remains**: the def gains a
+      spawn mode for the days after `first_day` — the smallest shape is a second `spawn_mode` field
+      that applies from `RUN_TAUGHT_DAY + 1`, read where the scheduler decides how a row is sited —
+      `charging_dog` takes `ALLEY`-style map placement from day 4 exactly as `alley_robbery` does,
+      the off-heading siting goes, and `_teach_the_run()` stays untouched. The lead-time gap
+      playtest 20 measured (1.5s to evade against 0.8–0.9s on the days it killed her) is closed by
+      M77 already: re-measured on the current tree, the notice and the evasion window are identical
+      on every heading; the figures are in `DECISIONS.md` under M96
 **The run is taught on day 3, and stays there.** *Asked for as `RUN_TAUGHT_DAY` 3 → 2 · overturned
 on 2026-09-09: "run taught goes to 3 not 2."* The constant gates everything that pursues, and day 3
 is where act I stops being a nice neighbourhood; the options weighed when the move was first
 proposed are in `DECISIONS.md` under M49, in the item "Day 3 carries act I's whole payload".
 
-- [ ] **Dying at high excitement on a quiet street: is one contact at 90 a cliff?** A bump is about
-      10.8 points, so above 89 a single one ends the day on an empty street. Two cheap checks:
-      whether the pram's `EXCITEMENT_NEARLY_CRYING` cue, which the baby shows from 80 of the
-      100-point meter, is drawn and actually read; and a rig walking an empty street at 90 into one
-      walker, to say whether the day ends. If it does, the fix is a rule about the last ten points,
-      not a density change
+- [ ] **One contact at 89 is a cliff, measured; the rule about the last ten points is the
+      player's to give.** A bump is about 10.8 points, and a rig confirmed it on 2026-09-11
+      (`DECISIONS.md`, M96): one walker's startle against the baby at 90 and at 89 both end at 100
+      and crying; at 85 it ends at 96.8 and awake. The pram's nearly-crying cue is drawn from 80 of
+      the 100-point meter, by code rather than by eye — whether it is *read* is a played question.
+      The entry's own rule stands: the fix is a rule about the last ten points, not a density
+      change — a floor on what one contact may add near the top, a grace window after the cue, or
+      nothing, if a walker at 89 on an empty street is meant to be the risk it is. Decide, then it
+      is one constant and a test beside `tests/test_meters.gd`'s pinned measurement
 
 ---
 
@@ -616,9 +566,15 @@ and one re-check.
       landing low enough some days to leave a walkable edge and high enough on others to deny the
       area outright. The run attached to playtest 20 does not carry the exact four-visit sequence
       the player describes — its own biased parks (`(1,1)` and `(4,8)`) were dense on every biased
-      day the log shows. **First task:** reproduce a zero-density biased visit on a rig, reading the
-      `roll` telemetry line that says *"in the park she used yesterday"*, before deciding whether the
-      bias roll's spread is the cause or something else is. The fix follows the reproduction
+      day the log shows. **The zero-density visit does not reproduce on the current tree**, measured
+      2026-09-11 with `tests/probes/m97_spoilage.gd` over every calm block on eight seeds — the
+      record, with the distribution, is in `DECISIONS.md` under M97. What the probe found instead
+      is a rare tail: a biased visit whose weighted roll draws one low-reach row for a large lot and
+      leaves most of it walkable, and a bias that is mostly backstopped by the day's ordinary fill
+      landing in the used park rather than by the spoil roll itself. So this waits for a played
+      recurrence: if a second visit to the same park reads unspoiled again, the probe is the
+      instrument and the low-reach-row draw is the suspect, and the fix is a floor on the spoil
+      roll's reach for a lot that size, not a density change
 **The main road is not made a soft block.** *Asked for on 2026-09-01 as a toll on crossing the
 spine · overturned on 2026-09-09: "M47's toll already exists — it's timing the traffic lights. we
 don't need to penalize routing through it just yet — it naturally happens that only some routes
@@ -649,7 +605,12 @@ became the charging dog")* — sited on her line on day 3 so the lesson is unavo
       mechanism to start from is M56's heated `police_patrol`, which is already denser and then
       interested as resistance progress rises; what this item adds is a return-phase shape in acts
       III and IV. Measure the return phase on a rig across the four acts — encounters per return,
-      and how much of the day's clock the return actually spends — before and after
+      and how much of the day's clock the return actually spends — before and after. **The shape
+      is not designed yet, and the measurement comes first** *(2026-09-11: "measure now, design
+      after")*: the before-figures are in hand, taken with `tests/probes/m98_return_phase.gd` and
+      recorded in `DECISIONS.md` under M98 — a return leg that spends a fifth to a third of the
+      day and meets the director's queue once or twice, zero on one leg in five — and the shape,
+      how many, where, at what cost, is the player's question now
 
 ---
 
@@ -657,20 +618,23 @@ became the charging dog")* — sited on her line on day 3 so the lesson is unavo
 
 Rewritten from M50. M64 superseded M50's gradient at both ends — off the path is *closed*, on it the
 density is *normal* and playtest 21's verdict on it was that it is already right — so what is left
-here is what the sealing did not answer.
+here is what the sealing did not answer. **The corridor's own obstacle density is measured, not
+raised**: M50's *"blocking events all over"* asked to raise the caps on the expensive rows, the
+player's sentence on the sealed corridor was *"on the path there should be a normal amount of
+events that remain passable — that looks like it is the case here"*, and the re-measurement on the
+current tree with `tests/probes/m64_density.gd` is in `DECISIONS.md` under M99. A cap moves only if
+a played day says the corridor is bare.
 
-- [ ] **The corridor's own obstacle density, measured rather than raised.** M50's *"blocking events
-      all over"* asked to raise the caps on the expensive rows, which is a catalogue question.
-      Under the sealed city the corridor carries 0.82 events per street a day, measured with
-      `tests/probes/m64_density.gd`, and the player's sentence on it was *"on the path there should
-      be a normal amount of events that remain passable — that looks like it is the case here"*. So
-      the item is a re-measurement on the current tree with the same probe, and a cap moves only if
-      a played day says the corridor is bare
-- [ ] **`cyclist` and `loose_dog`'s caps no longer mean what they say.** Both rows carry
-      `max_per_day` of 14 and 24 and arrive via the director's single queue at its 11–26s pacing
-      rather than being map-placed, so a day fields far fewer than the cap reads as promising — the
-      caps' meaning changed while the numbers stood still. Measure encounters per day on a rig
-      across the acts; the record is in `DECISIONS.md` under M54
+- [ ] **`cyclist` and `loose_dog`'s caps bind nowhere, and the number should say what it does.**
+      Both rows carry `max_per_day` of 14 and 24 and arrive via the director's single queue at its
+      11–26s pacing rather than being map-placed; measured 2026-09-11 with
+      `tests/probes/m99_caps.gd` across the acts (`DECISIONS.md`, M99), a day meets the cyclist
+      under once and the dog under three times on average, and never within an order of magnitude
+      of either cap. The caps' meaning changed while the numbers stood still. **The player's
+      choice**: either the cap is dropped from queue-fed rows, since the director's pacing is the
+      cap and a number nothing reaches is a false promise — the recommendation — or it is lowered
+      to the pacing's own ceiling so it reads true, with the row's doc saying which of the two
+      decides the count. The record of the caps' history is in `DECISIONS.md` under M54
 - [ ] **Placeholders — step 3.** The budget is a **variety ledger, not a density cap**: the count of
       sites is the density, the budget decides what fills them, and resolving late means variety is
       measured over the encounters that happen rather than over a city she never saw. Read the
@@ -694,30 +658,6 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **Every command-line entry point prints help on `--help`/`-h` and rejects what it does
-      not understand, and today most do neither.** *(2026-09-11: "help doesn't work it just
-      starts the game which becomes unresponsive. also invalid arguments should get rejected and
-      cause the help to be printed"; "rejecting invalid args and having a --help/-h is a general
-      requirements for everything that is cli accessible".)* The rule is the **cli-tools** skill;
-      this is the item that makes every existing tool obey it. `tools/run.sh` is the case that
-      showed it: it forwards everything to the game as a dev flag and reads none of it, and
-      `DevFlags` looks each flag up by name and ignores whatever it does not know — so `--help`
-      boots the game as usual and a typo boots a game nobody asked for. Go through every script in
-      `tools/`, shell and Python, and the dev-flag surface behind `run.sh`, `shot.sh` and the web
-      query string: `--help` and `-h` print the usage and exit before any work; an unknown flag, a
-      flag missing its value or a stray word gets the usage on stderr and a non-zero exit before
-      Godot is launched or a file is touched. The flag list a forwarding script validates against
-      lives in one place per tool, so `README.md`'s flag section documents it rather than copying
-      it. Each tool gets the two-path test the skill asks for — `--help`, and a bogus flag,
-      neither doing the work
-- [ ] **A rig driving `EventManager` before `City.start_day` seals nothing.** `EventManager.
-      start_day` reads the day's tree as `_city.route_tree()` when it has a city, and that
-      answers `null` until `City.start_day` has grown one — so a rig that starts the events first
-      hands `SealPlanner.plan_day` and `RegionPlanner.plan_day` no tree, both return empty, and
-      `EventScheduler.build_day` grows a tree of its own for the catalogue's placements: two
-      trees for one day and no seals or walls at all. Found building M62 and not fixed there;
-      the fix is one fallback — grow the tree when the city has none yet — and a test that a
-      day started through `EventManager` alone still carries seals
 - [ ] **A roadblock band is a row of blocks, not a barrier.** *(2026-09-10, playtest 55: "the
       barrier itself also doesn't read as a continuous element. is it using the texture of the
       other orientation and concatenating that one?")* No: `Look.ROADBLOCK` is drawn by
@@ -754,9 +694,13 @@ is still true.
       with that at `INF` — so a `pursues_within` row streamed out after it has noticed her returns
       waiting, standing where the day planted it. Not currently dangerous: `alley_robbery` has had
       it since the mechanic was built, and the heated patrol that surfaced it can never be
-      `hard_fail`. `tests/test_heat.gd` pins the behaviour rather than the one the field name
-      implies, so a fix fails there first. The fix is `resume()` carrying the notice, checked against
-      every `pursues_within` row rather than the one that found it
+      `hard_fail`. **Half built** (`DECISIONS.md`, M100): `resume()` now takes the notice as a
+      third, defaulted argument and restores it, and `tests/test_heat.gd` holds that for every
+      `pursues_within` row. **What remains is the caller**: `EventManager._stream_in()` never
+      captures a streamed-out instance's notice, because `EventScheduler.Planned` has no field for
+      it — so the argument is always its default and the behaviour is unchanged in play. The fix
+      is the field on `Planned`, written when an instance streams out and passed on `resume()`,
+      with a test that streams a noticed pursuer out and back through `EventManager` itself
 - [ ] **A big building can be built over a precinct's own pavement.** Measured on seed 24757: two
       tiles inside a precinct span are not walkable, because a footprint was placed across the
       corridor the span runs down. `CityGenerator._place_hard_blockers` never reads
@@ -869,69 +813,6 @@ re-pitched:
       face**, the meter read off the baby rather than off a strip at the bottom of the screen — the
       same shape as the audio item's *breathing as the diegetic version of the meters*. Not
       designed, and it needs the playing that the status-line cut is about to produce
-
----
-
-## M101 — The fire is found before the engine · asked for 2026-09-09
-
-**The SVG pictures are available:** `assets/events/flame.svg` supplies curling flames and
-`rubble.svg` the charred facade; `fire_engine.svg` and `fire_engine_end.svg` supply the engine's
-street-axis views. The remaining work below is placement and sequencing, with these textures
-already bound to the existing rows. See DECISIONS.md, "SVG artwork and upcoming milestone assets".
-
-> "the player should encounter the burning building before the fire truck. basically the fire
-> truck should spawn when the player sees the burning building not the other way around"
-
-**Today the engine is the event and the fire is what it leaves behind.** `fire_truck` is act I's
-one-shot — day 3 only, `ONE_SHOT`, a mobile row at 190px/s along a 60-tile street route with a
-4-second telegraph, because a truck outruns a walk and the fairness rule wants the full 340px of
-clearance — and `burning_building` is a `SCRIPTED` row that is never scheduled on its own:
-`EventManager._successor_of()` creates it where the engine's run ends, and
-`EventInstance._be_done()` makes an event with a `spawns_on_finish` stop where it stands rather
-than drive off, so the fire is at the building and not two streets past it. The engine is the
-thing she meets; the fire is a consequence she may never see.
-
-**The instruction reverses the two, and the reason is legibility.** A fire engine bearing down a
-street is a loud thing with no visible cause; a burning building she has already found is the
-cause, and the engine arriving *at it* is the answer. Seen in that order the set piece reads as
-one story rather than a truck and, later, a fire.
-
-**The seen predicate exists.** `DangerEdge.is_on_screen()` answers whether a world point is inside
-the view, and `ResistanceDirector.set_sight()` already takes it so a chalk mark can follow her
-until it has been on screen once (M78's rule). The same callable is what the fire wants.
-
-- [ ] **The burning building is the day's one-shot; the engine is spawned on sight of it.**
-      `burning_building` takes over `fire_truck`'s `ONE_SHOT` slot — day 3, sited by the director
-      the way the one-shot is sited today — placed *in* a building rather than on the road. When
-      it first comes on screen, `fire_truck` is created with a route that **ends at the fire**,
-      entering along the burning building's own street from off screen. The link is a field on the
-      def in the opposite direction from `spawns_on_finish` — a row that names what arrives once
-      this one has been seen — and `EventManager` owns the trigger, since it already owns the
-      successor mechanism and the player's position. Whether `spawns_on_finish` survives on any
-      other row, or goes, is a question for the build: today only the engine uses it
-- [ ] **The engine's fairness contract does not change and has to be re-proven for the new
-      siting.** Its telegraph is its approach, so the route's start has to be far enough up the
-      street that the full 4 seconds pass before its field reaches her — M77's off-screen arrival
-      rule applied to a thing driving at the building rather than at her. If she stands on that
-      street between the engine's entry and the fire, she is in its path; the row's own contract
-      (walk away the instant it is visible and be clear before it hurts) is what the test asserts,
-      and it is asserted from the worst position on the street. The `hard_fail`-style further
-      siting is not needed, since the engine is not lethal
-- [ ] **The fire's own telegraph and pulse are re-read for a thing she finds rather than one that
-      arrives.** `burning_building` carries a 2.2s telegraph and a 3-second pulse, both written
-      for a fire that begins in front of her when the engine stops. A fire that was already burning
-      when she turned the corner has no arrival to telegraph; what it keeps is the pulse, the
-      obstruction (30px, five flames) and the `burnt_shell` scar. Decide whether the telegraph
-      becomes zero or stays as the moment the fire is *noticed*, and say which in the row's doc
-- [ ] **Day 3 is re-measured.** Day 3 carries act I's whole payload — the run lesson's dog, the
-      cyclist's first day and the set piece — and the balance suite prices the day with the engine
-      as the expensive row. The engine still comes, but later and only if the fire is seen, so a
-      day on which she never finds the fire costs less than the day the suite describes. Run
-      `tests/test_balance.gd` and the day-3 rig before and after, and record both numbers in
-      `DECISIONS.md`
-- [ ] **`docs/EVENTS.md` follows.** Its one-shot example is the fire truck, its route sentence says
-      *a fire engine is in the world before its mark*, and its finishing-position paragraph
-      describes the engine leaving the fire behind. All three move in the same commit as the rows
 
 ---
 
@@ -1070,8 +951,8 @@ milestone places them so a street reads as a place, and a district as a district
 
 **Planned and not queued.** *("this is just a plan for now — we probably won't actually implement
 it for a while (there are a lot of milestones before that).")* Written down now so that M62
-(checkpoints that divide the map), M56 (the resistance is noticed), M100's sound lines and M101 (the
-fire found before the engine) are built knowing they are also the finale's parts.
+(checkpoints that divide the map), M56 (the resistance is noticed) and M100's sound lines are
+built knowing they are also the finale's parts, as M101 (the fire found before the engine) was.
 
 **The brief, in the player's words:**
 

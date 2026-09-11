@@ -57,6 +57,7 @@ func run(t) -> void:
 	_test_sleeping_baby_is_less_sensitive(t)
 	_test_wakes_up_with_penalty(t)
 	_test_full_excitement_cries(t)
+	_test_one_bump_near_the_ceiling(t)
 
 # ------------------------------------------------------------- pure numbers ---
 
@@ -353,4 +354,29 @@ func _test_full_excitement_cries(t) -> void:
 	_stand()
 	_simulate(2.0)
 	t.close_to(_baby.excitement, frozen, "the meters stop once the baby is crying")
+	_teardown()
+
+## M96, the teaching day and the dog after it: whether one contact on an otherwise empty street
+## is a cliff at 90. **Measured, not designed** — a real `CrowdAgent`'s own `startle()`, the same
+## call `Crowd._bump()` makes on a genuine contact, driven by hand since a bare agent has no lane
+## to steer in. This pins the number so a fix, if the ceiling is ever moved, is a decision made
+## with it in hand rather than a guess; it does not itself decide that a bump this close to the
+## ceiling should survive.
+func _test_one_bump_near_the_ceiling(t) -> void:
+	_build(t)
+	var agent := CrowdAgent.new()
+	agent.global_position = _stroller.global_position
+	agent.startle(Tuning.BUMP_INTENSITY, Tuning.BUMP_DURATION,
+			Tuning.BUMP_INNER_RADIUS, Tuning.BUMP_OUTER_RADIUS)
+	_baby.excitement = 90.0
+	_walk()
+	var jolt := Tuning.BUMP_DURATION
+	while jolt > 0.0:
+		agent._jolt = jolt
+		_world.noise = agent.contribution_at(_stroller.global_position)
+		_baby._physics_process(STEP)
+		jolt -= STEP
+	t.check(_baby.state == GameEnums.BabyState.CRYING,
+			"one bump from 90 on an empty street ends the day (excitement %.2f)" % _baby.excitement)
+	agent.free()
 	_teardown()

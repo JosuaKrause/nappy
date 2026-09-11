@@ -27,6 +27,12 @@ unmerged for no reason. Arm it as the last step of proposing, and arm the next P
 same way — a PR whose base was a branch has to be retargeted to `main` (or re-opened against it,
 since GitHub closes a PR whose base branch is deleted) before it can be armed.
 
+**Where something has to happen after the merge — a stacked PR retargeted, a worktree removed,
+`main` pulled into the player's checkout — a background agent does the watching, never the
+orchestrating session.** *(2026-09-11: "you can use an agent to poll a ci/merge to retarget prs
+etc. but don't block the main agent for it".)* Give it the PR number, the exact tidy steps and a
+90-second poll, and carry on; its report is the signal to act on.
+
 **A ready-for-review PR carries the completed work and its verification.** Run `./tools/check.sh`,
 the suites the change touches, and `./tools/lint.sh` if a governed doc moved. An unfinished draft
 may be pushed with failing or outstanding checks, stated in the PR; backing it up does not claim

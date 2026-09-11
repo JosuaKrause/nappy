@@ -240,13 +240,6 @@ longer what answers *can she get there today*.
 Two of the queue's milestones carry state worth knowing before picking them up; their place in the
 order is `TODO.md`'s.
 
-- **M65 — the protester points at the objective, revisited against the walled city.** Playtest 19's two-part gap — the first mark
-   announced before it is found, and unfindable once it is — is built and unwalked: the status line
-   is silent until the first mark has been touched, and a mark that has never been on screen
-   follows her to the next alley she comes near, guard and all (the record is in `DECISIONS.md`
-   under M78). What remains is playtest 20's item: a protester pointing toward the current
-   objective, and made more common since a protester obstructs nothing. Its milestone lists
-   the available directional SVG poses; objective binding and density remain open.
 - **M56 — the resistance is noticed.** What remains of its hunting rows is the roadblock, whose
   guards leaving their post is a posture drawing, and the end-on view the riot van now owes; its
   measurement against the nerves waits until act III is reached.
@@ -275,8 +268,7 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56's
 remaining hunting row, the roadblock, is next, on its own branch, and it is a drawing. M113, the
-inspection, comes from playtest 55; M110, the crowd goes round a seal, follows; M65, the protester who points, is revisited against the walled
-city rather than built as written. The debug view (`1` to `4` in a debug build, `--layers 1,3` for
+inspection, comes from playtest 55; M110, the crowd goes round a seal, follows. The debug view (`1` to `4` in a debug build, `--layers 1,3` for
 a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow or a body is checked by
 eye, and every one of the three is now derived from the object's one `GroundShape`. Behind those, unordered: M96 (the teaching day and
 the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's
@@ -285,7 +277,7 @@ consolidated), with M105 (the city degrades), M106 (roofs, fronts and street tre
 run clock, hidden until an ending) placed in that batch provisionally, since the player asked
 for them on 2026-09-10 without placing them.
 Reaching act III — which M56's measurement against the nerves needs — waits until
-that batch is done, and M101, the fire found before the engine, comes after that. SVG-to-PNG
+that batch is done. SVG-to-PNG
 style transfer is Codex's parallel track. Prepared artwork and its source-review sheets are listed
 in `GRAPHICS.md`; the integration table in `TODO.md` assigns each family to its gameplay owner.
 M110, the crowd goes round a seal, owns crowd blockage at seals; M111, cars follow their turns,

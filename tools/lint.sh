@@ -25,6 +25,33 @@ set -uo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root" || exit 1
 
+usage() {
+    cat <<'EOF'
+usage: tools/lint.sh [--help|-h] [file...]
+
+Scans governed docs for volatile-fact sentence shapes (a commit hash, a branch name, a check
+count, a ticked box, a status word in a heading) and every tracked SVG for well-formed XML. With
+no arguments, scans the whole governed set (AGENTS.md, CLAUDE.md, README.md, every
+.claude/skills/*/SKILL.md, every docs/*.md except DECISIONS.md and the playtests). Given file
+arguments, scans only those -- how the PostToolUse hook calls it after an edit.
+
+  tools/lint.sh
+  tools/lint.sh docs/CITY.md README.md
+EOF
+}
+
+for arg in "$@"; do
+    case "$arg" in
+        --help|-h) usage; exit 0 ;;
+        -*)
+            echo "unknown option: $arg" >&2
+            echo >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
 files=()
 if [[ $# -gt 0 ]]; then
     files=("$@")

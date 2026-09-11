@@ -40,6 +40,75 @@
 # See docs/TELEMETRY.md for what the entries mean.
 set -euo pipefail
 
+usage() {
+    cat <<'EOF'
+usage: tools/telemetry.sh [--help|-h] [-d|-l|-p [yes]|-f|N]
+
+Shows a run log. With no arguments, prints the newest run.
+  -d      print the telemetry directory and nothing else
+  -l      list every run, newest first, with size and kind
+  -p      say what is stale; "-p yes" actually deletes it
+  -f      follow the run that is happening right now
+  N       print the N-th newest run
+
+  tools/telemetry.sh
+  tools/telemetry.sh -l
+  tools/telemetry.sh -p yes
+EOF
+}
+
+case "${1:-}" in
+    --help|-h) usage; exit 0 ;;
+esac
+
+# Validate the shape before touching the filesystem: -d/-l/-f take no further argument, -p takes
+# an optional literal "yes", a bare N must be a whole number, and anything else -- including a
+# flag we do not recognise -- is rejected here rather than falling through to "print the newest
+# run", which is what silently ran on every typo before this validation existed.
+case "${1:-}" in
+    ''|-d|-l|-f)
+        if [[ $# -gt 1 ]]; then
+            echo "unexpected extra argument(s): ${*:2}" >&2
+            echo >&2
+            usage >&2
+            exit 1
+        fi
+        ;;
+    -p)
+        case "${2:-}" in
+            '') ;;
+            yes)
+                if [[ $# -gt 2 ]]; then
+                    echo "unexpected extra argument(s): ${*:3}" >&2
+                    echo >&2
+                    usage >&2
+                    exit 1
+                fi
+                ;;
+            *)
+                echo "unrecognized argument to -p: '$2' (the only accepted word is 'yes')" >&2
+                echo >&2
+                usage >&2
+                exit 1
+                ;;
+        esac
+        ;;
+    *)
+        if ! [[ "$1" =~ ^[0-9]+$ ]]; then
+            echo "unknown option: $1" >&2
+            echo >&2
+            usage >&2
+            exit 1
+        fi
+        if [[ $# -gt 1 ]]; then
+            echo "unexpected extra argument(s): ${*:2}" >&2
+            echo >&2
+            usage >&2
+            exit 1
+        fi
+        ;;
+esac
+
 case "$(uname -s)" in
     Darwin) DIR="$HOME/Library/Application Support/Godot/app_userdata/Nappy/telemetry" ;;
     *)      DIR="${XDG_DATA_HOME:-$HOME/.local/share}/godot/app_userdata/Nappy/telemetry" ;;
