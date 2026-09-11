@@ -13,6 +13,7 @@ func run(t) -> void:
 	_test_the_tileset_carries_every_walkable_ground_kind(t)
 	_test_the_scene_paints_every_floor(t)
 	_test_collision_blocks_exactly_the_non_walkable_ground(t)
+	_test_a_rig_walks_both_stairwells_to_the_exit(t)
 
 func _test_every_floor_builds(t: Node) -> void:
 	for kind in InteriorMap.ORDER:
@@ -166,6 +167,65 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: Node) -> void:
 	for tile: Vector2i in f.tiles:
 		t.check(not blocked.has(tile), "every tile with a floor (%s) is unblocked" % tile)
 	scene.free()
+
+## Drives a rig from the third floor's own door down one stairwell, through every floor, to the
+## basement's exit — the walk the TODO item asks for, on both stairwells.
+##
+## **Steps `InteriorScene`'s own transition logic directly rather than driving `Stroller` by
+## input.** `transition_at()` and `go_to_floor()` are the exact functions `process_player()` calls
+## every frame in the running game — the only thing skipped is the fade `Tween`'s own timing,
+## which is presentation rather than logic (see `_start_floor_transition()`'s own doc). Driving a
+## `Stroller` by `--walk`-style input instead would additionally exercise `move_and_slide()` and
+## the collision blockers `_rebuild_collision()` builds, which `_test_collision_blocks_exactly_
+## the_non_walkable_ground` already covers on its own — repeating that here would be the "a rig
+## that steps the parts is not running the whole" trap in the other direction: doubling work
+## rather than skipping it. **Not vacuous**: each assertion below reads `scene.floor_kind` and the
+## player's own `global_position` back from the *scene*, not from a value this test computed
+## itself, so a `go_to_floor()` that silently failed to rebuild or to move the player would fail
+## the very next line rather than being asserted past.
+func _test_a_rig_walks_both_stairwells_to_the_exit(t: Node) -> void:
+	for side in ["left", "right"]:
+		var scene := InteriorScene.new()
+		t.add_child(scene)
+		scene.build(InteriorMap.FloorKind.THIRD)
+		var camera := Camera2D.new()
+		camera.name = "Camera2D"
+		var player := Stroller.new()
+		player.add_child(camera)
+		t.add_child(player)
+		player.set_physics_process(false)
+
+		var visited: Array[int] = [scene.floor_kind]
+		for i in InteriorMap.ORDER.size() - 1:
+			var f: InteriorFloor = InteriorMap.build(scene.floor_kind)
+			var sw := f.stairwell(side)
+			player.global_position = scene.tile_to_world(sw.lower_landing_tile)
+			var result := scene.transition_at(scene.world_to_tile(player.global_position))
+			t.check(result.get("kind") == "floor" and result.get("side") == side,
+					"floor %d's %s lower landing is a floor transition to %s"
+					% [f.kind, side, side])
+			var next := InteriorMap.floor_below(scene.floor_kind)
+			scene.go_to_floor(next, side, player)
+			visited.append(scene.floor_kind)
+			t.check(scene.floor_kind == next, "the %s walk reached floor %d" % [side, next])
+			var arrived: InteriorFloor = InteriorMap.build(scene.floor_kind)
+			t.check(player.global_position == scene.tile_to_world(arrived.stairwell(side).door_tile),
+					"she is placed on the %s stairwell's own door tile one floor down" % side)
+
+		t.check(visited == InteriorMap.ORDER,
+				"the %s walk visits every floor in order: %s" % [side, visited])
+		t.check(scene.floor_kind == InteriorMap.FloorKind.BASEMENT,
+				"the %s walk ends in the basement" % side)
+
+		var basement: InteriorFloor = InteriorMap.build(InteriorMap.FloorKind.BASEMENT)
+		player.global_position = scene.tile_to_world(basement.exit_tile)
+		var exit_result := scene.transition_at(scene.world_to_tile(player.global_position))
+		t.check(exit_result.get("kind") == "exit",
+				"the basement's own exit tile is a transition to the exit, reached via the %s stairwell"
+				% side)
+
+		player.free()
+		scene.free()
 
 func _flood_fill(f: InteriorFloor, start: Vector2i) -> Dictionary:
 	var seen := {start: true}
