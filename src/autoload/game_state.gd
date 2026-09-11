@@ -160,10 +160,13 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 
 func _end_run(which: GameEnums.Ending) -> void:
 	ending = which
-	Telemetry.note("ending", "%s on day %d — resistance %d/%d, sabotage %s" % [
+	# `played` reuses the `ending` kind rather than adding a new one — how the run finished is
+	# exactly the question a run's own length answers alongside, and the telemetry skill's own
+	# "a kind reused from that table, not a synonym for one" does not want a second line for it.
+	Telemetry.note("ending", "%s on day %d — resistance %d/%d, sabotage %s, played %s" % [
 		GameEnums.Ending.keys()[which].to_lower(), day,
 		resistance_progress, Tuning.RESISTANCE_GOAL,
-		"done" if sabotage_done else "not done"])
+		"done" if sabotage_done else "not done", format_clock(play_seconds)])
 	EventBus.run_ended.emit(which)
 
 ## Records a permanent mark, ignoring duplicates from the same spot.

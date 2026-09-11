@@ -214,7 +214,7 @@ name the question it answers, or it is a metric and does not belong.
 | `quiet` | observer | The sabotage landed and the masts went off |
 | `home` / `lost` | observer | The outcome, the margin, and what was around when it happened |
 | `nerve` | `GameState` | Where the nerves went — which day, which act |
-| `ending` | `GameState` | How the run finished |
+| `ending` | `GameState` | How the run finished, and how long the world was actually moving to get there — `GameState.play_seconds`, formatted `%d:%02d.%03d` |
 | `shot` | `main.gd`, `Telemetry` | **A person requested a screenshot or animation burst** — where she was, what the meters read, which screen was up, and capture start/completion/refusal context. This entry records somebody observing the game |
 
 ### Reading the meter breakdown
