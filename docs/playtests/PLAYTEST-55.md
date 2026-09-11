@@ -53,6 +53,10 @@ and gave its choreography:
 > at checkpoints cars should slow down halt then the bar should lift then the car drives through
 > then it closes again
 
+Asked whether a bar raised for a car also lets her through without a hold:
+
+> attempting to do that should just start a regular checkpoint inspection
+
 ## The inspection
 
 > the checkpoint itself, 2s should be enough -- both the guard and the player should disappear

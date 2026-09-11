@@ -544,8 +544,11 @@ through a fallen tree says the street is open when it is not.
       model); the gate's `RegionPlanner.GateState` raises (`boom_gate_*_raised.svg` exists beside
       the lowered picture) after a short hold, the car drives through, and the bar lowers behind
       it; a queue forms behind the first car the way one forms at a light, and nothing enters the
-      gate's own box it cannot leave. Walkers pass the hut as she does. Whether the raised bar
-      also lets *her* through without a hold is not asked here — her inspection is M113's
+      gate's own box it cannot leave. Walkers pass the hut as she does. **A raised bar is not a
+      way past for her**: stepping into the gate while it is up for a car starts an ordinary
+      inspection, exactly as if it were down — *(2026-09-10: "attempting to do that should just
+      start a regular checkpoint inspection")* — so the gate's `detain_radius` holds whatever the
+      bar is doing, and a test drives her at a raised gate and asserts the hold
 - [ ] **A hard seal shuts its street to the crowd the way a closure does.** The map carries a
       second, crowd-facing record of the day's sealed ground — the cross-section tiles of every
       segment `SealPlanner` sealed hard, at the seal's position — and `_cannot_go_on()` treats them
