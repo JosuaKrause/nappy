@@ -545,18 +545,6 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **A pursuer streamed out mid-chase comes back having forgotten it.** `EventInstance.resume()`
-      restores the age and the distance travelled but not `_noticed_at`, and a fresh instance starts
-      with that at `INF` — so a `pursues_within` row streamed out after it has noticed her returns
-      waiting, standing where the day planted it. Not currently dangerous: `alley_robbery` has had
-      it since the mechanic was built, and the heated patrol that surfaced it can never be
-      `hard_fail`. **Half built** (`DECISIONS.md`, M100): `resume()` now takes the notice as a
-      third, defaulted argument and restores it, and `tests/test_heat.gd` holds that for every
-      `pursues_within` row. **What remains is the caller**: `EventManager._stream_in()` never
-      captures a streamed-out instance's notice, because `EventScheduler.Planned` has no field for
-      it — so the argument is always its default and the behaviour is unchanged in play. The fix
-      is the field on `Planned`, written when an instance streams out and passed on `resume()`,
-      with a test that streams a noticed pursuer out and back through `EventManager` itself
 - [ ] **What is still dev-only inside `main.gd`.** `DevFlags` took the flag parsing out; what stayed
       is the code that acts on it — `_first_event_position` and the `--spawn` target lookup, both of
       which read the live city. Worth finishing the next time the file is opened for another reason
