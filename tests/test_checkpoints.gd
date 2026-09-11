@@ -29,6 +29,7 @@ func run(t) -> void:
 	_test_the_chatting_mother_still_detains_once(t)
 	_test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t)
 	_test_a_raised_gate_still_detains_her_at_the_bar(t)
+	_test_a_raised_boom_does_not_open_the_checkpoint_for_her(t)
 
 # ------------------------------------------------------------------------ setup ---
 
@@ -612,5 +613,43 @@ func _test_a_raised_gate_still_detains_her_at_the_bar(t) -> void:
 
 	car_stand_in.free()
 	gate.free()
+## M110, the crowd goes round a seal: *(2026-09-10: "attempting to do that should just start a
+## regular checkpoint inspection")* — a raised boom is a fact about the car queue, and must not be
+## a way past her too. `checkpoint_gate` and `checkpoint_hut` share one crossing's `GateState`
+## structurally (`RegionPlanner._add_door_bodies` builds one `GateState` per street door and hands
+## it to the gate's own instance), but `EventManager._check_detentions()` never reads `gate_state`
+## or `raised` at all — the hut's hold is `def.detain_seconds`/`detain_radius` alone, so raising the
+## boom for the cars must leave it exactly as long. Drives her into the hut with the door's real
+## gate marked raised and asserts the inspection still starts and still runs its full length.
+func _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t) -> void:
+	var manager := _manager(t)
+	var stroller := _real_stroller(t)
+	manager._player = stroller
+
+	var axis := Vector2.RIGHT
+	var centre := Vector2(7000.0, 7000.0)
+	var hut := _door_instance(t, "checkpoint_hut", centre, axis)
+	var gate_instance := _door_instance(t, "checkpoint_gate", centre + axis * 64.0, axis)
+	manager._instances.append(hut)
+	manager._instances.append(gate_instance)
+
+	var gate := RegionPlanner.GateState.new()
+	gate.position = gate_instance.global_position
+	gate.raised = true
+	gate_instance.gate_state = gate
+
+	stroller.global_position = centre + axis * 40.0
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(stroller.is_detained(),
+			"the boom standing raised for the cars does not wave her past the hut")
+	t.check(hut.is_chatting(), "she still starts the ordinary inspection")
+
+	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
+	t.check(not hut.is_chatting(), "and it runs its full ordinary length regardless of the boom")
+	t.check(gate.raised, "raising the boom for the cars is a fact about the queue, not about her")
+
+	hut.free()
+	gate_instance.free()
 	stroller.free()
 	manager.free()
