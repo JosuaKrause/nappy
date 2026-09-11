@@ -1398,8 +1398,10 @@ static func _protest() -> EventDef:
 	def.solid(GroundShape.band(55.0))
 	def.weight = 2.5
 	# A wall row, capped with the rest of them. Act IV only, so this is the late city's share of the
-	# blocking events that make the ground off the paths expensive.
-	def.max_per_day = 6
+	# blocking events that make the ground off the paths expensive. A protester obstructs nothing
+	# and pursues nothing, so this cap has nothing else's own cap to compete with — and late acts
+	# leave enough of the day's budget unspent that this row's own cap is what actually binds.
+	def.max_per_day = 12
 	def.cost = 3
 	return def
 

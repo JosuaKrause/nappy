@@ -19,6 +19,16 @@ const POSTER_CREW := preload("res://assets/events/poster_crew.svg")
 const ROBBER_WAITING := preload("res://assets/events/robber_waiting.svg")
 const ROBBER_LUNGING := preload("res://assets/events/robber_lunging.svg")
 const PROTESTER := preload("res://assets/events/protester.svg")
+## The eight pointing poses, one per 45° bearing sector — see `_protester_texture()`. Ordered
+## clockwise from north to match `TelemetryLog.compass()`'s own bearing convention.
+const PROTESTER_POINT_N := preload("res://assets/events/protester_point_n.svg")
+const PROTESTER_POINT_NE := preload("res://assets/events/protester_point_ne.svg")
+const PROTESTER_POINT_E := preload("res://assets/events/protester_point_e.svg")
+const PROTESTER_POINT_SE := preload("res://assets/events/protester_point_se.svg")
+const PROTESTER_POINT_S := preload("res://assets/events/protester_point_s.svg")
+const PROTESTER_POINT_SW := preload("res://assets/events/protester_point_sw.svg")
+const PROTESTER_POINT_W := preload("res://assets/events/protester_point_w.svg")
+const PROTESTER_POINT_NW := preload("res://assets/events/protester_point_nw.svg")
 const GUNMAN := preload("res://assets/events/gunman.svg")
 const DELIVERY_VAN := preload("res://assets/events/delivery_van.svg")
 const FIRE_ENGINE := preload("res://assets/events/fire_engine.svg")
@@ -1861,6 +1871,51 @@ func _draw_cafe(canvas: CanvasItem = self) -> void:
 		Sprites.draw_standing(canvas, CAFE_TABLE,
 				_spread_at(along), _spread_extent(width, thickness), i % 2 == 1)
 
+## The eight pointing poses, in the bearing order `_protester_texture()` indexes into: north
+## first, then clockwise. Kept beside the poses themselves rather than built in the function, so
+## the table is one thing to read rather than eight `match` arms.
+const _POINTING_POSES: Array[Texture2D] = [
+	PROTESTER_POINT_N, PROTESTER_POINT_NE, PROTESTER_POINT_E, PROTESTER_POINT_SE,
+	PROTESTER_POINT_S, PROTESTER_POINT_SW, PROTESTER_POINT_W, PROTESTER_POINT_NW,
+]
+
+## The plain rank, or whichever of the eight `protester_point_*` poses points closest to
+## `objective` from `from`. `Vector2.INF` is "nothing to point at" — a chalk-mark step or no step
+## at all — and draws the same plain `PROTESTER` the row always used. *(2026-09-11, the player:
+## "the mark is findable now -- I don't think we need pointing for that. but the other tasks are
+## not as easy and need pointing.")*
+##
+## The bearing is `TelemetryLog.compass()`'s own arithmetic — clockwise from north (`-y`), through
+## east (`+x`) at 90° — rounded to the nearest of the eight 45° sectors the poses were drawn for.
+static func _protester_texture(from: Vector2, objective: Vector2) -> Texture2D:
+	if objective == Vector2.INF:
+		return PROTESTER
+	var toward := objective - from
+	if toward.length_squared() < 0.0001:
+		return PROTESTER
+	var bearing := rad_to_deg(atan2(toward.x, -toward.y))
+	var sector := roundi(bearing / 45.0) % 8
+	if sector < 0:
+		sector += 8
+	return _POINTING_POSES[sector]
+
+## The resistance director's own read-only `pointable_objective()`, found the same way `Baby`
+## finds `WorldContext` and `ResistanceDirector` finds the player — a group looked up once and
+## cached, since nothing here is handed a reference by whoever built the scene. `Vector2.INF` with
+## no director in the tree, which a bare test rig simply never has: `_draw_protest` already treats
+## that as "nothing to point at".
+var _resistance: ResistanceDirector
+
+func _protest_objective() -> Vector2:
+	if not (_resistance and is_instance_valid(_resistance)):
+		var tree := get_tree()
+		if tree == null:
+			return Vector2.INF
+		_resistance = tree.get_first_node_in_group("resistance") as ResistanceDirector
+	if not _resistance:
+		return Vector2.INF
+	return _resistance.pointable_objective()
+
 ## A rank of placards as wide as the ground it takes.
 ##
 ## The catalogue used to say of this row: *"one person's worth, because one person is what it
@@ -1872,13 +1927,20 @@ func _draw_cafe(canvas: CanvasItem = self) -> void:
 ## back rank is drawn first and higher up the screen. Nothing here grows with `intensity_ramp` —
 ## the caret over it already breathes with what it is emitting, and a crowd that visibly recruits
 ## would be a second cue saying the same thing.
+##
+## **Every body in the rank shares one pose.** They stand within a few tens of pixels of each
+## other and the objective is blocks away, so the bearing from any one of them to it is the same
+## bearing to within a sector; asking once for the whole rank is the same picture a per-body ask
+## would draw, for a fortieth of the cost.
 func _draw_protest(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
 	_draw_shape_shadow(canvas, def.shape)
+	var texture := _protester_texture(global_position, _protest_objective())
 	# Spaced off the body rather than off the sprite, so the rank ends where the ground it takes
 	# ends. A crowd drawn at its own natural spacing overhangs its own body by most of a person,
-	# which is the lie `_draw_spread` exists to avoid in the other direction.
-	var across := maxi(2, roundi(half * 2.0 / (PROTESTER.get_size().x * 0.8)))
+	# which is the lie `_draw_spread` exists to avoid in the other direction. Off `texture`'s own
+	# width rather than the plain pose's, because a pointing pose's placard arm doubles it.
+	var across := maxi(2, roundi(half * 2.0 / (texture.get_size().x * 0.8)))
 	var step := half * 2.0 / across
 	for rank in 2:
 		var back := rank == 0
@@ -1886,7 +1948,7 @@ func _draw_protest(canvas: CanvasItem = self) -> void:
 		var shift := step * 0.5 if back else 0.0
 		for i in across - (1 if back else 0):
 			var x := -half + step * (i + 0.5) + shift
-			Sprites.draw_standing(canvas, PROTESTER, Vector2(x, lift))
+			Sprites.draw_standing(canvas, texture, Vector2(x, lift))
 
 ## People behind cover, shooting at each other. Not a building on fire, which is what it drew for
 ## fourteen milestones — the same five flames as `burning_building`, on the one event in the
