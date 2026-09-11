@@ -418,30 +418,50 @@ stay there. The scene is entered from a debug flag only, `tools/run.sh --start-e
 events, no crowd and no day clock that matters: it is the building, her with the baby in her
 arms, and the way down.
 
-**The building.** Five floors, each its own small map drawn with the ground `TileMapLayer` and
-the same oblique view as the city: the third floor (her apartment's hallway, where the scene
-starts at her door, implied on the hallway's south edge), the second, the first, the ground floor
-(the main entrance in the middle of the north wall — the double door with the furniture heaped
-against it — not passable) and the basement (brick walls, the gloomy floor, puddles, the
-emergency exit at one end; walking into it ends the scene). Every floor has a hallway running
-east–west with its north wall in elevation — windows and the dead lift door — and a stairwell at
-each end, left and right, entered by walking south off the hallway's end; inside, the door back
-to the hallway stands in the stairwell's north wall, seen only from inside, which is the player's
-rule from M102. The prepared pictures in `assets/interior/` are the kit (`GRAPHICS.md` lists
-them); the one that is superseded is `stair_down.svg`.
+**The building, from the player's four sketches** (playtest 55; `docs/reference/
+escape-floor-hallway-sketch-01.jpg`, `escape-stairwell-sketch-01.jpg`, `escape-lobby-sketch-01.jpg`,
+`escape-basement-sketch-01.jpg` — read them before laying a tile). Six maps, each drawn with the
+ground `TileMapLayer` and the same oblique view as the city, joined by doors:
 
-**The stairs are tiles she walks on.** A stairwell is laid out as sideways switchback flights:
-from the stairwell door a flight of three tiles descends eastward to a landing, and from that
-landing a second flight of three tiles descends westward on the row below to the lower landing,
-which is the floor below. Each flight tile is a 32×32 floor tile whose picture is 2.5D — treads
-and risers seen from the oblique view, descending toward the tile's own direction — and it is
-walkable ground like any other; the handrail is a separate transparent overlay tile drawn *over*
-the flight, in front of her, so she walks behind the rail; a landing is a flat tile. Stepping onto
-the lower landing is the floor transition: fade, load the floor below, place her on that
-stairwell's upper landing at its door. The same on both sides, so the left stairwell and the
-right one both go down on every floor. Nothing moves her vertically within a floor; the descent
-is carried by the pictures and by the row change at the landing, and a per-tread offset that makes
-her visibly drop is an open refinement rather than part of this slice.
+- **Three hallway maps**, one per floor above the lobby, the same layout each: a long hallway
+  running east–west; its north wall in elevation carries wall lamps, windows and one framed door
+  with a bar across it — the dead lift; the south edge carries notches — the closed ones are the
+  locked apartment doors (her own is the one the scene starts in front of, on the top floor), and
+  the **two open notches are the staircase doors**, the way into the stairwell map at that
+  floor's landing. The sketch shows both open notches toward the hallway's right end; with a
+  double staircase below, the entry reads them as one door toward each end — *flag this if the
+  sketch meant otherwise*.
+- **One stairwell map**, tall, the camera following her down it: at each floor's level a
+  landing with **a door on each side**, left and right, both into that floor's hallway (*"one
+  staircase one each side. each floor has two doors that can be entered which lead to the same
+  hallway layout"*); from each landing a flight descends to the **left** and another to the
+  **right** — the double staircase — each turning back at a side landing toward the next floor's
+  landing below, the way the sketch's flights cross about the central column. The lowest doors
+  open into the lobby. Nothing loads mid-stairwell: the whole shaft is one map, so stair walking
+  is walking.
+- **The lobby map**: the main entrance in the middle of the north wall — the double door with the
+  furniture heaped against it, lamps either side — not passable; on the south edge, the **left
+  and right notches are the stairway's doors** and the **middle notch is the way to the
+  basement**.
+- **The basement map**: a winding corridor that **starts at the bottom**, where a short flight
+  leads down into it (the sketch's horizontal lines), jogs left and right between raw brick
+  walls past debris, a rat and puddles, and ends at the **exit door at the top**; walking into it
+  ends the scene.
+
+The prepared pictures in `assets/interior/` are the kit (`GRAPHICS.md` lists them); the one that
+is superseded is `stair_down.svg`. The lamps on the walls, the debris and the rat are new small
+pictures the kit item below adds.
+
+**The stairs are tiles she walks on.** Each flight tile is a 32×32 floor tile whose picture is
+2.5D — treads and risers seen from the oblique view, descending toward the tile's own direction —
+and it is walkable ground like any other; the handrail is a separate transparent overlay tile
+drawn *over* the flight, in front of her, so she walks behind the rail; a landing is a flat tile.
+A flight is a horizontal run of flight tiles, and descending it is walking along it: nothing moves
+her vertically within a flight, the descent is carried by the pictures and by the row change at
+each landing, and a per-tread offset that makes her visibly drop is an open refinement rather
+than part of this slice. Because the stairwell is one map, a floor's height in the shaft is what
+the flights between two landings add up to in rows, and that number is the layout's to choose so
+the double staircase reads as the sketch does.
 
 - [ ] **The stair tile kit, as SVG.** In `assets/interior/`, 32×32 tiles: `stair_flight_e.svg` and
       `stair_flight_w.svg` (treads descending toward east and toward west, seen from the oblique
@@ -449,26 +469,33 @@ her visibly drop is an open refinement rather than part of this slice.
       mechanical-floor family), `stair_rail_e.svg`, `stair_rail_w.svg` and `stair_rail_level.svg`
       (handrail overlays on transparent canvases — the sloped pair follow their flight's descent,
       the level one runs along a landing) and `stair_newel.svg` (the post where a rail turns,
-      bottom-centre anchored). Drawn under the svg-art rules, rendered at native and 3×, and
-      reviewed as an assembled stairwell before any of it is bound. `stair_down.svg` is retired to
-      the rejected-graphics archive as human-rejected (playtest 54), with its review sheets
-- [ ] **The interior map and its floors.** A new `src/interior/` — a small hand-shaped map class
-      apart from `CityMap`, floor plans as data, walkability from tile type, walls and doors in
-      elevation — and the five floors above, with the stairwell layout laid from the kit on both
-      sides of every floor. Headless tests: every floor builds; every stair and landing tile is
-      walkable; each floor's two stairwells lead to the floor below on the same side; the
-      basement's exit tile and the ground floor's barricaded entrance are what they claim
+      bottom-centre anchored), plus the sketches' small pictures: `wall_lamp.svg` (a sconce on the
+      hallway and lobby walls), `basement_debris.svg` and `rat.svg` (ground decals for the
+      basement corridor, centre-anchored). Drawn under the svg-art rules, rendered at native and
+      3×, and reviewed as an assembled double staircase before any of it is bound.
+      `stair_down.svg` is retired to the rejected-graphics archive as human-rejected (playtest 54),
+      with its review sheets
+- [ ] **The interior maps.** A new `src/interior/` — a small hand-shaped map class apart from
+      `CityMap`, plans as data, walkability from tile type, walls and doors in elevation — and the
+      six maps above: three hallways, the stairwell, the lobby, the basement, with the double
+      staircase laid from the kit. Headless tests: every map builds; every flight and landing tile
+      is walkable; every door has a counterpart on the map it leads to (hallway stair door ↔
+      stairwell landing door on the same floor, both sides; stairwell bottom doors ↔ lobby side
+      notches; lobby middle notch ↔ basement bottom); the exit tile and the barricaded entrance are
+      what they claim; nothing walkable is unreachable from her door
 - [ ] **`--start-escape`, and her with the baby.** A debug-only `DevFlags` flag that skips the
       title and starts in the third-floor hallway at her door, with `Stroller` drawing the
       prepared `assets/rig/mother_carrying_*` frames facing for facing instead of the
       mother-and-pram pair, the pram gone, and the baby-state cue over the bundle. Both control
       schemes work as they do outdoors. Absent from a release build, asserted the way the debug
       view's test asserts its own absence
-- [ ] **Transitions and the way out.** Walking onto a lower landing fades and loads the floor
-      below at the matching stairwell; walking into the emergency exit fades and returns to the
-      title. A test drives a rig down both stairwells from the apartment to the basement exit
-      through every floor
-- [ ] **Evidence.** One capture per floor with `--start-escape`, the debug view's layers where
+- [ ] **Transitions and the way out.** Walking into a door fades to black, loads the map it leads
+      to and places her just inside its counterpart door, then fades in; walking into the
+      emergency exit fades and returns to the title. A test drives a rig from her door on the
+      top floor through a stair door, down the whole shaft by the left flights and again by the
+      right, into the lobby, down to the basement and out, asserting the map sequence and her
+      placement after each door
+- [ ] **Evidence.** One capture per map with `--start-escape`, the debug view's layers where
       useful, and a burst of her walking a flight, in `docs/evidence/`
 
 **Open after it is walked**: whether the flights read as descending with her drawn at a constant

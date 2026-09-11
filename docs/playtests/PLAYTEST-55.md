@@ -102,6 +102,27 @@ slightly different ellipses; asked which, the player chose the width:
 > if anything the moving size should be bigger than the rest size since moving causes more
 > excitement.
 
+## The building, sketched
+
+Four hand-drawn sketches for M112, the escape scene, walkable, supplied as phone photos and
+ingested through `tools/reference.sh` as `docs/reference/escape-floor-hallway-sketch-01.jpg`,
+`escape-stairwell-sketch-01.jpg`, `escape-lobby-sketch-01.jpg` and `escape-basement-sketch-01.jpg`:
+
+> references for the escape sequence in the building: [the hallway] layout of each floor. notches
+> at the bottom left are locked apartment doors and the open two ones on the right are the
+> staircase doors that are open and can be used to transition to the staircase map [the stairwell]
+> staircase map one staircase one each side. each floor has two doors that can be entered which
+> lead to the same hallway layout as above. bottom doors lead to lobby [the lobby] left and right
+> notches at the bottom are the doors to the stairway notch in the middle leads to basement. [the
+> basement] basement starts at the bottom (horizontal lines indicate a small stair leading down)
+> top is the exit door
+
+This replaces the layout the M112 entry was first written with — a stairwell room at each end of
+every hallway, each floor its own map — with the sketched one: hallway maps that open through
+their stair doors onto **one** stairwell map, a double staircase whose flights descend left and
+right from each floor's landing, with a lobby below it and a winding basement corridor below that.
+The entry is rewritten; the stairs-as-walkable-tiles principle is unchanged.
+
 ## The inspection
 
 > the checkpoint itself, 2s should be enough -- both the guard and the player should disappear
