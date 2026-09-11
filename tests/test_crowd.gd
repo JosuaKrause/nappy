@@ -33,6 +33,7 @@ func run(t) -> void:
 	_test_a_car_can_always_stop_for_a_zebra_it_can_see(t)
 	_test_every_car_drives_on_its_own_right(t)
 	_test_the_strike_box_never_crosses_the_kerb(t)
+	_test_the_car_picture_agrees_with_its_strike_box(t)
 	_test_a_bump_costs_and_one_of_them_is_survivable(t)
 	_test_walking_into_somebody_displaces_and_startles_them(t)
 	_test_a_car_strikes_what_is_in_front_of_it_and_nothing_else(t)
@@ -50,6 +51,10 @@ func run(t) -> void:
 	_test_a_precinct_stops_the_street_that_crosses_it(t)
 	_test_cars_do_not_enter_a_junction_they_cannot_leave(t)
 	_test_nothing_walks_into_a_hard_blocker(t)
+	_test_a_hard_seal_shuts_its_street_to_the_crowd(t)
+	_test_a_region_wall_is_shut_and_a_door_is_carved_out(t)
+	_test_a_soft_seal_shuts_both_pavements_to_walkers_only(t)
+	_test_the_doorstep_street_is_not_shut_by_its_own_hold(t)
 	_test_only_cars_go_over_the_bridge(t)
 	_test_the_crowd_agrees_a_zone_absorbed_the_corridor(t)
 	_test_agents_do_not_overrun_an_ordinary_edge(t)
@@ -408,6 +413,40 @@ func _test_the_strike_box_never_crosses_the_kerb(t) -> void:
 	t.check(reach < Tuning.carriageway_width() * 0.5,
 			"a car's strike box stops %.0fpx short of the kerb"
 			% [Tuning.carriageway_width() * 0.5 - reach])
+
+## M100: *"the dead zone of a car is trailing the car instead of leading the car?"* — the end-on
+## picture used to be drawn bottom-anchored at the node, the way every other standing sprite is,
+## which for a picture whose own *height* is its along-track length left the whole car north of the
+## node while `Crowd._strike()`'s box, the shadow and the field stayed centred on it. Sampled here
+## the same way `Sprites.draw_standing` itself builds the rect, rather than by rasterising a frame:
+## the end-on picture's own along-axis centre now sits on the node, which is where the strike box's
+## centre already is.
+func _test_the_car_picture_agrees_with_its_strike_box(t) -> void:
+	var agent := CrowdAgent.new()
+	agent.kind = CrowdAgent.Kind.CAR
+
+	var end_extent := CrowdAgent.CAR_BODY[0].get_size()
+	var end_anchor: Vector2 = agent._car_body_anchor(0)
+	var end_drawn := Rect2(end_anchor - Vector2(end_extent.x * 0.5, end_extent.y), end_extent)
+	var end_along_centre := end_drawn.position.y + end_drawn.size.y * 0.5
+	t.check(is_equal_approx(end_along_centre, 0.0),
+			"the end-on picture's own along-axis centre sits on the node (%.1fpx off)"
+			% end_along_centre)
+	t.check(end_drawn.position.y < 0.0 and end_drawn.end.y > 0.0,
+			"so the node — where the strike box, the shadow and the field are all centred — falls "
+			+ "inside the drawn footprint rather than at its southern edge")
+
+	# The side view needs no correction and this pins that it stays that way: its along-track
+	# length is the texture's own width, which `Sprites.draw_standing` already centres by default.
+	var side_extent := CrowdAgent.CAR_BODY[1].get_size()
+	var side_anchor: Vector2 = agent._car_body_anchor(1)
+	t.check(side_anchor == Vector2.ZERO, "the side view's own anchor is left undisturbed")
+	var side_drawn := Rect2(side_anchor - Vector2(side_extent.x * 0.5, side_extent.y), side_extent)
+	var side_along_centre := side_drawn.position.x + side_drawn.size.x * 0.5
+	t.check(is_equal_approx(side_along_centre, 0.0),
+			"and the side view's own along-axis centre sits on the node too (%.1fpx off)"
+			% side_along_centre)
+	agent.free()
 
 ## Finding 2: bumping into somebody has to cost something, and it has to be *avoidable*, or it
 ## is a toll rather than a decision. The second check is the one that keeps a crowded pavement
@@ -1234,14 +1273,12 @@ func _test_the_arterial_is_the_busiest_street(t) -> void:
 ## probe stood at the front door and reported a clean bill of health on a build that was visibly
 ## broken.
 ##
-## **The tolerance below is not zero, and the gap is a different system than the one this test
-## names.** `CityGenerator._place_hard_blockers` grows one reference `RouteTree` and hands it to
-## both `_place_dead_ends` and `_place_big_buildings`, so a city's big buildings sit wherever that
-## tree left them uncovered, same as its dead ends. Grown over cells, that tree covers different
-## ground than the street-by-street one it replaced, so a fixed seed can now put a big building
-## where a car's crawl-forward step in a traffic queue grazes its footprint by one tile — never the
-## wall this test is named for, and never more than one car at once, but no longer strictly zero
-## either. Measured on this seed: one car, on 27 of 2400 frames (1.1%).
+## **Zero is the only acceptable end state, and it is the one asserted here.** `CrowdAgent.
+## nudge_back()` and `_join_the_back_of_the_queue()` are the two places a traffic queue's own
+## spacing arithmetic moves a car with no notion of the map underneath it, so both refuse a move
+## that would land on ground `_cannot_go_on` refuses — a car grazing a big building's own footprint
+## by one tile was exactly that, an unguarded backward shove across a junction into whatever
+## bordered it.
 func _test_nothing_walks_into_a_hard_blocker(t) -> void:
 	var walls := {}
 	for key: Vector3i in _city.map.built_over:
@@ -1272,10 +1309,292 @@ func _test_nothing_walks_into_a_hard_blocker(t) -> void:
 				inside += 1
 		frames_with_one += 1 if inside > 0 else 0
 		worst = maxi(worst, inside)
-	t.check(worst <= 1, "never more than one agent at once inside a hard blocker (worst %d)" % worst)
-	t.check(float(frames_with_one) / float(frames) < 0.05,
-			"barely anybody stands inside a hard blocker (%d frames of %d, worst %d at once)"
-			% [frames_with_one, frames, worst])
+	t.check(worst == 0, "nobody ever stands inside a hard blocker (worst %d at once)" % worst)
+	t.check(frames_with_one == 0,
+			"and it never happens on any frame (%d frames of %d it did)"
+			% [frames_with_one, frames])
+
+# --------------------------------------------------------------- M110: seals ---
+# "also I noticed that objects like fallen trees don't stop/redirect traffic or pedestrians"
+# (playtest 55, 2026-09-10). `CrowdAgent._cannot_go_on` used to know about a closure and about
+# nothing else that stands in a street, so a walker or a car passed straight through a hard seal,
+# a region wall, or a soft seal's own bodies. The three tests below are the shape
+# `_test_nothing_walks_into_a_hard_blocker` above already asks about the built-over kind, asked of
+# the day's own placed seals instead — see `docs/DECISIONS.md`, M100, "Events spawn inside a fully
+# blocked street", for `CityMap.held_segments` itself, which these read rather than duplicate.
+
+## M110, item 2: a hard seal shuts its street to the crowd the way a closure does.
+## `CityMap.held_segments` is filled directly with `hold_segment()` here rather than through the
+## whole day's pipeline, since `CrowdAgent._cannot_go_on` is what is being asked about — the wiring
+## that actually fills it from a placed hard seal is `EventManager.start_day`'s own job, covered by
+## `tests/test_events.gd`.
+func _test_a_hard_seal_shuts_its_street_to_the_crowd(t) -> void:
+	var segment: StreetNetwork.Segment = null
+	for candidate in StreetNetwork.segments():
+		if _city.map.has_street(candidate.key()):
+			segment = candidate
+			break
+	t.check(segment != null, "this city has an ordinary street to seal")
+	if not segment:
+		return
+
+	_city.map.clear_day_holds()
+	_city.map.hold_segment(segment.key())
+	var rect := segment.tile_rect()
+	var at := _city.map.tile_rect_to_world(rect).get_center()
+	_city.crowd.start_day(1, _rng(1), at)
+
+	var frames_inside := 0
+	for frame in int(round(20.0 / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		for agent in _city.crowd.agents():
+			if rect.has_point(_city.map.world_to_tile(agent.position)):
+				frames_inside += 1
+	t.check(frames_inside == 0,
+			"nobody ever stands on a hard-sealed segment's own ground, and it carries no through "
+			+ "traffic (%d frames it did)" % frames_inside)
+
+	_city.map.clear_day_holds()
+
+## M110, item 1: a region wall is shut to the crowd the way a hard seal is, and a region door is
+## carved out of the same check — a car still brakes and queues for the gate
+## (`Crowd._stop_for_gates()`, built for M62) and a walker still passes the hut, rather than either
+## turning away at the last junction. Driven off a real day (`City.start_day` then
+## `EventManager.start_day`), the only way to get an actual `RegionPlanner.RegionPlan` with real
+## wall and door segments on it, over however many sampled days it takes this seed's tree to cross
+## its own boundary at least once.
+func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
+	var map := CityGenerator.generate(SEED)
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(map)
+
+	var wall_segment: StreetNetwork.Segment = null
+	var door_segment: StreetNetwork.Segment = null
+	var used_day := -1
+	for day in range(Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
+		var state := CityState.new()
+		state.begin_day(map.block_plans, day)
+		var closures_rng := RandomNumberGenerator.new()
+		closures_rng.seed = hash("crowd-wall-closures:%d:%d" % [SEED, day])
+		city.start_day(state, day, closures_rng)
+		var events_rng := RandomNumberGenerator.new()
+		events_rng.seed = hash("crowd-wall-events:%d:%d" % [SEED, day])
+		var consumed: Array[String] = []
+		city.events.start_day(day, events_rng, consumed)
+		var plan := city.region_plan()
+		if not plan.walls.is_empty() and not plan.doors.is_empty():
+			wall_segment = plan.walls[0]
+			door_segment = plan.doors[0]
+			used_day = day
+			break
+	t.check(wall_segment != null and door_segment != null,
+			"at least one sampled day carries both a wall segment and a door segment")
+	if not wall_segment or not door_segment:
+		city.free()
+		return
+
+	var wall_rect := wall_segment.tile_rect()
+	# Focused on the wall's own mouth — where its bodies actually stand, one tile deep — rather
+	# than the middle of the whole segment: a field centred on the full length of a long held
+	# segment can leave a corridor with almost no open ground anywhere in view, which is a field
+	# placement nothing in `setup()`'s own retry budget promises to solve and not the property this
+	# test is about. `_test_nothing_walks_into_a_hard_blocker` above stands at a dead end's own
+	# (much shorter) rect for the same reason and the same way.
+	var default_at_a := RegionPlanner.region_of_junction(map, wall_segment.a) \
+			< RegionPlanner.region_of_junction(map, wall_segment.b)
+	var at_a: bool = map.boundary_wall_at_a.get(wall_segment.key(), default_at_a)
+	var mouth := wall_segment.mouth_rect(at_a)
+	var at := map.tile_rect_to_world(mouth).get_center()
+	city.crowd.start_day(used_day, _rng(used_day), at)
+	city.crowd.set_gates(city.region_plan().gates)
+
+	var frames_inside := 0
+	for frame in int(round(20.0 / STEP)):
+		city.crowd.set_focus(at)
+		city.crowd.step(STEP)
+		for agent in city.crowd.agents():
+			if wall_rect.has_point(map.world_to_tile(agent.position)):
+				frames_inside += 1
+	t.check(frames_inside == 0,
+			"nobody ever stands on today's region wall (%d frames it did)" % frames_inside)
+
+	# The door carve-out, checked directly against the predicate rather than by waiting for a
+	# random walker or car to wander onto the exact tile inside a short simulated window — the
+	# question is whether `_cannot_go_on` refuses the door, not whether the day's population
+	# happens to visit it.
+	var door_tile := door_segment.tile_rect().get_center()
+	var vertical := not door_segment.horizontal
+	var walker := CrowdAgent.new()
+	walker.kind = CrowdAgent.Kind.WALKER
+	walker._map = map
+	walker.door_segments = {door_segment.key(): true}
+	var car := CrowdAgent.new()
+	car.kind = CrowdAgent.Kind.CAR
+	car._map = map
+	car.door_segments = {door_segment.key(): true}
+	t.check(not walker._cannot_go_on(vertical, door_tile),
+			"a walker is not turned away from today's region door")
+	t.check(not car._cannot_go_on(vertical, door_tile),
+			"and neither is a car — it brakes and queues for the gate instead of diverting")
+	walker.free()
+	car.free()
+	city.free()
+
+## M110, item 3: a soft seal takes both pavements from the walkers and leaves the carriageway to
+## the cars. `SealPlanner.plan_day` is driven directly here, off a real tree, since
+## `CityMap.soft_sealed_tiles` and `CrowdAgent._cannot_go_on` are what is being asked about rather
+## than the whole day's pipeline — checked against the predicate directly, for the same reason the
+## door carve-out above is: whether a random walker wanders onto one particular tile inside a short
+## window is a question about the day's population, not about this rule.
+func _test_a_soft_seal_shuts_both_pavements_to_walkers_only(t) -> void:
+	var day := 3
+	var tree := RouteTree.for_day(_city.map, day)
+	var seal_rng := RandomNumberGenerator.new()
+	seal_rng.seed = hash("crowd-soft-seal:%d:%d" % [SEED, day])
+	SealPlanner.plan_day(_city.map, day, tree, seal_rng)
+	t.check(not _city.map.soft_sealed_tiles.is_empty(),
+			"today's tree leaves at least one street soft-sealed (%d tiles)"
+			% _city.map.soft_sealed_tiles.size())
+
+	var both_sealed: StreetNetwork.Segment = null
+	var thinned: StreetNetwork.Segment = null
+	var thinned_open: Array[Vector2i] = []
+	for segment in StreetNetwork.segments():
+		if not _city.map.has_street(segment.key()):
+			continue
+		# Ordinary streets only: a precinct has no pavement/carriageway split for a soft seal to
+		# take one side of, and asking a car to drive across one is a question this test does not
+		# mean to be asking.
+		var road_tile := _cross_section_tiles(segment)[2]
+		if not _city.map.is_driveable_at(not segment.horizontal, road_tile):
+			continue
+		var near := _sidewalk_side_tiles(segment, true)
+		var far := _sidewalk_side_tiles(segment, false)
+		var near_sealed := _all_soft_sealed(near)
+		var far_sealed := _all_soft_sealed(far)
+		if near_sealed and far_sealed and not both_sealed:
+			both_sealed = segment
+		elif near_sealed != far_sealed and not thinned:
+			thinned = segment
+			thinned_open = far if near_sealed else near
+		if both_sealed and thinned:
+			break
+	t.check(both_sealed != null, "at least one street has both pavements soft-sealed today")
+	t.check(thinned != null, "and at least one has only one — the thinning pass's own mark")
+	if not both_sealed or not thinned:
+		return
+
+	var walker := CrowdAgent.new()
+	walker.kind = CrowdAgent.Kind.WALKER
+	walker._map = _city.map
+	var car := CrowdAgent.new()
+	car.kind = CrowdAgent.Kind.CAR
+	car._map = _city.map
+	var vertical := not both_sealed.horizontal
+
+	for tile in _sidewalk_side_tiles(both_sealed, true) + _sidewalk_side_tiles(both_sealed, false):
+		t.check(walker._cannot_go_on(vertical, tile),
+				"a walker turns away from a fully soft-sealed pavement tile %s" % tile)
+		t.check(not car._cannot_go_on(vertical, tile),
+				("and a car still drives straight through the same tile %s — the carriageway is " +
+				"never sealed") % tile)
+
+	for tile in thinned_open:
+		t.check(not walker._cannot_go_on(not thinned.horizontal, tile),
+				"the thinned pair's open pavement stays open to a walker at %s" % tile)
+
+	walker.free()
+	car.free()
+	_city.map.clear_day_soft_seals()
+
+## The street's own cross-section, one tile per lane, at the middle of the block — the same layout
+## `SealPlanner._cross_section_tiles` places a soft seal's bodies against, duplicated here (it is
+## file-private there) rather than reached into.
+func _cross_section_tiles(segment: StreetNetwork.Segment) -> Array[Vector2i]:
+	var rect := segment.tile_rect()
+	var tiles: Array[Vector2i] = []
+	if segment.horizontal:
+		var mid_x := rect.position.x + rect.size.x / 2
+		for row in Tuning.STREET_WIDTH:
+			tiles.append(Vector2i(mid_x, rect.position.y + row))
+	else:
+		var mid_y := rect.position.y + rect.size.y / 2
+		for column in Tuning.STREET_WIDTH:
+			tiles.append(Vector2i(rect.position.x + column, mid_y))
+	return tiles
+
+## Both walker-lane tiles of one pavement side of `segment` — `Tuning.SIDEWALK_WIDTH` of them, the
+## whole footway rather than only the one lane a soft seal's own body happens to stand on.
+func _sidewalk_side_tiles(segment: StreetNetwork.Segment, near: bool) -> Array[Vector2i]:
+	var tiles := _cross_section_tiles(segment)
+	if near:
+		return tiles.slice(0, Tuning.SIDEWALK_WIDTH)
+	return tiles.slice(Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH, Tuning.STREET_WIDTH)
+
+func _all_soft_sealed(tiles: Array[Vector2i]) -> bool:
+	for tile in tiles:
+		if not _city.map.is_soft_sealed(tile):
+			return false
+	return true
+
+## M110: the streets bordering the home block are held the same way a hard seal's own segment is
+## (`EventManager.start_day` holds them so no catalogue row lands there — `docs/DECISIONS.md`, M100,
+## "Nothing on the home block") but carry no body across them at all: she walks out onto one of them
+## every morning, and the home is a notch with one exit, so shutting it to the crowd the way item 2
+## shuts a hard seal's street would be wrong. `CrowdAgent.home_segments` is the carve-out, the same
+## shape `door_segments` already is. Driven off a real day — `held_segments` has to be genuinely
+## non-empty around the home block for this to test anything rather than pass vacuously.
+func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t) -> void:
+	var map := CityGenerator.generate(SEED)
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(map)
+
+	var day := 1
+	var state := CityState.new()
+	state.begin_day(map.block_plans, day)
+	var closures_rng := RandomNumberGenerator.new()
+	closures_rng.seed = hash("crowd-home-closures:%d:%d" % [SEED, day])
+	city.start_day(state, day, closures_rng)
+	var events_rng := RandomNumberGenerator.new()
+	events_rng.seed = hash("crowd-home-events:%d:%d" % [SEED, day])
+	var consumed: Array[String] = []
+	city.events.start_day(day, events_rng, consumed)
+
+	var home_segments := StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE))
+	t.check(not home_segments.is_empty(), "the home block has bordering streets")
+	var home_keys := {}
+	var held_home := false
+	for segment in home_segments:
+		home_keys[segment.key()] = true
+		if map.is_held(segment):
+			held_home = true
+	t.check(held_home,
+			"at least one of them is held today, or this test is not exercising the carve-out")
+
+	var at := map.doorstep_world_position()
+	city.crowd.start_day(day, _rng(day), at)
+
+	var walkers_seen := 0
+	var cars_seen := 0
+	for frame in int(round(30.0 / STEP)):
+		city.crowd.set_focus(at)
+		city.crowd.step(STEP)
+		for agent in city.crowd.agents():
+			var segment := StreetNetwork.segment_containing(map.world_to_tile(agent.position))
+			if segment == null or not home_keys.has(segment.key()):
+				continue
+			if agent.kind == CrowdAgent.Kind.WALKER:
+				walkers_seen += 1
+			else:
+				cars_seen += 1
+	t.check(walkers_seen > 0,
+			"walkers still use the home block's own bordering streets (%d frames)" % walkers_seen)
+	t.check(cars_seen > 0, "and so do cars (%d frames)" % cars_seen)
+
+	city.free()
 
 ## M53: **the overrun permission was narrowed to a car on the spine, and the lane was not** — the
 ## entry-side fallback (`CrowdAgent._keep_within_the_room_beyond_the_map`) used to hand every kind

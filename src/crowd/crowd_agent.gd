@@ -76,6 +76,25 @@ var field: CrowdField
 ## the way it always did. See `TrafficIndex`.
 var traffic: TrafficIndex
 
+## Today's region-door segment keys (`StreetNetwork.Segment.key()` -> `true`), held by reference
+## and rebuilt once a day by `Crowd.start_day()` from `City.region_plan().doors`. Empty for an
+## agent built by hand in a test or for a rig with no city behind it, which then treats every held
+## segment as wall the way `_cannot_go_on` already would. The one carve-out `CityMap.is_held_at`
+## does not make on its own: a wall segment and a hard seal's segment are shut outright, but a
+## door is a crossing the day's structure means to keep open — a car brakes and queues for the
+## gate (`Crowd._stop_for_gates()`) rather than being turned away at the last junction, and a
+## walker passes the hut the way she does.
+var door_segments := {}
+
+## The segments bordering the home block, the second carve-out `is_held_at` cannot make on its
+## own — rebuilt beside `door_segments` from `StreetNetwork.around_blocks(Rect2i(map.home_block,
+## Vector2i.ONE))`, the exact set `EventManager.start_day` holds them from for the opposite reason:
+## those segments are held only so no catalogue row lands on the home block's own street, never
+## because a body stands across it. The home is a notch with one exit, she walks out onto one of
+## these every morning, and `held_segments` has no way to say *why* a segment is held — this list
+## is the crowd's own answer, the same shape `door_segments` already is.
+var home_segments := {}
+
 ## Somebody standing in front of this car, or `Vector2.INF` for nobody. Written once per
 ## physics frame by `Crowd` for the cars near the player and read here: an agent has no
 ## business knowing who the player is, but it does have to decide whether to stop.
@@ -202,15 +221,21 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 	# **And if the whole street is wrong, it picks another street.** Re-rolling only the position
 	# along a corridor cannot help a car that was given a corridor with nowhere drivable in view — a
 	# precinct is three blocks of an otherwise ordinary street, so the corridor keeps its car weight
-	# and the *stretch in the field* may be entirely pedestrianised. Eight position re-rolls then
-	# land among the bollards and the ninth places it there anyway: a car standing in a precinct,
-	# which `tests/test_crowd.gd` asks about by name. **A retry is not a guarantee** — when
+	# and the *stretch in the field* may be entirely pedestrianised. The position re-rolls below then
+	# land among the bollards every time and the last one places it there anyway: a car standing in a
+	# precinct, which `tests/test_crowd.gd` asks about by name. **A retry is not a guarantee** — when
 	# re-rolling the small decision keeps failing, re-take the big one.
 	for _street in 4:
 		_choose_lane(axis_roll)
 		var bounds := field.along_bounds(_vertical)
 		var placed := false
-		for _attempt in 8:
+		# **A held segment can swallow most of a corridor's visible stretch** — a region wall or a
+		# hard seal is kept off `held_segments` by the tile, not by a fraction of it, so a field
+		# centred close to one narrows the open ground a random draw can land on far more than a
+		# precinct's own bollards ever did. More draws is the same "retry is not a guarantee" trade
+		# the docstring above already makes, just carried far enough that the small decision keeps
+		# up with how much narrower "the small decision" can now be.
+		for _attempt in 24:
 			_set_along(_rng.randf_range(bounds.x, bounds.y))
 			_set_cross(_lane_centre)
 			if _stands_on_a_street():
@@ -246,6 +271,10 @@ func _stands_on_a_street() -> bool:
 	var tile := _map.world_to_tile(position)
 	if _map.is_closed(tile):
 		return false
+	if _segment_is_shut(tile):
+		return false
+	if kind == Kind.WALKER and _map.is_soft_sealed(tile):
+		return false
 	if not _map.in_bounds(tile):
 		return kind == Kind.CAR and _vertical and _corridor == _map.main_road \
 				and (tile.y < 0 or tile.y >= _map.size.y)
@@ -262,6 +291,25 @@ func _stands_on_a_street() -> bool:
 	if kind == Kind.WALKER and _map.tile_at(tile) == GameEnums.TileType.ROAD:
 		return false
 	return _map.is_street(tile)
+
+## Whether a tile's own street segment is shut to this agent the way a hard blocker is: held for
+## today (`CityMap.is_held_at` — a hard seal's segment, a region wall, a closure, or the streets
+## around the home block) and neither of the two carve-outs `held_segments` cannot make on its
+## own. A region door is a crossing anybody may still enter — a car brakes and queues for the gate
+## rather than turning away, and a walker passes the hut. The home block's own bordering streets
+## are held only so no catalogue row lands there, never because a body stands across one — she
+## walks out onto one of them every morning, and the home is a notch with one exit, so sealing it
+## would seal her in. Both lists are empty outside a real day (a hand-built test agent, a rig with
+## no city, or before the wall itself stands), which is a harmless no-op: nothing is held then
+## either.
+func _segment_is_shut(tile: Vector2i) -> bool:
+	if not _map.is_held_at(tile):
+		return false
+	var segment := StreetNetwork.segment_containing(tile)
+	if segment == null:
+		return true
+	var key := segment.key()
+	return not door_segments.has(key) and not home_segments.has(key)
 
 func _process(delta: float) -> void:
 	_clock += delta
@@ -558,8 +606,20 @@ func queue_position() -> float:
 ## Slides this agent back down its own lane. `Crowd` uses it to open a gap that the brake could
 ## not: a car that is recycled into a lane can materialise inside one that is already there, and
 ## from inside there is no speed either of them can choose that separates them.
+##
+## **Never past ground it could not have driven onto itself.** This is pure spacing arithmetic with
+## no notion of the map underneath it, so unguarded it can shove the rearmost car of a queue back
+## across a junction and into whatever borders it on the far side — measured as a car grazing a big
+## building's own footprint by one tile. `_cannot_go_on` is the same predicate `_look_ahead` already
+## trusts for the *forward* direction; asked here for the backward one, a nudge that would cross
+## into blocked ground is simply refused, which leaves that one pair a little closer than
+## `Tuning.CAR_GAP_MIN` for a frame rather than parking either of them in a wall.
 func nudge_back(distance: float) -> void:
-	_set_along(_along() - distance * _direction)
+	var target := _along() - distance * _direction
+	var probe := Vector2(_cross(), target) if _vertical else Vector2(target, _cross())
+	if _cannot_go_on(_vertical, _map.world_to_tile(probe)):
+		return
+	_set_along(target)
 
 ## Somebody she walked into gets out of her way.
 ##
@@ -927,6 +987,16 @@ func _blocked_ahead(vertical: bool, direction: float, distance: float) -> bool:
 func _cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	if _map.is_closed(tile):
 		return true
+	# A hard seal and a region wall stand bodies across the whole carriageway, kerb to kerb, the
+	# same way a dead end's own wall does — `_segment_is_shut` is the fact `_look_ahead` sees from
+	# `LOOKAHEAD_TILES` off, so both walkers and cars turn away at the last junction rather than
+	# walking or driving through what they cannot see through. A region door is carved out of the
+	# same check: it is a crossing the day means to keep open, not a wall with a picture on it.
+	if _segment_is_shut(tile):
+		return true
+	# A soft seal takes both pavements and leaves the carriageway to the cars — walkers only.
+	if kind == Kind.WALKER and _map.is_soft_sealed(tile):
+		return true
 	if not _map.in_bounds(tile):
 		var leaves_by_the_spine := kind == Kind.CAR and vertical and _corridor == _map.main_road \
 				and (tile.y < 0 or tile.y >= _map.size.y)
@@ -1241,13 +1311,23 @@ func _keep_within_the_room_beyond_the_map() -> void:
 ##
 ## It may put the car further back than the entry band is deep, which is exactly right: further back
 ## is further off-screen, and the alternative is a car appearing inside another one.
+##
+## **Never past ground it could not have driven onto itself**, for the same reason `nudge_back`
+## checks it: the rearmost car's own position says nothing about what stands behind it, and a queue
+## that has backed up almost to a wall would otherwise place the newcomer inside it. Refusing the
+## move leaves the car wherever `_recycle`'s own loop already found it standing on a street, which
+## is the position this whole fallback exists to improve on rather than one it has to guarantee.
 func _join_the_back_of_the_queue() -> void:
 	if kind != Kind.CAR or not traffic or _has_room_here():
 		return
 	var last := traffic.rearmost(lane_key())
 	if last == INF:
 		return
-	_set_along((last - Tuning.CAR_GAP_MIN) * _direction)
+	var target := (last - Tuning.CAR_GAP_MIN) * _direction
+	var probe := Vector2(_cross(), target) if _vertical else Vector2(target, _cross())
+	if _cannot_go_on(_vertical, _map.world_to_tile(probe)):
+		return
+	_set_along(target)
 
 ## Tells the index this car is here, so that another one recycling or turning later in the same
 ## frame does not choose the same piece of road. See `TrafficIndex.claim()`.
@@ -1305,12 +1385,28 @@ func _draw_body(canvas: CanvasItem) -> void:
 	var flip := _flipped()
 	if kind == Kind.CAR:
 		_draw_shape_shadow(canvas, shape, Vector2.ZERO, _travel_axis())
-		Sprites.draw_standing(canvas, CAR_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
-		Sprites.draw_standing(canvas, CAR_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
+		var anchor := _car_body_anchor(frame)
+		Sprites.draw_standing(canvas, CAR_BODY[frame], anchor, Vector2.ZERO, flip, colour)
+		Sprites.draw_standing(canvas, CAR_TRIM[frame], anchor, Vector2.ZERO, flip)
 		return
 	_draw_shape_shadow(canvas, shape, Vector2.ZERO, Vector2.RIGHT)
 	Sprites.draw_standing(canvas, WALKER_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
 	Sprites.draw_standing(canvas, WALKER_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
+
+## Where a car's own body texture is anchored for `Sprites.draw_standing`, which is always
+## bottom-centred at the point it is given. **The side view needs no correction**: its along-track
+## length is the texture's own *width*, which `draw_standing` already centres by default. **The
+## end-on view draws that same along-track length as the texture's *height* instead** — the
+## "standing" convention reads it as receding away from the viewer, the way a person's height reads
+## as her standing on the ground — so bottom-anchoring it at `Vector2.ZERO` the way every other
+## standing sprite is anchored leaves the whole car north of the node, while the strike box
+## (`Tuning.CAR_STRIKE_HALF_LENGTH`), the shadow (`_car_shadow_shape`) and the field are all centred
+## on the node already. Shifting the anchor down by half the texture's own height is what makes the
+## four agree in the debug view; nothing else about the drawing changes.
+func _car_body_anchor(frame: int) -> Vector2:
+	if frame != 0:
+		return Vector2.ZERO
+	return Vector2(0.0, CAR_BODY[0].get_size().y * 0.5)
 
 ## A car's own shadow shape — a capsule along its travel axis, read off its own two textures
 ## rather than a hand-picked radius: the side view's width is the car's along-track length, the

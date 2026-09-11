@@ -280,8 +280,8 @@ Reaching act III — which M56's measurement against the nerves needs — waits 
 that batch is done. SVG-to-PNG
 style transfer is Codex's parallel track. Prepared artwork and its source-review sheets are listed
 in `GRAPHICS.md`; the integration table in `TODO.md` assigns each family to its gameplay owner.
-M110, the crowd goes round a seal, owns crowd blockage at seals; M111, cars follow their turns,
-owns continuous turn paths and diagonal presentation. Coordinate them in the shared traffic code.
+The crowd goes round seals, walls and doors (`DECISIONS.md`, M110); M111, cars follow their
+turns, owns continuous turn paths and diagonal presentation in the same traffic code.
 
 ## What to distrust
 

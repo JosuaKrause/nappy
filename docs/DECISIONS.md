@@ -1,5 +1,52 @@
 # Decisions
 
+## M110 — The crowd goes round a seal · built 2026-09-11
+
+*(2026-09-10, playtest 52: "also I noticed that objects like fallen trees don't stop/redirect
+traffic or pedestrians"; playtest 55, day 7: "also cars go through the barriers and checkpoints";
+on the doors: "at checkpoints cars should slow down halt then the bar should lift then the car
+drives through then it closes again"; on her: "attempting to do that should just start a regular
+checkpoint inspection".)* Five agent commits on `feature/crowd-goes-round-a-seal`, reviewed here,
+with M100's two crowd defects alongside. **Seals, walls and doors only**, as the entry recommended;
+ordinary bodies — a café, a construction band, a kerbed van — are still walked through, and the
+question of whether they should be stays the player's, in the entry.
+
+**One record serves the catalogue and the crowd.** `CrowdAgent._cannot_go_on()` and the
+frame-zero placement test both read `CityMap.held_segments` through `is_held_at` — the record
+M100's held-ground fix built the same day, whose docstring already named this reader — so a hard
+seal's segment, a region wall's and a closure's are shut to walkers and cars from seven tiles
+off, and both turn at the last junction. A wall is a hard seal of the `roadblock` row, so nothing
+separate was needed for it; the two items share one commit for that reason. **Two carve-outs**,
+each a list threaded from `Crowd.start_day()` to every agent: the region's door segments, where
+a car brakes to the stop line, waits for the boom `Crowd._stop_for_gates()` already runs for M62,
+passes and lets it lower, and a walker passes the hut as she does; and the segments around the
+home block, which `EventManager` holds for placement only — no barrier stands there and she walks
+out onto one every morning — so the crowd keeps them. The second was an orchestrator's correction
+of the first build, which had shut them; a `CityMap` query saying *why* a segment is held was the
+alternative and was not taken, since it would attach a reason to every entry for one reader's
+sake. Tests: zero occupancy and zero through-traffic on a hard-sealed segment over twenty
+seconds; a wall shut and a door carved out on a real day; walkers and cars seen on the home
+block's own streets inside thirty seconds on a day with holds.
+
+**A soft seal takes both pavements from the walkers.** `CityMap.soft_sealed_tiles`, documented
+beside `held_segments` and filled by `SealPlanner.plan_day` with both pavement tiles of every
+surviving side — a thinned pair's dropped side stays open, which is the thinning's whole point —
+and read by walkers only; a car on the carriageway passes.
+
+**What the entry asked for and this branch could not reach**: a raised bar starts an inspection
+at the huts, where the detain radius lives, but `checkpoint_gate` carries no detain of its own, so
+the bar's own tiles hold nobody. The appended checkpoint test pins that the gate's raised state
+has no bearing on the hut's hold; giving the gate row its own radius is the remaining item, in
+M113's file.
+
+**The two crowd defects.** A car's end-on picture is now drawn with its footprint centred on the
+node, so the strike box, the shadow, the field and the picture agree — checked analytically
+rather than by rasterising. And a car crawling forward in a queue, or joining the back of one,
+refuses a step onto ground `_cannot_go_on` refuses, so *nothing walks into a hard blocker* is
+back to exactly zero from the one-car-on-one-percent-of-frames it had been loosened to. **Small
+things changed on the way**: `setup()`'s placement retry budget 8 → 24, kept as defence in depth
+after a test landed an agent on a wall on frame zero; `_recycle()`'s six-roll budget untouched.
+
 ## M100 — Small, real, and nobody's · a precinct's pavement is never built over, 2026-09-11
 
 The defect as queued: on seed 24757 two tiles inside a precinct span were not walkable because a
@@ -1559,7 +1606,6 @@ end before the frame is taken — filed in `TODO.md` under M100.
 
 ### The entry as it stood when the pictures were drawn
 
-
 **All that remains here is eight drawings.** The sealing itself is built and its record is in
 `DECISIONS.md` under M64; the off-screen arrivals item this milestone also carried became M77 and is
 built, recorded there too.
@@ -1963,7 +2009,6 @@ cyclist's whole 3.3s approach reads as warning or as alarm. The vocabulary's fou
 `docs/EVENTS.md` under "The visual vocabulary" and in the cues skill.
 
 ### The entry as it stood when it was built
-
 
 [PLAYTEST-37.md](playtests/PLAYTEST-37.md) finding 5, in three sentences: *"caret == lethal is good but is
 inconsistently applied at the moment"*, *"a cat has a caret but it's benign"*, *"a pedestrian
@@ -5941,7 +5986,6 @@ From `CLAUDE.md`, which is the fuller version:
   A green `check.sh` says nothing about whether the game looks right.
 - Commit the docs in the same commit as the code.
 - Update **this file** at the end of each work session.
-
 
 ---
 
@@ -11830,7 +11874,6 @@ lights are a decision about **which junctions are junctions at all**, and three 
 below are about what a junction is made of. Building them against a lattice that is about to be
 re-asked the same question would be doing the work twice.
 
-
 Playtest 16, in full in **[docs/playtests/PLAYTEST-16.md](playtests/PLAYTEST-16.md)**. Five findings; four of them are
 one complaint: **the city draws a lattice it does not have, and the crowd walks it.** It walks onto a bridge with no
 footway, off a bulkhead into the sea, and through crossroads whose arms are grass — and in every
@@ -12297,7 +12340,6 @@ These need a human playing the game, not more code.
       M6; closed by being asked out loud. See [PLAYTEST-06.md](playtests/PLAYTEST-06.md) for what it does
       to the one-shots, the block arcs and the endings
 
-
 ## SVG-to-PNG style-transfer experiment — 2026-09-10
 
 PLAYTEST-51 replaces the full illustrated overhaul with an experiment: style-transfer the existing SVGs into registered PNG replacements, retaining the illustrated opt-in. The player explicitly asks to archive the old outcomes and remove its code. The old layered-animation, comparison-offset and supersampling repair queue below is superseded by that request, not silently dropped. Adopting SVG-first authoring followed by style transfer as the standard pipeline remains conditional on the experiment working.
@@ -12359,8 +12401,6 @@ define style; `docs/reference/` supplies real-world structure and posture.
       the current callback traces the offset legacy comparison. Extend vehicles, authored events,
       environment and screens only
       after their prerequisite visual gates.
-
-
 
 ### Superseded text from docs/HANDOFF.md
 
@@ -12437,8 +12477,6 @@ when one is missing, so a pulled checkout boots rather than failing on the first
 Preserve `.import` sidecars. The missing-player diagnosis and capture provenance are in
 DECISIONS.md under Texture integration process; the screenshot does not establish appearance
 after the local import repair.
-
-
 
 ### Superseded text from docs/VISUALS.md
 
@@ -12679,7 +12717,6 @@ not merely enabling transparency on a roof. The
 [renderer guide](https://docs.godotengine.org/en/stable/tutorials/rendering/renderers.html)
 describes the Compatibility renderer used for web targets.
 
-
 ### Superseded text from docs/LUNA_HANDOFF.md
 
 # Luna graphics handoff
@@ -12850,7 +12887,6 @@ committed; never commit `.godot/`.
 Before stopping, update this handoff, the main handoff and the open queue; archive history in
 DECISIONS, run lint, commit and push. Tell the player what remains incomplete rather than presenting
 a source-art draft as a finished game overhaul.
-
 
 ### Superseded text from docs/ILLUSTRATED-GAMEPLAY-FIXES.md
 
@@ -13105,7 +13141,6 @@ Keep the illustrated presentation review-only until the player accepts the repai
 Report each repaired defect, the checks and images supporting it, and any remaining family or
 motion gap. Passing headless checks cannot override visible disconnection in the rendered game.
 
-
 ### Superseded text from .claude/skills/illustrated-png/SKILL.md
 
 ---
@@ -13197,7 +13232,6 @@ validation as unverified rather than claiming it passed.
 
 Do not extend a reviewed asset family to other gameplay families until the player has seen and
 accepted the gate that applies to it.
-
 
 ### Superseded text from .claude/skills/illustrated-png/references/texture-integration.md
 
