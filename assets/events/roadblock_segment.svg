@@ -1,0 +1,15 @@
+<!-- One repeatable segment of a continuous held-street barrier, replacing a row of separate
+     poured-concrete blocks (`checkpoint_block.svg`, still the badge's own icon). The cap, the
+     body and the base are flat fills abutting at fixed heights with no stroke of their own, so
+     two segments meet with no seam; the diagonal hazard stripe bleeds past both edges the same
+     way `barrier_segment.svg` already does, so the zigzag continues from one segment into the
+     next rather than restarting inside each one. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="30" viewBox="0 0 22 30" shape-rendering="geometricPrecision">
+  <rect x="0" y="0" width="22" height="6" fill="#a5a59d" stroke="none"/>
+  <rect x="0" y="6" width="22" height="21" fill="#85857f" stroke="none"/>
+  <rect x="0" y="9" width="22" height="16" fill="#e0d8c4" stroke="none"/>
+  <polygon points="-12,9 -6,9 6,25 0,25" fill="#c4503c" stroke="none"/>
+  <polygon points="0,9 6,9 18,25 12,25" fill="#c4503c" stroke="none"/>
+  <polygon points="12,9 18,9 30,25 24,25" fill="#c4503c" stroke="none"/>
+  <rect x="0" y="27" width="22" height="3" fill="#221f28" stroke="none" opacity="0.72"/>
+</svg>

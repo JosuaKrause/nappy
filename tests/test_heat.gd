@@ -20,6 +20,7 @@ func run(t) -> void:
 	_test_the_ladder_has_a_top(t)
 	_test_a_hunts_row_wakes_up_at_its_own_threshold(t)
 	_test_the_raid_hunts_past_its_own_threshold(t)
+	_test_the_roadblock_hunts_past_its_own_threshold(t)
 	_test_a_day_is_a_function_of_its_heat(t)
 	_test_the_patrol_presses_more_and_louder(t)
 	_test_the_patrol_investigates_past_the_threshold(t)
@@ -126,6 +127,48 @@ func _test_the_raid_hunts_past_its_own_threshold(t) -> void:
 				"heat %d: it notices her at the shared trigger" % level)
 		t.check(hot.duration == Tuning.PURSUIT_TIME,
 				"heat %d: it chases for the shared pursuit length" % level)
+
+func _cold_roadblock() -> EventDef:
+	return EventCatalogue.by_id("roadblock")
+
+## The roadblock's own hot shape, named rather than left to the generic `HUNTS` loop above: below
+## `Tuning.HEAT_HUNTS_LEVEL` it is the band it always was — untouched, still merely `costly` — and
+## at or above it its guards leave the post: `pursues` and `hard_fail` turn on for the same body,
+## with the numbers `abduction` and `night_raid` already share, and neither when it may appear nor
+## its population nor its intensity moves, since heat sets what a row does and never when it is
+## allowed to.
+func _test_the_roadblock_hunts_past_its_own_threshold(t) -> void:
+	var cold := _cold_roadblock()
+	t.check(cold.heat_response == EventDef.HeatResponse.HUNTS,
+			"the roadblock answers to the resistance, the lethal way")
+	t.check(cold.first_day == 7 and not cold.hard_fail,
+			"cold, it is still only a closed street from day 7")
+	for level in EventCatalogue.heat_levels():
+		var hot := EventCatalogue.heated(cold, level)
+		t.check(hot.validate(), "the roadblock is fair at heat %d" % level)
+		t.check(hot.first_day == cold.first_day,
+				"heat %d: hunting moves what it does, never when it may appear" % level)
+		t.check(hot.max_per_day == cold.max_per_day and hot.intensity == cold.intensity,
+				"heat %d: hunting moves neither its population nor its intensity" % level)
+		if level < Tuning.HEAT_HUNTS_LEVEL:
+			t.check(not hot.pursues and not hot.hard_fail,
+					"heat %d: below its own threshold the roadblock is still just a band" % level)
+			continue
+		t.check(hot.pursues and hot.hard_fail,
+				"heat %d: at or past its threshold its guards leave the post and it kills" % level)
+		t.check(hot.pursue_speed == Tuning.HEAT_HUNTS_SPEED,
+				"heat %d: it hunts at the speed the ladder's other pursuers share" % level)
+		t.check(hot.pursues_within == Tuning.HEAT_HUNTS_WITHIN,
+				"heat %d: it notices her at the shared trigger" % level)
+		t.check(hot.duration == Tuning.PURSUIT_TIME,
+				"heat %d: it chases for the shared pursuit length" % level)
+		# What actually forced `inner_radius` from the M61-derived 24 up to 86: restated as the
+		# body/lethal-radius arithmetic `EventDef.validate()` checks, rather than trusting the
+		# boot-time push_error alone to have caught a regression.
+		t.check(hot.obstructs_radius + Tuning.PLAYER_BODY_RADIUS < hot.inner_radius,
+				("heat %d: the band's own body still leaves the kill reachable "
+						+ "(%.0f + %.0f < %.0f)")
+				% [level, hot.obstructs_radius, Tuning.PLAYER_BODY_RADIUS, hot.inner_radius])
 
 # ------------------------------------------------------------- the derivation ---
 

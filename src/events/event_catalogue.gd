@@ -1125,16 +1125,45 @@ static func _curfew_announce() -> EventDef:
 ## guards on the sidewalks you can pass at a price — and this row means the opposite: a street you
 ## cannot pass at all. Two rows drawing armed men across a street and meaning opposite things about
 ## whether you can get through cannot share a name, and one picture per row fails at the name
-## exactly the way it fails at a shared silhouette. Its numbers, its intent and its picture are
-## unchanged — `assets/events/checkpoint_block.svg` keeps its filename, since the milestone that
-## renamed the row left the art alone.
+## exactly the way it fails at a shared silhouette.
+##
+## **Drawn as one continuous barrier, not a row of blocks.** *(2026-09-10, playtest 55: "the
+## barrier itself also doesn't read as a continuous element. is it using the texture of the other
+## orientation and concatenating that one?")* `EventInstance._draw_roadblock()` now reads
+## `_draw_spread(ROADBLOCK_SEGMENT, ROADBLOCK_END)`, the same rail-with-caps construction
+## `roadworks` already reads as one thing rather than a stack of blocks.
+## `assets/events/checkpoint_block.svg` stays bound as the badge's own icon
+## (`EventInstance.icon_for()`) — a badge is read small, and the concrete-block silhouette is still
+## the clearest single frame of "a street being held"; only the drawn body changed.
 ##
 ## **Radii derived from the body, not carried across.** Under M61's field — a capsule about the
 ## body's own spine rather than a disc about its centre — the along-axis reach from centre has to
 ## stay what it was, so both radii lose the segment's own `half_length` (36, from `band(60)`):
-## `inner_radius` 52 → 16, `outer_radius` 215 → 179. The raw inner falls under the body's own 24px
-## rounding (`GroundShape.BAND_RADIUS`), so it is clamped there instead — a field cannot start
-## inside the capsule that is already solid.
+## `inner_radius` 52 → 16, `outer_radius` 215 → 179, the raw inner falling under the body's own 24px
+## rounding (`GroundShape.BAND_RADIUS`) and clamped there — a field cannot start inside the capsule
+## that is already solid. That clamp is no longer where `inner_radius` ends up; see below.
+##
+## **`heat_response = HUNTS`, the lethal rung `abduction` and `night_raid` already climb.** A band
+## cannot chase — the guards leave their post instead: the moment a heated copy stops
+## `is_waiting()`, `_draw_roadblock()` swaps the barrier for `guard_standing.svg` (still
+## telegraphing) and then `guard_lunging.svg` (actually giving chase), the same `is_waiting()`/
+## `is_telegraphing()` switch `_draw_robber()` and `_draw_cat()` already read. **The band stays
+## exactly as it is until then, and nothing is left behind once the guards go**: its own
+## `heat_response` says nothing about that interval, and the smaller of the two rules available is
+## to add none — the generic pursuer rule in `EventInstance._process()` already frees the band's own
+## obstruction the same frame it stops waiting ("a moving pursuer with a body is a wall"), so no
+## phantom barrier is left blocking a street its own guards have abandoned.
+##
+## **`inner_radius` raised from 24 to 86, for the reachability check rather than the M61 derivation
+## above.** `EventDef.validate()` refuses a `hard_fail` body that reaches inside its own lethal
+## radius: the band's `obstructs_radius` (60, `band(60)`'s own `reach()`) plus her 14px
+## `Tuning.PLAYER_BODY_RADIUS` is 74, over the old 24 by 50px, so a hunting copy's kill could never
+## fire. 86 leaves the same 12px margin `night_raid` carries (70 − 58). `outer_radius` and
+## `telegraph_time` (1.8s) are unmoved: the narrower cold field this leaves (93px against the old
+## 155) still clears `Tuning.required_telegraph_time()` with room to spare, and
+## `Tuning.validate_pursuit()`'s own clauses hold at this radius against the shared
+## `HEAT_HUNTS_SPEED`/`HEAT_HUNTS_WITHIN`/`PURSUIT_TIME` — see `tests/test_heat.gd`,
+## `_test_the_roadblock_hunts_past_its_own_threshold`.
 static func _roadblock() -> EventDef:
 	var def := EventDef.new()
 	def.id = "roadblock"
@@ -1144,13 +1173,14 @@ static func _roadblock() -> EventDef:
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
 	def.intensity = 13.0
-	def.inner_radius = 24.0
+	def.inner_radius = 86.0
 	def.outer_radius = 179.0
 	def.telegraph_time = 1.8
 	def.solid(GroundShape.band(60.0))
 	def.weight = 2.0
 	def.max_per_day = 6
 	def.cost = 2
+	def.heat_response = EventDef.HeatResponse.HUNTS
 	return def
 
 # --------------------------------------------------------- Act III: vans (8-11) ---
