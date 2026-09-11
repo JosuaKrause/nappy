@@ -1188,11 +1188,20 @@ static func _curfew_announce() -> EventDef:
 ## radius: the band's `obstructs_radius` (60, `band(60)`'s own `reach()`) plus her 14px
 ## `Tuning.PLAYER_BODY_RADIUS` is 74, over the old 24 by 50px, so a hunting copy's kill could never
 ## fire. 86 leaves the same 12px margin `night_raid` carries (70 − 58). `outer_radius` and
-## `telegraph_time` (1.8s) are unmoved: the narrower cold field this leaves (93px against the old
-## 155) still clears `Tuning.required_telegraph_time()` with room to spare, and
+## `telegraph_time` (1.8s) are unmoved **cold**: the narrower cold field this leaves (93px against
+## the old 155) still clears `Tuning.required_telegraph_time()` with room to spare, and
 ## `Tuning.validate_pursuit()`'s own clauses hold at this radius against the shared
 ## `HEAT_HUNTS_SPEED`/`HEAT_HUNTS_WITHIN`/`PURSUIT_TIME` — see `tests/test_heat.gd`,
 ## `_test_the_roadblock_hunts_past_its_own_threshold`.
+##
+## **The 179px cold field sits under the shared 180px trigger, which the 24px `abduction` and
+## `night_raid` never had to notice because their own fields (250/330) already cleared it.**
+## `EventDef.at_heat()` widens only the hunting copy's `outer_radius` to `maxf(outer_radius,
+## pursues_within)` — the smallest fix that holds for every `HUNTS` row rather than one that asks
+## a row's cold field to carry a number that belongs to the ladder — so the roadblock's own 179px
+## field is exactly what it was cold, and only the moment its guards start hunting reaches 180px.
+## `tests/test_heat.gd`'s generic loop (`_test_a_hunts_row_wakes_up_at_its_own_threshold`) is what
+## catches a row whose field sits under the trigger; this one is the row that found it.
 static func _roadblock() -> EventDef:
 	var def := EventDef.new()
 	def.id = "roadblock"
