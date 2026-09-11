@@ -266,12 +266,25 @@ func is_walkable(tile: Vector2i) -> bool:
 func start_world_position() -> Vector2:
 	return tile_to_world(_floor.start_tile)
 
-## Roughly the building's own footprint, plus a tile of margin — the outdoor city's
-## `camera_bounds()` grows the map by a border band for the same reason: so panning does not read
-## as hitting a wall exactly at the last walkable tile.
+## The building's own footprint, grown by a wide margin — **wider than it looks like it needs to
+## be, on purpose.** `Stroller`'s `Camera2D` is authored at `zoom = Vector2(2, 2)`
+## (`scenes/player/stroller.tscn`), so its own visible world footprint is 640×360, not the
+## viewport's raw 1280×720 — and a `Camera2D` asked to keep its **whole view** inside a `limit_*`
+## box **smaller** than that footprint cannot satisfy the constraint on that axis at all, which
+## Godot resolves by pinning the camera to a fixed point derived from the limits alone rather than
+## from wherever the tracked node actually is. The original margin (a couple of tiles) was smaller
+## than the 640×360 footprint on both axes and carried exactly that risk, even though it did not
+## turn out to be the cause of the one framing defect a capture session actually found while
+## gathering this milestone's evidence — that one was a stalled windowed process losing real time
+## to something else on the machine, not a camera bug; see the evidence session's own note in
+## `docs/evidence/m112-escape-2026-09-10`. The outdoor city never carries this risk at all:
+## `City.camera_bounds()` grows the whole map by a full block, always far bigger than 640×360.
+## `MARGIN` is sized the same way here — comfortably past half the zoomed-out footprint on every
+## side — as a defensive fix now that the risk was seen, not as a fix for anything reproduced.
+const _CAMERA_MARGIN := 400.0
 func camera_bounds() -> Rect2:
-	return Rect2(Vector2.ONE * -TILE,
-			Vector2(InteriorMap.HALLWAY_LENGTH + 2, InteriorMap.HALLWAY_ROWS + 5) * TILE)
+	return Rect2(Vector2.ZERO, Vector2(InteriorMap.HALLWAY_LENGTH, InteriorMap.HALLWAY_ROWS + 3) * TILE) \
+			.grow(_CAMERA_MARGIN)
 
 ## Joins the y-sorted layer everything standing in this scene lives on.
 func add_entity(node: Node) -> void:
@@ -293,8 +306,10 @@ func transition_at(tile: Vector2i) -> Dictionary:
 ## Called every frame by `main._process()` while the escape scene is running. Reads `player`'s own
 ## tile rather than being told about it, the same way `EventInstance` and `CrowdAgent` ask the
 ## world about her rather than being pushed a position — there is exactly one caller, but the
-## question is "what is on this ground", not "what did somebody just do".
-func process_player(player: Node2D, delta: float) -> void:
+## question is "what is on this ground", not "what did somebody just do". Takes `_delta` only to
+## keep `main._process()`'s own call site uniform with every other per-frame update there; nothing
+## here is a rate the fade `Tween` does not already own.
+func process_player(player: Node2D, _delta: float) -> void:
 	if _transitioning:
 		return
 	var result := transition_at(world_to_tile(player.global_position))
@@ -329,6 +344,12 @@ func _start_exit() -> void:
 func go_to_floor(kind: int, side: String, player: Node2D) -> void:
 	build(kind)
 	var sw := _floor.stairwell(side)
-	player.global_position = tile_to_world(sw.door_tile)
+	var at := tile_to_world(sw.door_tile)
+	# `reset_at()` rather than a bare `global_position` assignment: it also resets the camera's
+	# own smoothing (`Camera2D.reset_smoothing()`). Without that, `position_smoothing_enabled`
+	# (set on `scenes/player/stroller.tscn`'s own Camera2D) keeps chasing wherever she was on the
+	# floor above, and every day already resets through the same call for the same reason.
 	if player is Stroller:
-		(player as Stroller).facing = Vector2.UP
+		(player as Stroller).reset_at(at, Vector2.UP)
+	else:
+		player.global_position = at

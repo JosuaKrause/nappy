@@ -215,6 +215,12 @@ func _ready_escape() -> void:
 		return
 	_status.visible = false
 	GameState.start_run(DevFlags.seed_override())
+	# Same opt-out and the same reasoning as the ordinary run: a trace behind a flag nobody
+	# remembers to turn on is a trace nobody gets, and `P`/`B` (`_snapshot_now()`/`_start_burst()`)
+	# both need an active log to write anything at all — see `Telemetry.start_burst()`'s own
+	# "no drawable viewport" refusal, which is really "no active log", not a rendering question.
+	if not "--no-telemetry" in OS.get_cmdline_user_args():
+		Telemetry.begin_run(GameState.run_seed, _somebody_is_playing())
 
 	_interior = InteriorScene.new()
 	_interior.name = "Interior"

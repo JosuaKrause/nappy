@@ -26,9 +26,10 @@ const LIFT_COLUMN := 3
 const WINDOW_COLUMNS: Array[int] = [1, 5, 9, 11]
 ## Ground floor only, in addition to the lift every floor has.
 const ENTRANCE_COLUMN := 7
-## Basement only, at the hallway's own west end — an arbitrary side; either stairwell reaches it
-## by the same short walk once she is on the basement's hallway floor.
-const EXIT_COLUMN := 1
+## Basement only, at the hallway's own west end, directly above the left stairwell's own door
+## column — an arbitrary side; either stairwell reaches it by the same short walk once she is on
+## the basement's hallway floor.
+const EXIT_COLUMN := 0
 
 ## Building order, top to bottom. `floor_below()` reads this rather than each floor answering
 ## "what comes after me" on its own, since the order is a fact about the building, not about any
