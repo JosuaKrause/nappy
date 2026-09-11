@@ -157,6 +157,47 @@ static func meters_override() -> Vector2:
 static func overview_requested() -> bool:
 	return "--overview" in _args()
 
+## `--start-escape` (or the page's own `?escape=1`) skips the title and the city and starts
+## `main` straight in the escape scene's interior — see docs/TODO.md, "M112 — The escape scene,
+## walkable". Gated the same as every other flag here: `false` outside a debug build, so the one
+## way into a scene with no events, no crowd and no day clock is a debug build, never a URL a
+## release build's own visitor could type.
+##
+## The query form is cheap to answer alongside the command-line one — `_web_query()` already
+## exists for `layers_override()` — and a release web build's own gate is `enabled()`, read here
+## the same way `layers_override()` reads it explicitly rather than through `_args()`, since a
+## bare `_web_query()` carries no gate of its own.
+static func start_escape() -> bool:
+	if "--start-escape" in _args():
+		return true
+	if not enabled():
+		return false
+	for parameter in _web_query().trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() == 2 and pair[0] == "escape" and pair[1] == "1":
+			return true
+	return false
+
+## `--start-escape`'s own optional value — `stairwell:left`, `stairwell:right`, `lobby`, `basement`
+## or `floor:N` — so a rig or a person can teleport straight to any of the building's seven parts
+## instead of always walking there from her door; the building is one map (see `InteriorMapPlan`'s
+## own doc), so this chooses where on it she starts rather than which map loads. `""` when the flag
+## was given bare (the default: the third floor at her door) or not given at all; mapping the word
+## onto an `InteriorMap.PARTS` name stays with `main.gd`, the only caller, the same split
+## `ending_override()` leaves to its own caller.
+##
+## Read only when `--start-escape` is itself present, so a bare next word that happens to start
+## with neither `--` nor a recognised target is not silently swallowed as some other flag's own
+## value — there is no other flag this could be confused with, since every value here is a fixed
+## word rather than a number.
+static func start_escape_at() -> String:
+	var args := _args()
+	var index := args.find("--start-escape")
+	if index == -1 or index + 1 >= args.size():
+		return ""
+	var word: String = args[index + 1]
+	return "" if word.begins_with("--") else word
+
 ## `--day-length N` compresses the day, so dusk and the timeout loss can be looked at without
 ## sitting through the whole three minutes. `-1.0` is "not given"; the fallback to
 ## `Tuning.day_length()` stays with the caller, since that also needs to know which day it is.

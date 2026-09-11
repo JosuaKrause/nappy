@@ -1,0 +1,102 @@
+nappy run log  2026-09-10T20:50:11  version v0.8.2-416-g07b801b
+
+day 7  act 2  run seed 291862120  city seed 291862120  length 144.0s
+   0.0  plan     regions: 39 boundary, 30 wall, 9 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  step 1 on offer at (37,149)
+   0.0  roll     chalk mark guarded: robber 92px away (band 66-176)
+   0.0  plan     closed: accident v(10,8), cordoned off v(10,2)
+   0.0  plan     calm: 1 quiet_square, 2 forest, 3 courtyard, 4 park
+   0.0  plan     events: burnt_out_car x72, burst_water_main x13, busker x6, cafe_tables x35, car_accident x13, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x9, checkpoint_hut x18, collapsed_frontage x10, construction x27, cyclist x6, delivery_van x37, dog_walker x22, fallen_tree x14, homeless_yeller x8, ice_cream_van x3, leaf_blower x17, loose_dog x13, market_stall x37, moving_van x18, pigeon_flock x4, playground x4, police_patrol x12, poster_crew x12, reversing_lorry x5, roadblock x98, scaffolding x10, skip x12
+   0.0  start    doorstep (81,84), facing 180°
+   0.0  contact  step 1 moved to (79,83): never seen at (37,149)
+   0.0  roll     chalk mark guarded: robber 68px away (band 66-176)
+   0.0  near     alley_robbery at (78,85), 95px, exc 0, in 0.0/s (crowd 0.0, events 13.6), sleep 0
+   0.0  contact  walked within 58px of the chalk mark at (79,83)
+   0.0  contact  step 1 seen at (79,83)
+   0.0  chase    alley_robbery came for her at (78,85) | exc 0, in 13.6/s (crowd 0.0, events 13.6), sleep 0
+   0.1  cue      the mark over her head: soon for 0.0s (0.0s of it on the road) | alley_robbery 95px
+   0.4  near     alley_robbery at (79,84), 52px, exc 5, in 15.7/s (crowd 0.0, events 15.7), sleep 0
+   0.5  path     0% of her street time on the corridor (0.0s on, 0.5s off, 0.0s off the streets)
+   0.5  lost     lost_hard_fail after 0.5s — They were waiting in the alley. | exc 8, in 17.4/s (crowd 1.4, events 16.0), sleep 0 | near: alley_robbery 29px
+   0.5  nerve    spent a nerve on day 7 (act 2); 4 left — day 7 again
+
+day 7  act 2  run seed 291862120  city seed 291862120  length 144.0s
+   0.0  plan     regions: 39 boundary, 30 wall, 9 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  step 1 on offer at (37,149)
+   0.0  roll     chalk mark guarded: robber 92px away (band 66-176)
+   0.0  plan     closed: accident v(10,8), cordoned off v(10,2)
+   0.0  plan     calm: 1 quiet_square, 2 forest, 3 courtyard, 4 park
+   0.0  plan     events: burnt_out_car x72, burst_water_main x13, busker x6, cafe_tables x35, car_accident x13, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x9, checkpoint_hut x18, collapsed_frontage x10, construction x27, cyclist x6, delivery_van x37, dog_walker x22, fallen_tree x14, homeless_yeller x8, ice_cream_van x3, leaf_blower x17, loose_dog x13, market_stall x37, moving_van x18, pigeon_flock x4, playground x4, police_patrol x12, poster_crew x12, reversing_lorry x5, roadblock x98, scaffolding x10, skip x12
+   0.0  start    doorstep (81,84), facing 180°
+   0.0  contact  step 1 moved to (79,83): never seen at (37,149)
+   0.0  roll     chalk mark guarded: robber 68px away (band 66-176)
+   0.1  near     alley_robbery at (78,85), 95px, exc 0, in 0.0/s (crowd 0.0, events 13.6), sleep 0
+   0.1  contact  walked within 58px of the chalk mark at (79,83)
+   0.1  contact  step 1 seen at (79,83)
+   0.2  chase    alley_robbery came for her at (78,85) | exc 1, in 13.7/s (crowd 0.0, events 13.7), sleep 0
+   0.2  cue      the mark over her head: soon for 0.1s (0.0s of it on the road) | alley_robbery 95px
+   0.5  near     alley_robbery at (79,84), 52px, exc 5, in 15.7/s (crowd 0.0, events 15.7), sleep 0
+   0.7  path     0% of her street time on the corridor (0.0s on, 0.6s off, 0.0s off the streets)
+   0.7  lost     lost_hard_fail after 0.7s — They were waiting in the alley. | exc 8, in 16.0/s (crowd 0.0, events 16.0), sleep 0 | near: alley_robbery 29px
+   0.7  nerve    spent a nerve on day 7 (act 2); 3 left — day 7 again
+
+day 7  act 2  run seed 291862120  city seed 291862120  length 144.0s
+   0.0  plan     regions: 39 boundary, 30 wall, 9 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  step 1 on offer at (37,149)
+   0.0  roll     chalk mark guarded: robber 92px away (band 66-176)
+   0.0  plan     closed: accident v(10,8), cordoned off v(10,2)
+   0.0  plan     calm: 1 quiet_square, 2 forest, 3 courtyard, 4 park
+   0.0  plan     events: burnt_out_car x72, burst_water_main x13, busker x6, cafe_tables x35, car_accident x13, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x9, checkpoint_hut x18, collapsed_frontage x10, construction x27, cyclist x6, delivery_van x37, dog_walker x22, fallen_tree x14, homeless_yeller x8, ice_cream_van x3, leaf_blower x17, loose_dog x13, market_stall x37, moving_van x18, pigeon_flock x4, playground x4, police_patrol x12, poster_crew x12, reversing_lorry x5, roadblock x98, scaffolding x10, skip x12
+   0.0  start    doorstep (81,84), facing 180°
+   0.0  contact  step 1 moved to (79,83): never seen at (37,149)
+   0.0  roll     chalk mark guarded: robber 68px away (band 66-176)
+   0.1  near     alley_robbery at (78,85), 95px, exc 0, in 0.0/s (crowd 0.0, events 13.6), sleep 0
+   0.1  contact  walked within 58px of the chalk mark at (79,83)
+   0.1  contact  step 1 seen at (79,83)
+   0.2  chase    alley_robbery came for her at (78,85) | exc 1, in 13.6/s (crowd 0.0, events 13.6), sleep 0
+   0.2  cue      the mark over her head: soon for 0.1s (0.0s of it on the road) | alley_robbery 95px
+   0.5  near     alley_robbery at (79,84), 52px, exc 6, in 15.7/s (crowd 0.0, events 15.7), sleep 0
+   0.9  path     0% of her street time on the corridor (0.0s on, 0.8s off, 0.0s off the streets)
+   0.9  lost     lost_hard_fail after 0.9s — They were waiting in the alley. | exc 11, in 18.6/s (crowd 2.6, events 16.0), sleep 0 | near: alley_robbery 30px
+   0.9  nerve    spent a nerve on day 7 (act 2); 2 left — day 7 again
+
+day 7  act 2  run seed 291862120  city seed 291862120  length 144.0s
+   0.0  plan     regions: 39 boundary, 30 wall, 9 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  step 1 on offer at (37,149)
+   0.0  roll     chalk mark guarded: robber 92px away (band 66-176)
+   0.0  plan     closed: accident v(10,8), cordoned off v(10,2)
+   0.0  plan     calm: 1 quiet_square, 2 forest, 3 courtyard, 4 park
+   0.0  plan     events: burnt_out_car x72, burst_water_main x13, busker x6, cafe_tables x35, car_accident x13, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x9, checkpoint_hut x18, collapsed_frontage x10, construction x27, cyclist x6, delivery_van x37, dog_walker x22, fallen_tree x14, homeless_yeller x8, ice_cream_van x3, leaf_blower x17, loose_dog x13, market_stall x37, moving_van x18, pigeon_flock x4, playground x4, police_patrol x12, poster_crew x12, reversing_lorry x5, roadblock x98, scaffolding x10, skip x12
+   0.0  start    doorstep (81,84), facing 180°
+   0.0  contact  step 1 moved to (79,83): never seen at (37,149)
+   0.0  roll     chalk mark guarded: robber 68px away (band 66-176)
+   0.1  near     alley_robbery at (78,85), 95px, exc 0, in 0.0/s (crowd 0.0, events 13.6), sleep 0
+   0.1  contact  walked within 58px of the chalk mark at (79,83)
+   0.1  contact  step 1 seen at (79,83)
+   0.2  chase    alley_robbery came for her at (78,85) | exc 1, in 13.6/s (crowd 0.0, events 13.6), sleep 0
+   0.2  cue      the mark over her head: soon for 0.1s (0.0s of it on the road) | alley_robbery 95px
+   0.5  near     alley_robbery at (79,84), 52px, exc 6, in 15.7/s (crowd 0.0, events 15.7), sleep 0
+   0.7  path     0% of her street time on the corridor (0.0s on, 0.6s off, 0.0s off the streets)
+   0.7  lost     lost_hard_fail after 0.7s — They were waiting in the alley. | exc 9, in 16.0/s (crowd 0.0, events 16.0), sleep 0 | near: alley_robbery 29px
+   0.7  nerve    spent a nerve on day 7 (act 2); 1 left — day 7 again
+
+day 7  act 2  run seed 291862120  city seed 291862120  length 144.0s
+   0.0  plan     regions: 39 boundary, 30 wall, 9 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  step 1 on offer at (37,149)
+   0.0  roll     chalk mark guarded: robber 92px away (band 66-176)
+   0.0  plan     closed: accident v(10,8), cordoned off v(10,2)
+   0.0  plan     calm: 1 quiet_square, 2 forest, 3 courtyard, 4 park
+   0.0  plan     events: burnt_out_car x72, burst_water_main x13, busker x6, cafe_tables x35, car_accident x13, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x9, checkpoint_hut x18, collapsed_frontage x10, construction x27, cyclist x6, delivery_van x37, dog_walker x22, fallen_tree x14, homeless_yeller x8, ice_cream_van x3, leaf_blower x17, loose_dog x13, market_stall x37, moving_van x18, pigeon_flock x4, playground x4, police_patrol x12, poster_crew x12, reversing_lorry x5, roadblock x98, scaffolding x10, skip x12
+   0.0  start    doorstep (81,84), facing 180°
+   0.0  contact  step 1 moved to (79,83): never seen at (37,149)
+   0.0  roll     chalk mark guarded: robber 68px away (band 66-176)
+   0.0  near     alley_robbery at (78,85), 95px, exc 0, in 0.0/s (crowd 0.0, events 13.6), sleep 0
+   0.0  contact  walked within 58px of the chalk mark at (79,83)
+   0.0  contact  step 1 seen at (79,83)
+   0.1  chase    alley_robbery came for her at (78,85) | exc 1, in 14.1/s (crowd 0.0, events 14.1), sleep 0
+   0.2  cue      the mark over her head: soon for 0.1s (0.0s of it on the road) | alley_robbery 88px
+   0.4  near     alley_robbery at (79,84), 52px, exc 5, in 15.7/s (crowd 0.0, events 15.7), sleep 0
+   0.6  path     0% of her street time on the corridor (0.0s on, 0.6s off, 0.0s off the streets)
+   0.6  lost     lost_hard_fail after 0.6s — They were waiting in the alley. | exc 8, in 16.0/s (crowd 0.0, events 16.0), sleep 0 | near: alley_robbery 29px
+   0.6  nerve    spent a nerve on day 7 (act 2); 0 left
+   0.6  ending   bad on day 7 — resistance 0/4, sabotage not done

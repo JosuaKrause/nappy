@@ -1,0 +1,10 @@
+<!-- Broken rubble on the basement floor, a ground decal centred on its tile like puddle.svg.
+     Transparent canvas, drawn under standing props. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- Ground anchor is the canvas centre. -->
+  <path d="M8 20L13 15L19 17L15 22Z" fill="#5c534a" stroke="#332e29" stroke-width="0.8"/>
+  <path d="M17 21L23 18L27 22L21 25Z" fill="#6b6058" stroke="#332e29" stroke-width="0.8"/>
+  <path d="M11 22L15 24L12 27L8 25Z" fill="#4a423b" stroke="#2a2621" stroke-width="0.8"/>
+  <circle cx="21" cy="14" r="1.6" fill="#4a423b"/>
+  <circle cx="9" cy="17" r="1.1" fill="#332e29"/>
+</svg>
