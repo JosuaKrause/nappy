@@ -29,6 +29,7 @@ func run(t) -> void:
 	_test_a_streamed_patrol_resumes_where_it_left_off(t)
 	_test_a_streamed_patrol_mid_chase(t)
 	_test_a_hot_day_places_more_patrols(t)
+	_test_every_pursues_within_row_resumes_the_notice(t)
 
 func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -356,16 +357,17 @@ func _test_a_streamed_patrol_resumes_where_it_left_off(t) -> void:
 			"and it resumes where it left off rather than restarting its beat", 1.0)
 	second.free()
 
-## The other half of the same question, mid-chase rather than mid-patrol — and the honest answer
-## rather than the hoped-for one. `resume()` restores `age` and the travelled distance, but not
-## `_noticed_at`: a fresh `EventInstance` always starts with it at `INF`, so a patrol streamed out
-## after it has noticed her comes back `is_waiting()` again, having forgotten the chase. That is
-## safe rather than a fairness gap, because `PRESSES` never gains `hard_fail` — the worst this
-## costs is a patrol that looks like it lost interest — and it is not new: `alley_robbery` has had
-## the identical property since the `pursues_within` mechanic was built, just never in a position
-## to be streamed out mid-chase, since a stationary pursuer's field never moves far enough from
-## where the day planted it. This test pins the actual behaviour rather than the one the field
-## name suggests, so the day this is fixed for every `pursues_within` row it fails here first.
+## The other half of the same question, mid-chase rather than mid-patrol. `resume()` restores
+## `age`, the travelled distance and `_noticed_at`, so a patrol streamed out after it has noticed
+## her comes back still chasing rather than `is_waiting()` again, having forgotten why it was
+## coming. Checked against `chase_age()` as well as `is_waiting()`, so the fix is that the chase's
+## own clock picks up where it left off, not only that the flag agrees — a restored `_noticed_at`
+## that disagreed with the restored `age` would still read `not is_waiting()` while timing the
+## telegraph and the duration from the wrong moment. `alley_robbery` has had the same
+## `pursues_within` shape since the mechanic was built, just never in a position to be streamed out
+## mid-chase, since a stationary pursuer's field never moves far enough from where the day planted
+## it — see `_test_every_pursues_within_row_resumes_the_notice` for the same restore checked
+## against that row rather than only the patrol that surfaced the gap.
 func _test_a_streamed_patrol_mid_chase(t) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
@@ -384,14 +386,17 @@ func _test_a_streamed_patrol_mid_chase(t) -> void:
 	t.check(not first.is_waiting(), "and a second later it is still chasing, not patrolling")
 	var age := first.age
 	var travelled := first.path_travelled()
+	var noticed_at := first._noticed_at
 	first.free()
 
 	var second := EventInstance.new()
 	second.setup(hot, path[0], path)
 	t.add_child(second)
-	second.resume(age, travelled)
-	t.check(second.is_waiting(),
-			"streamed back in mid-chase it reverts to waiting — `_noticed_at` is not carried over")
+	second.resume(age, travelled, noticed_at)
+	t.check(not second.is_waiting(),
+			"streamed back in mid-chase it is still chasing — `_noticed_at` is carried over")
+	t.close_to(second.chase_age(), age - noticed_at,
+			"and the chase clock resumes from the notice rather than restarting at it", 0.001)
 	second.free()
 
 ## A day planned at full heat places more patrols than the same day cold — measured, since the
@@ -411,3 +416,31 @@ func _count_patrols(planned: Array[EventScheduler.Planned]) -> int:
 		if plan.def.id == "police_patrol":
 			count += 1
 	return count
+
+## `resume()`'s restored notice is not particular to the heated patrol that surfaced the gap —
+## `alley_robbery` carries the identical `pursues_within` shape cold, with no heat level needed to
+## reach it, and this is the same restore checked against that row instead.
+func _test_every_pursues_within_row_resumes_the_notice(t) -> void:
+	var def := EventCatalogue.by_id("alley_robbery")
+	t.check(def.pursues_within > 0.0, "'alley_robbery' is a waiting pursuer, cold")
+
+	var first := EventInstance.new()
+	first.setup(def, Vector2.ZERO)
+	t.add_child(first)
+	first.set_process(false)
+	var her := Vector2(def.pursues_within - 10.0, 0.0)
+	first.player_at = her
+	first._process(STEP)
+	t.check(not first.is_waiting(), "she is inside the trigger, so he notices her")
+	var age := first.age
+	var travelled := first.path_travelled()
+	var noticed_at := first._noticed_at
+	first.free()
+
+	var second := EventInstance.new()
+	second.setup(def, Vector2.ZERO)
+	t.add_child(second)
+	second.resume(age, travelled, noticed_at)
+	t.check(not second.is_waiting(),
+			"'alley_robbery' streamed back in mid-chase is still chasing, not waiting in the hood")
+	second.free()
