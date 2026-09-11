@@ -77,6 +77,7 @@ const MIN_TREE_SPACING := 40.0 * 1.25
 @onready var _entities: Node2D = $Entities
 @onready var _buildings_layer: Node2D = $Buildings
 @onready var _ground: TileMapLayer = $Ground
+@onready var _decals: CityDecals = $Decals
 
 var map: CityMap
 var events: EventManager
@@ -419,6 +420,7 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 	_sleepiness_tile = Vector2i(-1, -1)
 	_day = day
 	_paint_ground()
+	_decals.set_placed(Litter.placed(map, day))
 	_dress_blocks(state)
 	# Last, and after the repaint: which blocks are calm is what the closure invariant is
 	# stated over, and a requisitioned park is not one of them.

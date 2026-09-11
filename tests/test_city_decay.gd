@@ -14,6 +14,8 @@ func run(t) -> void:
 	_test_the_curve(t)
 	_test_cracks_are_deterministic_and_grow(t)
 	_test_pavement_cracks_before_road(t)
+	_test_litter_stays_off_roads_and_calm_ground(t)
+	_test_litter_grows_with_the_day(t)
 
 # ---------------------------------------------------------------------- the curve ---
 
@@ -93,3 +95,26 @@ func _test_pavement_cracks_before_road(t) -> void:
 	t.check(share_sidewalk > share_road,
 			"on the last day a larger share of pavement is cracked than of road (%.3f vs %.3f)"
 			% [share_sidewalk, share_road])
+
+# ---------------------------------------------------------------------- litter ---
+
+func _test_litter_stays_off_roads_and_calm_ground(t) -> void:
+	for i in SEEDS:
+		var map := CityGenerator.generate(BASE_SEED + i)
+		var placed := Litter.placed(map, Tuning.RUN_LENGTH_DAYS)
+		t.check(not placed.is_empty(), "the last day places at least some litter (seed %d)" % [BASE_SEED + i])
+		for entry in placed:
+			var tile := map.world_to_tile(entry.position)
+			var type := map.tile_at(tile)
+			t.check(type != GameEnums.TileType.ROAD and type != GameEnums.TileType.CROSSING,
+					"no litter decal lands on the road's own lanes")
+			t.check(not Tile.is_calm(type), "no litter decal lands inside a calm area")
+
+func _test_litter_grows_with_the_day(t) -> void:
+	var map := CityGenerator.generate(BASE_SEED)
+	t.check(Litter.placed(map, 1).is_empty(), "day 1 places no litter")
+	var last := 0
+	for day in [Tuning.DEGRADATION_FIRST_DAY, 8, 11, Tuning.RUN_LENGTH_DAYS]:
+		var count := Litter.placed(map, day).size()
+		t.check(count >= last, "litter count never drops from day to day")
+		last = count
