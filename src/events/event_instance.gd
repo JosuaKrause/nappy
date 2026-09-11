@@ -530,7 +530,9 @@ var _outrun_for := 0.0
 var _last_range := INF
 ## For a pursuer with `pursues_within`: the age at which she came close enough for it to take an
 ## interest, or `INF` while it is still only standing there. Its telegraph and its chase are both
-## measured from here rather than from birth. See `is_waiting()`.
+## measured from here rather than from birth. See `is_waiting()`. Carried across a stream-out by
+## `resume()`'s own `from_noticed_at`, so a notice made before an instance left the world is not
+## made twice.
 var _noticed_at := INF
 ## True once she has come inside the stand-off during the telegraph, which ends the telegraph
 ## there and then.
@@ -723,11 +725,20 @@ func facing_now() -> Vector2:
 ## age as well as the distance, so the telegraph, the pulse phase and the duration all continue
 ## rather than starting again — an event that streams in and out must not become immortal by
 ## being visited twice.
-func resume(from_age: float, from_travelled: float) -> void:
+##
+## `from_noticed_at` is the same restore for `_noticed_at`, and it is general over every
+## `pursues_within` row rather than particular to whichever one exposed the gap: a fresh instance
+## always starts `is_waiting()` (`_noticed_at == INF`), so a row streamed out after it had already
+## noticed her came back standing where the day planted it, having forgotten the chase. Defaulted
+## to `INF` so a caller that only ever restored age and distance — every caller before this field
+## existed — keeps restoring exactly what it always restored, still `is_waiting()` unless told
+## otherwise.
+func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> void:
 	if from_age <= 0.0:
 		return
 	age = from_age
 	_path_travelled = from_travelled
+	_noticed_at = from_noticed_at
 	if def.mobile and path.size() > 1:
 		_advance_along_path(0.0)
 
