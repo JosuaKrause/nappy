@@ -618,9 +618,15 @@ and one re-check.
       landing low enough some days to leave a walkable edge and high enough on others to deny the
       area outright. The run attached to playtest 20 does not carry the exact four-visit sequence
       the player describes — its own biased parks (`(1,1)` and `(4,8)`) were dense on every biased
-      day the log shows. **First task:** reproduce a zero-density biased visit on a rig, reading the
-      `roll` telemetry line that says *"in the park she used yesterday"*, before deciding whether the
-      bias roll's spread is the cause or something else is. The fix follows the reproduction
+      day the log shows. **The zero-density visit does not reproduce on the current tree**, measured
+      2026-09-11 with `tests/probes/m97_spoilage.gd` over every calm block on eight seeds — the
+      record, with the distribution, is in `DECISIONS.md` under M97. What the probe found instead
+      is a rare tail: a biased visit whose weighted roll draws one low-reach row for a large lot and
+      leaves most of it walkable, and a bias that is mostly backstopped by the day's ordinary fill
+      landing in the used park rather than by the spoil roll itself. So this waits for a played
+      recurrence: if a second visit to the same park reads unspoiled again, the probe is the
+      instrument and the low-reach-row draw is the suspect, and the fix is a floor on the spoil
+      roll's reach for a lot that size, not a density change
 **The main road is not made a soft block.** *Asked for on 2026-09-01 as a toll on crossing the
 spine · overturned on 2026-09-09: "M47's toll already exists — it's timing the traffic lights. we
 don't need to penalize routing through it just yet — it naturally happens that only some routes
@@ -653,8 +659,10 @@ became the charging dog")* — sited on her line on day 3 so the lesson is unavo
       III and IV. Measure the return phase on a rig across the four acts — encounters per return,
       and how much of the day's clock the return actually spends — before and after. **The shape
       is not designed yet, and the measurement comes first** *(2026-09-11: "measure now, design
-      after")*: the before-figures are taken with a probe under `tests/probes/`, and the shape —
-      how many, where, at what cost — is the player's question once they are in hand
+      after")*: the before-figures are in hand, taken with `tests/probes/m98_return_phase.gd` and
+      recorded in `DECISIONS.md` under M98 — a return leg that spends a fifth to a third of the
+      day and meets the director's queue once or twice, zero on one leg in five — and the shape,
+      how many, where, at what cost, is the player's question now
 
 ---
 
@@ -662,20 +670,23 @@ became the charging dog")* — sited on her line on day 3 so the lesson is unavo
 
 Rewritten from M50. M64 superseded M50's gradient at both ends — off the path is *closed*, on it the
 density is *normal* and playtest 21's verdict on it was that it is already right — so what is left
-here is what the sealing did not answer.
+here is what the sealing did not answer. **The corridor's own obstacle density is measured, not
+raised**: M50's *"blocking events all over"* asked to raise the caps on the expensive rows, the
+player's sentence on the sealed corridor was *"on the path there should be a normal amount of
+events that remain passable — that looks like it is the case here"*, and the re-measurement on the
+current tree with `tests/probes/m64_density.gd` is in `DECISIONS.md` under M99. A cap moves only if
+a played day says the corridor is bare.
 
-- [ ] **The corridor's own obstacle density, measured rather than raised.** M50's *"blocking events
-      all over"* asked to raise the caps on the expensive rows, which is a catalogue question.
-      Under the sealed city the corridor carries 0.82 events per street a day, measured with
-      `tests/probes/m64_density.gd`, and the player's sentence on it was *"on the path there should
-      be a normal amount of events that remain passable — that looks like it is the case here"*. So
-      the item is a re-measurement on the current tree with the same probe, and a cap moves only if
-      a played day says the corridor is bare
-- [ ] **`cyclist` and `loose_dog`'s caps no longer mean what they say.** Both rows carry
-      `max_per_day` of 14 and 24 and arrive via the director's single queue at its 11–26s pacing
-      rather than being map-placed, so a day fields far fewer than the cap reads as promising — the
-      caps' meaning changed while the numbers stood still. Measure encounters per day on a rig
-      across the acts; the record is in `DECISIONS.md` under M54
+- [ ] **`cyclist` and `loose_dog`'s caps bind nowhere, and the number should say what it does.**
+      Both rows carry `max_per_day` of 14 and 24 and arrive via the director's single queue at its
+      11–26s pacing rather than being map-placed; measured 2026-09-11 with
+      `tests/probes/m99_caps.gd` across the acts (`DECISIONS.md`, M99), a day meets the cyclist
+      under once and the dog under three times on average, and never within an order of magnitude
+      of either cap. The caps' meaning changed while the numbers stood still. **The player's
+      choice**: either the cap is dropped from queue-fed rows, since the director's pacing is the
+      cap and a number nothing reaches is a false promise — the recommendation — or it is lowered
+      to the pacing's own ceiling so it reads true, with the row's doc saying which of the two
+      decides the count. The record of the caps' history is in `DECISIONS.md` under M54
 - [ ] **Placeholders — step 3.** The budget is a **variety ledger, not a density cap**: the count of
       sites is the density, the budget decides what fills them, and resolving late means variety is
       measured over the encounters that happen rather than over a city she never saw. Read the
