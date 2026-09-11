@@ -7,8 +7,13 @@ extends RefCounted
 ## the same way: deterministic per tile, non-decreasing with the day, and off entirely before the
 ## city has anything to show.
 
+const BASE_SEED := 40200
+const SEEDS := 3
+
 func run(t) -> void:
 	_test_the_curve(t)
+	_test_cracks_are_deterministic_and_grow(t)
+	_test_pavement_cracks_before_road(t)
 
 # ---------------------------------------------------------------------- the curve ---
 
@@ -25,3 +30,66 @@ func _test_the_curve(t) -> void:
 		var value := Tuning.degradation_for(day)
 		t.check(value >= last, "the curve never drops from one day to the next (day %d)" % day)
 		last = value
+
+# ---------------------------------------------------------------------- cracks ---
+
+## Every tile of `type` in the map, so the crack tests do not care which block purposes a seed
+## happened to generate.
+static func _tiles_of(map: CityMap, type: GameEnums.TileType) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	for y in map.size.y:
+		for x in map.size.x:
+			var tile := Vector2i(x, y)
+			if map.tile_at(tile) == type:
+				found.append(tile)
+	return found
+
+static func _count_cracked(map: CityMap, tiles: Array[Vector2i], day: int) -> int:
+	var count := 0
+	for tile in tiles:
+		if GroundTiles.source_for(map, tile, day) != GroundTiles.source_for(map, tile, 1):
+			count += 1
+	return count
+
+func _test_cracks_are_deterministic_and_grow(t) -> void:
+	for i in SEEDS:
+		var map := CityGenerator.generate(BASE_SEED + i)
+		var sidewalks := _tiles_of(map, GameEnums.TileType.SIDEWALK)
+		var baseline := {}
+		for tile in sidewalks:
+			baseline[tile] = GroundTiles.source_for(map, tile, 1)
+
+		var last_count := -1
+		for day in [1, Tuning.DEGRADATION_FIRST_DAY, 8, 11, Tuning.RUN_LENGTH_DAYS]:
+			var count := 0
+			for tile in sidewalks:
+				var source := GroundTiles.source_for(map, tile, day)
+				t.check(source == GroundTiles.source_for(map, tile, day),
+						"the same tile on the same day always answers the same source")
+				if source != baseline[tile]:
+					count += 1
+			if last_count >= 0:
+				t.check(count >= last_count,
+						"the share of cracked sidewalk tiles never drops from day to day (seed %d, day %d)"
+						% [BASE_SEED + i, day])
+			last_count = count
+		t.check(_count_cracked(map, sidewalks, 1) == 0, "day 1 has no cracked sidewalk tiles")
+
+func _test_pavement_cracks_before_road(t) -> void:
+	var total_sidewalk := 0
+	var total_road := 0
+	var cracked_sidewalk := 0
+	var cracked_road := 0
+	for i in SEEDS:
+		var map := CityGenerator.generate(BASE_SEED + i)
+		var sidewalks := _tiles_of(map, GameEnums.TileType.SIDEWALK)
+		var roads := _tiles_of(map, GameEnums.TileType.ROAD)
+		total_sidewalk += sidewalks.size()
+		total_road += roads.size()
+		cracked_sidewalk += _count_cracked(map, sidewalks, Tuning.RUN_LENGTH_DAYS)
+		cracked_road += _count_cracked(map, roads, Tuning.RUN_LENGTH_DAYS)
+	var share_sidewalk := float(cracked_sidewalk) / float(maxi(1, total_sidewalk))
+	var share_road := float(cracked_road) / float(maxi(1, total_road))
+	t.check(share_sidewalk > share_road,
+			"on the last day a larger share of pavement is cracked than of road (%.3f vs %.3f)"
+			% [share_sidewalk, share_road])

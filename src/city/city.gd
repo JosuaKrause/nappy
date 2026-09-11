@@ -86,6 +86,10 @@ var crowd: Crowd
 var signals: TrafficSignals
 var _daylight: CanvasModulate
 var _act := 1
+## Today's day number, read by `_paint_ground()` for the crack level `GroundTiles` picks —
+## `Tuning.degradation_for(_day)`. 1 (no degradation) until `start_day()` sets it, which happens
+## before a player ever sees the city `build()` painted it with.
+var _day := 1
 ## Rebuilt every day from the block purposes; freed and replaced wholesale.
 var _props: Array[Node2D] = []
 ## Today's corridor: the ways from the doorstep to the calm areas still worth reaching, grown
@@ -413,6 +417,7 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 	map.repaint(state)
 	# Before anything reads the ground again: a park that burnt down last night is not calm today.
 	_sleepiness_tile = Vector2i(-1, -1)
+	_day = day
 	_paint_ground()
 	_dress_blocks(state)
 	# Last, and after the repaint: which blocks are calm is what the closure invariant is
@@ -688,7 +693,7 @@ func _paint_ground() -> void:
 	for y in map.size.y:
 		for x in map.size.x:
 			var tile := Vector2i(x, y)
-			var source := GroundTiles.source_for(map, tile)
+			var source := GroundTiles.source_for(map, tile, _day)
 			if source >= 0:
 				_ground.set_cell(tile, source, Vector2i.ZERO)
 	_paint_outside_the_map()
@@ -778,7 +783,7 @@ func _border_source(x: int, y: int, depth: int) -> int:
 		var on_to_the_bridge := south > 0 and south <= depth
 		var into_the_tunnel := north > 0 and north <= CityEdge.TUNNEL_DEPTH_TILES
 		if on_to_the_bridge or into_the_tunnel:
-			return GroundTiles.source_for(map, Vector2i(x, clampi(y, 0, map.size.y - 1)))
+			return GroundTiles.source_for(map, Vector2i(x, clampi(y, 0, map.size.y - 1)), _day)
 	if north > 0:
 		return GroundTiles.SCREE if north == 1 else GroundTiles.MOUNTAIN
 	if south > 0:

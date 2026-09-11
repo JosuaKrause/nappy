@@ -58,15 +58,61 @@ const CROSSING_MAIN_S := 37
 const CROSSING_MAIN_W := 38
 const CROSSING_MAIN_E := 39
 
-## Tileset source id for a cell, or -1 where no ground should be drawn at all.
-static func source_for(map: CityMap, tile: Vector2i) -> int:
+## Two patterns at each of three damage levels, for the three tile types a day can crack. Drop-in
+## replacements for the *plain* road/sidewalk/alley source alone — a kerb, a road line, a crossing
+## and the main road keep their own markings, since no cracked variant of those exists and none
+## should: the milestone asked for variety and gradient on the ground she actually walks, not a
+## second edge-marking family to keep in step with the first.
+const ROAD_CRACKED_HAIRLINE_A := 40
+const ROAD_CRACKED_HAIRLINE_B := 41
+const ROAD_CRACKED_CRACKED_A := 42
+const ROAD_CRACKED_CRACKED_B := 43
+const ROAD_CRACKED_BROKEN_A := 44
+const ROAD_CRACKED_BROKEN_B := 45
+const SIDEWALK_CRACKED_HAIRLINE_A := 46
+const SIDEWALK_CRACKED_HAIRLINE_B := 47
+const SIDEWALK_CRACKED_CRACKED_A := 48
+const SIDEWALK_CRACKED_CRACKED_B := 49
+const SIDEWALK_CRACKED_BROKEN_A := 50
+const SIDEWALK_CRACKED_BROKEN_B := 51
+const ALLEY_CRACKED_HAIRLINE_A := 52
+const ALLEY_CRACKED_HAIRLINE_B := 53
+const ALLEY_CRACKED_CRACKED_A := 54
+const ALLEY_CRACKED_CRACKED_B := 55
+const ALLEY_CRACKED_BROKEN_A := 56
+const ALLEY_CRACKED_BROKEN_B := 57
+
+## `[level][pattern]`, level 0 hairline through 2 broken — the order `_cracked()` picks from.
+const _ROAD_CRACKS := [[ROAD_CRACKED_HAIRLINE_A, ROAD_CRACKED_HAIRLINE_B],
+	[ROAD_CRACKED_CRACKED_A, ROAD_CRACKED_CRACKED_B],
+	[ROAD_CRACKED_BROKEN_A, ROAD_CRACKED_BROKEN_B]]
+const _SIDEWALK_CRACKS := [[SIDEWALK_CRACKED_HAIRLINE_A, SIDEWALK_CRACKED_HAIRLINE_B],
+	[SIDEWALK_CRACKED_CRACKED_A, SIDEWALK_CRACKED_CRACKED_B],
+	[SIDEWALK_CRACKED_BROKEN_A, SIDEWALK_CRACKED_BROKEN_B]]
+const _ALLEY_CRACKS := [[ALLEY_CRACKED_HAIRLINE_A, ALLEY_CRACKED_HAIRLINE_B],
+	[ALLEY_CRACKED_CRACKED_A, ALLEY_CRACKED_CRACKED_B],
+	[ALLEY_CRACKED_BROKEN_A, ALLEY_CRACKED_BROKEN_B]]
+
+## How far into `Tuning.degradation_for(day)` each base type starts cracking. **Pavement before
+## road** — she walks the pavement and looks at it, the carriageway is behind her — so the
+## sidewalk (and the alley behind it, already the back of the block) read the curve at face value
+## while the road needs it further along before the same tile qualifies.
+const _SIDEWALK_CRACK_FACTOR := 1.0
+const _ALLEY_CRACK_FACTOR := 1.0
+const _ROAD_CRACK_FACTOR := 0.6
+
+## Tileset source id for a cell, or -1 where no ground should be drawn at all. `day` is today's —
+## the crack level a tile shows follows `Tuning.degradation_for(day)`.
+static func source_for(map: CityMap, tile: Vector2i, day: int) -> int:
 	match map.tile_at(tile):
 		GameEnums.TileType.BUILDING:
 			return -1  # A building covers its whole lot; nothing shows through.
 		GameEnums.TileType.SIDEWALK:
-			return _sidewalk_variant(map, tile)
+			return _cracked(map, tile, day, _sidewalk_variant(map, tile), SIDEWALK,
+					_SIDEWALK_CRACKS, _SIDEWALK_CRACK_FACTOR)
 		GameEnums.TileType.ROAD:
-			return _road_variant(map, tile)
+			return _cracked(map, tile, day, _road_variant(map, tile), ROAD,
+					_ROAD_CRACKS, _ROAD_CRACK_FACTOR)
 		GameEnums.TileType.CROSSING:
 			return _crossing_variant(map, tile)
 		GameEnums.TileType.PARK:
@@ -74,7 +120,7 @@ static func source_for(map: CityMap, tile: Vector2i) -> int:
 		GameEnums.TileType.PLAYGROUND:
 			return SAND
 		GameEnums.TileType.ALLEY:
-			return ALLEY
+			return _cracked(map, tile, day, ALLEY, ALLEY, _ALLEY_CRACKS, _ALLEY_CRACK_FACTOR)
 		GameEnums.TileType.SQUARE:
 			return PLAZA
 		GameEnums.TileType.HOME:
@@ -89,6 +135,37 @@ static func source_for(map: CityMap, tile: Vector2i) -> int:
 			return SPOILED
 		_:
 			return -1
+
+## Picks a cracked replacement for `source`, or leaves it alone. `source` only ever becomes
+## `plain` (`ROAD`, `SIDEWALK` or `ALLEY`) here — a kerb or a road line is a different source and
+## passes straight through, which is what keeps a crack from ever eating a marking.
+##
+## Deterministic per tile from the city's own seed, not the day: `severity` is a tile's fixed
+## place in the queue, rolled once, and only how much of `Tuning.degradation_for(day) * factor`
+## has passed it decides whether it shows yet and how far. A tile that has already crossed
+## `severity` at a lower day stays cracked — the share only ever grows — and the level itself
+## gets worse as the scaled density pushes further past where the tile sits, which is the
+## gradient in time the milestone asked for; the pattern (`a`/`b`) is a second, independent roll,
+## so which half of a level's variety a tile gets does not correlate with how bad the crack is.
+static func _cracked(map: CityMap, tile: Vector2i, day: int, source: int, plain: int,
+		levels: Array, factor: float) -> int:
+	if source != plain:
+		return source
+	var scaled := Tuning.degradation_for(day) * factor
+	if scaled <= 0.0:
+		return source
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("crack:%d:%d:%d" % [map.seed_used, tile.x, tile.y])
+	var severity := rng.randf()
+	if severity > scaled:
+		return source
+	var pattern := 0 if rng.randf() < 0.5 else 1
+	var level := 2
+	if severity > scaled * (2.0 / 3.0):
+		level = 0
+	elif severity > scaled * (1.0 / 3.0):
+		level = 1
+	return levels[level][pattern]
 
 ## The kerb runs along the pavement's edge against the carriageway — but only alongside a
 ## block. Through a junction there is no kerb, because that is the mouth of the junction.
