@@ -529,6 +529,7 @@ func _dress_blocks(state: CityState) -> void:
 	for building in _buildings:
 		building.condition = _condition_for(
 				state.purpose_of(map.block_plans, _block_of(building.lot)))
+		building.day = _day
 
 ## Today's garbage sacks — `GarbageSacks.placed()` re-rolled from the day, unlike the trees above:
 ## the city degrades over the run, so unlike a park's planting this is not the same every morning.

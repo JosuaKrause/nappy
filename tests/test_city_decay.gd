@@ -18,6 +18,8 @@ func run(t) -> void:
 	_test_litter_grows_with_the_day(t)
 	_test_sacks_wait_for_the_curve_then_alleys_before_fronts(t)
 	_test_the_mouse_prefers_a_pile(t)
+	_test_boarded_storefronts_and_windows_shutter(t)
+	_test_ambient_shuttering_waits_for_the_curve(t)
 
 # ---------------------------------------------------------------------- the curve ---
 
@@ -163,3 +165,47 @@ func _test_the_mouse_prefers_a_pile(t) -> void:
 				"the preference adds copies, never a tile that was not already a candidate")
 		return
 	t.check(true, "no seed in range rolled an alley pile by the last day — nothing to weight")
+
+# ---------------------------------------------------------------------- buildings ---
+
+func _test_boarded_storefronts_and_windows_shutter(t) -> void:
+	var building := Building.new()
+	building.district = GameEnums.BlockPurpose.COMMERCIAL
+	building.footprint = Vector2(96.0, 96.0)
+	building.height = 64.0
+	t.add_child(building)
+	building.condition = Building.Condition.BOARDED
+	building.day = Tuning.RUN_LENGTH_DAYS
+	for col in building.columns():
+		var texture := building._ground_floor_texture(col)
+		t.check(Building.STOREFRONT_SHUTTERED_TEXTURES.has(texture),
+				"a boarded commercial ground floor shows a shuttered storefront")
+	for index in building.columns() * building.wall_tiles():
+		var texture := building._window_texture(index)
+		t.check(texture == Building.WINDOW_SHUTTERED_DARK,
+				"a boarded building's windows are shuttered and dark, never lit")
+	building.free()
+
+func _test_ambient_shuttering_waits_for_the_curve(t) -> void:
+	var any_shuttered_late := false
+	var any_shuttered_early := false
+	for i in range(0, 24):
+		var building := Building.new()
+		building.district = GameEnums.BlockPurpose.COMMERCIAL
+		building.footprint = Vector2(96.0, 96.0)
+		building.height = 64.0
+		building.position = Vector2(i * 200.0, i * 137.0)
+		t.add_child(building)
+		building.condition = Building.Condition.LIVED_IN
+		building.day = 1
+		for col in building.columns():
+			if Building.STOREFRONT_SHUTTERED_TEXTURES.has(building._ground_floor_texture(col)):
+				any_shuttered_early = true
+		building.day = Tuning.RUN_LENGTH_DAYS
+		for col in building.columns():
+			if Building.STOREFRONT_SHUTTERED_TEXTURES.has(building._ground_floor_texture(col)):
+				any_shuttered_late = true
+		building.free()
+	t.check(not any_shuttered_early, "a lived-in block shows no shuttered storefront on day 1")
+	t.check(any_shuttered_late,
+			"by the last day some lived-in commercial storefronts have shuttered ahead of any block turning")

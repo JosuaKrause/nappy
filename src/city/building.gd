@@ -43,9 +43,21 @@ const ROOF_EDGE_W := preload("res://assets/buildings/roof_edge_w.svg")
 const ROOF_EDGE_E := preload("res://assets/buildings/roof_edge_e.svg")
 const WINDOW_DARK := preload("res://assets/buildings/window_dark.svg")
 const WINDOW_LIT := preload("res://assets/buildings/window_lit.svg")
+const WINDOW_TALL_DARK := preload("res://assets/buildings/window_tall_dark.svg")
+const WINDOW_TALL_LIT := preload("res://assets/buildings/window_tall_lit.svg")
+const WINDOW_SHUTTERED_DARK := preload("res://assets/buildings/window_shuttered_dark.svg")
+const WINDOW_SHUTTERED_LIT := preload("res://assets/buildings/window_shuttered_lit.svg")
 
 ## Share of the wall cells that are lit at all. Fixed at build time, never per frame.
 const LIT_WINDOW_CHANCE := 0.28
+## Which window pair a building's upper floors use — rolled once per building, ordinary street
+## variety rather than anything `condition` or the day changes. `SHUTTERED` here is a building that
+## was built that way, lit or dark like any other; a `BOARDED` block forces every building to it
+## regardless of this roll, and forces it dark, since `_lit()` already answers false off
+## `LIVED_IN` — see `_window_texture()`.
+enum _WindowStyle { PLAIN, TALL, SHUTTERED }
+const TALL_WINDOW_CHANCE := 0.3
+const SHUTTERED_WINDOW_CHANCE := 0.15
 
 # ------------------------------------------------------------------- fronts ---
 # A storefront replaces `WALL_BASE` at the ground row (its own fill is opaque, so it covers the
@@ -61,12 +73,20 @@ const STOREFRONT_TEXTURES: Array[Texture2D] = [
 	preload("res://assets/buildings/storefront_c.svg"),
 	preload("res://assets/buildings/storefront_d.svg"),
 ]
-## The `_shuttered` variants stay unbound — M105, the city's own degradation, owns picking those.
 const STOREFRONT_AWNING_TEXTURES: Array[Texture2D] = [
 	preload("res://assets/buildings/storefront_a_awning.svg"),
 	preload("res://assets/buildings/storefront_b_awning.svg"),
 	preload("res://assets/buildings/storefront_c_awning.svg"),
 	preload("res://assets/buildings/storefront_d_awning.svg"),
+]
+## A shuttered shopfront: always on a `BOARDED` block, and — beneath the curve's own threshold —
+## on a share of ordinary `LIVED_IN` commercial ground too, the city's own services failing ahead
+## of any one block turning. See `_ground_floor_texture()`.
+const STOREFRONT_SHUTTERED_TEXTURES: Array[Texture2D] = [
+	preload("res://assets/buildings/storefront_a_shuttered.svg"),
+	preload("res://assets/buildings/storefront_b_shuttered.svg"),
+	preload("res://assets/buildings/storefront_c_shuttered.svg"),
+	preload("res://assets/buildings/storefront_d_shuttered.svg"),
 ]
 const FIRE_ESCAPE_A := preload("res://assets/buildings/fire_escape_a.svg")
 const FIRE_ESCAPE_B := preload("res://assets/buildings/fire_escape_b.svg")
@@ -77,6 +97,11 @@ const STOREFRONT_AWNING_SHARE := 0.35
 ## Share of `RESIDENTIAL` buildings tall enough for one (`wall_tiles() >= 2`) that get a fire
 ## escape at all.
 const FIRE_ESCAPE_SHARE := 0.3
+## Share of a `LIVED_IN` commercial storefront that has gone shuttered by the time
+## `Tuning.degradation_for(day)` reaches 1.0 — read against each cell's own fixed severity roll
+## the same way `GroundTiles._cracked()` reads the ground's. A `BOARDED` block ignores this and
+## shutters every storefront outright; this is the ordinary street closing a few shops early.
+const AMBIENT_SHUTTER_SHARE := 0.3
 
 # ------------------------------------------------------------- roof furniture ---
 # One roof unit per interior cell: never on the perimeter row or column, so nothing overhangs
@@ -171,6 +196,16 @@ enum Condition {
 		condition = value
 		queue_redraw()
 
+## Today's day number, for the ambient-shutter roll in `_ground_floor_texture()` — read against
+## `Tuning.degradation_for(day)`, not stored anywhere the roll itself depends on, so changing it
+## only ever needs a redraw rather than a full `_rebuild()`.
+@export var day := 1:
+	set(value):
+		if day == value:
+			return
+		day = value
+		queue_redraw()
+
 ## The tile rect this building stands on, so the city can find its block again.
 var lot := Rect2i()
 
@@ -184,10 +219,20 @@ var shape: GroundShape
 var _collision: CollisionShape2D
 ## One entry per wall cell, row-major from the ground up: true where the light is on.
 var _windows: Array[bool] = []
+## This building's own upper-floor window style — one of `_WindowStyle`, rolled once with
+## `_windows` itself. A building keeps its own style once a `BOARDED` block that forced
+## `SHUTTERED` un-boards.
+var _window_style := _WindowStyle.PLAIN
 ## One entry per ground-floor column, index into `STOREFRONT_TEXTURES`/`STOREFRONT_AWNING_
-## TEXTURES` — populated only for a `COMMERCIAL` building, where every column gets one.
+## TEXTURES`/`STOREFRONT_SHUTTERED_TEXTURES` — populated only for a `COMMERCIAL` building, where
+## every column gets one.
 var _storefront_variant: Array[int] = []
 var _storefront_awning: Array[bool] = []
+## One fixed roll per storefront column, compared against `Tuning.degradation_for(day) *
+## AMBIENT_SHUTTER_SHARE` in `_ground_floor_texture()` — a shop with a low roll here closes early
+## in the run and stays shuttered, the same "fixed severity, the day decides how far it has been
+## crossed" shape `GroundTiles._cracked()` uses for a crack.
+var _storefront_shutter_severity: Array[float] = []
 ## The one ground-floor column a `RESIDENTIAL` building's fire escape stands against, or -1 for
 ## the share that rolled none.
 var _fire_escape_col := -1
@@ -265,6 +310,13 @@ func _build_windows() -> void:
 	_windows.clear()
 	for i in columns() * wall_tiles():
 		_windows.append(rng.randf() < LIT_WINDOW_CHANCE)
+	var style_roll := rng.randf()
+	if style_roll < SHUTTERED_WINDOW_CHANCE:
+		_window_style = _WindowStyle.SHUTTERED
+	elif style_roll < SHUTTERED_WINDOW_CHANCE + TALL_WINDOW_CHANCE:
+		_window_style = _WindowStyle.TALL
+	else:
+		_window_style = _WindowStyle.PLAIN
 
 ## The ground floor's own shops, and the one fire escape a `RESIDENTIAL` facade may carry. A
 ## district's own seed, distinct from `_build_windows()`'s, so an awning roll or a fire-escape
@@ -272,6 +324,7 @@ func _build_windows() -> void:
 func _build_front() -> void:
 	_storefront_variant.clear()
 	_storefront_awning.clear()
+	_storefront_shutter_severity.clear()
 	_fire_escape_col = -1
 	var cols := columns()
 	var rng := RandomNumberGenerator.new()
@@ -280,6 +333,7 @@ func _build_front() -> void:
 		for col in cols:
 			_storefront_variant.append(rng.randi_range(0, STOREFRONT_TEXTURES.size() - 1))
 			_storefront_awning.append(rng.randf() < STOREFRONT_AWNING_SHARE)
+			_storefront_shutter_severity.append(rng.randf())
 	elif district == GameEnums.BlockPurpose.RESIDENTIAL and wall_tiles() >= 2 \
 			and rng.randf() < FIRE_ESCAPE_SHARE:
 		# Away from the corner columns where there is room to choose one, so the escape does not
@@ -304,7 +358,7 @@ func _draw() -> void:
 			var at := _cell(col, row)
 			draw_texture(TextureResolver.resolve(WALL), at, wall_colour)
 			var index := row * cols + col
-			draw_texture(TextureResolver.resolve(WINDOW_LIT if _lit(index) else WINDOW_DARK), at)
+			draw_texture(TextureResolver.resolve(_window_texture(index)), at)
 			if col == 0:
 				draw_texture(TextureResolver.resolve(WALL_EDGE_W), at)
 			if col == cols - 1:
@@ -338,11 +392,33 @@ func _cell(col: int, row: int) -> Vector2:
 
 ## `WALL_BASE`, unless `col` is a `COMMERCIAL` shopfront — its own fill is opaque, which is what
 ## lets this stay a plain substitution rather than a second draw call skipping the window.
+##
+## A `BOARDED` block shutters every one of its own storefronts outright. Short of that, a shop
+## still shutters early once `Tuning.degradation_for(day) * AMBIENT_SHUTTER_SHARE` has passed the
+## cell's own fixed roll — the city's services failing ahead of any one block's arc, which is why
+## this reads `condition` and `day` as two separate questions rather than one.
 func _ground_floor_texture(col: int) -> Texture2D:
 	if col >= _storefront_variant.size():
 		return WALL_BASE
 	var index: int = _storefront_variant[col]
+	var ambient_shutter := _storefront_shutter_severity[col] < Tuning.degradation_for(day) * AMBIENT_SHUTTER_SHARE
+	if condition == Condition.BOARDED or ambient_shutter:
+		return STOREFRONT_SHUTTERED_TEXTURES[index]
 	return STOREFRONT_AWNING_TEXTURES[index] if _storefront_awning[col] else STOREFRONT_TEXTURES[index]
+
+## The window pair for a wall cell, from `_window_style` — except a `BOARDED` block, which forces
+## `SHUTTERED` regardless of the building's own roll. Never lit there either, but only because
+## `_lit()` already answers false off `LIVED_IN`; an ordinary `SHUTTERED` building lights up like
+## any other.
+func _window_texture(index: int) -> Texture2D:
+	var style := _WindowStyle.SHUTTERED if condition == Condition.BOARDED else _window_style
+	match style:
+		_WindowStyle.SHUTTERED:
+			return WINDOW_SHUTTERED_LIT if _lit(index) else WINDOW_SHUTTERED_DARK
+		_WindowStyle.TALL:
+			return WINDOW_TALL_LIT if _lit(index) else WINDOW_TALL_DARK
+		_:
+			return WINDOW_LIT if _lit(index) else WINDOW_DARK
 
 ## The one piece of a front that leaves the wall plane: a fire escape bolted to a `RESIDENTIAL`
 ## facade or a portico at a `CIVIC` entrance, drawn after every ground-floor cell so it stands in

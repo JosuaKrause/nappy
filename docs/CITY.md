@@ -1046,7 +1046,7 @@ in one place instead of leaving the scheduler to rescue each day.
 | `COURTYARD` | yes | A court cut inside a residential block, reached by an archway. Hidden calm. |
 | `RESIDENTIAL` `COMMERCIAL` `INDUSTRIAL` `CIVIC` | no | Built over: the ordinary city. |
 | `REQUISITIONED` | **no** | Calm ground taken by the regime. The same ground, churned; no longer calm. |
-| `BOARDED_UP` | no | A commercial block gone dark. Every window unlit. |
+| `BOARDED_UP` | no | A commercial block gone dark. Every window shuttered and unlit, every storefront shuttered — see "The city degrades". |
 | `BURNT_OUT` | no | A built block that burned and stayed burnt. |
 
 A step is taken when its **cause** fires: `SCHEDULED` (the day arrived — requisitions and
@@ -1088,6 +1088,48 @@ makes an unwinnable run rather than a hard one.
   a court on day 1 and churned mud on day 12, in the same place and the same size.
 - `CityState` — run-scoped, on `GameState`. Only records how far along each arc the run has
   got. A day is therefore reconstructible from a seed, a day number and the causes fired.
+
+## The city degrades
+
+Block purposes tell the story of the run in the streets she can walk into or out of; the ground
+under her feet tells the same story without a word. Cracked paving, litter, garbage sacks and
+shuttered shopfronts read the same one curve, `Tuning.degradation_for(day)` — zero through the
+early days, rising from `Tuning.DEGRADATION_FIRST_DAY` (day 5, one day into act II, so the ground
+catches up with what the act already told her rather than turning on the same morning) to 1.0 on
+the run's last day, the way `EventScheduler.budget_for()` rises. **None of it changes what a route
+costs** — not a tile's type, not its cost, not the crowd's lanes — it is presentation, the same way
+a closure is silent and a scar is a mark rather than an obstruction. One exception is stated below
+rather than smuggled in.
+
+- **Cracked ground.** `GroundTiles` gives a plain road, sidewalk or alley tile a crack level —
+  hairline, cracked, or broken, two patterns each — from a fixed per-tile roll compared against
+  the curve: a tile that has already crossed its own roll stays cracked, and the level worsens as
+  the curve pushes further past it, so the same tile shows the same crack on the same day every
+  time and the share of cracked ground only ever grows. **Pavement cracks before road** — a lower
+  threshold, since she walks the pavement and looks at it while the carriageway is behind her — a
+  kerb, a road line, a crossing and the main road keep their own markings regardless, since no
+  cracked variant of those exists.
+- **Loose litter.** Small ground decals — an eaten apple, a newspaper, a crushed cup, a torn bag,
+  a rolled can — placed at generation from the curve and a seeded roll, on pavements, alleys and
+  squares. Never on the road's own lanes and never inside a calm area, which falls out of the
+  eligible ground rather than needing its own check: neither is either. They carry no body, no
+  field and no y-sort — `CityDecals` draws them flat, between the ground and the buildings, so they
+  lie under everything the way a kerb or a centre line does.
+- **Garbage sacks.** Alleys carry sacks from the curve's own first day; building fronts a couple
+  of days after that — the city's services failing in the back streets before they fail on the
+  ones she actually shops on. A single sack is a `Prop` with a `GroundShape` for its shadow and no
+  body, drawn exactly like a bollard; a heaped pile is the same, also with no body — whether a pile
+  that narrows an alley should obstruct her is a decision for when one is actually seen standing in
+  an alley she has to use, not before. The mouse in the alley (`alley_mouse`) prefers a tile beside
+  a standing pile once both exist, as extra copies in the scheduler's own candidate roll rather
+  than as a new placement rule.
+- **The storefronts shutter.** A `BOARDED_UP` block's ground floor shows `storefront_
+  {a,b,c,d}_shuttered.svg` in place of whatever plain or awning shop stood there, and every window
+  above it shows the shuttered pair, dark — services gone the same day the block itself went dark.
+  Short of a block actually boarding, a share of ordinary `COMMERCIAL` ground floors shutters too
+  as the curve rises past each shop's own fixed roll, which is the city thinning out ahead of any
+  one block's arc reaching `BOARDED_UP`. A door never moves; only what stands either side of it
+  does.
 
 ## Life on the streets
 
@@ -1323,6 +1365,11 @@ Top-down camera with a fake vertical extrusion:
   both drawn as overlays, after the wall, rather than replacing a texture the way a storefront
   does. The awning is the one piece of a front that leaves the wall plane; it stays inside the
   wall's own footprint rather than reaching over the pavement's walkable band.
+- **A building's upper-floor windows carry one of three styles, rolled once for the whole
+  building**: the plain pair, a tall sash pair, or a shuttered pair that lights up like any other —
+  ordinary street variety, unconnected to the day or the block's own condition. Going
+  `BOARDED_UP` overrides the roll and forces the shuttered pair, dark, the same shutter the
+  degrading city's own storefronts use — see "The city degrades".
 - **Street trees stand in pits on the pavement, along `RESIDENTIAL` and `COMMERCIAL` streets at
   a seeded spacing** — `StreetTrees.planted()`, fixed for the run like a building rather than
   rebuilt daily like a park's own trees, since a street's frontage does not change with what a
