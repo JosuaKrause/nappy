@@ -10,6 +10,12 @@ var nerves: int = Tuning.STARTING_NERVES
 var resistance_progress: int = 0
 var ending: GameEnums.Ending = GameEnums.Ending.NONE
 
+## Seconds the world has actually been moving this run — advanced by exactly one owner,
+## `main._process()`'s own day-loop branch, while a day is walking or returning home and the tree
+## is not paused. Never shown during play; the ending screen is the only place it is read, through
+## `format_clock()` (added alongside the day summary's own line).
+var play_seconds: float = 0.0
+
 ## One-shot event ids already consumed this run, so they never fire twice.
 var consumed_one_shots: Array[String] = []
 ## Resistance steps completed, and steps failed beyond recovery.
@@ -89,6 +95,7 @@ func start_run(seed_value: int = 0) -> void:
 	nerves = Tuning.STARTING_NERVES
 	resistance_progress = 0
 	ending = GameEnums.Ending.NONE
+	play_seconds = 0.0
 	consumed_one_shots.clear()
 	completed_resistance_steps.clear()
 	failed_resistance_steps.clear()
