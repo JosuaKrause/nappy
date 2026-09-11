@@ -420,10 +420,13 @@ arms, and the way down.
 
 **The building, from the player's four sketches** (playtest 55; `docs/reference/
 escape-floor-hallway-sketch-01.jpg`, `escape-stairwell-sketch-01.jpg`, `escape-lobby-sketch-01.jpg`,
-`escape-basement-sketch-01.jpg` — read them before laying a tile). Six maps, each drawn with the
-ground `TileMapLayer` and the same oblique view as the city, joined by doors:
+`escape-basement-sketch-01.jpg` — read them before laying a tile). **One map**, drawn with the
+ground `TileMapLayer` and the same oblique view as the city, holding seven parts laid out with
+empty, unwalkable ground between them, joined by doors that teleport *(2026-09-10, playtest 55:
+"instead of multiple maps have all parts of the house on the same map with enough space inbetween
+and on transition fade to black, teleport, then fade in again")*:
 
-- **Three hallway maps**, one per floor above the lobby, the same layout each: a long hallway
+- **Three hallways**, one per floor above the lobby, the same layout each: a long hallway
   running east–west; its north wall in elevation carries wall lamps, windows and one framed door
   with a bar across it — the dead lift; the south edge carries notches — the closed ones are the
   locked apartment doors (her own is the one the scene starts in front of, on the top floor), and
@@ -431,12 +434,12 @@ ground `TileMapLayer` and the same oblique view as the city, joined by doors:
   that end's stairwell at this floor's landing. *(The sketch drew both at the right end; decided
   otherwise on 2026-09-10, playtest 55 — two stairwells at opposing ends, "that way having a fire
   on the stairs forces you to enter a floor hallway and walk to the other end".)*
-- **Two stairwell maps**, left and right, each tall and the camera following her down it: a
+- **Two stairwells**, left and right, each tall and the camera following her down it: a
   plain switchback — from each floor's landing one flight descends, turns back at a half-landing,
   and arrives at the next floor's landing below, alternating direction floor by floor — with
   **one door per landing on the hallway side**, into that floor's hallway at its end, and the
-  lowest landing's door into the lobby at the same end. Nothing loads mid-stairwell: each shaft
-  is one map, so stair walking is walking. The sketched double staircase in one shaft is not
+  lowest landing's door into the lobby at the same end. Nothing loads mid-stairwell: a shaft is
+  continuous ground, so stair walking is walking. The sketched double staircase in one shaft is not
   built: a fire on one flight of it would be dodged from the same landing, which is no route
   decision, while a fire in one stairwell sends her along the whole hallway to the other.
 - **The lobby map**, the hallway's own width: the main entrance in the middle of the north wall
@@ -464,9 +467,9 @@ left or right, key, tap or joystick alike — is redirected along the flight's s
 the flight's lower end and up toward its upper end, so she visibly descends or climbs and never
 walks off the treads sideways. A press along the slope's own axis behaves the same; a press
 straight up or down the screen on a flight does nothing, since there is no floor there. A
-half-landing is a flat tile or two where the next flight turns back. Because a stairwell is one
-map, a floor's height in the shaft is what its two flights add up to in rows, and the layout
-chooses that so the switchback reads as a stairwell rather than a ramp.
+half-landing is a flat tile or two where the next flight turns back. A floor's height in the
+shaft is what its two flights add up to in rows, and the layout chooses that so the switchback
+reads as a stairwell rather than a ramp.
 
 - [ ] **The stair tile kit, as SVG.** In `assets/interior/`, 32×32 tiles: `stair_flight_e.svg` and
       `stair_flight_w.svg` (treads descending toward east and toward west, seen from the oblique
@@ -480,27 +483,30 @@ chooses that so the switchback reads as a stairwell rather than a ramp.
       3×, and reviewed as an assembled switchback before any of it is bound.
       `stair_down.svg` is retired to the rejected-graphics archive as human-rejected (playtest 54),
       with its review sheets
-- [ ] **The interior maps.** A new `src/interior/` — a small hand-shaped map class apart from
-      `CityMap`, plans as data, walkability from tile type, walls and doors in elevation — and the
-      seven maps above: three hallways, two stairwells, the lobby, the basement, with each
-      switchback laid from the kit. Headless tests: every map builds; every flight and landing tile
-      is walkable; every door has a counterpart on the map it leads to (a hallway's end door ↔
-      that stairwell's landing door on the same floor; each stairwell's bottom door ↔ the lobby
-      notch at its end; lobby middle notch ↔ basement bottom); the exit tile and the barricaded
-      entrance are what they claim; nothing walkable is unreachable from her door
+- [ ] **The interior map.** A new `src/interior/` — a small hand-shaped map class apart from
+      `CityMap`, the plan as data, walkability from tile type, walls and doors in elevation — one
+      map holding the seven parts above with enough empty ground between them that no part is in
+      view from another, each switchback laid from the kit. Headless tests: the map builds; every
+      flight and landing tile is walkable; the ground between parts is not; every door has a
+      counterpart it teleports to (a hallway's end door ↔ that stairwell's landing door on the same
+      floor; each stairwell's bottom door ↔ the lobby notch at its end; lobby middle notch ↔
+      basement bottom); the exit tile and the barricaded entrance are what they claim; every
+      walkable tile is reachable from her door through the doors, and no two parts are reachable
+      from each other by walking
 - [ ] **`--start-escape`, and her with the baby.** A debug-only `DevFlags` flag that skips the
       title and starts in the third-floor hallway at her door, with `Stroller` drawing the
       prepared `assets/rig/mother_carrying_*` frames facing for facing instead of the
       mother-and-pram pair, the pram gone, and the baby-state cue over the bundle. Both control
       schemes work as they do outdoors. Absent from a release build, asserted the way the debug
       view's test asserts its own absence
-- [ ] **Transitions and the way out.** Walking into a door fades to black, loads the map it leads
-      to and places her just inside its counterpart door, then fades in; walking into the
+- [ ] **Transitions and the way out.** Walking into a door fades to black, teleports her to just
+      inside its counterpart door on the same map (the camera snapping with her, not sliding
+      across the empty ground), then fades in; nothing is loaded or freed. Walking into the
       emergency exit fades and returns to the title. A test drives a rig from her door on the
       top floor through a stair door, down the whole shaft by the left flights and again by the
-      right, into the lobby, down to the basement and out, asserting the map sequence and her
-      placement after each door
-- [ ] **Evidence.** One capture per map with `--start-escape`, the debug view's layers where
+      right, into the lobby, down to the basement and out, asserting the sequence of parts and
+      her placement after each door
+- [ ] **Evidence.** One capture per part with `--start-escape`, the debug view's layers where
       useful, and a burst of her walking a flight, in `docs/evidence/`
 
 **Open after it is walked**: whether the flights read as descending with her drawn at a constant
@@ -927,7 +933,14 @@ is still true.
       the door segments above — and `ResistanceDirector._maybe_set_a_trap()` refuses a bearing
       that lands there. `tests/test_generator.gd` asserts no alley tile on the home block over
       many seeds; the scheduler test asserts nothing planned on the block's segments. The spawn
-      kill needs no fix of its own once the ground is gone
+      kill needs no fix of its own once the ground is gone. **The run that showed it**: seed
+      291862120, day 7, five attempts lost in about half a second each,
+      `docs/evidence/archive/session-captures/2026-09-10/run-205011-seed291862120-v0.8.2-416-g07b801b/`.
+      Its log names the second cause: the mark was offered far away at (37,149) and the
+      *never-seen mark follows her* rule (M78) moved it at second zero to (79,83), the alley two
+      tiles from the doorstep at (81,84), guard and all. So the relocation is covered by the same
+      exclusion — a mark never follows her onto the home block's ground — and the test below
+      replays this seed
 - [ ] **A car's strike box sits half a car behind its picture going north, half a car ahead going
       south.** *(2026-09-10, playtest 55, read off the debug view: "the dead zone of a car is
       trailing the car instead of leading the car?")* `CrowdAgent._draw_body` draws a car with
