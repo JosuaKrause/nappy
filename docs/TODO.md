@@ -427,22 +427,22 @@ ground `TileMapLayer` and the same oblique view as the city, joined by doors:
   running east–west; its north wall in elevation carries wall lamps, windows and one framed door
   with a bar across it — the dead lift; the south edge carries notches — the closed ones are the
   locked apartment doors (her own is the one the scene starts in front of, on the top floor), and
-  the **two open notches are the staircase doors**, the way into the stairwell map at that
-  floor's landing. The sketch shows both open notches toward the hallway's right end; with a
-  double staircase below, the entry reads them as one door toward each end — *flag this if the
-  sketch meant otherwise*.
-- **One stairwell map**, tall, the camera following her down it: at each floor's level a
-  landing with **a door on each side**, left and right, both into that floor's hallway (*"one
-  staircase one each side. each floor has two doors that can be entered which lead to the same
-  hallway layout"*); from each landing a flight descends to the **left** and another to the
-  **right** — the double staircase — each turning back at a side landing toward the next floor's
-  landing below, the way the sketch's flights cross about the central column. The lowest doors
-  open into the lobby. Nothing loads mid-stairwell: the whole shaft is one map, so stair walking
-  is walking.
-- **The lobby map**: the main entrance in the middle of the north wall — the double door with the
-  furniture heaped against it, lamps either side — not passable; on the south edge, the **left
-  and right notches are the stairway's doors** and the **middle notch is the way to the
-  basement**.
+  the **two open notches are the stair doors, one at each end of the hallway**, each the way into
+  that end's stairwell at this floor's landing. *(The sketch drew both at the right end; decided
+  otherwise on 2026-09-10, playtest 55 — two stairwells at opposing ends, "that way having a fire
+  on the stairs forces you to enter a floor hallway and walk to the other end".)*
+- **Two stairwell maps**, left and right, each tall and the camera following her down it: a
+  plain switchback — from each floor's landing one flight descends, turns back at a half-landing,
+  and arrives at the next floor's landing below, alternating direction floor by floor — with
+  **one door per landing on the hallway side**, into that floor's hallway at its end, and the
+  lowest landing's door into the lobby at the same end. Nothing loads mid-stairwell: each shaft
+  is one map, so stair walking is walking. The sketched double staircase in one shaft is not
+  built: a fire on one flight of it would be dodged from the same landing, which is no route
+  decision, while a fire in one stairwell sends her along the whole hallway to the other.
+- **The lobby map**, the hallway's own width: the main entrance in the middle of the north wall
+  — the double door with the furniture heaped against it, lamps either side — not passable, and
+  the dead lift beside it; on the south edge, the **left and right notches are the two
+  stairwells' doors** and the **middle notch is the way to the basement**.
 - **The basement map**: a winding corridor that **starts at the bottom**, where a short flight
   leads down into it (the sketch's horizontal lines), jogs left and right between raw brick
   walls past debris, a rat and puddles, and ends at the **exit door at the top**; walking into it
@@ -461,7 +461,7 @@ her vertically within a flight, the descent is carried by the pictures and by th
 each landing, and a per-tread offset that makes her visibly drop is an open refinement rather
 than part of this slice. Because the stairwell is one map, a floor's height in the shaft is what
 the flights between two landings add up to in rows, and that number is the layout's to choose so
-the double staircase reads as the sketch does.
+a switchback reads as a stairwell rather than a ramp.
 
 - [ ] **The stair tile kit, as SVG.** In `assets/interior/`, 32×32 tiles: `stair_flight_e.svg` and
       `stair_flight_w.svg` (treads descending toward east and toward west, seen from the oblique
@@ -472,17 +472,17 @@ the double staircase reads as the sketch does.
       bottom-centre anchored), plus the sketches' small pictures: `wall_lamp.svg` (a sconce on the
       hallway and lobby walls), `basement_debris.svg` and `rat.svg` (ground decals for the
       basement corridor, centre-anchored). Drawn under the svg-art rules, rendered at native and
-      3×, and reviewed as an assembled double staircase before any of it is bound.
+      3×, and reviewed as an assembled switchback before any of it is bound.
       `stair_down.svg` is retired to the rejected-graphics archive as human-rejected (playtest 54),
       with its review sheets
 - [ ] **The interior maps.** A new `src/interior/` — a small hand-shaped map class apart from
       `CityMap`, plans as data, walkability from tile type, walls and doors in elevation — and the
-      six maps above: three hallways, the stairwell, the lobby, the basement, with the double
-      staircase laid from the kit. Headless tests: every map builds; every flight and landing tile
-      is walkable; every door has a counterpart on the map it leads to (hallway stair door ↔
-      stairwell landing door on the same floor, both sides; stairwell bottom doors ↔ lobby side
-      notches; lobby middle notch ↔ basement bottom); the exit tile and the barricaded entrance are
-      what they claim; nothing walkable is unreachable from her door
+      seven maps above: three hallways, two stairwells, the lobby, the basement, with each
+      switchback laid from the kit. Headless tests: every map builds; every flight and landing tile
+      is walkable; every door has a counterpart on the map it leads to (a hallway's end door ↔
+      that stairwell's landing door on the same floor; each stairwell's bottom door ↔ the lobby
+      notch at its end; lobby middle notch ↔ basement bottom); the exit tile and the barricaded
+      entrance are what they claim; nothing walkable is unreachable from her door
 - [ ] **`--start-escape`, and her with the baby.** A debug-only `DevFlags` flag that skips the
       title and starts in the third-floor hallway at her door, with `Stroller` drawing the
       prepared `assets/rig/mother_carrying_*` frames facing for facing instead of the

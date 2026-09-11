@@ -123,6 +123,25 @@ their stair doors onto **one** stairwell map, a double staircase whose flights d
 right from each floor's landing, with a lobby below it and a winding basement corridor below that.
 The entry is rewritten; the stairs-as-walkable-tiles principle is unchanged.
 
+Asked whether the hallway's two open notches really both sit at the right end, the player
+confirmed it and reopened the shape of the stairs:
+
+> they do both sit at the right end but now I'm thinking we could have one stairway map only show
+> one stairway (instead of both in the same map) and have their doors at the opposing ends. that
+> way having a fire on the stairs forces you to enter a floor hallway and walk to the other end.
+> on the other hand where would we put the elevator then? and how would the staircase connect to
+> the lobby? the lobby would need to be as wide as the hallway
+
+The orchestrator's assessment — two stairwells give the fire its route decision, the lift stays in
+the hallway's north wall where the sketch has it, and the lobby sketch's three notches already
+read as left stairwell, right stairwell and basement — was accepted:
+
+> okay, fine
+
+So the building is **two stairwell maps**, each a plain switchback with one door per landing on
+the hallway side, at opposite ends of every hallway and of the lobby; the sketched double
+staircase is not built.
+
 ## The inspection
 
 > the checkpoint itself, 2s should be enough -- both the guard and the player should disappear
