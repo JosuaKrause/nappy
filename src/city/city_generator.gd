@@ -311,8 +311,9 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator) -> Dictio
 	# rolled as calm below, and is not in `remaining`, so no courtyard is cut into it either.
 	purposes[home_block()] = GameEnums.BlockPurpose.RESIDENTIAL
 
-	var areas := _place_calm_zones(purposes, zones, shuffled, rng, map.main_road)
-	_place_apartment_complexes(purposes, zones, shuffled, rng, map.main_road)
+	var areas := _place_calm_zones(purposes, zones, shuffled, rng, map.main_road,
+			map.precinct_spans)
+	_place_apartment_complexes(purposes, zones, shuffled, rng, map.main_road, map.precinct_spans)
 
 	var calm_target := rng.randi_range(Tuning.MIN_CALM_BLOCKS, Tuning.MAX_CALM_BLOCKS)
 	for block in shuffled:
@@ -369,13 +370,14 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator) -> Dictio
 ## - **Never beside other calm.** A four-block park with a quiet square across the road from it is
 ##   one calm area with an awkward middle, and the point of several is that they are somewhere else.
 static func _place_calm_zones(purposes: Dictionary, zones: Dictionary,
-		shuffled: Array[Vector2i], rng: RandomNumberGenerator, main_road: int) -> int:
+		shuffled: Array[Vector2i], rng: RandomNumberGenerator, main_road: int,
+		precinct_spans: Array[Vector4i]) -> int:
 	var wanted := rng.randi_range(Tuning.MIN_CALM_ZONES, Tuning.MAX_CALM_ZONES)
 	var made := 0
 	for index in wanted:
 		var shapes := _shapes_to_try(index, rng)
 		for shape in shapes:
-			if _place_one_zone(purposes, zones, shuffled, rng, main_road, shape):
+			if _place_one_zone(purposes, zones, shuffled, rng, main_road, precinct_spans, shape):
 				made += 1
 				break
 	return made
@@ -394,10 +396,11 @@ static func _shapes_to_try(index: int, rng: RandomNumberGenerator) -> Array[Vect
 ## Puts one zone of exactly this shape down, at the first anchor that will take it. False when
 ## nowhere in the city will.
 static func _place_one_zone(purposes: Dictionary, zones: Dictionary, shuffled: Array[Vector2i],
-		rng: RandomNumberGenerator, main_road: int, shape: Vector2i) -> bool:
+		rng: RandomNumberGenerator, main_road: int, precinct_spans: Array[Vector4i],
+		shape: Vector2i) -> bool:
 	for anchor in shuffled:
 		var footprint := Rect2i(anchor, shape)
-		if not _zone_fits(purposes, footprint, main_road):
+		if not _zone_fits(purposes, footprint, main_road, precinct_spans):
 			continue
 		var purpose := _OPEN_CALM[rng.randi_range(0, _OPEN_CALM.size() - 1)]
 		for block in _blocks_in(footprint):
@@ -429,12 +432,13 @@ static func _place_one_zone(purposes: Dictionary, zones: Dictionary, shuffled: A
 ##   the big-building placement all treat them correctly without any of them learning about
 ##   apartment complexes. See `_record_zones`.
 static func _place_apartment_complexes(purposes: Dictionary, zones: Dictionary,
-		shuffled: Array[Vector2i], rng: RandomNumberGenerator, main_road: int) -> void:
+		shuffled: Array[Vector2i], rng: RandomNumberGenerator, main_road: int,
+		precinct_spans: Array[Vector4i]) -> void:
 	var span := Vector2i.ONE * Tuning.CALM_ZONE_BLOCKS
 	for _made in Tuning.MAX_APARTMENT_COMPLEXES:
 		for anchor in shuffled:
 			var footprint := Rect2i(anchor, span)
-			if not _zone_fits(purposes, footprint, main_road):
+			if not _zone_fits(purposes, footprint, main_road, precinct_spans):
 				continue
 			for block in _blocks_in(footprint):
 				purposes[block] = GameEnums.BlockPurpose.COURTYARD
@@ -469,6 +473,29 @@ static func _too_near_the_home(footprint: Rect2i) -> bool:
 	for block in _blocks_in(footprint):
 		var away: Vector2i = (block - home).abs()
 		if maxi(away.x, away.y) < clearance:
+			return true
+	return false
+
+## The tile rect a precinct span owns: the full cross-section (sidewalk, road, sidewalk) across
+## the blocks it covers, not the widened tail `CityMap.street_kind` reaches into a crossroads to
+## kill that street's zebra. The same bounds `tests/test_generator.gd`'s own precinct check uses.
+static func _precinct_rect(span: Vector4i) -> Rect2i:
+	var vertical := span.x == 1
+	var lo := span.z * CityMap.period() + Tuning.STREET_WIDTH
+	var hi := (span.w + 1) * CityMap.period()
+	var band := span.y * CityMap.period()
+	return Rect2i(Vector2i(band, lo), Vector2i(Tuning.STREET_WIDTH, hi - lo)) if vertical \
+			else Rect2i(Vector2i(lo, band), Vector2i(hi - lo, Tuning.STREET_WIDTH))
+
+## Whether any tile of `footprint` lies on a precinct's own paving. A precinct is paved frontage to
+## frontage, so nothing that takes ground for itself — a big building's mass, a calm zone's or an
+## apartment complex's absorbed streets — may cover any of it. Checked at candidate time, before a
+## footprint is accepted, never as a repair afterwards (`CLAUDE.md`, "Closures and events are
+## checked before they are accepted, never repaired afterwards"): a hard blocker or an absorbed
+## street that already covered precinct ground would have nothing left to check it against.
+static func _touches_a_precinct(precinct_spans: Array[Vector4i], footprint: Rect2i) -> bool:
+	for span in precinct_spans:
+		if _precinct_rect(span).intersects(footprint):
 			return true
 	return false
 
@@ -508,11 +535,21 @@ static func _calm_may_sit_here(footprint: Rect2i, main_road: int) -> bool:
 	return footprint.position.x > main_road or footprint.end.x <= main_road - 1
 
 ## Whether a calm zone's footprint is inside the map, somewhere calm ground may go, wholly
-## unclaimed and clear of other calm.
-static func _zone_fits(purposes: Dictionary, footprint: Rect2i, main_road: int) -> bool:
+## unclaimed, clear of other calm, and clear of every precinct's own paving.
+##
+## **Precinct clearance applies to every zone, open or solid.** An open zone would only ever
+## repaint a precinct's corridor as park, never as a wall — but a precinct is a place with its own
+## paving, not ground a calm area may annex, and an apartment complex on the same footprint absorbs
+## its streets *solid*: that is the shape that built over a precinct's own corridor on seed 24757,
+## found by `tests/test_generator.gd` and left as a gap in `docs/TODO.md` until this refused it at
+## the source rather than repairing it after.
+static func _zone_fits(purposes: Dictionary, footprint: Rect2i, main_road: int,
+		precinct_spans: Array[Vector4i]) -> bool:
 	if footprint.end.x > Tuning.CITY_BLOCKS.x or footprint.end.y > Tuning.CITY_BLOCKS.y:
 		return false
 	if not _calm_may_sit_here(footprint, main_road):
+		return false
+	if _touches_a_precinct(precinct_spans, CityMap.blocks_tile_rect(footprint)):
 		return false
 	for block in _blocks_in(footprint):
 		if purposes.has(block):
@@ -1100,7 +1137,7 @@ static func _big_building_candidates(map: CityMap, purposes: Dictionary,
 ## Whether two neighbouring blocks and the street between them are something a landmark may be
 ## built out of.
 ##
-## The exclusions are the dead end's, restated over a pair, plus two that only a big building
+## The exclusions are the dead end's, restated over a pair, plus three that only a big building
 ## needs:
 ##
 ## - **Interior blocks only.** A block on the outer ring has boundary corridors round it, and the
@@ -1108,6 +1145,12 @@ static func _big_building_candidates(map: CityMap, purposes: Dictionary,
 ##   somewhere to put a wall.
 ## - **Single-block lots.** A four-block calm zone is already a lot of its own, and there is no
 ##   sense in which a zone could also be a building.
+## - **Never on a precinct's own paving.** The `between` street's own kind already refuses a
+##   footprint whose removed street *is* a precinct corridor; this refuses the whole mass — both
+##   block interiors and the street between them — against every precinct span's tile rect, which
+##   is the same check a calm zone's footprint makes (`_zone_fits`) and for the same reason: a
+##   precinct is paved frontage to frontage, and nothing that takes ground for itself may cover any
+##   of it.
 ##
 ## The "nothing beside calm" rule applies here too, and for a *different* reason than it does to a
 ## dead end. There the worry is that the blocker is a lie — you step sideways into the park. Here
@@ -1120,6 +1163,8 @@ static func _the_pair_is_free(map: CityMap, purposes: Dictionary, pair: Rect2i,
 	if pair.end.x > Tuning.CITY_BLOCKS.x - 1 or pair.end.y > Tuning.CITY_BLOCKS.y - 1:
 		return false
 	if _too_near_the_home(pair):
+		return false
+	if _touches_a_precinct(map.precinct_spans, CityMap.blocks_tile_rect(pair)):
 		return false
 	for block in _blocks_in(pair):
 		if map.lot_blocks(block) != Rect2i(block, Vector2i.ONE):

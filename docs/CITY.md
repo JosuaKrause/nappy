@@ -561,9 +561,17 @@ be the tallest thing in the district. **Every other street around the pair stays
 every junction — a car still turns at all of them — so what is gone is one road and not the grid
 around it. It is a `BlockPurpose` with an empty `BlockLayout` on each block, which is what keeps it
 solid for the whole run: a repaint finds nothing to paint back. It obeys the same four exclusions
-plus two of its own — interior blocks only, since the edge of the world is a ring of frontages
-rather than somewhere to put a wall, and single-block lots only, since a four-block zone is already
-a lot.
+plus three of its own — interior blocks only, since the edge of the world is a ring of frontages
+rather than somewhere to put a wall; single-block lots only, since a four-block zone is already
+a lot; and never on a precinct's own paving, checked over the whole mass — both block interiors and
+the street between them — rather than only the street being removed.
+
+**A precinct is paved frontage to frontage, so nothing that takes ground for itself may cover any
+of it, and that is a constraint on where a footprint may land rather than a repair once it has.** A
+calm zone obeys the identical rule for the identical reason: an open zone would only ever repaint a
+precinct's corridor as park, but an apartment complex absorbs its streets *solid*, the same as a big
+building's mass, so both are checked before their footprint is accepted. `CityGenerator.
+_touches_a_precinct` is the one place either question is asked.
 
 **A landmark that took the whole ring around its two blocks would be an island in the lattice** —
 four streets removed by one roll of the dice, where this removes one. The four-sided kind is a

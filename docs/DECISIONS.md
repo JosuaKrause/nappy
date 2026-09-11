@@ -47,6 +47,36 @@ back to exactly zero from the one-car-on-one-percent-of-frames it had been loose
 things changed on the way**: `setup()`'s placement retry budget 8 → 24, kept as defence in depth
 after a test landed an agent on a wall on frame zero; `_recycle()`'s six-roll budget untouched.
 
+## M100 — Small, real, and nobody's · a precinct's pavement is never built over, 2026-09-11
+
+The defect as queued: on seed 24757 two tiles inside a precinct span were not walkable because a
+footprint had been placed across the corridor the span runs down, and `CityGenerator.
+_place_hard_blockers` never read `precinct_spans`. One agent commit on `feature/precinct-pavement`,
+reviewed here. **The gap was wider than the entry said**: by the time it was built the two tiles
+were eighteen, and the larger share was not a big building at all but an apartment complex —
+`_zone_fits`, the one gate open calm zones and complexes share, had no precinct clause, and a
+complex absorbs its inner streets solid the way a big building's mass does. The fix is the
+constraint the entry asked for, at candidate time on both gates: `_the_pair_is_free` (big
+buildings) and `_zone_fits` (zones and complexes) refuse any footprint overlapping a precinct
+span's own tile rect, the "core" band the existing precinct test already measures rather than the
+widened crossroads tail, before the candidate is accepted — never a repair afterwards. **Left
+alone on purpose**: dead ends, whose existing check on the removed segment's street kind already
+excludes a precinct corridor (a straight segment's tile rect cannot overlap a precinct on the
+crossing axis, since a block interior's tile range excludes every corridor column), and
+single-block calm, which structurally cannot touch precinct ground. Measured over a hundred seeds
+the constraint costs no generation retries — the average stays one attempt per city. The older
+precinct test lost the carve-out that had excused a hard blocker on the band, so both precinct
+tests now assert every tile walkable with nothing excused, and the new one pins seed 24757.
+**Merging main after M101 and the seals-nothing fix broke `tests/test_events.gd`'s held-ground
+test on the merge result and nowhere else**: it asserted the sampled days' closure, boundary,
+checkpoint and seal totals against four remembered numbers, and a footprint refused on precinct
+ground is a different city on the same seed, so three of the four moved (456 → 453 boundary
+segments, 396 → 377 checkpoint bodies, 5320 → 5242 seals). Re-measuring would have made the test
+fail on every later generator change while saying nothing about holds, so it now asserts by
+comparison — the seals planned twice on the same seeded stream, with and without the `held`
+out-param, must be the same size, and the other planners only have to have placed something —
+which is the claim the test was always making.
+
 ## M101 — The fire is found before the engine · built 2026-09-11
 
 *(2026-09-09: "the player should encounter the burning building before the fire truck. basically
@@ -93,7 +123,6 @@ fallback the region plan already had. **What it changes in the numbers**: the ba
 3 had been priced on a city with no seals — the plan roughly a third of its real size and its cost
 under half — and now prices the sealed one. A test starts a day through the manager alone and
 asserts every segment it holds is also held after a real `City.start_day`.
-
 
 ## M100 — Small, real, and nobody's · every command-line entry point owes help, built 2026-09-11
 
@@ -1577,7 +1606,6 @@ end before the frame is taken — filed in `TODO.md` under M100.
 
 ### The entry as it stood when the pictures were drawn
 
-
 **All that remains here is eight drawings.** The sealing itself is built and its record is in
 `DECISIONS.md` under M64; the off-screen arrivals item this milestone also carried became M77 and is
 built, recorded there too.
@@ -1981,7 +2009,6 @@ cyclist's whole 3.3s approach reads as warning or as alarm. The vocabulary's fou
 `docs/EVENTS.md` under "The visual vocabulary" and in the cues skill.
 
 ### The entry as it stood when it was built
-
 
 [PLAYTEST-37.md](playtests/PLAYTEST-37.md) finding 5, in three sentences: *"caret == lethal is good but is
 inconsistently applied at the moment"*, *"a cat has a caret but it's benign"*, *"a pedestrian
@@ -5959,7 +5986,6 @@ From `CLAUDE.md`, which is the fuller version:
   A green `check.sh` says nothing about whether the game looks right.
 - Commit the docs in the same commit as the code.
 - Update **this file** at the end of each work session.
-
 
 ---
 
@@ -11848,7 +11874,6 @@ lights are a decision about **which junctions are junctions at all**, and three 
 below are about what a junction is made of. Building them against a lattice that is about to be
 re-asked the same question would be doing the work twice.
 
-
 Playtest 16, in full in **[docs/playtests/PLAYTEST-16.md](playtests/PLAYTEST-16.md)**. Five findings; four of them are
 one complaint: **the city draws a lattice it does not have, and the crowd walks it.** It walks onto a bridge with no
 footway, off a bulkhead into the sea, and through crossroads whose arms are grass — and in every
@@ -12315,7 +12340,6 @@ These need a human playing the game, not more code.
       M6; closed by being asked out loud. See [PLAYTEST-06.md](playtests/PLAYTEST-06.md) for what it does
       to the one-shots, the block arcs and the endings
 
-
 ## SVG-to-PNG style-transfer experiment — 2026-09-10
 
 PLAYTEST-51 replaces the full illustrated overhaul with an experiment: style-transfer the existing SVGs into registered PNG replacements, retaining the illustrated opt-in. The player explicitly asks to archive the old outcomes and remove its code. The old layered-animation, comparison-offset and supersampling repair queue below is superseded by that request, not silently dropped. Adopting SVG-first authoring followed by style transfer as the standard pipeline remains conditional on the experiment working.
@@ -12377,8 +12401,6 @@ define style; `docs/reference/` supplies real-world structure and posture.
       the current callback traces the offset legacy comparison. Extend vehicles, authored events,
       environment and screens only
       after their prerequisite visual gates.
-
-
 
 ### Superseded text from docs/HANDOFF.md
 
@@ -12455,8 +12477,6 @@ when one is missing, so a pulled checkout boots rather than failing on the first
 Preserve `.import` sidecars. The missing-player diagnosis and capture provenance are in
 DECISIONS.md under Texture integration process; the screenshot does not establish appearance
 after the local import repair.
-
-
 
 ### Superseded text from docs/VISUALS.md
 
@@ -12697,7 +12717,6 @@ not merely enabling transparency on a roof. The
 [renderer guide](https://docs.godotengine.org/en/stable/tutorials/rendering/renderers.html)
 describes the Compatibility renderer used for web targets.
 
-
 ### Superseded text from docs/LUNA_HANDOFF.md
 
 # Luna graphics handoff
@@ -12868,7 +12887,6 @@ committed; never commit `.godot/`.
 Before stopping, update this handoff, the main handoff and the open queue; archive history in
 DECISIONS, run lint, commit and push. Tell the player what remains incomplete rather than presenting
 a source-art draft as a finished game overhaul.
-
 
 ### Superseded text from docs/ILLUSTRATED-GAMEPLAY-FIXES.md
 
@@ -13123,7 +13141,6 @@ Keep the illustrated presentation review-only until the player accepts the repai
 Report each repaired defect, the checks and images supporting it, and any remaining family or
 motion gap. Passing headless checks cannot override visible disconnection in the rendered game.
 
-
 ### Superseded text from .claude/skills/illustrated-png/SKILL.md
 
 ---
@@ -13215,7 +13232,6 @@ validation as unverified rather than claiming it passed.
 
 Do not extend a reviewed asset family to other gameplay families until the player has seen and
 accepted the gate that applies to it.
-
 
 ### Superseded text from .claude/skills/illustrated-png/references/texture-integration.md
 
