@@ -21,6 +21,7 @@ func run(t) -> void:
 	_test_add_touch_controls_builds_the_one_control_reader(t)
 	_test_on_title_start_sets_the_controls_mode(t)
 	_test_the_summary_and_pause_restart_signals_are_both_connected(t)
+	_test_no_interior_exists_outside_a_debug_build(t)
 
 ## `main._debug` is read once from `DevFlags.enabled()` rather than asked of the OS inside
 ## `_process()`, precisely so this can set it directly and check the release shape — the same
@@ -159,4 +160,19 @@ func _test_the_summary_and_pause_restart_signals_are_both_connected(t) -> void:
 
 	main._summary.queue_free()
 	main._pause.queue_free()
+	main.free()
+
+## `--start-escape` is a debug-only entry, gated the same shape `_add_debug_layers()` gates
+## `DebugLayers` on `_debug` — `main._escape_scene_requested` is read once from
+## `DevFlags.start_escape()` into a member (this file's own class doc explains why: `main.gd` is
+## never instantiated as a scene anywhere in the suite), so a test can set it directly and check
+## the release shape without a real command line. `_ready_escape()` re-checks the same member at
+## its own top, not only at the call site in `_ready()`, so calling it directly here exercises the
+## same guard a release build would hit.
+func _test_no_interior_exists_outside_a_debug_build(t: Node) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._escape_scene_requested = false
+	main._ready_escape()
+	t.check(main._interior == null,
+			"a release build never builds the interior scene at all, not even off to one side")
 	main.free()

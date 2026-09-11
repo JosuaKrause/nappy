@@ -157,6 +157,27 @@ static func meters_override() -> Vector2:
 static func overview_requested() -> bool:
 	return "--overview" in _args()
 
+## `--start-escape` (or the page's own `?escape=1`) skips the title and the city and starts
+## `main` straight in the escape scene's interior — see docs/TODO.md, "M112 — The escape scene,
+## walkable". Gated the same as every other flag here: `false` outside a debug build, so the one
+## way into a scene with no events, no crowd and no day clock is a debug build, never a URL a
+## release build's own visitor could type.
+##
+## The query form is cheap to answer alongside the command-line one — `_web_query()` already
+## exists for `layers_override()` — and a release web build's own gate is `enabled()`, read here
+## the same way `layers_override()` reads it explicitly rather than through `_args()`, since a
+## bare `_web_query()` carries no gate of its own.
+static func start_escape() -> bool:
+	if "--start-escape" in _args():
+		return true
+	if not enabled():
+		return false
+	for parameter in _web_query().trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() == 2 and pair[0] == "escape" and pair[1] == "1":
+			return true
+	return false
+
 ## `--day-length N` compresses the day, so dusk and the timeout loss can be looked at without
 ## sitting through the whole three minutes. `-1.0` is "not given"; the fallback to
 ## `Tuning.day_length()` stays with the caller, since that also needs to know which day it is.

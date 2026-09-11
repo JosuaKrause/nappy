@@ -12,6 +12,7 @@ func run(t) -> void:
 	_test_nothing_walkable_is_unreachable_from_the_start(t)
 	_test_the_tileset_carries_every_walkable_ground_kind(t)
 	_test_the_scene_paints_every_floor(t)
+	_test_collision_blocks_exactly_the_non_walkable_ground(t)
 
 func _test_every_floor_builds(t: Node) -> void:
 	for kind in InteriorMap.ORDER:
@@ -136,6 +137,34 @@ func _test_the_scene_paints_every_floor(t: Node) -> void:
 				t.check(ground.get_cell_source_id(tile) >= 0,
 						"floor %d tile %s is painted" % [kind, tile])
 		t.check(painted > 0, "floor %d actually has ground tiles to check (%d)" % [kind, painted])
+	scene.free()
+
+## `TileMapLayer` collision only ever comes from a cell that holds a tile — the walls, the gap
+## between a stairwell's two flights and everything off the building's own footprint hold none —
+## so `InteriorScene` builds its own blockers, one `StaticBody2D` per non-walkable cell in a
+## margin around the floor. Checked structurally, by each body's own position, rather than
+## through a physics-space query: a fresh body is not guaranteed to be registered with the
+## physics server until a physics frame has actually run, which nothing here steps.
+func _test_collision_blocks_exactly_the_non_walkable_ground(t: Node) -> void:
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	scene.build(InteriorMap.FloorKind.THIRD)
+	var f: InteriorFloor = InteriorMap.build(InteriorMap.FloorKind.THIRD)
+	var blocked := {}
+	for body in scene.get_node("Collision").get_children():
+		blocked[scene.world_to_tile(body.position)] = true
+	for sw in f.stairwells:
+		t.check(not blocked.has(sw.door_tile),
+				"the %s stairwell's own door tile is not blocked" % sw.side)
+		# The door's own north neighbour is the hallway itself, walkable by design — the
+		# stairwell opens directly off it. The cell south of the door, in the gap row between
+		# the two flights, is the nearby one that is genuinely outside the floor plan.
+		var in_the_gap := Vector2i(sw.door_tile.x, sw.door_tile.y + 1)
+		t.check(blocked.has(in_the_gap),
+				"the %s stairwell's own gap-row column (outside the floor plan) is blocked"
+				% sw.side)
+	for tile: Vector2i in f.tiles:
+		t.check(not blocked.has(tile), "every tile with a floor (%s) is unblocked" % tile)
 	scene.free()
 
 func _flood_fill(f: InteriorFloor, start: Vector2i) -> Dictionary:

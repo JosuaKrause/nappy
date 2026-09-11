@@ -43,6 +43,12 @@ var _tile_set: TileSet
 var _ground: TileMapLayer
 var _walls: Node2D
 var _entities: Node2D
+## Plain `StaticBody2D` blockers, one per non-walkable cell in a margin around the floor's own
+## footprint — the physical half of `InteriorFloor.is_walkable()`. A `TileMapLayer` only gives
+## collision to a cell that holds a tile, and the space north of the hallway, the gap row between
+## a stairwell's two flights and everything off the building's own footprint hold none at all, so
+## without this she could walk clean through a wall she can see, or off the map's own edge.
+var _collision: Node2D
 var _fade_layer: CanvasLayer
 var _fade_rect: ColorRect
 ## True from the first fade-to-black frame to the last fade-from-black frame of a transition, so
@@ -52,6 +58,15 @@ var _transitioning := false
 
 func _ready() -> void:
 	super()
+	_ensure_built()
+
+## Builds the child layers if `_ready()` has not already, so `build()` works on a node that has
+## never entered a tree — a script-only `main` under test adds this as a plain child of itself
+## without ever joining the running scene tree, and `_ready()` only fires on tree entry.
+## Idempotent: a second call after `_ready()` has already run does nothing.
+func _ensure_built() -> void:
+	if _ground:
+		return
 	_ground = TileMapLayer.new()
 	_ground.name = "Ground"
 	add_child(_ground)
@@ -64,6 +79,9 @@ func _ready() -> void:
 	_entities.z_index = 2
 	_entities.y_sort_enabled = true
 	add_child(_entities)
+	_collision = Node2D.new()
+	_collision.name = "Collision"
+	add_child(_collision)
 	_fade_layer = CanvasLayer.new()
 	_fade_layer.name = "FadeLayer"
 	add_child(_fade_layer)
@@ -80,6 +98,7 @@ func _ready() -> void:
 ## `City.start_day()` repaints its own ground rather than patching cells, because a floor plan
 ## this small is cheaper to rebuild than to diff.
 func build(kind: int) -> void:
+	_ensure_built()
 	floor_kind = kind
 	_floor = InteriorMap.build(kind)
 	if not _tile_set:
@@ -92,6 +111,29 @@ func build(kind: int) -> void:
 			_ground.set_cell(tile, source, Vector2i.ZERO)
 	_rebuild_walls()
 	_rebuild_overlays()
+	_rebuild_collision()
+
+## One blocker per non-walkable cell in a margin around the floor's own footprint. `queue_free()`
+## on the old set rather than reusing bodies — a floor swap is rare enough (one per stairwell
+## descent) that rebuilding wholesale costs nothing worth optimising, the same call
+## `_rebuild_walls()` and `_rebuild_overlays()` already make.
+const _MARGIN := 1
+func _rebuild_collision() -> void:
+	for child in _collision.get_children():
+		child.queue_free()
+	for y in range(-_MARGIN, InteriorMap.HALLWAY_ROWS + 3 + _MARGIN):
+		for x in range(-_MARGIN, InteriorMap.HALLWAY_LENGTH + _MARGIN):
+			var tile := Vector2i(x, y)
+			if _floor.tiles.has(tile):
+				continue
+			var body := StaticBody2D.new()
+			var shape := CollisionShape2D.new()
+			var rectangle := RectangleShape2D.new()
+			rectangle.size = Vector2.ONE * TILE
+			shape.shape = rectangle
+			body.position = tile_to_world(tile)
+			body.add_child(shape)
+			_collision.add_child(body)
 
 func _rebuild_walls() -> void:
 	for child in _walls.get_children():

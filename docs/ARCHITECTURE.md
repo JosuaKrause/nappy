@@ -158,7 +158,8 @@ windowed, saves the viewport after N frames and quits.
 ### Dev flags and release builds
 
 `DevFlags` (`src/dev/dev_flags.gd`) parses `--seed`, `--day`, `--spawn`, `--follow`, `--meters`,
-`--overview`, `--day-length`, `--ending`, `--controls` and `--layers`; `src/dev/auto_screenshot.gd`
+`--overview`, `--day-length`, `--ending`, `--controls`, `--layers` and `--start-escape` (also
+reachable as `?escape=1`); `src/dev/auto_screenshot.gd`
 parses `--screenshot` and the flags nested under it (`--after`, `--walk`, `--flee`, `--press`,
 `--tap`) itself, and gates its own entry point the same way rather than moving that parsing out.
 Both read `OS.is_debug_build()`,
@@ -310,8 +311,11 @@ Handles day transitions and ending selection. Serialisable for save/continue.
 `Baby` never learns what a tile or an event is. It asks a `WorldContext` three questions —
 `is_calm_zone()`, `is_alley()`, `total_excitement_at()` — and that is the entire surface
 between the meters and the world. The debug world answers with hand-placed test data; the generated
-city and the event manager answer for real. Adding an event type therefore never touches the meter
-code, and the meters can be unit-tested against a fake world.
+city and the event manager answer for real. `InteriorScene` (`--start-escape`) is a third
+implementor that overrides nothing at all: the base class's own defaults (1.0 recovery everywhere,
+no excitement sources) are exactly the "meters idle" the escape scene wants, since it has no
+events and no crowd. Adding an event type therefore never touches the meter code, and the meters
+can be unit-tested against a fake world.
 
 ## Excitement aggregation
 

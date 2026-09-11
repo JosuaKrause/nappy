@@ -21,7 +21,16 @@ const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
 ## check the release shape, the way `hud._debug` already does for the HUD's own gate.
 var _debug := DevFlags.enabled()
 
+## Read once into a member for the same reason `_debug` is: so a test can set it directly and
+## check the release shape, rather than only being able to exercise the flag from an actual debug
+## build's own command line. `_ready_escape()` reads this member rather than calling
+## `DevFlags.start_escape()` again, the same shape `_add_debug_layers()` reads `_debug`.
+var _escape_scene_requested := DevFlags.start_escape()
+
 var _city: City
+## Set instead of `_city` under `--start-escape`; the two are never both non-null. See
+## `_ready_escape()`.
+var _interior: InteriorScene
 var _player: Stroller
 var _baby: Baby
 var _day: DayController
@@ -81,6 +90,11 @@ func _ready() -> void:
 	# `get_tree().paused` while the player walks, the crowd drives and the resistance deadline
 	# runs out behind a screen saying the day is over.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# `--start-escape` is a different boot entirely — no title, no city, no day — so it branches
+	# before any of the ordinary run's own scaffolding exists. See `_ready_escape()`.
+	if _escape_scene_requested:
+		_ready_escape()
+		return
 	# Starts in the shape it should have on this build rather than trusting the scene file's own
 	# default (`true`): every later flip of it is relative to whichever screen is up, and a boot
 	# path that never reaches one of them should still open with the right answer.
@@ -185,6 +199,73 @@ func _ready() -> void:
 	if (screenshot or "--no-title" in args) and not "--title" in args:
 		return
 	_open_the_title()
+
+## `--start-escape`'s own boot: the third floor's hallway, her at the door with the baby in her
+## arms, and the way down. No title, no `City`, no events, no crowd, no `DayController` and no
+## `ResistanceDirector` — the milestone this exists for is judging the walking, the floor
+## transitions and the stair tiles on their own, before the finale puts any pressure on top of
+## them, so nothing here builds a clock or an ending. The HUD still comes up: its two meters
+## idle exactly as `WorldContext`'s own defaults leave them (1.0 recovery everywhere, nothing
+## charging excitement), which is "meters idle" for free rather than a case this has to build.
+func _ready_escape() -> void:
+	# Guarded here too, not only at the call site in `_ready()` — the same shape
+	# `_add_debug_layers()` reads `_debug` in, so a test can call this directly and check the
+	# release shape without also driving the rest of `_ready()`.
+	if not _escape_scene_requested:
+		return
+	_status.visible = false
+	GameState.start_run(DevFlags.seed_override())
+
+	_interior = InteriorScene.new()
+	_interior.name = "Interior"
+	add_child(_interior)
+	_pauses_with_the_game(_interior)
+	_interior.build(InteriorMap.FloorKind.THIRD)
+	_interior.exit_requested.connect(_on_escape_exit_requested)
+
+	_player = STROLLER.instantiate()
+	_player.carrying = true
+	_interior.add_entity(_player)
+	_player.set_camera_limits(_interior.camera_bounds())
+	_baby = _player.get_node("Baby")
+
+	_hud = HUD.instantiate()
+	add_child(_hud)
+	_add_touch_controls()
+
+	# Built but not opened — same reasoning `_ready()` builds `_title` up front for the ordinary
+	# run: `_on_escape_exit_requested()` needs somewhere to send the emergency exit rather than
+	# building a screen the moment it is first asked for.
+	_title = TITLE_SCREEN.instantiate()
+	add_child(_title)
+	_title.start_requested.connect(_on_escape_title_start)
+	_title.quit_requested.connect(_quit)
+
+	_apply_orientation()
+	_player.reset_at(_interior.start_world_position(), Vector2.UP)
+
+	var screenshot := AutoScreenshot.from_command_line()
+	if screenshot:
+		add_child(screenshot)
+
+## `InteriorScene.exit_requested` fires once the emergency exit's own fade has covered the screen
+## — see `InteriorScene._start_exit()`. Pausing and opening `_title` is what "returns to the title
+## screen" actually has to mean here: a scene reload would read `--start-escape` off the same
+## command line and boot straight back into this function, so the screen the spec names would
+## never actually appear on screen.
+func _on_escape_exit_requested() -> void:
+	get_tree().paused = true
+	_hud.visible = false
+	_title.open(false)
+
+## The title screen's own start button, reached after the emergency exit — there is no larger run
+## behind this debug entry to resume, so the only thing left worth doing with it is walking the
+## escape scene again from the top. `--start-escape` is read fresh on the reload, so this is also
+## "run it again" for anybody testing the walk down.
+func _on_escape_title_start(mode: ControlsMode.Mode) -> void:
+	_touch_controls.set_mode(mode)
+	get_tree().paused = false
+	get_tree().call_deferred("reload_current_scene")
 
 ## Both screens' own restart reaches the one thing that means it, and both screens' own way out
 ## reaches the same quit — pulled into its own function, called once `_summary` and `_pause` both
@@ -404,14 +485,19 @@ func _apply_orientation() -> void:
 	get_window().content_scale_size = ScreenOrientation.content_scale_size(rotate)
 	_player.set_screen_rotation(deg_to_rad(90.0) if rotate else 0.0)
 	_touch_controls.rotated = rotate
-	_edge.rotated = rotate
+	# `_edge` (the screen-edge badge) does not exist under `--start-escape` — there are no events
+	# to warn about — see `_ready_escape()`.
+	if _edge:
+		_edge.rotated = rotate
 	_hud.set_rotated(rotate)
 	# Every layer of screen furniture carries the same rotation, so the world (rotated by the
 	# camera above) and everything drawn over it agree — see `ScreenOrientation`'s class doc for
 	# why a `CanvasLayer` transform is the mechanism and `apply_to_layer()` the one place that
-	# reads `if rotate: ... else: IDENTITY`.
+	# reads `if rotate: ... else: IDENTITY`. Some layers are absent under `--start-escape` (see
+	# `_ready_escape()`), so the list is filtered rather than assumed complete.
 	for layer in _screen_furniture_layers():
-		ScreenOrientation.apply_to_layer(layer, rotate)
+		if layer:
+			ScreenOrientation.apply_to_layer(layer, rotate)
 
 func _screen_furniture_layers() -> Array[CanvasLayer]:
 	var layers: Array[CanvasLayer] = [
@@ -610,7 +696,7 @@ func _restart_run() -> void:
 	get_tree().paused = false
 	get_tree().call_deferred("reload_current_scene")
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	_update_follow_camera()
 	# Re-asked every frame rather than only on `size_changed` — see `_apply_orientation()`'s own
 	# doc for why a signal alone can latch the wrong answer. The cost is one vector comparison.
@@ -620,6 +706,9 @@ func _process(_delta: float) -> void:
 	if window and ScreenOrientation.wants_rotation(window.size, _touch_available) != _rotated:
 		_apply_orientation()
 	if not _player or not _baby:
+		return
+	if _interior:
+		_interior.process_player(_player, delta)
 		return
 	if _in_the_title:
 		# `EventManager` streams around the player and there is no player, so the street outside the
@@ -987,6 +1076,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		_toggle_debug_layer(layer_key)
 		return
 	if not event.is_action_pressed("pause"):
+		return
+	# `_pause` is never built under `--start-escape` — see `_ready_escape()` — so Esc does nothing
+	# there rather than opening a screen with no ordinary run behind it to pause.
+	if not _pause:
 		return
 	if _pause.is_open() or _title.is_open():
 		return
