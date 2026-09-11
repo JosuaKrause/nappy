@@ -140,11 +140,15 @@ func field_distance(at: Vector2, axis: Vector2, velocity: Vector2, point: Vector
 ## reaches further ahead of the emitter than behind it. `e` is `Tuning.field_eccentricity()` of
 ## `velocity`'s own speed; `θ` is the angle between `velocity` and the vector to `point`.
 ##
-## `d_eff = r · (1 − e·cosθ) / (1 − e)` is the polar form of a conic from its focus: at `θ = 0`
-## (dead ahead) `d_eff = r`, so a field's forward reach is exactly its catalogued radius, unchanged
-## from a disc's; behind (`θ = π`) it is `r · (1−e)/(1+e)`, and abeam (`θ = π/2`) it is `r · (1−e)`
-## — both smaller, which is the whole point. Zero `velocity` (or a `point` sitting on `from`) falls
-## back to the plain Euclidean distance a disc always used.
+## **The resting disc's own width is what the ellipse keeps** — *"the stretching should retain
+## the area so an unstretched car field should be the same width with shorter height", "if anything
+## the moving size should be bigger than the rest size"* — so the boundary at level `R` is
+## `r(θ) = R / (1 − e·cosθ)`: exactly `R` abeam (`θ = π/2`) whatever the speed, `R · Tuning.
+## field_scale(e)` (`R/(1−e)`) dead ahead, `R/(1+e)` behind. Inverting that for the level a given
+## `r` sits on: `d_eff = r · (1 − e·cosθ)`, with no `field_scale()` term of its own — the growth
+## `field_scale()` gives the boundary is exactly what cancels out of its own inverse, which is why
+## only `_eccentric_field_outline()` below calls it directly. Zero `velocity` (or a `point` sitting
+## on `from`) falls back to the plain Euclidean distance a disc always used.
 static func eccentric_distance(from: Vector2, velocity: Vector2, point: Vector2) -> float:
 	if velocity.is_zero_approx():
 		return from.distance_to(point)
@@ -154,14 +158,15 @@ static func eccentric_distance(from: Vector2, velocity: Vector2, point: Vector2)
 		return 0.0
 	var e := Tuning.field_eccentricity(velocity.length())
 	var cos_theta := velocity.normalized().dot(to_point) / r
-	return r * (1.0 - e * cos_theta) / (1.0 - e)
+	return r * (1.0 - e * cos_theta)
 
 ## The level set `field_distance()` reaches `level` at — the actual boundary `Tuning.falloff()`
 ## draws for this shape, read by the debug view's fields layer (`DebugLayers`, see
 ## docs/TELEMETRY.md, "The debug view") so a screenshot cannot disagree with the arithmetic. Same
 ## split as `field_distance()`: stationary is this shape's own boundary (a circle for a point, a
 ## stadium for a segment, both at radius `level`); moving sets the shape aside and traces the polar
-## ellipse `eccentric_distance()` inverts, focus at `at`, forward reach `level` along `velocity`.
+## ellipse `eccentric_distance()` inverts, focus at `at`, abeam reach `level` and forward reach
+## `level · Tuning.field_scale(e)` along `velocity`.
 func field_outline(at: Vector2, axis: Vector2, velocity: Vector2, level: float,
 		samples: int = _ELLIPSE_SAMPLES) -> PackedVector2Array:
 	if not velocity.is_zero_approx():
@@ -204,17 +209,20 @@ func _stadium_field_outline(at: Vector2, axis: Vector2, level: float, samples: i
 		points.append(trail + Vector2(cos(a), sin(a)) * level)
 	return points
 
-## The polar ellipse `eccentric_distance()` inverts: `r(θ) = level · (1−e)/(1−e·cosθ)`, sampled at
+## The polar ellipse `eccentric_distance()` inverts: `r(θ) = level / (1 − e·cosθ)`, sampled at
 ## `samples` angles `θ` around `velocity`'s own heading, so the drawn boundary is the exact level
-## set the falloff prices rather than a circle standing in for it.
+## set the falloff prices rather than a circle standing in for it. `level · Tuning.field_scale(e)`
+## is the conic's own scale `L(e) = R/(1−e)` — see that function's docstring — so the boundary holds
+## `level` exactly abeam at every speed and reaches `level · field_scale(e)` dead ahead.
 func _eccentric_field_outline(at: Vector2, velocity: Vector2, level: float, samples: int
 		) -> PackedVector2Array:
 	var e := Tuning.field_eccentricity(velocity.length())
+	var l := level * Tuning.field_scale(e)
 	var heading_angle := velocity.angle()
 	var points := PackedVector2Array()
 	for i in samples:
 		var theta := TAU * float(i) / float(samples)
-		var r := level * (1.0 - e) / (1.0 - e * cos(theta))
+		var r := l * (1.0 - e) / (1.0 - e * cos(theta))
 		var world_angle := heading_angle + theta
 		points.append(at + Vector2(cos(world_angle), sin(world_angle)) * r)
 	return points

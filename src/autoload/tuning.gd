@@ -1654,6 +1654,19 @@ const FIELD_ECCENTRICITY_SPEED := 260.0
 func field_eccentricity(speed: float) -> float:
 	return minf(FIELD_ECCENTRICITY_MAX, speed / FIELD_ECCENTRICITY_SPEED)
 
+## The moving field's growth over its resting disc: `L(e) = R / (1 − e)`, so a field at the
+## catalogued radius `R` reaches `R · field_scale(e)` dead ahead once it moves — the width the
+## player asked to keep. *(2026-09-10, overturning M61's field record: "the stretching should
+## retain the area so an unstretched car field should be the same width with shorter height" …
+## "if anything the moving size should be bigger than the rest size since moving causes more
+## excitement.")* `field_scale(0)` is 1.0, the plain disc M61 always gave a standing emitter.
+##
+## The one place this conic's own scale is computed — `GroundShape.eccentric_distance()` and
+## `GroundShape._eccentric_field_outline()` both go through it, so a future change to the growth
+## curve cannot update one and miss the other.
+func field_scale(e: float) -> float:
+	return 1.0 / (1.0 - e)
+
 ## Excitement contribution of a source of `intensity` at distance `d` — `d` is
 ## `GroundShape.field_distance()`/`eccentric_distance()` now, distance to a body's spine or to a
 ## moving emitter's own elliptical kernel rather than always the plain distance to a centre, but

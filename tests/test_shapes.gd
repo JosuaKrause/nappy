@@ -23,6 +23,8 @@ func run(t) -> void:
 	_test_field_distance_of_a_stationary_point_is_unchanged(t)
 	_test_field_distance_of_a_stationary_segment_is_a_capsule(t)
 	_test_field_distance_of_a_moving_point_is_an_ellipse(t)
+	_test_abeam_half_width_equals_the_resting_radius_at_every_speed(t)
+	_test_forward_reach_grows_monotonically_with_speed(t)
 	_test_zero_speed_gives_a_disc(t)
 	_test_approaching_costs_more_than_receding(t)
 	_test_no_emitting_segment_row_moves(t)
@@ -330,25 +332,60 @@ func _test_field_distance_of_a_stationary_segment_is_a_capsule(t) -> void:
 			"across the spine's middle, the level set at 'outer' sits at 'outer' from the centre — "
 			+ "no half_length added, which is the capsule's whole point")
 
+## M114, the moving field grows forward: the resting disc's own width is what the ellipse keeps
+## (`R` abeam at every speed), and motion only adds reach *ahead* of it — `R · Tuning.field_scale(e)`
+## dead ahead, `R/(1+e)` behind, both derived from `GroundShape.eccentric_distance()`'s own
+## docstring.
 func _test_field_distance_of_a_moving_point_is_an_ellipse(t) -> void:
 	var speed := 130.0
 	var e := Tuning.field_eccentricity(speed)
+	var scale := Tuning.field_scale(e)
 	var velocity := Vector2(speed, 0.0)
 	var outer := 100.0
-	var forward := Vector2(outer, 0.0)
+	var forward_r := outer * scale
+	var forward := Vector2(forward_r, 0.0)
 	t.check(is_equal_approx(GroundShape.eccentric_distance(Vector2.ZERO, velocity, forward), outer),
-			"dead ahead, the level set at 'outer' sits at exactly 'outer' — forward reach is unchanged")
-	var rear_r := outer * (1.0 - e) / (1.0 + e)
+			("dead ahead, the level set at 'outer' sits at outer * field_scale(e) (%.1f) — the field "
+					% forward_r) + "reaches further ahead of itself than it is wide")
+	var rear_r := outer / (1.0 + e)
 	var behind := Vector2(-rear_r, 0.0)
 	t.check(is_equal_approx(GroundShape.eccentric_distance(Vector2.ZERO, velocity, behind), outer),
-			"behind, the level set at 'outer' sits at outer * (1-e)/(1+e) (%.1f), closer than ahead"
+			"behind, the level set at 'outer' sits at outer / (1+e) (%.1f), closer than ahead"
 			% rear_r)
-	var abeam_r := outer * (1.0 - e)
-	var abeam := Vector2(0.0, abeam_r)
+	var abeam := Vector2(0.0, outer)
 	t.check(is_equal_approx(GroundShape.eccentric_distance(Vector2.ZERO, velocity, abeam), outer),
-			"abeam, the level set at 'outer' sits at outer * (1-e) (%.1f)" % abeam_r)
-	t.check(rear_r < abeam_r and abeam_r < outer,
-			"and the three reaches are strictly ordered: behind < abeam < ahead")
+			"abeam, the level set at 'outer' sits at exactly 'outer' — the resting disc's own width, "
+			+ "kept whatever the speed")
+	t.check(rear_r < outer and outer < forward_r,
+			"and the three reaches are strictly ordered: behind < abeam(=outer) < ahead")
+
+## The player's own reference: *"an unstretched car field should be the same width... if anything
+## the moving size should be bigger than the rest size"* — the abeam half-width is the resting
+## radius `R` exactly, at a standstill and at every speed up to the eccentricity cap.
+func _test_abeam_half_width_equals_the_resting_radius_at_every_speed(t) -> void:
+	var outer := 120.0
+	for speed in [0.0, 40.0, 130.0, 165.0, 240.0, 500.0]:
+		var velocity := Vector2(speed, 0.0)
+		var abeam := Vector2(0.0, outer)
+		var d := GroundShape.eccentric_distance(Vector2.ZERO, velocity, abeam)
+		t.check(is_equal_approx(d, outer),
+				("abeam of a %.0fpx/s emitter, the level set at 'outer' still sits at exactly " % speed)
+				+ "'outer' (%.1f, got %.1f) — width is kept, not stretched" % [outer, d])
+
+## The width the player asked to keep is not the reach the player asked to grow: forward reach
+## strictly increases with speed, right up to the eccentricity cap.
+func _test_forward_reach_grows_monotonically_with_speed(t) -> void:
+	var outer := 120.0
+	var previous := outer
+	for speed in [0.0, 50.0, 100.0, 130.0, 165.0, 240.0, 390.0, 500.0]:
+		var scale := Tuning.field_scale(Tuning.field_eccentricity(speed))
+		var forward_reach := outer * scale
+		t.check(forward_reach >= previous - 0.001,
+				("forward reach at %.0fpx/s (%.1f) is not less than the previous speed's (%.1f) — " % [
+						speed, forward_reach, previous]) + "it only ever grows")
+		previous = forward_reach
+	t.check(previous > outer, "and by the fastest speed sampled, forward reach has actually grown "
+			+ "past the resting radius (%.1f > %.1f)" % [previous, outer])
 
 func _test_zero_speed_gives_a_disc(t) -> void:
 	var point := Vector2(37.0, -14.0)

@@ -95,18 +95,29 @@ func _test_field_outline_of_a_stationary_segment_is_a_stadium(t) -> void:
 			"across it, only 'level' — no half_length added, which is the capsule's whole point",
 			1.0)
 
+## M114, the moving field grows forward: the drawn boundary holds `level` exactly abeam (theta =
+## pi/2, sample `_ELLIPSE_SAMPLES / 4` of `_eccentric_field_outline`'s own even spacing) and reaches
+## `level * Tuning.field_scale(e)` dead ahead (sample zero), further than `level` rather than equal
+## to it — the picture `DebugLayers`' layer `1` draws has to agree with the same growth the meter
+## prices.
 func _test_field_outline_of_a_moving_point_is_the_eccentric_ellipse(t) -> void:
 	var speed := 130.0
 	var velocity := Vector2(speed, 0.0)
 	var level := 100.0
+	var scale := Tuning.field_scale(Tuning.field_eccentricity(speed))
 	var points := GroundShape.field_outline_at(Vector2.ZERO, velocity, level)
 	t.check(points.size() > 0, "the moving boundary actually samples some points")
 	# Sample zero is theta=0 in `_eccentric_field_outline` — dead ahead, along `velocity` — where
-	# the effective distance is exactly `level`, the same forward reach a disc always had.
-	t.close_to(points[0].distance_to(Vector2.ZERO), level,
-			"the foremost sampled point sits exactly 'level' from the emitter (forward reach is "
-			+ "unchanged)", 0.5)
+	# the effective distance is `level * field_scale(e)`, further than a disc's plain `level`.
+	t.close_to(points[0].distance_to(Vector2.ZERO), level * scale,
+			"the foremost sampled point sits at level * field_scale(e) (%.1f) from the emitter — "
+			% (level * scale) + "forward reach grew past the resting radius", 0.5)
 	t.check(points[0].x > 0.0, "and it lies ahead, in the direction of travel")
+	# A quarter of the way round the even spacing is theta = pi/2, abeam.
+	var abeam_index := points.size() / 4
+	t.close_to(points[abeam_index].distance_to(Vector2.ZERO), level,
+			"the abeam sampled point sits at exactly 'level' — the resting disc's own width, kept "
+			+ "whatever the speed", 0.5)
 	var bounds := _bounds(points)
 	t.check(bounds.position.x > -level,
 			"the boundary's own rear edge sits closer than 'level' behind the emitter — the "
