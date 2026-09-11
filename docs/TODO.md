@@ -506,36 +506,34 @@ queue reprioritised". What is left is one decision nobody implemented and one me
       keeps the placement it has, because the lesson depends on being unavoidable; from day 4 it
       becomes a thing that is *somewhere*, placed on the map the way `alley_robbery` is, and met by
       routing into it — no siting on her heading, and no lesson line, which the HUD already
-      restricts to the teaching day. The row needs a day-dependent spawn mode or a second row for the later days;
-      `EventDirector._teach_the_run()`, which moves a pursuit to the head of the owed list on the
-      teaching day only, is unaffected either way. A test asserts that a day-4 `charging_dog` is
-      never sited on her heading.
-
-      **Measured, playtest 20** *(2026-09-03: "for some reason pursuing dogs after the run tutorial
-      have a shorter lead up time making them much harder to react to.")*: across five
-      `charging_dog` encounters in one seven-day run
-      (`docs/evidence/archive/session-captures/2026-09-03/run-2026-09-03T002310-seed4070543669-5d342c9.log`),
-      the day 3 tutorial encounter and every encounter afterward that ended in evasion ran **1.5
-      seconds** from the `chase` starting to the dog giving up. The two encounters that instead
-      killed her — one on day 4, one on a day 5 retry — ran **0.8 and 0.9 seconds**, roughly half,
-      with the dog closing distance far faster once its telegraph appeared: the tutorial encounter's
-      telegraph closed 20px in 1.1s, the day 4 encounter's closed roughly 70px in 0.3s. The row
-      carries one `inner_radius` (26px) and one `outer_radius` (150px) for every day, so nothing in
-      the row itself shortens the lead time — the gap is a placement effect, and this item is the
-      first thing to check before treating it as a row-tuning question. M77 has since moved every
-      pursuer's siting to past the edge of the view along her heading, so re-measure on the current
-      tree before assuming the gap is still there
+      restricts to the teaching day. **Half of this is built and the half is not the decision**
+      (`DECISIONS.md`, M96): from day 4 the director sites the dog off her heading — a bearing
+      50–110° to one side, past the edge of the view — so it is never in front of her on her own
+      line, and a test holds that; but it is still sited *near her* by the director, not placed on
+      the map and met by routing. The agent stopped there because the map placement needs a
+      day-dependent `spawn_mode` on the def (`event_def.gd`, then the scheduler reading it), and a
+      second row is blocked by the one-picture-per-row check. **What remains**: the def gains a
+      spawn mode for the days after `first_day` — the smallest shape is a second `spawn_mode` field
+      that applies from `RUN_TAUGHT_DAY + 1`, read where the scheduler decides how a row is sited —
+      `charging_dog` takes `ALLEY`-style map placement from day 4 exactly as `alley_robbery` does,
+      the off-heading siting goes, and `_teach_the_run()` stays untouched. The lead-time gap
+      playtest 20 measured (1.5s to evade against 0.8–0.9s on the days it killed her) is closed by
+      M77 already: re-measured on the current tree, the notice and the evasion window are identical
+      on every heading; the figures are in `DECISIONS.md` under M96
 **The run is taught on day 3, and stays there.** *Asked for as `RUN_TAUGHT_DAY` 3 → 2 · overturned
 on 2026-09-09: "run taught goes to 3 not 2."* The constant gates everything that pursues, and day 3
 is where act I stops being a nice neighbourhood; the options weighed when the move was first
 proposed are in `DECISIONS.md` under M49, in the item "Day 3 carries act I's whole payload".
 
-- [ ] **Dying at high excitement on a quiet street: is one contact at 90 a cliff?** A bump is about
-      10.8 points, so above 89 a single one ends the day on an empty street. Two cheap checks:
-      whether the pram's `EXCITEMENT_NEARLY_CRYING` cue, which the baby shows from 80 of the
-      100-point meter, is drawn and actually read; and a rig walking an empty street at 90 into one
-      walker, to say whether the day ends. If it does, the fix is a rule about the last ten points,
-      not a density change
+- [ ] **One contact at 89 is a cliff, measured; the rule about the last ten points is the
+      player's to give.** A bump is about 10.8 points, and a rig confirmed it on 2026-09-11
+      (`DECISIONS.md`, M96): one walker's startle against the baby at 90 and at 89 both end at 100
+      and crying; at 85 it ends at 96.8 and awake. The pram's nearly-crying cue is drawn from 80 of
+      the 100-point meter, by code rather than by eye — whether it is *read* is a played question.
+      The entry's own rule stands: the fix is a rule about the last ten points, not a density
+      change — a floor on what one contact may add near the top, a grace window after the cue, or
+      nothing, if a walker at 89 on an empty street is meant to be the risk it is. Decide, then it
+      is one constant and a test beside `tests/test_meters.gd`'s pinned measurement
 
 ---
 
@@ -721,9 +719,13 @@ is still true.
       with that at `INF` — so a `pursues_within` row streamed out after it has noticed her returns
       waiting, standing where the day planted it. Not currently dangerous: `alley_robbery` has had
       it since the mechanic was built, and the heated patrol that surfaced it can never be
-      `hard_fail`. `tests/test_heat.gd` pins the behaviour rather than the one the field name
-      implies, so a fix fails there first. The fix is `resume()` carrying the notice, checked against
-      every `pursues_within` row rather than the one that found it
+      `hard_fail`. **Half built** (`DECISIONS.md`, M100): `resume()` now takes the notice as a
+      third, defaulted argument and restores it, and `tests/test_heat.gd` holds that for every
+      `pursues_within` row. **What remains is the caller**: `EventManager._stream_in()` never
+      captures a streamed-out instance's notice, because `EventScheduler.Planned` has no field for
+      it — so the argument is always its default and the behaviour is unchanged in play. The fix
+      is the field on `Planned`, written when an instance streams out and passed on `resume()`,
+      with a test that streams a noticed pursuer out and back through `EventManager` itself
 - [ ] **`chat` is written and undocumented.** `EventManager` logs a `chat` entry when
       `chatting_mother` starts a conversation, and the table of entry kinds in `docs/TELEMETRY.md`
       has no row for it. One row, plus the check that would have caught it: something asserting the
