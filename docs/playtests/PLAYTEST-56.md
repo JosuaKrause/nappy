@@ -53,3 +53,7 @@ car is two layers, a tintable paint body and one trim layer holding windows, tyr
 together, so the wheels cannot stay still while the trim moves; the wheels come out into a layer
 of their own, SVG first. Filed under M108 beside the stride item, crowd cars first and the event
 vehicles that move the same way.
+
+Confirmed when the split was proposed:
+
+> yeah we can extract the wheels and make them separate svgs
