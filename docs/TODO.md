@@ -927,7 +927,14 @@ is still true.
       the door segments above — and `ResistanceDirector._maybe_set_a_trap()` refuses a bearing
       that lands there. `tests/test_generator.gd` asserts no alley tile on the home block over
       many seeds; the scheduler test asserts nothing planned on the block's segments. The spawn
-      kill needs no fix of its own once the ground is gone
+      kill needs no fix of its own once the ground is gone. **The run that showed it**: seed
+      291862120, day 7, five attempts lost in about half a second each,
+      `docs/evidence/archive/session-captures/2026-09-10/run-205011-seed291862120-v0.8.2-416-g07b801b/`.
+      Its log names the second cause: the mark was offered far away at (37,149) and the
+      *never-seen mark follows her* rule (M78) moved it at second zero to (79,83), the alley two
+      tiles from the doorstep at (81,84), guard and all. So the relocation is covered by the same
+      exclusion — a mark never follows her onto the home block's ground — and the test below
+      replays this seed
 - [ ] **A car's strike box sits half a car behind its picture going north, half a car ahead going
       south.** *(2026-09-10, playtest 55, read off the debug view: "the dead zone of a car is
       trailing the car instead of leading the car?")* `CrowdAgent._draw_body` draws a car with

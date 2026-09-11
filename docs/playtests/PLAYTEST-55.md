@@ -59,6 +59,12 @@ Asked whether a bar raised for a car also lets her through without a hold:
 
 ## An alley at the home, and the robber who spawns with it
 
+The run: `docs/evidence/archive/session-captures/2026-09-10/run-205011-seed291862120-v0.8.2-416-g07b801b/`,
+seed 291862120, day 7, five attempts each lost in about half a second. Its log shows the
+mechanism: the chalk mark is offered at (37,149), far away; at second zero the *never-seen mark
+follows her* rule (M78) moves it to (79,83), the alley two tiles from the doorstep at (81,84), and
+re-rolls the guard 68px from it; she is within reach of both before she has moved.
+
 > one bug that will automatically resolve once we pick the no alley at home up. right now if there
 > spawns an alley at the home (which shouldn't happen) the robber spawns too leading to a spawn
 > kill every time.
