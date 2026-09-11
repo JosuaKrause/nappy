@@ -1323,6 +1323,18 @@ Top-down camera with a fake vertical extrusion:
   both drawn as overlays, after the wall, rather than replacing a texture the way a storefront
   does. The awning is the one piece of a front that leaves the wall plane; it stays inside the
   wall's own footprint rather than reaching over the pavement's walkable band.
+- **Street trees stand in pits on the pavement, along `RESIDENTIAL` and `COMMERCIAL` streets at
+  a seeded spacing** — `StreetTrees.planted()`, fixed for the run like a building rather than
+  rebuilt daily like a park's own trees, since a street's frontage does not change with what a
+  block behind it currently is. A tree stands at the kerb-side tile of a pavement, never within a
+  tile of either end of its street (which is already where every crossing and every fixed
+  checkpoint mouth stands — see "What closes a street" above) and never within a tile of the
+  home's own door. It is a `Prop` like a park tree, feet-anchored so she passes behind its canopy,
+  but it is the one prop in the game with an actual body: a small collision circle at the trunk,
+  distinct from the wider canopy shape the shadow reads, kept well inside the one tile it stands
+  on so the pavement's other tile stays a full lane wide. `FALLEN_TREE`'s own placement prefers a
+  street `StreetTrees` already put trees on, from the same function, so the closure marker's
+  picture and the standing trees beside it are never two different species.
 - Everything is `y_sort_enabled`, so the player passes behind and in front of props
   correctly — with one deliberate exception. **Buildings are a layer of their own, beneath the
   entities, and sort against nothing but each other.** A building's origin is the south edge of its lot and its mass
