@@ -65,11 +65,22 @@ it, and a finished run goes back to it.
 
 ## Dev flags
 
-Everything after `--` is passed to the game:
+Everything after `--` is passed to the game, gated behind a debug build so none of it does
+anything in an exported release:
 
 ```sh
 godot --path . -- --seed 12345 --day 9 --overview
 ```
+
+`tools/run.sh` and `tools/shot.sh` forward whatever you give them the same way, validated first
+against the shapes below before either ever launches Godot — an unknown flag or one missing its
+value is rejected on the spot. That accept-list is not a copy of this table: it lives in
+`src/dev/dev_flags.gd`'s own `DEV_FLAG_TABLE`, which both scripts read live, and `tools/run.sh
+--help` / `tools/shot.sh --help` print it back out, so the shell side cannot drift from what the
+game actually reads. This table is the semantics — what each flag *means* — and
+`tools/test_cli_help.sh` (run in CI) asserts that every flag name in `DEV_FLAG_TABLE` still
+appears somewhere below, so an entry added to one and not the other fails the build rather than
+going quietly stale.
 
 | Flag | Effect |
 | --- | --- |
@@ -87,6 +98,12 @@ godot --path . -- --seed 12345 --day 9 --overview
 | `--walk north\|south\|east\|west\|<script>` | Hold a direction down for the whole run, or walk a script of timed steps — `1s5e` is one second south then five east, and `3@45@2e` is three seconds at a bearing of 45° then two east. A bearing is degrees clockwise from north, delimited by a pair of `@`s so its digits do not run into the next step's |
 | `--flee [delay]` | Turn round and run when something starts chasing her, after dithering for `delay` seconds |
 | `--press <action\|key:name> <seconds>` | Tap an action or a bare key, so a rig can press one. May be given more than once — `--press pause 2 --press key:r 3.5` |
+| `--tap X Y` | Send one synthetic touch at the raw screen position (X, Y), the moment the run starts |
+| `--touch` | Force the touch control scheme, for a desktop screenshot of it |
+| `--controls joystick\|tap` | Force a control scheme, the command-line half of the page's own `?controls=` |
+| `--layers 1,3` | Set which of the three debug geometry layers start on, for a reproducible rig screenshot |
+| `--svg` | Force SVG presentation over PNG, even where a matching PNG asset exists (also reachable as a release web build's own `?svg=1`) |
+| `--start-escape [stairwell:left\|stairwell:right\|lobby\|basement\|floor:N]` | Start straight in the escape scene's interior instead of the title and the city, optionally at one of its seven parts |
 | `--title` | Open on the title screen even under a screenshot rig, which otherwise skips it |
 | `--no-title` | Skip the title screen |
 | `--ending bad\|neutral\|good` | Put the given ending screen up at boot, to screenshot one without playing a run out to reach it |

@@ -659,22 +659,6 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **Every command-line entry point prints help on `--help`/`-h` and rejects what it does
-      not understand, and today most do neither.** *(2026-09-11: "help doesn't work it just
-      starts the game which becomes unresponsive. also invalid arguments should get rejected and
-      cause the help to be printed"; "rejecting invalid args and having a --help/-h is a general
-      requirements for everything that is cli accessible".)* The rule is the **cli-tools** skill;
-      this is the item that makes every existing tool obey it. `tools/run.sh` is the case that
-      showed it: it forwards everything to the game as a dev flag and reads none of it, and
-      `DevFlags` looks each flag up by name and ignores whatever it does not know — so `--help`
-      boots the game as usual and a typo boots a game nobody asked for. Go through every script in
-      `tools/`, shell and Python, and the dev-flag surface behind `run.sh`, `shot.sh` and the web
-      query string: `--help` and `-h` print the usage and exit before any work; an unknown flag, a
-      flag missing its value or a stray word gets the usage on stderr and a non-zero exit before
-      Godot is launched or a file is touched. The flag list a forwarding script validates against
-      lives in one place per tool, so `README.md`'s flag section documents it rather than copying
-      it. Each tool gets the two-path test the skill asks for — `--help`, and a bogus flag,
-      neither doing the work
 - [ ] **A rig driving `EventManager` before `City.start_day` seals nothing.** `EventManager.
       start_day` reads the day's tree as `_city.route_tree()` when it has a city, and that
       answers `null` until `City.start_day` has grown one — so a rig that starts the events first
