@@ -385,27 +385,23 @@ longer fires while she is detained or while the tree is paused, and the run less
 flag is reset on every attempt at the teaching day — and the record is in `DECISIONS.md` under "The
 queue reprioritised". What is left is one decision nobody implemented and one measurement.
 
-- [ ] **The tutorial dog recurs but is not sited ahead of her after day 3.** `charging_dog` has
-      `first_day = Tuning.RUN_TAUGHT_DAY` (3), `spawn_mode = AHEAD_OF_PLAYER` and no last day, so on
-      every day after the lesson it is still put in front of her on her own line. **Decided, and
-      confirmed 2026-09-09:** *"the tutorial dog may appear later but not as tutorial."* Day 3
-      keeps the placement it has, because the lesson depends on being unavoidable; from day 4 it
-      becomes a thing that is *somewhere*, placed on the map the way `alley_robbery` is, and met by
-      routing into it — no siting on her heading, and no lesson line, which the HUD already
-      restricts to the teaching day. **Half of this is built and the half is not the decision**
-      (`DECISIONS.md`, M96): from day 4 the director sites the dog off her heading — a bearing
-      50–110° to one side, past the edge of the view — so it is never in front of her on her own
-      line, and a test holds that; but it is still sited *near her* by the director, not placed on
-      the map and met by routing. The agent stopped there because the map placement needs a
-      day-dependent `spawn_mode` on the def (`event_def.gd`, then the scheduler reading it), and a
-      second row is blocked by the one-picture-per-row check. **What remains**: the def gains a
-      spawn mode for the days after `first_day` — the smallest shape is a second `spawn_mode` field
-      that applies from `RUN_TAUGHT_DAY + 1`, read where the scheduler decides how a row is sited —
-      `charging_dog` takes `ALLEY`-style map placement from day 4 exactly as `alley_robbery` does,
-      the off-heading siting goes, and `_teach_the_run()` stays untouched. The lead-time gap
-      playtest 20 measured (1.5s to evade against 0.8–0.9s on the days it killed her) is closed by
-      M77 already: re-measured on the current tree, the notice and the evasion window are identical
-      on every heading; the figures are in `DECISIONS.md` under M96
+- [ ] **The later dog charges the moment it streams in; whether it should wait to be routed into
+      is the player's call.** *"The tutorial dog may appear later but not as tutorial"* (confirmed
+      2026-09-09) is built as far as placement goes (`DECISIONS.md`, M96): from day 4
+      `charging_dog` is a map placement like `alley_robbery`, never sited on her heading, and day 3
+      keeps its unavoidable siting. What the placement does not give it is the robber's *waiting*:
+      the dog carries no `pursues_within`, because day 3's lesson depends on it charging at once and
+      `tests/test_danger.gd` pins that, so on day 4 and after it begins its telegraph and charge
+      the moment it streams in — `Tuning.EVENT_STREAM_RADIUS` (900px) from her, past the edge of
+      the view — rather than when she comes inside its own field. That is met by *proximity*, not
+      by routing into it, which the decision's own words asked for. **The recommendation** is a
+      trigger the dog gains on the same day-keyed switch its spawn mode already uses — waiting
+      inside its own outer radius from day 4, so a dog she can see is a dog she can route around,
+      exactly the robber's shape — built as a derived answer on the def rather than a mutation, the
+      way `spawn_mode_on(day)` is; the alternative is to leave it, if a dog that comes from off
+      screen whenever she passes within a block is the encounter wanted after the lesson. The
+      lead-time gap playtest 20 measured (1.5s to evade against 0.8–0.9s on the days it killed her)
+      is closed by M77 already; the figures are in `DECISIONS.md` under M96
 **The run is taught on day 3, and stays there.** *Asked for as `RUN_TAUGHT_DAY` 3 → 2 · overturned
 on 2026-09-09: "run taught goes to 3 not 2."* The constant gates everything that pursues, and day 3
 is where act I stops being a nice neighbourhood; the options weighed when the move was first
