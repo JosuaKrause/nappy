@@ -164,19 +164,15 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    the guard are gone and the camera eases onto the hut. *(2026-09-10, playtest 55.)* Placed here
    by the orchestrator because it is the first thing act III shows and it was seen once; open to
    the player moving it.
-3. **M114** — the moving field grows forward out of the resting disc rather than the disc growing
-   back out of the ellipse. *(2026-09-10, playtest 55.)* Small, and placed here by the
-   orchestrator because it is a decision of M61's being overturned while the field is fresh; open
-   to the player moving it.
-4. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
+3. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
    don't stop/redirect traffic or pedestrians.")* Placed here by the orchestrator, ahead of M65
    because a sealed street the crowd walks through is the sealing's own legibility failing — open
    to the player moving it.
-5. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
+4. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
    revisit after M62.")* Revisited rather than built as written: the regions and their
    checkpoints (`DECISIONS.md`, M62) may change what finding a mark is like, and the entry is
    re-read before the prepared poses are bound to objectives.
-6. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
+5. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
@@ -184,8 +180,8 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    clock, sit in this batch provisionally** — they were asked for on 2026-09-10 and not placed,
    so this is the orchestrator's guess at where work that needs no route decision belongs, open
    to the player moving it.
-7. **Reaching act III**, which M56's measurement against the nerves needs.
-8. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
+6. **Reaching act III**, which M56's measurement against the nerves needs.
+7. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
 The record, with its measurements and the choices open to overturn, is in `DECISIONS.md` under
@@ -425,55 +421,6 @@ the camera stays on her. The record of the regions and their doors is in `DECISI
       A test drives a hold and asserts the camera's target and its return
 - [ ] **Walk it on day 7.** One capture of a hold in progress and one of the release, on the seed
       playtest 55 was played on (3045005721), in `docs/evidence/`
-
----
-
-## M114 — The moving field grows forward · asked for 2026-09-10
-
-> "while the car moves the field gets narrower and oval -- this is good but when the car stops it
-> becomes round and bigger? this is counter intuitive. the stretching should retain the area so an
-> unstretched car field should be the same width with shorter height"
-
-**This overturns a decision the orchestrator took in M61's field, not one the player did.** That
-record chose the catalogued `outer_radius` as the moving field's *forward* reach, so an ellipse
-only ever shrank behind and abeam and a stopping car's field grew back into a bigger disc — the
-thing seen on day 7. The player's reference is the other way round: the resting disc is the
-field, and motion stretches it forward out of that disc. The kernel stays `GroundShape.
-eccentric_distance()`, the conic from a focus with the emitter at the rear focus and eccentricity
-from speed (`Tuning.field_eccentricity`); what changes is the scale `L` the conic is stated at,
-`r(θ) = L·(1−e)/(1−e·cosθ)`, which today is `L = outer_radius` and becomes a function of `e` that
-reduces to the disc at `e = 0`.
-
-**The width is what is kept, and the moving field is the bigger one — decided by the player.**
-The sentence named two ellipses a fifth apart: one with the resting disc's area (forward 1.61R at
-a car's `e` 0.5, abeam 0.80R, so the stopped disc would be a little wider than the moving field)
-and one with the disc's width (abeam stays `R`, `L = R/(1−e)`: forward 2R, rear 0.67R, the area
-up by half). Asked which, the player chose the second and gave the reason *(2026-09-10: "if
-anything the moving size should be bigger than the rest size since moving causes more
-excitement")*. So the abeam half-width is the catalogued radius whatever the speed, and motion
-adds reach ahead — never takes any away — with the disc the field collapses back to on stopping.
-
-**The fairness contract moves with it.** The forward reach is now larger than the catalogued
-number, so `required_telegraph_time` and `validate_pursuit` are stated over `L(e)` at the row's
-own speed rather than over `outer_radius`, and `EventDef.field_reach()` and every "how far"
-consumer take the same. Every moving row is re-validated on boot; a row that fails gets its
-telegraph or its radius re-derived and the change listed in the record, never a silent cap. The
-eccentricity cap (`FIELD_ECCENTRICITY_MAX` 0.7) is re-read against the new forward reach — at 0.7
-`L` is 3.3R — and comes down, or the speed constant goes up, so a cyclist's field does not reach
-three streets ahead; the number is set against the probes and the debug view, not by taste.
-
-- [ ] **The scale, from the resting disc.** `GroundShape.eccentric_distance()` and
-      `_eccentric_field_outline()` take `L(e) = R/(1−e)` from one function in `Tuning` beside
-      `field_eccentricity()`; a test asserts the moving ellipse's abeam half-width equals the
-      resting radius at every speed, that `e = 0` is exactly the disc, that forward reach grows
-      monotonically with speed, and that the approaching-costs-more test still holds
-- [ ] **The contract over the forward reach.** `required_telegraph_time`, `validate_pursuit`,
-      `field_reach()` and the halo's early-out over `L(e)`; the catalogue re-validated; any row
-      that has to move listed with before and after
-- [ ] **Measured and looked at.** The sealing probes before and after on the same seeds, the
-      debug view's `1` on a car stopping at a light — the field should shrink into the disc, not
-      grow — and the record in `DECISIONS.md` under M61 amended to say the forward-reach decision
-      was overturned and by whom
 
 ---
 

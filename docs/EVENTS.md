@@ -547,7 +547,7 @@ All implemented.
 | `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Silent: standing in the way is its entire price, and `obstructs_radius` already charges it — see "Solid things are solid". At the kerb rather than on the carriageway, and solid at `VEHICLE_BODY`: 44px of van across a 64px footway is a street that costs the other side. |
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
 | `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it and forces a reroute rather than inviting one — and since a street is sidewalk\|road\|sidewalk, the road is always still there, so it costs time, never the day. Silent, like `delivery_van`: a hoarding is not a source. |
-| `fire_truck` | ONE_SHOT | 3 | Drives an arterial at 190px/s with a 340px radius and a 4s telegraph (the fast-mover rule — see docs/MECHANICS.md). `spawns_on_finish` leaves a `burning_building` where it stops. |
+| `fire_truck` | ONE_SHOT | 3 | Drives an arterial at 190px/s with a 340px radius and a 6.27s telegraph (the fast-mover rule over its own forward reach — see docs/MECHANICS.md). `spawns_on_finish` leaves a `burning_building` where it stops. |
 | `burning_building` | — | — | Never scheduled: a SCRIPTED def with no day, so only the fire engine can put one in the world. Burns for the rest of the day, and you cannot walk through the fire. |
 
 **And the rest of act I**, which is where its variety and its danger come from — a
@@ -559,7 +559,7 @@ neighbourhood's own rather than a patrol's.
 | `market_stall` | RECURRING | 1 | The second thing on day 1 that forces a crossing, and it exists because one obstacle repeated eighteen times is a rule rather than a decision. Wider, louder, and on the other side of pleasant than `cafe_tables`: a café you squeeze past is a nuisance, a market is a crowd. A real source too, derived from the body the same way `cafe_tables` is — 38px/64px, the same pair, since both bodies share the same 24px rounding. |
 | `leaf_blower` | RECURRING | 1 | The loudest thing in act I, and it is a man tidying a park. Allowed on `PARK` on purpose — a calm block with a leaf blower in it is calm ground she cannot use. Swept in bursts, so there is a rhythm to time a pass through. |
 | `pigeon_flock` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | The second thing that happens *to* her, and the reason to have one is that a director with a single trick makes every moment a cat. It is on the pavement for its whole telegraph, then up, then *away* — and it is **eleven birds**, each with its own heading, height and wingbeat, and each an emitter, so the middle of a flock stacks four or five fields and the rim stacks one. The only row in the game that is more than one source. |
-| `cyclist` **`hard_fail`** | RECURRING (`TOWARD_PLAYER`) | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement she is walking, bell going, coming toward her, down her own side of the road — sited when she gets close rather than on a street the day chose at dawn, so she answers it with a route decision (cross, or turn) instead of finding out too late it was never on her way. Everything about it is ordinary, which is the point: act I does not become sinister, it becomes a real street. The bell rings for 2.0s, what the doubled margin costs at a 90px field — smaller than the fairness contract alone would allow, so the wait before it arrives stays a real reaction window rather than several seconds of watching it close from off screen. Its lethal `inner_radius` is 33px, widened from 26 so the far lane of her own pavement no longer clears it by construction — the same overturn `chatting_mother`'s `detain_radius` went through first. |
+| `cyclist` **`hard_fail`** | RECURRING (`TOWARD_PLAYER`) | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement she is walking, bell going, coming toward her, down her own side of the road — sited when she gets close rather than on a street the day chose at dawn, so she answers it with a route decision (cross, or turn) instead of finding out too late it was never on her way. Everything about it is ordinary, which is the point: act I does not become sinister, it becomes a real street. The bell rings for 2.97s, what the doubled margin costs at a 90px field grown forward by its own speed — smaller than the fairness contract alone would allow, so the wait before it arrives stays a real reaction window rather than several seconds of watching it close from off screen. Its lethal `inner_radius` is 33px, widened from 26 so the far lane of her own pavement no longer clears it by construction — the same overturn `chatting_mother`'s `detain_radius` went through first. |
 | `ice_cream_van` | RECURRING | 2 | The `busker` argument one size up: nothing about it is threatening, it is simply interesting. The widest ordinary radius in act I. At the kerb, and solid at 24px: a thing children cross a road to reach rather than a thing standing in one. |
 | `reversing_lorry` **`hard_fail`** | RECURRING | 3 | Act I's second lethal thing, teaching the opposite lesson to the cyclist. That one comes *at* you and the answer is to get off the pavement; this one is **stationary and the danger is behind it**, so the answer is not to walk into the gap it is backing into — which you have to look at the world to know. The beeper is the telegraph. It stands `AGAINST_THE_BUILDING`, turned to face out of the frontage, solid at 28px inside the 46 that ends the day. |
 | `charging_dog` **`hard_fail`** | RECURRING (`AHEAD_OF_PLAYER`) | `RUN_TAUGHT_DAY` | **The one thing running is the answer to**, and the day the run is taught. Sited 0.5s of closing outside the view (`offscreen_notice`), it spends `telegraph_time` 4.5s visibly closing at the stand-off, then chases at 130px/s for `Tuning.PURSUIT_TIME` — the further siting needs the longer telegraph so walking away still loses inside the row's own budget. Its 150px field is **wider than the stand-off** — a narrower one is a field the pursuer is never inside, so the warning would emit nothing at her and the `!` over her head would never go up; `validate_pursuit` refuses that. `max_per_day` 3, because a street with three of them turns the run button from an answer into a second walk speed. It trots off at 110px/s rather than blinking out: a dog that gives up in front of her and is then not there says the chase was never real. |
@@ -662,6 +662,20 @@ than at the centre, per the player's own *"the entity itself lives in one of the
 `Tuning.field_eccentricity()` turns a speed into the conic's own eccentricity, capped at
 `FIELD_ECCENTRICITY_MAX` so nothing flattens to a line.
 
+**The ellipse keeps the resting disc's own width, and motion only adds reach ahead of it.**
+*(2026-09-10, playtest 55: "while the car moves the field gets narrower and oval -- this is good
+but when the car stops it becomes round and bigger? this is counter intuitive. the stretching
+should retain the area so an unstretched car field should be the same width with shorter
+height" — and, asked to choose between retaining the area and retaining the width, "if anything
+the moving size should be bigger than the rest size since moving causes more excitement.")* So the
+boundary at the catalogued radius `R` is `r(θ) = R / (1 − e·cosθ)`: exactly `R` abeam whatever the
+speed, `R · Tuning.field_scale(e)` (`R/(1−e)`) dead ahead, `R/(1+e)` behind. `field_scale()` is the
+one function that states the growth, beside `field_eccentricity()` itself; a car at `CAR_SPEED.x`
+(130px/s) sits at `e` = 0.26, forward reach 1.35R and rear 0.79R, and the eccentricity cap
+(`FIELD_ECCENTRICITY_MAX` 0.5) holds every field in the game to at most twice its own catalogued
+radius ahead of itself — `FIELD_ECCENTRICITY_SPEED` is chosen so nothing catalogued reaches it: the
+fastest mobile row sits at 0.48.
+
 **Moving objects are points.** The two kernels compose — body ⊕ disc standing still, point ⊕
 ellipse moving — without ever building the general capsule-and-ellipse sum, because every emitting
 segment row in the catalogue is stationary (`tests/test_shapes.gd` holds this as a regression
@@ -699,14 +713,21 @@ map, so there is no moment at which they appear and nothing to warn about. The p
 learns where the playgrounds are on day 1 and that knowledge holds for the whole run, which
 is the point of a city that does not change.
 
-**The contract is stated over the spine-measured band and the forward reach, so the field's own
-Minkowski sum does not change this arithmetic.** `outer_radius − inner_radius` is a band width, and
-subtracting a segment's `half_length` from both radii (see "Solid things are solid") leaves that
-width untouched; a moving row's forward reach is exactly `outer_radius` under
-`GroundShape.eccentric_distance()`, the same number this contract was always stated over. What
-*does* change for a "how far" rule that reads `outer_radius` alone rather than a band width — the
-lethal clearance a placement keeps, the streaming radius, `expected_impact_at()`'s early-out — is
-`EventDef.field_reach()`, `outer_radius` plus a segment's own `half_length`.
+**The contract is stated over the spine-measured band and the row's own forward reach**, which is
+larger than the catalogued `outer_radius` for anything that moves. `outer_radius − inner_radius` is
+a band width, and subtracting a segment's `half_length` from both radii (see "Solid things are
+solid") leaves that width untouched; every emitting segment row is stationary, so its own forward
+reach never grows past `half_length + outer_radius`. For a moving point — a cat, a dog, a cyclist, a
+pursuer — the escape she is owed is stated over `outer_radius · Tuning.field_scale(e)` (a full
+forward-reach clearance for a row faster than a walk) or `(outer_radius − inner_radius) ·
+Tuning.field_scale(e)` (a band clearance for a slower one), `e` from the row's own `speed` or
+`pursue_speed`: `Tuning.required_telegraph_time()` and `Tuning.validate_pursuit()` are the two
+places this is stated, and every row in the catalogue whose forward reach grew past what its
+telegraph already bought had its `telegraph_time` re-derived — never its radii — to the new minimum
+plus the margin it already carried. What changes for a "how far" rule that reads `outer_radius`
+alone rather than a band width — the lethal clearance a placement keeps, the streaming radius,
+`expected_impact_at()`'s early-out — is `EventDef.field_reach()`: a segment's along-axis reach
+unchanged, or a moving point's own forward reach.
 
 ### The contract is per event, and the player experiences the sum
 
