@@ -77,6 +77,7 @@ const MIN_TREE_SPACING := 40.0 * 1.25
 @onready var _entities: Node2D = $Entities
 @onready var _buildings_layer: Node2D = $Buildings
 @onready var _ground: TileMapLayer = $Ground
+@onready var _decals: CityDecals = $Decals
 
 var map: CityMap
 var events: EventManager
@@ -86,6 +87,10 @@ var crowd: Crowd
 var signals: TrafficSignals
 var _daylight: CanvasModulate
 var _act := 1
+## Today's day number, read by `_paint_ground()` for the crack level `GroundTiles` picks —
+## `Tuning.degradation_for(_day)`. 1 (no degradation) until `start_day()` sets it, which happens
+## before a player ever sees the city `build()` painted it with.
+var _day := 1
 ## Rebuilt every day from the block purposes; freed and replaced wholesale.
 var _props: Array[Node2D] = []
 ## Today's corridor: the ways from the doorstep to the calm areas still worth reaching, grown
@@ -413,7 +418,9 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 	map.repaint(state)
 	# Before anything reads the ground again: a park that burnt down last night is not calm today.
 	_sleepiness_tile = Vector2i(-1, -1)
+	_day = day
 	_paint_ground()
+	_decals.set_placed(Litter.placed(map, day))
 	_dress_blocks(state)
 	# Last, and after the repaint: which blocks are calm is what the closure invariant is
 	# stated over, and a requisitioned park is not one of them.
@@ -518,9 +525,22 @@ func _dress_blocks(state: CityState) -> void:
 		var purpose := state.purpose_of(map.block_plans, block)
 		_dress_block(block, purpose)
 	_dress_precincts()
+	_place_garbage_sacks()
 	for building in _buildings:
 		building.condition = _condition_for(
 				state.purpose_of(map.block_plans, _block_of(building.lot)))
+		building.day = _day
+
+## Today's garbage sacks — `GarbageSacks.placed()` re-rolled from the day, unlike the trees above:
+## the city degrades over the run, so unlike a park's planting this is not the same every morning.
+## Each is a `Prop` with a `GroundShape` for its shadow and no body, exactly as decorative as a
+## bollard.
+func _place_garbage_sacks() -> void:
+	for entry in GarbageSacks.placed(map, _day):
+		var sack := Prop.new()
+		sack.kind = Prop.Kind.SACK_PILE if entry.pile else Prop.Kind.SACK
+		sack.position = entry.position
+		_add_prop(sack)
 
 ## What a block's buildings look like now. A boarded-up street and a burnt-out one are the
 ## same footprints and very different places.
@@ -688,7 +708,7 @@ func _paint_ground() -> void:
 	for y in map.size.y:
 		for x in map.size.x:
 			var tile := Vector2i(x, y)
-			var source := GroundTiles.source_for(map, tile)
+			var source := GroundTiles.source_for(map, tile, _day)
 			if source >= 0:
 				_ground.set_cell(tile, source, Vector2i.ZERO)
 	_paint_outside_the_map()
@@ -778,7 +798,7 @@ func _border_source(x: int, y: int, depth: int) -> int:
 		var on_to_the_bridge := south > 0 and south <= depth
 		var into_the_tunnel := north > 0 and north <= CityEdge.TUNNEL_DEPTH_TILES
 		if on_to_the_bridge or into_the_tunnel:
-			return GroundTiles.source_for(map, Vector2i(x, clampi(y, 0, map.size.y - 1)))
+			return GroundTiles.source_for(map, Vector2i(x, clampi(y, 0, map.size.y - 1)), _day)
 	if north > 0:
 		return GroundTiles.SCREE if north == 1 else GroundTiles.MOUNTAIN
 	if south > 0:

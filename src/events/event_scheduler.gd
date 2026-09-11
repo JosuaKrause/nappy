@@ -642,6 +642,11 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 	var open_candidates := _ground_for(def, map, ground, corridor, role, site)
 	if open_candidates.is_empty():
 		return null
+	# A local reweight rather than a change to `_ground_for`'s own cache: `alley_robbery` shares
+	# every field that cache is keyed on, so biasing the cached array would bias the robber's
+	# ground too. Only the mouse asks the question at all.
+	if def.id == _MOUSE_ID:
+		open_candidates = _prefer_beside_a_sack_pile(open_candidates, map, day)
 
 	var best: Planned = null
 	var best_room := -INF
@@ -733,15 +738,39 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 	return aimed
 
 ## Whether `def` is refused a required alley outright — an alley the day's corridor runs down,
-## rather than one she may choose to detour into. **Exactly one row today**: `def.placement ==
-## [ALLEY]` is `alley_robbery` alone, the row the instruction named, rather than every lethal thing
-## that can ever reach an alley — `charging_dog` arrives `AHEAD_OF_PLAYER` and never asks this pool
-## at all, and a heated patrol reaches an alley by a different path than a map placement. Stated over
-## the placement shape rather than `def.id` so a future row sharing it inherits the same refusal
+## rather than one she may choose to detour into. **Two rows today**, `alley_robbery` and
+## `alley_mouse`, both `def.placement == [ALLEY]` and neither one anything else can ever reach an
+## alley through — `charging_dog` arrives `AHEAD_OF_PLAYER` and never asks this pool at all, and a
+## heated patrol reaches an alley by a different path than a map placement. Stated over the
+## placement shape rather than `def.id` so a future row sharing it inherits the same refusal
 ## without this function changing, which is the same reason `has_a_spread` is a test on the def
 ## rather than a name.
 static func _refuses_required_alleys(def: EventDef) -> bool:
 	return def.placement.size() == 1 and def.placement[0] == GameEnums.TileType.ALLEY
+
+## `alley_mouse`'s own preference, once a garbage-sack pile stands in the alley too: extra copies
+## of a tile beside one (`GarbageSacks.alley_pile_tiles`), appended to the roll rather than
+## excluding anything else, so every guarantee already checked against `candidates` — spacing,
+## room, the required-alley refusal above — still runs against the result unchanged. A day with no
+## pile yet returns `candidates` untouched, which is every day before sacks reach the alleys at
+## all.
+const _MOUSE_ID := "alley_mouse"
+const _MOUSE_PILE_ADJACENCY := 1
+const _MOUSE_PILE_EXTRA_COPIES := 4
+
+static func _prefer_beside_a_sack_pile(candidates: Array[Vector2i], map: CityMap,
+		day: int) -> Array[Vector2i]:
+	var piles := GarbageSacks.alley_pile_tiles(map, day)
+	if piles.is_empty():
+		return candidates
+	var weighted := candidates.duplicate()
+	for tile in candidates:
+		for pile in piles:
+			if maxi(absi(tile.x - pile.x), absi(tile.y - pile.y)) <= _MOUSE_PILE_ADJACENCY:
+				for _copy in _MOUSE_PILE_EXTRA_COPIES:
+					weighted.append(tile)
+				break
+	return weighted
 
 ## A placement with no particular street asked for. Not `Vector3i.ZERO`, which is the key of a real
 ## street — the one running east out of the north-west corner.

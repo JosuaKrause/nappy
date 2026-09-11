@@ -1617,6 +1617,28 @@ func day_length(day: int) -> float:
 		length *= CURFEW_DAY_LENGTH_MULTIPLIER
 	return length
 
+# ------------------------------------------------------------ degradation ---
+
+## The first day the city visibly declines. Day 5 rather than day 4: `ACT_START_DAYS[1]` already
+## turns the act over on day 4, and a street that cracks on the same morning the block purposes
+## and the crowd both shift reads as one more thing changing at once rather than a decline that
+## has been happening. One day later, the ground catches up with what the act already told her.
+const DEGRADATION_FIRST_DAY := 5
+
+## The one density every visible sign of decline reads — cracked ground, litter, sacks, shuttered
+## fronts — so the city degrades as one thing rather than as several unrelated rolls. Zero before
+## `DEGRADATION_FIRST_DAY`, rising the way `EventScheduler.budget_for()` rises, to 1.0 on the run's
+## last day. A per-block factor (a `BURNT_OUT` block further gone than a `RESIDENTIAL` one) can
+## multiply this later; nothing below reads anything but this one number today.
+func degradation_for(day: int) -> float:
+	if day < DEGRADATION_FIRST_DAY:
+		return 0.0
+	# +1 on both ends of the fraction, or `DEGRADATION_FIRST_DAY` itself would answer zero — the
+	# day nothing has moved past yet — and the city would first visibly decline on the day after
+	# its own name.
+	return clampf(float(day - DEGRADATION_FIRST_DAY + 1)
+			/ float(RUN_LENGTH_DAYS - DEGRADATION_FIRST_DAY + 1), 0.0, 1.0)
+
 # --------------------------------------------------------------- validation ---
 
 ## The fairness contract from docs/EVENTS.md: a player who starts walking away the instant
