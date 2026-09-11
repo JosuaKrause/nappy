@@ -72,13 +72,17 @@ static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
 	# Built once and asked many times: the grid is the day's tiles, which do not move while
 	# candidates are tried — only the barrier tiles a candidate would add do.
 	var grid := ReachabilityGrid.build(map)
+	# Which segment has a standing street tree, asked once rather than once per candidate — see
+	# `StreetTrees` for why the same set also decides what `City` draws.
+	var tree_segments := StreetTrees.segment_keys_with_trees(map)
 	var today_closed := {}
 	for segment in _shuffled_candidates(map, home, areas, corridor, regions, rng):
 		if chosen.size() >= wanted:
 			break
 		today_closed[segment.key()] = true
 		if _invariant_holds(map, grid, areas, today_closed):
-			chosen.append(RoadClosure.new(_pick_kind(kinds, rng) as RoadClosure.Kind, segment))
+			var kind := _pick_kind(kinds, rng, tree_segments.has(segment.key())) as RoadClosure.Kind
+			chosen.append(RoadClosure.new(kind, segment))
 		else:
 			# **A wall off the tree should never fail this**, so a failure is not a near miss to be
 			# skipped quietly — it means the corridor and the wall disagree about where she is
@@ -332,10 +336,19 @@ static func _pick_weighted(weights: Array[float], rng: RandomNumberGenerator) ->
 			return index
 	return weights.size() - 1
 
+## Weight `fallen_tree` is multiplied by on a street `StreetTrees` already put trees on, so a
+## felled tree reads as one of *those* trees rather than one blown in from a park it was never
+## near. `RoadClosure.KINDS`'s own weight decides how often the kind is offered at all; this only
+## decides which of today's segments gets it once it is.
+const _FALLEN_TREE_STREET_BIAS := 6.0
+
 ## What closed this street. Weighted from the kinds the day has reached, so act I closes a
 ## street by accident and act IV closes it by bringing the building down.
-static func _pick_kind(kinds: Array[int], rng: RandomNumberGenerator) -> int:
+static func _pick_kind(kinds: Array[int], rng: RandomNumberGenerator, street_has_trees: bool) -> int:
 	var weights: Array[float] = []
 	for kind in kinds:
-		weights.append(float(RoadClosure.KINDS[kind]["weight"]))
+		var weight := float(RoadClosure.KINDS[kind]["weight"])
+		if kind == RoadClosure.Kind.FALLEN_TREE and street_has_trees:
+			weight *= _FALLEN_TREE_STREET_BIAS
+		weights.append(weight)
 	return kinds[_pick_weighted(weights, rng)]

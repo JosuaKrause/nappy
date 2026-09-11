@@ -824,6 +824,13 @@ bringing the building down. Mechanically they are identical — a street you can
 is a street you cannot walk down — and that is deliberate, because a closure that also had
 rules would be an event.
 
+**`FALLEN_TREE` prefers a street that already has standing trees on it.** `StreetTrees.planted()`
+is the one source of truth both `City` (what it draws) and `ClosurePlanner` (which segment a
+felled tree is more likely to land on) read, so the closure marker's picture and the standing
+trees beside it are the same species by construction — see "Rendering (2.5D)" below for where
+they stand. It is a preference, not a requirement: a street with no trees on it may still get a
+fallen one, the same way a `ROADWORKS` closure needs no dug-up ground to already be there.
+
 **A closure is silent.** It contributes nothing to the excitement meter. The noise of a
 street is the crowd on it and the danger of a street is the events on it; a closure is the
 *shape* of the route and nothing else. A noisy roadworks already exists as the `construction`
@@ -1297,6 +1304,37 @@ Top-down camera with a fake vertical extrusion:
   six roof colours still cost one asset each rather than six. Edges are overlays drawn on
   top, which is why a corner needs no dedicated corner tile — it takes two edge overlays
   and the parapet turns.
+- **A roof carries furniture, seeded per building from its block's own starting purpose**
+  (`Building.district`) — vents, HVAC boxes and a straight-and-corner duct run on `INDUSTRIAL`,
+  skylights on `CIVIC`, mostly water tanks with the odd vent on `RESIDENTIAL` and `COMMERCIAL`.
+  Every unit sits on an interior cell — never the perimeter row or column a roof's own edge tiles
+  already draw — so nothing overhangs the silhouette, and how many a roof carries scales with how
+  many interior cells it has. The vent is the one thing on a roof that moves: it swaps between its
+  two rotor frames on a timer of its own, and nothing else up there is animated. Furniture is
+  painted by `Building._draw()` itself, above its own roof tiles and inside the layer of buildings
+  under the entities — never the y-sorted layer a street prop or the player draws in — so a unit
+  is never compared against anything on the pavement.
+- **A front is district and block purpose, read the same way a roof's furniture is.** Every
+  ground-floor column of a `COMMERCIAL` building is a storefront — one of four, an awning variant
+  on a seeded share — as a plain substitution for the wall's own ground-floor plinth: the
+  storefront's fill is opaque, so it covers the ordinary window drawn under it the same way the
+  plinth always did. A `CIVIC` building's entrance carries `civic_portico.svg`, and a seeded share
+  of `RESIDENTIAL` facades tall enough for one carries a fire escape over their bottom two rows —
+  both drawn as overlays, after the wall, rather than replacing a texture the way a storefront
+  does. The awning is the one piece of a front that leaves the wall plane; it stays inside the
+  wall's own footprint rather than reaching over the pavement's walkable band.
+- **Street trees stand in pits on the pavement, along `RESIDENTIAL` and `COMMERCIAL` streets at
+  a seeded spacing** — `StreetTrees.planted()`, fixed for the run like a building rather than
+  rebuilt daily like a park's own trees, since a street's frontage does not change with what a
+  block behind it currently is. A tree stands at the kerb-side tile of a pavement, never within a
+  tile of either end of its street (which is already where every crossing and every fixed
+  checkpoint mouth stands — see "What closes a street" above) and never within a tile of the
+  home's own door. It is a `Prop` like a park tree, feet-anchored so she passes behind its canopy,
+  but it is the one prop in the game with an actual body: a small collision circle at the trunk,
+  distinct from the wider canopy shape the shadow reads, kept well inside the one tile it stands
+  on so the pavement's other tile stays a full lane wide. `FALLEN_TREE`'s own placement prefers a
+  street `StreetTrees` already put trees on, from the same function, so the closure marker's
+  picture and the standing trees beside it are never two different species.
 - Everything is `y_sort_enabled`, so the player passes behind and in front of props
   correctly — with one deliberate exception. **Buildings are a layer of their own, beneath the
   entities, and sort against nothing but each other.** A building's origin is the south edge of its lot and its mass

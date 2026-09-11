@@ -59,6 +59,17 @@ view").
   is being walked: a retried day's first attempt counts, a minute on the summary does not. Does
   the number feel like the run's length, and is *hidden until an ending* still the right call?
   Record is `DECISIONS.md`, M107.
+- **Walk one block of each district and look up.** Roofs carry furniture by district (vents,
+  ducts and boxes on industrial, skylights on civic, water tanks elsewhere), commercial ground
+  floors are storefronts with awnings, civic fronts have a portico, residential facades a fire
+  escape, and pavements have trees in pits. In the rig pictures commercial and residential read
+  at a glance; industrial and civic are told apart by their roofs alone, which are small at play
+  scale, and the portico was out of frame. Does each district read as a place, and does the
+  street-tree density read as a street or as a hedge? Record is `DECISIONS.md`, M106.
+- **Walk into a street tree, and find a fallen tree.** A trunk has a small body now, so she walks
+  round it; a fallen tree closure prefers a street with standing trees. Does the trunk catch her
+  where the pavement is narrow, and does the fallen tree read as one of the standing ones down?
+  Record is `DECISIONS.md`, M106.
 - **Look at a park or a forest block.** Trees keep at least a canopy's width apart now. Do the
   lots still read as *wooded*, or has the spacing made them look planted in rows? Record is
   `DECISIONS.md`, M100, the park trees.

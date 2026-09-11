@@ -169,8 +169,8 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
-   reprioritised". **M105, the city degrades, and M106, roofs, fronts and street trees, sit in
-   this batch provisionally** — they were asked for on 2026-09-10 and not placed,
+   reprioritised". **M105, the city degrades, sits in this batch provisionally** — it was asked
+   for on 2026-09-10 and not placed,
    so this is the orchestrator's guess at where work that needs no route decision belongs, open
    to the player moving it.
 4. **Reaching act III**, which M56's measurement against the nerves needs.
@@ -199,7 +199,7 @@ anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified 
 | M100 — Small, real, and nobody's | Review `chalk_mark.svg` beside `chalk_mark_touched.svg`, then bind the touched state to the acknowledgement she adds when contact counts. Keep the original mark visible and readable on the pavement. Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family with the alley event and the sound arcs with their event timing; source availability does not decide either behavior. |
 | M102 — The finale: out of the apartment, out of the city | Build the interior TileSet/map binding for hallway, stairwell and basement floors/edges/walls. Register doors, barricade, chandelier and puddle separately; retain the south hallway's implied door thresholds. Bind normal/flash windows to explosion timing, steam to its pulse, and carrying-mother facing/gait to actual movement. Reuse mouse, guards, vehicles and crater sources. Decide whether the optional `explosion_preview.svg` is needed; the off-screen explosion brief does not require a visible burst. Check room transitions, foot anchors, layering and state changes in runtime evidence. |
 | M105 — The city degrades | Register the three crack levels and two patterns for each road/sidewalk/alley base in the TileSet, preserving markings, kerbs, seams and tile semantics. Place the five flat litter decals under actors; place single/piled sacks with the milestone's obstruction decision. Select matching `storefront_{a,b,c,d}_shuttered.svg` variants through M106's frontage binding. Compare a fixed seed across acts. |
-| M106 — Roofs, fronts and street trees | Bind roof units and both vent phases in `Building`, preserving the fixed housing while the rotor changes. Assemble straight/corner ducts with matching joins; keep furniture inside roofs. Bind each storefront's plain/awning/shuttered states without moving its door, place fire escapes over existing walls/windows, and select tall/shuttered window pairs. Centre `tree_pit.svg` beneath the existing standing tree. Verify tint, depth, overhang and registration in district comparisons. |
+| M105 — The city degrades | Bind each storefront's shuttered state without moving its door (the plain and awning states are bound), and select the tall/shuttered window pairs. |
 
 The impact-crater decals `assets/props/impact_crater_1x1.svg`,
 `impact_crater_2x2.svg` and `impact_crater_3x3.svg` (32×32, 64×64 and 96×96 footprints) are the
@@ -554,9 +554,9 @@ the live body and picture's footprint still need comparison with the debug layer
 artwork, the player's perpendicular burnt-car correction and the rendered evidence are in
 `DECISIONS.md`, "SVG artwork and upcoming milestone assets".
 
-**The `INDUSTRIAL` and `CIVIC` districts reading differently moved to M106 on 2026-09-10**, where
-the roof furniture and the fronts are placed per district; the prepared `industrial_vent.svg` and
-`civic_portico.svg` are its first two pieces.
+**Whether the `INDUSTRIAL` and `CIVIC` districts read differently at a glance is a question in
+`REVIEW.md`**: their roof furniture and fronts are placed per district (`DECISIONS.md`, M106), and
+in the rig pictures the two are told apart by their roofs alone.
 
 **Polish, after the playtest work**, since there is no point polishing a loop that is about to be
 re-pitched:
@@ -680,51 +680,6 @@ milestone places them.
       block, so the degrading city and the block purposes tell one story rather than two
 - [ ] **A rig picture per act.** Four screenshots of the same seed on days 1, 5, 9 and 13 from the
       same doorstep, so the curve is judged as a sequence; the record goes to `DECISIONS.md`
-
----
-
-## M106 — Roofs, fronts and street trees · asked for 2026-09-10
-
-> "we need stuff on top of roofs -- we have an air duckt already -- it needs to be animated. but we
-> need other things on roofs as well (there are reference photos to draw ideas from). we need more
-> varied building fronts. storefronts, fire escapes."
-> "we could also add trees that can be placed in the street. right now the fallen tree doesn't make
-> that much sense"
-
-**The buildings are the same wall and roof repeated, and the districts are told apart by nothing
-but height.** `Building` composes every facade from `wall.svg`, `wall_base.svg`, the two window
-tiles and the edge tiles, and every roof from `roof.svg` and its edges; `INDUSTRIAL` and `CIVIC`
-differ only in storeys. The prepared pictures are catalogued in `GRAPHICS.md`; this
-milestone places them so a street reads as a place, and a district as a district, at a glance.
-
-- [ ] **Roof furniture, placed per building at generation.** A seeded pick from the roof units by
-      district — vents, ducts and HVAC boxes on `INDUSTRIAL`, skylights on `CIVIC`, water tanks and
-      the odd vent on `RESIDENTIAL` and `COMMERCIAL` — sited on the roof's interior cells so
-      nothing overhangs an edge, a count that scales with the footprint, and a duct run laid as a
-      straight-and-corner chain. The vent animates by alternating its two frames on the building's
-      own timer, and nothing else on a roof moves. Drawn by `Building` above its roof tiles, so a
-      roof unit is never y-sorted against anything on the street
-- [ ] **Fronts, per district and block purpose.** `COMMERCIAL` ground floors take storefronts, with
-      an awning on a seeded share of them; `CIVIC` takes `civic_portico.svg` at its entrance; fire
-      escapes go on `RESIDENTIAL` facades at a seeded share, two cells tall over the existing
-      windows. A storefront is a `wall_base` replacement and a fire escape is an overlay, so
-      `Building`'s composition changes in two places and the tint rules stay. The awning is the
-      one piece that leaves the facade plane, and it stays out of the pavement's walkable band.
-      Fire-escape flights run sideways parallel to the facade and reverse direction at landings;
-      retain their transparent treads and rail gaps over windows. Use PLAYTEST-53's exterior
-      reference for that construction, with the prepared SVG's native placement contract.
-- [ ] **Street trees.** Trees on the pavement, in pits, along `RESIDENTIAL` and `COMMERCIAL`
-      streets at a seeded spacing — never on a crossing, never within a tile of a door or a
-      checkpoint, and never on the main road's pavements where the crowd's lanes are densest. A
-      street tree is a `Prop` like a park tree, feet-anchored so she passes behind its canopy, and
-      it carries a `GroundShape` with a small body, since a trunk is something you walk around.
-      **This is what makes the fallen tree make sense**: a street with trees on it can have one
-      down across it. `fallen_tree`'s own placement then prefers a street that has standing trees,
-      and the closure marker's picture is checked against the standing drawing so the two read as
-      the same tree
-- [ ] **The district comparison.** One rig screenshot per district at gameplay scale, side by
-      side, so *reads differently at a glance* is judged by a person rather than by the count of
-      units placed; the record goes to `DECISIONS.md`
 
 ---
 

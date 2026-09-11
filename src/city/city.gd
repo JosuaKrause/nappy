@@ -101,6 +101,10 @@ var _closures: Array[RoadClosure] = []
 var _closure_nodes: Array[Node] = []
 ## Fixed for the run — only their condition changes.
 var _buildings: Array[Building] = []
+## Fixed for the run, from `StreetTrees.planted()` — unlike `_props`, never rebuilt daily: a
+## street tree is frontage, not a block's own purpose, so it stands whatever the block behind it
+## becomes.
+var _street_trees: Array[Prop] = []
 
 const DOOR_TEXTURE := preload("res://assets/props/door.svg")
 
@@ -114,6 +118,7 @@ func build(city_map: CityMap) -> void:
 	# or the wall draws over it.
 	_spawn_buildings()
 	_spawn_home()
+	_spawn_street_trees()
 	_spawn_boundary()
 	_spawn_the_edge_of_the_city()
 	signals = TrafficSignals.new(map)
@@ -256,6 +261,18 @@ func _spawn_home() -> void:
 	door.position = Vector2(stoop.get_center().x, stoop.position.y)
 	_entities.add_child(door)
 
+## `StreetTrees.planted()`'s own positions, drawn as `Prop`s once for the whole run — never
+## rebuilt in `_dress_blocks()`, unlike a park's trees, because a street tree belongs to the
+## street's own frontage rather than to what the block behind it currently is.
+func _spawn_street_trees() -> void:
+	for planted_tree in StreetTrees.planted(map):
+		var tree := Prop.new()
+		tree.kind = Prop.Kind.STREET_TREE
+		tree.position = planted_tree.position
+		tree.variant = hash(planted_tree.position)
+		_entities.add_child(tree)
+		_street_trees.append(tree)
+
 ## What is on the far side of the streets that run along the boundary.
 ##
 ## **Something has to be**: the outermost corridor is a whole street, every interior street runs
@@ -356,6 +373,7 @@ func _spawn_buildings() -> void:
 		building.position = Vector2(world.get_center().x, world.end.y)
 		building.footprint = world.size
 		building.variant = _variant_for(rect)
+		building.district = map.starting_purpose(_block_of(rect))
 		building.height = _height_for(rect, rect.size.y)
 		building.lot = rect
 		# Their own layer, under the entities — see the note at the top of this file. They still
@@ -428,10 +446,14 @@ func closures() -> Array[RoadClosure]:
 func buildings() -> Array[Building]:
 	return _buildings
 
-## Today's trees, bollards and playground frames, rebuilt daily by `_dress_blocks` — read by
-## `DebugLayers` so its shadow layer can trace each one's own `shape` the same way.
+## Today's trees, bollards and playground frames (rebuilt daily by `_dress_blocks`), plus the
+## street trees fixed for the whole run — read by `DebugLayers` so its shadow layer can trace
+## each one's own `shape` the same way, and by `tests/test_blocks.gd`'s spacing check.
 func props() -> Array[Node2D]:
-	return _props
+	var all: Array[Node2D] = []
+	all.append_array(_props)
+	all.append_array(_street_trees)
+	return all
 
 ## Today's corridor. Grown in `_close_streets`, so it is only meaningful after `start_day`.
 func route_tree() -> RouteTree:
