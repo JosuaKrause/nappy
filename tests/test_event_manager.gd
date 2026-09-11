@@ -21,6 +21,7 @@ func run(t) -> void:
 	_test_an_event_that_has_run_does_not_run_again(t)
 	_test_a_running_event_comes_back_where_it_got_to(t)
 	_test_a_set_piece_happens_at_exactly_one_of_its_sites(t)
+	_test_a_day_started_through_the_manager_alone_still_carries_seals(t)
 	_teardown()
 
 func _build_city(t) -> void:
@@ -72,35 +73,42 @@ func _test_finished_instances_are_dropped(t) -> void:
 ## The bug this exists for: one event finishing and spawning one successor leaves the list
 ## the same LENGTH, so a size comparison concluded nothing had changed — and left a freed
 ## node in the array while never tracking the successor at all.
+##
+## `military_convoy`/`barricade` rather than the fire engine: `fire_truck` no longer sets
+## `spawns_on_finish` — the day the fire is found before the engine reversed that link, so it is
+## `burning_building` that now names something, in the opposite direction
+## (`EventDef.spawns_on_sight`, checked in `tests/test_events.gd`, not here). The convoy is the
+## row `spawns_on_finish` still governs, and the wiring this test exists for is the same either
+## way.
 func _test_successor_replaces_its_parent(t) -> void:
-	_start(3)
-	var truck: EventInstance = null
+	_start(12)
+	var convoy: EventInstance = null
 	for instance in _city.events.instances():
-		if instance.def.id == "fire_truck":
-			truck = instance
+		if instance.def.id == "military_convoy":
+			convoy = instance
 			break
-	if not truck:
-		# The fire engine is a one-shot spread over its eligible days; this seed may not
-		# have rolled it. Spawn one directly rather than skip the check.
-		truck = _city.events._spawn_unplanned(
-				EventCatalogue.by_id("fire_truck"), Vector2(500, 500))
+	if not convoy:
+		# The convoy is a recurring row rather than a one-shot; this seed may not have rolled
+		# one on this day. Spawn one directly rather than skip the check.
+		convoy = _city.events._spawn_unplanned(
+				EventCatalogue.by_id("military_convoy"), Vector2(500, 500))
 
 	var before := _city.events.active_count()
-	var where := truck.global_position
-	truck._finish()
+	var where := convoy.global_position
+	convoy._finish()
 	_city.events._physics_process(0.016)
 
 	t.check(_city.events.active_count() == before,
 			"a one-for-one replacement keeps the count the same")
-	var fire: EventInstance = null
+	var barricade: EventInstance = null
 	for instance in _city.events.instances():
 		t.check(is_instance_valid(instance), "no freed node survives a successor swap")
-		if instance.def.id == "burning_building":
-			fire = instance
-	t.check(fire != null, "the fire engine leaves a fire behind it")
-	if fire:
-		t.close_to(fire.global_position.distance_to(where), 0.0,
-				"the fire starts where the engine stopped", 1.0)
+		if instance.def.id == "barricade":
+			barricade = instance
+	t.check(barricade != null, "the convoy leaves a barricade behind it")
+	if barricade:
+		t.close_to(barricade.global_position.distance_to(where), 0.0,
+				"the barricade starts where the convoy stopped", 1.0)
 
 func _test_excitement_sums_over_instances(t) -> void:
 	_start(5)
@@ -277,3 +285,41 @@ func _test_a_set_piece_happens_at_exactly_one_of_its_sites(t) -> void:
 					"day %d: and the other %d offers are spent (%d were)"
 					% [day, (groups[group] as Array).size() - 1, spent])
 	t.check(offered > 0, "a run offers a set piece at all (%d groups over fourteen days)" % offered)
+
+## M100: "a rig driving `EventManager` before `City.start_day` seals nothing." `EventManager.
+## start_day` used to read the day's tree as `_city.route_tree()` whenever `_city` existed at
+## all — even before `_city.start_day()` had ever grown one, which is exactly what every rig in
+## this suite does, this one included — so `SealPlanner.plan_day` and `RegionPlanner.plan_day`
+## were handed a null tree and came back with nothing, while `EventScheduler.build_day` grew a
+## tree of its own for the catalogue's own placements: two trees for one day, and no seals or
+## walls at all.
+##
+## Comparing "the manager alone" against "the manager after the city's own `start_day`" is the
+## check, rather than counting seals directly: `RouteTree.for_day(map, day)` is deterministic and
+## `SealPlanner`'s own RNG stream (`GameState.day_rng(day, "seals")`) does not depend on `_city`
+## either, so every segment the fallback holds has to be held the real way too — a rig that skips
+## `City.start_day` must not come out with less of it. **Not exact equality**: `_city.closures()`
+## only ever has something to read once `City.start_day()` has run (see the comment in
+## `EventManager.start_day` above `_map.clear_day_holds()`), so the "after" run legitimately holds
+## a little more, one closure's own segment. See `tests/test_checkpoints.gd`'s
+## `_test_the_manager_actually_places_the_door_structure()` for the same `City.start_day` calling
+## convention, written against this exact gap before it had a fix.
+func _test_a_day_started_through_the_manager_alone_still_carries_seals(t) -> void:
+	var day := Tuning.REGION_WALL_FIRST_DAY  # so a region wall or door is in play, not only seals.
+	_start(day)
+	var alone: Dictionary = _city.map.held_segments.duplicate()
+	t.check(alone.size() > 0,
+			"a day started through the manager alone still holds some ground (%d segments)"
+			% alone.size())
+
+	var state := CityState.new()
+	state.begin_day(_city.map.block_plans, day)
+	var closures_rng := RandomNumberGenerator.new()
+	closures_rng.seed = hash("m100-seals:closures:%d" % day)
+	_city.start_day(state, day, closures_rng)
+	_start(day)
+	var after_city: Dictionary = _city.map.held_segments.duplicate()
+
+	for key in alone:
+		t.check(after_city.has(key),
+				"everything the manager's own fallback tree holds, City.start_day holds too")

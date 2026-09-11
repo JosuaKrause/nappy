@@ -94,6 +94,53 @@ back to exactly zero from the one-car-on-one-percent-of-frames it had been loose
 things changed on the way**: `setup()`'s placement retry budget 8 → 24, kept as defence in depth
 after a test landed an agent on a wall on frame zero; `_recycle()`'s six-roll budget untouched.
 
+## M101 — The fire is found before the engine · built 2026-09-11
+
+*(2026-09-09: "the player should encounter the burning building before the fire truck. basically
+the fire truck should spawn when the player sees the burning building not the other way around";
+on its place: "M101 can go after the Act III stuff".)* Built ahead of act III with the rest of the
+2026-09-11 batch, two agent commits on `feature/fire-before-engine`, reviewed here. **The fire is
+day 3's one-shot and the engine is what the sight of it summons.** `burning_building` took over
+`fire_truck`'s `ONE_SHOT` slot, sited on the pavement against the building the way the reversing
+lorry is; `fire_truck` is `SCRIPTED` and never scheduled. A new def field, `spawns_on_sight`, is
+the link in the opposite direction from `spawns_on_finish` — a row naming what arrives once this
+one has been seen — and `EventManager` owns the trigger, since it already owns the successor
+mechanism and her position. `spawns_on_finish` stays: the convoy still uses it. "On screen" is a
+box test against her live position over the view's half extent rather than `DangerEdge`'s own
+predicate, which needs a live control a headless rig has none of; screen rotation is ignored,
+a touch-only concern. The engine enters along the fire's own street from off screen — the side
+chosen by the day's seeded RNG, the other side if one is out of bounds, nothing if neither fits,
+retried next frame — and parks at the near kerb across from the building.
+
+**The contract, re-proven from the worst position.** The engine's telegraph is its approach, and
+M114 restated it over the forward reach; the route's start is off screen by `Tuning.offscreen_lead()`
+stated over the *fire's* position, not hers, with the view's half-diagonal added for the furthest
+she can already be from the fire when it first comes into view — the ordinary lead rather than the
+stricter one a `hard_fail` row needs, since the engine cannot end the day. The test asserts it
+from the worst position on the street. The fire's own telegraph keeps its 2.2s number, now
+documented as how long she has once it is in view — the stationary contract already covers it —
+and its pulse, obstruction and scar are unchanged.
+
+**Day 3, measured.** The scheduled plan for day 3 is unchanged by M101 — the same count and the
+same total cost, since the fire inherits the engine's cost — and the engine is simply absent from
+it, arriving at runtime only if the fire is seen; the quietest park's settle time on day 3 is
+unchanged. So the day's realised cost is now conditional on finding the fire, which is the point,
+and whether that reads differently to a player who never finds it is a played question. **The
+larger swing in the same measurement was M100's**, below. `docs/EVENTS.md`'s examples that leaned
+on the engine — the one-shot kind, the map route sentence, the finishing-position paragraph, the
+table rows — moved in the same commit.
+
+## M100 — Small, real, and nobody's · a rig driving the manager alone seals nothing, fixed 2026-09-11
+
+`EventManager.start_day` read the day's tree as the city's when it had a city, and the city
+answers null until its own `start_day` has grown one — so every rig that drives the manager
+directly, the manager's own suite and the balance suite included, got no tree, no seals and no
+walls, and the scheduler grew a private tree for the catalogue. One line: the same explicit
+fallback the region plan already had. **What it changes in the numbers**: the balance suite's day
+3 had been priced on a city with no seals — the plan roughly a third of its real size and its cost
+under half — and now prices the sealed one. A test starts a day through the manager alone and
+asserts every segment it holds is also held after a real `City.start_day`.
+
 ## M100 — Small, real, and nobody's · every command-line entry point owes help, built 2026-09-11
 
 *(2026-09-11: "help doesn't work it just starts the game which becomes unresponsive. also invalid
@@ -120,9 +167,6 @@ it validates the way `run.sh` does. Every caller — CI's workflows, the lint ho
 path, the Codex hook's bare call, and every documented invocation in the docs and skills — was
 checked and kept working. `tools/test_cli_help.sh` (wired into CI) and `tools/test_cli_help.py`
 hold the two-path test for every tool.
-||||||| 5c43fb1
-||||||| 7dbd2b9
-||||||| ae2b84d
 
 ## M96 — The teaching day, and the dog after it · half built, measured 2026-09-11
 
@@ -158,7 +202,6 @@ notice and restores it, and the heat suite's test that pinned the forgetful beha
 the intended one, for `alley_robbery` as well as the patrol that surfaced it. The caller does not
 pass it yet — `EventManager._stream_in()` has nothing to pass, because `EventScheduler.Planned`
 carries no notice — so play is unchanged; the remaining half is in the M100 item, named exactly.
-||||||| 0f0b755
 
 ## M65 — A protester points at the objective · built 2026-09-11
 

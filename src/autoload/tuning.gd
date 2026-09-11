@@ -1680,9 +1680,11 @@ func required_telegraph_time(inner_radius: float, outer_radius: float,
 ## to touch an unvisited calm area it used to clear is a different one — `EventScheduler` refuses
 ## that placement outright (`_calm_to_leave_alone`, `_reaches_any`), so a row whose whole path is
 ## long enough to brush one can lose its only site and simply not happen that day, however fair its
-## telegraph is. `fire_truck` (190px/s, a sixty-tile `ALONG_STREET` route) is the row this binds:
-## `tests/test_events.gd`'s `_test_a_retried_day_is_the_same_day` is what catches a value too low to
-## place it reliably.
+## telegraph is. The value was set by measuring exactly that on the longest-routed scheduled row
+## of the day (`docs/DECISIONS.md`, M114); no scheduled row currently drives a route that long —
+## the fire engine is summoned to a route ending at the fire rather than planned — so
+## `tests/test_events.gd`'s `_test_a_retried_day_is_the_same_day` is the guard for whichever row
+## next does, and a value that makes a one-shot lose its only site fails there first.
 ##
 ## A car at `CAR_SPEED.x` (130px/s) sits at e = 0.26 (forward reach 1.35R, rear 0.79R); a walker
 ## (`PEDESTRIAN_SPEED`, 46-74px/s) at 0.09-0.15; the cyclist (165px/s) at 0.33; the cat (240px/s) at
