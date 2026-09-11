@@ -165,12 +165,17 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 static func plan_day(map: CityMap, day: int, tree: RouteTree,
 		rng: RandomNumberGenerator, skip: Dictionary = {},
 		held: Dictionary = {}) -> Array[EventScheduler.Planned]:
+	# The walker-facing half of a soft seal — see `CityMap.soft_sealed_tiles` — is this function's
+	# own output and nobody else's, so it is cleared and rebuilt here exactly the way `planned`
+	# itself is, rather than trusting a caller to clear it first.
+	map.clear_day_soft_seals()
 	var planned: Array[EventScheduler.Planned] = []
 	if not tree:
 		return planned
 	var home := ClosurePlanner.home_street(map)
-	# Soft pairs are collected rather than appended straight away, because the thinning pass below
-	# has to see a whole pair at once to drop one body of it — see `_thin_soft_pairs`.
+	# Soft pairs are collected as `[segment, placed]` rather than `placed` alone, because the
+	# thinning pass below needs the segment back to mark the surviving side's own pavement tiles in
+	# `CityMap.soft_sealed_tiles` as well as to drop one body of the pair — see `_thin_soft_pairs`.
 	var soft_pairs: Array = []
 	for segment in StreetNetwork.segments():
 		var key := segment.key()
@@ -185,11 +190,11 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree,
 			continue
 		var placed := _place(map, segment, candidate)
 		if candidate.strength == Strength.SOFT:
-			soft_pairs.append(placed)
+			soft_pairs.append([segment, placed])
 		else:
 			planned.append_array(placed)
 			held[key] = true
-	planned.append_array(_thin_soft_pairs(soft_pairs, rng))
+	planned.append_array(_thin_soft_pairs(map, soft_pairs, rng))
 	planned.append_array(_seal_alley_mouths(map, tree, day, rng, skip))
 	return planned
 
@@ -313,14 +318,36 @@ static func _place_soft(map: CityMap, segment: StreetNetwork.Segment,
 ## (`tests/test_seals.gd`) is about *reaching* somewhere, and dropping a barrier only adds reachable
 ## ground, never takes it away. A pass that only ever removes obstruction is the one case `CLAUDE.md`
 ## names as safe.
-static func _thin_soft_pairs(pairs: Array, rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
+static func _thin_soft_pairs(map: CityMap, pairs: Array, rng: RandomNumberGenerator) \
+		-> Array[EventScheduler.Planned]:
 	var kept: Array[EventScheduler.Planned] = []
-	for pair: Array in pairs:
+	for entry: Array in pairs:
+		var segment: StreetNetwork.Segment = entry[0]
+		var pair: Array = entry[1]
+		var bands := [_sidewalk_band_tiles(segment, true), _sidewalk_band_tiles(segment, false)]
 		if pair.size() == 2 and rng.randf() < Tuning.SEAL_THINNING_FRACTION:
-			kept.append(pair[rng.randi_range(0, 1)])
+			var side := rng.randi_range(0, 1)
+			kept.append(pair[side])
+			_mark_soft_sealed(map, bands[side])
 		else:
 			kept.append_array(pair)
+			_mark_soft_sealed(map, bands[0])
+			_mark_soft_sealed(map, bands[1])
 	return kept
+
+## Both walker-lane tiles of one pavement side of `segment` — `Tuning.SIDEWALK_WIDTH` of them, not
+## only the one a soft seal's own body stands on, so a walker on either lane of that pavement is
+## shut out of it rather than only the one nearest the kerb. `near` is `side_a` in `_place_soft`'s
+## own naming — the lower end of `_cross_section_tiles`' lattice order — and `false` is `side_b`.
+static func _sidewalk_band_tiles(segment: StreetNetwork.Segment, near: bool) -> Array[Vector2i]:
+	var tiles := _cross_section_tiles(segment)
+	if near:
+		return tiles.slice(0, Tuning.SIDEWALK_WIDTH)
+	return tiles.slice(Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH, Tuning.STREET_WIDTH)
+
+static func _mark_soft_sealed(map: CityMap, tiles: Array[Vector2i]) -> void:
+	for tile in tiles:
+		map.seal_soft_tile(tile)
 
 ## A candidate's def, made safe to place as a seal rather than roll as an event. See the class
 ## doc for why the scar and the finish-spawn are stripped unconditionally, on every candidate,

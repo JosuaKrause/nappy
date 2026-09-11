@@ -394,64 +394,22 @@ the camera stays on her. The record of the regions and their doors is in `DECISI
 
 > "also I noticed that objects like fallen trees don't stop/redirect traffic or pedestrians"
 
-**The crowd knows about closures and about nothing else that stands in a street.** A walker or a
-car looks `LOOKAHEAD_TILES` ahead along its lane and turns off at the last junction when
-`CrowdAgent._cannot_go_on()` says the way is shut — and that predicate knows three things: a tile
-outside the map, a tile that is not street (or not driveable, for a car), and a tile in
-`CityMap.closed_tiles`. That set holds only what `ClosurePlanner` closes: `close_streets` floods
-the day's ground from the doorstep with the closure barriers down and files whatever a closed
-street's own ground the flood never reaches. **A seal is not a closure.** A hard seal — the fallen
-tree, the car accident, the burst main, the burnt-out car, the collapsed frontage, the stacked
-barricade — is `SealPlanner._place_hard` standing one row's bodies across the middle of a segment,
-spaced so their shapes cover it kerb to kerb; a soft seal is `_place_soft` standing one body on
-each pavement with the carriageway left open, and the thinning pass drops one body of some pairs.
-None of it touches `closed_tiles`, so every seal stands on ground the crowd reads as open, and
-walkers and cars pass through the bodies because an agent has no physics against an event body at
-all. The `delivery_van` row's docstring says as much of every solid body: on the carriageway it
-stands *"in a traffic lane the crowd knows nothing about and drives straight through"*.
+**Built on 2026-09-11 for seals, walls and doors, and the record is in `DECISIONS.md` under
+M110.** A hard seal, a region wall and a closure shut their segment to walkers and cars alike
+through the one held-ground record the catalogue is already refused from; a door lets cars
+through one at a time under the boom the M62 gate already runs, and walkers pass the hut as she
+does; a soft seal takes both pavements from the walkers and leaves the carriageway to the cars;
+the streets around the home block, held for placement only, stay open to everyone. What is left
+is one item and one question.
 
-**Why it matters more for a seal than for a café**: traffic going round a closure is half of what
-makes one legible — `_divert()`'s own docstring: *"the street with nobody on it is the street that
-is shut, which reads from a block away — further than the barrier itself does."* A hard seal is
-meant to read as a closed street and gets none of that tell; worse, a stream of walkers passing
-through a fallen tree says the street is open when it is not.
-
-- [ ] **The region walls, their checkpoints and the roadblock are driven through too.**
-      *(2026-09-10, playtest 55, day 7: "also cars go through the barriers and checkpoints".)*
-      The same cause as the seals — none of it writes `closed_tiles` — and a wider set of bodies:
-      `RegionPlanner`'s wall segments, its door segments with `checkpoint_hut`, `checkpoint_gate`
-      and `checkpoint_post` standing on them, and the `roadblock` band. A wall segment is shut to
-      the crowd the way a hard seal is. **A door lets cars through, one at a time, and the gate
-      moves** — decided by the player the same day: *"at checkpoints cars should slow down halt
-      then the bar should lift then the car drives through then it closes again"*. So a car
-      approaching a `checkpoint_gate` brakes to a halt at a stop line before the bar, the way it
-      stops for a zebra or a red (`CrowdAgent`'s zebra commit rule and braking distance are the
-      model); the gate's `RegionPlanner.GateState` raises (`boom_gate_*_raised.svg` exists beside
-      the lowered picture) after a short hold, the car drives through, and the bar lowers behind
-      it; a queue forms behind the first car the way one forms at a light, and nothing enters the
-      gate's own box it cannot leave. Walkers pass the hut as she does. **A raised bar is not a
-      way past for her**: stepping into the gate while it is up for a car starts an ordinary
-      inspection, exactly as if it were down — *(2026-09-10: "attempting to do that should just
-      start a regular checkpoint inspection")* — so the gate's `detain_radius` holds whatever the
-      bar is doing, and a test drives her at a raised gate and asserts the hold
-- [ ] **A hard seal shuts its street to the crowd the way a closure does.** The map carries a
-      second, crowd-facing record of the day's sealed ground — the cross-section tiles of every
-      segment `SealPlanner` sealed hard, at the seal's position — and `_cannot_go_on()` treats them
-      as shut, so the look-ahead sees the seal from seven tiles off and both walkers and cars turn
-      off at the last junction. Not `closed_tiles` itself: that set is computed by flood and is read
-      by the scheduler's placement and by the reachability picture, and a seal's ground is still
-      walkable for her (the guarantee the seal body already respects). Keyed on the segment rather
-      than the tile, because M100's *"events spawn inside a fully blocked street"* defect wants the
-      same fact — no catalogue row placed on a hard-sealed segment — and one record should serve
-      both. A test in `tests/test_crowd.gd` in the shape of *"nothing walks into a hard blocker"*:
-      on a day with hard seals, no agent stands inside a hard seal body's footprint on any frame,
-      and the sealed segment carries no through traffic
-- [ ] **A soft seal takes both pavements from the walkers and leaves the carriageway to the cars.**
-      The tiles under each soft body are shut to walkers only; a car on the road passes. A thinned
-      pair leaves its open pavement open, and the walkers still using it become the tell that the
-      wrong turn is takeable — which is the thinning's whole point *(playtest 22: "this makes the
-      actual path the player takes feel more organic, self-chosen, and earned")*, now visible from a
-      block away rather than only on arrival
+- [ ] **A raised bar is not a way past for her, at the bar itself.** Decided 2026-09-10
+      *("attempting to do that should just start a regular checkpoint inspection")* and true
+      today only at the huts: `checkpoint_gate` carries no `detain_seconds` or `detain_radius` of
+      its own, so stepping onto the boom's own tiles while it is up for a car starts nothing. The
+      row gains both, sized so the gate's box holds her the way a hut does whatever the bar is
+      doing, and `tests/test_checkpoints.gd`'s raised-gate test then asserts the hold at the bar
+      rather than at the hut. Waits for M113, the inspection reads as one, which owns the
+      checkpoint rows
 - [ ] **Open question, the player's: does every other solid body divert the crowd too?** A café, a
       construction band, a kerbed van are walked through the same way. Diverting the crowd at every
       pavement obstacle spends the tell closures rely on — every obstructed street would read as
@@ -630,24 +588,6 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **A car's strike box sits half a car behind its picture going north, half a car ahead going
-      south.** *(2026-09-10, playtest 55, read off the debug view: "the dead zone of a car is
-      trailing the car instead of leading the car?")* `CrowdAgent._draw_body` draws a car with
-      `Sprites.draw_standing` — bottom-centre at the node's position, so the end-on picture stands
-      north of the node — while `Crowd._strike()`'s box, `will_be_lethal()`'s test, the car's
-      `GroundShape` shadow and its field are all centred on the node. For a vehicle seen end-on the
-      ground footprint is its whole length, so the standing anchor is the wrong one: draw the
-      end-on car with its footprint centred on the position (the side view already is, along its
-      length), or move the node to the picture's footprint centre — one of the two, chosen so
-      the box, the shadow, the field and the picture agree in the debug view, and asserted by a
-      test that samples the drawn footprint against the strike box
-- [ ] **A queued car grazes a big building's footprint, and the M53 assertion was loosened to let
-      it.** `tests/test_crowd.gd`'s *"nothing walks into a hard blocker"* asked for exactly zero
-      agents ever standing inside one; it now tolerates one agent on under 5% of frames, measured at
-      1.1% — one car on 27 of 2400 frames. The cause is a crawl-forward step in a traffic queue
-      stepping one tile into a footprint, in `src/crowd/`. Fix that and the assertion goes back to
-      zero, which is the only acceptable end state: a car standing inside a building is visible, and
-      the test's own name is a promise
 - [ ] **The pram has no collision of its own.** `scenes/player/stroller.tscn` carries one circle
       for her, so the pram clips into walls when she hugs a corner. A second body that trails her,
       or a capsule that rotates with `facing`
