@@ -174,6 +174,12 @@ that draws her, so nothing about them needs its own switch. The meters keep runn
 sleepiness still drains at the idle rate and the hut's own field still charges the flat `Tuning.
 CHAT_EXCITEMENT`, because the baby is still there whether or not the player can see her.
 
+**The camera eases onto the door instead of following her**, and back again once she is released —
+`Stroller.focus_camera_on()`/`release_camera_focus()`, a smooth-stepped ease over `Tuning.
+CAMERA_EASE_SECONDS` rather than a cut or the ordinary per-frame walking follow. This is the one
+camera move in the game that is not her walking; any later one that is not either reuses the same
+two calls rather than a second camera.
+
 ## Baby state machine
 
 ```

@@ -455,6 +455,9 @@ func _process(delta: float) -> void:
 		# `chatting_mother` has none of this: her conversation ending is what starts her own
 		# departure, `_be_done()`'s ordinary meaning for anything that is not a fixture.
 		if _chat_seconds_left <= 0.0 and def.redetains:
+			# The frame the hold's own clock runs out — before `EventManager` has teleported her,
+			# which is why the camera eases toward her *live* position rather than a captured one,
+			# see `Stroller.release_camera_focus()`.
 			_leave_inspection()
 		if _chat_seconds_left <= 0.0 and not def.redetains:
 			_be_done()
@@ -533,6 +536,7 @@ func _enter_inspection() -> void:
 	if not stroller:
 		return
 	stroller.hide_for_inspection()
+	stroller.focus_camera_on(global_position)
 
 ## The other half, called from `_process()` the frame the hold's own clock runs out.
 func _leave_inspection() -> void:
@@ -540,6 +544,7 @@ func _leave_inspection() -> void:
 	if not stroller:
 		return
 	stroller.show_after_inspection()
+	stroller.release_camera_focus()
 
 ## Whether the chase ended because she shook it off rather than because the clock ran out. Read by
 ## the telemetry, which is the only thing that can tell the two apart from outside.

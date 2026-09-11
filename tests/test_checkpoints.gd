@@ -24,6 +24,7 @@ func run(t) -> void:
 	_test_the_manager_actually_places_the_door_structure(t)
 	_test_a_hut_detains_and_releases_on_the_other_side(t)
 	_test_she_and_the_guard_are_gone_during_the_hold(t)
+	_test_the_camera_eases_onto_the_hut_and_back(t)
 	_test_walking_back_redetains_her(t)
 	_test_the_chatting_mother_still_detains_once(t)
 	_test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t)
@@ -352,6 +353,50 @@ func _test_she_and_the_guard_are_gone_during_the_hold(t) -> void:
 	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
 	t.check(not hut.is_chatting(), "the hold ends")
 	t.check(stroller.visible, "and she is visible again the same frame")
+
+	hut.free()
+	stroller.free()
+	manager.free()
+
+## *"The camera should center on the hut ... use a smooth ease in out for non player caused camera
+## movement."* Drives `Stroller._update_camera()` directly, the same private-method stepping
+## `_advance_chat()` above already uses for `EventInstance._process()`, so the ease is checked
+## without also exercising `move_and_slide()` against the hut's own obstruction body.
+func _test_the_camera_eases_onto_the_hut_and_back(t) -> void:
+	var manager := _manager(t)
+	var stroller := _real_stroller(t)
+	manager._player = stroller
+
+	var axis := Vector2.RIGHT
+	var centre := Vector2(4400.0, 4400.0)
+	var hut := _door_instance(t, "checkpoint_hut", centre, axis)
+	manager._instances.append(hut)
+
+	stroller.global_position = centre + axis * 40.0
+	var camera_before := stroller._camera.global_position
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(hut.is_chatting(), "the hold starts")
+
+	for i in int(round(Tuning.CAMERA_EASE_SECONDS / STEP)) + 5:
+		stroller._update_camera(STEP)
+	var eased_distance := stroller._camera.global_position.distance_to(hut.global_position)
+	t.check(eased_distance < 1.0,
+			"the camera arrives at the hut once the ease has run its course (%.1fpx away)"
+			% eased_distance)
+	t.check(stroller._camera.global_position.distance_to(camera_before) > 1.0,
+			"and it actually moved to get there, rather than having started there")
+
+	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
+	t.check(not hut.is_chatting(), "the hold ends")
+	var released_position := stroller.global_position
+
+	for i in int(round(Tuning.CAMERA_EASE_SECONDS / STEP)) + 5:
+		stroller._update_camera(STEP)
+	var returned_distance := stroller._camera.global_position.distance_to(released_position)
+	t.check(returned_distance < 1.0,
+			"and eases back to her, on the released side of the door (%.1fpx away)"
+			% returned_distance)
 
 	hut.free()
 	stroller.free()

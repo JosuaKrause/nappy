@@ -649,6 +649,12 @@ const CHECKPOINT_DETAIN_SECONDS := 2.0
 ## `EventManager._release_finished_door_detentions()`.
 const CHECKPOINT_RELEASE_MARGIN := 8.0
 
+## Seconds a camera move that is not her walking — currently only the checkpoint's own ease onto
+## the hut and back — takes to arrive. The move is smooth-stepped rather than linear so it reads
+## as an ease rather than a slide or a cut; short enough that most of `CHECKPOINT_DETAIN_SECONDS`
+## is spent settled on the hut rather than still travelling to it. See `Stroller.focus_camera_on()`.
+const CAMERA_EASE_SECONDS := 0.5
+
 ## Seconds a car has to have been stopped, dead level with a closed checkpoint gate, before it
 ## opens for it. *(2026-09-02, the player: "cars need to slow down to a full stop before the gate
 ## opens and they can go ahead again.")* See `Crowd._stop_for_gates()`.

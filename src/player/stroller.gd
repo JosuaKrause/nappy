@@ -158,6 +158,20 @@ var _alert_phase := 0.0
 ## without being able to touch anybody else's. See `stand_down()`.
 var _alert_source := &""
 
+## The point the camera is easing onto instead of following her — set by `focus_camera_on()`,
+## cleared by `release_camera_focus()`. Read by `_update_camera()`, the only place any of this
+## group is used.
+var _camera_focused := false
+var _camera_focus_point := Vector2.ZERO
+## Where the current ease started and how long it has been running — smooth-stepped over
+## `Tuning.CAMERA_EASE_SECONDS` rather than snapped, whether easing onto a focus or back to her.
+var _camera_ease_from := Vector2.ZERO
+var _camera_ease_elapsed := 0.0
+## Whether the camera is easing back to her after a focus ended, as opposed to the ordinary
+## per-frame follow `_update_camera()` gives her while walking — the one flag that keeps the two
+## from fighting over `_camera.global_position` in the same frame.
+var _camera_easing_back := false
+
 func _ready() -> void:
 	add_to_group("player")
 
@@ -286,6 +300,28 @@ func hide_for_inspection() -> void:
 ## The other half, called the frame the hold ends.
 func show_after_inspection() -> void:
 	visible = true
+
+## Eases the camera onto `point` instead of following her — a checkpoint's hut or post, currently
+## the only caller — over `Tuning.CAMERA_EASE_SECONDS`, smooth-stepped rather than snapped or slid.
+## `top_level` is set so the camera's own `global_position` stops being computed from her transform
+## for the duration; `release_camera_focus()` is what hands it back.
+func focus_camera_on(point: Vector2) -> void:
+	_camera_ease_from = _camera.global_position
+	_camera_ease_elapsed = 0.0
+	_camera_focused = true
+	_camera_focus_point = point
+	_camera_easing_back = false
+	_camera.top_level = true
+
+## Eases the camera back onto her — the other half of `focus_camera_on()`. The target is her *own*
+## `global_position`, read fresh every frame in `_update_camera()` rather than captured here, so a
+## release that teleports her mid-ease (`teleport_to()`, the same frame a checkpoint's hold ends)
+## still arrives at where she actually ends up rather than where she was caught.
+func release_camera_focus() -> void:
+	_camera_ease_from = _camera.global_position
+	_camera_ease_elapsed = 0.0
+	_camera_focused = false
+	_camera_easing_back = true
 
 ## Whether the baby is awake right now — for anything that has to price itself differently by her
 ## state without ever writing to her meters. `true` with no baby at all, which is what a test rig
@@ -439,7 +475,29 @@ func _turn_toward(target: Vector2, delta: float) -> void:
 	var diff := angle_difference(facing.angle(), target.angle())
 	facing = facing.rotated(clampf(diff, -step, step)).normalized()
 
+## Her own walking follow — `_camera.offset`'s look-ahead lerp — for every frame that is not a
+## focus or its own return; a focus takes the camera off her entirely, driven below instead.
 func _update_camera(delta: float) -> void:
+	if _camera_focused:
+		_camera_ease_elapsed += delta
+		var t := clampf(_camera_ease_elapsed / Tuning.CAMERA_EASE_SECONDS, 0.0, 1.0)
+		_camera.global_position = _camera_ease_from.lerp(
+				_camera_focus_point, smoothstep(0.0, 1.0, t))
+		return
+	if _camera_easing_back:
+		_camera_ease_elapsed += delta
+		var t := clampf(_camera_ease_elapsed / Tuning.CAMERA_EASE_SECONDS, 0.0, 1.0)
+		_camera.global_position = _camera_ease_from.lerp(global_position, smoothstep(0.0, 1.0, t))
+		if t >= 1.0:
+			# Arrived: hand the camera back to the ordinary parented follow rather than keep
+			# driving `global_position` by hand forever. `position = Vector2.ZERO` is exactly what
+			# `top_level = false` already means for a camera sitting on her — the ease's own target
+			# was her `global_position`, so there is nothing to reconcile.
+			_camera_easing_back = false
+			_camera.top_level = false
+			_camera.position = Vector2.ZERO
+			_camera.reset_smoothing()
+		return
 	var lead := Vector2(facing.x, facing.y * OBLIQUE_Y) * CAMERA_LOOK_AHEAD
 	_camera.offset = _camera.offset.lerp(lead, clampf(delta * 3.0, 0.0, 1.0))
 
@@ -453,10 +511,14 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	_alert = Alert.NONE
 	_alert_left = 0.0
 	_alert_source = &""
-	# A day boundary can land mid-hold if the run ends inside one; a stuck hidden rig should never
-	# survive into the next day.
+	# A day boundary can land mid-hold if the run ends inside one; neither a stuck hidden rig nor
+	# a camera still glued to a `top_level` focus should ever survive into the next day.
 	visible = true
+	_camera_focused = false
+	_camera_easing_back = false
 	if _camera:
+		_camera.top_level = false
+		_camera.position = Vector2.ZERO
 		_camera.offset = Vector2.ZERO
 		_camera.reset_smoothing()
 	# A reset has no preceding turn to preserve, so choose `look` directly instead of applying the
