@@ -169,10 +169,7 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
-   reprioritised". **M105, the city degrades, sits in this batch provisionally** — it was asked
-   for on 2026-09-10 and not placed,
-   so this is the orchestrator's guess at where work that needs no route decision belongs, open
-   to the player moving it.
+   reprioritised".
 4. **Reaching act III**, which M56's measurement against the nerves needs.
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
@@ -198,8 +195,6 @@ anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified 
 |---|---|
 | M100 — Small, real, and nobody's | Review `chalk_mark.svg` beside `chalk_mark_touched.svg`, then bind the touched state to the acknowledgement she adds when contact counts. Keep the original mark visible and readable on the pavement. Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family with the alley event and the sound arcs with their event timing; source availability does not decide either behavior. |
 | M102 — The finale: out of the apartment, out of the city | Build the interior TileSet/map binding for hallway, stairwell and basement floors/edges/walls. Register doors, barricade, chandelier and puddle separately; retain the south hallway's implied door thresholds. Bind normal/flash windows to explosion timing, steam to its pulse, and carrying-mother facing/gait to actual movement. Reuse mouse, guards, vehicles and crater sources. Decide whether the optional `explosion_preview.svg` is needed; the off-screen explosion brief does not require a visible burst. Check room transitions, foot anchors, layering and state changes in runtime evidence. |
-| M105 — The city degrades | Register the three crack levels and two patterns for each road/sidewalk/alley base in the TileSet, preserving markings, kerbs, seams and tile semantics. Place the five flat litter decals under actors; place single/piled sacks with the milestone's obstruction decision. Select matching `storefront_{a,b,c,d}_shuttered.svg` variants through M106's frontage binding. Compare a fixed seed across acts. |
-| M105 — The city degrades | Bind each storefront's shuttered state without moving its door (the plain and awning states are bound), and select the tall/shuttered window pairs. |
 
 The impact-crater decals `assets/props/impact_crater_1x1.svg`,
 `impact_crater_2x2.svg` and `impact_crater_3x3.svg` (32×32, 64×64 and 96×96 footprints) are the
@@ -626,60 +621,6 @@ re-pitched:
       face**, the meter read off the baby rather than off a strip at the bottom of the screen — the
       same shape as the audio item's *breathing as the diegetic version of the meters*. Not
       designed, and it needs the playing that the status-line cut is about to produce
-
----
-
-## M105 — The city degrades · asked for 2026-09-10
-
-> "we need cracked street/sidewalk tiles to be able to deteriorate the city. we need loose garbage
-> (eg eaten apple, newspaper, etc) that can be spread around throughout the city to show basic
-> services failing towards the later acts (it can be defined by a density factor for placement
-> which can increase with the days starting at day 4 or 5). we need garbage sacks that can be
-> placed in alleyways at first and at the side of buildings later on as the city degrades."
-> "floor tiles of the city need different levels of cracks"
-
-**What the street looks like is the act, told without a word.** The acts are already narrative —
-the crowd thins from act III because *"there is nobody left going out on them"*, blocks go
-`BOARDED_UP` and `BURNT_OUT` — and the ground under her feet says none of it. This milestone gives
-the city a visible decline that rises with the day: cracks in the road, litter on the pavement,
-sacks in the alleys and then against the buildings. **None of it changes what a route costs**, on
-purpose: it is presentation, and the one exception — a sack pile that stands in the way — is stated
-below rather than smuggled in. The prepared pictures are catalogued in `GRAPHICS.md`; this
-milestone places them.
-
-- [ ] **One degradation curve, in `Tuning`.** A density per tile that is zero through the early
-      days and rises from `DEGRADATION_FIRST_DAY` — *"day 4 or 5"*, the player's range, and the
-      build picks one and says why — to the last day, the way `budget_for(day)` rises. Everything
-      below reads that one number, so the city degrades as one thing rather than as three
-      unrelated ones; a per-block factor can sit on top of it later (a `BURNT_OUT` block is
-      further gone than a residential one) but is not the first version
-- [ ] **Cracked ground, by level — variety and gradient.** *("different levels of cracks … so we
-      can add variety and gradient.")* `GroundTiles` chooses a tile's crack level from the curve
-      and a per-tile hash, so the same tile shows the same crack every day and more tiles show
-      worse cracks as the run goes on: hairline first, cracked, then broken. That is the gradient
-      in time; the gradient across the map — a block further gone than its neighbour, the
-      industrial edge worse than the residential middle — is the per-block factor the first item
-      leaves for later, and the levels are what make it expressible. The patterns within a level
-      are the variety, picked by the same hash. Pavement before road, since it is what she walks
-      on and what she sees. A crack changes nothing about the tile — not its type, not its cost,
-      not the crowd's lanes
-- [ ] **Loose litter, spread by the curve.** Small ground decals placed at generation each day from
-      the curve and a seeded roll, on pavements, alleys and squares, never on the road's lanes
-      (where a decal under a car reads as a bug) and never inside a calm area (a park with litter
-      in it is a spoiled park, and spoiling has its own mechanism). Decals only: no body, no
-      field, no y-sort — they lie under everything
-- [ ] **Garbage sacks, alleys first.** Sacks stand in alleys from the first degraded day and beside
-      building fronts later, the second threshold another day or two on: *"in alleyways at first
-      and at the side of buildings later on"*. A single sack is decoration with a `GroundShape`
-      and no body; **a pile may carry a body** — an alley narrowed by rubbish is the one place this
-      milestone could touch a route, and whether it should is decided when a pile is seen in an
-      alley she has to use, not before. The mouse in the alley (M100) is placed by preference
-      beside a pile once both exist
-- [ ] **The storefronts shutter.** M106's `storefront_{a,b,c,d}_shuttered.svg` replaces a block's storefronts
-      when the block goes `BOARDED_UP`, and from a later point on the curve for any commercial
-      block, so the degrading city and the block purposes tell one story rather than two
-- [ ] **A rig picture per act.** Four screenshots of the same seed on days 1, 5, 9 and 13 from the
-      same doorstep, so the curve is judged as a sequence; the record goes to `DECISIONS.md`
 
 ---
 
