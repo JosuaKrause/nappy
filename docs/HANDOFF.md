@@ -274,7 +274,10 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 ## The queue, as prioritised on 2026-09-09
 
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56's
-remaining hunting row, the roadblock, is next, on its own branch, and it is a drawing. M110, the
+remaining hunting row, the roadblock, is next, on its own branch, and it is a drawing. M112, the
+escape scene, walkable, is being built beside it — the building's five floors, the stairs as
+walkable 2.5D tiles and her with the baby in her arms, behind `--start-escape` and with no
+events, pulled forward out of M102, the finale, on the player's word. M110, the
 crowd goes round a seal, follows; M65, the protester who points, is revisited against the walled
 city rather than built as written. The debug view (`1` to `4` in a debug build, `--layers 1,3` for
 a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow or a body is checked by

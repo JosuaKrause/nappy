@@ -131,7 +131,8 @@ The [environment source review](evidence/svg-environment-2026-09-10/INVENTORY.md
 prepared interior, ground, roof, frontage and prop source in `sources.csv`, with native canvases,
 anchors and alpha bounds. It includes tile repetition, facade overlays and chalk on pavement.
 
-Stair construction follows the [supplied lateral-flight references](evidence/stair-layout-reference-2026-09-10/README.md).
+Stair construction follows the supplied lateral-flight references,
+`docs/reference/stairwell-switchback-interior-01.jpg` and `fire-escape-switchback-exterior-01.jpg`.
 The interior has one stairwell on the building's left and one on its right; each contains sideways
 switchback flights. `assets/interior/stair_down.svg` is a 64×64 projected module, anchored at
 (32,64), separate from its eventual floor-transition trigger. Its unmirrored upper, intermediate
