@@ -1,0 +1,11 @@
+<!-- A rat, a small ground decal for the basement corridor, centred on its tile. Under a third of
+     the tile on its long axis, the way a decal this small has to stay to read as vermin rather
+     than as furniture. Transparent canvas. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision" stroke="#221f1c" stroke-width="0.6" stroke-linejoin="round" stroke-linecap="round">
+  <!-- Ground anchor is the canvas centre. -->
+  <path d="M12 17C12 15 14 14 17 14.3C19.5 14.6 21 16 21 17.4C21 18.8 19.6 19.6 17.6 19.6C15 19.6 12 19 12 17Z" fill="#4a4642"/>
+  <path d="M21 16.6L25 15.2L22.4 17.6L25 19.6L21 18.4Z" fill="#4a4642"/>
+  <circle cx="13.4" cy="16.4" r="0.6" fill="#0d0b09"/>
+  <path d="M12.2 15.6L9.6 14.6 M13 18.6L11 19.8" fill="none" stroke-width="0.5"/>
+  <path d="M14.4 19.4L14 21 M17.2 19.6L17.4 21.2 M19.6 19.2L20.2 20.6" fill="none" stroke-width="0.7"/>
+</svg>

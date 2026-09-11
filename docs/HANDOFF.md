@@ -274,7 +274,8 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 ## The queue, as prioritised on 2026-09-09
 
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56's
-remaining hunting row, the roadblock, is next, on its own branch, and it is a drawing. M110, the
+remaining hunting row, the roadblock, is next, on its own branch, and it is a drawing. M113, the
+inspection, and M114, the field that grows forward, come from playtest 55; M110, the
 crowd goes round a seal, follows; M65, the protester who points, is revisited against the walled
 city rather than built as written. The debug view (`1` to `4` in a debug build, `--layers 1,3` for
 a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow or a body is checked by
@@ -294,6 +295,17 @@ owns continuous turn paths and diagonal presentation. Coordinate them in the sha
 ## What to distrust
 
 What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
+
+- **The building exists and nobody has walked it.** `tools/run.sh --start-escape` (debug only;
+  `--start-escape stairwell:left|stairwell:right|lobby|basement|floor:2|floor:1` boots into a
+  part) puts her, carrying the baby, in front of her door on the third floor of a building with
+  three hallways, two switchback stairwells at opposite ends, a barricaded lobby and a winding
+  basement to the emergency exit — one map, the parts 64 tiles apart, every door a fade and a
+  teleport. Everything about it is checked by a rig and by seven captures: whether a diagonal
+  flight reads as *descending* when a sideways press walks it, whether the fade-and-teleport reads
+  as a door or as a cut, whether eight rows a floor reads as a stairwell, and whether five floors
+  is *"not excessively many"* are all played questions. The record is in `DECISIONS.md` under
+  M112; what M102, the finale, still adds inside it is in `TODO.md`.
 
 - **Every field has a shape now, and nobody has felt one.** A stationary body's field is a capsule
   about its own spine rather than a disc about its centre, and a moving thing's is an ellipse with
