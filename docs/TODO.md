@@ -59,8 +59,8 @@ pictures to their actual runtime consumers.
       PNG generation stays with M109, convert the SVG catalogue to PNG. Use focused selector and
       caller tests, import/boot checks and movement evidence; keep prepared families unbound until
       their gameplay owner needs them. M56, the resistance is noticed, owns guard/riot-van states;
-      M65, a protester points at the objective, owns objective-directed pointing; M102, the finale,
-      owns the carrying mother and interior sequence.
+      M102, the finale, owns the carrying mother and interior sequence. The protester's eight
+      pointing poses are bound (`DECISIONS.md`, M65).
 
 ### M111 — Cars follow their turns
 
@@ -165,14 +165,10 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    by the orchestrator because it is the first thing act III shows and it was seen once; open to
    the player moving it.
 3. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
-   don't stop/redirect traffic or pedestrians.")* Placed here by the orchestrator, ahead of M65
-   because a sealed street the crowd walks through is the sealing's own legibility failing — open
-   to the player moving it.
-4. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
-   revisit after M62.")* Revisited rather than built as written: the regions and their
-   checkpoints (`DECISIONS.md`, M62) may change what finding a mark is like, and the entry is
-   re-read before the prepared poses are bound to objectives.
-5. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
+   don't stop/redirect traffic or pedestrians.")* Placed here by the orchestrator because a sealed
+   street the crowd walks through is the sealing's own legibility failing — open to the player
+   moving it.
+4. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
@@ -180,8 +176,8 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    clock, sit in this batch provisionally** — they were asked for on 2026-09-10 and not placed,
    so this is the orchestrator's guess at where work that needs no route decision belongs, open
    to the player moving it.
-6. **Reaching act III**, which M56's measurement against the nerves needs.
-7. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
+5. **Reaching act III**, which M56's measurement against the nerves needs.
+6. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
 The record, with its measurements and the choices open to overturn, is in `DECISIONS.md` under
@@ -205,7 +201,6 @@ anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified 
 | Owner | Integration work and acceptance |
 |---|---|
 | M56 — The resistance is noticed | Bind the riot van's directional family and standing/lunging guard poses to the actual waiting, departing and pursuit states. Preserve the waiting silhouette and telegraph; use M108's heading selector rather than a second direction table. |
-| M65 — A protester points at the objective | Aim the eight `protester_point_*.svg` poses at the chosen objective; verify all target octants and no-target behavior without adding a first-encounter quest marker. |
 | M100 — Small, real, and nobody's | Review `chalk_mark.svg` beside `chalk_mark_touched.svg`, then bind the touched state to the acknowledgement she adds when contact counts. Keep the original mark visible and readable on the pavement. Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family with the alley event and the sound arcs with their event timing; source availability does not decide either behavior. |
 | M102 — The finale: out of the apartment, out of the city | Build the interior TileSet/map binding for hallway, stairwell and basement floors/edges/walls. Register doors, barricade, chandelier and puddle separately; retain the south hallway's implied door thresholds. Bind normal/flash windows to explosion timing, steam to its pulse, and carrying-mother facing/gait to actual movement. Reuse mouse, guards, vehicles and crater sources. Decide whether the optional `explosion_preview.svg` is needed; the off-screen explosion brief does not require a visible burst. Check room transitions, foot anchors, layering and state changes in runtime evidence. |
 | M105 — The city degrades | Register the three crack levels and two patterns for each road/sidewalk/alley base in the TileSet, preserving markings, kerbs, seams and tile semantics. Place the five flat litter decals under actors; place single/piled sacks with the milestone's obstruction decision. Select matching `storefront_{a,b,c,d}_shuttered.svg` variants through M106's frontage binding. Compare a fixed seed across acts. |
@@ -325,12 +320,12 @@ Read [PLAYTEST-22.md](playtests/PLAYTEST-22.md) and [PLAYTEST-21.md](playtests/P
 sealing: what they asked for is built and unplayed, so the next report on it is the thing that
 matters.
 
-**Playtest 20's four findings** went to M69 (a reachability gap, now built), M65 (a chalk-mark idea),
-M97 (a calm-area spoiling inconsistency) and M96 (a measured lead-time gap on the post-tutorial
-`charging_dog`).
+**Playtest 20's four findings** went to M69 (a reachability gap, built), M65 (the pointing
+protesters, built — `DECISIONS.md`, M65), M97 (a calm-area spoiling inconsistency) and M96 (a
+measured lead-time gap on the post-tutorial `charging_dog`).
 
 **Playtest 19's graphics and placement findings have separate owners.** The protester objective
-work belongs to M65, a protester points at the objective. The seal and barrier records are in
+work is built (`DECISIONS.md`, M65). The seal and barrier records are in
 `DECISIONS.md` under M64, eight seal pictures, and M48, the barriers; the remaining north-edge,
 junction-paint and robber-placement records are filed there under M49 and the small items.
 
@@ -494,50 +489,6 @@ through a fallen tree says the street is open when it is not.
       recommendation is seals only in this milestone, with ordinary bodies asked about against a
       played day; the alternative, treating any body that covers a whole lane as shut for that lane,
       is one predicate more and is cheap to add if the player wants it
-
----
-
-## M65 — A protester points at the objective · asked for 2026-09-03
-
-**The pointing poses are available; objective binding and density remain open.**
-`assets/events/protester_point_n.svg`, `protester_point_ne.svg`, `protester_point_e.svg`,
-`protester_point_se.svg`, `protester_point_s.svg`, `protester_point_sw.svg`,
-`protester_point_w.svg` and `protester_point_nw.svg` keep an upright body and a shared feet anchor
-at (22, 52) in a 44×52 canvas. Reuse them for the objective-bearing selection after the design
-review below. See DECISIONS.md, "SVG artwork and upcoming milestone assets". The two findings this milestone was
-opened for — the first mark being announced, and a mark that was never on screen — are built; the
-record is in `DECISIONS.md` under M78, and the played question it leaves is whether a mark that
-follows her until seen is now findable at all.
-
-**Re-read against the walled city on 2026-09-11, and narrowed by the player: a protester never
-points at a chalk mark.** *(2026-09-09: "M65 we need to revisit after M62"; 2026-09-11, asked
-whether to build it as written now: "the mark is findable now -- I don't think we need pointing
-for that. but the other tasks are not as easy and need pointing".)* So the pointing is for every
-objective that is not a mark — a perform step, wherever the current step stands — and a protester
-on a mark day wears the plain pose. The density raise below stands as asked.
-
-**Half of this item needs no drawing at all**: raising how often a protester appears is a density
-change, and the player's own reason it is cheap is that a protester obstructs nothing and pursues
-nothing, so it does not compete for the catalogue's placement budget.
-
-- [ ] **A protester points at the objective, and there are more of them.** *(2026-09-03, playtest
-      20: "the chalk is currently unfindable I spent almost a full day searching for it. let's make
-      the protesters point into the direction (with their arms or something) of the current
-      objectives (not only chalk marks). and make the protesters more common. they're not really an
-      obstacle/event anyway so they can be placed independently.")* Still the same complaint as the
-      two items above it — the mark cannot be found — with a mechanism attached rather than only a
-      placement fix: give the `protest` row (`EventDef.Look.PROTEST`, drawn in
-      `src/events/event_instance.gd` from `assets/events/protester.svg`) one of the eight
-      `protester_point_*.svg` poses listed above, aimed at whatever the
-      current objective is, and raise how often it appears. The player's own reason the density
-      change is cheap: a protester obstructs nothing and pursues nothing, so it does not compete
-      with the rest of the catalogue's placement budget the way raising an obstacle's density would.
-
-      **Measured, the same run:** a chalk mark is rolled and guarded by a nearby robber on every one
-      of the four days it becomes eligible
-      (`docs/evidence/archive/session-captures/2026-09-03/run-2026-09-03T002310-seed4070543669-5d342c9.log:240`, `:364`, `:546`, `:602`),
-      and the run ends *"bad on day 7 — resistance 0/4, sabotage not done"* (`:701`) — not found once
-      across the whole run, on every day one existed to find
 
 ---
 
