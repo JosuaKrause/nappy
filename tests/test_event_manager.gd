@@ -22,6 +22,7 @@ func run(t) -> void:
 	_test_a_running_event_comes_back_where_it_got_to(t)
 	_test_a_set_piece_happens_at_exactly_one_of_its_sites(t)
 	_test_a_day_started_through_the_manager_alone_still_carries_seals(t)
+	_test_a_streamed_pursuer_resumes_the_chase(t)
 	_teardown()
 
 func _build_city(t) -> void:
@@ -323,3 +324,48 @@ func _test_a_day_started_through_the_manager_alone_still_carries_seals(t) -> voi
 	for key in alone:
 		t.check(after_city.has(key),
 				"everything the manager's own fallback tree holds, City.start_day holds too")
+
+## M100, small, real, and nobody's: the wiring half of "a pursuer streamed out mid-chase comes
+## back having forgotten it." `tests/test_heat.gd` already drives `EventInstance.resume()` directly
+## and pins that its `from_noticed_at` argument restores `_noticed_at`; the gap that shipped anyway
+## was one level up — `EventScheduler.Planned` had no field to hold the notice, so
+## `EventManager._stream_in()` always called `resume()` with the default `INF` and a `pursues_within`
+## row streamed out mid-chase came back `is_waiting()`, standing where the day planted it. This
+## drives the same encounter through `EventManager._stream_in()`/`_stream_out()` themselves, the
+## only place that bug could actually live — the same kind of wiring question the rest of this
+## suite exists for (see the class doc above).
+##
+## `alley_robbery` rather than a scheduled plan: it carries `pursues_within` cold, with no heat
+## level or a particular day's roll needed to reach it, and a `Planned` built by hand is
+## deterministic where waiting for the scheduler to place one on some day would not be.
+func _test_a_streamed_pursuer_resumes_the_chase(t) -> void:
+	var def := EventCatalogue.by_id("alley_robbery")
+	var plan := EventScheduler.Planned.new(def, Vector2(500.0, 500.0))
+
+	_city.events._stream_in(plan)
+	t.check(plan.live != null, "the hand-built plan streams in like any other")
+	if not plan.live:
+		return
+
+	var her := plan.position + Vector2(def.pursues_within - 10.0, 0.0)
+	plan.live.player_at = her
+	plan.live._process(1.0 / 60.0)
+	t.check(not plan.live.is_waiting(), "she is inside the trigger, so it notices her")
+	for i in 60:
+		plan.live.player_at = her
+		plan.live._process(1.0 / 60.0)
+	t.check(not plan.live.is_waiting(), "and a second later it is still chasing, not patrolling")
+	var chase_age_before := plan.live.chase_age()
+
+	_city.events._stream_out(plan)
+	t.check(plan.live == null, "streaming out through the manager clears the live instance")
+	t.check(plan.noticed_at != INF,
+			"and the plan itself remembers when it noticed her, not just the freed instance")
+
+	_city.events._stream_in(plan)
+	t.check(plan.live != null, "streaming back in rebuilds it")
+	if plan.live:
+		t.check(not plan.live.is_waiting(),
+				"streamed back in through EventManager it is still chasing, not waiting")
+		t.close_to(plan.live.chase_age(), chase_age_before,
+				"and the chase clock continued from the notice rather than restarting at it", 0.05)
