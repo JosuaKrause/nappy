@@ -84,8 +84,16 @@ built half filed in `DECISIONS.md`.
 mention of it in any handoff still … since the work is done".)* `HANDOFF.md` holds the pick-up
 state and nothing else, so a merged item has no line there — not a "built and unwalked" bullet, not
 a distrust entry written for it, not its number. What a player should go and look at is a
-`TODO.md` item or a `DECISIONS.md` record, never a sentence in the handoff about work that is
-finished. Before merging, grep both handoffs for the item's number and its nouns.
+`TODO.md` item, a `DECISIONS.md` record, or an entry in `docs/REVIEW.md`, never a sentence in the
+handoff about work that is finished. Before merging, grep both handoffs for the item's number and
+its nouns.
+
+**And work that only a person can judge adds its entry to `docs/REVIEW.md` in the same PR.**
+*(2026-09-11: "keep a document with items that need human review / test runs. That way you can
+keep working without having to stop. And test runs can capture multiple items at once.")* The
+entry says what to do, where to look, and the question a run answers; the record of what was
+built stays in `DECISIONS.md`. It is the list a playtest is asked against, so an item missing
+from it is an item no run will ever be asked to look at.
 
 The **session-cleanup** skill still runs at the end of a session — it catches drift that no single
 change is responsible for, reassesses long-open items and re-reads the numbers. It is not where a

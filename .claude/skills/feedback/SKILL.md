@@ -43,6 +43,11 @@ decision somebody can overturn. Nothing else is.
 The test of whether it was written down is not "did I mention it" — it is whether **somebody opening
 the repo cold could build the thing that was asked for** from what is on disk.
 
+**A playtest also closes what it covered in `docs/REVIEW.md`.** That file is the list of things
+waiting on a person; when a run has looked at one, the verdict is in the playtest file and the
+item leaves the list in the same commit, whether the verdict was *fine* or a new finding. An item
+that stays after its run has been played is asked for twice.
+
 ## Never silently overturn a decision the player took
 
 **Recording a request is not the end of the obligation to it.** Once something has been asked for,
