@@ -57,6 +57,38 @@ Asked whether a bar raised for a car also lets her through without a hold:
 
 > attempting to do that should just start a regular checkpoint inspection
 
+## An alley at the home, and the robber who spawns with it
+
+> one bug that will automatically resolve once we pick the no alley at home up. right now if there
+> spawns an alley at the home (which shouldn't happen) the robber spawns too leading to a spawn
+> kill every time.
+
+Today the home block may carry a through-alley: the notch is slid sideways off it rather than the
+block being exempt from carving (`docs/CITY.md`, "Place home"). Filed under M100's defects as the
+rule the player names — no alley on the home block — with the spawn kill as its consequence.
+
+## The car's dead zone trails the car
+
+> from the debug view I can tell the dead zone of a car is trailing the car instead of leading the
+> car?
+
+Confirmed in the code: a car's picture is drawn standing, bottom-centre at the node's position,
+while its strike box and its shape are centred on that position — so on a north–south street the
+lethal box sits half a car behind the picture going north and half a car ahead going south. Filed
+under M100's defects.
+
+## The field when a car stops
+
+> also while the car moves the field gets narrower and oval -- this is good but when the car stops
+> it becomes round and bigger? this is counter intuitive. the stretching should retain the area so
+> an unstretched car field should be the same width with shorter height
+
+This overturns the orchestrator's decision in M61's field record — that the catalogued outer
+radius is the moving field's *forward* reach, so the field only shrinks behind and abeam — in
+favour of the player's: the resting disc is the reference and the moving field stretches out of
+it. Filed as M114, the moving field grows forward. "Retain the area" and "the same width" ask for
+slightly different ellipses; the entry states both and the question goes back to the player.
+
 ## The inspection
 
 > the checkpoint itself, 2s should be enough -- both the guard and the player should disappear
