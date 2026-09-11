@@ -177,7 +177,6 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    so this is the orchestrator's guess at where work that needs no route decision belongs, open
    to the player moving it.
 5. **Reaching act III**, which M56's measurement against the nerves needs.
-6. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
 The record, with its measurements and the choices open to overturn, is in `DECISIONS.md` under
@@ -233,7 +232,7 @@ review and the player's directional corrections are recorded in `DECISIONS.md`.
 **[PLAYTEST-49.md](playtests/PLAYTEST-49.md) is the session before it and it is the prioritisation above**, plus
 one bug — events spawning inside a fully blocked street — filed at the top of M100's defects,
 one correction, that the non-adjacency rule does not cover parks yet, filed in M97, and one design
-instruction, the fire found before the engine, filed as M101.
+instruction, the fire found before the engine, built (`DECISIONS.md`, M101).
 
 **[PLAYTEST-48.md](playtests/PLAYTEST-48.md) is the newest gameplay session, and its one note is built**:
 the signal head north of a junction, which faces up the screen, shows its back and no lamp. The
@@ -617,14 +616,6 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **A rig driving `EventManager` before `City.start_day` seals nothing.** `EventManager.
-      start_day` reads the day's tree as `_city.route_tree()` when it has a city, and that
-      answers `null` until `City.start_day` has grown one — so a rig that starts the events first
-      hands `SealPlanner.plan_day` and `RegionPlanner.plan_day` no tree, both return empty, and
-      `EventScheduler.build_day` grows a tree of its own for the catalogue's placements: two
-      trees for one day and no seals or walls at all. Found building M62 and not fixed there;
-      the fix is one fallback — grow the tree when the city has none yet — and a test that a
-      day started through `EventManager` alone still carries seals
 - [ ] **A roadblock band is a row of blocks, not a barrier.** *(2026-09-10, playtest 55: "the
       barrier itself also doesn't read as a continuous element. is it using the texture of the
       other orientation and concatenating that one?")* No: `Look.ROADBLOCK` is drawn by
@@ -765,69 +756,6 @@ re-pitched:
 
 ---
 
-## M101 — The fire is found before the engine · asked for 2026-09-09
-
-**The SVG pictures are available:** `assets/events/flame.svg` supplies curling flames and
-`rubble.svg` the charred facade; `fire_engine.svg` and `fire_engine_end.svg` supply the engine's
-street-axis views. The remaining work below is placement and sequencing, with these textures
-already bound to the existing rows. See DECISIONS.md, "SVG artwork and upcoming milestone assets".
-
-> "the player should encounter the burning building before the fire truck. basically the fire
-> truck should spawn when the player sees the burning building not the other way around"
-
-**Today the engine is the event and the fire is what it leaves behind.** `fire_truck` is act I's
-one-shot — day 3 only, `ONE_SHOT`, a mobile row at 190px/s along a 60-tile street route with a
-4-second telegraph, because a truck outruns a walk and the fairness rule wants the full 340px of
-clearance — and `burning_building` is a `SCRIPTED` row that is never scheduled on its own:
-`EventManager._successor_of()` creates it where the engine's run ends, and
-`EventInstance._be_done()` makes an event with a `spawns_on_finish` stop where it stands rather
-than drive off, so the fire is at the building and not two streets past it. The engine is the
-thing she meets; the fire is a consequence she may never see.
-
-**The instruction reverses the two, and the reason is legibility.** A fire engine bearing down a
-street is a loud thing with no visible cause; a burning building she has already found is the
-cause, and the engine arriving *at it* is the answer. Seen in that order the set piece reads as
-one story rather than a truck and, later, a fire.
-
-**The seen predicate exists.** `DangerEdge.is_on_screen()` answers whether a world point is inside
-the view, and `ResistanceDirector.set_sight()` already takes it so a chalk mark can follow her
-until it has been on screen once (M78's rule). The same callable is what the fire wants.
-
-- [ ] **The burning building is the day's one-shot; the engine is spawned on sight of it.**
-      `burning_building` takes over `fire_truck`'s `ONE_SHOT` slot — day 3, sited by the director
-      the way the one-shot is sited today — placed *in* a building rather than on the road. When
-      it first comes on screen, `fire_truck` is created with a route that **ends at the fire**,
-      entering along the burning building's own street from off screen. The link is a field on the
-      def in the opposite direction from `spawns_on_finish` — a row that names what arrives once
-      this one has been seen — and `EventManager` owns the trigger, since it already owns the
-      successor mechanism and the player's position. Whether `spawns_on_finish` survives on any
-      other row, or goes, is a question for the build: today only the engine uses it
-- [ ] **The engine's fairness contract does not change and has to be re-proven for the new
-      siting.** Its telegraph is its approach, so the route's start has to be far enough up the
-      street that the full 4 seconds pass before its field reaches her — M77's off-screen arrival
-      rule applied to a thing driving at the building rather than at her. If she stands on that
-      street between the engine's entry and the fire, she is in its path; the row's own contract
-      (walk away the instant it is visible and be clear before it hurts) is what the test asserts,
-      and it is asserted from the worst position on the street. The `hard_fail`-style further
-      siting is not needed, since the engine is not lethal
-- [ ] **The fire's own telegraph and pulse are re-read for a thing she finds rather than one that
-      arrives.** `burning_building` carries a 2.2s telegraph and a 3-second pulse, both written
-      for a fire that begins in front of her when the engine stops. A fire that was already burning
-      when she turned the corner has no arrival to telegraph; what it keeps is the pulse, the
-      obstruction (30px, five flames) and the `burnt_shell` scar. Decide whether the telegraph
-      becomes zero or stays as the moment the fire is *noticed*, and say which in the row's doc
-- [ ] **Day 3 is re-measured.** Day 3 carries act I's whole payload — the run lesson's dog, the
-      cyclist's first day and the set piece — and the balance suite prices the day with the engine
-      as the expensive row. The engine still comes, but later and only if the fire is seen, so a
-      day on which she never finds the fire costs less than the day the suite describes. Run
-      `tests/test_balance.gd` and the day-3 rig before and after, and record both numbers in
-      `DECISIONS.md`
-- [ ] **`docs/EVENTS.md` follows.** Its one-shot example is the fire truck, its route sentence says
-      *a fire engine is in the world before its mark*, and its finishing-position paragraph
-      describes the engine leaving the fire behind. All three move in the same commit as the rows
-
----
-
 ## M107 — The run clock · asked for 2026-09-10
 
 > "can you add an in-game timer that counts up during gameplay (and stops when paused or between
@@ -963,8 +891,8 @@ milestone places them so a street reads as a place, and a district as a district
 
 **Planned and not queued.** *("this is just a plan for now — we probably won't actually implement
 it for a while (there are a lot of milestones before that).")* Written down now so that M62
-(checkpoints that divide the map), M56 (the resistance is noticed), M100's sound lines and M101 (the
-fire found before the engine) are built knowing they are also the finale's parts.
+(checkpoints that divide the map), M56 (the resistance is noticed) and M100's sound lines are
+built knowing they are also the finale's parts, as M101 (the fire found before the engine) was.
 
 **The brief, in the player's words:**
 

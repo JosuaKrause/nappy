@@ -451,44 +451,62 @@ static func _construction() -> EventDef:
 	def.cost = 2
 	return def
 
-## The Act I finale. Audible from streets away, moving fast down an arterial road, and it
-## leaves a fire burning where it stops. Long telegraph, because the whole point is that
-## you hear it coming and have time to get off that street.
+## Audible from streets away, moving fast down an arterial road, and it stops at the fire
+## `burning_building` calls it in for. Long telegraph, because the whole point of the approach
+## is that you hear it coming and have time to get off that street.
+##
+## Never scheduled directly — a SCRIPTED def with no day, created only once the fire has been
+## seen (`EventDef.spawns_on_sight`, `EventManager._summon_what_has_been_sighted()`). The engine
+## used to be the day's own one-shot with the fire left behind wherever its route ended; the
+## instruction reversed the two — *"the player should encounter the burning building before the
+## fire truck ... the fire truck should spawn when the player sees the burning building not the
+## other way around"* — so the radii, the speed and the telegraph below are unchanged from that
+## row, and only where the def sits in the day (never scheduled, no place of its own) moved.
 static func _fire_truck() -> EventDef:
 	var def := EventDef.new()
 	def.id = "fire_truck"
 	def.display_name = "Fire engine"
-	def.kind = GameEnums.EventKind.ONE_SHOT
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
 	def.look = EventDef.Look.FIRE_ENGINE
 	def.shape = GroundShape.point(26.0)
-	def.first_day = 3
-	def.last_day = 3
-	def.placement = [GameEnums.TileType.ROAD]
 	def.intensity = 26.0
 	def.inner_radius = 70.0
 	def.outer_radius = 340.0
 	# A truck at 190px/s outruns a walk, so the fairness rule demands the FULL forward reach of
 	# clearance, not just the falloff band — and a field moving that fast reaches further ahead of
 	# itself than its own catalogued radius: `outer_radius · Tuning.field_scale(e)` (e = 0.38) is
-	# 548px, 5.96s, plus the margin the row already carried.
+	# 548px, 5.96s, plus the margin the row already carried. Unchanged by where it is sited: the
+	# contract is a property of this geometry and this speed, not of dawn placement versus a
+	# runtime summons — see `EventManager._summon_the_sighted_row()` for the siting itself and
+	# `tests/test_events.gd` for the worst-position check the new siting owes on top of it.
 	def.telegraph_time = 6.27
 	def.mobile = true
 	def.speed = 190.0
-	def.path_mode = EventDef.PathMode.ALONG_STREET
-	def.path_length_tiles = 60
-	def.spawns_on_finish = "burning_building"
-	def.cost = 4
 	return def
 
-## Never scheduled directly — a SCRIPTED def with no day, spawned only where the fire
-## engine stops. Burns for the rest of the day.
+## Act I's finale, and the day's own one-shot: placed in a building like every other set piece,
+## rather than left behind by something that drove through it. `spawns_on_sight` is what calls
+## the engine in the moment she first sees it.
+##
+## **The telegraph is no longer an arrival's warning; it is how long she has once it is in
+## view.** A fire that was already burning when she turned the corner has no approach to
+## telegraph — what would be damped is a thing that has already started — so the 2.2s below
+## buys the same escape the ordinary contract always has
+## (`(outer_radius - inner_radius) / WALK_SPEED` = 2.17s, `Tuning.validate_event()`), read now as
+## the moment she notices rather than the moment it arrives. The pulse, the obstruction (30px,
+## five flames) and the `burnt_shell` scar are unchanged: a place she finds still burns and still
+## blocks the way through, whichever way she came upon it.
 static func _burning_building() -> EventDef:
 	var def := EventDef.new()
 	def.id = "burning_building"
 	def.display_name = "Burning building"
-	def.kind = GameEnums.EventKind.SCRIPTED
-	def.scripted_day = 0
+	def.kind = GameEnums.EventKind.ONE_SHOT
 	def.look = EventDef.Look.BURNING_BUILDING
+	def.first_day = 3
+	def.last_day = 3
+	def.placement = [GameEnums.TileType.SIDEWALK]
+	def.pavement_side = EventDef.Pavement.AGAINST_THE_BUILDING
 	def.intensity = 18.0
 	def.inner_radius = 60.0
 	def.outer_radius = 260.0
@@ -498,6 +516,8 @@ static func _burning_building() -> EventDef:
 	# decision — what ends a day is in act III — so the body is simply the fire.
 	def.solid(GroundShape.point(30.0))
 	def.scar_id = "burnt_shell"
+	def.spawns_on_sight = "fire_truck"
+	def.cost = 4
 	return def
 
 ## What is left the next morning, and every morning after. Cordoned off, never repaired.
