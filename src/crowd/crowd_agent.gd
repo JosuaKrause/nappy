@@ -326,19 +326,22 @@ func contribution_at(world_position: Vector2) -> float:
 
 ## The furthest this agent's own field can currently reach — its ordinary outer radius, or the
 ## jolt's own if a jolt is running and reaches further, the way a car's `CAR_HORN_OUTER_RADIUS`
-## (132px) reaches past its ordinary `CAR_OUTER_RADIUS` (104px). What `expected_impact_at()` and
-## `will_be_lethal()` both compare a projected approach against, so a source mid-jolt is not
-## skipped early on a reach that no longer describes it.
+## (132px) reaches past its ordinary `CAR_OUTER_RADIUS` (104px), then grown forward by
+## `Tuning.field_scale()` at the fastest this agent's own kind ever moves. What `expected_impact_at()`
+## and `will_be_lethal()` both compare a projected approach against, so a source mid-jolt or
+## mid-approach is not skipped early on a reach that no longer describes it — a car's own forward
+## reach at `CAR_SPEED.y` (the top of its own speed range, not merely its current one) is the widest
+## this agent's field can ever be, so the early-out has to be stated over that rather than over
+## whatever it happens to be doing this frame.
 ##
 ## **Not `EventDef.field_reach()`'s business.** That one adds a segment's `half_length` back in for
-## a stationary body; a crowd agent has no body in field terms — see `contribution_at()`'s own
-## doc — so its forward reach is always the plain outer radius, moving or not, under
-## `GroundShape.eccentric_distance()`.
+## a stationary body; a crowd agent has no body in field terms — see `contribution_at()`'s own doc.
 func _current_reach() -> float:
 	var reach := Tuning.CAR_OUTER_RADIUS if kind == Kind.CAR else Tuning.PEDESTRIAN_OUTER_RADIUS
 	if _jolt > 0.0:
 		reach = maxf(reach, _jolt_outer)
-	return reach
+	var top_speed := Tuning.CAR_SPEED.y if kind == Kind.CAR else Tuning.PEDESTRIAN_SPEED.y
+	return reach * Tuning.field_scale(Tuning.field_eccentricity(top_speed))
 
 ## Points this agent is projected to land on her over `Tuning.EXPECTED_IMPACT_HORIZON`, her
 ## position held fixed and only this agent moving — `EventInstance.expected_impact_at()`'s own

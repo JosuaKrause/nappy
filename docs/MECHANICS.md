@@ -468,10 +468,12 @@ A point body's field is exactly the circle above; a segment's (a café frontage,
 capsule about its own spine, `GroundShape.distance_to_spine()`. A moving emitter is a point either
 way — nobody builds the general capsule-and-ellipse sum, because every emitting segment row is
 stationary — and its field is `GroundShape.eccentric_distance()`: a conic with the emitter at one
-focus rather than at the centre, eccentricity from speed (`Tuning.field_eccentricity()`), so the
-field reaches exactly as far ahead of a moving thing as a disc's `outer_radius` always did and less
-far behind and abeam. See docs/EVENTS.md, "The emission model", for the full derivation and the
-debug view (`DebugLayers`, layer `1`) for where the boundary is checked by eye.
+focus rather than at the centre, eccentricity from speed (`Tuning.field_eccentricity()`). **The
+resting disc's own width is what the ellipse keeps**: it holds exactly `outer_radius` abeam of a
+moving thing whatever its speed, reaches `outer_radius · Tuning.field_scale(e)` ahead of it — more
+than a disc's `outer_radius`, since motion only ever adds reach — and less far, `outer_radius /
+(1+e)`, behind. See docs/EVENTS.md, "The emission model", for the full derivation and the debug
+view (`DebugLayers`, layer `1`) for where the boundary is checked by eye.
 
 **`(1 − t)²` is the shape that looks equally reasonable and inverts the game.** It puts a
 **quarter** of the intensity at the midpoint of the falloff band and six percent three quarters of

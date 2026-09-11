@@ -231,7 +231,10 @@ static func _cat_dash() -> EventDef:
 	# Long enough to carry it the whole way across the street it starts at the edge of:
 	# STREET_WIDTH tiles either side at 240px/s is 1.6s, and it must not expire mid-road.
 	def.duration = 1.8
-	def.telegraph_time = 1.6
+	# Faster than a walk, so the escape distance is the forward reach, not the plain radius —
+	# `outer_radius · Tuning.field_scale(e)` at the cat's own speed (240px/s, e = 0.48, just under
+	# the eccentricity cap): 120 * 1.92 / 92 = 2.51s, plus the margin the row already carried.
+	def.telegraph_time = 2.81
 	def.mobile = true
 	def.still_while_telegraphing = true
 	def.speed = 240.0
@@ -464,9 +467,11 @@ static func _fire_truck() -> EventDef:
 	def.intensity = 26.0
 	def.inner_radius = 70.0
 	def.outer_radius = 340.0
-	# A truck at 190px/s outruns a walk, so the fairness rule demands the FULL radius of
-	# clearance, not just the falloff band: 340/92 = 3.7s.
-	def.telegraph_time = 4.0
+	# A truck at 190px/s outruns a walk, so the fairness rule demands the FULL forward reach of
+	# clearance, not just the falloff band — and a field moving that fast reaches further ahead of
+	# itself than its own catalogued radius: `outer_radius · Tuning.field_scale(e)` (e = 0.38) is
+	# 548px, 5.96s, plus the margin the row already carried.
+	def.telegraph_time = 6.27
 	def.mobile = true
 	def.speed = 190.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
@@ -570,8 +575,10 @@ static func _loose_dog() -> EventDef:
 	def.intensity = 32.0
 	def.inner_radius = 30.0
 	def.outer_radius = 140.0
-	# Faster than a walk, so the escape distance is the whole radius: 140/92 = 1.52s.
-	def.telegraph_time = 1.7
+	# Faster than a walk, so the escape distance is the forward reach: `outer_radius ·
+	# Tuning.field_scale(e)` at 132px/s (e = 0.264) is 190px, 2.07s, plus the margin the row already
+	# carried.
+	def.telegraph_time = 2.25
 	def.pulse_period = 2.2
 	def.mobile = true
 	def.speed = 132.0
@@ -785,8 +792,10 @@ static func _cyclist() -> EventDef:
 	def.intensity = 18.0
 	def.inner_radius = 33.0
 	def.outer_radius = 90.0
-	# hard_fail and faster than a walk: 90/92 * 2 = 1.96s.
-	def.telegraph_time = 2.0
+	# hard_fail and faster than a walk, so the escape distance is the forward reach and the margin
+	# is doubled: `outer_radius · Tuning.field_scale(e)` at 165px/s (e = 0.33) is 134px, * 2 / 92 =
+	# 2.92s, plus the margin the row already carried.
+	def.telegraph_time = 2.97
 	def.mobile = true
 	def.speed = 165.0
 	def.hard_fail = true
@@ -1041,7 +1050,10 @@ static func _police_patrol() -> EventDef:
 	def.intensity = 10.0
 	def.inner_radius = 44.0
 	def.outer_radius = 185.0
-	def.telegraph_time = 1.7
+	# Slower than a walk, so the escape distance is the falloff band stretched forward by the
+	# patrol's own eccentricity: `(outer_radius - inner_radius) · Tuning.field_scale(e)` at 74px/s
+	# (e = 0.148) is 165px, 1.80s, plus the margin the row already carried.
+	def.telegraph_time = 1.97
 	def.mobile = true
 	def.speed = 74.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
@@ -1310,7 +1322,10 @@ static func _military_convoy() -> EventDef:
 	def.intensity = 22.0
 	def.inner_radius = 76.0
 	def.outer_radius = 300.0
-	def.telegraph_time = 3.4
+	# Faster than a walk, so the escape distance is the forward reach: `outer_radius ·
+	# Tuning.field_scale(e)` at 120px/s (e = 0.24) is 395px, 4.29s, plus the margin the row already
+	# carried.
+	def.telegraph_time = 4.43
 	def.mobile = true
 	def.speed = 120.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
