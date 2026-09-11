@@ -12,10 +12,17 @@ silhouette on a roof, and a chalk mark on the carriageway behind the band.
 > checkpoint but the barrier suggests that the road is blocked and in fact there is no way to
 > actually get to the checkpoint here.
 
+> but the checkpoint suggests that there was a path planned through so there shouldn't be a
+> barrier
+
+> this shouldn't happen by construction
+
 The bands are the `roadblock` row, which is placed on any road or crossing tile from day 7 and
 knows nothing about the region wall's doors. Filed under M100's blocked-street defect, whose fix —
-placement keyed on the segment — is the same fix: a door segment and the approach to a checkpoint
-are never offered to the catalogue.
+placement keyed on the segment — is the same fix, and the player's principle is the rule: a door is
+where the day's route passes, so its ground is never among the candidate tiles a blocking row can
+be offered, refused where the scheduler already refuses closed tiles rather than checked or
+repaired afterwards.
 
 ## The robber on the roof, and the mark out of reach
 

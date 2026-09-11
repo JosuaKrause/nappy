@@ -789,8 +789,13 @@ is still true.
       checkpoint here")*: `roadblock` is placed on any road or crossing tile from day 7 and knows
       nothing about `RegionPlanner`'s doors, so a band stood across the street south of a hut and
       a boom gate on seed 3045005721, day 7, and sealed the door it was meant to be the way
-      through. A door segment, and the segment a checkpoint stands on, join the closure and
-      hard-seal segments as ground the catalogue is never offered; the test covers them too
+      through. **The player's principle, and it is the rule**: *"the checkpoint suggests that there
+      was a path planned through so there shouldn't be a barrier … this shouldn't happen by
+      construction"*. A door is where the day's route passes, so a door segment and the segment
+      its checkpoint stands on join the closure and hard-seal segments as ground a blocking row is
+      never offered — excluded where `EventScheduler` builds the candidate tiles, beside its
+      `closed_tiles`, doorstep and kerb tests, not checked or repaired after placement, which is
+      `CLAUDE.md`'s own rule for every guarantee here. The test covers the doors too
 - [ ] **A roadblock band is a row of blocks, not a barrier.** *(2026-09-10, playtest 55: "the
       barrier itself also doesn't read as a continuous element. is it using the texture of the
       other orientation and concatenating that one?")* No: `Look.ROADBLOCK` is drawn by
