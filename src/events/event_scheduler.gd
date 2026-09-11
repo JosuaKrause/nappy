@@ -183,12 +183,15 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## **set piece** placed so that she actually meets it. The fourth is the interesting one.
 ##
 ## **`NONE` is not a leftover bin, it is the honest answer for anything the day did not site
-## against the corridor at all.** An `AHEAD_OF_PLAYER` row is the case that proves it: a charging
-## dog is lethal and is not a wall, because `EventDirector` puts it in front of wherever she turns
-## out to be walking and the scheduler never chooses a tile for it. Calling it a wall would put a
-## mark on the telemetry map claiming a placement that nothing made — which is the exact failure
-## the picture exists to catch, arriving through the legend. `TOWARD_PLAYER` is sited by the same
-## director for the same reason and gets the same answer.
+## against the corridor at all.** An `AHEAD_OF_PLAYER` row is the case that proves it: `cat_dash` is
+## sited by `EventDirector` in front of wherever she turns out to be walking, and the scheduler
+## never chooses a tile for it. Calling it a wall would put a mark on the telemetry map claiming a
+## placement that nothing made — which is the exact failure the picture exists to catch, arriving
+## through the legend. `TOWARD_PLAYER` is sited by the same director for the same reason and gets
+## the same answer. `spawn_mode_on(day)` is what this asks rather than `spawn_mode` alone, since a
+## row like `charging_dog` answers `NONE` on `Tuning.RUN_TAUGHT_DAY` — a director moment, exactly
+## like the cat — and `WALL` every day after, once it is `spawn_mode_after_first_day`'s `MAP`
+## placement and the scheduler has chosen it a tile like any other lethal row.
 ##
 ## **A wall is not only the lethal rows.** The ground off the routes *ranges from very costly to
 ## deadly*, so an expensive row is a wall too and `Tuning.WALL_WORTH_OF_COST` is where the line
@@ -198,8 +201,8 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## It is stated over `walk_through_cost()` — the same integral `tests/test_danger.gd` orders the
 ## caret by — rather than over a new field, because *how expensive a row is* is a question the
 ## catalogue already answers, and a second answer to it is how two tables of one fact drift apart.
-static func _role_for(def: EventDef) -> GameEnums.BlockerRole:
-	if def.spawn_mode != EventDef.SpawnMode.MAP or def.kind == GameEnums.EventKind.AMBIENT:
+static func _role_for(def: EventDef, day: int = 0) -> GameEnums.BlockerRole:
+	if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP or def.kind == GameEnums.EventKind.AMBIENT:
 		return GameEnums.BlockerRole.NONE
 	if def.kind == GameEnums.EventKind.ONE_SHOT:
 		return GameEnums.BlockerRole.SET_PIECE
@@ -472,7 +475,7 @@ static func _place_scripted(day: int, rng: RandomNumberGenerator, map: CityMap,
 		planned: Array[Planned], ground := {}, leave_alone: Array[Rect2] = [],
 		corridor: Corridor = null, heat: int = 0) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day, heat):
-		var placement := _place_one(def, rng, map, planned, ground, leave_alone, corridor)
+		var placement := _place_one(def, day, rng, map, planned, ground, leave_alone, corridor)
 		if placement:
 			planned.append(placement)
 
@@ -543,12 +546,12 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 		# pixels apart is what `EVENT_SPACING_SAME` is for, and two candidate sites can be adjacent.
 		var beside: Array[Planned] = already.duplicate()
 		beside.append_array(made)
-		var placement := _place_one(def, rng, map, beside, ground, leave_alone, corridor, site)
+		var placement := _place_one(def, day, rng, map, beside, ground, leave_alone, corridor, site)
 		if placement:
 			placement.set_piece_group = "%s@%d" % [def.id, day]
 			made.append(placement)
 	if made.is_empty():
-		var anywhere := _place_one(def, rng, map, already, ground, leave_alone, corridor)
+		var anywhere := _place_one(def, day, rng, map, already, ground, leave_alone, corridor)
 		if anywhere:
 			# **The fallback carries the group too, and it is a group of one.** Every other
 			# one-shot placement is tagged, and `EventManager._stream_in` spends the rest of a
@@ -590,7 +593,7 @@ static func _fill_with_recurring(day: int, base: int, map: CityMap,
 			break
 		var rng := _stream(base, FILL_SALT + attempt)
 		var def := _pick_weighted(affordable, rng)
-		var placement := _place_one(def, rng, map, planned, ground, leave_alone, corridor)
+		var placement := _place_one(def, day, rng, map, planned, ground, leave_alone, corridor)
 		if not placement:
 			continue
 		planned.append(placement)
@@ -622,15 +625,18 @@ static func _pick_weighted(defs: Array[EventDef], rng: RandomNumberGenerator) ->
 ##
 ## The fallback is the roomiest candidate offered rather than nothing, because a scripted event
 ## has to happen: on a map with fifty events on it the honest answer is the best spot left.
-static func _place_one(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
+static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map: CityMap,
 		already: Array[Planned] = [], ground := {}, leave_alone: Array[Rect2] = [],
 		corridor: Corridor = null, site := NO_SITE) -> Planned:
-	var role := _role_for(def)
+	var role := _role_for(def, day)
 	# An `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` event is budgeted here and sited by `EventDirector`
 	# while the player walks. Costing it here rather than giving the director its own allowance is
 	# deliberate: the cat competes with the café tables and the roadworks for the same day, so
-	# making the cat matter cannot quietly make the day denser as well.
-	if def.spawn_mode != EventDef.SpawnMode.MAP:
+	# making the cat matter cannot quietly make the day denser as well. Asked over `spawn_mode_on
+	# (day)` rather than `spawn_mode` alone, so a row like `charging_dog` — director-sited on the
+	# day it teaches the run, map-placed every day after — is sited the way that day actually asks
+	# for.
+	if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
 		return Planned.new(def, Vector2.INF)
 
 	var open_candidates := _ground_for(def, map, ground, corridor, role, site)
@@ -1001,13 +1007,15 @@ static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
 ##
 ## This was already true for every lethal pursuer in the catalogue, but by accident rather than by
 ## name: `_role_for` gives any placed `hard_fail` row that is not a `ONE_SHOT` the `WALL` role
-## before it ever asks whether the row pursues, so `charging_dog` (never placed at all — it is
-## `AHEAD_OF_PLAYER`, sited by the director with no tile the scheduler ever reasons about) and
-## `alley_robbery` (placed, `hard_fail`, therefore always `WALL`) were both exempt without this
-## line doing anything. Stating it over `plan.def.pursues` rather than leaving the exemption to
-## follow from the `WALL` classification is what makes it survive a future pursuer the role logic
-## does not happen to route through `WALL` — a lethal `SET_PIECE` pursuer, say, which `_role_for`
-## would classify ahead of the `hard_fail` check.
+## before it ever asks whether the row pursues, so `alley_robbery` (placed, `hard_fail`, therefore
+## always `WALL`) and `charging_dog` past `Tuning.RUN_TAUGHT_DAY` (`spawn_mode_on()` answers `MAP`
+## from there, placed and `hard_fail` the same way) are both exempt without this line doing
+## anything. On `RUN_TAUGHT_DAY` itself `charging_dog` is never placed at all — it is
+## `AHEAD_OF_PLAYER`, sited by the director with no tile the scheduler ever reasons about — which is
+## the other way a pursuer reaches this exemption. Stating it over `plan.def.pursues` rather than
+## leaving the exemption to follow from the `WALL` classification is what makes it survive a future
+## pursuer the role logic does not happen to route through `WALL` — a lethal `SET_PIECE` pursuer,
+## say, which `_role_for` would classify ahead of the `hard_fail` check.
 static func _keeps_its_field_clear(plan: Planned) -> bool:
 	return plan.def.hard_fail and plan.role != GameEnums.BlockerRole.WALL and not plan.def.pursues
 

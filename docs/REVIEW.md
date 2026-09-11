@@ -46,6 +46,11 @@ view").
 - **Walk a precinct end to end** (a pedestrian street with bollards at each mouth). Nothing is
   built over its paving any more. Does it read as one paved place? Record is `DECISIONS.md`,
   M100, a precinct's pavement.
+- **Meet the dog on day 4 or later** (`--day 4`). It is placed on the map now, never on her
+  line, and it charges from off screen the moment she passes within a block of it. Does it read
+  as *a dog that was somewhere* or as the lesson again? That is the open question in `TODO.md`,
+  M96, whether it should wait to be routed into; a played answer decides it. Record is
+  `DECISIONS.md`, M96.
 
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 

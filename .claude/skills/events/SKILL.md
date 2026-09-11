@@ -138,8 +138,10 @@ emits nothing, cannot end the day and carries no cue, and it moves until it is p
 
 ## Pursuits
 
-**A pursuit has two shapes and a third state.** `charging_dog` is a **moment** — the director sites
-it in front of her and the chase is all of it. `EventDef.pursues_within` is the other shape: a thing
+**A pursuit has two shapes and a third state.** `charging_dog` on its teaching day is a **moment**
+— the director sites it in front of her and the chase is all of it; from the day after it is a map
+placement (`EventDef.spawn_mode_on(day)` answers `MAP` past `spawn_mode_switches_after_day`) that
+still charges the moment it streams in. `EventDef.pursues_within` is the other shape: a thing
 that is *somewhere*, that can be seen and priced and routed around, and that becomes a chase if she
 walks up to it. Two things about the waiting state are easy to get backwards:
 

@@ -34,9 +34,6 @@ var _rng := RandomNumberGenerator.new()
 ## The events the day has budgeted and not yet spent, in the order the scheduler asked for.
 var _owed: Array[EventDef] = []
 var _next_in := 0.0
-## The day in progress, so a pursuer's own siting can tell the teaching day from every day after
-## it without a second field on `EventDef` — see `_crossing_ahead_of()`.
-var _day := 0
 
 func _init(map: CityMap) -> void:
 	_map = map
@@ -45,14 +42,19 @@ func _init(map: CityMap) -> void:
 ## budgeted but left for the director to site while she walks. Called with the same plan list the
 ## manager streams the sited events from, so the two halves of a day cannot disagree about what is
 ## owed.
+##
+## Asked over `plan.def.spawn_mode_on(day)` rather than `spawn_mode` alone, so a row whose siting
+## changes after its own `first_day` — `charging_dog` past `Tuning.RUN_TAUGHT_DAY` — is owed to the
+## director only on the days it actually answers `AHEAD_OF_PLAYER` or `TOWARD_PLAYER`. Without this
+## the scheduler's own `EventScheduler._place_one()` would place the row on a tile *and* the
+## director would separately site a second one in front of her, from the one `EventDef` both read.
 func start_day(day: int, plans: Array[EventScheduler.Planned],
 		rng: RandomNumberGenerator) -> void:
 	_owed.clear()
 	_rng = rng
-	_day = day
 	for plan in plans:
-		if plan.def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER \
-				or plan.def.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER:
+		var mode := plan.def.spawn_mode_on(day)
+		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
 			_owed.append(plan.def)
 	_take_the_forced_row()
 	# The first one is not free: a cat on the doorstep before she has taken a step reads as the
@@ -223,24 +225,19 @@ func _roll_interval() -> float:
 ## badge (`DangerEdge`) now carries the notice for the whole of the offscreen approach, and the
 ## on-screen closing to the stand-off is what it always was.
 ##
-## **Past `Tuning.RUN_TAUGHT_DAY`, a pursuer is no longer sited dead ahead.** The day-3 dog is put
-## on her exact line so the lesson is unavoidable; every day after, the same row recurs — *"the
-## tutorial dog may appear later but not as tutorial"* — so it may not keep the placement that made
-## it one. `_off_her_heading()` swaps `heading` for a bearing well off it before the lead and the
-## centre are worked out, so she meets it by continuing to route somewhere near it rather than by
-## having it appear in the direction she already happens to be walking. The offscreen and telegraph
-## arithmetic above is unchanged either way — it is stated over whichever heading it is given, not
-## over hers specifically.
+## **This function only ever sites `charging_dog` on `Tuning.RUN_TAUGHT_DAY`.** Every day after,
+## `EventDef.spawn_mode_on()` answers `MAP` instead of `AHEAD_OF_PLAYER` for that row, so
+## `EventScheduler` places it on a tile like `alley_robbery` and `start_day()` above never adds it
+## to `_owed` at all — it is not sited off her heading by this function, it is not sited by this
+## function. A pursuer arriving here is always the teaching day's own dog, dead ahead on purpose,
+## because the lesson depends on being unavoidable.
 func _crossing_ahead_of(at: Vector2, heading: Vector2,
 		def: EventDef = null) -> PackedVector2Array:
-	var pursuer_heading := heading
-	if def and def.pursues and _day > Tuning.RUN_TAUGHT_DAY:
-		pursuer_heading = _off_her_heading(heading)
-	var lead := Tuning.offscreen_lead(pursuer_heading, def.pursue_speed + Tuning.WALK_SPEED,
+	var lead := Tuning.offscreen_lead(heading, def.pursue_speed + Tuning.WALK_SPEED,
 				def.offscreen_notice) \
 			if def and def.pursues \
 			else (def.ahead_of_player_lead() if def else Tuning.AHEAD_LEAD_DISTANCE)
-	var centre := at + pursuer_heading * lead
+	var centre := at + heading * lead
 	if not _map.is_walkable(_map.world_to_tile(centre)):
 		return PackedVector2Array()
 	if def and def.pursues:
@@ -329,20 +326,3 @@ func _onto_her_side(at: Vector2, heading: Vector2) -> Vector2:
 	if is_zero_approx(component):
 		return heading
 	return along * signf(component)
-
-## How far off her heading the recurring, post-lesson pursuer is sited — a bearing rather than a
-## line, on a coin-flipped side, so continuing roughly the way she is already going can still walk
-## her into it without it ever again arriving from dead ahead. Below the minimum a heading this far
-## round still reads as "in front of her" on a screen; above the maximum it starts reading as
-## "behind", which is not somewhere routing into it makes sense.
-const OFF_HEADING_MIN_DEGREES := 50.0
-const OFF_HEADING_MAX_DEGREES := 110.0
-
-## `heading` rotated by a random bearing in `OFF_HEADING_MIN_DEGREES..OFF_HEADING_MAX_DEGREES`, to
-## either side with an even chance. See `_crossing_ahead_of()`'s own note on why a pursuer past the
-## teaching day is sited off this rather than on it.
-func _off_her_heading(heading: Vector2) -> Vector2:
-	var degrees := _rng.randf_range(OFF_HEADING_MIN_DEGREES, OFF_HEADING_MAX_DEGREES)
-	if _rng.randf() < 0.5:
-		degrees = -degrees
-	return heading.rotated(deg_to_rad(degrees))
