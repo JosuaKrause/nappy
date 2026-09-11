@@ -39,6 +39,19 @@ pictures to their actual runtime consumers.
       and preserve tint, gait timing, sorting and foot registration. Verify all eight headings,
       boundary crossings, stops, blocked movement and recycle with a focused rig and rendered
       native-size movement evidence.
+- [ ] **The walkers get the mother's stride.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md):
+      "can we do a similar one to what the player does?")* A crowd walker is one static picture per
+      facing today, with no gait frames and no bob; the mother alternates two frames per view,
+      mid-stride and feet passing, from a walk phase advanced by her own speed
+      (`Stroller._walk_phase`, `_draw_mother()`). Author a second gait frame for every walker view
+      as SVG first — `assets/crowd/walker_{front,back,side,front_diagonal,back_diagonal}_{body,trim}.svg`
+      gains an `_a`/`_b` pair per layer on the same 18×38 canvas and (9,38) anchor, the upper body
+      consistent between frames and only the legs and shoes changing, the correction the mother's
+      own frames needed (`DECISIONS.md`, "Eight-direction style transfer") — then run the stroller's
+      alternation on the walker: phase advanced by applied speed, frame a at rest and while
+      stopped, so a queue or a give-way holds a standing pose. Body and trim swap frames together.
+      After the walker binding above, since it extends that family table; the event people keep
+      their single frames unless asked
 - [ ] **Bind live event people, animals and riders.** Extend the same selector to each actual
       drawing path in `EventInstance`, including composed actors, leads, prams, held tools and
       weapons. Keep idle/moving, waiting/lunging, talking/walking and wing/gait phases distinct;
