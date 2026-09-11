@@ -109,6 +109,10 @@ enum Alert {
 ## The baby rides in the pram and the rig draws itself, so the rig asks her what to draw. Null
 ## in a test rig built without one, which is why every use is guarded.
 @onready var _baby: Baby = get_node_or_null("Baby")
+## The pram's own body, trailing at `_pram_offset` — see `pram_shape`'s doc for why this is a
+## second `CollisionShape2D` on the same rig rather than one wider combined radius. Null in a test
+## rig built without one.
+@onready var _pram_collision: CollisionShape2D = get_node_or_null("PramCollisionShape2D")
 
 var facing := Vector2.DOWN
 
@@ -132,9 +136,20 @@ var slope_dir_at := Callable()
 ## `CircleShape2D` on `scenes/player/stroller.tscn`'s `CollisionShape2D` is one combined physics
 ## radius for the whole rig, `Tuning.PLAYER_BODY_RADIUS` (14px) — already checked against the
 ## scene by `tests/test_events.gd`'s `_test_the_pram_is_the_size_the_rules_think_it_is` — and nothing
-## here touches it. The pram itself has no body of its own — M100's, not this commit's.
+## here touches it. `pram_shape`'s own 12px radius is now also a real body: `PramCollisionShape2D`,
+## a second `CollisionShape2D` on the same `CharacterBody2D`, kept at `_pram_offset` every physics
+## frame — see `_physics_process()`. A second trailing body rather than one wider combined radius
+## because the pram sits `PRAM_DISTANCE` (34px) ahead of her on the facing axis, not concentric
+## with her own 14px circle, and a corner she hugs closely enough to clip her own body would not
+## yet clip a circle centred on her.
 var shape := GroundShape.point(9.0)
 var pram_shape := GroundShape.point(12.0)
+
+## Where the pram sits relative to her this frame — `Vector2.ZERO` while `carrying`, since there is
+## no pram to be ahead of her. Computed once in `_physics_process()`, before `move_and_slide()`
+## moves the collision body that trails it, and read again by `_draw()` so the two can never
+## disagree about where the pram is.
+var _pram_offset := Vector2.ZERO
 
 ## The current eight-direction projection, shared by both draw calls so mother and pram cannot
 ## disagree about which way the rig faces. Starts south to match the default `facing`.
@@ -174,6 +189,8 @@ var _camera_easing_back := false
 
 func _ready() -> void:
 	add_to_group("player")
+	if _pram_collision:
+		_pram_collision.disabled = carrying
 
 ## Takes her out of the world without taking her out of the tree, for the title screen's attract
 ## mode: the home and the street in front of it, with nobody in it.
@@ -226,6 +243,10 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, Tuning.FRICTION * delta)
 	_update_view()
+	_pram_offset = Vector2.ZERO if carrying \
+			else Vector2(facing.x, facing.y * OBLIQUE_Y) * PRAM_DISTANCE
+	if _pram_collision:
+		_pram_collision.position = _pram_offset
 	move_and_slide()
 
 	# The deflection is moved separately rather than added to `velocity`, which stays what she
@@ -577,8 +598,7 @@ func _draw() -> void:
 	# and nothing offset in front of her, so the cue over the bundle floats over her own column —
 	# see `_draw_baby_cue()` and `baby_cue_lift()`, both of which already treat a zero offset as
 	# "shares her column" without a branch of their own.
-	var pram_offset := Vector2.ZERO if carrying \
-			else Vector2(facing.x, facing.y * OBLIQUE_Y) * PRAM_DISTANCE
+	var pram_offset := _pram_offset
 
 	# Shadows belong to the ground plane, so they always go underneath both figures.
 	shape.draw_shadow(self, Vector2.ZERO)
