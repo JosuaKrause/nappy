@@ -30,6 +30,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `mobile` / `speed` | Whether it moves along a path, and how fast |
 | `still_while_telegraphing` | Holds position until the telegraph is over, then goes. Default off, which is right when the telegraph *is* the approach; on when it is a posture — see the cat, below |
 | `spawn_mode` | `MAP` (sited when the day is planned) or `AHEAD_OF_PLAYER` (sited in front of her, while she walks) — see "Where an event happens" |
+| `spawn_mode_switches_after_day` / `spawn_mode_after_first_day` | For a row whose siting changes once its first appearance is over: `spawn_mode_on(day)` answers `spawn_mode` through that day and `spawn_mode_after_first_day` past it. `0` (the default) means never — `spawn_mode` alone answers for every day. `charging_dog` is the one row that sets it: `AHEAD_OF_PLAYER` on `RUN_TAUGHT_DAY`, `MAP` after |
 | `departs_at` | How fast it removes itself when it is over (px/s). **Nothing vanishes while you are looking at it** — see "Going away". Anything `mobile` leaves at its own `speed` and needs no value here |
 | `pursues` / `pursue_speed` | Comes after **her** rather than along a path, at a speed strictly between a walk and a run. The one thing running is the answer to — see `Tuning.validate_pursuit` |
 | `pursues_within` | How close she has to come before it takes an interest. `0` is *immediately*, which is a pursuer that is a **moment**; anything else is a pursuer that is a **place** until she walks up to it, and its telegraph and chase are both measured from when it notices |
@@ -67,22 +68,21 @@ its course its plan is **spent**: walking back past it does not start it over.
 An event that is somewhere is half of what makes a route a decision. It can be routed around,
 and finding out it is there is what walking a street is for.
 
-**`AHEAD_OF_PLAYER`, which is the cat, the flock and the charging dog.** No tile. The day budgets it
-at the same cost as everything else, and `EventDirector` sites it while she is walking. A crossing
-row — the cat, the flock — is sited across her line, `AHEAD_LEAD_DISTANCE` in front of her. A
-pursuer — `charging_dog` — is sited down her line instead, outside the view along the heading she is
-actually walking (`Tuning.offscreen_boundary()`), so it has an offscreen approach to close before it
-reaches its stand-off; see "Everything arrives from off screen" below.
+**`AHEAD_OF_PLAYER`, which is the cat, the flock and the day-3 charging dog.** No tile. The day
+budgets it at the same cost as everything else, and `EventDirector` sites it while she is walking. A
+crossing row — the cat, the flock — is sited across her line, `AHEAD_LEAD_DISTANCE` in front of her.
+A pursuer — `charging_dog`, on `Tuning.RUN_TAUGHT_DAY` — is sited down her line instead, outside the
+view along the heading she is actually walking (`Tuning.offscreen_boundary()`), so it has an
+offscreen approach to close before it reaches its stand-off; see "Everything arrives from off
+screen" below.
 
 **`charging_dog` is sited on her exact heading only on `Tuning.RUN_TAUGHT_DAY`.** The row recurs
 after the teaching day — *"the tutorial dog may appear later but not as tutorial"* — and the same
-placement that makes day 3's dog unavoidable would make every later one an ambush guaranteed to
-meet her wherever she happened to be walking. Past that day, `EventDirector._crossing_ahead_of()`
-sites it off a bearing rotated well away from her heading instead (`EventDirector
-.OFF_HEADING_MIN_DEGREES`–`OFF_HEADING_MAX_DEGREES`, on a coin-flipped side), so continuing roughly
-the way she is already going can still walk her into it without it ever again arriving from dead
-ahead. The offscreen and telegraph arithmetic below is unaffected either way, since it is stated
-over whichever heading the row is given rather than over hers specifically.
+placement that makes day 3's dog unavoidable would make every later one an ambush guaranteed to meet
+her wherever she happened to be walking. `EventDef.spawn_mode_on(day)` answers `AHEAD_OF_PLAYER` up
+to and including `RUN_TAUGHT_DAY` and `MAP` every day after, so past the teaching day the row is
+placed on a tile the way `alley_robbery` is and met by routing into it rather than sited by the
+director at all — see `EventDef.spawn_mode_switches_after_day` and `spawn_mode_after_first_day`.
 
 That is a real distinction and not a placement trick. A café spilling across a pavement is a
 *place*. A cat bolting is not: you cannot plan around three seconds, and a cat sited on a tile at
@@ -589,7 +589,7 @@ neighbourhood's own rather than a patrol's.
 | `cyclist` **`hard_fail`** | RECURRING (`TOWARD_PLAYER`) | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement she is walking, bell going, coming toward her, down her own side of the road — sited when she gets close rather than on a street the day chose at dawn, so she answers it with a route decision (cross, or turn) instead of finding out too late it was never on her way. Everything about it is ordinary, which is the point: act I does not become sinister, it becomes a real street. The bell rings for 2.97s, what the doubled margin costs at a 90px field grown forward by its own speed — smaller than the fairness contract alone would allow, so the wait before it arrives stays a real reaction window rather than several seconds of watching it close from off screen. Its lethal `inner_radius` is 33px, widened from 26 so the far lane of her own pavement no longer clears it by construction — the same overturn `chatting_mother`'s `detain_radius` went through first. |
 | `ice_cream_van` | RECURRING | 2 | The `busker` argument one size up: nothing about it is threatening, it is simply interesting. The widest ordinary radius in act I. At the kerb, and solid at 24px: a thing children cross a road to reach rather than a thing standing in one. |
 | `reversing_lorry` **`hard_fail`** | RECURRING | 3 | Act I's second lethal thing, teaching the opposite lesson to the cyclist. That one comes *at* you and the answer is to get off the pavement; this one is **stationary and the danger is behind it**, so the answer is not to walk into the gap it is backing into — which you have to look at the world to know. The beeper is the telegraph. It stands `AGAINST_THE_BUILDING`, turned to face out of the frontage, solid at 28px inside the 46 that ends the day. |
-| `charging_dog` **`hard_fail`** | RECURRING (`AHEAD_OF_PLAYER`) | `RUN_TAUGHT_DAY` | **The one thing running is the answer to**, and the day the run is taught. Sited 0.5s of closing outside the view (`offscreen_notice`), it spends `telegraph_time` 4.5s visibly closing at the stand-off, then chases at 130px/s for `Tuning.PURSUIT_TIME` — the further siting needs the longer telegraph so walking away still loses inside the row's own budget. Its 150px field is **wider than the stand-off** — a narrower one is a field the pursuer is never inside, so the warning would emit nothing at her and the `!` over her head would never go up; `validate_pursuit` refuses that. `max_per_day` 3, because a street with three of them turns the run button from an answer into a second walk speed. It trots off at 110px/s rather than blinking out: a dog that gives up in front of her and is then not there says the chase was never real. No `last_day`: it recurs after `RUN_TAUGHT_DAY`, but only that one day sites it on her exact heading — see "Where an event happens" above. |
+| `charging_dog` **`hard_fail`** | RECURRING (`AHEAD_OF_PLAYER` on `RUN_TAUGHT_DAY`, `MAP` after) | `RUN_TAUGHT_DAY` | **The one thing running is the answer to**, and the day the run is taught. Sited 0.5s of closing outside the view (`offscreen_notice`), it spends `telegraph_time` 4.5s visibly closing at the stand-off, then chases at 130px/s for `Tuning.PURSUIT_TIME` — the further siting needs the longer telegraph so walking away still loses inside the row's own budget. Its 150px field is **wider than the stand-off** — a narrower one is a field the pursuer is never inside, so the warning would emit nothing at her and the `!` over her head would never go up; `validate_pursuit` refuses that. `max_per_day` 3, because a street with three of them turns the run button from an answer into a second walk speed. It trots off at 110px/s rather than blinking out: a dog that gives up in front of her and is then not there says the chase was never real. No `last_day`: it recurs after `RUN_TAUGHT_DAY`, but only that one day sites it on her exact heading — past it, `spawn_mode_on()` answers `MAP` and the row is placed on a tile and met by routing into it, the way `alley_robbery` is, rather than sited by the director — see "Where an event happens" above. |
 | `chatting_mother` | RECURRING | 1 | Another mother with a pram, paced along eight tiles of pavement like `homeless_yeller`. Her ambient field is person-scale (intensity 4.5, near a passer-by's 4.2) and tight (56/70px — the inner radius sits just outside her capture, which the catalogue's own check requires), so a normal pass costs a normal close pass. Entering `detain_radius` (48px, three quarters of the pavement band, so neither lane of her own pavement walks past her while the far pavement still does) of an instance that has not chatted yet locks the player's movement input for `detain_seconds` (5s) — the one mechanic in the catalogue that takes the controls away rather than costing a meter; the existing idle rules price the stop, so nothing new prices the time. While the conversation runs and the baby is **awake** it adds a flat `Tuning.CHAT_EXCITEMENT` (25) over the whole capture; **asleep** it adds nothing, gated on the baby's own state read from `EventInstance.baby_awake` rather than scaled through `SLEEPING_SENSITIVITY` — a *pure* time loss means exactly zero, not a smaller number. One conversation per instance: she is then spent as a detainer and departs like a `dog_walker`. |
 
 ### Act II — Something is off (days 4–7)

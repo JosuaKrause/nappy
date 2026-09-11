@@ -138,10 +138,16 @@ emits nothing, cannot end the day and carries no cue, and it moves until it is p
 
 ## Pursuits
 
-**A pursuit has two shapes and a third state.** `charging_dog` is a **moment** — the director sites
-it in front of her and the chase is all of it. `EventDef.pursues_within` is the other shape: a thing
+**A pursuit has two shapes and a third state.** `charging_dog` on its teaching day is a **moment**
+— the director sites it in front of her and the chase is all of it; from the day after it is a map
+placement (`EventDef.spawn_mode_on(day)` answers `MAP` past `spawn_mode_switches_after_day`) that
+still charges the moment it streams in. `EventDef.pursues_within` is the other shape: a thing
 that is *somewhere*, that can be seen and priced and routed around, and that becomes a chase if she
-walks up to it. Two things about the waiting state are easy to get backwards:
+walks up to it. **The field is wider than its name**: a row with `pursues_within` and no `pursues`
+waits the same way, unclocked and still, and then runs its own path instead of turning to follow
+her — `alley_mouse` is that row, and it exists because a map placement's clock otherwise starts
+at the stream radius, 900px out, so a short dash would be over before it was on screen. Two things
+about the waiting state are easy to get backwards:
 
 - **The clock starts when it notices her**, not when the day put it there. A telegraph that ran at
   dawn four streets away arrives with no notice in it at all.

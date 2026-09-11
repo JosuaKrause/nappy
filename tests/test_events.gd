@@ -2082,12 +2082,14 @@ func _test_nothing_happens_inside_a_lethal_field(t) -> void:
 
 ## **The third case of the clearance rule, pinned over `pursues` rather than over either row that
 ## carries it today.** A lethal field that follows her is neither on the corridor nor off it, so
-## placement cannot keep it clear of anything — `charging_dog` never reaches `_room_around` at
-## all (it is `AHEAD_OF_PLAYER`, sited with no tile) and `alley_robbery` is exempt today only
-## because `hard_fail` always classifies a `MAP`-placed `RECURRING`/`SCRIPTED` row `WALL` before
-## `_role_for` ever asks whether it pursues. Forcing the role off `WALL` here is what tells the two
-## reasons apart, and it is why a third pursuer — one a future `_role_for` change routes through
-## `SET_PIECE` or `FRICTION` instead — inherits the exemption without anybody adding a case for it.
+## placement cannot keep it clear of anything — `charging_dog` never reaches `_room_around` at all
+## on `Tuning.RUN_TAUGHT_DAY`, when it is still `AHEAD_OF_PLAYER` and sited with no tile, and
+## `alley_robbery` (and `charging_dog` again, past the teaching day, once `spawn_mode_on()` answers
+## `MAP`) is exempt only because `hard_fail` always classifies a `MAP`-placed `RECURRING`/`SCRIPTED`
+## row `WALL` before `_role_for` ever asks whether it pursues. Forcing the role off `WALL` here is
+## what tells the two reasons apart, and it is why a third pursuer — one a future `_role_for` change
+## routes through `SET_PIECE` or `FRICTION` instead — inherits the exemption without anybody adding
+## a case for it.
 func _test_a_pursuer_keeps_no_field_clear(t) -> void:
 	var pursuer := EventCatalogue.by_id("alley_robbery")
 	t.check(pursuer.hard_fail and pursuer.pursues, "alley_robbery is lethal and pursues")

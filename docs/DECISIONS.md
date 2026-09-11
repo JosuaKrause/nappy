@@ -1,5 +1,108 @@
 # Decisions
 
+## M100 — Small, real, and nobody's · a mouse in the alley, built 2026-09-11
+
+*(2026-09-10: "we can reuse the mouse for alleyways as well.")* Two agent commits on
+`feature/mouse-in-the-alley`, reviewed here. **The row**: `alley_mouse`, named the way
+`alley_robbery` is, placed on `ALLEY` tiles as a map placement rather than sited by the director
+the way `cat_dash` is — an alley is ground she is routed through, where a road tile picked at dawn
+might never be crossed — which also puts it under the scheduler's required-alley refusal for
+free, so it never stands in an alley she has no way round. The cat's shape at half its numbers:
+intensity 9 over a 15/60px field, cap 4 a day, weight shared with the robber's since both draw
+from the alley pool, a 1.4s telegraph against a required 1.09s, a 1.0s duration over a crossing
+that takes a third of that, no body, nothing lethal. **The dash is across the alley by
+construction**: `EventInstance._alley_crossing_path()` reads the alley rect the instance landed in
+and lays a two-point path across its narrower side, since she can only be walking the long axis.
+`PathMode.CROSS_STREET` was rejected because its axis comes from the corridor offset, which
+answers nothing for an alley cut mid-block. One picture, `mouse.svg`, mirrored, as the cat is
+drawn; the directional family stays unbound.
+
+**The review finding, and what it added to the machinery.** As first delivered the mouse was
+never seen: a map placement's clock runs from the frame it streams in, at the 900px stream
+radius, so telegraph and dash were over before she was within the view's 180px short half-extent.
+The fix reuses the robber's waiting state — `is_waiting()`, `_noticed_at`, the telegraph counted
+from the notice — which already keyed off `pursues_within` rather than `pursues`; the one thing
+not general was that only `_chase()` ever set the notice, so `_check_for_notice()` now does it for
+a non-pursuing row, which then runs its own path. `pursues_within` 150px: inside the short
+half-extent with margin and past the row's own 60px field, so the telegraph is on screen before
+the field is felt. **Rejected**: making the mouse `pursues` with a pursue speed, which drags in a
+stand-off, a lunge and the pursuit speed band for a row that never follows her. A test holds both
+halves: still and unclocked with her 400px past the trigger for five seconds, then noticing,
+telegraphing from the notice and crossing the narrow axis. **Chosen where the design was silent**:
+the notice check duplicates four lines of `_chase()` rather than refactoring proven pursuit code;
+the dash direction is rect start to rect end rather than a coin flip, since no RNG reaches
+`setup()` and it is not a fairness matter. Measured: walking through costs about 4 points,
+running through about 15.
+
+## M100 — Small, real, and nobody's · the chat entry, the spawn rig's pavement and the park trees, built 2026-09-11
+
+Three defects, three agent commits on `feature/three-small-defects`, reviewed here. **`chat` is
+documented, and the two lists are held together**: `docs/TELEMETRY.md`'s table gains the row,
+and `tests/test_telemetry.gd` scans every `Telemetry.note("<kind>"` call under `src/` — plus
+the bare `note(` calls the telemetry autoload makes on itself, where the `shot` kind lives —
+against the table's first column and asserts the sets agree both ways. A static list of kinds
+was rejected because it would be a third thing to keep in sync; there is no enumeration in the
+code, `note()` takes any string. Two traps in the scan itself, fixed before it landed: scanning
+the file as one block let the pattern run from the one call with no comma into the doc comments
+below it, so it scans line by line and skips comment lines; and Godot's `%` treats a bare array
+as the argument list, so an empty match array threw until wrapped. **`--spawn event:<id>` stands
+her on the pavement whatever the street's axis**: the fixed local-Y step became
+`main._pavement_offset()`, which asks `EventInstance._spread_is_vertical()` — the same question
+a spread asks to lie across the carriageway it blocks — and steps across the street's own axis.
+The test drives two known corridor tiles on a bare `CityMap`, since the offset is arithmetic on
+`Tuning.STREET_WIDTH`; a seed-driven test could pass by luck on the axis it never exercised.
+**Park trees keep their distance**: `City.MIN_TREE_SPACING` (50px) is checked before a
+candidate is accepted in the lot's rejection loop, never as a pass afterwards. The number is the
+picture's: both tree pictures are 40px wide and scale up to 1.25×, so 50px is the widest a canopy
+is ever drawn and two closer than that overlap into a clump. Deriving it from `Prop`'s shadow
+footprint (about 11–14px) was rejected as a number for a different job. A throwaway probe over
+sampled lots showed the forest's per-block target still reached under the extra rejections, so
+the attempt cap is unchanged; the test groups a real day's trees by lot anchor over three seeds
+and asserts every same-lot pair clears the spacing.
+
+## M96 — The teaching day, and the dog after it · the dog is placed on the map from day 4, built 2026-09-11
+
+One agent commit on `feature/dog-on-the-map`, reviewed here, finishing the placement half of
+*"the tutorial dog may appear later but not as tutorial"*. **The shape**: `EventDef` gains a
+day-keyed spawn mode — `spawn_mode_switches_after_day` and `spawn_mode_after_first_day`, read
+through `spawn_mode_on(day)` — as a derived answer rather than a mutation of the shared
+resource, since a mutated singleton would carry across a replay in the same process (the same
+reasoning `at_heat()` rests on). `charging_dog` switches to `MAP` after `Tuning.RUN_TAUGHT_DAY`,
+the scheduler's placement and role code ask `spawn_mode_on(day)` at the three call sites that
+already had the day, and the director builds its owed list the same way, so the scheduler placing
+the dog and the director queueing it cannot both happen. **Removed**: the director's off-heading
+half-measure — the 50–110° bearing, its two constants and the helper — because the switch keeps a
+day-4 dog out of the owed list before that code is reached. `_teach_the_run()` and day 3's
+siting are untouched; the tests hold day 3's heading, a `build_day()` sweep in which every
+day-4-plus dog plan is placed, and an owed list of zero past the teaching day, in place of the
+old off-heading angle checks. `validate()` checks the switched-to mode's obstruction the way it
+checks the base one.
+
+**The fork, named by the agent and left to the player** (it is the open item in `TODO.md`,
+M96): the placed dog has no `pursues_within`, because day 3's lesson needs it to charge at once
+and `tests/test_danger.gd` pins that, so from day 4 it begins its charge the moment it streams
+in — `Tuning.EVENT_STREAM_RADIUS` (900px) away — rather than when she enters its field. Placed
+on the map, yes; met by routing into it, not yet. **The recommendation** is a day-keyed trigger on
+the same switch, waiting inside its own outer radius from day 4. **Not done**: a `TOWARD_PLAYER`
+check for the switched-to mode, since no row uses that pairing.
+
+## M100 — Small, real, and nobody's · a pursuer streamed out mid-chase comes back still chasing, fixed 2026-09-11
+
+The other half of the defect the heated patrol surfaced: `EventInstance.resume()` had taken the
+notice as a third argument since the first half, and nothing passed it, because
+`EventScheduler.Planned` had nowhere to keep it. One agent commit on `feature/pursuer-remembers`,
+reviewed here. `Planned` carries `noticed_at` beside `age` and `travelled`; `_stream_out()` reads
+it off the live instance and `_stream_in()` hands it back on `resume()`, so a `pursues_within`
+row streamed out after noticing her returns still chasing, its chase clock continuing from the
+notice rather than restarting. The test drives `EventManager`'s own stream-out and stream-in on
+a hand-built `alley_robbery` plan — the one row that carries `pursues_within` cold, so no heat
+level and no scheduler roll is needed — and asserts both `not is_waiting()` and a continuing
+`chase_age()`; `tests/test_heat.gd` already held the instance half. **Chosen where the design
+was silent**: the test calls the manager's private stream methods directly, which is the file's
+existing convention, and the streamed instance is left to the rig's city teardown, as every
+other live instance in that file is. In play this is the first time a robber or a heated van
+that followed her off screen keeps following when the screen comes back.
+
 ## M113 — The inspection reads as one · built 2026-09-11
 
 *(2026-09-10, playtest 55: "the checkpoint itself, 2s should be enough -- both the guard and the

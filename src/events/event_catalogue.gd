@@ -1103,15 +1103,17 @@ static func _charging_dog() -> EventDef:
 	def.first_day = Tuning.RUN_TAUGHT_DAY
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	# No `last_day`: the dog recurs after the teaching day rather than being spent by it —
-	# *"the tutorial dog may appear later but not as tutorial."* `spawn_mode` stays
-	# `AHEAD_OF_PLAYER` on every day it appears rather than switching to `MAP`, because the row
-	# is shared by day 3 and every day after it and `EventDef` has no per-day reading of its own
-	# fields — a second row for the later days would need its own `Look`, and there is no spare
-	# dog silhouette to give it (`tests/test_events.gd` refuses two rows sharing one). What
-	# changes after `Tuning.RUN_TAUGHT_DAY` is where `EventDirector` sites it: still a director
-	# moment rather than a scheduler placement, but no longer on her heading — see
-	# `EventDirector._crossing_ahead_of()`.
+	# *"the tutorial dog may appear later but not as tutorial."* On `RUN_TAUGHT_DAY` itself
+	# `spawn_mode` is `AHEAD_OF_PLAYER` and `EventDirector` puts it dead ahead of her, unavoidably,
+	# because the lesson depends on it. Every day after, `spawn_mode_on()` answers `MAP` instead —
+	# the same row, but placed on a tile the way `alley_robbery` is and met by routing into it
+	# rather than appearing in front of whichever way she happens to be walking. One `EventDef`
+	# rather than a second row: a later dog needs its own `Look` and there is no spare silhouette to
+	# give it (`tests/test_events.gd` refuses two rows sharing one), and `spawn_mode_on()` is the
+	# field that lets one row answer two days without ever mutating the shared resource.
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
+	def.spawn_mode_switches_after_day = Tuning.RUN_TAUGHT_DAY
+	def.spawn_mode_after_first_day = EventDef.SpawnMode.MAP
 	def.intensity = 12.0
 	def.inner_radius = 26.0
 	# Wider than the stand-off, and that is a constraint rather than a taste: a pursuer holds its

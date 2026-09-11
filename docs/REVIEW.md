@@ -46,6 +46,17 @@ view").
 - **Walk a precinct end to end** (a pedestrian street with bollards at each mouth). Nothing is
   built over its paving any more. Does it read as one paved place? Record is `DECISIONS.md`,
   M100, a precinct's pavement.
+- **Meet the dog on day 4 or later** (`--day 4`). It is placed on the map now, never on her
+  line, and it charges from off screen the moment she passes within a block of it. Does it read
+  as *a dog that was somewhere* or as the lesson again? That is the open question in `TODO.md`,
+  M96, whether it should wait to be routed into; a played answer decides it. Record is
+  `DECISIONS.md`, M96.
+- **Walk through an alley in act I.** A mouse waits in some of them and darts across once she is
+  within 150px, after a short telegraph. Does it read as a startle rather than a threat, and does
+  the dash read as *across her path*? Record is `DECISIONS.md`, M100, the mouse in the alley.
+- **Look at a park or a forest block.** Trees keep at least a canopy's width apart now. Do the
+  lots still read as *wooded*, or has the spacing made them look planted in rows? Record is
+  `DECISIONS.md`, M100, the park trees.
 
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 

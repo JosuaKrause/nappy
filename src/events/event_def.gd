@@ -163,6 +163,35 @@ func solid(new_shape: GroundShape) -> void:
 
 @export var spawn_mode := SpawnMode.MAP
 
+## Day after which this row's siting changes from `spawn_mode` to `spawn_mode_after_first_day` — 0
+## (the default) means it never does, so `spawn_mode` alone answers for every day a row recurs,
+## which is right for almost everything. `spawn_mode_on()` below is the one place anything reads
+## which of the two applies.
+##
+## **Not a way to mutate `spawn_mode` at runtime.** The catalogue's defs are shared by every day of
+## the run and validated once at boot, so a field a day could set on the shared resource would
+## persist across a replay in the same process — the same reason `at_heat()` returns a duplicate
+## rather than editing `self`. This is the day axis instead of the heat axis, so it is a second
+## field and a query, not a mutation.
+##
+## `charging_dog` is the row that needs it: `Tuning.RUN_TAUGHT_DAY` sites it dead ahead of her,
+## unavoidably, because the run lesson depends on it, and every day after — *"the tutorial dog may
+## appear later but not as tutorial"* — the same row recurs but is no longer the lesson.
+@export var spawn_mode_switches_after_day := 0
+## What `spawn_mode_on()` answers once `day` is past `spawn_mode_switches_after_day`. Unread while
+## that is 0.
+@export var spawn_mode_after_first_day := SpawnMode.MAP
+
+## Which `SpawnMode` this row is sited in on a given day — `spawn_mode` itself for every day up to
+## and including `spawn_mode_switches_after_day`, `spawn_mode_after_first_day` for every day past
+## it. Every reader that sites an event by its day — `EventScheduler._place_one()`,
+## `EventScheduler._role_for()`, `EventDirector.start_day()` — asks this rather than `spawn_mode`
+## directly, so the two can never disagree about which day is which.
+func spawn_mode_on(day: int) -> SpawnMode:
+	if spawn_mode_switches_after_day > 0 and day > spawn_mode_switches_after_day:
+		return spawn_mode_after_first_day
+	return spawn_mode
+
 ## Seconds of closing this row needs beyond the screen edge before `EventDirector` will site it —
 ## `Tuning.OFFSCREEN_NOTICE` (0.2) unless a row overrides it. Only `AHEAD_OF_PLAYER` (`pursues`) and
 ## `TOWARD_PLAYER` rows read this; a `MAP` row is placed at dawn and never asks.
@@ -549,6 +578,15 @@ func validate() -> bool:
 	if spawn_mode != SpawnMode.MAP and obstructs_radius > 0.0:
 		push_error("event '%s' is director-sited and obstructs %.0fpx: nothing checks "
 				% [id, obstructs_radius] + "that it leaves a route to a park")
+		return false
+	# The same argument again, over the day the row switches to instead of the day it starts on —
+	# `spawn_mode_on()` is what every placement asks, so a row director-sited only after
+	# `spawn_mode_switches_after_day` has exactly the same unchecked-route problem on that side.
+	if spawn_mode_switches_after_day > 0 and spawn_mode_after_first_day != SpawnMode.MAP \
+			and obstructs_radius > 0.0:
+		push_error(("event '%s' is director-sited from day %d onward and obstructs %.0fpx: "
+				% [id, spawn_mode_switches_after_day + 1, obstructs_radius])
+				+ "nothing checks that it leaves a route to a park")
 		return false
 	# `EventDirector` sites a `TOWARD_PLAYER` row at least `Tuning.offscreen_lead(heading,
 	# closing_speed, offscreen_notice)` in front of her, which is never less than

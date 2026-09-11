@@ -881,9 +881,9 @@ const VICTIM_TAKEN_OVER := 2.5
 const VICTIM_STANDING_OFFSET := 32.0
 
 ## Age the take began, or `INF` before it has and after a hunting van abandons one mid-walk. Not
-## restored by `resume()` — the same gap `_noticed_at` carries, and unreachable for the same reason
-## it is harmless there: the whole scene is under three seconds, far short of anything that gets an
-## instance streamed out and back in.
+## restored by `resume()`, which carries `age`, `travelled` and `_noticed_at` but stops there — and
+## it is harmless for a reason `_noticed_at` does not share: the whole scene is under three
+## seconds, far short of anything that gets an instance streamed out and back in.
 var _victim_taken_at := INF
 ## Whether the one telemetry entry for this take has already been written, so a frame that finds
 ## the walk finished twice in a row cannot log it twice.

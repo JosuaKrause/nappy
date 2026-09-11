@@ -1031,9 +1031,23 @@ func _first_event_position(wanted_id: String = "") -> Vector2:
 				continue
 		elif plan.def.kind == GameEnums.EventKind.AMBIENT:
 			continue
-		return _nearest_walkable(plan.position + Vector2(0.0, plan.def.outer_radius * 0.6))
+		var offset := _pavement_offset(_city.map, plan.position, plan.def.outer_radius)
+		return _nearest_walkable(plan.position + offset)
 	push_warning("no non-ambient events planned today")
 	return _city.map.home_world_position()
+
+## The step from a found event's position to somewhere just off it, **across the street it stands
+## on** rather than along local Y unconditionally. A fixed `Vector2(0.0, radius * 0.6)` is a step
+## along the street's own length on a north-south street — which never leaves the carriageway a
+## north-south corridor's width is measured across (`CityMap.corridor_offset(tile.x)`) — and only
+## happens to clear the road on an east-west one, whose width runs the other way. `_spread_is_vertical`
+## is the one place that already answers which axis a street's *width* is on — it is the same
+## question `EventInstance._spread_at()` asks to lay an obstruction across the carriageway it blocks
+## — so reusing it here is the same answer applied to the opposite side of the same obstruction,
+## rather than a second guess about the street's orientation.
+static func _pavement_offset(map: CityMap, at: Vector2, radius: float) -> Vector2:
+	var vertical := EventInstance._spread_is_vertical(map, at)
+	return Vector2(0.0, radius * 0.6) if vertical else Vector2(radius * 0.6, 0.0)
 
 func _nearest_walkable(near: Vector2) -> Vector2:
 	var start := _city.map.world_to_tile(near)
