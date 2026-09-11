@@ -39,19 +39,40 @@ pictures to their actual runtime consumers.
       and preserve tint, gait timing, sorting and foot registration. Verify all eight headings,
       boundary crossings, stops, blocked movement and recycle with a focused rig and rendered
       native-size movement evidence.
-- [ ] **The walkers get the mother's stride.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md):
-      "can we do a similar one to what the player does?")* A crowd walker is one static picture per
-      facing today, with no gait frames and no bob; the mother alternates two frames per view,
-      mid-stride and feet passing, from a walk phase advanced by her own speed
-      (`Stroller._walk_phase`, `_draw_mother()`). Author a second gait frame for every walker view
-      as SVG first — `assets/crowd/walker_{front,back,side,front_diagonal,back_diagonal}_{body,trim}.svg`
-      gains an `_a`/`_b` pair per layer on the same 18×38 canvas and (9,38) anchor, the upper body
-      consistent between frames and only the legs and shoes changing, the correction the mother's
-      own frames needed (`DECISIONS.md`, "Eight-direction style transfer") — then run the stroller's
-      alternation on the walker: phase advanced by applied speed, frame a at rest and while
-      stopped, so a queue or a give-way holds a standing pose. Body and trim swap frames together.
-      After the walker binding above, since it extends that family table; the event people keep
-      their single frames unless asked
+- [ ] **Every living thing that moves has a stride.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md):
+      "can we do a similar one to what the player does?", then "all living things should have
+      movement animation")* Today only the mother animates: two frames per view, mid-stride and
+      feet passing, from a walk phase advanced by her own speed (`Stroller._walk_phase`,
+      `_draw_mother()`); a crowd walker, every event person, the cat, the dogs, the mouse and the
+      cyclist are one static picture per facing that slides. The pigeons already alternate two
+      wing phases. **Walkers first**, since their art derives from the mother's: the mother's b
+      frame differs from a only in the leg and shoe paths and a one-pixel lift, and the walker trim
+      layer carries its legs and shoes as the same two paths, so
+      `assets/crowd/walker_{front,back,side,front_diagonal,back_diagonal}_{body,trim}.svg` gains an
+      `_a`/`_b` pair per layer on the same 18×38 canvas and (9,38) anchor, the upper body consistent
+      between frames and only the legs and shoes changing, the correction the mother's own frames
+      needed (`DECISIONS.md`, "Eight-direction style transfer"). **Then the event people and the
+      animals**, one second frame per view per family — the dog walker's person, the chatting
+      mother walking, the robber and guard lunging, the protester, the leaf blower, the van victim
+      when led, the cat running, the dog, the charging dog, the mouse, the cyclist's pedal — each as
+      SVG first, reviewed on a native and 3× sheet beside its a frame. Then the stroller's
+      alternation on each: phase advanced by applied speed, frame a at rest and while stopped, so a
+      queue, a give-way or a posted guard holds a standing pose; body and trim, or actor and held
+      thing, swap frames together. Read as *while moving* — the yeller, the busker, the café sitters
+      and a standing guard keep one frame — which is the orchestrator's reading, open to overturn
+      if an idle animation was meant too. After the walker binding above, since it extends that
+      family table, and alongside the event binding below for the rest
+- [ ] **Cars bob on their wheels.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "cars
+      could bop up and down while the wheels stay in the same place")* A moving car's body rises
+      and falls about a pixel on a phase advanced by its speed, and its wheels stay on the ground.
+      A crowd car is two layers today, `assets/crowd/car_{view}_{body,trim}.svg`, the tintable
+      paint and one trim holding windows, tyres and lights together, so the wheels come out of the
+      trim into a third layer per view, `car_{view}_wheels.svg`, SVG first and on the same canvas
+      and anchor; body and the remaining trim bob together, the wheels draw fixed, and a stopped
+      car sits still. The halo traces the bobbing silhouette as it does the mother's lift
+      (`EntityHalo` asks each owner for its `bob()`; the crowd's answers zero today). Crowd cars
+      first, with the vehicle binding below; the event vehicles that move — the police car, the
+      vans, the lorry, the fire engine — the same way, and a parked one sits still
 - [ ] **Bind live event people, animals and riders.** Extend the same selector to each actual
       drawing path in `EventInstance`, including composed actors, leads, prams, held tools and
       weapons. Keep idle/moving, waiting/lunging, talking/walking and wing/gait phases distinct;
