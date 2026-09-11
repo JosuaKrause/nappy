@@ -130,7 +130,11 @@ one requirement because its implementation is older or on the branch labeled “
 ## Verify and finish
 
 Confirm no unresolved index entries or conflict markers remain, and review staged and unstaged
-diffs against both parents. Recheck every renumbered record against its original and search for
+diffs against both parents. **`git diff --check` is the confirmation, not the eye**: the repo's
+`diff3` conflict style writes a fourth marker, the `|||||||` line that opens the base section,
+and a resolution that deletes the other three by hand and leaves that one behind reads as a
+clean file until the next merge parses it. Four such lines reached `main` in DECISIONS.md this
+way, one per merge, before a merge that ran the check found them. Recheck every renumbered record against its original and search for
 stale references; inspect the PR description too. Preserve `.import` sidecars and source assets.
 
 Run `./tools/check.sh` in the actual merged checkout, focused tests for the affected interactions,
