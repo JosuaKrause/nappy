@@ -46,7 +46,12 @@ blocks. Filed under M100.
 
 A re-report of playtest 52's finding, widened: not only the seals but the region walls, their
 doors with the checkpoints on them, and the roadblock bands are driven through. Added to M110,
-the crowd goes round a seal, which now covers every body that holds a street.
+the crowd goes round a seal, which now covers every body that holds a street. Asked which of two
+answers a door should get — shut to cars, or cars let through — the player chose the fuller one
+and gave its choreography:
+
+> at checkpoints cars should slow down halt then the bar should lift then the car drives through
+> then it closes again
 
 ## The inspection
 
