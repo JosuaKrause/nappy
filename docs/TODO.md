@@ -160,27 +160,23 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 1. **M56**'s build item, the other rows that hunt. *("M56 is also related to the other items to
    work on right now.")* Its measurement against the nerves waits, because reaching act III
    waits: *"I wanna wait reaching act III until those things are done."*
-2. **M112** — the escape scene, walkable: the building's five floors, the stairs as tiles she
-   walks on, and her with the baby in her arms, behind `--start-escape` and with no events.
-   *(2026-09-10, playtest 54: "as a good exercise we could build out the escape scene … can you do
-   that right now".)* At the front because the player started it the same day.
-3. **M113** — the inspection reads as one: a two-second hold at a checkpoint during which she and
+2. **M113** — the inspection reads as one: a two-second hold at a checkpoint during which she and
    the guard are gone and the camera eases onto the hut. *(2026-09-10, playtest 55.)* Placed here
    by the orchestrator because it is the first thing act III shows and it was seen once; open to
    the player moving it.
-4. **M114** — the moving field grows forward out of the resting disc rather than the disc growing
+3. **M114** — the moving field grows forward out of the resting disc rather than the disc growing
    back out of the ellipse. *(2026-09-10, playtest 55.)* Small, and placed here by the
    orchestrator because it is a decision of M61's being overturned while the field is fresh; open
    to the player moving it.
-5. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
+4. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
    don't stop/redirect traffic or pedestrians.")* Placed here by the orchestrator, ahead of M65
    because a sealed street the crowd walks through is the sealing's own legibility failing — open
    to the player moving it.
-6. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
+5. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
    revisit after M62.")* Revisited rather than built as written: the regions and their
    checkpoints (`DECISIONS.md`, M62) may change what finding a mark is like, and the entry is
    re-read before the prepared poses are bound to objectives.
-7. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
+6. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
@@ -188,8 +184,8 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    clock, sit in this batch provisionally** — they were asked for on 2026-09-10 and not placed,
    so this is the orchestrator's guess at where work that needs no route decision belongs, open
    to the player moving it.
-8. **Reaching act III**, which M56's measurement against the nerves needs.
-9. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
+7. **Reaching act III**, which M56's measurement against the nerves needs.
+8. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
 The record, with its measurements and the choices open to overturn, is in `DECISIONS.md` under
@@ -397,121 +393,6 @@ use the guard pair for a guard departure if that proposed response is accepted.
       Preserve the waiting-to-hunting state change and the van's native ground registration.
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
-
----
-
-## M112 — The escape scene, walkable · asked for 2026-09-10
-
-> "I like the fire escape stairs but the inner stairs don't work. I think the misunderstanding
-> here is that the inner stairs need to work as tiles and need to be walkable so they need to be
-> actually 2.5D and be separated in handrail and stair tiles and landings."
-
-> "as a good exercise we could build out the escape scene (three floors over ground floor -- top
-> floor is her apartment -- entrance -- basement -- double staircase left and right) without any
-> events just as a special game entry ./tools/run.sh --start-escape or similar to test out the
-> walking and screen transitions and stair walking. graphics are her holding the baby"
-
-**Three of M102's items, built early and empty, so the walking is judged before the pressure is
-put on it.** The interior map, the stairs and the carrying rig come forward from M102, the
-finale; the events, the flashing windows, the hint lines, the millisecond clock and the city half
-stay there. The scene is entered from a debug flag only, `tools/run.sh --start-escape`, and has no
-events, no crowd and no day clock that matters: it is the building, her with the baby in her
-arms, and the way down.
-
-**The building, from the player's four sketches** (playtest 55; `docs/reference/
-escape-floor-hallway-sketch-01.jpg`, `escape-stairwell-sketch-01.jpg`, `escape-lobby-sketch-01.jpg`,
-`escape-basement-sketch-01.jpg` — read them before laying a tile). **One map**, drawn with the
-ground `TileMapLayer` and the same oblique view as the city, holding seven parts laid out with
-empty, unwalkable ground between them, joined by doors that teleport *(2026-09-10, playtest 55:
-"instead of multiple maps have all parts of the house on the same map with enough space inbetween
-and on transition fade to black, teleport, then fade in again")*:
-
-- **Three hallways**, one per floor above the lobby, the same layout each: a long hallway
-  running east–west; its north wall in elevation carries wall lamps, windows and one framed door
-  with a bar across it — the dead lift; the south edge carries notches — the closed ones are the
-  locked apartment doors (her own is the one the scene starts in front of, on the top floor), and
-  the **two open notches are the stair doors, one at each end of the hallway**, each the way into
-  that end's stairwell at this floor's landing. *(The sketch drew both at the right end; decided
-  otherwise on 2026-09-10, playtest 55 — two stairwells at opposing ends, "that way having a fire
-  on the stairs forces you to enter a floor hallway and walk to the other end".)*
-- **Two stairwells**, left and right, each tall and the camera following her down it: a
-  plain switchback — from each floor's landing one flight descends, turns back at a half-landing,
-  and arrives at the next floor's landing below, alternating direction floor by floor — with
-  **one door per landing on the hallway side**, into that floor's hallway at its end, and the
-  lowest landing's door into the lobby at the same end. Nothing loads mid-stairwell: a shaft is
-  continuous ground, so stair walking is walking. The sketched double staircase in one shaft is not
-  built: a fire on one flight of it would be dodged from the same landing, which is no route
-  decision, while a fire in one stairwell sends her along the whole hallway to the other.
-- **The lobby map**, the hallway's own width: the main entrance in the middle of the north wall
-  — the double door with the furniture heaped against it, lamps either side — not passable, and
-  the dead lift beside it; on the south edge, the **left and right notches are the two
-  stairwells' doors** and the **middle notch is the way to the basement**.
-- **The basement map**: a winding corridor that **starts at the bottom**, where a short flight
-  leads down into it (the sketch's horizontal lines), jogs left and right between raw brick
-  walls past debris, a rat and puddles, and ends at the **exit door at the top**; walking into it
-  ends the scene.
-
-The prepared pictures in `assets/interior/` are the kit (`GRAPHICS.md` lists them); the one that
-is superseded is `stair_down.svg`. The lamps on the walls, the debris and the rat are new small
-pictures the kit item below adds.
-
-**The stairs are tiles she walks on.** Each flight tile is a 32×32 floor tile whose picture is
-2.5D — treads and risers seen from the oblique view, descending toward the tile's own direction —
-and it is walkable ground like any other; the handrail is a separate transparent overlay tile
-drawn *over* the flight, in front of her, so she walks behind the rail; a landing is a flat tile.
-**A flight is a diagonal run of flight tiles, and she descends it as she walks it** *(2026-09-10,
-playtest 55: "holding right or left on the switchback stairs moves the player diagonally")*: the
-kit's flight tile drops one tile height over one tile width at 45°, so a flight of three tiles
-runs three tiles across and three down, and while she stands on a flight tile a sideways press —
-left or right, key, tap or joystick alike — is redirected along the flight's slope, down toward
-the flight's lower end and up toward its upper end, so she visibly descends or climbs and never
-walks off the treads sideways. A press along the slope's own axis behaves the same; a press
-straight up or down the screen on a flight does nothing, since there is no floor there. A
-half-landing is a flat tile or two where the next flight turns back. A floor's height in the
-shaft is what its two flights add up to in rows, and the layout chooses that so the switchback
-reads as a stairwell rather than a ramp.
-
-- [ ] **The stair tile kit, as SVG.** In `assets/interior/`, 32×32 tiles: `stair_flight_e.svg` and
-      `stair_flight_w.svg` (treads descending toward east and toward west, seen from the oblique
-      view, seamless with the next flight tile), `stair_landing.svg` (flat, in the stairwell's
-      mechanical-floor family), `stair_rail_e.svg`, `stair_rail_w.svg` and `stair_rail_level.svg`
-      (handrail overlays on transparent canvases — the sloped pair follow their flight's descent,
-      the level one runs along a landing) and `stair_newel.svg` (the post where a rail turns,
-      bottom-centre anchored), plus the sketches' small pictures: `wall_lamp.svg` (a sconce on the
-      hallway and lobby walls), `basement_debris.svg` and `rat.svg` (ground decals for the
-      basement corridor, centre-anchored). Drawn under the svg-art rules, rendered at native and
-      3×, and reviewed as an assembled switchback before any of it is bound.
-      `stair_down.svg` is retired to the rejected-graphics archive as human-rejected (playtest 54),
-      with its review sheets
-- [ ] **The interior map.** A new `src/interior/` — a small hand-shaped map class apart from
-      `CityMap`, the plan as data, walkability from tile type, walls and doors in elevation — one
-      map holding the seven parts above with enough empty ground between them that no part is in
-      view from another, each switchback laid from the kit. Headless tests: the map builds; every
-      flight and landing tile is walkable; the ground between parts is not; every door has a
-      counterpart it teleports to (a hallway's end door ↔ that stairwell's landing door on the same
-      floor; each stairwell's bottom door ↔ the lobby notch at its end; lobby middle notch ↔
-      basement bottom); the exit tile and the barricaded entrance are what they claim; every
-      walkable tile is reachable from her door through the doors, and no two parts are reachable
-      from each other by walking
-- [ ] **`--start-escape`, and her with the baby.** A debug-only `DevFlags` flag that skips the
-      title and starts in the third-floor hallway at her door, with `Stroller` drawing the
-      prepared `assets/rig/mother_carrying_*` frames facing for facing instead of the
-      mother-and-pram pair, the pram gone, and the baby-state cue over the bundle. Both control
-      schemes work as they do outdoors. Absent from a release build, asserted the way the debug
-      view's test asserts its own absence
-- [ ] **Transitions and the way out.** Walking into a door fades to black, teleports her to just
-      inside its counterpart door on the same map (the camera snapping with her, not sliding
-      across the empty ground), then fades in; nothing is loaded or freed. Walking into the
-      emergency exit fades and returns to the title. A test drives a rig from her door on the
-      top floor through a stair door, down the whole shaft by the left flights and again by the
-      right, into the lobby, down to the basement and out, asserting the sequence of parts and
-      her placement after each door
-- [ ] **Evidence.** One capture per part with `--start-escape`, the debug view's layers where
-      useful, and a burst of her walking a flight, in `docs/evidence/`
-
-**Open after it is walked**: whether the flights read as descending with her drawn at a constant
-height; whether the stairwell door's placement — south off the hallway's end — reads; and whether
-five floors is *"not excessively many"*.
 
 ---
 
@@ -1389,9 +1270,10 @@ M103, the drawings the queue owes.
 
 **What is genuinely new, and the order to build it in:**
 
-- [ ] **The interior map, the stairs and the carrying rig are M112's**, the escape scene,
-      walkable — built empty first, behind `--start-escape`, so the walking is judged on its own.
-      What this milestone adds inside the building on top of it: the entry from day 14's summary
+- [ ] **The building is built and empty** — M112, the escape scene, walkable, in `DECISIONS.md`:
+      one map with three hallways, two switchback stairwells, the lobby and the basement, doors
+      that fade and teleport, her carrying the baby, all behind `--start-escape`. What this
+      milestone adds inside it: the entry from day 14's summary
       rather than from a flag, the exit through the service door onto the city map at the home
       lot's side, the hallway windows that **flash** when an off-screen explosion goes off (the
       explosion row's cue indoors, one or two frames of `hallway_wall_window_flash.svg`), the
