@@ -20,6 +20,53 @@ single-block calm, which structurally cannot touch precinct ground. Measured ove
 the constraint costs no generation retries — the average stays one attempt per city. The older
 precinct test lost the carve-out that had excused a hard blocker on the band, so both precinct
 tests now assert every tile walkable with nothing excused, and the new one pins seed 24757.
+||||||| 5c43fb1
+
+## M97 — Calm areas that hold · spoilage measured 2026-09-11
+
+*(Playtest 20, 2026-09-03: "the spoilage of a clam area is not always effective I went to the
+same park 4 times and only the last time had a high enough density of events to actually prevent
+me from using it. the previous time I could just walk at the edge of it. and the time before that
+didn't have any spoilage at all even though it was the second visit.")* The entry's first task was
+a reproduction before any fix; `tests/probes/m97_spoilage.gd` is the instrument, on
+`feature/measurements-m97-m99`, and it did not reproduce. Over 8 seeds, settle days 1, 4, 8 and
+12, and every calm block — 243 biased visits — no visit was structurally empty: the spoil roll
+alone denied a mean 95.9% of the lot's open ground, the full day 96.5%, and 234 of 243 visits were
+over two thirds denied. Two visits fell under 15% denied, both the weighted roll drawing one
+low-reach row for a large lot — the "walkable edge" the player described, now a 0.8% tail. The
+day's ordinary fill placed more in the used park than the spoil roll did on 93.4% of visits, so the
+bias is mostly backstopped by incidental placement rather than doing the denying itself. **What
+this leaves open** is a played recurrence: the probe re-runs in seconds, the low-reach draw is the
+suspect, and the fix it points at is a floor on the spoil roll's reach for a lot that size, not a
+density change. Nothing in `src/` changed.
+
+## M98 — Pressure in the empty acts · the return phase measured 2026-09-11
+
+*(2026-09-11, asked whether to design the act III and IV patrol shape or measure first: "measure
+now, design after".)* `tests/probes/m98_return_phase.gd`, 6 seeds, one day per act (2, 5, 9, 13),
+a rig walking the day through: the return leg (`DayPhase.RETURNING`) lasts 45.5s in act I, 35.2s
+in act II, 32.9s in act III and 47.3s in act IV — a quarter, a fifth, a bit under a quarter and a
+third of the day's clock — and meets the director's owed queue 2.17, 1.33, 1.83 and 2.33 times on
+average; 5 of 24 legs met nothing at all. Playtest 03's *"42% of the day left"* was time remaining
+at the turn rather than the leg's own share, so the two figures are not the same statistic, but
+they point the same way: a short return that meets the single queue once or twice, sometimes never.
+These are the before-figures the entry's item asks to compare against; the shape — how many, where,
+at what cost — is the player's question now, in that item.
+
+## M99 — The corridor's density after the sealing · re-measured 2026-09-11
+
+Two measurements the entry asked for, on `feature/measurements-m97-m99`, no code changed. **The
+corridor's density**, `tests/probes/m64_density.gd` unchanged over 8 seeds and days 1, 5, 8, 11 and
+14: 0.65 events per street a day on the tree, against the 0.82 the entry carried from the earlier
+run; the held-ground exclusion (M100, built the same day) and M114's larger forward reach both
+narrow where a row may stand, which is the likely cause and was not isolated. The player's verdict
+on the sealed corridor was that it is right, so a cap moves only on a played day that says it is
+bare. **The caps**, `tests/probes/m99_caps.gd`, 6 seeds, one day per act, a whole day of walking:
+`cyclist` met 0.79 times a day on average (at most 2 on any sampled day) against `max_per_day` 14;
+`loose_dog` 2.71 (at most 5) against 24; both queue-fed at the director's 11–26s pacing, and the
+day's total of ahead-and-toward encounters falls from 9.5 in act I to 6.5 in act IV as the streets
+empty. Neither cap binds anywhere measured. The choice that leaves — drop the cap from queue-fed
+rows, or lower it to the pacing's ceiling — went back to the player in the entry's remaining item.
 
 ## M114 — The moving field grows forward · built 2026-09-11
 
