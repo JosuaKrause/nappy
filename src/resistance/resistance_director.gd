@@ -25,6 +25,13 @@ const TRAP_FIRST_DAY := 4
 ## player's own sentence, open to overturn: a single constant here is one edit to move it.
 const NOTICE_RADIUS := 400.0
 
+## How many bearings `_draw_guard_position` tries before giving up on the day's guard. A
+## `barricade`-scale alley is 64px wide against a band that can reach past 150px out — most
+## bearings land in the building on either side of it — so this is generous rather than tight;
+## what bounds it at all is that a draw has to stop somewhere; see `_draw_guard_position`'s own
+## doc for the fallback when it does.
+const TRAP_DRAW_LIMIT := 24
+
 var _city: City
 var _map: CityMap
 var _contact: ContactPoint
@@ -132,20 +139,63 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2,
 		return
 	var min_distance := robbery.inner_radius + ContactPoint.REACH
 	var max_distance := robbery.pursues_within + ContactPoint.REACH
-	# Hoisted so the draw can be written down. Which distance a mark got is the one random
-	# outcome that decides a run without a route around it, and the only one whose
-	# consequence otherwise looks like bad luck with the event scheduler.
-	var distance := rng.randf_range(min_distance, max_distance)
-	var angle: float
-	if away_from == Vector2.INF:
-		angle = rng.randf() * TAU
-	else:
-		var facing_away := (at - away_from).angle()
-		angle = facing_away + rng.randf_range(-PI / 2.0, PI / 2.0)
-	var guard_at := at + Vector2.RIGHT.rotated(angle) * distance
+	var guard_at := _draw_guard_position(rng, at, away_from, min_distance, max_distance)
+	if guard_at == Vector2.INF:
+		# **No trap is better than a trap in a wall.** `TRAP_DRAW_LIMIT` bearings found nowhere
+		# walkable at all — every one of them a building, a held segment or the home block — so
+		# the mark goes out unguarded today rather than guarded by a robber stuck for ever where
+		# nobody can ever meet him. `docs/TODO.md`, "The guard robber is placed inside a
+		# building, where he is stuck for ever".
+		Telemetry.note("roll", "chalk mark unguarded: no walkable ground for the robber in %d draws"
+				% TRAP_DRAW_LIMIT)
+		return
 	Telemetry.note("roll", "chalk mark guarded: robber %.0fpx away (band %.0f-%.0f)"
-			% [distance, min_distance, max_distance])
+			% [at.distance_to(guard_at), min_distance, max_distance])
 	_guard = _city.events.spawn_extra(robbery, guard_at)
+
+## A bearing and a distance from `at`, redrawn until the point is walkable ground the day's
+## catalogue and the home-block exemption both leave alone — rejected rather than repaired, the
+## same rule every other placement in this game keeps. `docs/TODO.md`, "The guard robber is
+## placed inside a building": his lethal radius travels with him, so a bearing that lands him in
+## a building is an invisible fatal spot rather than a cosmetic one.
+##
+## **An `ALLEY` tile by preference, since the row's own placement is `ALLEY`**, but not a
+## requirement: the band this draws from can reach well past a two-tile-wide alley's own building
+## line, so an alley hit is kept the moment it is found and any other walkable, unheld, off-the-
+## home-block tile is kept as a fallback in case the budget runs out first. `Vector2.INF` when
+## `TRAP_DRAW_LIMIT` draws found neither — see the caller for what that means.
+##
+## `away_from` is set only when this guard is replacing one whose mark just moved — see
+## `_move_the_mark()`. A moved mark sits up to `NOTICE_RADIUS` (400px) from her, and a bearing
+## drawn from the full circle could land him toward her at as little as ~224px (400 − 176, the
+## band's own far edge) — on screen, appearing out of nothing. Restricted to the half-circle
+## facing away from her instead, the worst case — perpendicular to the away direction — puts him
+## at `sqrt(400² + 176²)` ≈ 437px, past the 367px half-diagonal that makes a point off screen at
+## this zoom (see `NOTICE_RADIUS`'s own doc), so he is never drawn appearing from nothing.
+func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, away_from: Vector2,
+		min_distance: float, max_distance: float) -> Vector2:
+	var fallback := Vector2.INF
+	for _attempt in TRAP_DRAW_LIMIT:
+		# Hoisted so the draw can be written down. Which distance a mark got is the one random
+		# outcome that decides a run without a route around it, and the only one whose
+		# consequence otherwise looks like bad luck with the event scheduler.
+		var distance := rng.randf_range(min_distance, max_distance)
+		var angle: float
+		if away_from == Vector2.INF:
+			angle = rng.randf() * TAU
+		else:
+			var facing_away := (at - away_from).angle()
+			angle = facing_away + rng.randf_range(-PI / 2.0, PI / 2.0)
+		var candidate := at + Vector2.RIGHT.rotated(angle) * distance
+		var tile := _map.world_to_tile(candidate)
+		if not _map.is_walkable(tile) or _map.is_closed(tile) or _map.is_held_at(tile) \
+				or _map.is_on_home_block(tile):
+			continue
+		if _map.tile_at(tile) == GameEnums.TileType.ALLEY:
+			return candidate
+		if fallback == Vector2.INF:
+			fallback = candidate
+	return fallback
 
 ## Clear of any obstruction the rider carries, in a direction the day's own RNG chose — a
 ## fixed offset rather than a re-rolled one, so a contact that has to clear a body sits at a
@@ -170,11 +220,18 @@ func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator) -> Vector2:
 
 ## A contact behind a closed street is a step the player cannot take today, and the
 ## resistance has steps that expire — so this would silently cost a run its good ending.
+##
+## **Never on the home block's own ground, either.** Playtest 11's finding — "events/hazards
+## should not spawn on the home block" — was built as one exempt street and reopened once an
+## alley through the block (now impossible, `CityGenerator._build_block`) turned out to be the
+## other half of it; `is_held_at` refuses a segment bordering the block, `is_on_home_block`
+## refuses anything inside it. See `docs/TODO.md`, "Nothing on the home block".
 func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator) -> Vector2:
 	var reachable: Array[Vector2i] = []
 	for tile in candidates:
-		if not _map.is_closed(tile):
-			reachable.append(tile)
+		if _map.is_closed(tile) or _map.is_held_at(tile) or _map.is_on_home_block(tile):
+			continue
+		reachable.append(tile)
 	if reachable.is_empty():
 		return Vector2.INF
 	return _map.tile_to_world(reachable[rng.randi_range(0, reachable.size() - 1)])
@@ -235,14 +292,17 @@ func _track_sight_and_reposition() -> void:
 		return
 	_move_the_mark(nearest, here)
 
-## The nearest `ALLEY` tile to `here` that is not closed and is walkable, within
-## `NOTICE_RADIUS` — or `Vector2.INF` if there is none. Linear over `tiles_of_type()`, which
-## is already cached; there is one active mark at a time, so this runs once a frame at most.
+## The nearest `ALLEY` tile to `here` that is not closed, is walkable, and is not held or on the
+## home block (see `_pick_reachable`'s own doc — the M78 relocation is the same placement question
+## as the initial roll, asked again), within `NOTICE_RADIUS` — or `Vector2.INF` if there is none.
+## Linear over `tiles_of_type()`, which is already cached; there is one active mark at a time, so
+## this runs once a frame at most.
 func _nearest_alley_within(here: Vector2) -> Vector2:
 	var nearest := Vector2.INF
 	var nearest_distance := NOTICE_RADIUS
 	for tile in _map.tiles_of_type(GameEnums.TileType.ALLEY):
-		if _map.is_closed(tile) or not _map.is_walkable(tile):
+		if _map.is_closed(tile) or not _map.is_walkable(tile) \
+				or _map.is_held_at(tile) or _map.is_on_home_block(tile):
 			continue
 		var world := _map.tile_to_world(tile)
 		var distance := here.distance_to(world)
