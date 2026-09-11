@@ -76,6 +76,16 @@ var field: CrowdField
 ## the way it always did. See `TrafficIndex`.
 var traffic: TrafficIndex
 
+## Today's region-door segment keys (`StreetNetwork.Segment.key()` -> `true`), held by reference
+## and rebuilt once a day by `Crowd.start_day()` from `City.region_plan().doors`. Empty for an
+## agent built by hand in a test or for a rig with no city behind it, which then treats every held
+## segment as wall the way `_cannot_go_on` already would. The one carve-out `CityMap.is_held_at`
+## does not make on its own: a wall segment and a hard seal's segment are shut outright, but a
+## door is a crossing the day's structure means to keep open — a car brakes and queues for the
+## gate (`Crowd._stop_for_gates()`) rather than being turned away at the last junction, and a
+## walker passes the hut the way she does.
+var door_segments := {}
+
 ## Somebody standing in front of this car, or `Vector2.INF` for nobody. Written once per
 ## physics frame by `Crowd` for the cars near the player and read here: an agent has no
 ## business knowing who the player is, but it does have to decide whether to stop.
@@ -202,15 +212,21 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 	# **And if the whole street is wrong, it picks another street.** Re-rolling only the position
 	# along a corridor cannot help a car that was given a corridor with nowhere drivable in view — a
 	# precinct is three blocks of an otherwise ordinary street, so the corridor keeps its car weight
-	# and the *stretch in the field* may be entirely pedestrianised. Eight position re-rolls then
-	# land among the bollards and the ninth places it there anyway: a car standing in a precinct,
-	# which `tests/test_crowd.gd` asks about by name. **A retry is not a guarantee** — when
+	# and the *stretch in the field* may be entirely pedestrianised. The position re-rolls below then
+	# land among the bollards every time and the last one places it there anyway: a car standing in a
+	# precinct, which `tests/test_crowd.gd` asks about by name. **A retry is not a guarantee** — when
 	# re-rolling the small decision keeps failing, re-take the big one.
 	for _street in 4:
 		_choose_lane(axis_roll)
 		var bounds := field.along_bounds(_vertical)
 		var placed := false
-		for _attempt in 8:
+		# **A held segment can swallow most of a corridor's visible stretch** — a region wall or a
+		# hard seal is kept off `held_segments` by the tile, not by a fraction of it, so a field
+		# centred close to one narrows the open ground a random draw can land on far more than a
+		# precinct's own bollards ever did. More draws is the same "retry is not a guarantee" trade
+		# the docstring above already makes, just carried far enough that the small decision keeps
+		# up with how much narrower "the small decision" can now be.
+		for _attempt in 24:
 			_set_along(_rng.randf_range(bounds.x, bounds.y))
 			_set_cross(_lane_centre)
 			if _stands_on_a_street():
@@ -246,6 +262,8 @@ func _stands_on_a_street() -> bool:
 	var tile := _map.world_to_tile(position)
 	if _map.is_closed(tile):
 		return false
+	if _segment_is_shut(tile):
+		return false
 	if not _map.in_bounds(tile):
 		return kind == Kind.CAR and _vertical and _corridor == _map.main_road \
 				and (tile.y < 0 or tile.y >= _map.size.y)
@@ -262,6 +280,19 @@ func _stands_on_a_street() -> bool:
 	if kind == Kind.WALKER and _map.tile_at(tile) == GameEnums.TileType.ROAD:
 		return false
 	return _map.is_street(tile)
+
+## Whether a tile's own street segment is shut to this agent the way a hard blocker is: held for
+## today (`CityMap.is_held_at` — a hard seal's segment, a region wall, a closure, or the streets
+## around the home block) and not one of today's region doors, which are meant to stay a crossing
+## anybody may still enter — a car brakes and queues for the gate rather than turning away, and a
+## walker passes the hut. `door_segments` is empty outside a real day (a hand-built test agent, a
+## rig with no city, or before the wall itself stands), which is a harmless no-op: nothing is held
+## then either.
+func _segment_is_shut(tile: Vector2i) -> bool:
+	if not _map.is_held_at(tile):
+		return false
+	var segment := StreetNetwork.segment_containing(tile)
+	return segment == null or not door_segments.has(segment.key())
 
 func _process(delta: float) -> void:
 	_clock += delta
@@ -926,6 +957,13 @@ func _blocked_ahead(vertical: bool, direction: float, distance: float) -> bool:
 ## out of bounds", because the spine is the one corridor this is true of, not every vertical one.
 func _cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	if _map.is_closed(tile):
+		return true
+	# A hard seal and a region wall stand bodies across the whole carriageway, kerb to kerb, the
+	# same way a dead end's own wall does — `_segment_is_shut` is the fact `_look_ahead` sees from
+	# `LOOKAHEAD_TILES` off, so both walkers and cars turn away at the last junction rather than
+	# walking or driving through what they cannot see through. A region door is carved out of the
+	# same check: it is a crossing the day means to keep open, not a wall with a picture on it.
+	if _segment_is_shut(tile):
 		return true
 	if not _map.in_bounds(tile):
 		var leaves_by_the_spine := kind == Kind.CAR and vertical and _corridor == _map.main_road \

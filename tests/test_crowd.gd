@@ -50,6 +50,8 @@ func run(t) -> void:
 	_test_a_precinct_stops_the_street_that_crosses_it(t)
 	_test_cars_do_not_enter_a_junction_they_cannot_leave(t)
 	_test_nothing_walks_into_a_hard_blocker(t)
+	_test_a_hard_seal_shuts_its_street_to_the_crowd(t)
+	_test_a_region_wall_is_shut_and_a_door_is_carved_out(t)
 	_test_only_cars_go_over_the_bridge(t)
 	_test_the_crowd_agrees_a_zone_absorbed_the_corridor(t)
 	_test_agents_do_not_overrun_an_ordinary_edge(t)
@@ -1272,10 +1274,138 @@ func _test_nothing_walks_into_a_hard_blocker(t) -> void:
 				inside += 1
 		frames_with_one += 1 if inside > 0 else 0
 		worst = maxi(worst, inside)
-	t.check(worst <= 1, "never more than one agent at once inside a hard blocker (worst %d)" % worst)
-	t.check(float(frames_with_one) / float(frames) < 0.05,
-			"barely anybody stands inside a hard blocker (%d frames of %d, worst %d at once)"
-			% [frames_with_one, frames, worst])
+	t.check(worst == 0, "nobody ever stands inside a hard blocker (worst %d at once)" % worst)
+	t.check(frames_with_one == 0,
+			"and it never happens on any frame (%d frames of %d it did)"
+			% [frames_with_one, frames])
+
+# --------------------------------------------------------------- M110: seals ---
+# "also I noticed that objects like fallen trees don't stop/redirect traffic or pedestrians"
+# (playtest 55, 2026-09-10). `CrowdAgent._cannot_go_on` used to know about a closure and about
+# nothing else that stands in a street, so a walker or a car passed straight through a hard seal,
+# a region wall, or a soft seal's own bodies. The three tests below are the shape
+# `_test_nothing_walks_into_a_hard_blocker` above already asks about the built-over kind, asked of
+# the day's own placed seals instead — see `docs/DECISIONS.md`, M100, "Events spawn inside a fully
+# blocked street", for `CityMap.held_segments` itself, which these read rather than duplicate.
+
+## M110, item 2: a hard seal shuts its street to the crowd the way a closure does.
+## `CityMap.held_segments` is filled directly with `hold_segment()` here rather than through the
+## whole day's pipeline, since `CrowdAgent._cannot_go_on` is what is being asked about — the wiring
+## that actually fills it from a placed hard seal is `EventManager.start_day`'s own job, covered by
+## `tests/test_events.gd`.
+func _test_a_hard_seal_shuts_its_street_to_the_crowd(t) -> void:
+	var segment: StreetNetwork.Segment = null
+	for candidate in StreetNetwork.segments():
+		if _city.map.has_street(candidate.key()):
+			segment = candidate
+			break
+	t.check(segment != null, "this city has an ordinary street to seal")
+	if not segment:
+		return
+
+	_city.map.clear_day_holds()
+	_city.map.hold_segment(segment.key())
+	var rect := segment.tile_rect()
+	var at := _city.map.tile_rect_to_world(rect).get_center()
+	_city.crowd.start_day(1, _rng(1), at)
+
+	var frames_inside := 0
+	for frame in int(round(20.0 / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		for agent in _city.crowd.agents():
+			if rect.has_point(_city.map.world_to_tile(agent.position)):
+				frames_inside += 1
+	t.check(frames_inside == 0,
+			"nobody ever stands on a hard-sealed segment's own ground, and it carries no through "
+			+ "traffic (%d frames it did)" % frames_inside)
+
+	_city.map.clear_day_holds()
+
+## M110, item 1: a region wall is shut to the crowd the way a hard seal is, and a region door is
+## carved out of the same check — a car still brakes and queues for the gate
+## (`Crowd._stop_for_gates()`, built for M62) and a walker still passes the hut, rather than either
+## turning away at the last junction. Driven off a real day (`City.start_day` then
+## `EventManager.start_day`), the only way to get an actual `RegionPlanner.RegionPlan` with real
+## wall and door segments on it, over however many sampled days it takes this seed's tree to cross
+## its own boundary at least once.
+func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
+	var map := CityGenerator.generate(SEED)
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(map)
+
+	var wall_segment: StreetNetwork.Segment = null
+	var door_segment: StreetNetwork.Segment = null
+	var used_day := -1
+	for day in range(Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
+		var state := CityState.new()
+		state.begin_day(map.block_plans, day)
+		var closures_rng := RandomNumberGenerator.new()
+		closures_rng.seed = hash("crowd-wall-closures:%d:%d" % [SEED, day])
+		city.start_day(state, day, closures_rng)
+		var events_rng := RandomNumberGenerator.new()
+		events_rng.seed = hash("crowd-wall-events:%d:%d" % [SEED, day])
+		var consumed: Array[String] = []
+		city.events.start_day(day, events_rng, consumed)
+		var plan := city.region_plan()
+		if not plan.walls.is_empty() and not plan.doors.is_empty():
+			wall_segment = plan.walls[0]
+			door_segment = plan.doors[0]
+			used_day = day
+			break
+	t.check(wall_segment != null and door_segment != null,
+			"at least one sampled day carries both a wall segment and a door segment")
+	if not wall_segment or not door_segment:
+		city.free()
+		return
+
+	var wall_rect := wall_segment.tile_rect()
+	# Focused on the wall's own mouth — where its bodies actually stand, one tile deep — rather
+	# than the middle of the whole segment: a field centred on the full length of a long held
+	# segment can leave a corridor with almost no open ground anywhere in view, which is a field
+	# placement nothing in `setup()`'s own retry budget promises to solve and not the property this
+	# test is about. `_test_nothing_walks_into_a_hard_blocker` above stands at a dead end's own
+	# (much shorter) rect for the same reason and the same way.
+	var default_at_a := RegionPlanner.region_of_junction(map, wall_segment.a) \
+			< RegionPlanner.region_of_junction(map, wall_segment.b)
+	var at_a: bool = map.boundary_wall_at_a.get(wall_segment.key(), default_at_a)
+	var mouth := wall_segment.mouth_rect(at_a)
+	var at := map.tile_rect_to_world(mouth).get_center()
+	city.crowd.start_day(used_day, _rng(used_day), at)
+	city.crowd.set_gates(city.region_plan().gates)
+
+	var frames_inside := 0
+	for frame in int(round(20.0 / STEP)):
+		city.crowd.set_focus(at)
+		city.crowd.step(STEP)
+		for agent in city.crowd.agents():
+			if wall_rect.has_point(map.world_to_tile(agent.position)):
+				frames_inside += 1
+	t.check(frames_inside == 0,
+			"nobody ever stands on today's region wall (%d frames it did)" % frames_inside)
+
+	# The door carve-out, checked directly against the predicate rather than by waiting for a
+	# random walker or car to wander onto the exact tile inside a short simulated window — the
+	# question is whether `_cannot_go_on` refuses the door, not whether the day's population
+	# happens to visit it.
+	var door_tile := door_segment.tile_rect().get_center()
+	var vertical := not door_segment.horizontal
+	var walker := CrowdAgent.new()
+	walker.kind = CrowdAgent.Kind.WALKER
+	walker._map = map
+	walker.door_segments = {door_segment.key(): true}
+	var car := CrowdAgent.new()
+	car.kind = CrowdAgent.Kind.CAR
+	car._map = map
+	car.door_segments = {door_segment.key(): true}
+	t.check(not walker._cannot_go_on(vertical, door_tile),
+			"a walker is not turned away from today's region door")
+	t.check(not car._cannot_go_on(vertical, door_tile),
+			"and neither is a car — it brakes and queues for the gate instead of diverting")
+	walker.free()
+	car.free()
+	city.free()
 
 ## M53: **the overrun permission was narrowed to a car on the spine, and the lane was not** — the
 ## entry-side fallback (`CrowdAgent._keep_within_the_room_beyond_the_map`) used to hand every kind
