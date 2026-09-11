@@ -331,10 +331,14 @@ A car is not an event: it has no telegraph, it is not in the catalogue, and
 The horn also raises the **exclamation mark over the player**, the load-bearing cue of the visual
 vocabulary. See docs/EVENTS.md.
 
-Belt and braces: the strike box is geometrically incapable of reaching over the kerb. A car
-sits half a tile off the middle of the carriageway, so its far edge is `16 + 14 = 30 px` out
-and the kerb is at `32`. `tests/test_crowd.gd` asserts it, because a box that reached the
+Belt and braces: a car in its lane has a strike box geometrically incapable of reaching over the
+kerb. A car sits half a tile off the middle of the carriageway, so its far edge is `16 + 14 = 30 px`
+out and the kerb is at `32`. `tests/test_crowd.gd` asserts it, because a box that reached the
 pavement would kill people who never stepped off it and would look exactly like a fair death.
+
+**The one manoeuvre that puts a car's body over a kerb is an about-face in a street**, and it cannot
+kill anybody standing there: a strike only counts while she is on a road tile, which is the same
+kerb read from her side. See "How a car turns".
 
 ### The zebra is a negotiation
 
@@ -371,6 +375,45 @@ Why it matters more than tidiness: the painted carriageway is one of the two thi
 for a telegraph in the traffic fairness contract. A car halted on the zebra cannot hurt anybody
 — it is under `CAR_STRIKE_MIN_SPEED` — but it is *unreadable* scenery parked on the one place
 the game has told the player is the safe way across.
+
+### How a car turns
+
+**A turn is a path a car follows, not a swap of its axis and its lane.** It plans one arc before it
+starts, drives its own lane up to where the arc begins, and then follows the curve frame by frame —
+so its position and its heading are continuous the whole way round, and it lands on the centre line
+of the lane it was turning into rather than steering across to it afterwards.
+
+**The radius is the city's geometry rather than a dial.** An arc tangent to both lanes has one free
+parameter, and fixing it by where the arc *starts* is what makes a turn sit inside the junction it
+is taken at: a lane centre is 16px from its own kerb and the two lanes of a carriageway are 32px
+apart, so the near-side arm is a 16px radius, the far-side arm 48px, and an about-face 16px with no
+choice in it at all. `Tuning.CAR_TURN_SPEED` (60px/s) is the speed the arc is taken at — 0.42s in
+the tightest quarter turn, where the 130px/s cruise would be through it in 0.19s — and the approach
+eases toward it from the moment the car knows it is turning.
+
+**A car's back swings to the outside of its turn**, which is why the two arms start in different
+places. Turning toward its own kerb, the tail swings into the far lane, which is road; turning away
+from it, the tail swings over the pavement of the street it is still leaving, so that arm does not
+begin until the tail is past the kerb — a body's half length into the junction.
+
+**Nothing is committed to before it has been checked.** The strike box swept along the curve is the
+footprint, and it is validated against the pavement, closures, seals, walls, precinct paving and the
+edge of the map; the lane the car lands in must have a car's length free, and that place is *held*
+for every frame of the manoeuvre so nothing else turns or recycles into it; and there must be road
+past the end of the arc for the car to leave by. A turn that fails any of those is not taken, and
+the separation pass is never asked to repair one — `Crowd.space_out_the_traffic()` refuses to slide
+a car that is on an arc.
+
+**What a car does when nothing fits is brake.** It aims to stop a half turn's worth of road short of
+whatever is in the way, which is what leaves it somewhere it can still turn round.
+
+Three places a turn can happen, in order of preference: the arm the car picked, the other arm, an
+about-face in the middle of the junction box, and — only when a barrier leaves it no junction to
+reach — an about-face in the street. **That last one is the one manoeuvre whose swept body crosses a
+kerb**, by 8px, and it is a fact about the city rather than a concession: a half turn between two
+lanes 32px apart is a 16px arc, and a car's corners then reach 40px from the centre of it. The
+alternative manoeuvre is a three-point turn, and the traffic has no reverse gear. Every hard blocker
+is still refused, so a car turning round in a dead end never touches what it stopped for.
 
 ### Which side of the road
 

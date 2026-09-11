@@ -153,6 +153,18 @@ var _lane_centre := 0.0
 ## The junction the agent is currently inside, so a turn is rolled once per junction and
 ## not once per frame for as long as it takes to cross one.
 var _junction := -1
+
+## The turn this car has committed to, or null. Cars only; a walker still swaps its axis where it
+## stands, because a person turning a corner *is* a body that can change direction in a stride and
+## has no lane, no queue and no length to swing round. See `CarTurn`.
+##
+## Committed to before the arc begins rather than when it does: the whole of it — the ground it
+## sweeps and the room in the lane it lands in — is checked once, up front, and nothing revisits the
+## decision afterwards. A turn that cannot be made is never started.
+var _turn: CarTurn = null
+## How much straight lane is left before the arc begins, in px. The car drives its own lane for
+## this much and then curves, so the approach is ordinary travel with every ordinary rule on it.
+var _turn_run_up := 0.0
 ## The frame and flip currently drawn, so a redraw only happens when they change.
 var _picture := Vector2i(-1, -1)
 ## Whether this car's own caret was up last frame, so it gets one redraw to come off with.
@@ -322,6 +334,15 @@ func _process(delta: float) -> void:
 	_yield_left = maxf(0.0, _yield_left - delta)
 	if kind == Kind.CAR:
 		_give_way(delta)
+		# A car in a turn is following a path that was checked before it started, so none of the
+		# lane steering, lookahead or diverting below applies to it: the only thing left to decide
+		# is how far along the curve it has come. It is not recycled mid-turn either — a recycle is
+		# a teleport, and half a turn is the one place in a car's life where that would be seen.
+		if _turn:
+			_follow_the_turn(delta)
+			_claim_the_turn()
+			_redraw_if_the_picture_changed()
+			return
 	_set_along(_along() + _speed * _yield_factor() * _direction * delta)
 	_set_cross(move_toward(_cross(), _lane_centre + _detour, STEER_SPEED * delta))
 	if kind == Kind.WALKER:
@@ -333,9 +354,14 @@ func _process(delta: float) -> void:
 	if _has_left_the_field():
 		_recycle()
 		recycled = true
-	# Moving a Node2D does not invalidate its draw list — the transform is applied when it
-	# is replayed — so an agent only redraws when its picture actually changes. At this
-	# population that is the difference between five hundred redraws a frame and a handful.
+	_redraw_if_the_picture_changed()
+
+## Asks for a redraw when what this agent is showing has actually changed.
+##
+## Moving a Node2D does not invalidate its draw list — the transform is applied when it is
+## replayed — so an agent only redraws when its picture actually changes. At this population that
+## is the difference between five hundred redraws a frame and a handful.
+func _redraw_if_the_picture_changed() -> void:
 	var picture := Vector2i(_frame(), 1 if _flipped() else 0)
 	if picture != _picture:
 		_picture = picture
@@ -530,7 +556,15 @@ func velocity() -> Vector2:
 
 ## True while travelling along a vertical corridor. What decides whether two cars at the same
 ## junction are crossing each other's path or merely queueing behind one another.
+##
+## **Read off the heading rather than off the lane while a car is in a turn**, because mid-turn
+## there is no lane to read and the question is about the path: a car that has swung past the
+## diagonal is across the traffic it used to be queueing with. It ties to the axis it came in on,
+## which is the half of the turn it has not yet finished.
 func travelling_vertically() -> bool:
+	if _turn and _turn_run_up <= 0.0:
+		var forward := heading()
+		return absf(forward.y) >= absf(forward.x)
 	return _vertical
 
 # -------------------------------------------------------------- junctions ---
@@ -582,9 +616,20 @@ func _junction_index() -> int:
 		index += 1
 	return index
 
-## Which way it is pointing, in world space.
+## Which way it is pointing, in world space: a unit vector along its actual line of travel,
+## **continuous through a turn**.
+##
+## Cardinal while an agent is following a lane, and the tangent of its own arc while a car is in a
+## turn — so it sweeps through the diagonals over the length of the manoeuvre rather than switching
+## from one axis to the other between two frames. Everything that asks which way a car is pointing
+## goes through this one answer: the lethal strike box and the horn (`Crowd._strike`, `Crowd._horn`),
+## right of way at a box, the gate's own along/across projection, the shadow and the picture. A turn
+## that changed the axis without changing this would point every one of them at a car that is not
+## there.
 func heading() -> Vector2:
-	return (Vector2(0.0, _direction) if _vertical else Vector2(_direction, 0.0)).normalized()
+	if _turn and _turn_run_up <= 0.0:
+		return _turn.heading_at(_turn.travelled)
+	return Vector2(0.0, _direction) if _vertical else Vector2(_direction, 0.0)
 
 ## Everything about where this agent is travelling that decides whether another agent is *in
 ## front of it* — the axis, the corridor, the lane and the way it is pointing. Two agents share
@@ -615,6 +660,12 @@ func queue_position() -> float:
 ## into blocked ground is simply refused, which leaves that one pair a little closer than
 ## `Tuning.CAR_GAP_MIN` for a frame rather than parking either of them in a wall.
 func nudge_back(distance: float) -> void:
+	# **Never a car in a turn.** Sliding one back down its entry lane takes it off the arc it is
+	# following, which is the separation pass repairing a manoeuvre — and a manoeuvre that needs
+	# repairing is one that should not have been started. The room a turn lands in is checked and
+	# held before the car commits; whoever ended up too close to it is nudged instead.
+	if _turn:
+		return
 	var target := _along() - distance * _direction
 	var probe := Vector2(_cross(), target) if _vertical else Vector2(target, _cross())
 	if _cannot_go_on(_vertical, _map.world_to_tile(probe)):
@@ -759,6 +810,9 @@ func _choose_lane(roll: float) -> void:
 	_cruise = _speed
 	_lane_centre = _lane_centre_here()
 	_junction = -1
+	# A planned turn is about a junction on a corridor this agent is no longer on.
+	_turn = null
+	_turn_run_up = 0.0
 	_forget_the_detour()
 
 ## Where this agent travels in its lane. A car sits on the tile centre; a walker is pushed toward
@@ -811,6 +865,20 @@ func _give_way(delta: float) -> void:
 		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * junction_hold))
 	if gate_hold < INF:
 		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * gate_hold))
+	# A turn it has committed to: ease toward the speed the arc is taken at over whatever run-up is
+	# left, and hold that speed for the whole curve. When the junction came into sight too late for
+	# the easing to finish — which the lookahead makes the ordinary case rather than the unlucky one
+	# — the car is still braking as it turns, which is what a driver who took a corner a little fast
+	# does. See `Tuning.CAR_TURN_SPEED`.
+	if _turn:
+		wanted = minf(wanted, sqrt(Tuning.CAR_TURN_SPEED * Tuning.CAR_TURN_SPEED
+				+ 2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * _turn_run_up))
+	# And the wall itself, for the car that has no manoeuvre that fits. Nothing used to brake for a
+	# blockage at all, because reversing on the spot was always available; refusing that has to leave
+	# the car somewhere it could have stopped.
+	var blockage := _room_to_stop_in()
+	if blockage < INF:
+		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * blockage))
 	var to_line := _distance_to_stop_line()
 	if to_line < INF:
 		# The speed that runs out exactly at the line at the *approach* rate. **Braking toward a
@@ -870,6 +938,13 @@ func _following_speed() -> float:
 ## and a signal is decoration on top of a courtesy that was already enough.
 func _crossing_ahead_somebody_is_waiting_at() -> float:
 	if pedestrian_ahead == Vector2.INF:
+		return INF
+	# **A car mid-turn is inside the box and has nothing to give way at.** The scan below walks
+	# tiles down one axis from the car's own tile, which is a question about a lane the car is not
+	# in while it is on an arc — and stopping there would be stopping in the junction, which is the
+	# one thing the box rules exist to prevent. The zebras a turn crosses are at the box's own edges
+	# and the car gave way at them, or committed, on the way in.
+	if _turn and _turn_run_up <= 0.0:
 		return INF
 	if _map.street_kind_at(_vertical, _map.world_to_tile(global_position)) \
 			== GameEnums.StreetKind.MAIN:
@@ -970,10 +1045,12 @@ func _consider_turning() -> void:
 ## to watch is the pavement she is walking towards near an edge**: a body that turns round at the
 ## boundary instead of recycling is one fewer arriving from that side, and whether the edge
 ## streets read thinner for it is a played question rather than a tested one.
-func _blocked_ahead(vertical: bool, direction: float, distance: float) -> bool:
+func _blocked_ahead(vertical: bool, direction: float, distance: float,
+		from := Vector2.INF) -> bool:
+	var origin := position if from == Vector2.INF else from
 	var offset := Vector2(0.0, direction * distance) if vertical \
 			else Vector2(direction * distance, 0.0)
-	return _cannot_go_on(vertical, _map.world_to_tile(position + offset))
+	return _cannot_go_on(vertical, _map.world_to_tile(origin + offset))
 
 ## Whether a *tile* is somewhere this agent may be. The predicate under both of the questions
 ## below, so "the way is shut" means one thing however it is asked.
@@ -1044,7 +1121,15 @@ func _look_ahead() -> void:
 ## Turning here rather than only in `_consider_turning` is why cars divert too. A car that
 ## carried on would drive through the barrier, and a car that vanished at the junction would
 ## be worse: at this population something popping out of existence is very visible.
+##
+## **A walker turns where it stands and a car plans a curve** — see `_plan_a_turn`. The rest of this
+## function is the walker's own version: a person changes direction in a stride, has no lane to be
+## on the correct side of and no length to swing round, so there is nothing for a path to be
+## continuous about.
 func _divert() -> void:
+	if kind == Kind.CAR:
+		_plan_a_turn()
+		return
 	var crossing := CrowdLanes.corridor_at(_along())
 	if crossing < 0:
 		# Still in the street, a junction short of where it can turn. Carry on — unless it is
@@ -1115,7 +1200,12 @@ func _turn_round() -> void:
 ## Preferring rather than requiring, because a car that refuses to turn drives into the barrier it
 ## was avoiding. When both arms are full it takes the first one anyway and the resolve does what it
 ## can — which makes the jump the rare case instead of the usual one.
-func _pick_an_arm(crossing: int, first: float) -> float:
+##
+## `from` is where the two probes are fired from, and it matters because a car asks this question
+## **before** it reaches the junction rather than from inside it: fired from where the car happens
+## to be standing, a probe across the axis lands in the block beside it and reports both arms shut.
+## It defaults to the agent's own position, which is where a walker asks from.
+func _pick_an_arm(crossing: int, first: float, from := Vector2.INF) -> float:
 	# A precinct is not an arm a car has. Neither of the two questions below would catch it: it is
 	# paved end to end, so the tile map says it is a street, and there is never a car in it to
 	# leave no room. A car with nowhere else to go turns round instead, which is what a driver
@@ -1125,7 +1215,7 @@ func _pick_an_arm(crossing: int, first: float) -> float:
 		return 0.0
 	var open: Array[float] = []
 	for turning in [first, -first]:
-		if not _blocked_ahead(not _vertical, turning, LOOKAHEAD):
+		if not _blocked_ahead(not _vertical, turning, LOOKAHEAD, from):
 			open.append(turning)
 	if open.is_empty():
 		return 0.0
@@ -1152,15 +1242,362 @@ func _has_room_to_turn(crossing: int, turning: float) -> bool:
 ## Whether the agent is far enough into a junction to turn without landing on the wrong surface.
 ##
 ## A turn makes the *along* coordinate the new *across* one, and the new across coordinate is
-## the lane the agent then has to steer away from. So a car turns while it is on the junction's
-## carriageway band and a walker while it is on one of its pavement bands, and each ends the
-## turn a few pixels from a lane it is allowed to be in rather than two tiles from one. Every
-## agent crosses both bands on its way through a junction, so waiting costs at most a tile.
+## the lane the agent then has to steer away from. So a walker turns while it is on one of the
+## junction's pavement bands and ends the turn a few pixels from a lane it is allowed to be in
+## rather than two tiles from one. Every walker crosses both bands on its way through a junction, so
+## waiting costs at most a tile. **Walkers only now** — a car's turn is a planned arc that lands on
+## its exit lane exactly, so where it may start from is the arc's own geometry rather than a band.
 func _can_turn_here() -> bool:
 	var offset := CityMap.corridor_offset(floori(_along() / float(Tuning.TILE_SIZE)))
 	if offset < 0:
 		return false
 	return CityMap.is_road_offset(offset) == (kind == Kind.CAR)
+
+# ------------------------------------------------------------- car turns ---
+# **A turn is a path a car has to be able to take, and both halves of that were missing.** It used
+# to swap the axis and the lane in the frame it happened: the car was carried sideways across the
+# carriageway by its own steering afterwards, and on the frame itself its heading jumped a right
+# angle — or, turning round, a straight reversal — so the strike box, the horn and the picture all
+# pointed somewhere the car had never been going. *(Playtest 53: "when a car turns or turns around
+# it should make a proper turn".)*
+#
+# So a car now plans the whole manoeuvre before it starts it. `CarTurn` is the curve; everything
+# here is the *deciding*: where the arc goes, whether the ground it sweeps is road the car may be
+# on, whether the lane it lands in has room, and what it does when the answer is no.
+#
+# **What it does when the answer is no is stop.** A car that cannot fit a turn does not take a
+# smaller one and does not fall back on the separation pass to repair it — it brakes for the
+# blockage and stands there. See `_distance_to_the_blockage`.
+
+## A car plans its way round the blockage ahead and commits to the whole of it before it moves.
+##
+## Called instead of the walker's `_divert` body, and it takes the same two decisions in the same
+## order: which arm of the junction (`_pick_an_arm`, unchanged, with the probes fired from the
+## junction rather than from wherever the car is standing) and, when neither arm is open, the way it
+## came. What is new is that each of those is now a *curve* that has to fit, so the order below is
+## the order of preference among places to turn rather than a single answer:
+##
+## 1. **The arm it picked**, as a quarter turn taken from the junction's own carriageway entry.
+## 2. **The other arm**, which is a wider arc — the far-side lane is three times the radius away —
+##    and so fits in some junctions where the near one does not.
+## 3. **An about-face in the middle of the junction box**, where the crossing street's own
+##    carriageway is the room a half turn needs.
+## 4. **An about-face in the street**, short of whatever is blocking it. This is the one manoeuvre
+##    in the game whose swept body crosses a kerb, and it is a fact about the city rather than a
+##    concession: the two lanes of a carriageway are 32px apart, so a half turn between them is a
+##    16px arc and a car's own corners then reach 40px from the centre of it — 8px past a kerb that
+##    is 32px away. There is no rounder way to do it, the alternative manoeuvre is a three-point
+##    turn the traffic has no reverse gear for, and refusing it outright parks a third of the
+##    traffic: measured over ninety seconds, stopped cars at the end went 10 → 33 of 34, because one
+##    car nose-to-wall in a dead end takes its whole street with it. Nothing else is relaxed — the
+##    wall, the closure, the seal and the building are all still refused.
+func _plan_a_turn() -> void:
+	if _turn:
+		return
+	# Standing on ground it may not be on at all, which is a day that started behind a barrier. There
+	# is no legal space to sweep and nothing to be gained by waiting for some, so the about-face on
+	# the spot stays exactly what it was: the way out of a state that is already illegal.
+	if not _stands_on_a_street():
+		_turn_round()
+		return
+	var band := _junction_index()
+	if band < 0:
+		return
+	var box := junction_ahead()
+	var probe := CarTurn.world(_vertical, CarTurn.carriageway_centre(band), _cross())
+	var first := 1.0 if _rng.randf() < 0.5 else -1.0
+	var turning := _pick_an_arm(band, first, probe)
+	if turning != 0.0:
+		if _commit_to_a_turn(_arm_turn(band, turning, box)):
+			return
+		var other := _pick_an_arm(band, -turning, probe)
+		if other != 0.0 and other != turning and _commit_to_a_turn(_arm_turn(band, other, box)):
+			return
+	if _commit_to_a_turn(_about_face_at(CarTurn.carriageway_centre(band), box)):
+		return
+	var blockage := _distance_to_the_blockage()
+	if blockage == INF:
+		return
+	if _commit_to_a_turn(_about_face_at(_along() + (blockage - CarTurn.about_face_reach())
+			* _direction, Vector2i(-1, -1)), true):
+		return
+	# **Nothing fits, and the car has run out of road to find something that does.** A car still
+	# rolling keeps asking, since a few pixels further on the answer changes; one that has come to
+	# rest with less than a half turn's room in front of it has no manoeuvre left at all — it is
+	# parked closer to the barrier than any curve needs, which is a state the model does not cover
+	# and only a placement or a barrier that arrived after it did can produce. The alternative to
+	# reversing its heading where it stands is a car that never moves again, and a car that never
+	# moves again holds the junction box it is standing in and takes the whole street behind it: 33
+	# of 34 cars at a standstill in ninety seconds, measured. Reverse gear is the manoeuvre this
+	# wants and the traffic has none.
+	if _speed < Tuning.CAR_STOPPED_SPEED and _room_to_stop_in() < _nose():
+		_turn_round()
+
+## The half turn back down the other lane, taken at a given point along this corridor.
+func _about_face_at(at_along: float, box: Vector2i) -> CarTurn:
+	return CarTurn.about_face(_vertical, _direction, _corridor, _lane, _cross(), at_along,
+			CrowdLanes.road_lane(_vertical, -_direction), box)
+
+## The arc into one arm of the junction ahead. The lane it lands in is the one on its own right for
+## the way it will then be pointing, which is the **new** axis's answer — driving on the right flips
+## with the axis, exactly as it did when this was a lane swap.
+func _arm_turn(band: int, turning: float, box: Vector2i) -> CarTurn:
+	return CarTurn.into_an_arm(_vertical, _direction, _corridor, _cross(), band,
+			CrowdLanes.road_lane(not _vertical, turning), turning, box)
+
+## Takes a planned turn if it fits, and says whether it did.
+##
+## Three things have to be true, and none of them is revisited afterwards: there is a straight
+## run-up to the arc rather than the arc starting behind the car, the ground the body sweeps is road
+## it may drive on, and the lane it lands in has a car's length free. The room is then *held* for
+## every frame of the manoeuvre, run-up included, so nothing else turns or recycles into the piece of
+## road this car is already committed to.
+func _commit_to_a_turn(turn: CarTurn, over_the_kerb := false) -> bool:
+	var run_up := (turn.entry_along - _along()) * _direction
+	# Further off than the car watches a junction from is further off than it can know the road is
+	# still going to be clear when it gets there.
+	if run_up > Tuning.CAR_JUNCTION_SIGHT:
+		return false
+	# **The run-up is driving, and it has to be legal driving.** Only the arc's own ground is swept
+	# and checked; the straight before it is ordinary lane travel, so what says whether it is clear
+	# is the lookahead. Without this a car blocked in mid-street plans for the junction *beyond* the
+	# barrier — `_junction_index()` names the one it is heading for — and drives through the barrier
+	# to reach it.
+	if run_up > _distance_to_the_blockage():
+		return false
+	if run_up < 0.0:
+		# Past the entry the geometry would have chosen — a car that only found out it was turning
+		# once it was already in the box. What is left of the junction is a tighter arc, and one
+		# tighter than `Tuning.CAR_TURN_RADIUS_MIN` is refused rather than squeezed.
+		if not turn.tighten_to(_along(), _cross()):
+			return false
+		run_up = 0.0
+	if not _the_ground_a_turn_sweeps_is_clear(turn, over_the_kerb):
+		return false
+	if not _the_exit_has_room_to_leave(turn):
+		return false
+	if not _has_room_to_land(turn):
+		return false
+	_turn = turn
+	_turn_run_up = run_up
+	_claim_the_turn()
+	return true
+
+## Moves this car along its own planned turn: the straight run-up first, then the arc.
+##
+## **The frame that changes over from one to the other splits its travel between them**, so the car
+## covers exactly `speed × delta` on it like every other frame and starts curving from the entry
+## point rather than from wherever the last straight step happened to leave it. The same split
+## happens at the far end, where what is left over is spent going straight down the new lane.
+func _follow_the_turn(delta: float) -> void:
+	var travel := _speed * delta
+	if _turn_run_up > 0.0:
+		var straight := minf(travel, _turn_run_up)
+		_set_along(_along() + straight * _direction)
+		_set_cross(move_toward(_cross(), _lane_centre, STEER_SPEED * delta))
+		_turn_run_up -= straight
+		travel -= straight
+		if _turn_run_up > 0.0:
+			return
+		# The arc is put on the car rather than the car on the arc: whatever fraction of a pixel it
+		# is off its own lane centre is where the curve begins. A quarter turn still lands on its
+		# exit lane exactly — see `CarTurn.begin_at`.
+		_turn.begin_at(_cross())
+	_turn.travelled += travel
+	if _turn.travelled < _turn.length():
+		position = _turn.point_at(_turn.travelled)
+		return
+	var overshoot := _turn.travelled - _turn.length()
+	_land_the_turn()
+	_set_along(_along() + overshoot * _direction)
+
+## The end of a turn: the car takes up the axis, corridor, lane and direction it turned into.
+##
+## It is standing on the exit lane's own centre line, pointing along it, because that is where the
+## arc ends — so there is nothing to steer back to and nothing that has to be spaced out. The
+## lookahead is thrown away, since it is a cached answer about an axis this car no longer has.
+func _land_the_turn() -> void:
+	position = _turn.point_at(_turn.length())
+	_vertical = _turn.exit_vertical
+	_corridor = _turn.exit_corridor
+	_lane = _turn.exit_lane
+	_direction = _turn.exit_direction
+	_junction = _turn.entry_corridor
+	_turn = null
+	_turn_run_up = 0.0
+	_lane_centre = _lane_centre_here()
+	_forget_the_detour()
+	_scan_at = Vector2i(-9999, -9999)
+	_claim_the_road_here()
+
+## Whether every tile the car's own body passes over during the arc is road it may drive on.
+##
+## **The strike box is the datum** — the 52×28px rectangle that makes a car lethal — swept along the
+## curve and sampled at its own corners and the points between them. It is deliberately the same
+## rectangle the game already tells the player is the dangerous part of a car, rather than a second
+## footprint nobody can see.
+##
+## What it adds to `_cannot_go_on` is the **kerb**. Going straight, a car is kept off the pavement by
+## lane arithmetic and `_cannot_go_on` never had to say so — a sidewalk tile is a perfectly good
+## street. A curve has no lane to be in the middle of, so the pavement has to be refused explicitly
+## or the first tight turn puts a car's back wheels through a bus queue.
+##
+## `over_the_kerb` is the one exemption, and it is only ever granted to the about-face of last
+## resort: see `_plan_a_turn` for why a half turn between two lanes of one carriageway cannot be
+## contained by it. Everything a car may not *be* on — a wall, a closure, a seal, a precinct's
+## paving, the ground outside the map — is refused either way.
+func _the_ground_a_turn_sweeps_is_clear(turn: CarTurn, over_the_kerb: bool) -> bool:
+	var seen := {}
+	var length := turn.length()
+	var steps := maxi(1, ceili(length / TURN_SWEEP_STEP))
+	for i in steps + 1:
+		var at := length * float(i) / float(steps)
+		var centre := turn.point_at(at)
+		var forward := turn.heading_at(at)
+		var side := Vector2(-forward.y, forward.x)
+		for a in TURN_BODY_SAMPLES.x:
+			var along := lerpf(-1.0, 1.0, float(a) / float(TURN_BODY_SAMPLES.x - 1))
+			for b in TURN_BODY_SAMPLES.y:
+				var across := lerpf(-1.0, 1.0, float(b) / float(TURN_BODY_SAMPLES.y - 1))
+				var tile := _map.world_to_tile(centre
+						+ forward * (along * Tuning.CAR_STRIKE_HALF_LENGTH)
+						+ side * (across * Tuning.CAR_STRIKE_HALF_WIDTH))
+				if seen.has(tile):
+					continue
+				seen[tile] = true
+				if _cannot_drive_over(tile, over_the_kerb):
+					return false
+	return true
+
+## How finely the swept body is sampled: a pose every `TURN_SWEEP_STEP` px of arc, and the strike
+## box itself on a grid that includes its own four corners.
+##
+## Four pixels is a seventh of the tightest arc's own quarter turn, which is fine enough that the
+## body cannot pass a whole tile between two poses. It is not free — a rejected turn is a hundred-odd
+## tile questions — but a turn is a thing a car does a few times a minute, not a thing it does every
+## frame, and the tiles are deduplicated because consecutive samples mostly land on the same one.
+const TURN_SWEEP_STEP := 4.0
+const TURN_BODY_SAMPLES := Vector2i(5, 3)
+
+## Whether a tile is carriageway this car may sweep over: open today, in bounds, not a precinct's
+## paving, and road rather than pavement. See `_the_ground_a_turn_sweeps_is_clear` for why the last
+## one is asked here and nowhere else.
+func _cannot_drive_over(tile: Vector2i, over_the_kerb: bool) -> bool:
+	if _cannot_go_on(_vertical, tile):
+		return true
+	return not over_the_kerb and not Tile.is_road(_map.tile_at(tile))
+
+## Whether there is enough road past the end of the arc for the car to have got itself out of the
+## turn — *nothing enters a junction it cannot leave*, asked of the street it is leaving into.
+##
+## **The arm a car picks is probed with a single point seven tiles out, and a single probe looks
+## straight past a two-tile plug** — the same aliasing `_look_ahead` walks tiles to avoid. That was
+## harmless while a car could reverse its heading wherever it stood: it turned into the cul-de-sac,
+## met the plug and flipped. It is not harmless now, because a car that lands nose-to-wall has no
+## room left to swing round in and stands there for the rest of the day, holding the junction it
+## came through shut and taking the whole street behind it with it — measured, that one hole put
+## 33 of 34 cars at a standstill inside ninety seconds.
+##
+## Stated over the room a *turnaround* needs rather than over some tile count: a car that can still
+## turn round is never stuck, whatever it finds later.
+func _the_exit_has_room_to_leave(turn: CarTurn) -> bool:
+	var end := turn.point_at(turn.length())
+	var forward := turn.heading_at(turn.length())
+	var step := Vector2i(roundi(forward.x), roundi(forward.y))
+	var needed := ceili((CarTurn.about_face_reach() + _nose()) / float(Tuning.TILE_SIZE))
+	var here := _map.world_to_tile(end)
+	for i in range(1, needed + 1):
+		if _cannot_drive_over(here + step * i, false):
+			return false
+	return true
+
+## Whether the lane a planned turn lands in has a car's length of road to spare where it lands.
+##
+## The landing is the arc's own end point rather than the approximation `_has_room_to_turn` makes
+## for the *preference* between two arms — those are the same question asked for different purposes,
+## one to choose between arms and this one to refuse a turn outright, and this one knows exactly
+## where the car will be standing.
+func _has_room_to_land(turn: CarTurn) -> bool:
+	if not traffic:
+		return true
+	return traffic.room_at(make_lane_key(turn.exit_vertical, turn.exit_corridor, turn.exit_lane,
+			turn.exit_direction), turn.landing(), Tuning.CAR_GAP_MIN)
+
+## Holds the piece of road a committed turn is going to land on, once a frame for as long as the
+## manoeuvre lasts.
+##
+## **Two cars can commit to the same piece of road in one frame** — the index they both read is
+## rebuilt once a frame and predates both of them — which is the same hole `TrafficIndex.claim()`
+## closes for recycling, and a turn is the case where it is worst: the reservation has to outlive
+## the whole manoeuvre rather than one frame, because the car is not in that lane yet and nothing
+## else would put it in the index. Re-made every frame, since every rebuild throws it away.
+func _claim_the_turn() -> void:
+	if not traffic or not _turn:
+		return
+	traffic.claim(turn_lane_key(), _turn.landing())
+
+## True while this car is following a planned turn, run-up included. What tells `Crowd` to hold the
+## junction box shut on both axes until the car is out of it.
+func is_turning() -> bool:
+	return _turn != null
+
+## The junction box a turning car is claiming, or `(-1, -1)`.
+##
+## **Only once the arc has actually begun**, never during the run-up: a car that has committed to a
+## turn from a junction's sight distance away is still queueing for the box like anybody else, and
+## holding it shut for the length of its approach would empty the crossing street for a second and a
+## half. What it claims is the box it is *in*.
+func turning_in() -> Vector2i:
+	return _turn.junction if _turn and _turn_run_up <= 0.0 else Vector2i(-1, -1)
+
+## The lane a turning car has reserved a place in, and where in it — `Crowd` puts the pair into the
+## index it rebuilds, so the reservation is visible to every car for the whole frame rather than
+## only to the ones that happen to look after this one has moved.
+func turn_lane_key() -> String:
+	if not _turn:
+		return ""
+	return make_lane_key(_turn.exit_vertical, _turn.exit_corridor, _turn.exit_lane,
+			_turn.exit_direction)
+
+func turn_landing() -> float:
+	return _turn.landing() if _turn else 0.0
+
+## How far this car has to the near edge of the first thing it cannot drive past, or `INF` when the
+## road ahead is clear as far as it looks.
+##
+## **Braking for it is what makes a turnaround possible at all.** Nothing used to brake for a
+## blockage, because reversing the heading on the spot was always available however close the wall
+## was. A car that has to swing round needs road to swing into, so `_room_to_stop_in` is what the
+## brake actually aims at and this is the distance under it.
+func _distance_to_the_blockage() -> float:
+	# Nothing to answer on the arc itself: the lookahead is a cached scan down the lane the car has
+	# left, and the ground the curve covers was checked before it started.
+	if kind != Kind.CAR or _blocked_in > LOOKAHEAD_TILES:
+		return INF
+	if _turn and _turn_run_up <= 0.0:
+		return INF
+	var here := floori(_along() / float(Tuning.TILE_SIZE))
+	var tile := here + _blocked_in * signi(int(_direction))
+	var edge := float(tile * Tuning.TILE_SIZE)
+	if _direction < 0.0:
+		edge += float(Tuning.TILE_SIZE)
+	return maxf(0.0, (edge - _along()) * _direction - _nose())
+
+## Where a car braking for a blockage aims to come to rest: a half turn's worth of road short of it,
+## so that a car which has to turn round has somewhere to do it. A driver meeting a dead end stops a
+## car's length off the wall rather than nosing into it, and for the same reason.
+func _room_to_stop_in() -> float:
+	# **Not while a turn is committed**, and this is the difference between a car that turns round at
+	# a dead end and one that creeps to a halt just short of turning round: the two brakes aim at the
+	# same point, and a car easing to *zero* there never reaches the entry it was easing toward. The
+	# turn's own brake is what governs the approach once there is a turn, and the road it runs over
+	# was checked before the car committed.
+	if _turn:
+		return INF
+	var blockage := _distance_to_the_blockage()
+	if blockage == INF:
+		return INF
+	return maxf(0.0, blockage - CarTurn.about_face_reach())
 
 ## Whether this agent has walked out of the patch of city that is being simulated — either off
 ## the map entirely, or out of the box that travels with the player.
