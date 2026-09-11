@@ -67,6 +67,13 @@ const _TREES := {
 ## spaces them over.
 const BOLLARD_SPACING := 14.0
 
+## The least two trees in one lot may stand apart, centre to centre — read off the picture rather
+## than asked for. `Prop.TREES` (`tree_a.svg`, `tree_b.svg`) are both drawn 40px wide, and
+## `_dress_block` below rolls `scale_factor` as large as 1.25x, so the widest either canopy is ever
+## drawn is 50px; two canopies planted any closer than their own width overlap and read as one
+## shape rather than as two trees, which is the clump this spacing exists to stop.
+const MIN_TREE_SPACING := 40.0 * 1.25
+
 @onready var _entities: Node2D = $Entities
 @onready var _buildings_layer: Node2D = $Buildings
 @onready var _ground: TileMapLayer = $Ground
@@ -533,6 +540,10 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 	var lot := map.tile_rect_to_world(layout.open_rect)
 	var placed := 0
 	var attempts := 0
+	# Every tree already placed in this lot, so a candidate too close to one of them is rejected
+	# the same way one landing off calm ground already is — checked before it is ever added rather
+	# than thinned out afterwards, the same rule closures and events are already held to.
+	var planted: Array[Vector2] = []
 	while placed < wanted and attempts < wanted * 8:
 		attempts += 1
 		var at := Vector2(rng.randf_range(lot.position.x + 16.0, lot.end.x - 16.0),
@@ -542,13 +553,24 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 			continue
 		if map.tile_type_at_world(at) == GameEnums.TileType.PLAYGROUND:
 			continue
+		if _too_close_to_a_planted_tree(at, planted):
+			continue
 		var tree := Prop.new()
 		tree.kind = Prop.Kind.TREE
 		tree.position = at
 		tree.variant = rng.randi()
 		tree.scale_factor = rng.randf_range(0.75, 1.25)
 		_add_prop(tree)
+		planted.append(at)
 		placed += 1
+
+## Whether `at` lands within `MIN_TREE_SPACING` of a tree this lot has already planted — pulled out
+## from the loop above so the spacing rule is one line to read and one line to test.
+static func _too_close_to_a_planted_tree(at: Vector2, planted: Array[Vector2]) -> bool:
+	for other in planted:
+		if at.distance_to(other) < MIN_TREE_SPACING:
+			return true
+	return false
 
 ## A line of posts across the carriageway at each mouth of every precinct, so a street that
 ## meets one reads as closed on purpose rather than as the road running out. Placed from the map
