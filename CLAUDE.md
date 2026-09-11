@@ -154,7 +154,7 @@ decisions.md — that information is rarely relevant when working on the codebas
 in to play when planning things out, so we don't attempt approaches again that we already ruled
 out.")* A ticked box, a "Done:" paragraph, a branch name or a status word in a heading is a quest
 log wherever it stands: `TODO.md` holds open work only, `HANDOFF.md` holds the pick-up state only,
-and what was done — with its measurement and its rejected options — is retrievable on demand from
+`REVIEW.md` holds what waits on a person only, and what was done — with its measurement and its rejected options — is retrievable on demand from
 `DECISIONS.md` and nowhere else.
 
 The playtest files are the exception and are never rewritten. `docs/playtests/PLAYTEST-NN.md` are primary
