@@ -53,12 +53,12 @@ pictures to their actual runtime consumers.
       between frames and only the legs and shoes changing, the correction the mother's own frames
       needed (`DECISIONS.md`, "Eight-direction style transfer"). **Then the event people and the
       animals**, one second frame per view per family — the dog walker's person, the chatting
-      mother walking, the robber and guard lunging, the protester, the leaf blower, the van victim
+      mother walking, the pacing yeller, the robber and guard lunging, the protester, the leaf blower, the van victim
       when led, the cat running, the dog, the charging dog, the mouse, the cyclist's pedal — each as
       SVG first, reviewed on a native and 3× sheet beside its a frame. Then the stroller's
       alternation on each: phase advanced by applied speed, frame a at rest and while stopped, so a
       queue, a give-way or a posted guard holds a standing pose; body and trim, or actor and held
-      thing, swap frames together. Read as *while moving* — the yeller, the busker, the café sitters
+      thing, swap frames together. Read as *while moving* — the busker, the café sitters
       and a standing guard keep one frame — which is the orchestrator's reading, open to overturn
       if an idle animation was meant too. After the walker binding above, since it extends that
       family table, and alongside the event binding below for the rest

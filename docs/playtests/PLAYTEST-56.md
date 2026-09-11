@@ -31,9 +31,15 @@ frame is those two paths redrawn and the coat body unchanged.
 
 This widens the instruction from the crowd walkers to every living thing the game draws: the
 event people, the animals and the cyclist as well. Read as *while moving* — a thing that stands
-still keeps its single frame, so the yeller, the busker, the café sitters and a posted guard are
-unchanged until they move — and the pigeons already alternate two wing phases, which is a movement
-animation. Filed under M108, eight-direction entity graphics, as one item after the walker
+still keeps its single frame, so the busker, the café sitters and a posted guard are unchanged
+until they move — and the pigeons already alternate two wing phases, which is a movement
+animation. The first draft of this listed the yeller among the standing ones and the player
+caught it:
+
+> the yeller walks around, too, no?
+
+He does — `homeless_yeller` paces eight tiles of pavement, walking up and down for ever — so he
+strides like the rest. Filed under M108, eight-direction entity graphics, as one item after the walker
 binding, walkers first because their art derives from the mother's, then the event people and the
 animals, each needing its own second frame for every view before any code. Reading *movement* as
 *while moving* is the orchestrator's, open to overturn if an idle animation was meant too.
