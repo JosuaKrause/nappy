@@ -122,6 +122,49 @@ var seed_used := 0
 ## rather than an edit to `tiles`. See `RoadClosure` and docs/CITY.md, "Road closures".
 var closed_tiles := {}
 
+## Street segments a catalogue row may never be offered as ground today, keyed by
+## `StreetNetwork.Segment.key()`. Filled by `EventManager.start_day`, before `EventScheduler.
+## build_day` runs, from four sources: today's closures, every hard-sealed segment (`SealPlanner.
+## plan_day`'s own `held` out-param — a soft seal is deliberately not covered, since its
+## carriageway is still walkable and a café on it is the price of that route), every region wall
+## and door segment (`RegionPlanner.plan_day`'s `walls` and `doors`), and every segment bordering
+## the home block. See `docs/TODO.md`, "Events spawn inside a fully blocked street" and "Nothing
+## on the home block".
+##
+## **Two readers, and the docstring is for both.** `EventScheduler._open_ground_for` refuses any
+## candidate tile on a held segment, the fix this exists for. `CrowdAgent._cannot_go_on()` (M110,
+## "The crowd goes round a seal") wants the identical fact for the same reason a car should not
+## queue across a seal it cannot see through — read it with `is_held`/`is_held_at` rather than
+## reaching into this dictionary directly.
+var held_segments := {}
+
+## Clears today's held segments. Called once per day, before anything is added — see
+## `held_segments`.
+func clear_day_holds() -> void:
+	held_segments.clear()
+
+## Marks one segment as held for today. See `held_segments`.
+func hold_segment(key: Vector3i) -> void:
+	held_segments[key] = true
+
+## Whether `segment` is held today. Null answers false, so a caller need not check for a real
+## street first.
+func is_held(segment: StreetNetwork.Segment) -> bool:
+	return segment != null and held_segments.has(segment.key())
+
+## Whether the street segment a tile stands on is held today. False for a tile inside a junction
+## or a block interior, where `StreetNetwork.segment_containing` names no segment at all.
+func is_held_at(tile: Vector2i) -> bool:
+	return is_held(StreetNetwork.segment_containing(tile))
+
+## Whether a tile is inside the home block's own lot — the ground `_place_home` carves the notch
+## out of. Distinct from `is_held_at`, which is about the streets *around* the block: a catalogue
+## row or a resistance mark placed inside the block itself (its building interior, or an alley if
+## one were ever carved there) is the other half of "nothing on the home block", `docs/TODO.md`'s
+## own words for playtest 11's reopened finding.
+func is_on_home_block(tile: Vector2i) -> bool:
+	return lot_rect(home_block).has_point(tile)
+
 # ------------------------------------------------------------------ layout ---
 
 ## Tiles between the start of one street corridor and the start of the next.
