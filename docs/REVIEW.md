@@ -51,6 +51,9 @@ view").
   as *a dog that was somewhere* or as the lesson again? That is the open question in `TODO.md`,
   M96, whether it should wait to be routed into; a played answer decides it. Record is
   `DECISIONS.md`, M96.
+- **Walk through an alley in act I.** A mouse waits in some of them and darts across once she is
+  within 150px, after a short telegraph. Does it read as a startle rather than a threat, and does
+  the dash read as *across her path*? Record is `DECISIONS.md`, M100, the mouse in the alley.
 - **Reach any ending and read the last line.** The run clock is there, to the millisecond, and
   nowhere else — not the HUD, not the pause screen, not a day summary. It counts only while a day
   is being walked: a retried day's first attempt counts, a minute on the summary does not. Does

@@ -554,14 +554,6 @@ the live body and picture's footprint still need comparison with the debug layer
 artwork, the player's perpendicular burnt-car correction and the rendered evidence are in
 `DECISIONS.md`, "SVG artwork and upcoming milestone assets".
 
-- [ ] **A mouse in the alley.** *(2026-09-10: "we can reuse the mouse for alleyways as well.")* A
-      new catalogue row placed on `ALLEY` tiles: a mouse that darts across the alley when she comes
-      near, the `cat_dash` shape — a short pulse, no body, nothing lethal — at a lower intensity,
-      since it is a startle rather than a threat, and the alley's own `+3.0` a second of dread is
-      already the row's setting. The picture is `assets/events/mouse.svg`, shared with
-      M102, the finale, and its prepared directional family. Which acts it appears in and its cap are the build's
-      to derive from the cat's, and its dash is aimed across the alley's short axis so it crosses
-      her path rather than running down it
 **The `INDUSTRIAL` and `CIVIC` districts reading differently moved to M106 on 2026-09-10**, where
 the roof furniture and the fronts are placed per district; the prepared `industrial_vent.svg` and
 `civic_portico.svg` are its first two pieces.

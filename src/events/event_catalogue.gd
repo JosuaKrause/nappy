@@ -88,6 +88,7 @@ static func _build() -> Array[EventDef]:
 		# Act I - a nice neighbourhood.
 		_playground(),
 		_cat_dash(),
+		_alley_mouse(),
 		_dog_walker(),
 		_cafe_tables(),
 		_delivery_van(),
@@ -245,6 +246,95 @@ static func _cat_dash() -> EventDef:
 	# while she walks and `AHEAD_INTERVAL` spreads them 11-26s apart over a 180s day, so past this
 	# there is nowhere left for one to happen and the budget goes on cats the day cannot fit.
 	def.max_per_day = 8
+	return def
+
+## The cat's shape, softened, and placed rather than sited: a mouse that darts across an alley
+## when she walks into range of it.
+##
+## **`MAP`, not `AHEAD_OF_PLAYER`, and that is the one thing this row changes about the shape it
+## borrows.** `_cat_dash` needs the director because a road tile picked at dawn could be anywhere
+## in the city and she may never cross it; an `ALLEY` tile is not that — alleys are rare, and one
+## she is routed through she is, by definition, about to walk down. Placing it the ordinary way,
+## on the tile itself, is what lets `EventScheduler._refuses_required_alleys` reach it: that check
+## is stated over `def.placement == [ALLEY]` rather than over `alley_robbery`'s own id precisely
+## so "a future row sharing it inherits the same refusal without this function changing" — its own
+## docstring's words — and this row is that future row. A required alley, one the day's corridor
+## runs down with no way round, never offers one; only an alley she chose to detour into can. That
+## was written for a lethal row with no telegraph; here it just means the mouse leans toward the
+## alleys that were always optional ground, which costs it nothing since it is not a risk either
+## way.
+##
+## **Acts and cap, derived from the cat's.** `first_day`, `last_day` and `act_tag` are left at
+## their defaults (1, 0, 1) — exactly what `_cat_dash` leaves them at — so a mouse is everyday
+## background texture for the same reason a cat is: neither is a thing the acts turn on. The cap
+## is half of the cat's 8. The cat's own is sized against how many `AHEAD_INTERVAL` slots a 180s
+## day has room for; an `ALLEY` tile is scarcer than every `ROAD` and `CROSSING` tile a cat may
+## cross, and `_refuses_required_alleys` above narrows the pool further still, so a cap the day
+## can actually spend has to sit well under the cat's rather than beside it.
+##
+## **Lower intensity than the cat's 17, because it is a startle rather than a threat** — 9, roughly
+## half, on the same 4:1 outer:inner ratio the cat uses (120:30) scaled down to the alley's own
+## smaller stage (60:15). The alley she is standing in is already worth `Tuning.EXCITEMENT_FROM_ALLEY`
+## (+3.0/s) of ambient dread on its own; the mouse only has to add a spike on top of ground that is
+## already tense, where the cat has to make the whole case for itself on an open street.
+##
+## **No body, nothing lethal.** `shape` is set for the shadow alone — `solid()` is never called —
+## and `hard_fail` stays at its default `false`.
+##
+## **It waits for her rather than running the moment it exists.** `MAP` places it on its `ALLEY`
+## tile at dawn, well outside `Tuning.EVENT_STREAM_RADIUS` (900px) — far past
+## `Tuning.VIEW_HALF_EXTENT` — so a row that started telegraphing on arrival dashed and finished off
+## screen before she was anywhere near the alley, which read as nothing happening at all: the review
+## finding this field exists to answer. `pursues_within` is not only for a pursuer any more — see its
+## own docstring — so this row sets it (150px) without `pursues`: `EventInstance._check_for_notice()`
+## holds it `is_waiting()`, emitting nothing above the ordinary field and not yet on the clock, until
+## she is within 150px, and only then does the telegraph start and the path run. 150px is inside
+## `VIEW_HALF_EXTENT.y` (180, the shorter axis, so this holds whichever way she is facing) with room
+## to spare, and past the field's own `outer_radius` (60px), so the telegraph is always already on
+## screen by the time she could feel it. `EventDef.validate()`'s ordinary `Tuning.validate_event()`
+## check is unaffected — it is stated over `telegraph_time` against the field's own geometry, not
+## over when the clock starts — and still passes at the same numbers as before this field existed.
+##
+## **The dash crosses the alley's own short axis by construction, not by luck.** `EventInstance`
+## reads `map.alley_rects` for the rect this instance landed in and lays its two-point path across
+## whichever side of that rect is narrower — the width, since `ALLEY_WIDTH_TILES` (2) is always
+## less than an alley's length. She can only ever be walking the long axis, so the dash is always
+## across her path and never down it. See `EventInstance._alley_crossing_path()`.
+##
+## **The picture is `assets/events/mouse.svg`, one look, mirrored — not the prepared directional
+## family (`mouse_{front,back}[_diagonal].svg`).** `_cat_dash` does not pick a picture by heading
+## either: `_draw_cat` swaps crouched for running on the telegraph alone and mirrors east/west the
+## same way `_draw_simple` does for everything else. The mouse does not even keep a second posture
+## for its own telegraph — it is already small and already still — so it draws with `_draw_simple`
+## exactly as `busker` or `delivery_van` do.
+static func _alley_mouse() -> EventDef:
+	var def := EventDef.new()
+	def.id = "alley_mouse"
+	def.display_name = "Mouse"
+	def.look = EventDef.Look.MOUSE
+	def.shape = GroundShape.point(4.0)
+	def.placement = [GameEnums.TileType.ALLEY]
+	def.intensity = 9.0
+	def.inner_radius = 15.0
+	def.outer_radius = 60.0
+	# `Tuning.required_telegraph_time(15, 60, false, 200)` is ~1.09s (outer_radius · field_scale(e)
+	# at e = min(0.5, 200/500) = 0.4, scale 1.667, over WALK_SPEED); this carries a margin the same
+	# shape as the cat's own.
+	def.telegraph_time = 1.4
+	# Comfortably past the ~0.32s the physical crossing takes at this speed over the alley's 64px
+	# width (`ALLEY_WIDTH_TILES · Tuning.TILE_SIZE`), so `_has_expired()` never cuts the dash short.
+	def.duration = 1.0
+	def.mobile = true
+	def.still_while_telegraphing = true
+	def.speed = 200.0
+	# Waits unclocked until she is this close — inside VIEW_HALF_EXTENT.y (180px) with room to
+	# spare, past outer_radius (60px) — rather than telegraphing from the moment a MAP placement
+	# exists, off screen. See the row's own docstring and EventDef.pursues_within.
+	def.pursues_within = 150.0
+	# Shared with `alley_robbery`'s own weight: the two rows draw from the same `ALLEY`-only pool
+	# and neither should be favoured over the other when both are offered the same tile.
+	def.weight = 1.5
+	def.max_per_day = 4
 	return def
 
 ## Stationary, loud, and *pulsing* — the intensity envelope means the counterplay is timing
