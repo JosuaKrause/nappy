@@ -416,6 +416,16 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 func closures() -> Array[RoadClosure]:
 	return _closures
 
+## Every building this city built, fixed for the run — read by `DebugLayers` so its bounding-box
+## layer can trace each one's own `shape` rather than a second list of them.
+func buildings() -> Array[Building]:
+	return _buildings
+
+## Today's trees, bollards and playground frames, rebuilt daily by `_dress_blocks` — read by
+## `DebugLayers` so its shadow layer can trace each one's own `shape` the same way.
+func props() -> Array[Node2D]:
+	return _props
+
 ## Today's corridor. Grown in `_close_streets`, so it is only meaningful after `start_day`.
 func route_tree() -> RouteTree:
 	return _tree

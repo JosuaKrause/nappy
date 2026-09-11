@@ -154,23 +154,19 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 1. **M56**'s build item, the other rows that hunt. *("M56 is also related to the other items to
    work on right now.")* Its measurement against the nerves waits, because reaching act III
    waits: *"I wanna wait reaching act III until those things are done."*
-2. **M104** — the debug view: fields, shadows and bounding boxes as toggleable layers, and the
-   existing readout made toggleable with them. *(2026-09-10: "create a debug view to show the
-   fields and the shadows and the bounding boxes. make each layer toggleable (maybe number keys?)
-   also make other debug information toggleable.")* Ahead of M61's field because it is how M61
-   is checked.
-3. **M61** — one shape per object, from which the field (the Minkowski sum of the body and a
+2. **M61** — one shape per object, from which the field (the Minkowski sum of the body and a
    kernel) is derived the way the shadow and the collision body already are. *("M61 is kind of
-   important but not the immediate next item.")*
-4. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
+   important but not the immediate next item.")* Checked by eye with the debug view's `1` and
+   `3` layers, which exist for exactly that.
+3. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
    don't stop/redirect traffic or pedestrians.")* Placed here by the orchestrator, behind M61
    because the two share `src/crowd/crowd_agent.gd` and ahead of M65 because a sealed street the
    crowd walks through is the sealing's own legibility failing — open to the player moving it.
-5. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
+4. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
    revisit after M62.")* Revisited rather than built as written: the regions and their
    checkpoints (`DECISIONS.md`, M62) may change what finding a mark is like, and the entry is
    re-read before the prepared poses are bound to objectives.
-6. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
+5. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
@@ -178,8 +174,8 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    clock, sit in this batch provisionally** — they were asked for on 2026-09-10 and not placed,
    so this is the orchestrator's guess at where work that needs no route decision belongs, open
    to the player moving it.
-7. **Reaching act III**, which M56's measurement against the nerves needs.
-8. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
+6. **Reaching act III**, which M56's measurement against the nerves needs.
+7. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
 The record, with its measurements and the choices open to overturn, is in `DECISIONS.md` under
@@ -390,43 +386,6 @@ use the guard pair for a guard departure if that proposed response is accepted.
 
 ---
 
-## M104 — The debug view · asked for 2026-09-10
-
-> "create a debug view to show the fields and the shadows and the bounding boxes. make each layer
-> toggleable (maybe number keys?) also make other debug information toggleable."
-
-**A set of world-space overlays, each one a layer with a key, in a debug build only.** Today the
-only developer furniture drawn over the game is the readout in the top right — the seed, the frame
-rate, the meter's breakdown by source, whether she stands on calm ground and what the closest live
-event is doing — assembled in `main.gd` behind `DevFlags.enabled()` and never toggled: it is on for
-the whole of every debug run and absent from a release. Everything else a developer looks at is
-after the fact, in the run log and the dusk map. Nothing draws a field, a shadow's extent or a
-collision body while the game runs, which is why M61 cannot be checked by eye until this exists.
-
-- [ ] **Three geometry layers, drawn from the objects' own data rather than a second copy of it.**
-      **Fields**: every emitter's falloff footprint — inner and outer boundaries — for events,
-      walkers and cars alike, since all three run `Tuning.falloff`, tinted so a lethal field is told
-      from a costly one. **Shadows**: the ground extent each shadow is drawn over. **Bounding
-      boxes**: every collision body — event obstructions, buildings, her own circle, the car strike
-      box — as its outline. Before M61 lands these show circles and hand-set ovals, which is the
-      point: the view is what makes the disagreement M61 fixes visible, and after M61 all three
-      layers trace one rectangle each
-- [ ] **The readout becomes a layer too**, and so does anything else that is currently always-on
-      in a debug build. *("also make other debug information toggleable.")* Each layer has a
-      number key, `1` to `n`, and the mapping is printed once on boot and in `docs/TELEMETRY.md`,
-      which already documents the developer surface. Keys are debug-only, gated by
-      `DevFlags.enabled()` the way the snapshot key is, so a release build neither draws nor listens
-- [ ] **Each layer is a `CanvasItem` that draws in `_draw()` from a query of the live objects**,
-      never a change to the objects' own drawing, so a layer can be added or removed without
-      touching `EventInstance`, `CrowdAgent` or `Stroller`. The halo already has this shape — a
-      duplicate drawing over the source — and the layers go the other way, reading positions and
-      numbers and drawing outlines. Nothing here changes what the game does; a test asserts that
-      every layer is absent from the tree when `DevFlags.enabled()` is false
-- [ ] **A `--layers 1,3` flag** sets the initial state, so a rig screenshot can be taken with the
-      fields on and nothing else, and the M61 evidence pictures are reproducible
-
----
-
 ## M61 — One shape per object: the field, the shadow and the body · asked for 2026-09-02, widened 2026-09-10
 
 > "fields should be ellipses, not circles. the excentricity should be determined by movement speed.
@@ -463,9 +422,11 @@ covers the crowd's sources on the same terms. Being hit is separate: a moving ca
 car's shape. A test compares their longitudinal and transverse extents; it does not establish
 containment of the rectangle's corners by the capsule.
 
-**M104's debug view is how the field is checked**, because a field that reaches further than the
-body it is drawn around is a thing a person sees in one frame with the layers on and a rig cannot.
-The shadow and the body landed before it and are checked by eye once it exists.
+**The debug view is how the field is checked** — in a debug build `1` draws every field's inner
+and outer boundary and `3` every body, and `--layers 1,3` puts both on a rig screenshot — because
+a field that reaches further than the body it is drawn around is a thing a person sees in one
+frame and a rig cannot. Today it draws every field as the circle it still is; the record of the
+view is in `DECISIONS.md` under M104.
 
 **A change to the emission model itself, and it is the first one since the falloff shape.** Today
 every field is a disc: `Tuning.falloff(distance, intensity, inner, outer)` prices being near a thing
@@ -907,7 +868,7 @@ is still true.
 **Drawings, as SVG:**
 
 **Vehicle collision and silhouette agreement is checked with M61, one shape per object, and
-M104, the debug view.** Skip and burnt-out-car obstructions remain circular; the moving van uses
+the debug view's bounding-box layer (`3`).** Skip and burnt-out-car obstructions remain circular; the moving van uses
 a capsule. Shape-derived bodies do not alone establish that apparent gaps can be walked through:
 the live body and picture's footprint still need comparison with the debug layers. The directional
 artwork, the player's perpendicular burnt-car correction and the rendered evidence are in

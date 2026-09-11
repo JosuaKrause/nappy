@@ -951,6 +951,21 @@ const BIRD_TURN_IN := 4.6
 func _bird_outer() -> float:
 	return maxf(def.inner_radius + 1.0, def.outer_radius - def.flock_spread)
 
+## `_bird_outer()`, read by `DebugLayers` so a flock's own fields layer draws the exact radius
+## `_flock_contribution_at()` sums over rather than a second formula that could drift from it.
+func flock_outer_radius() -> float:
+	return _bird_outer()
+
+## Each live bird's own ground-plane offset from this instance's origin — empty for anything
+## without a flock. The one place `DebugLayers` reads into `_flock`, which otherwise has no public
+## accessor: see that class for why the fields layer draws one pair of radii per bird rather than
+## one for the whole instance.
+func flock_offsets() -> Array[Vector2]:
+	var offsets: Array[Vector2] = []
+	for bird in _flock:
+		offsets.append(bird.at)
+	return offsets
+
 # --------------------------------------------------------------- going away ---
 # **Nothing vanishes while you are looking at it.** An event that ends by `_finish()` wherever it
 # happens to be standing ends, for the two shortest-lived rows in the game, directly in front of
@@ -1365,6 +1380,12 @@ func _solid_axis() -> Vector2:
 	if has_a_spread(def) or def.look == EventDef.Look.PROTEST or def.look == EventDef.Look.FIREFIGHT:
 		return _spread_axis()
 	return Vector2.RIGHT if _stationary_vehicle_side else Vector2.DOWN
+
+## `_solid_axis()`, read by `DebugLayers` so its shadow and bounding-box layers rotate a segment
+## the same way `_draw_shape_shadow()` and `_build_obstruction()` already do, rather than guessing
+## an axis of their own.
+func solid_axis() -> Vector2:
+	return _solid_axis()
 
 ## Forwards to `_halo`'s own `set_glow()` — see `EntityHalo`'s class doc for the duck-typed shape
 ## `CrowdAgent` shares. Called by `ExcitementHalo` once a frame for every live instance — above

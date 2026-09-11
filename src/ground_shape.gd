@@ -143,39 +143,56 @@ const SHADOW_SQUASH := 0.4
 
 const _ELLIPSE_SAMPLES := 28
 
-## Draws this shape's shadow at `at`, in `canvas`'s own coordinates.
+## The polygon `draw_shadow()` fills, at `at` in `canvas`'s own coordinates — pulled out so the
+## debug view's shadow layer (`DebugLayers`, see docs/TODO.md, M104) can trace exactly the ground
+## extent a shadow is drawn over, from the same call `draw_shadow()` itself now makes, rather than
+## a second copy of this geometry the two could drift apart from.
 ##
 ## For a point this is exactly the contact-shadow ellipse every point object in the game already
 ## casts, so every point shadow is visually unchanged by this shape existing. For a segment, the
 ## spine is rotated by `axis` **on the ground plane, unsquashed** — the ground itself is drawn
 ## 1:1, tiles are square, so there is no foreshortening to apply to a direction lying flat on it —
-## an ellipse is placed at each end, and the convex hull of the two ellipses' outlines is filled: a
-## north-south band therefore gets a tall thin shadow spanning its whole length, rather than the
-## single oval every shape stood on before this. For a rectangle, the four corners are rotated by
-## `axis` the same way the segment's spine is, and **then** squashed on Y by `SHADOW_SQUASH` — the
-## point case's own foreshortening, applied after the rotation rather than to the rectangle's own
-## local frame, so a rectangle turned to face `axis` still reads as lying flat in the same oblique
-## view every other shadow does.
-func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2 = Vector2.RIGHT) -> void:
+## an ellipse is placed at each end, and the convex hull of the two ellipses' outlines is the
+## result: a north-south band therefore gets a tall thin shadow spanning its whole length, rather
+## than the single oval every shape stood on before this. For a rectangle, the four corners are
+## rotated by `axis` the same way the segment's spine is, and **then** squashed on Y by
+## `SHADOW_SQUASH` — the point case's own foreshortening, applied after the rotation rather than to
+## the rectangle's own local frame, so a rectangle turned to face `axis` still reads as lying flat
+## in the same oblique view every other shadow does.
+func shadow_outline(at: Vector2, axis: Vector2 = Vector2.RIGHT) -> PackedVector2Array:
 	match kind:
 		Kind.POINT:
-			canvas.draw_set_transform(at, 0.0, Vector2(1.0, SHADOW_SQUASH))
-			canvas.draw_circle(Vector2.ZERO, radius, Palette.SHADOW, true, -1.0, true)
-			canvas.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			return _squashed_ellipse_points(at)
 		Kind.RECT:
-			canvas.draw_colored_polygon(_rect_points(at, axis), Palette.SHADOW)
+			return _rect_points(at, axis)
 		_:
 			var along := axis.normalized()
 			var points := PackedVector2Array()
 			points.append_array(_ellipse_points(at + along * half_length))
 			points.append_array(_ellipse_points(at - along * half_length))
-			canvas.draw_colored_polygon(Geometry2D.convex_hull(points), Palette.SHADOW)
+			return Geometry2D.convex_hull(points)
+
+## Draws this shape's shadow at `at`, in `canvas`'s own coordinates — the filled polygon
+## `shadow_outline()` traces, so the layer and the shadow cannot disagree about what shape it is.
+func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2 = Vector2.RIGHT) -> void:
+	canvas.draw_colored_polygon(shadow_outline(at, axis), Palette.SHADOW)
 
 func _ellipse_points(centre: Vector2) -> PackedVector2Array:
 	var points := PackedVector2Array()
 	for i in _ELLIPSE_SAMPLES:
 		var angle := TAU * float(i) / float(_ELLIPSE_SAMPLES)
 		points.append(centre + Vector2(cos(angle), sin(angle)) * radius)
+	return points
+
+## The same circle, squashed on Y by `SHADOW_SQUASH` around `centre` — the point case's own
+## foreshortening, folded into the points themselves (`shadow_outline()` used to apply it as a
+## canvas transform around a plain `draw_circle`) so it can hand back world-space points instead of
+## making a draw call.
+func _squashed_ellipse_points(centre: Vector2) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for i in _ELLIPSE_SAMPLES:
+		var angle := TAU * float(i) / float(_ELLIPSE_SAMPLES)
+		points.append(centre + Vector2(cos(angle) * radius, sin(angle) * radius * SHADOW_SQUASH))
 	return points
 
 ## The rectangle's four corners, rotated by `axis` about `at` and then squashed on Y — see

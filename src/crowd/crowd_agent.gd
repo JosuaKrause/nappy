@@ -413,6 +413,12 @@ func startle(intensity: float, seconds: float, inner: float, outer: float) -> vo
 func is_startled() -> bool:
 	return _jolt > 0.0
 
+## The jolt's own inner and outer radii, valid only while `is_startled()` — read by `DebugLayers`
+## so its fields layer can draw the extra field a running jolt adds on top of this agent's ordinary
+## one, the same pair `contribution_at()` sums in.
+func jolt_radii() -> Vector2:
+	return Vector2(_jolt_inner, _jolt_outer)
+
 ## Forwards to `_halo`'s own `set_glow()` — see `EntityHalo`'s class doc for the duck-typed shape
 ## `EventInstance` shares. Called by `ExcitementHalo` once a frame for every agent in the crowd —
 ## nonzero for the handful `select_sources()` picked, zero for everything else. Builds `_halo`
@@ -1312,6 +1318,12 @@ static func _car_shadow_shape() -> GroundShape:
 ## along. `_vertical` is the same flag `_frame()` reads to choose a side-on or end-on sprite.
 func _travel_axis() -> Vector2:
 	return Vector2.DOWN if _vertical else Vector2.RIGHT
+
+## `_travel_axis()`, read by `DebugLayers` so its shadow layer rotates a car's capsule the same way
+## `_draw_body()` already does, rather than a second guess at which axis this agent is travelling
+## along.
+func travel_axis() -> Vector2:
+	return _travel_axis()
 
 ## The drop shadow under this agent's own `shape`, skipped for its own halo ring — the same rule
 ## `EventInstance._draw_shape_shadow` has, for the same reason: the shadow is the ground under the
