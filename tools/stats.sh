@@ -48,12 +48,9 @@ if [[ $# -gt 1 ]]; then
     exit 1
 fi
 
-if [[ ! -d "$DIR" ]]; then
-    echo "no telemetry yet: $DIR" >&2
-    echo "play a run with tools/run.sh — it is on unless you pass --no-telemetry" >&2
-    exit 1
-fi
-
+# The argument shape is validated -- usage on anything it does not recognise -- before the
+# telemetry folder is even looked for, so a runner that has never played a run still gets a
+# straight rejection on a bad flag instead of "no telemetry yet".
 mode="playtest"
 case "${1:-}" in
     --rigs) mode="rigs" ;;
@@ -61,6 +58,12 @@ case "${1:-}" in
     "")     ;;
     *)      echo "unknown option: $1" >&2; echo >&2; usage >&2; exit 1 ;;
 esac
+
+if [[ ! -d "$DIR" ]]; then
+    echo "no telemetry yet: $DIR" >&2
+    echo "play a run with tools/run.sh — it is on unless you pass --no-telemetry" >&2
+    exit 1
+fi
 
 # One group's worth of logs: run count, days won/lost, loss causes, most-met events. Each figure
 # is a straight count of a `kind` column in docs/TELEMETRY.md's table -- `home`, `lost` and
