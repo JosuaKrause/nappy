@@ -606,13 +606,17 @@ func ahead_of_player_lead() -> float:
 	return maxf(Tuning.AHEAD_LEAD_DISTANCE, time_to_middle * Tuning.WALK_SPEED)
 
 ## The field's own furthest reach from this row's centre — what every "how far" rule needs instead
-## of `outer_radius` alone now that a segment's field is a capsule rather than a disc:
+## of `outer_radius` alone now that a segment's field is a capsule rather than a disc, and now that
+## a moving point's own forward reach outgrows its resting radius:
 ## `EventScheduler._keeps_its_field_clear`'s clearance, the streaming rect, and
 ## `EventInstance.expected_impact_at()`'s early-out. `half_length + outer_radius` for a segment (the
 ## along-axis reach, which is exactly the old flat `outer_radius` a row's radii were derived
-## *against* — see the catalogue's own docstrings), `outer_radius` for everything else, since a
-## moving emitter's forward reach is already the catalogued number under
-## `GroundShape.eccentric_distance()`.
+## *against* — see the catalogue's own docstrings; every emitting segment row is stationary, so its
+## own eccentricity is always zero and this figure never grows). Otherwise `outer_radius ·
+## Tuning.field_scale(e)`, `e` from whichever speed the row's own motion actually uses —
+## `pursue_speed` for a pursuer, `speed` for an ordinary mobile row, zero (the plain disc) for
+## anything standing still. A row cannot be both: `EventInstance.travel_velocity()` picks
+## `pursue_speed` whenever `pursues` is set and never reads `speed` for the same instance.
 ##
 ## **Not `is_lethal_at()`'s business.** Lethal is contact, not noise, and stays a plain circle of
 ## `inner_radius` about the centre — see docs/EVENTS.md, "Solid things are solid", and
@@ -620,7 +624,8 @@ func ahead_of_player_lead() -> float:
 func field_reach() -> float:
 	if shape != null and shape.kind == GroundShape.Kind.SEGMENT:
 		return shape.half_length + outer_radius
-	return outer_radius
+	var moving_speed := pursue_speed if pursues else (speed if mobile else 0.0)
+	return outer_radius * Tuning.field_scale(Tuning.field_eccentricity(moving_speed))
 
 # ------------------------------------------------------------ what a row costs ---
 # The integral behind the cost table in `docs/EVENTS.md` and behind the assertion that nothing is

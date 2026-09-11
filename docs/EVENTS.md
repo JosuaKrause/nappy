@@ -643,6 +643,20 @@ than at the centre, per the player's own *"the entity itself lives in one of the
 `Tuning.field_eccentricity()` turns a speed into the conic's own eccentricity, capped at
 `FIELD_ECCENTRICITY_MAX` so nothing flattens to a line.
 
+**The ellipse keeps the resting disc's own width, and motion only adds reach ahead of it.**
+*(2026-09-10, playtest 55: "while the car moves the field gets narrower and oval -- this is good
+but when the car stops it becomes round and bigger? this is counter intuitive. the stretching
+should retain the area so an unstretched car field should be the same width with shorter
+height" — and, asked to choose between retaining the area and retaining the width, "if anything
+the moving size should be bigger than the rest size since moving causes more excitement.")* So the
+boundary at the catalogued radius `R` is `r(θ) = R / (1 − e·cosθ)`: exactly `R` abeam whatever the
+speed, `R · Tuning.field_scale(e)` (`R/(1−e)`) dead ahead, `R/(1+e)` behind. `field_scale()` is the
+one function that states the growth, beside `field_eccentricity()` itself; a car at `CAR_SPEED.x`
+(130px/s) sits at `e` = 0.26, forward reach 1.35R and rear 0.79R, and the eccentricity cap
+(`FIELD_ECCENTRICITY_MAX` 0.5) holds every field in the game to at most twice its own catalogued
+radius ahead of itself — `FIELD_ECCENTRICITY_SPEED` is chosen so nothing catalogued reaches it: the
+fastest mobile row sits at 0.48.
+
 **Moving objects are points.** The two kernels compose — body ⊕ disc standing still, point ⊕
 ellipse moving — without ever building the general capsule-and-ellipse sum, because every emitting
 segment row in the catalogue is stationary (`tests/test_shapes.gd` holds this as a regression
@@ -680,14 +694,21 @@ map, so there is no moment at which they appear and nothing to warn about. The p
 learns where the playgrounds are on day 1 and that knowledge holds for the whole run, which
 is the point of a city that does not change.
 
-**The contract is stated over the spine-measured band and the forward reach, so the field's own
-Minkowski sum does not change this arithmetic.** `outer_radius − inner_radius` is a band width, and
-subtracting a segment's `half_length` from both radii (see "Solid things are solid") leaves that
-width untouched; a moving row's forward reach is exactly `outer_radius` under
-`GroundShape.eccentric_distance()`, the same number this contract was always stated over. What
-*does* change for a "how far" rule that reads `outer_radius` alone rather than a band width — the
-lethal clearance a placement keeps, the streaming radius, `expected_impact_at()`'s early-out — is
-`EventDef.field_reach()`, `outer_radius` plus a segment's own `half_length`.
+**The contract is stated over the spine-measured band and the row's own forward reach**, which is
+larger than the catalogued `outer_radius` for anything that moves. `outer_radius − inner_radius` is
+a band width, and subtracting a segment's `half_length` from both radii (see "Solid things are
+solid") leaves that width untouched; every emitting segment row is stationary, so its own forward
+reach never grows past `half_length + outer_radius`. For a moving point — a cat, a dog, a cyclist, a
+pursuer — the escape she is owed is stated over `outer_radius · Tuning.field_scale(e)` (a full
+forward-reach clearance for a row faster than a walk) or `(outer_radius − inner_radius) ·
+Tuning.field_scale(e)` (a band clearance for a slower one), `e` from the row's own `speed` or
+`pursue_speed`: `Tuning.required_telegraph_time()` and `Tuning.validate_pursuit()` are the two
+places this is stated, and every row in the catalogue whose forward reach grew past what its
+telegraph already bought had its `telegraph_time` re-derived — never its radii — to the new minimum
+plus the margin it already carried. What changes for a "how far" rule that reads `outer_radius`
+alone rather than a band width — the lethal clearance a placement keeps, the streaming radius,
+`expected_impact_at()`'s early-out — is `EventDef.field_reach()`: a segment's along-axis reach
+unchanged, or a moving point's own forward reach.
 
 ### The contract is per event, and the player experiences the sum
 

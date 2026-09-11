@@ -1513,17 +1513,23 @@ func _test_fire_truck_is_a_day_three_one_shot(t) -> void:
 	t.check(truck.available_on(3), "the fire engine can come on day 3")
 	t.check(not truck.available_on(4), "the fire engine never comes again")
 
-	# It outruns a walk, so the fairness rule must demand the full radius of clearance.
+	# It outruns a walk, so the fairness rule must demand the full forward reach of clearance — the
+	# row's own catalogued radius grown forward by how fast it moves (M114, the moving field grows
+	# forward), not the plain radius a standing thing would have.
 	t.check(truck.speed > Tuning.WALK_SPEED, "the fire engine is faster than walking")
-	t.close_to(truck.minimum_telegraph(), truck.outer_radius / Tuning.WALK_SPEED,
-			"a fast mover must be clearable across its whole radius, not just its band")
+	var truck_scale := Tuning.field_scale(Tuning.field_eccentricity(truck.speed))
+	t.close_to(truck.minimum_telegraph(), truck.outer_radius * truck_scale / Tuning.WALK_SPEED,
+			"a fast mover must be clearable across its whole forward reach, not just its band")
 	t.check(truck.telegraph_time >= truck.minimum_telegraph(),
 			"the fire engine gives that much warning")
 
-	# A dog walker is slower than walking, so the ordinary band rule applies to it.
+	# A dog walker is slower than walking, so the ordinary band rule applies to it, stretched
+	# forward by the same growth as everything else that moves.
 	var dog := EventCatalogue.by_id("dog_walker")
 	t.check(dog.speed < Tuning.WALK_SPEED, "the dog walker is slower than walking")
-	t.close_to(dog.minimum_telegraph(), (dog.outer_radius - dog.inner_radius) / Tuning.WALK_SPEED,
+	var dog_scale := Tuning.field_scale(Tuning.field_eccentricity(dog.speed))
+	t.close_to(dog.minimum_telegraph(),
+			(dog.outer_radius - dog.inner_radius) * dog_scale / Tuning.WALK_SPEED,
 			"a slow mover can simply be walked away from")
 
 func _test_along_street_paths_stay_in_bounds(t) -> void:

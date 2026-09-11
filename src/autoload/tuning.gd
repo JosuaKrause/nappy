@@ -1477,13 +1477,17 @@ func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 		push_error("Unfair pursuit '%s': a %.1fs chase is shorter than the %.1fs of being outrun "
 				% [id, chase_time, PURSUIT_SHAKEN_OFF] + "that ends it, so nothing she does matters")
 		return false
-	# A pursuer that holds its stand-off outside its own `outer_radius` emits nothing at her for the
+	# A pursuer that holds its stand-off outside its own forward reach emits nothing at her for the
 	# whole of the phase that is supposed to be the warning — no meter, no `!` over her head, and a
-	# telemetry entry that cannot say what raised the mark.
+	# telemetry entry that cannot say what raised the mark. Stated over `outer · field_scale(e)`
+	# rather than the catalogued `outer` alone, since a pursuer's own approach is the one direction
+	# `field_scale` was built for — the check can only get easier to satisfy as the field grows
+	# forward, never harder.
+	var forward_reach := outer * field_scale(field_eccentricity(speed))
 	var standoff := pursuit_standoff(speed, inner)
-	if standoff > outer and outer > 0.0:
+	if standoff > forward_reach and outer > 0.0:
 		push_error("Unfair pursuit '%s': it stands off at %.0fpx and reaches %.0fpx, so its whole "
-				% [id, standoff, outer] + "notice is spent outside its own field")
+				% [id, standoff, forward_reach] + "notice is spent outside its own field")
 		return false
 	if notice_within <= 0.0:
 		return true
@@ -1491,9 +1495,9 @@ func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 		push_error("Unfair pursuit '%s': it notices her at %.0fpx and stands off at %.0fpx, so its "
 				% [id, notice_within, standoff] + "whole notice is spent standing still")
 		return false
-	if notice_within > outer:
+	if notice_within > forward_reach:
 		push_error("Unfair pursuit '%s': it notices her at %.0fpx and reaches %.0fpx, so it decides "
-				% [id, notice_within, outer] + "about her before she can feel it at all")
+				% [id, notice_within, forward_reach] + "about her before she can feel it at all")
 		return false
 	return true
 
@@ -1631,10 +1635,20 @@ func validate_event(id: String, telegraph_time: float, inner_radius: float,
 ## the street instead — you cannot outwalk it, you can only get off its line — so the
 ## escape distance is the full radius. An event slower than walking pace (a dog walker)
 ## can simply be walked away from, so it uses the stationary rule.
+##
+## **Both distances are stated over the row's own forward reach, `outer_radius · field_scale(e)`,
+## not the catalogued `outer_radius` alone** — a moving field now reaches further ahead of itself
+## than it is wide (see `field_scale()`), and the escape she is owed is the ground she actually has
+## to clear, not the number the row was authored with. The band case scales the same way:
+## `(outer_radius − inner_radius) · field_scale(e)` is the band's own width stretched forward, since
+## the near edge of an approaching field arrives sooner too. `e` is zero for a stationary row, where
+## `field_scale(0)` is 1.0 and both escapes are exactly what they always were.
 func required_telegraph_time(inner_radius: float, outer_radius: float,
 		hard_fail: bool, speed: float = 0.0) -> float:
 	var margin := TELEGRAPH_HARD_FAIL_MARGIN if hard_fail else 1.0
-	var escape := outer_radius if speed > WALK_SPEED else outer_radius - inner_radius
+	var scale := field_scale(field_eccentricity(speed))
+	var escape := outer_radius * scale if speed > WALK_SPEED \
+			else (outer_radius - inner_radius) * scale
 	return escape * margin / WALK_SPEED
 
 ## Eccentricity of a moving emitter's field kernel, from its own speed — the shape the player asked
@@ -1643,13 +1657,30 @@ func required_telegraph_time(inner_radius: float, outer_radius: float,
 ## orthogonal. the entity itself lives in one of the focus points."* Zero at a standstill, which is
 ## the plain disc every field always was; rises with speed and is capped at
 ## `FIELD_ECCENTRICITY_MAX` so nothing ever flattens to a line. Fed to
-## `GroundShape.eccentric_distance()`, the polar conic this shapes.
+## `GroundShape.eccentric_distance()` and `field_scale()`, the polar conic and its own forward reach.
 ##
-## A car at `CAR_SPEED.x` (130px/s) sits at e = 0.5; a walker (`PEDESTRIAN_SPEED`, 46-74px/s) at
-## 0.18-0.28; the cyclist (165px/s) at 0.63; the cat (240px/s) would be 0.92 uncapped and is held at
-## the ceiling instead.
-const FIELD_ECCENTRICITY_MAX := 0.7
-const FIELD_ECCENTRICITY_SPEED := 260.0
+## **The cap is stated over `field_scale()`, not over `e` on its own.** A moving field's forward
+## reach is `R · field_scale(e)` (see that function), so the cap has to be read as "how far past its
+## own resting radius may a field reach" rather than as a shape of the ellipse in isolation — at
+## `FIELD_ECCENTRICITY_MAX` 0.5, `field_scale` is exactly 2.0, so nothing in the game reaches more
+## than twice its catalogued `outer_radius` ahead of itself. Nothing in the catalogue is fast enough
+## to reach it — the ceiling is a safety bound for a future row, not a number any current one sits
+## against.
+##
+## **`FIELD_ECCENTRICITY_SPEED` is set against placement, not against taste.** A row's forward
+## reach growing past what its telegraph already priced is a fairness question; growing far enough
+## to touch an unvisited calm area it used to clear is a different one — `EventScheduler` refuses
+## that placement outright (`_calm_to_leave_alone`, `_reaches_any`), so a row whose whole path is
+## long enough to brush one can lose its only site and simply not happen that day, however fair its
+## telegraph is. `fire_truck` (190px/s, a sixty-tile `ALONG_STREET` route) is the row this binds:
+## `tests/test_events.gd`'s `_test_a_retried_day_is_the_same_day` is what catches a value too low to
+## place it reliably.
+##
+## A car at `CAR_SPEED.x` (130px/s) sits at e = 0.26 (forward reach 1.35R, rear 0.79R); a walker
+## (`PEDESTRIAN_SPEED`, 46-74px/s) at 0.09-0.15; the cyclist (165px/s) at 0.33; the cat (240px/s) at
+## 0.48, just under the cap.
+const FIELD_ECCENTRICITY_MAX := 0.5
+const FIELD_ECCENTRICITY_SPEED := 500.0
 
 func field_eccentricity(speed: float) -> float:
 	return minf(FIELD_ECCENTRICITY_MAX, speed / FIELD_ECCENTRICITY_SPEED)
