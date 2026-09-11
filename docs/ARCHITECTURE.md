@@ -78,6 +78,13 @@ src/
 	telemetry_map.gd      the tile grid as a picture, drawn at dawn and again at dusk
   world/
 	world_context.gd      the only questions the baby may ask the world
+  interior/               the escape scene's building, behind --start-escape
+	interior_tile.gd      the tile-kind enum and which kinds are walkable
+	interior_floor.gd     one floor's plan: tiles, the north wall, the start tile, both stairwells
+	interior_map.gd       builds all five floors' plans and the switchback stairwell layout
+	interior_tileset.gd   the interior's own TileSet, built in code from the SVGs it binds
+	interior_scene.gd     the WorldContext node: paints a floor, and the floor-to-floor and
+	                      basement-to-title transitions
   ui/
 	hud.gd                the clock, the two bars, the teach line and the status line
 	meter_bar.gd
