@@ -36,6 +36,25 @@ const MOTHER_FRONT_DIAGONAL: Array[Texture2D] = [
 	preload("res://assets/rig/mother_front_diagonal_a.svg"), preload("res://assets/rig/mother_front_diagonal_b.svg")]
 const MOTHER_BACK_DIAGONAL: Array[Texture2D] = [
 	preload("res://assets/rig/mother_back_diagonal_a.svg"), preload("res://assets/rig/mother_back_diagonal_b.svg")]
+
+## The escape scene's rig — the baby in her arms, no pram. Selected in place of the sets above
+## whenever `carrying` is set; see `_mother_texture()`.
+const MOTHER_CARRYING_FRONT: Array[Texture2D] = [
+	preload("res://assets/rig/mother_carrying_front_a.svg"),
+	preload("res://assets/rig/mother_carrying_front_b.svg")]
+const MOTHER_CARRYING_BACK: Array[Texture2D] = [
+	preload("res://assets/rig/mother_carrying_back_a.svg"),
+	preload("res://assets/rig/mother_carrying_back_b.svg")]
+const MOTHER_CARRYING_SIDE: Array[Texture2D] = [
+	preload("res://assets/rig/mother_carrying_side_a.svg"),
+	preload("res://assets/rig/mother_carrying_side_b.svg")]
+const MOTHER_CARRYING_FRONT_DIAGONAL: Array[Texture2D] = [
+	preload("res://assets/rig/mother_carrying_front_diagonal_a.svg"),
+	preload("res://assets/rig/mother_carrying_front_diagonal_b.svg")]
+const MOTHER_CARRYING_BACK_DIAGONAL: Array[Texture2D] = [
+	preload("res://assets/rig/mother_carrying_back_diagonal_a.svg"),
+	preload("res://assets/rig/mother_carrying_back_diagonal_b.svg")]
+
 const PRAM_SIDE := preload("res://assets/rig/pram_side.svg")
 const PRAM_FRONT := preload("res://assets/rig/pram_front.svg")
 const PRAM_BACK := preload("res://assets/rig/pram_back.svg")
@@ -92,6 +111,20 @@ enum Alert {
 @onready var _baby: Baby = get_node_or_null("Baby")
 
 var facing := Vector2.DOWN
+
+## The escape scene's carrying rig: the baby in her arms instead of ahead of her in the pram.
+## Set once by `main._ready_escape()` before she is ever drawn; nothing else in the game ever
+## flips it, so there is no case of switching mid-walk to account for. Her collision circle is
+## unchanged either way — see `shape`'s own doc.
+var carrying := false
+
+## `InteriorScene.slope_dir_at`, or an unset `Callable` outdoors — the one hook the escape scene's
+## diagonal stairs need from this otherwise interior-agnostic rig. Asked every physics frame for
+## whether her *current* position sits on a diagonal flight tile (`+1` descending toward east,
+## `-1` toward west, `0` off any flight), so a sideways press can be redirected along the slope —
+## see `_physics_process()`. Set once by `main._ready_escape()`, the same shape `carrying` is set
+## in; unset (`Callable()`) leaves every outdoor run and every other test untouched.
+var slope_dir_at := Callable()
 
 ## Her own ground shape and the pram's, read by `_draw()` for their shadows — 9px and 12px, the
 ## same two numbers the shadow always used. Fixed rather than computed in a `setup()`, since
@@ -170,6 +203,7 @@ func _physics_process(delta: float) -> void:
 		# Ignored rather than read: the run key doing nothing during a capture falls out of this
 		# for free, since `top_speed` below is only ever reached through a nonzero `input_dir`.
 		input_dir = Vector2.ZERO
+	input_dir = _redirect_along_a_flight(input_dir)
 	var top_speed := Tuning.RUN_SPEED if Input.is_action_pressed("run") else Tuning.WALK_SPEED
 
 	if input_dir != Vector2.ZERO:
@@ -195,6 +229,29 @@ func _physics_process(delta: float) -> void:
 		_alert = Alert.NONE
 	_update_camera(delta)
 	queue_redraw()
+
+## On a diagonal flight tile, a sideways press walks the slope rather than the screen axis it was
+## pressed on — *(2026-09-10, playtest 55: "holding right or left on the switchback stairs moves
+## the player diagonally")*. `slope_dir_at` answers `+1` on a tile descending toward east, `-1`
+## toward west, `0` everywhere else (including a flat landing); off a flight, or outdoors where the
+## callable was never set, `raw` is returned unchanged.
+##
+## The redirection reads only `raw.x`'s **sign**, never its `y` component or which device pressed
+## it — key, tap and joystick share this one call. Pressing *toward* the flight's own descending
+## side (`sign(raw.x) == slope`) walks toward its lower end; pressing the other way climbs toward
+## its upper end; a press with no horizontal component (`raw.x == 0`, including a pure up/down
+## press) moves nowhere, since there is no floor beside the tread to step onto. The result keeps
+## `raw`'s own magnitude, so an analog joystick still climbs or descends at partial speed.
+func _redirect_along_a_flight(raw: Vector2) -> Vector2:
+	if not slope_dir_at.is_valid():
+		return raw
+	var slope: int = slope_dir_at.call(global_position)
+	if slope == 0:
+		return raw
+	if raw.x == 0.0:
+		return Vector2.ZERO
+	var sign_matches := 1.0 if signf(raw.x) == signf(slope) else -1.0
+	return Vector2(slope, 1.0).normalized() * sign_matches * raw.length()
 
 ## Locks her own movement input for `seconds` — the one mechanic in the catalogue that takes the
 ## controls away rather than costing a meter. Called by `EventManager` the frame `chatting_mother`
@@ -336,6 +393,10 @@ func baby_cue_aside() -> float:
 ## between two positions while she walks in a straight line. A report of the cue moving on its own
 ## is not worth saving 10px of margin over.
 func _pram_shares_her_column() -> bool:
+	# Carrying, `pram_offset` in `_draw()` is always `Vector2.ZERO` — the bundle rides at her own
+	# position on every facing, so it shares her column on all eight rather than on two.
+	if carrying:
+		return true
 	return absf(facing.x) * PRAM_DISTANCE < Tuning.PLAYER_BODY_RADIUS
 
 ## How far above the pram the cue floats, which is more on exactly one of the eight facings.
@@ -434,18 +495,26 @@ func run_excess_ratio() -> float:
 # ------------------------------------------------------------------ drawing ---
 
 func _draw() -> void:
-	var pram_offset := Vector2(facing.x, facing.y * OBLIQUE_Y) * PRAM_DISTANCE
+	# Carrying her in arms rather than pushing her ahead in the pram: there is no second figure
+	# and nothing offset in front of her, so the cue over the bundle floats over her own column —
+	# see `_draw_baby_cue()` and `baby_cue_lift()`, both of which already treat a zero offset as
+	# "shares her column" without a branch of their own.
+	var pram_offset := Vector2.ZERO if carrying \
+			else Vector2(facing.x, facing.y * OBLIQUE_Y) * PRAM_DISTANCE
 
 	# Shadows belong to the ground plane, so they always go underneath both figures.
 	shape.draw_shadow(self, Vector2.ZERO)
-	pram_shape.draw_shadow(self, pram_offset)
 	var gait := clampf(velocity.length() / Tuning.WALK_SPEED, 0.0, 1.6)
-	if facing.y < 0.0:
-		_draw_pram(pram_offset)
+	if carrying:
 		_draw_mother(gait)
 	else:
-		_draw_mother(gait)
-		_draw_pram(pram_offset)
+		pram_shape.draw_shadow(self, pram_offset)
+		if facing.y < 0.0:
+			_draw_pram(pram_offset)
+			_draw_mother(gait)
+		else:
+			_draw_mother(gait)
+			_draw_pram(pram_offset)
 
 	_draw_baby_cue(pram_offset)
 	_draw_alert()
@@ -466,6 +535,16 @@ func _draw_pram(at: Vector2) -> void:
 
 ## The mother texture selected by the live drawing path for a gait frame.
 func _mother_texture(frame: int) -> Texture2D:
+	if carrying:
+		if _view_direction == 0 or _view_direction == 4:
+			return MOTHER_CARRYING_SIDE[frame]
+		if _view_direction == 1 or _view_direction == 3:
+			return MOTHER_CARRYING_FRONT_DIAGONAL[frame]
+		if _view_direction == 2:
+			return MOTHER_CARRYING_FRONT[frame]
+		if _view_direction == 5 or _view_direction == 7:
+			return MOTHER_CARRYING_BACK_DIAGONAL[frame]
+		return MOTHER_CARRYING_BACK[frame]
 	if _view_direction == 0 or _view_direction == 4:
 		return MOTHER_SIDE[frame]
 	if _view_direction == 1 or _view_direction == 3:

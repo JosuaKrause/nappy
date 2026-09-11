@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://7mnsk545an1c"
-path="res://.godot/imported/stair_down.svg-16bfb157ce6fa8512bf2fe6e13a728e8.ctex"
+uid="uid://cvb7xty5dlmmq"
+path="res://.godot/imported/stair_rail_level.svg-1e7ba87f3180f52a4821809bb833dbdf.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/interior/stair_down.svg"
-dest_files=["res://.godot/imported/stair_down.svg-16bfb157ce6fa8512bf2fe6e13a728e8.ctex"]
+source_file="res://assets/interior/stair_rail_level.svg"
+dest_files=["res://.godot/imported/stair_rail_level.svg-1e7ba87f3180f52a4821809bb833dbdf.ctex"]
 
 [params]
 
