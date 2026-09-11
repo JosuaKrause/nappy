@@ -228,6 +228,16 @@ func space_out_the_traffic(delta: float) -> void:
 			positions[i] = queue[i].queue_position()
 		index[key] = positions
 	_traffic.rebuild(index)
+	# And the road a car in a turn has **booked** rather than reached. A turning car is still in the
+	# queue it came from — that is where its body is, and that is who has to keep a gap behind it —
+	# so nothing above knows about the lane it is on its way into, and a second car would happily
+	# turn or recycle into the piece of it the first one is already committed to. See
+	# `CrowdAgent._claim_the_turn()`; put into the rebuild rather than left to the claim alone so
+	# the reservation is visible to every car for the whole frame rather than only to the ones that
+	# happen to move after the turning one.
+	for agent in _agents:
+		if agent.is_turning():
+			_traffic.claim(agent.turn_lane_key(), agent.turn_landing())
 	give_way_at_junctions()
 	_stop_for_gates(delta)
 
@@ -265,6 +275,18 @@ func give_way_at_junctions() -> void:
 			continue
 		agent.junction_hold = INF
 		var axis := 1 if agent.travelling_vertically() else 2
+		# **A car in a turn holds the whole box rather than one arm of it.** Its path crosses both
+		# axes, its tail is still in the way after its nose has left, and it is in there for the
+		# length of a manoeuvre rather than for the length of a drive-through — so nothing else may
+		# enter until it is out. That is also what keeps the queue behind it off its own back bumper:
+		# a follower held at the stop line is a car's length clear of where the arc begins.
+		var turning := agent.turning_in()
+		if turning.x >= 0:
+			occupied[turning] = int(occupied.get(turning, 0)) | 3
+			if not inside_the_box.has(turning):
+				inside_the_box[turning] = [] as Array[CrowdAgent]
+			inside_the_box[turning].append(agent)
+			continue
 		var inside := agent.junction_occupied()
 		if inside.x >= 0:
 			occupied[inside] = int(occupied.get(inside, 0)) | axis
