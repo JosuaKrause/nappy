@@ -244,7 +244,7 @@ The same holds for anything else the fiction may rename: the city has no name fo
 
 **New things get American English names.** *(2026-09-11: "use american words for new things";
 "existing names are fine".)* A new event, asset, identifier, constant or doc noun says *sidewalk*,
-*crosswalk*, *street musician*, not *pavement*, *zebra*, *busker* — the player is not a native
+*crosswalk*, *street musician*, not *pavement*, *zebra*, *busker* — the player is not a native British
 speaker and a British word is a lookup. Nothing existing is renamed for it: `pavement`, `zebra` and
 `busker` stay wherever they already are, since a rename across the tree is a diff nobody can review
 for anything else.
