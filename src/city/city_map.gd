@@ -128,7 +128,7 @@ var closed_tiles := {}
 ## plan_day`'s own `held` out-param — a soft seal is deliberately not covered, since its
 ## carriageway is still walkable and a café on it is the price of that route), every region wall
 ## and door segment (`RegionPlanner.plan_day`'s `walls` and `doors`), and every segment bordering
-## the home block. See `docs/TODO.md`, "Events spawn inside a fully blocked street" and "Nothing
+## the home block. See `docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street" and "Nothing
 ## on the home block".
 ##
 ## **Two readers, and the docstring is for both.** `EventScheduler._open_ground_for` refuses any
@@ -160,7 +160,7 @@ func is_held_at(tile: Vector2i) -> bool:
 ## Whether a tile is inside the home block's own lot — the ground `_place_home` carves the notch
 ## out of. Distinct from `is_held_at`, which is about the streets *around* the block: a catalogue
 ## row or a resistance mark placed inside the block itself (its building interior, or an alley if
-## one were ever carved there) is the other half of "nothing on the home block", `docs/TODO.md`'s
+## one were ever carved there) is the other half of "nothing on the home block", `docs/DECISIONS.md`, M100's
 ## own words for playtest 11's reopened finding.
 func is_on_home_block(tile: Vector2i) -> bool:
 	return lot_rect(home_block).has_point(tile)

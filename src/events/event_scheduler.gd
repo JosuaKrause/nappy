@@ -768,7 +768,7 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary) ->
 				# or a segment bordering the home block (`CityMap.held_segments`) — and
 				# `is_on_home_block` refuses the block's own interior on top of that, both by
 				# construction rather than as a repair once something has landed there. See
-				# `docs/TODO.md`, "Events spawn inside a fully blocked street" and "Nothing on the
+				# `docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street" and "Nothing on the
 				# home block".
 				if map.is_closed(candidate) or doorstep.has_point(candidate) \
 						or map.is_held_at(candidate) or map.is_on_home_block(candidate) \

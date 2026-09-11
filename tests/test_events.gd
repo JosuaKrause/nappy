@@ -2168,7 +2168,7 @@ func _test_nothing_stands_on_the_doorstep_street(t) -> void:
 			% pavement)
 	t.check(placed > 14, "and the days it was checked over still place events (%d)" % placed)
 
-## `docs/TODO.md`, "Events spawn inside a fully blocked street" and "Nothing on the home block":
+## `docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street" and "Nothing on the home block":
 ## a catalogue placement is refused a candidate tile whose street segment is held today — a
 ## closure, a hard seal, a region wall or door, or a segment bordering the home block
 ## (`CityMap.held_segments`) — or that lies inside the home block's own lot

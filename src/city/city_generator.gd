@@ -769,7 +769,7 @@ static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.Block
 	# `ALLEY_CHANCE` entry is 0 — except the home shares `RESIDENTIAL`'s purpose and its 0.25 with
 	# every other block of it, so the exemption has to be asked here rather than carried by the
 	# table. An alley through it would be a second, unguarded way onto ground playtest 11 asked to
-	# keep clear of every hazard (`docs/TODO.md`, "Nothing on the home block"), and it is asked
+	# keep clear of every hazard (`docs/DECISIONS.md`, M100, "Nothing on the home block"), and it is asked
 	# before the roll rather than discarded after: `_home_rect` no longer has anything to slide
 	# the notch off of.
 	#

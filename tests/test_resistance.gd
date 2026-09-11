@@ -481,7 +481,7 @@ func _test_the_guard_moves_with_the_mark_and_faces_away_from_her(t) -> void:
 		player.free()
 		director.free())
 
-## `docs/TODO.md`, "The guard robber is placed inside a building, where he is stuck for ever":
+## `docs/DECISIONS.md`, M100, "The guard robber is placed inside a building, where he is stuck for ever":
 ## `ResistanceDirector._draw_guard_position` redraws a bearing until the point is walkable, never
 ## on a held segment or the home block, rejecting rather than repairing — checked directly, over
 ## many seeds and many marks, rather than through a live guard instance: the geometry is the same

@@ -131,7 +131,7 @@ func _test_home_opens_onto_the_street(t) -> void:
 		t.check(map.is_walkable(doorstep),
 				"seed %d: the tile outside the front door is walkable" % _seed(i))
 
-## `docs/TODO.md`, "Nothing on the home block": no alley is carved into the home block at all,
+## `docs/DECISIONS.md`, M100, "Nothing on the home block": no alley is carved into the home block at all,
 ## decided where alleys are rolled (`CityGenerator._build_block`) rather than slid sideways
 ## afterwards. Guarded against vacuity — zero on the home block proves nothing if the city rolled
 ## none anywhere — by also counting alleys elsewhere.

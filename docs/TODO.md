@@ -747,6 +747,18 @@ is still true.
 
 **Defects, each a few lines once found:**
 
+- [ ] **`tools/run.sh --help` starts the game instead of printing help, and a wrong flag is
+      accepted in silence.** *(2026-09-11: "help doesn't work it just starts the game which
+      becomes unresponsive. also invalid arguments should get rejected and cause the help to be
+      printed".)* `tools/run.sh` forwards everything it is given to the game as a dev flag and
+      reads none of it, and `DevFlags` looks each flag up by name and ignores whatever it does not
+      know — so `--help` is a flag nobody reads and the game boots as usual, and a typo boots the
+      game the player did not ask for. The fix is in the script rather than the game: `--help`
+      and `-h` print the flag list — the one `README.md` carries, kept in one place so it cannot
+      drift — and exit, and any argument that is not a known flag or a known flag's value is
+      rejected with the same list and a non-zero exit before Godot is launched. A test in
+      `tools/` that runs the script with `--help` and with a bogus flag and asserts neither
+      starts the game
 - [ ] **A rig driving `EventManager` before `City.start_day` seals nothing.** `EventManager.
       start_day` reads the day's tree as `_city.route_tree()` when it has a city, and that
       answers `null` until `City.start_day` has grown one — so a rig that starts the events first
@@ -755,37 +767,6 @@ is still true.
       trees for one day and no seals or walls at all. Found building M62 and not fixed there;
       the fix is one fallback — grow the tree when the city has none yet — and a test that a
       day started through `EventManager` alone still carries seals
-- [ ] **Events spawn inside a fully blocked street.** *(2026-09-09, playtest 49: "a definite bug
-      is that inside fully blocked streets (eg tree) restaurants etc can still spawn which is
-      silly".)* The scheduler's own rule is the right one — *"a closed street is not somewhere
-      anyone can get to, so it is not somewhere an event can usefully happen"* — and it is enforced
-      by refusing any candidate tile in `closed_tiles`. Two things put a café behind a fallen tree
-      anyway. `CityMap.close_streets` fills `closed_tiles` with only the tiles a flood from the
-      doorstep cannot reach once the barrier tiles at both mouths are down, so a closed street with
-      an alley mouth or a courtyard archway opening onto its middle keeps its ground open, on
-      purpose, and the scheduler then places on it. And a **hard seal** is not a closure at all: it
-      is `barricade` bodies standing across the middle of the segment, placed by `SealPlanner`, so
-      neither half of that street is in `closed_tiles` and the whole of it is open to the catalogue.
-      **The fix is at placement, keyed on the segment rather than on the tile**: no catalogue row is
-      offered a tile on a segment that carries a closure or a hard seal, with the seal's own bodies
-      and the closure marker the only things allowed to stand there. A soft seal is not covered — the
-      street is still walkable down the carriageway and a café on it is the price of going that way.
-      A test plans several seeds and days and asserts that nothing planned stands on a closed or
-      hard-sealed segment. Placed here rather than ahead of the queue by the player: *"blocked
-      street can go behind actual important things"*.
-
-      **The same fix covers the region doors** *(2026-09-10, playtest 55: "the barriers are oddly
-      placed. why would they be in front of a checkpoint? … there is no way to actually get to the
-      checkpoint here")*: `roadblock` is placed on any road or crossing tile from day 7 and knows
-      nothing about `RegionPlanner`'s doors, so a band stood across the street south of a hut and
-      a boom gate on seed 3045005721, day 7, and sealed the door it was meant to be the way
-      through. **The player's principle, and it is the rule**: *"the checkpoint suggests that there
-      was a path planned through so there shouldn't be a barrier … this shouldn't happen by
-      construction"*. A door is where the day's route passes, so a door segment and the segment
-      its checkpoint stands on join the closure and hard-seal segments as ground a blocking row is
-      never offered — excluded where `EventScheduler` builds the candidate tiles, beside its
-      `closed_tiles`, doorstep and kerb tests, not checked or repaired after placement, which is
-      `CLAUDE.md`'s own rule for every guarantee here. The test covers the doors too
 - [ ] **A roadblock band is a row of blocks, not a barrier.** *(2026-09-10, playtest 55: "the
       barrier itself also doesn't read as a continuous element. is it using the texture of the
       other orientation and concatenating that one?")* No: `Look.ROADBLOCK` is drawn by
@@ -796,32 +777,6 @@ is still true.
       thing; the roadblock wants the same construction — a continuous held-street barrier picture
       that repeats seamlessly, with an end piece — drawn under the svg-art rules and bound in
       `_draw_body`'s `ROADBLOCK` case
-- [ ] **Nothing on the home block — the whole block, as playtest 11 asked, not the doorstep
-      street.** *(Playtest 11, finding 1: "events/hazards should not spawn on the home block";
-      2026-09-10, playtest 55: "if there spawns an alley at the home (which shouldn't happen) the
-      robber spawns too leading to a spawn kill every time … there was a bug report a while back
-      -- where did it go".)* The archive records finding 1 as built, and what was built is
-      `EventScheduler._the_street_she_starts_on()` — the one segment outside the front door is
-      never offered to the catalogue. **Asked for the block · narrowed to the street with nobody
-      saying so**, which is why it is reopened here from the old finding rather than filed as
-      new. Two parts, both by construction. **No alley is carved into the home block**:
-      `CityGenerator` carves a through-alley into any non-park, non-commercial block, the middle
-      block included, and only slides the home notch sideways off it (`docs/CITY.md`, "Place
-      home"); the middle block joins the commercial blocks as exempt where the alleys are rolled,
-      and the notch-sliding clause goes with nothing left to slide for. **And the exemption is the
-      block's ground**: every segment bordering the home block, and anything inside it, is
-      excluded where the scheduler builds candidates — beside `closed_tiles`, the kerb test and
-      the door segments above — and `ResistanceDirector._maybe_set_a_trap()` refuses a bearing
-      that lands there. `tests/test_generator.gd` asserts no alley tile on the home block over
-      many seeds; the scheduler test asserts nothing planned on the block's segments. The spawn
-      kill needs no fix of its own once the ground is gone. **The run that showed it**: seed
-      291862120, day 7, five attempts lost in about half a second each,
-      `docs/evidence/archive/session-captures/2026-09-10/run-205011-seed291862120-v0.8.2-416-g07b801b/`.
-      Its log names the second cause: the mark was offered far away at (37,149) and the
-      *never-seen mark follows her* rule (M78) moved it at second zero to (79,83), the alley two
-      tiles from the doorstep at (81,84), guard and all. So the relocation is covered by the same
-      exclusion — a mark never follows her onto the home block's ground — and the test below
-      replays this seed
 - [ ] **A car's strike box sits half a car behind its picture going north, half a car ahead going
       south.** *(2026-09-10, playtest 55, read off the debug view: "the dead zone of a car is
       trailing the car instead of leading the car?")* `CrowdAgent._draw_body` draws a car with
@@ -840,20 +795,6 @@ is still true.
       stepping one tile into a footprint, in `src/crowd/`. Fix that and the assertion goes back to
       zero, which is the only acceptable end state: a car standing inside a building is visible, and
       the test's own name is a promise
-- [ ] **The guard robber is placed inside a building, where he is stuck for ever.** *(2026-09-02:
-      "the robber can be placed inside buildings which makes him unable to move at all."; 2026-09-09,
-      playtest 50: "the robber is stuck inside the roof"; 2026-09-10, playtest 55: "the robber is
-      inside the roof as usual".)* **Reproduced, with the cause.** Seed
-      2295276695, day 5: the chalk mark is at tile (69,79), an `ALLEY` tile in a two-tile alley,
-      and the robber at (67,80) is `BUILDING`, one tile south of it; the run log has him at that
-      tile before, during and after his chase while she moved, since a chase step is clamped to
-      walkable ground. The scheduler's own `alley_robbery` placement is not the path — the
-      guard is: `ResistanceDirector._maybe_set_a_trap()` stands him at a random bearing from the
-      mark, 66 to 176px out, and never asks whether that point is walkable, and an alley is 64px
-      wide. His lethal radius travels with him, which makes an invisible fatal spot inside a wall.
-      **Fix it where he is placed**: draw the bearing until the point is walkable ground (an
-      alley tile by preference, since the row's own placement is `ALLEY`), rejecting rather than
-      repairing, and keep the band. The evidence is [PLAYTEST-50.md](playtests/PLAYTEST-50.md), section 2
 - [ ] **The pram has no collision of its own.** `scenes/player/stroller.tscn` carries one circle
       for her, so the pram clips into walls when she hugs a corner. A second body that trails her,
       or a capsule that rotates with `facing`

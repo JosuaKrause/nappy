@@ -144,7 +144,7 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2,
 		# **No trap is better than a trap in a wall.** `TRAP_DRAW_LIMIT` bearings found nowhere
 		# walkable at all — every one of them a building, a held segment or the home block — so
 		# the mark goes out unguarded today rather than guarded by a robber stuck for ever where
-		# nobody can ever meet him. `docs/TODO.md`, "The guard robber is placed inside a
+		# nobody can ever meet him. `docs/DECISIONS.md`, M100, "The guard robber is placed inside a
 		# building, where he is stuck for ever".
 		Telemetry.note("roll", "chalk mark unguarded: no walkable ground for the robber in %d draws"
 				% TRAP_DRAW_LIMIT)
@@ -155,7 +155,7 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2,
 
 ## A bearing and a distance from `at`, redrawn until the point is walkable ground the day's
 ## catalogue and the home-block exemption both leave alone — rejected rather than repaired, the
-## same rule every other placement in this game keeps. `docs/TODO.md`, "The guard robber is
+## same rule every other placement in this game keeps. `docs/DECISIONS.md`, M100, "The guard robber is
 ## placed inside a building": his lethal radius travels with him, so a bearing that lands him in
 ## a building is an invisible fatal spot rather than a cosmetic one.
 ##
@@ -225,7 +225,7 @@ func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator) -> Vector2:
 ## should not spawn on the home block" — was built as one exempt street and reopened once an
 ## alley through the block (now impossible, `CityGenerator._build_block`) turned out to be the
 ## other half of it; `is_held_at` refuses a segment bordering the block, `is_on_home_block`
-## refuses anything inside it. See `docs/TODO.md`, "Nothing on the home block".
+## refuses anything inside it. See `docs/DECISIONS.md`, M100, "Nothing on the home block".
 func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator) -> Vector2:
 	var reachable: Array[Vector2i] = []
 	for tile in candidates:

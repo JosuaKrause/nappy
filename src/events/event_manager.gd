@@ -110,7 +110,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# with the catalogue's), so moving it earlier changes which seals a day gets not at all — only
 	# how soon `build_day` can see where they landed. `held` is `_map.held_segments` itself: a hard
 	# seal's segment is marked there as it is placed, so the catalogue never offers a candidate row
-	# that same ground (`docs/TODO.md`, "Events spawn inside a fully blocked street").
+	# that same ground (`docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street").
 	var seals := SealPlanner.plan_day(_map, day, tree, GameState.day_rng(day, "seals"), boundary,
 			_map.held_segments)
 	_plans = EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars,
