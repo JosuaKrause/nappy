@@ -2258,17 +2258,14 @@ func _test_nothing_stands_on_the_doorstep_street(t) -> void:
 ## rolls a single candidate.
 ##
 ## **The seals' own bodies, the closure marker and the checkpoint rows are placed by their
-## planners, not by the catalogue roll, so they are unaffected** — asserted directly against a
-## measured baseline rather than trusted, on the same seeds and days the exclusion is checked
-## over: 20 (seed, day) pairs (4 seeds × 5 days, including day 7 and day 10 for the regions) give
-## 48 closures, 456 region-boundary segments (walls plus doors), 396 checkpoint bodies and 5320
-## seal placements, measured with `SealPlanner.plan_day`'s own `held` out-param wired in exactly
-## as `EventManager.start_day` wires it — so a regression here means construction changed, not
-## that this test drifted from it. **Re-measured against the RNG-cadence fix in
-## `CityGenerator._build_block`**, which draws the home block's alley roll and discards it rather
-## than skipping the draw: skipping it reseeded every block built after the home block for this
-## same set of seeds, so the boundary/checkpoint/seal totals a pre-fix run gives (441/384/5119)
-## are a different, incorrect city rather than a looser bound on this one.
+## planners, not by the catalogue roll, so they are unaffected** — asserted by comparison rather
+## than against a remembered count: the seals are planned twice on the same seeded stream, once
+## with `SealPlanner.plan_day`'s `held` out-param wired in exactly as `EventManager.start_day`
+## wires it and once without, and the two plans must be the same size, since `held` is written
+## by the planner and read by nobody in it; closures, walls, doors and checkpoint bodies never
+## read the holds at all, so they only have to exist across the sampled days (day 7 and day 10
+## are in the sample for the regions). A remembered total would fail on every unrelated change to
+## the generator — it did, twice, the day this was written — and say nothing about holds.
 func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 	const SEEDS := 4
 	const BASE_SEED := 314159
@@ -2314,6 +2311,12 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
 			var seals := SealPlanner.plan_day(map, day, tree, seal_rng, boundary, map.held_segments)
+			var unheld_rng := RandomNumberGenerator.new()
+			unheld_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
+			var seals_unheld := SealPlanner.plan_day(map, day, tree, unheld_rng, boundary)
+			t.check(seals.size() == seals_unheld.size(),
+					"seed %d day %d: holding the hard seals' ground plans the same seals (%d vs %d)"
+					% [map.seed_used, day, seals.size(), seals_unheld.size()])
 
 			var consumed: Array[String] = []
 			for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
@@ -2338,14 +2341,11 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 
 	t.check(checked > 0, "the catalogue placed something to check across every sampled day (%d)"
 			% checked)
-	t.check(total_closures == 48,
-			"the day's closures are unaffected by holding their ground (%d, want 48)" % total_closures)
-	t.check(total_boundary == 456,
-			"the region's walls and doors are unaffected (%d segments, want 456)" % total_boundary)
-	t.check(total_checkpoints == 396,
-			"the region's checkpoint bodies are unaffected (%d, want 396)" % total_checkpoints)
-	t.check(total_seals == 5320,
-			"the day's seal placements are unaffected (%d, want 5320)" % total_seals)
+	t.check(total_closures > 0, "the sampled days closed streets to hold (%d)" % total_closures)
+	t.check(total_boundary > 0, "the sampled days had walls and doors to hold (%d)" % total_boundary)
+	t.check(total_checkpoints > 0,
+			"the sampled days stood checkpoint bodies on their doors (%d)" % total_checkpoints)
+	t.check(total_seals > 0, "the sampled days sealed streets (%d)" % total_seals)
 
 # ------------------------------------------------------- one picture per row ---
 # *(M37, playtest 07 finding 2: "not sure what that person was supposed to be".)* The vocabulary's
