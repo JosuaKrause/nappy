@@ -58,10 +58,12 @@ pictures to their actual runtime consumers.
       SVG first, reviewed on a native and 3× sheet beside its a frame. Then the stroller's
       alternation on each: phase advanced by applied speed, frame a at rest and while stopped, so a
       queue, a give-way or a posted guard holds a standing pose; body and trim, or actor and held
-      thing, swap frames together. Read as *while moving* — the busker, the café sitters
-      and a standing guard keep one frame — which is the orchestrator's reading, open to overturn
-      if an idle animation was meant too. After the walker binding above, since it extends that
-      family table, and alongside the event binding below for the rest
+      thing, swap frames together. **The café sitters get an idle animation** *(same day: "cafe
+      sitters should have an idle animation, too")* — a second seated frame, a lean or a raised
+      cup, alternated slowly on a timer rather than on a speed, since they never move. Whether the
+      busker strums and a standing guard shifts is the player's to say; until then those two keep
+      one frame. After the walker binding above, since it extends that family table, and alongside
+      the event binding below for the rest
 - [ ] **Cars bob on their wheels.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "cars
       could bop up and down while the wheels stay in the same place")* A moving car's body rises
       and falls about a pixel on a phase advanced by its speed, and its wheels stay on the ground.

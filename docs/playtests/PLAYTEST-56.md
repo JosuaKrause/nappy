@@ -44,6 +44,15 @@ binding, walkers first because their art derives from the mother's, then the eve
 animals, each needing its own second frame for every view before any code. Reading *movement* as
 *while moving* is the orchestrator's, open to overturn if an idle animation was meant too.
 
+Partly overturned the same day, for the café sitters:
+
+> cafe sitters should have an idle animation, too. what's a busker? I'm not english
+
+So a seated figure that never moves still animates: a second seated frame, alternated slowly on a
+timer. The busker — a street musician playing for coins, here the man with the guitar and the
+open case in a park or square — and a standing guard stay single-frame until the player says
+otherwise.
+
 ## Cars bob on their wheels
 
 > cars could bop up and down while the wheels stay in the same place
