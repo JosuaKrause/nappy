@@ -13,8 +13,17 @@ var ending: GameEnums.Ending = GameEnums.Ending.NONE
 ## Seconds the world has actually been moving this run — advanced by exactly one owner,
 ## `main._process()`'s own day-loop branch, while a day is walking or returning home and the tree
 ## is not paused. Never shown during play; the ending screen is the only place it is read, through
-## `format_clock()` (added alongside the day summary's own line).
+## `format_clock()` below.
 var play_seconds: float = 0.0
+
+## `%d:%02d.%03d` — minutes, seconds, milliseconds — the one format a run's own length is ever
+## shown in, so a second clock reading to the millisecond has this to call rather than a second
+## copy of the string. `DaySummary.show_ending()` is the only caller so far; the finale's own
+## clock is not built yet, and calls this the same way once it is.
+static func format_clock(seconds: float) -> String:
+	var total_ms := int(round(seconds * 1000.0))
+	var total_seconds := total_ms / 1000
+	return "%d:%02d.%03d" % [total_seconds / 60, total_seconds % 60, total_ms % 1000]
 
 ## One-shot event ids already consumed this run, so they never fire twice.
 var consumed_one_shots: Array[String] = []

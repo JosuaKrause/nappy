@@ -169,7 +169,11 @@ func show_ending(ending: GameEnums.Ending) -> void:
 	_heading.text = _ENDING_HEADING.get(ending, "THE END")
 	_heading.show()
 	_title.text = _ENDING_TITLE.get(ending, "The end.")
-	_body.text = _ENDING_BODY.get(ending, "")
+	# The one place `GameState.play_seconds` is ever shown — never during play, on every ending
+	# alike. `GameState.format_clock()` is the shared formatter so this line and the finale's own
+	# clock, once that is built, never carry two copies of the same format string.
+	_body.text = "%s\n\nTime played: %s" \
+			% [_ENDING_BODY.get(ending, ""), GameState.format_clock(GameState.play_seconds)]
 	_hint.text = ""
 	_showing_ending = true
 	_present()
