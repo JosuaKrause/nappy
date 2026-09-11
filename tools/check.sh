@@ -5,6 +5,29 @@
 # exist yet and every typed reference fails to parse. The import pass builds it.
 set -uo pipefail
 
+usage() {
+    cat <<'EOF'
+usage: tools/check.sh [--help|-h]
+
+Imports assets, boots the project headless, and fails on any script error. Takes no arguments
+of its own; point it at a different Godot binary with GODOT=/path/to/Godot.
+
+  tools/check.sh
+  GODOT=/path/to/Godot tools/check.sh
+EOF
+}
+
+case "${1:-}" in
+    --help|-h) usage; exit 0 ;;
+esac
+
+if [[ $# -gt 0 ]]; then
+    echo "tools/check.sh takes no arguments; got: $*" >&2
+    echo >&2
+    usage >&2
+    exit 2
+fi
+
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
