@@ -21,6 +21,7 @@ func run(t) -> void:
 	_test_an_event_that_has_run_does_not_run_again(t)
 	_test_a_running_event_comes_back_where_it_got_to(t)
 	_test_a_set_piece_happens_at_exactly_one_of_its_sites(t)
+	_test_a_day_started_through_the_manager_alone_still_carries_seals(t)
 	_teardown()
 
 func _build_city(t) -> void:
@@ -277,3 +278,41 @@ func _test_a_set_piece_happens_at_exactly_one_of_its_sites(t) -> void:
 					"day %d: and the other %d offers are spent (%d were)"
 					% [day, (groups[group] as Array).size() - 1, spent])
 	t.check(offered > 0, "a run offers a set piece at all (%d groups over fourteen days)" % offered)
+
+## M100: "a rig driving `EventManager` before `City.start_day` seals nothing." `EventManager.
+## start_day` used to read the day's tree as `_city.route_tree()` whenever `_city` existed at
+## all — even before `_city.start_day()` had ever grown one, which is exactly what every rig in
+## this suite does, this one included — so `SealPlanner.plan_day` and `RegionPlanner.plan_day`
+## were handed a null tree and came back with nothing, while `EventScheduler.build_day` grew a
+## tree of its own for the catalogue's own placements: two trees for one day, and no seals or
+## walls at all.
+##
+## Comparing "the manager alone" against "the manager after the city's own `start_day`" is the
+## check, rather than counting seals directly: `RouteTree.for_day(map, day)` is deterministic and
+## `SealPlanner`'s own RNG stream (`GameState.day_rng(day, "seals")`) does not depend on `_city`
+## either, so every segment the fallback holds has to be held the real way too — a rig that skips
+## `City.start_day` must not come out with less of it. **Not exact equality**: `_city.closures()`
+## only ever has something to read once `City.start_day()` has run (see the comment in
+## `EventManager.start_day` above `_map.clear_day_holds()`), so the "after" run legitimately holds
+## a little more, one closure's own segment. See `tests/test_checkpoints.gd`'s
+## `_test_the_manager_actually_places_the_door_structure()` for the same `City.start_day` calling
+## convention, written against this exact gap before it had a fix.
+func _test_a_day_started_through_the_manager_alone_still_carries_seals(t) -> void:
+	var day := Tuning.REGION_WALL_FIRST_DAY  # so a region wall or door is in play, not only seals.
+	_start(day)
+	var alone: Dictionary = _city.map.held_segments.duplicate()
+	t.check(alone.size() > 0,
+			"a day started through the manager alone still holds some ground (%d segments)"
+			% alone.size())
+
+	var state := CityState.new()
+	state.begin_day(_city.map.block_plans, day)
+	var closures_rng := RandomNumberGenerator.new()
+	closures_rng.seed = hash("m100-seals:closures:%d" % day)
+	_city.start_day(state, day, closures_rng)
+	_start(day)
+	var after_city: Dictionary = _city.map.held_segments.duplicate()
+
+	for key in alone:
+		t.check(after_city.has(key),
+				"everything the manager's own fallback tree holds, City.start_day holds too")

@@ -58,12 +58,21 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# is a thing that stops being true the first time one of them takes an argument. Kept as a local
 	# rather than re-read from `_city` below, for the same reason — `SealPlanner` needs the same
 	# tree the catalogue's own placements were just stated against.
-	var tree := _city.route_tree() if _city else RouteTree.for_day(_map, day)
+	#
+	# **`_city.route_tree()` can itself be null even when `_city` is not** — a live `_city` whose
+	# own `start_day` was never called for this day, which is the whole rig `tests/test_event_
+	# manager.gd` and `tests/test_balance.gd` drive: `EventManager.start_day` on its own, with no
+	# `City.start_day` first. A ternary on `_city` alone always took the true branch there and
+	# handed every planner below a null tree — `docs/TODO.md`'s M100 defect, "a rig driving
+	# EventManager before City.start_day seals nothing". The explicit null check grows one the
+	# same way `City._close_streets` does, from the same `RouteTree.for_day(map, day)`, so the
+	# fallback and the real thing can never disagree.
+	var tree: RouteTree = _city.route_tree() if _city else null
+	if not tree:
+		tree = RouteTree.for_day(_map, day)
 	# Grown the same way `tree` was, so the two never answer for two different days — see
-	# `City._close_streets`. `_city.region_plan()` can itself be null on a live `_city` whose own
-	# `start_day` was never called for this day (a rig that drives `EventManager` directly, the
-	# same shape `tree` above already has to tolerate) — the explicit null check falls through to
-	# growing one, the same way `RegionPlanner.plan_day` grows its own tree when handed none.
+	# `City._close_streets`. `_city.region_plan()` can itself be null for the same reason as
+	# `tree` above, and the explicit null check here falls through to growing one the same way.
 	var region_plan: RegionPlanner.RegionPlan = _city.region_plan() if _city else null
 	if not region_plan:
 		region_plan = RegionPlanner.plan_day(_map, day, tree)
@@ -73,9 +82,11 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# streets around the home block are all known already; the hard seals are not, which is
 	# why `SealPlanner.plan_day` moved ahead of `build_day` below (see that call's own note).
 	#
-	# A rig driving `EventManager` with no `City` gets no closures held: `_city.closures()` has
-	# nothing to read without one, the same gap `docs/TODO.md`'s "a rig driving EventManager
-	# before City.start_day seals nothing" already names for the tree and the region plan. The
+	# A rig driving `EventManager` off a `City` that has not run its own `start_day` yet still
+	# gets no closures held: `_city.closures()` reads `City`'s own `_closures`, which only
+	# `City.start_day()` ever populates, and there is no fallback for it the way `tree` and
+	# `region_plan` now grow their own just above — closures are `ClosurePlanner`'s to plan, not
+	# `EventManager`'s, so a rig that wants them run has to run `City.start_day()` first. The
 	# wall, the doors and the home block are still held, because all three come from
 	# `region_plan` and `_map` alone.
 	_map.clear_day_holds()
