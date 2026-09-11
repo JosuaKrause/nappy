@@ -179,10 +179,12 @@ static func start_escape() -> bool:
 	return false
 
 ## `--start-escape`'s own optional value — `stairwell:left`, `stairwell:right`, `lobby`, `basement`
-## or `floor:N` — so a rig or a person can boot straight into any of the seven maps instead of
-## always walking there from her door. `""` when the flag was given bare (the default: the third
-## floor at her door) or not given at all; mapping the word onto an `InteriorMap.MapKind` stays
-## with `main.gd`, the only caller, the same split `ending_override()` leaves to its own caller.
+## or `floor:N` — so a rig or a person can teleport straight to any of the building's seven parts
+## instead of always walking there from her door; the building is one map (see `InteriorMapPlan`'s
+## own doc), so this chooses where on it she starts rather than which map loads. `""` when the flag
+## was given bare (the default: the third floor at her door) or not given at all; mapping the word
+## onto an `InteriorMap.PARTS` name stays with `main.gd`, the only caller, the same split
+## `ending_override()` leaves to its own caller.
 ##
 ## Read only when `--start-escape` is itself present, so a bare next word that happens to start
 ## with neither `--` nor a recognised target is not silently swallowed as some other flag's own

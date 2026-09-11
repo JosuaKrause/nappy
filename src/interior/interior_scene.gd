@@ -1,9 +1,9 @@
 class_name InteriorScene
 extends WorldContext
-## The escape scene's building, one map at a time — `assets/interior`'s floor plan and stair kit
-## made walkable. Built by `main._ready_escape()` behind `--start-escape`; absent from every
-## ordinary run, which is why it needs no events and no crowd of its own — `WorldContext`'s own
-## defaults (1.0 recovery, no excitement sources) are exactly "meters idle" already.
+## The escape scene's building, as one persistent map — `assets/interior`'s floor plan and stair
+## kit made walkable. Built once by `main._ready_escape()` behind `--start-escape`; absent from
+## every ordinary run, which is why it needs no events and no crowd of its own — `WorldContext`'s
+## own defaults (1.0 recovery, no excitement sources) are exactly "meters idle" already.
 ##
 ## Ground is a `TileMapLayer` built from `InteriorTileSet`; walls, doors, the barricade and the
 ## brick stand in elevation in a plain layer under everything, the same reasoning `Building` and
@@ -13,18 +13,17 @@ extends WorldContext
 ## player joins through `add_entity()`, so she walks behind a rail the same way she walks behind an
 ## event's shadow outdoors.
 ##
-## **Seven maps, joined only by doors, never by a shared coordinate space.** Each
-## `InteriorMap.build()` call returns a small grid with its own origin; walking onto a door tile
-## fades out, rebuilds this scene for the door's own `target_map`, places her at the counterpart
-## door and fades back in — see `_start_door_transition()`. There is no "next floor" arithmetic
-## left in this class; `InteriorMapPlan.Door` carries the whole topology.
+## **One map, seven parts, no loading.** `InteriorMap.build()` lays all seven parts at once, `64`
+## tiles apart from each other — comfortably more than the 20×11.25 tiles a 640×360 view at zoom 2
+## can ever show, so no part is in view from another. A door does not rebuild anything: it fades to
+## black, moves her to the counterpart door's own tile, and fades back in — see
+## `_start_door_transition()`. There is no "current part" left in this class.
 ##
 ## **A door tile is both where she leaves from and where she arrives.** Nothing here makes the
-## arrival tile different from the trigger tile — the way the original single-shaft design needed
-## a landing two tiles from its own door — because the trigger is edge-detected: `process_player()`
-## remembers her last tile and only fires when the current one is *newly* a trigger, not merely
-## *is* one, so being placed on a door the instant a transition finishes does not immediately fire
-## the next one. `_last_player_tile` carries that memory across frames.
+## arrival tile different from the trigger tile, because the trigger is edge-detected:
+## `process_player()` remembers her last tile and only fires when the current one is *newly* a
+## trigger, not merely *is* one, so being placed on a door the instant a transition finishes does
+## not immediately fire the next one. `_last_player_tile` carries that memory across frames.
 
 signal exit_requested
 
@@ -51,25 +50,22 @@ const TILE := float(Tuning.TILE_SIZE)
 ## rather than for a whole day changing.
 const FADE_SECONDS := 0.35
 
-## `InteriorMap.MapKind` as a plain `int` — see `InteriorMapPlan.Door.target_map`'s own doc for why
-## every cross-file reference to the enum widens rather than naming it.
-var map_kind := 0
 var _plan: InteriorMapPlan
 var _tile_set: TileSet
 var _ground: TileMapLayer
 var _walls: Node2D
 var _entities: Node2D
-## Plain `StaticBody2D` blockers, one per non-walkable cell in a margin around the map's own
+## Plain `StaticBody2D` blockers, one per non-walkable cell in a margin around the building's own
 ## footprint — the physical half of `InteriorMapPlan.is_walkable()`. A `TileMapLayer` only gives
-## collision to a cell that holds a tile, and the space around the hallway, the gap beside a
-## stairwell's flights and everything off a map's own footprint hold none at all, so without this
-## she could walk clean through a wall she can see, or off the map's own edge.
+## collision to a cell that holds a tile, and the gaps between parts and everything off the whole
+## footprint hold none at all, so without this she could walk clean through a wall she can see, or
+## off the map's own edge, or straight across a gap from one part into another.
 var _collision: Node2D
 var _fade_layer: CanvasLayer
 var _fade_rect: ColorRect
 ## True from the first fade-to-black frame to the last fade-from-black frame of a transition, so
-## `process_player()` cannot fire a second one out from under the first while the map swap and the
-## placement in the middle of it are still in flight.
+## `process_player()` cannot fire a second one out from under the first while the teleport in the
+## middle of it is still in flight.
 var _transitioning := false
 ## The tile she stood on last frame, so a transition fires only on the frame she newly steps onto
 ## a trigger tile rather than on every frame she merely stands on one — see this class's own doc
@@ -78,14 +74,13 @@ var _last_player_tile := Vector2i(-999999, -999999)
 
 func _ready() -> void:
 	super()
-	_ensure_built()
+	build()
 
-## Builds the child layers if `_ready()` has not already, so `build()` works on a node that has
-## never entered a tree — a script-only `main` under test adds this as a plain child of itself
-## without ever joining the running scene tree, and `_ready()` only fires on tree entry.
-## Idempotent: a second call after `_ready()` has already run does nothing.
-func _ensure_built() -> void:
-	if _ground:
+## Builds the whole building and paints the scene for it. Idempotent: a second call does nothing,
+## since the map never changes after the first — there is nothing left to rebuild once every part
+## is laid out and painted, only her position to move.
+func build() -> void:
+	if _plan:
 		return
 	_ground = TileMapLayer.new()
 	_ground.name = "Ground"
@@ -113,18 +108,9 @@ func _ensure_built() -> void:
 	_fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_fade_layer.add_child(_fade_rect)
 
-## Builds `kind`'s map plan and repaints the scene for it. Called once at boot and again by every
-## transition — rebuilding wholesale rather than diffing the two maps, the way `City.start_day()`
-## repaints its own ground rather than patching cells, because a map this small is cheaper to
-## rebuild than to diff.
-func build(kind: int) -> void:
-	_ensure_built()
-	map_kind = kind
-	_plan = InteriorMap.build(kind)
-	if not _tile_set:
-		_tile_set = InteriorTileSet.build()
+	_plan = InteriorMap.build()
+	_tile_set = InteriorTileSet.build()
 	_ground.tile_set = _tile_set
-	_ground.clear()
 	for tile: Vector2i in _plan.tiles:
 		var source := InteriorTileSet.source_id_for(_plan.tiles[tile])
 		if source >= 0:
@@ -133,8 +119,9 @@ func build(kind: int) -> void:
 	_rebuild_overlays()
 	_rebuild_collision()
 
-## The footprint every per-map pass (collision, camera bounds) grows from — the bounding box of
-## every walkable-or-standable cell, since a wall stands only where a floor tile already is.
+## The bounding box of every walkable-or-standable cell in the whole building — every part and
+## every gap between them, since the collision pass and the camera limits both need to cover the
+## gaps too (she must not be able to walk, or be framed, off the building's own combined edge).
 func _footprint() -> Rect2i:
 	var min_t := Vector2i(999999, 999999)
 	var max_t := Vector2i(-999999, -999999)
@@ -143,10 +130,11 @@ func _footprint() -> Rect2i:
 		max_t = max_t.max(tile)
 	return Rect2i(min_t, max_t - min_t + Vector2i.ONE)
 
-## One blocker per non-walkable cell in a margin around the map's own footprint. `queue_free()` on
-## the old set rather than reusing bodies — a map swap is rare enough (one per door) that
-## rebuilding wholesale costs nothing worth optimising, the same call `_rebuild_walls()` and
-## `_rebuild_overlays()` already make.
+## One blocker per non-walkable cell in a margin around the whole building's footprint, including
+## every gap between parts — so a gap blocks her exactly the way a wall does, and the only way from
+## one part to another is through a door. Godot 4.7 was not asked to give a `TileMapLayer` collision
+## on cells with no tile, so this is built by hand the same way the outdoor city never needs to
+## (its ground is one continuous walkable sheet).
 const _MARGIN := 1
 func _rebuild_collision() -> void:
 	for child in _collision.get_children():
@@ -167,8 +155,6 @@ func _rebuild_collision() -> void:
 			_collision.add_child(body)
 
 func _rebuild_walls() -> void:
-	for child in _walls.get_children():
-		child.queue_free()
 	for at: Vector2i in _plan.walls:
 		var kind: InteriorTile.Kind = _plan.walls[at]
 		var texture := _wall_texture(kind)
@@ -180,13 +166,13 @@ func _rebuild_walls() -> void:
 		sprite.offset = Vector2(-TILE * 0.5, -texture.get_height())
 		sprite.position = Vector2((at.x + 0.5) * TILE, at.y * TILE)
 		_walls.add_child(sprite)
-	if _plan.entrance_column >= 0:
+	for at: Vector2i in _plan.entrance_tiles:
 		var barricade := Sprite2D.new()
 		barricade.texture = ENTRANCE_BARRICADE_TEXTURE
 		barricade.centered = false
 		barricade.offset = Vector2(-ENTRANCE_BARRICADE_TEXTURE.get_width() * 0.5,
 				-ENTRANCE_BARRICADE_TEXTURE.get_height())
-		barricade.position = Vector2((_plan.entrance_column + 0.5) * TILE, TILE * 0.5)
+		barricade.position = Vector2((at.x + 0.5) * TILE, at.y * TILE + TILE * 0.5)
 		_walls.add_child(barricade)
 
 func _wall_texture(kind: InteriorTile.Kind) -> Texture2D:
@@ -206,12 +192,10 @@ func _wall_texture(kind: InteriorTile.Kind) -> Texture2D:
 		_:
 			return null
 
-## Doors, rails, newels, the chandelier and every ground decal — everything that stands above the
+## Doors, rails, newels, the chandeliers and every ground decal — everything that stands above the
 ## floor rather than being the floor, all in the y-sorted layer the player joins through
 ## `add_entity()`.
 func _rebuild_overlays() -> void:
-	for child in _entities.get_children():
-		child.queue_free()
 	for id: String in _plan.doors:
 		var door: InteriorMapPlan.Door = _plan.doors[id]
 		_add_standing(door.tile, DOOR_TEXTURE)
@@ -223,17 +207,22 @@ func _rebuild_overlays() -> void:
 		sprite.texture = _decal_texture(kind)
 		sprite.position = tile_to_world(tile)
 		_entities.add_child(sprite)
-	if map_kind in [InteriorMap.MapKind.STAIRWELL_LEFT, InteriorMap.MapKind.STAIRWELL_RIGHT]:
-		_add_stairwell_rails()
-	if map_kind in [InteriorMap.MapKind.HALLWAY_THIRD, InteriorMap.MapKind.HALLWAY_SECOND,
-			InteriorMap.MapKind.HALLWAY_FIRST, InteriorMap.MapKind.LOBBY]:
-		var box := _footprint()
-		var mid_column := box.position.x + box.size.x / 2
+	_add_stairwell_rails()
+	_add_chandeliers()
+
+## A chandelier at each hallway's and the lobby's own midpoint — the three hallway waypoints plus
+## `"lobby"`, read back from `_plan.waypoints` rather than a second list of parts (each waypoint
+## sits at that part's own mid-column, one row south of where the chandelier hangs), so a new
+## hallway-family part picks one up for free by naming its own waypoint the same way.
+func _add_chandeliers() -> void:
+	for id in ["hallway_third", "hallway_second", "hallway_first", "lobby"]:
+		if not _plan.waypoints.has(id):
+			continue
 		var chandelier := Sprite2D.new()
 		chandelier.texture = CHANDELIER_TEXTURE
 		chandelier.centered = false
 		chandelier.offset = Vector2(-CHANDELIER_TEXTURE.get_width() * 0.5, -CHANDELIER_TEXTURE.get_height())
-		chandelier.position = tile_to_world(Vector2i(mid_column, 0))
+		chandelier.position = tile_to_world(_plan.waypoints[id] + Vector2i(0, -1))
 		_entities.add_child(chandelier)
 
 func _decal_texture(kind: InteriorTile.Kind) -> Texture2D:
@@ -255,7 +244,7 @@ func _add_standing(tile: Vector2i, texture: Texture2D) -> void:
 	sprite.position = tile_to_world(tile)
 	_entities.add_child(sprite)
 
-## Rails over every flight and landing tile in this stairwell, and a newel at each `LANDING`
+## Rails over every flight and landing tile in both stairwells, and a newel at each `LANDING`
 ## (every turn is one, since a door tile is a full landing in its own right and does not get one).
 ##
 ## Each rail's y-sort key is pinned to its tile's own **south edge** rather than its centre, so a
@@ -274,8 +263,6 @@ func _add_stairwell_rails() -> void:
 			InteriorTile.Kind.LANDING:
 				_add_rail(tile, RAIL_LEVEL)
 				_add_newel(tile)
-			InteriorTile.Kind.DOOR:
-				_add_rail(tile, RAIL_LEVEL)
 
 func _add_rail(tile: Vector2i, texture: Texture2D) -> void:
 	var sprite := Sprite2D.new()
@@ -316,15 +303,24 @@ func slope_dir_at(world_position: Vector2) -> int:
 func start_world_position() -> Vector2:
 	return tile_to_world(_plan.start_tile)
 
-## The map's own footprint, grown by a wide margin — **wider than it looks like it needs to be, on
-## purpose.** `Stroller`'s `Camera2D` is authored at `zoom = Vector2(2, 2)`
+## `InteriorMap.PARTS`' own waypoint, in world space — what `--start-escape <part>` teleports to.
+## `Vector2.ZERO` (her own start) for a name this does not recognise, the same "unknown means the
+## default" shape `DevFlags.start_escape_at()` already leaves to its caller.
+func part_world_position(part: String) -> Vector2:
+	if _plan.waypoints.has(part):
+		return tile_to_world(_plan.waypoints[part])
+	return start_world_position()
+
+## The whole building's own footprint, grown by a wide margin — **wider than it looks like it
+## needs to be, on purpose.** `Stroller`'s `Camera2D` is authored at `zoom = Vector2(2, 2)`
 ## (`scenes/player/stroller.tscn`), so its own visible world footprint is 640×360, not the
 ## viewport's raw 1280×720 — and a `Camera2D` asked to keep its **whole view** inside a `limit_*`
 ## box **smaller** than that footprint cannot satisfy the constraint on that axis at all, which
 ## Godot resolves by pinning the camera to a fixed point derived from the limits alone rather than
 ## from wherever the tracked node actually is. `_CAMERA_MARGIN` is sized comfortably past half the
-## zoomed-out footprint on every side. The outdoor city never carries this risk at all:
-## `City.camera_bounds()` grows the whole map by a full block, always far bigger than 640×360.
+## zoomed-out footprint on every side; the whole-building footprint is already far bigger than that
+## on its own, seven parts 64 tiles apart, so this margin is a small addition on top rather than
+## the difference between working and pinned.
 const _CAMERA_MARGIN := 400.0
 func camera_bounds() -> Rect2:
 	var box := _footprint()
@@ -336,8 +332,8 @@ func add_entity(node: Node) -> void:
 
 # ------------------------------------------------------------------ transitions ---
 
-## Whether `tile` is a transition trigger on the current map, and what it leads to. Factored out
-## from `process_player()` so a test can ask the exact question the running game asks every frame
+## Whether `tile` is a transition trigger, and what it leads to. Factored out from
+## `process_player()` so a test can ask the exact question the running game asks every frame
 ## without also waiting on the fade this class owns — see `tests/test_interior.gd`.
 func transition_at(tile: Vector2i) -> Dictionary:
 	for id: String in _plan.doors:
@@ -371,11 +367,10 @@ func process_player(player: Node2D, _delta: float) -> void:
 
 func _start_door_transition(door: InteriorMapPlan.Door, player: Node2D) -> void:
 	_transitioning = true
-	var target_map: int = door.target_map
 	var target_door: String = door.target_door
 	var tween := create_tween()
 	tween.tween_property(_fade_rect, "modulate:a", 1.0, FADE_SECONDS)
-	tween.tween_callback(func() -> void: go_to_map(target_map, target_door, player))
+	tween.tween_callback(func() -> void: teleport_to_door(target_door, player))
 	tween.tween_property(_fade_rect, "modulate:a", 0.0, FADE_SECONDS)
 	tween.tween_callback(func() -> void: _transitioning = false)
 
@@ -385,22 +380,21 @@ func _start_exit() -> void:
 	tween.tween_property(_fade_rect, "modulate:a", 1.0, FADE_SECONDS)
 	tween.tween_callback(func() -> void: exit_requested.emit())
 
-## Rebuilds for `kind` and places `player` at the door named `door_id` on that map — "the upper
-## landing at its door," in the TODO's own words. Exposed rather than kept behind the tween above,
-## so a test can drive the same map-swap and placement code the running game uses without also
-## driving the fade's timing — see `transition_at()`'s own doc for the same reasoning.
+## Moves `player` to the door named `door_id`'s own tile — "just inside its counterpart door," in
+## the TODO's own words, since the door tile is exactly where she is placed. Exposed rather than
+## kept behind the tween above, so a test can drive the same teleport the running game uses without
+## also driving the fade's timing — see `transition_at()`'s own doc for the same reasoning.
 ##
-## Facing chosen as north on arrival: arbitrary, and open to revisit once the scene is actually
-## played rather than stepped.
-func go_to_map(kind: int, door_id: String, player: Node2D) -> void:
-	build(kind)
+## `reset_at()` rather than a bare `global_position` assignment: it also resets the camera's own
+## smoothing (`Camera2D.reset_smoothing()`), which is what makes this a *snap* to the door rather
+## than a slide across the empty ground between two parts — *(2026-09-10, playtest 55: "fade to
+## black, teleport, then fade in again", and the camera "snapping with her, not sliding across the
+## gap")*. Facing chosen as north on arrival: arbitrary, and open to revisit once the scene is
+## actually played rather than stepped.
+func teleport_to_door(door_id: String, player: Node2D) -> void:
 	var door := _plan.door(door_id)
 	var at := tile_to_world(door.tile)
 	_last_player_tile = door.tile
-	# `reset_at()` rather than a bare `global_position` assignment: it also resets the camera's
-	# own smoothing (`Camera2D.reset_smoothing()`). Without that, `position_smoothing_enabled`
-	# (set on `scenes/player/stroller.tscn`'s own Camera2D) keeps chasing wherever she was on the
-	# map before, and every day already resets through the same call for the same reason.
 	if player is Stroller:
 		(player as Stroller).reset_at(at, Vector2.UP)
 	else:
