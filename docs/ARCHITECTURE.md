@@ -105,6 +105,7 @@ src/
 	quit_option.gd        whether the game can quit itself, answered once
   visuals/                PNG selection with SVG override; see the illustrated-png skill
 	texture_resolver.gd   cached same-size PNG selection, with SVG fallback
+	eight_direction.gd    the eight-sector heading selector the stroller and the crowd both draw by
   dev/
 	auto_screenshot.gd    render N frames, save a PNG, quit
 	dev_flags.gd          every dev command-line flag, gated behind OS.is_debug_build()
