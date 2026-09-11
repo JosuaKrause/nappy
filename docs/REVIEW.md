@@ -51,6 +51,15 @@ view").
   as *a dog that was somewhere* or as the lesson again? That is the open question in `TODO.md`,
   M96, whether it should wait to be routed into; a played answer decides it. Record is
   `DECISIONS.md`, M96.
+- **Watch a car turn at a junction, and one turn round at a closure** (any day; a closure or a
+  seal on a road sends cars back). A car now drives to the mouth of the junction, eases to a turn
+  speed, follows one arc onto the centre of the lane it is joining and picks up speed again; an
+  about-face is a half circle inside the junction box, or, with no junction to reach, in the
+  street with its body over the kerb by a few pixels. The picture is still the cardinal one
+  until M108's vehicle item lands, so judge the *motion*: does a turn read as a car turning, does
+  the pause at the mouth read as slowing rather than stalling, and does a street about-face over
+  the kerb read as wrong? That last one is the open question in `TODO.md`, M111. Record is
+  `DECISIONS.md`, M111.
 - **Watch walkers round a corner or step aside for you** (any day, any busy pavement). A walker
   now picks one of eight views from the way it is actually moving, so it shows a diagonal picture
   for the few tenths of a second it is steering across its lane, and a stopped one keeps its last
