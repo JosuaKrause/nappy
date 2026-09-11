@@ -86,6 +86,15 @@ var traffic: TrafficIndex
 ## walker passes the hut the way she does.
 var door_segments := {}
 
+## The segments bordering the home block, the second carve-out `is_held_at` cannot make on its
+## own — rebuilt beside `door_segments` from `StreetNetwork.around_blocks(Rect2i(map.home_block,
+## Vector2i.ONE))`, the exact set `EventManager.start_day` holds them from for the opposite reason:
+## those segments are held only so no catalogue row lands on the home block's own street, never
+## because a body stands across it. The home is a notch with one exit, she walks out onto one of
+## these every morning, and `held_segments` has no way to say *why* a segment is held — this list
+## is the crowd's own answer, the same shape `door_segments` already is.
+var home_segments := {}
+
 ## Somebody standing in front of this car, or `Vector2.INF` for nobody. Written once per
 ## physics frame by `Crowd` for the cars near the player and read here: an agent has no
 ## business knowing who the player is, but it does have to decide whether to stop.
@@ -285,16 +294,22 @@ func _stands_on_a_street() -> bool:
 
 ## Whether a tile's own street segment is shut to this agent the way a hard blocker is: held for
 ## today (`CityMap.is_held_at` — a hard seal's segment, a region wall, a closure, or the streets
-## around the home block) and not one of today's region doors, which are meant to stay a crossing
-## anybody may still enter — a car brakes and queues for the gate rather than turning away, and a
-## walker passes the hut. `door_segments` is empty outside a real day (a hand-built test agent, a
-## rig with no city, or before the wall itself stands), which is a harmless no-op: nothing is held
-## then either.
+## around the home block) and neither of the two carve-outs `held_segments` cannot make on its
+## own. A region door is a crossing anybody may still enter — a car brakes and queues for the gate
+## rather than turning away, and a walker passes the hut. The home block's own bordering streets
+## are held only so no catalogue row lands there, never because a body stands across one — she
+## walks out onto one of them every morning, and the home is a notch with one exit, so sealing it
+## would seal her in. Both lists are empty outside a real day (a hand-built test agent, a rig with
+## no city, or before the wall itself stands), which is a harmless no-op: nothing is held then
+## either.
 func _segment_is_shut(tile: Vector2i) -> bool:
 	if not _map.is_held_at(tile):
 		return false
 	var segment := StreetNetwork.segment_containing(tile)
-	return segment == null or not door_segments.has(segment.key())
+	if segment == null:
+		return true
+	var key := segment.key()
+	return not door_segments.has(key) and not home_segments.has(key)
 
 func _process(delta: float) -> void:
 	_clock += delta

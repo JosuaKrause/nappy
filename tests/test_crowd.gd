@@ -54,6 +54,7 @@ func run(t) -> void:
 	_test_a_hard_seal_shuts_its_street_to_the_crowd(t)
 	_test_a_region_wall_is_shut_and_a_door_is_carved_out(t)
 	_test_a_soft_seal_shuts_both_pavements_to_walkers_only(t)
+	_test_the_doorstep_street_is_not_shut_by_its_own_hold(t)
 	_test_only_cars_go_over_the_bridge(t)
 	_test_the_crowd_agrees_a_zone_absorbed_the_corridor(t)
 	_test_agents_do_not_overrun_an_ordinary_edge(t)
@@ -1537,6 +1538,63 @@ func _all_soft_sealed(tiles: Array[Vector2i]) -> bool:
 		if not _city.map.is_soft_sealed(tile):
 			return false
 	return true
+
+## M110: the streets bordering the home block are held the same way a hard seal's own segment is
+## (`EventManager.start_day` holds them so no catalogue row lands there — `docs/DECISIONS.md`, M100,
+## "Nothing on the home block") but carry no body across them at all: she walks out onto one of them
+## every morning, and the home is a notch with one exit, so shutting it to the crowd the way item 2
+## shuts a hard seal's street would be wrong. `CrowdAgent.home_segments` is the carve-out, the same
+## shape `door_segments` already is. Driven off a real day — `held_segments` has to be genuinely
+## non-empty around the home block for this to test anything rather than pass vacuously.
+func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t) -> void:
+	var map := CityGenerator.generate(SEED)
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(map)
+
+	var day := 1
+	var state := CityState.new()
+	state.begin_day(map.block_plans, day)
+	var closures_rng := RandomNumberGenerator.new()
+	closures_rng.seed = hash("crowd-home-closures:%d:%d" % [SEED, day])
+	city.start_day(state, day, closures_rng)
+	var events_rng := RandomNumberGenerator.new()
+	events_rng.seed = hash("crowd-home-events:%d:%d" % [SEED, day])
+	var consumed: Array[String] = []
+	city.events.start_day(day, events_rng, consumed)
+
+	var home_segments := StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE))
+	t.check(not home_segments.is_empty(), "the home block has bordering streets")
+	var home_keys := {}
+	var held_home := false
+	for segment in home_segments:
+		home_keys[segment.key()] = true
+		if map.is_held(segment):
+			held_home = true
+	t.check(held_home,
+			"at least one of them is held today, or this test is not exercising the carve-out")
+
+	var at := map.doorstep_world_position()
+	city.crowd.start_day(day, _rng(day), at)
+
+	var walkers_seen := 0
+	var cars_seen := 0
+	for frame in int(round(30.0 / STEP)):
+		city.crowd.set_focus(at)
+		city.crowd.step(STEP)
+		for agent in city.crowd.agents():
+			var segment := StreetNetwork.segment_containing(map.world_to_tile(agent.position))
+			if segment == null or not home_keys.has(segment.key()):
+				continue
+			if agent.kind == CrowdAgent.Kind.WALKER:
+				walkers_seen += 1
+			else:
+				cars_seen += 1
+	t.check(walkers_seen > 0,
+			"walkers still use the home block's own bordering streets (%d frames)" % walkers_seen)
+	t.check(cars_seen > 0, "and so do cars (%d frames)" % cars_seen)
+
+	city.free()
 
 ## M53: **the overrun permission was narrowed to a car on the spine, and the lane was not** — the
 ## entry-side fallback (`CrowdAgent._keep_within_the_room_beyond_the_map`) used to hand every kind

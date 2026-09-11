@@ -49,6 +49,15 @@ var _gates: Array[RegionPlanner.GateState] = []
 ## Empty before the wall stands, or for a rig with no city, which then holds nothing a door either.
 var _door_segments := {}
 
+## The segments bordering the home block, handed to every agent as `CrowdAgent.home_segments` —
+## the second carve-out `_cannot_go_on` needs, since `EventManager.start_day` holds those segments
+## too (`StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE))`, the identical set),
+## but only so no catalogue row lands on the home block's own street, never because a body stands
+## across it. Rebuilt every `start_day` beside `_door_segments`: the home block never moves, but
+## computing it fresh here is one loop over four segments and needs no assumption about what
+## `main.gd` has or has not called yet.
+var _home_segments := {}
+
 ## Told which gates today's cars have to stop for. See `_gates`'s own doc for where the day's list
 ## comes from — `main.gd` is the wiring, not this class, since a `Crowd` has no route to `City`'s
 ## own `region_plan()` other than the one it already has through `setup()`.
@@ -84,14 +93,17 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> vo
 	_field.centre = focus if focus != Vector2.INF else _map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, _map.size)).get_center()
 	# Before either `_populate` call: a walker's own `setup()` re-rolls off `_stands_on_a_street()`,
-	# which now refuses a door-carve-out the same as any other held ground unless this is already
-	# in place.
+	# which refuses both carve-outs the same as any other held ground unless they are already in
+	# place.
 	_door_segments = {}
 	if _city:
 		var plan := _city.region_plan()
 		if plan:
 			for segment in plan.doors:
 				_door_segments[segment.key()] = true
+	_home_segments = {}
+	for segment in StreetNetwork.around_blocks(Rect2i(_map.home_block, Vector2i.ONE)):
+		_home_segments[segment.key()] = true
 	var act := Tuning.act_for_day(day)
 	_populate(CrowdAgent.Kind.WALKER, Tuning.crowd_pedestrians(act), rng)
 	_populate(CrowdAgent.Kind.CAR, Tuning.crowd_cars(act), rng)
@@ -127,6 +139,7 @@ func _populate(kind: CrowdAgent.Kind, count: int, rng: RandomNumberGenerator) ->
 		var agent := CrowdAgent.new()
 		agent.traffic = _traffic
 		agent.door_segments = _door_segments
+		agent.home_segments = _home_segments
 		agent.setup(kind, _map, _field, rng.randi(), 0.0 if i % 2 == 0 else 1.0)
 		_city.add_entity(agent)
 		_agents.append(agent)
