@@ -454,6 +454,8 @@ func _process(delta: float) -> void:
 		# instant she is released and clear of `detain_radius` — see `EventDef.redetains`.
 		# `chatting_mother` has none of this: her conversation ending is what starts her own
 		# departure, `_be_done()`'s ordinary meaning for anything that is not a fixture.
+		if _chat_seconds_left <= 0.0 and def.redetains:
+			_leave_inspection()
 		if _chat_seconds_left <= 0.0 and not def.redetains:
 			_be_done()
 		queue_redraw()
@@ -519,6 +521,25 @@ func has_chatted() -> bool:
 func start_chat() -> void:
 	_has_chatted = true
 	_chat_seconds_left = def.detain_seconds
+	if def.redetains:
+		_enter_inspection()
+
+## The checkpoint's own *"gone inside"* — reached only by `start_chat()` above, and only for a
+## `redetains` row, so `chatting_mother`'s one conversation is untouched. `EventInstance` holds no
+## `Stroller` reference of its own; the `player` group is the same lookup `Crowd`, `HUD` and the
+## resistance director already use to reach her from outside the player scene.
+func _enter_inspection() -> void:
+	var stroller := get_tree().get_first_node_in_group("player") as Stroller
+	if not stroller:
+		return
+	stroller.hide_for_inspection()
+
+## The other half, called from `_process()` the frame the hold's own clock runs out.
+func _leave_inspection() -> void:
+	var stroller := get_tree().get_first_node_in_group("player") as Stroller
+	if not stroller:
+		return
+	stroller.show_after_inspection()
 
 ## Whether the chase ended because she shook it off rather than because the clock ran out. Read by
 ## the telemetry, which is the only thing that can tell the two apart from outside.
@@ -1341,6 +1362,12 @@ func will_be_lethal(player_position: Vector2) -> bool:
 
 func _draw() -> void:
 	if is_finished:
+		return
+	# A redetaining checkpoint row reads as "gone inside" for the whole of its own hold — the guard
+	# is not drawn any more than she is, see `Stroller.hide_for_inspection()`. `def.redetains` is
+	# the flag only `checkpoint_hut`/`checkpoint_post` carry; `chatting_mother` keeps her ordinary
+	# talking posture (`_draw_chatting_mother`) for the whole of her own conversation.
+	if def.redetains and is_chatting():
 		return
 	var bob := _current_bob()
 	draw_set_transform(Vector2(0.0, bob), 0.0, Vector2.ONE)

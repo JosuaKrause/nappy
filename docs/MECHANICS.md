@@ -158,6 +158,22 @@ means the contribution is exactly zero, not merely smaller. Five seconds is a qu
 meter outbound and only the clock on the way home, which is why the same body reads as a different
 obstacle in each half of a day. See docs/EVENTS.md for the row itself.
 
+## A checkpoint
+
+`checkpoint_hut` and `checkpoint_post` — the huts and the alley guard a region wall's own door
+stands, see docs/DECISIONS.md, "M62 — Checkpoints that divide the map" — reuse the conversation
+mechanism above at a shorter hold, `Tuning.CHECKPOINT_DETAIN_SECONDS` (2s): a toll paid at every
+crossing of the wall has to stay cheap to repeat, where a conversation is spent once.
+
+**She and the guard are both gone for the hold's duration**, reading as *inside* rather than as
+frozen in the street — `Stroller.hide_for_inspection()` and the door instance's own `_draw()`
+stop drawing the moment the hold starts, and both reappear the moment it ends, her on the far side
+of the door so being let out reads as being let through (`EventManager._release_finished_door_
+detentions()`). The pram's cue and the alert mark hidden along with her are the same drawing call
+that draws her, so nothing about them needs its own switch. The meters keep running throughout —
+sleepiness still drains at the idle rate and the hut's own field still charges the flat `Tuning.
+CHAT_EXCITEMENT`, because the baby is still there whether or not the player can see her.
+
 ## Baby state machine
 
 ```

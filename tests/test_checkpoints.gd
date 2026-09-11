@@ -23,6 +23,7 @@ func run(t) -> void:
 	_test_the_three_rows_validate_and_are_never_rolled(t)
 	_test_the_manager_actually_places_the_door_structure(t)
 	_test_a_hut_detains_and_releases_on_the_other_side(t)
+	_test_she_and_the_guard_are_gone_during_the_hold(t)
 	_test_walking_back_redetains_her(t)
 	_test_the_chatting_mother_still_detains_once(t)
 	_test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t)
@@ -321,6 +322,36 @@ func _test_a_hut_detains_and_releases_on_the_other_side(t) -> void:
 	# detain_radius by construction.
 	manager._check_detentions()
 	t.check(not hut.is_chatting(), "released, and not immediately re-captured")
+
+	hut.free()
+	stroller.free()
+	manager.free()
+
+## M113, the inspection reads as one — *(2026-09-10, playtest 55: "both the guard and the player
+## should disappear during the inspection ... after the inspection the player and the guard should
+## reappear".)* Neither `Stroller.visible` nor `EventInstance._draw()`'s own early return is
+## reachable from a test that never calls `_draw()` (headless runs never call it — see the
+## **verify** skill), so the state each of them reads is asserted directly instead.
+func _test_she_and_the_guard_are_gone_during_the_hold(t) -> void:
+	var manager := _manager(t)
+	var stroller := _real_stroller(t)
+	manager._player = stroller
+
+	var axis := Vector2.RIGHT
+	var centre := Vector2(4200.0, 4200.0)
+	var hut := _door_instance(t, "checkpoint_hut", centre, axis)
+	manager._instances.append(hut)
+
+	t.check(stroller.visible, "she is visible before the hold starts")
+	stroller.global_position = centre + axis * 40.0
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(hut.is_chatting(), "the hold starts")
+	t.check(not stroller.visible, "and she is hidden the instant it does")
+
+	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
+	t.check(not hut.is_chatting(), "the hold ends")
+	t.check(stroller.visible, "and she is visible again the same frame")
 
 	hut.free()
 	stroller.free()

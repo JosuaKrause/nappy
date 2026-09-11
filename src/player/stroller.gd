@@ -274,6 +274,19 @@ func detain(seconds: float) -> void:
 func is_detained() -> bool:
 	return _detained_for > 0.0
 
+## A checkpoint's own *"gone inside"* — called by a `redetains` event instance the frame its hold
+## starts, on the same `visible` switch `stand_aside()` uses for the same reason: hiding a
+## `Node2D` does not touch physics, the meters, `is_detained()`'s own lock, or the `Camera2D`
+## riding under it, so the day keeps advancing around a mother the player simply cannot see for a
+## moment. The pram, its cue and the alert mark are all drawn from `_draw()`, so one switch is all
+## "hidden with her" needs.
+func hide_for_inspection() -> void:
+	visible = false
+
+## The other half, called the frame the hold ends.
+func show_after_inspection() -> void:
+	visible = true
+
 ## Whether the baby is awake right now — for anything that has to price itself differently by her
 ## state without ever writing to her meters. `true` with no baby at all, which is what a test rig
 ## built without one gets: the ordinary behaviour, rather than a silent asleep-shaped one.
@@ -440,6 +453,9 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	_alert = Alert.NONE
 	_alert_left = 0.0
 	_alert_source = &""
+	# A day boundary can land mid-hold if the run ends inside one; a stuck hidden rig should never
+	# survive into the next day.
+	visible = true
 	if _camera:
 		_camera.offset = Vector2.ZERO
 		_camera.reset_smoothing()
