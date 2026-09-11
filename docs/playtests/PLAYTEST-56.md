@@ -56,6 +56,18 @@ open case in a park or square — was then given his own:
 
 A standing guard stays single-frame until the player says otherwise.
 
+## New names in American English
+
+The "I'm not english" above was read as a question about a word; it was an instruction:
+
+> I'm not english means -- use american words for new things
+
+> existing names are fine
+
+So anything new — an event, an asset, an identifier, a doc noun — takes the American word, and
+nothing already named is renamed. Recorded as a rule in `CLAUDE.md` under "Names are content,
+never identifiers".
+
 ## Cars bob on their wheels
 
 > cars could bop up and down while the wheels stay in the same place
