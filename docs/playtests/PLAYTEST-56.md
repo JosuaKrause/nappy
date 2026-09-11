@@ -50,8 +50,11 @@ Partly overturned the same day, for the café sitters:
 
 So a seated figure that never moves still animates: a second seated frame, alternated slowly on a
 timer. The busker — a street musician playing for coins, here the man with the guitar and the
-open case in a park or square — and a standing guard stay single-frame until the player says
-otherwise.
+open case in a park or square — was then given his own:
+
+> busker should have a two frame animation strumming the guitar
+
+A standing guard stays single-frame until the player says otherwise.
 
 ## Cars bob on their wheels
 

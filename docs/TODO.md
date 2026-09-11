@@ -60,9 +60,10 @@ pictures to their actual runtime consumers.
       queue, a give-way or a posted guard holds a standing pose; body and trim, or actor and held
       thing, swap frames together. **The café sitters get an idle animation** *(same day: "cafe
       sitters should have an idle animation, too")* — a second seated frame, a lean or a raised
-      cup, alternated slowly on a timer rather than on a speed, since they never move. Whether the
-      busker strums and a standing guard shifts is the player's to say; until then those two keep
-      one frame. After the walker binding above, since it extends that family table, and alongside
+      cup, alternated slowly on a timer rather than on a speed, since they never move. **The busker
+      strums** *(same day: "busker should have a two frame animation strumming the guitar")*:
+      two frames, the strumming hand up and down, on the same timer. Whether a standing guard
+      shifts is the player's to say; until then he keeps one frame. After the walker binding above, since it extends that family table, and alongside
       the event binding below for the rest
 - [ ] **Cars bob on their wheels.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "cars
       could bop up and down while the wheels stay in the same place")* A moving car's body rises
