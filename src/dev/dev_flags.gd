@@ -14,6 +14,48 @@ extends RefCounted
 ## **`AutoScreenshot.from_command_line()` gates itself the same way independently**, since
 ## `--screenshot`, `--after`, `--walk`, `--flee` and `--press` are parsed there rather than in
 ## `main.gd`, and are gated in place rather than moved here.
+##
+## **The table below is the one manifest of the whole surface, even the half parsed elsewhere.**
+## `tools/run.sh` and `tools/shot.sh` forward whatever a caller gives them straight to the game
+## as a dev flag (see the **cli-tools** skill), so they need to reject a typo before spending a
+## Godot launch on it — and the only way that check cannot drift from what the game actually
+## reads is to read it from the same file the game does. A flag's own parsing stays where it
+## already lives (here, `AutoScreenshot`, `TouchInput`, `QuitOption`, `main.gd`); this table adds
+## nothing to that and changes no behaviour — it is a manifest for the shell side, not a second
+## parser. Each row is `<flag> <arity>`: arity is the exact count of words the flag always
+## consumes, `?` marks one more consumed only when it looks like a number, `w?` marks one more
+## consumed only when it does not itself start with `--` (`--start-escape`'s own target word),
+## and `*` marks a flag that may repeat (`--press` only, two words each time). Keep this in step
+## with the getters below and with
+## `AutoScreenshot.from_command_line()` — a flag added to either without a row here is invisible
+## to the shell tools and gets rejected as unknown.
+##
+## DEV_FLAG_TABLE
+##   --seed          1
+##   --day           1
+##   --day-length    1
+##   --meters        2
+##   --spawn         1
+##   --follow        1
+##   --force         1?
+##   --overview      0
+##   --start-escape  0w?
+##   --ending        1
+##   --controls      1
+##   --layers        1
+##   --svg           0
+##   --no-telemetry  0
+##   --screenshot    1
+##   --after         1
+##   --walk          1
+##   --flee          0?
+##   --press         2*
+##   --tap           2
+##   --touch         0
+##   --web           0
+##   --title         0
+##   --no-title      0
+## END_DEV_FLAG_TABLE
 
 ## Whether dev flags are readable at all. `main.gd` also reads this directly for the two gated
 ## things that are not a flag value — the snapshot key, and whether to even ask `AutoScreenshot`

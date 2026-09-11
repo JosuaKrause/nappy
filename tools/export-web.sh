@@ -23,6 +23,29 @@ GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_DIR="$PROJECT_DIR/build/web"
 
+usage() {
+    cat <<'EOF'
+usage: tools/export-web.sh [--help|-h] [release|debug]
+
+Headless Web export into build/web/ (gitignored). "release" is the default -- what
+.github/workflows/deploy.yml publishes. "debug" makes OS.is_debug_build() true in the result,
+so ?telemetry=1 answers; tools/serve-web.sh exports this way and serves the result.
+
+  tools/export-web.sh
+  tools/export-web.sh debug
+  RELEASE_TAG=v1.2.3 tools/export-web.sh
+EOF
+}
+
+case "${1:-}" in
+    --help|-h) usage; exit 0 ;;
+esac
+
+if [[ $# -gt 1 ]]; then
+    echo "usage: tools/export-web.sh [release|debug] -- unexpected extra argument(s): ${*:2}" >&2
+    exit 2
+fi
+
 MODE="${1:-release}"
 case "$MODE" in
     release) EXPORT_FLAG="--export-release" ;;

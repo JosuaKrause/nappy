@@ -5,11 +5,44 @@
 #   tools/run.sh --seed 12345           # a specific city
 #   tools/run.sh --day 9 --overview     # look at act III from above
 #
-# See README.md for the full flag list.
+# See README.md for the full flag list and what each flag means. --help/-h prints the shape of
+# every flag this accepts and exits before anything else happens; an unknown flag, one missing
+# its value, or a stray word is rejected the same way, on stderr, before Godot is launched.
 set -euo pipefail
 
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=tools/lib_dev_flags.sh
+source "$PROJECT_DIR/tools/lib_dev_flags.sh"
+
+usage() {
+    cat <<EOF
+usage: tools/run.sh [--help|-h] [dev flags...]
+
+Play the game. Everything after the script name is forwarded to the game as a dev flag --
+gated behind a debug build, so it does nothing at all in an exported release. See README.md's
+"Dev flags" section for what each one means; the shapes below are read live out of
+src/dev/dev_flags.gd's own DEV_FLAG_TABLE, so this list cannot go stale on its own.
+
+  tools/run.sh --seed 12345
+  tools/run.sh --day 9 --overview
+
+flags:
+$(dev_flag_usage_lines)
+EOF
+}
+
+for arg in "$@"; do
+    case "$arg" in
+        --help|-h) usage; exit 0 ;;
+    esac
+done
+
+if [[ $# -gt 0 ]] && ! validate_dev_flags "$@"; then
+    echo >&2
+    usage >&2
+    exit 1
+fi
 
 if [[ ! -x "$GODOT" ]]; then
     echo "godot not found at $GODOT" >&2

@@ -22,6 +22,11 @@ jobs:
       - name: Lint the docs
         run: ./tools/lint.sh
 
+      # Needs nothing but bash and the scripts under test -- no uv, no real Godot binary (it
+      # stubs GODOT) -- so it runs this early, before either is set up.
+      - name: Check --help/-h and rejection on every shell tool
+        run: ./tools/test_cli_help.sh
+
       # The Python tooling: uv reads .python-version and uv.lock, so the interpreter and every
       # package are the ones the lockfile names rather than whatever the runner image ships.
       - name: Install uv

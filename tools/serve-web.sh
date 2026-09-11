@@ -36,7 +36,37 @@ set -uo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_DIR="$PROJECT_DIR/build/web"
+
+usage() {
+    cat <<'EOF'
+usage: tools/serve-web.sh [--help|-h] [port]
+
+Exports a debug Web build and serves build/web/ over plain HTTP. port defaults to 8060.
+OS.is_debug_build() is true in the served build, so a browser-side dev flag reachable through
+the page's own query string -- ?svg=1, ?layers=1,3, ?controls=, ?escape=1 -- answers; see
+README.md's "Dev flags" section for what each one does.
+
+  tools/serve-web.sh
+  tools/serve-web.sh 8080
+EOF
+}
+
+case "${1:-}" in
+    --help|-h) usage; exit 0 ;;
+esac
+
+if [[ $# -gt 1 ]]; then
+    echo "usage: tools/serve-web.sh [port] -- unexpected extra argument(s): ${*:2}" >&2
+    exit 2
+fi
+
 PORT="${1:-8060}"
+if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
+    echo "port must be a number, got '$PORT'" >&2
+    echo >&2
+    usage >&2
+    exit 2
+fi
 
 "$PROJECT_DIR/tools/export-web.sh" debug
 status=$?
