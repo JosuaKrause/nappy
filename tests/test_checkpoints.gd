@@ -23,9 +23,12 @@ func run(t) -> void:
 	_test_the_three_rows_validate_and_are_never_rolled(t)
 	_test_the_manager_actually_places_the_door_structure(t)
 	_test_a_hut_detains_and_releases_on_the_other_side(t)
+	_test_she_and_the_guard_are_gone_during_the_hold(t)
+	_test_the_camera_eases_onto_the_hut_and_back(t)
 	_test_walking_back_redetains_her(t)
 	_test_the_chatting_mother_still_detains_once(t)
 	_test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t)
+	_test_a_raised_gate_still_detains_her_at_the_bar(t)
 	_test_a_raised_boom_does_not_open_the_checkpoint_for_her(t)
 
 # ------------------------------------------------------------------------ setup ---
@@ -327,6 +330,91 @@ func _test_a_hut_detains_and_releases_on_the_other_side(t) -> void:
 	stroller.free()
 	manager.free()
 
+## M113, the inspection reads as one — *(2026-09-10, playtest 55: "both the guard and the player
+## should disappear during the inspection ... after the inspection the player and the guard should
+## reappear".)* Neither `Stroller.visible` nor `EventInstance._draw()`'s own early return is
+## reachable from a test that never calls `_draw()` (headless runs never call it — see the
+## **verify** skill), so the state each of them reads is asserted directly instead.
+##
+## The halo goes with the guard too — the checkpoint's own `EntityHalo` ring stayed up through the
+## hold in an earlier capture, which contradicted "both the guard and the player should disappear."
+## `is_suppressed_by_its_own_hold()` is the one condition `_draw()` and `_draw_body()` (the halo's
+## own re-draw entry point) both gate on, so asserting it here is asserting what the halo actually
+## does without a canvas.
+func _test_she_and_the_guard_are_gone_during_the_hold(t) -> void:
+	var manager := _manager(t)
+	var stroller := _real_stroller(t)
+	manager._player = stroller
+
+	var axis := Vector2.RIGHT
+	var centre := Vector2(4200.0, 4200.0)
+	var hut := _door_instance(t, "checkpoint_hut", centre, axis)
+	manager._instances.append(hut)
+
+	t.check(stroller.visible, "she is visible before the hold starts")
+	t.check(not hut.is_suppressed_by_its_own_hold(), "and the hut's own halo is not suppressed yet")
+	stroller.global_position = centre + axis * 40.0
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(hut.is_chatting(), "the hold starts")
+	t.check(not stroller.visible, "and she is hidden the instant it does")
+	t.check(hut.is_suppressed_by_its_own_hold(),
+			"and the hut's own halo is suppressed the same instant, with the guard")
+
+	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
+	t.check(not hut.is_chatting(), "the hold ends")
+	t.check(stroller.visible, "and she is visible again the same frame")
+	t.check(not hut.is_suppressed_by_its_own_hold(),
+			"and the halo is no longer suppressed, with the guard")
+
+	hut.free()
+	stroller.free()
+	manager.free()
+
+## *"The camera should center on the hut ... use a smooth ease in out for non player caused camera
+## movement."* Drives `Stroller._update_camera()` directly, the same private-method stepping
+## `_advance_chat()` above already uses for `EventInstance._process()`, so the ease is checked
+## without also exercising `move_and_slide()` against the hut's own obstruction body.
+func _test_the_camera_eases_onto_the_hut_and_back(t) -> void:
+	var manager := _manager(t)
+	var stroller := _real_stroller(t)
+	manager._player = stroller
+
+	var axis := Vector2.RIGHT
+	var centre := Vector2(4400.0, 4400.0)
+	var hut := _door_instance(t, "checkpoint_hut", centre, axis)
+	manager._instances.append(hut)
+
+	stroller.global_position = centre + axis * 40.0
+	var camera_before := stroller._camera.global_position
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(hut.is_chatting(), "the hold starts")
+
+	for i in int(round(Tuning.CAMERA_EASE_SECONDS / STEP)) + 5:
+		stroller._update_camera(STEP)
+	var eased_distance := stroller._camera.global_position.distance_to(hut.global_position)
+	t.check(eased_distance < 1.0,
+			"the camera arrives at the hut once the ease has run its course (%.1fpx away)"
+			% eased_distance)
+	t.check(stroller._camera.global_position.distance_to(camera_before) > 1.0,
+			"and it actually moved to get there, rather than having started there")
+
+	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
+	t.check(not hut.is_chatting(), "the hold ends")
+	var released_position := stroller.global_position
+
+	for i in int(round(Tuning.CAMERA_EASE_SECONDS / STEP)) + 5:
+		stroller._update_camera(STEP)
+	var returned_distance := stroller._camera.global_position.distance_to(released_position)
+	t.check(returned_distance < 1.0,
+			"and eases back to her, on the released side of the door (%.1fpx away)"
+			% returned_distance)
+
+	hut.free()
+	stroller.free()
+	manager.free()
+
 ## *"It works in both directions with the same cost each time."* Having just been released on the
 ## far side, walking back into the same hut detains her again, for the same `detain_seconds`, and
 ## returns her to (the clearance distance on) the original side.
@@ -470,6 +558,63 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t) -> void:
 			% [stopped_seconds, passed_at, elapsed])
 
 	city.free()
+
+## *"A raised bar is not a way past for her, at the bar itself."* Found building M110, the crowd's
+## own seal-avoidance: `checkpoint_gate` carried no `detain_seconds`/`detain_radius` of its own, so
+## stepping onto the boom's own tiles while it stood up for a car started nothing — only the huts
+## detained. *(2026-09-10, the player: "attempting to do that should just start a regular
+## checkpoint inspection".)* The gate now detains exactly like a hut, `redetains` included, so the
+## vanish (`Stroller.hide_for_inspection()`) and the halo suppression
+## (`is_suppressed_by_its_own_hold()`) both apply here too, the same way
+## `_test_she_and_the_guard_are_gone_during_the_hold` above checks them against a hut.
+##
+## `gate_state.raised` is set here and never read anywhere in the detain path — only by the gate's
+## own drawing (`_draw_checkpoint_gate()`) — so triggering the hold with it `true` is the whole of
+## "whatever the bar is doing." A stand-in for a car queued at the line, sited close to where she
+## is walking but far from the gate's own centre and never added to `manager._instances`, is the
+## proof that proximity to it could never matter: `_check_detentions()` only ever measures
+## `instance.global_position.distance_to(body.global_position)` over live `EventInstance`s, so
+## nothing that is not one can ever be examined at all, whatever it is standing in for.
+func _test_a_raised_gate_still_detains_her_at_the_bar(t) -> void:
+	var manager := _manager(t)
+	var stroller := _real_stroller(t)
+	manager._player = stroller
+
+	var axis := Vector2.RIGHT
+	var centre := Vector2(4600.0, 4600.0)
+	var gate := _door_instance(t, "checkpoint_gate", centre, axis)
+	gate.gate_state = RegionPlanner.GateState.new()
+	gate.gate_state.raised = true
+	manager._instances.append(gate)
+
+	var car_stand_in := Node2D.new()
+	car_stand_in.global_position = centre + axis * 300.0
+	t.add_child(car_stand_in)
+
+	stroller.global_position = centre + axis * 200.0
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(not gate.is_chatting(),
+			"well short of the gate's own detain_radius (near the car stand-in instead), nothing "
+			+ "starts")
+
+	stroller.global_position = centre + axis * 20.0
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(gate.is_chatting(), "inside the gate's own detain_radius, the hold starts")
+	t.check(gate.gate_state.raised, "with the bar still reading raised the whole time")
+	t.check(not stroller.visible, "and she is hidden, the same as at a hut")
+	t.check(gate.is_suppressed_by_its_own_hold(), "and the gate's own halo is suppressed too")
+
+	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
+	t.check(not gate.is_chatting(), "the hold ends")
+	t.check(stroller.visible, "and she is visible again")
+	t.check(not gate.is_suppressed_by_its_own_hold(), "with the halo no longer suppressed")
+
+	car_stand_in.free()
+	gate.free()
+	stroller.free()
+	manager.free()
 
 ## M110, the crowd goes round a seal: *(2026-09-10: "attempting to do that should just start a
 ## regular checkpoint inspection")* — a raised boom is a fact about the car queue, and must not be

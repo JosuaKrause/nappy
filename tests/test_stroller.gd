@@ -1,12 +1,15 @@
 extends RefCounted
 ## Direction quantisation for the player rig, including its boundary hold.
 
+const STEP := 1.0 / 60.0
+
 func run(t) -> void:
 	_test_all_eight_facings(t)
 	_test_live_draw_selection(t)
 	_test_boundary_hysteresis(t)
 	_test_reset_settles_direction(t)
 	_test_wrap_boundary_holds(t)
+	_test_the_pram_has_its_own_trailing_body(t)
 
 func _rig(t) -> Stroller:
 	var rig := Stroller.new()
@@ -96,3 +99,50 @@ func _test_wrap_boundary_holds(t) -> void:
 	_face(rig, 345.0)
 	t.check(rig._view_direction == 0, "east wins after crossing the wrapped boundary")
 	rig.free()
+
+## M100, small, real and nobody's — "the pram has no collision of its own ... so the pram clips
+## into walls when she hugs a corner." `scenes/player/stroller.tscn` now carries a second
+## `CollisionShape2D`, `PramCollisionShape2D`, kept at `_pram_offset` every physics frame — see
+## `Stroller._physics_process()`. Checked at the wiring level rather than by driving her into a
+## real wall: `move_and_slide()` does not move a body in this suite's own synchronous headless
+## run — no physics frame ever actually elapses while `run()` is executing, which is also why
+## `tests/test_events.gd`'s own conversation test reads `velocity` rather than `global_position`
+## after holding a key, and `_test_the_pram_is_the_size_the_rules_think_it_is` (same file) checks
+## the existing body's shape and radius directly rather than a collision outcome. What is checked
+## here is the same shape: the new shape exists, sized to `pram_shape`, and its local `position` is
+## a function of `facing` rather than a value fixed at scene load — a fixed offset would only ever
+## be right for one direction, which is the "capsule that rotates with facing" half of the fix.
+func _test_the_pram_has_its_own_trailing_body(t) -> void:
+	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
+	var rig: Stroller = scene.instantiate()
+	t.add_child(rig)
+	rig.set_physics_process(false)
+
+	var pram_collision := rig.get_node_or_null("PramCollisionShape2D") as CollisionShape2D
+	t.check(pram_collision != null,
+			"the real stroller scene carries a second collision shape for the pram")
+	var circle := pram_collision.shape as CircleShape2D
+	t.check(circle != null and is_equal_approx(circle.radius, rig.pram_shape.radius),
+			("sized to the same 12px pram_shape draws the shadow with (%.1f in the scene, %.1f " +
+			"in pram_shape)") % [circle.radius if circle else -1.0, rig.pram_shape.radius])
+	t.check(not pram_collision.disabled, "and enabled while she is pushing the pram")
+
+	# Trails at the pram's own drawn offset, whichever way she is facing. No input is pressed, so
+	# `_turn_toward()` never runs and `facing` stays exactly what this sets before each step.
+	for facing in [Vector2.DOWN, Vector2.UP, Vector2.LEFT, Vector2.RIGHT,
+			Vector2(1.0, 1.0).normalized()]:
+		rig.facing = facing
+		rig._physics_process(STEP)
+		var expected := Vector2(facing.x, facing.y * rig.OBLIQUE_Y) * rig.PRAM_DISTANCE
+		t.check(pram_collision.position.is_equal_approx(expected),
+				"the pram's own body trails at the pram's drawn offset facing %s (%s, want %s)"
+				% [facing, pram_collision.position, expected])
+	rig.free()
+
+	# Carrying her in arms rather than pushing the pram: there is no pram to collide with either.
+	var carrying_rig: Stroller = scene.instantiate()
+	carrying_rig.carrying = true
+	t.add_child(carrying_rig)
+	var carrying_collision := carrying_rig.get_node("PramCollisionShape2D") as CollisionShape2D
+	t.check(carrying_collision.disabled, "and disabled for the carrying rig, which has no pram")
+	carrying_rig.free()

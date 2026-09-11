@@ -266,8 +266,8 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 ## The queue, as prioritised on 2026-09-09
 
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56 has only
-its measurement against the nerves left, and that waits for act III. M113, the
-inspection, comes from playtest 55; M110, the crowd goes round a seal, follows. The debug view (`1` to `4` in a debug build, `--layers 1,3` for
+its measurement against the nerves left, and that waits for act III; M110, the crowd goes
+round a seal, keeps one open question behind it. The debug view (`1` to `4` in a debug build, `--layers 1,3` for
 a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow or a body is checked by
 eye, and every one of the three is now derived from the object's one `GroundShape`. Behind those, unordered: M96 (the teaching day and
 the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's

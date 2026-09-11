@@ -635,17 +635,25 @@ const REGION_COUNT := 4
 ## already uses.
 const REGION_WALL_FIRST_DAY := 7
 
-## Seconds a `checkpoint_hut`/`checkpoint_post` detention holds her — a beat longer than
-## `chatting_mother`'s 5s, since a toll should read as heavier than a chat even though both take
-## the controls the same way. See `EventDef.detain_seconds`.
-const CHECKPOINT_DETAIN_SECONDS := 6.0
+## Seconds a `checkpoint_hut`/`checkpoint_post` detention holds her — *(2026-09-10, playtest 55:
+## "the checkpoint itself, 2s should be enough".)* Short rather than heavier than
+## `chatting_mother`'s 5s: a toll paid at every crossing of a region wall has to stay cheap to
+## repeat, where a conversation is spent once. See `EventDef.detain_seconds`.
+const CHECKPOINT_DETAIN_SECONDS := 2.0
 
 ## How far clear of a door body's own solid edge the released side of a detention pushes her,
 ## beyond `obstructs_radius + PLAYER_BODY_RADIUS` — the smallest amount that reliably lands her
 ## outside `checkpoint_hut`/`checkpoint_post`'s own 48px `detain_radius` (32 + 14 + 8 = 54 > 48),
-## so the same approach cannot re-trigger the instant she is released. See
+## so the same approach cannot re-trigger the instant she is released. Purely a spatial clearance
+## against `detain_radius`, so it does not move with `CHECKPOINT_DETAIN_SECONDS`. See
 ## `EventManager._release_finished_door_detentions()`.
 const CHECKPOINT_RELEASE_MARGIN := 8.0
+
+## Seconds a camera move that is not her walking — currently only the checkpoint's own ease onto
+## the hut and back — takes to arrive. The move is smooth-stepped rather than linear so it reads
+## as an ease rather than a slide or a cut; short enough that most of `CHECKPOINT_DETAIN_SECONDS`
+## is spent settled on the hut rather than still travelling to it. See `Stroller.focus_camera_on()`.
+const CAMERA_EASE_SECONDS := 0.5
 
 ## Seconds a car has to have been stopped, dead level with a closed checkpoint gate, before it
 ## opens for it. *(2026-09-02, the player: "cars need to slow down to a full stop before the gate

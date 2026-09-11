@@ -160,15 +160,12 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
    related to the other items to work on right now.")* It waits, because reaching act III waits:
    *"I wanna wait reaching act III until those things are done."*
-2. **M113** — the inspection reads as one: a two-second hold at a checkpoint during which she and
-   the guard are gone and the camera eases onto the hut. *(2026-09-10, playtest 55.)* Placed here
-   by the orchestrator because it is the first thing act III shows and it was seen once; open to
-   the player moving it.
-3. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
-   don't stop/redirect traffic or pedestrians.")* Placed here by the orchestrator because a sealed
-   street the crowd walks through is the sealing's own legibility failing — open to the player
-   moving it.
-4. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
+2. **M110** — the crowd goes round a seal, built for seals, walls and doors; what stands here is
+   its one open question, the player's, whether every other solid body diverts the crowd too.
+   *(2026-09-10, playtest 52: "objects like fallen trees don't stop/redirect traffic or
+   pedestrians.")* Placed here by the orchestrator because a sealed street the crowd walks
+   through is the sealing's own legibility failing — open to the player moving it.
+3. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
@@ -176,7 +173,7 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    clock, sit in this batch provisionally** — they were asked for on 2026-09-10 and not placed,
    so this is the orchestrator's guess at where work that needs no route decision belongs, open
    to the player moving it.
-5. **Reaching act III**, which M56's measurement against the nerves needs.
+4. **Reaching act III**, which M56's measurement against the nerves needs.
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
 The record, with its measurements and the choices open to overturn, is in `DECISIONS.md` under
@@ -358,38 +355,6 @@ her. The reasoning, and what was rejected on the way, is in `DECISIONS.md` under
 
 ---
 
-## M113 — The inspection reads as one · asked for 2026-09-10
-
-> "the checkpoint itself, 2s should be enough -- both the guard and the player should disappear
-> during the inspection, the camera should center on the hut (use a smooth ease in out for non
-> player caused camera movement if possible) after the inspection the player and the guard should
-> reappear"
-
-**Today a checkpoint hold is six seconds of standing still.** `checkpoint_hut` and
-`checkpoint_post` detain through `chatting_mother`'s mechanism — `Tuning.CHECKPOINT_DETAIN_SECONDS`
-6.0 over a 48px `detain_radius`, `redetains` so a second approach holds again — and while she is
-held nothing else happens: she stands where she was caught, the guard stands where he was drawn,
-the camera stays on her. The record of the regions and their doors is in `DECISIONS.md` under M62.
-
-- [ ] **Two seconds, and both of them gone.** `CHECKPOINT_DETAIN_SECONDS` 6.0 → 2.0. For the
-      hold's duration neither she nor the guard is drawn — they have gone inside — and both
-      reappear when it ends, her on the far side of the hut so being let out reads as being let
-      through, the guard at his post. The pram's cue and the danger caret over her are hidden with
-      her; the meters keep running, since the baby is still there. `EventDef.detain_seconds` and
-      the release margin (`CHECKPOINT_RELEASE_MARGIN`, 8px) are the two numbers to re-check against
-      the shorter hold so she is not re-detained on release; `tests/test_checkpoints.gd` covers it
-- [ ] **The camera eases onto the hut and back.** During the hold the camera centres on the hut
-      rather than on her, and every camera move that is not her walking — this one, and any later
-      one — eases in and out (a smooth-step over a short, tuned duration) rather than cutting or
-      using the walk's own `position_smoothing`. Today the camera is `Camera2D` on
-      `scenes/player/stroller.tscn` with `position_smoothing_speed` 6, plus `main.gd`'s follow
-      camera for rigs; the ease is a small focus-target on the player's camera, not a second camera.
-      A test drives a hold and asserts the camera's target and its return
-- [ ] **Walk it on day 7.** One capture of a hold in progress and one of the release, on the seed
-      playtest 55 was played on (3045005721), in `docs/evidence/`
-
----
-
 ## M110 — The crowd goes round a seal · asked for 2026-09-10
 
 > "also I noticed that objects like fallen trees don't stop/redirect traffic or pedestrians"
@@ -399,17 +364,9 @@ M110.** A hard seal, a region wall and a closure shut their segment to walkers a
 through the one held-ground record the catalogue is already refused from; a door lets cars
 through one at a time under the boom the M62 gate already runs, and walkers pass the hut as she
 does; a soft seal takes both pavements from the walkers and leaves the carriageway to the cars;
-the streets around the home block, held for placement only, stay open to everyone. What is left
-is one item and one question.
+the streets around the home block, held for placement only, stay open to everyone; and the bar
+itself holds her the way a hut does, whatever it is doing for a car. What is left is one question.
 
-- [ ] **A raised bar is not a way past for her, at the bar itself.** Decided 2026-09-10
-      *("attempting to do that should just start a regular checkpoint inspection")* and true
-      today only at the huts: `checkpoint_gate` carries no `detain_seconds` or `detain_radius` of
-      its own, so stepping onto the boom's own tiles while it is up for a car starts nothing. The
-      row gains both, sized so the gate's box holds her the way a hut does whatever the bar is
-      doing, and `tests/test_checkpoints.gd`'s raised-gate test then asserts the hold at the bar
-      rather than at the hut. Waits for M113, the inspection reads as one, which owns the
-      checkpoint rows
 - [ ] **Open question, the player's: does every other solid body divert the crowd too?** A café, a
       construction band, a kerbed van are walked through the same way. Diverting the crowd at every
       pavement obstacle spends the tell closures rely on — every obstructed street would read as
@@ -588,9 +545,6 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **The pram has no collision of its own.** `scenes/player/stroller.tscn` carries one circle
-      for her, so the pram clips into walls when she hugs a corner. A second body that trails her,
-      or a capsule that rotates with `facing`
 - [ ] **A pursuer streamed out mid-chase comes back having forgotten it.** `EventInstance.resume()`
       restores the age and the distance travelled but not `_noticed_at`, and a fresh instance starts
       with that at `INF` — so a `pursues_within` row streamed out after it has noticed her returns
