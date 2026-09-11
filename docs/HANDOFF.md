@@ -277,7 +277,7 @@ consolidated), with M105 (the city degrades), M106 (roofs, fronts and street tre
 run clock, hidden until an ending) placed in that batch provisionally, since the player asked
 for them on 2026-09-10 without placing them.
 Reaching act III — which M56's measurement against the nerves needs — waits until
-that batch is done, and M101, the fire found before the engine, comes after that. SVG-to-PNG
+that batch is done. SVG-to-PNG
 style transfer is Codex's parallel track. Prepared artwork and its source-review sheets are listed
 in `GRAPHICS.md`; the integration table in `TODO.md` assigns each family to its gameplay owner.
 M110, the crowd goes round a seal, owns crowd blockage at seals; M111, cars follow their turns,

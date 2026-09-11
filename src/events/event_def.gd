@@ -357,8 +357,15 @@ enum Pavement {
 
 @export var pavement_side := Pavement.ANY
 
-## Event id to spawn where this one ends. How a fire engine leaves a fire behind it.
+## Event id to spawn where this one ends. How a military convoy leaves a barricade behind it.
 @export var spawns_on_finish := ""
+
+## Event id to spawn the moment this one is first seen. The opposite direction from
+## `spawns_on_finish` above: that names what a row leaves behind when it is done; this names
+## what arrives once she has found it. How the burning building calls in the fire engine —
+## `EventManager` owns the trigger, since it already owns the successor mechanism and her
+## position; see `EventManager._summon_what_has_been_sighted()`.
+@export var spawns_on_sight := ""
 
 ## Seconds the player's movement input is locked for, on first contact within `detain_radius`.
 ## `0.0` means never — the default, and true of every row but `chatting_mother`.

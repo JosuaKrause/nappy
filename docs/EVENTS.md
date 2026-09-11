@@ -51,7 +51,7 @@ entire excitement model a pure query with nothing pushing values at the baby.
 
 - **`AMBIENT`** — permanently present, part of the map (playground, busy road).
 - **`RECURRING`** — can be rolled on any eligible day, possibly many times in a run.
-- **`ONE_SHOT`** — fires on exactly one day in the run, then never again (fire truck).
+- **`ONE_SHOT`** — fires on exactly one day in the run, then never again (burning building).
 - **`SCRIPTED`** — the scheduler is told exactly which day it fires (story beats).
 
 ## Where an event happens
@@ -60,7 +60,7 @@ entire excitement model a pure query with nothing pushing values at the baby.
 
 **`MAP`, which is nearly everything.** The scheduler puts it on a tile when the day is planned,
 and `EventManager` puts it in the world when the player comes within `EVENT_STREAM_RADIUS` of it
-— of the nearest point of its *route*, for a mobile one, so a fire engine is in the world before
+— of the nearest point of its *route*, for a mobile one, so a dog walker is in the world before
 it sets off down the street she is on. It goes away again when she leaves, and once it has run
 its course its plan is **spent**: walking back past it does not start it over.
 
@@ -317,9 +317,9 @@ Three things worth keeping straight:
   going; the dog walker carries on down the street. `departs_at` is for the rest — a flock, which
   has to fly, and a pursuer that has lost interest and trots off.
 - **Two things never leave**, and both would break something that reads the finishing position: an
-  event with a `spawns_on_finish` stops **where the thing it leaves belongs** (a fire engine's fire
-  is at the building, not two streets past it), and anything with no departure speed is simply
-  over, which is right for a café that closes.
+  event with a `spawns_on_finish` stops **where the thing it leaves belongs** (a military convoy's
+  barricade is where it stopped, not two streets past it), and anything with no departure speed is
+  simply over, which is right for a café that closes.
 
 ## Scheduling
 
@@ -398,14 +398,16 @@ outward. The measurement that established this is in `docs/DECISIONS.md` under M
 
 ### A set piece is offered on every route and happens on one
 
-The fire engine is the only one-shot in the catalogue. Placed like everything else — a legal spot
-somewhere on the map, on a day she may never walk that way — an authored set piece that fires once
-per run is a fairness contract and a silhouette spent on nothing.
+The burning building is the only one-shot in the catalogue. Placed like everything else — a legal
+spot somewhere on the map, on a day she may never walk that way — an authored set piece that fires
+once per run is a fairness contract and a silhouette spent on nothing.
 
 So the day plans it **at every site of a covering set** — `RouteTree.covering_sites`, the smallest
 set of streets such that every route touches one — and the placements share a `set_piece_group`.
 The first one to enter the world spends the rest, in `EventManager._stream_in`, which is also
-where a scar is recorded: a run gets exactly one fire however many streets were offered.
+where a scar is recorded: a run gets exactly one fire however many streets were offered. The fire
+engine is not part of this — it is never scheduled at all, and arrives only once the building it
+answers has been seen (`EventDef.spawns_on_sight`, `EventManager._summon_the_sighted_row()`).
 
 Three things this gets right that choosing a site on her route would not:
 
@@ -430,7 +432,7 @@ Because an offer costs nothing, the fill is **identical** between attempts.
 
 Two exceptions, both load-bearing. **Siblings space against each other**, because two offers on top
 of one another would be a real overlap on whichever one fires. And **nothing lethal may be planned
-into an offer**: if it does resolve there, she meets a lethal field and a fire engine at once,
+into an offer**: if it does resolve there, she meets a lethal field and a burning building at once,
 which is exactly the sum the telegraph contract refuses.
 
 The three counts this splits apart are worth keeping straight, because two tests depend on it.
@@ -557,8 +559,8 @@ All implemented.
 | `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Silent: standing in the way is its entire price, and `obstructs_radius` already charges it — see "Solid things are solid". At the kerb rather than on the carriageway, and solid at `VEHICLE_BODY`: 44px of van across a 64px footway is a street that costs the other side. |
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
 | `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it and forces a reroute rather than inviting one — and since a street is sidewalk\|road\|sidewalk, the road is always still there, so it costs time, never the day. Silent, like `delivery_van`: a hoarding is not a source. |
-| `fire_truck` | ONE_SHOT | 3 | Drives an arterial at 190px/s with a 340px radius and a 6.27s telegraph (the fast-mover rule over its own forward reach — see docs/MECHANICS.md). `spawns_on_finish` leaves a `burning_building` where it stops. |
-| `burning_building` | — | — | Never scheduled: a SCRIPTED def with no day, so only the fire engine can put one in the world. Burns for the rest of the day, and you cannot walk through the fire. |
+| `burning_building` | ONE_SHOT | 3 | Placed in a building, `AGAINST_THE_BUILDING`, the way `reversing_lorry` is. `spawns_on_sight` calls `fire_truck` in the moment she first sees it. Burns for the rest of the day, and you cannot walk through the fire. |
+| `fire_truck` | — | — | Never scheduled: a SCRIPTED def with no day, created only once `burning_building` has been seen. Drives an arterial at 190px/s with a 340px radius and a 6.27s telegraph (the fast-mover rule over its own forward reach — see docs/MECHANICS.md), entering along the fire's own street from off screen and ending there. |
 
 **And the rest of act I**, which is where its variety and its danger come from — a
 neighbourhood's own rather than a patrol's.
@@ -600,7 +602,7 @@ neighbourhood's own rather than a patrol's.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `military_convoy` | RECURRING | 12 | Like the fire engine, but what it leaves behind is a `barricade`. |
+| `military_convoy` | RECURRING | 12 | Drives its street and stops where what it leaves belongs: a `barricade`, through `spawns_on_finish`. |
 | `barricade` | — | — | Never scheduled directly by the ordinary catalogue roll — `scripted_day` 0 never equals a real day. Two things place it: left where a convoy stopped, and — via `scar_id` — left there for the rest of the **run**; or placed fresh, without a scar, every morning from act IV onward as a **hard seal** on a street off the day's route tree (`SealPlanner`, `obstructs_radius` 62 repeated across the street's whole width so nothing gets past it) — see docs/CITY.md, "Sealing the tree". |
 | `protest` | RECURRING | 12 | `intensity_ramp` 1.9 over 150s: a protest you could have walked past when you saw it is not one you can walk past two minutes later. **Solid at 55px**, and `_draw_protest` draws two ranks across exactly that width — the clearest case in the catalogue of the picture deciding a gameplay number, because a body may not claim ground the drawing does not. Under its own 70px inner radius on purpose — the loudest part of a protest is something you stand in rather than bump into. **A rank points at the resistance's own objective**, one of eight `protester_point_*` poses picked by whichever 45° bearing from the protest to the objective is nearest, whenever today's resistance step has a position and is not a chalk mark. *(2026-09-11, the player: "the mark is findable now -- I don't think we need pointing for that. but the other tasks are not as easy and need pointing.")* A mark step, or no step at all, draws the plain rank. `max_per_day` is 12: a protest obstructs nothing off its own tile and pursues nothing, so raising it never competes with anything else's own cap. |
 | `firefight` | SCRIPTED | 13 | The worst thing in the catalogue. Extreme, `hard_fail`, 6.5s telegraph, and it shuts a junction. Solid at the width of its cover. Its picture is **people** doing this, not a street on fire — that is a burning building's picture, and the two rows are not the same event. |
