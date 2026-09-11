@@ -157,9 +157,9 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
-1. **M56**'s build item, the other rows that hunt. *("M56 is also related to the other items to
-   work on right now.")* Its measurement against the nerves waits, because reaching act III
-   waits: *"I wanna wait reaching act III until those things are done."*
+1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
+   related to the other items to work on right now.")* It waits, because reaching act III waits:
+   *"I wanna wait reaching act III until those things are done."*
 2. **M113** — the inspection reads as one: a two-second hold at a checkpoint during which she and
    the guard are gone and the camera eases onto the hut. *(2026-09-10, playtest 55.)* Placed here
    by the orchestrator because it is the first thing act III shows and it was seen once; open to
@@ -199,7 +199,6 @@ anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified 
 
 | Owner | Integration work and acceptance |
 |---|---|
-| M56 — The resistance is noticed | Bind the riot van's directional family and standing/lunging guard poses to the actual waiting, departing and pursuit states. Preserve the waiting silhouette and telegraph; use M108's heading selector rather than a second direction table. |
 | M100 — Small, real, and nobody's | Review `chalk_mark.svg` beside `chalk_mark_touched.svg`, then bind the touched state to the acknowledgement she adds when contact counts. Keep the original mark visible and readable on the pavement. Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family with the alley event and the sound arcs with their event timing; source availability does not decide either behavior. |
 | M102 — The finale: out of the apartment, out of the city | Build the interior TileSet/map binding for hallway, stairwell and basement floors/edges/walls. Register doors, barricade, chandelier and puddle separately; retain the south hallway's implied door thresholds. Bind normal/flash windows to explosion timing, steam to its pulse, and carrying-mother facing/gait to actual movement. Reuse mouse, guards, vehicles and crater sources. Decide whether the optional `explosion_preview.svg` is needed; the off-screen explosion brief does not require a visible burst. Check room transitions, foot anchors, layering and state changes in runtime evidence. |
 | M105 — The city degrades | Register the three crack levels and two patterns for each road/sidewalk/alley base in the TileSet, preserving markings, kerbs, seams and tile semantics. Place the five flat litter decals under actors; place single/piled sacks with the milestone's obstruction decision. Select matching `storefront_{a,b,c,d}_shuttered.svg` variants through M106's frontage binding. Compare a fixed seed across acts. |
@@ -339,48 +338,21 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 The city gets more dangerous the further into the subquest you are. **A task may not cost a nerve**
 — a nerve is a rewind, not a resource, so there is nothing to trade.
 
-**The raid hunts; what is left of "and other dangers like this" is the roadblock, which needs a
-drawing, and the measurement waits until act III is reached**, which the queue puts after M96 to
-M100. *(2026-09-09: "M56 is also related to the other items to work on right now. I wanna wait
-reaching act III until those things are done.")* The raid's record is in `DECISIONS.md` under M56.
+**Every hunting row is built; what is left is the measurement, and it waits until act III is
+reached**, which the queue puts after M96 to M100. *(2026-09-09: "M56 is also related to the other
+items to work on right now. I wanna wait reaching act III until those things are done.")* The
+records are in `DECISIONS.md` under M56.
 
-**What the remaining items are stated against**, since the machinery under them exists: a row says
-how it answers to the resistance with `EventDef.heat_response` — `NONE`, `PRESSES` or `HUNTS` —
+**What the remaining item is stated against**, since the machinery under it exists: a row says how
+it answers to the resistance with `EventDef.heat_response` — `NONE`, `PRESSES` or `HUNTS` —
 `EventCatalogue.heated()` derives that row's shape at a progress level, and every one of those
 shapes is validated on boot. The ladder has three rungs a player can name and both its upper ones
 are built: `police_patrol` is **denser and then interested**, and `abduction` is **hunted**, taking
 a bystander of its own while she watches and coming after her instead past three of four, with
-`night_raid` on the same rung from day 10 — cold it closes a block, hot it comes for her. The
-reasoning, and what was rejected on the way, is in `DECISIONS.md` under M56.
+`night_raid` on the same rung from day 10 — cold it closes a block, hot it comes for her — and
+`roadblock` on it from day 7 — cold it closes a street, hot its guards leave the post and come for
+her. The reasoning, and what was rejected on the way, is in `DECISIONS.md` under M56.
 
-**Guard artwork is available for the hut interaction:** `assets/checkpoints/guard_standing.svg`
-and `guard_lunging.svg` share the person's scale and keep their ground anchors in the SVG comments.
-The lunging pose faces east and can be mirrored for west. These are the stationary and departing
-poses for the drawing discussed below; the heat-response decision and runtime binding remain here.
-Use `assets/events/riot_van.svg` for the existing night-raid vehicle;
-use the guard pair for a guard departure if that proposed response is accepted.
-
-- [ ] **The roadblock's guards leave their post.** The other half of *"and other dangers like
-      this"*, filed after the raid on the draft's own recommendation — *the raid now, the roadblock
-      later* — because it is a drawing where the raid was one line. What `HUNTS` does to a row is
-      fixed by `EventDef.at_heat()`: at `Tuning.HEAT_HUNTS_LEVEL` (3 of the 4 performs that
-      qualify) and above, the derived copy `pursues` at 130px/s, notices her within 180px, chases
-      for `PURSUIT_TIME`, and is `hard_fail`. `roadblock` cannot simply switch that on: it is a
-      spread — `Look.ROADBLOCK` draws a 120px band across the road through `_draw_spread`,
-      intensity 13 over 52/215px, from day 7 — and a band does not chase. A hunting roadblock is
-      *guards leaving their post*, a second posture like the robber's waiting/lunging pair, so the
-      item is the drawing (the prepared `guard_standing.svg` / `guard_lunging.svg` pair above is
-      the candidate), the `heat_response` line, a rule for what the band does while its guards
-      are away, and the same named test the raid has in `tests/test_heat.gd`. The region
-      checkpoints (`checkpoint_hut`, `checkpoint_gate`, `checkpoint_post`) are a separate thing
-      and are never rolled by the scheduler, so they are not candidates; neither is
-      `police_patrol`, the `PRESSES` rung that *"never gains `hard_fail`, whatever the heat"* —
-      the player's own instruction, 2026-09-01
-- [ ] **Bind the riot van's end and diagonal views.** `Look.RIOT_VAN` uses one side view, so
-      a hunting raid van chasing north or south is drawn side-on. Select the prepared
-      `riot_van_{front,back,front_diagonal,back_diagonal}.svg` family through M108's heading
-      binding; `riot_van_end.svg` is available for the side/end caller during integration.
-      Preserve the waiting-to-hunting state change and the van's native ground registration.
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
 
@@ -658,16 +630,6 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **A roadblock band is a row of blocks, not a barrier.** *(2026-09-10, playtest 55: "the
-      barrier itself also doesn't read as a continuous element. is it using the texture of the
-      other orientation and concatenating that one?")* No: `Look.ROADBLOCK` is drawn by
-      `_draw_spread(CHECKPOINT_BLOCK)`, which repeats `assets/events/checkpoint_block.svg` — one
-      22×30 concrete block with its own frame and hazard panel — along the band with no end cap and
-      no orientation sibling, so the band is identical blocks side by side. `roadworks` already
-      draws as `_draw_spread(BARRIER_SEGMENT, BARRIER_END)`, a rail with caps that reads as one
-      thing; the roadblock wants the same construction — a continuous held-street barrier picture
-      that repeats seamlessly, with an end piece — drawn under the svg-art rules and bound in
-      `_draw_body`'s `ROADBLOCK` case
 - [ ] **A car's strike box sits half a car behind its picture going north, half a car ahead going
       south.** *(2026-09-10, playtest 55, read off the debug view: "the dead zone of a car is
       trailing the car instead of leading the car?")* `CrowdAgent._draw_body` draws a car with

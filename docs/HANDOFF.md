@@ -240,9 +240,8 @@ longer what answers *can she get there today*.
 Two of the queue's milestones carry state worth knowing before picking them up; their place in the
 order is `TODO.md`'s.
 
-- **M56 — the resistance is noticed.** What remains of its hunting rows is the roadblock, whose
-  guards leaving their post is a posture drawing, and the end-on view the riot van now owes; its
-  measurement against the nerves waits until act III is reached.
+- **M56 — the resistance is noticed.** What remains is its measurement against the nerves, which
+  waits until act III is reached.
 
 **The instrument to judge any of it with now exists and was used this session.** The dusk map draws
 the walk over the plan: where she went, which stretches she ran, and which events actually reached
@@ -266,8 +265,8 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
 ## The queue, as prioritised on 2026-09-09
 
-**`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56's
-remaining hunting row, the roadblock, is next, on its own branch, and it is a drawing. M113, the
+**`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56 has only
+its measurement against the nerves left, and that waits for act III. M113, the
 inspection, comes from playtest 55; M110, the crowd goes round a seal, follows. The debug view (`1` to `4` in a debug build, `--layers 1,3` for
 a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow or a body is checked by
 eye, and every one of the three is now derived from the object's one `GroundShape`. Behind those, unordered: M96 (the teaching day and
@@ -359,6 +358,13 @@ What is untested by a human, listed so nobody mistakes arithmetic for a verdict.
   harder *precisely for the player doing well at the optional path*, and **nobody has ever reached
   act III**. The night raid is the newest rung of it: on day 10 it hunts, and is lethal, only for
   a player holding every perform so far, and no run has reached day 10 with any.
+- **A roadblock's guards have never been seen leaving their post, and the barrier has never been
+  seen in play.** The hunting copy draws the standing then the lunging guard the frame it stops
+  waiting, and the band is one continuous barrier with end posts rather than a row of blocks; both
+  were checked by rendering the textures headless, since two rig attempts to frame a forced
+  roadblock failed, so no capture exists in `docs/evidence/`. Whether a guard on foot reads as
+  *the roadblock coming for her* rather than a checkpoint's guard out of place is a played
+  question, and so is whether a street its guards have left reads as open.
 - **An investigating patrol has never been seen.** The claim is that a police car breaking off its
   route to follow her reads as *being noticed*. That is a screenshot question and no screenshot has
   been taken.
