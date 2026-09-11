@@ -201,12 +201,14 @@ func _ready() -> void:
 	_open_the_title()
 
 ## `--start-escape`'s own boot: the third floor's hallway, her at the door with the baby in her
-## arms, and the way down. No title, no `City`, no events, no crowd, no `DayController` and no
-## `ResistanceDirector` — the milestone this exists for is judging the walking, the floor
-## transitions and the stair tiles on their own, before the finale puts any pressure on top of
-## them, so nothing here builds a clock or an ending. The HUD still comes up: its two meters
-## idle exactly as `WorldContext`'s own defaults leave them (1.0 recovery everywhere, nothing
-## charging excitement), which is "meters idle" for free rather than a case this has to build.
+## arms, and the way down — or, with `DevFlags.start_escape_at()`'s optional value, straight into
+## any of the building's other six maps, so a rig or a person can look at one without walking
+## there. No title, no `City`, no events, no crowd, no `DayController` and no `ResistanceDirector`
+## — the milestone this exists for is judging the walking, the door transitions and the stair
+## tiles on their own, before the finale puts any pressure on top of them, so nothing here builds a
+## clock or an ending. The HUD still comes up: its two meters idle exactly as `WorldContext`'s own
+## defaults leave them (1.0 recovery everywhere, nothing charging excitement), which is "meters
+## idle" for free rather than a case this has to build.
 func _ready_escape() -> void:
 	# Guarded here too, not only at the call site in `_ready()` — the same shape
 	# `_add_debug_layers()` reads `_debug` in, so a test can call this directly and check the
@@ -226,11 +228,12 @@ func _ready_escape() -> void:
 	_interior.name = "Interior"
 	add_child(_interior)
 	_pauses_with_the_game(_interior)
-	_interior.build(InteriorMap.FloorKind.THIRD)
+	_interior.build(_escape_start_kind())
 	_interior.exit_requested.connect(_on_escape_exit_requested)
 
 	_player = STROLLER.instantiate()
 	_player.carrying = true
+	_player.slope_dir_at = _interior.slope_dir_at
 	_interior.add_entity(_player)
 	_player.set_camera_limits(_interior.camera_bounds())
 	_baby = _player.get_node("Baby")
@@ -253,6 +256,29 @@ func _ready_escape() -> void:
 	var screenshot := AutoScreenshot.from_command_line()
 	if screenshot:
 		add_child(screenshot)
+
+## `DevFlags.start_escape_at()`'s raw word, mapped onto the `InteriorMap.MapKind` to boot into —
+## `InteriorMap.MapKind.HALLWAY_THIRD`, her own door, for every word this does not recognise,
+## which covers both "not given" and a typo alike. Kept here rather than in `DevFlags`, the same
+## split `ending_override()` leaves to its own caller, since mapping a word onto an enum only this
+## file imports is not that class's job.
+func _escape_start_kind() -> int:
+	var raw := DevFlags.start_escape_at()
+	match raw:
+		"stairwell:left":
+			return InteriorMap.MapKind.STAIRWELL_LEFT
+		"stairwell:right":
+			return InteriorMap.MapKind.STAIRWELL_RIGHT
+		"lobby":
+			return InteriorMap.MapKind.LOBBY
+		"basement":
+			return InteriorMap.MapKind.BASEMENT
+		"floor:2":
+			return InteriorMap.MapKind.HALLWAY_SECOND
+		"floor:1":
+			return InteriorMap.MapKind.HALLWAY_FIRST
+		_:
+			return InteriorMap.MapKind.HALLWAY_THIRD
 
 ## `InteriorScene.exit_requested` fires once the emergency exit's own fade has covered the screen
 ## — see `InteriorScene._start_exit()`. Pausing and opening `_title` is what "returns to the title

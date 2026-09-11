@@ -26,7 +26,7 @@ const _SOURCES := {
 	InteriorTile.Kind.BASEMENT_FLOOR_EDGE_E: "res://assets/interior/basement_floor_edge_e.svg",
 	InteriorTile.Kind.BASEMENT_FLOOR_EDGE_S: "res://assets/interior/basement_floor_edge_s.svg",
 	InteriorTile.Kind.BASEMENT_FLOOR_EDGE_W: "res://assets/interior/basement_floor_edge_w.svg",
-	InteriorTile.Kind.STAIRWELL_DOOR: "res://assets/interior/stairwell_floor.svg",
+	InteriorTile.Kind.DOOR: "res://assets/interior/stairwell_floor.svg",
 	InteriorTile.Kind.EMERGENCY_EXIT: "res://assets/interior/basement_floor_edge_n.svg",
 }
 

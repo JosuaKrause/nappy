@@ -118,6 +118,14 @@ var facing := Vector2.DOWN
 ## unchanged either way — see `shape`'s own doc.
 var carrying := false
 
+## `InteriorScene.slope_dir_at`, or an unset `Callable` outdoors — the one hook the escape scene's
+## diagonal stairs need from this otherwise interior-agnostic rig. Asked every physics frame for
+## whether her *current* position sits on a diagonal flight tile (`+1` descending toward east,
+## `-1` toward west, `0` off any flight), so a sideways press can be redirected along the slope —
+## see `_physics_process()`. Set once by `main._ready_escape()`, the same shape `carrying` is set
+## in; unset (`Callable()`) leaves every outdoor run and every other test untouched.
+var slope_dir_at := Callable()
+
 ## Her own ground shape and the pram's, read by `_draw()` for their shadows — 9px and 12px, the
 ## same two numbers the shadow always used. Fixed rather than computed in a `setup()`, since
 ## neither figure changes size. **Not the same datum as the scene's own collision body**: the
@@ -195,6 +203,7 @@ func _physics_process(delta: float) -> void:
 		# Ignored rather than read: the run key doing nothing during a capture falls out of this
 		# for free, since `top_speed` below is only ever reached through a nonzero `input_dir`.
 		input_dir = Vector2.ZERO
+	input_dir = _redirect_along_a_flight(input_dir)
 	var top_speed := Tuning.RUN_SPEED if Input.is_action_pressed("run") else Tuning.WALK_SPEED
 
 	if input_dir != Vector2.ZERO:
@@ -220,6 +229,29 @@ func _physics_process(delta: float) -> void:
 		_alert = Alert.NONE
 	_update_camera(delta)
 	queue_redraw()
+
+## On a diagonal flight tile, a sideways press walks the slope rather than the screen axis it was
+## pressed on — *(2026-09-10, playtest 55: "holding right or left on the switchback stairs moves
+## the player diagonally")*. `slope_dir_at` answers `+1` on a tile descending toward east, `-1`
+## toward west, `0` everywhere else (including a flat landing); off a flight, or outdoors where the
+## callable was never set, `raw` is returned unchanged.
+##
+## The redirection reads only `raw.x`'s **sign**, never its `y` component or which device pressed
+## it — key, tap and joystick share this one call. Pressing *toward* the flight's own descending
+## side (`sign(raw.x) == slope`) walks toward its lower end; pressing the other way climbs toward
+## its upper end; a press with no horizontal component (`raw.x == 0`, including a pure up/down
+## press) moves nowhere, since there is no floor beside the tread to step onto. The result keeps
+## `raw`'s own magnitude, so an analog joystick still climbs or descends at partial speed.
+func _redirect_along_a_flight(raw: Vector2) -> Vector2:
+	if not slope_dir_at.is_valid():
+		return raw
+	var slope: int = slope_dir_at.call(global_position)
+	if slope == 0:
+		return raw
+	if raw.x == 0.0:
+		return Vector2.ZERO
+	var sign_matches := 1.0 if signf(raw.x) == signf(slope) else -1.0
+	return Vector2(slope, 1.0).normalized() * sign_matches * raw.length()
 
 ## Locks her own movement input for `seconds` — the one mechanic in the catalogue that takes the
 ## controls away rather than costing a meter. Called by `EventManager` the frame `chatting_mother`

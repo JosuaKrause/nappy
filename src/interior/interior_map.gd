@@ -1,127 +1,231 @@
 class_name InteriorMap
 extends RefCounted
-## Builds the five floors of the escape scene's building — each a small, hand-shaped plan of
-## `InteriorTile.Kind` cells, independent of `CityMap`'s own lattice, generator and guarantees:
-## a building with one way through it has no route-redundancy invariant to keep. See
-## `docs/TODO.md`, "M112 — The escape scene, walkable" for the brief this lays out.
+## Builds the seven maps of the escape scene's building, from the player's four sketches
+## (`docs/reference/escape-{floor-hallway,stairwell,lobby,basement}-sketch-01.jpg`) — each a small,
+## hand-shaped plan of `InteriorTile.Kind` cells, independent of `CityMap`'s own lattice, generator
+## and guarantees: a building with one way through it has no route-redundancy invariant to keep.
+## See `docs/TODO.md`, "M112 — The escape scene, walkable" for the brief this lays out.
 ##
-## Coordinate system: `x` runs east along the hallway (`0 .. HALLWAY_LENGTH - 1`), `y` runs south.
-## Rows 0 and 1 are the hallway itself — row 0 against the north wall, row 1 its south edge, where
-## the apartment doors are implied below the view. A stairwell opens off column 0 (the left/west
-## end) or column `HALLWAY_LENGTH - 1` (the right/east end) by carving three further rows south of
-## the hallway. See `_carve_stairwell()` for the switchback layout.
+## The seven maps are never one coordinate space. Each is its own small grid with its own origin,
+## and the only thing that joins two of them is a matched pair of `InteriorMapPlan.Door` — one
+## door on each side naming the other map and the other door's own id. `tests/test_interior.gd`
+## asserts every door has exactly the counterpart it claims.
+##
+## Three hallways (`HALLWAY_THIRD`/`SECOND`/`FIRST`) share one layout: a 14-tile east-west hallway,
+## two rows deep, with a stair door at each end — opposite ends, not the two the sketch drew both
+## at the right, a player decision (playtest 55: "that way having a fire on the stairs forces you
+## to enter a floor hallway and walk to the other end"). Two independent stairwells
+## (`STAIRWELL_LEFT`/`RIGHT`), each its own tall map the camera follows down with no map load
+## mid-shaft: a plain switchback, one flight down and one flight back per floor, alternating
+## direction. `LOBBY` is the hallway's own width with the barricaded entrance and doors to both
+## stairwells and the basement. `BASEMENT` is the winding corridor with its own short entry flight
+## and the exit at the top.
 
-## `FloorKind`, kept here rather than on `InteriorFloor`, since this is the file that knows the
-## order they stack in. Every other file reads it as `int` — see `InteriorFloor.kind`'s own doc.
-enum FloorKind { THIRD, SECOND, FIRST, GROUND, BASEMENT }
+## Which of the seven maps `build()` was asked for, and which door on it leads where. Every other
+## file reads this as `int` — see `InteriorMapPlan.Door.target_map`'s own doc.
+enum MapKind { HALLWAY_THIRD, HALLWAY_SECOND, HALLWAY_FIRST, STAIRWELL_LEFT, STAIRWELL_RIGHT, LOBBY, BASEMENT }
+
+const _HALLWAY_KINDS: Array[int] = [MapKind.HALLWAY_THIRD, MapKind.HALLWAY_SECOND, MapKind.HALLWAY_FIRST]
+## The landing door id each hallway's stair door leads to, in stacking order (top to bottom) —
+## the same order `_STAIRWELL_LANDING_IDS` walks when laying out a shaft.
+const _HALLWAY_LANDING_ID := {
+	MapKind.HALLWAY_THIRD: "landing_third",
+	MapKind.HALLWAY_SECOND: "landing_second",
+	MapKind.HALLWAY_FIRST: "landing_first",
+}
+
+static func build(kind: int) -> InteriorMapPlan:
+	match kind:
+		MapKind.HALLWAY_THIRD, MapKind.HALLWAY_SECOND, MapKind.HALLWAY_FIRST:
+			return _build_hallway(kind)
+		MapKind.STAIRWELL_LEFT:
+			return _build_stairwell("left")
+		MapKind.STAIRWELL_RIGHT:
+			return _build_stairwell("right")
+		MapKind.LOBBY:
+			return _build_lobby()
+		MapKind.BASEMENT:
+			return _build_basement()
+		_:
+			push_error("InteriorMap.build: unknown MapKind %d" % kind)
+			return InteriorMapPlan.new()
+
+# -------------------------------------------------------------------------------- hallway ---
 
 const HALLWAY_LENGTH := 14
-## Rows 0 and 1 are the hallway; a stairwell's own rows start at row `HALLWAY_ROWS`.
-const HALLWAY_ROWS := 2
+const HALLWAY_ROWS := 2   ## Rows 0 (north, walled) and 1 (south, the apartment-door edge).
+const LIFT_COLUMN := 6
+const WINDOW_COLUMNS: Array[int] = [2, 4, 9, 11]
+## Beside each stair door, lighting the way to it — kept clear of the lift and window columns.
+const LAMP_COLUMNS: Array[int] = [0, HALLWAY_LENGTH - 1]
 const LEFT_DOOR_COLUMN := 0
 const RIGHT_DOOR_COLUMN := HALLWAY_LENGTH - 1
-## Kept clear of both door columns and of each other, so nothing in the wall ever shares a column
-## with two different features.
-const LIFT_COLUMN := 3
-const WINDOW_COLUMNS: Array[int] = [1, 5, 9, 11]
-## Ground floor only, in addition to the lift every floor has.
-const ENTRANCE_COLUMN := 7
-## Basement only, at the hallway's own west end, directly above the left stairwell's own door
-## column — an arbitrary side; either stairwell reaches it by the same short walk once she is on
-## the basement's hallway floor.
-const EXIT_COLUMN := 0
+## Her own apartment door, third floor only — implied on the south edge below the view, the same
+## as every other apartment door on every floor.
+const HALLWAY_START_COLUMN := HALLWAY_LENGTH / 2
 
-## Building order, top to bottom. `floor_below()` reads this rather than each floor answering
-## "what comes after me" on its own, since the order is a fact about the building, not about any
-## one storey.
-const ORDER: Array[int] = [
-	FloorKind.THIRD, FloorKind.SECOND, FloorKind.FIRST, FloorKind.GROUND, FloorKind.BASEMENT,
-]
-
-## The floor one storey down, or `kind` unchanged at the basement — there is nothing further down
-## to go, and `InteriorFloor.Stairwell.has_flights()` is what actually keeps the basement's own
-## stairwells from ever asking this.
-static func floor_below(kind: int) -> int:
-	var index := ORDER.find(kind)
-	return ORDER[index + 1] if index != -1 and index + 1 < ORDER.size() else kind
-
-static func build(kind: int) -> InteriorFloor:
-	var f := InteriorFloor.new()
+static func _build_hallway(kind: int) -> InteriorMapPlan:
+	var f := InteriorMapPlan.new()
 	f.kind = kind
-	var basement := kind == FloorKind.BASEMENT
-	var wall_kind := InteriorTile.Kind.BRICK_WALL if basement else InteriorTile.Kind.WALL
-	var edge_n := InteriorTile.Kind.BASEMENT_FLOOR_EDGE_N if basement \
-			else InteriorTile.Kind.HALLWAY_FLOOR_EDGE_N
-	var edge_s := InteriorTile.Kind.BASEMENT_FLOOR_EDGE_S if basement \
-			else InteriorTile.Kind.HALLWAY_FLOOR_EDGE_S
-	var edge_w := InteriorTile.Kind.BASEMENT_FLOOR_EDGE_W if basement \
-			else InteriorTile.Kind.HALLWAY_FLOOR_EDGE_W
-	var edge_e := InteriorTile.Kind.BASEMENT_FLOOR_EDGE_E if basement \
-			else InteriorTile.Kind.HALLWAY_FLOOR_EDGE_E
-
-	# The hallway: two rows deep, so both rows are edges rather than plain floor — see
-	# InteriorTile.Kind.HALLWAY_FLOOR's own doc for why the bare kind goes unused here.
 	for x in HALLWAY_LENGTH:
-		f.tiles[Vector2i(x, 0)] = edge_n
-		f.tiles[Vector2i(x, 1)] = edge_s
-		f.north_wall[x] = wall_kind
-	f.tiles[Vector2i(0, 1)] = edge_w
-	f.tiles[Vector2i(HALLWAY_LENGTH - 1, 1)] = edge_e
+		f.tiles[Vector2i(x, 0)] = InteriorTile.Kind.HALLWAY_FLOOR_EDGE_N
+		f.tiles[Vector2i(x, 1)] = InteriorTile.Kind.HALLWAY_FLOOR_EDGE_S
+		f.walls[Vector2i(x, 0)] = InteriorTile.Kind.WALL
+	f.walls[Vector2i(LIFT_COLUMN, 0)] = InteriorTile.Kind.LIFT_DOOR
+	for c in WINDOW_COLUMNS:
+		f.walls[Vector2i(c, 0)] = InteriorTile.Kind.WINDOW
+	for c in LAMP_COLUMNS:
+		f.walls[Vector2i(c, 0)] = InteriorTile.Kind.WALL_LAMP
 
-	if basement:
-		f.tiles[Vector2i(EXIT_COLUMN, 0)] = InteriorTile.Kind.EMERGENCY_EXIT
-		f.exit_tile = Vector2i(EXIT_COLUMN, 0)
-		f.puddle_tiles = [Vector2i(6, 1), Vector2i(9, 0)]
-	else:
-		f.north_wall[LIFT_COLUMN] = InteriorTile.Kind.LIFT_DOOR
-		for c in WINDOW_COLUMNS:
-			f.north_wall[c] = InteriorTile.Kind.WINDOW
-		if kind == FloorKind.GROUND:
-			f.north_wall[ENTRANCE_COLUMN] = InteriorTile.Kind.ENTRANCE_DOOR
-			f.entrance_column = ENTRANCE_COLUMN
+	# The two open notches — one at each end, opposite the sketch's both-at-the-right (playtest 55).
+	_add_door(f, "left", Vector2i(LEFT_DOOR_COLUMN, 1), MapKind.STAIRWELL_LEFT, _HALLWAY_LANDING_ID[kind])
+	_add_door(f, "right", Vector2i(RIGHT_DOOR_COLUMN, 1), MapKind.STAIRWELL_RIGHT, _HALLWAY_LANDING_ID[kind])
 
-	# Every floor gets both stairwells; only the basement's have nothing further down.
-	f.stairwells.append(_carve_stairwell(f, "left", LEFT_DOOR_COLUMN, 1, not basement))
-	f.stairwells.append(_carve_stairwell(f, "right", RIGHT_DOOR_COLUMN, -1, not basement))
-
-	f.start_tile = Vector2i(HALLWAY_LENGTH / 2, 1) if kind == FloorKind.THIRD \
-			else f.stairwell("left").door_tile
+	f.start_tile = Vector2i(HALLWAY_START_COLUMN, 1)
 	return f
 
-## One stairwell: a door at `door_col`, a three-tile flight `dir` columns per step east (`dir=1`)
-## or west (`dir=-1`) to a landing, then — only when `has_flights` — a second three-tile flight
-## back the other way, two rows further south, to the lower landing that triggers the transition
-## to the floor below.
-##
-## **The gap row between the two flights is deliberately left with nothing walkable except the
-## landing's own turn column.** The door and the lower landing sit in the same column two rows
-## apart — a Chebyshev distance of 2, so they are never orthogonally *or* diagonally adjacent —
-## and the row between them is otherwise entirely absent from `tiles`. Diagonal movement is live
-## (`Stroller._physics_process()` reads `Input.get_vector()` on both axes), so anything less than
-## that gap would let her step from the door straight to the transition tile without ever standing
-## on a flight tile, which is the one thing this layout exists to prevent.
-static func _carve_stairwell(f: InteriorFloor, side: String, door_col: int, dir: int,
-		has_flights: bool) -> InteriorFloor.Stairwell:
-	var s := InteriorFloor.Stairwell.new()
-	s.side = side
-	var row_door := HALLWAY_ROWS
-	s.door_tile = Vector2i(door_col, row_door)
-	f.tiles[s.door_tile] = InteriorTile.Kind.STAIRWELL_DOOR
-	if not has_flights:
-		return s
+# ------------------------------------------------------------------------------ stairwell ---
 
-	var flight_down := InteriorTile.Kind.STAIR_FLIGHT_E if dir > 0 else InteriorTile.Kind.STAIR_FLIGHT_W
-	var flight_back := InteriorTile.Kind.STAIR_FLIGHT_W if dir > 0 else InteriorTile.Kind.STAIR_FLIGHT_E
-	for i in range(1, 4):
-		f.tiles[Vector2i(door_col + dir * i, row_door)] = flight_down
-	var turn_col := door_col + dir * 4
-	var row_gap := row_door + 1
-	var row_lower := row_door + 2
-	f.tiles[Vector2i(turn_col, row_door)] = InteriorTile.Kind.LANDING
-	f.tiles[Vector2i(turn_col, row_gap)] = InteriorTile.Kind.LANDING
-	f.tiles[Vector2i(turn_col, row_lower)] = InteriorTile.Kind.LANDING
-	for i in range(1, 4):
-		f.tiles[Vector2i(turn_col - dir * i, row_lower)] = flight_back
-	s.lower_landing_tile = Vector2i(door_col, row_lower)
-	f.tiles[s.lower_landing_tile] = InteriorTile.Kind.LANDING
-	return s
+## Rows between one landing and the next: a landing (1) + a 3-tile flight down + a 1-tile
+## half-landing at the turn + a 3-tile flight back = 8, which returns to the same column, so
+## landings stack in one vertical line down the shaft.
+const STAIRWELL_LANDING_GAP := 8
+const STAIRWELL_FLIGHT_LEN := 3
+## The column every landing sits at; the switchback swings `STAIRWELL_FLIGHT_LEN + 1` tiles either
+## side of it, so this is comfortably clear of both map edges.
+const STAIRWELL_X0 := 4
+
+## Top to bottom. The last has no flights of its own — it is the shaft's own floor, and its door
+## leads to the lobby rather than to a hallway.
+const _STAIRWELL_LANDINGS: Array[String] = ["landing_third", "landing_second", "landing_first", "landing_lobby"]
+
+## One step off a landing, to the side rather than on the vertical line the flights travel —
+## arbitrary, and the same side for every landing on every shaft.
+const STAIRWELL_DOOR_OFFSET := Vector2i(-1, 0)
+
+static func _build_stairwell(side: String) -> InteriorMapPlan:
+	var f := InteriorMapPlan.new()
+	f.kind = MapKind.STAIRWELL_LEFT if side == "left" else MapKind.STAIRWELL_RIGHT
+	for i in _STAIRWELL_LANDINGS.size():
+		var landing_id: String = _STAIRWELL_LANDINGS[i]
+		var y0 := i * STAIRWELL_LANDING_GAP
+		var at := Vector2i(STAIRWELL_X0, y0)
+		f.tiles[at] = InteriorTile.Kind.LANDING
+		f.waypoints[landing_id] = at
+		var door_tile := at + STAIRWELL_DOOR_OFFSET
+		if i == 0:
+			f.start_tile = door_tile
+		if i < _HALLWAY_KINDS.size():
+			_add_door(f, landing_id, door_tile, _HALLWAY_KINDS[i], side)
+		else:
+			_add_door(f, landing_id, door_tile, MapKind.LOBBY, side)
+		if i == _STAIRWELL_LANDINGS.size() - 1:
+			continue   # The lobby landing has nothing further down.
+		# Alternates so the shaft zigzags floor by floor rather than always swinging the same way.
+		var dir := 1 if i % 2 == 0 else -1
+		_lay_flight(f, at, dir)
+	return f
+
+## One floor's worth of switchback: a flight of `STAIRWELL_FLIGHT_LEN` diagonal tiles down from
+## `top` in `dir` (east for `1`, west for `-1`), a one-tile half-landing at the turn, and a second
+## flight back the other way to `top + Vector2i(0, STAIRWELL_LANDING_GAP)` — the next floor's own
+## landing, laid by the next loop iteration in `_build_stairwell()`. Every step is diagonal — see
+## `InteriorTile.Kind.STAIR_FLIGHT_E`'s own doc — so no walkable tile ever stands beside the run
+## without also being part of it, which is the anti-shortcut property `tests/test_interior.gd`
+## checks: the only way from one landing to the next is along these flights.
+static func _lay_flight(f: InteriorMapPlan, top: Vector2i, dir: int) -> void:
+	var down_kind := InteriorTile.Kind.STAIR_FLIGHT_E if dir > 0 else InteriorTile.Kind.STAIR_FLIGHT_W
+	var back_kind := InteriorTile.Kind.STAIR_FLIGHT_W if dir > 0 else InteriorTile.Kind.STAIR_FLIGHT_E
+	for i in range(1, STAIRWELL_FLIGHT_LEN + 1):
+		f.tiles[top + Vector2i(dir * i, i)] = down_kind
+	var turn := top + Vector2i(dir * (STAIRWELL_FLIGHT_LEN + 1), STAIRWELL_FLIGHT_LEN + 1)
+	f.tiles[turn] = InteriorTile.Kind.LANDING
+	for i in range(1, STAIRWELL_FLIGHT_LEN + 1):
+		f.tiles[turn + Vector2i(-dir * i, i)] = back_kind
+
+# ---------------------------------------------------------------------------------- lobby ---
+
+const LOBBY_ENTRANCE_COLUMN := 6
+const LOBBY_LIFT_COLUMN := LOBBY_ENTRANCE_COLUMN + 3
+const LOBBY_LAMP_COLUMNS: Array[int] = [4, 8]
+const LOBBY_LEFT_DOOR_COLUMN := 0
+const LOBBY_RIGHT_DOOR_COLUMN := HALLWAY_LENGTH - 1
+const LOBBY_BASEMENT_COLUMN := LOBBY_ENTRANCE_COLUMN
+
+static func _build_lobby() -> InteriorMapPlan:
+	var f := InteriorMapPlan.new()
+	f.kind = MapKind.LOBBY
+	for x in HALLWAY_LENGTH:
+		f.tiles[Vector2i(x, 0)] = InteriorTile.Kind.HALLWAY_FLOOR_EDGE_N
+		f.tiles[Vector2i(x, 1)] = InteriorTile.Kind.HALLWAY_FLOOR_EDGE_S
+		f.walls[Vector2i(x, 0)] = InteriorTile.Kind.WALL
+	f.walls[Vector2i(LOBBY_ENTRANCE_COLUMN, 0)] = InteriorTile.Kind.ENTRANCE_DOOR
+	f.entrance_column = LOBBY_ENTRANCE_COLUMN
+	f.walls[Vector2i(LOBBY_LIFT_COLUMN, 0)] = InteriorTile.Kind.LIFT_DOOR
+	for c in LOBBY_LAMP_COLUMNS:
+		f.walls[Vector2i(c, 0)] = InteriorTile.Kind.WALL_LAMP
+
+	_add_door(f, "left", Vector2i(LOBBY_LEFT_DOOR_COLUMN, 1), MapKind.STAIRWELL_LEFT, "landing_lobby")
+	_add_door(f, "right", Vector2i(LOBBY_RIGHT_DOOR_COLUMN, 1), MapKind.STAIRWELL_RIGHT, "landing_lobby")
+	_add_door(f, "basement", Vector2i(LOBBY_BASEMENT_COLUMN, 1), MapKind.BASEMENT, "entry")
+
+	f.start_tile = Vector2i(LOBBY_ENTRANCE_COLUMN, 1)
+	return f
+
+# -------------------------------------------------------------------------------- basement ---
+
+## Three short east-west stretches, each two rows deep like a hallway with its own brick wall
+## along its north edge, stacked and jogged so the corridor "runs north, jogs, runs north again"
+## the way the sketch draws it (`escape-basement-sketch-01.jpg`) — entry at the bottom, exit at the
+## top. Connected by narrow one-tile jogs rather than by widening a single band, which is where the
+## sketch's debris, rat and puddles sit.
+static func _build_basement() -> InteriorMapPlan:
+	var f := InteriorMapPlan.new()
+	f.kind = MapKind.BASEMENT
+
+	# Band A, nearest the entry.
+	_lay_basement_band(f, 0, 10, 4)
+	# The jog right, into band B.
+	for y in [8, 9]:
+		f.tiles[Vector2i(4, y)] = InteriorTile.Kind.BASEMENT_FLOOR
+	# Band B, shifted two east of band A — the sketch's rightward jog.
+	_lay_basement_band(f, 2, 6, 6)
+	# The jog left, into band C.
+	for y in [2, 3, 4, 5]:
+		f.tiles[Vector2i(2, y)] = InteriorTile.Kind.BASEMENT_FLOOR
+	# Band C, back under band A's own columns — the sketch's leftward jog, and the exit's band.
+	_lay_basement_band(f, 0, 0, 4)
+
+	# The entry: a short diagonal flight up from the lobby's own door into band A's floor.
+	_add_door(f, "entry", Vector2i(2, 13), MapKind.LOBBY, "basement")
+	f.tiles[Vector2i(1, 12)] = InteriorTile.Kind.STAIR_FLIGHT_E
+	f.tiles[Vector2i(0, 11)] = InteriorTile.Kind.STAIR_FLIGHT_E
+
+	f.exit_tile = Vector2i(1, 0)
+	f.tiles[f.exit_tile] = InteriorTile.Kind.EMERGENCY_EXIT
+
+	f.decals[Vector2i(3, 11)] = InteriorTile.Kind.PUDDLE
+	f.decals[Vector2i(5, 7)] = InteriorTile.Kind.DEBRIS
+	f.decals[Vector2i(2, 3)] = InteriorTile.Kind.RAT
+
+	f.start_tile = f.doors["entry"].tile
+	return f
+
+## One two-row band of basement floor, brick-walled along its own north edge (`wall_row`), from
+## `x_min` to `x_max` inclusive.
+static func _lay_basement_band(f: InteriorMapPlan, x_min: int, wall_row: int, x_max: int) -> void:
+	for x in range(x_min, x_max + 1):
+		f.tiles[Vector2i(x, wall_row)] = InteriorTile.Kind.BASEMENT_FLOOR_EDGE_N
+		f.tiles[Vector2i(x, wall_row + 1)] = InteriorTile.Kind.BASEMENT_FLOOR_EDGE_S
+		f.walls[Vector2i(x, wall_row)] = InteriorTile.Kind.BRICK_WALL
+
+# ---------------------------------------------------------------------------------- doors ---
+
+static func _add_door(f: InteriorMapPlan, id: String, tile: Vector2i, target_map: int, target_door: String) -> void:
+	var d := InteriorMapPlan.Door.new()
+	d.id = id
+	d.tile = tile
+	d.target_map = target_map
+	d.target_door = target_door
+	f.tiles[tile] = InteriorTile.Kind.DOOR
+	f.doors[id] = d

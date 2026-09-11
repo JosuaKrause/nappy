@@ -178,6 +178,24 @@ static func start_escape() -> bool:
 			return true
 	return false
 
+## `--start-escape`'s own optional value — `stairwell:left`, `stairwell:right`, `lobby`, `basement`
+## or `floor:N` — so a rig or a person can boot straight into any of the seven maps instead of
+## always walking there from her door. `""` when the flag was given bare (the default: the third
+## floor at her door) or not given at all; mapping the word onto an `InteriorMap.MapKind` stays
+## with `main.gd`, the only caller, the same split `ending_override()` leaves to its own caller.
+##
+## Read only when `--start-escape` is itself present, so a bare next word that happens to start
+## with neither `--` nor a recognised target is not silently swallowed as some other flag's own
+## value — there is no other flag this could be confused with, since every value here is a fixed
+## word rather than a number.
+static func start_escape_at() -> String:
+	var args := _args()
+	var index := args.find("--start-escape")
+	if index == -1 or index + 1 >= args.size():
+		return ""
+	var word: String = args[index + 1]
+	return "" if word.begins_with("--") else word
+
 ## `--day-length N` compresses the day, so dusk and the timeout loss can be looked at without
 ## sitting through the whole three minutes. `-1.0` is "not given"; the fallback to
 ## `Tuning.day_length()` stays with the caller, since that also needs to know which day it is.
