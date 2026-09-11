@@ -22,6 +22,7 @@ func run(t) -> void:
 	_test_on_title_start_sets_the_controls_mode(t)
 	_test_the_summary_and_pause_restart_signals_are_both_connected(t)
 	_test_no_interior_exists_outside_a_debug_build(t)
+	_test_the_pavement_offset_crosses_the_streets_own_axis(t)
 
 ## `main._debug` is read once from `DevFlags.enabled()` rather than asked of the OS inside
 ## `_process()`, precisely so this can set it directly and check the release shape — the same
@@ -176,3 +177,31 @@ func _test_no_interior_exists_outside_a_debug_build(t: Node) -> void:
 	t.check(main._interior == null,
 			"a release build never builds the interior scene at all, not even off to one side")
 	main.free()
+
+## `--spawn event:<id>` used to step a fixed `Vector2(0.0, radius * 0.6)` off a found event
+## regardless of the street it stood on. A north-south corridor's own width is measured across
+## local X (`CityMap.corridor_offset(tile.x)`, "sidewalk | road | sidewalk"), so a step along Y
+## only ever changes how far up or down the *same* carriageway column she stands — the rig never
+## left the road. `_pavement_offset` is the isolated fix, checked directly against known corridor
+## tiles rather than against wherever a generated city happens to place an event: `CityMap`'s own
+## `corridor_offset` is pure arithmetic on `Tuning.STREET_WIDTH`, so a bare `CityMap.new()` answers
+## it without generating anything, the same fact `tests/test_telemetry.gd`'s `_blocked_rig()` (a
+## bare `CityMap.new()` for `world_to_tile`) already leans on.
+func _test_the_pavement_offset_crosses_the_streets_own_axis(t) -> void:
+	var map := CityMap.new()
+	const RADIUS := 100.0
+
+	# x=0 sits inside the first north-south corridor's own width band; y=STREET_WIDTH sits one
+	# tile past the first east-west corridor's. On a north-south street and nothing else, so its
+	# width — the axis a step has to cross to clear it — is local X.
+	var ns_at := map.tile_to_world(Vector2i(0, Tuning.STREET_WIDTH))
+	var ns_offset: Vector2 = MAIN_SCRIPT._pavement_offset(map, ns_at, RADIUS)
+	t.check(not is_zero_approx(ns_offset.x) and is_zero_approx(ns_offset.y),
+			"on a north-south street the offset crosses local X, the street's own width axis "
+			+ "(got %s)" % ns_offset)
+
+	# The mirror tile: on an east-west street and nothing else, whose width runs the other way.
+	var ew_at := map.tile_to_world(Vector2i(Tuning.STREET_WIDTH, 0))
+	var ew_offset: Vector2 = MAIN_SCRIPT._pavement_offset(map, ew_at, RADIUS)
+	t.check(not is_zero_approx(ew_offset.y) and is_zero_approx(ew_offset.x),
+			"and on an east-west street it crosses local Y instead (got %s)" % ew_offset)
