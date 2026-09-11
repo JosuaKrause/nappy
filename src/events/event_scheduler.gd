@@ -61,6 +61,11 @@ class Planned extends RefCounted:
 	## **resumes** it rather than rewinding it. See `EventManager._stream_in`.
 	var age := 0.0
 	var travelled := 0.0
+	## The `_noticed_at` a `pursues_within` instance held when it was last streamed out, or `INF` if
+	## it had not yet noticed her — the third thing a stream-out has to carry beside `age` and
+	## `travelled`, or a row streamed out mid-chase comes back `is_waiting()`, having forgotten it.
+	## See `EventManager._stream_out()` and `_stream_in()`, and `EventInstance.resume()`.
+	var noticed_at := INF
 
 	## False for an event the day has budgeted but not sited.
 	func is_placed() -> bool:
