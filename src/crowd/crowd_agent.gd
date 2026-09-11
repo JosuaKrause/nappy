@@ -1348,12 +1348,28 @@ func _draw_body(canvas: CanvasItem) -> void:
 	var flip := _flipped()
 	if kind == Kind.CAR:
 		_draw_shape_shadow(canvas, shape, Vector2.ZERO, _travel_axis())
-		Sprites.draw_standing(canvas, CAR_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
-		Sprites.draw_standing(canvas, CAR_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
+		var anchor := _car_body_anchor(frame)
+		Sprites.draw_standing(canvas, CAR_BODY[frame], anchor, Vector2.ZERO, flip, colour)
+		Sprites.draw_standing(canvas, CAR_TRIM[frame], anchor, Vector2.ZERO, flip)
 		return
 	_draw_shape_shadow(canvas, shape, Vector2.ZERO, Vector2.RIGHT)
 	Sprites.draw_standing(canvas, WALKER_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
 	Sprites.draw_standing(canvas, WALKER_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
+
+## Where a car's own body texture is anchored for `Sprites.draw_standing`, which is always
+## bottom-centred at the point it is given. **The side view needs no correction**: its along-track
+## length is the texture's own *width*, which `draw_standing` already centres by default. **The
+## end-on view draws that same along-track length as the texture's *height* instead** — the
+## "standing" convention reads it as receding away from the viewer, the way a person's height reads
+## as her standing on the ground — so bottom-anchoring it at `Vector2.ZERO` the way every other
+## standing sprite is anchored leaves the whole car north of the node, while the strike box
+## (`Tuning.CAR_STRIKE_HALF_LENGTH`), the shadow (`_car_shadow_shape`) and the field are all centred
+## on the node already. Shifting the anchor down by half the texture's own height is what makes the
+## four agree in the debug view; nothing else about the drawing changes.
+func _car_body_anchor(frame: int) -> Vector2:
+	if frame != 0:
+		return Vector2.ZERO
+	return Vector2(0.0, CAR_BODY[0].get_size().y * 0.5)
 
 ## A car's own shadow shape — a capsule along its travel axis, read off its own two textures
 ## rather than a hand-picked radius: the side view's width is the car's along-track length, the

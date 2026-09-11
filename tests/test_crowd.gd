@@ -33,6 +33,7 @@ func run(t) -> void:
 	_test_a_car_can_always_stop_for_a_zebra_it_can_see(t)
 	_test_every_car_drives_on_its_own_right(t)
 	_test_the_strike_box_never_crosses_the_kerb(t)
+	_test_the_car_picture_agrees_with_its_strike_box(t)
 	_test_a_bump_costs_and_one_of_them_is_survivable(t)
 	_test_walking_into_somebody_displaces_and_startles_them(t)
 	_test_a_car_strikes_what_is_in_front_of_it_and_nothing_else(t)
@@ -411,6 +412,40 @@ func _test_the_strike_box_never_crosses_the_kerb(t) -> void:
 	t.check(reach < Tuning.carriageway_width() * 0.5,
 			"a car's strike box stops %.0fpx short of the kerb"
 			% [Tuning.carriageway_width() * 0.5 - reach])
+
+## M100: *"the dead zone of a car is trailing the car instead of leading the car?"* — the end-on
+## picture used to be drawn bottom-anchored at the node, the way every other standing sprite is,
+## which for a picture whose own *height* is its along-track length left the whole car north of the
+## node while `Crowd._strike()`'s box, the shadow and the field stayed centred on it. Sampled here
+## the same way `Sprites.draw_standing` itself builds the rect, rather than by rasterising a frame:
+## the end-on picture's own along-axis centre now sits on the node, which is where the strike box's
+## centre already is.
+func _test_the_car_picture_agrees_with_its_strike_box(t) -> void:
+	var agent := CrowdAgent.new()
+	agent.kind = CrowdAgent.Kind.CAR
+
+	var end_extent := CrowdAgent.CAR_BODY[0].get_size()
+	var end_anchor: Vector2 = agent._car_body_anchor(0)
+	var end_drawn := Rect2(end_anchor - Vector2(end_extent.x * 0.5, end_extent.y), end_extent)
+	var end_along_centre := end_drawn.position.y + end_drawn.size.y * 0.5
+	t.check(is_equal_approx(end_along_centre, 0.0),
+			"the end-on picture's own along-axis centre sits on the node (%.1fpx off)"
+			% end_along_centre)
+	t.check(end_drawn.position.y < 0.0 and end_drawn.end.y > 0.0,
+			"so the node — where the strike box, the shadow and the field are all centred — falls "
+			+ "inside the drawn footprint rather than at its southern edge")
+
+	# The side view needs no correction and this pins that it stays that way: its along-track
+	# length is the texture's own width, which `Sprites.draw_standing` already centres by default.
+	var side_extent := CrowdAgent.CAR_BODY[1].get_size()
+	var side_anchor: Vector2 = agent._car_body_anchor(1)
+	t.check(side_anchor == Vector2.ZERO, "the side view's own anchor is left undisturbed")
+	var side_drawn := Rect2(side_anchor - Vector2(side_extent.x * 0.5, side_extent.y), side_extent)
+	var side_along_centre := side_drawn.position.x + side_drawn.size.x * 0.5
+	t.check(is_equal_approx(side_along_centre, 0.0),
+			"and the side view's own along-axis centre sits on the node too (%.1fpx off)"
+			% side_along_centre)
+	agent.free()
 
 ## Finding 2: bumping into somebody has to cost something, and it has to be *avoidable*, or it
 ## is a toll rather than a decision. The second check is the one that keeps a crowded pavement
