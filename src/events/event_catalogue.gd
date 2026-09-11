@@ -992,6 +992,15 @@ static func _charging_dog() -> EventDef:
 	def.shape = GroundShape.point(13.0)
 	def.first_day = Tuning.RUN_TAUGHT_DAY
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
+	# No `last_day`: the dog recurs after the teaching day rather than being spent by it —
+	# *"the tutorial dog may appear later but not as tutorial."* `spawn_mode` stays
+	# `AHEAD_OF_PLAYER` on every day it appears rather than switching to `MAP`, because the row
+	# is shared by day 3 and every day after it and `EventDef` has no per-day reading of its own
+	# fields — a second row for the later days would need its own `Look`, and there is no spare
+	# dog silhouette to give it (`tests/test_events.gd` refuses two rows sharing one). What
+	# changes after `Tuning.RUN_TAUGHT_DAY` is where `EventDirector` sites it: still a director
+	# moment rather than a scheduler placement, but no longer on her heading — see
+	# `EventDirector._crossing_ahead_of()`.
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
 	def.intensity = 12.0
 	def.inner_radius = 26.0
@@ -1389,8 +1398,10 @@ static func _protest() -> EventDef:
 	def.solid(GroundShape.band(55.0))
 	def.weight = 2.5
 	# A wall row, capped with the rest of them. Act IV only, so this is the late city's share of the
-	# blocking events that make the ground off the paths expensive.
-	def.max_per_day = 6
+	# blocking events that make the ground off the paths expensive. A protester obstructs nothing
+	# and pursues nothing, so this cap has nothing else's own cap to compete with — and late acts
+	# leave enough of the day's budget unspent that this row's own cap is what actually binds.
+	def.max_per_day = 12
 	def.cost = 3
 	return def
 
