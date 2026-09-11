@@ -20,9 +20,8 @@ const CAMERA_LOOK_AHEAD := 46.0
 
 ## `_update_view()` selects one of eight upright projections, indexed clockwise from east. Each
 ## 22.5° boundary has a five-degree hold so float noise cannot chatter the artwork while the
-## physical facing remains continuous.
-const DIRECTION_BOUNDARY_DEGREES := 22.5
-const DIRECTION_HYSTERESIS_DEGREES := 5.0
+## physical facing remains continuous — `EightDirection.SECTOR_DEGREES` and
+## `EightDirection.HYSTERESIS_DEGREES`, the same selector `CrowdAgent`'s walkers now share.
 
 ## The SVG presentation, and the one a build draws unless the illustrated transfer is opted into.
 ## Two frames per direction: mid-stride, then feet passing.
@@ -655,7 +654,7 @@ func _mother_texture(frame: int) -> Texture2D:
 
 ## West-facing projections mirror their corresponding east-authored SVGs about the feet anchor.
 func _mother_is_mirrored() -> bool:
-	return _view_direction == 3 or _view_direction == 4 or _view_direction == 5
+	return EightDirection.is_mirrored(_view_direction)
 
 ## The pram texture selected by the live drawing path.
 func _pram_texture() -> Texture2D:
@@ -671,10 +670,10 @@ func _pram_texture() -> Texture2D:
 
 ## West-facing prams share the same explicit east-authored symmetry as the mother.
 func _pram_is_mirrored() -> bool:
-	return _view_direction == 3 or _view_direction == 4 or _view_direction == 5
+	return EightDirection.is_mirrored(_view_direction)
 
 ## Decides the eight-direction projection for this frame, with hysteresis rather than a single
-## switching angle. See `DIRECTION_BOUNDARY_DEGREES` and `DIRECTION_HYSTERESIS_DEGREES`.
+## switching angle — `EightDirection.update()`, the selector `CrowdAgent`'s walkers now share.
 ##
 ## The east/west mirror the side view picks by the sign of `facing.x` needs no hysteresis of its
 ## own: turning between facing mostly-east and mostly-west at `FACING_TURN_SPEED` sweeps through
@@ -682,17 +681,11 @@ func _pram_is_mirrored() -> bool:
 ## either side boundary, so the new direction is already decided by the time either draw function
 ## reads it.
 func _update_view() -> void:
-	var angle := fposmod(rad_to_deg(facing.angle()), 360.0)
-	var candidate := _nearest_view_direction()
-	var current_angle := float(_view_direction) * 45.0
-	var difference := absf(fposmod(angle - current_angle + 180.0, 360.0) - 180.0)
-	if candidate != _view_direction and difference > DIRECTION_BOUNDARY_DEGREES + DIRECTION_HYSTERESIS_DEGREES:
-		_view_direction = candidate
+	_view_direction = EightDirection.update(_view_direction, facing)
 
 ## The nearest of the eight projections, without the moving-view hysteresis.
 func _nearest_view_direction() -> int:
-	var angle := fposmod(rad_to_deg(facing.angle()), 360.0)
-	return int(floor((angle + DIRECTION_BOUNDARY_DEGREES) / 45.0)) % 8
+	return EightDirection.nearest(facing)
 
 ## How the baby is, drawn where the player is already looking — a zzz above the stroller when the
 ## baby is asleep, and something louder as the excitement approaches full, rather than a number

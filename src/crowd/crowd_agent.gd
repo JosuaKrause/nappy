@@ -15,15 +15,32 @@ extends Node2D
 
 enum Kind { WALKER, CAR }
 
-const WALKER_BODY: Array[Texture2D] = [
-	preload("res://assets/crowd/walker_front_body.svg"),
-	preload("res://assets/crowd/walker_back_body.svg"),
-	preload("res://assets/crowd/walker_side_body.svg"),
-]
-const WALKER_TRIM: Array[Texture2D] = [
-	preload("res://assets/crowd/walker_front_trim.svg"),
-	preload("res://assets/crowd/walker_back_trim.svg"),
-	preload("res://assets/crowd/walker_side_trim.svg"),
+## The walker's five authored views, keyed by name rather than by sector — `WALKER_VIEW_BY_SECTOR`
+## below does the sector-to-view lookup, so drawing never repeats an eight-way if-chain of its
+## own to get here. All five share one 18x38 canvas and one (9, 38) feet anchor (see
+## `docs/evidence/svg-people-2026-09-10/PEOPLE-MATRIX.md`); body is tinted per walker, trim is
+## drawn untinted above it — see `_draw_body()`.
+const WALKER_BODY_BY_VIEW := {
+	"front": preload("res://assets/crowd/walker_front_body.svg"),
+	"back": preload("res://assets/crowd/walker_back_body.svg"),
+	"side": preload("res://assets/crowd/walker_side_body.svg"),
+	"front_diagonal": preload("res://assets/crowd/walker_front_diagonal_body.svg"),
+	"back_diagonal": preload("res://assets/crowd/walker_back_diagonal_body.svg"),
+}
+const WALKER_TRIM_BY_VIEW := {
+	"front": preload("res://assets/crowd/walker_front_trim.svg"),
+	"back": preload("res://assets/crowd/walker_back_trim.svg"),
+	"side": preload("res://assets/crowd/walker_side_trim.svg"),
+	"front_diagonal": preload("res://assets/crowd/walker_front_diagonal_trim.svg"),
+	"back_diagonal": preload("res://assets/crowd/walker_back_diagonal_trim.svg"),
+}
+## Which authored view each of `EightDirection`'s eight sectors draws — N back, NE/NW
+## back_diagonal, E/W side, SE/SW front_diagonal, S front, the same N/NE/E/SE/S coverage the
+## mother/pram family uses. Sectors 3 (SW), 4 (W) and 5 (NW) mirror their partner here rather
+## than being separately authored — see `EightDirection.is_mirrored()`.
+const WALKER_VIEW_BY_SECTOR: Array[String] = [
+	"side", "front_diagonal", "front", "front_diagonal", "side",
+	"back_diagonal", "back", "back_diagonal",
 ]
 const CAR_BODY: Array[Texture2D] = [
 	preload("res://assets/crowd/car_end_body.svg"),
@@ -1360,18 +1377,65 @@ func _entry_band_fits() -> bool:
 
 # ---------------------------------------------------------------- drawing ---
 
-## Which sprite the agent is showing: side-on along a horizontal corridor, front or back
-## along a vertical one. A car has no front/back pair — at this angle both ends of a car are
-## the same shape, and the lights in the trim say which way it is pointing.
+## The sector a walker is currently drawn in — `EightDirection`'s own indexing, clockwise from
+## east — persisted across frames so `_update_walker_view()` can hold it through the boundary and
+## hysteresis `EightDirection.update()` applies. Unused for a car, which keeps its own two-frame
+## `_frame()` below.
+var _walker_view := 2
+
+## Below this speed a walker's own applied heading (`_walker_heading()`) is too close to zero to
+## mean a facing, so it holds whatever it was last drawn as rather than chattering on the residual
+## few px/s `_yield_factor()` and float noise can still leave in it. Well under
+## `Tuning.PEDESTRIAN_SPEED`'s own floor (46px/s), so only an actually-stopped walker — a give-way,
+## a queue, a halt — ever reads as idle.
+const WALKER_IDLE_SPEED := 5.0
+
+## Which sprite the agent is showing: for a car, side-on along a horizontal corridor, front or
+## back along a vertical one — a car has no front/back pair, since at this angle both ends of a
+## car are the same shape and the lights in the trim say which way it is pointing. For a walker,
+## one of `EightDirection`'s eight sectors, advanced here — `_process()` already calls `_frame()`
+## once every physics tick, so this is where the walker's own hold actually runs rather than in a
+## second per-frame hook. Calling it again — `_draw_body()`'s own call, and every halo ring atop
+## that — is safe: asking `EightDirection.update()` twice with the same starting sector and the
+## same heading always answers the same way.
 func _frame() -> int:
 	if kind == Kind.CAR:
 		return 1 if not _vertical else 0
-	if not _vertical:
-		return 2
-	return 0 if _direction > 0.0 else 1
+	_update_walker_view()
+	return _walker_view
 
 func _flipped() -> bool:
+	if kind == Kind.WALKER:
+		return EightDirection.is_mirrored(_walker_view)
 	return not _vertical and _direction < 0.0
+
+## The walker's own instantaneous heading this frame: its along-lane velocity (`velocity()`, the
+## actual-motion quantity M111's own turning work already reads elsewhere) plus whatever its
+## steering is doing across the lane right now — the term `_frame()`'s old lane-axis-only version
+## never had, and the one that swings a walker rounding a corner, or nudged aside by
+## `step_aside()`, onto a diagonal view a moment before its lane assignment itself turns. The
+## cross term is `_set_cross()`'s own target (`_lane_centre + _detour`) minus where it actually is,
+## signed and capped at `STEER_SPEED` — the rate `_process()`'s own `move_toward` steers at while
+## it has not yet arrived. Zero once it has arrived with no detour running, which a stopped walker
+## (give-way, queue, halted) always has, since `_yield_factor()` also zeroes the along term then.
+func _walker_heading() -> Vector2:
+	var along := velocity()
+	var cross_gap := _lane_centre + _detour - _cross()
+	if is_zero_approx(cross_gap):
+		return along
+	var cross_speed := signf(cross_gap) * STEER_SPEED
+	return along + (Vector2(cross_speed, 0.0) if _vertical else Vector2(0.0, cross_speed))
+
+## Advances `_walker_view` for this frame. `setup()` and `_recycle()` place a walker with no
+## cross-lane steering yet running (`_set_cross(_lane_centre)`, `_forget_the_detour()`), so
+## `_walker_heading()` right after either is always exactly along the new lane axis — a sector
+## centre 45° clear of its neighbours, twice the hold's own 27.5° reach — and the ordinary test
+## below already replaces whatever sector was drawn before without a special reset call into
+## either function. Both are owned by the concurrent lane-turning work on this file (see the class
+## doc), which is the other reason this reaches for the plain hold here rather than a call added
+## to either placement.
+func _update_walker_view() -> void:
+	_walker_view = EightDirection.update(_walker_view, _walker_heading(), WALKER_IDLE_SPEED)
 
 func _draw() -> void:
 	_draw_body(self)
@@ -1390,8 +1454,9 @@ func _draw_body(canvas: CanvasItem) -> void:
 		Sprites.draw_standing(canvas, CAR_TRIM[frame], anchor, Vector2.ZERO, flip)
 		return
 	_draw_shape_shadow(canvas, shape, Vector2.ZERO, Vector2.RIGHT)
-	Sprites.draw_standing(canvas, WALKER_BODY[frame], Vector2.ZERO, Vector2.ZERO, flip, colour)
-	Sprites.draw_standing(canvas, WALKER_TRIM[frame], Vector2.ZERO, Vector2.ZERO, flip)
+	var view: String = WALKER_VIEW_BY_SECTOR[frame]
+	Sprites.draw_standing(canvas, WALKER_BODY_BY_VIEW[view], Vector2.ZERO, Vector2.ZERO, flip, colour)
+	Sprites.draw_standing(canvas, WALKER_TRIM_BY_VIEW[view], Vector2.ZERO, Vector2.ZERO, flip)
 
 ## Where a car's own body texture is anchored for `Sprites.draw_standing`, which is always
 ## bottom-centred at the point it is given. **The side view needs no correction**: its along-track
