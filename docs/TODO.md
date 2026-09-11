@@ -531,6 +531,17 @@ is shut, which reads from a block away — further than the barrier itself does.
 meant to read as a closed street and gets none of that tell; worse, a stream of walkers passing
 through a fallen tree says the street is open when it is not.
 
+- [ ] **The region walls, their checkpoints and the roadblock are driven through too.**
+      *(2026-09-10, playtest 55, day 7: "also cars go through the barriers and checkpoints".)*
+      The same cause as the seals — none of it writes `closed_tiles` — and a wider set of bodies:
+      `RegionPlanner`'s wall segments, its door segments with `checkpoint_hut`, `checkpoint_gate`
+      and `checkpoint_post` standing on them, and the `roadblock` band. A wall segment is shut to
+      the crowd the way a hard seal is. **A door is the open question**: it is the street the
+      route uses, so traffic through it is right in principle, but a car passing a boom gate and
+      a hut without stopping reads as the gate not being there. The smaller answer is to shut door
+      segments to cars as well and let walkers through, so the checkpoint is hers alone; the fuller
+      one — cars queuing at the gate and being let through — is M111's turning work plus a signal,
+      and is not promised here. The player picks
 - [ ] **A hard seal shuts its street to the crowd the way a closure does.** The map carries a
       second, crowd-facing record of the day's sealed ground — the cross-section tiles of every
       segment `SealPlanner` sealed hard, at the seal's position — and `_cannot_go_on()` treats them

@@ -40,6 +40,14 @@ It repeats one picture — `checkpoint_block.svg`, a 22×30 concrete block with 
 along the band, with no end cap and no orientation sibling, so a band is a row of identical
 blocks. Filed under M100.
 
+## Cars through barriers and checkpoints
+
+> also cars go through the barriers and checkpoints
+
+A re-report of playtest 52's finding, widened: not only the seals but the region walls, their
+doors with the checkpoints on them, and the roadblock bands are driven through. Added to M110,
+the crowd goes round a seal, which now covers every body that holds a street.
+
 ## The inspection
 
 > the checkpoint itself, 2s should be enough -- both the guard and the player should disappear
