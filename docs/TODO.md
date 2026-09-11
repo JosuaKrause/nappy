@@ -164,15 +164,23 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    walks on, and her with the baby in her arms, behind `--start-escape` and with no events.
    *(2026-09-10, playtest 54: "as a good exercise we could build out the escape scene … can you do
    that right now".)* At the front because the player started it the same day.
-3. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
+3. **M113** — the inspection reads as one: a two-second hold at a checkpoint during which she and
+   the guard are gone and the camera eases onto the hut. *(2026-09-10, playtest 55.)* Placed here
+   by the orchestrator because it is the first thing act III shows and it was seen once; open to
+   the player moving it.
+4. **M114** — the moving field grows forward out of the resting disc rather than the disc growing
+   back out of the ellipse. *(2026-09-10, playtest 55.)* Small, and placed here by the
+   orchestrator because it is a decision of M61's being overturned while the field is fresh; open
+   to the player moving it.
+5. **M110** — the crowd goes round a seal. *(2026-09-10, playtest 52: "objects like fallen trees
    don't stop/redirect traffic or pedestrians.")* Placed here by the orchestrator, ahead of M65
    because a sealed street the crowd walks through is the sealing's own legibility failing — open
    to the player moving it.
-4. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
+6. **M65** — the protester who points, revisited against the walled city. *("M65 we need to
    revisit after M62.")* Revisited rather than built as written: the regions and their
    checkpoints (`DECISIONS.md`, M62) may change what finding a mark is like, and the entry is
    re-read before the prepared poses are bound to objectives.
-5. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
+7. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
@@ -180,8 +188,8 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    clock, sit in this batch provisionally** — they were asked for on 2026-09-10 and not placed,
    so this is the orchestrator's guess at where work that needs no route decision belongs, open
    to the player moving it.
-6. **Reaching act III**, which M56's measurement against the nerves needs.
-7. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
+8. **Reaching act III**, which M56's measurement against the nerves needs.
+9. **M101**, the fire found before the engine. *("M101 can go after the Act III stuff.")*
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
 The record, with its measurements and the choices open to overturn, is in `DECISIONS.md` under
@@ -410,30 +418,50 @@ stay there. The scene is entered from a debug flag only, `tools/run.sh --start-e
 events, no crowd and no day clock that matters: it is the building, her with the baby in her
 arms, and the way down.
 
-**The building.** Five floors, each its own small map drawn with the ground `TileMapLayer` and
-the same oblique view as the city: the third floor (her apartment's hallway, where the scene
-starts at her door, implied on the hallway's south edge), the second, the first, the ground floor
-(the main entrance in the middle of the north wall — the double door with the furniture heaped
-against it — not passable) and the basement (brick walls, the gloomy floor, puddles, the
-emergency exit at one end; walking into it ends the scene). Every floor has a hallway running
-east–west with its north wall in elevation — windows and the dead lift door — and a stairwell at
-each end, left and right, entered by walking south off the hallway's end; inside, the door back
-to the hallway stands in the stairwell's north wall, seen only from inside, which is the player's
-rule from M102. The prepared pictures in `assets/interior/` are the kit (`GRAPHICS.md` lists
-them); the one that is superseded is `stair_down.svg`.
+**The building, from the player's four sketches** (playtest 55; `docs/reference/
+escape-floor-hallway-sketch-01.jpg`, `escape-stairwell-sketch-01.jpg`, `escape-lobby-sketch-01.jpg`,
+`escape-basement-sketch-01.jpg` — read them before laying a tile). Six maps, each drawn with the
+ground `TileMapLayer` and the same oblique view as the city, joined by doors:
 
-**The stairs are tiles she walks on.** A stairwell is laid out as sideways switchback flights:
-from the stairwell door a flight of three tiles descends eastward to a landing, and from that
-landing a second flight of three tiles descends westward on the row below to the lower landing,
-which is the floor below. Each flight tile is a 32×32 floor tile whose picture is 2.5D — treads
-and risers seen from the oblique view, descending toward the tile's own direction — and it is
-walkable ground like any other; the handrail is a separate transparent overlay tile drawn *over*
-the flight, in front of her, so she walks behind the rail; a landing is a flat tile. Stepping onto
-the lower landing is the floor transition: fade, load the floor below, place her on that
-stairwell's upper landing at its door. The same on both sides, so the left stairwell and the
-right one both go down on every floor. Nothing moves her vertically within a floor; the descent
-is carried by the pictures and by the row change at the landing, and a per-tread offset that makes
-her visibly drop is an open refinement rather than part of this slice.
+- **Three hallway maps**, one per floor above the lobby, the same layout each: a long hallway
+  running east–west; its north wall in elevation carries wall lamps, windows and one framed door
+  with a bar across it — the dead lift; the south edge carries notches — the closed ones are the
+  locked apartment doors (her own is the one the scene starts in front of, on the top floor), and
+  the **two open notches are the stair doors, one at each end of the hallway**, each the way into
+  that end's stairwell at this floor's landing. *(The sketch drew both at the right end; decided
+  otherwise on 2026-09-10, playtest 55 — two stairwells at opposing ends, "that way having a fire
+  on the stairs forces you to enter a floor hallway and walk to the other end".)*
+- **Two stairwell maps**, left and right, each tall and the camera following her down it: a
+  plain switchback — from each floor's landing one flight descends, turns back at a half-landing,
+  and arrives at the next floor's landing below, alternating direction floor by floor — with
+  **one door per landing on the hallway side**, into that floor's hallway at its end, and the
+  lowest landing's door into the lobby at the same end. Nothing loads mid-stairwell: each shaft
+  is one map, so stair walking is walking. The sketched double staircase in one shaft is not
+  built: a fire on one flight of it would be dodged from the same landing, which is no route
+  decision, while a fire in one stairwell sends her along the whole hallway to the other.
+- **The lobby map**, the hallway's own width: the main entrance in the middle of the north wall
+  — the double door with the furniture heaped against it, lamps either side — not passable, and
+  the dead lift beside it; on the south edge, the **left and right notches are the two
+  stairwells' doors** and the **middle notch is the way to the basement**.
+- **The basement map**: a winding corridor that **starts at the bottom**, where a short flight
+  leads down into it (the sketch's horizontal lines), jogs left and right between raw brick
+  walls past debris, a rat and puddles, and ends at the **exit door at the top**; walking into it
+  ends the scene.
+
+The prepared pictures in `assets/interior/` are the kit (`GRAPHICS.md` lists them); the one that
+is superseded is `stair_down.svg`. The lamps on the walls, the debris and the rat are new small
+pictures the kit item below adds.
+
+**The stairs are tiles she walks on.** Each flight tile is a 32×32 floor tile whose picture is
+2.5D — treads and risers seen from the oblique view, descending toward the tile's own direction —
+and it is walkable ground like any other; the handrail is a separate transparent overlay tile
+drawn *over* the flight, in front of her, so she walks behind the rail; a landing is a flat tile.
+A flight is a horizontal run of flight tiles, and descending it is walking along it: nothing moves
+her vertically within a flight, the descent is carried by the pictures and by the row change at
+each landing, and a per-tread offset that makes her visibly drop is an open refinement rather
+than part of this slice. Because the stairwell is one map, a floor's height in the shaft is what
+the flights between two landings add up to in rows, and that number is the layout's to choose so
+a switchback reads as a stairwell rather than a ramp.
 
 - [ ] **The stair tile kit, as SVG.** In `assets/interior/`, 32×32 tiles: `stair_flight_e.svg` and
       `stair_flight_w.svg` (treads descending toward east and toward west, seen from the oblique
@@ -441,31 +469,119 @@ her visibly drop is an open refinement rather than part of this slice.
       mechanical-floor family), `stair_rail_e.svg`, `stair_rail_w.svg` and `stair_rail_level.svg`
       (handrail overlays on transparent canvases — the sloped pair follow their flight's descent,
       the level one runs along a landing) and `stair_newel.svg` (the post where a rail turns,
-      bottom-centre anchored). Drawn under the svg-art rules, rendered at native and 3×, and
-      reviewed as an assembled stairwell before any of it is bound. `stair_down.svg` is retired to
-      the rejected-graphics archive as human-rejected (playtest 54), with its review sheets
-- [ ] **The interior map and its floors.** A new `src/interior/` — a small hand-shaped map class
-      apart from `CityMap`, floor plans as data, walkability from tile type, walls and doors in
-      elevation — and the five floors above, with the stairwell layout laid from the kit on both
-      sides of every floor. Headless tests: every floor builds; every stair and landing tile is
-      walkable; each floor's two stairwells lead to the floor below on the same side; the
-      basement's exit tile and the ground floor's barricaded entrance are what they claim
+      bottom-centre anchored), plus the sketches' small pictures: `wall_lamp.svg` (a sconce on the
+      hallway and lobby walls), `basement_debris.svg` and `rat.svg` (ground decals for the
+      basement corridor, centre-anchored). Drawn under the svg-art rules, rendered at native and
+      3×, and reviewed as an assembled switchback before any of it is bound.
+      `stair_down.svg` is retired to the rejected-graphics archive as human-rejected (playtest 54),
+      with its review sheets
+- [ ] **The interior maps.** A new `src/interior/` — a small hand-shaped map class apart from
+      `CityMap`, plans as data, walkability from tile type, walls and doors in elevation — and the
+      seven maps above: three hallways, two stairwells, the lobby, the basement, with each
+      switchback laid from the kit. Headless tests: every map builds; every flight and landing tile
+      is walkable; every door has a counterpart on the map it leads to (a hallway's end door ↔
+      that stairwell's landing door on the same floor; each stairwell's bottom door ↔ the lobby
+      notch at its end; lobby middle notch ↔ basement bottom); the exit tile and the barricaded
+      entrance are what they claim; nothing walkable is unreachable from her door
 - [ ] **`--start-escape`, and her with the baby.** A debug-only `DevFlags` flag that skips the
       title and starts in the third-floor hallway at her door, with `Stroller` drawing the
       prepared `assets/rig/mother_carrying_*` frames facing for facing instead of the
       mother-and-pram pair, the pram gone, and the baby-state cue over the bundle. Both control
       schemes work as they do outdoors. Absent from a release build, asserted the way the debug
       view's test asserts its own absence
-- [ ] **Transitions and the way out.** Walking onto a lower landing fades and loads the floor
-      below at the matching stairwell; walking into the emergency exit fades and returns to the
-      title. A test drives a rig down both stairwells from the apartment to the basement exit
-      through every floor
-- [ ] **Evidence.** One capture per floor with `--start-escape`, the debug view's layers where
+- [ ] **Transitions and the way out.** Walking into a door fades to black, loads the map it leads
+      to and places her just inside its counterpart door, then fades in; walking into the
+      emergency exit fades and returns to the title. A test drives a rig from her door on the
+      top floor through a stair door, down the whole shaft by the left flights and again by the
+      right, into the lobby, down to the basement and out, asserting the map sequence and her
+      placement after each door
+- [ ] **Evidence.** One capture per map with `--start-escape`, the debug view's layers where
       useful, and a burst of her walking a flight, in `docs/evidence/`
 
 **Open after it is walked**: whether the flights read as descending with her drawn at a constant
 height; whether the stairwell door's placement — south off the hallway's end — reads; and whether
 five floors is *"not excessively many"*.
+
+---
+
+## M113 — The inspection reads as one · asked for 2026-09-10
+
+> "the checkpoint itself, 2s should be enough -- both the guard and the player should disappear
+> during the inspection, the camera should center on the hut (use a smooth ease in out for non
+> player caused camera movement if possible) after the inspection the player and the guard should
+> reappear"
+
+**Today a checkpoint hold is six seconds of standing still.** `checkpoint_hut` and
+`checkpoint_post` detain through `chatting_mother`'s mechanism — `Tuning.CHECKPOINT_DETAIN_SECONDS`
+6.0 over a 48px `detain_radius`, `redetains` so a second approach holds again — and while she is
+held nothing else happens: she stands where she was caught, the guard stands where he was drawn,
+the camera stays on her. The record of the regions and their doors is in `DECISIONS.md` under M62.
+
+- [ ] **Two seconds, and both of them gone.** `CHECKPOINT_DETAIN_SECONDS` 6.0 → 2.0. For the
+      hold's duration neither she nor the guard is drawn — they have gone inside — and both
+      reappear when it ends, her on the far side of the hut so being let out reads as being let
+      through, the guard at his post. The pram's cue and the danger caret over her are hidden with
+      her; the meters keep running, since the baby is still there. `EventDef.detain_seconds` and
+      the release margin (`CHECKPOINT_RELEASE_MARGIN`, 8px) are the two numbers to re-check against
+      the shorter hold so she is not re-detained on release; `tests/test_checkpoints.gd` covers it
+- [ ] **The camera eases onto the hut and back.** During the hold the camera centres on the hut
+      rather than on her, and every camera move that is not her walking — this one, and any later
+      one — eases in and out (a smooth-step over a short, tuned duration) rather than cutting or
+      using the walk's own `position_smoothing`. Today the camera is `Camera2D` on
+      `scenes/player/stroller.tscn` with `position_smoothing_speed` 6, plus `main.gd`'s follow
+      camera for rigs; the ease is a small focus-target on the player's camera, not a second camera.
+      A test drives a hold and asserts the camera's target and its return
+- [ ] **Walk it on day 7.** One capture of a hold in progress and one of the release, on the seed
+      playtest 55 was played on (3045005721), in `docs/evidence/`
+
+---
+
+## M114 — The moving field grows forward · asked for 2026-09-10
+
+> "while the car moves the field gets narrower and oval -- this is good but when the car stops it
+> becomes round and bigger? this is counter intuitive. the stretching should retain the area so an
+> unstretched car field should be the same width with shorter height"
+
+**This overturns a decision the orchestrator took in M61's field, not one the player did.** That
+record chose the catalogued `outer_radius` as the moving field's *forward* reach, so an ellipse
+only ever shrank behind and abeam and a stopping car's field grew back into a bigger disc — the
+thing seen on day 7. The player's reference is the other way round: the resting disc is the
+field, and motion stretches it forward out of that disc. The kernel stays `GroundShape.
+eccentric_distance()`, the conic from a focus with the emitter at the rear focus and eccentricity
+from speed (`Tuning.field_eccentricity`); what changes is the scale `L` the conic is stated at,
+`r(θ) = L·(1−e)/(1−e·cosθ)`, which today is `L = outer_radius` and becomes a function of `e` that
+reduces to the disc at `e = 0`.
+
+**The width is what is kept, and the moving field is the bigger one — decided by the player.**
+The sentence named two ellipses a fifth apart: one with the resting disc's area (forward 1.61R at
+a car's `e` 0.5, abeam 0.80R, so the stopped disc would be a little wider than the moving field)
+and one with the disc's width (abeam stays `R`, `L = R/(1−e)`: forward 2R, rear 0.67R, the area
+up by half). Asked which, the player chose the second and gave the reason *(2026-09-10: "if
+anything the moving size should be bigger than the rest size since moving causes more
+excitement")*. So the abeam half-width is the catalogued radius whatever the speed, and motion
+adds reach ahead — never takes any away — with the disc the field collapses back to on stopping.
+
+**The fairness contract moves with it.** The forward reach is now larger than the catalogued
+number, so `required_telegraph_time` and `validate_pursuit` are stated over `L(e)` at the row's
+own speed rather than over `outer_radius`, and `EventDef.field_reach()` and every "how far"
+consumer take the same. Every moving row is re-validated on boot; a row that fails gets its
+telegraph or its radius re-derived and the change listed in the record, never a silent cap. The
+eccentricity cap (`FIELD_ECCENTRICITY_MAX` 0.7) is re-read against the new forward reach — at 0.7
+`L` is 3.3R — and comes down, or the speed constant goes up, so a cyclist's field does not reach
+three streets ahead; the number is set against the probes and the debug view, not by taste.
+
+- [ ] **The scale, from the resting disc.** `GroundShape.eccentric_distance()` and
+      `_eccentric_field_outline()` take `L(e) = R/(1−e)` from one function in `Tuning` beside
+      `field_eccentricity()`; a test asserts the moving ellipse's abeam half-width equals the
+      resting radius at every speed, that `e = 0` is exactly the disc, that forward reach grows
+      monotonically with speed, and that the approaching-costs-more test still holds
+- [ ] **The contract over the forward reach.** `required_telegraph_time`, `validate_pursuit`,
+      `field_reach()` and the halo's early-out over `L(e)`; the catalogue re-validated; any row
+      that has to move listed with before and after
+- [ ] **Measured and looked at.** The sealing probes before and after on the same seeds, the
+      debug view's `1` on a car stopping at a light — the field should shrink into the disc, not
+      grow — and the record in `DECISIONS.md` under M61 amended to say the forward-reach decision
+      was overturned and by whom
 
 ---
 
@@ -495,6 +611,24 @@ is shut, which reads from a block away — further than the barrier itself does.
 meant to read as a closed street and gets none of that tell; worse, a stream of walkers passing
 through a fallen tree says the street is open when it is not.
 
+- [ ] **The region walls, their checkpoints and the roadblock are driven through too.**
+      *(2026-09-10, playtest 55, day 7: "also cars go through the barriers and checkpoints".)*
+      The same cause as the seals — none of it writes `closed_tiles` — and a wider set of bodies:
+      `RegionPlanner`'s wall segments, its door segments with `checkpoint_hut`, `checkpoint_gate`
+      and `checkpoint_post` standing on them, and the `roadblock` band. A wall segment is shut to
+      the crowd the way a hard seal is. **A door lets cars through, one at a time, and the gate
+      moves** — decided by the player the same day: *"at checkpoints cars should slow down halt
+      then the bar should lift then the car drives through then it closes again"*. So a car
+      approaching a `checkpoint_gate` brakes to a halt at a stop line before the bar, the way it
+      stops for a zebra or a red (`CrowdAgent`'s zebra commit rule and braking distance are the
+      model); the gate's `RegionPlanner.GateState` raises (`boom_gate_*_raised.svg` exists beside
+      the lowered picture) after a short hold, the car drives through, and the bar lowers behind
+      it; a queue forms behind the first car the way one forms at a light, and nothing enters the
+      gate's own box it cannot leave. Walkers pass the hut as she does. **A raised bar is not a
+      way past for her**: stepping into the gate while it is up for a car starts an ordinary
+      inspection, exactly as if it were down — *(2026-09-10: "attempting to do that should just
+      start a regular checkpoint inspection")* — so the gate's `detain_radius` holds whatever the
+      bar is doing, and a test drives her at a raised gate and asserts the hold
 - [ ] **A hard seal shuts its street to the crowd the way a closure does.** The map carries a
       second, crowd-facing record of the day's sealed ground — the cross-section tiles of every
       segment `SealPlanner` sealed hard, at the seal's position — and `_cannot_go_on()` treats them
@@ -746,7 +880,60 @@ is still true.
       street is still walkable down the carriageway and a café on it is the price of going that way.
       A test plans several seeds and days and asserts that nothing planned stands on a closed or
       hard-sealed segment. Placed here rather than ahead of the queue by the player: *"blocked
-      street can go behind actual important things"*
+      street can go behind actual important things"*.
+
+      **The same fix covers the region doors** *(2026-09-10, playtest 55: "the barriers are oddly
+      placed. why would they be in front of a checkpoint? … there is no way to actually get to the
+      checkpoint here")*: `roadblock` is placed on any road or crossing tile from day 7 and knows
+      nothing about `RegionPlanner`'s doors, so a band stood across the street south of a hut and
+      a boom gate on seed 3045005721, day 7, and sealed the door it was meant to be the way
+      through. **The player's principle, and it is the rule**: *"the checkpoint suggests that there
+      was a path planned through so there shouldn't be a barrier … this shouldn't happen by
+      construction"*. A door is where the day's route passes, so a door segment and the segment
+      its checkpoint stands on join the closure and hard-seal segments as ground a blocking row is
+      never offered — excluded where `EventScheduler` builds the candidate tiles, beside its
+      `closed_tiles`, doorstep and kerb tests, not checked or repaired after placement, which is
+      `CLAUDE.md`'s own rule for every guarantee here. The test covers the doors too
+- [ ] **A roadblock band is a row of blocks, not a barrier.** *(2026-09-10, playtest 55: "the
+      barrier itself also doesn't read as a continuous element. is it using the texture of the
+      other orientation and concatenating that one?")* No: `Look.ROADBLOCK` is drawn by
+      `_draw_spread(CHECKPOINT_BLOCK)`, which repeats `assets/events/checkpoint_block.svg` — one
+      22×30 concrete block with its own frame and hazard panel — along the band with no end cap and
+      no orientation sibling, so the band is identical blocks side by side. `roadworks` already
+      draws as `_draw_spread(BARRIER_SEGMENT, BARRIER_END)`, a rail with caps that reads as one
+      thing; the roadblock wants the same construction — a continuous held-street barrier picture
+      that repeats seamlessly, with an end piece — drawn under the svg-art rules and bound in
+      `_draw_body`'s `ROADBLOCK` case
+- [ ] **Nothing on the home block — the whole block, as playtest 11 asked, not the doorstep
+      street.** *(Playtest 11, finding 1: "events/hazards should not spawn on the home block";
+      2026-09-10, playtest 55: "if there spawns an alley at the home (which shouldn't happen) the
+      robber spawns too leading to a spawn kill every time … there was a bug report a while back
+      -- where did it go".)* The archive records finding 1 as built, and what was built is
+      `EventScheduler._the_street_she_starts_on()` — the one segment outside the front door is
+      never offered to the catalogue. **Asked for the block · narrowed to the street with nobody
+      saying so**, which is why it is reopened here from the old finding rather than filed as
+      new. Two parts, both by construction. **No alley is carved into the home block**:
+      `CityGenerator` carves a through-alley into any non-park, non-commercial block, the middle
+      block included, and only slides the home notch sideways off it (`docs/CITY.md`, "Place
+      home"); the middle block joins the commercial blocks as exempt where the alleys are rolled,
+      and the notch-sliding clause goes with nothing left to slide for. **And the exemption is the
+      block's ground**: every segment bordering the home block, and anything inside it, is
+      excluded where the scheduler builds candidates — beside `closed_tiles`, the kerb test and
+      the door segments above — and `ResistanceDirector._maybe_set_a_trap()` refuses a bearing
+      that lands there. `tests/test_generator.gd` asserts no alley tile on the home block over
+      many seeds; the scheduler test asserts nothing planned on the block's segments. The spawn
+      kill needs no fix of its own once the ground is gone
+- [ ] **A car's strike box sits half a car behind its picture going north, half a car ahead going
+      south.** *(2026-09-10, playtest 55, read off the debug view: "the dead zone of a car is
+      trailing the car instead of leading the car?")* `CrowdAgent._draw_body` draws a car with
+      `Sprites.draw_standing` — bottom-centre at the node's position, so the end-on picture stands
+      north of the node — while `Crowd._strike()`'s box, `will_be_lethal()`'s test, the car's
+      `GroundShape` shadow and its field are all centred on the node. For a vehicle seen end-on the
+      ground footprint is its whole length, so the standing anchor is the wrong one: draw the
+      end-on car with its footprint centred on the position (the side view already is, along its
+      length), or move the node to the picture's footprint centre — one of the two, chosen so
+      the box, the shadow, the field and the picture agree in the debug view, and asserted by a
+      test that samples the drawn footprint against the strike box
 - [ ] **A queued car grazes a big building's footprint, and the M53 assertion was loosened to let
       it.** `tests/test_crowd.gd`'s *"nothing walks into a hard blocker"* asked for exactly zero
       agents ever standing inside one; it now tolerates one agent on under 5% of frames, measured at
@@ -756,7 +943,8 @@ is still true.
       the test's own name is a promise
 - [ ] **The guard robber is placed inside a building, where he is stuck for ever.** *(2026-09-02:
       "the robber can be placed inside buildings which makes him unable to move at all."; 2026-09-09,
-      playtest 50: "the robber is stuck inside the roof".)* **Reproduced, with the cause.** Seed
+      playtest 50: "the robber is stuck inside the roof"; 2026-09-10, playtest 55: "the robber is
+      inside the roof as usual".)* **Reproduced, with the cause.** Seed
       2295276695, day 5: the chalk mark is at tile (69,79), an `ALLEY` tile in a two-tile alley,
       and the robber at (67,80) is `BUILDING`, one tile south of it; the run log has him at that
       tile before, during and after his chase while she moved, since a chase step is clamped to
