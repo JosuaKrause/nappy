@@ -143,7 +143,7 @@ func _rebuild_collision() -> void:
 	for y in range(box.position.y, box.position.y + box.size.y):
 		for x in range(box.position.x, box.position.x + box.size.x):
 			var tile := Vector2i(x, y)
-			if _plan.tiles.has(tile):
+			if _plan.tiles.has(tile) or _plan.collision_clearance.has(tile):
 				continue
 			var body := StaticBody2D.new()
 			var shape := CollisionShape2D.new()

@@ -16,6 +16,7 @@ func run(t) -> void:
 	_test_the_scene_paints_the_whole_map(t)
 	_test_collision_blocks_exactly_the_non_walkable_ground(t)
 	_test_a_sideways_press_on_a_flight_walks_its_slope(t)
+	_test_every_diagonal_step_has_both_its_pinch_corners_cleared(t)
 	_test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t)
 
 func _test_the_map_builds(t: Node) -> void:
@@ -235,17 +236,54 @@ func _test_a_sideways_press_on_a_flight_walks_its_slope(t: Node) -> void:
 ## the left flights and again by the right, into the lobby, down to the basement and out — the walk
 ## the TODO item asks for, on both stairwells.
 ##
+## **The regression test for the actual defect a capture session found.** A diagonal flight tile
+## touches its own diagonal neighbour at a single corner point; the two cells flanking that step
+## are full-tile collision blockers on both sides by default, and a circular body of any real
+## radius cannot cross a gap pinched to nothing between them. Every headless test above this one —
+## the tile arithmetic, the anti-shortcut graph distance, even the redirected velocity's own
+## direction — passed while a real body stood still against a wall it could not see, because
+## nothing headless exercises `move_and_slide()` against freshly built collision bodies with no
+## physics frame having actually elapsed (the project's own established shape: "a bare
+## `Stroller.new()` has no `CollisionShape2D`, so `move_and_slide()` never moves it — assert on
+## velocity, not on position," and no suite in this repo drives real collision-checked movement
+## either). So this asserts the fix at the level headless *can* see: the data.
+## `InteriorMap._mark_diagonal_clearances()` must have freed both corner cells for every diagonal
+## adjacency in `tiles`, or `InteriorScene._rebuild_collision()` places a blocker back in the pinch
+## and the defect returns.
+func _test_every_diagonal_step_has_both_its_pinch_corners_cleared(t: Node) -> void:
+	var f := InteriorMap.build()
+	var diagonals: Array[Vector2i] = [Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]
+	var checked := 0
+	for t1: Vector2i in f.tiles:
+		for d in diagonals:
+			var t2 := t1 + d
+			if not f.tiles.has(t2):
+				continue
+			checked += 1
+			var corner_a := Vector2i(t1.x + d.x, t1.y)
+			var corner_b := Vector2i(t1.x, t1.y + d.y)
+			# Safe from `_rebuild_collision()`'s own blocker either way: floor of its own, or
+			# explicitly cleared. Either satisfies the geometry; what matters is that it is never
+			# both un-floored and un-cleared, which is the pinch.
+			t.check(f.tiles.has(corner_a) or f.collision_clearance.has(corner_a),
+					"the corner %s pinching %s to %s is floor or cleared" % [corner_a, t1, t2])
+			t.check(f.tiles.has(corner_b) or f.collision_clearance.has(corner_b),
+					"the corner %s pinching %s to %s is floor or cleared" % [corner_b, t1, t2])
+	# A guard that the sweep found real diagonal adjacencies to check — every flight in both
+	# shafts plus the basement's own entry flight.
+	t.check(checked > 0, "the map has at least one diagonal adjacency to check (got %d)" % checked)
+
 ## **Steps `InteriorScene`'s own transition functions directly rather than driving `Stroller` by
 ## input.** `transition_at()` and `teleport_to_door()` are the exact functions `process_player()`
 ## calls every frame in the running game — the only thing skipped is the fade `Tween`'s own timing,
 ## which is presentation rather than logic (see `_start_door_transition()`'s own doc). Driving a
-## `Stroller` by `--walk`-style input instead would additionally exercise `move_and_slide()` and the
-## collision blockers `_rebuild_collision()` builds, which `_test_collision_blocks_exactly_the_
-## non_walkable_ground` already covers on its own — repeating that here would double the work
-## rather than test anything new. **Not vacuous**: every assertion below reads the player's own
-## `global_position` back after the call, not from a value this test computed itself, so a
-## `teleport_to_door()` that silently failed to move the player would fail the very next line
-## rather than being asserted past.
+## `Stroller` by `--walk`-style input instead would additionally exercise `move_and_slide()` and
+## real collision, which `_test_a_real_stroller_physically_crosses_a_diagonal_step` already covers
+## on its own, over a real `CollisionShape2D` rather than a teleport that skips physics entirely —
+## repeating that here would double the work rather than test anything new. **Not vacuous**: every
+## assertion below reads the player's own `global_position` back after the call, not from a value
+## this test computed itself, so a `teleport_to_door()` that silently failed to move the player
+## would fail the very next line rather than being asserted past.
 func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: Node) -> void:
 	var f := InteriorMap.build()
 	for side in ["left", "right"]:

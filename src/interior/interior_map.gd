@@ -49,7 +49,22 @@ static func build() -> InteriorMapPlan:
 	_build_lobby(f, _LOBBY_ORIGIN)
 	_build_basement(f, _BASEMENT_ORIGIN)
 	f.start_tile = f.waypoints["hallway_third"]
+	_mark_diagonal_clearances(f)
 	return f
+
+## The two cells flanking every diagonal step between two walkable tiles touch each other only at
+## a single corner point — a circular body of any real radius cannot cross a pinch with a full-tile
+## blocker on both flanks, which is what made a diagonal flight unwalkable in practice the first
+## time this was played rather than only stepped by a headless test. Freeing both flanks of every
+## diagonal adjacency, once, over the whole finished plan, fixes every flight and the basement's own
+## entry flight alike without threading the concept through each place a diagonal tile is laid.
+static func _mark_diagonal_clearances(f: InteriorMapPlan) -> void:
+	var diagonals: Array[Vector2i] = [Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]
+	for t: Vector2i in f.tiles.keys():
+		for d in diagonals:
+			if f.tiles.has(t + d):
+				f.collision_clearance[Vector2i(t.x + d.x, t.y)] = true
+				f.collision_clearance[Vector2i(t.x, t.y + d.y)] = true
 
 # -------------------------------------------------------------------------------- hallway ---
 

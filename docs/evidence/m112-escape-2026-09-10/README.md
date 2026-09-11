@@ -1,42 +1,45 @@
 # The escape scene, walkable — capture session
 
-`tools/shot.sh` and a windowed boot, both `--start-escape`, against a real display — the capture
-guard (`can_photograph(DisplayServer.get_name())`) answered yes throughout, so no capture here was
-skipped for lack of one.
+`tools/shot.sh` against a real display — the capture guard
+(`can_photograph(DisplayServer.get_name())`) answered yes throughout, so no capture here was
+skipped for lack of one. The building is one map holding seven parts (see `InteriorMapPlan`'s own
+doc); `--start-escape <part>` teleports straight to any of them, so every capture below is a boot
+and a short wait rather than a walk from her own door, and none took longer than six real seconds.
 
-- `floor-3-start.png` — `--start-escape`, 1.5s wait, no walk. The third floor's hallway at boot:
-  her own door mid-hallway (the wall carries the lift and four windows), the chandelier's light
-  pool, and both stairwells with their treads, rails, newels and the open shaft between each
-  flight pair.
-- `floor-3-left-stairwell.png` — `--start-escape --walk 5w2s2e`, 9s wait. West to the hallway's own
-  end, south onto the left stairwell's door, east across its first flight to the landing —
-  carrying the baby, standing on `stair_landing.svg` with the rail and newel drawn over the flight
-  behind her.
-- `left-stairwell-flight-burst.mp4` — `--start-escape --walk 5w2s3e --press snapshot_burst 7`,
-  11s wait, converted from a 36-frame burst with `tools/clip.sh`. She crosses the first flight's
-  three tread tiles while the camera pans to keep her in frame.
+- `hallway-third.png` — `--start-escape`, 2s wait. Her own door mid-hallway, the north wall's lift
+  and windows, both lamps, and the chandelier's light pool.
+- `hallway-second.png` — `--start-escape floor:2`, 2s wait.
+- `hallway-first.png` — `--start-escape floor:1`, 2s wait. Byte-identical to the other two
+  hallways' own captures, since all three share one layout and a centred camera shows nothing that
+  distinguishes them — expected, not a capture defect.
+- `stairwell-left.png` — `--start-escape stairwell:left`, 2s wait. The shaft's own top landing at
+  its door, the first flight's treads descending toward the turn, its newel, and the rail running
+  unbroken across the tile seams.
+- `stairwell-right.png` — `--start-escape stairwell:right`, 2s wait. Byte-identical to the left
+  shaft's own capture for the same reason the hallways are.
+- `lobby.png` — `--start-escape lobby`, 2s wait. The barricaded entrance behind its lamps, the dead
+  lift beside it, and both stairwells' doors at the south edge's ends.
+- `basement.png` — `--start-escape basement`, 2s wait. The brick-walled stretch nearest the entry,
+  a puddle, and the jog toward the next stretch.
+- `stairwell-left-flight-walk-burst.mp4` — `--start-escape stairwell:left --walk 1@135@6e --press
+  snapshot_burst 1.5`, 6s wait, a 36-frame/3s burst converted with `tools/clip.sh`. One second at a
+  135° bearing onto the first flight tile, then six seconds holding plain east: the redirect
+  carries her down the first flight, across the turn, down the back flight and onto the second
+  floor's own landing — a screen-axis press walking the tile's own diagonal slope the whole way,
+  never sideways off the treads.
 
-## What is not here, and why
+## What this capture session found
 
-Floors below the third, and the basement's own exit, are not captured. Reaching them from a cold
-boot needs a `--walk` script chained through 3–4 stairwell traversals, each a fixed sequence of
-whole-second holds overshooting into a wall on purpose (`--walk`'s own script format takes whole
-seconds only, so a hold long enough to reliably reach a landing works the same way a `--flee`
-timeout margin does — err long, let the collision stop her exactly, never err short and miss the
-tile) — around 13 real seconds per floor. Windowed captures at that length were not reliable in
-this session: the process's own accumulated frame time stopped advancing partway through
-(consistently around the same in-scene position, `day 1` sleepiness reading `5` regardless of how
-much longer the wait was extended, from 16s up to 36s) while the wall-clock `--after` timer kept
-running and eventually took the shot anyway — the windowed-run stall the verify skill names, where
-a window not holding focus stops getting frames, and a longer wait cannot fix a process that is not
-advancing. The three captures above each finish inside roughly nine to eleven real seconds and were
-reliable across repeats; nothing scripted past about ten seconds was.
-
-This is a gap in the *pictures*, not in the *check*: every floor, both stairwells' switchback
-layout, the anti-shortcut gap between a door and its own lower landing, and a full walk from the
-third floor to the basement's exit down each stairwell are already asserted headlessly in
-`tests/test_interior.gd` (`_test_a_rig_walks_both_stairwells_to_the_exit` and the floor-plan tests
-beside it), which steps `InteriorScene`'s own transition logic directly rather than depending on
-real time elapsing in a window. What a screenshot alone could still answer — whether the deeper
-floors and the exit *read* right on screen — is open for a session with a display available for
-longer stretches at once.
+The first attempt at the burst above showed her standing still at the shaft's own top landing for
+the whole three seconds despite the walk script, both indoors and — as a control — with the same
+bearing script run outdoors, where it visibly carried her most of a city block. The difference was
+not the redirect: a diagonal flight tile touches its own diagonal neighbour at a single corner
+point, and `InteriorScene._rebuild_collision()` was blocking both cells flanking that corner with a
+full 32px `RectangleShape2D` on each side, pinching the gap to nothing — no radius of circular body
+can cross a gap with zero width. `InteriorMap._mark_diagonal_clearances()` now frees both flanking
+cells of every diagonal adjacency in the plan after it is laid, and `_rebuild_collision()` skips
+them the same way it already skips floor; `tests/test_interior.gd`'s
+`_test_every_diagonal_step_has_both_its_pinch_corners_cleared` is the headless regression test,
+asserting the data rather than real collision, since no suite in this repo drives
+collision-checked `move_and_slide()` movement headlessly (see that test's own doc for why). The
+capture above is the fix confirmed on screen.

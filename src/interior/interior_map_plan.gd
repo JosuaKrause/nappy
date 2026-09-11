@@ -42,6 +42,13 @@ var entrance_tiles: Array[Vector2i] = []
 ## Ground decals — `PUDDLE`, `DEBRIS` or `RAT` — that change nothing about what is walkable
 ## beneath them. `tile -> InteriorTile.Kind`.
 var decals: Dictionary = {}
+## Cells that are not floor (absent from `tiles`, so `is_walkable()` still says no and no flood
+## fill ever steps onto one) but must not get a collision blocker either — the two cells flanking
+## each diagonal step between two walkable tiles, which touch each other only at a single corner
+## point. A circular body of any real radius cannot cross a corner pinched between two full-tile
+## blockers on both flanks, so `InteriorMap._mark_diagonal_clearances()` frees them after every
+## part is laid, and `InteriorScene._rebuild_collision()` skips them the same way it skips `tiles`.
+var collision_clearance: Dictionary = {}
 ## A named position that is not a door — a stairwell's own landing platform, a hallway's mid-point,
 ## the lobby's own floor — used both as `--start-escape <part>`'s teleport target and, in
 ## `tests/test_interior.gd`, as the seed a per-part flood fill starts from. `id -> Vector2i`.

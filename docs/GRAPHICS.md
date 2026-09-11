@@ -63,19 +63,21 @@ Some visible graphics are code rather than image files:
 ### Interior (the escape scene, behind `--start-escape`)
 
 `src/interior/interior_scene.gd` and `src/interior/interior_tileset.gd` own this entire family;
-see `docs/ARCHITECTURE.md`, "`src/interior/`" for how the floor plan, the TileSet and the scene
-divide the work. Floor and wall modules are 32×32; standing sprites are bottom-centre anchored at
-their own tile.
+see `docs/ARCHITECTURE.md`, "`src/interior/`" for how the plan, the TileSet and the scene divide
+the work. The building is one map holding seven parts — three hallways, two stairwells, the lobby,
+the basement — spaced well apart and joined by doors that teleport rather than by shared floor; see
+`InteriorMapPlan`'s own doc. Floor and wall modules are 32×32; standing sprites are bottom-centre
+anchored at their own tile.
 
 | Assets | Runtime binding and behaviour |
 |---|---|
-| `hallway_floor_edge_{n,e,s,w}.svg`, `basement_floor_edge_{n,e,s,w}.svg`, `stairwell_floor.svg`, `stair_flight_{e,w}.svg`, `stair_landing.svg` | `InteriorTileSet.build()` binds one atlas source per kind, keyed on `InteriorTile.Kind`'s own enum values; `InteriorScene.build()` paints a `TileMapLayer` cell for every position `InteriorMap`'s floor plan carries. `hallway_floor.svg` and `basement_floor.svg` are bound the same way but currently unused — the hallway is only ever two tiles deep, so every row is one of the four edges above. |
-| `hallway_wall.svg`, `hallway_wall_window.svg`, `basement_wall_brick.svg`, `lift_door_dead.svg`, `entrance_door.svg` | `InteriorScene._rebuild_walls()` draws one of these per column of the hallway's own north wall, chosen from `InteriorFloor.north_wall`. |
-| `entrance_barricade.svg` | Drawn in front of the ground floor's own entrance column. |
-| `stairwell_door.svg`, `emergency_exit_door.svg` | `InteriorScene._add_standing()` draws these as ordinary feet-anchored sprites at a stairwell's own door tile and the basement's exit tile, in the y-sorted layer the player joins too. |
-| `stair_rail_{e,w,level}.svg`, `stair_newel.svg` | `InteriorScene._add_rails()` draws a rail over every flight and landing tile and a newel at each turn corner, in the same y-sorted layer — see that function's own doc for why each rail's sort key is pinned to its tile's south edge. |
-| `chandelier.svg` | Hung at the hallway's own midpoint on every floor but the basement. |
-| `puddle.svg` | Decorates the basement's own `InteriorFloor.puddle_tiles`. |
+| `hallway_floor_edge_{n,e,s,w}.svg`, `basement_floor_edge_{n,e,s,w}.svg`, `basement_floor.svg`, `stairwell_floor.svg`, `stair_flight_{e,w}.svg`, `stair_landing.svg` | `InteriorTileSet.build()` binds one atlas source per kind, keyed on `InteriorTile.Kind`'s own enum values; `InteriorScene.build()` paints a `TileMapLayer` cell for every position `InteriorMap`'s plan carries. `basement_floor.svg` grounds the narrow one-tile jogs between the basement's three brick-walled stretches. `hallway_floor.svg` is bound the same way but currently unused — every hallway, and the lobby, is only ever two tiles deep, so every row is one of the four edges above. |
+| `hallway_wall.svg`, `hallway_wall_window.svg`, `wall_lamp.svg`, `basement_wall_brick.svg`, `lift_door_dead.svg`, `entrance_door.svg` | `InteriorScene._rebuild_walls()` draws one of these per position in `InteriorMapPlan.walls`, at that cell's own north edge — every hallway's, the lobby's and the basement's three stretches' own wall, not only one hallway's. |
+| `entrance_barricade.svg` | Drawn in front of the lobby's own entrance, one of `InteriorMapPlan.entrance_tiles`. |
+| `stairwell_door.svg`, `emergency_exit_door.svg` | `InteriorScene._add_standing()` draws these as ordinary feet-anchored sprites at every door's own tile and the basement's exit tile, in the y-sorted layer the player joins too — one texture for every door regardless of what it leads to. |
+| `stair_rail_{e,w,level}.svg`, `stair_newel.svg` | `InteriorScene._add_stairwell_rails()` draws a rail over every flight and landing tile and a newel at each landing (a switchback's own floor landings and its turns alike), in the same y-sorted layer — see that function's own doc for why each rail's sort key is pinned to its tile's south edge. The flight tiles' own tread motif already spans a full 32×32 tile at 45°, so placing them on the diagonal grid `InteriorMap._lay_flight()` lays joins them with no seam; the rails, drawn corner to corner, do the same. |
+| `chandelier.svg` | Hung at each hallway's and the lobby's own midpoint. |
+| `puddle.svg`, `basement_debris.svg`, `rat.svg` | Ground decals over `InteriorMapPlan.decals`, in the basement corridor. |
 
 ### Closures
 
@@ -149,31 +151,18 @@ The [environment source review](evidence/svg-environment-2026-09-10/INVENTORY.md
 prepared interior, ground, roof, frontage and prop source in `sources.csv`, with native canvases,
 anchors and alpha bounds. It includes tile repetition, facade overlays and chalk on pavement.
 
-Stair construction follows the supplied lateral-flight references,
-`docs/reference/stairwell-switchback-interior-01.jpg` and `fire-escape-switchback-exterior-01.jpg`.
-The interior has one stairwell on the building's left and one on its right; each contains sideways
-switchback flights, walked one 32×32 tile at a time rather than drawn as a single picture — the
-player rejected the whole-module `stair_down.svg` in PLAYTEST-54 because a tile is what a
-`TileMapLayer` can make walkable, and one picture cannot be (see
+The stair kit's own live binding is documented in "Interior (the escape scene)" above; this
+paragraph is its history. Stair construction followed the supplied lateral-flight references,
+`docs/reference/stairwell-switchback-interior-01.jpg` and `fire-escape-switchback-exterior-01.jpg`,
+walked one 32×32 tile at a time rather than drawn as a single picture — the player rejected the
+whole-module `stair_down.svg` in PLAYTEST-54 because a tile is what a `TileMapLayer` can make
+walkable, and one picture cannot be (see
 `docs/evidence/archive/rejected-graphics/stair-down-module-superseded-2026-09-10/README.md`, the
-archived module and the reasoning). The live kit, all 32×32 tile-origin except the newel:
-`stair_flight_e.svg` and `stair_flight_w.svg` are walkable floor tiles whose tread-and-riser motif
-repeats every 32px, so three placed in a row read as one continuous flight descending toward that
-tile's own direction; `stair_landing.svg` is the flat platform between two flights, in
-`stairwell_floor.svg`'s own checker-plate family with a lighter edge frame. `stair_rail_e.svg`,
-`stair_rail_w.svg` and `stair_rail_level.svg` are transparent overlays — a 45° line matching its
-flight's own tread slope, or a level line along a landing — bound in `InteriorScene`'s y-sorted
-layer so she walks behind the rail rather than under it. `stair_newel.svg` is a 16×40 transparent
-canvas, bottom-centre anchored at (8,40), for the post at a landing's turn corner. `InteriorMap`
-(`src/interior/interior_map.gd`) lays a stairwell out as: from the door, three `stair_flight_e`
-(or `_w`, mirrored for the opposite side) tiles descending to a `stair_landing`, then — beyond a
-one-tile gap that keeps the door and the floor-transition tile from ever standing adjacent — a
-second three-tile flight in the opposite direction to the lower landing, which triggers the floor
-transition. Exterior `fire_escape_{a,b}.svg` stays 48×64, with alternating lateral flights
-parallel to the facade; that pair is unaffected by this milestone. The
+archived module and the reasoning). Exterior `fire_escape_{a,b}.svg` stays 48×64, with alternating
+lateral flights parallel to the facade; that pair is unaffected by this milestone. The
 [stair source and assembly review](evidence/svg-sideways-stairs-2026-09-10/README.md) documents
 the retired module's own sources; the [M112 stair tile review](evidence/m112-stairs-2026-09-10/)
-shows the live kit at native and 3× scale and one assembled stairwell.
+shows the kit at native and 3× scale and one assembled flight.
 
 The [people source matrix](evidence/svg-people-2026-09-10/PEOPLE-MATRIX.md) names every body,
 trim, gait and action source, its registration and intended live or prepared use. Native/3×
@@ -182,7 +171,6 @@ arm direction; ordinary movement suffixes describe the body's facing.
 
 | Owning design | Prepared assets, dimensions and registration |
 |---|---|
-| M112 — The escape scene, walkable (wall lamp, basement debris and rat) | `assets/interior/wall_lamp.svg`: a 32×32 tile in the wall family, `hallway_wall.svg`'s own plaster and plinth behind a bracket sconce — a full column tile rather than a runtime overlay, so it drops into `InteriorScene._wall_texture()`'s existing one-texture-per-column match the same way `WINDOW` and `LIFT_DOOR` do. `assets/interior/basement_debris.svg` and `rat.svg`: 32×32 centre-anchored ground decals for the basement corridor, in `puddle.svg`'s own transparent-overlay family; the rat's visible geometry stays under 11px — a third of the tile — on its long axis. Unbound until the interior maps (`src/interior/`) place them. |
 | M102 — The finale: out of the apartment, out of the city (interior) | `assets/interior/hallway_wall_window_flash.svg` — the brief illuminated window state from an off-screen explosion, sharing `hallway_wall_window.svg`'s own placement once M112's interior scene extends past the escape slice. `assets/events/steam.svg` is 32×48; `explosion_preview.svg` is a 40×40 optional burst. The rest of `assets/interior/` is now bound by M112, the escape scene, walkable — see "Interior (the escape scene)" above. |
 | M100 — Small, real, and nobody's (chalk and alley review) | `assets/props/chalk_mark.svg` and `chalk_mark_touched.svg` are 32×32 centre-anchored decals; the touched version keeps the circle/cross and adds her small tick. `assets/tiles/alley_draft.svg` is a 32×32 paving alternative for comparison. Current code-drawn chalk and the live alley tile remain the runtime pictures. |
 | M105 — The city degrades | `assets/tiles/{road,sidewalk,alley}_cracked_{hairline,cracked,broken}_{a,b}.svg` supplies two 32×32 patterns per damage level. `assets/props/litter_{apple,newspaper,cup,bag,can}.svg` uses 32×32 centre-anchored transparent canvases with visible geometry at most 10px wide/high. `garbage_sack.svg` is 28×34 and `garbage_sacks_pile.svg` 42×34, bottom-centre anchored. All placement and TileSet selection remain unbound. |

@@ -80,11 +80,12 @@ src/
 	world_context.gd      the only questions the baby may ask the world
   interior/               the escape scene's building, behind --start-escape
 	interior_tile.gd      the tile-kind enum and which kinds are walkable
-	interior_floor.gd     one floor's plan: tiles, the north wall, the start tile, both stairwells
-	interior_map.gd       builds all five floors' plans and the switchback stairwell layout
+	interior_map_plan.gd  the whole building's plan: tiles, walls, doors, decals, waypoints
+	interior_map.gd       lays all seven parts (three hallways, two stairwells, the lobby, the
+	                      basement) into one plan, 64 tiles apart, and the switchback layout
 	interior_tileset.gd   the interior's own TileSet, built in code from the SVGs it binds
-	interior_scene.gd     the WorldContext node: paints a floor, and the floor-to-floor and
-	                      basement-to-title transitions
+	interior_scene.gd     the WorldContext node: paints the building once, and every door's
+	                      fade-teleport-fade transition and the exit-to-title transition
   ui/
 	hud.gd                the clock, the two bars, the teach line and the status line
 	meter_bar.gd
@@ -159,7 +160,11 @@ windowed, saves the viewport after N frames and quits.
 
 `DevFlags` (`src/dev/dev_flags.gd`) parses `--seed`, `--day`, `--spawn`, `--follow`, `--meters`,
 `--overview`, `--day-length`, `--ending`, `--controls`, `--layers` and `--start-escape` (also
-reachable as `?escape=1`); `src/dev/auto_screenshot.gd`
+reachable as `?escape=1`). `--start-escape` takes an optional value — `stairwell:left`,
+`stairwell:right`, `lobby`, `basement` or `floor:2`/`floor:1` — that teleports straight to that
+part of the escape scene's one building-wide map instead of starting at her own door on the third
+floor; `main._escape_start_part()` maps the word onto `InteriorScene.part_world_position()`.
+`src/dev/auto_screenshot.gd`
 parses `--screenshot` and the flags nested under it (`--after`, `--walk`, `--flee`, `--press`,
 `--tap`) itself, and gates its own entry point the same way rather than moving that parsing out.
 Both read `OS.is_debug_build()`,
