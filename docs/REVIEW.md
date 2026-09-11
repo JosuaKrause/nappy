@@ -51,6 +51,11 @@ view").
   as *a dog that was somewhere* or as the lesson again? That is the open question in `TODO.md`,
   M96, whether it should wait to be routed into; a played answer decides it. Record is
   `DECISIONS.md`, M96.
+- **Watch walkers round a corner or step aside for you** (any day, any busy pavement). A walker
+  now picks one of eight views from the way it is actually moving, so it shows a diagonal picture
+  for the few tenths of a second it is steering across its lane, and a stopped one keeps its last
+  facing. Does the diagonal moment read as *turning* or as a flicker, and does a walker ever face
+  the wrong way while standing? Record is `DECISIONS.md`, M108, the crowd walkers.
 - **Walk through an alley in act I.** A mouse waits in some of them and darts across once she is
   within 150px, after a short telegraph. Does it read as a startle rather than a threat, and does
   the dash read as *across her path*? Record is `DECISIONS.md`, M100, the mouse in the alley.

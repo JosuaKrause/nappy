@@ -11,7 +11,7 @@ Two `tools/shot.sh` captures, both `--seed 4242`, 1280×720, at commit `34289a6`
   follows the walker's own body through the new view lookup rather than a separate presentation.
 
 Both confirm the live binding renders correctly: the right texture pair, tint on the body only,
-trim untinted above it, shadow, gait bob and the halo all intact through the sector-based drawing
+trim untinted above it, shadow and the halo all intact through the sector-based drawing
 path this milestone item replaced the three-frame one with.
 
 **Neither capture happens to catch a walker in a diagonal sector**, and that is expected rather

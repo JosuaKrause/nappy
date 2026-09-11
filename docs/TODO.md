@@ -30,15 +30,8 @@ symmetry; choose an authored projection rather than rotating an upright picture.
 The prepared source families and their complete facing/state matrices are in `GRAPHICS.md` and
 its linked people, vehicle/animal and environment inventories. The source-art record is in
 `DECISIONS.md` under SVG completion and selective rejection retention. Work below binds those
-pictures to their actual runtime consumers.
-- [ ] **Bind crowd walkers first.** Add a shared eight-sector heading selector and explicit
-      family tables for source paths, mirrors, canvases and anchors. Reuse the stroller's stable
-      sector-selection behavior where appropriate: retain facing at rest, avoid chatter at sector
-      boundaries, reset cleanly on placement/recycle. Drive walking facing from applied travel,
-      keeping authored action aim separate. Bind matching walker body/trim views with one transform
-      and preserve tint, gait timing, sorting and foot registration. Verify all eight headings,
-      boundary crossings, stops, blocked movement and recycle with a focused rig and rendered
-      native-size movement evidence.
+pictures to their actual runtime consumers. The crowd walkers are bound, through the shared
+`EightDirection` selector every family below extends (`DECISIONS.md`, M108, the crowd walkers).
 - [ ] **Every living thing that moves has a stride.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md):
       "can we do a similar one to what the player does?", then "all living things should have
       movement animation")* Today only the mother animates: two frames per view, mid-stride and
@@ -63,7 +56,7 @@ pictures to their actual runtime consumers.
       cup, alternated slowly on a timer rather than on a speed, since they never move. **The busker
       strums** *(same day: "busker should have a two frame animation strumming the guitar")*:
       two frames, the strumming hand up and down, on the same timer. Whether a standing guard
-      shifts is the player's to say; until then he keeps one frame. After the walker binding above, since it extends that family table, and alongside
+      shifts is the player's to say; until then he keeps one frame. First here, since it extends the walker's own view table (`CrowdAgent.WALKER_VIEW_BY_SECTOR`, built — `DECISIONS.md`, M108, the crowd walkers), and alongside
       the event binding below for the rest
 - [ ] **Cars bob on their wheels.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "cars
       could bop up and down while the wheels stay in the same place")* A moving car's body rises
