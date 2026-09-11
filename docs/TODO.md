@@ -456,12 +456,17 @@ pictures the kit item below adds.
 2.5D — treads and risers seen from the oblique view, descending toward the tile's own direction —
 and it is walkable ground like any other; the handrail is a separate transparent overlay tile
 drawn *over* the flight, in front of her, so she walks behind the rail; a landing is a flat tile.
-A flight is a horizontal run of flight tiles, and descending it is walking along it: nothing moves
-her vertically within a flight, the descent is carried by the pictures and by the row change at
-each landing, and a per-tread offset that makes her visibly drop is an open refinement rather
-than part of this slice. Because the stairwell is one map, a floor's height in the shaft is what
-the flights between two landings add up to in rows, and that number is the layout's to choose so
-a switchback reads as a stairwell rather than a ramp.
+**A flight is a diagonal run of flight tiles, and she descends it as she walks it** *(2026-09-10,
+playtest 55: "holding right or left on the switchback stairs moves the player diagonally")*: the
+kit's flight tile drops one tile height over one tile width at 45°, so a flight of three tiles
+runs three tiles across and three down, and while she stands on a flight tile a sideways press —
+left or right, key, tap or joystick alike — is redirected along the flight's slope, down toward
+the flight's lower end and up toward its upper end, so she visibly descends or climbs and never
+walks off the treads sideways. A press along the slope's own axis behaves the same; a press
+straight up or down the screen on a flight does nothing, since there is no floor there. A
+half-landing is a flat tile or two where the next flight turns back. Because a stairwell is one
+map, a floor's height in the shaft is what its two flights add up to in rows, and the layout
+chooses that so the switchback reads as a stairwell rather than a ramp.
 
 - [ ] **The stair tile kit, as SVG.** In `assets/interior/`, 32×32 tiles: `stair_flight_e.svg` and
       `stair_flight_w.svg` (treads descending toward east and toward west, seen from the oblique

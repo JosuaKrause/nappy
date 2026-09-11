@@ -142,6 +142,14 @@ So the building is **two stairwell maps**, each a plain switchback with one door
 the hallway side, at opposite ends of every hallway and of the lobby; the sketched double
 staircase is not built.
 
+And how a flight is walked:
+
+> holding right or left on the switchback stairs moves the player diagonally
+
+This settles what the M112 entry had left as an open refinement: she does move vertically on a
+flight. A flight is a diagonal run of tiles, and on it a sideways press is redirected along the
+slope, so she visibly descends or climbs.
+
 ## The inspection
 
 > the checkpoint itself, 2s should be enough -- both the guard and the player should disappear
