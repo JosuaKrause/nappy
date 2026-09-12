@@ -1,0 +1,11 @@
+Targeted correction to the existing five-column by three-row illustrated atlas in Image 1. Image 2 is the authoritative source pose sheet. Preserve Image 1 exactly everywhere except the BLUE-JEAN LEGS AND DARK SHOES BELOW THE RED COAT HEM IN THE BOTTOM ROW (Contact 2 / B). Do not alter the top A row, middle C row, any white background, layout, upper body, adult proportions, head, hair, face, coat, arms, hands, baby, or cradle.
+
+The current bottom B row repeats the same anatomical lead as A in some views. Redraw each bottom-row B as the actual opposite contact shown by Image 2:
+
+BOTTOM COLUMN 1 FRONT: screen-LEFT shoe is now the full-length leading shoe lower in the canvas; screen-RIGHT leg is shortened/receding and its shoe is clearly 10% higher. Do not cross the legs and do not make a lateral split. One leg comes toward the viewer, the other recedes.
+BOTTOM COLUMN 2 BACK: reverse the top-row depth ownership. Screen-LEFT shoe is the full-length lower/trailing-toward-viewer shoe; screen-RIGHT leg is shortened/leading-away and its shoe is clearly higher. Do not cross legs.
+BOTTOM COLUMN 3 RIGHT PROFILE: keep toes and knees oriented toward screen-right travel. The nearer/lighter anatomical leg must now be the BACK leg extending toward screen-left, while the farther/darker anatomical leg is the FORWARD leg extending screen-right. Reverse their overlap and denim shading from top A. Do not horizontally mirror shoe shapes; both toes remain anatomically oriented for walking right.
+BOTTOM COLUMN 4 FRONT THREE-QUARTER: screen-LEFT leg becomes lower/leading/downscreen and screen-RIGHT leg becomes higher/receding; reverse near/far overlap. Keep shoes aligned with the same diagonal facing, never mirrored backward.
+BOTTOM COLUMN 5 BACK THREE-QUARTER: screen-LEFT leg becomes lower/toward-viewer and screen-RIGHT leg becomes higher/away; reverse near/far overlap. Keep toes aligned to the existing diagonal facing.
+
+B must have the same stride extent as A and must be clearly different from the narrow middle C row. Use one sensible knee per leg and clean cloth planes. No X-crossed legs, no sideways split for front/back, no standing parallel legs, no extra limbs, labels, guides, shadows, or objects. Uniform plain white background. Preserve the 1380×1140 five-column/three-row layout.

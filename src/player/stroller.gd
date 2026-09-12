@@ -46,19 +46,27 @@ const MOTHER_BACK_DIAGONAL: Array[Texture2D] = [
 ## whenever `carrying` is set; see `_mother_texture()`.
 const MOTHER_CARRYING_FRONT: Array[Texture2D] = [
 	preload("res://assets/rig/mother_carrying_front_a.svg"),
+	preload("res://assets/rig/mother_carrying_front_c.svg"),
 	preload("res://assets/rig/mother_carrying_front_b.svg")]
 const MOTHER_CARRYING_BACK: Array[Texture2D] = [
 	preload("res://assets/rig/mother_carrying_back_a.svg"),
+	preload("res://assets/rig/mother_carrying_back_c.svg"),
 	preload("res://assets/rig/mother_carrying_back_b.svg")]
 const MOTHER_CARRYING_SIDE: Array[Texture2D] = [
 	preload("res://assets/rig/mother_carrying_side_a.svg"),
+	preload("res://assets/rig/mother_carrying_side_c.svg"),
 	preload("res://assets/rig/mother_carrying_side_b.svg")]
 const MOTHER_CARRYING_FRONT_DIAGONAL: Array[Texture2D] = [
 	preload("res://assets/rig/mother_carrying_front_diagonal_a.svg"),
+	preload("res://assets/rig/mother_carrying_front_diagonal_c.svg"),
 	preload("res://assets/rig/mother_carrying_front_diagonal_b.svg")]
 const MOTHER_CARRYING_BACK_DIAGONAL: Array[Texture2D] = [
 	preload("res://assets/rig/mother_carrying_back_diagonal_a.svg"),
+	preload("res://assets/rig/mother_carrying_back_diagonal_c.svg"),
 	preload("res://assets/rig/mother_carrying_back_diagonal_b.svg")]
+
+## One distance-driven turn visits both open contacts with the shared passing pose between them.
+const CARRYING_GAIT_LOOP: Array[int] = [0, 1, 2, 1]
 
 const PRAM_SIDE := preload("res://assets/rig/pram_side.svg")
 const PRAM_FRONT := preload("res://assets/rig/pram_front.svg")
@@ -281,7 +289,7 @@ func _physics_process(delta: float) -> void:
 	if _shove != Vector2.ZERO:
 		move_and_collide(_shove * delta)
 		_shove = _shove.move_toward(Vector2.ZERO, Tuning.FRICTION * delta)
-	_walk_phase = wrapf(_walk_phase + velocity.length() * delta * 0.09, 0.0, TAU)
+	_advance_walk_phase(velocity.length() * delta)
 
 	# Stride cadence is driven by distance covered, so it stays in step at any speed.
 	_alert_phase = wrapf(_alert_phase + delta, 0.0, 1.0)
@@ -689,14 +697,24 @@ func _draw() -> void:
 	_draw_baby_cue(pram_offset)
 	_draw_alert()
 
-## The stride is two frames rather than a procedural swing: with the legs drawn into the sprite
-## there is nothing left to swing. The frames carry the body's bob too, which is why nothing here
-## offsets her vertically. The source texture's native size supplies the complete geometry.
+## The source texture supplies the complete body geometry, including the stride and its small bob.
 func _draw_mother(gait: float) -> void:
-	var stepping := gait > 0.05 and sin(_walk_phase * 2.0) > 0.0
-	var frame := 1 if stepping else 0
-	Sprites.draw_standing(self, _mother_texture(frame), Vector2.ZERO, Vector2.ZERO,
+	Sprites.draw_standing(self, _mother_texture(_mother_gait_frame(gait)), Vector2.ZERO, Vector2.ZERO,
 			_mother_is_mirrored())
+
+## Distance advances the gait so slowing down changes cadence without changing the depicted loop.
+func _advance_walk_phase(distance: float) -> void:
+	_walk_phase = wrapf(_walk_phase + distance * 0.09, 0.0, TAU)
+
+## Carrying uses contact, passing, opposite contact, passing over one full turn. Keeping that loop
+## on `TAU` preserves the old contact/passing change frequency instead of doubling the step rate.
+func _mother_gait_frame(gait: float) -> int:
+	if gait <= 0.05:
+		return 1 if carrying else 0
+	if carrying:
+		var quarter := int(floor(_walk_phase / (TAU / 4.0))) % CARRYING_GAIT_LOOP.size()
+		return CARRYING_GAIT_LOOP[quarter]
+	return 1 if sin(_walk_phase * 2.0) > 0.0 else 0
 
 ## The pram has authored front, back, side and diagonal projections. A hood belongs to its own
 ## three-quarter body plane, rather than sliding across an unchanged basket as the rig turns.
