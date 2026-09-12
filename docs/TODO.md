@@ -187,12 +187,12 @@ anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified 
 | Owner | Integration work and acceptance |
 |---|---|
 | M100 — Small, real, and nobody's | Review `chalk_mark.svg` beside `chalk_mark_touched.svg`, then bind the touched state to the acknowledgement she adds when contact counts. Keep the original mark visible and readable on the pavement. Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family with the alley event and the sound arcs with their event timing; source availability does not decide either behavior. |
-| M102 — The finale: out of the apartment, out of the city | Build the interior TileSet/map binding for hallway, stairwell and basement floors/edges/walls. Register doors, barricade, chandelier and puddle separately; retain the south hallway's implied door thresholds. Bind normal/flash windows to explosion timing, steam to its pulse, and carrying-mother facing/gait to actual movement. Reuse mouse, guards, vehicles and crater sources. Decide whether the optional `explosion_preview.svg` is needed; the off-screen explosion brief does not require a visible burst. Check room transitions, foot anchors, layering and state changes in runtime evidence. |
+| M102 — The finale: out of the apartment, out of the city | Extend the playable interior and its carrying-mother rig into the finale. Bind normal/flash windows to explosion timing and steam to its pulse. Reuse mouse, guards, vehicles and crater sources. Decide whether the optional `explosion_preview.svg` is needed; the off-screen explosion brief does not require a visible burst. Check event state changes and their layering in the interior at runtime. |
 
 The impact-crater decals `assets/props/impact_crater_1x1.svg`,
 `impact_crater_2x2.svg` and `impact_crater_3x3.svg` (32×32, 64×64 and 96×96 footprints) are the
 finale's: the marks its off-screen explosions leave on the street. M102 also owns the prepared `assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b}.svg`
-set, documented in GRAPHICS.md; nothing binds it until that milestone is built.
+set, documented in GRAPHICS.md and bound by the playable apartment's carrying rig.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
 no artist.
@@ -764,7 +764,7 @@ M103, the drawings the queue owes.
       rather than from a flag, the exit through the service door onto the city map at the home
       lot's side, the hallway windows that **flash** when an off-screen explosion goes off (the
       explosion row's cue indoors, one or two frames of `hallway_wall_window_flash.svg`), the
-      chandelier as the hallway's light, and the events — mice, the pursuers on the stairs, the
+      lighting response to the explosions, and the events — mice, the pursuers on the stairs, the
       fire on one stairwell, the steam
 - [ ] **A finale plan for the city map.** An ordered chain, not a `RouteTree`: service exit to
       first park to second to third to the edge, one street-walk between each pair and nothing

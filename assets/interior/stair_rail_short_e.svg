@@ -1,0 +1,8 @@
+<!-- Foreground rail for the short basement flight, using the same bottom-edge sorting convention
+     as the larger runs. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M2 30L68 96" stroke="#30292f" stroke-width="8"/>
+  <path d="M12 40L12 58 M30 58L30 76 M48 76L48 94" stroke="#30292f" stroke-width="5"/>
+  <path d="M2 28L70 96" stroke="#958879" stroke-width="3"/>
+  <path d="M12 40L12 58 M30 58L30 76 M48 76L48 94" stroke="#c1ad90" stroke-width="1.5"/>
+</svg>

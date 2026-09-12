@@ -143,16 +143,18 @@ item below for as long as looking takes.
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
 
-- **The building exists and nobody has walked it.** `tools/run.sh --start-escape` (debug only;
+- **Walk the apartment and judge the reference-based interior graphics.** `tools/run.sh --start-escape` (debug only;
   `--start-escape stairwell:left|stairwell:right|lobby|basement|floor:2|floor:1` boots into a
   part) puts her, carrying the baby, in front of her door on the third floor of a building with
   three hallways, two switchback stairwells at opposite ends, a barricaded lobby and a winding
   basement to the emergency exit — one map, the parts 64 tiles apart, every door a fade and a
-  teleport. Everything about it is checked by a rig and by seven captures: whether a diagonal
-  flight reads as *descending* when a sideways press walks it, whether the fade-and-teleport reads
-  as a door or as a cut, whether eight rows a floor reads as a stairwell, and whether five floors
-  is *"not excessively many"* are all played questions. The record is in `DECISIONS.md` under
-  M112; what M102, the finale, still adds inside it is in `TODO.md`.
+  teleport. Look at the open passage notches beside the locked apartment recesses, the lobby's
+  barricaded entrance, the broad stairs and level turn platforms, and the basement's short stair
+  and open corridor mouths. Do the stairs read as descending, are the doors easy to identify,
+  and does the building match the supplied sketches? Both stairwells have recorded physical
+  walks, but the feel of the sideways controls and fade-and-teleport still needs a person's
+  verdict. Records are in `DECISIONS.md` under M112, the escape scene and interior graphics;
+  what M102, the finale, still adds is in `TODO.md`.
 
 - **Every field has a shape now, and nobody has felt one.** A stationary body's field is a capsule
   about its own spine rather than a disc about its centre, and a moving thing's is an ellipse with

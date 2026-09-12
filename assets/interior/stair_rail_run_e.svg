@@ -1,0 +1,14 @@
+<!-- Foreground joined rail for stair_flight_run_e.svg. It is transparent and y-sorted in front of
+     the walker; the separate rear rail stays below the walking layer. Origin matches the deck. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <g stroke="#30292f">
+    <path d="M2 43L117 158" stroke-width="8"/>
+    <path d="M12 54L12 72 M32 74L32 92 M52 94L52 112 M72 114L72 132 M92 134L92 152" stroke-width="5"/>
+  </g>
+  <g stroke="#958879">
+    <path d="M2 41L119 158" stroke-width="3"/>
+  </g>
+  <g stroke="#c1ad90" stroke-width="1.5">
+    <path d="M12 54L12 72 M32 74L32 92 M52 94L52 112 M72 114L72 132 M92 134L92 152"/>
+  </g>
+</svg>
