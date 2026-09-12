@@ -1768,17 +1768,25 @@ static func _collapsed_frontage() -> EventDef:
 # "Checkpoints".
 
 ## The hut at a region door. Detains rather than blocking outright — M62's own words: *"the player
-## walks to the hut gets detained inside and then spawns on the other side."* `detain_radius`
-## (48px) sits inside `inner_radius` (52px), the way every detainer's does, and the ambient field
-## is the milestone's own "a bit of excitement": a small `intensity` over a tight band, small
-## enough that the real price stays the flat `Tuning.CHAT_EXCITEMENT` the detention charges through
-## the ordinary chat mechanism, and standing still on its own pays nothing back
-## (`EXCITEMENT_DECAY_IDLE`) — but not so small that walking through the field for free undercuts
-## `tests/test_events.gd`'s own catalogue-wide rule that nothing is cheaper to walk through than
-## around: with most of the 52-66px band held at peak against `EXCITEMENT_DECAY_WALKING` (3.5/s),
-## 6.0 is the smallest round number that clears it with a margin rather than by luck. `redetains`
-## is what tells `EventManager` this instance is armed again once she is outside `detain_radius`,
-## in either direction, rather than spent after one conversation like `chatting_mother`.
+## walks to the hut gets detained inside and then spawns on the other side."*
+##
+## **The hold starts a reach past the hut's own wall**, not a radius from the middle of it:
+## `detain_radius` is `Tuning.CHECKPOINT_DETAIN_REACH` (48px) measured from the solid edge, so
+## `EventDef.detain_distance()` comes out at 80px from the centre, and the guard steps out while
+## she is still walking up rather than only once she is pressed against the hut — which, with a
+## pram in front of her, she never was. It sits inside `inner_radius` (84px) the way every
+## detainer's does, and the ambient field is the milestone's own "a bit of excitement": a small
+## `intensity` over a tight band, small enough that the real price stays the flat
+## `Tuning.CHAT_EXCITEMENT` the detention charges through the ordinary chat mechanism, and standing
+## still on its own pays nothing back (`EXCITEMENT_DECAY_IDLE`) — but not so small that walking
+## through the field for free undercuts `tests/test_events.gd`'s own catalogue-wide rule that
+## nothing is cheaper to walk through than around: with most of the 84-98px band held at peak
+## against `EXCITEMENT_DECAY_WALKING` (3.5/s), 6.0 is the smallest round number that clears it with
+## a margin rather than by luck. The band stays 14px wide, which is what the telegraph is priced
+## on; the disc moved out with the capture so the two keep the order `validate()` requires.
+## `redetains` is what tells `EventManager` this instance is armed again once she is outside
+## `detain_distance()`, in either direction, rather than spent after one conversation like
+## `chatting_mother`.
 static func _checkpoint_hut() -> EventDef:
 	var def := EventDef.new()
 	def.id = "checkpoint_hut"
@@ -1788,12 +1796,12 @@ static func _checkpoint_hut() -> EventDef:
 	def.look = EventDef.Look.CHECKPOINT_HUT
 	def.act_tag = 2
 	def.intensity = 6.0
-	def.inner_radius = 52.0
-	def.outer_radius = 66.0
+	def.inner_radius = 84.0
+	def.outer_radius = 98.0
 	def.telegraph_time = 1.0
 	def.solid(GroundShape.point(32.0))
 	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
-	def.detain_radius = 48.0
+	def.detain_radius = Tuning.CHECKPOINT_DETAIN_REACH
 	def.redetains = true
 	return def
 
@@ -1802,13 +1810,11 @@ static func _checkpoint_hut() -> EventDef:
 ## now, *(2026-09-10, the player, on stepping onto the gate's own ground while the boom is up for a
 ## car: "attempting to do that should just start a regular checkpoint inspection".)* The toll was
 ## paid only at the hut before this; a raised bar read as a way past at the bar itself, since
-## nothing stood on the gate's own tiles to catch her. `detain_radius` (48px, the same number the
-## hut uses) and `inner_radius` (52px, raised from a field-only 40px to sit above it) are unchanged
-## from the hut's own arithmetic: `obstructs_radius + PLAYER_BODY_RADIUS` (32 + 14 = 46) is the same
-## solid body's own stop distance, so 48 is still the smallest round number a straight approach can
-## reach before the body would have stopped her outright. `outer_radius` (120px) is untouched — it
-## still comfortably clears `Tuning.required_telegraph_time()` at the new `inner_radius`, and
-## nothing about it ties to the field this row never had. Drawn raised or lowered from the shared
+## nothing stood on the gate's own tiles to catch her. `detain_radius` and `inner_radius` are the
+## hut's own numbers, for the hut's own reasons — the same reach past the same 32px body, inside
+## the same 84px disc. `outer_radius` (120px) is its own: it still comfortably clears
+## `Tuning.required_telegraph_time()` at that `inner_radius`, and nothing about it ties to the
+## field this row never had. Drawn raised or lowered from the shared
 ## `RegionPlanner.GateState` `Crowd` keeps current for the day's cars; see `docs/TODO.md`, M62,
 ## "cars need to slow down to a full stop." Placed with `Planned.facing` set along the street's own
 ## axis, which is both what tells the drawing a north-south road from an east-west one and what
@@ -1822,12 +1828,12 @@ static func _checkpoint_gate() -> EventDef:
 	def.look = EventDef.Look.CHECKPOINT_GATE
 	def.act_tag = 2
 	def.intensity = 0.0
-	def.inner_radius = 52.0
+	def.inner_radius = 84.0
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
 	def.solid(GroundShape.point(32.0))
 	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
-	def.detain_radius = 48.0
+	def.detain_radius = Tuning.CHECKPOINT_DETAIN_REACH
 	def.redetains = true
 	return def
 
@@ -1844,11 +1850,11 @@ static func _checkpoint_post() -> EventDef:
 	def.look = EventDef.Look.CHECKPOINT_POST
 	def.act_tag = 2
 	def.intensity = 6.0
-	def.inner_radius = 52.0
-	def.outer_radius = 66.0
+	def.inner_radius = 84.0
+	def.outer_radius = 98.0
 	def.telegraph_time = 1.0
 	def.solid(GroundShape.point(32.0))
 	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
-	def.detain_radius = 48.0
+	def.detain_radius = Tuning.CHECKPOINT_DETAIN_REACH
 	def.redetains = true
 	return def

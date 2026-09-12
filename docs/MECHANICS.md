@@ -144,8 +144,9 @@ At `excitement = 100` → **crying** → day lost.
 ## A conversation
 
 `chatting_mother` is the one row in the catalogue that takes the player's own controls away rather
-than costing a meter: entering `detain_radius` of an instance that has not yet chatted locks her
-movement input for `detain_seconds` (5s) — the run key does nothing, and velocity runs out through
+than costing a meter: coming within `EventDef.detain_distance()` of an instance that has not yet
+chatted locks her movement input for `detain_seconds` (5s) — the run key does nothing, and she
+keeps no speed of her own: velocity runs out through
 the ordinary friction rather than stopping her dead, the same as letting go of every key would.
 
 **No new meter rule prices the stop**, because the idle rules above already do: sleepiness drains
@@ -160,10 +161,18 @@ obstacle in each half of a day. See docs/EVENTS.md for the row itself.
 
 ## A checkpoint
 
-`checkpoint_hut` and `checkpoint_post` — the huts and the alley guard a region wall's own door
-stands, see docs/DECISIONS.md, "M62 — Checkpoints that divide the map" — reuse the conversation
-mechanism above at a shorter hold, `Tuning.CHECKPOINT_DETAIN_SECONDS` (2s): a toll paid at every
-crossing of the wall has to stay cheap to repeat, where a conversation is spent once.
+`checkpoint_hut`, `checkpoint_gate` and `checkpoint_post` — the huts, the boom and the alley guard
+a region wall's own door stands, see docs/DECISIONS.md, "M62 — Checkpoints that divide the map" —
+reuse the conversation mechanism above at a shorter hold, `Tuning.CHECKPOINT_DETAIN_SECONDS` (2s):
+a toll paid at every crossing of the wall has to stay cheap to repeat, where a conversation is
+spent once.
+
+**The inspection starts as she walks up, measured from the door body's own wall** —
+`Tuning.CHECKPOINT_DETAIN_REACH` (48px) past its solid edge, rather than a radius from its middle.
+A door body is something she cannot walk through, so a trigger stated from the middle has to be
+wider than her own body *and* than whatever she is pushing in front of it; stated from the wall,
+one number covers both, and the hold cannot be switched off by a change to the pram. Only the
+nearest of a door's bodies ever captures her, so one approach is one inspection.
 
 **She and the guard are both gone for the hold's duration**, reading as *inside* rather than as
 frozen in the street — `Stroller.hide_for_inspection()` and the door instance's own `_draw()`

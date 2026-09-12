@@ -38,7 +38,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `obstructs_radius` | The reach (px) of the row's own `shape` — a `GroundShape`, and the body is that shape, not a second number. **A thing that stands still is solid at the width it is drawn** — see "Solid things are solid" |
 | `pavement_side` | Which lane of a two-tile pavement it wants: `ANY`, `AT_THE_KERB`, `AGAINST_THE_BUILDING` |
 | `hard_fail` | Whether contact ends the day immediately |
-| `redetains` | Whether a `detain_seconds` row is armed again once she is released and outside `detain_radius`, rather than spent after one conversation. `false` for everything but `checkpoint_hut`/`checkpoint_post` — see "Checkpoints" |
+| `redetains` | Whether a `detain_seconds` row is armed again once she is released and outside `detain_distance()`, rather than spent after one conversation. `false` for everything but the three region-door rows — see "Checkpoints" |
 | `heat_response` | How the row answers to the resistance: `NONE`, `PRESSES` (more of them, more expensive, and past half way it comes over), `HUNTS` (it stops being a place and starts being a hunter) — see "The heat" |
 | `look` | Which picture it draws. **One per row, and no two rows share one** — see "The visual vocabulary", point 6 |
 | `shape` | The row's own `GroundShape` (`src/ground_shape.gd`) — a point or a segment, independent of the picture — that its shadow and, when it obstructs, its collision body are both derived from. Set by `EventDef.solid(shape)` for anything with `obstructs_radius`, or directly for anything with a `look` that does not obstruct; `null` only for `look == NONE` — see "Solid things are solid" |
@@ -246,19 +246,31 @@ width would suggest: a man is 11px wide and she is 14, so at 22 the pram is held
 
 ### Checkpoints
 
-A region door is solid, like anything else that stands still — `checkpoint_hut` and
-`checkpoint_post` at 32px, `checkpoint_gate` at 32px — but it is not a closure. **A door is passable
-only by detention, and the toll is the same both ways.** She walks up to a hut or a post, is held
-for `Tuning.CHECKPOINT_DETAIN_SECONDS`, and comes out the other side of the crossing, on the same
-pavement lane she went in on: `EventManager` reflects her release position through the crossing's
-own cross-street line, pushed clear of `detain_radius`, and teleports her there — see
-`Stroller.teleport_to()`. Walking round a hut into its own solid body does not open it; the only
-way through is the conversation. `checkpoint_hut` and `checkpoint_post` both set `redetains`, so
-the same body detains her again on the next approach, from either side — unlike `chatting_mother`,
-who is spent after her one conversation.
+A region door is solid, like anything else that stands still — `checkpoint_hut`,
+`checkpoint_gate` and `checkpoint_post` at 32px each — but it is not a closure. **A door is passable
+only by detention, and the toll is the same both ways.** She walks up to a hut, a gate or a post, is
+held for `Tuning.CHECKPOINT_DETAIN_SECONDS`, and comes out the other side of the crossing, on the
+same pavement lane she went in on: `EventManager` reflects her release position through the
+crossing's own cross-street line, pushed clear of the hold's own trigger by
+`Tuning.CHECKPOINT_RELEASE_MARGIN`, and teleports her there — see `Stroller.teleport_to()`. Walking
+round a hut into its own solid body does not open it; the only way through is the conversation. All
+three rows set `redetains`, so the same body detains her again on the next approach, from either
+side — unlike `chatting_mother`, who is spent after her one conversation.
 
-The gate over the road between a door's two huts costs her nothing at all: it detains no one and
-carries no field, and it only ever stops a car — see `docs/CITY.md`, "Regions and the wall", and
+**The hold starts a reach past the door body's own wall, not a radius from its middle.** Her centre
+is stopped `obstructs_radius + PLAYER_BODY_RADIUS` from a body it cannot walk through, and further
+when the pram's body is between her and it, so a trigger stated from the middle has to be wider
+than whatever she is pushing that day — and when the pram moved, the hut became a wall she could
+stand against and never open. `EventDef.detain_distance()` is the same reach as a distance between
+centres, which is what `validate()` checks against `inner_radius` and what the release has to
+clear. **Only the nearest eligible body captures her**: the three bodies of a street door stand a
+tile apart and each reaches a reach past its own edge, so ground inside two of them at once exists,
+and two holds beginning together would end as two releases, the second sending her back through the
+door the first had just let her out of.
+
+The gate over the road between a door's two huts carries no field of its own — a car passing under
+it costs her nothing — but it detains exactly as a hut does, because a raised bar is a fact about
+the car queue and never a way past her. See `docs/CITY.md`, "Regions and the wall", and
 `Crowd._stop_for_gates()`.
 
 **The boom hangs from a point midway between its own two posts, not from one of them.** A gate
@@ -609,8 +621,8 @@ neighbourhood's own rather than a patrol's.
 | `loudspeaker` | SCRIPTED | 5 | **City-wide**: no falloff, no edge, nowhere in the city it does not reach. The first event the player cannot walk away from. Pitched under the walking decay, so like a back street it does not raise the meter — it stops you clearing it. |
 | `curfew_announce` | SCRIPTED | 6 | City-wide, brief, and fading (`intensity_ramp` 0.2). The mechanical bite is in `Tuning.day_length`, which shortens every day from 6 onward; this is the moment you are told. |
 | `roadblock` **`heat_response HUNTS`** | RECURRING | 7 | Loud, and **physically closes a street** (`obstructs_radius` 60), drawn as one continuous barrier (`roadblock_segment.svg`/`roadblock_end.svg`) rather than a row of blocks. The first event that takes a route away rather than making it expensive. Named `roadblock` rather than `checkpoint` because the region wall's own door structure — a hut, a gate and guards you can pass at a price — took that word; the two rows mean opposite things about whether a street can be crossed. Below `Tuning.HEAT_HUNTS_LEVEL` that is all it ever does; at or above it its guards leave the post — the band cannot chase, so the hunting posture is a guard on foot, `guard_standing.svg` then `guard_lunging.svg`, coming at 130px/s once she comes within 180px, `hard_fail` inside `inner_radius` 86. |
-| `checkpoint_hut` | SCRIPTED | 7 | `RegionPlanner`'s own structure, not a catalogue roll: two stand at every open region-boundary street crossing, one on each pavement, doorway facing the carriageway. Detains — `detain_radius` 48px inside `inner_radius` 52px — for `Tuning.CHECKPOINT_DETAIN_SECONDS` (6s), and `redetains`, so the same hut tolls her again on a later approach from either side. A small `intensity` (6.0) over a tight 52/66px band is the milestone's own "a bit of excitement" on top of the flat `Tuning.CHAT_EXCITEMENT` the detention charges — the smallest value that still clears "nothing is cheaper to walk through than around" against most of that band held at peak — see "Checkpoints". |
-| `checkpoint_gate` | SCRIPTED | 7 | The boom over the road between a door's two huts. No detention, no field — it only ever stops a car, never her. Drawn raised or lowered from the shared `RegionPlanner.GateState` `Crowd` keeps current. |
+| `checkpoint_hut` | SCRIPTED | 7 | `RegionPlanner`'s own structure, not a catalogue roll: two stand at every open region-boundary street crossing, one on each pavement, doorway facing the carriageway. Detains for `Tuning.CHECKPOINT_DETAIN_SECONDS` (2s) as she comes within `Tuning.CHECKPOINT_DETAIN_REACH` (48px) of its own solid edge — 80px from its centre, inside `inner_radius` 84px — and `redetains`, so the same hut tolls her again on a later approach from either side. A small `intensity` (6.0) over a tight 84/98px band is the milestone's own "a bit of excitement" on top of the flat `Tuning.CHAT_EXCITEMENT` the detention charges — the smallest value that still clears "nothing is cheaper to walk through than around" against most of that band held at peak — see "Checkpoints". |
+| `checkpoint_gate` | SCRIPTED | 7 | The boom over the road between a door's two huts. No field of its own — a car passing under it costs her nothing — but it detains exactly as a hut does, on the hut's own numbers, so a raised bar is not a way past her at the bar itself. Drawn raised or lowered from the shared `RegionPlanner.GateState` `Crowd` keeps current. |
 | `checkpoint_post` | SCRIPTED | 7 | The alley half of a door: one guard at each mouth of a through-alley that crosses a region boundary. Detains exactly like `checkpoint_hut`, same numbers and the same `redetains`. |
 
 ### Act III — Disappearances (days 8–11)

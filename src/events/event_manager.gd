@@ -650,24 +650,33 @@ func _tell_them_where_she_is() -> void:
 		instance.player_running = running
 		instance.baby_awake = awake
 
-## Entering `detain_radius` of an instance that has not yet chatted locks her controls for
-## `detain_seconds` — the one mechanic in the catalogue that takes them away rather than costing a
-## meter. This is the one place that can actually do it: `EventInstance` only ever gets handed a
-## point (`player_at`), never a `Stroller`, and `Stroller.detain()` needs the real thing. See
-## `EventDef.detain_seconds`, `EventInstance.start_chat()`.
+## Coming within `EventDef.detain_distance()` of an instance that has not yet chatted locks her
+## controls for `detain_seconds` — the one mechanic in the catalogue that takes them away rather
+## than costing a meter. This is the one place that can actually do it: `EventInstance` only ever
+## gets handed a point (`player_at`), never a `Stroller`, and `Stroller.detain()` needs the real
+## thing. See `EventDef.detain_seconds`, `EventInstance.start_chat()`.
 ##
-## **A `redetains` row is armed again once released**, in either direction — `checkpoint_hut` and
-## `checkpoint_post` are the two, and this is the whole of what makes a door a toll rather than a
-## one-time gate. `has_chatted()` is only the gate for everything else in the catalogue, since
-## `chatting_mother`'s own contract is one conversation for good; a redetaining instance is skipped
-## by `is_chatting()` alone, so the moment its own conversation ends and she has moved clear of
-## `detain_radius` (which `_release_finished_door_detentions()` always leaves her outside of), the
-## ordinary distance check below re-arms it exactly as if it had never fired.
+## **Only the nearest eligible instance captures her**, and it is not an optimisation. A street
+## door stands three bodies a tile apart across the street, each reaching a tile past its own edge,
+## so ground that is inside two of them at once exists — and two holds starting on the same frame
+## means two releases, the second reading the position the first teleported her to and sending her
+## back through the door she has just come out of.
+##
+## **A `redetains` row is armed again once released**, in either direction — `checkpoint_hut`,
+## `checkpoint_gate` and `checkpoint_post` are the three, and this is the whole of what makes a
+## door a toll rather than a one-time gate. `has_chatted()` is only the gate for everything else in
+## the catalogue, since `chatting_mother`'s own contract is one conversation for good; a
+## redetaining instance is skipped by `is_chatting()` alone, so the moment its own conversation
+## ends and she has moved clear of the trigger (which `_release_finished_door_detentions()` always
+## leaves her outside of, by `Tuning.CHECKPOINT_RELEASE_MARGIN`), the ordinary distance check below
+## re-arms it exactly as if it had never fired.
 func _check_detentions() -> void:
 	var body := _player as Stroller
 	if not body:
 		return
 	_release_finished_door_detentions(body)
+	var nearest: EventInstance = null
+	var nearest_range := INF
 	for instance in _instances:
 		if instance.def.detain_seconds <= 0.0 or instance.is_finished or instance.is_leaving:
 			continue
@@ -675,24 +684,29 @@ func _check_detentions() -> void:
 			continue
 		if not instance.def.redetains and instance.has_chatted():
 			continue
-		if instance.global_position.distance_to(body.global_position) > instance.def.detain_radius:
+		var range_to := instance.global_position.distance_to(body.global_position)
+		if range_to > instance.def.detain_distance() or range_to >= nearest_range:
 			continue
-		instance.start_chat()
-		if instance.def.redetains:
-			var axis := instance.facing_now()
-			var offset := body.global_position - instance.global_position
-			_door_entry_side[instance] = signf(offset.dot(axis))
-		body.detain(instance.def.detain_seconds)
-		Telemetry.note("chat", "%s at %s, %.1fs, baby %s, meter %s" % [
-			instance.def.id, TelemetryLog.tile(_map.world_to_tile(instance.global_position)),
-			instance.def.detain_seconds,
-			"awake" if instance.baby_awake else "asleep",
-			("+%.0f" % Tuning.CHAT_EXCITEMENT) if instance.baby_awake else "+0 (asleep)"])
+		nearest = instance
+		nearest_range = range_to
+	if not nearest:
+		return
+	nearest.start_chat()
+	if nearest.def.redetains:
+		var axis := nearest.facing_now()
+		var offset := body.global_position - nearest.global_position
+		_door_entry_side[nearest] = signf(offset.dot(axis))
+	body.detain(nearest.def.detain_seconds)
+	Telemetry.note("chat", "%s at %s, %.1fs, baby %s, meter %s" % [
+		nearest.def.id, TelemetryLog.tile(_map.world_to_tile(nearest.global_position)),
+		nearest.def.detain_seconds,
+		"awake" if nearest.baby_awake else "asleep",
+		("+%.0f" % Tuning.CHAT_EXCITEMENT) if nearest.baby_awake else "+0 (asleep)"])
 
 ## The other half of `checkpoint_hut`/`checkpoint_post`'s own toll: the moment a redetaining
 ## instance's conversation ends, teleport her to the mirror of where she stood, reflected through
-## the crossing's own cross-street line and pushed out clear of the body and of `detain_radius` —
-## see `Tuning.CHECKPOINT_RELEASE_MARGIN`. Run *before* the ordinary detention pass above in the
+## the crossing's own cross-street line and pushed out clear of the body and of the hold's own
+## trigger — see `Tuning.CHECKPOINT_RELEASE_MARGIN`. Run *before* the ordinary detention pass in the
 ## same frame, so a distance check that would otherwise fire again this frame sees where she has
 ## just been put rather than where she was captured.
 ##
@@ -708,8 +722,9 @@ func _release_finished_door_detentions(body: Stroller) -> void:
 		var entry_sign: float = _door_entry_side[instance]
 		_door_entry_side.erase(instance)
 		var axis := instance.facing_now()
-		var clearance := instance.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
-				+ Tuning.CHECKPOINT_RELEASE_MARGIN
+		# Stated against the trigger the hold actually starts on, not against the body — so the
+		# release lands outside it by construction whatever either number becomes.
+		var clearance := instance.def.detain_distance() + Tuning.CHECKPOINT_RELEASE_MARGIN
 		var offset := body.global_position - instance.global_position
 		var along := offset.dot(axis)
 		var released_along := -entry_sign * maxf(absf(along), clearance)

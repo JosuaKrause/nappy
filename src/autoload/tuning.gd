@@ -641,13 +641,29 @@ const REGION_WALL_FIRST_DAY := 7
 ## repeat, where a conversation is spent once. See `EventDef.detain_seconds`.
 const CHECKPOINT_DETAIN_SECONDS := 2.0
 
-## How far clear of a door body's own solid edge the released side of a detention pushes her,
-## beyond `obstructs_radius + PLAYER_BODY_RADIUS` — the smallest amount that reliably lands her
-## outside `checkpoint_hut`/`checkpoint_post`'s own 48px `detain_radius` (32 + 14 + 8 = 54 > 48),
-## so the same approach cannot re-trigger the instant she is released. Purely a spatial clearance
-## against `detain_radius`, so it does not move with `CHECKPOINT_DETAIN_SECONDS`. See
+## How far past a door body's own solid edge the inspection starts — *(PLAYTEST-57: "the checkpoint
+## should activate when I get close. with the new stroller hitbox I cannot reach the checkpoint
+## entrance".)*
+##
+## **Stated over the hut, never over her, and that is the whole of the fix.** Her centre is stopped
+## `obstructs_radius + PLAYER_BODY_RADIUS` (32 + 14 = 46px) from a door body's centre, and further
+## when the pram's own body is the thing between her and it — so a trigger stated as a radius from
+## the hut's *centre* has to be larger than whatever she happens to be pushing that day, and
+## changing the pram switched the mechanic off without touching it. Measured from the hut's wall,
+## one number covers every pram there has ever been: 48px clears her own body's 14px stand-off and
+## the widest the pram's own body has ever reached ahead of her, with room left over, and it starts
+## the inspection while she is still walking up rather than only once she is pressed against the
+## door. See `EventDef.detain_radius`.
+const CHECKPOINT_DETAIN_REACH := 48.0
+
+## How far clear of the hold's own trigger the released side of a detention pushes her, beyond
+## `EventDef.detain_distance()` — so the release cannot re-trigger the approach it just ended, by
+## construction rather than by two numbers that happen to be in the right order. A full tile,
+## because the scheme walks her wherever her last press pointed until the next one: released with a
+## thinner margin than a step, she is back inside the trigger before the player has done anything
+## at all. Purely a spatial clearance, so it does not move with `CHECKPOINT_DETAIN_SECONDS`. See
 ## `EventManager._release_finished_door_detentions()`.
-const CHECKPOINT_RELEASE_MARGIN := 8.0
+const CHECKPOINT_RELEASE_MARGIN := 32.0
 
 ## Seconds a camera move that is not her walking — currently only the checkpoint's own ease onto
 ## the hut and back — takes to arrive. The move is smooth-stepped rather than linear so it reads

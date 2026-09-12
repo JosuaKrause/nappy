@@ -809,7 +809,7 @@ func _process(delta: float) -> void:
 		_chat_seconds_left = maxf(0.0, _chat_seconds_left - delta)
 		# `redetains` is the one thing that skips `_be_done()` here: a checkpoint's hut or post
 		# stays exactly where it is, still solid, ready for `EventManager` to arm it again the
-		# instant she is released and clear of `detain_radius` — see `EventDef.redetains`.
+		# instant she is released and clear of `detain_distance()` — see `EventDef.redetains`.
 		# `chatting_mother` has none of this: her conversation ending is what starts her own
 		# departure, `_be_done()`'s ordinary meaning for anything that is not a fixture.
 		if _chat_seconds_left <= 0.0 and def.redetains:
@@ -893,7 +893,8 @@ func has_chatted() -> bool:
 	return _has_chatted
 
 ## Starts the one conversation this instance will ever have. Called by `EventManager` the frame it
-## decides the player has entered `def.detain_radius` of an instance that has not chatted yet — see
+## decides the player has come within `def.detain_distance()` of an instance that has not chatted
+## yet — see
 ## `EventManager._check_detentions()`. Spends the instance as a detainer immediately, before the
 ## clock has run a single frame, so a second call before this one finishes can never restart it.
 func start_chat() -> void:
@@ -1553,7 +1554,7 @@ func current_intensity() -> float:
 		return 0.0
 	if is_chatting():
 		# A flat rate for the whole conversation rather than a falloff: she is inside `inner_radius`
-		# by construction (`detain_radius < inner_radius`), so there is no distance left to shape.
+		# by construction (`detain_distance() < inner_radius`), so there is no distance to shape.
 		# Gated on `baby_awake`, read and never written — see the field's own comment — which is
 		# what makes "asleep, it is a pure time loss" true of the meter and not only of the words:
 		# nothing here scales through `Tuning.SLEEPING_SENSITIVITY`, it emits exactly zero.
