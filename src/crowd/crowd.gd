@@ -58,6 +58,12 @@ var _door_segments := {}
 ## `main.gd` has or has not called yet.
 var _home_segments := {}
 
+## Today's checkpoint huts, as the crowd sees them — one `WalkerDoorHold` per door body that
+## detains, rebuilt every `start_day` from `City.region_plan().door_bodies`. Empty before the wall
+## stands or for a rig with no city, which then holds nobody at anything. See
+## `_hold_walkers_at_doors()`, and `WalkerDoorHold` for what a hut's own state actually is.
+var _door_holds: Array[WalkerDoorHold] = []
+
 ## Told which gates today's cars have to stop for. See `_gates`'s own doc for where the day's list
 ## comes from — `main.gd` is the wiring, not this class, since a `Crowd` has no route to `City`'s
 ## own `region_plan()` other than the one it already has through `setup()`.
@@ -96,11 +102,24 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> vo
 	# which refuses both carve-outs the same as any other held ground unless they are already in
 	# place.
 	_door_segments = {}
+	_door_holds = []
 	if _city:
 		var plan := _city.region_plan()
 		if plan:
 			for segment in plan.doors:
 				_door_segments[segment.key()] = true
+			# Every door body that **detains** — the hut on each sidewalk, the alley door's guard,
+			# and the boom, which detains her as well since a raised bar is not a way past. Which
+			# of them a given walker can be held at is a question about that walker's own line of
+			# travel rather than about the row, and `_hold_walkers_at_doors()` answers it: on an
+			# ordinary street the boom is a carriageway away from any sidewalk lane and only the
+			# hut is ever on one.
+			for body in plan.door_bodies:
+				if body.def.detain_seconds <= 0.0:
+					continue
+				var hold := WalkerDoorHold.new()
+				hold.position = body.position
+				_door_holds.append(hold)
 	_home_segments = {}
 	for segment in StreetNetwork.around_blocks(Rect2i(_map.home_block, Vector2i.ONE)):
 		_home_segments[segment.key()] = true
@@ -127,6 +146,10 @@ func clear() -> void:
 	for agent in _agents:
 		agent.queue_free()
 	_agents.clear()
+	# Nobody is standing at a checkpoint any more, and a hut that is still holding a freed walker
+	# never lets anybody in again — see `WalkerDoorHold.empty()`.
+	for hold in _door_holds:
+		hold.empty()
 	# With it, yesterday's traffic decides how many rolls one of today's cars needs to find a free
 	# lane, and "the same day and seed rebuild the same crowd in the same places" stops being true.
 	# The index is state about a frame, not about a run.
@@ -167,12 +190,17 @@ func _populate(kind: CrowdAgent.Kind, count: int, rng: RandomNumberGenerator) ->
 ##
 ## Movement first and separation after, which is the order the world settles in — see
 ## `test_crowd.gd`, "cars do not drive through each other", for why that order is the honest one.
+##
+## **And the walkers' own doors last**, for the same reason the whole function exists: a rig that
+## walked the agents without it would run a crowd in which nobody is ever held at a checkpoint, and
+## nothing about that looks like a missing call.
 func step(delta: float) -> void:
 	if _signals:
 		_signals.advance(delta)
 	for agent in _agents:
 		agent._process(delta)
 	space_out_the_traffic(delta)
+	_hold_walkers_at_doors(delta)
 
 ## Tells every car how much clear road it has in front of it, and pulls apart any two that have
 ## ended up in the same piece of it.
@@ -387,6 +415,53 @@ func _stop_for_gates(delta: float) -> void:
 			if gate.stopped_for >= Tuning.GATE_STOP_SECONDS:
 				gate.raised = true
 
+## Tells every walker which checkpoint hut, if any, is standing in front of it and how far off —
+## the sidewalk's own version of `_stop_for_gates()` above, and computed the same way: from the
+## walker's public geometry alone, never from `CrowdAgent`'s private lane bookkeeping, because a
+## hut is sited across a street by the region plan rather than on a lane index.
+##
+## *(Playtest 58: "Held at the hut like her"; "four states walking -> waiting -> inspection ->
+## emerging on the other side (with cooldown to not go back again) -> walking".)* **The four states
+## are the walker's own** — see `CrowdAgent._advance_the_door_hold()` — and what is decided here is
+## only the two facts a walker cannot work out for itself: which hut is its, and how far away.
+##
+## Two clauses in the filter below are load-bearing:
+##
+## - **A hut has to be on the walker's own line**, within `Tuning.WALKER_DOOR_LANE_TOLERANCE` of
+##   it. That is what makes a door's two huts one each rather than both belonging to everybody, and
+##   what leaves the boom to the cars on an ordinary street.
+## - **And it has to stand in a corridor.** An alley door's guards stand at the alley's two mouths,
+##   which are inside the block rather than on the street — a tile past the corridor's own edge,
+##   which is *also* about a tile from the nearest sidewalk lane. Without this test a guard at an
+##   alley mouth stops the people walking past it on the street outside, who are not crossing
+##   anything. Nobody in the crowd ever walks an alley, so this leaves those guards holding nobody,
+##   which is correct rather than a gap.
+func _hold_walkers_at_doors(delta: float) -> void:
+	for agent in _agents:
+		if agent.kind != CrowdAgent.Kind.WALKER:
+			continue
+		agent.door_ahead = null
+		agent.door_ahead_along = INF
+		if not _door_holds.is_empty():
+			_find_the_hut_in_front_of(agent)
+		agent.advance_the_door_hold(delta)
+
+func _find_the_hut_in_front_of(agent: CrowdAgent) -> void:
+	var forward := agent.heading()
+	var vertical := agent.travelling_vertically()
+	for hold in _door_holds:
+		var offset: Vector2 = hold.position - agent.global_position
+		var along := offset.dot(forward)
+		if along < 0.0 or along > CrowdAgent.LOOKAHEAD or along >= agent.door_ahead_along:
+			continue
+		if (offset - forward * along).length() > Tuning.WALKER_DOOR_LANE_TOLERANCE:
+			continue
+		var across_coordinate: float = hold.position.x if vertical else hold.position.y
+		if CityMap.corridor_offset(floori(across_coordinate / float(Tuning.TILE_SIZE))) < 0:
+			continue
+		agent.door_ahead = hold
+		agent.door_ahead_along = along
+
 ## Whether there is somewhere on the far side for this car to be.
 ##
 ## The other half of *do not enter a junction you cannot leave*, and the half that decides whether
@@ -476,6 +551,9 @@ func _physics_process(delta: float) -> void:
 	# a car driving through another one at the far end of the street is still a car driving
 	# through another one, and a test rig has no player in it.
 	space_out_the_traffic(delta)
+	# And so does a queue at a checkpoint, for the same reason and on the same side of the return
+	# below: a door with nobody watching it still lets one walker through at a time.
+	_hold_walkers_at_doors(delta)
 	if not _player:
 		_player = get_tree().get_first_node_in_group("player") as Stroller
 		if not _player:

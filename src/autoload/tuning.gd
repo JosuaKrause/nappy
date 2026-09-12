@@ -798,6 +798,47 @@ const WALKER_DOOR_PASS_FRACTION := 0.125
 ## `validate_traffic()` says so on boot.
 const WALKER_DOOR_TURN_BACK_FRACTION := 0.25
 
+## Seconds a held walker spends inside the hut, not drawn — the player's *inspection*. Shorter than
+## her own `CHECKPOINT_DETAIN_SECONDS` (2s) on purpose and for the reason that number is itself
+## short: a walker is not the one being looked for, so the guard has less to do. One second is the
+## recommendation rather than a number the player gave, and the relationship is what matters — a
+## walker's hold under hers, so a player watching a door sees the crowd cycle through it faster
+## than she is ever let through it herself.
+const WALKER_DOOR_HOLD_SECONDS := 1.0
+
+## How far short of a hut's own ground point the first walker in the line stops, in px. The hut's
+## solid body is `GroundShape.point(32.0)` and a walker's own is a 7px point, so 40 is the first
+## round number clear of the two of them touching — it stands beside the hut rather than inside its
+## footprint, which is what the frame reads as *waiting to be seen* rather than as *stuck on a
+## building*. It is also where a walker is put back down on the far side when it comes out, so the
+## two sides of a door are symmetric.
+const WALKER_DOOR_STOP_DISTANCE := 40.0
+
+## And how much further back each walker behind the first one stands. Comfortably over
+## `BUMP_RADIUS` (14px, where a crowd contact fires), so a line at a door is people standing near
+## each other rather than people standing inside each other — the separation between crowd bodies
+## is positional everywhere else in this file, and a queue placed at a spacing smaller than a body
+## would be asking a brake to open a gap that is not there.
+const WALKER_DOOR_QUEUE_SPACING := 26.0
+
+## How far a walker has to get from a hut before that hut may take it again, in px. *(Playtest 58,
+## on her own release: "it should work that she has a flag 'just spawned' that only resets once she
+## leaves the area.")* A walker comes out `WALKER_DOOR_STOP_DISTANCE` (40px) along its own lane and
+## some 24px across from the hut's centre line — about 47px away — so anything at or under that
+## would clear the moment it was set and buy nothing. Three tiles is comfortably past the whole
+## door structure, so a walker turned round by the crowd's own steering just past a door walks on
+## instead of being inspected a second time.
+const WALKER_DOOR_COOLDOWN_RADIUS := 96.0
+
+## How far to either side of its own line of travel a walker will look for a hut, in px. A tile: a
+## walker's lane sits exactly 24px across from the hut on its own sidewalk (the hut is on the
+## sidewalk band's centre line, the two walker lanes are `CrowdLanes.SIDEWALK_LANE_SPREAD` either
+## side of their tile centres), and the boom over the road is 64px further still — so a tile picks
+## out the hut on the walker's own sidewalk and nothing else. The car's own equivalent is
+## `GATE_LANE_TOLERANCE`, which is wide where this is narrow, because a carriageway is one lane of
+## traffic and a sidewalk has a door structure standing across it.
+const WALKER_DOOR_LANE_TOLERANCE := 32.0
+
 # ------------------------------------------------------- bodies on the street ---
 # A crowd you can walk through is a field with a picture attached: every pavement is identical, none
 # of them can hurt you, and the route is not a decision. See docs/MECHANICS.md, "The street has
