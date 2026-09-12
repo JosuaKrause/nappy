@@ -32,6 +32,15 @@ extends StaticBody2D
 
 const TILE := float(Tuning.TILE_SIZE)
 
+## How far the collision body's own north edge sits south of the lot's own north edge — the top
+## of the wall in this projection, which is ground she may step a little way into rather than a
+## wall she stops a tile short of. *(2026-09-11, the player, PLAYTEST-57.md: "also allow going in
+## a little bit for northern edges of roofs.")* 6px, pinned here and open to overturn. The south
+## edge is untouched: `_rebuild()` shrinks `shape.half_extents.y` by half of this and shifts the
+## shape's centre south by the same half, so the south edge (the lot's own kerb, where the
+## building meets the street) stays exactly where it was.
+const NORTH_EDGE_INSET := 6.0
+
 const WALL := preload("res://assets/buildings/wall.svg")
 const WALL_BASE := preload("res://assets/buildings/wall_base.svg")
 const WALL_EDGE_W := preload("res://assets/buildings/wall_edge_w.svg")
@@ -209,11 +218,12 @@ enum Condition {
 ## The tile rect this building stands on, so the city can find its block again.
 var lot := Rect2i()
 
-## This building's own ground shape — a rectangle of half `footprint`, the one place `GroundShape`
-## is a rectangle rather than a point or a band: nothing else in the game has a footprint that
-## is not already one of those two. Kept in step with `footprint` in `_rebuild()`, since the
-## `@export` setter can still reassign it. Buildings draw no shadow, so this is read for its body
-## alone today.
+## This building's own ground shape — a rectangle the one place `GroundShape` is a rectangle
+## rather than a point or a band: nothing else in the game has a footprint that is not already one
+## of those two. Half `footprint` on the south-north axis less `NORTH_EDGE_INSET`, not half
+## `footprint` outright — see `_rebuild()` — so the body's own north edge sits `NORTH_EDGE_INSET`
+## south of the lot's. Kept in step with `footprint` in `_rebuild()`, since the `@export` setter
+## can still reassign it. Buildings draw no shadow, so this is read for its body alone today.
 var shape: GroundShape
 
 var _collision: CollisionShape2D
@@ -265,11 +275,16 @@ func _rebuild() -> void:
 	if not is_inside_tree():
 		return
 	# Collision is the whole lot, including the strip the roof is drawn over, so the player
-	# can never walk into the space the building's mass occupies on screen. Built from `shape`
-	# rather than a `RectangleShape2D` sized separately, so the body and the shape cannot disagree.
-	shape = GroundShape.rect(footprint * 0.5)
+	# can never walk into the space the building's mass occupies on screen — except a few pixels
+	# of the north edge, `NORTH_EDGE_INSET`, ground she may step into rather than a wall she stops
+	# a tile short of. Built from `shape` rather than a `RectangleShape2D` sized separately, so the
+	# body and the shape cannot disagree. The south-north half-extent shrinks by half the inset and
+	# the shape's centre (`_collision.position`) shifts south by the same half, which is what keeps
+	# the south edge — the lot's own kerb — exactly where it was.
+	var depth := maxf(footprint.y - NORTH_EDGE_INSET, TILE)
+	shape = GroundShape.rect(Vector2(footprint.x * 0.5, depth * 0.5))
 	_collision.shape = shape.collision_shape()
-	_collision.position = Vector2(0.0, -footprint.y * 0.5)
+	_collision.position = Vector2(0.0, -shape.half_extents.y)
 	_build_windows()
 	_build_front()
 	_build_roof_furniture()

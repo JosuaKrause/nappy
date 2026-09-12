@@ -272,6 +272,11 @@ func _test_rect_collision_shape(t) -> void:
 	t.check((collision as RectangleShape2D).size.is_equal_approx(Vector2(96.0, 64.0)),
 			"and its size is 2 * half_extents, the building's own full footprint")
 
+## The body is the footprint on the east-west axis and on the south edge (local y = 0, the
+## node's own origin — see the class doc), but `Building.NORTH_EDGE_INSET` short of it on the
+## north: PLAYTEST-57.md, "Roofs" — *"also allow going in a little bit for northern edges of
+## roofs"* — so she may step a little way into the top of a wall in this projection rather than
+## stop a tile short of it.
 func _test_a_built_building_carries_its_own_footprint_as_its_body(t) -> void:
 	var footprint := Vector2(96.0, 160.0)
 	var building := Building.new()
@@ -279,15 +284,29 @@ func _test_a_built_building_carries_its_own_footprint_as_its_body(t) -> void:
 	t.add_child(building)
 	t.check(building.shape != null and building.shape.kind == GroundShape.Kind.RECT,
 			"a built building's own shape is a rectangle")
-	t.check(building.shape.half_extents.is_equal_approx(footprint * 0.5),
-			"sized off its own footprint, halved")
+	t.check(is_equal_approx(building.shape.half_extents.x, footprint.x * 0.5),
+			"sized off its own footprint on the east-west axis, unchanged")
+	var inset_depth := footprint.y - Building.NORTH_EDGE_INSET
+	t.check(is_equal_approx(building.shape.half_extents.y, inset_depth * 0.5),
+			"the north-south half-extent is the footprint's, short by the north edge's own inset")
 	var collision := building._collision
 	t.check(collision != null and collision.shape is RectangleShape2D,
 			"the building's own collision body is a RectangleShape2D")
 	if collision and collision.shape is RectangleShape2D:
-		t.check((collision.shape as RectangleShape2D).size.is_equal_approx(footprint),
-				"and its size is exactly the footprint — the body derived from the shape rather "
-				+ "than sized separately")
+		var size: Vector2 = (collision.shape as RectangleShape2D).size
+		t.check(is_equal_approx(size.x, footprint.x),
+				"full width — the inset is only along the north edge")
+		t.check(is_equal_approx(size.y, inset_depth),
+				"and its depth is the footprint's, less the north edge's own inset")
+	# The lot's own north edge sits at local y = -footprint.y (the node's origin is the south edge
+	# centre); the body's own north edge is `collision.position.y - shape.half_extents.y`.
+	var lot_north_edge_y := -footprint.y
+	var body_north_edge_y := collision.position.y - building.shape.half_extents.y
+	t.check(is_equal_approx(body_north_edge_y - lot_north_edge_y, Building.NORTH_EDGE_INSET),
+			"the body's own north edge is NORTH_EDGE_INSET (%.0fpx) south of the lot's"
+			% Building.NORTH_EDGE_INSET)
+	var body_south_edge_y := collision.position.y + building.shape.half_extents.y
+	t.check(is_equal_approx(body_south_edge_y, 0.0), "the body's own south edge is unchanged")
 	building.free()
 
 # -------------------------------------------------------------- the strike box ---
