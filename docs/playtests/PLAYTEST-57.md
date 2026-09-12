@@ -45,7 +45,14 @@ And then, having thought about it, a third shape, which is the one that stands:
 
 So the pram keeps a body, pulled in toward her so the pram's far half overlaps whatever it meets
 and she can stand against a wall; and the debug view's bounding-box layer, which draws every
-other body, does not draw the pram's at all. The gap
+other body, does not draw the pram's at all. Asked where exactly:
+
+> place the center of the stroller hitbox at the circumference of the player hitbox
+
+> and don't make it too big
+
+Her body is a 14px circle; the pram's body sits with its centre on that circle's edge, 14px out
+along her facing, and is smaller than the 12px it has today. The gap
 in the pictures is bigger than the pram alone explains — the band's body stops her a pram's length
 short of the band's drawn box — so the wall's own body is to be measured against its picture too.
 

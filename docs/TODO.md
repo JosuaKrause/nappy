@@ -572,11 +572,14 @@ is still true.
       closer to the player (btw the hitbox right now is not drawn at all for some reason) -- that
       way the stroller would go a little bit into objects (the part that is not covered) but it
       wouldn't be completely wild like before".)* The pram's own body — built on 2026-09-10 from an
-      M1 engineering note, never asked for — stays, but `PramCollisionShape2D` is pulled in along
-      her facing so that only the pram's near half is solid: she can stand against a wall with the
-      pram's far half over it, and the pram no longer clips through corners whole. Pick the offset
-      so the pram's shadow overlaps a wall by roughly half its radius at rest against it, state the
-      number, and pin it. The debug view's bounding-box layer (`3`) draws every other body and not
+      M1 engineering note, never asked for — stays, placed where the player said: *"place the center
+      of the stroller hitbox at the circumference of the player hitbox"*, *"and don't make it too
+      big"*. Her body is the 14px circle in `scenes/player/stroller.tscn`; `PramCollisionShape2D`'s
+      centre sits on that circle's edge, 14px out along her facing, and its radius comes down from
+      12px to something clearly smaller — 8px is the recommendation, stated in the commit and
+      pinned — so the pram's far half overlaps whatever it meets and she can stand against a wall
+      while the pram no longer clips through corners whole. The pram's *drawing*, shadow, cue and
+      field keep their 34px offset; only the body moves. The debug view's bounding-box layer (`3`) draws every other body and not
       this one; draw it. And measure the roadblock band's and the region wall's bodies against
       their drawn boxes: in the run's pictures she stops a pram's length short of a band across an
       alley and short of the wall across a road with the boxes nowhere near touching, so whatever
