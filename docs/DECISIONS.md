@@ -26,6 +26,10 @@ The storefront playtest is renumbered from 60 to 61 to avoid the separate apartm
 record numbered 60 on the concurrent documentation branch; its original words, date and
 evidence remain intact. Milestone identities do not collide.
 
+A subsequent clean merge takes main `105ef597927137cd475f950a2b9e4fc78be878f1`, which adds that
+apartment Playtest 60 and its separate queue/review updates. Both playtests and their references
+remain distinct; this documentation-only update changes no gameplay or storefront source.
+
 Verification: import/boot, doc lint and focused `city_decay`, `checkpoints` and `interior`
 suites pass on the merged tree. The storefront regression samples different building seeds,
 checks complete groups and neighbors, and preserves the order across rebuilds and state changes.
