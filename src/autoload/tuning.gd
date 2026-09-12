@@ -866,6 +866,24 @@ const WALKER_DOOR_QUEUE_MAX := 2
 ## traffic and a sidewalk has a door structure standing across it.
 const WALKER_DOOR_LANE_TOLERANCE := 32.0
 
+# ------------------------------------------------- walkers round a solid body ---
+# What a walker does about a stationary solid body standing on its own lane — a café's tables, a
+# construction band, a kerbed van, a stall. *("yes every solid body should do that -- not
+# necessarily force a turn around but at least avoid the solid".)* It steps into the other lane of
+# its own footway and steps back after; only a body that takes **every** lane of that footway turns
+# it at the last junction, the way a seal does. See `CrowdAgent._step_around_a_body()` and
+# `CityMap.obstructed_tiles`.
+
+## How far ahead a walker begins going round a body, in tiles. Four tiles is 128px, a second and
+## three quarters at the fastest a walker goes — long enough to read as *going round that* rather
+## than as a lane change taken a street early, and comfortably over what the crossing itself costs.
+##
+## **The floor under it is the crossing time, and `validate_traffic()` states it**: the two lanes of
+## one footway are `TILE_SIZE + 2 * CrowdLanes.SIDEWALK_LANE_SPREAD` (48px) apart and a walker
+## closes on its lane at `CrowdAgent.STEER_SPEED`, so a walker that starts too late arrives beside
+## the body still halfway across — which is a walker clipping a café rather than avoiding one.
+const WALKER_BODY_SIDESTEP_TILES := 4
+
 # ------------------------------------------------------- bodies on the street ---
 # A crowd you can walk through is a field with a picture attached: every pavement is identical, none
 # of them can hurt you, and the route is not a decision. See docs/MECHANICS.md, "The street has
@@ -1684,6 +1702,16 @@ func validate_traffic() -> bool:
 	if WALKER_DOOR_PASS_FRACTION + WALKER_DOOR_TURN_BACK_FRACTION >= 1.0:
 		push_error("No walker is ever held at a door: pass %.3f + turn back %.3f leaves nothing"
 				% [WALKER_DOOR_PASS_FRACTION, WALKER_DOOR_TURN_BACK_FRACTION])
+		return false
+	# A walker going round a solid body has to have finished crossing to the other lane of its own
+	# footway by the time it gets there. Stated over the distance rather than the time, because what
+	# it is really about is where the walker is when it reaches the body.
+	var lane_gap := float(TILE_SIZE) + 2.0 * CrowdLanes.SIDEWALK_LANE_SPREAD
+	var crossing_run := lane_gap / CrowdAgent.STEER_SPEED * PEDESTRIAN_SPEED.y
+	if float(WALKER_BODY_SIDESTEP_TILES * TILE_SIZE) < crossing_run:
+		push_error("A walker cannot get round a body: it starts %.0fpx out and needs %.0fpx to "
+				% [float(WALKER_BODY_SIDESTEP_TILES * TILE_SIZE), crossing_run]
+				+ "cross the %.0fpx to the other lane of its footway" % lane_gap)
 		return false
 	return true
 
