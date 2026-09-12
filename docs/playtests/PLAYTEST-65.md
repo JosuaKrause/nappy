@@ -122,3 +122,10 @@ The grounded stroller placement is accepted. Apply the same three-pose walking c
 pushing mother: opposite leading legs, a together pose between contacts, A/C/B/C playback and
 together idle. Preserve the accepted stroller scale, offsets, ground contact and connected hands.
 Author/review the source SVGs before their PNG derivatives and retain the rollout/GIF recipes.
+
+> One note on the tiles. The sidewalk tiles and the edge of the road tiles don't go together. The sidewalk tiles should be a continuation of the edge of the road tiles. Edge of the road tile is good. Need to fix the sidewalk tile
+
+Keep the accepted road-edge tiles. Redraw the sidewalk surface as a continuation of their paving
+material, slab pattern, scale and color. Review assembled road-edge/sidewalk neighbors and repeated
+sidewalk interiors, including damaged variants where they meet the same edge. Preserve tile sizes,
+road-edge geometry and runtime placement, with reproducible source/transfer and assembly recipes.

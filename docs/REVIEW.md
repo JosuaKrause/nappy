@@ -14,7 +14,7 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-- **Walk across neighboring ground variants.** Check repeated terrain, curb edges and road
+- **Walk across neighboring road variants.** Check road
   markings for seams or distracting repetition during movement.
   The current native pairs and neighbors are in
   `evidence/style-transfer-tiles-2026-09-12/comic/registered/`.

@@ -130,6 +130,12 @@ findings supported by the conversion and review.
       consistent identity and connected hands. Play A/C/B/C and choose C whenever stopped.
       Preserve the accepted stroller scale, offsets and ground contact. Retain native/enlarged
       rollouts and GIF recipes, and verify runtime selection in PNG and forced-SVG modes.
+- [ ] Continue the accepted road-edge paving through the sidewalk tiles. PLAYTEST-65 rejects
+      the sidewalk/road-edge material mismatch and explicitly keeps the road-edge tile. Match
+      sidewalk slab pattern, color and scale to the adjacent accepted paving, including damaged
+      sidewalk variants. Preserve road-edge textures, tile size and placement. Review native
+      assembled neighbors in both axes and repeated interiors; keep SVG-first provenance and
+      the exact transfer/registration/neighbor-review recipes.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The
