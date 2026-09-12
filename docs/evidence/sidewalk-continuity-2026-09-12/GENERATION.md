@@ -1,11 +1,11 @@
 # Sidewalk material continuity
 
-This record preserves the seven current 32×32 sidewalk PNGs and their generation recipe.
+This record preserves seven 32×32 sidewalk PNGs and their generation recipe.
 Their continuity with curb paving remains open in PLAYTEST-65 and `docs/TODO.md`.
 The [actual-map layout review](../sidewalk-layout-review-2026-09-12/GENERATION.md) shows these
 textures in repeated street runs and junction corners using the game's tile selector.
-The accepted curb and road SVG/PNG controls remain unchanged. The sidewalk SVG
-family also remains unchanged: all seven target sources and all eight curb sources already use the
+The curb and road SVG/PNG controls are the fixed inputs for this recipe. The sidewalk SVG
+family uses the same source geometry: all seven target sources and all eight curb sources use the
 same warm gray fill, darker joints, and staggered seam coordinates. The recorded mismatch is
 between the independently generated PNG materials.
 
@@ -36,6 +36,10 @@ LANCZOS resampler, and makes opaque-ground alpha explicit. It does not fit visib
 curb planes, paint pixels, or restore an SVG mask.
 
 ## Reproduction
+
+Run registration and control verification from a checkout of
+5210f6d828cf61d22c95516fbb1c34ff7d96529d, whose live assets match this recipe's retained
+authority. Other ground recipes can then change the runtime textures without changing this record.
 
 The source and before panels describe the pinned source revision
 bef0c39af93da2607b76faa868815b899d48ebc4. Keep a separate checkout at that revision and point
@@ -88,5 +92,5 @@ panels use nearest-neighbor enlargement so native pixels remain inspectable.
   [`6× view`](registered/damaged-repetition-native-6x.png) repeat every damaged tile in both axes,
   exposing cell outlines, phase changes, or broken edge coverage.
 
-The runtime files are exact copies of `registered/tiles/*.png`. Their existing `.import` sidecars
-remain in place so Godot resource identity and import settings do not change.
+The runtime files at the pinned recipe revision are exact copies of `registered/tiles/*.png`.
+The recipe preserves their `.import` sidecars and Godot resource identities.

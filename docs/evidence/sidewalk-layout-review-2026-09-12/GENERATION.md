@@ -1,6 +1,6 @@
 # Actual-map sidewalk layout review
 
-This evidence places the current ground textures edge-to-edge using the same map generator, ground
+This evidence places its frozen ground textures edge-to-edge using the same map generator, ground
 source selector, TileSet source IDs, and illustrated texture resolver as the game. It is a CPU
 assembly of ground tiles rather than a gameplay capture; dark blank cells mark building-covered
 coordinates where the game paints no ground.
@@ -16,7 +16,10 @@ selector, TileSet, resolver, tool files, and every resolved PNG used by the crop
 are frozen under [`inputs/tiles/`](inputs/tiles/). The native crop files are under [`crops/`](crops/);
 the day sheets also have nearest-neighbor 4× views.
 
-Run the retained-authority rebuild into a new directory, then compare every byte:
+The retained authority is the graphics checkout at
+5210f6d828cf61d22c95516fbb1c34ff7d96529d. Run the retained-authority rebuild from a checkout
+of that revision into a new directory, then compare every byte. This keeps the diagnosis
+reproducible independently of subsequent runtime texture changes:
 
 ```sh
 uv run python docs/evidence/sidewalk-layout-review-2026-09-12/assemble.py build \
