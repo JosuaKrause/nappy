@@ -179,10 +179,12 @@ M88.
 
 **SVG-first style transfer is the graphics workflow.** The game selects native-size PNG
 replacements where available; `--svg`, or `?svg=1` on the web, forces original SVGs.
-The existing drawing transforms and animation remain in charge. Other families use SVGs.
+The existing drawing transforms and animation remain in charge. Unconverted families use SVGs.
 Read [VISUALS.md](VISUALS.md) for reference roles and the replacement contract, and
 M108, eight-direction entity graphics, then M109, convert the SVG catalogue to PNG, in
 [TODO.md](TODO.md) for the remaining work. Every PNG asset needs a corresponding SVG authored first.
+Compare each character's directions, gait frames and state variants as one family; the
+illustrated-PNG skill describes the identity references and extraction checks that keep them aligned.
 
 **M76 is also built and released, on top of it.** Both the pause screen and the day summary carry a
 continue button and a held restart that acknowledges the press before the day it starts blocks the
@@ -276,16 +278,14 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 its measurement against the nerves left, and that waits for act III. The debug view (`1` to `4` in a debug build, `--layers 1,3` for
 a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow or a body is checked by
 eye, and every one of the three is now derived from the object's one `GroundShape`. Behind those, unordered: M96 (the teaching day and
-the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's
-density after the sealing) and M100 (the small work, the polish and the open design questions,
-consolidated).
+the dog after it), M97 (calm areas that hold), M99 (the corridor's density after the sealing) and
+M100 (the small work, the polish and the open design questions, consolidated).
 Reaching act III — which M56's measurement against the nerves needs — waits until
 that batch is done. SVG-to-PNG
 style transfer is Codex's parallel track. Prepared artwork and its source-review sheets are listed
 in `GRAPHICS.md`; the integration table in `TODO.md` assigns each family to its gameplay owner.
-**M115, streets with trees, stands in front of that batch** by the orchestrator's placement, since
-a played day asked for it; playtest 57's other findings are built. The crowd goes round every
-solid body it meets, not only a seal (`DECISIONS.md`, M110), and a car follows an arc through a turn with its heading
+The crowd goes round every solid body it meets, not only a seal (`DECISIONS.md`, M110), and a
+car follows an arc through a turn with its heading
 continuous throughout (`DECISIONS.md`, M111), drawn through side, diagonal and end views on the
 way (`DECISIONS.md`, M108, the crowd car); M111's one open question — a street about-face
 that crosses a kerb, or a reverse gear — is the player's, in `TODO.md`.

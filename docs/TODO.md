@@ -111,6 +111,12 @@ and call that SVG-first creation.
 The approval and request are recorded in PLAYTEST-51 and `DECISIONS.md` under Eight-direction
 style transfer.
 
+[PLAYTEST-62](playtests/PLAYTEST-62.md) requires consistent identity, materials and rendering across
+all directions, animation frames and state variants. In particular, the mother carrying the baby
+must read as the same woman pushing the stroller. Choose the generation method by visual results;
+a shared direction/state grid is a suggested strategy. Update the illustrated-PNG skill with
+findings supported by the conversion and review.
+
 - [ ] Inventory every current tracked SVG, including the prepared environment graphics and the new
       directional families, into a conversion manifest with source path, PNG destination,
       dimensions, anchor, usage and review evidence. Include root application/identity SVGs;
@@ -119,13 +125,16 @@ style transfer.
       mappings for non-mirrored paths. Keep raw generator outputs and captures in evidence.
       Record SVG review and generation provenance so ordering is reviewable; reject PNG-only
       additions instead of accepting a later placeholder SVG.
-- [ ] Transfer all entity SVGs and every directional/animation/state layer. Preserve native
+- [ ] Transfer the remaining entity SVGs and every directional/animation/state layer. The player
+      rig's generation records are in `DECISIONS.md` under Eight-direction style transfer and
+      M109, the carrying mother as one family. Preserve native
       canvases and exact SVG alpha, and keep tintable body/trim separation and authored identities.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
 - [ ] Transfer terrain, building tiles, props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
-      alignment. Convert prepared assets too without prematurely binding their gameplay.
+      alignment. Convert prepared assets too without prematurely binding their gameplay. The
+      garbage/litter generation record is in `DECISIONS.md` under M109, litter and garbage materials.
 - [ ] Convert UI, cue and identity SVGs while preserving their symbols, text, legibility and
       exact geometry. Keep code-drawn graphics and shader behavior under their current owners.
 - [ ] Audit all loading paths: shared drawing helpers, direct textures, TileSets, scenes/resources,
@@ -155,14 +164,13 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    stationary solid body now divert the crowd (`DECISIONS.md`, M110, every solid body). Whether
    diverting at every body blunts the tell a closure's own turn-away relies on — the
    recommendation the player overturned on 2026-09-12 — is a played question, in `REVIEW.md`.
-3. **M115**, streets with trees — asked for on 2026-09-11 in playtest 57 and placed here by the
-   orchestrator beside the city work, open to the player moving it.
-4. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
-   the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
+3. **M96, M97, M99 and M100**, in no order between them: the teaching day, the calm areas, the
+   corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
-   reprioritised".
-5. **Reaching act III**, which M56's measurement against the nerves needs.
+   reprioritised". M98, pressure in the empty acts, was the fifth of them and is built
+   (`DECISIONS.md`, M98); whether its return reads as pressure or punishment is in `REVIEW.md`.
+4. **Reaching act III**, which M56's measurement against the nerves needs.
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
 The record, with its measurements and the choices open to overturn, is in `DECISIONS.md` under
@@ -342,56 +350,6 @@ her. The reasoning, and what was rejected on the way, is in `DECISIONS.md` under
 
 ---
 
-## M115 — Streets with trees · asked for 2026-09-11
-
-> "can we make only some streets have trees? it should be continuous segments of 3/4/5 blocks
-> randomly placed on the map in both directions. fallen trees should only be possible on streets
-> with trees and one spot should be empty (the fallen tree's spot)"
-
-[PLAYTEST-57](playtests/PLAYTEST-57.md). And, reshaping it, [PLAYTEST-58](playtests/PLAYTEST-58.md):
-
-> "trees should only be allowed to be placed if there is no other blocking event (or conversely
-> due to map consistency) events can only be placed where no trees are (except for the fallen
-> tree which must empty out one tree lot). so trees must be quite rare to be able to still place
-> vans restaurants etc. also, trees make it harder to spot events like yeller, dog walker, etc. so
-> we need to be careful about how many we are placing"
-
-Today `StreetTrees` puts a pit at a fixed spacing along every pavement fronted by a residential or
-commercial block, `ClosurePlanner` only *prefers* `fallen_tree` on a street that has trees (a
-weight, `_FALLEN_TREE_STREET_BIAS`), and nothing stops an event being placed on a tree's own
-ground, so a van or a café can stand in a tree and a yeller can hide behind one.
-
-- [ ] **Only some streets have trees, in runs, and few of them.** A tree-lined street is a
-      straight run of three, four or five consecutive blocks along one street line, horizontal or
-      vertical, chosen from the city's own seed at generation and fixed for the run like every
-      other piece of geometry she learns; runs are placed at random across the map in both
-      directions, and the count of runs is a `Tuning` constant chosen so that most streets are
-      bare and a tree-lined one reads as a place. **Rare**, in the player's word: few enough runs
-      and a wide enough spacing within one that the day's events still find room on the streets
-      the route uses, and a tree never stands where a yeller or a dog walker would be hidden by
-      it — a pit at most every other lot-length is the recommendation, pinned and open to
-      overturn, with the run count set so a quarter of the ordinary streets or fewer carry trees.
-      Pits keep their mouth margins inside a run; a street outside every run gets none.
-      `StreetTrees` stays a pure function of `CityMap` and remains the one source of truth
-      `City._spawn_street_trees()` and the planner read.
-- [ ] **A tree and an event never share ground.** The trees are the city's and fixed for the run;
-      the events are the day's. So the day's placement is what yields: the scheduler's candidate
-      ground refuses any tile a standing street tree occupies or that its footprint reaches
-      (the tree's own ground shape, the one the shadow reads), the same refusal it applies to
-      closed tiles, checked where the candidate is offered and never repaired afterwards — so a
-      van, a café, a market stall, a yeller or a dog walker is never placed in or behind a tree.
-      Seals are bodies of catalogue rows and are placed by the same ground query, so a seal on a
-      tree-lined street stands between the trees, not on one. The one exception is the fallen
-      tree, below
-- [ ] **A fallen tree only where a tree stood.** `fallen_tree` closures and `fallen_tree_seal` are
-      offered only on a tree-lined segment, never merely preferred there, and the fallen tree
-      takes one of that street's own pits: that pit is left empty for the day — the tree that fell
-      is the one that is missing — so the picture and the planting agree. Which pit is chosen is
-      the planner's, nearest the closure's own centre; the seal's whole-street scene keeps its own
-      picture and empties the pit it covers.
-
----
-
 ## M96 — The teaching day, and the dog after it · rewritten 2026-09-09
 
 Rewritten from M43. Two of M43's items turned out to be built when checked — the pause lesson no
@@ -482,51 +440,6 @@ of a day's routes across the spine; nothing prices the crossing on top of that. 
 - [ ] **Re-check `MIN_CALM_BLOCKS` (5 to 7) and `MIN_HOME_TO_PARK_TILES` at the end, not the
       start** — now that the region walls stand from day 7, since a region that holds no calm
       area gets no door and the count of places to go is what the wall divides
-
----
-
-## M98 — Pressure in the empty acts · rewritten 2026-09-09
-
-Rewritten from M25 and M26. All of M26 is built: day 1 says how to walk, the run is taught by the
-first pursuit on `RUN_TAUGHT_DAY`, with one wording on every device and no key named, and the
-scripted event that requires a short run is the charging dog itself — *(2026-09-09: "this is what
-became the charging dog")* — sited on her line on day 3 so the lesson is unavoidable, which is the
-"safe place" playtest 02 asked for, moved to the day running becomes right. What remains is M25.
-
-- [ ] **Patrols for acts III and IV, built around encounter cost.** The crowd table in `Tuning`
-      empties the streets from act III on purpose — *"the cruellest number in the game: from act III
-      the streets are quieter, because there is nobody left going out on them"* — and the return
-      phase (`DayPhase.RETURNING`, entered when the day's clock runs low) was measured in playtest
-      03 as a formality: 26s, five crossings, zero encounters, 42% of the day left. Pressure goes
-      back into those streets as things she **meets**, not as an ambient band she cannot see. The
-      mechanism to start from is M56's heated `police_patrol`, which is already denser and then
-      interested as resistance progress rises; what this item adds is a return-phase shape in acts
-      III and IV. Measure the return phase on a rig across the four acts — encounters per return,
-      and how much of the day's clock the return actually spends — before and after. **The shape
-      is not designed yet, and the measurement comes first** *(2026-09-11: "measure now, design
-      after")*: the before-figures are in hand, taken with `tests/probes/m98_return_phase.gd` and
-      recorded in `DECISIONS.md` under M98 — a return leg that spends a fifth to a third of the
-      day and meets the director's queue once or twice, zero on one leg in five. **Go ahead was
-      given on 2026-09-12** *("M98, too")* with the shape left to the orchestrator, so what
-      follows is a recommendation, pinned and open to overturn. **The shape: patrols owed to the
-      return.** When `EventBus.return_phase_started` fires on a day in act III or IV, the
-      director's single queue is handed `Tuning.RETURN_PATROLS_PER_ACT` (recommended `[0, 0, 2,
-      3]`) extra `police_patrol` rows at the day's own heat, sited `TOWARD_PLAYER` — a patrol car
-      coming down her own street toward her, on the carriageway, from outside the view, the way a
-      cyclist is sited today — and the queue's interval for the rest of the day is
-      `Tuning.RETURN_PATROL_INTERVAL` (recommended 9–16s) rather than `AHEAD_INTERVAL`'s 11–26s,
-      so the extra rows land inside a 33s or 47s leg rather than after she is home. A patrol
-      passing at 74px/s with `outer_radius` 185px is the encounter cost: never lethal, an amount
-      the sleeping baby can take once or twice and not four times, which is why the count is per
-      act and small. They are outside the day's budget on purpose — the budget is a variety
-      ledger, and the return's pressure is a second half the budget never priced — and they are
-      *met*, never ambient; the crowd table stays as it is. If the baby wakes and the phase drops
-      back to walking, the rows already owed stay owed; nothing is added twice on a day. Acts I
-      and II get nothing, so the teaching days and the return she learns on stay as they are.
-      **After-measurement on the same probe**: `tests/probes/m98_return_phase.gd` told the phase
-      has started, printing encounters per return and the leg's share of the clock beside the
-      before-figures; and a `REVIEW.md` entry, since whether a return in act IV reads as pressure
-      or as punishment is a played question
 
 ---
 

@@ -61,6 +61,14 @@ func setup(city: City, map: CityMap) -> void:
 	_city = city
 	_map = map
 	_director = EventDirector.new(map)
+	EventBus.return_phase_started.connect(_owe_the_return)
+
+## Forwards to `EventDirector.owe_the_return()` the moment the baby is asleep and the day turns
+## to `RETURNING` — see that function's own doc for the shape it owes. `_day` is `start_day()`'s
+## own argument, kept for exactly this: the signal carries nothing, so this is the one place still
+## reading the day and the resistance level directly rather than having them threaded through.
+func _owe_the_return() -> void:
+	_director.owe_the_return(_day, GameState.resistance_progress)
 
 ## Clears yesterday and plans today. `consumed_one_shots` is appended to in place.
 ##

@@ -8,6 +8,7 @@ extends Node
 func _ready() -> void:
 	validate_traffic()
 	validate_signals()
+	validate_return_patrols()
 
 # ---------------------------------------------------------------- movement ---
 
@@ -302,6 +303,50 @@ const SIDEWALK_WIDTH := 2
 ## population per corridor, the arterial index — so a change here is a change to the whole density
 ## table. **Re-measure rather than convert.**
 const CITY_BLOCKS := Vector2i(11, 11)
+
+# ------------------------------------------------------------- street trees ---
+# How rare a street tree is, in four numbers. **Trees read like obstacles** — *(2026-09-12, the
+# player: "trees read like obstacles (they add noise) so it makes detecting actual obstacles
+# harder … trees must be quite rare to be able to still place vans restaurants etc.")* — and a
+# tree and an event never share ground, so every pit here is a tile the day's vans, cafés,
+# yellers and seals may not use. These four are what keeps that bill small.
+
+## How many tree-lined runs the city plants. A run is one straight stretch of consecutive blocks
+## along a single street line, so this is the whole of "how much of the city has trees": at
+## `STREET_TREE_RUN_MIN_BLOCKS`–`STREET_TREE_RUN_MAX_BLOCKS` streets each, six runs is well under
+## the quarter of ordinary streets `STREET_TREE_MAX_LINED_FRACTION` caps it at.
+##
+## **The count is per city, not per block**, unlike the event budget: a tree-lined street is
+## meant to be a *place* you recognise, and a number of places does not grow with the lattice the
+## way a density does.
+const STREET_TREE_RUNS := 6
+
+## The shortest and longest a run may be, in blocks — *(2026-09-11, the player: "it should be
+## continuous segments of 3/4/5 blocks randomly placed on the map in both directions")*. Three is
+## long enough to read as deliberate planting rather than two stray trees; five is short enough
+## that a run still ends somewhere she can see.
+const STREET_TREE_RUN_MIN_BLOCKS := 3
+const STREET_TREE_RUN_MAX_BLOCKS := 5
+
+## Least distance between two pits along one pavement, in px — **two lot-lengths**, a lot-length
+## being one block plus the street beside it, which is the distance from a pit to the same spot
+## on the next block. Measured along the whole run rather than within one street, so a run of
+## four blocks carries about two pits a side rather than two per street.
+##
+## The spacing is what keeps a tree-lined street walkable *and* legible: a yeller or a dog walker
+## standing between two pits is still the only silhouette in a hundred pixels of pavement.
+const STREET_TREE_PIT_SPACING := 2.0 * float((BLOCK_SIZE + STREET_WIDTH) * TILE_SIZE)
+
+## Chance a candidate pit inside a run is actually planted, rolled in scan order. What stops a run
+## from being a perfectly regular colonnade — the first roll to succeed sets the phase and
+## `STREET_TREE_PIT_SPACING` sets the rest, so the row jitters without ever crowding.
+const STREET_TREE_PLANT_CHANCE := 0.55
+
+## The most of the city's ordinary streets that may carry trees, as a fraction. Not a dial — the
+## runs are — but the ceiling the run count is chosen under, asserted over a seed sweep in
+## `tests/test_blocks.gd` so that raising `STREET_TREE_RUNS` cannot quietly make a tree-lined
+## street the ordinary case again.
+const STREET_TREE_MAX_LINED_FRACTION := 0.25
 
 # -------------------------------------------------------- the street hierarchy ---
 # Three kinds of street: a main road, two retail precincts, and ordinary streets everywhere else.
@@ -1259,6 +1304,20 @@ const AHEAD_MIN_SPEED := 40.0
 ## than spent in the first ten seconds. The director rolls within this band.
 const AHEAD_INTERVAL := Vector2(11.0, 26.0)
 
+## Extra `police_patrol` rows the return leg owes in acts III and IV, one entry per act —
+## `Tuning.act_for_day()` is 1-based, so `RETURN_PATROLS_PER_ACT[act - 1]`. Acts I and II carry
+## none, so the teaching days and the return she learns the mechanic on stay exactly as they were
+## measured. Sized against the return leg's own length (`docs/DECISIONS.md`, M98: a return leg
+## measured at 32.9s in act III and 47.3s in act IV) and the row's own cost — non-lethal, 74px/s,
+## a 185px outer radius — so a leg meets one or two of them rather than four: an amount the
+## sleeping baby can take, not a gauntlet.
+const RETURN_PATROLS_PER_ACT: Array[int] = [0, 0, 2, 3]
+
+## How far apart the return leg's own patrols land, once `EventDirector.owe_the_return()` has
+## fired for the day. Tighter than `AHEAD_INTERVAL` on purpose, so the rows it owes land inside
+## the 33-47s return leg they were sized against rather than arriving after she is already home.
+const RETURN_PATROL_INTERVAL := Vector2(9.0, 16.0)
+
 # ------------------------------------------------------ one event per block ---
 # The density target is one event per block, so the decision a player makes about an obstacle
 # happens several times a day rather than once. The density itself lives in
@@ -1719,6 +1778,29 @@ func validate_traffic() -> bool:
 ## test can check the contract without tripping the error it raises.
 func required_horn_time() -> float:
 	return carriageway_width() * TELEGRAPH_HARD_FAIL_MARGIN / WALK_SPEED
+
+## The return leg's own pacing is fair by construction as long as its shape holds: one entry per
+## act, none of them negative, and an interval that is ordered and strictly shorter than
+## `AHEAD_INTERVAL`'s on both ends — the rows this owes have to be able to land inside the return
+## leg they were sized against, not merely inside "the day" the ordinary pacing still covers.
+func validate_return_patrols() -> bool:
+	if RETURN_PATROLS_PER_ACT.size() != 4:
+		push_error("RETURN_PATROLS_PER_ACT has %d entries, not one per act"
+				% RETURN_PATROLS_PER_ACT.size())
+		return false
+	for count in RETURN_PATROLS_PER_ACT:
+		if count < 0:
+			push_error("RETURN_PATROLS_PER_ACT carries a negative count: %s" % [RETURN_PATROLS_PER_ACT])
+			return false
+	if RETURN_PATROL_INTERVAL.x > RETURN_PATROL_INTERVAL.y:
+		push_error("RETURN_PATROL_INTERVAL is not ordered: %s" % RETURN_PATROL_INTERVAL)
+		return false
+	if RETURN_PATROL_INTERVAL.x >= AHEAD_INTERVAL.x or RETURN_PATROL_INTERVAL.y >= AHEAD_INTERVAL.y:
+		push_error(("RETURN_PATROL_INTERVAL %s is not shorter than AHEAD_INTERVAL %s: the return "
+				% [RETURN_PATROL_INTERVAL, AHEAD_INTERVAL])
+				+ "would owe patrols no faster than an ordinary walk already gets")
+		return false
+	return true
 
 ## Distance a car needs to stop from a given speed. Used by the crossing logic and asserted
 ## against `CAR_ZEBRA_SIGHT` in `tests/test_crowd.gd`.

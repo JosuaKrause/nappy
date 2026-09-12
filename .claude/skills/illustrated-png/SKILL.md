@@ -24,6 +24,26 @@ Inspect it and both `docs/evidence/graphics-reference-urban-01.jpeg` and
 only: omit their interface and debug annotations. Do not substitute a different character design,
 projection or composition. Archived experiments and unapproved outputs are not style references.
 
+## Directions, frames and variants form one family
+
+Review the complete facing × animation × state matrix together. The mother carrying the baby
+must be recognizably the same woman pushing the stroller: preserve hair, face, proportions,
+clothing colors and construction, shoes, line weight and material shading wherever the SVGs
+share them. Apply the same consistency requirement to other families with multiple variants.
+
+A shared grid is a useful generation input when every cell remains large enough to retain detail.
+Keep views in a fixed order, adjacent gait/state variants easy to compare, and record cell bounds
+and anchors for extraction. When extending a converted family, supply its existing PNGs as an
+explicit identity/rendering reference alongside the new SVG targets. They do not override the
+targets' pose or geometry. Split a dense family into batches when needed, carrying the same
+reference through every batch; choose by inspected results rather than mandating a single atlas.
+
+Compare native-size and enlarged results across the whole family, including the runtime's west
+mirrors. Check that details common to adjacent animation frames hold still and that a state swap
+does not change who the character appears to be. Exact alpha registration proves boundaries,
+not consistent faces, clothing or interior placement. Update this workflow with observed results;
+record experiments and rejected options in `docs/DECISIONS.md`.
+
 ## Asset contract
 
 - Read the imagegen skill and use the built-in generator for raster generation or editing.
@@ -38,8 +58,17 @@ projection or composition. Archived experiments and unapproved outputs are not s
 - Check real alpha, including wheel and handle gaps. A checkerboard painted into an RGBA image
   is not transparency. The player authorizes the existing checkerboard removal script for this
   workflow; preserve its input and inspect retained detail after extraction.
+  Inspect the extracted cell bounds before fitting them: leftover checker or ghost outlines can
+  expand those bounds, shrinking the character inside an otherwise exact SVG alpha mask. If the
+  removal script leaves residue, correct the background with imagegen and rerun extraction;
+  preserve that edit's input and prompt. A plain white background can use the same neutral-region
+  extraction when a generated transparency request produces an unusable painted checker.
 - Commit runtime PNGs with their `.import` sidecars. Preserve sidecar settings and identity.
   `.godot/` is rebuildable and ignored; evidence under `docs/` is excluded by `docs/.gdignore`.
+  Let Godot create sidecars for new PNGs; copying another asset's sidecar can retain its UID or
+  source/remap path and load the wrong picture. Check each new resource's own source path and
+  unique identity, and verify through Godot's texture loader as well as reading the PNG bytes.
+  Preserve existing assets' identities when extending a family.
 
 ## Runtime and review
 

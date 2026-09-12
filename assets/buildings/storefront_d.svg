@@ -1,13 +1,9 @@
-<!-- Small sign-front shop tile; the shared door sits at x=4..10. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-  <rect width="32" height="32" fill="#9a7659"/>
-  <rect x="13" y="4" width="14" height="18" fill="#483d43" stroke="#3b3034" stroke-width="1"/>
-  <rect x="15" y="6" width="10" height="5" fill="#d4a04e"/>
-  <path d="M16 8H24" stroke="#5e4540" stroke-width="1"/>
-  <rect x="15" y="13" width="10" height="7" fill="#756e77"/>
-  <path d="M16 15H24 M16 18H24" stroke="#b7ada0" stroke-width="1"/>
-  <rect x="3" y="8" width="9" height="23" fill="#513a38" stroke="#3b3034" stroke-width="1"/>
-  <rect x="5" y="10" width="5" height="6" fill="#756e77"/>
-  <circle cx="10" cy="26" r="0.9" fill="#d4b26e"/>
-  <rect y="29" width="32" height="3" fill="#4e3a3b"/>
+<!-- Sign-shop frontage: fixed 26×34 entrance at left and display at right. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="36" viewBox="0 0 64 36" shape-rendering="crispEdges">
+  <rect width="64" height="36" fill="#9a7659"/>
+  <rect x="2" y="2" width="26" height="34" fill="#8d5c48"/><rect x="5" y="5" width="20" height="31" fill="#5c3a30"/>
+  <rect x="7" y="8" width="16" height="10" fill="#4a2e26"/><path d="M7 19H23" stroke="#9b6d55"/><circle cx="20" cy="27" r="1.5" fill="#c9a86a"/>
+  <rect x="34" y="4" width="26" height="30" fill="#483d43" stroke="#3b3034"/><rect x="37" y="7" width="20" height="7" fill="#d4a04e"/>
+  <path d="M39 10H55" stroke="#5e4540"/><rect x="37" y="17" width="20" height="13" fill="#756e77"/><path d="M39 21H55 M39 26H55" stroke="#b7ada0"/>
+  <rect y="34" width="64" height="2" fill="#4e3a3b"/>
 </svg>

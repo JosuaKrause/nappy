@@ -830,7 +830,7 @@ Both ends of the journey are exempt from being charged for their own doorway:
 | Kind | From | What it is |
 | --- | --- | --- |
 | `ROADWORKS` | day 1 | A trench, a spoil heap and a length of pipe. |
-| `FALLEN_TREE` | day 1 | A tree down across the road, roots and all. |
+| `FALLEN_TREE` | day 1 | A tree down across the road, roots and all — only on a street that has trees, and it takes one of their pits with it. |
 | `CRASH` | day 1 | Two cars that met. |
 | `CORDON` | day 4 | Barriers and an order. Act II closes streets on purpose. |
 | `RUBBLE` | day 12 | A facade in the road. |
@@ -840,12 +840,25 @@ bringing the building down. Mechanically they are identical — a street you can
 is a street you cannot walk down — and that is deliberate, because a closure that also had
 rules would be an event.
 
-**`FALLEN_TREE` prefers a street that already has standing trees on it.** `StreetTrees.planted()`
-is the one source of truth both `City` (what it draws) and `ClosurePlanner` (which segment a
-felled tree is more likely to land on) read, so the closure marker's picture and the standing
-trees beside it are the same species by construction — see "Rendering (2.5D)" below for where
-they stand. It is a preference, not a requirement: a street with no trees on it may still get a
-fallen one, the same way a `ROADWORKS` closure needs no dug-up ground to already be there.
+**`FALLEN_TREE` only happens where a tree stood, and the tree that fell is the one that is
+missing.** *(2026-09-11, the player: "fallen trees should only be possible on streets with trees
+and one spot should be empty (the fallen tree's spot)".)* `ClosurePlanner._pick_kind` drops the
+kind from the roll entirely on a street `StreetTrees` never planted — a gate, not a preference —
+and weights it up on one it did, since tree-lined streets are a small fraction of the city and a
+day closes between one and four of them. The closure then takes one of that street's own pits,
+**the one nearest the middle of the street it closed**, and that pit stands empty for the day:
+`City.refresh_street_trees()` does not draw the tree there. A gap at the far end of the street
+would read as two different trees, which is why the choice is the planner's rather than the first
+pit it finds.
+
+**`fallen_tree_seal` is the same rule in the other pass.** `SealPlanner` offers that picture only
+on a tree-lined street too, stands its whole-street scene on a pit rather than beside one, and
+empties it. It is the single exception to "a tree and an event never share ground" — see
+"Rendering (2.5D)" below, and `docs/EVENTS.md`, "Where in the city, and why".
+
+`StreetTrees.planted()` is the one source of truth all of them read — what `City` draws, which
+segment may carry a felled tree, and which pit that felled tree takes — so the closure marker's
+picture and the standing trees beside it can never be two different species.
 
 **A closure is silent.** It contributes nothing to the excitement meter. The noise of a
 street is the crowd on it and the danger of a street is the events on it; a closure is the
@@ -1384,11 +1397,15 @@ Top-down camera with a fake vertical extrusion:
   painted by `Building._draw()` itself, above its own roof tiles and inside the layer of buildings
   under the entities — never the y-sorted layer a street prop or the player draws in — so a unit
   is never compared against anything on the pavement.
-- **A front is district and block purpose, read the same way a roof's furniture is.** Every
-  ground-floor column of a `COMMERCIAL` building is a storefront — one of four, an awning variant
-  on a seeded share — as a plain substitution for the wall's own ground-floor plinth: the
-  storefront's fill is opaque, so it covers the ordinary window drawn under it the same way the
-  plinth always did. A `CIVIC` building's entrance carries `civic_portico.svg`, and a seeded share
+- **A front is district and block purpose, read the same way a roof's furniture is.** Each complete
+  two-column span of a `COMMERCIAL` building is a 64×36px storefront. Each facade samples the
+  four types in seeded, shuffled groups, using each once before repeating and avoiding an
+  immediate repeat between groups; the same building keeps its order across days. An awning
+  variant appears on a seeded share. Each is a substitution for the wall's ground-floor plinth:
+  the storefront's fill is opaque, so it covers the ordinary windows under both columns the same
+  way the plinth always did. An odd final column remains ordinary wall, and a facade only one wall
+  row tall keeps its wall base so the complete store fits. Each storefront has a 26×34px entrance
+  aligned to the shared ground line. A `CIVIC` building's entrance carries `civic_portico.svg`, and a seeded share
   of `RESIDENTIAL` facades tall enough for one carries a fire escape over their bottom two rows —
   both drawn as overlays, after the wall, rather than replacing a texture the way a storefront
   does. The awning is the one piece of a front that leaves the wall plane; it stays inside the
@@ -1398,18 +1415,40 @@ Top-down camera with a fake vertical extrusion:
   ordinary street variety, unconnected to the day or the block's own condition. Going
   `BOARDED_UP` overrides the roll and forces the shuttered pair, dark, the same shutter the
   degrading city's own storefronts use — see "The city degrades".
-- **Street trees stand in pits on the pavement, along `RESIDENTIAL` and `COMMERCIAL` streets at
-  a seeded spacing** — `StreetTrees.planted()`, fixed for the run like a building rather than
-  rebuilt daily like a park's own trees, since a street's frontage does not change with what a
-  block behind it currently is. A tree stands at the kerb-side tile of a pavement, never within a
+- **Street trees stand only on a handful of tree-lined runs, and a run is a *place*.** A run is a
+  straight stretch of `Tuning.STREET_TREE_RUN_MIN_BLOCKS`–`STREET_TREE_RUN_MAX_BLOCKS` (three to
+  five) consecutive blocks along one street line, horizontal or vertical, and there are
+  `Tuning.STREET_TREE_RUNS` of them placed at random across the map, well under the
+  `Tuning.STREET_TREE_MAX_LINED_FRACTION` (a quarter) ceiling `tests/test_blocks.gd` holds over a
+  seed sweep. Every street outside every run is bare. **Rare on purpose, and the reason is the
+  events rather than the look**: a tree standing beside a van or a yeller is a second silhouette
+  to read past, and a street full of them is a street where an obstacle is hard to spot.
+- **Inside a run, pits sit at `Tuning.STREET_TREE_PIT_SPACING` — two lot-lengths — on each kerb**,
+  measured along the whole run rather than street by street, so a four-block run carries about two
+  pits a side rather than two per street. `StreetTrees.planted()` is the one function that decides,
+  fixed for the run like a building rather than rebuilt daily like a park's own trees, since a
+  street's frontage does not change with what a block behind it currently is. A tree stands at the
+  kerb-side tile of a pavement, never within a
   tile of either end of its street (which is already where every crossing and every fixed
   checkpoint mouth stands — see "What closes a street" above) and never within a tile of the
   home's own door. It is a `Prop` like a park tree, feet-anchored so she passes behind its canopy,
   and like a park tree it has no body: she walks through a street tree exactly as she walks
   through one in a park, so a pavement with trees costs the route nothing a bare one does not.
-  `FALLEN_TREE`'s own placement prefers a
-  street `StreetTrees` already put trees on, from the same function, so the closure marker's
-  picture and the standing trees beside it are never two different species.
+- **A tree and an event never share ground.** *(2026-09-12, the player: "events can only be placed
+  where no trees are (except for the fallen tree which must empty out one tree lot)".)* The trees
+  are the city's and fixed for the run while the events are the day's, so the day is what yields:
+  `EventScheduler._open_ground_for` refuses any tile a standing tree occupies or its footprint
+  reaches, the same way it refuses a closed street, and `SealPlanner._seal_along_tile` steps a
+  seal's bodies along the street to the nearest clear cross-section. Both refuse where the
+  candidate is offered rather than moving something afterwards. So a van, a café, a market stall,
+  a yeller, a dog walker or a seal is never in or behind a tree, and the only thing that ever
+  stands in a pit is the tree that fell out of it.
+- **A pit the day emptied has no tree in it.** A `FALLEN_TREE` closure and a `fallen_tree_seal`
+  each take one of their street's own pits — see "What closes a street" above —
+  and `CityMap.is_tree_pit_emptied` is what `City.refresh_street_trees()` reads to leave that one
+  prop undrawn for the day. The planting itself never changes: where a city's trees stand is a
+  fact about the run, which one is lying in the road is a fact about the day, so the day's answer
+  lives beside `closed_tiles` rather than inside `StreetTrees`.
 - Everything is `y_sort_enabled`, so the player passes behind and in front of props
   correctly — with one deliberate exception. **Buildings are a layer of their own, beneath the
   entities, and sort against nothing but each other.** A building's origin is the south edge of its lot and its mass

@@ -37,6 +37,8 @@ func run(t) -> void:
 	_test_the_doorstep_still_reaches_the_corridor_after_thinning(t)
 	_test_hard_seals_cover_the_street_edge_to_edge(t)
 	_test_whole_scene_hard_seals_place_a_single_body(t)
+	_test_no_seal_body_stands_in_a_street_tree(t)
+	_test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t)
 
 # ------------------------------------------------------------------------ setup ---
 
@@ -488,3 +490,79 @@ func _test_whole_scene_hard_seals_place_a_single_body(t) -> void:
 		t.check(positions.size() == 1,
 				"'%s' is one continuous scene, so it places exactly one body (got %d)"
 				% [id, positions.size()])
+
+# ------------------------------------------------------------------ street trees ---
+
+## **A seal never stands in a street tree** — `docs/CITY.md`, "Street trees". A seal does not go
+## through `EventScheduler._open_ground_for`, because `plan_day` puts one on every off-tree street
+## whether or not the catalogue would have been offered that tile, so the refusal lives in
+## `SealPlanner._seal_along_tile` instead and this is what holds it. Stated over a whole run of
+## days rather than one, since which street gets which picture is a daily roll.
+##
+## `fallen_tree` is excluded by name and checked by the test below instead: it is the one body in
+## the game that stands **on** a pit.
+func _test_no_seal_body_stands_in_a_street_tree(t) -> void:
+	var checked := 0
+	for map in _maps:
+		var trees := StreetTrees.footprint_tiles(map)
+		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+			_repaint_for(map, day)
+			var tree := RouteTree.for_day(map, day)
+			for plan in SealPlanner.plan_day(map, day, tree, _seal_rng(map, day)):
+				if plan.def.id == "fallen_tree":
+					continue
+				checked += 1
+				var tile := map.world_to_tile(plan.position)
+				t.check(not trees.has(tile),
+						"seed %d day %d: seal '%s' stands in a street tree at %s"
+						% [map.seed_used, day, plan.def.id, tile])
+	t.check(checked > 0, "there were seal bodies to check (%d)" % checked)
+
+## *(2026-09-11, the player: "fallen trees should only be possible on streets with trees and one
+## spot should be empty (the fallen tree's spot)".)* Two halves, and the second is what makes the
+## first worth having: the seal is **offered** only on a street `StreetTrees` planted — a gate, not
+## a weight — and the tree it puts in the road takes one of that street's own pits, which is empty
+## for the day.
+##
+## Exactly one pit of the street, and the seal's own scene covers it: a fallen tree that emptied
+## two pits would be two trees, and one that emptied a pit the scene does not reach would be a tree
+## that fell somewhere she cannot see. The seal is one body spanning the whole carriageway
+## (`_test_whole_scene_hard_seals_place_a_single_body`), so its position is the middle of the road
+## and the pit is at the kerb — "covers it" is measured against the body's own
+## `obstructs_radius`, not against the tile it stands on.
+func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t) -> void:
+	var found := 0
+	var reach := EventCatalogue.by_id("fallen_tree").obstructs_radius
+	for map in _maps:
+		var lined := StreetTrees.segment_keys_with_trees(map)
+		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+			_repaint_for(map, day)
+			var tree := RouteTree.for_day(map, day)
+			var planned := SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+			var felled := {}
+			for plan in planned:
+				if plan.def.id != "fallen_tree":
+					continue
+				found += 1
+				var tile := map.world_to_tile(plan.position)
+				var segment := StreetNetwork.segment_containing(tile)
+				t.check(segment != null and lined.has(segment.key()),
+						"seed %d day %d: a fallen tree seals %s, which has no trees on it"
+						% [map.seed_used, day, tile])
+				if segment:
+					felled[segment.key()] = plan.position
+			for key: Vector3i in felled:
+				var at: Vector2 = felled[key]
+				var empty := 0
+				for pit in StreetTrees.planted(map):
+					if pit.segment_key != key or not map.is_tree_pit_emptied(pit.tile):
+						continue
+					empty += 1
+					t.check(pit.position.distance_to(at) <= reach,
+							"seed %d day %d: the empty pit at %s is %.0fpx from the fallen tree, "
+							% [map.seed_used, day, pit.tile, pit.position.distance_to(at)]
+							+ "outside its own %.0fpx scene" % reach)
+				t.check(empty == 1,
+						"seed %d day %d: street %s has %d empty pits, want exactly the one the tree fell from"
+						% [map.seed_used, day, key, empty])
+	t.check(found > 0, "some day across the sweep felled a tree across a street (%d)" % found)

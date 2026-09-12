@@ -24,6 +24,13 @@ at all. It does not drain either — the baby is just too interested in the worl
 
 At `sleepiness = 100` the baby falls asleep and the day enters its **return phase**.
 
+**In acts III and IV, the return leg owes its own pressure.** `EventDirector.owe_the_return()`
+fires the moment `EventBus.return_phase_started` does, adding `Tuning.RETURN_PATROLS_PER_ACT`
+(`[0, 0, 2, 3]`) extra `police_patrol` rows to the owed queue and switching its pacing to
+`Tuning.RETURN_PATROL_INTERVAL` (9–16s, tighter than the ordinary 11–26s) for the rest of the day
+— see `docs/EVENTS.md`, "The return owes her patrols", for the siting and the fairness. Acts I
+and II are untouched, so the days she is taught the mechanic on stay exactly as they were.
+
 **Where a day is won.** These three numbers are pitched against the *day*, not against each
 other, and they are what makes the walk the game:
 

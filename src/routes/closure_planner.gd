@@ -56,6 +56,10 @@ class CalmArea extends RefCounted:
 static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
 		tree: RouteTree = null, region_plan: RegionPlanner.RegionPlan = null) -> Array[RoadClosure]:
 	var chosen: Array[RoadClosure] = []
+	# Whatever this day does or does not close, it owns the answer to which pits are empty — so a
+	# day that closes nothing says so, rather than leaving yesterday's fallen tree missing from the
+	# row. See `CityMap.set_closure_tree_pits`.
+	map.set_closure_tree_pits([] as Array[Vector2i])
 	var wanted := Tuning.closures_for_day(day)
 	if wanted <= 0:
 		return chosen
@@ -75,6 +79,9 @@ static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
 	# Which segment has a standing street tree, asked once rather than once per candidate — see
 	# `StreetTrees` for why the same set also decides what `City` draws.
 	var tree_segments := StreetTrees.segment_keys_with_trees(map)
+	# The pits today's fallen trees take, collected as they are chosen and handed to the map whole
+	# below.
+	var emptied: Array[Vector2i] = []
 	var today_closed := {}
 	for segment in _shuffled_candidates(map, home, areas, corridor, regions, rng):
 		if chosen.size() >= wanted:
@@ -83,6 +90,14 @@ static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
 		if _invariant_holds(map, grid, areas, today_closed):
 			var kind := _pick_kind(kinds, rng, tree_segments.has(segment.key())) as RoadClosure.Kind
 			chosen.append(RoadClosure.new(kind, segment))
+			if kind == RoadClosure.Kind.FALLEN_TREE:
+				# The tree that fell is the one that is missing. Which pit is this planner's, and
+				# the answer is the one nearest the middle of the street it closed — a gap at the
+				# far end of the street from the wreck would read as two different trees.
+				var centre := map.tile_rect_to_world(segment.tile_rect()).get_center()
+				var pit := StreetTrees.pit_nearest(map, segment.key(), centre)
+				if pit:
+					emptied.append(pit.tile)
 		else:
 			# **A wall off the tree should never fail this**, so a failure is not a near miss to be
 			# skipped quietly — it means the corridor and the wall disagree about where she is
@@ -92,6 +107,7 @@ static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
 			today_closed.erase(segment.key())
 			Telemetry.note("plan", "day %d: closing %s off the corridor would have cut the calm"
 					% [day, TelemetryLog.tile(segment.a)])
+	map.set_closure_tree_pits(emptied)
 	return chosen
 
 ## The street the front door opens onto. Never closable — the home is a notch in a block with
@@ -336,19 +352,32 @@ static func _pick_weighted(weights: Array[float], rng: RandomNumberGenerator) ->
 			return index
 	return weights.size() - 1
 
-## Weight `fallen_tree` is multiplied by on a street `StreetTrees` already put trees on, so a
-## felled tree reads as one of *those* trees rather than one blown in from a park it was never
-## near. `RoadClosure.KINDS`'s own weight decides how often the kind is offered at all; this only
-## decides which of today's segments gets it once it is.
+## Weight `fallen_tree` is multiplied by on a street `StreetTrees` planted, on top of the gate
+## below rather than instead of it. **The gate is what the player asked for and the weight is what
+## keeps the kind visible**: tree-lined streets are a small fraction of the city, and a day closes
+## between one and four streets, so a fallen tree offered at its plain 0.6 against roadworks and an
+## accident would be a picture almost nobody ever meets. On a street that has trees, it is the
+## likeliest thing to have happened.
 const _FALLEN_TREE_STREET_BIAS := 6.0
 
 ## What closed this street. Weighted from the kinds the day has reached, so act I closes a
 ## street by accident and act IV closes it by bringing the building down.
+##
+## **`FALLEN_TREE` is offered only where a tree stood** — *(2026-09-11, the player: "fallen trees
+## should only be possible on streets with trees and one spot should be empty (the fallen tree's
+## spot)")*. A street with no trees on it drops the kind from the roll entirely rather than
+## weighting it down, which is what makes the empty pit beside the wreck a promise rather than a
+## coincidence. `RoadClosure.KINDS` always leaves `ROADWORKS` and `CRASH` available from day 1, so
+## dropping this one can never leave a street with nothing to have happened to it.
 static func _pick_kind(kinds: Array[int], rng: RandomNumberGenerator, street_has_trees: bool) -> int:
+	var offered: Array[int] = []
 	var weights: Array[float] = []
 	for kind in kinds:
+		if kind == RoadClosure.Kind.FALLEN_TREE and not street_has_trees:
+			continue
 		var weight := float(RoadClosure.KINDS[kind]["weight"])
-		if kind == RoadClosure.Kind.FALLEN_TREE and street_has_trees:
+		if kind == RoadClosure.Kind.FALLEN_TREE:
 			weight *= _FALLEN_TREE_STREET_BIAS
+		offered.append(kind)
 		weights.append(weight)
-	return kinds[_pick_weighted(weights, rng)]
+	return offered[_pick_weighted(weights, rng)]

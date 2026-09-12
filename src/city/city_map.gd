@@ -273,6 +273,38 @@ func release_obstruction(owner: int) -> void:
 func is_obstructed(tile: Vector2i) -> bool:
 	return obstructed_tiles.has(tile)
 
+## The street-tree pits today's fallen trees stand in, so the tree that fell is the one that is
+## missing. `StreetTrees.planted()` is never touched: where a city's trees stand is a fact about
+## the run, and which one is lying in the road is a fact about the day, so the day's answer lives
+## here beside `closed_tiles` and `soft_sealed_tiles` rather than in the planting.
+##
+## **Two dictionaries because two passes write them at two different moments.**
+## `ClosurePlanner.plan_day` runs inside `City.start_day`; `SealPlanner.plan_day` runs later, in
+## `EventManager.start_day`. Each hands over its *whole* answer through the setter below rather
+## than adding to a shared set, so neither has to clear anything, neither can accumulate yesterday's
+## pits, and a rig that runs one pass without the other gets exactly the pits that pass emptied.
+var _closure_tree_pits := {}
+var _seal_tree_pits := {}
+
+## Today's fallen-tree **closures**' pits, replacing whatever was there. See `_closure_tree_pits`.
+func set_closure_tree_pits(tiles: Array[Vector2i]) -> void:
+	_closure_tree_pits = _tile_set(tiles)
+
+## Today's fallen-tree **seals**' pits, replacing whatever was there. See `_closure_tree_pits`.
+func set_seal_tree_pits(tiles: Array[Vector2i]) -> void:
+	_seal_tree_pits = _tile_set(tiles)
+
+## Whether the street tree that stands in this pit is missing today, because the day put a fallen
+## tree there. `City` reads it to decide which of its street-tree props to draw.
+func is_tree_pit_emptied(tile: Vector2i) -> bool:
+	return _closure_tree_pits.has(tile) or _seal_tree_pits.has(tile)
+
+static func _tile_set(tiles: Array[Vector2i]) -> Dictionary:
+	var found := {}
+	for tile in tiles:
+		found[tile] = true
+	return found
+
 # ------------------------------------------------------------------ layout ---
 
 ## Tiles between the start of one street corridor and the start of the next.
