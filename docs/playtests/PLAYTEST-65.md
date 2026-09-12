@@ -157,3 +157,9 @@ artwork and registration; the proposed size correction is withdrawn before any a
 Acceptance refers to the actual shared repository checkout, with the F carrying and P2 pushing
 assets and animation unchanged from the graphics PR's displayed version. Preserve that in-game
 result rather than applying the proposed size correction.
+
+> the sidewalk is still not continuous though -- place the tiles together how they would be in game for a visual check
+
+The sidewalk continuity issue remains open. Assemble the current tiles using the game's actual
+selection and adjacency, including repeated runs and corners, before judging the joins. Preserve
+the accepted mother graphics and road-edge artwork.

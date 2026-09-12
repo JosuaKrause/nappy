@@ -44,11 +44,6 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   and enlarged walking GIFs are linked from the
   [recipe index](evidence/README.md#graphics-recipes); they are sprite assemblies, not live captures.
 
-- **Walk along the sidewalk beside road edges.** Do the plain and damaged surfaces continue
-  the curb paving without an obvious material boundary? The
-  [sidewalk neighbor panels](evidence/sidewalk-continuity-2026-09-12/GENERATION.md) cover both axes
-  and all eight accepted curb variants at native size.
-
 - **Look at the garbage sacks and small litter from day 10.** Do the standalone sacks and
   piles look like the same material, and does the small ground litter remain quiet and readable?
   `evidence/comic-props-2026-09-12/comparisons/` compares the SVG and PNG sources; use the

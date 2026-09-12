@@ -116,6 +116,11 @@ findings supported by the conversion and review.
       Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
+- [ ] Review and repair sidewalk continuity in actual game arrangements. PLAYTEST-65 reports
+      that the current sidewalk still does not continue the road edge. Assemble current tiles
+      with the real game selector and adjacency, including repeated runs and corners, and inspect
+      the joins visually. Preserve accepted curb artwork and the current mother graphics. Keep
+      the assembly script, exact tile inputs and layout so the review is reproducible.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The
