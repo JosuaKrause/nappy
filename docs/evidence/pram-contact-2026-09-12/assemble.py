@@ -41,15 +41,20 @@ class Placement:
     north: float
     south: float
     lift: float
+    scale: float = 1.0
 
     def label(self) -> str:
         if self.horizontal == self.north == self.south and self.lift == 0.0:
             return f"{self.horizontal:g}px"
-        return f"x{self.horizontal:g}/n{self.north:g}/s{self.south:g}/lift{self.lift:g}px"
+        result = f"x{self.horizontal:g}/n{self.north:g}/s{self.south:g}/lift{self.lift:g}px"
+        if self.scale != 1.0:
+            result += f"/scale{self.scale:g}"
+        return result
 
 
 BASELINE = Placement(34.0, 34.0, 34.0, 0.0)
 CONTACT = Placement(22.0, 14.0, 8.0, -4.0)
+GROUNDED = Placement(24.0, 17.0, 9.0, 0.0, 7.0 / 6.0)
 PLACEMENTS = (BASELINE, CONTACT)
 
 
@@ -111,6 +116,11 @@ def draw_pose(
     )
     mother = texture(rig, "mother", view, frame, mirror)
     pram = texture(rig, "pram", view, frame, mirror)
+    if placement.scale != 1.0:
+        pram = pram.resize(
+            (round(pram.width * placement.scale), round(pram.height * placement.scale)),
+            Image.Resampling.NEAREST,
+        )
     parts = ((mother, (0.0, 0.0)), (pram, offset))
     pram_draws_first = facing_y < 0.0 if draw_order == "runtime" else offset[1] < 0.0
     if pram_draws_first:
@@ -131,12 +141,13 @@ def assemble(
     rig: Path,
     family: str,
     draw_order: str,
+    sheet_kind: str,
 ) -> Path:
     cell_width = 78
     cell_height = 64
     label_width = 9
     header_height = 12
-    footer_height = 18
+    footer_height = 28 if sheet_kind == "grounding" else 18
     columns = [(placement, frame) for placement in placements for frame in ("a", "b")]
     block_width = label_width + cell_width * len(columns)
     sheet = Image.new(
@@ -163,6 +174,29 @@ def assemble(
         for column, (placement, frame) in enumerate(columns):
             center_x = left + label_width + column * cell_width + cell_width // 2
             ground_y = top + 56
+            if sheet_kind == "grounding":
+                cell_left = left + label_width + column * cell_width
+                draw.line(
+                    (cell_left + 2, ground_y, cell_left + cell_width - 2, ground_y),
+                    fill="#9fc2c9",
+                )
+                angle = math.radians(degrees)
+                facing_x = 0.0 if abs(math.cos(angle)) < 1e-9 else math.cos(angle)
+                facing_y = 0.0 if abs(math.sin(angle)) < 1e-9 else math.sin(angle)
+                vertical = placement.south if facing_y > 0.0 else placement.north
+                pram_anchor = (
+                    round(center_x + facing_x * placement.horizontal),
+                    round(ground_y + facing_y * vertical * OBLIQUE_Y + placement.lift),
+                )
+                draw.line(
+                    (
+                        pram_anchor[0],
+                        pram_anchor[1] - 2,
+                        pram_anchor[0],
+                        pram_anchor[1] + 2,
+                    ),
+                    fill="#f2d398",
+                )
             draw_pose(
                 sheet,
                 center_x,
@@ -183,10 +217,21 @@ def assemble(
     )
     draw.text(
         (1, header_height + cell_height * 4 + 9),
-        f"Canonical {family} source assembly only; does not prove live turns or animation.",
+        (
+            "Canonical source assembly only; does not prove live turns or animation."
+            if draw_order == "offset-snapshot" and family == "png"
+            else f"Canonical {family} source assembly only; does not prove live turns or animation."
+        ),
         fill="white",
         font=LABEL_FONT,
     )
+    if sheet_kind == "grounding":
+        draw.text(
+            (1, header_height + cell_height * 4 + 17),
+            "cyan: mother ground baseline    yellow: pram bottom-center anchor",
+            fill="white",
+            font=LABEL_FONT,
+        )
     destination.parent.mkdir(parents=True, exist_ok=True)
     sheet.save(destination)
     enlarged = destination.with_name(f"{destination.stem.removesuffix('-native')}-8x.png")
@@ -228,11 +273,14 @@ def rasterize_svg_rig(destination: Path, godot: Path) -> None:
 def verify_outputs(
     family: str,
     draw_order: str,
+    sheet_kind: str,
     native: Path,
     enlarged: Path,
     expected: dict[str, str],
 ) -> None:
-    if draw_order == "offset-snapshot":
+    if sheet_kind == "grounding":
+        stem = f"grounding-{family}"
+    elif draw_order == "offset-snapshot":
         stem = f"review-snapshot-{family}"
     else:
         stem = "svg-comparison" if family == "svg" else "comparison"
@@ -248,20 +296,52 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("destination", type=Path)
     parser.add_argument("--family", choices=("png", "svg"), default="png")
+    parser.add_argument("--sheet", choices=("contact", "grounding"), default="contact")
     parser.add_argument("--draw-order", choices=("runtime", "offset-snapshot"), default="runtime")
     parser.add_argument("--godot", type=Path, default=Path(os.environ.get("GODOT", DEFAULT_GODOT)))
     args = parser.parse_args()
     expected = checksums()
     verify_recipe_inputs(expected)
+    placements = (CONTACT, GROUNDED) if args.sheet == "grounding" else PLACEMENTS
+    if args.sheet == "grounding" and args.draw_order != "runtime":
+        raise RuntimeError("the grounding sheet only has a runtime draw-order form")
     if args.family == "png":
-        enlarged = assemble(args.destination, PLACEMENTS, PNG_RIG, args.family, args.draw_order)
-        verify_outputs(args.family, args.draw_order, args.destination, enlarged, expected)
+        enlarged = assemble(
+            args.destination,
+            placements,
+            PNG_RIG,
+            args.family,
+            args.draw_order,
+            args.sheet,
+        )
+        verify_outputs(
+            args.family,
+            args.draw_order,
+            args.sheet,
+            args.destination,
+            enlarged,
+            expected,
+        )
         return
     with tempfile.TemporaryDirectory(prefix="pram-svg-rig-") as temporary:
         rig = Path(temporary)
         rasterize_svg_rig(rig, args.godot)
-        enlarged = assemble(args.destination, PLACEMENTS, rig, args.family, args.draw_order)
-        verify_outputs(args.family, args.draw_order, args.destination, enlarged, expected)
+        enlarged = assemble(
+            args.destination,
+            placements,
+            rig,
+            args.family,
+            args.draw_order,
+            args.sheet,
+        )
+        verify_outputs(
+            args.family,
+            args.draw_order,
+            args.sheet,
+            args.destination,
+            enlarged,
+            expected,
+        )
 
 
 if __name__ == "__main__":

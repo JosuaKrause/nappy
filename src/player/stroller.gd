@@ -10,13 +10,19 @@ extends CharacterBody2D
 ## The SVG mother and pram below are the logical body and the complete drawing in every mode.
 
 ## The illustrated family keeps different amounts of empty canvas around each projection, so its
-## functional hand-to-handle placement uses three distances and a small shared lift. Scaling
-## `facing` by these axes keeps the pram moving continuously through a turn; selecting offsets from
-## the eight texture views instead would make it jump at every view boundary.
-const PRAM_HORIZONTAL_DISTANCE := 22.0
-const PRAM_NORTH_DISTANCE := 14.0
-const PRAM_SOUTH_DISTANCE := 8.0
-const PRAM_VERTICAL_LIFT := -4.0
+## functional hand-to-handle placement uses three screen-axis distances. Scaling `facing` by these
+## axes keeps the pram moving continuously through a turn; selecting offsets from the eight texture
+## views instead would make it jump at every view boundary.
+const PRAM_HORIZONTAL_DISTANCE := 24.0
+const PRAM_NORTH_DISTANCE := 17.0
+const PRAM_SOUTH_DISTANCE := 9.0
+## The texture grows uniformly about its bottom-center ground anchor. Seven-sixths turns the native
+## 36×30 side and diagonal canvases into exact 42×35px rectangles, avoiding fractional raster sizes
+## while making the handle-to-wheel reach match the mother's hand-to-foot reach.
+const PRAM_VISUAL_SCALE := 7.0 / 6.0
+## A fixed Y adjustment is part of the continuous offset formula, but grounding the scaled wheels
+## beside her feet needs no lift.
+const PRAM_VERTICAL_LIFT := 0.0
 ## Vertical squash applied to ground-plane offsets, i.e. the obliqueness of the view.
 const OBLIQUE_Y := 0.7
 ## Radians per second the rig turns to face a new input direction.
@@ -661,8 +667,7 @@ func run_excess_ratio() -> float:
 ## Where the visible pram, its shadow, baby cue and debug field sit relative to the mother's feet.
 ## The south-facing view needs less depth than the north-facing view because its handle is higher
 ## inside the registered texture. The sign choice remains continuous at east and west: the
-## directional Y contribution reaches zero before its distance changes, while the shared lift
-## remains fixed.
+## directional Y contribution reaches zero before its distance changes.
 func pram_draw_offset() -> Vector2:
 	if carrying:
 		return Vector2.ZERO
@@ -719,7 +724,11 @@ func _mother_gait_frame(gait: float) -> int:
 ## The pram has authored front, back, side and diagonal projections. A hood belongs to its own
 ## three-quarter body plane, rather than sliding across an unchanged basket as the rig turns.
 func _draw_pram(at: Vector2) -> void:
-	Sprites.draw_standing(self, _pram_texture(), at, Vector2.ZERO, _pram_is_mirrored())
+	var texture := _pram_texture()
+	Sprites.draw_standing(self, texture, at, _pram_draw_size(), _pram_is_mirrored())
+
+func _pram_draw_size() -> Vector2:
+	return _pram_texture().get_size() * PRAM_VISUAL_SCALE
 
 ## The mother texture selected by the live drawing path for a gait frame.
 func _mother_texture(frame: int) -> Texture2D:

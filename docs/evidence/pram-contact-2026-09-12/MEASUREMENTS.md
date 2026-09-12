@@ -27,6 +27,29 @@ hand-to-handle pixels are less than half a native pixel apart in both gait frame
 the north-east and south-east placements. The south-facing hands overlap the handle bar in both
 frames. These checks use the visible handle pixels, rather than the hood edge.
 
+## Grounding correction
+
+The grounded placement scales the stroller uniformly by 7/6 about the same bottom-center anchor
+used by `Sprites.draw_standing()`. Side and diagonal canvases become exact 42×35px rectangles and
+front and back canvases become exact 35×35px rectangles, avoiding fractional raster sizes. The new
+distances are 24px horizontal, 17px north, 9px south, and no fixed lift.
+
+Both mother and stroller source alpha reaches the bottom row of its canvas. The east and west
+bottom-center anchors therefore share Y=0 exactly, and their opaque feet and wheel bottoms land on
+the same source-pixel baseline. The side hand-to-handle distance is about 0.47px in gait frame A and
+0.71px in frame B. The corresponding nearest visible landmark distances are about 0.70px north-east
+and 0.91px south-east, with the west views mirrored exactly.
+
+The stroller remains ahead of or behind her in projected depth outside the side views. Its canonical
+anchor Y positions are -11.9px north, -8.415px north-east, 0px east and west, 4.455px south-east,
+and 6.3px south. Forcing every facing to the same screen Y would remove the existing 0.7 oblique
+ground projection and separate the north-east and south-east handles from the hands by about 8.5px
+and 4.2px respectively.
+
+`grounding-{png,svg}-{native,8x}.png` compares the connected but lifted placement with this grounded
+placement. Cyan marks the mother's ground baseline and yellow marks the stroller's bottom-center
+anchor. The sheets use the runtime's facing-based layer order.
+
 The comparison files are:
 
 - `comparison-native.png` and `comparison-8x.png` for the registered illustrated PNG family,
@@ -49,9 +72,9 @@ The recipe does not read the mutable runtime asset folders or the current stroll
 `inputs/png/` and `inputs/svg/` directories preserve the exact 15 pushing-rig inputs from
 `assets/illustrated/svg-transfer/rig/` and `assets/rig/` at source commit
 `55b566834899c1ac95f7b09cc216064cc50af996`. The former and selected placement values are fixed
-inside `assemble.py`. `SHA256SUMS` records every preserved input, the SVG rasterizer, and all four
-primary outputs plus the four review snapshots; the recipe refuses a missing or changed input and
-refuses an output whose byte hash differs.
+inside `assemble.py`. `SHA256SUMS` records every preserved input, the SVG rasterizer, the four contact
+outputs, the four grounding outputs, and the four review snapshots; the recipe refuses a missing or
+changed input and refuses an output whose byte hash differs.
 
 The Python assembly ran through uv 0.12.10 with Python 3.14.7 and Pillow 12.3.0. The repository
 environment files used for that run have these hashes:
@@ -98,6 +121,16 @@ UV_CACHE_DIR=/tmp/nappy-pram-uv-cache uv run --frozen python \
   docs/evidence/pram-contact-2026-09-12/assemble.py \
   docs/evidence/pram-contact-2026-09-12/review-snapshot-svg-native.png \
   --family svg --draw-order offset-snapshot
+
+UV_CACHE_DIR=/tmp/nappy-pram-uv-cache uv run --frozen python \
+  docs/evidence/pram-contact-2026-09-12/assemble.py \
+  docs/evidence/pram-contact-2026-09-12/grounding-png-native.png \
+  --sheet grounding
+
+UV_CACHE_DIR=/tmp/nappy-pram-uv-cache uv run --frozen python \
+  docs/evidence/pram-contact-2026-09-12/assemble.py \
+  docs/evidence/pram-contact-2026-09-12/grounding-svg-native.png \
+  --family svg --sheet grounding
 ```
 
 The source art, texture dimensions, collision bodies, navigation, steering, movement costs, and

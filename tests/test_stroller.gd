@@ -6,6 +6,7 @@ const STEP := 1.0 / 60.0
 func run(t) -> void:
 	_test_all_eight_facings(t)
 	_test_live_draw_selection(t)
+	_test_pram_scale_preserves_integer_canvas_sizes(t)
 	_test_boundary_hysteresis(t)
 	_test_reset_settles_direction(t)
 	_test_wrap_boundary_holds(t)
@@ -64,6 +65,18 @@ func _test_live_draw_selection(t) -> void:
 				"mother mirror matches direction %d" % direction)
 		t.check(rig._pram_is_mirrored() == mirrored[direction],
 				"pram mirror matches direction %d" % direction)
+	rig.free()
+
+func _test_pram_scale_preserves_integer_canvas_sizes(t) -> void:
+	var rig := _rig(t)
+	for direction in range(8):
+		rig._view_direction = direction
+		var native_size := rig._pram_texture().get_size()
+		var draw_size := rig._pram_draw_size()
+		t.check(draw_size.is_equal_approx(native_size * Stroller.PRAM_VISUAL_SCALE),
+				"direction %d applies the reviewed uniform pram scale" % direction)
+		t.check(draw_size.x == roundf(draw_size.x) and draw_size.y == roundf(draw_size.y),
+				"direction %d keeps the scaled pram on an integer-pixel canvas" % direction)
 	rig.free()
 
 func _test_boundary_hysteresis(t) -> void:
