@@ -28,6 +28,7 @@ func run(t) -> void:
 	_test_she_and_the_guard_are_gone_during_the_hold(t)
 	_test_the_whole_hold_reads_as_one_move(t)
 	_test_crossing_the_street_at_the_door_still_puts_her_through_it(t)
+	_test_the_release_latch(t)
 	_test_walking_back_redetains_her(t)
 	_test_the_chatting_mother_still_detains_once(t)
 	_test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t)
@@ -398,22 +399,25 @@ func _test_a_hut_detains_and_releases_on_the_other_side(t) -> void:
 	t.check(released_along < 0.0,
 			"released on the opposite side of the crossing from where she went in (%.1f)"
 			% released_along)
-	var clearance := hut.def.detain_distance() + Tuning.CHECKPOINT_RELEASE_MARGIN
+	var clearance := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+			+ Tuning.CHECKPOINT_RELEASE_MARGIN
 	t.check(absf(released_along) >= clearance - 0.5,
-			"and clear of the body and of the trigger (%.1f against %.1f)"
+			"and just clear of its body, as close to the door as she can stand (%.1f against %.1f)"
 			% [absf(released_along), clearance])
-	t.check(absf(released_along) > hut.def.detain_distance() + Tuning.TILE_SIZE - 0.5,
-			("clear by more than a step, so a scheme that walks her wherever her last press " +
-			"pointed cannot put her back inside it before the player has done anything (%.1f " +
-			"against %.1f)") % [absf(released_along), hut.def.detain_distance()])
+	t.check(absf(released_along) < hut.def.detain_distance(),
+			("which is *inside* the hold's own trigger, because the far side of a door is — the " +
+			"latch is what keeps her from being taken straight back in (%.1f against %.1f)")
+			% [absf(released_along), hut.def.detain_distance()])
 	t.check(released_cross.is_equal_approx(Vector2(0.0, 16.0)),
 			"on the same pavement lane she arrived on (%s)" % released_cross)
 	t.check(stroller.velocity == Vector2.ZERO, "the teleport zeroes her velocity")
 
-	# The moment of release does not re-trigger the same frame: she is already outside the
-	# trigger by construction.
-	manager._check_detentions()
-	t.check(not hut.is_chatting(), "released, and not immediately re-captured")
+	# And she stands there, inside the trigger, for as long as she likes.
+	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS * 3.0)
+	t.check(not hut.is_chatting(),
+			"released, and standing still is not taken in again however long she stands there")
+	t.check(stroller.global_position.is_equal_approx(released),
+			"without having been moved again (%s)" % stroller.global_position)
 
 	hut.free()
 	stroller.free()
@@ -628,19 +632,31 @@ func _test_the_whole_hold_reads_as_one_move(t) -> void:
 	t.check(not stroller._camera.top_level, "handed back to her own transform")
 	t.check(stroller._camera.position_smoothing_enabled, "with its own smoothing back on")
 
-	# **Sent back without moving.** "If I don't move" is not standing still: a press sets a heading
-	# she keeps walking until the next press, so doing nothing after a release means walking on in
-	# the direction that took her into the door. Walked on for as long as the hold itself lasted,
-	# she has to be leaving the door rather than being put back through it.
-	var range_before := stroller.global_position.distance_to(hut.global_position)
-	for i in int(round(Tuning.CHECKPOINT_DETAIN_SECONDS / STEP)):
-		stroller.global_position += heading * Tuning.WALK_SPEED * STEP
-		manager._tell_them_where_she_is()
-		manager._check_detentions()
+	# **Sent back without moving.** She is set down just clear of the hut's body, which is well
+	# inside the trigger — the far side of a door is a body's width away and the trigger reaches
+	# further than that — so what keeps her out of it is the `ReleaseLatch` armed on the way out,
+	# not distance. Standing there for several times the length of the hold itself costs nothing.
+	t.check(released.distance_to(hut.global_position) < hut.def.detain_distance(),
+			"she is standing inside the trigger she was just let out of (%.1f against %.1f)"
+			% [released.distance_to(hut.global_position), hut.def.detain_distance()])
+	_advance_hold(manager, stroller, Tuning.CHECKPOINT_DETAIN_SECONDS * 4.0)
 	t.check(not hut.is_chatting() and not gate.is_chatting() and not far_hut.is_chatting(),
-			"walking on from the release does not put her straight back through the door")
-	t.check(stroller.global_position.distance_to(hut.global_position) > range_before,
-			"because the far side is the far side: she is walking away from it, not back into it")
+			"and standing there is not another inspection, however long she stands — and not by "
+			+ "the gate beside the hut either: one crossing is one toll")
+	t.check(stroller.global_position.is_equal_approx(released),
+			"nor is she moved again (%s)" % stroller.global_position)
+
+	# And walking out of the door's reach and back in pays the toll again, which is the whole of
+	# what a door is.
+	var away := (released - hut.global_position).normalized()
+	stroller.global_position = hut.global_position + away * (hut.def.detain_distance() + 8.0)
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(not hut.is_chatting(), "one step outside its reach is not a toll")
+	stroller.global_position = released
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(hut.is_chatting(), "but stepping back in from there is")
 
 	hut.free()
 	gate.free()
@@ -654,43 +670,59 @@ func _test_the_whole_hold_reads_as_one_move(t) -> void:
 ## the release used to multiply its clearance by `signf(0.0)` — which is zero, so it put her back
 ## down exactly where it found her, inside the trigger, to be held again the next frame for as long
 ## as she stood there. Level with the door is one of the two sides, picked the same way every time.
+##
+## Against a whole door — two huts and the gate between them — because that is also where the other
+## half of the rule is checked: a door's three reaches overlap, so being let out of one of them puts
+## her inside another, and **one crossing has to be one toll** whichever body took her in.
 func _test_crossing_the_street_at_the_door_still_puts_her_through_it(t) -> void:
-	var ids: Array[String] = ["checkpoint_hut", "checkpoint_gate"]
-	for id in ids:
+	# Two approaches, each the same door: stopped against the northern hut from the frontage behind
+	# it, dead level with it along the street; and stopped against the gate out on the carriageway,
+	# a few pixels off its centre line, which is the one that lands her release inside a *hut's*
+	# reach rather than the gate's.
+	var entries: Array[Vector2] = [Vector2(0.0, -110.0), Vector2(-46.0, -6.0)]
+	for from_road in entries:
 		var manager := _manager(t)
 		var stroller := _real_stroller(t)
 		manager._player = stroller
 
 		var axis := Vector2.RIGHT
-		var centre := Vector2(5200.0, 5200.0)
-		var door := _door_instance(t, id, centre, axis)
-		manager._instances.append(door)
+		var road := Vector2(5200.0, 5200.0)
+		var doors: Array[EventInstance] = [
+			_door_instance(t, "checkpoint_hut", road - Vector2(0.0, 64.0), axis),
+			_door_instance(t, "checkpoint_gate", road, axis),
+			_door_instance(t, "checkpoint_hut", road + Vector2(0.0, 64.0), axis)]
+		for door in doors:
+			manager._instances.append(door)
+		var caught_by := doors[0] if is_zero_approx(from_road.x) else doors[1]
+		var entry := road + from_road
 
-		# Dead level with it along the street, approaching from the carriageway side.
-		var entry := centre + Vector2(0.0, 60.0)
 		stroller.global_position = entry
 		manager._tell_them_where_she_is()
 		manager._check_detentions()
-		t.check(door.is_chatting(), "%s: crossing the street at the door starts the hold" % id)
+		t.check(caught_by.is_chatting(),
+				"crossing the street at %s starts the hold" % caught_by.def.id)
 
 		_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
 		var released := stroller.global_position
-		t.check(released.distance_to(entry) > 1.0,
-				"%s: the release moves her at all (%s)" % [id, released])
-		t.check(released.distance_to(centre) > door.def.detain_distance(),
-				("%s: and puts her outside the trigger (%.1f against %.1f) rather than back where " +
-				"it found her") % [id, released.distance_to(centre), door.def.detain_distance()])
+		var crossed := (released - caught_by.global_position).dot(axis)
+		t.check(absf(crossed) > 1.0,
+				("%s: the release carries her across the crossing (%.1f along it) rather than " +
+				"setting her down exactly where it found her") % [caught_by.def.id, crossed])
 
-		manager._check_detentions()
-		t.check(not door.is_chatting(), "%s: so standing still there is not held a second time" % id)
+		_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS * 3.0)
+		for door in doors:
+			t.check(not door.is_chatting(),
+					"%s: nothing at the door holds her again where it let her out" % door.def.id)
 
-		door.free()
+		for door in doors:
+			door.free()
 		stroller.free()
 		manager.free()
 
 ## *"It works in both directions with the same cost each time."* Having just been released on the
-## far side, walking back into the same hut detains her again, for the same `detain_seconds`, and
-## returns her to (the clearance distance on) the original side.
+## far side, **leaving** the post's own reach re-arms it, and walking back in costs her the same
+## hold and returns her to the original side. The two halves are the whole of the latch's contract:
+## standing where she was let out is free, and the walk out and back is what pays again.
 func _test_walking_back_redetains_her(t) -> void:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
@@ -701,20 +733,29 @@ func _test_walking_back_redetains_her(t) -> void:
 	var post := _door_instance(t, "checkpoint_post", centre, axis)
 	manager._instances.append(post)
 
-	stroller.global_position = centre + axis * 30.0
+	stroller.global_position = centre + axis * 60.0
 	manager._tell_them_where_she_is()
 	manager._check_detentions()
 	t.check(post.is_chatting(), "the first approach detains her")
 	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
 	var first_release := stroller.global_position
+	var out_side := (first_release - centre).normalized()
 	t.check((first_release - centre).dot(axis) < 0.0, "released on the far side, first crossing")
 
-	# Walk back in from the side she is now on.
-	stroller.global_position = centre + (first_release - centre).normalized() * 30.0
+	# Standing where she was let out, inside the post's own reach, is free for as long as she likes.
+	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS * 3.0)
+	t.check(not post.is_chatting(), "and standing there is not a second toll")
+
+	# Walking out of its reach re-arms it, and walking back in pays again.
+	stroller.global_position = centre + out_side * (post.def.detain_distance() + 4.0)
 	manager._tell_them_where_she_is()
 	manager._check_detentions()
-	t.check(post.is_chatting(), "the return approach detains her again — redetains, in either "
-			+ "direction")
+	t.check(not post.is_chatting(), "one step outside its reach is not a toll either")
+	stroller.global_position = centre + out_side * 60.0
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(post.is_chatting(), "but walking back in from there detains her again — redetains, in "
+			+ "either direction")
 	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
 	var second_release := stroller.global_position
 	t.check((second_release - centre).dot(axis) > 0.0,
@@ -723,6 +764,32 @@ func _test_walking_back_redetains_her(t) -> void:
 	post.free()
 	stroller.free()
 	manager.free()
+
+## `ReleaseLatch` on its own, without a door around it — the one rule the escape scene will reuse
+## for its own doors *(2026-09-12: "same mechanism can be reused in the escape scene when going
+## through doors")*, so it is checked here as a thing rather than only through the checkpoint that
+## first needed it.
+func _test_the_release_latch(t) -> void:
+	var latch := ReleaseLatch.new()
+	t.check(not latch.holds(), "a fresh latch holds nothing")
+
+	var at := Vector2(100.0, 100.0)
+	latch.arm(at, 48.0)
+	t.check(latch.holds(), "armed, it holds")
+
+	latch.update(at)
+	t.check(latch.holds(), "and standing exactly where she was let out keeps holding it")
+	latch.update(at + Vector2(47.0, 0.0))
+	t.check(latch.holds(), "as does anywhere else inside the circle it was armed with")
+
+	latch.update(at + Vector2(49.0, 0.0))
+	t.check(not latch.holds(), "one step outside it clears the latch")
+	latch.update(at)
+	t.check(not latch.holds(),
+			"and walking back in does not re-hold it — that is the door's job, not the latch's")
+
+	latch.arm(at, 48.0)
+	t.check(latch.holds(), "which the door does by arming it again")
 
 ## The one row that keeps its old, once-only behaviour: `redetains` defaults to `false`, and
 ## `chatting_mother` never sets it, so a second approach to the same instance never starts a

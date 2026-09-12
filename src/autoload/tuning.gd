@@ -656,14 +656,18 @@ const CHECKPOINT_DETAIN_SECONDS := 2.0
 ## door. See `EventDef.detain_radius`.
 const CHECKPOINT_DETAIN_REACH := 48.0
 
-## How far clear of the hold's own trigger the released side of a detention pushes her, beyond
-## `EventDef.detain_distance()` — so the release cannot re-trigger the approach it just ended, by
-## construction rather than by two numbers that happen to be in the right order. A full tile,
-## because the scheme walks her wherever her last press pointed until the next one: released with a
-## thinner margin than a step, she is back inside the trigger before the player has done anything
-## at all. Purely a spatial clearance, so it does not move with `CHECKPOINT_DETAIN_SECONDS`. See
+## How far past a door body's own solid edge the released side of a detention sets her down, beyond
+## `obstructs_radius + PLAYER_BODY_RADIUS` — a few pixels of daylight rather than a shove, so she
+## comes out **where the far side of the door is** and nowhere further.
+##
+## **Deliberately not enough to clear the hold's own trigger**, which reaches further than a body is
+## wide and so cannot be escaped by any release that does not throw her past the door
+## *(2026-09-12, the player: "she just spawns further away now? it should work that she has a flag
+## 'just spawned' that only resets once she leaves the area. that way she can't accidentally go back
+## and we don't need to place her far away".)* `ReleaseLatch` is what stops the trigger firing on
+## her there. Purely a spatial clearance, so it does not move with `CHECKPOINT_DETAIN_SECONDS`. See
 ## `EventManager._release_finished_door_detentions()`.
-const CHECKPOINT_RELEASE_MARGIN := 32.0
+const CHECKPOINT_RELEASE_MARGIN := 8.0
 
 ## Seconds a camera move that is not her walking — currently only the checkpoint's own ease onto
 ## the hut and back — takes to arrive. The move is smooth-stepped rather than linear so it reads

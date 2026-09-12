@@ -251,11 +251,23 @@ A region door is solid, like anything else that stands still — `checkpoint_hut
 only by detention, and the toll is the same both ways.** She walks up to a hut, a gate or a post, is
 held for `Tuning.CHECKPOINT_DETAIN_SECONDS`, and comes out the other side of the crossing, on the
 same pavement lane she went in on: `EventManager` reflects her release position through the
-crossing's own cross-street line, pushed clear of the hold's own trigger by
+crossing's own cross-street line, sets her down just clear of the body by
 `Tuning.CHECKPOINT_RELEASE_MARGIN`, and teleports her there — see `Stroller.teleport_to()`. Walking
 round a hut into its own solid body does not open it; the only way through is the conversation. All
 three rows set `redetains`, so the same body detains her again on the next approach, from either
 side — unlike `chatting_mother`, who is spent after her one conversation.
+
+**She is let out inside the door's own trigger, and a latch rather than distance is what keeps her
+there.** The far side of a body she cannot walk through is a body's width away and the trigger
+reaches further than that, so no release that leaves her at the door can land outside it — and one
+that throws her past the door is a teleport further than the door is wide. `ReleaseLatch`
+(`src/world/release_latch.gd`) is the flag instead: armed on the way out with the trigger's own
+circle, it holds until she is measured outside that circle, so standing where she was let out costs
+nothing however long she stands there and the toll comes back the moment she leaves and walks in
+again. **It is armed for every body of the door whose reach she lands in**, not only the one that
+let her out: a street door's three reaches overlap, so being released from the boom used to put her
+straight into the hut beside it, and one crossing has to be one toll. The building's own doors in
+the escape scene reuse the same class.
 
 **The hold starts a reach past the door body's own wall, not a radius from its middle.** Her centre
 is stopped `obstructs_radius + PLAYER_BODY_RADIUS` from a body it cannot walk through, and further
