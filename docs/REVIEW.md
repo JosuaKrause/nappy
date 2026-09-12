@@ -116,6 +116,11 @@ item below for as long as looking takes.
   is being walked: a retried day's first attempt counts, a minute on the summary does not. Does
   the number feel like the run's length, and is *hidden until an ending* still the right call?
   Record is `DECISIONS.md`, M107.
+- **Compare the commercial doors with the home entrance.** On day 1, seed 255862635, look at
+  the stores beside tile 70,57 at normal camera scale. Does each two-tile store read as a
+  plausible shop beside the mother, with a full-sized doorway? Check an awning and a shuttered
+  storefront too. Record is `DECISIONS.md`, M116, wider storefronts and human-sized doors;
+  the size complaint is [PLAYTEST-60](playtests/PLAYTEST-60.md).
 - **Walk one block of each district and look up.** Roofs carry furniture by district (vents,
   ducts and boxes on industrial, skylights on civic, water tanks elsewhere), commercial ground
   floors are storefronts with awnings, civic fronts have a portico, residential facades a fire

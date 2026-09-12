@@ -176,7 +176,7 @@ func _test_boarded_storefronts_and_windows_shutter(t) -> void:
 	t.add_child(building)
 	building.condition = Building.Condition.BOARDED
 	building.day = Tuning.RUN_LENGTH_DAYS
-	for col in building.columns():
+	for col in range(0, building.columns() - 1, 2):
 		var texture := building._ground_floor_texture(col)
 		t.check(Building.STOREFRONT_SHUTTERED_TEXTURES.has(texture),
 				"a boarded commercial ground floor shows a shuttered storefront")
