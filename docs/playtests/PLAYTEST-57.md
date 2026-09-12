@@ -35,7 +35,17 @@ whether that means no body at all:
 
 > also maybe not "no hitbox at all" just how it was before
 
-So her own body stays exactly as it was before the pram got one; only the pram's added body goes. The gap
+So her own body stays exactly as it was before the pram got one; only the pram's added body goes.
+
+And then, having thought about it, a third shape, which is the one that stands:
+
+> can we keep the stroller hitbox but move it closer to the player (btw the hitbox right now is not
+> drawn at all for some reason) -- that way the stroller would go a little bit into objects (the
+> part that is not covered) but it wouldn't be completely wild like before
+
+So the pram keeps a body, pulled in toward her so the pram's far half overlaps whatever it meets
+and she can stand against a wall; and the debug view's bounding-box layer, which draws every
+other body, does not draw the pram's at all. The gap
 in the pictures is bigger than the pram alone explains — the band's body stops her a pram's length
 short of the band's drawn box — so the wall's own body is to be measured against its picture too.
 

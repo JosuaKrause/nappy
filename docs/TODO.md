@@ -566,19 +566,21 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **The pram has no body of its own; the wall's body is its picture.** *Built on 2026-09-10
-      from an M1 engineering note, never asked for by the player · rejected on 2026-09-11,
-      [PLAYTEST-57](playtests/PLAYTEST-57.md):
+- [ ] **The pram's body sits closer to her, and the debug view draws it.** *([PLAYTEST-57](playtests/PLAYTEST-57.md):
       "I don't like the stroller having a hitbox. it makes navigation clunky, I cannot get close to
-      walls anymore, and I get constantly stuck."; then "also maybe not 'no hitbox at all' just how it
-      was before"* — her own body stays exactly as it was; remove `PramCollisionShape2D` and the
-      physics step that keeps it at the pram's offset, and nothing else about her collision. The
-      pram's shadow, cue and field keep their offset.
-      And measure the roadblock band's and the region wall's bodies against their drawn boxes:
-      in the run's pictures she stops a pram's length short of a band across an alley and short of
-      the wall across a road with the boxes nowhere near touching, so whatever body those rows
-      carry beyond their picture is trimmed to it. Check with the debug view's layer `3` that her
-      body can touch a band's box
+      walls anymore, and I get constantly stuck."; then "can we keep the stroller hitbox but move it
+      closer to the player (btw the hitbox right now is not drawn at all for some reason) -- that
+      way the stroller would go a little bit into objects (the part that is not covered) but it
+      wouldn't be completely wild like before".)* The pram's own body — built on 2026-09-10 from an
+      M1 engineering note, never asked for — stays, but `PramCollisionShape2D` is pulled in along
+      her facing so that only the pram's near half is solid: she can stand against a wall with the
+      pram's far half over it, and the pram no longer clips through corners whole. Pick the offset
+      so the pram's shadow overlaps a wall by roughly half its radius at rest against it, state the
+      number, and pin it. The debug view's bounding-box layer (`3`) draws every other body and not
+      this one; draw it. And measure the roadblock band's and the region wall's bodies against
+      their drawn boxes: in the run's pictures she stops a pram's length short of a band across an
+      alley and short of the wall across a road with the boxes nowhere near touching, so whatever
+      body those rows carry beyond their picture is trimmed to it
 - [ ] **A roof's northern edge is ground she may step into, and a roof draws over what stands in
       the street.** *(PLAYTEST-57: "allow going in a little bit for northern edges of roofs"; "roofs
       also should be drawn over objects. the barrier looks on top of the roof in those pictures.")*
