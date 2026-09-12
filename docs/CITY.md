@@ -1397,9 +1397,15 @@ Top-down camera with a fake vertical extrusion:
   home's own door. It is a `Prop` like a park tree, feet-anchored so she passes behind its canopy,
   and like a park tree it has no body: she walks through a street tree exactly as she walks
   through one in a park, so a pavement with trees costs the route nothing a bare one does not.
-  `FALLEN_TREE`'s own placement prefers a
-  street `StreetTrees` already put trees on, from the same function, so the closure marker's
-  picture and the standing trees beside it are never two different species.
+- **A tree and an event never share ground.** *(2026-09-12, the player: "events can only be placed
+  where no trees are (except for the fallen tree which must empty out one tree lot)".)* The trees
+  are the city's and fixed for the run while the events are the day's, so the day is what yields:
+  `EventScheduler._open_ground_for` refuses any tile a standing tree occupies or its footprint
+  reaches, the same way it refuses a closed street, and `SealPlanner._seal_along_tile` steps a
+  seal's bodies along the street to the nearest clear cross-section. Both refuse where the
+  candidate is offered rather than moving something afterwards. So a van, a café, a market stall,
+  a yeller, a dog walker or a seal is never in or behind a tree, and the only thing that ever
+  stands in a pit is the tree that fell out of it.
 - Everything is `y_sort_enabled`, so the player passes behind and in front of props
   correctly — with one deliberate exception. **Buildings are a layer of their own, beneath the
   entities, and sort against nothing but each other.** A building's origin is the south edge of its lot and its mass

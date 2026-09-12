@@ -2374,6 +2374,14 @@ func _test_nothing_stands_on_the_doorstep_street(t) -> void:
 ## the region plan are known, and `held_segments` is filled, before `EventScheduler.build_day`
 ## rolls a single candidate.
 ##
+## **And the fifth refusal, a standing street tree's own ground** (`docs/CITY.md`, "Street trees"):
+## every catalogue placement and every seal body on these same full days is asked whether it stands
+## on a tile `StreetTrees.footprint_tiles` covers. The seals are asked here rather than only in
+## `tests/test_seals.gd` because they are the half that does **not** go through
+## `EventScheduler._open_ground_for` — `SealPlanner._seal_along_tile` is a second implementation of
+## one rule, and a day's plan is where the two have to agree. `fallen_tree` is the single exception
+## and is excluded by name: it is the body that stands in a pit and empties it.
+##
 ## **The seals' own bodies, the closure marker and the checkpoint rows are placed by their
 ## planners, not by the catalogue roll, so they are unaffected** — asserted by comparison rather
 ## than against a remembered count: the seals are planned twice on the same seeded stream, once
@@ -2392,6 +2400,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 	var total_checkpoints := 0
 	var total_seals := 0
 	var checked := 0
+	var checked_trees := 0
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 137)
 		for day in DAYS:
@@ -2435,6 +2444,19 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 					"seed %d day %d: holding the hard seals' ground plans the same seals (%d vs %d)"
 					% [map.seed_used, day, seals.size(), seals_unheld.size()])
 
+			# **A tree and an event never share ground** — `docs/CITY.md`, "Street trees". Checked
+			# over the same full days, against the tree footprints themselves rather than against
+			# the pit tiles, since the refusal is stated over the ground the shadow reaches.
+			var trees := StreetTrees.footprint_tiles(map)
+			for seal in seals:
+				if seal.def.id == "fallen_tree":
+					continue   # the one body that stands in a pit, and empties it; see below
+				var seal_tile := map.world_to_tile(seal.position)
+				t.check(not trees.has(seal_tile),
+						"seed %d day %d: seal '%s' stands in a street tree at %s"
+						% [map.seed_used, day, seal.def.id, seal_tile])
+				checked_trees += 1
+
 			var consumed: Array[String] = []
 			for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
 				if not plan.is_placed():
@@ -2450,6 +2472,10 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 				t.check(not map.is_on_home_block(tile),
 						"seed %d day %d: '%s' does not stand inside the home block"
 						% [map.seed_used, day, plan.def.id])
+				t.check(not trees.has(tile),
+						"seed %d day %d: '%s' stands in a street tree at %s"
+						% [map.seed_used, day, plan.def.id, tile])
+				checked_trees += 1
 
 			total_closures += closures.size()
 			total_boundary += region_plan.walls.size() + region_plan.doors.size()
@@ -2463,6 +2489,9 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 	t.check(total_checkpoints > 0,
 			"the sampled days stood checkpoint bodies on their doors (%d)" % total_checkpoints)
 	t.check(total_seals > 0, "the sampled days sealed streets (%d)" % total_seals)
+	t.check(checked_trees > 0,
+			"and every one of those bodies was asked whether it stands in a tree (%d)"
+			% checked_trees)
 
 # ------------------------------------------------------- one picture per row ---
 # *(M37, playtest 07 finding 2: "not sure what that person was supposed to be".)* The vocabulary's
