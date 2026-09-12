@@ -58,3 +58,22 @@ And the building's doors, which fade and teleport:
 
 So a door in the escape scene gives her the same flag on arrival, reset only once she leaves that
 door's area, rather than its own guard.
+
+## Street trees
+
+On the trunk body M106 gave a street tree, listed in `REVIEW.md` as *does the trunk catch her
+where the pavement is narrow*:
+
+> trees shouldn't have a hitbox at all. trees in parks don't why should the ones in the street be
+> treated differently?
+
+So a street tree has no body, like a park tree.
+
+## This round
+
+> implement those this round
+
+> also include this in this round
+
+So the walkers' hold, the release flag, the building's doors and the tree body all go in this
+round rather than into the queue.
