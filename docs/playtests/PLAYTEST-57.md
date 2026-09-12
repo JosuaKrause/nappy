@@ -27,7 +27,10 @@ collision* and listed in `REVIEW.md` for exactly this judgement:
 > I don't like the stroller having a hitbox. it makes navigation clunky, I cannot get close to
 > walls anymore, and I get constantly stuck.
 
-So the pram's collision body goes: *asked for on 2026-09-10 · overturned on 2026-09-11*. Asked
+So the pram's collision body goes. Nobody asked for it: it came from an engineering note in the
+first milestone's own log — *the pram has no collision of its own, so the pram clips into walls when
+she hugs a corner* — carried into M100's defects in the queue rewrite of 2026-09-09 and built on
+2026-09-10 without a playtest behind it. *Built from a note · rejected by the player on 2026-09-11.* Asked
 whether that means no body at all:
 
 > also maybe not "no hitbox at all" just how it was before

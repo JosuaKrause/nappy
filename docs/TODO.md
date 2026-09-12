@@ -566,8 +566,9 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **The pram has no body of its own; the wall's body is its picture.** *Asked for on
-      2026-09-10 as the pram's own collision · overturned on 2026-09-11, [PLAYTEST-57](playtests/PLAYTEST-57.md):
+- [ ] **The pram has no body of its own; the wall's body is its picture.** *Built on 2026-09-10
+      from an M1 engineering note, never asked for by the player · rejected on 2026-09-11,
+      [PLAYTEST-57](playtests/PLAYTEST-57.md):
       "I don't like the stroller having a hitbox. it makes navigation clunky, I cannot get close to
       walls anymore, and I get constantly stuck."; then "also maybe not 'no hitbox at all' just how it
       was before"* — her own body stays exactly as it was; remove `PramCollisionShape2D` and the
