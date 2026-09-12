@@ -1,5 +1,87 @@
 # Decisions
 
+## M116 — A random mixture within each storefront row, 2026-09-12
+
+[PLAYTEST-61](playtests/PLAYTEST-61.md) first reports that the wider fronts lost their variety
+and look empty, then accepts the four source variants: "those are fine for now". The remaining
+request is "a single house front should sample randomly from the variants", because "the
+example picture shows only one variant applied four times". The larger doors and all twelve
+SVG sources remain unchanged.
+
+The picker independently rolled each store, which allowed the pictured facade to select the
+same type four times. Each building now shuffles the four variants, uses each once, then
+reshuffles when a longer facade needs another group. An immediate repeat at the group boundary
+is swapped away. **Chosen where the request was silent:** sampling without replacement inside
+each group, rather than independent draws that can produce another identical row. The seed
+still comes from the building's variant and position, so rebuilding or advancing the day does
+not change its store identities. Awnings and shutter severity remain seeded per storefront.
+
+**Merge review:** incoming main `05c733b2317bb3708a0e7220c25d2aee29805efe` and the storefront
+tip `90e20055effd24a6ae99263d9c54567449017ba7` share base
+`b9d3805e68e28f8a11749ea2d5cea684359ecf43`. Both inserted records at the top of `DECISIONS.md`;
+both records are retained. Main's checkpoint reach, shared release latch, walker hold and
+interior-door changes remain intact, including their tests. `CITY.md` combines its walker-door
+documentation with the storefront contract. The reviewed size question leaves `REVIEW.md`.
+The storefront playtest is renumbered from 60 to 61 to avoid the separate apartment-graphics
+record numbered 60 on the concurrent documentation branch; its original words, date and
+evidence remain intact. Milestone identities do not collide.
+
+A subsequent clean merge takes main `105ef597927137cd475f950a2b9e4fc78be878f1`, which adds that
+apartment Playtest 60 and its separate queue/review updates. Both playtests and their references
+remain distinct; this documentation-only update changes no gameplay or storefront source.
+
+PR 129's review also requested a named evidence parent and explicit texture-selection checks.
+The complete original run moved under `evidence/playtest-61-2026-09-12/`, with all six files
+byte-identical and its document links updated. The texture selector reads eligibility from the
+generated variant list, avoiding a duplicate commercial/height predicate. Focused checks cover
+one variant per complete column pair, a skipped partner column, an ordinary odd end column and
+an ordinary base on a shallow facade. Import/boot and the focused `city_decay` suite pass after
+these review fixes.
+
+Verification: import/boot, doc lint and focused `city_decay`, `checkpoints` and `interior`
+suites pass on the merged tree. The storefront regression samples different building seeds,
+checks complete groups and neighbors, and preserves the order across rebuilds and state changes.
+The [updated gameplay still](evidence/archive/session-captures/2026-09-12/m116-storefront-mix-seed255862635-day1.png)
+shows the same facade using pharmacy, café, grocer and sign-front variants from left to right.
+Capture: seed 255862635, day 1, 1280×720, four seconds, `--svg --invincible --no-title`; a
+temporary default-spawn override placed the rig at tile 70,57 and was removed afterward.
+
+## M116 — Wider storefronts and human-sized doors, 2026-09-12
+
+[PLAYTEST-61](playtests/PLAYTEST-61.md) asks: "store fronts have too small doors (compare eg
+with the home door) and are not wide enough stores should be double each."
+The [supplied frame](evidence/playtest-61-2026-09-12/run-043335-seed255862635-v0.8.2-704-g4f3cfb7/asked/002-attempt2-asked.png)
+shows a commercial frontage at tile 70,57 on day 1, seed 255862635. The complete player run is
+preserved with it. The old store occupied 32×32px with a 9×23px door, beside the home's 26×34px
+entrance.
+
+Each store now occupies two columns: a 64×36px SVG with a 26×34px entrance, across all four
+plain, awning and shuttered families. The renderer seeds one variant, awning roll and shutter
+severity per store, and paints its whole frontage after the wall cells so a neighboring cell
+cannot cover half of it. Source height determines the offset to the existing ground line;
+ordinary wall bases keep their original placement. Windows immediately above a storefront move
+2px north, including an odd end column's window, so tall and shuttered sills stay complete.
+
+**Choices where the request was silent:** an odd final column remains ordinary wall, and a
+one-row facade carries no storefront because a full-height entrance cannot fit. These are
+presentation choices open to revision; building footprints, sidewalk collision and degradation
+rules do not change. The complete stores retain the four existing display identities and muted
+materials. A scaled old drawing with a larger door layered on top was rejected internally
+because it collided with displays and canopy geometry; the final family uses native coordinates.
+
+The import/boot check, doc/XML lint and focused `city_decay` suite verify the renderer and
+degradation wiring. All twelve final sources were rendered by Godot and inspected at
+[native scale](evidence/m116-storefronts-2026-09-12/storefronts_1x.png) and
+[3× scale](evidence/m116-storefronts-2026-09-12/storefronts_3x.png): columns are grocer, café,
+pharmacy and sign shop; rows are plain, awning and shuttered. The remaining human scale judgment
+is listed in `REVIEW.md`.
+
+The [gameplay still](evidence/archive/session-captures/2026-09-12/m116-storefronts-seed255862635-day1.png)
+shows the same commercial block at normal 1280×720 scale, day 1 and seed 255862635. A temporary
+DevRig spawn target placed the player at tile 70,57; the capture waited four seconds with
+`--svg --invincible --no-title`, and the temporary target was removed. The row shows four
+complete stores in the space occupied by eight in the original frame. This is visual evidence,
+not a played verdict on difficulty.
 ## M115 — Streets with trees · built 2026-09-12
 
 *(2026-09-11, playtest 57: "can we make only some streets have trees? it should be continuous

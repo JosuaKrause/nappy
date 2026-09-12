@@ -1394,11 +1394,15 @@ Top-down camera with a fake vertical extrusion:
   painted by `Building._draw()` itself, above its own roof tiles and inside the layer of buildings
   under the entities — never the y-sorted layer a street prop or the player draws in — so a unit
   is never compared against anything on the pavement.
-- **A front is district and block purpose, read the same way a roof's furniture is.** Every
-  ground-floor column of a `COMMERCIAL` building is a storefront — one of four, an awning variant
-  on a seeded share — as a plain substitution for the wall's own ground-floor plinth: the
-  storefront's fill is opaque, so it covers the ordinary window drawn under it the same way the
-  plinth always did. A `CIVIC` building's entrance carries `civic_portico.svg`, and a seeded share
+- **A front is district and block purpose, read the same way a roof's furniture is.** Each complete
+  two-column span of a `COMMERCIAL` building is a 64×36px storefront. Each facade samples the
+  four types in seeded, shuffled groups, using each once before repeating and avoiding an
+  immediate repeat between groups; the same building keeps its order across days. An awning
+  variant appears on a seeded share. Each is a substitution for the wall's ground-floor plinth:
+  the storefront's fill is opaque, so it covers the ordinary windows under both columns the same
+  way the plinth always did. An odd final column remains ordinary wall, and a facade only one wall
+  row tall keeps its wall base so the complete store fits. Each storefront has a 26×34px entrance
+  aligned to the shared ground line. A `CIVIC` building's entrance carries `civic_portico.svg`, and a seeded share
   of `RESIDENTIAL` facades tall enough for one carries a fire escape over their bottom two rows —
   both drawn as overlays, after the wall, rather than replacing a texture the way a storefront
   does. The awning is the one piece of a front that leaves the wall plane; it stays inside the

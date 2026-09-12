@@ -1,11 +1,6 @@
-<!-- Sign-front shop behind a dented steel shutter. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
-  <rect width="32" height="32" fill="#766457"/>
-  <rect x="13" y="4" width="14" height="18" fill="#4b4d53" stroke="#3b3034" stroke-width="1"/>
-  <path d="M14 6H26 M14 9H26 M14 12H26 M14 15H26 M14 18H26 M14 21H26" stroke="#77797a" stroke-width="1"/>
-  <path d="M15 11L25 18 M25 7L16 17" stroke="#a17d5f" stroke-width="1"/>
-  <rect x="3" y="8" width="9" height="23" fill="#443638" stroke="#3b3034" stroke-width="1"/>
-  <rect x="5" y="10" width="5" height="6" fill="#5f777c"/>
-  <circle cx="10" cy="26" r="0.9" fill="#d4b26e"/>
-  <rect y="29" width="32" height="3" fill="#3b3034"/>
+<!-- Sign-shop frontage shuttered across its fixed entrance and display bays. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="36" viewBox="0 0 64 36" shape-rendering="crispEdges">
+  <rect width="64" height="36" fill="#766457"/><rect x="2" y="2" width="26" height="34" fill="#8d5c48"/><rect x="5" y="5" width="20" height="31" fill="#4b4d53"/><rect x="34" y="4" width="26" height="30" fill="#4b4d53" stroke="#3b3034"/>
+  <path d="M6 8H24 M6 12H24 M6 16H24 M6 20H24 M6 24H24 M6 28H24 M6 32H24 M35 8H59 M35 12H59 M35 16H59 M35 20H59 M35 24H59 M35 28H59 M35 32H59" stroke="#77797a"/><path d="M7 10H23 M7 22H23 M36 10H58 M36 22H58" stroke="#62666b"/><path d="M38 12L56 26 M57 9L40 24" stroke="#a17d5f"/>
+  <rect y="34" width="64" height="2" fill="#3b3034"/>
 </svg>
