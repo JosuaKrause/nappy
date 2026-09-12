@@ -60,6 +60,14 @@ view").
   the pause at the mouth read as slowing rather than stalling, and does a street about-face over
   the kerb read as wrong? That last one is the open question in `TODO.md`, M111. Record is
   `DECISIONS.md`, M111.
+- **Look at the people and animals in events from more than one side** (any day). The dog
+  walker and his dog, the pacing yeller and the chatting mother, the cat, the loose dog, the
+  charging dog, the cyclist and each pigeon now face the way they actually move, through the
+  same eight views the mother has; a stationary busker, poster crew, leaf blower or protest rank
+  faces the way its site was placed; the waiting robber turns to face *you*; café sitters share
+  their frontage's facing. Does a figure seen from behind still read as what it is, does the
+  robber turning toward you read as a tell or as a glitch, and do the café sitters all facing one
+  way read as a party or as a row? Record is `DECISIONS.md`, M108, the event people.
 - **Watch walkers round a corner or step aside for you** (any day, any busy pavement). A walker
   now picks one of eight views from the way it is actually moving, so it shows a diagonal picture
   for the few tenths of a second it is steering across its lane, and a stopped one keeps its last

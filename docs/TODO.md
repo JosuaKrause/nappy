@@ -30,8 +30,10 @@ symmetry; choose an authored projection rather than rotating an upright picture.
 The prepared source families and their complete facing/state matrices are in `GRAPHICS.md` and
 its linked people, vehicle/animal and environment inventories. The source-art record is in
 `DECISIONS.md` under SVG completion and selective rejection retention. Work below binds those
-pictures to their actual runtime consumers. The crowd walkers are bound, through the shared
-`EightDirection` selector every family below extends (`DECISIONS.md`, M108, the crowd walkers).
+pictures to their actual runtime consumers. The crowd walkers and the event people, animals and
+riders are bound, through the shared `EightDirection` selector every family below extends
+(`DECISIONS.md`, M108, the crowd walkers; M108, the event people); the gunman and the mouse stay on
+their single side picture by the choices recorded there.
 - [ ] **Every living thing that moves has a stride.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md):
       "can we do a similar one to what the player does?", then "all living things should have
       movement animation")* Today only the mother animates: two frames per view, mid-stride and
@@ -69,12 +71,6 @@ pictures to their actual runtime consumers. The crowd walkers are bound, through
       (`EntityHalo` asks each owner for its `bob()`; the crowd's answers zero today). Crowd cars
       first, with the vehicle binding below; the event vehicles that move — the police car, the
       vans, the lorry, the fire engine — the same way, and a parked one sits still
-- [ ] **Bind live event people, animals and riders.** Extend the same selector to each actual
-      drawing path in `EventInstance`, including composed actors, leads, prams, held tools and
-      weapons. Keep idle/moving, waiting/lunging, talking/walking and wing/gait phases distinct;
-      an action's target supplies its aim even when its actor is stationary. Preserve event
-      identity, timing, collision, cues and halo silhouettes. Exercise state transitions as well
-      as every facing; a source sheet alone does not verify the runtime composite.
 - [ ] **Bind vehicle views.** Use each family's explicit front/back/side/diagonal table, including
       its documented side-facing convention, rather than assuming every side source faces east.
       Keep crowd car body/trim and police overlays registered together. Straight-moving event
