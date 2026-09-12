@@ -149,6 +149,19 @@ out. Asked of `git` at runtime; an exported build has no repository to ask and r
 `CityGenerator.generate()` retries with `seed + 1` when a layout fails its guarantees, so the
 run seed alone does **not** reproduce a city and both have to be written down.
 
+### `--invincible`
+
+`--invincible` (or the page's own `?invincible=1`, a debug web build only) is `DevFlags`' own
+developer flag — gated behind `DevFlags.enabled()` (`OS.is_debug_build()`) like every other one,
+listed in README.md's "Dev flags" table. Under it, `DayController._ignores_loss()` is the one
+predicate all three losing results — crying, a hard fail, the clock reaching zero — consult before
+ending the day, so none of them do; a won day still ends normally. The day header notes it the same
+way it notes the seed, appended once when the day opens rather than as a per-frame entry —
+`day 6  act 2  run seed 4242  city seed 4242  length 144.0s  invincible` — so a log from an
+invincible day is recognisable without reading a single `lost` or `nerve` line that never comes.
+The HUD's own debug header (`hud.gd`'s `_refresh_header()`) appends `INVINCIBLE` for the same
+reason, so no capture from such a run is mistaken for one where a loss meant anything.
+
 ---
 
 ## What is recorded, and what is not

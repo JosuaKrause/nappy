@@ -199,8 +199,13 @@ func begin_day(day: int, act: int, run_seed: int, city_seed: int, length: float)
 	_shots_today = 0
 	_last_shot = -INF
 	_log.header("")
-	_log.header("day %-2d act %d  run seed %d  city seed %d  length %.1fs"
-			% [day, act, run_seed, city_seed, length])
+	var line := "day %-2d act %d  run seed %d  city seed %d  length %.1fs" \
+			% [day, act, run_seed, city_seed, length]
+	# Noted the same way the seed is, once per day rather than as a per-frame entry, so a log
+	# from an --invincible day cannot be mistaken for one where a loss actually meant anything.
+	if DevFlags.invincible():
+		line += "  invincible"
+	_log.header(line)
 
 ## Closes a day's section. The clock stops here, so the between-days screen — during which the
 ## tree is paused anyway — cannot advance it.
