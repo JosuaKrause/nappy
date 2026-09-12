@@ -33,8 +33,8 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   Check both tree shapes and the roof variants in
   `evidence/comic-city-props-2026-09-12/comparisons/`; `--svg` shows their source concepts.
 
-- **Watch the stroller handle through a turn and both pushing gait frames.** Do her hands stay
-  connected while the stroller remains grounded? The PNG and SVG `grounding-*` sheets in
+- **Watch the stroller handle through a turn.** Do her hands stay
+  connected? The PNG and SVG `grounding-*` sheets in
   `evidence/pram-contact-2026-09-12/` show the enlarged stroller and its ground anchors;
   live motion and texture changes
   between directions still need a person's look. Collision positions and touch radii stay fixed.

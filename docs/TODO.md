@@ -33,8 +33,9 @@ its linked people, vehicle/animal and environment inventories. The source-art re
 pictures to their actual runtime consumers. The crowd walkers and the event people, animals and
 riders are bound, through the shared `EightDirection` selector every family below extends
 (`DECISIONS.md`, M108, the crowd walkers; M108, the event people); the gunman and the mouse stay on
-their single side picture by the choices recorded there. Every living thing that moves strides,
-two frames per view (`DECISIONS.md`, M108, the walkers' stride; M108, the event strides), the
+their single side picture by the choices recorded there. Moving families use two frames per view
+(`DECISIONS.md`, M108, the walkers' stride; M108, the event strides), with three carrying-mother
+poses in an open/together/opposite-open/together cycle. The
 café sitters lean and the busker strums on a timer; whether a standing guard shifts is the
 player's to say, and until then he keeps one frame.
 - [ ] **Cars bob on their wheels.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "cars
@@ -115,15 +116,20 @@ findings supported by the conversion and review.
       Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
-- [ ] Repair the carrying gait as continuous anatomy, **F — Hip motion**. PLAYTEST-65 rejects
-      E's stitched lower legs, fixed pelvis and disconnected leg colors. Redraw the hips,
-      thighs, knees, shoes and lower coat as coherent poses; do not splice fixed upper rows
-      over moving legs or substitute a color swap for a step. Preserve the adult identity and
-      supported baby through image editing, with head/arms stable and lower-body movement
-      continuous. NE/NW's open feet must follow their travel axis in both contacts; SE/SW need
-      real three-quarter silhouettes. Keep the other facings, three poses, A/C/B/C loop and
-      together idle. Review SVG sources first, then full generated poses at native scale and
-      as an eight-direction animation. Preserve E's named evidence and every reproducible recipe.
+- [ ] Repair the carrying gait, **F — Hip motion**, using the high-resolution E atlas selected
+      in PLAYTEST-65's annotation. Correct its front A/C/B column to show opposite leading legs
+      and a clear standing/together frame, and correct the back-diagonal B legs to follow A's
+      travel axis. Preserve the other high-resolution poses, adult identity and supported baby.
+      Scale whole corrected figures directly; do not splice fixed upper rows over moving legs
+      or substitute a color swap for a step. Review corresponding SVG poses before transfer,
+      then native images and an eight-direction A/C/B/C animation with together idle. Preserve
+      E's named evidence, the annotation and every reproducible recipe.
+- [ ] Give the pushing mother three distinct walking poses in all eight directions. PLAYTEST-65
+      accepts stroller grounding but rejects the two-frame pushing gait with one leading leg.
+      Author opposite contacts and a together SVG pose, then transfer the full figures with
+      consistent identity and connected hands. Play A/C/B/C and choose C whenever stopped.
+      Preserve the accepted stroller scale, offsets and ground contact. Retain native/enlarged
+      rollouts and GIF recipes, and verify runtime selection in PNG and forced-SVG modes.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The
@@ -198,7 +204,7 @@ anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified 
 
 The impact-crater decals `assets/props/impact_crater_1x1.svg`,
 `impact_crater_2x2.svg` and `impact_crater_3x3.svg` (32×32, 64×64 and 96×96 footprints) are the
-finale's: the marks its off-screen explosions leave on the street. M102 also owns the prepared `assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b}.svg`
+finale's: the marks its off-screen explosions leave on the street. M102 also owns the `assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b,c}.svg`
 set, documented in GRAPHICS.md and bound by the playable apartment's carrying rig.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
@@ -785,7 +791,7 @@ milestone is their owner. `burnt_out_car.svg` with its vertical sibling, `barric
 and the `abduction` row are the masked men in vans; `guard_standing.svg` and `guard_lunging.svg`
 are masked men on foot; `flame.svg` is the staircase fire; `sound_pulse.svg` is the arc an
 off-screen explosion draws, once M100's sound lines bind it. The player herself is drawn:
-`assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b}.svg` are the mother's ten sources with
+`assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b,c}.svg` are the mother's fifteen sources with
 the baby in her arms and no pram, on the same canvases and feet anchors as the walking set, so
 `Stroller` can swap them in facing for facing. Prepared drawings, each listed with its contract in
 `GRAPHICS.md`: the hallway with its flashing windows and its floor edge that implies the apartment doors,

@@ -106,3 +106,19 @@ supported cradle, three distinct poses, four-phase loop and together idle pose. 
 NE/NW travel axis in both open contacts and make SE/SW visibly three-quarter views rather than
 front-view substitutes. The other directions' facing is acceptable, but their continuous anatomy
 and hip motion still need correction. Preserve E as rejected review evidence.
+
+> In the high res image the left column (circled) has always the same leg forward and no standing frame. The circled legs in the bottom right are incorrect (legs pointing in the wrong direction). If you fix those two issues the scaled down version should look good
+
+The annotated E high-resolution atlas identifies the complete front column and the bottom-right
+back-diagonal B cell. Use that atlas as the edit target: make front A/C/B show opposite leading
+legs and a clear standing/together frame, and correct the back-diagonal B legs to follow the same
+travel axis as A. The player's annotation narrows the required illustrated edits; the remaining
+high-resolution poses supply the intended result. Scale the corrected complete figures directly,
+without restoring the fixed upper-row splice that damaged the low-resolution anatomy.
+
+> The stroller grounding looks correct now. Only issue is that the pushing animation still has only two frames with the always the same leg forward
+
+The grounded stroller placement is accepted. Apply the same three-pose walking contract to the
+pushing mother: opposite leading legs, a together pose between contacts, A/C/B/C playback and
+together idle. Preserve the accepted stroller scale, offsets, ground contact and connected hands.
+Author/review the source SVGs before their PNG derivatives and retain the rollout/GIF recipes.
