@@ -73,8 +73,8 @@ func _test_pram_scale_preserves_integer_canvas_sizes(t) -> void:
 		rig._view_direction = direction
 		var native_size := rig._pram_texture().get_size()
 		var draw_size := rig._pram_draw_size()
-		t.check(draw_size.is_equal_approx(native_size * Stroller.PRAM_VISUAL_SCALE),
-				"direction %d applies the reviewed uniform pram scale" % direction)
+		t.check(is_equal_approx(draw_size.x * native_size.y, draw_size.y * native_size.x),
+				"direction %d preserves the authored pram aspect ratio" % direction)
 		t.check(draw_size.x == roundf(draw_size.x) and draw_size.y == roundf(draw_size.y),
 				"direction %d keeps the scaled pram on an integer-pixel canvas" % direction)
 	rig.free()
