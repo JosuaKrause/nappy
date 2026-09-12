@@ -1627,7 +1627,17 @@ static func _fallen_tree() -> EventDef:
 ## should only be the crashed cars but it should emanate an excitement field that prevents the
 ## player from walking past it".)* `shape` stays the whole-street band — it is what the picture is
 ## fitted to, what the field is stated over, and the disc every planner clears the street by — while
-## `solid_parts` puts a body under each car and leaves the debris and the two pavements open.
+## `solid_parts` puts a body under each car and leaves the debris and the two pavements open. The
+## price of walking through one of those gaps is the field, not a wall: see
+## `Tuning.CAR_ACCIDENT_INTENSITY`, which is what overturns *a closure is silent* for this row alone
+## (`docs/CITY.md`, "A closure is silent").
+##
+## **The field is stated over the band and not over the cars.** `inner_radius` is
+## `GroundShape.BAND_RADIUS` — the band's own surface, since a segment's field is priced from its
+## spine — so everything inside the scene's own footprint is charged at the full rate, gaps
+## included, and the shoulder outside it is short: 72px, under half a street's width, so the crash
+## is felt walking up to it rather than from down the street. A sealed street still has to be
+## discoverable by walking into it, which is the reason closures are silent in the first place.
 static func _car_accident() -> EventDef:
 	var def := EventDef.new()
 	def.id = "car_accident"
@@ -1636,12 +1646,19 @@ static func _car_accident() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.CAR_ACCIDENT
 	def.act_tag = 1
-	def.intensity = 0.0
-	def.inner_radius = 40.0
-	def.outer_radius = 120.0
+	def.intensity = Tuning.CAR_ACCIDENT_INTENSITY
+	def.inner_radius = GroundShape.BAND_RADIUS
+	def.outer_radius = 96.0
 	def.telegraph_time = 0.9
 	def.solid(GroundShape.band(96.0))
 	def.solid_parts = _car_accident_parts()
+	if Tuning.CAR_ACCIDENT_GAPS_ARE_LETHAL:
+		# The other answer to *prevents*, off by default — see the constant. The lethal radius has
+		# to clear the cars' own bodies with her 14px to spare or the kill can never fire
+		# (`EventDef.validate()`), and the telegraph has to buy the walk out of the doubled margin.
+		def.hard_fail = true
+		def.inner_radius = Tuning.CAR_ACCIDENT_LETHAL_INNER_RADIUS
+		def.telegraph_time = 1.2
 	return def
 
 ## Where the two cars stand, read off the two authored pictures at the scale

@@ -1900,9 +1900,31 @@ func _cost_to_run_through(def: EventDef) -> float:
 ## fast — and the two answers give opposite outcomes rather than the same outcome at two prices.
 ## `Tuning.validate_pursuit` is the contract and it runs on load; this is the part of it that is
 ## about the *catalogue* rather than about one row.
+##
+## **`car_accident` is named as the one row where running is cheaper, and it is arithmetic rather
+## than taste.** Running beats walking on any field whose mean emission along the line clears about
+## 24/s: `EXCITEMENT_FROM_RUNNING` (14.0) plus the collapsed decay is a fixed price per second, so
+## past that rate the shorter exposure wins. The crash was asked to cost more than half the meter to
+## squeeze past (`tests/test_seals.gd`), and no field short and fierce enough to do that inside its
+## own short shoulder sits under that rate — a field wide enough to charge fifty points at a walk
+## would be felt from down the street, which is the thing the row's own design refuses. **So the
+## choice was made by the entry's contract rather than by retuning something else**: sprinting past
+## a crash costs 54 where walking costs 63, nine points of a hundred, against a field she is meant
+## to route around rather than push through. It is open to overturn — the alternative is a wider,
+## quieter field, and the cost of that is a sealed street announcing itself half a block away.
+const _RUNNING_IS_CHEAPER := ["car_accident"]
+
 func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t) -> void:
 	var pursuers := 0
+	var running_is_cheaper := 0
 	for def in EventCatalogue.all():
+		if def.id in _RUNNING_IS_CHEAPER:
+			running_is_cheaper += 1
+			t.check(_cost_to_run_through(def) < _cost_to_walk_through(def),
+					("'%s' is named as the row running is cheaper on (%.1f running, %.1f walking) — "
+					+ "if that has stopped being true, take it off the list rather than keeping it")
+					% [def.id, _cost_to_run_through(def), _cost_to_walk_through(def)])
+			continue
 		if def.city_wide:
 			continue   # No line through it, so no crossing to compare.
 		if def.pursues:
@@ -1924,6 +1946,12 @@ func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t) -> void:
 				"running through '%s' (%.1f) costs more than walking (%.1f)"
 				% [def.id, _cost_to_run_through(def), _cost_to_walk_through(def)])
 	t.check(pursuers > 0, "and there is something in the game that running is the answer to")
+	t.check(running_is_cheaper == _RUNNING_IS_CHEAPER.size(),
+			"every row named as a running exemption is still in the catalogue (%d of %d)"
+			% [running_is_cheaper, _RUNNING_IS_CHEAPER.size()])
+	t.check(_RUNNING_IS_CHEAPER.size() == 1,
+			"and there is exactly one of them (%d): a second is a decision somebody takes"
+			% _RUNNING_IS_CHEAPER.size())
 
 ## *(Playtest 07: "on day 3 we introduce the running key (it is possible to run before but not
 ## required)" and "so on day 1 we only introduce arrow keys".)*

@@ -37,6 +37,7 @@ func run(t) -> void:
 	_test_the_doorstep_still_reaches_the_corridor_after_thinning(t)
 	_test_hard_seals_cover_the_street_edge_to_edge(t)
 	_test_whole_scene_hard_seals_place_a_single_body(t)
+	_test_squeezing_past_a_crash_costs_more_than_half_the_meter(t)
 	_test_no_seal_body_stands_in_a_street_tree(t)
 	_test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t)
 
@@ -490,6 +491,80 @@ func _test_whole_scene_hard_seals_place_a_single_body(t) -> void:
 		t.check(positions.size() == 1,
 				"'%s' is one continuous scene, so it places exactly one body (got %d)"
 				% [id, positions.size()])
+
+## **The gap in a crash is a price, not a way through.** *(2026-09-12: "it should emanate an
+## excitement field that prevents the player from walking past it".)* The body is the two cars, so
+## the debris and the two pavements are walkable ground; what stands in the way instead is the
+## field, and the promise is that squeezing through costs more than half the meter — the
+## `Tuning.METER_MAX / 2` line `tests/test_crowd.gd` draws between *expensive* and *fatal*, taken
+## deliberately on the fatal side.
+##
+## **Walked, not asserted about the constant.** `Tuning.CAR_ACCIDENT_INTENSITY` is set from
+## `tests/probes/m118_crash_gap.gd`, which walks the same lines and prints them; this holds the
+## thing that number was chosen for, so a change to the falloff shape, the radii or the parts fails
+## here rather than passing a number back to itself. The **cheapest** open line is what it measures:
+## a guarantee about a price is a guarantee about the price she can actually get.
+func _test_squeezing_past_a_crash_costs_more_than_half_the_meter(t) -> void:
+	var map := _maps[0]
+	var crash := EventCatalogue.by_id("car_accident")
+	var checked := 0
+	for vertical in [false, true]:
+		var tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2) if vertical \
+				else Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
+		var instance := EventInstance.new()
+		instance.setup(crash, map.tile_to_world(tile), PackedVector2Array(), Vector2.RIGHT, map)
+		# Past its own telegraph, so the field is the rate the row states rather than the damped one
+		# a telegraph holds it to. Never added to the tree: `contribution_at()` is a pure query.
+		instance.age = 10.0
+		t.check(instance.solid_axis() == (Vector2.DOWN if vertical else Vector2.RIGHT),
+				"the rig stands on a %s street" % ["east-west" if vertical else "north-south"])
+		var cheapest := INF
+		var lanes := 0
+		var offset := -crash.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
+		while offset <= crash.obstructs_radius - Tuning.PLAYER_BODY_RADIUS:
+			if not _blocked_at(instance, offset):
+				lanes += 1
+				cheapest = minf(cheapest, _crash_pass_cost(instance, offset))
+			offset += 2.0
+		checked += lanes
+		t.check(lanes > 0, "there is a gap to squeeze through at all (%d lines)" % lanes)
+		t.check(cheapest > Tuning.METER_MAX / 2.0,
+				("the cheapest way past a %s crash costs %.1f of a %d meter, past the half "
+				+ "that separates expensive from fatal")
+				% ["east-west" if vertical else "north-south", cheapest, int(Tuning.METER_MAX)])
+		instance.free()
+	t.check(checked > 0, "and there were lines to walk (%d)" % checked)
+
+## Whether her centre may stand `offset` along the scene's own spread axis, clear of every car by
+## her own body radius.
+func _blocked_at(instance: EventInstance, offset: float) -> bool:
+	var vertical := instance.solid_axis() == Vector2.DOWN
+	var shapes := instance.solid_part_shapes()
+	var centres := instance.solid_part_centres()
+	for i in centres.size():
+		var delta := centres[i] - instance.global_position
+		var along: float = delta.y if vertical else delta.x
+		if absf(offset - along) < shapes[i].reach() + Tuning.PLAYER_BODY_RADIUS:
+			return true
+	return false
+
+## What one straight crossing of the sealed street at `offset` puts on the meter: the crash's field
+## less the walking decay, integrated at `WALK_SPEED` from outside its reach to outside it again.
+## The same arithmetic `tests/test_crowd.gd` prices a main-road crossing with.
+func _crash_pass_cost(instance: EventInstance, offset: float) -> float:
+	var step := 1.0 / 60.0
+	var vertical := instance.solid_axis() == Vector2.DOWN
+	var across := Vector2.RIGHT if vertical else Vector2.DOWN
+	var along := Vector2.DOWN if vertical else Vector2.RIGHT
+	var reach: float = instance.def.field_reach() + 8.0
+	var walker: Vector2 = instance.global_position + along * offset - across * reach
+	var paid := 0.0
+	var travelled := 0.0
+	while travelled < reach * 2.0:
+		walker += across * Tuning.WALK_SPEED * step
+		travelled += Tuning.WALK_SPEED * step
+		paid += (instance.contribution_at(walker) - Tuning.EXCITEMENT_DECAY_WALKING) * step
+	return paid
 
 # ------------------------------------------------------------------ street trees ---
 
