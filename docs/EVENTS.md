@@ -261,6 +261,14 @@ The gate over the road between a door's two huts costs her nothing at all: it de
 carries no field, and it only ever stops a car — see `docs/CITY.md`, "Regions and the wall", and
 `Crowd._stop_for_gates()`.
 
+**The boom hangs from a point midway between its own two posts, not from one of them.** A gate
+stands on the carriageway's centre line, level with the huts on either pavement, so a picture hung
+by the near post alone puts its whole arm to one side of where the body is — along a kerb, with the
+lanes it exists to bar open underneath it. Anchored between the posts, each post lands just outside
+a kerb and the striped arm crosses the lanes. `EventInstance.boom_arm_span()` states that reach as
+a number, because `_draw()` never runs in a headless test and the arm's own extent is the whole of
+what the player sees.
+
 ### Which way a spread lies
 
 `_draw_spread` and `_draw_cafe` lay their segments along local X by default — the right way to

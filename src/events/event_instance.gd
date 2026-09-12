@@ -368,13 +368,33 @@ const BOOM_GATE_NS_RAISED := preload("res://assets/checkpoints/boom_gate_ns_rais
 const BOOM_GATE_EW_LOWERED := preload("res://assets/checkpoints/boom_gate_ew_lowered.svg")
 const BOOM_GATE_EW_RAISED := preload("res://assets/checkpoints/boom_gate_ew_raised.svg")
 ## Each asset's own documented ground anchor, read out of the SVG's own comment rather than
-## assumed — none of the four is `Sprites.draw_standing`'s bottom-centre: the hut's doorway sits a
-## few pixels short of the canvas's own bottom edge, and a boom gate's anchor is off to one side,
-## at the post nearest the camera. See `_draw_at_anchor`.
+## assumed — neither is `Sprites.draw_standing`'s bottom-centre: the hut's doorway sits a few
+## pixels short of the canvas's own bottom edge. See `_draw_at_anchor`.
 const _HUT_ANCHOR := Vector2(28.0, 52.0)
 const _GUARD_ANCHOR := Vector2(11.0, 44.0)
-const _BOOM_NS_ANCHOR := Vector2(84.0, 59.0)
-const _BOOM_EW_ANCHOR := Vector2(21.0, 88.0)
+
+## A boom's two posts, as the ground point each of them stands on in its own canvas — the near
+## post is the `ground anchor` the SVG documents, the far one is the receiving post at the other
+## end of the arm, read off the same post box and base plate the near one is read off. Both states
+## of each boom put its posts in exactly these places, which is what keeps a raised bar registered
+## with the lowered one it replaces.
+const _BOOM_NS_NEAR_POST := Vector2(84.0, 59.0)
+const _BOOM_NS_FAR_POST := Vector2(5.0, 55.0)
+const _BOOM_EW_NEAR_POST := Vector2(21.0, 88.0)
+const _BOOM_EW_FAR_POST := Vector2(18.5, 12.0)
+## **A boom hangs from its body's ground point midway between its two posts, not from one of
+## them.** A gate is sited on the middle of the carriageway — `RegionPlanner._add_door_bodies`
+## puts it on the road's own centre line between the two huts — and a picture hung by the near
+## post alone puts its whole arm to one side of that point: on the kerb, with the lanes it exists
+## to bar left open underneath it. Anchored between the posts, each post lands just outside a kerb
+## and the arm crosses the lanes, which is the shape the picture was drawn as.
+const _BOOM_NS_ANCHOR := (_BOOM_NS_NEAR_POST + _BOOM_NS_FAR_POST) * 0.5
+const _BOOM_EW_ANCHOR := (_BOOM_EW_NEAR_POST + _BOOM_EW_FAR_POST) * 0.5
+## The lowered arm's own extent inside each canvas — the striped bar itself, not the posts or the
+## sockets. Only `boom_arm_span()` reads them: where the bar lands across the road is the thing a
+## test can check and `_draw()` cannot.
+const _BOOM_NS_ARM := Rect2(4.0, 43.0, 79.0, 7.0)
+const _BOOM_EW_ARM := Rect2(15.0, 7.0, 9.0, 76.0)
 
 ## The one silhouette that stands for a look, at any size.
 ##
@@ -2577,11 +2597,11 @@ func _select_view(heading: Vector2) -> String:
 # The checkpoint kit: `docs/GRAPHICS.md` binds each row to the file it draws. See `RegionPlanner`
 # for where the bodies stand and `EventManager` for the detention and the teleport.
 
-## Draws `texture` so its own documented ground anchor lands at `at` (local space, default the
-## body's own origin) — `Sprites.draw_standing`'s bottom-centre assumption is wrong for this kit:
-## a boom gate's anchor sits at one post, not the middle of the canvas, and the hut's doorway is a
-## few pixels short of the canvas's own bottom edge. No mirroring, unlike `Sprites.draw_standing` —
-## nothing in the kit that draws this way ever needs to flip.
+## Draws `texture` so its own ground anchor lands at `at` (local space, default the body's own
+## origin) — `Sprites.draw_standing`'s bottom-centre assumption is wrong for this kit: a boom
+## gate's anchor sits between its two posts rather than under the middle of the canvas, and the
+## hut's doorway is a few pixels short of the canvas's own bottom edge. No mirroring, unlike
+## `Sprites.draw_standing` — nothing in the kit that draws this way ever needs to flip.
 func _draw_at_anchor(canvas: CanvasItem, texture: Texture2D, anchor: Vector2,
 		at: Vector2 = Vector2.ZERO) -> void:
 	texture = TextureResolver.resolve(texture)
@@ -2629,7 +2649,7 @@ func _draw_checkpoint_hut(canvas: CanvasItem = self) -> void:
 ## turns to face, see `facing_now()`'s own doc.
 func _draw_checkpoint_gate(canvas: CanvasItem = self) -> void:
 	var raised: bool = gate_state != null and gate_state.raised
-	var runs_north_south := absf(_heading.y) > absf(_heading.x)
+	var runs_north_south := gate_runs_north_south(_heading)
 	var texture: Texture2D
 	var anchor: Vector2
 	if runs_north_south:
@@ -2640,3 +2660,21 @@ func _draw_checkpoint_gate(canvas: CanvasItem = self) -> void:
 		anchor = _BOOM_EW_ANCHOR
 	_draw_shape_shadow(canvas, def.shape)
 	_draw_at_anchor(canvas, texture, anchor)
+
+## Whether a gate sited with `along_axis` bars a road running north-south, and so draws the boom
+## whose arm spans east-west. `along_axis` is the street's own along-axis, which
+## `RegionPlanner._along_axis` sets to `DOWN` for a north-south street and `RIGHT` for an east-west
+## one. Named rather than inlined so the drawing and the test that measures it read the same rule.
+static func gate_runs_north_south(along_axis: Vector2) -> bool:
+	return absf(along_axis.y) > absf(along_axis.x)
+
+## How far the lowered arm reaches to either side of the gate's own ground point, across the road
+## it bars: `x` the near edge (negative), `y` the far edge, in pixels along the cross-street axis.
+## This is the number the player reads as *the bar is on the road* or *the bar is on the kerb*, and
+## nothing in `_draw()` can be asserted headless — see `tests/test_checkpoints.gd`.
+static func boom_arm_span(runs_north_south: bool) -> Vector2:
+	if runs_north_south:
+		var ns := _BOOM_NS_ARM.position.x - _BOOM_NS_ANCHOR.x
+		return Vector2(ns, ns + _BOOM_NS_ARM.size.x)
+	var ew := _BOOM_EW_ARM.position.y - _BOOM_EW_ANCHOR.y
+	return Vector2(ew, ew + _BOOM_EW_ARM.size.y)

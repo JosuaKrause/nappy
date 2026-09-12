@@ -20,6 +20,7 @@ func run(t) -> void:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 251))
 	_test_every_door_has_its_three_bodies(t)
 	_test_door_bodies_stand_on_their_own_ground(t)
+	_test_the_boom_bars_the_carriageway(t)
 	_test_the_three_rows_validate_and_are_never_rolled(t)
 	_test_the_manager_actually_places_the_door_structure(t)
 	_test_a_hut_detains_and_releases_on_the_other_side(t)
@@ -143,6 +144,92 @@ func _test_door_bodies_stand_on_their_own_ground(t) -> void:
 						"at %s (%.0fpx away)") % [map.seed_used, day, wall_body.position,
 						wall_body.def.obstructs_radius, segment.key(), distance])
 	t.check(checked > 0, "at least one door body was checked against its own segment (%d)" % checked)
+
+## *(PLAYTEST-57: "the gate for the cars is too high up. it needs to be further down".)* The boom
+## is the one body at a door whose picture is much wider than the body under it, so where the bar
+## actually lands is a question only the drawing can answer — and a headless run never calls
+## `_draw()` (see the **verify** skill), which is why `EventInstance.boom_arm_span()` states the
+## arm's own reach as a number the drawing and this check share.
+##
+## Three things about a street door, over every sampled day: the gate stands level with its two
+## huts along the street, its own ground point is on the carriageway's centre line, and the arm it
+## draws crosses the whole carriageway rather than lying along a kerb. The last one is what the
+## picture got wrong: hung from the near post, the arm sat entirely to one side of the ground
+## point, at the height of the road's upper kerb with the lanes open under it.
+func _test_the_boom_bars_the_carriageway(t) -> void:
+	var checked := 0
+	for pair in _sampled_days():
+		var map: CityMap = pair[0]
+		var day: int = pair[1]
+		_repaint_for(map, day)
+		var tree := RouteTree.for_day(map, day)
+		var plan := RegionPlanner.plan_day(map, day, tree)
+		for segment in plan.doors:
+			var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
+					< RegionPlanner.region_of_junction(map, segment.b)
+			var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
+			var mouth := map.tile_rect_to_world(segment.mouth_rect(at_a))
+			var gate: EventScheduler.Planned = null
+			var huts: Array[EventScheduler.Planned] = []
+			for body in plan.door_bodies:
+				if not mouth.has_point(body.position):
+					continue
+				if body.def.id == "checkpoint_gate":
+					gate = body
+				elif body.def.id == "checkpoint_hut":
+					huts.append(body)
+			if not gate or huts.size() != 2:
+				continue
+			checked += 1
+
+			# The cross-street axis, and the carriageway band on it: the middle of the street's own
+			# cross-section, with `Tuning.SIDEWALK_WIDTH` tiles of pavement on either side of it.
+			var across_low: float = (mouth.position.y if segment.horizontal else mouth.position.x) \
+					+ Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE
+			var road_width: float = (Tuning.STREET_WIDTH - 2 * Tuning.SIDEWALK_WIDTH) \
+					* Tuning.TILE_SIZE
+			var across_high := across_low + road_width
+			var gate_across: float = gate.position.y if segment.horizontal else gate.position.x
+			var gate_along: float = gate.position.x if segment.horizontal else gate.position.y
+
+			for hut in huts:
+				var hut_along: float = hut.position.x if segment.horizontal else hut.position.y
+				t.check(is_equal_approx(hut_along, gate_along),
+						"seed %d day %d: the gate stands level with its huts along the street "
+						% [map.seed_used, day] + "(gate %.1f, hut %.1f)" % [gate_along, hut_along])
+			t.check(gate_across > across_low and gate_across < across_high,
+					"seed %d day %d: the gate's ground point is on the carriageway, not a kerb "
+					% [map.seed_used, day] + "(%.1f in %.1f..%.1f)"
+					% [gate_across, across_low, across_high])
+
+			var span := EventInstance.boom_arm_span(
+					EventInstance.gate_runs_north_south(gate.facing))
+			var arm_near := gate_across + span.x
+			var arm_far := gate_across + span.y
+			t.check(arm_near <= across_low and arm_far >= across_high,
+					("seed %d day %d: the lowered arm crosses the whole carriageway (%.1f..%.1f " +
+					"over %.1f..%.1f)")
+					% [map.seed_used, day, arm_near, arm_far, across_low, across_high])
+			var arm_middle := 0.5 * (arm_near + arm_far)
+			t.check(arm_middle > across_low and arm_middle < across_high,
+					"seed %d day %d: and the middle of the bar is over the lanes, not a kerb "
+					% [map.seed_used, day] + "(%.1f in %.1f..%.1f)"
+					% [arm_middle, across_low, across_high])
+
+			# And the picture stays over ground the door is actually solid on: the three bodies
+			# tile the street edge to edge at `Tuning.TILE_SIZE` spacing, so an arm that reaches
+			# past the gate's own body is still over a hut's.
+			var solid_low := gate_across - gate.def.obstructs_radius
+			var solid_high := gate_across + gate.def.obstructs_radius
+			for hut in huts:
+				var hut_across: float = hut.position.y if segment.horizontal else hut.position.x
+				solid_low = minf(solid_low, hut_across - hut.def.obstructs_radius)
+				solid_high = maxf(solid_high, hut_across + hut.def.obstructs_radius)
+			t.check(arm_near >= solid_low and arm_far <= solid_high,
+					("seed %d day %d: the arm never reaches past the door's own solid line " +
+					"(%.1f..%.1f over %.1f..%.1f)")
+					% [map.seed_used, day, arm_near, arm_far, solid_low, solid_high])
+	t.check(checked > 0, "at least one street door's boom was measured (%d)" % checked)
 
 ## The three rows are `SCRIPTED`, `scripted_day 0`, like the seal pictures — so they validate on
 ## boot (already checked by `EventCatalogue.all()`, restated here explicitly) and the ordinary
