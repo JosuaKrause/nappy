@@ -27,11 +27,36 @@ unmerged for no reason. Arm it as the last step of proposing, and arm the next P
 same way — a PR whose base was a branch has to be retargeted to `main` (or re-opened against it,
 since GitHub closes a PR whose base branch is deleted) before it can be armed.
 
-**Where something has to happen after the merge — a stacked PR retargeted, a worktree removed,
-`main` pulled into the player's checkout — a background agent does the watching, never the
-orchestrating session.** *(2026-09-11: "you can use an agent to poll a ci/merge to retarget prs
-etc. but don't block the main agent for it".)* Give it the PR number, the exact tidy steps and a
-90-second poll, and carry on; its report is the signal to act on.
+**Arm it so that it can actually merge, then move on.** *(2026-09-11: "and just arm the PRs
+don't wait for them"; then "make sure PRs can actually auto merge fully when arming them. and of
+course wait for them if new work depends on them".)* Arming is only the last step if the PR is
+`MERGEABLE` at that moment — `gh pr view <n> --json mergeable,mergeStateStatus` says so; a PR that
+is `CONFLICTING`, or would be the instant a sibling armed ahead of it merges, is not armed yet, it
+is merged with `main` first under the **merging-main** rules. **Several armed PRs that touch the
+same file will conflict in turn**, because each merges against a `main` the previous one changed —
+`docs/DECISIONS.md`, where every PR prepends a record, and `docs/TODO.md`, where every PR removes
+or adds an entry, do this every time — so before arming a second PR that touches those, either
+wait for the first, or fold the two into one PR, or accept that the second needs a merge of `main`
+after the first lands and do that merge before walking away. What is never right is arming a PR
+that cannot merge and leaving.
+
+**Wait exactly when the next work depends on the merge, and never in the orchestrating session.**
+*(2026-09-11: "you can use an agent to poll a ci/merge to retarget prs etc. but don't block the
+main agent for it"; "and don't forget the earlier instruction to wait for PRs via agent".)* A
+branch that has to build on another PR's code waits for that PR rather than stacking on its branch,
+since GitHub closes a stacked PR when its base branch is deleted; a docs-only PR nothing depends on
+is armed and left. The waiting itself is a background agent's or a monitor's: give it the PR
+numbers, the exact tidy steps — retarget, remove the worktree, pull `main` into the player's
+checkout — and a 90-second poll in a foreground loop, and carry on with something else; its report
+is the signal to act on. An agent told to poll must be told to loop in the foreground and to keep
+going through `UNKNOWN` states, since one that backgrounds its own loop exits at once and one that
+stops at the first `CONFLICTING` has reported a state the orchestrator then resolves by hand.
+
+**Leaving PRs open at the end of a session is not the standard** *(2026-09-11: "also this is not a
+general rule for *every* session")*: it happened once because the player asked for a break with the
+checks still running. The ordinary end of a session sees its PRs merged, the worktrees removed and
+`main` pulled into the player's checkout. When a session does end with PRs open, the next one
+begins by fetching and looking at what merged and what did not.
 
 **A ready-for-review PR carries the completed work and its verification.** Run `./tools/check.sh`,
 the suites the change touches, and `./tools/lint.sh` if a governed doc moved. An unfinished draft

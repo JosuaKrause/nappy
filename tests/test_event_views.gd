@@ -90,8 +90,9 @@ const VEHICLE_SIDE_REUSE := {
 ## Which vehicle families' `"side"` view is authored facing west rather than east — the exact
 ## `side_faces_west` argument `EventInstance._draw_body()` passes to `_draw_eight_view()` for each,
 ## read back here so the selector test below can assert the mirror the same way the drawing does.
-## `riot_van` is the one family missing: its `"side"` view keeps the plain `is_mirrored()` sense
-## despite being west-authored too — see `RIOT_VAN_BY_VIEW`'s own doc comment.
+## `ice_cream_van`, `lorry` and `police_car` are the three genuinely east-authored families;
+## `riot_van` joins `delivery_van`, `fire_engine`, `unmarked_van` and `army_truck` as west-authored
+## — see `RIOT_VAN_BY_VIEW`'s own doc comment.
 const VEHICLE_SIDE_FACES_WEST := {
 	"delivery_van": true,
 	"fire_engine": true,
@@ -100,7 +101,7 @@ const VEHICLE_SIDE_FACES_WEST := {
 	"unmarked_van": true,
 	"army_truck": true,
 	"police_car": false,
-	"riot_van": false,
+	"riot_van": true,
 }
 
 func run(t) -> void:
@@ -121,7 +122,7 @@ func run(t) -> void:
 	_test_chatting_mother_state_predicate_selects_the_conversation_posture(t)
 	_test_unpaired_event_views_still_fall_back_to_svg(t)
 	_test_vehicle_views_match_facings_csv_per_sector(t)
-	_test_riot_van_reproduces_its_original_octant_table(t)
+	_test_riot_van_reproduces_its_octant_table_with_the_corrected_side_mirror(t)
 	_test_kerb_parked_vans_keep_their_axis_chosen_view(t)
 	_test_reversing_lorry_only_ever_faces_the_side_view(t)
 	_test_vehicle_views_are_grounded_at_the_canvas_bottom(t)
@@ -363,10 +364,9 @@ const VEHICLE_DEF_ID := {
 ## Each vehicle family's own mirror per sector (0 E .. 7 NE), transcribed directly from
 ## `facings.csv`'s own `mirror_x` column rather than re-derived from `EightDirection.is_mirrored()`
 ## — so a mistake in `_draw_eight_view()`'s `side_faces_west` inversion cannot cancel a mistake
-## here. Every family but `riot_van` matches `EXPECTED_MIRRORED` exactly except at sectors 0 (E)
-## and 4 (W), which invert for the four whose `"side"` picture is authored facing west
-## (`VEHICLE_SIDE_FACES_WEST`); `riot_van` keeps the plain sense throughout — see
-## `RIOT_VAN_BY_VIEW`'s own doc comment for why.
+## here. Every family matches `EXPECTED_MIRRORED` exactly except at sectors 0 (E) and 4 (W), which
+## invert for the five whose `"side"` picture is authored facing west (`VEHICLE_SIDE_FACES_WEST`),
+## `riot_van` among them.
 const VEHICLE_MIRROR_BY_SECTOR := {
 	"delivery_van": [true, false, false, true, false, true, false, false],
 	"fire_engine": [true, false, false, true, false, true, false, false],
@@ -375,7 +375,7 @@ const VEHICLE_MIRROR_BY_SECTOR := {
 	"ice_cream_van": [false, false, false, true, true, true, false, false],
 	"lorry": [false, false, false, true, true, true, false, false],
 	"police_car": [false, false, false, true, true, true, false, false],
-	"riot_van": [false, false, false, true, true, true, false, false],
+	"riot_van": [true, false, false, true, false, true, false, false],
 }
 
 ## The whole binding, per family and per sector: the view `EIGHT_VIEW_BY_SECTOR` names, and the
@@ -408,25 +408,32 @@ func _test_vehicle_views_match_facings_csv_per_sector(t) -> void:
 ## M56's original hand-written `match` in `_draw_riot_van()`, transcribed as literal data
 ## independent of `EXPECTED_VIEW`/`EIGHT_VIEW_BY_SECTOR` above, so a later change to either of those
 ## shared tables cannot silently change what a hunting night raid draws without this test noticing.
+## The texture per sector is exactly what the hand-written match once picked; the mirror at
+## sectors 0 (E) and 4 (W) is corrected from it, since `riot_van.svg` is authored facing west
+## (`facings.csv`) and the hand-written match had those two sectors backwards — every other sector
+## draws a front/back/diagonal view, which `side_faces_west` never touches, so it is pinned exactly
+## as the original match had it.
 const RIOT_VAN_OCTANT_TEXTURE := [
 	EventInstance.RIOT_VAN, EventInstance.RIOT_VAN_FRONT_DIAGONAL, EventInstance.RIOT_VAN_FRONT,
 	EventInstance.RIOT_VAN_FRONT_DIAGONAL, EventInstance.RIOT_VAN,
 	EventInstance.RIOT_VAN_BACK_DIAGONAL, EventInstance.RIOT_VAN_BACK,
 	EventInstance.RIOT_VAN_BACK_DIAGONAL,
 ]
-const RIOT_VAN_OCTANT_MIRROR: Array[bool] = [false, false, false, true, true, true, false, false]
+const RIOT_VAN_OCTANT_MIRROR: Array[bool] = [true, false, false, true, false, true, false, false]
 
-func _test_riot_van_reproduces_its_original_octant_table(t) -> void:
+func _test_riot_van_reproduces_its_octant_table_with_the_corrected_side_mirror(t) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("night_raid"), Vector2.ZERO)
 	for sector in range(8):
 		instance._view_sector = (sector + 4) % 8
 		var view := instance._select_view(_heading_for_sector(sector))
 		var mirror := EightDirection.is_mirrored(instance._view_sector)
+		if view == "side":
+			mirror = not mirror
 		t.check(EventInstance.RIOT_VAN_BY_VIEW[view] == RIOT_VAN_OCTANT_TEXTURE[sector],
 				"sector %d draws the same texture the hand-written match once did" % sector)
 		t.check(mirror == RIOT_VAN_OCTANT_MIRROR[sector],
-				"sector %d mirrors the same way the hand-written match once did" % sector)
+				"sector %d mirrors per facings.csv, corrected from the hand-written match" % sector)
 	instance.free()
 
 ## `delivery_van` and `ice_cream_van` are always sited facing east — `AT_THE_KERB` never sets

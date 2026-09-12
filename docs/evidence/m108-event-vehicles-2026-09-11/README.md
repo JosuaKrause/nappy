@@ -17,10 +17,10 @@ sheet — the same rasteriser `docs/evidence/svg-vehicles-2026-09-10/`'s own rev
   (`AGAINST_THE_BUILDING`), so every column past the `E`/`W` pair is shown here for completeness
   rather than because the row is ever seen at it.
 - `vehicles-security-{native,3x}.png` — unmarked van (`abduction`, west-authored), army truck
-  (`military_convoy`, west-authored) and the riot van (`night_raid`). The riot van's own `side` view
-  keeps the plain `EightDirection.is_mirrored()` sense despite being west-authored too — see
-  `EventInstance.RIOT_VAN_BY_VIEW`'s own doc comment — which is why its mirror direction at `E`/`W`
-  reads backwards next to the other two rows on this sheet.
+  (`military_convoy`, west-authored) and the riot van (`night_raid`, west-authored too). All three
+  rows now take the `side_faces_west` correction, so all three read the same way at `E`/`W` on this
+  sheet — see `EventInstance.RIOT_VAN_BY_VIEW`'s own doc comment for why the riot van's side view
+  mirrors on east like its siblings rather than on west as M56's original hand-written match had it.
 - `police-car-{native,3x}.png` — `police_patrol`, east-authored, and the only family here whose
   diagonal views are ordinarily reachable in play: the row is mobile and turns corners along its own
   patrol route, where every other vehicle family above either never turns (`delivery_van`,
@@ -36,10 +36,11 @@ own side/vertical axis choice is untouched.
 **What a sheet cannot show**: the exact mirror per family per sector, checked against
 `docs/evidence/svg-vehicles-2026-09-10/facings.csv`'s own `mirror_x` column rather than eyeballed, is
 asserted directly in `tests/test_event_views.gd` — the same suite that pins the riot van's octant
-table against M56's original hand-written `match` (independent of `EIGHT_VIEW_BY_SECTOR`, so a later
-change there cannot silently change what a hunting night raid draws), the kerb-parked vans' and the
-reversing lorry's axis-fixed view, and every front/back/diagonal picture's own ground contact within
-a few pixels of its canvas's bottom edge.
+table against M56's original hand-written `match`, with the side view's mirror corrected to match
+`facings.csv` (independent of `EIGHT_VIEW_BY_SECTOR`, so a later change there cannot silently
+change what a hunting night raid draws), the kerb-parked vans' and the reversing lorry's
+axis-fixed view, and every front/back/diagonal picture's own ground contact within a few pixels of
+its canvas's bottom edge.
 
 Two `tools/shot.sh` captures, `--layers 2,3` (shadows and bounding boxes) on top of the ordinary
 picture, seed 4242:

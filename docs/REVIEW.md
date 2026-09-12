@@ -20,14 +20,6 @@ toggle the field, shadow, bounding-box and readout layers (`docs/TELEMETRY.md`, 
 view"). `--invincible` is the way to walk this whole list in one sitting: nothing ends the day, so
 one run can stand next to every item below for as long as looking takes.
 
-- **Walk into a checkpoint on day 7 or later** (`--day 7`; the region walls stand from day 7 and
-  a door is a hut on each pavement with a boom between). Both she and the guard vanish for two
-  seconds, the camera eases onto the hut and back. Does the hold read as *an inspection* or as a
-  cut? Is two seconds right? Does the ease feel like a camera move she did not make? Record is
-  `DECISIONS.md`, M113.
-- **Hug a corner with the pram.** The pram has its own collision body now, trailing 34px ahead of
-  her. Does she catch on corners she used to slide round, and does that read as *the pram* or as
-  an invisible wall? Record is `DECISIONS.md`, M100, the pram's own collision.
 - **Stand by a sealed street and watch the crowd** (any day; seals are the bodies on the streets
   the day's route does not use). Walkers and cars turn back from a hard seal, a wall and a
   closure; a soft seal takes both pavements from walkers and leaves the road to cars; a door lets
@@ -69,8 +61,7 @@ one run can stand next to every item below for as long as looking takes.
   as facing the right way along its kerb? The police car is the one event vehicle that turns
   corners, so it shows the diagonal views: do its markings and light bar hold up from every
   side, and does it sit on its shadow at the diagonal? Record is `DECISIONS.md`, M108, the event
-  vehicles. The riot van's side view faces the wrong way, known and filed under M100 — do not
-  report it again.
+  vehicles.
 - **Look at the people and animals in events from more than one side** (any day). The dog
   walker and his dog, the pacing yeller and the chatting mother, the cat, the loose dog, the
   charging dog, the cyclist and each pigeon now face the way they actually move, through the
