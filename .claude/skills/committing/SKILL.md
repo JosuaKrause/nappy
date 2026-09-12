@@ -27,11 +27,21 @@ unmerged for no reason. Arm it as the last step of proposing, and arm the next P
 same way — a PR whose base was a branch has to be retargeted to `main` (or re-opened against it,
 since GitHub closes a PR whose base branch is deleted) before it can be armed.
 
-**Where something has to happen after the merge — a stacked PR retargeted, a worktree removed,
-`main` pulled into the player's checkout — a background agent does the watching, never the
-orchestrating session.** *(2026-09-11: "you can use an agent to poll a ci/merge to retarget prs
-etc. but don't block the main agent for it".)* Give it the PR number, the exact tidy steps and a
-90-second poll, and carry on; its report is the signal to act on.
+**Arm it and move on; nobody waits for it, not even a background agent.** *(2026-09-11: "and
+just arm the PRs don't wait for them".)* A session that has armed its PRs is finished with them:
+the worktree removal, the `main` pull into the player's checkout and any stacked PR's retarget
+happen at the **start of the next session**, which begins by fetching and looking at what merged
+and what did not. Watcher agents that poll a check every ninety seconds were tried and cost more
+than they saved — one exited before the merge, one stopped at the first conflict, and each cost a
+spawn — so a wait is never the right answer to an open PR.
+
+**Several armed PRs that touch the same file will conflict in turn**, because each merges against
+a `main` the previous one changed — `docs/DECISIONS.md`, where every PR prepends a record, and
+`docs/TODO.md`, where every PR removes or adds an entry, do this every time. A PR that goes
+`CONFLICTING` is not merged by anybody: it waits for a merge of `main` resolved by hand under the
+**merging-main** rules, at the next session's start. Reduce the collisions where it is cheap —
+one PR that files several records rather than several PRs that each file one — and accept the
+rest.
 
 **A ready-for-review PR carries the completed work and its verification.** Run `./tools/check.sh`,
 the suites the change touches, and `./tools/lint.sh` if a governed doc moved. An unfinished draft

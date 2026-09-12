@@ -13,6 +13,14 @@ Claude Code and Codex share `CLAUDE.md` and `.claude/skills/`; Codex reads `CLAU
 through `project_doc_fallback_filenames` in `.codex/config.toml`, and finds the skills through the
 `.agents/skills` link. Its repository hooks need review through `/hooks` before they execute.
 
+**A session ends with its pull requests armed, not merged**, so the first thing to do is `git fetch
+--prune` and `gh pr list`: whatever is still open either waits on its check or has gone
+`CONFLICTING` under a sibling that merged first, and the second kind needs a merge of `main` resolved
+by hand under the **merging-main** rules before auto-merge can take it. `git worktree list` shows
+any agent worktree left behind for a branch that was still open; remove it once its PR has merged.
+`docs/playtests/PLAYTEST-57.md` is the newest session: its findings are the M100 defects at the top
+of that milestone's list and M115, streets with trees, and they are the next work.
+
 **Every branch is work in progress; nothing is parked on one.** The sealing measurement probes,
 `tests/probes/m64_measure.gd` and `tests/probes/m64_density.gd`, live under `tests/probes/`, where
 the runner does not discover them: they print rather than assert, they are the instrument the
@@ -277,9 +285,11 @@ Reaching act III — which M56's measurement against the nerves needs — waits 
 that batch is done. SVG-to-PNG
 style transfer is Codex's parallel track. Prepared artwork and its source-review sheets are listed
 in `GRAPHICS.md`; the integration table in `TODO.md` assigns each family to its gameplay owner.
-The crowd goes round seals, walls and doors (`DECISIONS.md`, M110), and a car follows an arc
-through a turn with its heading continuous throughout (`DECISIONS.md`, M111); the diagonal car
-pictures on that arc are M108's vehicle item, and M111's one open question — a street about-face
+**M115, streets with trees, and the M100 defects playtest 57 filed stand in front of that batch**
+by the orchestrator's placement, since a played day found them. The crowd goes round seals, walls
+and doors (`DECISIONS.md`, M110), and a car follows an arc through a turn with its heading
+continuous throughout (`DECISIONS.md`, M111), drawn through side, diagonal and end views on the
+way (`DECISIONS.md`, M108, the crowd car); M111's one open question — a street about-face
 that crosses a kerb, or a reverse gear — is the player's, in `TODO.md`.
 
 ## What to distrust
