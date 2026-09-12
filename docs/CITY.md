@@ -857,11 +857,31 @@ empties it. It is the single exception to "a tree and an event never share groun
 segment may carry a felled tree, and which pit that felled tree takes — so the closure marker's
 picture and the standing trees beside it can never be two different species.
 
-**A closure is silent.** It contributes nothing to the excitement meter. The noise of a
-street is the crowd on it and the danger of a street is the events on it; a closure is the
-*shape* of the route and nothing else. A noisy roadworks already exists as the `construction`
-event, which emits and obstructs; keeping the two apart is what stops `City` growing a third
-thing to sum, and keeps "excitement is a pure query" true.
+**A closure is silent, and so is every seal but one.** A `RoadClosure` contributes nothing to the
+excitement meter: the noise of a street is the crowd on it and the danger of a street is the events
+on it, and a closure is the *shape* of the route and nothing else. A noisy roadworks already exists
+as the `construction` event, which emits and obstructs; keeping the two apart is what stops `City`
+growing a third thing to sum, and keeps "excitement is a pure query" true. All five kinds in the
+table above are silent, `CRASH` included — the two cars it leaves in the road are a picture.
+
+**The one exception is the `car_accident` seal, and it is the player's own.** *(2026-09-12: "a car
+crash right now has a full bounding box even though there are gaps in the sprite. the bounding box
+should only be the crashed cars but it should emanate an excitement field that prevents the player
+from walking past it".)* That row is a `SealPlanner` scene rather than a `RoadClosure` — see
+"Sealing the tree" — and it is now solid only where its two cars are, so the debris and the
+pavements either side of them are ground she can walk. What closes them is
+`Tuning.CAR_ACCIDENT_INTENSITY`, a field over the scene's own band that costs more than half the
+meter to squeeze past. **It is still not a third thing to sum**: a seal is a catalogue row, so it
+emits the way every event does and `City.total_excitement_at` is unchanged. What has changed is
+that a seal may be loud, and only this one is — the fallen tree (one trunk kerb to kerb) and the
+burst main (a crater between two barriers) leave no gaps to close and stay at zero.
+
+**The seal still seals.** `ClosurePlanner` goes on counting a closed street as closed for the route
+guarantee, and `CityMap.held_segments` still keeps the crowd off a hard seal's street; both are
+stated over `obstructs_radius` — the ground the scene *closes*, unmoved at 96px — rather than over
+the bodies it puts down. That is the conservative direction and deliberately so: taking obstruction
+away can only add reachable ground, so a day proved winnable against the whole-street band is still
+winnable with two cars standing in it.
 
 ### How heavy
 
