@@ -24,6 +24,13 @@ at all. It does not drain either — the baby is just too interested in the worl
 
 At `sleepiness = 100` the baby falls asleep and the day enters its **return phase**.
 
+**In acts III and IV, the return leg owes its own pressure.** `EventDirector.owe_the_return()`
+fires the moment `EventBus.return_phase_started` does, adding `Tuning.RETURN_PATROLS_PER_ACT`
+(`[0, 0, 2, 3]`) extra `police_patrol` rows to the owed queue and switching its pacing to
+`Tuning.RETURN_PATROL_INTERVAL` (9–16s, tighter than the ordinary 11–26s) for the rest of the day
+— see `docs/EVENTS.md`, "The return owes her patrols", for the siting and the fairness. Acts I
+and II are untouched, so the days she is taught the mechanic on stay exactly as they were.
+
 **Where a day is won.** These three numbers are pitched against the *day*, not against each
 other, and they are what makes the walk the game:
 
@@ -526,6 +533,33 @@ zebra, and so does a walker — unless the answer it drew when it was placed is 
 one in four do, and the door then reads to that walker exactly like the wall either side of it. A
 walker that crosses is held at the hut on its own sidewalk, one at a time; see "A checkpoint"
 above.
+
+**And every other solid body diverts the crowd too, as far as avoiding it.** *(2026-09-12: "yes
+every solid body should do that -- not necessarily force a turn around but at least avoid the
+solid".)* A café's tables, a construction band, a kerbed van, a stall, a skip, a burnt-out car:
+`CityMap.obstructed_tiles` records the tiles each stationary solid body stands on, filled from the
+day's whole plan rather than from the events near the player, because the crowd is steered across
+the whole map while an event only exists within reach of her. Mobile rows are exempt, the way the
+catalogue's own solidity rule exempts them; so is a body on a segment that is held anyway, and so
+is a door, because a hard seal and a hut each already have an answer.
+
+**A walker steps round it and a car turns at the junction, and the difference is that a walker has
+another lane.** A footway is two lanes wide, so a walker whose own lane is taken steers into the
+other one `Tuning.WALKER_BODY_SIDESTEP_TILES` (4 tiles, 128px) before it gets there and steers back
+once it is past — the same sidestep a bump gives it, aimed at a lane rather than away from a person.
+Only a body that takes **every** lane of one footway at the same point along the street shuts that
+footway, and then the walker turns at the last junction exactly as it does for a soft seal — with
+the other footway and the carriageway still open, which is the whole difference between a body and
+a seal. A car has one lane per direction and the oncoming one is not an option, so a body on its own
+lane tile shuts that direction to it and it turns at the last junction; a car already past the last
+junction stops behind the body the way it stops behind a queue, and the oncoming lane keeps flowing.
+
+**Neither the brake nor the sidestep is what makes this true, and that is worth knowing.** Both are
+*approaches* — they aim at a point and arrive late by whatever the last frame's speed bought — so
+the guarantee is positional instead: an agent's step is held inside the tile it started the frame
+on whenever it would have carried its centre into a body, the sideways half given up before the
+forward half so a walker crossing a pavement beside a stall keeps walking along it rather than
+wedging against it.
 
 ## The world near you
 

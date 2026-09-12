@@ -8,6 +8,7 @@ extends Node
 func _ready() -> void:
 	validate_traffic()
 	validate_signals()
+	validate_return_patrols()
 
 # ---------------------------------------------------------------- movement ---
 
@@ -910,6 +911,24 @@ const WALKER_DOOR_QUEUE_MAX := 2
 ## traffic and a sidewalk has a door structure standing across it.
 const WALKER_DOOR_LANE_TOLERANCE := 32.0
 
+# ------------------------------------------------- walkers round a solid body ---
+# What a walker does about a stationary solid body standing on its own lane — a café's tables, a
+# construction band, a kerbed van, a stall. *("yes every solid body should do that -- not
+# necessarily force a turn around but at least avoid the solid".)* It steps into the other lane of
+# its own footway and steps back after; only a body that takes **every** lane of that footway turns
+# it at the last junction, the way a seal does. See `CrowdAgent._step_around_a_body()` and
+# `CityMap.obstructed_tiles`.
+
+## How far ahead a walker begins going round a body, in tiles. Four tiles is 128px, a second and
+## three quarters at the fastest a walker goes — long enough to read as *going round that* rather
+## than as a lane change taken a street early, and comfortably over what the crossing itself costs.
+##
+## **The floor under it is the crossing time, and `validate_traffic()` states it**: the two lanes of
+## one footway are `TILE_SIZE + 2 * CrowdLanes.SIDEWALK_LANE_SPREAD` (48px) apart and a walker
+## closes on its lane at `CrowdAgent.STEER_SPEED`, so a walker that starts too late arrives beside
+## the body still halfway across — which is a walker clipping a café rather than avoiding one.
+const WALKER_BODY_SIDESTEP_TILES := 4
+
 # ------------------------------------------------------- bodies on the street ---
 # A crowd you can walk through is a field with a picture attached: every pavement is identical, none
 # of them can hurt you, and the route is not a decision. See docs/MECHANICS.md, "The street has
@@ -1284,6 +1303,20 @@ const AHEAD_MIN_SPEED := 40.0
 ## Seconds between two `AHEAD` events, so the day's allowance is spread over the walk rather
 ## than spent in the first ten seconds. The director rolls within this band.
 const AHEAD_INTERVAL := Vector2(11.0, 26.0)
+
+## Extra `police_patrol` rows the return leg owes in acts III and IV, one entry per act —
+## `Tuning.act_for_day()` is 1-based, so `RETURN_PATROLS_PER_ACT[act - 1]`. Acts I and II carry
+## none, so the teaching days and the return she learns the mechanic on stay exactly as they were
+## measured. Sized against the return leg's own length (`docs/DECISIONS.md`, M98: a return leg
+## measured at 32.9s in act III and 47.3s in act IV) and the row's own cost — non-lethal, 74px/s,
+## a 185px outer radius — so a leg meets one or two of them rather than four: an amount the
+## sleeping baby can take, not a gauntlet.
+const RETURN_PATROLS_PER_ACT: Array[int] = [0, 0, 2, 3]
+
+## How far apart the return leg's own patrols land, once `EventDirector.owe_the_return()` has
+## fired for the day. Tighter than `AHEAD_INTERVAL` on purpose, so the rows it owes land inside
+## the 33-47s return leg they were sized against rather than arriving after she is already home.
+const RETURN_PATROL_INTERVAL := Vector2(9.0, 16.0)
 
 # ------------------------------------------------------ one event per block ---
 # The density target is one event per block, so the decision a player makes about an obstacle
@@ -1729,12 +1762,45 @@ func validate_traffic() -> bool:
 		push_error("No walker is ever held at a door: pass %.3f + turn back %.3f leaves nothing"
 				% [WALKER_DOOR_PASS_FRACTION, WALKER_DOOR_TURN_BACK_FRACTION])
 		return false
+	# A walker going round a solid body has to have finished crossing to the other lane of its own
+	# footway by the time it gets there. Stated over the distance rather than the time, because what
+	# it is really about is where the walker is when it reaches the body.
+	var lane_gap := float(TILE_SIZE) + 2.0 * CrowdLanes.SIDEWALK_LANE_SPREAD
+	var crossing_run := lane_gap / CrowdAgent.STEER_SPEED * PEDESTRIAN_SPEED.y
+	if float(WALKER_BODY_SIDESTEP_TILES * TILE_SIZE) < crossing_run:
+		push_error("A walker cannot get round a body: it starts %.0fpx out and needs %.0fpx to "
+				% [float(WALKER_BODY_SIDESTEP_TILES * TILE_SIZE), crossing_run]
+				+ "cross the %.0fpx to the other lane of its footway" % lane_gap)
+		return false
 	return true
 
 ## Shortest horn a lethal car may fairly give. Kept separate from `validate_traffic()` so a
 ## test can check the contract without tripping the error it raises.
 func required_horn_time() -> float:
 	return carriageway_width() * TELEGRAPH_HARD_FAIL_MARGIN / WALK_SPEED
+
+## The return leg's own pacing is fair by construction as long as its shape holds: one entry per
+## act, none of them negative, and an interval that is ordered and strictly shorter than
+## `AHEAD_INTERVAL`'s on both ends — the rows this owes have to be able to land inside the return
+## leg they were sized against, not merely inside "the day" the ordinary pacing still covers.
+func validate_return_patrols() -> bool:
+	if RETURN_PATROLS_PER_ACT.size() != 4:
+		push_error("RETURN_PATROLS_PER_ACT has %d entries, not one per act"
+				% RETURN_PATROLS_PER_ACT.size())
+		return false
+	for count in RETURN_PATROLS_PER_ACT:
+		if count < 0:
+			push_error("RETURN_PATROLS_PER_ACT carries a negative count: %s" % [RETURN_PATROLS_PER_ACT])
+			return false
+	if RETURN_PATROL_INTERVAL.x > RETURN_PATROL_INTERVAL.y:
+		push_error("RETURN_PATROL_INTERVAL is not ordered: %s" % RETURN_PATROL_INTERVAL)
+		return false
+	if RETURN_PATROL_INTERVAL.x >= AHEAD_INTERVAL.x or RETURN_PATROL_INTERVAL.y >= AHEAD_INTERVAL.y:
+		push_error(("RETURN_PATROL_INTERVAL %s is not shorter than AHEAD_INTERVAL %s: the return "
+				% [RETURN_PATROL_INTERVAL, AHEAD_INTERVAL])
+				+ "would owe patrols no faster than an ordinary walk already gets")
+		return false
+	return true
 
 ## Distance a car needs to stop from a given speed. Used by the crossing logic and asserted
 ## against `CAR_ZEBRA_SIGHT` in `tests/test_crowd.gd`.

@@ -91,6 +91,53 @@ func reach() -> float:
 		return half_extents.length()
 	return half_length + radius
 
+## Every tile of the lattice this shape's own body stands on when it is placed at `at` in world
+## space, lying along `axis` — the same ground the debug view's bounding-box layer draws, turned
+## into the tiles `CityMap.obstructed_tiles` records so the crowd can ask about a body it cannot
+## see. A tile is in when the tile's own square comes within the shape's rounding of its spine, so
+## a body overhanging a tile by a pixel takes that tile: the crowd is kept out of the whole square
+## it stands on rather than half of it.
+##
+## **Exact for a cardinal `axis`, which is the only kind anything in the game has** —
+## `EventInstance.solid_axis()` answers `Vector2.RIGHT` or `Vector2.DOWN` and nothing else, because
+## a body lies along a street and the streets are a lattice. Handed a diagonal it is *conservative*
+## rather than wrong: the spine's own bounding box stands in for it, which can only add tiles, and
+## adding tiles can only make the crowd give a body more room.
+func tiles_under(at: Vector2, axis: Vector2 = Vector2.RIGHT) -> Array[Vector2i]:
+	var along := axis.normalized()
+	var core := _spine_half_extents(along)
+	var tile := float(Tuning.TILE_SIZE)
+	var half_tile := tile * 0.5
+	var covered: Array[Vector2i] = []
+	var low := Vector2i(floori((at.x - core.x - radius) / tile),
+			floori((at.y - core.y - radius) / tile))
+	var high := Vector2i(floori((at.x + core.x + radius) / tile),
+			floori((at.y + core.y + radius) / tile))
+	for y in range(low.y, high.y + 1):
+		for x in range(low.x, high.x + 1):
+			var centre := Vector2((float(x) + 0.5) * tile, (float(y) + 0.5) * tile)
+			var gap := Vector2(
+					maxf(absf(centre.x - at.x) - core.x - half_tile, 0.0),
+					maxf(absf(centre.y - at.y) - core.y - half_tile, 0.0))
+			if gap.length() <= radius:
+				covered.append(Vector2i(x, y))
+	return covered
+
+## The half-extents, in world axes, of the box the rounding is applied around: the origin for a
+## point, the spine for a segment, the whole rectangle for a rect (which carries its rounding in
+## the box itself and has `radius` zero).
+func _spine_half_extents(along: Vector2) -> Vector2:
+	match kind:
+		Kind.RECT:
+			var across_axis := Vector2(-along.y, along.x)
+			return Vector2(
+					absf(along.x) * half_extents.x + absf(across_axis.x) * half_extents.y,
+					absf(along.y) * half_extents.x + absf(across_axis.y) * half_extents.y)
+		Kind.SEGMENT:
+			return Vector2(absf(along.x), absf(along.y)) * half_length
+		_:
+			return Vector2.ZERO
+
 ## The half-thickness perpendicular to the spine — the shape's narrow axis, and the one a spread
 ## body is measured against when it has to fit a pavement band rather than merely reach across it.
 ## A rectangle's is its smaller half-extent.
@@ -291,8 +338,19 @@ func shadow_outline(at: Vector2, axis: Vector2 = Vector2.RIGHT) -> PackedVector2
 
 ## Draws this shape's shadow at `at`, in `canvas`'s own coordinates — the filled polygon
 ## `shadow_outline()` traces, so the layer and the shadow cannot disagree about what shape it is.
+##
+## A shadow narrower than a pixel is not drawn at all. A radius that has shrunk toward zero — a
+## bird's contact shadow fading as it climbs to `BIRD_SHADOW_CEILING`, anything else that scales a
+## shadow away — collapses every sample of the outline onto one point, and the renderer refuses
+## the polygon with "Invalid polygon data, triangulation failed" once a frame for as long as it
+## lasts. Nothing is lost by skipping it: it would have covered no pixel.
 func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2 = Vector2.RIGHT) -> void:
+	if radius < MIN_DRAWN_SHADOW_RADIUS:
+		return
 	canvas.draw_colored_polygon(shadow_outline(at, axis), Palette.SHADOW)
+
+## Half a pixel: below this every sample of the outline rounds onto the same point.
+const MIN_DRAWN_SHADOW_RADIUS := 0.5
 
 func _ellipse_points(centre: Vector2) -> PackedVector2Array:
 	var points := PackedVector2Array()
