@@ -1,0 +1,202 @@
+[
+  {
+    "name": "mother_carrying_front_a",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      104,
+      78,
+      277,
+      448
+    ],
+    "svg_8x_bounds": [
+      11,
+      4,
+      181,
+      368
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "mother_carrying_back_a",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      102,
+      78,
+      286,
+      448
+    ],
+    "svg_8x_bounds": [
+      4,
+      4,
+      192,
+      368
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "mother_carrying_side_a",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      99,
+      81,
+      278,
+      448
+    ],
+    "svg_8x_bounds": [
+      12,
+      4,
+      192,
+      368
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "mother_carrying_front_diagonal_a",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      113,
+      82,
+      285,
+      448
+    ],
+    "svg_8x_bounds": [
+      28,
+      0,
+      200,
+      368
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "mother_carrying_back_diagonal_a",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      110,
+      81,
+      290,
+      448
+    ],
+    "svg_8x_bounds": [
+      23,
+      0,
+      204,
+      368
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "mother_carrying_front_b",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      104,
+      72,
+      277,
+      449
+    ],
+    "svg_8x_bounds": [
+      11,
+      0,
+      181,
+      368
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "mother_carrying_back_b",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      102,
+      72,
+      286,
+      448
+    ],
+    "svg_8x_bounds": [
+      4,
+      0,
+      192,
+      368
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "mother_carrying_side_b",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      114,
+      74,
+      278,
+      449
+    ],
+    "svg_8x_bounds": [
+      28,
+      0,
+      192,
+      368
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "mother_carrying_front_diagonal_b",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      113,
+      75,
+      285,
+      448
+    ],
+    "svg_8x_bounds": [
+      28,
+      0,
+      200,
+      368
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "mother_carrying_back_diagonal_b",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      110,
+      74,
+      290,
+      448
+    ],
+    "svg_8x_bounds": [
+      23,
+      0,
+      204,
+      368
+    ],
+    "alpha_identical_to_native_svg": true
+  }
+]

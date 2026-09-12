@@ -44,6 +44,15 @@ extends RefCounted
 ## pavement auto-centring for the hard band, which places its own bodies precisely; see
 ## `_hard_positions`.
 ##
+## **A seal never stands in a street tree, and a felled one only stands where a tree stood.**
+## `plan_day` puts a seal on every off-tree street whether or not `EventScheduler` would have
+## offered that tile, so the scheduler's own refusal of a tree's ground cannot cover it — the
+## refusal is applied here instead, at `_seal_along_tile`, which is the one place a seal's site is
+## chosen. An ordinary seal steps along the street to the nearest tile whose cross-section is
+## clear of pits; `fallen_tree_seal` does the opposite and stands **on** a pit, which it empties
+## for the day, and it is offered only on a street `StreetTrees` actually planted (see
+## `FALLEN_TREE_SEAL_ID`).
+##
 ## **The doorstep is exempt.** `ClosurePlanner.home_street(map)` is never sealed, for the same
 ## reason it is never closed: the home is a notch with one exit, so sealing it seals her in.
 ##
@@ -171,8 +180,17 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree,
 	map.clear_day_soft_seals()
 	var planned: Array[EventScheduler.Planned] = []
 	if not tree:
+		map.set_seal_tree_pits([] as Array[Vector2i])
 		return planned
 	var home := ClosurePlanner.home_street(map)
+	# The city's standing street trees, asked once rather than once per street. `trees` is the
+	# ground no seal body may stand on (`_seal_along_tile` steps along the street until it is
+	# clear); `lined` is which streets may carry a fallen tree at all; `emptied` collects the pits
+	# today's fallen-tree seals take, handed to the map whole at the end so `City` knows which
+	# trees are missing.
+	var trees := StreetTrees.footprint_tiles(map)
+	var lined := StreetTrees.segment_keys_with_trees(map)
+	var emptied: Array[Vector2i] = []
 	# Soft pairs are collected as `[segment, placed]` rather than `placed` alone, because the
 	# thinning pass below needs the segment back to mark the surviving side's own pavement tiles in
 	# `CityMap.soft_sealed_tiles` as well as to drop one body of the pair — see `_thin_soft_pairs`.
@@ -185,15 +203,17 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree,
 			continue
 		if _is_the_main_road(map, segment):
 			continue
-		var candidate := _pick_candidate(day, rng)
+		var candidate := _pick_candidate(day, rng, lined.has(key))
 		if not candidate:
 			continue
-		var placed := _place(map, segment, candidate)
+		var along := _seal_along_tile(map, segment, candidate, trees, emptied)
+		var placed := _place(map, segment, candidate, along)
 		if candidate.strength == Strength.SOFT:
-			soft_pairs.append([segment, placed])
+			soft_pairs.append([segment, placed, along])
 		else:
 			planned.append_array(placed)
 			held[key] = true
+	map.set_seal_tree_pits(emptied)
 	planned.append_array(_thin_soft_pairs(map, soft_pairs, rng))
 	planned.append_array(_seal_alley_mouths(map, tree, day, rng, skip))
 	return planned
@@ -231,15 +251,35 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree,
 static func plan_finale(map: CityMap, open_cells: Dictionary,
 		rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
 	map.clear_day_soft_seals()
+	# And no pit is emptied, for the same reason the soft seals are cleared: whatever a day left on
+	# this map is not the escape's, and nothing here fells a tree. `plan_day` makes the same call
+	# on its own no-tree path.
+	map.set_seal_tree_pits([] as Array[Vector2i])
 	var planned: Array[EventScheduler.Planned] = []
 	var home := ClosurePlanner.home_street(map)
+	# A seal never stands in a street tree here either — the same rule `plan_day` keeps, and a
+	# `City` plants its trees in `build()`, so the escape's city has the row it has always had. No
+	# `emptied` pit ever comes back: `fallen_tree_seal` is a day's candidate and none of
+	# `finale_candidates()` is it, so `_seal_along_tile` only ever takes its tree-avoiding branch.
+	var trees := StreetTrees.footprint_tiles(map)
+	var no_pits_are_emptied: Array[Vector2i] = []
 	for segment in StreetNetwork.segments():
 		var key := segment.key()
 		if not map.has_street(key) or runs_through(segment, open_cells):
 			continue
 		if home and key == home.key():
 			continue
-		planned.append_array(_place_hard(map, segment, _finale_candidate(rng).def_ids[0]))
+		var candidate := _finale_candidate(rng)
+		# **Stepping off a tree may never step onto the chain.** The street was spared the walk at
+		# its own midpoint, which is the only position `runs_through` above asked about; a tile or
+		# two along from there can be ground a chain walks, and a seal placed on it would wall the
+		# one route out of the city. So the moved position is asked the same question, and a move
+		# that would close the chain is refused — the seal stands in the tree instead, which is a
+		# picture overlapping a picture rather than a city with no way through it.
+		var along := _seal_along_tile(map, segment, candidate, trees, no_pits_are_emptied)
+		if runs_through(segment, open_cells, along):
+			along = -1
+		planned.append_array(_place_hard(map, segment, candidate.def_ids[0], along))
 	for rect in map.alley_rects:
 		# A through-alley can be built over by a later generation pass, which does not retract it
 		# from `alley_rects` — so the ground is checked rather than trusted, the same as
@@ -266,8 +306,13 @@ static func plan_finale(map: CityMap, open_cells: Dictionary,
 ## Public because `FinalePlanner` asks the same question to decide where the finale's own events
 ## stand: the streets she can walk are the streets worth putting an army truck on, and two answers
 ## to that would put trucks on streets she cannot reach.
-static func runs_through(segment: StreetNetwork.Segment, open_cells: Dictionary) -> bool:
-	for tile in _cross_section_tiles(segment):
+##
+## `along` names a tile on the street's own along axis to ask about instead of the midpoint, which
+## is what `plan_finale` uses to check a position a seal has been stepped to in order to clear a
+## street tree. `-1` is the midpoint, the same convention `_cross_section_tiles` already keeps.
+static func runs_through(segment: StreetNetwork.Segment, open_cells: Dictionary,
+		along: int = -1) -> bool:
+	for tile in _cross_section_tiles(segment, along):
 		if open_cells.has(tile / ReachabilityGrid.CELL):
 			return true
 	return false
@@ -328,9 +373,18 @@ const _FINALE_ALLEY_DEF := "collapsed_frontage"
 static func _is_the_main_road(map: CityMap, segment: StreetNetwork.Segment) -> bool:
 	return not segment.horizontal and segment.a.x == map.main_road
 
-static func _pick_candidate(day: int, rng: RandomNumberGenerator) -> Candidate:
+## The candidate id that is a felled street tree, and the one seal picture whose street is not a
+## free choice: *(2026-09-11, the player: "fallen trees should only be possible on streets with
+## trees and one spot should be empty (the fallen tree's spot)")*. Offered nowhere else — a gate
+## rather than a preference — so a tree in the road is always one of that street's own.
+const FALLEN_TREE_SEAL_ID := "fallen_tree_seal"
+
+static func _pick_candidate(day: int, rng: RandomNumberGenerator,
+		street_has_trees: bool) -> Candidate:
 	var eligible: Array[Candidate] = []
 	for candidate in candidates():
+		if candidate.id == FALLEN_TREE_SEAL_ID and not street_has_trees:
+			continue
 		if _eligible(candidate, day):
 			eligible.append(candidate)
 	if eligible.is_empty():
@@ -357,20 +411,65 @@ static func _effective_first_day(def: EventDef) -> int:
 		return Tuning.ACT_START_DAYS[index]
 	return def.first_day
 
+## Where along `segment` this seal's bodies stand, as a tile coordinate on the street's own along
+## axis — and, for a fallen tree, which pit that empties.
+##
+## **A seal never stands in a tree.** A seal is one of the day's bodies like any other
+## (`docs/EVENTS.md`, "Where in the city, and why"), but it does not come through the scheduler's
+## candidate ground: `plan_day` puts one on every off-tree street whether or not the scheduler
+## would have offered that tile. So the refusal is applied here instead, at the one place a seal's
+## site is chosen — the tile nearest the street's own midpoint whose cross-section carries no
+## standing tree, searched outward from the middle so an ordinary seal barely moves. A street is
+## eight tiles long and `Tuning.STREET_TREE_PIT_SPACING` allows at most one pit per kerb on it, so
+## a clear tile always exists; the midpoint is the fallback rather than a promise.
+##
+## **The fallen tree is the exception, and it is the exception in the other direction**: it stands
+## *on* a pit, which it then empties, so the tree lying in the road is the one missing from the
+## row. `emptied` collects those pits for `CityMap.set_seal_tree_pits`.
+static func _seal_along_tile(map: CityMap, segment: StreetNetwork.Segment, candidate: Candidate,
+		trees: Dictionary, emptied: Array[Vector2i]) -> int:
+	var rect := segment.tile_rect()
+	var base: int = rect.position.x if segment.horizontal else rect.position.y
+	var count: int = rect.size.x if segment.horizontal else rect.size.y
+	var middle := base + count / 2
+	if candidate.id == FALLEN_TREE_SEAL_ID:
+		var centre := map.tile_rect_to_world(rect).get_center()
+		var pit := StreetTrees.pit_nearest(map, segment.key(), centre)
+		if pit:
+			emptied.append(pit.tile)
+			return pit.tile.x if segment.horizontal else pit.tile.y
+		return middle
+	for step in count:
+		# The middle first, then one tile either side of it, then two, and so on.
+		var offset := (step + 1) / 2 * (-1 if step % 2 == 1 else 1)
+		var along := middle + offset
+		if along < base or along >= base + count:
+			continue
+		if not _crosses_a_tree(segment, along, trees):
+			return along
+	return middle
+
+static func _crosses_a_tree(segment: StreetNetwork.Segment, along: int,
+		trees: Dictionary) -> bool:
+	for tile in _cross_section_tiles(segment, along):
+		if trees.has(tile):
+			return true
+	return false
+
 static func _place(map: CityMap, segment: StreetNetwork.Segment,
-		candidate: Candidate) -> Array[EventScheduler.Planned]:
+		candidate: Candidate, along: int) -> Array[EventScheduler.Planned]:
 	if candidate.strength == Strength.HARD:
-		return _place_hard(map, segment, candidate.def_ids[0])
-	return _place_soft(map, segment, candidate.def_ids)
+		return _place_hard(map, segment, candidate.def_ids[0], along)
+	return _place_soft(map, segment, candidate.def_ids, along)
 
 ## A hard seal: the named row, repeated across the street's whole width so nothing can slip past
 ## on either side of it. See `_hard_positions` for how many copies that takes and why the count
 ## is a function of the row's own `obstructs_radius` rather than a fixed number.
 static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
-		def_id: String) -> Array[EventScheduler.Planned]:
+		def_id: String, along: int = -1) -> Array[EventScheduler.Planned]:
 	var def := sealed_variant(EventCatalogue.by_id(def_id), true)
 	var planned: Array[EventScheduler.Planned] = []
-	for at in _hard_positions(map, segment, def):
+	for at in _hard_positions(map, segment, def, along):
 		planned.append(EventScheduler.Planned.new(def, at))
 	return planned
 
@@ -407,8 +506,8 @@ static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: 
 ## (`EventInstance._centred_on_the_pavement_band`) puts it regardless of which of the pavement's
 ## two lanes this names.
 static func _place_soft(map: CityMap, segment: StreetNetwork.Segment,
-		def_ids: Array[String]) -> Array[EventScheduler.Planned]:
-	var tiles := _cross_section_tiles(segment)
+		def_ids: Array[String], along: int = -1) -> Array[EventScheduler.Planned]:
+	var tiles := _cross_section_tiles(segment, along)
 	var side_a := tiles[Tuning.SIDEWALK_WIDTH - 1]
 	var side_b := tiles[Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH]
 	var def_a := sealed_variant(EventCatalogue.by_id(def_ids[0]), false)
@@ -448,7 +547,11 @@ static func _thin_soft_pairs(map: CityMap, pairs: Array, rng: RandomNumberGenera
 	for entry: Array in pairs:
 		var segment: StreetNetwork.Segment = entry[0]
 		var pair: Array = entry[1]
-		var bands := [_sidewalk_band_tiles(segment, true), _sidewalk_band_tiles(segment, false)]
+		# The along tile `_seal_along_tile` chose for this pair, so the tiles marked shut to walkers
+		# are the ones the bodies actually stand on rather than the street's own midpoint.
+		var along: int = entry[2]
+		var bands := [_sidewalk_band_tiles(segment, true, along),
+				_sidewalk_band_tiles(segment, false, along)]
 		if pair.size() == 2 and rng.randf() < Tuning.SEAL_THINNING_FRACTION:
 			var side := rng.randi_range(0, 1)
 			kept.append(pair[side])
@@ -463,8 +566,9 @@ static func _thin_soft_pairs(map: CityMap, pairs: Array, rng: RandomNumberGenera
 ## only the one a soft seal's own body stands on, so a walker on either lane of that pavement is
 ## shut out of it rather than only the one nearest the kerb. `near` is `side_a` in `_place_soft`'s
 ## own naming — the lower end of `_cross_section_tiles`' lattice order — and `false` is `side_b`.
-static func _sidewalk_band_tiles(segment: StreetNetwork.Segment, near: bool) -> Array[Vector2i]:
-	var tiles := _cross_section_tiles(segment)
+static func _sidewalk_band_tiles(segment: StreetNetwork.Segment, near: bool,
+		along: int = -1) -> Array[Vector2i]:
+	var tiles := _cross_section_tiles(segment, along)
 	if near:
 		return tiles.slice(0, Tuning.SIDEWALK_WIDTH)
 	return tiles.slice(Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH, Tuning.STREET_WIDTH)
@@ -495,19 +599,22 @@ static func sealed_variant(def: EventDef, suppress_recenter: bool) -> EventDef:
 		variant.pavement_side = EventDef.Pavement.AT_THE_KERB
 	return variant
 
-## The street's own cross-section, one tile per lane, at the middle of the block: sidewalk,
-## sidewalk, road, road, sidewalk, sidewalk in lattice order, whichever axis the street runs on.
-static func _cross_section_tiles(segment: StreetNetwork.Segment) -> Array[Vector2i]:
+## The street's own cross-section, one tile per lane: sidewalk, sidewalk, road, road, sidewalk,
+## sidewalk in lattice order, whichever axis the street runs on. `along` is the tile on the
+## street's own along axis to take it at — `-1` for the middle of the block, which is where a seal
+## stands unless a street tree is in the way (`_seal_along_tile`).
+static func _cross_section_tiles(segment: StreetNetwork.Segment,
+		along: int = -1) -> Array[Vector2i]:
 	var rect := segment.tile_rect()
 	var tiles: Array[Vector2i] = []
 	if segment.horizontal:
-		var mid_x := rect.position.x + rect.size.x / 2
+		var x: int = along if along >= 0 else rect.position.x + rect.size.x / 2
 		for row in Tuning.STREET_WIDTH:
-			tiles.append(Vector2i(mid_x, rect.position.y + row))
+			tiles.append(Vector2i(x, rect.position.y + row))
 	else:
-		var mid_y := rect.position.y + rect.size.y / 2
+		var y: int = along if along >= 0 else rect.position.y + rect.size.y / 2
 		for column in Tuning.STREET_WIDTH:
-			tiles.append(Vector2i(rect.position.x + column, mid_y))
+			tiles.append(Vector2i(rect.position.x + column, y))
 	return tiles
 
 ## Where a hard seal's bodies stand, spaced so their circles cover the street edge to edge with
@@ -524,9 +631,19 @@ static func _cross_section_tiles(segment: StreetNetwork.Segment) -> Array[Vector
 ## `sealed_variant`'s pavement-side override: `EventInstance`'s own auto-centring would otherwise
 ## collapse two of these onto the same pavement-band midpoint and reopen the gap this exists to
 ## close.
+## `along` narrows the rect to one tile on the street's own along axis, so the bodies land on the
+## tile `_seal_along_tile` chose rather than on the street's midpoint; `-1` keeps the whole
+## segment, whose along midpoint is the same thing when no street tree is in the way. The cross
+## axis — the one `positions_across` actually covers — is untouched either way, which is why the
+## edge-to-edge guarantee is unaffected by moving a seal a tile down the street.
 static func _hard_positions(map: CityMap, segment: StreetNetwork.Segment,
-		def: EventDef) -> Array[Vector2]:
-	return positions_across(map.tile_rect_to_world(segment.tile_rect()), segment.horizontal,
+		def: EventDef, along: int = -1) -> Array[Vector2]:
+	var rect := segment.tile_rect()
+	if along >= 0:
+		rect = Rect2i(Vector2i(along, rect.position.y), Vector2i(1, rect.size.y)) \
+				if segment.horizontal \
+				else Rect2i(Vector2i(rect.position.x, along), Vector2i(rect.size.x, 1))
+	return positions_across(map.tile_rect_to_world(rect), segment.horizontal,
 			def.obstructs_radius)
 
 ## The same spacing arithmetic as `_hard_positions`, generalised to any world rect rather than a

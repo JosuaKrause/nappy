@@ -207,12 +207,19 @@ static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 	var vans := EventCatalogue.by_id("abduction")
 	var masked := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	var bursts := EventCatalogue.by_id("finale_explosion")
+	# **A tree and an event never share ground**, the finale's streets included — `docs/CITY.md`,
+	# "Street trees". Scanned once for the whole plan rather than once per street per row: a city
+	# plants its trees in `City.build()` and nothing in a walk moves them.
+	var trees := StreetTrees.footprint_tiles(map)
 	for segment in streets:
-		_fill_a_finale_street(map, rng, segment, trucks, Tuning.FINALE_TRUCKS_PER_STREET, planned)
-		_fill_a_finale_street(map, rng, segment, vans, Tuning.FINALE_VANS_PER_STREET, planned)
-		_fill_a_finale_street(map, rng, segment, masked, Tuning.FINALE_GUARDS_PER_STREET, planned)
-		_fill_a_finale_street(map, rng, segment, bursts, Tuning.FINALE_EXPLOSIONS_PER_STREET,
+		_fill_a_finale_street(map, rng, segment, trucks, Tuning.FINALE_TRUCKS_PER_STREET, trees,
 				planned)
+		_fill_a_finale_street(map, rng, segment, vans, Tuning.FINALE_VANS_PER_STREET, trees,
+				planned)
+		_fill_a_finale_street(map, rng, segment, masked, Tuning.FINALE_GUARDS_PER_STREET, trees,
+				planned)
+		_fill_a_finale_street(map, rng, segment, bursts, Tuning.FINALE_EXPLOSIONS_PER_STREET,
+				trees, planned)
 	return planned
 
 ## `count` copies of one row on one street, sited the same way `_place_one` sites a day's: roll a
@@ -220,9 +227,9 @@ static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 ## otherwise the roomiest one the tries found. A street with no ground of the right kind simply
 ## gets none of that row, which is the same failure direction a day's own placement has.
 static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
-		segment: StreetNetwork.Segment, def: EventDef, count: int,
+		segment: StreetNetwork.Segment, def: EventDef, count: int, trees: Dictionary,
 		planned: Array[Planned]) -> void:
-	var candidates := _finale_ground(map, segment, def)
+	var candidates := _finale_ground(map, segment, def, trees)
 	if candidates.is_empty():
 		return
 	for _copy in count:
@@ -248,13 +255,21 @@ static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 ## over the whole city the way `_open_ground_for` is, because the finale already knows which
 ## streets exist for it — there is no corridor weighting to apply and no closure to avoid, since
 ## the finale plans no closures at all.
-static func _finale_ground(map: CityMap, segment: StreetNetwork.Segment,
-		def: EventDef) -> Array[Vector2i]:
+##
+## `trees` is `StreetTrees.footprint_tiles()`, refused here for the same reason
+## `_open_ground_for` refuses it on a day: *(2026-09-12, the player: "trees read like obstacles
+## (they add noise) so it makes detecting actual obstacles harder")*, and the climax is the one
+## walk where telling an obstacle from scenery matters most. The footprint rather than the trunk
+## tile, because the ground the canopy reaches over is ground a van would be standing in.
+static func _finale_ground(map: CityMap, segment: StreetNetwork.Segment, def: EventDef,
+		trees: Dictionary) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
 	var rect := segment.tile_rect()
 	for y in range(rect.position.y, rect.end.y):
 		for x in range(rect.position.x, rect.end.x):
 			var tile := Vector2i(x, y)
+			if trees.has(tile):
+				continue
 			if def.placement.has(map.tile_at(tile)) and map.is_open(tile):
 				found.append(tile)
 	return found
@@ -872,6 +887,17 @@ static func _prefer_beside_a_sack_pile(candidates: Array[Vector2i], map: CityMap
 				break
 	return weighted
 
+## The day's copy of `StreetTrees.footprint_tiles()`, kept in the same `ground` dictionary every
+## other answer in this file is cached in and under a key no `"%s|%d"` placement question can
+## collide with. One scan of the city's pits per day rather than one per candidate row: the trees
+## are fixed for the run, so nothing inside one `build_day` can move them.
+const _TREE_TILES_KEY := "street tree footprints"
+
+static func _street_tree_tiles(map: CityMap, ground: Dictionary) -> Dictionary:
+	if not ground.has(_TREE_TILES_KEY):
+		ground[_TREE_TILES_KEY] = StreetTrees.footprint_tiles(map)
+	return ground[_TREE_TILES_KEY]
+
 ## A placement with no particular street asked for. Not `Vector3i.ZERO`, which is the key of a real
 ## street — the one running east out of the north-west corner.
 const NO_SITE := Vector3i(-1, -1, -1)
@@ -898,6 +924,7 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary) ->
 	var key := "%s|%d" % [def.placement, def.pavement_side]
 	if not ground.has(key):
 		var doorstep := _the_street_she_starts_on(map)
+		var trees := _street_tree_tiles(map, ground)
 		var open: Array[Vector2i] = []
 		for type in def.placement:
 			for candidate in map.tiles_of_type(type as GameEnums.TileType):
@@ -910,8 +937,18 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary) ->
 				# construction rather than as a repair once something has landed there. See
 				# `docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street" and "Nothing on the
 				# home block".
+				#
+				# **And a standing street tree's own ground.** The trees are the city's and fixed
+				# for the run while the events are the day's, so the day is what yields — refused
+				# here, where the candidate is offered, never moved afterwards. *(2026-09-12, the
+				# player: "events can only be placed where no trees are (except for the fallen tree
+				# which must empty out one tree lot)".)* The footprint rather than the trunk tile,
+				# because the ground a tree's shadow reaches over is ground a van would be standing
+				# in. The fallen tree is the exception and needs none here: it arrives as a closure
+				# or a hard seal, and both hold their whole street against the catalogue already.
 				if map.is_closed(candidate) or doorstep.has_point(candidate) \
 						or map.is_held_at(candidate) or map.is_on_home_block(candidate) \
+						or trees.has(candidate) \
 						or not _wants_this_side(def, map, candidate):
 					continue
 				open.append(candidate)

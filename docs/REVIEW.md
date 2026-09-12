@@ -14,6 +14,17 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
+- **Compare the mother carrying the baby with the mother pushing the stroller.** Use ordinary
+  gameplay for pushing and `--start-escape floor:2` for carrying; walk and turn in both. Does she
+  remain recognizably the same woman, with stable hair, clothes and proportions across directions
+  and gait frames? The native and enlarged comparisons in
+  `evidence/style-transfer-player-family-2026-09-12/registered/` show both states side by side;
+  check the result at gameplay size too. `--svg` provides the original source comparison.
+
+- **Look at the garbage sacks and small litter from day 10.** Do the standalone sacks and
+  piles look like the same material, and does the small ground litter remain quiet and readable?
+  `evidence/style-transfer-litter-2026-09-12/registered/` compares the SVG and PNG sources.
+
 Each line is a thing to try or look at and the question it settles. `tools/run.sh` plays the
 desktop build; `--seed <n> --day <n>` puts a run where an item says; `1` to `4` in a debug build
 toggle the field, shadow, bounding-box and readout layers (`docs/TELEMETRY.md`, "The debug
@@ -138,12 +149,20 @@ item below for as long as looking takes.
 - **Walk one block of each district and look up.** Roofs carry furniture by district (vents,
   ducts and boxes on industrial, skylights on civic, water tanks elsewhere), commercial ground
   floors are storefronts with awnings, civic fronts have a portico, residential facades a fire
-  escape, and pavements have trees in pits. In the rig pictures commercial and residential read
-  at a glance; industrial and civic are told apart by their roofs alone, which are small at play
-  scale, and the portico was out of frame. Does each district read as a place, and does the
-  street-tree density read as a street or as a hedge? Record is `DECISIONS.md`, M106.
-- **Find a fallen tree.** A fallen tree closure prefers a street with standing trees. Does the
-  fallen tree read as one of the standing ones down? Record is `DECISIONS.md`, M106.
+  escape. In the rig pictures commercial and residential read at a glance; industrial and civic
+  are told apart by their roofs alone, which are small at play scale, and the portico was out of
+  frame. Does each district read as a place? Record is `DECISIONS.md`, M106.
+- **Find a tree-lined street and walk it end to end** (`--overview` shows where the few are;
+  seed 4229 has six). Trees stand only on a handful of straight runs of three to five blocks, a
+  pit about every two lot-lengths, so a run carries four or five trees and about one ordinary
+  street in sixteen has any. Does a run read as *a planted street* or as two stray trees, and is
+  a tree still ever in the way of spotting a yeller or a dog walker? The run count and the
+  spacing are both pinned guesses. Record is `DECISIONS.md`, M115.
+- **Find a fallen tree** (seed 4229, day 1 plans exactly one; `--spawn closure:0`). It lies only
+  on a tree-lined street, and the pit it fell from is empty for the day: the whole prop is
+  hidden, so what she sees is a gap in the row. Look down the street for the gap. Does it read
+  as *the tree that was here is in the road*, or as nothing at all? If nothing, the bare pit
+  drawn without its tree is one branch in the prop's drawing. Same record.
 - **Play or jump to day 5, day 9 and day 13 and look at the ground** (`--day 9`). The city
   degrades on one curve from day 5: cracks on pavement before road, in three levels; litter on
   pavements, alleys and squares; garbage sacks in alleys first and against building fronts from
@@ -156,6 +175,14 @@ item below for as long as looking takes.
 - **Look at a park or a forest block.** Trees keep at least a canopy's width apart now. Do the
   lots still read as *wooded*, or has the spacing made them look planted in rows? Record is
   `DECISIONS.md`, M100, the park trees.
+
+- **Walk a baby home in act III or IV** (`--day 9` or `--day 13`; settle the baby in a park, then
+  walk back). Two patrol cars on day 9, three on day 13, now come down her own street toward her
+  during the walk home, nine to sixteen seconds apart, on top of whatever the day already owed;
+  none is lethal. Does the return read as pressure — a reason to pick the quieter street home —
+  or as punishment for having found calm, and does the sleeping baby survive it often enough?
+  Record is `DECISIONS.md`, M98, the return owes her patrols; the counts and the interval are
+  `Tuning.RETURN_PATROLS_PER_ACT` and `RETURN_PATROL_INTERVAL`, both open to overturn.
 
 - **Walk the whole escape end to end** (`tools/run.sh --start-escape --seed 4242`; debug only).
   She starts at her own door with the baby asleep, goes down past the barricaded lobby to the

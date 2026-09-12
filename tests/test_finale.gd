@@ -29,6 +29,8 @@ func run(t) -> void:
 	_test_the_clock_reads_milliseconds_only_in_the_finale(t)
 	_test_a_lost_section_starts_again_and_costs_no_nerve(t)
 	_test_the_city_word_boots_the_second_section(t)
+	_test_the_escape_owes_no_return_leg(t)
+	_test_nothing_the_escape_places_stands_in_a_street_tree(t)
 
 # --------------------------------------------------------------- the chains ---
 
@@ -334,3 +336,77 @@ func _test_the_city_word_boots_the_second_section(t) -> void:
 			"and a bare flag is still her own door")
 	t.check(MAIN_SCRIPT.escape_part_for("nonsense") == "hallway_third",
 			"as is anything this does not recognise")
+
+## **The escape is outbound from its first frame, so it owes no return leg.** `EventDirector.owe_
+## the_return()` hands acts III and IV extra `police_patrol` rows when `EventBus.return_phase_
+## started` fires and tightens the director's pacing for the rest of the day — and that signal is
+## emitted by `Baby.force_sleep()`, which the escape calls at the top of every section and every
+## retry, since *"the player holding the sleeping baby (sleep bar is full)"* is where it starts.
+## Without the guard in `EventManager._owe_the_return()` the climax would be handed the walk home's
+## pressure at the moment it began, on a walk that never turns round.
+##
+## The first half is the guard against a vacuous second: a bare director on the same day and the
+## same heat does owe rows, so "the escape owes none" is about the escape rather than about the
+## day being one that owes nothing.
+func _test_the_escape_owes_no_return_leg(t) -> void:
+	var map := CityGenerator.generate(SEEDS[0])
+	var an_act_iv_day := 13
+	t.check(Tuning.act_for_day(an_act_iv_day) >= 3
+			and Tuning.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(an_act_iv_day) - 1] > 0,
+			"day %d is a day that owes its return something" % an_act_iv_day)
+	var bare := EventDirector.new(map)
+	bare.owe_the_return(an_act_iv_day, 0)
+	t.check(bare.owed() > 0, "a day's own director owes %d rows to the return" % bare.owed())
+
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEEDS[0]))
+	city.events.setup(city, city.map)
+	var was_the_day := GameState.day
+	GameState.day = an_act_iv_day
+	city.events.start_finale([] as Array[EventScheduler.Planned])
+	EventBus.return_phase_started.emit()
+	t.check(city.events.owed_ahead() == 0,
+			"and the escape owes nothing to a return it does not have (got %d)"
+					% city.events.owed_ahead())
+	GameState.day = was_the_day
+	city.queue_free()
+
+## **A tree and an event never share ground** (`docs/CITY.md`, "Street trees"), and the escape's
+## own plan is a second placement path that does not go through `EventScheduler._open_ground_for`
+## or `SealPlanner.plan_day` — so the rule is asserted on this side too, over the whole plan: the
+## trucks, vans, masked men and bursts on the open streets, and every seal body off them.
+##
+## **The one licensed exception is a seal that could not step off a tree without stepping onto the
+## chain.** `SealPlanner.plan_finale` refuses that move, because a picture overlapping a picture is
+## better than a city with no way out of it; the count is reported so an exception that stopped
+## being rare would be visible rather than silent.
+func _test_nothing_the_escape_places_stands_in_a_street_tree(t) -> void:
+	var checked := 0
+	var in_a_tree := 0
+	for seed_value in SEEDS:
+		var built := _plan_for(seed_value)
+		var map: CityMap = built["map"]
+		var plan: FinalePlanner.Plan = built["plan"]
+		var trees := StreetTrees.footprint_tiles(map)
+		# The two halves of `plan.placements` are asked separately, because only one of them has a
+		# licensed exception: they are re-planned here from the same inputs rather than told apart
+		# by row id, since `barricade` and `impact_crater` are each both a seal picture and an
+		# event's own row.
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_value
+		for placement in EventScheduler.build_finale(map, rng, plan.open_streets):
+			var tile := map.world_to_tile(placement.position)
+			t.check(not trees.has(tile),
+					"seed %d: the escape's '%s' stands in a street tree at %s"
+							% [seed_value, placement.def.id, tile])
+			checked += 1
+		rng.seed = seed_value
+		for seal in SealPlanner.plan_finale(map, plan.open_cells, rng):
+			if trees.has(map.world_to_tile(seal.position)):
+				in_a_tree += 1
+			checked += 1
+	t.check(checked > 0, "there were escape placements to ask about (%d)" % checked)
+	t.check(in_a_tree * 20 < checked,
+			"and seals held against a tree by the chain stay rare (%d of %d bodies)"
+					% [in_a_tree, checked])

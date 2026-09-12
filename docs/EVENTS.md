@@ -134,6 +134,36 @@ whose `obstructs_radius` is nonzero, or whose `outer_radius` reaches `Tuning.min
 wide would already be on her the moment it appeared, which is the one thing "she gets close and it
 arrives" cannot mean.
 
+**A `TOWARD_PLAYER` row whose `placement` names `ROAD` runs down the carriageway instead of her
+pavement.** `police_patrol` is the one row that does: `EventDirector.owe_the_return()` hands the
+return leg a few extra copies of it in acts III and IV, sited `TOWARD_PLAYER` by
+`_toward_her_on_the_road()` rather than `_toward_her()` — the same offscreen margin and the same
+"straighten onto the corridor's own axis" idea, but the lane it straightens onto is
+`CrowdLanes.road_lane()`'s own carriageway lane, driving opposite her heading so it meets her, on
+tiles `CityMap.is_driveable_at()` actually calls a road. Empty wherever there is no carriageway to
+drive on — a park, a square, a precinct — the same "retry later" the rest of the director's siting
+already does. The copy this hands out is its own duplicate, never the shared, cached row every
+ordinary `MAP` placement of `police_patrol` reads (`EventCatalogue.heated()`): only its `spawn_mode`
+differs, so the row's cost and picture are exactly the ones the day's own plan already uses.
+
+### The return owes her patrols
+
+**The streets that go quiet from act III on get something back, on the walk home.** The crowd
+table empties them on purpose — see `docs/MECHANICS.md`, "the cruellest number in the game" — and
+the return phase (`DayPhase.RETURNING`, entered the moment the baby falls asleep) is the one
+stretch of a day nothing in the catalogue was ever pacing for. `Tuning.RETURN_PATROLS_PER_ACT`
+(`[0, 0, 2, 3]`, one entry per act) is what `EventDirector.owe_the_return()` adds to the owed
+queue the moment `EventBus.return_phase_started` fires, at the day's own heat — the same heated
+`police_patrol` copy the day's other plans of that row already use — and from then on the queue
+rolls `Tuning.RETURN_PATROL_INTERVAL` (9–16s) instead of `Tuning.AHEAD_INTERVAL` (11–26s) for the
+rest of the day, so the extra rows have a real chance of landing inside a 33–47s leg rather than
+after she is already home. Acts I and II carry nothing, so the teaching days and the return she
+learns the mechanic on stay exactly as they were measured.
+
+It is owed exactly once a day — a baby that wakes and settles again does not owe a second batch —
+and the rows already owed stay owed if the phase drops back to `WALKING`. `--force` leaves the
+forced queue alone: there is no ordinary queue under it for this to add to or re-pace.
+
 ### Everything arrives from off screen
 
 **A row that travels toward her — a pursuer or a `TOWARD_PLAYER` row — is sited outside the view,
@@ -387,10 +417,17 @@ so a day's `plan` line reads as *n sited, m ahead*.
 ### Where in the city, and why
 
 **The pool is narrower than "every tile of the right type" before a single weight is applied.**
-`EventScheduler._open_ground_for` refuses four kinds of ground outright, by construction rather than
+`EventScheduler._open_ground_for` refuses five kinds of ground outright, by construction rather than
 as a check on what a roll came back with:
 
 - a tile closed today (`CityMap.is_closed`);
+- **a tile a standing street tree occupies or reaches over** (`StreetTrees.footprint_tiles`, the
+  tree's own ground shape — the one the shadow is drawn from). *(2026-09-12, the player: "events
+  can only be placed where no trees are (except for the fallen tree which must empty out one tree
+  lot)".)* The trees are the city's and fixed for the run while the events are the day's, so the
+  day is what yields, and a van, a café, a market stall, a yeller or a dog walker is never in or
+  behind one. `docs/CITY.md`, "Street trees", is why they are rare enough for this to cost the day
+  almost nothing;
 - the street the front door opens onto (`_the_street_she_starts_on` — a notch with one exit is not
   a route decision, it is a tax);
 - a tile whose street segment is **held** today (`CityMap.is_held_at`) — a hard seal's own segment,
@@ -401,7 +438,14 @@ as a check on what a roll came back with:
   the other way round.
 
 None of this is a weight: a closed or held street is not somewhere anyone can get to, or is already
-standing for something else, so nothing about the role table below ever sees it. See `docs/CITY.md`,
+standing for something else, or is a tree, so nothing about the role table below ever sees it.
+
+**A seal is checked the same way in a different place.** `SealPlanner` puts a body on every
+off-tree street whether or not the scheduler would have offered that tile, so it never asks
+`_open_ground_for` at all; `SealPlanner._seal_along_tile` applies the tree refusal at the one place
+a seal's site is chosen, stepping along the street from its midpoint to the nearest cross-section
+with no pit in it. The single exception in the whole game is `fallen_tree_seal`, which stands *on*
+a pit and empties it — see `docs/CITY.md`, "What closes a street". See `docs/CITY.md`,
 "Carve alleys" and "Place home", for why the home block's own ground never has an alley to be a
 candidate in the first place.
 
@@ -635,7 +679,7 @@ neighbourhood's own rather than a patrol's.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `police_patrol` | RECURRING | 4 | Mobile, unhurried, along a corridor. Not dangerous yet — the danger is that you start planning around it. |
+| `police_patrol` | RECURRING | 4 | Mobile, unhurried, along a corridor. Not dangerous yet — the danger is that you start planning around it. In acts III and IV, extra copies of this row are also what the return leg owes — see "The return owes her patrols" above. |
 | `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. |
 | `loudspeaker` | SCRIPTED | 5 | **City-wide**: no falloff, no edge, nowhere in the city it does not reach. The first event the player cannot walk away from. Pitched under the walking decay, so like a back street it does not raise the meter — it stops you clearing it. |
 | `curfew_announce` | SCRIPTED | 6 | City-wide, brief, and fading (`intensity_ramp` 0.2). The mechanical bite is in `Tuning.day_length`, which shortens every day from 6 onward; this is the moment you are told. |
@@ -692,6 +736,12 @@ two inside the building. Three rows the escape uses are not new and are not chan
 `military_convoy` is the army truck (with the barricade it ordinarily leaves stripped, since a
 convoy in the escape is traffic rather than the aftermath of something), `abduction` is the masked
 men in a van, and `roadblock` at full heat is the masked men on foot who leave the post.
+
+**The escape rolls its ground per street rather than per city** — `EventScheduler._finale_ground`
+over one segment's own rect, since the chains already say which streets exist for it, there is no
+corridor to weight against and no closure to avoid. Of the five refusals above it keeps the two
+that are still true of a walk with no day behind it: a tile must be open, and **a standing street
+tree's ground is refused here exactly as it is on a day** (`docs/CITY.md`, "Street trees").
 
 | id | kind | where | Behaviour |
 | --- | --- | --- | --- |

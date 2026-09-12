@@ -31,6 +31,10 @@ var _hard_failed := false
 ## come from the day's own seed to stay deterministic.
 var _day := 0
 
+## True between `start_finale()` and the next `start_day()`: this walk is the escape, not a day.
+## Read by `_owe_the_return()` only — see there for why the difference matters.
+var _walking_the_finale := false
+
 ## Which planned events have already summoned the row their own `spawns_on_sight` names, so a
 ## `burning_building` streamed out and back in — a fresh `EventInstance` every time, unlike the
 ## `Planned` it comes from, see `_stream_in()` — does not hand out a second fire engine. Keyed by
@@ -61,6 +65,31 @@ func setup(city: City, map: CityMap) -> void:
 	_city = city
 	_map = map
 	_director = EventDirector.new(map)
+	# **Connected once however often this is called.** `City.build()` calls `setup()` and a rig
+	# that wants its own map calls it again on the same manager, which Godot answers with an
+	# `ERROR: Signal ... is already connected` — an error line in a headless run is a failed
+	# `check.sh`, and a second connection would fire the same forward twice besides.
+	if not EventBus.return_phase_started.is_connected(_owe_the_return):
+		EventBus.return_phase_started.connect(_owe_the_return)
+
+## Forwards to `EventDirector.owe_the_return()` the moment the baby is asleep and the day turns
+## to `RETURNING` — see that function's own doc for the shape it owes. `_day` is `start_day()`'s
+## own argument, kept for exactly this: the signal carries nothing, so this is the one place still
+## reading the day and the resistance level directly rather than having them threaded through.
+##
+## **The escape owes no return, because it has no walk home.** `Baby.force_sleep()` emits this
+## signal, and the escape force-sleeps her at the top of every section and every retry — *"the
+## player holding the sleeping baby (sleep bar is full)"* — so without this guard a walk that is
+## outbound from its first frame to its last would be handed the return leg's own pressure at the
+## moment it begins, and the director's pacing would tighten to `Tuning.RETURN_PATROL_INTERVAL`
+## for the rest of it. The guard is on the day rather than on the act because it has to hold
+## whatever day the escape is eventually entered from: today the flag boots it on day 1, where
+## `RETURN_PATROLS_PER_ACT[0]` is 0 and nothing would be owed anyway, and from day 14 — the one
+## `TODO.md` item still open — act IV would owe three.
+func _owe_the_return() -> void:
+	if _walking_the_finale:
+		return
+	_director.owe_the_return(_day, GameState.resistance_progress)
 
 ## Clears yesterday and plans today. `consumed_one_shots` is appended to in place.
 ##
@@ -71,6 +100,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	clear()
 	_hard_failed = false
 	_day = day
+	_walking_the_finale = false
 	# The corridor the city grew this morning, before it placed its closures off it. Passed rather
 	# than grown again so that the walls, the friction and the picture are all stated against one
 	# tree; `RouteTree.for_day` would give the same answer, and two places agreeing by arithmetic
@@ -177,6 +207,7 @@ func start_finale(plans: Array[EventScheduler.Planned], focus := Vector2.ZERO) -
 	clear()
 	_hard_failed = false
 	_day = GameState.day
+	_walking_the_finale = true
 	# Nothing is held: a hold keeps the catalogue's own roll off ground something else has taken,
 	# and nothing rolls here. Cleared rather than left, so a rig that ran a day before the escape
 	# does not leave yesterday's holds on the map.

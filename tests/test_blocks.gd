@@ -31,6 +31,12 @@ func run(t) -> void:
 	_test_a_courtyard_can_be_reached(t)
 	_test_the_same_seed_plans_the_same_arcs(t)
 	_test_park_trees_keep_their_distance(t)
+	_test_tree_runs_are_straight_runs_of_three_to_five(t)
+	_test_tree_runs_are_fixed_for_the_seed(t)
+	_test_tree_lined_streets_stay_rare(t)
+	_test_pits_keep_their_spacing_across_a_whole_run(t)
+	_test_a_pit_is_never_on_a_junction_or_a_mouth(t)
+	_test_the_planner_and_the_prop_agree_on_a_tree_footprint(t)
 
 func _map(index: int = 0) -> CityMap:
 	return _maps[index]
@@ -223,6 +229,157 @@ func _test_park_trees_keep_their_distance(t) -> void:
 							% [seed_value, anchor, apart, City.MIN_TREE_SPACING])
 		city.free()
 	t.check(checked_any_pair, "at least one lot across these seeds had more than one tree to check")
+
+# -------------------------------------------------------------- street trees ---
+
+## The shape the player asked for: *"continuous segments of 3/4/5 blocks randomly placed on the
+## map in both directions"*. A run is straight by construction — one corridor index, consecutive
+## blocks — so what is worth asserting is that construction holds against a real lattice: every
+## street of every run is a real ordinary street, no run is shorter or longer than the bounds, no
+## two runs share a street, and both directions actually occur across a sweep.
+func _test_tree_runs_are_straight_runs_of_three_to_five(t) -> void:
+	var horizontal_seen := false
+	var vertical_seen := false
+	var total := 0
+	for map in _maps:
+		var taken := {}
+		for run in StreetTrees.runs(map):
+			total += 1
+			horizontal_seen = horizontal_seen or run.horizontal
+			vertical_seen = vertical_seen or not run.horizontal
+			t.check(run.length >= Tuning.STREET_TREE_RUN_MIN_BLOCKS \
+					and run.length <= Tuning.STREET_TREE_RUN_MAX_BLOCKS,
+					"seed %d: a run is %d blocks long, outside %d-%d"
+					% [map.seed_used, run.length, Tuning.STREET_TREE_RUN_MIN_BLOCKS,
+					Tuning.STREET_TREE_RUN_MAX_BLOCKS])
+			var keys := run.segment_keys()
+			t.check(keys.size() == run.length, "seed %d: a run names one street per block"
+					% map.seed_used)
+			for i in keys.size():
+				var key: Vector3i = keys[i]
+				t.check(not taken.has(key),
+						"seed %d: street %s is in two runs at once" % [map.seed_used, key])
+				taken[key] = true
+				t.check(map.has_street(key),
+						"seed %d: a run covers %s, which is not a street this city has"
+						% [map.seed_used, key])
+				var segment := StreetNetwork.by_key(key)
+				t.check(segment != null and segment.horizontal == run.horizontal,
+						"seed %d: a run's streets all run the same way" % map.seed_used)
+				if i > 0:
+					var previous: Vector3i = keys[i - 1]
+					var step := Vector2i(key.x, key.y) - Vector2i(previous.x, previous.y)
+					t.check(step == (Vector2i.RIGHT if run.horizontal else Vector2i.DOWN),
+							"seed %d: a run's blocks are consecutive along one line" % map.seed_used)
+	t.check(total > 0, "there were runs to check (%d across %d seeds)" % [total, SEEDS])
+	t.check(horizontal_seen and vertical_seen,
+			"runs are placed in both directions across the sweep")
+
+## Trees are geometry she learns, so they are fixed for the run like a building: the same seed
+## has to give the same runs and the same pits, whatever order anybody asks in.
+func _test_tree_runs_are_fixed_for_the_seed(t) -> void:
+	var map := CityGenerator.generate(BASE_SEED)
+	var again := CityGenerator.generate(BASE_SEED)
+	var first := StreetTrees.planted(map)
+	var second := StreetTrees.planted(again)
+	var third := StreetTrees.planted(map)
+	t.check(first.size() == second.size() and first.size() == third.size(),
+			"the same seed plants the same number of trees (%d, %d, %d)"
+			% [first.size(), second.size(), third.size()])
+	var same := true
+	for i in mini(first.size(), second.size()):
+		if first[i].position != second[i].position or first[i].segment_key != second[i].segment_key:
+			same = false
+	t.check(same, "the same seed plants the same trees in the same pits")
+
+## **Rare, in the player's word** *(2026-09-12: "trees must be quite rare to be able to still place
+## vans restaurants etc.")*. This is the ceiling `Tuning.STREET_TREE_RUNS` is chosen under, not a
+## restatement of it: raising the run count is allowed right up to the point where a tree-lined
+## street stops being the exception, and this is the point.
+func _test_tree_lined_streets_stay_rare(t) -> void:
+	var worst := 0.0
+	var ordinary_total := 0
+	for map in _maps:
+		var ordinary := 0
+		for segment in StreetNetwork.segments():
+			if map.has_street(segment.key()) \
+					and StreetTrees._street_kind_of(map, segment) == GameEnums.StreetKind.ORDINARY:
+				ordinary += 1
+		ordinary_total += ordinary
+		var lined := StreetTrees.segment_keys_with_trees(map).size()
+		var fraction := float(lined) / float(maxi(1, ordinary))
+		worst = maxf(worst, fraction)
+		t.check(fraction <= Tuning.STREET_TREE_MAX_LINED_FRACTION,
+				"seed %d: %d of %d ordinary streets are tree-lined (%.1f%%), over the %.0f%% cap"
+				% [map.seed_used, lined, ordinary, 100.0 * fraction,
+				100.0 * Tuning.STREET_TREE_MAX_LINED_FRACTION])
+	t.check(ordinary_total > 0, "there were ordinary streets to ask about (%d)" % ordinary_total)
+	t.check(worst > 0.0, "and at least one seed had trees at all (worst %.3f)" % worst)
+
+## The spacing is measured over the **run**, not over one street — which is the whole difference
+## between "a pit every other lot-length" and "a pit every other lot-length within each block".
+## Checked per kerb line, since the two kerbs of a street are two independent rows.
+func _test_pits_keep_their_spacing_across_a_whole_run(t) -> void:
+	var pairs := 0
+	for map in _maps:
+		var by_line := {}
+		for tree in StreetTrees.planted(map):
+			var horizontal := tree.segment_key.z == 0
+			# One key per kerb line: the axis, the cross coordinate the row stands on, and nothing
+			# about which street of the run a given pit belongs to.
+			var line := Vector3i(1 if horizontal else 0,
+					tree.tile.y if horizontal else tree.tile.x, 0)
+			var row: Array = by_line.get(line, [])
+			row.append(tree.position.x if horizontal else tree.position.y)
+			by_line[line] = row
+		for line in by_line:
+			var row: Array = by_line[line]
+			row.sort()
+			for i in range(row.size() - 1):
+				pairs += 1
+				var apart: float = row[i + 1] - row[i]
+				t.check(apart >= Tuning.STREET_TREE_PIT_SPACING,
+						"seed %d: two pits on one kerb line %.0fpx apart, under the %.0fpx floor"
+						% [map.seed_used, apart, Tuning.STREET_TREE_PIT_SPACING])
+	t.check(pairs > 0, "there were neighbouring pits to measure (%d)" % pairs)
+
+## The mouth margin is what keeps a pit off a crossing and off a checkpoint's own doorway, and it
+## has to keep holding inside a run — a run's junctions are the places two of its streets meet, so
+## they are exactly where a naive walk along the line would plant one.
+func _test_a_pit_is_never_on_a_junction_or_a_mouth(t) -> void:
+	var checked := 0
+	for map in _maps:
+		for tree in StreetTrees.planted(map):
+			checked += 1
+			var horizontal := tree.segment_key.z == 0
+			var along: int = tree.tile.x if horizontal else tree.tile.y
+			var within := posmod(along, CityMap.period())
+			t.check(within >= Tuning.STREET_WIDTH,
+					"seed %d: a pit at %s stands in a junction" % [map.seed_used, tree.tile])
+			var into_block := within - Tuning.STREET_WIDTH
+			t.check(into_block >= 1 and into_block <= Tuning.BLOCK_SIZE - 2,
+					"seed %d: a pit at %s stands in a street mouth" % [map.seed_used, tree.tile])
+	t.check(checked > 0, "there were pits to check (%d)" % checked)
+
+## `StreetTrees.footprint_radius()` is what the scheduler and the seals keep clear, and it is
+## computed from `Prop`'s own textures rather than read off a live prop, because every caller is a
+## headless planner with no scene. This is the thing that stops the copy drifting: a real street
+## tree, built by a real `City`, has to carry exactly the shape the planners assumed.
+func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t) -> void:
+	var map := CityGenerator.generate(BASE_SEED)
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(map)
+	var checked := 0
+	for prop in city.props():
+		if prop.kind != Prop.Kind.STREET_TREE:
+			continue
+		checked += 1
+		t.check(prop.shape != null and prop.shape.reach() <= StreetTrees.footprint_radius() + 0.001,
+				"a street tree reaches %.2fpx, over the %.2fpx the planners keep clear"
+				% [prop.shape.reach() if prop.shape else -1.0, StreetTrees.footprint_radius()])
+	t.check(checked > 0, "the city built street trees to check (%d)" % checked)
+	city.free()
 
 # ------------------------------------------------------------------ helpers ---
 
