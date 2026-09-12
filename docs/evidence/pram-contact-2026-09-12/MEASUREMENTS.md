@@ -1,11 +1,13 @@
 # Pram hand-contact assembly
 
-This source-level assembly compares the registered runtime mother and pram PNGs at the former
-34px lead and at the proposed presentation offset. It uses both authored pushing gait frames,
-mirrors the west-facing views exactly as the game does, and follows the game's canonical draw
-order. It does not prove interpolation during a live turn or animation timing.
+This record preserves contact-only and grounded assemblies of the registered mother and pram.
+The runtime uses the **grounded placement** below: uniform 7/6 stroller scale and no fixed lift.
+The sheets cover both pushing gait frames and all eight views, with runtime west mirrors and
+draw order. They do not establish live-turn appearance or animation timing.
 
-The proposed continuous offset is:
+## Contact-only snapshot
+
+The smaller, lifted stroller's continuous offset is preserved for comparison:
 
 | Facing | Screen offset from her feet |
 |---|---:|
@@ -27,7 +29,7 @@ hand-to-handle pixels are less than half a native pixel apart in both gait frame
 the north-east and south-east placements. The south-facing hands overlap the handle bar in both
 frames. These checks use the visible handle pixels, rather than the hood edge.
 
-## Grounding correction
+## Grounded runtime placement
 
 The grounded placement scales the stroller uniformly by 7/6 about the same bottom-center anchor
 used by `Sprites.draw_standing()`. Side and diagonal canvases become exact 42×35px rectangles and
@@ -71,7 +73,7 @@ Each 8× image uses nearest-neighbor sampling so individual source pixels remain
 The recipe does not read the mutable runtime asset folders or the current stroller source. Its
 `inputs/png/` and `inputs/svg/` directories preserve the exact 15 pushing-rig inputs from
 `assets/illustrated/svg-transfer/rig/` and `assets/rig/` at source commit
-`55b566834899c1ac95f7b09cc216064cc50af996`. The former and selected placement values are fixed
+55b566834899c1ac95f7b09cc216064cc50af996. The former and selected placement values are fixed
 inside `assemble.py`. `SHA256SUMS` records every preserved input, the SVG rasterizer, the four contact
 outputs, the four grounding outputs, and the four review snapshots; the recipe refuses a missing or
 changed input and refuses an output whose byte hash differs.

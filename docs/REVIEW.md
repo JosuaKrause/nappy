@@ -44,8 +44,9 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   `--svg` provides the source comparison.
 
 - **Watch the stroller handle through a turn and both pushing gait frames.** Do her hands stay
-  connected while the stroller remains grounded? The PNG and SVG comparison sheets in
-  `evidence/pram-contact-2026-09-12/` show canonical placements; live motion and texture changes
+  connected while the stroller remains grounded? The PNG and SVG `grounding-*` sheets in
+  `evidence/pram-contact-2026-09-12/` show the enlarged stroller and its ground anchors;
+  live motion and texture changes
   between directions still need a person's look. Collision positions and touch radii stay fixed.
 
 - **Look at the garbage sacks and small litter from day 10.** Do the standalone sacks and

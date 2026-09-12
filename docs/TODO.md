@@ -115,11 +115,6 @@ findings supported by the conversion and review.
       Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
-- [ ] Ground the connected stroller: PLAYTEST-65 finds that the upward placement makes its
-      wheels float above the mother's feet. Match wheel/foot height and hand/handle contact
-      together; try a modest stroller drawing scale to match handle-to-wheel and hand-to-foot
-      height without regenerating. Review both frames and all eight views, including turns,
-      and keep the collision and input contracts unchanged.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The

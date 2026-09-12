@@ -54,6 +54,17 @@ raster hash, canvas, bottom-center anchor and generated cell. `source/input-mani
 the pushing crop and approved style-reference roles. Preparation refuses an existing output
 directory and fails if any current SVG no longer matches the preserved source raster record.
 
+D's source SVG hashes differ from E's repaired legs. To reproduce D's registration, use its
+preserved source checkout first; the source guard intentionally rejects the E checkout:
+
+```sh
+git worktree add --detach /tmp/nappy-d-source 92bc41d85a35d0025ec9bfff2e4b9e4c78e8eb05
+cd /tmp/nappy-d-source
+```
+
+The D walking GIF and four-version comparison use frozen registered inputs and can be rebuilt
+from the current checkout using their own recipes; they do not require this source checkout.
+
 Run source preparation with the project lock and a fresh destination:
 
 ```sh

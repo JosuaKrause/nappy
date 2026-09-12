@@ -49,7 +49,8 @@ extraction for the pushing mother and every stroller view. Its assembly sheets a
 source placement and do not establish live hand-to-handle contact.
 The [hand-contact comparison](evidence/pram-contact-2026-09-12/MEASUREMENTS.md) assembles both
 formats at the current continuous stroller offset. Shadows and cues share that drawing position;
-the collision body retains its separate ground-plane position. Static contact does not establish
+the uniformly enlarged stroller retains its bottom ground anchor, and the collision body retains
+its separate ground-plane position. Static contact does not establish
 live turning. The [recipe index](evidence/README.md#graphics-recipes) locates generation,
 registration, comparison-sheet and walking-GIF scripts with their inputs and regeneration commands.
 The [comic prop record](evidence/comic-props-2026-09-12/GENERATION.md) preserves the redrawn
