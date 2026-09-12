@@ -95,3 +95,16 @@ which nothing ends the day lets one sitting walk past every item and stand next 
 for as long as looking takes. Filed under M100, small, real and nobody's, as a debug flag on the
 same terms as the rest of the developer furniture: never in a release build, marked on screen and
 in the run log so no capture from it can be mistaken for a real run.
+
+## The mid-turn capture is a burst
+
+Two branches had failed to photograph a crowd car mid-turn with a single windowed screenshot — a
+turn is two seconds, and a still lands on it by luck — and the queue had proposed a probe that
+places a car on a synthetic arc. The player chose the instrument that already exists:
+
+> use burst mode for mid turn capture
+
+So the evidence is an animation burst — `B` in a debug run, or `--press snapshot_burst <seconds>`
+from a rig, thirty-six frames over three seconds at a junction — converted with `tools/clip.sh`
+and kept with its frames and timing record, as the session-captures rule already requires for
+anything about motion. A still cannot establish a smooth turn; the burst can.
