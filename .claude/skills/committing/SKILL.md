@@ -27,21 +27,29 @@ unmerged for no reason. Arm it as the last step of proposing, and arm the next P
 same way — a PR whose base was a branch has to be retargeted to `main` (or re-opened against it,
 since GitHub closes a PR whose base branch is deleted) before it can be armed.
 
-**Arm it and move on; nobody waits for it, not even a background agent.** *(2026-09-11: "and
-just arm the PRs don't wait for them".)* A session that has armed its PRs is finished with them:
-the worktree removal, the `main` pull into the player's checkout and any stacked PR's retarget
-happen at the **start of the next session**, which begins by fetching and looking at what merged
-and what did not. Watcher agents that poll a check every ninety seconds were tried and cost more
-than they saved — one exited before the merge, one stopped at the first conflict, and each cost a
-spawn — so a wait is never the right answer to an open PR.
+**Arm it so that it can actually merge, then move on.** *(2026-09-11: "and just arm the PRs
+don't wait for them"; then "make sure PRs can actually auto merge fully when arming them. and of
+course wait for them if new work depends on them".)* Arming is only the last step if the PR is
+`MERGEABLE` at that moment — `gh pr view <n> --json mergeable,mergeStateStatus` says so; a PR that
+is `CONFLICTING`, or would be the instant a sibling armed ahead of it merges, is not armed yet, it
+is merged with `main` first under the **merging-main** rules. **Several armed PRs that touch the
+same file will conflict in turn**, because each merges against a `main` the previous one changed —
+`docs/DECISIONS.md`, where every PR prepends a record, and `docs/TODO.md`, where every PR removes
+or adds an entry, do this every time — so before arming a second PR that touches those, either
+wait for the first, or fold the two into one PR, or accept that the second needs a merge of `main`
+after the first lands and do that merge before walking away. What is never right is arming a PR
+that cannot merge and leaving.
 
-**Several armed PRs that touch the same file will conflict in turn**, because each merges against
-a `main` the previous one changed — `docs/DECISIONS.md`, where every PR prepends a record, and
-`docs/TODO.md`, where every PR removes or adds an entry, do this every time. A PR that goes
-`CONFLICTING` is not merged by anybody: it waits for a merge of `main` resolved by hand under the
-**merging-main** rules, at the next session's start. Reduce the collisions where it is cheap —
-one PR that files several records rather than several PRs that each file one — and accept the
-rest.
+**Wait exactly when the next work depends on the merge.** A branch that has to build on another
+PR's code waits for that PR rather than stacking on its branch, since GitHub closes a stacked PR
+when its base branch is deleted; a docs-only PR nothing depends on is armed and left. When a wait is
+right, one monitor that reports state changes beats an agent that polls: watcher agents were tried
+and cost more than they saved — one exited before the merge, one stopped at the first conflict, and
+each cost a spawn.
+
+**A session ends with its PRs armed and mergeable.** The worktree removal, the `main` pull into
+the player's checkout and any stacked PR's retarget happen at the start of the next session, which
+begins by fetching and looking at what merged and what did not.
 
 **A ready-for-review PR carries the completed work and its verification.** Run `./tools/check.sh`,
 the suites the change touches, and `./tools/lint.sh` if a governed doc moved. An unfinished draft
