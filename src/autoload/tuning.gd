@@ -830,6 +830,13 @@ const WALKER_DOOR_QUEUE_SPACING := 26.0
 ## instead of being inspected a second time.
 const WALKER_DOOR_COOLDOWN_RADIUS := 96.0
 
+## The longest line a door is allowed to grow behind the walker inside it — the player's *"don't
+## want a queue that is long"*. Two is the recommendation rather than a number they gave, so a door
+## holds three people at the very most: one inside and two waiting. Anybody who first sees the door
+## while it is that busy turns back at the last junction instead of joining, so the line is short
+## **by construction** and never by a walker giving up once it is standing in one.
+const WALKER_DOOR_QUEUE_MAX := 2
+
 ## How far to either side of its own line of travel a walker will look for a hut, in px. A tile: a
 ## walker's lane sits exactly 24px across from the hut on its own sidewalk (the hut is on the
 ## sidewalk band's centre line, the two walker lanes are `CrowdLanes.SIDEWALK_LANE_SPREAD` either

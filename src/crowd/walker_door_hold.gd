@@ -70,6 +70,13 @@ func release(walker: Node2D) -> void:
 func waiting() -> int:
 	return queue.size()
 
+## How many walkers this hut has altogether — inside and waiting. **The quantity the queue cap is
+## stated over**, rather than the waiting line alone: before anybody has been let in, the line
+## *is* everybody, and a cap that only counted the waiters would let an unbounded number commit in
+## the first frame a door is seen and then discover the crowd afterwards.
+func committed() -> int:
+	return queue.size() + (1 if inside != null else 0)
+
 ## Lets go of everybody at once — what `Crowd.clear()` does when a day's whole crowd stops
 ## existing. Without it a hut holds references to freed nodes, which are not `null` and are not
 ## valid either, and the first thing that asks whether somebody is inside gets the worst of both.

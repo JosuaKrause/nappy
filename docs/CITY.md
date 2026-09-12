@@ -425,7 +425,10 @@ in four states: *walking* up to it, *waiting* stopped beside it in their last fa
 is inside is seen to, *inspection* inside the hut and not drawn for
 `Tuning.WALKER_DOOR_HOLD_SECONDS` (1s, under her own two), and *emerging* on the far side on the
 same lane, carrying a cooldown that keeps that hut from taking them again until they have left its
-area. One walker inside a hut at a time, so the line behind it is whoever is waiting.
+area. One walker inside a hut at a time, and the line behind it never grows past
+`Tuning.WALKER_DOOR_QUEUE_MAX`: a walker whose lookahead first sees a door that is already that
+busy turns back at the last junction instead of joining it, so a busy door never grows a queue down
+the sidewalk.
 
 What this does *not* give is planning-time legibility — knowing a street is shut before you
 are standing next to it. That would be a route map, which is backlogged; see `docs/TODO.md`.

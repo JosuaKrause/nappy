@@ -184,7 +184,11 @@ goes **inside** for `Tuning.WALKER_DOOR_HOLD_SECONDS` (1s, shorter than her own 
 walker is not the one being looked for) and is not drawn, and comes out on the far side of the door
 on the same lane with a cooldown that keeps that hut from taking it again until it has left the
 hut's area — so the crowd's own steering turning it round just past a door cannot put it through a
-second inspection. One inside at a time, so the line at a door is whoever is waiting.
+second inspection. One inside at a time, and **the line is short by construction**: a door holds
+one walker inside and `Tuning.WALKER_DOOR_QUEUE_MAX` (2) behind it, and the next walker to see it
+turns back at the last junction instead of joining. The decision is taken where the lookahead first
+sees the door — the same seven tiles the crowd sees a wall from — rather than at the hut, because a
+walker has no about-face to make once it is standing in a queue.
 
 It is the crowd's own state throughout — `Crowd._hold_walkers_at_doors()`, `WalkerDoorHold` and
 `CrowdAgent`'s four `DoorState`s, keyed on the hut body's ground point from the region plan. It

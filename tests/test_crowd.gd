@@ -58,6 +58,7 @@ func run(t) -> void:
 	# minute, and every test below places its own bodies at the same hut anyway.
 	var door_day := _open_a_door_day(t)
 	_test_a_walker_is_held_at_a_door_in_four_states(t, door_day)
+	_test_a_line_at_a_door_stays_short(t, door_day)
 	_test_a_car_still_stops_for_the_boom(t, door_day)
 	if not door_day.is_empty():
 		var door_city: City = door_day["city"]
@@ -1701,6 +1702,66 @@ func _test_a_walker_is_held_at_a_door_in_four_states(t, scene: Dictionary) -> vo
 			"a walker that walks through a door never stops at the hut (%d frames it did)"
 			% stopped)
 	t.check(_past_the_hut(passing, hut) > 0.0, "and it is through the door")
+
+## M110, the last item's own third clause: *"don't want a queue that is long"*. A door's line is
+## short **by construction** — one walker inside, `Tuning.WALKER_DOOR_QUEUE_MAX` standing behind it,
+## and the next walker to see the door turns away at the door rather than joining. The line is
+## asserted against the constant rather than against a count, so moving the cap moves the test with
+## it; what would fail is a line that grows past whatever the cap says.
+func _test_a_line_at_a_door_stays_short(t, scene: Dictionary) -> void:
+	if scene.is_empty():
+		return
+	var city: City = scene["city"]
+	city.crowd.clear()
+	var hut: WalkerDoorHold = scene["huts"][0]
+	# One at the hut, `WALKER_DOOR_QUEUE_MAX` behind it, and one more than the door will take.
+	var line: Array[CrowdAgent] = []
+	for i in Tuning.WALKER_DOOR_QUEUE_MAX + 2:
+		line.append(_walker_approaching(scene, hut, 60.0 + 40.0 * float(i),
+				CrowdAgent.DoorAnswer.HELD))
+	var turned_away: CrowdAgent = line[line.size() - 1]
+	var away_at_the_start := turned_away.global_position.distance_to(hut.position)
+	# Measured against the way it was **originally** pointing, because turning away reverses its
+	# heading: "how far past the door" read off the current heading flips sign the moment it turns
+	# round, and a walker that correctly went home would read as one that sailed through.
+	var approach := turned_away.heading()
+
+	var longest := 0
+	var ever_joined := false
+	var ever_refused := false
+	var crossed := false
+	var spacing_seen := 0
+	for frame in int(round(6.0 / STEP)):
+		city.crowd.step(STEP)
+		longest = maxi(longest, hut.committed())
+		if hut.place_of(turned_away) >= 0:
+			ever_joined = true
+		if turned_away._refused_hut == hut:
+			ever_refused = true
+		if (turned_away.global_position - hut.position).dot(approach) > 0.0:
+			crossed = true
+		# Two waiting behind somebody inside: the second of them stands one spacing further back
+		# than the first, which is what makes a line a line rather than a heap.
+		if hut.inside != null and hut.waiting() >= 2:
+			var first: CrowdAgent = hut.queue[0]
+			var second: CrowdAgent = hut.queue[1]
+			if first.velocity().is_zero_approx() and second.velocity().is_zero_approx():
+				var gap := absf(_past_the_hut(second, hut)) - absf(_past_the_hut(first, hut))
+				if absf(gap - Tuning.WALKER_DOOR_QUEUE_SPACING) < 6.0:
+					spacing_seen += 1
+	t.check(longest <= Tuning.WALKER_DOOR_QUEUE_MAX + 1,
+			"a door never holds more than one walker inside and WALKER_DOOR_QUEUE_MAX behind it "
+			+ "(the most it held was %d)" % longest)
+	t.check(longest == Tuning.WALKER_DOOR_QUEUE_MAX + 1,
+			"and it does fill up, so the cap above was actually asked about (%d)" % longest)
+	t.check(not ever_joined, "the walker the door has no room for never joins the line")
+	t.check(ever_refused, "it decides against that door rather than walking up to the queue")
+	t.check(not crossed, "and it never reaches the door, let alone crosses it")
+	t.check(turned_away.global_position.distance_to(hut.position) > away_at_the_start,
+			"it is walking away from the door by the end")
+	t.check(spacing_seen > 0,
+			"a second walker waits behind the first at a walker's spacing (%d frames)"
+			% spacing_seen)
 
 ## The boom over the roadway is the cars' own and is untouched by any of the above: a car still
 ## comes to a full stop at a lowered gate and the gate still raises for it once it has been stopped

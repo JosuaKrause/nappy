@@ -237,6 +237,15 @@ var _door_hold: WalkerDoorHold = null
 ## Seconds left of the inspection inside the hut.
 var _inspection_left := 0.0
 
+## The hut this walker has decided against because the line at it was already as long as a line is
+## allowed to get, and that door's own segment key — which is what `_segment_is_shut` reads, so a
+## refusal turns this walker away at the last junction exactly the way a wall does. Both are
+## dropped again once that hut is out of sight, since a later approach is a later decision.
+## `NO_DOOR` is "no refusal", and is a key no segment can have.
+const NO_DOOR := Vector3i(-9999, -9999, -9999)
+var _refused_hut: WalkerDoorHold = null
+var _refused_door_key := NO_DOOR
+
 var _map: CityMap
 ## Its own RNG, seeded from the day and its own index. Per-agent rather than shared so a
 ## turn taken at a junction cannot depend on the order agents happen to reach junctions in
@@ -446,7 +455,9 @@ func _stands_on_a_street() -> bool:
 ## **The door's carve-out is per walker**, which is the one thing here that is not a fact about the
 ## day: a walker whose own answer is `TURNS_BACK` gets no carve-out at all, so a door reads to it
 ## exactly like the wall either side of it and it turns away at the last junction with the machinery
-## that already does that. Nothing else about turning back needs writing.
+## that already does that. Nothing else about turning back needs writing — and a walker that has
+## decided against one particular door's queue (`_refuse_the_door`) is the same sentence for one
+## segment rather than for all of them.
 func _segment_is_shut(tile: Vector2i) -> bool:
 	if not _map.is_held_at(tile):
 		return false
@@ -457,7 +468,7 @@ func _segment_is_shut(tile: Vector2i) -> bool:
 	if home_segments.has(key):
 		return false
 	if door_segments.has(key):
-		return _door_answer == DoorAnswer.TURNS_BACK
+		return _door_answer == DoorAnswer.TURNS_BACK or key == _refused_door_key
 	return true
 
 # -------------------------------------------------------- checkpoint doors ---
@@ -508,16 +519,48 @@ func advance_the_door_hold(delta: float) -> void:
 ## decide against a door and turn at a junction — walking up to a full line and then about-facing
 ## on the sidewalk is not a move a walker has.
 func _consider_the_hut_ahead() -> void:
+	if _refused_hut and _refused_hut != door_ahead:
+		# Out of sight of the door it turned away from — a fresh approach is a fresh decision.
+		_forget_the_refusal()
 	if _door_answer != DoorAnswer.HELD or door_ahead == null:
 		if _door_hold:
 			_let_go_of_the_hut()
 		return
+	if _refused_hut == door_ahead:
+		return
 	if _door_hold != door_ahead:
 		_let_go_of_the_hut()
+		if door_ahead.committed() > Tuning.WALKER_DOOR_QUEUE_MAX:
+			_refuse_the_door(door_ahead)
+			return
 		_door_hold = door_ahead
 		_door_hold.join(self)
 	if door_ahead_along <= _door_stop_distance():
 		_door_state = DoorState.WAITING
+
+## Decides against a door whose line is already as long as it is allowed to get — the player's
+## *"don't want a queue that is long"* — and does it by shutting that door's own **segment** to this
+## walker, which is exactly what turning back at a door already means (`_segment_is_shut`).
+##
+## **Nothing here waits at the hut and then gives up.** The decision is taken where the lookahead
+## first sees the door and the turn is the one a wall gets, so the ordinary case is a walker that
+## takes the junction rather than one that walks up to a queue and about-faces on the sidewalk.
+## Where there is no junction left between it and the door — it is already inside the door's own
+## street, because seven tiles is all anybody in the crowd sees a wall from either — it turns round
+## where it stands, immediately rather than at the hut, the same move a cul-de-sac gets.
+func _refuse_the_door(hold: WalkerDoorHold) -> void:
+	_refused_hut = hold
+	_refused_door_key = NO_DOOR
+	var segment := StreetNetwork.segment_containing(_map.world_to_tile(hold.position))
+	if segment:
+		_refused_door_key = segment.key()
+	# The lookahead is cached per tile and was worked out before this walker decided anything.
+	_scan_at = Vector2i(-9999, -9999)
+
+func _forget_the_refusal() -> void:
+	_refused_hut = null
+	_refused_door_key = NO_DOOR
+	_scan_at = Vector2i(-9999, -9999)
 
 ## Where this walker stops short of the hut, in px along its own line of travel: beside the hut if
 ## it is at the front of the line, and one spacing further back for everybody behind it. Recomputed
@@ -1977,8 +2020,11 @@ func _recycle() -> void:
 	if kind == Kind.WALKER:
 		_walker_gait_phase = 0.0
 	# Whatever door had hold of this walker is at the other end of the field now, and a hut left
-	# occupied by somebody who has been recycled out of it never lets anybody else in again.
+	# occupied by somebody who has been recycled out of it never lets anybody else in again. A
+	# refusal goes with it: this is a fresh person walking in from the edge of the box, and the door
+	# it decided against is nowhere near the street it is about to be standing on.
 	_let_go_of_the_hut()
+	_forget_the_refusal()
 	# A recycled agent is a fresh person walking in from the edge of the box, so it draws a fresh
 	# answer — and draws it here, before the rolls below, for the reason `_draw_the_door_answer()`
 	# gives: the entry point is checked against ground this walker may actually walk.
