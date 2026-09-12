@@ -116,12 +116,16 @@ findings supported by the conversion and review.
       Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
-- [ ] Repair sidewalk continuity in actual game arrangements. PLAYTEST-65 reports that the
-      current sidewalk still does not continue the road edge. Align slab joints and material
-      shading with accepted curb paving, including repeated runs and junction corners. Use the
-      [actual-map layout recipe](evidence/sidewalk-layout-review-2026-09-12/GENERATION.md) to compare
-      both sidewalk lanes and street axes. Preserve accepted curb artwork and current mother
-      graphics. The diagnosis is in `DECISIONS.md` under M109, sidewalk joins in actual street layouts.
+- [ ] Assemble ground variants from shared bases and transparent overlays. PLAYTEST-65 asks for
+      one sidewalk floor texture, a curbstone-only texture and a red main-street edge-line texture,
+      blended during assembly. Remove backgrounds from cracks and other damage and composite them
+      over the actual sidewalk, road or alley base. Keep the floor identical outside each overlay;
+      preserve native tile geometry, curb detail, markings, selection and current mother graphics.
+      Store component SVGs before their PNG derivatives, frozen input artwork and reproducible
+      assembly scripts. Review repeated runs and corners using the
+      [actual-map layout recipe](evidence/sidewalk-layout-review-2026-09-12/GENERATION.md), keeping
+      the previous comparison reproducible. The diagnosis is in `DECISIONS.md` under M109,
+      sidewalk joins in actual street layouts.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The

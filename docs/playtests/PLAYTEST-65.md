@@ -163,3 +163,13 @@ result rather than applying the proposed size correction.
 The sidewalk continuity issue remains open. Assemble the current tiles using the game's actual
 selection and adjacency, including repeated runs and corners, before judging the joins. Preserve
 the accepted mother graphics and road-edge artwork.
+
+> just create *one* floor tile and then create a texture for just the curbstone and just the red main street edge line. then blend them over the floor tile when assembling -- the same for cracks etc remove their background and blend them over the actual tile to apply them. that way you don't have to worry about getting the same texture multiple times
+
+Use one shared sidewalk floor texture and separate transparent curbstone, red main-street edge
+marking, and damage textures. Composite those layers over the appropriate base surface during
+tile assembly, so decorated variants inherit the exact base instead of independently redrawing
+it. Remove the background from crack artwork before applying it to sidewalk, road, or alley.
+This replaces preserving the complete curb PNG with preserving the curb detail over a shared
+floor. Keep layer inputs and assembly scripts reproducible, and check the resulting actual-map
+layouts. The accepted mother graphics remain unchanged.
