@@ -165,6 +165,15 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# `region_plan.door_bodies` stays the one place that answers "where do today's doors stand"
 	# without filtering.
 	_plans.append_array(region_plan.door_bodies)
+	# Every stationary solid body the day has sited, recorded per tile so the crowd goes round it —
+	# see `CityMap.obstructed_tiles`. Taken from the **plan** rather than from the live instances
+	# because a body is a body whether or not the player has come near enough to stream it in, and
+	# the crowd is placed and steered across the whole map. Last of the assembly, so that everything
+	# the day places — the catalogue's rows, the seals, the wall and the door structure — is in
+	# `_plans`, and so that every held segment the record refuses against is already on the map.
+	for plan in _plans:
+		if plan.is_placed():
+			_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
 	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"))
 	stream_around(focus)
 
@@ -175,6 +184,11 @@ func clear() -> void:
 	for plan in _plans:
 		plan.live = null
 	_plans.clear()
+	# Yesterday's bodies go with yesterday's events, the same once-a-day sweep `clear_day_holds()`
+	# and `clear_day_soft_seals()` get — every owner in the record is a plan or an instance this
+	# call has just thrown away.
+	if _map:
+		_map.clear_day_obstructions()
 	_door_entry_side.clear()
 	_door_release_latches.clear()
 	_sighted.clear()
@@ -241,6 +255,9 @@ func _spend_the_rest_of_the_group(chosen: EventScheduler.Planned) -> void:
 		if plan == chosen or plan.set_piece_group != chosen.set_piece_group:
 			continue
 		plan.spent = true
+		# A sibling that will now never be placed is a body that is not in the street, so the
+		# ground it was holding opens again.
+		_map.release_obstruction(plan.get_instance_id())
 		# A sibling cannot already be live — the group is spent the first time any of them enters
 		# the world, and `stream_around` skips a spent plan — but taking one out is the only safe
 		# thing to do if that ever stops being true, because a second live one is a second scar.
@@ -251,9 +268,72 @@ func _stream_out(plan: EventScheduler.Planned) -> void:
 	plan.age = plan.live.age
 	plan.travelled = plan.live.path_travelled()
 	plan.noticed_at = plan.live._noticed_at
+	_map.release_obstruction(plan.live.get_instance_id())
 	_instances.erase(plan.live)
 	plan.live.queue_free()
 	plan.live = null
+
+# --------------------------------------------------- the bodies in the street ---
+# Every stationary solid body is recorded per tile for the day, so the crowd steers round it
+# instead of walking and driving through it — *("yes every solid body should do that -- not
+# necessarily force a turn around but at least avoid the solid")*. `CityMap.obstructed_tiles` is
+# the record and says which bodies it deliberately leaves out; this is the whole of what fills it.
+#
+# **Two identities record the same footprint and both give it back.** A `Planned` records its body
+# at dawn, because the crowd runs across the whole map and a body is a body whether or not the
+# player has come near enough for it to exist yet; the `EventInstance` records the same tiles again
+# while it is live, because a body placed later in the day — a successor left where a fire burnt
+# out, the resistance's own robbery — has no plan behind it. The record counts rather than flags
+# for exactly this reason, so neither release can open ground the other is still standing on.
+
+## Records one body's footprint under `owner`, or nothing at all for anything the record leaves
+## out. Safe to call for every plan and every instance: the deciding is all in
+## `obstructed_footprint()`.
+func _record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) -> void:
+	if not _map:
+		return
+	_map.obstruct_tiles(owner, obstructed_footprint(_map, def, at, facing))
+
+## The tiles a row's own solid body stands on when it is sited at `at` looking `facing`, or an
+## empty list for anything `CityMap.obstructed_tiles` deliberately leaves out — a mobile row, a
+## door body, a body on a segment that is held for the day anyway, or a row with no body at all.
+##
+## **The placement and the axis are read back out of `EventInstance`'s own statics rather than
+## worked out again here.** Where a body actually stands is not `Planned.position`: a stationary,
+## unpinned body is shifted onto the middle of its pavement band, and a segment body lies along
+## whichever axis the street it stands on gives it. Both are decided in exactly one place, and a
+## second copy of that arithmetic would agree with it right up to the first time one of the two
+## took an argument — which would leave the crowd avoiding ground no body is on and walking
+## through the ground one is.
+static func obstructed_footprint(map: CityMap, def: EventDef, at: Vector2,
+		facing: Vector2) -> Array[Vector2i]:
+	var nothing: Array[Vector2i] = []
+	if not map or def == null or def.shape == null or def.obstructs_radius <= 0.0:
+		return nothing
+	# A moving wall pins her, so the catalogue exempts anything mobile from being solid at all; a
+	# door is a crossing the day means to keep open, answered for a walker by `WalkerDoorHold` and
+	# for a car by `Crowd._stop_for_gates()`.
+	if def.mobile or def.detain_seconds > 0.0:
+		return nothing
+	var placed := at
+	if def.pavement_side == EventDef.Pavement.ANY:
+		placed = EventInstance._centred_on_the_pavement_band(map, at)
+	# A hard seal's own body and a region wall's stand in the mouth of a segment that is already
+	# held, which shuts the whole street to walkers and cars alike — recording their tiles as well
+	# would be a second answer to a question that has one. Asked of the body's own placement tile,
+	# which is the tile that decided the segment it belongs to.
+	if map.is_held_at(map.world_to_tile(placed)):
+		return nothing
+	return def.shape.tiles_under(placed, _body_axis(map, def, placed, facing))
+
+## The ground-plane direction a sited body's spine lies along — `EventInstance._solid_axis()` for a
+## body that does not exist yet, off the same two statics that instance would read.
+static func _body_axis(map: CityMap, def: EventDef, placed: Vector2, facing: Vector2) -> Vector2:
+	if EventInstance.has_a_spread(def) or def.look == EventDef.Look.PROTEST \
+			or def.look == EventDef.Look.FIREFIGHT:
+		return Vector2.DOWN if EventInstance._spread_is_vertical(map, placed) else Vector2.RIGHT
+	return Vector2.RIGHT if EventInstance._stationary_vehicle_uses_side(def.look, map, placed,
+			facing) else Vector2.DOWN
 
 ## Adds an event outside the day's plan and outside the streaming, at a path the caller chose.
 ## The director's cats arrive this way, and so does the resistance's robbery.
@@ -271,6 +351,10 @@ func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sc
 	var instance := EventInstance.new()
 	instance.setup(def, at, path, facing, _map)
 	_city.add_entity(instance)
+	# Its own copy of the footprint, given back when it streams out or finishes. A planned body has
+	# already recorded the same tiles from its plan; a body placed later in the day has not, and
+	# this is the one path every one of those comes through. See "the bodies in the street" above.
+	_record_the_body(instance.get_instance_id(), def, at, facing)
 	if def.scar_id != "" and record_scar:
 		# A scar is where the city stopped being recomputable: it exists because of what
 		# happened on an earlier day, so from day 4 onwards the map depends on run history.
@@ -607,6 +691,9 @@ func _retire_finished() -> void:
 			if successor:
 				successors.append(successor)
 			_mark_plan_spent(instance)
+			# The body is gone from the street, so the ground under it is open again. Its plan gives
+			# back its own copy in `_mark_plan_spent()`; this is the instance's.
+			_map.release_obstruction(instance.get_instance_id())
 			instance.queue_free()
 		else:
 			survivors.append(instance)
@@ -626,6 +713,9 @@ func _mark_plan_spent(instance: EventInstance) -> void:
 		if plan.live == instance:
 			plan.live = null
 			plan.spent = true
+			# A spent plan is a body that has left, so its ground opens again — the plan's own half
+			# of the release. See "the bodies in the street".
+			_map.release_obstruction(plan.get_instance_id())
 			return
 
 ## An event that leaves something behind where it stopped — how a fire engine ends its run

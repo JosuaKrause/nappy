@@ -323,7 +323,10 @@ open**, and the player walks over it. A zone is a shortcut as well as a destinat
 The crowd asks a different question. An agent travels the lattice, so it checks `is_street()`
 and diverts at the T-junction rather than strolling across the grass — the same move a
 barricade already produces, with the same good side effect: the street with nobody on it is the
-street that does not go through.
+street that does not go through. The same predicate carries every other thing standing in a street:
+a held segment, a soft seal's pavements, and the tiles under any stationary solid body
+(`CityMap.obstructed_tiles`), so the crowd goes round a café the way it goes round a seal — see
+docs/MECHANICS.md, "The crowd goes round a seal".
 
 The zebras on a zone's edge are the case that looks obvious and is not. A crossing sits where a
 *pavement* lane meets a *carriageway*, so most of them still make sense — the pavement is there

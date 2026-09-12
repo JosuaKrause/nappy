@@ -210,6 +210,69 @@ func seal_soft_tile(tile: Vector2i) -> void:
 func is_soft_sealed(tile: Vector2i) -> bool:
 	return soft_sealed_tiles.has(tile)
 
+## Tiles a **stationary solid body** stands on today — a café's tables, a construction band, a
+## kerbed van, a stall, a skip, a burnt-out car — as tile -> how many bodies are standing there.
+## *("yes every solid body should do that -- not necessarily force a turn around but at least avoid
+## the solid".)* Filled by `EventManager.start_day` from the day's whole plan and by
+## `EventManager._create` for anything placed later, and read by `CrowdAgent` so the crowd goes
+## round a body instead of through it.
+##
+## **Three kinds of body are deliberately not in here**, each because something else already
+## answers for it and two answers to one question is one too many. A **mobile** row is exempt by
+## the catalogue's own *solid things are solid* rule and moves out of the way by walking. A body
+## standing on a segment `held_segments` already holds — a hard seal, a region wall — has shut the
+## whole segment to everybody, so recording its tiles again would change nothing and would make
+## the two records disagree the moment one of them moved. And a **door** body (`detain_seconds >
+## 0`: a hut, the boom, an alley guard) is a crossing the day means to keep open, held by
+## `WalkerDoorHold` for a walker and by `Crowd._stop_for_gates()` for a car.
+##
+## **Counted rather than flagged**, because two bodies can overlap a tile — a café beside a stall
+## on the same pavement — and the first of them to finish must not open ground the second is still
+## standing on. See `release_obstruction()`.
+##
+## Keyed on the tile the way `soft_sealed_tiles` is and for the same reason: a body takes one lane
+## of a pavement or one lane of a carriageway, never a whole segment, and which lane is the whole
+## of what the crowd does about it.
+var obstructed_tiles := {}
+## Which tiles each body put there, by the owner id it was recorded under. Kept so a body can give
+## its own tiles back without a sweep of the whole record.
+var _obstruction_owners := {}
+
+## Clears today's solid bodies. Called once a day, beside `clear_day_holds()` — see
+## `obstructed_tiles`.
+func clear_day_obstructions() -> void:
+	obstructed_tiles.clear()
+	_obstruction_owners.clear()
+
+## Records one body's footprint under `owner`, an `Object.get_instance_id()` the caller can hand
+## back later. Re-recording the same owner replaces its old footprint, so a body that moved or a
+## plan re-recorded on a second day cannot leave tiles behind.
+func obstruct_tiles(owner: int, tiles_covered: Array[Vector2i]) -> void:
+	release_obstruction(owner)
+	if tiles_covered.is_empty():
+		return
+	for tile in tiles_covered:
+		obstructed_tiles[tile] = int(obstructed_tiles.get(tile, 0)) + 1
+	_obstruction_owners[owner] = tiles_covered
+
+## Gives one body's footprint back — its instance finishing, or the day ending. Unknown owners are
+## a no-op, so every way a body can stop existing may call this without checking first.
+func release_obstruction(owner: int) -> void:
+	if not _obstruction_owners.has(owner):
+		return
+	var tiles_covered: Array[Vector2i] = _obstruction_owners[owner]
+	for tile in tiles_covered:
+		var left := int(obstructed_tiles.get(tile, 0)) - 1
+		if left > 0:
+			obstructed_tiles[tile] = left
+		else:
+			obstructed_tiles.erase(tile)
+	_obstruction_owners.erase(owner)
+
+## Whether a stationary solid body is standing on a tile today.
+func is_obstructed(tile: Vector2i) -> bool:
+	return obstructed_tiles.has(tile)
+
 ## The street-tree pits today's fallen trees stand in, so the tree that fell is the one that is
 ## missing. `StreetTrees.planted()` is never touched: where a city's trees stand is a fact about
 ## the run, and which one is lying in the road is a fact about the day, so the day's answer lives

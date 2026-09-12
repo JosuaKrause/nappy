@@ -250,6 +250,18 @@ balance value — and `EventInstance._draw_spread` draws a blocking object at ex
 shape reaches, for the same reason in the other direction: a body that disagrees with the picture
 is a lie about where she can walk, whichever way it lies.
 
+**A body is solid to the crowd as well as to her.** `EventManager` rasterises every stationary
+solid body's own `GroundShape`, at the placement and along the axis the instance itself would draw
+it, into `CityMap.obstructed_tiles`, and the walkers and the cars read that record: a walker steps
+into the other lane of its footway to get past a café and a car turns at the last junction rather
+than driving through a stall. It is taken from the day's **plan** rather than from the live
+instances, since the crowd is steered across the whole map while an instance only exists within
+`Tuning.EVENT_STREAM_RADIUS` of the player. The three exemptions below are exactly the rows the
+record leaves out, plus two the crowd has its own answer for already: a body standing on a segment
+`CityMap.held_segments` holds — a hard seal, a region wall — has shut the whole street to everybody,
+and a door body holds walkers at the hut and cars at the boom. See docs/MECHANICS.md, "The crowd
+goes round a seal".
+
 **The catalogue is not the only thing carrying this datum.** A building's collision is a rectangle
 built from `shape.collision_shape()` on `GroundShape.rect(footprint * 0.5)` — `src/city/building.gd`
 — the one caller of `GroundShape`'s rectangle kind, since nothing else has a footprint that is not
