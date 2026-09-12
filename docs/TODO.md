@@ -146,11 +146,12 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    *(2026-09-10, playtest 52: "objects like fallen trees don't stop/redirect traffic or
    pedestrians.")* Placed here by the orchestrator because a sealed street the crowd walks
    through is the sealing's own legibility failing — open to the player moving it.
-3. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
-   the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
+3. **M96, M97, M99 and M100**, in no order between them: the teaching day, the calm areas, the
+   corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
-   reprioritised".
+   reprioritised". M98, pressure in the empty acts, was the fifth of them and is built
+   (`DECISIONS.md`, M98); whether its return reads as pressure or punishment is in `REVIEW.md`.
 4. **Reaching act III**, which M56's measurement against the nerves needs.
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
@@ -462,51 +463,6 @@ of a day's routes across the spine; nothing prices the crossing on top of that. 
 - [ ] **Re-check `MIN_CALM_BLOCKS` (5 to 7) and `MIN_HOME_TO_PARK_TILES` at the end, not the
       start** — now that the region walls stand from day 7, since a region that holds no calm
       area gets no door and the count of places to go is what the wall divides
-
----
-
-## M98 — Pressure in the empty acts · rewritten 2026-09-09
-
-Rewritten from M25 and M26. All of M26 is built: day 1 says how to walk, the run is taught by the
-first pursuit on `RUN_TAUGHT_DAY`, with one wording on every device and no key named, and the
-scripted event that requires a short run is the charging dog itself — *(2026-09-09: "this is what
-became the charging dog")* — sited on her line on day 3 so the lesson is unavoidable, which is the
-"safe place" playtest 02 asked for, moved to the day running becomes right. What remains is M25.
-
-- [ ] **Patrols for acts III and IV, built around encounter cost.** The crowd table in `Tuning`
-      empties the streets from act III on purpose — *"the cruellest number in the game: from act III
-      the streets are quieter, because there is nobody left going out on them"* — and the return
-      phase (`DayPhase.RETURNING`, entered when the day's clock runs low) was measured in playtest
-      03 as a formality: 26s, five crossings, zero encounters, 42% of the day left. Pressure goes
-      back into those streets as things she **meets**, not as an ambient band she cannot see. The
-      mechanism to start from is M56's heated `police_patrol`, which is already denser and then
-      interested as resistance progress rises; what this item adds is a return-phase shape in acts
-      III and IV. Measure the return phase on a rig across the four acts — encounters per return,
-      and how much of the day's clock the return actually spends — before and after. **The shape
-      is not designed yet, and the measurement comes first** *(2026-09-11: "measure now, design
-      after")*: the before-figures are in hand, taken with `tests/probes/m98_return_phase.gd` and
-      recorded in `DECISIONS.md` under M98 — a return leg that spends a fifth to a third of the
-      day and meets the director's queue once or twice, zero on one leg in five. **Go ahead was
-      given on 2026-09-12** *("M98, too")* with the shape left to the orchestrator, so what
-      follows is a recommendation, pinned and open to overturn. **The shape: patrols owed to the
-      return.** When `EventBus.return_phase_started` fires on a day in act III or IV, the
-      director's single queue is handed `Tuning.RETURN_PATROLS_PER_ACT` (recommended `[0, 0, 2,
-      3]`) extra `police_patrol` rows at the day's own heat, sited `TOWARD_PLAYER` — a patrol car
-      coming down her own street toward her, on the carriageway, from outside the view, the way a
-      cyclist is sited today — and the queue's interval for the rest of the day is
-      `Tuning.RETURN_PATROL_INTERVAL` (recommended 9–16s) rather than `AHEAD_INTERVAL`'s 11–26s,
-      so the extra rows land inside a 33s or 47s leg rather than after she is home. A patrol
-      passing at 74px/s with `outer_radius` 185px is the encounter cost: never lethal, an amount
-      the sleeping baby can take once or twice and not four times, which is why the count is per
-      act and small. They are outside the day's budget on purpose — the budget is a variety
-      ledger, and the return's pressure is a second half the budget never priced — and they are
-      *met*, never ambient; the crowd table stays as it is. If the baby wakes and the phase drops
-      back to walking, the rows already owed stay owed; nothing is added twice on a day. Acts I
-      and II get nothing, so the teaching days and the return she learns on stay as they are.
-      **After-measurement on the same probe**: `tests/probes/m98_return_phase.gd` told the phase
-      has started, printing encounters per return and the leg's share of the clock beside the
-      before-figures; and a `REVIEW.md` entry, since whether a return in act IV reads as pressure
-      or as punishment is a played question
 
 ---
 

@@ -34,6 +34,14 @@ var _rng := RandomNumberGenerator.new()
 ## The events the day has budgeted and not yet spent, in the order the scheduler asked for.
 var _owed: Array[EventDef] = []
 var _next_in := 0.0
+## Whether `owe_the_return()` has already handed today its return-phase patrols. Set once and
+## never cleared until `start_day()`, so a baby that wakes and settles again does not owe a
+## second batch — see that function's own doc.
+var _return_owed := false
+## Whether the queue is rolling `Tuning.RETURN_PATROL_INTERVAL` instead of `Tuning.AHEAD_INTERVAL`
+## for the rest of the day. Set by `owe_the_return()` and never cleared until `start_day()`: once
+## the return owes its pressure, the pacing stays tight even if the phase drops back to walking.
+var _return_pacing := false
 
 func _init(map: CityMap) -> void:
 	_map = map
@@ -52,6 +60,8 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 		rng: RandomNumberGenerator) -> void:
 	_owed.clear()
 	_rng = rng
+	_return_owed = false
+	_return_pacing = false
 	for plan in plans:
 		var mode := plan.def.spawn_mode_on(day)
 		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
@@ -130,6 +140,56 @@ const LESSON_DELAY := 6.0
 func owed() -> int:
 	return _owed.size()
 
+## Hands the day's return leg its own pressure — `docs/TODO.md`'s M98, pressure in the empty acts
+## — the moment `EventManager` hears `EventBus.return_phase_started`. `Tuning.RETURN_PATROLS_PER_
+## ACT[act - 1]` copies of `police_patrol`, at the day's own heat, are appended to the owed queue
+## sited `TOWARD_PLAYER` down her own carriageway rather than crossed — see
+## `_toward_her_on_the_road()` — and the interval the queue rolls for the rest of the day switches
+## from `Tuning.AHEAD_INTERVAL` to the tighter `Tuning.RETURN_PATROL_INTERVAL`, so the extra rows
+## land inside the leg rather than after she is home.
+##
+## Acts I and II are untouched: the array's first two entries are 0, so the teaching days and the
+## return she learns the mechanic on stay exactly as they were measured.
+##
+## **Idempotent for the day.** `return_phase_started` can fire more than once — the baby wakes and
+## is walked back down before settling again — and the return is owed exactly once; `_return_owed`
+## is what remembers that past the phase dropping back to `WALKING` and the rows already owed stay
+## owed regardless. **`--force` leaves the forced queue alone**: under it `_owed` holds only the
+## forced row and there is no ordinary queue for this to add to or re-pace.
+func owe_the_return(day: int, heat: int) -> void:
+	if _return_owed or _forced:
+		return
+	_return_owed = true
+	var act := Tuning.act_for_day(day)
+	if act < 3:
+		return
+	var count: int = Tuning.RETURN_PATROLS_PER_ACT[act - 1]
+	if count <= 0:
+		return
+	var cold := EventCatalogue.by_id("police_patrol")
+	if not cold:
+		push_error("owe_the_return: no 'police_patrol' row in the catalogue")
+		return
+	# The day's own heated copy — the same call `EventScheduler.build_day()` makes for every other
+	# placement of the row today — duplicated once more rather than mutated, because `heated()`
+	# caches its answer and shares it with every ordinary `MAP` placement of the row for the rest
+	# of the run: setting `spawn_mode` on that shared copy would turn every later patrol into a
+	# director-sited one, not just this day's return-owed rows. See `EventCatalogue._hot` and
+	# `EventDef.at_heat()`'s own note on why a heated row is a derived copy in the first place.
+	var heated := EventCatalogue.heated(cold, heat)
+	var for_return := heated.duplicate() as EventDef
+	for_return.shape = heated.shape
+	for_return.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
+	for i in count:
+		_owed.append(for_return)
+	_return_pacing = true
+	# Shortened immediately rather than left for the next ordinary roll to expire — `AHEAD_INTERVAL`
+	# can still be waiting out up to 26s when the phase turns, and a 33s return leg cannot afford
+	# to spend most of itself on a wait rolled under the pacing this call just replaced — but only
+	# ever shortened, never lengthened: a `minf` against whatever is already ticking down means the
+	# return can land its first row sooner than the ordinary pacing would have, never later.
+	_next_in = minf(_next_in, _roll_interval())
+
 ## Advances the clock and returns the event to place plus the path to place it on, or null when
 ## nothing is due. `heading` is the direction she is actually travelling, not the way she is
 ## facing: something that crosses in front of a player standing still is not in front of
@@ -154,9 +214,18 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 	# a placement that fails must not spend the event.
 	var next := _owed[0] as EventDef
 	var heading := velocity / speed
-	var path := _toward_her(at, heading, next) \
-			if next.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER \
-			else _crossing_ahead_of(at, heading, next)
+	# A `TOWARD_PLAYER` row whose `placement` names `ROAD` is a car, not a bike — `police_patrol`
+	# is the one row `owe_the_return()` ever adds this way — and a car belongs on the carriageway
+	# lane that drives toward her rather than on her own pavement. `_toward_her()` is still what
+	# every `TOWARD_PLAYER` row on foot (`cyclist`, `loose_dog`) gets; only the road-placed ones
+	# take the road-aware sibling.
+	var path: PackedVector2Array
+	if next.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER:
+		path = _toward_her_on_the_road(at, heading, next) \
+				if next.placement.has(GameEnums.TileType.ROAD) \
+				else _toward_her(at, heading, next)
+	else:
+		path = _crossing_ahead_of(at, heading, next)
 	if path.is_empty():
 		# Nowhere to put it — she is in the middle of a park, or against the map edge. Try
 		# again shortly rather than burning the allowance on a place that would not read.
@@ -178,6 +247,8 @@ func _roll_interval() -> float:
 	# the flag on and off, so what she walks past is the same city either way.
 	if _forced:
 		return _forced_interval
+	if _return_pacing:
+		return _rng.randf_range(Tuning.RETURN_PATROL_INTERVAL.x, Tuning.RETURN_PATROL_INTERVAL.y)
 	return _rng.randf_range(Tuning.AHEAD_INTERVAL.x, Tuning.AHEAD_INTERVAL.y)
 
 ## A run straight across her line, `AHEAD_LEAD_DISTANCE` in front of her.
@@ -301,6 +372,63 @@ func _toward_her(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2A
 		return PackedVector2Array()
 	var behind := at - site_heading * lead
 	if not _map.in_bounds(_map.world_to_tile(behind)):
+		return PackedVector2Array()
+	return PackedVector2Array([far, behind])
+
+## The road-aware sibling of `_toward_her()`, for a `TOWARD_PLAYER` row whose `placement` names
+## `ROAD` — `owe_the_return()`'s own `police_patrol` copies, a car rather than a bike.
+## `_toward_her()` straightens the line onto *her* pavement; a car has no business on a pavement
+## at all, so this runs it down the **carriageway lane that drives toward her** instead, using
+## `CrowdLanes` for the lane geometry the same way `Crowd` sites one.
+##
+## Built the same way `_onto_her_side()` reads a corridor's own axis, then handed to
+## `CrowdLanes`: `pavement_inward()` says which axis the corridor she is beside runs on and which
+## way is into it, `corridor_at()` says which corridor that is, and `road_lane()` picks the lane
+## that legally runs the direction the car is coming from — **opposite her own heading**, since it
+## is meeting her rather than following her.
+##
+## Empty wherever there is nothing to run a car down: she is not beside a plain sidewalk edge at
+## all (`pavement_inward()` answers `Vector2i.ZERO` for a park, a square, a junction, or the
+## carriageway itself), her heading has no along-corridor component to pick a direction from, or
+## the corridor there has no carriageway to drive on — a precinct is paved kerb to kerb, so its
+## "road" tiles fail `is_driveable_at()` and this returns empty exactly where the brief asks it
+## to: a park, a square, a precinct.
+##
+## **No `hard_fail` branch.** `_toward_her()` sites a lethal row further out so its telegraph
+## outlasts the approach; `police_patrol` never gains `hard_fail` at any heat (`EventDef.at_heat()`
+## states it explicitly for the `PRESSES` rung), so the ordinary `Tuning.offscreen_lead()` margin
+## is all this owes today. A future lethal road row would need the same
+## `Tuning.outlasting_telegraph_lead()` branch `_toward_her()` carries.
+func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2Array:
+	var inward := _map.pavement_inward(_map.world_to_tile(at))
+	if inward == Vector2i.ZERO:
+		return PackedVector2Array()
+	var vertical := inward.x != 0
+	var along := Vector2(inward.y, inward.x)
+	var component := heading.dot(along)
+	if is_zero_approx(component):
+		return PackedVector2Array()
+	var site_heading := along * signf(component)
+	var index := CrowdLanes.corridor_at(at.x if vertical else at.y)
+	if index < 0:
+		return PackedVector2Array()
+	# The car drives opposite her own along-corridor heading — coming down the street as she
+	# walks up it — so its lane is the one `CrowdLanes.road_direction()` says legally runs that
+	# way, not merely a point somewhere in the road band.
+	var direction := -(site_heading.y if vertical else site_heading.x)
+	var lane_coordinate := CrowdLanes.lane_centre(index, CrowdLanes.road_lane(vertical, direction))
+	var closing := def.speed + Tuning.WALK_SPEED
+	var lead := Tuning.offscreen_lead(site_heading, closing, def.offscreen_notice)
+	var far := at + site_heading * lead
+	var behind := at - site_heading * lead
+	if vertical:
+		far.x = lane_coordinate
+		behind.x = lane_coordinate
+	else:
+		far.y = lane_coordinate
+		behind.y = lane_coordinate
+	if not _map.is_driveable_at(vertical, _map.world_to_tile(far)) \
+			or not _map.is_driveable_at(vertical, _map.world_to_tile(behind)):
 		return PackedVector2Array()
 	return PackedVector2Array([far, behind])
 

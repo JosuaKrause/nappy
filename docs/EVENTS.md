@@ -134,6 +134,36 @@ whose `obstructs_radius` is nonzero, or whose `outer_radius` reaches `Tuning.min
 wide would already be on her the moment it appeared, which is the one thing "she gets close and it
 arrives" cannot mean.
 
+**A `TOWARD_PLAYER` row whose `placement` names `ROAD` runs down the carriageway instead of her
+pavement.** `police_patrol` is the one row that does: `EventDirector.owe_the_return()` hands the
+return leg a few extra copies of it in acts III and IV, sited `TOWARD_PLAYER` by
+`_toward_her_on_the_road()` rather than `_toward_her()` — the same offscreen margin and the same
+"straighten onto the corridor's own axis" idea, but the lane it straightens onto is
+`CrowdLanes.road_lane()`'s own carriageway lane, driving opposite her heading so it meets her, on
+tiles `CityMap.is_driveable_at()` actually calls a road. Empty wherever there is no carriageway to
+drive on — a park, a square, a precinct — the same "retry later" the rest of the director's siting
+already does. The copy this hands out is its own duplicate, never the shared, cached row every
+ordinary `MAP` placement of `police_patrol` reads (`EventCatalogue.heated()`): only its `spawn_mode`
+differs, so the row's cost and picture are exactly the ones the day's own plan already uses.
+
+### The return owes her patrols
+
+**The streets that go quiet from act III on get something back, on the walk home.** The crowd
+table empties them on purpose — see `docs/MECHANICS.md`, "the cruellest number in the game" — and
+the return phase (`DayPhase.RETURNING`, entered the moment the baby falls asleep) is the one
+stretch of a day nothing in the catalogue was ever pacing for. `Tuning.RETURN_PATROLS_PER_ACT`
+(`[0, 0, 2, 3]`, one entry per act) is what `EventDirector.owe_the_return()` adds to the owed
+queue the moment `EventBus.return_phase_started` fires, at the day's own heat — the same heated
+`police_patrol` copy the day's other plans of that row already use — and from then on the queue
+rolls `Tuning.RETURN_PATROL_INTERVAL` (9–16s) instead of `Tuning.AHEAD_INTERVAL` (11–26s) for the
+rest of the day, so the extra rows have a real chance of landing inside a 33–47s leg rather than
+after she is already home. Acts I and II carry nothing, so the teaching days and the return she
+learns the mechanic on stay exactly as they were measured.
+
+It is owed exactly once a day — a baby that wakes and settles again does not owe a second batch —
+and the rows already owed stay owed if the phase drops back to `WALKING`. `--force` leaves the
+forced queue alone: there is no ordinary queue under it for this to add to or re-pace.
+
 ### Everything arrives from off screen
 
 **A row that travels toward her — a pursuer or a `TOWARD_PLAYER` row — is sited outside the view,
@@ -649,7 +679,7 @@ neighbourhood's own rather than a patrol's.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `police_patrol` | RECURRING | 4 | Mobile, unhurried, along a corridor. Not dangerous yet — the danger is that you start planning around it. |
+| `police_patrol` | RECURRING | 4 | Mobile, unhurried, along a corridor. Not dangerous yet — the danger is that you start planning around it. In acts III and IV, extra copies of this row are also what the return leg owes — see "The return owes her patrols" above. |
 | `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. |
 | `loudspeaker` | SCRIPTED | 5 | **City-wide**: no falloff, no edge, nowhere in the city it does not reach. The first event the player cannot walk away from. Pitched under the walking decay, so like a back street it does not raise the meter — it stops you clearing it. |
 | `curfew_announce` | SCRIPTED | 6 | City-wide, brief, and fading (`intensity_ramp` 0.2). The mechanical bite is in `Tuning.day_length`, which shortens every day from 6 onward; this is the moment you are told. |
