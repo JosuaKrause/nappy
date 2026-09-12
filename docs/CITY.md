@@ -413,9 +413,11 @@ closure does (`CrowdAgent._cannot_go_on`): a hard seal or a wall stands bodies k
 both walkers and cars turn off at the last junction the same way they do for a closure; a soft
 seal takes both pavements and leaves the carriageway, so a walker turns away while a car drives
 straight through, reading as a street quiet on foot and ordinary on the road. A region **door** is
-the one crossing this never applies to — a car brakes and queues for the gate instead of
-diverting, and a walker passes the hut, because a door is a crossing the day's own structure means
-to keep open.
+the one crossing this mostly does not apply to — a car brakes and queues for the gate instead of
+diverting, because a door is a crossing the day's own structure means to keep open. A walker's
+answer there is its own, drawn once when it is placed so it cannot change halfway down a street:
+one in four (`Tuning.WALKER_DOOR_TURN_BACK_FRACTION`) turns back at the last junction exactly the
+way it would at a wall, and the rest cross.
 
 What this does *not* give is planning-time legibility — knowing a street is shut before you
 are standing next to it. That would be a route map, which is backlogged; see `docs/TODO.md`.
@@ -1207,8 +1209,10 @@ is loud, and the reason a park is quiet.
   own pavement tiles, kept apart because its carriageway is not held) are what `CrowdAgent.
   _cannot_go_on` asks alongside a closure: a hard seal or a wall shuts the whole street to both
   walkers and cars, a soft seal shuts only the pavements so a car still crosses it, and a region
-  door is carved out of the held check entirely — a car brakes and queues for the gate the way it
-  does at a light, and a walker passes the hut the way she does.
+  door is carved out of the held check for everybody the door means to let through — a car brakes
+  and queues for the gate the way it does at a light, and so does a walker unless its own answer at
+  a door is to turn back, in which case it gets no carve-out and the door reads to it exactly like
+  the wall either side of it.
 
 - **Bodies are solid, and cars are lethal.** Walking into somebody displaces you both and startles
   them; stepping into the carriageway in front of a moving car ends the day; traffic gives way at a

@@ -15,6 +15,16 @@ extends Node2D
 
 enum Kind { WALKER, CAR }
 
+## What this walker does when the street it is on crosses a region wall at a door — drawn once, in
+## `_draw_the_door_answer()`, at the moment it is placed. *(Playtest 58: "Held at the hut like her";
+## "a small fraction can do that"; "others can turn back".)*
+##
+## **Drawn at placement rather than at the door**, so a walker's answer cannot change halfway down
+## the street it is walking: a person who turns back at the sight of a checkpoint decided that
+## before they got there, and one who is rolled again every frame would dither on the pavement.
+## Cars have no answer here — a car queues for the boom, which is `Crowd._stop_for_gates()`.
+enum DoorAnswer { HELD, PASSES, TURNS_BACK }
+
 ## The walker's five authored views, keyed by name rather than by sector — `WALKER_VIEW_BY_SECTOR`
 ## below does the sector-to-view lookup, so drawing never repeats an eight-way if-chain of its
 ## own to get here. All five share one 18x38 canvas and one (9, 38) feet anchor (see
@@ -138,7 +148,7 @@ var traffic: TrafficIndex
 ## does not make on its own: a wall segment and a hard seal's segment are shut outright, but a
 ## door is a crossing the day's structure means to keep open — a car brakes and queues for the
 ## gate (`Crowd._stop_for_gates()`) rather than being turned away at the last junction, and a
-## walker passes the hut the way she does.
+## walker crosses unless its own `DoorAnswer` is to turn back.
 var door_segments := {}
 
 ## The segments bordering the home block, the second carve-out `is_held_at` cannot make on its
@@ -191,6 +201,10 @@ var player_at := Vector2.INF
 
 func set_player_at(at: Vector2) -> void:
 	player_at = at
+
+## This walker's own answer at a door, from `DoorAnswer` — see that enum for why it is drawn once
+## per placement. Always `HELD` for a car, which never reads it.
+var _door_answer := DoorAnswer.HELD
 
 var _map: CityMap
 ## Its own RNG, seeded from the day and its own index. Per-agent rather than shared so a
@@ -286,6 +300,7 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 	# as it takes to notice — but resetting it is free and keeps a placement deterministic for a
 	# given seed, the same reason `Stroller.reset_at()` zeroes `_walk_phase` for a new day.
 	_walker_gait_phase = 0.0
+	_draw_the_door_answer()
 	# Start somewhere along the field rather than at its edge, or the whole crowd arrives from
 	# one side in a wave on the first morning. Re-rolled if it lands somewhere it could not have
 	# walked to: behind a barrier, which reads as the barrier being fake, or in the middle of a
@@ -322,6 +337,27 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 		axis_roll = _rng.randf()
 	_settle_junction()
 	colour = _colour()
+
+## Rolls what this walker does at a region door, off its own RNG stream so a seed reproduces a
+## day's crowd answer for answer.
+##
+## **Drawn before the position is, and that ordering is load-bearing.** `_stands_on_a_street()`
+## refuses to place anybody on ground they treat as shut, and a walker that turns back at doors
+## treats a door's whole segment as shut — so an answer drawn *after* the placement loop can land
+## somebody inside a street they will not walk, where they pace between its two ends for the rest of
+## the day. That is the exact trap the refusal exists to prevent; a car does not draw at all, since
+## the boom is `Crowd._stop_for_gates()`'s business and a car spending a number here would turn
+## differently at every junction it has ever turned at correctly.
+func _draw_the_door_answer() -> void:
+	if kind != Kind.WALKER:
+		return
+	var roll := _rng.randf()
+	if roll < Tuning.WALKER_DOOR_PASS_FRACTION:
+		_door_answer = DoorAnswer.PASSES
+	elif roll < Tuning.WALKER_DOOR_PASS_FRACTION + Tuning.WALKER_DOOR_TURN_BACK_FRACTION:
+		_door_answer = DoorAnswer.TURNS_BACK
+	else:
+		_door_answer = DoorAnswer.HELD
 
 ## Marks the junction this agent is standing in, if it is standing in one, so that it does not
 ## roll a turn on its very first frame.
@@ -369,12 +405,18 @@ func _stands_on_a_street() -> bool:
 ## today (`CityMap.is_held_at` — a hard seal's segment, a region wall, a closure, or the streets
 ## around the home block) and neither of the two carve-outs `held_segments` cannot make on its
 ## own. A region door is a crossing anybody may still enter — a car brakes and queues for the gate
-## rather than turning away, and a walker passes the hut. The home block's own bordering streets
-## are held only so no catalogue row lands there, never because a body stands across one — she
-## walks out onto one of them every morning, and the home is a notch with one exit, so sealing it
-## would seal her in. Both lists are empty outside a real day (a hand-built test agent, a rig with
-## no city, or before the wall itself stands), which is a harmless no-op: nothing is held then
-## either.
+## rather than turning away, and so does a walker unless its own answer is to turn back. The home
+## block's
+## own bordering streets are held only so no catalogue row lands there, never because a body stands
+## across one — she walks out onto one of them every morning, and the home is a notch with one exit,
+## so sealing it would seal her in. Both lists are empty outside a real day (a hand-built test agent,
+## a rig with no city, or before the wall itself stands), which is a harmless no-op: nothing is held
+## then either.
+##
+## **The door's carve-out is per walker**, which is the one thing here that is not a fact about the
+## day: a walker whose own answer is `TURNS_BACK` gets no carve-out at all, so a door reads to it
+## exactly like the wall either side of it and it turns away at the last junction with the machinery
+## that already does that. Nothing else about turning back needs writing.
 func _segment_is_shut(tile: Vector2i) -> bool:
 	if not _map.is_held_at(tile):
 		return false
@@ -382,7 +424,11 @@ func _segment_is_shut(tile: Vector2i) -> bool:
 	if segment == null:
 		return true
 	var key := segment.key()
-	return not door_segments.has(key) and not home_segments.has(key)
+	if home_segments.has(key):
+		return false
+	if door_segments.has(key):
+		return _door_answer == DoorAnswer.TURNS_BACK
+	return true
 
 func _process(delta: float) -> void:
 	_clock += delta
@@ -1131,7 +1177,8 @@ func _cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	# same way a dead end's own wall does — `_segment_is_shut` is the fact `_look_ahead` sees from
 	# `LOOKAHEAD_TILES` off, so both walkers and cars turn away at the last junction rather than
 	# walking or driving through what they cannot see through. A region door is carved out of the
-	# same check: it is a crossing the day means to keep open, not a wall with a picture on it.
+	# same check for everybody but a walker that turns back at doors: it is a crossing the day means
+	# to keep open, not a wall with a picture on it.
 	if _segment_is_shut(tile):
 		return true
 	# A soft seal takes both pavements and leaves the carriageway to the cars — walkers only.
@@ -1755,6 +1802,10 @@ func _recycle() -> void:
 	# stale would be, and doing it anyway keeps a recycled walker's stride deterministic per seed.
 	if kind == Kind.WALKER:
 		_walker_gait_phase = 0.0
+	# A recycled agent is a fresh person walking in from the edge of the box, so it draws a fresh
+	# answer — and draws it here, before the rolls below, for the reason `_draw_the_door_answer()`
+	# gives: the entry point is checked against ground this walker may actually walk.
+	_draw_the_door_answer()
 	for _attempt in 6:
 		_choose_lane(_rng.randf())
 		var bounds := field.along_bounds(_vertical)

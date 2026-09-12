@@ -778,6 +778,26 @@ const CAR_OUTER_RADIUS := 104.0
 ## junction. High enough that the crowd churns, low enough that streets still have flow.
 const PEDESTRIAN_TURN_CHANCE := 0.35
 
+# ------------------------------------------------- walkers at a region door ---
+# What a walker does when its street crosses a region wall at a door. *(Playtest 58: "walkers walk
+# through checkpoints..."; asked which rule they get, "Held at the hut like her"; then "a small
+# fraction can do that"; "others can turn back"; "don't want a queue that is long".)* The answer is
+# drawn once per walker, when it is placed, so a walker's answer at a door can never change halfway
+# down the street it is walking.
+
+## Of every walker placed, the fraction that walks through a door's hut without stopping — the
+## player's *"a small fraction can do that"*, one in eight. Small enough that walking through reads
+## as the exception rather than as the rule the hold is an exception to.
+const WALKER_DOOR_PASS_FRACTION := 0.125
+
+## And the fraction that turns back at the last junction instead, the way every walker turns away
+## from a wall — the player's *"others can turn back"*, one in four. Larger than the pass fraction
+## on purpose: a door that only ever collects people is a door with a permanent crowd at it, and
+## somebody who decides against the queue and goes another way is the cheapest thing there is to
+## read from a block away. Held is whatever is left, so these two must sum to under 1.0 —
+## `validate_traffic()` says so on boot.
+const WALKER_DOOR_TURN_BACK_FRACTION := 0.25
+
 # ------------------------------------------------------- bodies on the street ---
 # A crowd you can walk through is a field with a picture attached: every pavement is identical, none
 # of them can hurt you, and the route is not a decision. See docs/MECHANICS.md, "The street has
@@ -1589,6 +1609,13 @@ func validate_traffic() -> bool:
 	if CAR_HORN_TIME + 0.001 < required:
 		push_error("Unfair traffic: CAR_HORN_TIME %.2fs < required %.2fs (carriageway %.0fpx)"
 				% [CAR_HORN_TIME, required, carriageway_width()])
+		return false
+	# The three answers a walker may be given at a door are one draw of one number, so the two
+	# fractions have to leave something over — held is the remainder, and a remainder of nothing is
+	# a door nobody is ever held at with no error anywhere to say so.
+	if WALKER_DOOR_PASS_FRACTION + WALKER_DOOR_TURN_BACK_FRACTION >= 1.0:
+		push_error("No walker is ever held at a door: pass %.3f + turn back %.3f leaves nothing"
+				% [WALKER_DOOR_PASS_FRACTION, WALKER_DOOR_TURN_BACK_FRACTION])
 		return false
 	return true
 

@@ -466,9 +466,10 @@ way to the traffic.** `CrowdAgent._cannot_go_on` treats a tile on a held segment
 ground, or a region wall's) exactly like a closed one: both walkers and cars turn off at the last
 junction rather than driving into a barrier they have no physics against. A soft seal takes only
 the pavements, so a car still crosses it while a walker turns away — the street reads quiet on
-foot and ordinary on the road. A region door is carved out of the same check entirely: a car
-brakes and queues for the gate the way it already does at a red light or a zebra, and a walker
-passes the hut.
+foot and ordinary on the road. A region door is carved out of the same check for whoever it means
+to let through: a car brakes and queues for the gate the way it already does at a red light or a
+zebra, and so does a walker — unless the answer it drew when it was placed is to turn back, which
+one in four do, and the door then reads to that walker exactly like the wall either side of it.
 
 ## The world near you
 

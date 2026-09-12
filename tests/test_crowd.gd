@@ -21,6 +21,7 @@ func run(t) -> void:
 	_city.build(CityGenerator.generate(SEED))
 
 	_test_population_follows_the_act(t)
+	_test_a_walker_draws_its_own_answer_at_a_door(t)
 	_test_the_streets_empty_out_after_act_two(t)
 	_test_the_same_day_makes_the_same_crowd(t)
 	_test_walkers_stay_on_foot_and_cars_stay_on_the_road(t)
@@ -101,6 +102,52 @@ func _test_walkers_follow_the_selected_presentation(t) -> void:
 			t.check(not agent.has_node("ModularWalker"),
 				"car retains its legacy presentation")
 	t.check(walkers > 0 and cars > 0, "walker presentation invariant covers both live kinds")
+
+## M110: the three answers a walker may be given at a region door come out of the placement draw in
+## the fractions `Tuning` pins.
+##
+## Asserted against the constants rather than against literals — this is "the draw honours the
+## fractions", not "the fractions are 0.125 and 0.25" — and over a sweep of days rather than one
+## morning, because the question is about the draw and not about any one day's crowd. The sample is
+## every walker four days put on the streets, which is several hundred: the tolerance below is wide
+## enough that a correct draw cannot fail it by luck and narrow enough that swapping two of the
+## three answers cannot pass.
+const DOOR_ANSWER_TOLERANCE := 0.05
+
+func _test_a_walker_draws_its_own_answer_at_a_door(t) -> void:
+	var counts := {
+		CrowdAgent.DoorAnswer.HELD: 0,
+		CrowdAgent.DoorAnswer.PASSES: 0,
+		CrowdAgent.DoorAnswer.TURNS_BACK: 0,
+	}
+	var walkers := 0
+	var cars_with_an_answer := 0
+	for day in [1, 2, 5, 9]:
+		_city.crowd.start_day(day, _rng(day))
+		for agent: CrowdAgent in _city.crowd.agents():
+			if agent.kind != CrowdAgent.Kind.WALKER:
+				if agent._door_answer != CrowdAgent.DoorAnswer.HELD:
+					cars_with_an_answer += 1
+				continue
+			walkers += 1
+			counts[agent._door_answer] += 1
+	t.check(walkers > 300, "there were walkers to ask (%d)" % walkers)
+	var passing := float(counts[CrowdAgent.DoorAnswer.PASSES]) / float(maxi(1, walkers))
+	var turning := float(counts[CrowdAgent.DoorAnswer.TURNS_BACK]) / float(maxi(1, walkers))
+	var held := float(counts[CrowdAgent.DoorAnswer.HELD]) / float(maxi(1, walkers))
+	t.check(absf(passing - Tuning.WALKER_DOOR_PASS_FRACTION) < DOOR_ANSWER_TOLERANCE,
+			"about WALKER_DOOR_PASS_FRACTION of walkers walk through a door (%.3f vs %.3f)"
+			% [passing, Tuning.WALKER_DOOR_PASS_FRACTION])
+	t.check(absf(turning - Tuning.WALKER_DOOR_TURN_BACK_FRACTION) < DOOR_ANSWER_TOLERANCE,
+			"about WALKER_DOOR_TURN_BACK_FRACTION of them turn back (%.3f vs %.3f)"
+			% [turning, Tuning.WALKER_DOOR_TURN_BACK_FRACTION])
+	t.check(absf(held - (1.0 - Tuning.WALKER_DOOR_PASS_FRACTION
+			- Tuning.WALKER_DOOR_TURN_BACK_FRACTION)) < DOOR_ANSWER_TOLERANCE,
+			"and everybody else is held (%.3f)" % held)
+	# A car's own answer is never drawn — the boom is what stops a car, and a car that spent a
+	# number here would turn differently at every junction it has ever turned at.
+	t.check(cars_with_an_answer == 0,
+			"no car carries a door answer (%d did)" % cars_with_an_answer)
 
 ## The point of the number, not the number: from act III there is nobody left going out, and
 ## the city becomes an easier place to put a baby to sleep. If that ever inverts, the horror
@@ -1463,6 +1510,17 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 			"a walker is not turned away from today's region door")
 	t.check(not car._cannot_go_on(vertical, door_tile),
 			"and neither is a car — it brakes and queues for the gate instead of diverting")
+	# And the carve-out is the walker's own rather than the day's: one whose answer at a door is to
+	# turn back sees the same tile as wall, which is the whole of turning back — the machinery that
+	# turns it at the last junction is the one a wall already uses.
+	var turner := CrowdAgent.new()
+	turner.kind = CrowdAgent.Kind.WALKER
+	turner._map = map
+	turner.door_segments = {door_segment.key(): true}
+	turner._door_answer = CrowdAgent.DoorAnswer.TURNS_BACK
+	t.check(turner._cannot_go_on(vertical, door_tile),
+			"a walker that turns back at doors reads today's door as wall")
+	turner.free()
 	walker.free()
 	car.free()
 	city.free()
