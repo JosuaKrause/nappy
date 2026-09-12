@@ -7,7 +7,7 @@ description: Add or revise illustrated PNG textures and their reproducible integ
 
 **Every PNG asset must have a corresponding SVG asset, and the SVG always comes first.** Author
 and review the SVG before generating its PNG; do not create an SVG after the fact to legitimize
-a PNG-only asset. Keep the SVG as the editable source of content, geometry and placement. Record
+a PNG-only asset. Keep the SVG as the editable source of subject and functional placement. Record
 the source/derivative pair in the conversion manifest, including UI and identity assets. Raw
 generator outputs belong with generation evidence, not in the runtime asset catalogue.
 
@@ -18,10 +18,15 @@ textures, using the same drawing and animation code.
 
 ## Reference authority
 
-The SVG is the authority for subject, colors, canvas, pose, direction, placement and silhouette.
+Transfer the SVG's idea into the references' comic drawing language: redraw its forms,
+linework, material details and shadow shapes. Adding grain or surface shading to a traced
+SVG does not satisfy style transfer. The SVG defines subject, recognizable color identity,
+canvas, pose, direction and functional placement; its primitive interior shapes are not an
+exact tracing template. Preserve gameplay boundaries and anchors while giving the artwork
+the references' authored contours and shading.
 Inspect it and both `docs/evidence/graphics-reference-urban-01.jpeg` and
 `docs/evidence/graphics-reference-cardinal.jpeg` before generation. The latter two supply style
-only: omit their interface and debug annotations. Do not substitute a different character design,
+only: omit their interface and debug annotations. Do not substitute a different character identity,
 projection or composition. Archived experiments and unapproved outputs are not style references.
 
 ## Directions, frames and variants form one family
@@ -33,15 +38,17 @@ share them. Apply the same consistency requirement to other families with multip
 
 A shared grid is a useful generation input when every cell remains large enough to retain detail.
 Keep views in a fixed order, adjacent gait/state variants easy to compare, and record cell bounds
-and anchors for extraction. When extending a converted family, supply its existing PNGs as an
+and anchors for extraction. When extending a converted family, supply its reviewed PNGs as an
 explicit identity/rendering reference alongside the new SVG targets. They do not override the
-targets' pose or geometry. Split a dense family into batches when needed, carrying the same
+targets' pose or functional placement. Split a dense family into batches when needed, carrying the same
 reference through every batch; choose by inspected results rather than mandating a single atlas.
+Do not use a rejected family to perpetuate the rendering the player asked to replace; derive
+the revised family's identity from its source concept and the approved style references.
 
 Compare native-size and enlarged results across the whole family, including the runtime's west
 mirrors. Check that details common to adjacent animation frames hold still and that a state swap
-does not change who the character appears to be. Exact alpha registration proves boundaries,
-not consistent faces, clothing or interior placement. Update this workflow with observed results;
+does not change who the character appears to be. Canvas registration does not prove consistent
+faces, clothing or interior placement. Update this workflow with observed results;
 record experiments and rejected options in `docs/DECISIONS.md`.
 
 ## Asset contract
@@ -53,13 +60,16 @@ record experiments and rejected options in `docs/DECISIONS.md`.
   outside the repository. Record extraction commands, tool versions, source dimensions and
   registration measurements for retained derivatives.
 - Runtime PNGs use `assets/illustrated/svg-transfer/<family>/<name>.png`, corresponding to
-  `assets/<family>/<name>.svg`. Match native canvas dimensions and rasterized SVG alpha exactly.
-  Verify internal placement visually as well as testing boundary registration.
+  `assets/<family>/<name>.svg`. Match native canvas dimensions, ground anchors and functional
+  placement. Preserve the generated artwork's true alpha and expressive silhouette; do not
+  reapply the SVG's primitive alpha mask to a redrawn figure or prop. Opaque ground stays fully
+  opaque and functional markings retain their joins. Verify outlines, transparent gaps and
+  internal placement visually as well as checking canvas registration.
 - Check real alpha, including wheel and handle gaps. A checkerboard painted into an RGBA image
   is not transparency. The player authorizes the existing checkerboard removal script for this
   workflow; preserve its input and inspect retained detail after extraction.
   Inspect the extracted cell bounds before fitting them: leftover checker or ghost outlines can
-  expand those bounds, shrinking the character inside an otherwise exact SVG alpha mask. If the
+  expand those bounds and shrink the character during registration. If the
   removal script leaves residue, correct the background with imagegen and rerun extraction;
   preserve that edit's input and prompt. A plain white background can use the same neutral-region
   extraction when a generated transparency request produces an unusable painted checker.
@@ -71,6 +81,13 @@ record experiments and rejected options in `docs/DECISIONS.md`.
   Preserve existing assets' identities when extending a family.
 
 ## Runtime and review
+
+For opaque ground tiles, extract fixed atlas cells rather than fitting visible bounding boxes.
+Cell edges are part of the texture's placement contract. Generated atlas dimensions need not
+divide evenly by the grid: record normalized cells and rounded pixel bounds. Compare opposite
+road-line halves assembled as neighbors as well as repeated full tiles; alpha equality alone
+cannot reveal shifted markings, unwanted grid borders or a material that changes between variants.
+Keep low-contrast ground texture quiet enough for actors and route markings to remain legible.
 
 Resolve textures only. Keep original scale, offsets, animation, mirroring, sorting, shadows,
 camera and gameplay behavior. Missing or differently sized replacements fall back to the SVG;

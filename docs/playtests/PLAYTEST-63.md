@@ -35,3 +35,20 @@ The supplied screenshot is `asked/005-attempt3-asked.png` in the same preserved 
 Render the tree bed as ground beneath the stroller and other upright actors; keep the tree
 itself in the existing upright drawing and collision system. Preserve the bed's position,
 size and tree placement.
+
+## Style transfer means transferring the idea
+
+> hmm, a lot of those textures are basically the exact same as the svg just with a nicer texture. style transfer means that the idea of the svg graphic gets *transferred* to the style of the comicesque reference images
+
+The player rejects the surface-only treatment in the first tile comparison. Transfer the
+SVG's subject and gameplay meaning into the references' comic drawing: authored shapes,
+expressive outlines, material-specific marks and deliberate shadow shapes. The original
+primitive edges and tiny rectangular details are not a tracing template. Preserve functional
+tile boundaries, directional markings, anchors and source pairing, without freezing the
+SVG's interior drawing. Rework the outdoor family and compare the actual native-size tiles.
+
+> the same applies to all textures generated so far
+
+Apply this correction to the complete generated texture catalogue, including the mother in
+both states, the stroller, garbage and litter, as well as ground tiles. Audit prior families
+and rework their drawing; do not treat the correction as a tiles-only instruction.

@@ -46,6 +46,11 @@ default and `--svg` gameplay using the same seed, walk, capture time and window 
 Keep captures bounded to one or two windowed runs. Preserve whole telemetry folders and record
 build, flags and coverage in `docs/DECISIONS.md` under the session-captures skill.
 
+For comic redraws, preserve generated alpha within the native canvas and align functional
+anchors. Do not reuse the older scripts' final SVG-alpha stamping step: it clips expressive
+outlines back to the primitive source. Save the actual registration script with each family.
+Opaque terrain retains full coverage and directional joins retain their functional alignment.
+
 Review appearance at gameplay scale, frame consistency, silhouettes, transparent gaps and ground
 contact. A still does not verify smooth motion or every facing. Keep unverified gates explicit,
 and review each family before accepting its derivatives into the asset catalogue. Every PNG

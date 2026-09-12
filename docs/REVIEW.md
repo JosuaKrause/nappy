@@ -14,6 +14,17 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
+- **Compare the comic ground redraw with the SVGs at the same seed.** Do vegetation, rock,
+  water and broken paving read as drawings in the supplied comic style at gameplay size?
+  Check repeated terrain, curb edges and road markings for seams or distracting repetition.
+  The current native pairs and neighbors are in
+  `evidence/style-transfer-tiles-2026-09-12/comic/registered/`.
+
+- **Look at café seating and roadworks along both street axes.** Each café sitter should
+  face its own table, including the right-hand chair and the vertical arrangement. Vertical
+  red barriers should read as a narrow continuous barrier, and a horizontal alley should be
+  closed across its short mouth. The original findings are in [PLAYTEST-63](playtests/PLAYTEST-63.md).
+
 - **Walk past a street tree with the stroller overlapping its bed.** The paving bed should
   stay underneath her and the pram while the trunk and canopy retain their upright sorting.
   Check the location pictured in [PLAYTEST-63](playtests/PLAYTEST-63.md), or any street-tree run.

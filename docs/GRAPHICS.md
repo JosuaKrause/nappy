@@ -120,9 +120,9 @@ street axis without rotating the pixels.
 | Mouse | `mouse.svg`: one side-on picture, mirrored east/west like `delivery_van` rather than switching pose — see `docs/EVENTS.md`'s `alley_mouse` row. The prepared `mouse_{front,back}[_diagonal].svg` family stays unbound: `EventCatalogue._alley_mouse()`'s own docstring documents, with its reasoning, that the row is not given a second posture or a heading-selected picture. |
 | Yeller; busker; poster crew | `yeller_{view}.svg`, `busker_{view}.svg`, `poster_crew_{view}.svg` (`{view}` is `front`, `back`, `side`, `front_diagonal` or `back_diagonal`): each a stationary figure whose view comes from its own site facing — the same `_heading` that used to only decide `_heading_is_west()`'s mirror of one picture, now read as a full octant through `EventInstance._select_view()`. The old unsuffixed `yeller.svg`/`busker.svg`/`poster_crew.svg` stay live only as `icon_for()`'s own screen-edge badge silhouette. |
 | Dog walker; loose dog | `person_{view}.svg` and `dog_{view}.svg` (`dog`'s `side` is the existing `dog.svg`): the walker composite draws both from the same selected view and mirror — the dog faces the walker's own travel, since it is being led rather than watching anything of its own — with the taut code-drawn lead unchanged; the loose dog draws `dog_{view}.svg` from its own travel with a trailing lead. The old unsuffixed `person.svg` stays live only as the dog walker's badge silhouette. |
-| Café | `cafe_table.svg` and `cafe_sitter_{view}.svg`: repeated furniture and sitters across the frontage, every sitter sharing one view and mirror from the frontage's own site facing — a party at one table facing different directions is not a picture this row ever drew. The old unsuffixed `cafe_sitter.svg` is unused once the named views cover it (no badge of its own; the café's icon is `cafe_table.svg`). |
+| Café | `cafe_table.svg` and `cafe_sitter_{view}.svg`: repeated furniture and sitters across the frontage. Each sitter faces from its alternating chair position toward its own table: east/west for a horizontal frontage, south/north for a vertical one. The fixed screen-depth offset does not change that bearing. The unsuffixed `cafe_sitter.svg` is unused; the café's icon is `cafe_table.svg`. |
 | Delivery van | `delivery_van_{front,back,side,front_diagonal,back_diagonal}.svg` (`side` is the existing `delivery_van.svg`): a stationary van parked at the kerb as a pavement obstacle, its view read through `EventInstance._draw_eight_view()` from the row's own placement heading — always due east, since `AT_THE_KERB` never turns it, so the row always draws the `side` view. Its `side` picture is authored facing west (`docs/evidence/svg-vehicles-2026-09-10/README.md`), so `_draw_eight_view`'s `side_faces_west` mirrors it for this always-east heading; the picture is now the mirror of what `_draw_simple` drew before this row was bound, a cosmetic change with no effect on its shape, shadow or obstruction. The old `delivery_van_end.svg` was never authored; this row never had one. |
-| Roadworks event | `barrier_segment.svg` and `barrier_end.svg`: repeated across the event's obstruction span. |
+| Roadworks event | `barrier_segment.svg` (22×22) and `barrier_segment_vertical.svg` (14×26) supply broad and narrow upright projections; `barrier_end.svg` supplies the end posts. The repeated span crosses the street or the alley's short axis. Drawing, collision and field distance share that axis. |
 | Fire engine | `fire_engine_{front,back,side,front_diagonal,back_diagonal}.svg` (`side` is the existing `fire_engine.svg`): `fire_truck` is mobile, so its view is read from its actual travel heading (`_heading`, updated every frame it advances along its route) through `EventInstance._draw_eight_view()`, `side_faces_west` set since its `side` picture is west-authored. The old `fire_engine_end.svg`, drawn for both north and south headings alike, is superseded by the two-way `front`/`back` split and stays on disk unbound. |
 | Burning building; burnt shell | `flame.svg` is repeated and scaled by the fire animation; `rubble.svg` is repeated across the burnt frontage. |
 | Stall | `stall.svg` repeats across the frontage. |
@@ -209,6 +209,13 @@ art counterparts: the active application icon is root `icon.svg`, while the READ
 `assets/logo.png` and the web metadata publishes `assets/social-card.png`.
 
 ## PNG replacements
+
+`assets/illustrated/svg-transfer/tiles/` contains native 32×32 replacements for the outdoor
+ground SVG family. `City._ground_tile_set_with_transfers()` substitutes textures without
+changing TileSet source IDs or atlas regions, and `CityEdge` resolves the mountain texture
+for its separate repeated drawing. The prepared `alley_draft` has a PNG but remains unbound.
+The [generation record](evidence/style-transfer-tiles-2026-09-12/GENERATION.md) links source
+pairings, exact prompts, raw outputs and repeated-tile comparisons.
 
 `TextureResolver` selects a same-size PNG by default at
 `assets/illustrated/svg-transfer/<family>/<name>.png` for a corresponding SVG. Missing or

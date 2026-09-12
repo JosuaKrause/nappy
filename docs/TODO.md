@@ -101,19 +101,11 @@ build could not decide alone.
 
 ### M109 — Convert the SVG catalogue to PNG
 
-- [ ] Repair barrier direction and vertical artwork from
-      [PLAYTEST-63](playtests/PLAYTEST-63.md): vertical barriers must not stack horizontal
-      boards, and horizontal alley mouths must use the barrier orientation across the alley.
-      Inspect event and closure drawing callers and reuse the authored end-view assets.
-
-- [ ] Repair the café seating facings reported in [PLAYTEST-63](playtests/PLAYTEST-63.md):
-      the right person in a horizontal restaurant faces the wrong way, and the vertical
-      restaurant's people look sideways. Derive each sitter's direction from their seat
-      toward the table, preserving the authored upright views and seat/table anchors.
-
 Follows M108, eight-direction entity graphics. Use the approved SVG-first workflow in
 [VISUALS.md](VISUALS.md) and the illustrated-png skill. The supplied diagonal urban and cardinal
-gameplay references define style only; each SVG defines content, geometry and placement.
+gameplay references define the comic drawing style; each SVG defines the subject and functional
+placement. PLAYTEST-63 requires transferring the idea, with redrawn forms and expressive ink
+and shadow shapes, rather than copying the primitive drawing and adding surface texture.
 **Every PNG asset must have a corresponding SVG asset, authored and reviewed first.** This is
 a permanent authoring requirement, not only a conversion step. Audit existing PNG-only assets
 and author their source SVG before generating a replacement; never backfill an SVG from a PNG
@@ -138,16 +130,19 @@ findings supported by the conversion and review.
 - [ ] Transfer the remaining entity SVGs and every directional/animation/state layer. The player
       rig's generation records are in `DECISIONS.md` under Eight-direction style transfer and
       M109, the carrying mother as one family. Preserve native
-      canvases and exact SVG alpha, and keep tintable body/trim separation and authored identities.
+      canvases and functional anchors, and keep tintable body/trim separation and authored identities.
+      Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
-- [ ] Transfer the outdoor ground family in `assets/tiles/` next, as requested in
-      [PLAYTEST-63](playtests/PLAYTEST-63.md). Review repeated seams, road markings, sidewalk
-      edges and degradation variants together at native size; preserve the TileSet bindings.
-- [ ] Transfer terrain, building tiles, props, closures, checkpoint structures and whole-street
+- [ ] Rework all previously generated textures into the references' comic drawing style,
+      including the pushing and carrying mother, stroller, garbage and litter. PLAYTEST-63
+      explicitly applies the correction to the complete generated catalogue. Audit earlier
+      families too; source pairing and registration do not establish the requested appearance.
+- [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The
       garbage/litter generation record is in `DECISIONS.md` under M109, litter and garbage materials.
+      The outdoor ground family record is under M109, outdoor tile materials.
 - [ ] Convert UI, cue and identity SVGs while preserving their symbols, text, legibility and
       exact geometry. Keep code-drawn graphics and shader behavior under their current owners.
 - [ ] Audit all loading paths: shared drawing helpers, direct textures, TileSets, scenes/resources,
