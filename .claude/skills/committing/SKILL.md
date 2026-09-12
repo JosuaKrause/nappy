@@ -47,8 +47,10 @@ right, one monitor that reports state changes beats an agent that polls: watcher
 and cost more than they saved — one exited before the merge, one stopped at the first conflict, and
 each cost a spawn.
 
-**A session ends with its PRs armed and mergeable.** The worktree removal, the `main` pull into
-the player's checkout and any stacked PR's retarget happen at the start of the next session, which
+**Leaving PRs open at the end of a session is not the standard** *(2026-09-11: "also this is not a
+general rule for *every* session")*: it happened once because the player asked for a break with the
+checks still running. The ordinary end of a session sees its PRs merged, the worktrees removed and
+`main` pulled into the player's checkout. When a session does end with PRs open, the next one
 begins by fetching and looking at what merged and what did not.
 
 **A ready-for-review PR carries the completed work and its verification.** Run `./tools/check.sh`,

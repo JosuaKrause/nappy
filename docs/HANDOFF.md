@@ -13,13 +13,12 @@ Claude Code and Codex share `CLAUDE.md` and `.claude/skills/`; Codex reads `CLAU
 through `project_doc_fallback_filenames` in `.codex/config.toml`, and finds the skills through the
 `.agents/skills` link. Its repository hooks need review through `/hooks` before they execute.
 
-**A session ends with its pull requests armed, not merged**, so the first thing to do is `git fetch
---prune` and `gh pr list`: whatever is still open either waits on its check or has gone
-`CONFLICTING` under a sibling that merged first, and the second kind needs a merge of `main` resolved
-by hand under the **merging-main** rules before auto-merge can take it. `git worktree list` shows
-any agent worktree left behind for a branch that was still open; remove it once its PR has merged.
-`docs/playtests/PLAYTEST-57.md` is the newest session: its findings are the M100 defects at the top
-of that milestone's list and M115, streets with trees, and they are the next work.
+**Start with `git fetch --prune` and `gh pr list`.** A pull request still open either waits on its
+check or has gone `CONFLICTING` under a sibling that merged first, and the second kind needs a merge
+of `main` resolved by hand under the **merging-main** rules before auto-merge can take it; a session
+normally ends with its PRs merged, so an open one is worth a look. `docs/playtests/PLAYTEST-57.md`
+is the newest session: its findings are the M100 defects at the top of that milestone's list and
+M115, streets with trees, and they are the next work.
 
 **Every branch is work in progress; nothing is parked on one.** The sealing measurement probes,
 `tests/probes/m64_measure.gd` and `tests/probes/m64_density.gd`, live under `tests/probes/`, where
