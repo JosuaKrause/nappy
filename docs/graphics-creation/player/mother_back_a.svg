@@ -1,9 +1,11 @@
-<!-- Walking away from the viewer: all hair, no face. -->
+<!-- Pushing north, leg A leads away while leg B trails toward the viewer. Feet anchor at (12,46). -->
 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="46" viewBox="0 0 24 46" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-  <path d="M6 31 L11 31 L10 43 L5 43 Z M13 31 L18 31 L19 43 L14 43 Z" fill="#3c4560"/>
-  <path d="M4 43 L11 43 L10 46 L3 46 Z M13 43 L19 43 L21 46 L13 46 Z" fill="#2f2a2c"/>
-  <path d="M5 13 Q12 10 19 13 L21 28 Q19 33 12 34 Q5 33 3 28 Z" fill="#b0574f"/>
-  <path d="M4 27 Q12 30 20 27 L20 33 Q12 36 4 32 Z" fill="#8e433d"/>
+  <path id="leg-a" d="M6 31 L11 31 Q12 35 9 39 L6 41 L5 44 L11 44 L13 41 Q14 35 13 32 Z" fill="#46506b"/>
+  <path d="M5 41 L11 41 L12 44 L4 44 Z" fill="#2f2a2c"/>
+  <path id="leg-b" d="M13 31 L18 31 Q18 37 19 42 L20 43 L21 46 L14 46 Q12 38 12 32 Z" fill="#3c4560"/>
+  <path d="M13 43 L20 43 L22 46 L14 46 Z" fill="#2f2a2c"/>
+  <path d="M5 13 Q12 10 19 13 L21 28 Q18 33 12 34 Q6 34 3 28 Z" fill="#b0574f"/>
+  <path d="M4 27 Q11 30 20 27 L19 33 Q12 36 4 32 Z" fill="#8e433d"/>
   <path d="M12 13 L12 33" stroke="#8f413d" stroke-width="1.3" fill="none"/>
   <path d="M4 16 Q1 18 1 27 L5 30 L7 19 Z M20 16 Q23 18 23 27 L19 30 L17 19 Z" fill="#b0574f"/>
   <path d="M12 1 Q19 1 19 8 Q19 14 12 15 Q5 14 5 8 Q5 1 12 1 Z" fill="#3a2b26"/>

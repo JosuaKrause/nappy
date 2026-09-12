@@ -2,8 +2,9 @@
      Both arms meet the bundle: one cups the head and one supports its underside.
      Feet anchor at (13, 46). -->
 <svg xmlns="http://www.w3.org/2000/svg" width="26" height="46" viewBox="0 0 26 46" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-  <path d="M5 31 L10 31 L10 43 L4 43 Z M12 31 L17 31 L18 43 L13 43 Z" fill="#3c4560"/>
-  <path d="M3 43 L11 43 L10 46 L2 46 Z M12 43 L20 43 L21 46 L12 46 Z" fill="#2f2a2c"/>
+  <path d="M5 31 L10 31 Q9 37 4 42 L1 43 L1 46 L8 45 Q13 39 13 32 Z" fill="#3c4560"/>
+  <path d="M12 31 L17 31 Q18 37 22 42 L25 43 L25 46 L18 46 Q13 39 12 32 Z" fill="#46506b"/>
+  <path d="M1 43 L8 42 L9 45 L1 46 Z M18 43 L25 43 L26 46 L18 46 Z" fill="#2f2a2c"/>
   <path d="M6 13 Q12 10 18 13 L20 28 Q18 33 11 34 Q6 33 4 28 Z" fill="#b0574f"/>
   <path d="M5 27 Q12 30 19 27 L19 33 Q12 36 5 32 Z" fill="#8e433d"/>
   <!-- Her far arm reaches beneath the head and neck before the bundle covers it. -->
