@@ -14,7 +14,7 @@ extends Node2D
 ## **The bounding-box layer is the one exception, and reads the physics tree itself instead of a
 ## query.** `collision_nodes_under()` walks every *enabled* `CollisionShape2D`/`CollisionPolygon2D`
 ## under a `StaticBody2D` or `CharacterBody2D` anywhere in `_city`'s or `_player`'s own subtree —
-## hers, the pram's, every building, every street tree's trunk, a road closure's and the map
+## hers, the pram's, every building, a road closure's and the map
 ## boundary's own barrier bodies, and every solid event's obstruction (a checkpoint hut or gate, a
 ## region wall, a barricade) — so a body a future row grows needs nothing added here to be drawn,
 ## and this layer cannot disagree with what she actually collides against. `_draw_bodies()` and
@@ -193,7 +193,7 @@ func _pram_position() -> Vector2:
 
 ## Every enabled collision shape a body in the tree could touch, traced from the actual
 ## `CollisionShape2D`/`CollisionPolygon2D` nodes physics reads via `collision_nodes_under()` —
-## hers, the pram's, every building, every street tree's trunk, a road closure's and the map
+## hers, the pram's, every building, a road closure's and the map
 ## boundary's own barrier bodies, and every solid event's obstruction — plus a moving car's strike
 ## box, drawn in the field layer's own lethal colour because it is not a body
 ## (`CrowdAgent._car_shadow_shape()`'s own doc: "no body for a car") but is exactly what
