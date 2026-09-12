@@ -131,8 +131,11 @@ edges, yellow lines, crosswalks and damage. Remove the ground background from de
 before alpha compositing it over the actual base. Preserve the layer inputs and composition
 recipe, including SVG sources for the components. Pixels outside the overlay remain identical
 to the base. Inspect repeated bases in both axes for lighting gradients and brightness jumps;
-a shared texture still needs to tile cleanly. Precomposed runtime tiles may retain the existing
-TileSet bindings while their editable components stay separate.
+a shared texture still needs to tile cleanly. Blend curbstones, markings, damage and grass
+features over their bases in the engine, retaining the separate component graphics. The
+rotation/offset blend that makes one continuous asphalt base is an offline preparation step.
+Separate existing grass features from a soft green base and place them sparsely with stable
+city-seed variation, keeping grass detail quieter than the actors and route markings.
 
 Resolve textures only. Keep original scale, offsets, animation, mirroring, sorting, shadows,
 camera and gameplay behavior. Missing or differently sized replacements fall back to the SVG;

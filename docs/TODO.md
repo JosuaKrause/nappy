@@ -130,6 +130,10 @@ findings supported by the conversion and review.
       Compare wrapped half-tile offsets as the player's alternative and retain the smoother repeat.
       Check both repeat axes and keep the floor identical outside each overlay;
       preserve native tile geometry, curb detail, markings, selection and current mother graphics.
+      Compose detail layers inside the engine, keeping the final graphics as separate components;
+      the rotation/offset asphalt blend remains an offline preparation step producing one base.
+      Split existing grass features from a soft green base and distribute them sparsely at varied
+      positions with deterministic city-seed variation, making parks quieter and less repetitive.
       Store component SVGs before their PNG derivatives, frozen input artwork and reproducible
       assembly scripts. Review repeated runs and corners using the
       [actual-map layout recipe](evidence/sidewalk-layout-review-2026-09-12/GENERATION.md), keeping

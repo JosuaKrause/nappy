@@ -209,3 +209,18 @@ damage forms.
 
 This acceptance covers every pre-PR cracked variant across sidewalk, road and alley, including
 hairline, cracked and broken A/B forms. Use all of those originals as the stencil sources.
+
+> for the grass tile -- split the tile into grass features (bushels etc) that exist on it already and the base grass (just green with soft variations). then use those grass features and place them on top of the grass randomly -- that way it looks less noisy and parks look more varied. -- those blendings should ideally happen in engine and shouldn't be baked into graphics
+
+Separate the existing grass clumps and other features from a soft green base. Place those
+features sparsely at varied positions in the game so parks have more variation and less visual
+noise. Use deterministic variation from the city seed so a generated city remains reproducible.
+Compose the ground bases, curb and road markings, damage, and grass detail inside the engine;
+do not install flattened graphics as the final implementation. Precomposed images may serve as
+review evidence. Preserve the separate source layers and their scripts.
+
+> the curbstone/line/cracks/grass feature blendings that is. *not* the road texture blending approach to make the texture more continuous
+
+The rotation/offset asphalt blend is an offline asset-preparation step that saves one continuous
+road base texture. Only the curbstone, marking, crack and grass-feature compositing happens
+inside the engine.
