@@ -14,8 +14,9 @@ event stride and idle frames with per-seat café facing. The café drawing choos
 frame family once, then the correct view and mirror for each table-facing seat. Both the
 musician's idle drawing and the café's facing helper survive. Alley-aware barrier selection
 also survives; the solid-body footprint computation uses that same spread axis. Tree beds
-remain ground decals, separate from upright tree collision, and fallen-tree visibility updates
-both layers. Return patrols and stationary crowd obstructions retain main's implementations.
+remain ground decals, separate from upright tree drawings and their shadows; props have no
+collision bodies. Fallen-tree visibility updates both layers. Return patrols and stationary
+crowd obstructions retain main's implementations.
 The queue keeps main's open decay/crash work and removes its finished stride, crowd and
 return work while retaining the graphics branch's comic-transfer requirements.
 
