@@ -223,26 +223,45 @@ func _test_a_park_is_out_of_earshot_of_the_traffic(t) -> void:
 	_advance(45.0)
 	for block in _city.map.calm_blocks:
 		var centre := _city.map.tile_rect_to_world(CityMap.block_rect(block)).get_center()
-		t.check(_city.crowd.total_excitement_at(centre) < Tuning.EXCITEMENT_DECAY_WALKING,
-				"the middle of park %s recovers faster than the traffic loads it"
-				% [block])
+		# Against what a park gives back rather than against the flat walking rate: calm ground
+		# has a multiplier of its own, so the raw constant is a number that is never applied here.
+		var calm_decay := Tuning.EXCITEMENT_DECAY_WALKING * _city.decay_multiplier(centre)
+		t.check(_city.crowd.total_excitement_at(centre) < calm_decay,
+				"the middle of park %s recovers faster than the traffic loads it (%.1f of %.1f)"
+				% [block, _city.crowd.total_excitement_at(centre), calm_decay])
 
 # ------------------------------------------------------------------- the floor ---
 
 ## Finding 9: passing a person barely moved the meter, so the crowd was scenery. It has to
 ## cost something up close — and it has to be avoidable, or the cost is not a decision.
 ## The pavement is two tiles, which is what makes "how close do I pass" a real choice.
+##
+## **What "up close" means is a contact, and no longer a near miss.** *(Playtest 63, the decay
+## raised so the bar visibly falls on quiet ground: "excitement should go visibly down when no
+## excitement source is around".)* The walking decay now outruns one person at arm's length, and
+## that is the decision rather than a casualty of it — the player's sentence is that *no source
+## around* should read as recovery, and a lone passer-by at the pavement's width is the nearest
+## thing in the game to nobody. What still has to cost is a **contact**, which is the thing she
+## did rather than the thing that walked past her, and a **crowded** pavement, which is several
+## of them and is what `_test_a_busy_street_never_lets_the_meter_fall` measures.
+##
+## **The crowd's own numbers were deliberately left where they were.** Raising them to chase the
+## decay would raise what crossing the main road costs with them, which is a different decision
+## nobody made.
 func _test_a_close_pass_costs_and_a_wide_one_does_not(t) -> void:
-	t.check(Tuning.PEDESTRIAN_INTENSITY > Tuning.EXCITEMENT_DECAY_WALKING,
-			"brushing past somebody (%.1f) outruns the walking decay (%.1f)"
-			% [Tuning.PEDESTRIAN_INTENSITY, Tuning.EXCITEMENT_DECAY_WALKING])
+	t.check(Tuning.BUMP_INTENSITY > Tuning.EXCITEMENT_DECAY_WALKING,
+			"walking into somebody (%.1f) outruns the walking decay (%.1f)"
+			% [Tuning.BUMP_INTENSITY, Tuning.EXCITEMENT_DECAY_WALKING])
+	t.check(Tuning.PEDESTRIAN_INTENSITY < Tuning.EXCITEMENT_DECAY_WALKING,
+			"and one person at arm's length (%.1f) does not, so an empty pavement reads as "
+			% Tuning.PEDESTRIAN_INTENSITY + "recovery (%.1f)" % Tuning.EXCITEMENT_DECAY_WALKING)
 
 	var pavement := float(Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
 	var wide := Tuning.falloff(pavement, Tuning.PEDESTRIAN_INTENSITY,
 			Tuning.PEDESTRIAN_INNER_RADIUS, Tuning.PEDESTRIAN_OUTER_RADIUS)
-	t.check(wide < Tuning.EXCITEMENT_DECAY_WALKING,
-			"giving somebody the width of the pavement (%.1f) stays under the decay (%.1f)"
-			% [wide, Tuning.EXCITEMENT_DECAY_WALKING])
+	t.check(wide < Tuning.PEDESTRIAN_INTENSITY * 0.5,
+			"giving somebody the width of the pavement costs less than half what standing "
+			+ "against them does (%.1f of %.1f)" % [wide, Tuning.PEDESTRIAN_INTENSITY])
 	t.check(Tuning.PEDESTRIAN_INNER_RADIUS < pavement,
 			"the close-pass band is narrower than the pavement, so it can be walked around")
 
@@ -267,12 +286,22 @@ func _test_a_car_is_louder_and_carries_further_than_a_person(t) -> void:
 ## reference for "she stops here and waits"; now that waiting is never a plan, the only question a
 ## street has to answer is what it costs to *walk down*, which is what a route is made of.
 func _test_a_busy_street_never_lets_the_meter_fall(t) -> void:
-	var arterial := _floor_on(CrowdLanes.arterial_pavement(_city.map))
-	var quiet := _floor_on(CrowdLanes.quietest_pavement(_city.map))
+	var arterial_at := CrowdLanes.arterial_pavement(_city.map)
+	var quiet_at := CrowdLanes.quietest_pavement(_city.map)
+	var arterial := _floor_on(arterial_at)
+	var quiet := _floor_on(quiet_at)
+	# **Each floor is priced against the decay on the ground it was measured on**, which is the
+	# trap the balance skill names: the spine gives back
+	# `EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` of the walking rate and a back street gives back all
+	# of it, so comparing both loads to the raw constant flatters one and libels the other. The
+	# two questions are "does this street out-load what standing on it pays back" — and that is a
+	# different number per street by design.
+	var arterial_decay := Tuning.EXCITEMENT_DECAY_WALKING * _city.decay_multiplier(arterial_at)
+	var quiet_decay := Tuning.EXCITEMENT_DECAY_WALKING * _city.decay_multiplier(quiet_at)
 
-	t.check(arterial > Tuning.EXCITEMENT_DECAY_WALKING,
-			"walking the arterial loses ground on average (%.1f vs %.1f decay)"
-			% [arterial, Tuning.EXCITEMENT_DECAY_WALKING])
+	t.check(arterial > arterial_decay,
+			"walking the arterial loses ground on average (%.1f vs %.1f the spine gives back)"
+			% [arterial, arterial_decay])
 	# The other half of the same rule: the main road has to be expensive, not impassable, because
 	# a street nobody can use is not a route decision.
 	#
@@ -295,9 +324,17 @@ func _test_a_busy_street_never_lets_the_meter_fall(t) -> void:
 	t.check(crossing < Tuning.METER_MAX / 2.0,
 			"crossing the main road is expensive, not fatal (%.0f of %d)"
 			% [crossing, Tuning.METER_MAX])
-	t.check(quiet < Tuning.EXCITEMENT_DECAY_WALKING,
-			"a back street is somewhere she can recover (%.1f vs %.1f decay)"
-			% [quiet, Tuning.EXCITEMENT_DECAY_WALKING])
+	t.check(quiet < quiet_decay,
+			"a back street is somewhere she can recover (%.1f vs %.1f it gives back)"
+			% [quiet, quiet_decay])
+	# **And recovery she can see**, which is the whole of playtest 63: *"excitement should go
+	# visibly down when no excitement source is around"*. Net-negative on paper was already true
+	# and was the complaint — the bar fell at a fifth of the rate the ground gives back. Half is
+	# the floor, not a measurement: what may not return is a quiet street whose crowd eats most of
+	# its own recovery.
+	t.check(quiet < quiet_decay * 0.5,
+			"and visibly so — the crowd takes back less than half of it (%.1f of %.1f)"
+			% [quiet, quiet_decay])
 	t.check(arterial > quiet * 2.0,
 			"the main road is not merely busier than a back street, it is a different place")
 

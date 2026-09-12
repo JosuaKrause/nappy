@@ -1760,12 +1760,28 @@ func _test_along_street_paths_stay_in_bounds(t) -> void:
 ## that is cheaper to walk into than to walk around is a bribe, and the player learns to take
 ## it. Naming them explicitly is the point: one more has to be a decision.
 ##
-## **Down to one row in playtest 07.** `falloff`'s new shoulder lifted `poster_crew` to +0.7 and
-## `barricade` to +3.0, so neither needs the exemption any more — both are still nearly free to
-## walk through, which is all the design ever asked of them. A burnt-out shell is the last row
-## that is genuinely cheaper to walk through than around, and it is a reminder rather than an
-## obstacle. (`loudspeaker` is `city_wide` and has no line to walk through at all.)
-const _SCENERY := ["burnt_shell"]
+## **Two rows, and both are meant to be free.** A burnt-out shell is a reminder rather than an
+## obstacle, and a poster crew is there so a street *looks* like a city under a curfew. Neither
+## has ever been more than nearly free to walk through, which is all the design asked of them.
+## *(Playtest 63 raised the walking decay past what a poster crew emits, so "nearly free" became
+## "free" and the row needs the exemption it used to sit just above. Nothing about the row moved;
+## the ground under it did.)* (`barricade` and the other pure obstructions emit nothing at all and
+## are covered by the blanket `intensity <= 0.0` exemption; `loudspeaker` is `city_wide` and has
+## no line to walk through at all.)
+const _SCENERY := ["burnt_shell", "poster_crew"]
+
+## The other exemption, and it is a different sentence: these rows are not cheap, they are **not
+## priced by their field at all**. A detainer's cost is `Tuning.CHAT_EXCITEMENT` charged flat over
+## the seconds it holds her still, through the conversation mechanism — the ambient disc around it
+## is atmosphere, and the catalogue's own notes on `chatting_mother` and `checkpoint_hut` say so.
+##
+## *(Playtest 63 is what made it visible: with the walking decay raised to 6.0/s their fields no
+## longer clear the ground they stand on, and the rule above called four rows a bribe. Sizing a
+## detainer's field to clear the decay would have been charging the same body twice, at a number
+## driven by a test rather than by what the row is.)* The exemption is not a hole because the
+## check below replaces it: a row that is excused from costing something to walk past has to
+## actually cost something to walk **into**.
+const _PRICED_BY_THEIR_CAPTURE := ["chatting_mother", "checkpoint_hut", "checkpoint_post"]
 
 ## Net excitement from walking straight through the centre of an event at walking pace, in
 ## points of a hundred-point meter. This is what produced the table in docs/EVENTS.md, and the
@@ -1848,6 +1864,14 @@ func _test_nothing_chases_her_before_the_run_is_taught(t) -> void:
 func _test_nothing_is_cheaper_to_walk_through_than_around(t) -> void:
 	for def in EventCatalogue.all():
 		if def.city_wide or def.intensity <= 0.0 or def.id in _SCENERY:
+			continue
+		if def.id in _PRICED_BY_THEIR_CAPTURE:
+			# The exemption owes its own check, or it is a way of not being tested: a row excused
+			# from costing something to walk past has to cost something to walk into.
+			t.check(def.detain_seconds > 0.0 and Tuning.CHAT_EXCITEMENT > 0.0,
+					"'%s' is excused the field because the detention is what it charges (%.1f "
+					% [def.id, Tuning.CHAT_EXCITEMENT]
+					+ "over %.1fs)" % def.detain_seconds)
 			continue
 		t.check(_cost_to_walk_through(def) > 0.0,
 				"walking through '%s' costs more than walking around it (%.1f)"

@@ -1447,29 +1447,37 @@ const CLOSURE_GAP_BIAS := 4.0
 ## to *how expensive is this* is how two tables of the same fact drift apart.
 ##
 ## **Setting it to a row's own `walk_through_cost()` line for the caret is the mistake with the
-## good argument.** The caret's own threshold (`EXPECTED_IMPACT_POINTS`, which happens to be the
-## same 0.4 of the meter as this constant — a coincidence of two felt numbers, not one question
-## asked twice: the caret is read off a projected position and this is read off a row's own static
-## integral) is where the game raises a caret — *this is worth going round* — so sharing the
+## good argument.** The caret's own threshold, `EXPECTED_IMPACT_POINTS`, is a near neighbour of
+## this one and is not the same question: the caret is read off a **projected position** and this
+## is read off a row's own **static integral**, so the two move independently and have. It is where
+## the game raises a caret — *this is worth going round* — so sharing the
 ## question, not merely the value, would make the cue and the placement say one sentence. What
 ## sharing the question did instead was empty the routes: at 25 points, the caret's line before
 ## this milestone raised it, **two thirds of every day becomes a wall**, and day 1's corridor drops
 ## from 69.6 placements to 27.8 of 113. The ground off the paths is what was asked to be closed;
 ## nobody asked for the paths to be cleared.
 ##
-## The line is set by one row instead, and by the right one. **`dog_walker` costs 36.5 and has to
+## The line is set by two rows instead, and by the right two. **`dog_walker` costs 30.8 and has to
 ## stay friction**: the dog-walker decision arriving twice on day one is the route decision this
-## game is made of, and a dog walker that is never on her route is that decision deleted. So the
-## line goes above it, and the first row above it is `loose_dog` (61.2, raised from 43.3 for a
-## bigger startle without moving out of this bracket) — which is where *very costly* starts reading
-## as a different thing from *costly*. Forty points is four tenths of the meter to walk through the
-## middle of.
+## game is made of, and a dog walker that is never on her route is that decision deleted. **And
+## `leaf_blower` at 37.7 has to stay a wall**, because without it the non-lethal half of the range
+## is act III and later rows only, and *"very costly to deadly"* stops being a range anybody meets
+## — `tests/test_events.gd` samples five days and counts both kinds. The line goes between them.
+##
+## **It is in points of the meter, so it moves when the meter's own arithmetic does.** Raising the
+## walking decay lowers every row's cost, and not evenly: the decay is netted off over the *time*
+## the crossing takes, so a wide, moderate row loses far more of its price than a narrow, intense
+## one. That is why `protest` (269px of 15/s) fell from 42.3 to 27.6 and crossed under
+## `dog_walker` (105px of 26/s), which no threshold can undo — a protest now genuinely costs less
+## to walk through than a dog walker does, so it is on the routes with the rest of the ordinary
+## expensive city.
 ##
 ## What that leaves on the corridor is `cafe_tables`, `market_stall`, `homeless_yeller`,
-## `delivery_van` and the dog walker — the ordinary expensive city — and what it puts off it is
-## `loose_dog`, `leaf_blower`, `burning_building`, `protest`, `military_convoy`, `night_raid` and
-## every lethal row. Re-measure with a probe if the cost table moves; do not re-derive it.
-const WALL_WORTH_OF_COST := METER_MAX * 0.4
+## `delivery_van`, `protest` and the dog walker, and what it puts off it is `leaf_blower`,
+## `burning_building`, `pigeon_flock`, `loose_dog`, `military_convoy`, `night_raid`, `fire_truck`
+## and every lethal row. Re-measure with `tests/probes/m117_decay.gd` if the cost table moves; do
+## not re-derive it.
+const WALL_WORTH_OF_COST := METER_MAX * 0.35
 
 # ----------------------------------------------------- solid things are solid ---
 # The rule is in `EventDef.obstructs_radius`: **anything that stands still is solid at the width it

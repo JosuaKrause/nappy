@@ -274,6 +274,21 @@ func _test_only_motion_settles_her(t) -> void:
 	t.check(Tuning.EXCITEMENT_DECAY_RUNNING > Tuning.EXCITEMENT_DECAY_IDLE,
 			"even running is motion, so it settles her more than standing does")
 
+	# **And the other axis of the same table: what she is standing on.** *(Playtest 63.)* Five
+	# grounds, best to worst, asserted as the ordering rather than as five numbers — the absolute
+	# rates are what a rig measures and this is what the route decision is made of. A ground that
+	# swapped places with its neighbour would make some street the wrong answer everywhere.
+	t.check(Tuning.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
+			> Tuning.EXCITEMENT_DECAY_PRECINCT_MULTIPLIER,
+			"a park settles her faster than a precinct")
+	t.check(Tuning.EXCITEMENT_DECAY_PRECINCT_MULTIPLIER > 1.0,
+			"and a precinct faster than an ordinary street, which is why it is worth walking to")
+	t.check(1.0 > Tuning.EXCITEMENT_DECAY_ALLEY_MULTIPLIER,
+			"an ordinary street is better ground than an alley")
+	t.check(Tuning.EXCITEMENT_DECAY_ALLEY_MULTIPLIER
+			> Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER,
+			"and an alley better than the main road, which stays the worst ground in the city")
+
 	_build(t)
 	_baby.excitement = 50.0
 	_stand()
@@ -294,9 +309,24 @@ func _test_alley_trickle(t) -> void:
 	_build(t)
 	_world.alley = true
 	_walk()
-	# Alley trickle is below the walking decay, so an alley alone cannot raise excitement.
-	t.check(Tuning.EXCITEMENT_FROM_ALLEY < Tuning.EXCITEMENT_DECAY_WALKING,
-			"walking an empty alley should not by itself build excitement")
+	# **Against the decay on an alley's own ground, not against the flat walking rate.** *(Playtest
+	# 63.)* An alley has a multiplier of its own — 3.5/s against an ordinary street's 6.0 — and the
+	# trickle is set just under it: comparing it to the unmultiplied rate would call an alley safe
+	# on the strength of a number that is never applied in one. What has to stay true is that an
+	# empty alley is very nearly flat: it cannot build excitement on its own, and it is never quite
+	# recovery either, which is the pressure the row is for.
+	var alley_decay := Tuning.EXCITEMENT_DECAY_WALKING * Tuning.EXCITEMENT_DECAY_ALLEY_MULTIPLIER
+	t.check(Tuning.EXCITEMENT_FROM_ALLEY < alley_decay,
+			"walking an empty alley should not by itself build excitement (%.1f against %.1f)"
+			% [Tuning.EXCITEMENT_FROM_ALLEY, alley_decay])
+	t.check(Tuning.EXCITEMENT_FROM_ALLEY > alley_decay * 0.5,
+			"but it is close enough underneath that an alley is not somewhere she recovers")
+	# And the ordering the ground table is made of: an alley is worse ground than the street it
+	# cuts between and better than the spine.
+	t.check(Tuning.EXCITEMENT_DECAY_ALLEY_MULTIPLIER < 1.0
+			and Tuning.EXCITEMENT_DECAY_ALLEY_MULTIPLIER
+			> Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER,
+			"an alley sits between an ordinary street and the main road")
 	_simulate(1.0)
 	t.close_to(_baby.last_incoming, Tuning.EXCITEMENT_FROM_ALLEY,
 			"an alley contributes its trickle to incoming excitement")
@@ -356,19 +386,42 @@ func _test_full_excitement_cries(t) -> void:
 	t.close_to(_baby.excitement, frozen, "the meters stop once the baby is crying")
 	_teardown()
 
-## M96, the teaching day and the dog after it: whether one contact on an otherwise empty street
-## is a cliff at 90. **Measured, not designed** — a real `CrowdAgent`'s own `startle()`, the same
+## M96, the teaching day and the dog after it: where one contact on an otherwise empty street
+## becomes a cliff. **Measured, not designed** — a real `CrowdAgent`'s own `startle()`, the same
 ## call `Crowd._bump()` makes on a genuine contact, driven by hand since a bare agent has no lane
-## to steer in. This pins the number so a fix, if the ceiling is ever moved, is a decision made
-## with it in hand rather than a guess; it does not itself decide that a bump this close to the
-## ceiling should survive.
+## to steer in.
+##
+## **Stated as where the cliff is rather than as what happens at 90**, because the height of one
+## contact is the difference between what the jolt lands and what the ground gives back over the
+## same second and a bit, and the second of those is a balance number that moves. *(Playtest 63
+## raised the walking decay and one contact from 90 stopped ending the day — at 90 it now reaches
+## 98.8, a point and a bit short.)* What the number was ever worth knowing for is the relationship
+## below it: **a single contact may only be fatal from inside the band the pram is already
+## warning about.** A contact that killed from under `EXCITEMENT_NEARLY_CRYING` would be a death
+## with no cue in front of it, which is the one thing this suite exists to refuse.
 func _test_one_bump_near_the_ceiling(t) -> void:
+	var landed := _one_bump_from(t, 90.0) - 90.0
+	t.check(landed > 0.0,
+			"one contact still puts the meter up on an empty street (%.2f)" % landed)
+	var fatal_from := Tuning.METER_MAX - landed
+	t.check(fatal_from > Tuning.EXCITEMENT_NEARLY_CRYING,
+			"one contact ends the day only from %.1f up, which is inside the nearly-crying band "
+			% fatal_from + "(%.0f) the pram is already showing"
+			% Tuning.EXCITEMENT_NEARLY_CRYING)
+	t.check(fatal_from < Tuning.METER_MAX,
+			"and there is a height from which it does end the day, so a contact stays a cliff")
+	# The other end, walked rather than derived: from just inside that height it really does cry.
+	t.check(_one_bump_from(t, fatal_from + 1.0) >= Tuning.METER_MAX,
+			"and one contact from %.1f ends it" % (fatal_from + 1.0))
+
+## The meter after one whole contact, starting from `at` and walking ordinary ground.
+func _one_bump_from(t, at: float) -> float:
 	_build(t)
 	var agent := CrowdAgent.new()
 	agent.global_position = _stroller.global_position
 	agent.startle(Tuning.BUMP_INTENSITY, Tuning.BUMP_DURATION,
 			Tuning.BUMP_INNER_RADIUS, Tuning.BUMP_OUTER_RADIUS)
-	_baby.excitement = 90.0
+	_baby.excitement = at
 	_walk()
 	var jolt := Tuning.BUMP_DURATION
 	while jolt > 0.0:
@@ -376,7 +429,7 @@ func _test_one_bump_near_the_ceiling(t) -> void:
 		_world.noise = agent.contribution_at(_stroller.global_position)
 		_baby._physics_process(STEP)
 		jolt -= STEP
-	t.check(_baby.state == GameEnums.BabyState.CRYING,
-			"one bump from 90 on an empty street ends the day (excitement %.2f)" % _baby.excitement)
+	var reached := _baby.excitement
 	agent.free()
 	_teardown()
+	return reached
