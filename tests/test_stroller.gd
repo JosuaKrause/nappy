@@ -100,18 +100,19 @@ func _test_wrap_boundary_holds(t) -> void:
 	t.check(rig._view_direction == 0, "east wins after crossing the wrapped boundary")
 	rig.free()
 
-## M100, small, real and nobody's — "the pram has no collision of its own ... so the pram clips
-## into walls when she hugs a corner." `scenes/player/stroller.tscn` now carries a second
-## `CollisionShape2D`, `PramCollisionShape2D`, kept at `_pram_offset` every physics frame — see
-## `Stroller._physics_process()`. Checked at the wiring level rather than by driving her into a
-## real wall: `move_and_slide()` does not move a body in this suite's own synchronous headless
-## run — no physics frame ever actually elapses while `run()` is executing, which is also why
-## `tests/test_events.gd`'s own conversation test reads `velocity` rather than `global_position`
-## after holding a key, and `_test_the_pram_is_the_size_the_rules_think_it_is` (same file) checks
-## the existing body's shape and radius directly rather than a collision outcome. What is checked
-## here is the same shape: the new shape exists, sized to `pram_shape`, and its local `position` is
-## a function of `facing` rather than a value fixed at scene load — a fixed offset would only ever
-## be right for one direction, which is the "capsule that rotates with facing" half of the fix.
+## M100, small, real and nobody's — the pram's own body, rejected once at 12px trailing the pram's
+## drawn `PRAM_DISTANCE` (34px) because *(PLAYTEST-57: "I cannot get close to walls anymore, and I
+## get constantly stuck")*, then rebuilt at the shape the player asked for: *"place the center of
+## the stroller hitbox at the circumference of the player hitbox", "and don't make it too big"*.
+## `PramCollisionShape2D`'s centre sits `Tuning.PLAYER_BODY_RADIUS` (14px) out along `facing` —
+## on her own circle's edge, unsquashed, since physics stays in the plain 2D plane — and its radius
+## is `Stroller.PRAM_BODY_RADIUS` (8px, pinned and open to overturn), smaller than the 12px
+## `pram_shape` still uses for the pram's shadow, cue and field. Checked at the wiring level rather
+## than by driving her into a real wall: `move_and_slide()` does not move a body in this suite's own
+## synchronous headless run — no physics frame ever actually elapses while `run()` is executing,
+## which is also why `tests/test_events.gd`'s own conversation test reads `velocity` rather than
+## `global_position` after holding a key, and `_test_the_pram_is_the_size_the_rules_think_it_is`
+## (same file) checks the existing body's shape and radius directly rather than a collision outcome.
 func _test_the_pram_has_its_own_trailing_body(t) -> void:
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var rig: Stroller = scene.instantiate()
@@ -122,21 +123,25 @@ func _test_the_pram_has_its_own_trailing_body(t) -> void:
 	t.check(pram_collision != null,
 			"the real stroller scene carries a second collision shape for the pram")
 	var circle := pram_collision.shape as CircleShape2D
-	t.check(circle != null and is_equal_approx(circle.radius, rig.pram_shape.radius),
-			("sized to the same 12px pram_shape draws the shadow with (%.1f in the scene, %.1f " +
-			"in pram_shape)") % [circle.radius if circle else -1.0, rig.pram_shape.radius])
+	t.check(circle != null and is_equal_approx(circle.radius, Stroller.PRAM_BODY_RADIUS),
+			("sized to PRAM_BODY_RADIUS, smaller than the 12px pram_shape still draws the shadow "
+			+ "with (%.1f in the scene, %.1f pinned)")
+			% [circle.radius if circle else -1.0, Stroller.PRAM_BODY_RADIUS])
 	t.check(not pram_collision.disabled, "and enabled while she is pushing the pram")
 
-	# Trails at the pram's own drawn offset, whichever way she is facing. No input is pressed, so
-	# `_turn_toward()` never runs and `facing` stays exactly what this sets before each step.
-	for facing in [Vector2.DOWN, Vector2.UP, Vector2.LEFT, Vector2.RIGHT,
+	# On the circumference of her own circle, whichever way she is facing, never at the pram's own
+	# drawn distance. No input is pressed, so `_turn_toward()` never runs and `facing` stays exactly
+	# what this sets before each step.
+	for facing: Vector2 in [Vector2.DOWN, Vector2.UP, Vector2.LEFT, Vector2.RIGHT,
 			Vector2(1.0, 1.0).normalized()]:
 		rig.facing = facing
 		rig._physics_process(STEP)
-		var expected := Vector2(facing.x, facing.y * rig.OBLIQUE_Y) * rig.PRAM_DISTANCE
+		var expected: Vector2 = facing * Tuning.PLAYER_BODY_RADIUS
 		t.check(pram_collision.position.is_equal_approx(expected),
-				"the pram's own body trails at the pram's drawn offset facing %s (%s, want %s)"
+				"the pram's own body sits PLAYER_BODY_RADIUS out along facing %s (%s, want %s)"
 				% [facing, pram_collision.position, expected])
+		t.close_to(pram_collision.position.length(), Tuning.PLAYER_BODY_RADIUS,
+				"which is 14px from her own centre on every facing, not only the axes", 0.01)
 	rig.free()
 
 	# Carrying her in arms rather than pushing the pram: there is no pram to collide with either.
