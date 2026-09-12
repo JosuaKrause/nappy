@@ -579,8 +579,13 @@ is still true.
       12px to something clearly smaller — 8px is the recommendation, stated in the commit and
       pinned — so the pram's far half overlaps whatever it meets and she can stand against a wall
       while the pram no longer clips through corners whole. The pram's *drawing*, shadow, cue and
-      field keep their 34px offset; only the body moves. The debug view's bounding-box layer (`3`) draws every other body and not
-      this one; draw it. And measure the roadblock band's and the region wall's bodies against
+      field keep their 34px offset; only the body moves. **And the debug view draws every body
+      there is** *("and make sure *all* hitboxes are actually drawn")*: the bounding-box layer (`3`)
+      does not draw the pram's body today, so audit every `CollisionShape2D` and `StaticBody2D` the
+      scene tree holds — hers, the pram's, buildings, city bodies, event bodies, walls and doors —
+      against what the layer draws, and draw whatever is missing from the same source the physics
+      reads, so the layer cannot omit a body again; a test walks the tree and asserts the count
+      the layer draws equals the count of enabled shapes. And measure the roadblock band's and the region wall's bodies against
       their drawn boxes: in the run's pictures she stops a pram's length short of a band across an
       alley and short of the wall across a road with the boxes nowhere near touching, so whatever
       body those rows carry beyond their picture is trimmed to it

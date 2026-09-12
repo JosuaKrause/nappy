@@ -52,7 +52,12 @@ other body, does not draw the pram's at all. Asked where exactly:
 > and don't make it too big
 
 Her body is a 14px circle; the pram's body sits with its centre on that circle's edge, 14px out
-along her facing, and is smaller than the 12px it has today. The gap
+along her facing, and is smaller than the 12px it has today. And on the debug view's own completeness:
+
+> and make sure *all* hitboxes are actually drawn
+
+The bounding-box layer is trusted to show every body there is; a body it does not draw is the
+kind of thing this run walked into. The gap
 in the pictures is bigger than the pram alone explains — the band's body stops her a pram's length
 short of the band's drawn box — so the wall's own body is to be measured against its picture too.
 
