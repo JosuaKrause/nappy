@@ -544,6 +544,21 @@ is still true.
       it backwards beside the other two. One flag on its table — `side_faces_west` in
       `EventInstance._draw_eight_view()` — and the octant test transcribed from M56's original
       match updated to the corrected side mirror, with M56's own heat tests kept green
+- [ ] **An invincible mode for playtesting.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md):
+      "can you add an invincible mode for playtesting? that way I can check off basically all items
+      in one go", "and it let's me inspect things more thoroughly")* A debug flag, `--invincible`
+      on the desktop and `?invincible=1` on a debug web build, on the same terms as every other
+      developer flag in `DevFlags`: unreadable in a release build, listed in its help table. With
+      it, nothing ends the day: the baby may reach 100 and cry and the day goes on, a car strike
+      or a capture that would raise a hard fail does not end it, and the clock runs to zero and
+      stays there. Everything else is real — the meters fill and drain, the halo, carets and badges
+      fire, closures and seals stand, the checkpoint hold holds — so what is being inspected is the
+      game and not a copy of it. The HUD shows the word so no capture from such a run reads as a
+      real one, and the run log notes the flag at the top the way it notes the seed, since a run
+      log from an invincible day answers nothing about cost. `REVIEW.md`'s intro names the flag as
+      the way to walk its whole list in one sitting. A test pins that each of the three loss paths
+      leaves the day running under the flag and ends it without
+
 - [ ] **What is still dev-only inside `main.gd`.** `DevFlags` took the flag parsing out; what stayed
       is the code that acts on it — `_first_event_position` and the `--spawn` target lookup, both of
       which read the live city. Worth finishing the next time the file is opened for another reason
