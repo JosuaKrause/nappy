@@ -19,6 +19,9 @@ func run(t) -> void:
 	_test_every_diagonal_step_has_both_its_pinch_corners_cleared(t)
 	_test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t)
 	_test_a_door_release_latch_keeps_a_door_from_retaking_her(t)
+	_test_the_fire_closes_one_stairwell_and_leaves_the_other(t)
+	_test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t)
+	_test_an_explosion_flashes_every_hallway_window(t)
 
 func _test_the_map_builds(t: Node) -> void:
 	var f := InteriorMap.build()
@@ -431,3 +434,119 @@ func _shortest_path_length(f: InteriorMapPlan, start: Vector2i, goal: Vector2i) 
 					dist[next] = dist[here] + 1
 					queue.append(next)
 	return -1
+
+# ------------------------------------------------------------ the escape's own events ---
+# `InteriorEvents` is the escape's first section: a mouse, a masked man on one stairwell, a fire on
+# the other, steam in the basement and the explosions outside. What these check is the placement's
+# own promises — the ones the brief makes and a screenshot cannot see.
+
+## *"There might be a fire on one staircase forcing us to use the other staircase (all buildings
+## have two egresses)."* Both halves of that sentence: the fire really does close the shaft it is
+## in, and it reaches nothing at all in the other one.
+##
+## Stated over the fire's own blocking reach — `obstructs_radius` plus her own body, which is where
+## her centre is stopped — rather than over a number of tiles, so it survives the fire's body being
+## retuned.
+func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+
+	var fire: EventInstance = null
+	for instance in events.instances():
+		if instance.def.id == "burning_building":
+			fire = instance
+	t.check(fire != null, "the escape puts a fire in the building")
+	if fire:
+		var burning := events.burning_side()
+		var other := "right" if burning == "left" else "left"
+		t.check(scene.turn_landings("stairwell_%s" % burning).has(
+				scene.world_to_tile(fire.global_position)),
+				"the fire stands on a half-landing of the %s shaft" % burning)
+		var reach := fire.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
+		t.check(reach > 0.0, "and it is solid at all (%.0fpx)" % reach)
+		var shut := 0
+		for tile in _shaft_tiles(scene, "stairwell_%s" % burning):
+			if scene.tile_to_world(tile).distance_to(fire.global_position) < reach:
+				shut += 1
+		t.check(shut > 0, "it closes ground in its own shaft (%d tiles)" % shut)
+		var elsewhere := 0
+		for tile in _shaft_tiles(scene, "stairwell_%s" % other):
+			if scene.tile_to_world(tile).distance_to(fire.global_position) < reach:
+				elsewhere += 1
+		t.check(elsewhere == 0, "and reaches nothing in the %s shaft, which stays walkable" % other)
+		# The other egress is where the masked man is, which is the whole reason the fire is worth
+		# having: the way past a fire is the other stairwell, and somebody is coming up it.
+		var man: EventInstance = null
+		for instance in events.instances():
+			if instance.def.id == "masked_pursuer":
+				man = instance
+		t.check(man != null, "a masked man is on the stairs")
+		if man:
+			t.check(_shaft_tiles(scene, "stairwell_%s" % other).has(
+					scene.world_to_tile(man.global_position)),
+					"on the shaft the fire left open")
+	events.free()
+	scene.free()
+
+## Every tile of one stairwell: its landings and its flights, taken as the box the shaft occupies
+## between its top and bottom landings.
+func _shaft_tiles(scene: InteriorScene, part_id: String) -> Array[Vector2i]:
+	var f := InteriorMap.build()
+	var top: Vector2i = scene.waypoint(part_id)
+	var bottom: Vector2i = scene.waypoint("%s:landing_lobby" % part_id)
+	var swing := InteriorMap.STAIRWELL_FLIGHT_LEN + 1
+	var found: Array[Vector2i] = []
+	for tile: Vector2i in f.tiles:
+		if absi(tile.x - top.x) <= swing and tile.y >= top.y and tile.y <= bottom.y:
+			found.append(tile)
+	return found
+
+## *"Maybe some mice. ... Maybe some steam in the basement etc."* Both stand on the basement's own
+## corridor, which has no branches — so they are things she walks past rather than things she may
+## happen not to find.
+func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) -> void:
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var walk := scene.basement_walk()
+	t.check(walk.size() > 8, "the basement is a walk from its entry to its exit (%d tiles)"
+			% walk.size())
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	for id in ["alley_mouse", "basement_steam"]:
+		var found: EventInstance = null
+		for instance in events.instances():
+			if instance.def.id == id:
+				found = instance
+		t.check(found != null, "'%s' is in the building" % id)
+		if found:
+			t.check(walk.has(scene.world_to_tile(found.global_position)),
+					"'%s' stands on the basement's own corridor" % id)
+	events.free()
+	scene.free()
+
+## *"The hallway windows that flash when an explosion goes off."* There is no burst on the street
+## to see and no arc drawn for the noise, so the flash is the whole of the cue — driven here
+## through the same per-frame call the running game makes, rather than by reaching for the swap.
+func _test_an_explosion_flashes_every_hallway_window(t: Node) -> void:
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	t.check(not scene.windows_are_flashing(), "the windows are dark to begin with")
+	events._physics_process(Tuning.FINALE_EXPLOSION_INTERVAL)
+	t.check(scene.windows_are_flashing(), "an explosion lights every hallway window")
+	scene._process(Tuning.FINALE_WINDOW_FLASH_SECONDS + 0.01)
+	t.check(not scene.windows_are_flashing(), "and they go dark again a frame or two later")
+	events.free()
+	scene.free()
