@@ -321,12 +321,7 @@ func _test_alley_trickle(t) -> void:
 			% [Tuning.EXCITEMENT_FROM_ALLEY, alley_decay])
 	t.check(Tuning.EXCITEMENT_FROM_ALLEY > alley_decay * 0.5,
 			"but it is close enough underneath that an alley is not somewhere she recovers")
-	# And the ordering the ground table is made of: an alley is worse ground than the street it
-	# cuts between and better than the spine.
-	t.check(Tuning.EXCITEMENT_DECAY_ALLEY_MULTIPLIER < 1.0
-			and Tuning.EXCITEMENT_DECAY_ALLEY_MULTIPLIER
-			> Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER,
-			"an alley sits between an ordinary street and the main road")
+	# Where the alley's ground sits among the other four is `_test_only_motion_settles_her`'s.
 	_simulate(1.0)
 	t.close_to(_baby.last_incoming, Tuning.EXCITEMENT_FROM_ALLEY,
 			"an alley contributes its trickle to incoming excitement")
