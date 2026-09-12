@@ -186,6 +186,16 @@ const BUSKER_BY_VIEW := {
 	"front_diagonal": preload("res://assets/events/busker_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/busker_back_diagonal.svg"),
 }
+## The strumming hand raised — read by `_draw_busker()` off `_idle_stepping()`'s own timer rather
+## than `_gait_stepping()`'s distance, since he never moves. Everything but the hand/arm draped
+## over the guitar is byte-identical to frame a.
+const BUSKER_BY_VIEW_B := {
+	"front": preload("res://assets/events/busker_front_b.svg"),
+	"back": preload("res://assets/events/busker_back_b.svg"),
+	"side": preload("res://assets/events/busker_side_b.svg"),
+	"front_diagonal": preload("res://assets/events/busker_front_diagonal_b.svg"),
+	"back_diagonal": preload("res://assets/events/busker_back_diagonal_b.svg"),
+}
 const POSTER_CREW_BY_VIEW := {
 	"front": preload("res://assets/events/poster_crew_front.svg"),
 	"back": preload("res://assets/events/poster_crew_back.svg"),
@@ -199,6 +209,16 @@ const CAFE_SITTER_BY_VIEW := {
 	"side": preload("res://assets/events/cafe_sitter_side.svg"),
 	"front_diagonal": preload("res://assets/events/cafe_sitter_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/cafe_sitter_back_diagonal.svg"),
+}
+## A lean, not a stride: the sitters never move, so this alternates on `_idle_stepping()`'s own
+## timer rather than on `_gait_stepping()`'s distance. Everything but the lap/table-contact stays
+## put; the seated body above it leans a couple of pixels — see the SVG's own comment.
+const CAFE_SITTER_BY_VIEW_B := {
+	"front": preload("res://assets/events/cafe_sitter_front_b.svg"),
+	"back": preload("res://assets/events/cafe_sitter_back_b.svg"),
+	"side": preload("res://assets/events/cafe_sitter_side_b.svg"),
+	"front_diagonal": preload("res://assets/events/cafe_sitter_front_diagonal_b.svg"),
+	"back_diagonal": preload("res://assets/events/cafe_sitter_back_diagonal_b.svg"),
 }
 const VAN_VICTIM_BY_VIEW := {
 	"front": preload("res://assets/events/van_victim_front.svg"),
@@ -699,6 +719,13 @@ var _gait_phase := 0.0
 ## yeller, the dog walker's own stop) hold frame a rather than whatever `_gait_phase` last landed
 ## on. See `_advance_gait()` and `_gait_stepping()`.
 var _gait_moving := false
+## A deterministic 0..1 drawn once, in `setup()`, from this instance's own siting position — the
+## same position-hash approach `_flock_roll()` uses, since the day's own RNG is not reachable from
+## here and streaming an instance out and back in must not draw twice from it. Offsets the café
+## sitters' and the busker's own idle timer (`_idle_stepping()`) so two of either kind placed on
+## the same day do not lean or strum in lockstep.
+var _idle_phase_offset := 0.0
+
 ## The city, for the one question a chase needs answered that nothing here ever asked before:
 ## whether the ground a step would land on is somewhere anybody can stand. `null` in every
 ## data-level test that builds an instance without one — a rig that walks a straight line on
@@ -759,6 +786,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	# A stride never starts mid-cycle — the mother's own `reset_at()` precedent.
 	_gait_phase = 0.0
 	_gait_moving = false
+	_idle_phase_offset = _position_roll(101)
 	if definition.look == EventDef.Look.MOUSE:
 		# `alley_mouse` is `MAP`-placed rather than director-sited, so it arrives here with no
 		# route at all (`EventScheduler._build_placement`'s default case) — this is the one place
@@ -1972,6 +2000,12 @@ func _current_bob() -> float:
 ## from this file, and a cross-file literal agreement is worth restating rather than importing.
 const GAIT_RATE := 0.09
 
+## A few seconds per swap — slow enough that a café frontage reads as sitting rather than
+## fidgeting. See `_idle_stepping()`.
+const SITTER_IDLE_PERIOD := 3.4
+## A strum's own tempo. See `_idle_stepping()`.
+const BUSKER_STRUM_PERIOD := 0.5
+
 ## Advances `_gait_phase` by `moved` (px covered this tick, positive or exactly zero — `_process()`
 ## passes `_path_travelled`'s own delta, which is never negative) and records whether anything
 ## moved at all, which is the "stopped" gate `_gait_stepping()` reads. Called once per tick, at
@@ -2007,6 +2041,23 @@ func _victim_gait_stepping() -> bool:
 	var elapsed := age - _victim_taken_at
 	var speed := VICTIM_STANDING_OFFSET / VICTIM_TAKEN_OVER
 	return sin(elapsed * speed * GAIT_RATE * 2.0) > 0.0
+
+## A deterministic 0..1 from this instance's own siting position, an index and a salt — the same
+## hash `_flock_roll()` already uses for a flock's own scatter, generalised to one index (0) since
+## nothing outside a flock needs more than one draw. No global RNG is reachable from here, and
+## streaming an instance out and back in must not draw from one twice; a hash of where the day
+## placed it answers the same way every time the same plan places the same instance.
+func _position_roll(salt: int) -> float:
+	var mixed := int(position.x) * 73856093 + int(position.y) * 19349663 + salt * 2971215073
+	return float(absi(mixed) % 4096) / 4096.0
+
+## Whether the café sitters' or the busker's own idle frame is up right now: a plain 50/50 split of
+## `period` seconds, offset per instance by `_idle_phase_offset` so two placed the same day do not
+## swap in lockstep. Driven by `_clock` rather than `age`, the same simulated-time clock `landed()`
+## already measures against, so a paused game holds the frame rather than drifting it.
+func _idle_stepping(period: float) -> bool:
+	var phase := fmod(_clock + _idle_phase_offset * period, period)
+	return phase >= period * 0.5
 
 # ------------------------------------------------------------------ the halo ---
 # The ring itself is `EntityHalo`'s job now, shared with `CrowdAgent` — see that class for the
@@ -2207,7 +2258,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			# obstruction moves.
 			_draw_eight_view(DELIVERY_VAN_BY_VIEW, _heading, canvas, true)
 		EventDef.Look.BUSKER:
-			_draw_eight_view(BUSKER_BY_VIEW, _heading, canvas)
+			_draw_busker(canvas)
 		EventDef.Look.ROADWORKS:
 			_draw_spread(BARRIER_SEGMENT, BARRIER_END, canvas)
 		EventDef.Look.FIRE_ENGINE:
@@ -2585,7 +2636,8 @@ func _draw_cafe(canvas: CanvasItem = self) -> void:
 	# Every sitter shares one view and one mirror — the frontage is sited once and never turns, and
 	# a party at the same table facing in different directions is not a picture this row ever drew.
 	var view := _select_view(_heading)
-	var sitter: Texture2D = CAFE_SITTER_BY_VIEW[view]
+	var by_view := CAFE_SITTER_BY_VIEW_B if _idle_stepping(SITTER_IDLE_PERIOD) else CAFE_SITTER_BY_VIEW
+	var sitter: Texture2D = by_view[view]
 	var mirror := EightDirection.is_mirrored(_view_sector)
 	var segment := CAFE_TABLE.get_size()
 	var along_natural := segment.y if _spread_vertical else segment.x
@@ -2602,6 +2654,17 @@ func _draw_cafe(canvas: CanvasItem = self) -> void:
 		var along := -half + width * (i + 0.5)
 		Sprites.draw_standing(canvas, CAFE_TABLE,
 				_spread_at(along), _spread_extent(width, thickness), i % 2 == 1)
+
+## The busker's own site facing and idle strum — he never moves, so this reads `_idle_stepping()`
+## rather than `_gait_stepping()`, the same timer the café sitters use above at a faster tempo
+## (`BUSKER_STRUM_PERIOD`). Kept as its own function rather than routed through `_draw_eight_view()`
+## because that helper's own `by_view_b` parameter is keyed to the gait, not the idle timer.
+func _draw_busker(canvas: CanvasItem = self) -> void:
+	_draw_shape_shadow(canvas, def.shape)
+	var view := _select_view(_heading)
+	var mirror := EightDirection.is_mirrored(_view_sector)
+	var by_view := BUSKER_BY_VIEW_B if _idle_stepping(BUSKER_STRUM_PERIOD) else BUSKER_BY_VIEW
+	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO, mirror)
 
 ## The eight pointing poses, in the bearing order `_protester_texture()` indexes into: north
 ## first, then clockwise. Kept beside the poses themselves rather than built in the function, so
