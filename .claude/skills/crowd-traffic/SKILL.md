@@ -51,10 +51,57 @@ re-rolls its position and finds bollards every time, so `CrowdAgent.setup` picks
 - **Nearest first, then right before left.** Distance alone leaves a symmetric arrival undecided and
   right-before-left alone deadlocks four cars in a ring; in that order there is exactly one winner
   per box per frame. A light overrides the whole negotiation where there is one.
+- **A car turning in a box holds the whole of it, on both axes, until it is out.** Its path crosses
+  both arms and its tail is still in the way after its nose has left. It claims it from the moment
+  the arc begins and not from the moment it commits: a car that has planned a turn from the
+  junction's sight distance away is still queueing for the box like anybody else, and holding it for
+  the length of an approach empties the crossing street for a second and a half.
 
 The collision that gets through is deliberate and is **not** a catalogue row: it startles the cars
 it happened to, which composes by addition like every other body. An event nobody meets in a run is
 a silhouette and a fairness contract spent on decoration.
+
+## A turn is a path, and the radius is the lattice's rather than yours
+
+A car plans one arc — `CarTurn` — before it starts turning, and follows it. **The free parameter in
+an arc tangent to two lanes is fixed by where the arc *starts*, not by a constant**: a lane centre
+sits 16px from its kerb and two lanes are 32px apart, so the near-side arm comes out at 16px, the
+far-side at 48 and an about-face at 16 with no choice in it at all. **If you find yourself adding a
+turn-radius dial, that is the thing this entry exists to stop** — the number would have to agree
+with the lane geometry to land on a lane, so it is the geometry.
+
+Three things about the shape of it that are easy to get wrong:
+
+- **A body swings to the outside of its turn.** A 28px car in a 32px lane has two pixels of slack,
+  so nine degrees of rotation drags its tail over the kerb. The arm that turns *away* from its own
+  kerb therefore cannot begin at the carriageway's edge; it waits until the tail is inside the
+  junction. Measured as exactly the two pixels, and it refused every far-side turn in the city until
+  the entry moved.
+- **A half turn between two lanes cannot be contained by their own street.** The arc is 16px and the
+  body's corners reach 40 from the centre of it, against 32 to the kerb. So an about-face is taken
+  in a junction box, where the crossing street's carriageway is the room it needs — and the street
+  version, which is the only manoeuvre in the game whose swept body crosses a kerb, is the last
+  resort before a barrier.
+- **Refusing outright is not available.** Cars that cannot turn round stop, one nose-to-wall car
+  holds the junction it is standing in, and the street behind it queues: measured, 33 of 34 cars at
+  a standstill inside ninety seconds. Whatever replaces a manoeuvre has to keep the road moving.
+
+**And a car that lands from a turn has to be able to leave.** The arm probe is a single point seven
+tiles out and looks straight past a two-tile plug — harmless while a car could reverse its heading
+anywhere, and a car parked in a cul-de-sac for the rest of the day once it cannot. The exit is
+checked for a turnaround's worth of road, which is the same *nothing enters a junction it cannot
+leave* rule read one street further on.
+
+## The heading is the datum, and it is continuous
+
+`CrowdAgent.heading()` is a unit vector along the car's actual line of travel — cardinal in a lane,
+the **tangent of its own arc** mid-turn — and `velocity()` is that times the speed it is really
+doing. Everything downstream reads it: the lethal strike box and the horn, right of way at a box,
+the checkpoint gate's along/across projection, the shadow, and the picture. **A turn that changed
+the axis without changing this pointed every one of them at a car that was not there.**
+
+`travelling_vertically()` follows the heading mid-turn for the same reason: a car that has swung
+past the diagonal is across the traffic it used to be queueing with.
 
 ## A gap is a snapshot
 

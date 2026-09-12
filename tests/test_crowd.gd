@@ -611,6 +611,13 @@ func _test_traffic_gives_way_at_a_crossing(t) -> void:
 		var crossing := _crossing_ahead_of(agent)
 		if crossing == Vector2.INF:
 			continue
+		# And with nothing in the way beyond the zebra. A car with a barrier inside its own
+		# lookahead is braking for that barrier and planning its way round it, so what it does once
+		# the crossing clears is a statement about the barrier rather than about the zebra — and the
+		# claim below is that the *courtesy* ends when the pedestrian steps off.
+		agent._look_ahead()
+		if agent._blocked_in <= CrowdAgent.LOOKAHEAD_TILES:
+			continue
 		tested += 1
 		# The crowd is a field around the player, and this rig has no player: without moving the
 		# focus onto the car it is outside the box, recycles on the first frame, and every
@@ -640,8 +647,13 @@ func _test_traffic_gives_way_at_a_crossing(t) -> void:
 
 		agent.pedestrian_ahead = Vector2.INF
 		_step(agent, 3.0)
-		t.check(agent.speed() > Tuning.CAR_SPEED.x * 0.5,
-				"and pulls away again once the crossing is clear")
+		# Back to road speed, or down to turn speed if it has committed to a turn in the three
+		# seconds since — a car easing into a junction it is turning at is not a car still waiting
+		# for a pedestrian who has gone, which is the failure this is watching for.
+		var pulling_away := Tuning.CAR_TURN_SPEED if agent.is_turning() \
+				else Tuning.CAR_SPEED.x * 0.5
+		t.check(agent.speed() >= pulling_away * 0.99,
+				"and pulls away again once the crossing is clear (%.0fpx/s)" % agent.speed())
 	t.check(tested > 0, "at least one car had a zebra ahead of it to give way at")
 
 ## Distance from a car's centre to the near edge of the first zebra in front of it, walked tile by
@@ -1151,9 +1163,17 @@ func _test_the_traffic_index_is_emptied_every_frame(t) -> void:
 	# place in a lane. The growth is visible within a frame or two of the first recycle, so this
 	# does not need the minute the tests either side of it do.
 	_advance(10.0)
-	t.check(_city.crowd.traffic().entry_count() == Tuning.crowd_cars(1),
-			"ten seconds on, the index holds one entry per car rather than a day's worth (%d of %d)"
-			% [_city.crowd.traffic().entry_count(), Tuning.crowd_cars(1)])
+	# One entry per car, plus one for each car that is mid-turn: a turning car is in the queue it
+	# came from *and* has booked the place in the lane it is turning into, which nothing else in the
+	# index would show. See `Crowd.space_out_the_traffic`.
+	var turning := 0
+	for agent in _city.crowd.agents():
+		if agent.is_turning():
+			turning += 1
+	t.check(_city.crowd.traffic().entry_count() == Tuning.crowd_cars(1) + turning,
+			"ten seconds on, the index holds one entry per car and one per turn rather than a day's "
+			+ "worth (%d of %d + %d turning)"
+			% [_city.crowd.traffic().entry_count(), Tuning.crowd_cars(1), turning])
 
 ## The tightest two cars sharing a lane got, in px.
 func _closest_two_cars_in_a_lane() -> float:

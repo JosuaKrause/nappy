@@ -1006,6 +1006,33 @@ const CAR_JUNCTION_SIGHT := 200.0
 ## right-before-left never actually running.
 const CAR_JUNCTION_TIE := 60.0
 
+## How fast a car takes a turn, and the tightest arc it will take one on.
+##
+## **The radius is the city's geometry rather than a dial** — a lane centre sits 16px from its own
+## kerb and the two lanes of a carriageway are 32px apart, so the arc joining one lane to another
+## comes out at 16px on the near-side arm, 48px on the far-side one, and 16px for an about-face. The
+## minimum is the floor under all three: below the car's own half width (`CAR_STRIKE_HALF_WIDTH`,
+## 14px) an arc sweeps the body's inner flank backwards through the centre of its own circle, which
+## is a pivot rather than a turn, and 16 is both a little over that and the exact radius an
+## about-face already has to use. A turn that cannot be taken at this radius or wider is refused, not
+## squeezed.
+##
+## The speed is what makes a turn *read* as one. At the tightest arc the quarter turn is 25px of
+## road, so 60px/s spends 0.42s in it and the far-side arm 1.25s — both long enough to watch, where
+## a car taking the same corner at its 130px/s cruise is through it in 0.19s and reads as the swap
+## this replaced. The relationship under it, which `tests/test_turns.gd` states: `CAR_TURN_SPEED² /
+## CAR_TURN_RADIUS_MIN` is 225px/s² of lateral acceleration, under `CAR_BRAKE`'s 320 — a car is
+## never asked to corner harder than it can brake. It is also well over `CAR_STRIKE_MIN_SPEED`, so a
+## turning car is still a lethal one and a junction is not a safe place to stand.
+##
+## **A car does not always reach it.** The approach eases from the moment the car knows it is
+## turning, at `CAR_ZEBRA_APPROACH_BRAKE`, and what it knows is bounded by `CrowdAgent.LOOKAHEAD` —
+## about a hundred pixels of warning at an ordinary closure, which from cruise leaves it entering
+## the arc at around 130px/s and still braking. Lengthening the lookahead would buy the rest, and
+## would also move which junction a car turns at, which is a route decision rather than a turn.
+const CAR_TURN_SPEED := 60.0
+const CAR_TURN_RADIUS_MIN := 16.0
+
 # ------------------------------------------------------- the world near you ---
 # The world is populated around the player rather than authored across a map she mostly never
 # visits: nothing is loaded upfront, and a thing whose whole content is a moment is sited in front
