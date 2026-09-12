@@ -71,24 +71,6 @@ their single side picture by the choices recorded there.
       (`EntityHalo` asks each owner for its `bob()`; the crowd's answers zero today). Crowd cars
       first, with the vehicle binding below; the event vehicles that move — the police car, the
       vans, the lorry, the fire engine — the same way, and a parked one sits still
-- [ ] **Bind the event vehicles and the police car.** The crowd car is bound
-      (`DECISIONS.md`, M108, the crowd car): it reads M111's continuous `heading()`, so the
-      picture runs through the diagonals on the arc, its standing front, back and diagonal views
-      are registered against the strike box rather than the old top-down end view, and its shadow
-      turns with it. What is left is the same for every event vehicle — delivery van, fire engine,
-      ice-cream van, lorry, the abduction van, the army truck, the moving-van seal pair — and the
-      police car: each family's explicit front/back/side/diagonal table from `facings.csv`,
-      including its documented side-facing convention, rather than assuming every side source
-      faces east; a moving vehicle from its travel heading, a parked one or a seal from its
-      placement axis, landing on the same view the axis chose before; registration per view
-      against the row's own `GroundShape` and obstruction, which do not change; the riot van's
-      octant selection generalised onto the shared helper rather than copied, with its output
-      identical. **And the capture nobody has managed**: native-scale turns showing the
-      intermediate diagonal views at entry, apex and exit, with the debug view's shadow and box
-      layers on. A windowed `tools/shot.sh` has not caught one in six tries, because a turn is two
-      seconds and the day ends while a rig stands still; a probe that places a car on a synthetic
-      arc and renders it is the way, and the analytic per-sector footprint test in
-      `tests/test_car_views.gd` is the pin until then.
 - [ ] **Verify and document each binding increment.** Update `GRAPHICS.md` from prepared to live
       only for callers actually wired. Check SVG override and illustrated fallback so an available
       cardinal PNG cannot replace a newly selected diagonal SVG or lose its state/registration.
@@ -97,6 +79,12 @@ their single side picture by the choices recorded there.
       their gameplay owner needs them. M56, the resistance is noticed, owns guard/riot-van states;
       M102, the finale, owns the carrying mother and interior sequence. The protester's eight
       pointing poses are bound (`DECISIONS.md`, M65).
+      **And the capture nobody has managed**: native-scale crowd-car turns showing the intermediate
+      diagonal views at entry, apex and exit, with the debug view's shadow and box layers on. A
+      windowed `tools/shot.sh` has not caught one in six tries, because a turn is two seconds and
+      the day ends while a rig stands still; a probe that places a car on a synthetic arc and
+      renders it is the way, and the analytic per-sector footprint test in
+      `tests/test_car_views.gd` is the pin until then.
 
 ### M111 — Cars follow their turns
 
@@ -549,6 +537,13 @@ is still true.
 
 **Defects, each a few lines once found:**
 
+- [ ] **The riot van's side view faces the wrong way.** `facings.csv` records `riot_van.svg` as
+      authored facing west, like the unmarked van and the army truck, but its selection keeps the
+      east-native mirror sense, so a hunting riot van heading east shows a west-facing cab; the
+      evidence sheet `docs/evidence/m108-event-vehicles-2026-09-11/vehicles-security-3x.png` shows
+      it backwards beside the other two. One flag on its table — `side_faces_west` in
+      `EventInstance._draw_eight_view()` — and the octant test transcribed from M56's original
+      match updated to the corrected side mirror, with M56's own heat tests kept green
 - [ ] **What is still dev-only inside `main.gd`.** `DevFlags` took the flag parsing out; what stayed
       is the code that acts on it — `_first_event_position` and the `--spawn` target lookup, both of
       which read the live city. Worth finishing the next time the file is opened for another reason
