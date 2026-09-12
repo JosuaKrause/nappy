@@ -2,7 +2,7 @@
 
 The current comic redraw's prompts, raw outputs, registration script and comparisons live in
 [`comic/`](comic/). The files described below preserve the original surface-treatment batch;
-the player's verdict and the change of drawing contract are in PLAYTEST-63 and DECISIONS.
+the player's verdict and the change of drawing contract are in PLAYTEST-64 and DECISIONS.
 
 Reproduce the comic tiles into a fresh directory:
 

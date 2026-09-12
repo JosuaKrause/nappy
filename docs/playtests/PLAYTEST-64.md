@@ -1,4 +1,4 @@
-# Playtest 63 — Ground tiles in PNG
+# Playtest 64 — Ground tiles in PNG
 
 2026-09-12
 
@@ -22,7 +22,7 @@ need directions derived from the individual seat, not one facing shared by the w
 > vertical barriers look wrong (just sideways textures stacked on top of each other) also barriers in horizontal alleys use the wrong orientation
 
 The supplied screenshot is `asked/002-attempt2-asked.png` in the preserved full run
-[run-143205-seed1489549101-v0.8.2-764-g28fe845](../evidence/playtest-63-2026-09-12/run-143205-seed1489549101-v0.8.2-764-g28fe845/).
+[run-143205-seed1489549101-v0.8.2-764-g28fe845](../evidence/playtest-64-2026-09-12/run-143205-seed1489549101-v0.8.2-764-g28fe845/).
 It shows horizontal boards stacked along vertical barrier bands. Inspect the authored end
 view and the barrier drawing callers, plus how an alley's axis chooses the barrier across it.
 Use the correct upright/end-view artwork and place it along the actual barrier axis.
