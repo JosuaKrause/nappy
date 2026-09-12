@@ -21,6 +21,17 @@ view"). `--invincible` is the way to walk this whole list in one sitting: nothin
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Cross a region door on foot, from day 7** (`--day 7`; a door is the hut-boom-hut across a
+  boundary street). The boom hangs between its posts across the lanes, level with the huts; the
+  inspection starts as soon as she stands against the hut; the camera eases from where it was
+  drawing to the hut and back, the hut stays drawn with its guard gone, and she comes out on the
+  far side and is left alone until she walks away and back. Does the hold read as one move, and
+  does walking out of the door's area and back in, about a third of a second on a pavement, read
+  as a fair toll or as being charged twice for hesitating? Record is `DECISIONS.md`, M100, the
+  checkpoint as played.
+- **Walk the approach to a door with the field layer on** (`1`). A hut's field is a 98px disc,
+  grown from the invariant that a captured player is fully charged rather than from a balance
+  decision. Does the approach to a wall crossing now cost more than it should? Same record.
 - **Walk her into a wall, a corner and a barrier at an angle** (any day; `3` shows the bodies).
   The pram's body is an 8px circle centred on the edge of her own 14px one, so the pram's far
   half overlaps what it meets and she stands against a wall again. Does the pram still catch on

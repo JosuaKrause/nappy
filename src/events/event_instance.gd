@@ -368,13 +368,33 @@ const BOOM_GATE_NS_RAISED := preload("res://assets/checkpoints/boom_gate_ns_rais
 const BOOM_GATE_EW_LOWERED := preload("res://assets/checkpoints/boom_gate_ew_lowered.svg")
 const BOOM_GATE_EW_RAISED := preload("res://assets/checkpoints/boom_gate_ew_raised.svg")
 ## Each asset's own documented ground anchor, read out of the SVG's own comment rather than
-## assumed — none of the four is `Sprites.draw_standing`'s bottom-centre: the hut's doorway sits a
-## few pixels short of the canvas's own bottom edge, and a boom gate's anchor is off to one side,
-## at the post nearest the camera. See `_draw_at_anchor`.
+## assumed — neither is `Sprites.draw_standing`'s bottom-centre: the hut's doorway sits a few
+## pixels short of the canvas's own bottom edge. See `_draw_at_anchor`.
 const _HUT_ANCHOR := Vector2(28.0, 52.0)
 const _GUARD_ANCHOR := Vector2(11.0, 44.0)
-const _BOOM_NS_ANCHOR := Vector2(84.0, 59.0)
-const _BOOM_EW_ANCHOR := Vector2(21.0, 88.0)
+
+## A boom's two posts, as the ground point each of them stands on in its own canvas — the near
+## post is the `ground anchor` the SVG documents, the far one is the receiving post at the other
+## end of the arm, read off the same post box and base plate the near one is read off. Both states
+## of each boom put its posts in exactly these places, which is what keeps a raised bar registered
+## with the lowered one it replaces.
+const _BOOM_NS_NEAR_POST := Vector2(84.0, 59.0)
+const _BOOM_NS_FAR_POST := Vector2(5.0, 55.0)
+const _BOOM_EW_NEAR_POST := Vector2(21.0, 88.0)
+const _BOOM_EW_FAR_POST := Vector2(18.5, 12.0)
+## **A boom hangs from its body's ground point midway between its two posts, not from one of
+## them.** A gate is sited on the middle of the carriageway — `RegionPlanner._add_door_bodies`
+## puts it on the road's own centre line between the two huts — and a picture hung by the near
+## post alone puts its whole arm to one side of that point: on the kerb, with the lanes it exists
+## to bar left open underneath it. Anchored between the posts, each post lands just outside a kerb
+## and the arm crosses the lanes, which is the shape the picture was drawn as.
+const _BOOM_NS_ANCHOR := (_BOOM_NS_NEAR_POST + _BOOM_NS_FAR_POST) * 0.5
+const _BOOM_EW_ANCHOR := (_BOOM_EW_NEAR_POST + _BOOM_EW_FAR_POST) * 0.5
+## The lowered arm's own extent inside each canvas — the striped bar itself, not the posts or the
+## sockets. Only `boom_arm_span()` reads them: where the bar lands across the road is the thing a
+## test can check and `_draw()` cannot.
+const _BOOM_NS_ARM := Rect2(4.0, 43.0, 79.0, 7.0)
+const _BOOM_EW_ARM := Rect2(15.0, 7.0, 9.0, 76.0)
 
 ## The one silhouette that stands for a look, at any size.
 ##
@@ -789,7 +809,7 @@ func _process(delta: float) -> void:
 		_chat_seconds_left = maxf(0.0, _chat_seconds_left - delta)
 		# `redetains` is the one thing that skips `_be_done()` here: a checkpoint's hut or post
 		# stays exactly where it is, still solid, ready for `EventManager` to arm it again the
-		# instant she is released and clear of `detain_radius` — see `EventDef.redetains`.
+		# instant she is released and clear of `detain_distance()` — see `EventDef.redetains`.
 		# `chatting_mother` has none of this: her conversation ending is what starts her own
 		# departure, `_be_done()`'s ordinary meaning for anything that is not a fixture.
 		if _chat_seconds_left <= 0.0 and def.redetains:
@@ -858,22 +878,36 @@ var _chat_seconds_left := 0.0
 func is_chatting() -> bool:
 	return _chat_seconds_left > 0.0
 
-## Whether a checkpoint's own hold is suppressing every drawing of this instance right now — she
-## and the guard both go inside for it, see `Stroller.hide_for_inspection()`. `def.redetains` is
-## the flag only `checkpoint_hut`/`checkpoint_post` carry, so `chatting_mother` — same mechanism,
-## no `redetains` — keeps her ordinary talking posture for the whole of her own conversation
-## instead. Named once and read by `_draw()`, by `_draw_body()` (the halo's own re-draw entry
-## point — see that function's doc for why the halo needs its own guard rather than inheriting
-## `_draw()`'s), and by a test, so the three can never drift apart from each other.
-func is_suppressed_by_its_own_hold() -> bool:
+## Whether the guard this instance draws is inside with her for its own hold right now — he is the
+## one taking her in, so he is not also standing in the street, see
+## `Stroller.hide_for_inspection()`. `def.redetains` is the flag only the three region-door rows
+## carry, so `chatting_mother` — same mechanism, no `redetains` — keeps her ordinary talking
+## posture for the whole of her own conversation instead.
+func is_its_guard_inside() -> bool:
 	return def.redetains and is_chatting()
+
+## Whether a checkpoint's own hold suppresses *every* drawing of this instance, halo included.
+##
+## **True only where the guard is the whole of what this row draws.** `checkpoint_post` is one
+## man at an alley mouth and nothing else, so when he goes in there is nothing left to draw; a hut
+## is a building and a gate is a boom across a road, and *(PLAYTEST-57: "the checkpoint house
+## disappears ... all this is incorrect".)* A structure that blinks out while she is inside it
+## reads as the door having been removed rather than as her having gone through it, which is the
+## opposite of what the hold is for.
+##
+## Read by `_draw()`, by `_draw_body()` (the halo's own re-draw entry point — see that function's
+## doc for why the halo needs its own guard rather than inheriting `_draw()`'s), and by a test, so
+## the three can never drift apart from each other.
+func is_suppressed_by_its_own_hold() -> bool:
+	return is_its_guard_inside() and def.look == EventDef.Look.CHECKPOINT_POST
 
 ## Whether this instance has ever detained anybody. See `_has_chatted`.
 func has_chatted() -> bool:
 	return _has_chatted
 
 ## Starts the one conversation this instance will ever have. Called by `EventManager` the frame it
-## decides the player has entered `def.detain_radius` of an instance that has not chatted yet — see
+## decides the player has come within `def.detain_distance()` of an instance that has not chatted
+## yet — see
 ## `EventManager._check_detentions()`. Spends the instance as a detainer immediately, before the
 ## clock has run a single frame, so a second call before this one finishes can never restart it.
 func start_chat() -> void:
@@ -1533,7 +1567,7 @@ func current_intensity() -> float:
 		return 0.0
 	if is_chatting():
 		# A flat rate for the whole conversation rather than a falloff: she is inside `inner_radius`
-		# by construction (`detain_radius < inner_radius`), so there is no distance left to shape.
+		# by construction (`detain_distance() < inner_radius`), so there is no distance to shape.
 		# Gated on `baby_awake`, read and never written — see the field's own comment — which is
 		# what makes "asleep, it is a pure time loss" true of the meter and not only of the words:
 		# nothing here scales through `Tuning.SLEEPING_SENSITIVITY`, it emits exactly zero.
@@ -1960,12 +1994,13 @@ func _draw_mark() -> void:
 
 ## The single body-drawing entry point `_draw()` calls for the primary render and `EntityHalo`
 ## calls, repeatedly at a ring of offsets, for the halo — see `_build_halo()`. Gating it here
-## rather than only in `_draw()` is what actually hides the checkpoint's own halo during a
-## redetaining hold: `EntityHalo` never asks `_draw()`, it re-runs this function directly, and its
-## own alpha fades over `EntityHalo.FADE_OUT_SECONDS` (0.8s) rather than cutting, which would have
-## left a fading ring on screen for most of a two-second hold if this guard lived only in `_draw()`.
-## Drawing nothing is instant either way; the fade timer keeps running underneath, so the ring
-## reappears at whatever brightness it already had rather than fading back in.
+## rather than only in `_draw()` is what actually hides an alley post's own halo during its hold:
+## `EntityHalo` never asks `_draw()`, it re-runs this function directly, and its own alpha fades
+## over `EntityHalo.FADE_OUT_SECONDS` (0.8s) rather than cutting, which would have left a fading
+## ring around a man who is not there for most of a two-second hold if this guard lived only in
+## `_draw()`. Drawing nothing is instant either way; the fade timer keeps running underneath, so
+## the ring reappears at whatever brightness it already had rather than fading back in. A hut or a
+## gate keeps both its picture and its ring, because it never left.
 func _draw_body(canvas: CanvasItem = self) -> void:
 	if is_suppressed_by_its_own_hold():
 		return
@@ -2577,11 +2612,11 @@ func _select_view(heading: Vector2) -> String:
 # The checkpoint kit: `docs/GRAPHICS.md` binds each row to the file it draws. See `RegionPlanner`
 # for where the bodies stand and `EventManager` for the detention and the teleport.
 
-## Draws `texture` so its own documented ground anchor lands at `at` (local space, default the
-## body's own origin) — `Sprites.draw_standing`'s bottom-centre assumption is wrong for this kit:
-## a boom gate's anchor sits at one post, not the middle of the canvas, and the hut's doorway is a
-## few pixels short of the canvas's own bottom edge. No mirroring, unlike `Sprites.draw_standing` —
-## nothing in the kit that draws this way ever needs to flip.
+## Draws `texture` so its own ground anchor lands at `at` (local space, default the body's own
+## origin) — `Sprites.draw_standing`'s bottom-centre assumption is wrong for this kit: a boom
+## gate's anchor sits between its two posts rather than under the middle of the canvas, and the
+## hut's doorway is a few pixels short of the canvas's own bottom edge. No mirroring, unlike
+## `Sprites.draw_standing` — nothing in the kit that draws this way ever needs to flip.
 func _draw_at_anchor(canvas: CanvasItem, texture: Texture2D, anchor: Vector2,
 		at: Vector2 = Vector2.ZERO) -> void:
 	texture = TextureResolver.resolve(texture)
@@ -2613,10 +2648,16 @@ func _hut_texture(doorway: Vector2i) -> Texture2D:
 ## The hut, doorway facing the carriageway, with a guard posted beside it on the pavement rather
 ## than in the doorway itself — offset along whichever axis the doorway does not face, so the two
 ## never overlap whichever of the four the doorway turns out to be.
+##
+## **The guard is the only part of it that goes inside for a hold.** The hut is a building: it
+## stays exactly where it is, casting the same shadow, so the two seconds read as her having gone
+## in rather than as the checkpoint having vanished.
 func _draw_checkpoint_hut(canvas: CanvasItem = self) -> void:
 	var doorway := _hut_doorway()
 	_draw_shape_shadow(canvas, def.shape)
 	_draw_at_anchor(canvas, _hut_texture(doorway), _HUT_ANCHOR)
+	if is_its_guard_inside():
+		return
 	var beside := Vector2(0.0, 22.0) if doorway.x == 0 else Vector2(22.0, 0.0)
 	# The guard's own shadow, not the row's shape — a per-part point beside the hut, same as the
 	# dog beside a dog walker.
@@ -2629,7 +2670,7 @@ func _draw_checkpoint_hut(canvas: CanvasItem = self) -> void:
 ## turns to face, see `facing_now()`'s own doc.
 func _draw_checkpoint_gate(canvas: CanvasItem = self) -> void:
 	var raised: bool = gate_state != null and gate_state.raised
-	var runs_north_south := absf(_heading.y) > absf(_heading.x)
+	var runs_north_south := gate_runs_north_south(_heading)
 	var texture: Texture2D
 	var anchor: Vector2
 	if runs_north_south:
@@ -2640,3 +2681,21 @@ func _draw_checkpoint_gate(canvas: CanvasItem = self) -> void:
 		anchor = _BOOM_EW_ANCHOR
 	_draw_shape_shadow(canvas, def.shape)
 	_draw_at_anchor(canvas, texture, anchor)
+
+## Whether a gate sited with `along_axis` bars a road running north-south, and so draws the boom
+## whose arm spans east-west. `along_axis` is the street's own along-axis, which
+## `RegionPlanner._along_axis` sets to `DOWN` for a north-south street and `RIGHT` for an east-west
+## one. Named rather than inlined so the drawing and the test that measures it read the same rule.
+static func gate_runs_north_south(along_axis: Vector2) -> bool:
+	return absf(along_axis.y) > absf(along_axis.x)
+
+## How far the lowered arm reaches to either side of the gate's own ground point, across the road
+## it bars: `x` the near edge (negative), `y` the far edge, in pixels along the cross-street axis.
+## This is the number the player reads as *the bar is on the road* or *the bar is on the kerb*, and
+## nothing in `_draw()` can be asserted headless — see `tests/test_checkpoints.gd`.
+static func boom_arm_span(runs_north_south: bool) -> Vector2:
+	if runs_north_south:
+		var ns := _BOOM_NS_ARM.position.x - _BOOM_NS_ANCHOR.x
+		return Vector2(ns, ns + _BOOM_NS_ARM.size.x)
+	var ew := _BOOM_EW_ARM.position.y - _BOOM_EW_ANCHOR.y
+	return Vector2(ew, ew + _BOOM_EW_ARM.size.y)

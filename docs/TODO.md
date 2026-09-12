@@ -581,31 +581,11 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **The boom is drawn on the road, and the inspection starts as she approaches.**
-      *(PLAYTEST-57: "the gate for the cars is too high up. it needs to be further down"; "the
-      checkpoint should activate when I get close. with the new stroller hitbox I cannot reach the
-      checkpoint entrance.")* The gate's picture sits at the height of the road's upper kerb; it
-      belongs across the carriageway at the huts' own level. And the hut's `detain_radius` (48px)
-      starts the inspection only once her body is inside it, which a body stopped short of the hut
-      never reaches: start it on approach, from the distance she can actually stand at, re-checked
-      once the pram's body is gone
-- [ ] **The inspection, as played.** *(PLAYTEST-57, on M113's `REVIEW.md` item: "the camera makes a
-      huge jump from somewhere to the checkpoint. the checkpoint house disappears. the camera
-      doesn't move at all after the 2s. also, if I don't move I get sent back afterwards. all this
-      is incorrect.")* Four faults in one hold. The camera jumps rather than eases — the ease starts
-      from `_camera.global_position` the frame `top_level` is set, which is not where the camera was
-      drawn from, so find where it actually starts and ease from there. The hut vanishes with the
-      guard, where only the guard and she should go. The camera does not come back after the two
-      seconds. And released on the far side without moving, she stands inside the hut's
-      `detain_radius` and is detained again — the run log shows the same hut at 65px right after
-      the release. **The answer is a flag, not a distance** *([PLAYTEST-58](playtests/PLAYTEST-58.md):
-      "she just spawns further away now? it should work that she has a flag 'just spawned' that
-      only resets once she leaves the area. that way she can't accidentally go back and we don't
-      need to place her far away")*: the release puts her on the far side just clear of the hut's
-      body, as close as she can stand, and a released flag for that hut suppresses re-detention
-      until she has once left its trigger area, after which the door re-arms as a toll in either
-      direction. All four against a rig that drives the hold end to end, and a burst of the whole
-      hold as the evidence
+- [ ] **The gate detains but draws no guard.** Found while capturing the inspection: the boom's
+      own body takes her in, and nobody on screen is the one doing it — the guards stand at the
+      huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard
+      stepping to the arm, or the boom stops being a detaining body and the huts alone are the
+      toll, with the boom's picture still barring the lanes for the cars. The player's call
 
 **Drawings, as SVG:**
 

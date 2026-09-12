@@ -144,8 +144,9 @@ At `excitement = 100` → **crying** → day lost.
 ## A conversation
 
 `chatting_mother` is the one row in the catalogue that takes the player's own controls away rather
-than costing a meter: entering `detain_radius` of an instance that has not yet chatted locks her
-movement input for `detain_seconds` (5s) — the run key does nothing, and velocity runs out through
+than costing a meter: coming within `EventDef.detain_distance()` of an instance that has not yet
+chatted locks her movement input for `detain_seconds` (5s) — the run key does nothing, and she
+keeps no speed of her own: velocity runs out through
 the ordinary friction rather than stopping her dead, the same as letting go of every key would.
 
 **No new meter rule prices the stop**, because the idle rules above already do: sleepiness drains
@@ -160,19 +161,42 @@ obstacle in each half of a day. See docs/EVENTS.md for the row itself.
 
 ## A checkpoint
 
-`checkpoint_hut` and `checkpoint_post` — the huts and the alley guard a region wall's own door
-stands, see docs/DECISIONS.md, "M62 — Checkpoints that divide the map" — reuse the conversation
-mechanism above at a shorter hold, `Tuning.CHECKPOINT_DETAIN_SECONDS` (2s): a toll paid at every
-crossing of the wall has to stay cheap to repeat, where a conversation is spent once.
+`checkpoint_hut`, `checkpoint_gate` and `checkpoint_post` — the huts, the boom and the alley guard
+a region wall's own door stands, see docs/DECISIONS.md, "M62 — Checkpoints that divide the map" —
+reuse the conversation mechanism above at a shorter hold, `Tuning.CHECKPOINT_DETAIN_SECONDS` (2s):
+a toll paid at every crossing of the wall has to stay cheap to repeat, where a conversation is
+spent once.
+
+**The inspection starts as she walks up, measured from the door body's own wall** —
+`Tuning.CHECKPOINT_DETAIN_REACH` (48px) past its solid edge, rather than a radius from its middle.
+A door body is something she cannot walk through, so a trigger stated from the middle has to be
+wider than her own body *and* than whatever she is pushing in front of it; stated from the wall,
+one number covers both, and the hold cannot be switched off by a change to the pram. Only the
+nearest of a door's bodies ever captures her, so one approach is one inspection.
+
+**She comes out just clear of the door, standing inside its own trigger, and what stops it taking
+her again is a latch rather than distance.** `ReleaseLatch` (`src/world/release_latch.gd`) is armed
+on the way out with the trigger's own circle and holds until she is measured outside it: standing
+where she was let out is free for as long as she likes, and leaving is what re-arms the toll. Every
+body of the door whose reach she lands in gets one, so a crossing costs one hold whichever of the
+three took her in. The escape scene's own doors reuse the same class.
 
 **She and the guard are both gone for the hold's duration**, reading as *inside* rather than as
-frozen in the street — `Stroller.hide_for_inspection()` and the door instance's own `_draw()`
-stop drawing the moment the hold starts, and both reappear the moment it ends, her on the far side
-of the door so being let out reads as being let through (`EventManager._release_finished_door_
-detentions()`). The pram's cue and the alert mark hidden along with her are the same drawing call
-that draws her, so nothing about them needs its own switch. The meters keep running throughout —
-sleepiness still drains at the idle rate and the hut's own field still charges the flat `Tuning.
-CHAT_EXCITEMENT`, because the baby is still there whether or not the player can see her.
+frozen in the street — `Stroller.hide_for_inspection()` and `EventInstance.is_its_guard_inside()`
+stop drawing the two of them the moment the hold starts, and both are back the moment it ends, her
+on the far side of the door so being let out reads as being let through
+(`EventManager._release_finished_door_detentions()`). The pram's cue and the alert mark hidden
+along with her are the same drawing call that draws her, so nothing about them needs its own
+switch. The meters keep running throughout — sleepiness still drains at the idle rate and the hut's
+own field still charges the flat `Tuning.CHAT_EXCITEMENT`, because the baby is still there whether
+or not the player can see her.
+
+**The hut, the boom and the shadow under them stay exactly where they are.** The guard is what goes
+inside, not the building he works in: a checkpoint that blinks out for two seconds reads as the
+door having been removed rather than as her having gone through it. The one row where the whole
+picture goes is `checkpoint_post`, an alley guard standing alone, since he *is* all of it —
+`EventInstance.is_suppressed_by_its_own_hold()` is that narrower question and the halo gates on it
+too.
 
 **The crowd is held at the same huts, and none of it is her machinery.** *(Playtest 58: "walkers
 walk through checkpoints..."; asked which rule they get, "Held at the hut like her"; then "a small
@@ -200,6 +224,15 @@ detention above, which teleports her, hides her, moves the camera and charges he
 CAMERA_EASE_SECONDS` rather than a cut or the ordinary per-frame walking follow. This is the one
 camera move in the game that is not her walking; any later one that is not either reuses the same
 two calls rather than a second camera.
+
+**An ease starts from where the camera was drawing, which is not where the camera is.** Three
+things sit between `Camera2D.global_position` and the point on screen — `position_smoothing_enabled`
+still catching up, the walking look-ahead in `offset`, and the city limits — so
+`Stroller.camera_screen_center()` is what the ease reads. Two more belong to the switch itself:
+taking the camera off her transform (`top_level`) leaves its *local* position, the world origin, as
+its new global one, so it is put back on the drawn point in the same call; and its own smoothing is
+switched off for the duration, because the ease is the smoothing and two of them in series make a
+half-second move read as a cut.
 
 ## Baby state machine
 

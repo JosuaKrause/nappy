@@ -641,11 +641,31 @@ const REGION_WALL_FIRST_DAY := 7
 ## repeat, where a conversation is spent once. See `EventDef.detain_seconds`.
 const CHECKPOINT_DETAIN_SECONDS := 2.0
 
-## How far clear of a door body's own solid edge the released side of a detention pushes her,
-## beyond `obstructs_radius + PLAYER_BODY_RADIUS` — the smallest amount that reliably lands her
-## outside `checkpoint_hut`/`checkpoint_post`'s own 48px `detain_radius` (32 + 14 + 8 = 54 > 48),
-## so the same approach cannot re-trigger the instant she is released. Purely a spatial clearance
-## against `detain_radius`, so it does not move with `CHECKPOINT_DETAIN_SECONDS`. See
+## How far past a door body's own solid edge the inspection starts — *(PLAYTEST-57: "the checkpoint
+## should activate when I get close. with the new stroller hitbox I cannot reach the checkpoint
+## entrance".)*
+##
+## **Stated over the hut, never over her, and that is the whole of the fix.** Her centre is stopped
+## `obstructs_radius + PLAYER_BODY_RADIUS` (32 + 14 = 46px) from a door body's centre, and further
+## when the pram's own body is the thing between her and it — so a trigger stated as a radius from
+## the hut's *centre* has to be larger than whatever she happens to be pushing that day, and
+## changing the pram switched the mechanic off without touching it. Measured from the hut's wall,
+## one number covers every pram there has ever been: 48px clears her own body's 14px stand-off and
+## the widest the pram's own body has ever reached ahead of her, with room left over, and it starts
+## the inspection while she is still walking up rather than only once she is pressed against the
+## door. See `EventDef.detain_radius`.
+const CHECKPOINT_DETAIN_REACH := 48.0
+
+## How far past a door body's own solid edge the released side of a detention sets her down, beyond
+## `obstructs_radius + PLAYER_BODY_RADIUS` — a few pixels of daylight rather than a shove, so she
+## comes out **where the far side of the door is** and nowhere further.
+##
+## **Deliberately not enough to clear the hold's own trigger**, which reaches further than a body is
+## wide and so cannot be escaped by any release that does not throw her past the door
+## *(2026-09-12, the player: "she just spawns further away now? it should work that she has a flag
+## 'just spawned' that only resets once she leaves the area. that way she can't accidentally go back
+## and we don't need to place her far away".)* `ReleaseLatch` is what stops the trigger firing on
+## her there. Purely a spatial clearance, so it does not move with `CHECKPOINT_DETAIN_SECONDS`. See
 ## `EventManager._release_finished_door_detentions()`.
 const CHECKPOINT_RELEASE_MARGIN := 8.0
 
