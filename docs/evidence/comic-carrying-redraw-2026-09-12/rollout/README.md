@@ -26,3 +26,8 @@ use E's independent four-phase loop (three unique poses).
 UV_CACHE_DIR=/tmp/nappy-uv uv run python \
   docs/evidence/comic-carrying-redraw-2026-09-12/rollout/assemble_rollout.py
 ```
+
+The checked run uses CPython 3.14.7 and Pillow 12.3.0 from the repository lock via `uv`.
+Labels use macOS SFNS (`/System/Library/Fonts/SFNS.ttf`), falling back to Helvetica or Pillow's
+built-in font when those system fonts are unavailable. The images are regenerated from the frozen
+registered inputs; no generative or runtime asset is read.

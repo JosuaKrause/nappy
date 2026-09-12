@@ -13,3 +13,20 @@
 
 B and C are evidence of human-visible alternatives. They are not style, identity or pose inputs
 for D or for future artwork.
+
+## Rebuild the A–D comparison
+
+`make-comparison.py` rebuilds the saved `all-versions.png` sheet from the registered PNGs and
+refuses to overwrite an existing destination. From the repository checkout, use a fresh path:
+
+```sh
+comparison_dir=$(mktemp -d)
+UV_CACHE_DIR=/tmp/nappy-uv uv run python \
+  docs/evidence/comic-carrying-redraw-2026-09-12/versions/make-comparison.py \
+  "$comparison_dir/all-versions.png"
+```
+
+The reproducible run uses CPython 3.14.7 and Pillow 12.3.0 from the locked `uv` environment.
+The script uses the macOS Arial fonts at `/System/Library/Fonts/Supplemental/Arial Bold.ttf` and
+`Arial.ttf`; those system fonts are part of the rendering dependency. The regenerated output is
+byte-identical to the checked-in `all-versions.png`.
