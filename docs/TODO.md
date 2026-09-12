@@ -71,17 +71,24 @@ their single side picture by the choices recorded there.
       (`EntityHalo` asks each owner for its `bob()`; the crowd's answers zero today). Crowd cars
       first, with the vehicle binding below; the event vehicles that move — the police car, the
       vans, the lorry, the fire engine — the same way, and a parked one sits still
-- [ ] **Bind vehicle views.** Use each family's explicit front/back/side/diagonal table, including
-      its documented side-facing convention, rather than assuming every side source faces east.
-      Keep crowd car body/trim and police overlays registered together. Straight-moving event
-      vehicles use their existing travel heading. Crowd cars consume the continuous turn heading
-      supplied by M111, cars follow their turns; changing the picture alone does not close that
-      item. Preserve native scale, contact point, sorting and per-view halo geometry. Keep
-      `GroundShape` as the independent ground datum; changing sprite view must not resize the
-      shape or lethal strike box. Orient shape-derived shadows with the continuous travel heading. Capture
-      native-scale turns showing intermediate diagonal views, including body/trim and police
-      markings, and inspect grounding and heading at entry, apex and exit; update `GRAPHICS.md`
-      with the resulting binding contract.
+- [ ] **Bind the event vehicles and the police car.** The crowd car is bound
+      (`DECISIONS.md`, M108, the crowd car): it reads M111's continuous `heading()`, so the
+      picture runs through the diagonals on the arc, its standing front, back and diagonal views
+      are registered against the strike box rather than the old top-down end view, and its shadow
+      turns with it. What is left is the same for every event vehicle — delivery van, fire engine,
+      ice-cream van, lorry, the abduction van, the army truck, the moving-van seal pair — and the
+      police car: each family's explicit front/back/side/diagonal table from `facings.csv`,
+      including its documented side-facing convention, rather than assuming every side source
+      faces east; a moving vehicle from its travel heading, a parked one or a seal from its
+      placement axis, landing on the same view the axis chose before; registration per view
+      against the row's own `GroundShape` and obstruction, which do not change; the riot van's
+      octant selection generalised onto the shared helper rather than copied, with its output
+      identical. **And the capture nobody has managed**: native-scale turns showing the
+      intermediate diagonal views at entry, apex and exit, with the debug view's shadow and box
+      layers on. A windowed `tools/shot.sh` has not caught one in six tries, because a turn is two
+      seconds and the day ends while a rig stands still; a probe that places a car on a synthetic
+      arc and renders it is the way, and the analytic per-sector footprint test in
+      `tests/test_car_views.gd` is the pin until then.
 - [ ] **Verify and document each binding increment.** Update `GRAPHICS.md` from prepared to live
       only for callers actually wired. Check SVG override and illustrated fallback so an available
       cardinal PNG cannot replace a newly selected diagonal SVG or lose its state/registration.
