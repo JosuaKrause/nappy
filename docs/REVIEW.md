@@ -165,13 +165,12 @@ item below for as long as looking takes.
   part) puts her, carrying the baby, in front of her door on the third floor of a building with
   three hallways, two switchback stairwells at opposite ends, a barricaded lobby and a winding
   basement to the emergency exit — one map, the parts 64 tiles apart, every door a fade and a
-  teleport. Look at the open passage notches beside the locked apartment recesses, the lobby's
-  barricaded entrance, the broad stairs and level turn platforms, and the basement's short stair
-  and open corridor mouths. Do the stairs read as descending, are the doors easy to identify,
-  and does the building match the supplied sketches? Both stairwells have recorded physical
-  walks, but the feel of the sideways controls and fade-and-teleport still needs a person's
-  verdict. Records are in `DECISIONS.md` under M112, the escape scene and interior graphics;
-  what M102, the finale, still adds is in `TODO.md`.
+  teleport. The graphics were judged in playtest 60 and the doors and stair treads are being
+  redrawn under M102 in `TODO.md`. Both stairwells have recorded physical walks, but the feel of
+  the sideways controls and fade-and-teleport still needs a person's verdict: does a diagonal
+  flight read as *descending* when a sideways press walks it, and does the fade-and-teleport
+  read as a door or as a cut? Records are in `DECISIONS.md` under M112, the escape scene and
+  interior graphics; what M102, the finale, still adds is in `TODO.md`.
 
 - **Every field has a shape now, and nobody has felt one.** A stationary body's field is a capsule
   about its own spine rather than a disc about its centre, and a moving thing's is an ellipse with
