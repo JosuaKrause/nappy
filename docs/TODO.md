@@ -776,14 +776,6 @@ M103, the drawings the queue owes.
       explosion row's cue indoors, one or two frames of `hallway_wall_window_flash.svg`), the
       lighting response to the explosions, and the events — mice, the pursuers on the stairs, the
       fire on one stairwell, the steam
-- [ ] **The building's doors use the checkpoint's release flag.** *([PLAYTEST-58](playtests/PLAYTEST-58.md),
-      on the checkpoint's "just spawned" flag: "same mechanism can be reused in the escape scene
-      when going through doors".)* Today a door in the building fires only on the frame she newly
-      steps onto its trigger tile, which is what lets the arrival tile and the trigger tile be the
-      same tile. It becomes the same rule the checkpoint hut and the crowd's door hold use: on
-      arrival she carries a flag for the door she came out of that resets only once she has left
-      that door's area, so she cannot be sent straight back and the arrival point need not be
-      placed away from the door. One mechanism, shared rather than written twice
 - [ ] **A finale plan for the city map.** An ordered chain, not a `RouteTree`: service exit to
       first park to second to third to the edge, one street-walk between each pair and nothing
       else open. `RouteTree.for_day` and its redundancy guarantee (two distinct routes to each calm
