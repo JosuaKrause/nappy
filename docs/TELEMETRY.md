@@ -404,8 +404,8 @@ build has nothing in `project.godot` to reach:
 - **`3` bounding boxes** — every enabled collision shape a body could touch, traced straight from
   the `CollisionShape2D`/`CollisionPolygon2D` nodes physics itself reads (`DebugLayers.
   collision_nodes_under()`), so the layer cannot omit one: an event's obstruction, a building's
-  footprint, her own circle, the pram's own body, a street tree's trunk, and a road closure's or
-  the map boundary's own barrier. A moving car's strike box is drawn here too, in the lethal
+  footprint, her own circle, the pram's own body, and a road closure's or the map boundary's own
+  barrier. A moving car's strike box is drawn here too, in the lethal
   colour, because it is not a body but is exactly what ends the day on contact. Walkers and cars
   have no body of their own, and none is invented for them.
 - **`4` the readout** — the seed, frame rate and meter breakdown `main.gd` has always drawn top

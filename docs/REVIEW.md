@@ -27,9 +27,9 @@ item below for as long as looking takes.
   corners, and does the far half clipping into a wall read as wrong? 8px is a guess. Record is
   `DECISIONS.md`, M100, the pram's body sits on her circumference.
 - **Turn on the bounding-box layer and look at everything** (`3`). It now draws every body physics
-  reads, from the collision nodes themselves: hers, the pram's, buildings, events, street-tree
-  trunks, closure barriers and the map's boundary. Is there any body you can walk into that has
-  no outline? Same record.
+  reads, from the collision nodes themselves: hers, the pram's, buildings, events, closure
+  barriers and the map's boundary. Is there any body you can walk into that has no outline? Same
+  record.
 - **Click to set a heading, then press an arrow or WASD while she walks** (either control mode).
   She walks in the key's direction only, and the joystick knob reads as stopped. Does a held Shift
   survive it, and does a click afterwards aim fresh? Record is `DECISIONS.md`, M100, the keyboard
@@ -123,10 +123,8 @@ item below for as long as looking takes.
   at a glance; industrial and civic are told apart by their roofs alone, which are small at play
   scale, and the portico was out of frame. Does each district read as a place, and does the
   street-tree density read as a street or as a hedge? Record is `DECISIONS.md`, M106.
-- **Walk into a street tree, and find a fallen tree.** A trunk has a small body now, so she walks
-  round it; a fallen tree closure prefers a street with standing trees. Does the trunk catch her
-  where the pavement is narrow, and does the fallen tree read as one of the standing ones down?
-  Record is `DECISIONS.md`, M106.
+- **Find a fallen tree.** A fallen tree closure prefers a street with standing trees. Does the
+  fallen tree read as one of the standing ones down? Record is `DECISIONS.md`, M106.
 - **Play or jump to day 5, day 9 and day 13 and look at the ground** (`--day 9`). The city
   degrades on one curve from day 5: cracks on pavement before road, in three levels; litter on
   pavements, alleys and squares; garbage sacks in alleys first and against building fronts from
