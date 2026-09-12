@@ -149,3 +149,11 @@ insufficient.
 
 The player accepts the current F — Hip motion and P2 — Three-pose push version. Keep the current
 artwork and registration; the proposed size correction is withdrawn before any asset changes.
+
+> in game it looks nice.
+
+> whatever is checked out in this folder right now
+
+Acceptance refers to the actual shared repository checkout, with the F carrying and P2 pushing
+assets and animation unchanged from the graphics PR's displayed version. Preserve that in-game
+result rather than applying the proposed size correction.
