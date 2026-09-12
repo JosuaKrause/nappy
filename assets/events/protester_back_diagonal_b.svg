@@ -1,0 +1,20 @@
+<!-- Placard-bearing protester, back diagonal. Paper turns with the body; reverse faces have no writing. Ground anchor (11,52) Feet passing. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="52" viewBox="0 0 22 52" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <g transform="translate(10 0)">
+  <g transform="translate(2 0)"><path d="M-4 39 L0 39 L-1 50 L-5 50Z" fill="#46506b"/></g><g transform="translate(-2 0)"><path d="M2 39 L6 39 L7 50 L3 50Z" fill="#46506b"/></g>
+  <g transform="translate(2 0)"><path d="M-6 50 L0 50 L0 52 L-7 52Z" fill="#221f28"/></g><g transform="translate(-2 0)"><path d="M2 50 L8 50 L9 52 L2 52Z" fill="#221f28"/></g>
+  </g>
+  <path d="M16 12 L18 13 L17 28 L15 28Z" fill="#6b543f"/>
+  <path d="M9 2 L21 5 L21 16 L9 13Z" fill="#e0d8c4"/>
+  <path d="M16 3 L16 13" fill="none" stroke="#b8ae98" stroke-width="1.3"/>
+  <g transform="translate(10 22)">
+  <path d="M-6 1 L1 -2 L7 2 L7 17 L1 20 L-6 18Z" fill="#7a6a58"/>
+  <path d="M-6 12 L1 15 L7 12 L7 18 L1 20 L-6 18Z" fill="#665849"/>
+  </g>
+  <path d="M14 25 L17 21 L19 21 L19 28 L13 30Z" fill="#665849"/>
+  <circle cx="17" cy="21" r="1.5" fill="#d9a878"/>
+  <g transform="translate(10 17)">
+  <path d="M2 -5 Q6 -4 6 0 L7 1 L5 3 L4 5 L1 4Z" fill="#d9a878"/>
+  <path d="M-6 0 Q-6 -7 0 -7 Q5 -7 5 -3 L4 2 Q3 6 -1 6 Q-6 5 -6 0Z" fill="#3a2b26"/>
+  </g>
+</svg>
