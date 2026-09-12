@@ -272,8 +272,9 @@ it is the one place `docs/CITY.md`'s *a closure is silent* does not hold; squeez
 than half the meter, which `tests/test_seals.gd` walks rather than asserts.
 
 **A body is solid to the crowd as well as to her.** `EventManager` rasterises every stationary
-solid body's own `GroundShape`, at the placement and along the axis the instance itself would draw
-it, into `CityMap.obstructed_tiles`, and the walkers and the cars read that record: a walker steps
+solid body's own pieces — `EventDef.parts()`, which is one piece carrying `shape` for every row but
+the crash — at the placement and along the axis the instance itself would draw them, into
+`CityMap.obstructed_tiles`, and the walkers and the cars read that record: a walker steps
 into the other lane of its footway to get past a café and a car turns at the last junction rather
 than driving through a stall. It is taken from the day's **plan** rather than from the live
 instances, since the crowd is steered across the whole map while an instance only exists within

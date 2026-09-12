@@ -537,9 +537,10 @@ above.
 **And every other solid body diverts the crowd too, as far as avoiding it.** *(2026-09-12: "yes
 every solid body should do that -- not necessarily force a turn around but at least avoid the
 solid".)* A café's tables, a construction band, a kerbed van, a stall, a skip, a burnt-out car:
-`CityMap.obstructed_tiles` records the tiles each stationary solid body stands on, filled from the
-day's whole plan rather than from the events near the player, because the crowd is steered across
-the whole map while an event only exists within reach of her. Mobile rows are exempt, the way the
+`CityMap.obstructed_tiles` records the tiles each stationary solid body stands on — every piece of
+it, for the one row that is several (`docs/EVENTS.md`, "A row may be solid in parts") — filled from
+the day's whole plan rather than from the events near the player, because the crowd is steered
+across the whole map while an event only exists within reach of her. Mobile rows are exempt, the way the
 catalogue's own solidity rule exempts them; so is a body on a segment that is held anyway, and so
 is a door, because a hard seal and a hut each already have an answer.
 

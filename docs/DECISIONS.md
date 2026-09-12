@@ -107,9 +107,18 @@ the stacked side views and the readout reads `incoming 45.00/s` against `decay 3
 passing 42; and `gap-walk-east-west.png`, the end of that run, which is a cry — two passes through
 one crash is the whole meter.
 
-**Not done**: M110's per-tile solid record is not on `main`, so the crowd still walks a held segment
-rather than stepping round the cars. `EventInstance.solid_part_centres()` and `solid_part_shapes()`
-are the pair that record is meant to iterate when it lands.
+**Merged with M110's per-tile solid record, and the join is one loop.**
+`EventManager.obstructed_footprint()` rasterises `EventDef.parts()` rather than the one `shape`,
+each piece at its own offset along the spread axis — so a one-piece row records exactly the tiles it
+recorded before (`tests/test_crowd_bodies.gd` pins that against `shape.tiles_under()` directly) and
+a crash records its two cars and leaves the debris and both pavements open. **It changes nothing on
+a played day today, and that is worth writing down rather than discovering**: a crash is a hard
+seal, `SealPlanner.plan_day` marks every hard seal's segment in `CityMap.held_segments`, and the
+record deliberately skips a body on held ground because the whole street is already shut to walkers
+and cars. So the crowd stays off the crash's street the way it always did; what M118 opened is the
+*player's* way through, and she is stopped by the pieces' own collision shapes, not by that record.
+The loop is what makes the two milestones agree the first time a partly-solid body stands anywhere
+the crowd can reach.
 
 ## M110 — The crowd goes round a seal · every solid body, built 2026-09-12
 

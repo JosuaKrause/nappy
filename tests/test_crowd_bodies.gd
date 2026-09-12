@@ -26,6 +26,8 @@ func run(t) -> void:
 	_test_a_walker_steps_round_a_one_lane_body(t, city, map)
 	_test_a_body_across_a_footway_turns_a_walker_at_the_junction(t, city, map)
 	_test_a_body_in_a_lane_turns_a_car_and_leaves_the_oncoming_lane_alone(t, city, map)
+	_test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t, map)
+	_test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t, map)
 
 	city.free()
 	_test_nobody_ever_stands_in_a_body_on_a_real_day(t)
@@ -267,6 +269,87 @@ func _test_a_body_in_a_lane_turns_a_car_and_leaves_the_oncoming_lane_alone(t, ci
 			% (oncoming_started - oncoming.position.y))
 	map.clear_day_obstructions()
 
+# --------------------------------------------------------- a body in pieces ---
+# `EventManager.obstructed_footprint()` rasterises `EventDef.parts()` rather than the row's one
+# `shape`. Every row but the crash declares no parts, which means one piece at the origin carrying
+# `shape`, and these two tests are the two halves of that sentence: nothing moved for the rows that
+# are one piece, and the crash records its two cars instead of the street they are lying across.
+
+## A row that is one piece records **exactly** the tiles its own `shape` covers — the tiles it
+## recorded before the record learned about pieces.
+##
+## Asserted against `GroundShape.tiles_under()` directly rather than against a written-down list,
+## because the point is that the two agree: a list would pass while both drifted together. Three
+## rows of different shapes, so a point body and a band body are both covered.
+func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t, map: CityMap) -> void:
+	var run := _a_straight_run(map, Tuning.BLOCK_SIZE)
+	t.check(run.x >= 0, "this city has a straight stretch to site a body on")
+	if run.x < 0:
+		return
+	var at := map.tile_to_world(Vector2i(run.x * CityMap.period() + 1, run.y + 3))
+	var checked := 0
+	for id: String in ["cafe_tables", "construction", "delivery_van"]:
+		var def := EventCatalogue.by_id(id)
+		if def == null or def.shape == null or def.obstructs_radius <= 0.0:
+			continue
+		t.check(def.parts().size() == 1, "'%s' is one piece, so it is this test's business" % id)
+		var placed := at
+		if def.pavement_side == EventDef.Pavement.ANY:
+			placed = EventInstance._centred_on_the_pavement_band(map, at)
+		var axis := EventManager._body_axis(map, def, placed, Vector2.RIGHT)
+		var before := def.shape.tiles_under(placed, axis)
+		var after := EventManager.obstructed_footprint(map, def, at, Vector2.RIGHT)
+		before.sort()
+		after.sort()
+		t.check(not before.is_empty(), "'%s' stands on ground at all (%d tiles)" % [id, before.size()])
+		t.check(after == before,
+				"'%s' records exactly its own shape's tiles: %d against %d"
+				% [id, after.size(), before.size()])
+		checked += 1
+	t.check(checked == 3, "there were one-piece rows to ask about (%d)" % checked)
+
+## A crash records **its two cars** and not the street they are lying across: the tiles its whole
+## 192px band would have taken are a strict superset, and the pavement lanes the picture leaves open
+## are in the difference.
+##
+## Sited by hand on an unheld street rather than by planning a day, and that is the test's own
+## finding as much as its rig: on a real day a crash is a hard seal, `SealPlanner.plan_day` marks
+## every hard seal's segment in `CityMap.held_segments`, and the record skips a body on held ground
+## because the whole street is shut to the crowd already. So this asks the rasterising — the half
+## M118 changed — on ground where the answer is not thrown away.
+func _test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t, map: CityMap) -> void:
+	var run := _a_straight_run(map, Tuning.BLOCK_SIZE)
+	if run.x < 0:
+		return
+	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("car_accident"), true)
+	t.check(def.parts().size() == 2, "a crash is two cars (%d pieces)" % def.parts().size())
+	var base := run.x * CityMap.period()
+	var along := run.y + 3
+	# The middle of the carriageway, which is where `SealPlanner._hard_positions` stands the one
+	# copy a 96px reach takes to span a 6-tile street.
+	var at := Vector2(float(base) * Tuning.TILE_SIZE + float(Tuning.STREET_WIDTH) * 16.0,
+			(float(along) + 0.5) * Tuning.TILE_SIZE)
+	var axis := EventManager._body_axis(map, def, at, Vector2.RIGHT)
+	var whole_band := def.shape.tiles_under(at, axis)
+	var cars := EventManager.obstructed_footprint(map, def, at, Vector2.RIGHT)
+	t.check(not cars.is_empty(), "the cars stand on ground (%d tiles)" % cars.size())
+	t.check(cars.size() < whole_band.size(),
+			"the two cars take less ground than the band across the street would (%d of %d tiles)"
+			% [cars.size(), whole_band.size()])
+	var left_out := 0
+	for tile: Vector2i in whole_band:
+		if not cars.has(tile):
+			left_out += 1
+	t.check(left_out > 0, "and the ground between and beside them is open (%d tiles)" % left_out)
+	# The pavements the picture shows an onlooker standing on, never the cars: the outermost lane of
+	# each footway, which is as far from the carriageway's middle as this street gets.
+	for offset: int in [CrowdLanes.SIDEWALK_OFFSETS[0], CrowdLanes.SIDEWALK_OFFSETS[3]]:
+		var pavement := Vector2i(base + offset, along)
+		t.check(not cars.has(pavement),
+				"the pavement at offset %d beside the crash carries no body" % offset)
+		t.check(whole_band.has(pavement),
+				"and the whole-street band it replaces did carry one, so this is a real difference")
+
 # ------------------------------------------------------------------ the sweep ---
 
 ## Nobody is ever inside a body's own footprint, over a day's real crowd on a day's real plan,
@@ -276,7 +359,22 @@ func _test_a_body_in_a_lane_turns_a_car_and_leaves_the_oncoming_lane_alone(t, ci
 ## **Stated over the record rather than over the catalogue**, because the record is what the crowd
 ## reads: a seed whose day happened to place nothing solid would pass vacuously, so the tile count
 ## is checked as well.
+##
+## **A crash's two cars are asked about separately, and off the catalogue rather than off the
+## record.** They are not in the record at all — a crash is a hard seal and the record skips a body
+## on held ground — so what keeps the crowd out of them is `CityMap.held_segments` shutting the
+## whole street, and that is a different sentence worth its own count. Vacuity is guarded the same
+## way: the number of car bodies the days actually placed is checked.
+##
+## **Stated as *reaches* rather than *stands in*, and the difference is the placement fallback.**
+## `CrowdAgent.setup()` re-rolls a position 24 times against `_stands_on_a_street()` and places the
+## agent anyway if every draw lands on shut ground, which a day with many hard seals can produce —
+## so a body does occasionally start the day standing on a sealed street, inside a crash among other
+## places, and walks off it. That is the crowd's placement, not the seal's siting. What this holds
+## is the sentence the siting owns: every agent ever found inside a car is on ground the crowd is
+## held off, so no car is ever sited somewhere the crowd can legitimately walk.
 func _test_nobody_ever_stands_in_a_body_on_a_real_day(t) -> void:
+	var cars_seen := 0
 	for city_seed: int in [4242, 24757, 91117]:
 		var map := CityGenerator.generate(city_seed)
 		var city: City = CITY_SCENE.instantiate()
@@ -301,17 +399,52 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t) -> void:
 			crowd_rng.seed = hash("bodies-crowd:%d:%d" % [city_seed, day])
 			city.crowd.start_day(day, crowd_rng, at)
 			city.crowd.set_gates(city.region_plan().gates)
+			var cars := _car_bodies(map, city.events)
+			cars_seen += cars.size()
 			var inside := 0
+			var in_a_car := 0
+			var reached_a_car := 0
 			for frame in int(round(20.0 / STEP)):
 				city.crowd.set_focus(at)
 				city.crowd.step(STEP)
 				for agent in city.crowd.agents():
 					if map.is_obstructed(map.world_to_tile(agent.position)):
 						inside += 1
+					for car: Array in cars:
+						if agent.position.distance_to(car[0]) < float(car[1]):
+							in_a_car += 1
+							if not map.is_held_at(map.world_to_tile(agent.position)):
+								reached_a_car += 1
 			t.check(inside == 0,
 					"seed %d day %d: nobody in the crowd ever stands inside a solid body "
 					% [city_seed, day] + "(%d agent-frames they did)" % inside)
+			t.check(reached_a_car == 0,
+					"seed %d day %d: nobody in the crowd ever reaches a crashed car across open "
+					% [city_seed, day] + "ground (%d agent-frames of %d inside a car were on "
+					% [reached_a_car, in_a_car] + "ground the crowd is not held off, over %d cars)"
+					% cars.size())
 		city.free()
+	t.check(cars_seen > 0, "these days stood crashed cars somewhere at all (%d)" % cars_seen)
+
+## Every crashed car standing on the day `events` has planned, as `[centre, radius]` pairs — the
+## rows that declare `EventDef.solid_parts`, each piece placed the way
+## `EventManager.obstructed_footprint()` places it. Read off the **plan** rather than off the live
+## instances for the reason the record is: a plan covers the whole map and an instance only exists
+## near the player.
+func _car_bodies(map: CityMap, events: EventManager) -> Array:
+	var bodies := []
+	for plan in events.plans():
+		if not plan.is_placed() or plan.def == null or plan.def.solid_parts.is_empty():
+			continue
+		var placed := plan.position
+		if plan.def.pavement_side == EventDef.Pavement.ANY:
+			placed = EventInstance._centred_on_the_pavement_band(map, placed)
+		var vertical := EventInstance._spread_is_vertical(map, placed)
+		for piece in plan.def.parts():
+			var offset := piece.offset_for(vertical)
+			var centre := placed + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0))
+			bodies.append([centre, piece.shape.reach()])
+	return bodies
 
 func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
