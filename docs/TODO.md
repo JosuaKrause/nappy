@@ -537,6 +537,18 @@ is still true.
 
 **Defects, each a few lines once found:**
 
+- [ ] **A screenshot is named by the clock on the wall, not the clock in the game.**
+      *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "phot capture must use real time not
+      game time otherwise at the end of the day all pictures get overwritten")* `Telemetry.
+      snapshot_now()` and `snapshot()` name a picture from the day clock, `%03.0fs<attempt>-<kind>
+      .png`, so two pictures inside one second of the day collide and a day whose clock holds at
+      zero under `--invincible` overwrites every shot into one file. Name both from real time of
+      day with sub-second precision — the hour, minute, second and milliseconds the picture was
+      taken — with the attempt suffix kept and a guard that appends a serial rather than
+      overwriting if the name still exists; the burst folder already stamps itself from a
+      microsecond tick and stays as it is. The dusk map and the log keep their names. Update
+      `docs/TELEMETRY.md`'s description of the `asked/` and `auto/` names and any skill that
+      quotes the old pattern; playtest files quoting old names are primary sources and stay
 - [ ] **The riot van's side view faces the wrong way.** `facings.csv` records `riot_van.svg` as
       authored facing west, like the unmarked van and the army truck, but its selection keeps the
       east-native mirror sense, so a hunting riot van heading east shows a west-facing cab; the
