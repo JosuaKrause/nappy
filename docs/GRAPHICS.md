@@ -219,7 +219,12 @@ The live replacement family is `assets/illustrated/svg-transfer/rig/`: `mother_f
 `mother_side_b.png` (26×46), `pram_front.png` and `pram_back.png` (30×30), and `pram_side.png`
 (36×30). `mother_{front,back}_diagonal_{a,b}.png` (26×46) and
 `pram_{front,back}_diagonal.png` (36×30) supply the diagonal views; west views mirror their
-east-authored partners. Each preserves native SVG alpha. Other families retain SVG textures.
+east-authored partners. The carrying set adds
+`mother_carrying_{front,back}_{a,b}.png` (24×46) and
+`mother_carrying_{side,front_diagonal,back_diagonal}_{a,b}.png` (26×46), selected by the same
+resolver during the escape scene. All use bottom-center anchors and preserve native SVG alpha.
+Other families retain SVG textures. The [carrying generation record](evidence/style-transfer-player-family-2026-09-12/GENERATION.md)
+documents the identity comparison against the pushing mother and reproducible registration.
 
 [VISUALS.md](VISUALS.md) defines reference authority and the visual acceptance gate.
 [The generation record](evidence/style-transfer-2026-09-10/GENERATION.md) preserves raw outputs,

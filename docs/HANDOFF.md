@@ -183,6 +183,8 @@ The existing drawing transforms and animation remain in charge. Other families u
 Read [VISUALS.md](VISUALS.md) for reference roles and the replacement contract, and
 M108, eight-direction entity graphics, then M109, convert the SVG catalogue to PNG, in
 [TODO.md](TODO.md) for the remaining work. Every PNG asset needs a corresponding SVG authored first.
+Compare each character's directions, gait frames and state variants as one family; the
+illustrated-PNG skill describes the identity references and extraction checks that keep them aligned.
 
 **M76 is also built and released, on top of it.** Both the pause screen and the day summary carry a
 continue button and a held restart that acknowledges the press before the day it starts blocks the

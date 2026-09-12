@@ -111,6 +111,12 @@ and call that SVG-first creation.
 The approval and request are recorded in PLAYTEST-51 and `DECISIONS.md` under Eight-direction
 style transfer.
 
+[PLAYTEST-62](playtests/PLAYTEST-62.md) requires consistent identity, materials and rendering across
+all directions, animation frames and state variants. In particular, the mother carrying the baby
+must read as the same woman pushing the stroller. Choose the generation method by visual results;
+a shared direction/state grid is a suggested strategy. Update the illustrated-PNG skill with
+findings supported by the conversion and review.
+
 - [ ] Inventory every current tracked SVG, including the prepared environment graphics and the new
       directional families, into a conversion manifest with source path, PNG destination,
       dimensions, anchor, usage and review evidence. Include root application/identity SVGs;
@@ -119,7 +125,9 @@ style transfer.
       mappings for non-mirrored paths. Keep raw generator outputs and captures in evidence.
       Record SVG review and generation provenance so ordering is reviewable; reject PNG-only
       additions instead of accepting a later placeholder SVG.
-- [ ] Transfer all entity SVGs and every directional/animation/state layer. Preserve native
+- [ ] Transfer the remaining entity SVGs and every directional/animation/state layer. The player
+      rig's generation records are in `DECISIONS.md` under Eight-direction style transfer and
+      M109, the carrying mother as one family. Preserve native
       canvases and exact SVG alpha, and keep tintable body/trim separation and authored identities.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
