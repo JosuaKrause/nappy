@@ -2645,6 +2645,10 @@ static func _cap_offset(half: float, cap_along: float, side: float) -> float:
 func _draw_cafe(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
 	_draw_shape_shadow(canvas, def.shape)
+	# The lean is the whole row's, the facing is each seat's. `_idle_stepping()` is a property of
+	# this instance rather than of a chair, so the frame table is chosen once here and every sitter
+	# leans together; the view and the mirror are picked per seat inside the loop below, because a
+	# party at one table faces the table rather than sharing the frontage's own bearing.
 	var by_view := CAFE_SITTER_BY_VIEW_B if _idle_stepping(SITTER_IDLE_PERIOD) else CAFE_SITTER_BY_VIEW
 	var segment := CAFE_TABLE.get_size()
 	var along_natural := segment.y if _spread_vertical else segment.x

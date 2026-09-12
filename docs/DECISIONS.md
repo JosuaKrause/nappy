@@ -20,6 +20,13 @@ crowd obstructions retain main's implementations.
 The queue keeps main's open decay/crash work and removes its finished stride, crowd and
 return work while retaining the graphics branch's comic-transfer requirements.
 
+The concurrent remote integration `62d1c34` was reconciled with local `f1ef463` before
+pushing. Both independently integrated the same main tip, so the two merge bases were
+`3fdcb50` and `3b2ad25`; Git synthesized an ancestor containing conflict text. The result
+keeps the remote's matching Playtest 64 evidence-folder rename and café explanation, plus
+this local review and the new Playtest 65 requests. The executable source is identical to
+the remote integration; both preserve per-seat café facing and shared idle timing.
+
 ## M109 — The complete generated catalogue uses comic drawings — 2026-09-12
 
 The PLAYTEST-64 correction was applied to all 95 existing PNG assets: 59 outdoor tiles,
@@ -152,7 +159,7 @@ emptied pit. The blocks suite verifies nonempty planted trees, one ground bed pe
 the actual scene's z-index and sibling ordering beneath entities. Import/boot and the focused
 blocks suite passed in the isolated implementation checkout. Human appearance review remains
 in `REVIEW.md`; the supplied full telemetry run is preserved under
-`docs/evidence/playtest-63-2026-09-12/`.
+`docs/evidence/playtest-64-2026-09-12/`.
 
 ## PR merges require permission in the current session — 2026-09-12
 
@@ -162,6 +169,7 @@ creating and pushing PRs stays authorized, but merging, enabling auto-merge and 
 a merge require explicit permission in the current session. The committing, orchestration
 and cleanup skills and the handoff carry the same boundary. No merge is authorized in this
 session.
+
 ## M110 — The crowd goes round a seal · every solid body, built 2026-09-12
 
 *(2026-09-12, asked whether every other solid body diverts the crowd too: "yes every solid body
