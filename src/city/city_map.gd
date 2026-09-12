@@ -165,6 +165,27 @@ func is_held_at(tile: Vector2i) -> bool:
 func is_on_home_block(tile: Vector2i) -> bool:
 	return lot_rect(home_block).has_point(tile)
 
+## Whether `tile` lies inside one of `walled_alleys` — today's crossing alleys where the region
+## wall stands rather than a door (`RegionPlanner.RegionPlan.alley_walls`). **A fourth refusal
+## beside `is_closed()`, `is_held_at()` and `is_on_home_block()`, and the one none of those three
+## can ever stand in for**: an alley is carved into a block interior, never a `StreetNetwork`
+## segment, so `is_held_at()`'s `StreetNetwork.segment_containing()` answers null for every tile of
+## it and the alley is invisible to it regardless of what stands at its mouths; and a region wall
+## is not a `RoadClosure`, so `is_closed()` never sees it either.
+##
+## Whole-rect rather than a flood from the doorstep: `RegionPlanner`'s own doc says a crossing
+## alley off today's tree is walled at **both** mouths at once ("an alley has two mouths and, when
+## it is a crossing, both are walled"), one tile deep and spanning the alley's full width the same
+## way a street door's three bodies span a carriageway (`SealPlanner.positions_across`) — so there
+## is no third opening and no tile of the rect is reachable from either street it borders. That
+## makes membership in the rect itself the exact answer a reachability flood would give, without
+## paying for one. See `docs/DECISIONS.md`, M100, "A blocked-off alley has no chalk mark".
+func is_in_walled_alley(tile: Vector2i, walled_alleys: Array[Rect2i]) -> bool:
+	for rect in walled_alleys:
+		if rect.has_point(tile):
+			return true
+	return false
+
 ## Tiles a soft seal's own body stands on, shut to walkers only for today — the carriageway
 ## underneath a soft seal is untouched, so a car still drives straight through it. Deliberately
 ## apart from `held_segments`: that record is about which whole *segment* no catalogue row may be

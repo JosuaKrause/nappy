@@ -144,7 +144,8 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2,
 		return
 	var min_distance := robbery.inner_radius + ContactPoint.REACH
 	var max_distance := robbery.pursues_within + ContactPoint.REACH
-	var guard_at := _draw_guard_position(rng, at, away_from, min_distance, max_distance)
+	var guard_at := _draw_guard_position(rng, at, away_from, min_distance, max_distance,
+			_walled_alleys())
 	if guard_at == Vector2.INF:
 		# **No trap is better than a trap in a wall.** `TRAP_DRAW_LIMIT` bearings found nowhere
 		# walkable at all — every one of them a building, a held segment or the home block — so
@@ -177,8 +178,12 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2,
 ## facing away from her instead, the worst case — perpendicular to the away direction — puts him
 ## at `sqrt(400² + 176²)` ≈ 437px, past the 367px half-diagonal that makes a point off screen at
 ## this zoom (see `NOTICE_RADIUS`'s own doc), so he is never drawn appearing from nothing.
+##
+## `walled_alleys` defaults empty for the bare-map rigs several tests in `tests/test_resistance.gd`
+## drive with no `_city` — see `_walled_alleys()`, which is what the real caller passes.
 func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, away_from: Vector2,
-		min_distance: float, max_distance: float) -> Vector2:
+		min_distance: float, max_distance: float,
+		walled_alleys: Array[Rect2i] = []) -> Vector2:
 	var fallback := Vector2.INF
 	for _attempt in TRAP_DRAW_LIMIT:
 		# Hoisted so the draw can be written down. Which distance a mark got is the one random
@@ -194,7 +199,7 @@ func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, away_from: Ve
 		var candidate := at + Vector2.RIGHT.rotated(angle) * distance
 		var tile := _map.world_to_tile(candidate)
 		if not _map.is_walkable(tile) or _map.is_closed(tile) or _map.is_held_at(tile) \
-				or _map.is_on_home_block(tile):
+				or _map.is_on_home_block(tile) or _map.is_in_walled_alley(tile, walled_alleys):
 			continue
 		if _map.tile_at(tile) == GameEnums.TileType.ALLEY:
 			return candidate
@@ -231,15 +236,34 @@ func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator) -> Vector2:
 ## alley through the block (now impossible, `CityGenerator._build_block`) turned out to be the
 ## other half of it; `is_held_at` refuses a segment bordering the block, `is_on_home_block`
 ## refuses anything inside it. See `docs/DECISIONS.md`, M100, "Nothing on the home block".
+##
+## **Never inside a walled-off crossing alley, either.** PLAYTEST-57: "a blocked off alley must
+## not have a chalk mark." An alley never sits on a `StreetNetwork` segment, so `is_held_at`
+## cannot see one however its mouths stand, and a region wall is not a `RoadClosure`, so
+## `is_closed` cannot either — `CityMap.is_in_walled_alley` is the refusal built for exactly this
+## ground. See `docs/DECISIONS.md`, M100, "A blocked-off alley has no chalk mark".
 func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator) -> Vector2:
+	var walled_alleys := _walled_alleys()
 	var reachable: Array[Vector2i] = []
 	for tile in candidates:
-		if _map.is_closed(tile) or _map.is_held_at(tile) or _map.is_on_home_block(tile):
+		if _map.is_closed(tile) or _map.is_held_at(tile) or _map.is_on_home_block(tile) \
+				or _map.is_in_walled_alley(tile, walled_alleys):
 			continue
 		reachable.append(tile)
 	if reachable.is_empty():
 		return Vector2.INF
 	return _map.tile_to_world(reachable[rng.randi_range(0, reachable.size() - 1)])
+
+## Today's crossing alleys that are wall rather than door — see `CityMap.is_in_walled_alley`.
+## Read from the city's own region plan rather than tracked here, so a director never disagrees
+## with whatever wall `EventManager` actually built bodies for; empty before `Tuning.
+## REGION_WALL_FIRST_DAY`, and for the bare-map rigs (`_city == null`) several tests in
+## `tests/test_resistance.gd` build, which never wall anything.
+func _walled_alleys() -> Array[Rect2i]:
+	var region_plan: RegionPlanner.RegionPlan = _city.region_plan() if _city else null
+	if not region_plan:
+		return []
+	return region_plan.alley_walls
 
 func _process(delta: float) -> void:
 	if not _step or _expired or not _contact or _contact.is_done:
@@ -297,17 +321,21 @@ func _track_sight_and_reposition() -> void:
 		return
 	_move_the_mark(nearest, here)
 
-## The nearest `ALLEY` tile to `here` that is not closed, is walkable, and is not held or on the
-## home block (see `_pick_reachable`'s own doc — the M78 relocation is the same placement question
-## as the initial roll, asked again), within `NOTICE_RADIUS` — or `Vector2.INF` if there is none.
-## Linear over `tiles_of_type()`, which is already cached; there is one active mark at a time, so
-## this runs once a frame at most.
+## The nearest `ALLEY` tile to `here` that is not closed, is walkable, and is not held, on the
+## home block or inside a walled-off crossing alley (see `_pick_reachable`'s own doc — the M78
+## relocation is the same placement question as the initial roll, asked again, and the same
+## refusal has to hold or a mark could relocate into a sealed alley even though it is never placed
+## there to start with), within `NOTICE_RADIUS` — or `Vector2.INF` if there is none. Linear over
+## `tiles_of_type()`, which is already cached; there is one active mark at a time, so this runs
+## once a frame at most.
 func _nearest_alley_within(here: Vector2) -> Vector2:
+	var walled_alleys := _walled_alleys()
 	var nearest := Vector2.INF
 	var nearest_distance := NOTICE_RADIUS
 	for tile in _map.tiles_of_type(GameEnums.TileType.ALLEY):
 		if _map.is_closed(tile) or not _map.is_walkable(tile) \
-				or _map.is_held_at(tile) or _map.is_on_home_block(tile):
+				or _map.is_held_at(tile) or _map.is_on_home_block(tile) \
+				or _map.is_in_walled_alley(tile, walled_alleys):
 			continue
 		var world := _map.tile_to_world(tile)
 		var distance := here.distance_to(world)
