@@ -1,0 +1,4 @@
+<!-- cat running front; muzzle and face lead the pose. Bottom-centre ground anchor; prepared and unbound. Mid-stride. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="24" viewBox="0 0 30 24" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M11 5 Q15 2 19 5 L21 15 L9 15 Z" fill="#58524d" />  <path d="M12 12 L7 18 L10 23 M18 12 L23 18 L20 23" fill="none" stroke="#3f3a36" stroke-width="2"/>  <path d="M9 13 L8 6 L12 9 L18 9 L22 6 L21 13 Q21 20 15 20 Q9 20 9 13 Z" fill="#58524d" />  <path d="M12 17 L18 17 L15 20 Z" fill="#81736b" />  <path d="M14 16 L16 16 L15 18 Z" fill="#221f28" /><circle cx="12" cy="13" r="0.7" fill="#e8ddc8"/><circle cx="18" cy="13" r="0.7" fill="#e8ddc8"/>
+</svg>

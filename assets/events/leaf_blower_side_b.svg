@@ -1,0 +1,31 @@
+<!-- Yellow groundskeeper with blower aimed side. The rear view occludes the nozzle behind the torso. Ground anchor (17,42) Feet passing. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="34" height="42" viewBox="0 0 34 42" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <g transform="translate(0 -1)">
+
+  <g transform="translate(10 0)">
+  <g transform="translate(3 1)"><path d="M-5 29 L-1 29 L-2 40 L-6 40Z" fill="#4a4a3c"/></g><g transform="translate(-2 1)"><path d="M1 29 L5 29 L7 40 L2 40Z" fill="#4a4a3c"/></g>
+  <g transform="translate(3 1)"><path d="M-7 40 L-1 40 L-1 42 L-8 42Z" fill="#221f28"/></g><g transform="translate(-2 1)"><path d="M1 40 L8 40 L9 42 L1 42Z" fill="#221f28"/></g>
+  </g>
+  <g transform="translate(10 0)">
+  <path d="M-5 13 L2 11 L6 14 L6 30 L-5 30Z" fill="#e8b64a"/>
+  <path d="M-6 24 L6 24 L6 30 L-6 30Z" fill="#c99a34"/>
+  </g>
+  <path d="M13 16 L20 18 L20 23 L14 22Z" fill="#3b3f4a"/>
+  <path d="M18 21 L28 21 L28 26 L18 26Z" fill="#3b3f4a"/>
+  <rect x="27" y="20" width="6" height="7" fill="#58524d"/>
+  <rect x="31" y="21" width="2" height="5" fill="#26232a"/>
+  <g transform="translate(10 0)">
+  <path d="M-6 15 L-6 22 L2 26 L5 23 L-2 20 L-2 15Z" fill="#e8b64a"/>
+  <circle cx="5" cy="23" r="1.6" fill="#d9a878"/>
+  </g>
+  <g transform="translate(10 7)">
+  <path d="M-3 -6 Q3 -7 5 -3 L5 0 L7 2 L5 3 Q5 7 0 6 L-4 4 Z" fill="#d9a878"/>
+  <path d="M-5 1 Q-6 -6 0 -7 Q4 -7 5 -3 L1 -3 L0 2 L-3 3Z" fill="#c99a34"/>
+  <circle cx="4" cy="0" r="0.5" fill="#221f28"/>
+  </g>
+  <g transform="translate(10 7)">
+  <path d="M-5 -1 Q-5 -7 1 -7 Q5 -7 6 -2 L8 -1Z" fill="#e8b64a"/>
+  </g>
+
+  </g>
+</svg>

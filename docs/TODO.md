@@ -33,29 +33,10 @@ its linked people, vehicle/animal and environment inventories. The source-art re
 pictures to their actual runtime consumers. The crowd walkers and the event people, animals and
 riders are bound, through the shared `EightDirection` selector every family below extends
 (`DECISIONS.md`, M108, the crowd walkers; M108, the event people); the gunman and the mouse stay on
-their single side picture by the choices recorded there. The walkers also stride (`DECISIONS.md`,
-M108, the walkers' stride).
-- [ ] **Every living thing that moves has a stride.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md):
-      "can we do a similar one to what the player does?", then "all living things should have
-      movement animation")* The mother and now the crowd walkers alternate two frames per view,
-      mid-stride and feet passing, from a walk phase advanced by their own speed (`DECISIONS.md`,
-      M108, the walkers' stride, for the frame-authoring rule that worked: the b frame changes only
-      the legs and shoes, and the coat and head hold still); every event person, the cat, the dogs,
-      the mouse and the cyclist are still one static picture per facing that slides, and the pigeons
-      already alternate two wing phases. **Now the event people and the animals**, one second frame
-      per view per family — the dog walker's person, the chatting mother walking, the pacing yeller,
-      the robber and guard lunging, the protester, the leaf blower, the van victim when led, the cat
-      running, the dog, the charging dog, the mouse, the cyclist's pedal — each as SVG first, a `_b`
-      file beside the existing source the way the walker frames were added, reviewed on a native and
-      3× sheet beside its a frame. Then the same alternation on each in `EventInstance`: phase
-      advanced by applied speed at the mother's rate, frame a at rest and while stopped, so a queue,
-      a give-way or a posted guard holds a standing pose; actor and held thing swap frames together.
-      **The café sitters get an idle animation** *(same day: "cafe sitters should have an idle
-      animation, too")* — a second seated frame, a lean or a raised cup, alternated slowly on a
-      timer rather than on a speed, since they never move. **The busker strums** *(same day:
-      "busker should have a two frame animation strumming the guitar")*: two frames, the strumming
-      hand up and down, on the same timer. Whether a standing guard shifts is the player's to say;
-      until then he keeps one frame
+their single side picture by the choices recorded there. Every living thing that moves strides,
+two frames per view (`DECISIONS.md`, M108, the walkers' stride; M108, the event strides), the
+café sitters lean and the busker strums on a timer; whether a standing guard shifts is the
+player's to say, and until then he keeps one frame.
 - [ ] **Cars bob on their wheels.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "cars
       could bop up and down while the wheels stay in the same place")* A moving car's body rises
       and falls about a pixel on a phase advanced by its speed, and its wheels stay on the ground.
@@ -157,6 +138,10 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
+0. **M117**, excitement decays visibly on quiet ground, and **M118**, a car crash is solid only
+   where the cars are — *(2026-09-12: "prioritize this fix"; "this round's feedbacks should all
+   be prioritized since I'm actively testing the changes as they come in")* — ahead of
+   everything, by the player's own word.
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
    related to the other items to work on right now.")* It waits, because reaching act III waits:
    *"I wanna wait reaching act III until those things are done."*
@@ -322,6 +307,121 @@ junction-paint and robber-placement records are filed there under M49 and the sm
 
 Everything below is in the order the gameplay queue above gives it, and was reassessed on
 2026-09-09.
+
+---
+
+## M117 — Excitement decays visibly on quiet ground · asked for 2026-09-12
+
+> "the decay for excitement is too low anywhere -- except for the main street and maybe alleys
+> there excitement should go visibly down when no excitement source is around -- prioritize this
+> fix"
+
+[PLAYTEST-63](playtests/PLAYTEST-63.md). Placed first by the player's own word.
+
+**What is true today.** Walking decays excitement at `EXCITEMENT_DECAY_WALKING`, 3.5 a second,
+times what the ground does: calm ground 2.2, a precinct 1.5, an ordinary street 1.0, the main
+road 0.6 (`City.decay_multiplier()`; an alley has no multiplier of its own and decays as an
+ordinary street, while standing in one adds `EXCITEMENT_FROM_ALLEY`, 3.0 a second, so an alley
+is already net-slower than a street). Standing still decays nothing and running 0.5. The crowd
+on an ordinary pavement charges about 1.4 to 2.2 a second over a forty-second walk, so a quiet
+street nets only 1.3 to 2.1 a second downward — thirty points take fifteen to twenty seconds
+to leave the bar, which is the "too low" the player sees. **Every crowd number is pitched
+against the walking decay**: one person at arm's length is 4.2, just over it, so a close pass
+costs; one car 5.4; the arterial's floor between one and three times it; `tests/test_crowd.gd`
+and `tests/test_meters.gd` assert those relationships, and the calm-zone admission distance in
+`EventScheduler._denial_radius()` is the walking decay times the calm multiplier, 7.7 a second.
+
+- [ ] **Raise the walking decay on every ground but the main road, and hold the main road where
+      it is.** The target is a **net** rate on an ordinary pavement, with the day's own crowd on
+      it and nothing authored in range, that the bar shows: measure it first on a rig over
+      several seeds and forty-second walks (the `tests/test_crowd.gd` floor probes are the
+      instrument), then set `EXCITEMENT_DECAY_WALKING` so the net comes out around 4 a second
+      or better — a full meter in about twenty-five seconds of quiet walking — and reduce
+      `EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` in the same step so the main road's **absolute**
+      rate stays at today's 2.1 a second. Keep the ordering calm > precinct > street > main road
+      and re-measure the calm and precinct rates after; if the park clears a full meter in under
+      eight seconds the calm multiplier comes down to keep it a place rather than a switch.
+      **Decouple the calm-zone admission distance from the decay**: `_denial_radius()` gets its
+      own constant at today's 7.7 a second, so louder rows are not admitted beside parks as a
+      side effect of the pram settling faster. Regenerate the cost table in `EVENTS.md` ("What an
+      event actually costs"), rewrite the decay table and the crowd paragraphs in
+      `MECHANICS.md`, and re-state — not delete — every relationship test that the new number
+      breaks, with the reason beside it. Verify on a played rig, not by arithmetic: the same
+      walk before and after, net rate in the report.
+- [ ] **Three questions the instruction left open, put to the player on 2026-09-12 with a
+      recommendation each, and answered the same day: "build as recommended"** — so each is
+      a decision now, built with the item above and recorded beside it:
+      1. **Standing still.** Today it settles nothing, and that was a decision (playtest 07
+         finding 3: standing was the fastest of the three rates and made waiting the strongest
+         move in the game). Recommended: unchanged — the fix is on the walking rate, so the
+         bar visibly falls while she is being pushed, and waiting stays no plan.
+      2. **Alleys.** The player's "maybe". Recommended: an alley keeps today's absolute rate,
+         3.5 a second, through a multiplier of its own, so it sits between the main road and an
+         ordinary street — pressured ground, not a shortcut to recovery — and the constant dread
+         it already adds keeps meaning something.
+      3. **A single passer-by.** Once the decay outruns 4.2, one person at arm's length no
+         longer costs on their own; a contact (18 a second) and a busy pavement still do.
+         Playtest 07 finding 9 asked that brushing past somebody cost something. Recommended:
+         accept it — the player's sentence is that *no source around* should read as recovery,
+         and a lone passer-by at the pavement's width is the nearest thing to nobody — and keep
+         the crowd's own numbers where they are, since raising them to chase the decay raises
+         the main road's crossing cost with them.
+
+---
+
+## M118 — A car crash is solid only where the cars are · asked for 2026-09-12
+
+> "a car crash right now has a full bounding box even though there are gaps in the sprite. the
+> bounding box should only be the crashed cars but it should emanate an excitement field that
+> prevents the player from walking past it"
+
+[PLAYTEST-63](playtests/PLAYTEST-63.md). Prioritised with everything from that round.
+
+**What is true today.** `car_accident` is a hard seal: `SealPlanner._hard_positions` stands one
+copy of it across the carriageway, and its body is `GroundShape.band(96.0)` — one capsule 192px
+kerb to kerb, the width of the street, like the fallen tree's and the burst water main's. The
+picture (`assets/events/car_accident.svg`, 200×50, and its `_vertical` sibling) is two cars locked
+side by side with debris between them and an onlooker on each pavement, so the body covers
+pavement and debris the picture leaves open. Its `intensity` is 0.0, by the rule in `CITY.md`
+that **a closure is silent** — the shape of the route and nothing else — and the crowd is kept
+off the street through `CityMap.held_segments`, not through the body.
+
+**What this overturns, on the player's word.** *A closure is silent* · overturned for the
+accident on 2026-09-12, because a body that matches the picture leaves gaps, and the player wants
+the gaps closed by a field rather than by a wall nobody can see. The fallen tree (one trunk kerb
+to kerb) and the burst main (a crater between two barriers) are not named and stay as they are;
+whether they follow is the player's question, not this item's.
+
+- [ ] **Two car bodies, not one band.** The def carries a list of solid parts — each an offset in
+      the scene's own frame and a `GroundShape` — in place of one shape, and `EventInstance`
+      registers a collision body per part and records each part's tiles in M110's per-tile
+      solid record (`CityMap`, the record the crowd reads) so the crowd steps round the cars and
+      not the debris. Every other row keeps exactly one part, so nothing else changes; `reach()`
+      over the parts is what the planners' disc-shaped guarantees are stated over, and it stays
+      96 for the accident so no placement rule moves. The parts' positions are read off the
+      picture, per axis, at the scale `_draw_wide_scene` fits it to the street: the two cars,
+      nothing else. The debug view's bounding-box layer draws each part, which is how the fit is
+      checked by eye.
+- [ ] **The scene emits.** `Tuning.CAR_ACCIDENT_INTENSITY`, with the field stated over the
+      scene's own band — inner radius at the band's edge, a short shoulder outside it — so it is
+      felt in the gaps and beside the cars and not from down the street; a sealed street must
+      still be discoverable by walking up to it, which is why closures were silent. The number
+      is chosen by the walk, the way the main-road crossing is: measure what squeezing through
+      the pavement gap and the debris gap costs at a walk, over several seeds, and set it so the
+      pass costs **more than half the meter** — the line `tests/test_crowd.gd` draws between
+      expensive and fatal, on the fatal side of it — and state that as the test. **One open
+      question, built the recommended way and switchable by one number:** whether *prevents*
+      means *costs more than she can carry* (recommended: the nearly-crying cue at the pram is
+      the turn-back signal, and a fresh meter can still force it at the price of the day) or
+      *lethal* (a `hard_fail` inner radius over the gaps, the mechanism a fire already uses —
+      stricter, and it makes a crash a thing that kills). `CITY.md`'s closure section and
+      `EVENTS.md`'s "Solid things are solid" carry the exception in the same commit.
+- [ ] **The seal still seals.** `ClosurePlanner` goes on counting the street as closed for the
+      route guarantee and the crowd is still held off it; both are conservative once the street
+      is passable at a price, and the direction argument — a pass that only ever removes
+      obstruction can only add reachable ground — is written beside the change. A test walks the
+      gap on a rig and asserts the cost, and `tests/test_events.gd`'s solidity checks accept a
+      row whose silhouette is wider than any one of its parts.
 
 ---
 

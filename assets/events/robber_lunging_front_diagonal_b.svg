@@ -1,0 +1,14 @@
+<!-- Hooded robber reaching front diagonal. Projected stride and arm distinguish the attack from waiting. Ground anchor (17,44) Feet passing. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 34 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <g transform="translate(2 0)"><path d="M11 31 L16 34 L10 41 L5 40Z" fill="#26262e"/></g><g transform="translate(-2 0)"><path d="M19 31 L23 31 L29 42 L23 43Z" fill="#26262e"/></g>
+  <g transform="translate(2 0)"><path d="M3 39 L11 40 L11 43 L2 42Z" fill="#17171c"/></g><g transform="translate(-2 0)"><path d="M22 41 L30 41 L32 44 L23 44Z" fill="#17171c"/></g>
+  <path d="M10 17 L18 14 L24 19 L23 33 L16 35 L8 31Z" fill="#353a46"/>
+  <path d="M10 17 L15 17 L16 34 L8 31Z" fill="#2b303a"/>
+  <path d="M8 28 L16 30 L23 28 L23 33 L16 35 L8 32Z" fill="#2b303a"/>
+  <path d="M20 18 L26 23 L31 29 L28 33 L22 28 L17 23Z" fill="#2b303a"/>
+  <circle cx="30" cy="32" r="2.5" fill="#d9a878"/>
+  <g transform="translate(18 11)">
+  <ellipse cx="0" cy="0" rx="7" ry="7" fill="#2b303a"/>
+  <ellipse cx="2" cy="1" rx="3.5" ry="4" fill="#141419"/>
+  </g>
+</svg>
