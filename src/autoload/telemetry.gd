@@ -159,6 +159,7 @@ func begin_run(run_seed: int, played := true) -> void:
 	_day_open = false
 	_shots_today = 0
 	_last_shot = -INF
+	_shot_serial = 0
 	_day_attempts = {}
 	_attempt = 1
 	_log.header("nappy %s log  %s  version %s"
@@ -179,6 +180,7 @@ func begin_memory_log() -> void:
 	_run_dir = ""
 	_clock = 0.0
 	_day_open = false
+	_shot_serial = 0
 	_day_attempts = {}
 	_attempt = 1
 	_log.header("nappy run log  (memory)")
@@ -274,6 +276,12 @@ const SHOT_SPACING := 3.0
 var _shots_today := 0
 var _last_shot := -INF
 
+## Names a picture, shared by `snapshot()` and `snapshot_now()` — see `_next_shot_name()`. Counts
+## from 1 for the life of the run, reset only in `begin_run()`/`begin_memory_log()`: neither a new
+## day nor a retried attempt resets it, since a number that reset could repeat, which is the exact
+## failure a clock-based name already had.
+var _shot_serial := 0
+
 const BURST_VERSION := 1
 const BURST_TARGET_FPS := 12
 const BURST_DURATION_SECONDS := 3.0
@@ -296,7 +304,7 @@ func snapshot(kind: String) -> void:
 		return
 	_shots_today += 1
 	_last_shot = _clock
-	_capture(_real_time_path(_type_dir("auto"), kind))
+	_capture("%s/%s" % [_type_dir("auto"), _next_shot_name(kind)])
 
 ## The same picture, asked for by a person rather than by a heuristic. A debugging aid rather than
 ## a game feature.
@@ -322,7 +330,7 @@ func snapshot_now(context: String) -> void:
 	if _log.path == "" or DisplayServer.get_name() == "headless":
 		return
 	_shots_today += 1
-	_capture(_real_time_path(_type_dir("asked"), "asked"))
+	_capture("%s/%s" % [_type_dir("asked"), _next_shot_name("asked")])
 
 ## Starts one bounded animation sequence in the current run's `asked/` folder. The sequence is
 ## serialized one frame at a time so a slow PNG write cannot create an unbounded backlog, and the
@@ -607,41 +615,19 @@ func _type_dir(name: String) -> String:
 		push_warning("telemetry: cannot create %s" % dir)
 	return dir
 
-## Names a snapshot from the wall clock, not the day clock. *(2026-09-11, playtest 56: "phot
+## Names a snapshot by a per-run counter, not by any clock. *(2026-09-11, playtest 56: "phot
 ## capture must use real time not game time otherwise at the end of the day all pictures get
-## overwritten".)* `--invincible` clamps the countdown to exactly zero once a day runs out rather
-## than ending it (`DayController._process()`), which holds the elapsed day clock this file reads
-## (`time_total - time_remaining`) at the day's own length for as long as the day keeps running
-## afterward — so every picture taken past dusk that day named itself identically and each
-## overwrote the last; even off that flag, two pictures within the same in-game second collided
-## the same way. The wall clock a picture was actually taken at can only repeat if two calls land
-## in the same **millisecond**, which `_unique_path()` still catches with a serial rather than
-## silently overwriting.
+## overwritten", then, once a real-time name was in place, "actually why not just count up the
+## screenshot numbers?".)* Shared by `snapshot()` and `snapshot_now()` — `auto/` and `asked/` are
+## separate folders, so the two could never collide on a name either way, but one counter across
+## both means a picture's own number already says when in the run, relative to every other picture
+## the run took, it was taken. `_shot_serial` is never reset by a day boundary or a retried
+## attempt, so the counter itself cannot repeat a number the way a clock could.
 ##
-## `<HHMMSS>-<mmm><attempt suffix>-<kind>.png` — hour, minute and second so a directory listing
-## already sorts by time of day, then milliseconds for the precision a day clock could not give,
-## then the existing attempt suffix and kind so a name is unique both across a retried day and
-## across what asked for the picture. Split from `_unique_path()` so a test can check the format
-## without touching disk.
-static func _real_time_stem(kind: String, attempt_suffix: String) -> String:
-	var now := Time.get_datetime_dict_from_system()
-	var millisecond := int(fmod(Time.get_unix_time_from_system(), 1.0) * 1000.0)
-	return "%02d%02d%02d-%03d%s-%s" % [now["hour"], now["minute"], now["second"], millisecond,
-			attempt_suffix, kind]
-
-## `dir/stem.png`, or `dir/stem-<serial>.png` the first time that name is already taken — the
-## guard `_real_time_stem()` alone cannot give, since two calls in the same millisecond still ask
-## for the same name. The serial starts at 2 so the first picture with a given stem keeps the
-## plain name and only a genuine collision grows a suffix.
-static func _unique_path(dir: String, stem: String) -> String:
-	var path := "%s/%s.png" % [dir, stem]
-	var serial := 1
-	while FileAccess.file_exists(path):
-		serial += 1
-		path = "%s/%s-%d.png" % [dir, stem, serial]
-	return path
-
-## What `snapshot()` and `snapshot_now()` both name their picture with — one helper so the two
-## call sites cannot drift into two different shapes of filename.
-func _real_time_path(dir: String, kind: String) -> String:
-	return _unique_path(dir, _real_time_stem(kind, _attempt_suffix()))
+## `%03d<attempt suffix>-<kind>.png` — `001-attempt1-asked.png`, `002-attempt1-asked.png` — the
+## attempt suffix and kind are what a retried day, or a heuristic-vs-asked picture, still need to
+## say without opening the file; the day clock the name used to carry is already in the run log's
+## own `shot` entry.
+func _next_shot_name(kind: String) -> String:
+	_shot_serial += 1
+	return "%03d%s-%s.png" % [_shot_serial, _attempt_suffix(), kind]

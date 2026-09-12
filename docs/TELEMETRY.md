@@ -43,9 +43,9 @@ user://telemetry/2026-09-03/run-205437-seed2102613802-v0.0.0-49-gdb09693-dirty/
 │   ├── day06-attempt2.png
 │   └── day06-attempt2-dusk.png
 ├── auto/
-│   └── 143022-057-attempt1-lost_crying.png
+│   └── 003-attempt1-lost_crying.png
 └── asked/
-    └── 143205-311-attempt1-asked.png
+    └── 004-attempt1-asked.png
 ```
 
 - **`<day>`** is the calendar date the run was played (not the in-game day the log talks about),
@@ -305,17 +305,20 @@ the one this project keeps having to answer with a rig. The defects no log can s
 kind here: birds that freeze in the air, a cat drawn running backwards, a zzz a body's width off the
 pram, a caret over the wrong things.
 
-So a run writes PNGs into its own `auto/` folder, named `<HHMMSS>-<mmm>-attempt<N>-<what>.png` —
-the wall-clock hour, minute, second and millisecond the picture was actually taken, not the day
-clock: `--invincible` clamps the countdown to exactly zero once a day runs out rather than ending
-it, which holds the elapsed day clock at the day's own length for as long as the day keeps running
-afterward, so every picture taken past dusk that day would otherwise name itself identically; even
-off that flag, two pictures inside one in-game second collide the same way. *(2026-09-11, playtest
-56: "phot capture must use real time not game time otherwise at the end of the day all pictures
-get overwritten".)* The attempt is named on every one, including the first, the same rule "A day
-played twice" below states for the maps, and a name already on disk — two pictures in the same
-millisecond — gets a serial (`-2`, `-3`, …) appended rather than overwriting the first. Three
-rules:
+So a run writes PNGs into its own `auto/` folder, named `<N><attempt suffix>-<what>.png` from a
+counter — `003-attempt1-lost_crying.png` — rather than from the day clock: `--invincible` clamps
+the countdown to exactly zero once a day runs out rather than ending it, which holds the elapsed
+day clock at the day's own length for as long as the day keeps running afterward, so a clock-named
+picture taken past dusk that day would name itself identically to every other one taken after it;
+even off that flag, two pictures inside one in-game second collided the same way. *(2026-09-11,
+playtest 56: "phot capture must use real time not game time otherwise at the end of the day all
+pictures get overwritten", then "actually why not just count up the screenshot numbers?".)* The
+counter is `Telemetry._shot_serial`, shared with the person-requested pictures in `asked/` below so
+a picture's own number says when in the run — relative to every picture the run took, from either
+folder — it was taken; it counts from 1 for the life of the run and never resets, not even across a
+retried attempt at the same day, so the counter itself cannot repeat a number. The attempt is named
+on every one, including the first, the same rule "A day played twice" below states for the maps.
+Three rules:
 
 - **The heuristic is the log's own.** There is no interval. A shot is taken on the entries a reader
   already stops at, because those are exactly the lines that raise the question a picture answers:
@@ -332,9 +335,9 @@ rules:
 
 ### And one a person asks for
 
-`P` (or `F9`) writes `<HHMMSS>-<mmm>-attempt<N>-asked.png` — the same wall-clock naming `snapshot()`
-uses, for the same reason — into the run's own `asked/` folder, kept apart from the heuristic's
-`auto/` so a directory listing already says which of the two asked for a picture — and
+`P` (or `F9`) writes `<N><attempt suffix>-asked.png` — the same counter `snapshot()` uses, for the
+same reason — into the run's own `asked/` folder, kept apart from the heuristic's `auto/` so a
+directory listing already says which of the two asked for a picture — and
 a `shot` entry beside it in `run.log`. `Telemetry.snapshot_now()` is the heuristic one with the two
 limits taken off, and that is the
 whole difference: `SHOTS_PER_DAY` and `SHOT_SPACING` exist because a condition that stays true for
