@@ -201,9 +201,9 @@ func _sleepiness_on(tile: Vector2i) -> float:
 	return Tuning.sleepiness_calm_multiplier(map.calm_lot_blocks(
 			map.block_at(map.tile_to_world(tile))))
 
-## What the ground she is standing on does to her recovery: calm, precinct, ordinary, main road,
-## best to worst — and then, for the rest of a day she is carrying the resistance's package, worse
-## again.
+## What the ground she is standing on does to her recovery: calm, precinct, ordinary, alley, main
+## road, best to worst — and then, for the rest of a day she is carrying the resistance's package,
+## worse again.
 ##
 ## A precinct beats a main road even where the two cross, and that is not an oversight: standing
 ## on brick is standing on brick, and the tile she is on is the whole of what this question is
@@ -221,8 +221,14 @@ func decay_multiplier(world_position: Vector2) -> float:
 func _ground_decay_multiplier(world_position: Vector2) -> float:
 	if not map:
 		return 1.0
-	if Tile.is_calm(map.tile_type_at_world(world_position)):
+	var type := map.tile_type_at_world(world_position)
+	if Tile.is_calm(type):
 		return Tuning.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
+	# An alley is cut through a block rather than laid out as a corridor, so no street kind answers
+	# for it and it would otherwise read as an ordinary street. It is asked before the corridors
+	# for that reason and not by precedence: the two cannot overlap.
+	if Tile.is_alley(type):
+		return Tuning.EXCITEMENT_DECAY_ALLEY_MULTIPLIER
 	var tile := map.world_to_tile(world_position)
 	var across := map.street_kind_at(true, tile)
 	var along := map.street_kind_at(false, tile)

@@ -91,8 +91,8 @@ const EXCITEMENT_WAKE_THRESHOLD := 60.0
 ##
 ## Nearly crying is the last band before `METER_MAX` ends the day. Far enough up that it is not
 ## a second name for "loud street" — a pavement sits under the calm threshold and a bad moment
-## reaches the fifties — and far enough from 100 to be worth acting on: at the walking decay it
-## is about six seconds of quiet ground back to safety.
+## reaches the fifties — and far enough from 100 to be worth acting on: the forty-five points back
+## to the calm threshold are about four seconds of a park, or seven and a half of a quiet street.
 const EXCITEMENT_NEARLY_CRYING := 80.0
 ## And how far below the wake threshold a sleeping baby starts to stir. Waking costs
 ## `WAKE_SLEEPINESS_PENALTY` — half the bar — so this is the most expensive thing in the return
@@ -117,22 +117,59 @@ const SLEEPING_SENSITIVITY := 0.55
 ## bad idea. The ordering is motion-shaped rather than arbitrary: walking calms most, running calms
 ## a little, standing calms nothing.
 const EXCITEMENT_DECAY_IDLE := 0.0
-const EXCITEMENT_DECAY_WALKING := 3.5
+## **The bar has to be seen falling on ground with nothing on it.** The walking rate is set from a
+## *net* measurement rather than from taste: the quietest ordinary pavement with the day's own
+## crowd on it and nothing authored in range loads about 2.5/s, so this is what is left over, and
+## what is left over is what the player watches. At 6.0 a quiet street nets about 3.8/s downward —
+## a full meter in a little over twenty-five seconds of walking — where 3.5 left 1.2/s and
+## eighty-five seconds, which reads as a bar that is not moving.
+##
+## **Its ceiling is the catalogue, and it is close.** A row costs more to walk through than around
+## exactly while its mean emission along the line beats this number, and the two quietest rows that
+## still have to cost — `busker` and `alley_mouse` — mean 6.71 and 6.75. Above about 6.7 they turn
+## free and the catalogue loses two rows rather than gaining a rate; `tests/test_events.gd` is what
+## says so out loud.
+const EXCITEMENT_DECAY_WALKING := 6.0
 const EXCITEMENT_DECAY_RUNNING := 0.5
-## What the **ground** does to the decay, best to worst: calm, then precinct, then ordinary
-## street, then main road.
+## What the **ground** does to the decay, best to worst: calm, precinct, ordinary street, alley,
+## main road.
 ##
 ## This is what makes a route a **recovery rate** rather than only a set of things to walk past,
 ## and what makes a precinct worth walking to although it is loud: a retail street is busy, and it
 ## is still the best place in the city that is not a park to bring a meter down.
 ##
+## **The multipliers are ratios and the absolute rates are the design**, so a change to the walking
+## rate above moves every one of these to keep its own ground where it was put:
+##
+##     calm 12.0/s   precinct 9.0/s   street 6.0/s   alley 3.5/s   main road 2.1/s
+##
 ## The park has to read on *both* bars, not just the sleepiness one — half of "this is working" is
-## the excitement visibly falling away as she walks in under the trees. The main road is the same
-## sentence inverted: it is the one ground in the city that is actively bad at letting her recover,
-## which is most of what "a main road is crossed, not walked" now means arithmetically.
-const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.2
+## the excitement visibly falling away as she walks in under the trees. **Its floor is that a park
+## must stay a place rather than a switch**: at 12.0/s a full meter takes eight and a third seconds
+## to clear, which is long enough to be somewhere she walks to and stays in. Much faster and the
+## park is a button she taps.
+##
+## The main road is the same sentence inverted: it is the one ground in the city that is actively
+## bad at letting her recover, which is most of what "a main road is crossed, not walked" means
+## arithmetically. **An alley sits between the two** — pressured ground rather than a shortcut to
+## recovery, which is what keeps `EXCITEMENT_FROM_ALLEY` (3.0/s of constant dread) meaning
+## something: it sits just under the 3.5/s an alley gives back, so an empty alley is very nearly
+## flat and is never quite recovery.
+const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.0
 const EXCITEMENT_DECAY_PRECINCT_MULTIPLIER := 1.5
-const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.6
+const EXCITEMENT_DECAY_ALLEY_MULTIPLIER := 0.58
+const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.35
+
+## The rate a source has to beat before it is counted as denying the calm ground near it —
+## `EventScheduler._denial_radius`, and `EventCatalogue`'s own reasoning for the one ambient row
+## that stands in a park.
+##
+## **Its own number rather than the calm ground's live decay, and the decoupling is the point.**
+## Read off the decay, every rise in the walking rate would quietly admit louder rows beside parks:
+## the pram settling faster is a statement about the pram, and *which events may stand next to a
+## park* is a statement about the parks. Tying the two put the second decision inside the first,
+## where nobody making it would see it.
+const CALM_ZONE_DENIAL_RATE := 7.7
 
 ## Layered on top of the ground's own multiplier for the rest of a day once the resistance's
 ## package is picked up (`GameState.resistance_carrying_package`) — the one cost in the subquest
@@ -153,7 +190,9 @@ const RESISTANCE_PACKAGE_DECAY_MULTIPLIER := 0.5
 ## of the two. `tests/test_events.gd` asserts the ordering row by row rather than leaving it in a
 ## document, because that is how it can break silently.
 const EXCITEMENT_FROM_RUNNING := 14.0
-## Constant dread while standing in an alley.
+## Constant dread while standing in an alley, and it is set against the ground it is felt on: an
+## alley gives back 3.5/s, so the trickle sits just under its own decay and an empty alley is very
+## nearly flat rather than a place to recover in. The pressure is that it is never quite recovery.
 const EXCITEMENT_FROM_ALLEY := 3.0
 
 ## What a `chatting_mother` conversation adds over its whole `detain_seconds`, while the baby is
@@ -1950,7 +1989,7 @@ func field_scale(e: float) -> float:
 ##
 ## **`(1−t)²` is the shape that looks equally reasonable and inverts the game.** It puts a quarter of
 ## the intensity at the midpoint of the band and six percent three quarters of the way out, so a café
-## at 12/s sits under the 3.5/s walking decay across the whole outer 60% of its own field — and a
+## at 12/s sits under the 6.0/s walking decay across the whole outer 70% of its own field — and a
 ## `near` entry written at an event's outer radius reads `events 0.0`. An event you are not charged
 ## for until you touch it is not a thing to route around, it is a thing to bump into.
 ##

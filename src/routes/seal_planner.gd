@@ -62,7 +62,7 @@ extends RefCounted
 ## a strand along it (see its own class doc, "The main road"), so the spine is off the tree on
 ## every day by construction — which would make the loop below seal every segment of it, sidewalk
 ## to sidewalk, on every day of the run. It is already the worst ground in the game to stand on
-## (`Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER`, 0.6 against an ordinary street's 1.0), so making
+## (`Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER`, 0.35 against an ordinary street's 1.0), so making
 ## it *not a route* is enough — sealing it on top would be the harm playtest 22 reported rather than
 ## the fix, and `docs/CITY.md`'s constraint that she may cross it wherever she likes stands unmoved.
 ##
