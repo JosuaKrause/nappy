@@ -77,6 +77,7 @@ const ARMY_TRUCK_FRONT_DIAGONAL := preload("res://assets/events/army_truck_front
 const ARMY_TRUCK_BACK_DIAGONAL := preload("res://assets/events/army_truck_back_diagonal.svg")
 const FLAME := preload("res://assets/events/flame.svg")
 const BARRIER_SEGMENT := preload("res://assets/events/barrier_segment.svg")
+const BARRIER_SEGMENT_VERTICAL := preload("res://assets/events/barrier_segment_vertical.svg")
 const BARRIER_END := preload("res://assets/events/barrier_end.svg")
 const RUBBLE := preload("res://assets/events/rubble.svg")
 const CHECKPOINT_BLOCK := preload("res://assets/events/checkpoint_block.svg")
@@ -691,9 +692,20 @@ static func _spread_is_vertical(map: CityMap, at: Vector2) -> bool:
 	if not map:
 		return false
 	var tile := map.world_to_tile(at)
+	for alley: Rect2i in map.alley_rects:
+		if alley.has_point(tile):
+			# An alley's barrier closes its short mouth, so a horizontal alley gets a vertical
+			# spread and a vertical alley keeps the default horizontal spread.
+			return alley.size.x > alley.size.y
 	var on_a_north_south_street := CityMap.corridor_offset(tile.x) >= 0
 	var on_an_east_west_street := CityMap.corridor_offset(tile.y) >= 0
 	return on_an_east_west_street and not on_a_north_south_street
+
+## The roadworks panel source follows the spread's authored projection. The vertical source is
+## selected for an east-west street or horizontal alley; the ordinary source remains the broad
+## panel for a north-south street or vertical alley.
+static func _roadwork_segment_texture(spread_vertical: bool) -> Texture2D:
+	return BARRIER_SEGMENT_VERTICAL if spread_vertical else BARRIER_SEGMENT
 
 ## The `Rect2i` (from `CityMap.alley_rects`) that `at` falls inside, in **world** space, or an
 ## empty `Rect2` when it is not inside any of them — a data-level rig with no map, or a placement
@@ -2027,7 +2039,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.BUSKER:
 			_draw_eight_view(BUSKER_BY_VIEW, _heading, canvas)
 		EventDef.Look.ROADWORKS:
-			_draw_spread(BARRIER_SEGMENT, BARRIER_END, canvas)
+			_draw_spread(_roadwork_segment_texture(_spread_vertical), BARRIER_END, canvas)
 		EventDef.Look.FIRE_ENGINE:
 			_draw_eight_view(FIRE_ENGINE_BY_VIEW, _heading, canvas, true)
 		EventDef.Look.BURNING_BUILDING:
@@ -2376,11 +2388,6 @@ static func _cap_offset(half: float, cap_along: float, side: float) -> float:
 func _draw_cafe(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
 	_draw_shape_shadow(canvas, def.shape)
-	# Every sitter shares one view and one mirror — the frontage is sited once and never turns, and
-	# a party at the same table facing in different directions is not a picture this row ever drew.
-	var view := _select_view(_heading)
-	var sitter: Texture2D = CAFE_SITTER_BY_VIEW[view]
-	var mirror := EightDirection.is_mirrored(_view_sector)
 	var segment := CAFE_TABLE.get_size()
 	var along_natural := segment.y if _spread_vertical else segment.x
 	var thickness := segment.x if _spread_vertical else segment.y
@@ -2389,13 +2396,29 @@ func _draw_cafe(canvas: CanvasItem = self) -> void:
 	for i in segments:
 		var along := -half + width * (i + 0.5)
 		# The chair is drawn at one end of the table sprite and turns round with it.
-		var chair_along := along + width * (0.26 if i % 2 == 1 else -0.26)
+		var alternate := i % 2 == 1
+		var chair_along := along + width * (0.26 if alternate else -0.26)
+		# Face the table from this chair. The +Vector2(0, -7) below is a screen-depth lift for
+		# the sitter's projected feet; it is deliberately not part of the table-facing bearing.
+		var sitter_heading := _cafe_seat_heading(_spread_vertical, alternate)
+		var sitter_sector := EightDirection.nearest(sitter_heading)
+		var view: String = EIGHT_VIEW_BY_SECTOR[sitter_sector]
+		var sitter: Texture2D = CAFE_SITTER_BY_VIEW[view]
+		var mirror := EightDirection.is_mirrored(sitter_sector)
 		Sprites.draw_standing(canvas, sitter, _spread_at(chair_along) + Vector2(0.0, -7.0),
 				Vector2.ZERO, mirror)
 	for i in segments:
 		var along := -half + width * (i + 0.5)
 		Sprites.draw_standing(canvas, CAFE_TABLE,
 				_spread_at(along), _spread_extent(width, thickness), i % 2 == 1)
+
+## The bearing from an alternating café chair to its own table. This follows the chair anchor's
+## spread-axis offset, while leaving the sprite's fixed screen-depth lift out of the calculation.
+## A horizontal frontage therefore seats its pair facing east and west; a vertical frontage seats
+## them facing south and north. The caller resolves the bearing through the shared eight-view table.
+static func _cafe_seat_heading(spread_vertical: bool, alternate: bool) -> Vector2:
+	var toward_table := Vector2.DOWN if spread_vertical else Vector2.RIGHT
+	return -toward_table if alternate else toward_table
 
 ## The eight pointing poses, in the bearing order `_protester_texture()` indexes into: north
 ## first, then clockwise. Kept beside the poses themselves rather than built in the function, so
