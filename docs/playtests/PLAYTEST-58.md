@@ -51,3 +51,10 @@ radius or not re-arming until she has left it:
 
 So the release puts her close, just clear of the hut, and a flag keeps that hut from taking her
 again until she has once left its area. The walker's cooldown above is the same rule.
+
+And the building's doors, which fade and teleport:
+
+> same mechanism can be reused in the escape scene when going through doors
+
+So a door in the escape scene gives her the same flag on arrival, reset only once she leaves that
+door's area, rather than its own guard.
