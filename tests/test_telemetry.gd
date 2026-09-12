@@ -35,6 +35,9 @@ func run(t) -> void:
 	_test_every_routed_event_is_a_straight_line(t)
 	_test_the_map_picture_reads_the_map_and_nothing_else(t)
 	_test_a_picture_asked_for_by_hand_is_never_capped(t)
+	_test_the_shot_name_is_a_run_wide_counter_shared_by_auto_and_asked(t)
+	_test_the_counter_never_resets_across_a_day_or_a_retried_attempt(t)
+	_test_a_day_clock_held_at_zero_still_gets_two_distinct_shot_names(t)
 	_test_the_trail_is_sampled_by_distance_not_by_frame(t)
 	_test_the_trail_carries_whether_she_was_running(t)
 	_test_a_lost_day_restarts_the_trail(t)
@@ -975,6 +978,61 @@ func _test_a_picture_asked_for_by_hand_is_never_capped(t) -> void:
 			"and the line is a shot entry")
 	Telemetry.end_run()
 	t.check(not Telemetry.is_active(), "and the suite is left dormant again")
+
+## *(2026-09-11, playtest 56: "phot capture must use real time not game time otherwise at the
+## end of the day all pictures get overwritten", then, once a real-time name was in place,
+## "actually why not just count up the screenshot numbers?".)* `%03d<attempt suffix>-<kind>.png`,
+## one counter shared by `snapshot()`'s `auto/` and `snapshot_now()`'s `asked/`, so a picture's own
+## number says when in the run — relative to every other picture the run took, from either folder
+## — it was taken.
+func _test_the_shot_name_is_a_run_wide_counter_shared_by_auto_and_asked(t) -> void:
+	Telemetry.begin_memory_log()
+	Telemetry.begin_day(1, 1, 1, 1, 180.0)
+	var first := Telemetry._next_shot_name("asked")
+	t.check(first == "001-attempt1-asked.png",
+			"the first picture the run takes, from either folder, is 001 (got '%s')" % first)
+	var second := Telemetry._next_shot_name("lost_crying")
+	t.check(second == "002-attempt1-lost_crying.png",
+			"a picture from the other folder keeps counting from the same sequence (got '%s')"
+			% second)
+	Telemetry.end_run()
+
+## The counter must not repeat the day clock's own failure: a value that resets can produce the
+## same name twice. Crossing into a new day, and a nerve retrying the same day without the
+## calendar advancing (`begin_day()`'s own note on `_day_attempts`), both keep counting rather
+## than starting over — only the attempt suffix changes.
+func _test_the_counter_never_resets_across_a_day_or_a_retried_attempt(t) -> void:
+	Telemetry.begin_memory_log()
+	Telemetry.begin_day(1, 1, 1, 1, 180.0)
+	t.check(Telemetry._next_shot_name("asked") == "001-attempt1-asked.png",
+			"the first picture of the run")
+	Telemetry.begin_day(2, 1, 1, 1, 180.0)
+	t.check(Telemetry._next_shot_name("asked") == "002-attempt1-asked.png",
+			"a new day does not reset the counter")
+	Telemetry.begin_day(2, 1, 1, 1, 180.0)  # a nerve retries day 2 without the calendar advancing
+	t.check(Telemetry._next_shot_name("asked") == "003-attempt2-asked.png",
+			"neither does a retried attempt at the same day — only the attempt suffix changes")
+	Telemetry.end_run()
+
+## `--invincible` clamps the countdown to exactly zero once a day runs out rather than ending it
+## (`DayController._process()`), which holds the elapsed day clock at the day's own length for as
+## long as the day keeps running afterward — so under a clock-named scheme, every picture taken
+## past dusk that day asked for the exact same file and each one silently overwrote the last. A
+## counter cannot repeat this way at all, which this checks directly by pinning `_clock` at zero
+## across two calls and confirming the day clock genuinely never moved between them.
+func _test_a_day_clock_held_at_zero_still_gets_two_distinct_shot_names(t) -> void:
+	Telemetry.begin_memory_log()
+	Telemetry.begin_day(1, 1, 1, 1, 180.0)
+	Telemetry.set_clock(0.0)
+	var first := Telemetry._next_shot_name("asked")
+	var second := Telemetry._next_shot_name("asked")
+	t.check(Telemetry.clock() == 0.0,
+			"the day clock genuinely never moved between the two — the same way --invincible " +
+			"holds it at the day's length once the countdown clamps at zero")
+	t.check(first != second,
+			"two pictures asked for at the same held day clock still get two distinct names " +
+			"(got '%s' and '%s')" % [first, second])
+	Telemetry.end_run()
 
 # ---------------------------------------------------------------- one folder ---
 # *(docs/DECISIONS.md, M70 "A run is a folder": the run identity moved from

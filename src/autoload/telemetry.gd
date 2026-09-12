@@ -159,6 +159,7 @@ func begin_run(run_seed: int, played := true) -> void:
 	_day_open = false
 	_shots_today = 0
 	_last_shot = -INF
+	_shot_serial = 0
 	_day_attempts = {}
 	_attempt = 1
 	_log.header("nappy %s log  %s  version %s"
@@ -179,6 +180,7 @@ func begin_memory_log() -> void:
 	_run_dir = ""
 	_clock = 0.0
 	_day_open = false
+	_shot_serial = 0
 	_day_attempts = {}
 	_attempt = 1
 	_log.header("nappy run log  (memory)")
@@ -274,6 +276,12 @@ const SHOT_SPACING := 3.0
 var _shots_today := 0
 var _last_shot := -INF
 
+## Names a picture, shared by `snapshot()` and `snapshot_now()` — see `_next_shot_name()`. Counts
+## from 1 for the life of the run, reset only in `begin_run()`/`begin_memory_log()`: neither a new
+## day nor a retried attempt resets it, since a number that reset could repeat, which is the exact
+## failure a clock-based name already had.
+var _shot_serial := 0
+
 const BURST_VERSION := 1
 const BURST_TARGET_FPS := 12
 const BURST_DURATION_SECONDS := 3.0
@@ -296,7 +304,7 @@ func snapshot(kind: String) -> void:
 		return
 	_shots_today += 1
 	_last_shot = _clock
-	_capture("%s/%03.0fs%s-%s.png" % [_type_dir("auto"), _clock, _attempt_suffix(), kind])
+	_capture("%s/%s" % [_type_dir("auto"), _next_shot_name(kind)])
 
 ## The same picture, asked for by a person rather than by a heuristic. A debugging aid rather than
 ## a game feature.
@@ -322,7 +330,7 @@ func snapshot_now(context: String) -> void:
 	if _log.path == "" or DisplayServer.get_name() == "headless":
 		return
 	_shots_today += 1
-	_capture("%s/%03.0fs%s-asked.png" % [_type_dir("asked"), _clock, _attempt_suffix()])
+	_capture("%s/%s" % [_type_dir("asked"), _next_shot_name("asked")])
 
 ## Starts one bounded animation sequence in the current run's `asked/` folder. The sequence is
 ## serialized one frame at a time so a slow PNG write cannot create an unbounded backlog, and the
@@ -606,3 +614,20 @@ func _type_dir(name: String) -> String:
 	if DirAccess.make_dir_recursive_absolute(dir) != OK:
 		push_warning("telemetry: cannot create %s" % dir)
 	return dir
+
+## Names a snapshot by a per-run counter, not by any clock. *(2026-09-11, playtest 56: "phot
+## capture must use real time not game time otherwise at the end of the day all pictures get
+## overwritten", then, once a real-time name was in place, "actually why not just count up the
+## screenshot numbers?".)* Shared by `snapshot()` and `snapshot_now()` — `auto/` and `asked/` are
+## separate folders, so the two could never collide on a name either way, but one counter across
+## both means a picture's own number already says when in the run, relative to every other picture
+## the run took, it was taken. `_shot_serial` is never reset by a day boundary or a retried
+## attempt, so the counter itself cannot repeat a number the way a clock could.
+##
+## `%03d<attempt suffix>-<kind>.png` — `001-attempt1-asked.png`, `002-attempt1-asked.png` — the
+## attempt suffix and kind are what a retried day, or a heuristic-vs-asked picture, still need to
+## say without opening the file; the day clock the name used to carry is already in the run log's
+## own `shot` entry.
+func _next_shot_name(kind: String) -> String:
+	_shot_serial += 1
+	return "%03d%s-%s.png" % [_shot_serial, _attempt_suffix(), kind]
