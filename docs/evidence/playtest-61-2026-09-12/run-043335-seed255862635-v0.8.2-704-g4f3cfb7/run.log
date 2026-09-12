@@ -1,0 +1,58 @@
+nappy run log  2026-09-12T04:33:35  version v0.8.2-704-g4f3cfb7
+
+day 1  act 1  run seed 255862635  city seed 255862635  length 180.0s
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  plan     closed: fallen tree h(5,7)
+   0.0  plan     calm: 1 forest, 1 quiet_square, 2 courtyard, 5 park
+   0.0  plan     events: alley_mouse x4, burst_water_main x9, cafe_tables x62, car_accident x23, cat_dash x8, chatting_mother x2, delivery_van x42, dog_walker x17, fallen_tree x19, homeless_yeller x13, leaf_blower x17, loose_dog x23, market_stall x43, moving_van x50, pigeon_flock x5, playground x5, scaffolding x19, skip x19
+   0.0  start    doorstep (80,84), facing 180°
+   1.9  path     onto the corridor at (75,84), after 1.9s off it
+   5.6  near     homeless_yeller at (68,75), 209px, exc 0, in 1.7/s (crowd 0.0, events 1.8), sleep 2
+   6.7  crowd    a car sounded its horn at her in the road at (75,73) | exc 2, in 6.3/s (crowd 0.1, events 6.3), sleep 3
+   6.7  cross    stepped into the road at (75,73), at a zebra
+   7.4  cue      the mark over her head: soon for 0.7s (0.7s of it on the road) | a car, and she is in the road
+  10.3  near     dog_walker at (75,60), 104px, exc 14, in 9.8/s (crowd 7.3, events 2.8), sleep 4
+  10.7  near     dog_walker at (75,61), 57px, exc 21, in 27.8/s (crowd 8.2, events 20.0), sleep 4
+  10.9  near     dog_walker at (75,61), 31px, exc 27, in 35.1/s (crowd 10.5, events 24.9), sleep 4
+  11.1  freeze   sleep stopped filling | exc 35, in 35.7/s (crowd 10.0, events 26.0), sleep 4 | near: dog_walker 21px
+  11.8  cross    stepped into the road at (74,59), at a zebra
+  11.9  near     leaf_blower at (80,57), 200px, exc 54, in 9.0/s (crowd 7.4, events 1.4), sleep 4
+  13.0  path     off the corridor at (73,57), after 11.1s on it
+  13.0  cross    stepped into the road at (73,57), at a zebra
+  13.5  near     leaf_blower at (67,61), 200px, exc 57, in 5.0/s (crowd 4.9, events 0.1), sleep 4
+  14.7  ahead    loose_dog comes at her from 0px in front of her at (69,56)
+  15.8  near     loose_dog (telegraph) at (62,56), 137px, exc 64, in 14.4/s (crowd 3.4, events 11.2), sleep 4
+  16.1  near     loose_dog (telegraph) at (63,56), 74px, exc 67, in 14.3/s (crowd 0.0, events 14.4), sleep 4
+  16.4  cross    stepped into the road at (65,58), mid-block
+  16.5  near     leaf_blower at (67,61), 109px, exc 72, in 17.5/s (crowd 0.0, events 17.5), sleep 4
+  19.2  crowd    walked into somebody at (65,57) | exc 100, in 9.7/s (crowd 23.1, events 4.6), sleep 4
+  19.3  path     58% of her street time on the corridor (11.1s on, 8.1s off, 0.0s off the streets)
+  19.3  lost     lost_crying after 19.3s — She started crying. There is no settling her now. | exc 100, in 27.0/s (crowd 22.2, events 4.8), sleep 4 | near: market_stall 105px (out of range)
+  19.3  nerve    spent a nerve on day 1 (act 1); 4 left — day 1 again
+
+day 1  act 1  run seed 255862635  city seed 255862635  length 180.0s
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  plan     closed: fallen tree h(5,7)
+   0.0  plan     calm: 1 forest, 1 quiet_square, 2 courtyard, 5 park
+   0.0  plan     events: alley_mouse x4, burst_water_main x9, cafe_tables x62, car_accident x23, cat_dash x8, chatting_mother x2, delivery_van x42, dog_walker x17, fallen_tree x19, homeless_yeller x13, leaf_blower x17, loose_dog x23, market_stall x43, moving_van x50, pigeon_flock x5, playground x5, scaffolding x19, skip x19
+   0.0  start    doorstep (80,84), facing 180°
+   2.2  path     onto the corridor at (75,84), after 2.2s off it
+   2.9  path     off the corridor at (73,84), after 0.7s on it
+   2.9  cross    stepped into the road at (73,84), at a zebra
+   3.0  path     onto the corridor at (73,83), after 0.1s off it
+   4.7  near     homeless_yeller at (66,75), 208px, exc 0, in 0.5/s (crowd 0.0, events 0.5), sleep 2
+   5.7  near     homeless_yeller at (67,75), 114px, exc 0, in 4.7/s (crowd 0.0, events 4.8), sleep 2
+   6.3  path     off the corridor at (70,75), after 3.2s on it
+   7.1  path     onto the corridor at (71,73), after 0.8s off it
+   7.1  cross    stepped into the road at (71,73), at a zebra
+   7.3  crowd    a car sounded its horn at her in the road at (71,73) | exc 15, in 13.3/s (crowd 0.4, events 12.9), sleep 3
+   7.8  cue      the mark over her head: soon for 0.5s (0.5s of it on the road) | a car, and she is in the road
+   9.9  near     leaf_blower at (67,61), 198px, exc 28, in 1.1/s (crowd 0.2, events 0.5), sleep 4
+  11.1  freeze   sleep stopped filling | exc 35, in 9.8/s (crowd 1.2, events 7.8), sleep 4 | near: leaf_blower 133px
+  11.5  cross    stepped into the road at (72,62), mid-block
+  11.5  path     off the corridor at (72,61), after 4.4s on it
+  12.7  crowd    a car sounded its horn at her in the road at (72,58) | exc 36, in 3.6/s (crowd 0.0, events 3.6), sleep 4
+  12.9  cue      the mark over her head: soon for 0.2s (0.2s of it on the road) | a car, and she is in the road
+  13.4  crowd    walked into somebody at (70,57) | exc 40, in 19.8/s (crowd 27.8, events 10.0), sleep 4
+  13.5  cross    stepped into the road at (70,58), at a zebra
+  14.8  shot     asked for a picture at (70,57) | exc 65, sleep 4 | playing

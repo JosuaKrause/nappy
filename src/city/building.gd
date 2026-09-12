@@ -69,8 +69,8 @@ const TALL_WINDOW_CHANCE := 0.3
 const SHUTTERED_WINDOW_CHANCE := 0.15
 
 # ------------------------------------------------------------------- fronts ---
-# A storefront replaces `WALL_BASE` at the ground row (its own fill is opaque, so it covers the
-# ordinary window drawn under it the same way `WALL_BASE`'s plinth always sat over the wall); a
+# A storefront replaces `WALL_BASE` across a two-column ground row (its own fill is opaque, so it
+# covers the ordinary windows drawn under it the same way `WALL_BASE`'s plinth always sat over the wall); a
 # fire escape and a civic portico are overlays drawn after the wall, in front of everything a
 # ground-floor cell already drew. The tint rules are untouched either way: none of these three
 # textures is multiplied by `Palette.building_wall` — they are already-coloured overlays, the
@@ -233,12 +233,11 @@ var _windows: Array[bool] = []
 ## `_windows` itself. A building keeps its own style once a `BOARDED` block that forced
 ## `SHUTTERED` un-boards.
 var _window_style := _WindowStyle.PLAIN
-## One entry per ground-floor column, index into `STOREFRONT_TEXTURES`/`STOREFRONT_AWNING_
-## TEXTURES`/`STOREFRONT_SHUTTERED_TEXTURES` — populated only for a `COMMERCIAL` building, where
-## every column gets one.
+## One entry per two-column storefront, index into `STOREFRONT_TEXTURES`/`STOREFRONT_AWNING_
+## TEXTURES`/`STOREFRONT_SHUTTERED_TEXTURES` — populated only for a `COMMERCIAL` building.
 var _storefront_variant: Array[int] = []
 var _storefront_awning: Array[bool] = []
-## One fixed roll per storefront column, compared against `Tuning.degradation_for(day) *
+## One fixed roll per two-column storefront, compared against `Tuning.degradation_for(day) *
 ## AMBIENT_SHUTTER_SHARE` in `_ground_floor_texture()` — a shop with a low roll here closes early
 ## in the run and stays shuttered, the same "fixed severity, the day decides how far it has been
 ## crossed" shape `GroundTiles._cracked()` uses for a crack.
@@ -344,9 +343,26 @@ func _build_front() -> void:
 	var cols := columns()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("front:%d:%d:%d" % [variant, int(global_position.x), int(global_position.y)])
-	if district == GameEnums.BlockPurpose.COMMERCIAL:
-		for col in cols:
-			_storefront_variant.append(rng.randi_range(0, STOREFRONT_TEXTURES.size() - 1))
+	if district == GameEnums.BlockPurpose.COMMERCIAL and wall_tiles() >= 2:
+		# A shuffled bag gives one frontage a varied mixture while keeping the same building's
+		# storefront choices stable across redraws, day changes, and condition changes.
+		var bag: Array[int] = []
+		var previous_variant := -1
+		for col in range(0, cols - 1, 2):
+			if bag.is_empty():
+				for index in STOREFRONT_TEXTURES.size():
+					bag.append(index)
+				for index in range(bag.size() - 1, 0, -1):
+					var swap_index := rng.randi_range(0, index)
+					var swapped := bag[index]
+					bag[index] = bag[swap_index]
+					bag[swap_index] = swapped
+				if previous_variant >= 0 and bag.size() > 1 and bag[0] == previous_variant:
+					var swapped := bag[0]
+					bag[0] = bag[1]
+					bag[1] = swapped
+			_storefront_variant.append(bag.pop_front())
+			previous_variant = _storefront_variant[-1]
 			_storefront_awning.append(rng.randf() < STOREFRONT_AWNING_SHARE)
 			_storefront_shutter_severity.append(rng.randf())
 	elif district == GameEnums.BlockPurpose.RESIDENTIAL and wall_tiles() >= 2 \
@@ -373,16 +389,29 @@ func _draw() -> void:
 			var at := _cell(col, row)
 			draw_texture(TextureResolver.resolve(WALL), at, wall_colour)
 			var index := row * cols + col
-			draw_texture(TextureResolver.resolve(_window_texture(index)), at)
+			var window_at := at
+			if row == 1 and not _storefront_variant.is_empty():
+				# The 36px storefront rises four pixels into this row; lift every upper window two
+				# pixels so its sill remains visible, including the odd column that stays wall.
+				window_at.y -= 2.0
+			draw_texture(TextureResolver.resolve(_window_texture(index)), window_at)
 			if col == 0:
 				draw_texture(TextureResolver.resolve(WALL_EDGE_W), at)
 			if col == cols - 1:
 				draw_texture(TextureResolver.resolve(WALL_EDGE_E), at)
-			if row == 0:
-				draw_texture(TextureResolver.resolve(_ground_floor_texture(col)), at)
 			# With no roof at all, the parapet is what stops the wall.
 			if roof_rows == 0 and row == wall_rows - 1:
 				draw_texture(TextureResolver.resolve(ROOF_EDGE_N), at)
+
+	# Ground-floor substitutions are drawn after every wall cell, so a 64px storefront cannot be
+	# painted over by the neighboring half of its pair. A 36px source is offset four pixels north
+	# to keep its bottom edge on the shared ground line; facades with only one wall row keep the
+	# ordinary wall base because there is not enough height for the complete entrance.
+	for col in cols:
+		var ground_texture := _ground_floor_texture(col)
+		if ground_texture != null:
+			var y_offset := TILE - ground_texture.get_height()
+			draw_texture(TextureResolver.resolve(ground_texture), _cell(col, 0) + Vector2(0.0, y_offset))
 
 	_draw_front_overlay()
 
@@ -405,21 +434,28 @@ func _draw() -> void:
 func _cell(col: int, row: int) -> Vector2:
 	return Vector2(-columns() * TILE * 0.5 + col * TILE, -(row + 1) * TILE)
 
-## `WALL_BASE`, unless `col` is a `COMMERCIAL` shopfront — its own fill is opaque, which is what
-## lets this stay a plain substitution rather than a second draw call skipping the window.
+## `WALL_BASE`, unless `col` is the first column of a complete two-column `COMMERCIAL` shopfront —
+## its own fill is opaque, which is what lets this stay a plain substitution rather than a second
+## draw call skipping the windows. The second column returns `null` because its partner already
+## paints both cells; an odd final column stays `WALL_BASE`.
 ##
 ## A `BOARDED` block shutters every one of its own storefronts outright. Short of that, a shop
 ## still shutters early once `Tuning.degradation_for(day) * AMBIENT_SHUTTER_SHARE` has passed the
 ## cell's own fixed roll — the city's services failing ahead of any one block's arc, which is why
 ## this reads `condition` and `day` as two separate questions rather than one.
 func _ground_floor_texture(col: int) -> Texture2D:
-	if col >= _storefront_variant.size():
+	if _storefront_variant.is_empty():
 		return WALL_BASE
-	var index: int = _storefront_variant[col]
-	var ambient_shutter := _storefront_shutter_severity[col] < Tuning.degradation_for(day) * AMBIENT_SHUTTER_SHARE
+	if col % 2 == 1:
+		return null
+	var store := col / 2
+	if store >= _storefront_variant.size() or col + 1 >= columns():
+		return WALL_BASE
+	var index: int = _storefront_variant[store]
+	var ambient_shutter := _storefront_shutter_severity[store] < Tuning.degradation_for(day) * AMBIENT_SHUTTER_SHARE
 	if condition == Condition.BOARDED or ambient_shutter:
 		return STOREFRONT_SHUTTERED_TEXTURES[index]
-	return STOREFRONT_AWNING_TEXTURES[index] if _storefront_awning[col] else STOREFRONT_TEXTURES[index]
+	return STOREFRONT_AWNING_TEXTURES[index] if _storefront_awning[store] else STOREFRONT_TEXTURES[index]
 
 ## The window pair for a wall cell, from `_window_style` — except a `BOARDED` block, which forces
 ## `SHUTTERED` regardless of the building's own roll. Never lit there either, but only because

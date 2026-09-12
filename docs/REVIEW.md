@@ -138,12 +138,20 @@ item below for as long as looking takes.
 - **Walk one block of each district and look up.** Roofs carry furniture by district (vents,
   ducts and boxes on industrial, skylights on civic, water tanks elsewhere), commercial ground
   floors are storefronts with awnings, civic fronts have a portico, residential facades a fire
-  escape, and pavements have trees in pits. In the rig pictures commercial and residential read
-  at a glance; industrial and civic are told apart by their roofs alone, which are small at play
-  scale, and the portico was out of frame. Does each district read as a place, and does the
-  street-tree density read as a street or as a hedge? Record is `DECISIONS.md`, M106.
-- **Find a fallen tree.** A fallen tree closure prefers a street with standing trees. Does the
-  fallen tree read as one of the standing ones down? Record is `DECISIONS.md`, M106.
+  escape. In the rig pictures commercial and residential read at a glance; industrial and civic
+  are told apart by their roofs alone, which are small at play scale, and the portico was out of
+  frame. Does each district read as a place? Record is `DECISIONS.md`, M106.
+- **Find a tree-lined street and walk it end to end** (`--overview` shows where the few are;
+  seed 4229 has six). Trees stand only on a handful of straight runs of three to five blocks, a
+  pit about every two lot-lengths, so a run carries four or five trees and about one ordinary
+  street in sixteen has any. Does a run read as *a planted street* or as two stray trees, and is
+  a tree still ever in the way of spotting a yeller or a dog walker? The run count and the
+  spacing are both pinned guesses. Record is `DECISIONS.md`, M115.
+- **Find a fallen tree** (seed 4229, day 1 plans exactly one; `--spawn closure:0`). It lies only
+  on a tree-lined street, and the pit it fell from is empty for the day: the whole prop is
+  hidden, so what she sees is a gap in the row. Look down the street for the gap. Does it read
+  as *the tree that was here is in the road*, or as nothing at all? If nothing, the bare pit
+  drawn without its tree is one branch in the prop's drawing. Same record.
 - **Play or jump to day 5, day 9 and day 13 and look at the ground** (`--day 9`). The city
   degrades on one curve from day 5: cracks on pavement before road, in three levels; litter on
   pavements, alleys and squares; garbage sacks in alleys first and against building fronts from
