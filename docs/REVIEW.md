@@ -34,10 +34,21 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   `evidence/comic-city-props-2026-09-12/comparisons/`; `--svg` shows their source concepts.
 
 - **Watch the stroller handle through a turn.** Do her hands stay
-  connected? The PNG and SVG `grounding-*` sheets in
-  `evidence/pram-contact-2026-09-12/` show the enlarged stroller and its ground anchors;
+  connected through all three pushing poses? The P2 `p2-grounded-contact-*` sheets in
+  `evidence/comic-pushing-strides-2026-09-12/registered/` show each pose with the grounded stroller;
   live motion and texture changes
   between directions still need a person's look. Collision positions and touch radii stay fixed.
+
+- **Walk and stop in each direction while pushing and while carrying.** Do F — Hip motion and
+  P2 — Three-pose push read as opposite steps separated by a clear together pose, and do they
+  remain the same woman when switching states? Use `--start-escape` for carrying. Exact native
+  and enlarged walking GIFs are linked from the
+  [recipe index](evidence/README.md#graphics-recipes); they are sprite assemblies, not live captures.
+
+- **Walk along the sidewalk beside road edges.** Do the plain and damaged surfaces continue
+  the curb paving without an obvious material boundary? The
+  [sidewalk neighbor panels](evidence/sidewalk-continuity-2026-09-12/GENERATION.md) cover both axes
+  and all eight accepted curb variants at native size.
 
 - **Look at the garbage sacks and small litter from day 10.** Do the standalone sacks and
   piles look like the same material, and does the small ground litter remain quiet and readable?

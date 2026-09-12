@@ -11,7 +11,7 @@
   frames. Its selected raw atlas, exact prompt, source inputs and previews live at the record's
   top level.
 
-The current carrying family is [E — Clear strides](../../comic-carrying-strides-2026-09-12/GENERATION.md),
+The current carrying family is [F — Hip motion](../../comic-carrying-hip-motion-2026-09-12/GENERATION.md),
 with three poses and a feet-together idle frame. The four-version comparison remains fixed.
 
 B and C are evidence of human-visible alternatives. They are not style, identity or pose inputs

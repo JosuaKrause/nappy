@@ -2,12 +2,12 @@
 
 This record preserves **D — Matched proportions**, the two-frame carrying redraw requested in
 PLAYTEST-65. The ten PNG derivatives use
-the same adult woman, directions and gait as the current pushing raster family while replacing her
+the same adult woman, directions and gait as the preserved P1 pushing raster family while replacing her
 pushing arms with a secure two-arm cradle. The baby lies horizontally or diagonally in the front,
 profile and front-diagonal views. The direct back view hides the baby except for a narrow blanket
 edge; the back diagonal exposes only the outside edge of the bundle.
 The current runtime carrying family is documented in
-[E — Clear strides](../comic-carrying-strides-2026-09-12/GENERATION.md); D remains a fixed identity
+[F — Hip motion](../comic-carrying-hip-motion-2026-09-12/GENERATION.md); D remains a fixed identity
 reference and comparison snapshot.
 
 The previous carrying result and its provenance remain intact under

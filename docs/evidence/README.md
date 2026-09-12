@@ -23,15 +23,18 @@ can produce different pixels on another call; extraction and assembly use the re
 
 | Graphics or review | Recipe and inputs |
 | --- | --- |
-| Pushing mother and stroller | [Comic rig generation and registration](comic-rig-2026-09-12/GENERATION.md) |
+| P1's preserved pushing family and stroller artwork | [Comic rig generation and registration](comic-rig-2026-09-12/GENERATION.md) |
+| P2's three-pose pushing walk and grounded contact | [Generation, registration and GIF recipe](comic-pushing-strides-2026-09-12/GENERATION.md) |
 | Carrying redraws and identity comparison | [Carrying generation and registration](comic-carrying-redraw-2026-09-12/GENERATION.md) |
 | Four named carrying versions | [Comparison script](comic-carrying-redraw-2026-09-12/versions/make-comparison.py) and [version inputs](comic-carrying-redraw-2026-09-12/versions/README.md) |
 | D's preserved two-frame walking GIF and rollout | [Recipe, timing and source manifest](comic-carrying-redraw-2026-09-12/rollout/README.md) |
 | E's three-pose carrying walk and GIF | [Generation, registration and safe rebuild commands](comic-carrying-strides-2026-09-12/GENERATION.md) |
+| F's whole-figure carrying correction and GIF | [Source review, generation, registration and rebuild commands](comic-carrying-hip-motion-2026-09-12/GENERATION.md) |
 | Stroller contact and grounded scale in PNG and SVG | [Assembly script, placements and regeneration commands](pram-contact-2026-09-12/MEASUREMENTS.md) |
 | Trees, bollard and rooftop equipment | [City prop generation and registration](comic-city-props-2026-09-12/GENERATION.md) |
 | Garbage and litter | [Comic prop generation and registration](comic-props-2026-09-12/GENERATION.md) |
 | Outdoor ground tiles | [Tile generation and registration](style-transfer-tiles-2026-09-12/GENERATION.md) |
+| Sidewalk continuation of road-edge paving | [Source pairs, transfer, registration and neighbor panels](sidewalk-continuity-2026-09-12/GENERATION.md) |
 | Logo, social card and exported icons | [Identity generation and registration](comic-identity-2026-09-12/GENERATION.md) |
 
 ## What is here

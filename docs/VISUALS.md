@@ -17,8 +17,8 @@ with their SVG source mappings in the
 [identity generation record](evidence/comic-identity-2026-09-12/GENERATION.md).
 Compare directions, gait frames and state variants together so the mother
 carrying the baby reads as the same woman pushing the stroller.
-The carrying walk uses three distinct poses in four phases: open, together, opposite open,
-together. Stopping selects the together pose. The pushing walk uses its own two-frame family.
+Both carrying and pushing use three distinct poses in four phases: open, together, opposite open,
+together. Stopping selects the together pose in either state.
 
 ## Reference roles
 
@@ -44,9 +44,10 @@ Identity/export variants retain their documented source-derived canvas sizes. Re
 the redrawn artwork's real transparency rather than stamping the SVG's primitive silhouette
 over it. Opaque ground stays opaque; outlines, transparent gaps, internal placement and visual
 quality require inspection alongside dimension and anchor checks.
-The [comic rig record](evidence/comic-rig-2026-09-12/GENERATION.md) documents generation and
-extraction for the pushing mother and every stroller view. Its assembly sheets approximate
-source placement and do not establish live hand-to-handle contact.
+The [pushing stride record](evidence/comic-pushing-strides-2026-09-12/GENERATION.md) documents
+P2 — Three-pose push, including SVG sources, whole-figure registration and all-direction
+contact sheets. The [comic rig record](evidence/comic-rig-2026-09-12/GENERATION.md) preserves
+P1 — Two-pose push and every stroller view.
 The [hand-contact comparison](evidence/pram-contact-2026-09-12/MEASUREMENTS.md) assembles both
 formats at the current continuous stroller offset. Shadows and cues share that drawing position;
 the uniformly enlarged stroller retains its bottom ground anchor, and the collision body retains
@@ -57,11 +58,13 @@ The [comic prop record](evidence/comic-props-2026-09-12/GENERATION.md) preserves
 garbage and litter, their generated silhouettes and reproducible anchor registration.
 The [city prop record](evidence/comic-city-props-2026-09-12/GENERATION.md) covers trees,
 their opaque ground bed, the overhead bollard cap and rooftop equipment. The
-[carrying stride record](evidence/comic-carrying-strides-2026-09-12/GENERATION.md) documents
-the current three-pose carrying family, its source pairings and reproducible walking rollout.
+[carrying hip-motion record](evidence/comic-carrying-hip-motion-2026-09-12/GENERATION.md) documents
+F — Hip motion, its whole-figure source pairings and reproducible walking rollout.
 The [tile generation record](evidence/style-transfer-tiles-2026-09-12/GENERATION.md) preserves
 the terrain sheets, source-pair manifest and native/repeated-neighbor comparisons. Ground tiles
 use fixed cell extraction because every pixel belongs to a filled tile, including its edges.
+The [sidewalk continuity record](evidence/sidewalk-continuity-2026-09-12/GENERATION.md) covers
+the plain and damaged sidewalk surfaces and their joins with the accepted road-edge paving.
 
 ## Review
 

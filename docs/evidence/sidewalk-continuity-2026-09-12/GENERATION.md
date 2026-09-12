@@ -35,7 +35,7 @@ curb planes, paint pixels, or restore an SVG mask.
 ## Reproduction
 
 The source and before panels describe the pinned source revision
-`bef0c39af93da2607b76faa868815b899d48ebc4`. Keep a separate checkout at that revision and point
+bef0c39af93da2607b76faa868815b899d48ebc4. Keep a separate checkout at that revision and point
 `--before-dir` to its illustrated tile directory, which contains the seven original PNGs whose
 hashes are retained in the source manifest:
 

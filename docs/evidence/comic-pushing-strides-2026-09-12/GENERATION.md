@@ -19,7 +19,8 @@ the opposite screen axis. The coat hem and pelvis articulate with the legs, whil
 hands and canvas landmarks stay stable.
 
 `source/p1/` freezes the ten original P1 — Two-pose push SVGs and illustrated PNGs directly from
-git object `f39bd59`. These are comparison evidence and registration anchors, not mutable runtime
+git object f39bd59c19ba3ea59804723ddeedb9bd9e34da6c. These are comparison evidence and registration
+anchors, not mutable runtime
 inputs. `source/review/p1-source-{native,6x}.png` and
 `source/review/p2-source-{native,6x}.png` show the source families. The P2 source GIF presents all
 eight runtime directions in the exact `A, C, B, C` order. The source contact sheet uses the same
@@ -56,13 +57,13 @@ of these inputs, all prompts, all raw selected results, the P1 anchor art, curre
 PNGs, extraction code, recipe scripts, font, CPython 3.14.7 and Pillow 12.3.0.
 
 The exact prompts are retained beside this document. `prompt.txt` produces the first complete
-atlas in `raw/p2-acb-pass1.png`; it is retained because the human review found repeated forward-leg
+atlas in `raw/p2-acb-pass1.png`; it is retained as a displayed candidate with repeated forward-leg
 ownership. `prompt-pass2.txt` produces `raw/p2-acb-pass2.png`. The final family selects eight whole
 figures from that result: all five A figures plus front, back and front-diagonal B. The separate
 `prompt-c-row.txt` produces the five whole full-height C figures in `raw/p2-c-row.png`; treating the
 row as its own generation preserves adult leg length without enlarging the head or coat.
 
-Human review found that pass2's side B and northeast B still retained A's anatomical leg ownership.
+Visual review found that pass2's side B and northeast B still retained A's anatomical leg ownership.
 `prompt-pass4-side-ne.txt` directs a continuous hip-to-knee-to-shoe correction and produces
 `raw/p2-acb-pass4-side-ne.png`. The final selection uses its two whole B figures. It does not paste
 legs onto fixed upper-body pixels. The thirteen previously accepted whole figures remain sourced
@@ -82,7 +83,7 @@ fit scale, stable anchor, placement adjustment, final alpha bounds and the expli
 anatomical splice.
 
 The shared 28-color palette draws from the selected figures and frozen P1 PNGs. Color is extended
-under transparent pixels before downsampling and the generated alpha bytes are restored after
+under transparent pixels before quantization and the generated alpha bytes are restored after
 quantization. No SVG alpha is stamped or intersected onto the illustrated result.
 
 Registration checks `input-manifest.json` before creating its fresh output directory:
@@ -102,7 +103,7 @@ The comparison checks every output byte. Verification also decodes the native an
 requires four 190ms frames, proves A/C/B are distinct and proves the fourth frame repeats C. The
 retained earlier result is reproducible with `register --selection pass2`.
 
-After human review, the final registered PNGs install with:
+After visual review, the final registered PNGs install with:
 
 ```sh
 UV_CACHE_DIR=/tmp/nappy-uv-cache uv run --frozen python \

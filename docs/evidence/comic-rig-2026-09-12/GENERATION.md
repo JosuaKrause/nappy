@@ -7,10 +7,12 @@ inputs rather than contours to trace. The two approved reference images define t
 language: expressive dark ink, purposeful anatomy and construction, painted material folds and
 deliberate shadow planes.
 
-The pushing and pram derivatives supply the current runtime assets. The carrying rows and
-their registered PNGs are retained rejection evidence for PLAYTEST-65, not reference art or
-the current carrying textures. The active carrying family is documented in
-[the carrying stride record](../comic-carrying-strides-2026-09-12/GENERATION.md).
+The pram derivatives supply the runtime stroller assets. The pushing derivatives preserve
+**P1 — Two-pose push**; the current family is
+[P2 — Three-pose push](../comic-pushing-strides-2026-09-12/GENERATION.md).
+The carrying rows and their registered PNGs are retained rejection evidence for PLAYTEST-65.
+The active carrying family is documented in
+[F — Hip motion](../comic-carrying-hip-motion-2026-09-12/GENERATION.md).
 
 The registered derivatives keep every source canvas dimension and bottom-center anchor. They preserve
 the generated comic silhouettes and transparent gaps, so they do not reuse the SVG alpha. This is
@@ -108,8 +110,8 @@ uv run python docs/evidence/comic-rig-2026-09-12/convert.py register \
   docs/evidence/comic-rig-2026-09-12/pram-atlas-background-corrected.png
 ```
 
-The pushing and pram files in `registered/rig/` match the bytes in
-`assets/illustrated/svg-transfer/rig/`; the carrying files preserve the rejected result.
+The pram files in `registered/rig/` match the bytes in
+`assets/illustrated/svg-transfer/rig/`; the mother files preserve the named review snapshots.
 Existing `.import` files remain untouched, preserving each
 Godot resource identity. Import/boot and the focused visual, stroller, presentation and orientation
 suites verify that each derivative loads at its SVG's native dimensions, contains visible art,

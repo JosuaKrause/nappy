@@ -2,8 +2,10 @@
 
 This record preserves contact-only and grounded assemblies of the registered mother and pram.
 The runtime uses the **grounded placement** below: uniform 7/6 stroller scale and no fixed lift.
-The sheets cover both pushing gait frames and all eight views, with runtime west mirrors and
-draw order. They do not establish live-turn appearance or animation timing.
+The sheets cover the two frozen P1 pushing frames and all eight views, with runtime west mirrors
+and draw order. [P2's three-pose contact sheets](../comic-pushing-strides-2026-09-12/GENERATION.md)
+cover the current mother sprites at the same grounded placement. Neither assembly establishes
+live-turn appearance or animation timing.
 
 ## Contact-only snapshot
 

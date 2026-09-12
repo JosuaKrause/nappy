@@ -34,8 +34,8 @@ pictures to their actual runtime consumers. The crowd walkers and the event peop
 riders are bound, through the shared `EightDirection` selector every family below extends
 (`DECISIONS.md`, M108, the crowd walkers; M108, the event people); the gunman and the mouse stay on
 their single side picture by the choices recorded there. Moving families use two frames per view
-(`DECISIONS.md`, M108, the walkers' stride; M108, the event strides), with three carrying-mother
-poses in an open/together/opposite-open/together cycle. The
+(`DECISIONS.md`, M108, the walkers' stride; M108, the event strides), with three mother
+poses in each of the pushing and carrying open/together/opposite-open/together cycles. The
 café sitters lean and the busker strums on a timer; whether a standing guard shifts is the
 player's to say, and until then he keeps one frame.
 - [ ] **Cars bob on their wheels.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "cars
@@ -116,26 +116,6 @@ findings supported by the conversion and review.
       Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
-- [ ] Repair the carrying gait, **F — Hip motion**, using the high-resolution E atlas selected
-      in PLAYTEST-65's annotation. Correct its front A/C/B column to show opposite leading legs
-      and a clear standing/together frame, and correct the back-diagonal B legs to follow A's
-      travel axis. Preserve the other high-resolution poses, adult identity and supported baby.
-      Scale whole corrected figures directly; do not splice fixed upper rows over moving legs
-      or substitute a color swap for a step. Review corresponding SVG poses before transfer,
-      then native images and an eight-direction A/C/B/C animation with together idle. Preserve
-      E's named evidence, the annotation and every reproducible recipe.
-- [ ] Give the pushing mother three distinct walking poses in all eight directions. PLAYTEST-65
-      accepts stroller grounding but rejects the two-frame pushing gait with one leading leg.
-      Author opposite contacts and a together SVG pose, then transfer the full figures with
-      consistent identity and connected hands. Play A/C/B/C and choose C whenever stopped.
-      Preserve the accepted stroller scale, offsets and ground contact. Retain native/enlarged
-      rollouts and GIF recipes, and verify runtime selection in PNG and forced-SVG modes.
-- [ ] Continue the accepted road-edge paving through the sidewalk tiles. PLAYTEST-65 rejects
-      the sidewalk/road-edge material mismatch and explicitly keeps the road-edge tile. Match
-      sidewalk slab pattern, color and scale to the adjacent accepted paving, including damaged
-      sidewalk variants. Preserve road-edge textures, tile size and placement. Review native
-      assembled neighbors in both axes and repeated interiors; keep SVG-first provenance and
-      the exact transfer/registration/neighbor-review recipes.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The

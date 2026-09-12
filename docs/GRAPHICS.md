@@ -57,12 +57,12 @@ Some visible graphics are code rather than image files:
 
 | Assets | Runtime binding and behaviour |
 |---|---|
-| `assets/rig/mother_{front,back,side}_{a,b}.svg`, `mother_{front,back}_diagonal_{a,b}.svg` | `src/player/stroller.gd` chooses among eight upright views and alternates the two gait frames. East-authored side and diagonal views mirror explicitly for west. Mother canvases are 24×46 cardinal front/back, 26×46 side/diagonal, all bottom-centre grounded. |
+| `assets/rig/mother_{front,back,side,front_diagonal,back_diagonal}_{a,b,c}.svg` | `src/player/stroller.gd` chooses among eight upright views and plays A/C/B/C: opposite open contacts separated by the feet-together pose. Movement distance advances the loop; stopping selects C. East-authored side and diagonal views mirror explicitly for west. Mother canvases are 24×46 cardinal front/back, 26×46 side/diagonal, all bottom-center grounded. |
 | `assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b,c}.svg` | `src/player/stroller.gd` selects these when `Stroller.carrying` is set, including the escape scene behind `--start-escape`. Three distinct poses play A, C, B, C: open contact, feet together, opposite contact, feet together. Movement distance advances the loop; stopping selects C. Five authored views supply eight directions through the same west mirrors as the pushing set. The baby's cue (`baby_{zzz,fuss,cry}.svg`) draws over the bundle at her own position, with no pram sprite. |
 | `assets/rig/pram_{front,back,side}.svg`, `pram_{front,back}_diagonal.svg` | `src/player/stroller.gd` chooses the matching eight-direction pram view; east-authored side and diagonal views mirror explicitly for west. Native canvases are 30×30 cardinal and 36×30 side/diagonal. A uniform 7/6 drawing scale about the bottom-center anchor gives 35×35 and 42×35 rectangles, connecting the handle without lifting the wheels. The side views share the mother's ground baseline; other directions retain projected ground depth. |
 | `assets/props/baby_{zzz,fuss,cry}.svg` | `src/player/stroller.gd` chooses sleeping, awake/fussing or crying state above the pram. |
 | `assets/props/alert.svg`, `assets/props/alert_close.svg` | `src/player/stroller.gd` draws the exclamation over the player when an event is about her, using the close variant at the nearer threshold. |
-| `assets/crowd/walker_{front,back,side,front_diagonal,back_diagonal}_{body,trim}.svg`, `walker_{front,back,side,front_diagonal,back_diagonal}_{body,trim}_b.svg` | `src/crowd/crowd_agent.gd` chooses one of `EightDirection`'s eight sectors from the walker's own applied travel — its along-lane `velocity()` plus whatever its steering is doing across the lane this instant, not the lane axis alone — so a walker rounding a corner or nudged aside by `step_aside()` shows a diagonal view before its lane assignment itself turns, and a stopped walker (a give-way, a queue, a halt) keeps its last one. Each view also has a second gait frame, `_b`, the mother's own two-frame stride extended to the crowd: `_walker_gait_phase` advances by distance actually covered (`velocity().length()`, the same 0.09 rate `Stroller._walk_phase` uses) and `_walker_gait_frame()` alternates between the rest pose and feet passing while moving, holding the rest pose the instant `velocity()` drops to or below `WALKER_IDLE_SPEED` — the same give-way, queue or halt that holds the view. The `_b` frame changes only the legs and shoes in the trim layer, redrawn crossing; the front, back and side coats and heads lift a pixel with the stride the way the mother's own front/back/side `_b` frames do, while the two three-quarter views leave the coat and head untouched, matching the mother's own diagonal frames. Body and trim are bound with one transform apiece: tinted body first, untinted trim above it, both bottom-centre at the node, and one `stepping` lookup picks both layers' gait frame together so they can never disagree. West-of-centre sectors mirror their east-authored partner rather than being separately drawn. All five views and both gait frames share one 18×38 canvas and one (9, 38) feet anchor. |
+| `assets/crowd/walker_{front,back,side,front_diagonal,back_diagonal}_{body,trim}.svg`, `walker_{front,back,side,front_diagonal,back_diagonal}_{body,trim}_b.svg` | `src/crowd/crowd_agent.gd` chooses one of `EightDirection`'s eight sectors from applied travel, including steering across the lane. A stopped walker keeps its last view. `_walker_gait_phase` advances with traveled distance at the 0.09 rate also used by `Stroller._walk_phase`; `_walker_gait_frame()` alternates two crowd poses while moving and holds the rest pose at or below `WALKER_IDLE_SPEED`. The `_b` legs and shoes cross in the trim layer; front, back and side heads and coats rise one pixel, while diagonal upper bodies stay level. One `stepping` lookup selects both tinted body and untinted trim with matching transforms. West sectors mirror their east-authored partners. Every view and frame shares an 18×38 canvas and (9, 38) feet anchor. |
 | `assets/crowd/car_{front,back,side,front_diagonal,back_diagonal}_{body,trim}.svg` | `src/crowd/crowd_agent.gd` chooses one of `EightDirection`'s eight sectors from the car's own `velocity()` — `heading()` (cardinal in a lane, the tangent of its own arc mid-turn) times its actual speed — so a turning car's picture sweeps through the diagonal for the length of the manoeuvre and a car stopped at a light, a gate or a give-way keeps its last view. Body and trim are bound with one transform: tinted body first, untinted trim above it. West-of-centre sectors mirror their east-authored partner. Side is 52×30 and needs no anchor correction, already grounded at its own canvas edge; front/back are 30×46 standing pictures anchored `CAR_STRIKE_HALF_LENGTH` (26px) south of the node, where the strike box's own south edge sits for a car pointed along that axis; the diagonals are 52×42, anchored at the strike box's own south corner rotated onto the screen (`(CAR_STRIKE_HALF_LENGTH + CAR_STRIKE_HALF_WIDTH) / sqrt(2)`, ≈28.28px) plus the 2px the canvas leaves between its alpha content and its own edge. The shadow capsule and the strike box stay independent of the picture — `_car_shadow_shape()`'s own 52×30 along/across measurement is unchanged, and both now orient with the same continuous heading the picture reads. `car_end_{body,trim}.svg`, the old two-view family's foreshortened top-down picture, is unbound — see the prepared table below. |
 | `assets/ui/{pause,restart,continue,joystick,tap}.svg` | `src/ui/touch_controls.gd` draws `pause.svg`; `src/ui/mode_button.gd` selects the other four for pause, summary and control-mode buttons. |
 | `icon.svg` | `project.godot` uses the root SVG as the application icon, including the exported icon generated by Godot. |
@@ -224,21 +224,26 @@ pairings, exact prompts, raw outputs and repeated-tile comparisons.
 `assets/illustrated/svg-transfer/<family>/<name>.png` for a corresponding SVG. Missing or
 differently sized PNGs fall back to the SVG. Existing draw transforms and animation still apply.
 
-The live replacement family is `assets/illustrated/svg-transfer/rig/`: `mother_front_a.png`,
-`mother_front_b.png`, `mother_back_a.png`, `mother_back_b.png` (24×46), `mother_side_a.png` and
-`mother_side_b.png` (26×46), `pram_front.png` and `pram_back.png` (30×30), and `pram_side.png`
-(36×30). `mother_{front,back}_diagonal_{a,b}.png` (26×46) and
+The live replacement family is `assets/illustrated/svg-transfer/rig/`:
+`mother_{front,back}_{a,b,c}.png` (24×46), `mother_side_{a,b,c}.png` (26×46),
+`pram_front.png` and `pram_back.png` (30×30), and `pram_side.png`
+(36×30). `mother_{front,back}_diagonal_{a,b,c}.png` (26×46) and
 `pram_{front,back}_diagonal.png` (36×30) supply the diagonal views; west views mirror their
 east-authored partners. The carrying set adds
 `mother_carrying_{front,back}_{a,b,c}.png` (24×46) and
 `mother_carrying_{side,front_diagonal,back_diagonal}_{a,b,c}.png` (26×46), selected by the same
 resolver during the escape scene. All use bottom-center anchors and retain their redrawn
-silhouettes and true transparency. The [comic rig record](evidence/comic-rig-2026-09-12/GENERATION.md)
-documents the pushing mother and stroller. The current carrying family is **E — Clear strides**;
-its SVG sources, three poses, closed idle frame, registration and eight-direction GIF recipe are
-in the [carrying stride record](evidence/comic-carrying-strides-2026-09-12/GENERATION.md).
+silhouettes and true transparency. **P2 — Three-pose push** and its grounded contact sheets are
+documented in the [pushing stride record](evidence/comic-pushing-strides-2026-09-12/GENERATION.md).
+The current carrying family is **F — Hip motion**; its SVG sources, three whole-figure poses,
+closed idle frame, registration and eight-direction GIF recipe are in the
+[carrying hip-motion record](evidence/comic-carrying-hip-motion-2026-09-12/GENERATION.md).
 The [graphics recipe index](evidence/README.md#graphics-recipes) also locates the named comparison
 versions and their preserved rollouts.
+
+The seven `sidewalk{,_cracked_*}.png` surfaces continue the accepted curb paving with the same
+slab scale and material. The [sidewalk continuity record](evidence/sidewalk-continuity-2026-09-12/GENERATION.md)
+preserves SVG/PNG pairings and native neighbor comparisons against all eight curb directions.
 
 `assets/illustrated/svg-transfer/props/` supplies `garbage_sack.png` (28×34) and
 `garbage_sacks_pile.png` (42×34), bottom-center anchored, plus `litter_{can,apple,bag,newspaper,cup}.png`
