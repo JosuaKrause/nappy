@@ -79,12 +79,6 @@ their single side picture by the choices recorded there.
       their gameplay owner needs them. M56, the resistance is noticed, owns guard/riot-van states;
       M102, the finale, owns the carrying mother and interior sequence. The protester's eight
       pointing poses are bound (`DECISIONS.md`, M65).
-      **And the capture nobody has managed**: native-scale crowd-car turns showing the intermediate
-      diagonal views at entry, apex and exit, with the debug view's shadow and box layers on. A
-      windowed `tools/shot.sh` has not caught one in six tries, because a turn is two seconds and
-      the day ends while a rig stands still; a probe that places a car on a synthetic arc and
-      renders it is the way, and the analytic per-sector footprint test in
-      `tests/test_car_views.gd` is the pin until then.
 
 ### M111 — Cars follow their turns
 
