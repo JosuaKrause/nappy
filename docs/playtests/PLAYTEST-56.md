@@ -82,6 +82,20 @@ Confirmed when the split was proposed:
 
 > yeah we can extract the wheels and make them separate svgs
 
+## An invincible mode for playtesting
+
+> can you add an invincible mode for playtesting? that way I can check off basically all items in
+> one go
+
+> and it let's me inspect things more thoroughly
+
+Asked after `docs/REVIEW.md` was named as the file that keeps what a person still has to look at.
+The list is long and a day is three minutes that one car or one crying baby ends, so a mode in
+which nothing ends the day lets one sitting walk past every item and stand next to any of them
+for as long as looking takes. Filed under M100, small, real and nobody's, as a debug flag on the
+same terms as the rest of the developer furniture: never in a release build, marked on screen and
+in the run log so no capture from it can be mistaken for a real run.
+
 ## The mid-turn capture is a burst
 
 Two branches had failed to photograph a crowd car mid-turn with a single windowed screenshot — a
