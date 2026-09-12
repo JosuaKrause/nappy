@@ -124,7 +124,7 @@ findings supported by the conversion and review.
       Author and review each new passing-pose SVG before its PNG. Check readable leg motion at
       native scale. Keep versions
       A–D available for comparison; name the corrected family E, clear strides. Inspect all
-      five pairs and west mirrors, and verify animation in the running game.
+      five view cycles and west mirrors, and verify animation in the running game.
 - [ ] Bring the stroller drawing closer so the mother's hands meet its handle, as requested
       in PLAYTEST-65. Inspect both gait frames and all eight directions, including turns;
       change visual placement and its dependent shadow/cue placement together. Preserve

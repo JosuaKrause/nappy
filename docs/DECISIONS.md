@@ -37,6 +37,13 @@ and enlarged sheets established identity and support but did not establish suffi
 contrast. The existing named versions remain unchanged; the gait correction is E, clear strides,
 tracked separately in TODO. Version names and gait-frame letters identify different axes.
 
+The player requested D's full walking rollout in all eight directions. The frozen D textures
+are assembled in `docs/evidence/comic-carrying-redraw-2026-09-12/rollout/`: a repeating GIF,
+individual animation frames and a four-phase static sheet. These use the exact registered
+pixels, runtime west mirrors and 190ms frame intervals at walking speed, enlarged by nearest
+neighbor. They expose D's existing two-frame motion; they are source animation previews,
+not gameplay captures or evidence that the gait finding is fixed.
+
 The integrated checkout passed import/boot, 783 focused checks across visuals, stroller,
 presentation mode and orientation, and 665 visual checks with `--svg`. The tests check loading,
 anchors and selection; they do not establish visibly distinct steps. D's seed-4242 capture used

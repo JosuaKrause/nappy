@@ -64,3 +64,8 @@ through the passing pose. Author the new pose SVG before producing its PNG deriv
 
 Here `a` and `b` identify the two anatomical legs, rather than gait-frame or version labels:
 leg A leads, legs together, leg B leads, legs together, then repeat.
+
+> D is the latest one? next show a full walking rollout for each of the 8 directions for D
+
+Show the currently published D family in all eight directions, with its actual two-frame
+walking cycle and west mirrors. Keep this review distinct from the E correction in progress.
