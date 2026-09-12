@@ -156,14 +156,12 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    *(2026-09-10, playtest 52: "objects like fallen trees don't stop/redirect traffic or
    pedestrians.")* Placed here by the orchestrator because a sealed street the crowd walks
    through is the sealing's own legibility failing — open to the player moving it.
-3. **M115**, streets with trees — asked for on 2026-09-11 in playtest 57 and placed here by the
-   orchestrator beside the city work, open to the player moving it.
-4. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
+3. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
    reprioritised".
-5. **Reaching act III**, which M56's measurement against the nerves needs.
+4. **Reaching act III**, which M56's measurement against the nerves needs.
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
 The record, with its measurements and the choices open to overturn, is in `DECISIONS.md` under
@@ -365,56 +363,6 @@ kept short (`DECISIONS.md`, M110, walkers are held at a door). What is left is o
       recommendation is seals only in this milestone, with ordinary bodies asked about against a
       played day; the alternative, treating any body that covers a whole lane as shut for that lane,
       is one predicate more and is cheap to add if the player wants it
-
----
-
-## M115 — Streets with trees · asked for 2026-09-11
-
-> "can we make only some streets have trees? it should be continuous segments of 3/4/5 blocks
-> randomly placed on the map in both directions. fallen trees should only be possible on streets
-> with trees and one spot should be empty (the fallen tree's spot)"
-
-[PLAYTEST-57](playtests/PLAYTEST-57.md). And, reshaping it, [PLAYTEST-58](playtests/PLAYTEST-58.md):
-
-> "trees should only be allowed to be placed if there is no other blocking event (or conversely
-> due to map consistency) events can only be placed where no trees are (except for the fallen
-> tree which must empty out one tree lot). so trees must be quite rare to be able to still place
-> vans restaurants etc. also, trees make it harder to spot events like yeller, dog walker, etc. so
-> we need to be careful about how many we are placing"
-
-Today `StreetTrees` puts a pit at a fixed spacing along every pavement fronted by a residential or
-commercial block, `ClosurePlanner` only *prefers* `fallen_tree` on a street that has trees (a
-weight, `_FALLEN_TREE_STREET_BIAS`), and nothing stops an event being placed on a tree's own
-ground, so a van or a café can stand in a tree and a yeller can hide behind one.
-
-- [ ] **Only some streets have trees, in runs, and few of them.** A tree-lined street is a
-      straight run of three, four or five consecutive blocks along one street line, horizontal or
-      vertical, chosen from the city's own seed at generation and fixed for the run like every
-      other piece of geometry she learns; runs are placed at random across the map in both
-      directions, and the count of runs is a `Tuning` constant chosen so that most streets are
-      bare and a tree-lined one reads as a place. **Rare**, in the player's word: few enough runs
-      and a wide enough spacing within one that the day's events still find room on the streets
-      the route uses, and a tree never stands where a yeller or a dog walker would be hidden by
-      it — a pit at most every other lot-length is the recommendation, pinned and open to
-      overturn, with the run count set so a quarter of the ordinary streets or fewer carry trees.
-      Pits keep their mouth margins inside a run; a street outside every run gets none.
-      `StreetTrees` stays a pure function of `CityMap` and remains the one source of truth
-      `City._spawn_street_trees()` and the planner read.
-- [ ] **A tree and an event never share ground.** The trees are the city's and fixed for the run;
-      the events are the day's. So the day's placement is what yields: the scheduler's candidate
-      ground refuses any tile a standing street tree occupies or that its footprint reaches
-      (the tree's own ground shape, the one the shadow reads), the same refusal it applies to
-      closed tiles, checked where the candidate is offered and never repaired afterwards — so a
-      van, a café, a market stall, a yeller or a dog walker is never placed in or behind a tree.
-      Seals are bodies of catalogue rows and are placed by the same ground query, so a seal on a
-      tree-lined street stands between the trees, not on one. The one exception is the fallen
-      tree, below
-- [ ] **A fallen tree only where a tree stood.** `fallen_tree` closures and `fallen_tree_seal` are
-      offered only on a tree-lined segment, never merely preferred there, and the fallen tree
-      takes one of that street's own pits: that pit is left empty for the day — the tree that fell
-      is the one that is missing — so the picture and the planting agree. Which pit is chosen is
-      the planner's, nearest the closure's own centre; the seal's whole-street scene keeps its own
-      picture and empties the pit it covers.
 
 ---
 

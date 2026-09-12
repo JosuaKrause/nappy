@@ -284,8 +284,8 @@ Reaching act III — which M56's measurement against the nerves needs — waits 
 that batch is done. SVG-to-PNG
 style transfer is Codex's parallel track. Prepared artwork and its source-review sheets are listed
 in `GRAPHICS.md`; the integration table in `TODO.md` assigns each family to its gameplay owner.
-**M115, streets with trees, stands in front of that batch** by the orchestrator's placement, since
-a played day asked for it; playtest 57's other findings are built. The crowd goes round seals, walls
+**Playtest 57's findings are all built, M115, streets with trees, among them**, so that batch is
+next. The crowd goes round seals, walls
 and doors (`DECISIONS.md`, M110), and a car follows an arc through a turn with its heading
 continuous throughout (`DECISIONS.md`, M111), drawn through side, diagonal and end views on the
 way (`DECISIONS.md`, M108, the crowd car); M111's one open question — a street about-face
