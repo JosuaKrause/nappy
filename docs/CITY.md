@@ -1378,10 +1378,20 @@ Top-down camera with a fake vertical extrusion:
   ordinary street variety, unconnected to the day or the block's own condition. Going
   `BOARDED_UP` overrides the roll and forces the shuttered pair, dark, the same shutter the
   degrading city's own storefronts use — see "The city degrades".
-- **Street trees stand in pits on the pavement, along `RESIDENTIAL` and `COMMERCIAL` streets at
-  a seeded spacing** — `StreetTrees.planted()`, fixed for the run like a building rather than
-  rebuilt daily like a park's own trees, since a street's frontage does not change with what a
-  block behind it currently is. A tree stands at the kerb-side tile of a pavement, never within a
+- **Street trees stand only on a handful of tree-lined runs, and a run is a *place*.** A run is a
+  straight stretch of `Tuning.STREET_TREE_RUN_MIN_BLOCKS`–`STREET_TREE_RUN_MAX_BLOCKS` (three to
+  five) consecutive blocks along one street line, horizontal or vertical, and there are
+  `Tuning.STREET_TREE_RUNS` of them placed at random across the map, well under the
+  `Tuning.STREET_TREE_MAX_LINED_FRACTION` (a quarter) ceiling `tests/test_blocks.gd` holds over a
+  seed sweep. Every street outside every run is bare. **Rare on purpose, and the reason is the
+  events rather than the look**: a tree standing beside a van or a yeller is a second silhouette
+  to read past, and a street full of them is a street where an obstacle is hard to spot.
+- **Inside a run, pits sit at `Tuning.STREET_TREE_PIT_SPACING` — two lot-lengths — on each kerb**,
+  measured along the whole run rather than street by street, so a four-block run carries about two
+  pits a side rather than two per street. `StreetTrees.planted()` is the one function that decides,
+  fixed for the run like a building rather than rebuilt daily like a park's own trees, since a
+  street's frontage does not change with what a block behind it currently is. A tree stands at the
+  kerb-side tile of a pavement, never within a
   tile of either end of its street (which is already where every crossing and every fixed
   checkpoint mouth stands — see "What closes a street" above) and never within a tile of the
   home's own door. It is a `Prop` like a park tree, feet-anchored so she passes behind its canopy,
