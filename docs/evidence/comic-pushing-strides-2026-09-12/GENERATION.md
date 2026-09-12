@@ -35,7 +35,7 @@ directories:
 Run this record's source-rendering and registration commands from a checkout of
 5210f6d828cf61d22c95516fbb1c34ff7d96529d. Its runtime SVG paths hold the generation targets
 whose hashes this recipe checks. The dedicated authoring folder preserves those same targets
-independently of the in-game SVG restoration; the accepted PNG outputs remain identical.
+separately from the runtime SVG artwork; the accepted PNG outputs match the retained derivatives.
 
 ```sh
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . \

@@ -34,9 +34,8 @@ Keep the game's perspective and the SVG subject's identity.
 
 The [player authoring sources](graphics-creation/player/README.md) preserve the high-fidelity SVG
 targets used for the accepted PNG sprites. Their manifest distinguishes those creation references
-from the runtime SVG fallback artwork. Existing runtime frames retain the pre-PR drawings, while
-the newly introduced together frames remain available. Use the creation-reference family for
-high-fidelity generation and its linked recipes for reproduction.
+from the runtime SVG fallback artwork. Both families provide contact and together poses. Use the
+creation-reference family for high-fidelity generation and its linked recipes for reproduction.
 
 ## Replacement contract
 

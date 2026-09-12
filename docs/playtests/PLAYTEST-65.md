@@ -238,3 +238,8 @@ discoverable.
 Restore only player SVG files that existed before this PR. Keep newly introduced player SVG
 files in the runtime catalogue. Preserve the complete creation-reference family separately so
 it can still guide high-fidelity generation.
+
+> don't call it pre-PR drawings or stuff like this use the timeless writing style
+
+Describe current graphics by their stable roles: runtime SVG artwork and generation-reference
+SVGs. Keep change history in `DECISIONS.md`; current docs explain the current arrangement.

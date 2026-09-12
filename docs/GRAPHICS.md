@@ -241,9 +241,8 @@ closed idle frame, registration and eight-direction GIF recipe are in the
 The [graphics recipe index](evidence/README.md#graphics-recipes) also locates the named comparison
 versions and their preserved rollouts.
 The [player authoring directory](graphics-creation/player/README.md) holds the high-fidelity SVG
-generation targets and their runtime/PNG pairings. Runtime SVGs that predate the player-art PR
-retain their original artwork; new together-frame SVGs remain in the runtime catalogue. The PNG
-presentation uses the accepted F and P2 textures.
+generation targets and their runtime/PNG pairings. The runtime SVG catalogue supplies vector
+artwork for contact and together poses. The PNG presentation uses the accepted F and P2 textures.
 
 The seven `sidewalk{,_cracked_*}.png` surfaces have a shared plain and damaged paving base.
 Their joins with the accepted curb artwork require correction under M109, convert the SVG

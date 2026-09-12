@@ -119,8 +119,8 @@ findings supported by the conversion and review.
 - [ ] Assemble ground variants from shared bases and transparent overlays. PLAYTEST-65 asks for
       one sidewalk floor texture, a curbstone-only texture and a red main-street edge-line texture,
       blended during assembly. Remove backgrounds from cracks and other damage and composite them
-      over the actual sidewalk, road or alley base. Stencil the damage from the pre-PR illustrated
-      versions accepted in PLAYTEST-65: all sidewalk, road and alley hairline/cracked/broken A/B
+      over the actual sidewalk, road or alley base. Stencil the illustrated damage sources
+      accepted in PLAYTEST-65: all sidewalk, road and alley hairline/cracked/broken A/B
       variants, preserving their crack, hole and debris shapes. Road variants
       likewise share one asphalt base,
       with yellow lines and crosswalk stripes applied as transparent marking layers. Keep the
