@@ -61,9 +61,10 @@ const UNMARKED_VAN_FRONT_DIAGONAL := preload("res://assets/events/unmarked_van_f
 const UNMARKED_VAN_BACK_DIAGONAL := preload("res://assets/events/unmarked_van_back_diagonal.svg")
 const VAN_VICTIM := preload("res://assets/events/van_victim.svg")
 ## The night raid's van: `_draw_eight_view()` reads `RIOT_VAN_BY_VIEW` below through the same
-## octant/mirror convention `EightDirection` gives every other family — see M56's own record for
-## why the side view mirrors on **west** here rather than on east as the other west-authored vans
-## below do (`side_faces_west` stays false for this family to keep that exact behaviour).
+## octant/mirror convention `EightDirection` gives every other family. Its side picture is
+## authored facing west, the same as `unmarked_van` and `army_truck` below
+## (`docs/evidence/svg-vehicles-2026-09-10/facings.csv`), so it takes the same `side_faces_west`
+## override those two do.
 const RIOT_VAN := preload("res://assets/events/riot_van.svg")
 const RIOT_VAN_FRONT := preload("res://assets/events/riot_van_front.svg")
 const RIOT_VAN_BACK := preload("res://assets/events/riot_van_back.svg")
@@ -343,8 +344,10 @@ const POLICE_CAR_BY_VIEW := {
 	"front_diagonal": POLICE_CAR_FRONT_DIAGONAL,
 	"back_diagonal": POLICE_CAR_BACK_DIAGONAL,
 }
-## `_draw_eight_view(RIOT_VAN_BY_VIEW, _heading, canvas)` with no `side_faces_west` override
-## reproduces M56's own hand-written octant match exactly — see that const's own doc comment above.
+## `_draw_eight_view(RIOT_VAN_BY_VIEW, _heading, canvas, true)` — west-authored like
+## `UNMARKED_VAN_BY_VIEW` and `ARMY_TRUCK_BY_VIEW` above, see that pair's own doc comment — so the
+## side view mirrors on **east** to match `facings.csv`'s recorded `mirror_x`, corrected from M56's
+## own hand-written octant match, which had it backwards.
 const RIOT_VAN_BY_VIEW := {
 	"front": RIOT_VAN_FRONT,
 	"back": RIOT_VAN_BACK,
@@ -2035,9 +2038,10 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.ROBBER:
 			_draw_robber(canvas)
 		EventDef.Look.RIOT_VAN:
-			# Generalised onto the shared helper — see `RIOT_VAN_BY_VIEW`'s own doc comment above for
-			# why no `side_faces_west` override reproduces M56's hand-written octant match exactly.
-			_draw_eight_view(RIOT_VAN_BY_VIEW, _heading, canvas)
+			# West-authored, like `unmarked_van` and `army_truck` — see `RIOT_VAN_BY_VIEW`'s own doc
+			# comment above for why the side view needs the `side_faces_west` override to match
+			# `facings.csv` rather than M56's hand-written octant match, which had it backwards.
+			_draw_eight_view(RIOT_VAN_BY_VIEW, _heading, canvas, true)
 		EventDef.Look.ARMY_TRUCK:
 			_draw_eight_view(ARMY_TRUCK_BY_VIEW, _heading, canvas, true)
 		EventDef.Look.BARRICADE:
@@ -2095,9 +2099,9 @@ func _draw_simple(texture: Texture2D, canvas: CanvasItem = self) -> void:
 ## mirrors the same way regardless, since each is authored facing its own specific compass point
 ## rather than shared between two.
 ##
-## `night_raid`'s van reaches this same helper through `RIOT_VAN_BY_VIEW` with no `side_faces_west`
-## override — see that const's own doc comment for why the plain `is_mirrored()` sense is kept for
-## its `"side"` view rather than corrected to match `facings.csv`.
+## `night_raid`'s van reaches this same helper through `RIOT_VAN_BY_VIEW` with the
+## `side_faces_west` override set, the same as `delivery_van`, `fire_engine`, `unmarked_van` and
+## `army_truck` above — see that const's own doc comment.
 ##
 ## `_draw_simple` itself is untouched and keeps drawing every row that has no directional family at
 ## all: `mouse` and `skip`.
