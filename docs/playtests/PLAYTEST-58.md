@@ -69,6 +69,22 @@ where the pavement is narrow*:
 
 So a street tree has no body, like a park tree.
 
+And on how many there are and where, reshaping M115, streets with trees, which playtest 57 asked
+for as runs of three to five blocks:
+
+> and we should place trees in the streets more sparingly as per my earlier comment. trees read
+> like obstacles (they add noise) so it makes detecting actual obstacles harder. actually, I'm
+> rethinking the placement strategy. trees should only be allowed to be placed if there is no
+> other blocking event (or conversely due to map consistency) events can only be placed where no
+> trees are (except for the fallen tree which must empty out one tree lot). so trees must be
+> quite rare to be able to still place vans restaurants etc. also, trees make it harder to spot
+> events like yeller, dog walker, etc. so we need to be careful about how many we are placing
+
+So a tree and an event never share ground: since the trees are the city's and fixed for the run
+while the events are the day's, the day's events are placed only where no tree stands, the
+fallen tree being the one exception that takes a tree's own spot and empties it. And trees are
+rare, both so the events still have room and so a tree never hides one.
+
 ## This round
 
 > implement those this round
