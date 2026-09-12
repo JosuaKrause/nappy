@@ -1,0 +1,233 @@
+[
+  {
+    "svg": "assets/props/tree_a.svg",
+    "png": "assets/illustrated/svg-transfer/props/tree_a.png",
+    "svg_sha256": "6a88eb392899fb5762a3e105b8070e19c439ce2d998f772f1213d32fe29724dc",
+    "native_dimensions": [
+      40,
+      46
+    ],
+    "anchor": [
+      20,
+      46
+    ],
+    "source_center": null,
+    "usage": "src/city/prop.gd via Prop.TREES, park/street tree variation",
+    "review_evidence": [
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-native.png",
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-4x.png"
+    ]
+  },
+  {
+    "svg": "assets/props/tree_b.svg",
+    "png": "assets/illustrated/svg-transfer/props/tree_b.png",
+    "svg_sha256": "915f4f0127c5cc7b459cc0cf85345230da26ecd4290843e9fa78351fa518bdb2",
+    "native_dimensions": [
+      40,
+      52
+    ],
+    "anchor": [
+      20,
+      52
+    ],
+    "source_center": null,
+    "usage": "src/city/prop.gd via Prop.TREES, park/street tree variation",
+    "review_evidence": [
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-native.png",
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-4x.png"
+    ]
+  },
+  {
+    "svg": "assets/props/tree_pit.svg",
+    "png": "assets/illustrated/svg-transfer/props/tree_pit.png",
+    "svg_sha256": "59265133bd269339c44e25b1b08b5315b46848c420df71edc4e1095425186c99",
+    "native_dimensions": [
+      32,
+      32
+    ],
+    "anchor": [
+      16,
+      16
+    ],
+    "source_center": null,
+    "usage": "src/city/city_decals.gd via CityDecals, flat street-tree bed",
+    "review_evidence": [
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-native.png",
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-4x.png"
+    ]
+  },
+  {
+    "svg": "assets/props/bollard.svg",
+    "png": "assets/illustrated/svg-transfer/props/bollard.png",
+    "svg_sha256": "a2548daabbaca3ea88588f59536add34cf8bd433bfa8d6c488ee98546f842ca5",
+    "native_dimensions": [
+      12,
+      12
+    ],
+    "anchor": [
+      6,
+      12
+    ],
+    "source_center": [
+      6,
+      6
+    ],
+    "usage": "src/city/prop.gd via Prop.BOLLARD, precinct mouth decoration",
+    "review_evidence": [
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-native.png",
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-4x.png"
+    ]
+  },
+  {
+    "svg": "assets/props/roof_water_tank.svg",
+    "png": "assets/illustrated/svg-transfer/props/roof_water_tank.png",
+    "svg_sha256": "ee35cf7c6d871ec9ef9d6286151037073a0825c5dd2f93b4ecf3dc2258a023a8",
+    "native_dimensions": [
+      32,
+      48
+    ],
+    "anchor": [
+      16,
+      48
+    ],
+    "source_center": null,
+    "usage": "src/city/building.gd via residential/commercial roof furniture",
+    "review_evidence": [
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-native.png",
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-4x.png"
+    ]
+  },
+  {
+    "svg": "assets/props/roof_hvac_unit.svg",
+    "png": "assets/illustrated/svg-transfer/props/roof_hvac_unit.png",
+    "svg_sha256": "97778cedf885c46db7a2f631290fb6dccedc2e96d5d56641196467cd00deefbf",
+    "native_dimensions": [
+      32,
+      32
+    ],
+    "anchor": [
+      16,
+      32
+    ],
+    "source_center": null,
+    "usage": "src/city/building.gd via industrial roof furniture",
+    "review_evidence": [
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-native.png",
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-4x.png"
+    ]
+  },
+  {
+    "svg": "assets/props/roof_hvac_unit_b.svg",
+    "png": "assets/illustrated/svg-transfer/props/roof_hvac_unit_b.png",
+    "svg_sha256": "16ed45ae52e2011934eb9ae9c2d0a503b2a268dfeb91aec0313f90d06411c482",
+    "native_dimensions": [
+      32,
+      32
+    ],
+    "anchor": [
+      16,
+      32
+    ],
+    "source_center": null,
+    "usage": "src/city/building.gd via industrial roof furniture variant",
+    "review_evidence": [
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-native.png",
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-4x.png"
+    ]
+  },
+  {
+    "svg": "assets/props/roof_vent_stack.svg",
+    "png": "assets/illustrated/svg-transfer/props/roof_vent_stack.png",
+    "svg_sha256": "714168582e14c86df514c7b99121ecbb48b34a4e665f48083294a1e741e4306b",
+    "native_dimensions": [
+      32,
+      32
+    ],
+    "anchor": [
+      16,
+      32
+    ],
+    "source_center": null,
+    "usage": "src/city/building.gd via industrial roof furniture",
+    "review_evidence": [
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-native.png",
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-4x.png"
+    ]
+  },
+  {
+    "svg": "assets/props/roof_skylight.svg",
+    "png": "assets/illustrated/svg-transfer/props/roof_skylight.png",
+    "svg_sha256": "1a64ae7255b96a1edd60fc059e51b61eec2fa473311f5997cc5072a143251c10",
+    "native_dimensions": [
+      32,
+      32
+    ],
+    "anchor": [
+      16,
+      32
+    ],
+    "source_center": null,
+    "usage": "src/city/building.gd via civic roof furniture",
+    "review_evidence": [
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-native.png",
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-4x.png"
+    ]
+  },
+  {
+    "svg": "assets/props/roof_skylight_b.svg",
+    "png": "assets/illustrated/svg-transfer/props/roof_skylight_b.png",
+    "svg_sha256": "0c6315e7889d50bbcba5d52fd420605f01c1d02f3aa939716e455d5d839e5780",
+    "native_dimensions": [
+      32,
+      32
+    ],
+    "anchor": [
+      16,
+      32
+    ],
+    "source_center": null,
+    "usage": "src/city/building.gd via civic roof furniture variant",
+    "review_evidence": [
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-native.png",
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-4x.png"
+    ]
+  },
+  {
+    "svg": "assets/props/roof_duct_straight.svg",
+    "png": "assets/illustrated/svg-transfer/props/roof_duct_straight.png",
+    "svg_sha256": "16559a605204698b3e6a5775ab28849ede486a6181c9c0d6bf1f686509338c48",
+    "native_dimensions": [
+      64,
+      32
+    ],
+    "anchor": [
+      32,
+      32
+    ],
+    "source_center": null,
+    "usage": "src/city/building.gd via industrial roof duct run",
+    "review_evidence": [
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-native.png",
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-4x.png"
+    ]
+  },
+  {
+    "svg": "assets/props/roof_duct_corner.svg",
+    "png": "assets/illustrated/svg-transfer/props/roof_duct_corner.png",
+    "svg_sha256": "ad30ff91027a8866534e45bc7ad0db6363f67517893f63d5561febae4c9e7372",
+    "native_dimensions": [
+      32,
+      32
+    ],
+    "anchor": [
+      16,
+      32
+    ],
+    "source_center": null,
+    "usage": "src/city/building.gd via industrial roof duct run",
+    "review_evidence": [
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-native.png",
+      "docs/evidence/comic-city-props-2026-09-12/comparisons/props-4x.png"
+    ]
+  }
+]
