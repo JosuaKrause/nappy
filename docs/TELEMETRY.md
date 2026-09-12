@@ -155,7 +155,14 @@ run seed alone does **not** reproduce a city and both have to be written down.
 developer flag — gated behind `DevFlags.enabled()` (`OS.is_debug_build()`) like every other one,
 listed in README.md's "Dev flags" table. Under it, `DayController._ignores_loss()` is the one
 predicate all three losing results — crying, a hard fail, the clock reaching zero — consult before
-ending the day, so none of them do; a won day still ends normally. The day header notes it the same
+ending the day, so none of them do; a won day still ends normally. **It also stands the day clock
+and the excitement meter still**, rather than letting the day run its noisy, darkening course with
+nothing able to end it: `DayController._process()` skips the countdown outright, so
+`fraction_remaining()` — and the light it drives — stays wherever the day started, and `Baby.
+_update_excitement()` never adds to the meter, though decay may still run it down. *(2026-09-11,
+overturning the flag's own first build the same evening, [PLAYTEST-57](playtests/PLAYTEST-57.md):
+"when invincible the timer should never go down and excitement should never go up. this is just
+noisy flashing of alarms and the day gets dark.")* The day header notes the flag itself the same
 way it notes the seed, appended once when the day opens rather than as a per-frame entry —
 `day 6  act 2  run seed 4242  city seed 4242  length 144.0s  invincible` — so a log from an
 invincible day is recognisable without reading a single `lost` or `nerve` line that never comes.
@@ -306,11 +313,10 @@ kind here: birds that freeze in the air, a cat drawn running backwards, a zzz a 
 pram, a caret over the wrong things.
 
 So a run writes PNGs into its own `auto/` folder, named `<N><attempt suffix>-<what>.png` from a
-counter — `003-attempt1-lost_crying.png` — rather than from the day clock: `--invincible` clamps
-the countdown to exactly zero once a day runs out rather than ending it, which holds the elapsed
-day clock at the day's own length for as long as the day keeps running afterward, so a clock-named
-picture taken past dusk that day would name itself identically to every other one taken after it;
-even off that flag, two pictures inside one in-game second collided the same way. *(2026-09-11,
+counter — `003-attempt1-lost_crying.png` — rather than from the day clock: under `--invincible` the
+clock never moves at all, so a clock-named picture would name itself identically to every other one
+taken that same day; even off that flag, two pictures inside one in-game second collided the same
+way. *(2026-09-11,
 playtest 56: "phot capture must use real time not game time otherwise at the end of the day all
 pictures get overwritten", then "actually why not just count up the screenshot numbers?".)* The
 counter is `Telemetry._shot_serial`, shared with the person-requested pictures in `asked/` below so
@@ -395,10 +401,13 @@ build has nothing in `project.godot` to reach:
   agents, props, her and the pram. Buildings draw no shadow, so none is drawn for one here either.
   Traced from `GroundShape.shadow_outline()`, the same polygon `draw_shadow()` itself now fills, so
   the layer and the shadow cannot disagree.
-- **`3` bounding boxes** — every collision body's own outline: an event's obstruction, a building's
-  footprint, her own circle. A moving car's strike box is drawn here too, in the lethal colour,
-  because it is not a body but is exactly what ends the day on contact. Walkers and cars have no
-  body of their own, and none is invented for them.
+- **`3` bounding boxes** — every enabled collision shape a body could touch, traced straight from
+  the `CollisionShape2D`/`CollisionPolygon2D` nodes physics itself reads (`DebugLayers.
+  collision_nodes_under()`), so the layer cannot omit one: an event's obstruction, a building's
+  footprint, her own circle, the pram's own body, and a road closure's or the map boundary's own
+  barrier. A moving car's strike box is drawn here too, in the lethal
+  colour, because it is not a body but is exactly what ends the day on contact. Walkers and cars
+  have no body of their own, and none is invented for them.
 - **`4` the readout** — the seed, frame rate and meter breakdown `main.gd` has always drawn top
   right, now toggleable like the other three: off, the string is not assembled, not merely hidden
   behind an invisible label, the same rule `_debug` itself already applied to the whole thing.

@@ -1,0 +1,10 @@
+<!-- Three-tile east-descending stair run for the basement entry. It matches the switchback deck's
+     broad tread-and-riser language while covering the existing two physical diagonal cells only. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" shape-rendering="crispEdges" stroke-linejoin="round">
+  <path d="M0 34L34 0H52L96 44V76L76 96H44L0 52Z" fill="#2d3036"/>
+  <path d="M4 36L36 4H50L92 46V74L74 92H46L4 50Z" fill="#696c70"/>
+  <path d="M10 42L42 10H48L86 48V68L68 86H48L10 48Z" fill="#767a7d"/>
+  <path d="M18 50L50 18 M32 64L64 32 M46 78L78 46 M60 92L92 60" fill="none" stroke="#c2b7a5" stroke-width="4"/>
+  <path d="M21 54L53 22 M35 68L67 36 M49 82L81 50" fill="none" stroke="#41434a" stroke-width="3"/>
+  <path d="M4 36L50 82 M36 4L82 50" fill="none" stroke="#a3988a" stroke-width="2"/>
+</svg>

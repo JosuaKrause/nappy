@@ -1,0 +1,14 @@
+<!-- Foreground joined rail for stair_flight_run_w.svg, mirrored with the same registration. The
+     separate rear rail remains beneath the walker. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <g stroke="#30292f">
+    <path d="M158 43L43 158" stroke-width="8"/>
+    <path d="M148 54L148 72 M128 74L128 92 M108 94L108 112 M88 114L88 132 M68 134L68 152" stroke-width="5"/>
+  </g>
+  <g stroke="#958879">
+    <path d="M158 41L41 158" stroke-width="3"/>
+  </g>
+  <g stroke="#c1ad90" stroke-width="1.5">
+    <path d="M148 54L148 72 M128 74L128 92 M108 94L108 112 M88 114L88 132 M68 134L68 152"/>
+  </g>
+</svg>

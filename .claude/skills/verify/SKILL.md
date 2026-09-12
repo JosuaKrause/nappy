@@ -165,8 +165,9 @@ somewhere.
   "make future agents aware that invincibility exists to capture things where timing to avoid a
   death screen would be difficult to do".)* A rig standing still at a busy junction pushes the
   meter to a hundred inside ten seconds, and a `--after 13` shot lands on the summary screen —
-  that is how one branch lost its best try at a turn. Under the flag nothing ends the day: the
-  baby cries and stays crying, a car or a capture does not end it, the clock holds at zero. So
+  that is how one branch lost its best try at a turn. Under the flag nothing ends the day, the
+  clock never moves and the excitement meter never rises, so the light stays where the day
+  started and no alarm flashes over the capture; a car or a hard fail does not end it either. So
   **any capture whose timing is hard to hit adds `--invincible`** and waits as long as it needs
   to. The HUD shows `INVINCIBLE` and the run log says so in its day header, which is what stops
   the picture being mistaken for a real run; a capture meant to show *cost* or a *loss* leaves

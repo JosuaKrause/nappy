@@ -17,9 +17,39 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 Each line is a thing to try or look at and the question it settles. `tools/run.sh` plays the
 desktop build; `--seed <n> --day <n>` puts a run where an item says; `1` to `4` in a debug build
 toggle the field, shadow, bounding-box and readout layers (`docs/TELEMETRY.md`, "The debug
-view"). `--invincible` is the way to walk this whole list in one sitting: nothing ends the day, so
-one run can stand next to every item below for as long as looking takes.
+view"). `--invincible` is the way to walk this whole list in one sitting: nothing ends the day,
+the clock stands still and the excitement meter never rises, so one run can stand next to every
+item below for as long as looking takes.
 
+- **Walk her into a wall, a corner and a barrier at an angle** (any day; `3` shows the bodies).
+  The pram's body is an 8px circle centred on the edge of her own 14px one, so the pram's far
+  half overlaps what it meets and she stands against a wall again. Does the pram still catch on
+  corners, and does the far half clipping into a wall read as wrong? 8px is a guess. Record is
+  `DECISIONS.md`, M100, the pram's body sits on her circumference.
+- **Turn on the bounding-box layer and look at everything** (`3`). It now draws every body physics
+  reads, from the collision nodes themselves: hers, the pram's, buildings, events, closure
+  barriers and the map's boundary. Is there any body you can walk into that has no outline? Same
+  record.
+- **Click to set a heading, then press an arrow or WASD while she walks** (either control mode).
+  She walks in the key's direction only, and the joystick knob reads as stopped. Does a held Shift
+  survive it, and does a click afterwards aim fresh? Record is `DECISIONS.md`, M100, the keyboard
+  resets the pointer's aim.
+- **Find a crossing alley walled at its mouth on day 7 or later** (`--seed 2199579682 --day 7`,
+  tile 95,88). The band is 64px wide, flush with the alley's paving, no longer over the roof
+  edges either side. Does it still read as standing on a roof? Record is `DECISIONS.md`, M100, a
+  region wall fits the alley mouth.
+- **Walk north into the top of any building.** Her body goes 6px into the roof's northern edge
+  before stopping. Does that read as leaning into the top of a wall, or is it too little to
+  notice? Same record.
+- **Run `--invincible` for a couple of minutes beside a loud event** (any day). The clock and the
+  light stay where the day started and the excitement bar never rises, while the crowd, the
+  events, the closures and the checkpoints all still run. Does anything still flash or darken, and
+  is a held day still useful for looking at the rest of this list? Record is `DECISIONS.md`,
+  M100, invincible freezes the clock and the meter.
+- **Find a crossing alley walled at both mouths on day 7 or later** (`--seed 2199579682 --day 7`
+  has one). No chalk mark and no robber ever stands on its paving; the mark is offered somewhere
+  she can reach. Does the mark ever appear behind a band anywhere else — a closure, a soft seal?
+  Record is `DECISIONS.md`, M100, a blocked-off alley has no chalk mark.
 - **Stand by a sealed street and watch the crowd** (any day; seals are the bodies on the streets
   the day's route does not use). Walkers and cars turn back from a hard seal, a wall and a
   closure; a soft seal takes both pavements from walkers and leaves the road to cars; a door lets
@@ -93,10 +123,8 @@ one run can stand next to every item below for as long as looking takes.
   at a glance; industrial and civic are told apart by their roofs alone, which are small at play
   scale, and the portico was out of frame. Does each district read as a place, and does the
   street-tree density read as a street or as a hedge? Record is `DECISIONS.md`, M106.
-- **Walk into a street tree, and find a fallen tree.** A trunk has a small body now, so she walks
-  round it; a fallen tree closure prefers a street with standing trees. Does the trunk catch her
-  where the pavement is narrow, and does the fallen tree read as one of the standing ones down?
-  Record is `DECISIONS.md`, M106.
+- **Find a fallen tree.** A fallen tree closure prefers a street with standing trees. Does the
+  fallen tree read as one of the standing ones down? Record is `DECISIONS.md`, M106.
 - **Play or jump to day 5, day 9 and day 13 and look at the ground** (`--day 9`). The city
   degrades on one curve from day 5: cracks on pavement before road, in three levels; litter on
   pavements, alleys and squares; garbage sacks in alleys first and against building fronts from
@@ -113,16 +141,18 @@ one run can stand next to every item below for as long as looking takes.
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
 
-- **The building exists and nobody has walked it.** `tools/run.sh --start-escape` (debug only;
+- **Walk the apartment and judge the reference-based interior graphics.** `tools/run.sh --start-escape` (debug only;
   `--start-escape stairwell:left|stairwell:right|lobby|basement|floor:2|floor:1` boots into a
   part) puts her, carrying the baby, in front of her door on the third floor of a building with
   three hallways, two switchback stairwells at opposite ends, a barricaded lobby and a winding
   basement to the emergency exit — one map, the parts 64 tiles apart, every door a fade and a
-  teleport. Everything about it is checked by a rig and by seven captures: whether a diagonal
-  flight reads as *descending* when a sideways press walks it, whether the fade-and-teleport reads
-  as a door or as a cut, whether eight rows a floor reads as a stairwell, and whether five floors
-  is *"not excessively many"* are all played questions. The record is in `DECISIONS.md` under
-  M112; what M102, the finale, still adds inside it is in `TODO.md`.
+  teleport. Look at the open passage notches beside the locked apartment recesses, the lobby's
+  barricaded entrance, the broad stairs and level turn platforms, and the basement's short stair
+  and open corridor mouths. Do the stairs read as descending, are the doors easy to identify,
+  and does the building match the supplied sketches? Both stairwells have recorded physical
+  walks, but the feel of the sideways controls and fade-and-teleport still needs a person's
+  verdict. Records are in `DECISIONS.md` under M112, the escape scene and interior graphics;
+  what M102, the finale, still adds is in `TODO.md`.
 
 - **Every field has a shape now, and nobody has felt one.** A stationary body's field is a capsule
   about its own spine rather than a disc about its centre, and a moving thing's is an ellipse with

@@ -1,5 +1,218 @@
 # Decisions
 
+## One handoff entry point, 2026-09-12
+
+The player asked: "do we need LUNA_HANDOFF anymore? I think all the info is now repeated elsewhere
+as well? can we remove it?" `docs/LUNA_HANDOFF.md` contained only pointers and rules already in
+`HANDOFF.md`, `TODO.md`, `VISUALS.md`, `GRAPHICS.md` and the art/orchestration skills. It was
+removed without moving any unique guidance; the committing skill now checks `HANDOFF.md`
+rather than referring to two handoffs. The old illustrated-work document snapshot stays in
+the rejected-graphics archive as historical evidence, not a working entry point.
+
+## M112 — Escape interior graphics from the references, 2026-09-12
+
+Playtest 59 asked to use the playable ending section and reference images to fix its graphics.
+The four apartment sketches and two stair references were compared with the existing runtime
+pictures. The accepted layout from playtests 54 and 55 remained: opposite-end stairwells,
+three hallways, the lobby and basement, joined on one map by fade-and-teleport doors.
+
+The graphics pass gave each switchback continuous broad tread decks, separate foreground and
+rear rails, enclosed shaft bays and end caps, and level landing platforms. The floor platforms
+fit the door/landing/clearance strip; turn platforms fit the existing cleared corner cells.
+The short basement entry got a matching deck and rails. The original walking cells, collision,
+slope redirection and door behavior were not changed. Apartment recesses became four distinct
+locked thresholds per hallway, including the start; usable south-edge doors became open notches.
+The wide lift and entrance are centered on their own widths and drawn after neighboring wall
+strips so they cannot be cropped. The lobby chandelier was removed to expose the furniture
+barricade, and brick-wall pictures were omitted at the basement's two walkable passage mouths.
+
+**Choices open to overturn.** The locked recesses occupy columns 2, 5, 7 and 10. Floor-starting
+flights have a rear rail; return flights keep that edge open to avoid an incoming foreground
+rail crossing it at the turn. Floor platforms are 96×32 and turn platforms 64×96, chosen from
+the existing physical clearance rather than added walkable space. A first assembly's crossing
+rails and oversized platform were rejected internally; those drafts were not retained. The
+repeating south-edge threshold source shown in the earlier human-review build is preserved in
+`docs/evidence/archive/rejected-graphics/escape-interior-before-reference-fix-2026-09-12/`;
+the remaining original stair sources stay in the tile kit, and the earlier runtime pictures
+stay in `docs/evidence/m112-escape-2026-09-10/`.
+
+**Verification.** Godot import/boot, the focused interior suite and XML/document lint passed.
+Every new or changed source was rendered with Godot at native and 3× size and inspected; sheets
+and an assembled stair preview are in `docs/evidence/m112-escape-graphics-2026-09-12/`.
+The final 1280×720 runtime pass captured all seven parts plus both stair directions, lower
+landings and the basement passages. Real input carried the collision-enabled player around the
+first switchback of both stairwells to the second-floor landing, within 4px of its center.
+Both walks have complete three-second bursts with actual frame timing, original PNGs and MP4s.
+The run and capture rig are preserved under
+`docs/evidence/archive/session-captures/2026-09-12/run-043554-seed4242-v0.8.2-704-g4f3cfb7-dirty/`.
+The human readability and control-feel questions are in `REVIEW.md`; this pass does not build
+the finale events, clock or city escape.
+
+**Integration review.** Main's street-tree body removal and checkpoint/release-flag queue
+additions were retained alongside the interior graphics. The tree/debug-layer edits have no
+interior caller; the new apartment door-flag request remains open under the finale rather than
+being silently implemented by an art pass. Playtests 58 and 59 remain separate primary sources.
+The archive's prepend conflict retained both histories, and the merged boot, interior suite,
+document lint and whitespace checks passed.
+
+## M106 — Roofs, fronts and street trees · a street tree has no body, 2026-09-12
+
+*(2026-09-12, playtest 58: "trees shouldn't have a hitbox at all. trees in parks don't why should
+the ones in the street be treated differently?")* M106 gave a street tree a 6px collision circle
+at its trunk, kept inside one tile so the pavement's other tile stayed a full lane, on the
+reasoning that a canopy is walked under and a trunk is not; it went to `REVIEW.md` as *does the
+trunk catch her where the pavement is narrow*, and the player's answer is that it should not exist.
+**What stands**: no prop has a body. The trunk body, its radius constant and the sentence in
+`docs/CITY.md` that called the street tree the one prop with a real body are gone; a street tree
+is walked through exactly like a park tree, so a pavement with trees costs the route nothing a bare
+one does not. The bounding-box layer walks the physics tree, so it needed no change and draws one
+outline fewer. No test asserted the trunk body. Done by the orchestrator in the same round as
+playtest 58's other items, since it is a deletion and four sentences.
+
+## M100 — Small, real, and nobody's · the pram's body sits on her circumference, and the debug view draws every body, 2026-09-12
+
+*(2026-09-11, playtest 57: "I don't like the stroller having a hitbox. it makes navigation clunky,
+I cannot get close to walls anymore, and I get constantly stuck."; then "can we keep the stroller
+hitbox but move it closer to the player (btw the hitbox right now is not drawn at all for some
+reason)"; "place the center of the stroller hitbox at the circumference of the player hitbox";
+"and don't make it too big"; "and make sure *all* hitboxes are actually drawn".)* The pram's own
+body had been built on 2026-09-10 from an M1 engineering note, never asked for, as a 12px circle
+34px ahead of her. Two agent commits on `feature/pram-body-and-keyboard`, reviewed here. **The
+body**: `PramCollisionShape2D`'s centre is `Tuning.PLAYER_BODY_RADIUS` (14px) out along her facing,
+on the edge of her own circle, at `Stroller.PRAM_BODY_RADIUS`, 8px, pinned and open to overturn.
+The drawing, shadow, cue and field keep their 34px offset; `pram_shape` stays 12px for the shadow.
+**Chosen where the design was silent**: the body's offset is unsquashed, where the old one applied
+the drawing's `OBLIQUE_Y` foreshortening to the physics offset too; every other body in the game
+is unsquashed and the debug layer's own doc says physics is. **The debug view** no longer keeps a
+list of body kinds to draw: `DebugLayers.collision_nodes_under()` walks the live tree under the
+city and the player for every enabled `CollisionShape2D` or `CollisionPolygon2D` under a
+`StaticBody2D` or `CharacterBody2D`, and draws each from its own `Shape2D` and global transform,
+so the layer cannot omit a body again. **The audit found four kinds it had been omitting**: the
+pram's body, a street tree's trunk, a road closure's two barrier bodies, and the four walls around
+the map's boundary. A test builds a day with region walls in play, counts enabled shapes by its
+own walk and asserts `body_outline_count()` matches. **Left open**: the escape scene's interior
+blockers are not wired to the layer at all, since `main` only hands it the city and the player;
+and the closure and boundary bodies are found by the walk rather than by a getter on `City`.
+**The band's body against its picture**, the tail of the same item, is recorded under the alley
+wall below: the wall across a road was already fitted, so the pram's own body was the whole of
+that gap.
+
+## M100 — Small, real, and nobody's · a region wall fits the alley mouth, and a roof's northern edge is ground, 2026-09-12
+
+*(2026-09-11, playtest 57: "also allow going in a little bit for northern edges of roofs"; "roofs
+also should be drawn over objects. the barrier looks on top of the roof in those pictures.")* Two
+agent commits on `feature/roof-edge-and-band`, reviewed here. **Measured first, both
+orientations, on seed 2199579682, day 7.** A region wall across a road is placed by
+`SealPlanner.place_hard_on()`, which already overrides the `roadblock` row's shape to a 32px point
+per body, three bodies at exactly 64px spacing across the 192px carriageway: body and picture
+agree and fit the street, so the gap the player measured there was the pram's body alone. A wall
+at a crossing alley's mouth was placed by `SealPlanner.alley_mouth_wall()` with the row's own
+`GroundShape.band(60.0)`, a 120px-wide capsule across a 64px alley, 28px onto each neighbouring
+lot: that is the barrier that read as standing on a roof. **What stands**:
+`RegionPlanner._alley_mouth_wall_body()` overrides the returned body's shape to a point of half the
+alley's width (32px), the same trim the road case already had, so the band draws and collides
+edge to edge with the alley's paving; a single 64px body across a 64px mouth still closes it, so
+no sealing guarantee moved. The override sits in `RegionPlanner` after the call because
+`SealPlanner` was outside the agent's fence; folding it into `alley_mouth_wall()` itself is a
+follow-up so a future caller cannot forget it. **Rejected**: sorting roofs above the entities
+layer. Buildings are drawn beneath the entities on purpose, since sorting a building against
+entities puts cues and the player under a roof (`City`'s top doc); fitting the band was enough.
+**The roof's northern edge**: `Building.NORTH_EDGE_INSET`, 6px, pinned and open to overturn. The
+body's south-north half-extent shrinks by half the inset and its centre shifts south by the same
+half, so the south edge stays on the lot's kerb and the north edge sits 6px inside the lot; no lot
+tile becomes walkable. Tests: every crossing alley's wall body draws within its own tile rect on
+the across-alley axis over the regions suite's seed sweep, and a built building's body north edge
+is the inset south of its lot's with the south edge and the east-west extent unchanged. Evidence:
+`docs/evidence/m100-alley-wall-2026-09-12/`, the run folder and `alley-wall.png`, the same
+alley playtest 57 stood at, with the bounding-box layer showing the wall's body flush inside the
+paving. Two attempts to frame a plain road wall landed on a building and a door, and the road
+case was already covered by the test, so no picture of it was kept.
+
+## M100 — Small, real, and nobody's · the keyboard resets the pointer's aim, fixed 2026-09-12
+
+*(2026-09-11, playtest 57: "arrow keys should reset any mouse click position. when pressing awsd
+or arrow keys right now the last pressed mouse position is still active resulting in incorrect /
+drifting movement.")* `TouchControls` locks a heading in by pressing the `move_*` actions
+synthetically, and the stroller reads one input vector, so a real key added to the stale press.
+One agent commit on `feature/pram-body-and-keyboard`. **What stands**: on any non-echo key press
+that maps to a movement action, `TouchControls._yield_to_the_keyboard()` releases the movement
+actions this node itself pressed, derived from the sign of its own locked heading, **except the
+action the key just pressed**, and clears the drag, the locked heading and the drawn knob. That
+exception is the ordering trap: `Input` updates an action's polled state before `_input()` sees
+the event, so releasing the key's own action would cancel the key rather than the click. `run` is
+released only if this node's own double press set it, so a physically held Shift is never touched.
+A test reproduces the engine's ordering by hand: a click north, then a `D` press, and the input
+vector is exactly right with the heading cleared.
+
+## M100 — Small, real, and nobody's · the dev rig moves out of main.gd, 2026-09-12
+
+The last of the queue's dev-only leftovers: `DevFlags` had taken the flag parsing out of `main.gd`
+and left the code that acts on the flags there, about a sixth of the file, tangled into the boot
+sequence. One agent commit on `feature/dev-rig-out-of-main`. **What stands**: `src/dev/dev_rig.gd`,
+class `DevRig`, holds the whole `--spawn` target lookup (park, alley, square, playground, event and
+`event:<id>`, arterial, `closure:<n>`, `zone:<n>`, landmark, signal, `edge:<side>`, precinct,
+`corner:<which>`, contact), `first_event_position`, `pavement_offset`, `nearest_walkable`, the
+`--follow` camera, the `--overview` camera, the `--meters` override and the `--day-length`
+override, every doc comment moved with its function and behaviour unchanged. It is a
+`RefCounted`: the follow camera and the event id it tracks are the only state that survives
+across calls, so those are instance members and everything else is static, taking the city, the
+resistance director, the baby or a parent node as arguments so it runs headless without booting
+`main`. `main.gd` keeps one-line calls and `_somebody_is_playing()`, which is about the run log
+rather than a rig. `tests/test_dev_rig.gd` builds a day on a fixed seed and checks the named
+targets land on walkable ground, an unknown target warns and falls back to the doorstep, and the
+pavement offset crosses the street's own width on both orientations, moved from `tests/test_main.gd`.
+Six smoke runs of the moved flags through `tools/shot.sh` each produced a picture and no script
+error. `DECISIONS.md`'s older record naming `main._pavement_offset()` is history and stands; the
+function is now `DevRig.pavement_offset()`.
+
+## M100 — Small, real, and nobody's · a blocked-off alley has no chalk mark, fixed 2026-09-12
+
+*(2026-09-11, playtest 57: "a blocked off alley must not have a chalk mark.")* The mark lay on the
+paving of an alley whose mouth a roadblock band closed. One agent commit on
+`feature/chalk-and-invincible`, reviewed here. **The cause, exactly**: on seed 2199579682, day 7,
+the alley is a crossing alley off the day's route tree, which `RegionPlanner` walls at both mouths
+with a `roadblock` band each. All three refusals `ResistanceDirector._pick_reachable()` applied
+let it through — `is_closed()` knows only `RoadClosure`s, `is_held_at()` asks
+`StreetNetwork.segment_containing()`, which answers null for every tile of an alley because an
+alley is carved into a block interior and never sits on a lattice segment, and the home-block check
+is unrelated. All eighty tiles of that day's walled alleys passed all three. **What stands**: a
+fourth query, `CityMap.is_in_walled_alley(tile, walled_alleys)`, rect membership against the region
+plan's `alley_walls`, asked at every point a candidate is offered — the mark's initial roll, the
+trap's guard position, and the relocation path that moves an unseen mark to the nearest alley —
+never as a repair afterwards. **Rejected**: a `ReachabilityGrid` flood from the doorstep. The
+planner's own contract is that a walled crossing alley is walled at both mouths, one tile deep and
+full width, so there is no third opening and rect membership is the exact answer a flood would
+give, without rebuilding and flooding a grid on every alley tile the relocation path checks per
+frame. **What this does not cover**: ground behind a closure or a hard seal on a street is refused
+by the existing closed and held checks; a soft seal leaves the far pavement walkable by design. If
+a mark is ever seen behind a band that is neither a closure nor a region wall, that is a new gap,
+not this one. Two tests in `tests/test_resistance.gd` pin it: the walled alley escaping every other
+check, and the real city-to-director pipeline never offering it the mark or the guard over twenty
+draws per step; both were red before the fix.
+
+## M100 — Small, real, and nobody's · invincible freezes the clock and the meter, 2026-09-12
+
+*Asked for on 2026-09-11 as everything else real · overturned the same day, playtest 57: "when
+invincible the timer should never go down and excitement should never go up. this is just noisy
+flashing of alarms and the day gets dark."* The flag's first build kept the day running with every
+meter real, which meant the baby cried at once and stayed crying, the alert flashed for the whole
+run, and the clock ran the light down to dusk and held it there. One agent commit on
+`feature/chalk-and-invincible`. **What stands**: `DayController._process()` skips the countdown
+outright under `DevFlags.invincible()`, so `fraction_remaining()` and the light stay wherever the
+day started — asked directly rather than through `_ignores_loss()`, which answers whether a result
+ends the day, a question a clock that never reaches zero never asks. `Baby._update_excitement()`
+empties its source list under the flag, so nothing adds to the meter and nothing reaches
+`accumulate_landed()`, which is what charges the halo; decay still runs, so the meter may fall.
+Sleepiness, the crowd, the events, the closures and the checkpoints all still run; the HUD word and
+the day header's log note stay. **Chosen where the design was silent**: the run clock shown on an
+ending (`GameState.play_seconds`, M107) keeps counting real time under the flag, because it
+measures the player's session and not the day. Open to overturn. Three tests in
+`tests/test_invincible.gd` pin the frozen clock, the meter that does not rise against a live noise
+source, and both moving with the flag off; the earlier test that pinned the clock clamping at zero
+was rewritten, since that state is now reached only by a day started with no time at all. A live
+picture on seed 2199579682, day 7, showed the clock at the day's own starting length and
+excitement at zero.
+
 ## M100 — Small, real, and nobody's · a screenshot is numbered, not timed, fixed 2026-09-11
 
 *(2026-09-11, playtest 56: "phot capture must use real time not game time otherwise at the end of

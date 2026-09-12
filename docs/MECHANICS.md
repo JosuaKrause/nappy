@@ -253,7 +253,9 @@ This makes the walk home a real second act rather than a victory lap.
 
 Controls: arrow keys or WASD to walk, hold **Shift** to run, **Esc** to pause. There is no
 interact key — touching a resistance chalk mark or a task's own contact is what completes it. The
-keyboard is a device rather than a scheme and works this way regardless of what a pointer does.
+keyboard is a device rather than a scheme and works this way regardless of what a pointer does. A
+press on the arrows or WASD resets whatever heading a click, tap or drag last locked in, so the
+keys steer alone from that frame; a later click sets a fresh heading as it does today.
 
 The title screen offers a choice of two pointer schemes, picked by pressing one of its two buttons
 — a direction key or `space` begins a run in the **tap** scheme instead. Both share the same shape:
@@ -838,6 +840,11 @@ only once its own position has actually been inside view, and until then, walkin
 `ResistanceDirector.NOTICE_RADIUS` (400px) away from it moves it to the nearest reachable
 alley tile within that radius of her instead — the alley's own mouth, on the path rather
 than off it. Its guard moves with it, at the same 66–176px band from wherever it lands.
+
+Neither the mark nor its guard is ever offered ground she cannot reach that day: a held
+segment, a sealed alley, or the ground behind a region wall's band — including a crossing
+alley the wall seals at both mouths, which is unreachable in its own right even though it is
+never on the closed-street list and never on a `StreetNetwork` segment.
 
 ## Day timer
 

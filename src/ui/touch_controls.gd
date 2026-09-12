@@ -49,6 +49,11 @@ extends Control
 ## re-aiming: the heading updates continuously until it lifts, always at one speed, never a partial
 ## vector — see `_on_drag()`'s own doc for why that is not the deleted drag stick returning.
 ##
+## **A real key on the arrows or WASD resets whatever a click, tap or drag last locked in, so the
+## keys steer alone from that frame.** See `_yield_to_the_keyboard()`'s own doc for the mechanism
+## and the ordering trap it exists to avoid — a naive release of the same action a key press just
+## set would cancel the key rather than the stale click.
+##
 ## **The pause button is not that kind of control.** `main._unhandled_input()` reads
 ## `event.is_action_pressed("pause")` off the propagated *event*, not off polled state, so
 ## `Input.action_press(&"pause")` would set the state and be heard by nothing — the same trap
@@ -214,6 +219,11 @@ var _rig: Node2D
 ## Locked in at the last press; never touched again until the next press releases or replaces it.
 var _direction := Vector2.ZERO
 var _walking := false
+## Whether this node itself currently holds the `run` action pressed — set alongside `_direction`
+## in `set_direction()`, cleared wherever `_direction` is. Tracked rather than read back off
+## `Input.is_action_pressed(&"run")`, which cannot tell this node's own press from `Tuning`'s Shift
+## binding: see `_yield_to_the_keyboard()`'s own doc for why that distinction is the whole fix.
+var _run_active := false
 
 ## The previous press's own moment and screen position, for the double-tap windows. `-INF` reads as
 ## "no earlier press this run", which can never fall inside either window.
@@ -337,6 +347,8 @@ func _input(event: InputEvent) -> void:
 		var motion := event as InputEventMouseMotion
 		if motion.button_mask & MOUSE_BUTTON_MASK_LEFT:
 			_on_drag(motion.position, _MOUSE_POINTER_INDEX)
+	elif event is InputEventKey and event.pressed and not (event as InputEventKey).echo:
+		_yield_to_the_keyboard(event as InputEventKey)
 
 ## Stands in for the touch index a mouse event carries none of — the same role `PauseScreen
 ## ._MOUSE_HOLD_INDEX` plays for the restart button's own hold. Needed now that the pause button is
@@ -557,6 +569,7 @@ func set_direction(target: Vector2, run: bool, from := Vector2.INF) -> void:
 	_walking = true
 	_set_axis(&"move_left", &"move_right", direction.x)
 	_set_axis(&"move_up", &"move_down", direction.y)
+	_run_active = run
 	if run:
 		Input.action_press(&"run")
 	else:
@@ -570,8 +583,73 @@ func set_direction(target: Vector2, run: bool, from := Vector2.INF) -> void:
 func _stop() -> void:
 	_walking = false
 	_direction = Vector2.ZERO
+	_run_active = false
 	_release_movement()
 	queue_redraw()
+
+## The keyboard resets whatever heading a click, tap or drag last locked in. *(PLAYTEST-57: "arrow
+## keys should reset any mouse click position. when pressing awsd or arrow keys right now the last
+## pressed mouse position is still active resulting in incorrect / drifting movement.")* A pointer
+## press locks a heading in by pressing `move_*` actions synthetically (`_set_axis()`, called from
+## `set_direction()`), and `Stroller._physics_process()` reads the same four actions through
+## `Input.get_vector()`, which sums over *everybody* currently pressing them — so a real key adds
+## to, rather than replaces, whatever a click left behind, and she drifts toward neither heading.
+##
+## **Releasing this node's own synthetic press is only safe for an action the key itself did not
+## just set.** The trap: `Input`'s polled state for an action is updated before any node's
+## `_input()` sees the event that changed it, so a naive `Input.action_release()` on the same
+## action the key press just set would cancel the key that is now actually held, not the click
+## that is stale. `_our_pressed_move_actions()` names exactly what this node itself is holding down
+## from the last `set_direction()` call — never derived from a real key's own state, which `Input`
+## already tracks correctly and this never has to touch — and every entry that is not `key`'s own
+## action is released. An entry that *is* that action is left alone, because the real key is now
+## the one holding it, which is already the direction she should walk.
+##
+## Also drops any drag still in flight, so a finger or a held mouse button left down cannot re-aim
+## over the keyboard a frame later, and this node's own `run` press from a double click or tap —
+## `_run_active`, never a bare `Input.action_release(&"run")`, for the same reason as the move
+## actions: a real Shift held at the same moment is not this node's to release. Zeroing `_direction`
+## and `_walking` is what lets the drawn focus knob (`Mode.JOYSTICK`) read as centred — stopped and
+## keyboard-driven — rather than still pointing at a heading the keys have already overridden.
+## Harmless when nothing was ever clicked: both sets are already empty, so pure keyboard play never
+## reaches past the first `return` below.
+func _yield_to_the_keyboard(key: InputEventKey) -> void:
+	if get_tree().paused:
+		return
+	var pressed_action: StringName = &""
+	for action in [&"move_left", &"move_right", &"move_up", &"move_down"]:
+		if key.is_action(action, true):
+			pressed_action = action
+			break
+	if pressed_action == &"":
+		return
+	for action in _our_pressed_move_actions():
+		if action != pressed_action:
+			Input.action_release(action)
+	if _run_active:
+		Input.action_release(&"run")
+		_run_active = false
+	_drag_pointer_index = -1
+	_walking = false
+	_direction = Vector2.ZERO
+	queue_redraw()
+
+## Exactly the `move_*` actions this node itself currently holds pressed, derived from `_direction`
+## rather than kept as a second copy of it — `_set_axis()` is what `set_direction()` presses these
+## through, and it presses at most one of each opposing pair, matching `_direction`'s own sign on
+## each axis. Empty once `_direction` is `Vector2.ZERO`, which `_stop()` and `_release_all()` both
+## already set.
+func _our_pressed_move_actions() -> Array[StringName]:
+	var found: Array[StringName] = []
+	if _direction.x > 0.0:
+		found.append(&"move_right")
+	elif _direction.x < 0.0:
+		found.append(&"move_left")
+	if _direction.y > 0.0:
+		found.append(&"move_down")
+	elif _direction.y < 0.0:
+		found.append(&"move_up")
+	return found
 
 ## The unit vector from `from` to `target`, or `Vector2.ZERO` for a press with nowhere to go.
 static func heading_to(target: Vector2, from: Vector2) -> Vector2:
@@ -664,6 +742,7 @@ func _release_all() -> void:
 	_drag_pointer_index = -1
 	_walking = false
 	_direction = Vector2.ZERO
+	_run_active = false
 	_release_movement()
 	queue_redraw()
 

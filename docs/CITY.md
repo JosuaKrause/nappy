@@ -1001,7 +1001,12 @@ segment's wall stands at one of its two ends (`CityMap.boundary_wall_at_a`, deci
 a crossing alley's wall stands at both of its mouths. One tile deep is deliberate: the roadblock
 row's own width reaches roughly two tiles along a street each way, wide enough to cover a nearby
 alley's mouth outright from a segment's midpoint, and the mouth is where a barrier already stands for
-every other closure in the game. The whole of a boundary segment's ground therefore belongs to the
+every other closure in the game. **A crossing alley's own two wall bodies carry a narrower
+override again, to their own mouth rather than a neighbour's**: the row's shape becomes a point of
+half the alley's own width (`RegionPlanner._alley_mouth_wall_body()`), so the barrier draws and
+collides at exactly the alley's own `ALLEY_WIDTH_TILES × Tuning.TILE_SIZE` (64px) instead of the
+row's own 120px reach, which used to lie over the roof edges of the lots either side of the mouth
+(`docs/playtests/PLAYTEST-57.md`, "Roofs"). The whole of a boundary segment's ground therefore belongs to the
 region at its **far** end, away from the wall — which end carries it is nudged at generation so that
 matching an alley's other, real bordering street's ground keeps as many alleys as possible from
 becoming crossings at all.
@@ -1335,7 +1340,10 @@ Top-down camera with a fake vertical extrusion:
   street. (It does *not* by itself keep an extrusion off the player: the mass is inside the lot and
   still north of the origin a y-sort would compare, which is why buildings are their own layer —
   see below.) A taller building therefore shows more wall and less roof, which is what an oblique
-  view of a taller building should look like.
+  view of a taller building should look like. **The collision body follows the lot with one
+  exception**: its own north edge — the top of the wall in this projection — sits
+  `Building.NORTH_EDGE_INSET` (6px) south of the lot's own north edge, so she can step a little
+  way into it rather than stop a tile short. The south edge is untouched.
 - **Building heights are whole tiles**, because a tiled facade cannot honour a continuous height
   without stretching a tile. Quantising also makes the "a roof always shows" rule exact instead of
   approximate: the wall takes at most `floor(depth * 0.55)`
@@ -1377,9 +1385,9 @@ Top-down camera with a fake vertical extrusion:
   tile of either end of its street (which is already where every crossing and every fixed
   checkpoint mouth stands — see "What closes a street" above) and never within a tile of the
   home's own door. It is a `Prop` like a park tree, feet-anchored so she passes behind its canopy,
-  but it is the one prop in the game with an actual body: a small collision circle at the trunk,
-  distinct from the wider canopy shape the shadow reads, kept well inside the one tile it stands
-  on so the pavement's other tile stays a full lane wide. `FALLEN_TREE`'s own placement prefers a
+  and like a park tree it has no body: she walks through a street tree exactly as she walks
+  through one in a park, so a pavement with trees costs the route nothing a bare one does not.
+  `FALLEN_TREE`'s own placement prefers a
   street `StreetTrees` already put trees on, from the same function, so the closure marker's
   picture and the standing trees beside it are never two different species.
 - Everything is `y_sort_enabled`, so the player passes behind and in front of props

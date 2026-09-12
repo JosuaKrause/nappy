@@ -25,6 +25,8 @@ func run(t) -> void:
 	_test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t)
 	_test_no_alley_robbery_stands_near_the_doorstep(t)
 	_test_playtest_55_seed_has_no_spawn_kill(t)
+	_test_a_walled_alley_escapes_no_other_check(t)
+	_test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t)
 	_test_a_perform_contact_is_never_relocated(t)
 	_test_a_perform_step_expires_when_its_rider_is_gone(t)
 	_test_a_timed_step_expires(t)
@@ -676,6 +678,102 @@ func _test_playtest_55_seed_has_no_spawn_kill(t) -> void:
 				% [seed_value, day, robbers_checked])
 
 		player.free()
+		director.free()
+		city.free())
+
+## PLAYTEST-57, "a chalk mark behind a barrier": `144s-attempt1-asked-1.png` shows the
+## resistance's mark on an alley's paving behind a roadblock band across its mouth. Reproduced on
+## the reported run's own seed, 2199579682, day 7 — `Tuning.REGION_WALL_FIRST_DAY`, the first day a
+## wall can stand at all: `RegionPlanner.plan_day` walls several crossing alleys that day, off
+## today's tree, and **every one of their tiles passed all three checks `_pick_reachable()` had
+## before this fix** — `is_closed()` (about a `RoadClosure`, which this is not), `is_held_at()`
+## (about a `StreetNetwork` segment, which an alley is never on) and `is_on_home_block()`. None of
+## the three ever looks at a region wall, which is the whole of the escape. `CityMap.
+## is_in_walled_alley()` is the fourth check that closes it.
+func _test_a_walled_alley_escapes_no_other_check(t) -> void:
+	var seed_value := 2199579682
+	var day := 7
+	var map := CityGenerator.generate(seed_value)
+	var tree := RouteTree.for_day(map, day)
+	var region_plan := RegionPlanner.plan_day(map, day, tree)
+	t.check(not region_plan.alley_walls.is_empty(),
+			"seed %d day %d walls at least one crossing alley, or this test checks nothing"
+			% [seed_value, day])
+
+	var checked := 0
+	for rect in region_plan.alley_walls:
+		for tile in map.rect_tiles(rect):
+			checked += 1
+			t.check(not map.is_closed(tile) and not map.is_held_at(tile) \
+					and not map.is_on_home_block(tile),
+					("seed %d day %d: %s is inside a walled alley, and none of is_closed(), " +
+					"is_held_at() or is_on_home_block() catches it — that gap is the reported bug")
+					% [seed_value, day, tile])
+			t.check(map.is_in_walled_alley(tile, region_plan.alley_walls),
+					"seed %d day %d: %s is refused by the check that closes the gap"
+					% [seed_value, day, tile])
+	t.check(checked > 0, "some walled-alley tile was actually checked (%d)" % checked)
+
+## The same reported seed and day, through the real pipeline `_test_playtest_55_seed_has_no_spawn_
+## kill` uses — `City.start_day`, then `ResistanceDirector.start_day` — swept over many RNG draws
+## per step rather than trusting the one draw the reported run happened to make: neither the mark
+## nor its guard, from `TRAP_FIRST_DAY`, may ever land inside a walled-off crossing alley, on any
+## draw.
+func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t) -> void:
+	_with_clean_run(func() -> void:
+		var seed_value := 2199579682
+		var day := 7
+		var city: City = CITY_SCENE.instantiate()
+		t.add_child(city)
+		city.build(CityGenerator.generate(seed_value))
+
+		var closure_state := CityState.new()
+		closure_state.begin_day(city.map.block_plans, day)
+		var closure_rng := RandomNumberGenerator.new()
+		closure_rng.seed = hash("%d:closures:%d" % [seed_value, day])
+		city.start_day(closure_state, day, closure_rng)
+		var walled_alleys := city.region_plan().alley_walls
+		t.check(not walled_alleys.is_empty(),
+				"seed %d day %d walls at least one crossing alley, or this test checks nothing"
+				% [seed_value, day])
+
+		var director := ResistanceDirector.new()
+		t.add_child(director)
+		director.set_process(false)
+		director.setup(city, city.map)
+
+		var robbery := EventCatalogue.by_id("alley_robbery")
+		var min_distance: float = robbery.inner_radius + ContactPoint.REACH
+		var max_distance: float = robbery.pursues_within + ContactPoint.REACH
+
+		var attempts := 0
+		for step in ResistanceSteps.all():
+			if step.district >= 0:
+				continue   # the finale sits in a district, never an alley
+			for trial in 20:
+				attempts += 1
+				var mark_rng := RandomNumberGenerator.new()
+				mark_rng.seed = hash("%d:mark:%d:%d:%d" % [seed_value, day, step.index, trial])
+				var at := director._place(step, mark_rng)
+				if at == Vector2.INF:
+					continue
+				var tile := city.map.world_to_tile(at)
+				t.check(not city.map.is_in_walled_alley(tile, walled_alleys),
+						"seed %d day %d step %d trial %d: the mark is not inside a walled alley"
+						% [seed_value, day, step.index, trial])
+
+				var guard_rng := RandomNumberGenerator.new()
+				guard_rng.seed = hash("%d:guard:%d:%d:%d" % [seed_value, day, step.index, trial])
+				var guard_at := director._draw_guard_position(guard_rng, at, Vector2.INF,
+						min_distance, max_distance, walled_alleys)
+				if guard_at == Vector2.INF:
+					continue
+				var guard_tile := city.map.world_to_tile(guard_at)
+				t.check(not city.map.is_in_walled_alley(guard_tile, walled_alleys),
+						"seed %d day %d step %d trial %d: the guard is not inside a walled alley either"
+						% [seed_value, day, step.index, trial])
+		t.check(attempts > 0, "some (step, trial) actually placed something to check (%d)" % attempts)
+
 		director.free()
 		city.free())
 

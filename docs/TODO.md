@@ -187,12 +187,12 @@ anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified 
 | Owner | Integration work and acceptance |
 |---|---|
 | M100 — Small, real, and nobody's | Review `chalk_mark.svg` beside `chalk_mark_touched.svg`, then bind the touched state to the acknowledgement she adds when contact counts. Keep the original mark visible and readable on the pavement. Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family with the alley event and the sound arcs with their event timing; source availability does not decide either behavior. |
-| M102 — The finale: out of the apartment, out of the city | Build the interior TileSet/map binding for hallway, stairwell and basement floors/edges/walls. Register doors, barricade, chandelier and puddle separately; retain the south hallway's implied door thresholds. Bind normal/flash windows to explosion timing, steam to its pulse, and carrying-mother facing/gait to actual movement. Reuse mouse, guards, vehicles and crater sources. Decide whether the optional `explosion_preview.svg` is needed; the off-screen explosion brief does not require a visible burst. Check room transitions, foot anchors, layering and state changes in runtime evidence. |
+| M102 — The finale: out of the apartment, out of the city | Extend the playable interior and its carrying-mother rig into the finale. Bind normal/flash windows to explosion timing and steam to its pulse. Reuse mouse, guards, vehicles and crater sources. Decide whether the optional `explosion_preview.svg` is needed; the off-screen explosion brief does not require a visible burst. Check event state changes and their layering in the interior at runtime. |
 
 The impact-crater decals `assets/props/impact_crater_1x1.svg`,
 `impact_crater_2x2.svg` and `impact_crater_3x3.svg` (32×32, 64×64 and 96×96 footprints) are the
 finale's: the marks its off-screen explosions leave on the street. M102 also owns the prepared `assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b}.svg`
-set, documented in GRAPHICS.md; nothing binds it until that milestone is built.
+set, documented in GRAPHICS.md and bound by the playable apartment's carrying rig.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
 no artist.
@@ -353,8 +353,42 @@ through the one held-ground record the catalogue is already refused from; a door
 through one at a time under the boom the M62 gate already runs, and walkers pass the hut as she
 does; a soft seal takes both pavements from the walkers and leaves the carriageway to the cars;
 the streets around the home block, held for placement only, stay open to everyone; and the bar
-itself holds her the way a hut does, whatever it is doing for a car. What is left is one question.
+itself holds her the way a hut does, whatever it is doing for a car. What is left is one item and
+one question.
 
+- [ ] **Walkers are held at the hut like her; a few walk through, some turn back, and the queue
+      stays short.** *([PLAYTEST-58](playtests/PLAYTEST-58.md): "walkers walk through
+      checkpoints..."; asked which rule they get, "Held at the hut like her"; then "a small
+      fraction can do that"; "others can turn back"; "don't want a queue that is long".)* Today a
+      walker passes a door's hut untouched, straight through its footprint, because the door is
+      carved out of the crowd's shut list so the street reads as open. What stands instead, drawn
+      per walker when it is placed so a walker's answer at a door never changes mid-street: most
+      walkers arriving at a door's hut stop beside it for a short hold — shorter than her own
+      `Tuning.CHECKPOINT_DETAIN_SECONDS`, since a walker is not the one being looked for; one
+      second is the recommendation, pinned and open to overturn — then continue, one at a time; a
+      small fraction walk through as they do today; and the rest turn back at the door the way
+      every walker turns back at a wall. The fractions are the player's *"small"* and *"others"*
+      and not numbers they gave — one in eight through and one in four turning back is the
+      recommendation, pinned and open to overturn. **The queue is short by construction**: a
+      walker that would be held while another is already held, or while more than a short line
+      waits behind it — two is the recommendation — turns back instead of joining it, so a busy
+      door never grows a line down the pavement. **The hold is four states, the player's**
+      *("four states walking -> waiting -> inspection -> emerging on the other side (with cooldown
+      to not go back again) -> walking")*: a walker **walking** toward a door's hut reaches it and
+      is **waiting** — stopped beside the hut in its last facing, frame a, the way a stopped walker
+      already stands, behind whoever is inside; then **inspection** — the walker goes inside the
+      hut and is not drawn, for the hold's length, the way she does; then **emerging** — it
+      reappears on the far side of the door, on its own pavement, past the hut's body, and carries
+      a **cooldown** during which that door cannot take it again, so a walker that is turned round
+      by the crowd's own steering just past the door walks on instead of being inspected a second
+      time; then **walking**. One walker inside at a time, so the queue is whoever is waiting. The
+      hold is the crowd's own state (`CrowdAgent`, the way a car's gate stop is computed in
+      `Crowd`), keyed on the door's hut position from the region plan, never on the hut's
+      `detain_radius` or her hold code, which detains her and not them; the two-second hut hold
+      she gets is the model for the walker's shorter one. Waits for the checkpoint fixes in M100
+      to land, since the hut's own approach geometry is moving there and the walkers' hold should
+      sit where hers does. Evidence is a burst at a door on a busy street, with `--invincible`,
+      long enough to show one walker through all four states
 - [ ] **Open question, the player's: does every other solid body divert the crowd too?** A café, a
       construction band, a kerbed van are walked through the same way. Diverting the crowd at every
       pavement obstacle spends the tell closures rely on — every obstructed street would read as
@@ -556,49 +590,6 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **The pram's body sits closer to her, and the debug view draws it.** *([PLAYTEST-57](playtests/PLAYTEST-57.md):
-      "I don't like the stroller having a hitbox. it makes navigation clunky, I cannot get close to
-      walls anymore, and I get constantly stuck."; then "can we keep the stroller hitbox but move it
-      closer to the player (btw the hitbox right now is not drawn at all for some reason) -- that
-      way the stroller would go a little bit into objects (the part that is not covered) but it
-      wouldn't be completely wild like before".)* The pram's own body — built on 2026-09-10 from an
-      M1 engineering note, never asked for — stays, placed where the player said: *"place the center
-      of the stroller hitbox at the circumference of the player hitbox"*, *"and don't make it too
-      big"*. Her body is the 14px circle in `scenes/player/stroller.tscn`; `PramCollisionShape2D`'s
-      centre sits on that circle's edge, 14px out along her facing, and its radius comes down from
-      12px to something clearly smaller — 8px is the recommendation, stated in the commit and
-      pinned — so the pram's far half overlaps whatever it meets and she can stand against a wall
-      while the pram no longer clips through corners whole. The pram's *drawing*, shadow, cue and
-      field keep their 34px offset; only the body moves. **And the debug view draws every body
-      there is** *("and make sure *all* hitboxes are actually drawn")*: the bounding-box layer (`3`)
-      does not draw the pram's body today, so audit every `CollisionShape2D` and `StaticBody2D` the
-      scene tree holds — hers, the pram's, buildings, city bodies, event bodies, walls and doors —
-      against what the layer draws, and draw whatever is missing from the same source the physics
-      reads, so the layer cannot omit a body again; a test walks the tree and asserts the count
-      the layer draws equals the count of enabled shapes. And measure the roadblock band's and the region wall's bodies against
-      their drawn boxes: in the run's pictures she stops a pram's length short of a band across an
-      alley and short of the wall across a road with the boxes nowhere near touching, so whatever
-      body those rows carry beyond their picture is trimmed to it
-- [ ] **A roof's northern edge is ground she may step into, and a roof draws over what stands in
-      the street.** *(PLAYTEST-57: "allow going in a little bit for northern edges of roofs"; "roofs
-      also should be drawn over objects. the barrier looks on top of the roof in those pictures.")*
-      The northern edge of a roof is the top of a wall in this projection: inset the building's body
-      a few pixels along its north side so she overlaps that edge rather than stopping a tile short.
-      And a roadblock band across an alley is drawn wider than the alley, over the roof edges either
-      side; a roof is above everything at street level, so events and props that overlap a roof
-      draw beneath it — fit the band to its obstruction span where it crosses an alley, and sort the
-      roof above what it overlaps, whichever the pictures need; say which was done
-- [ ] **A blocked-off alley has no chalk mark.** *(PLAYTEST-57: "a blocked off alley must not
-      have a chalk mark.")* The resistance's mark was offered on the paving of an alley whose mouth
-      a roadblock band closes. The trap's and the mark's candidate ground refuses any tile she
-      cannot reach on the day — held segments, sealed alleys, the ground behind a band — the same
-      refusal the scheduler already applies to closed tiles, checked where the candidate is
-      offered rather than repaired afterwards
-- [ ] **The keyboard resets the pointer's aim.** *(PLAYTEST-57: "arrow keys should reset any mouse
-      click position. when pressing awsd or arrow keys right now the last pressed mouse position is
-      still active resulting in incorrect / drifting movement.")* A press on the arrows or `WASD`
-      clears whatever heading the last click or tap set, so the keys steer alone from that frame;
-      a later click sets a fresh heading as it does today
 - [ ] **The boom is drawn on the road, and the inspection starts as she approaches.**
       *(PLAYTEST-57: "the gate for the cars is too high up. it needs to be further down"; "the
       checkpoint should activate when I get close. with the new stroller hitbox I cannot reach the
@@ -616,19 +607,14 @@ is still true.
       guard, where only the guard and she should go. The camera does not come back after the two
       seconds. And released on the far side without moving, she stands inside the hut's
       `detain_radius` and is detained again — the run log shows the same hut at 65px right after
-      the release — so the released side must put her outside the radius, or the row must not
-      re-arm until she has left it once. All four against a rig that drives the hold end to end,
-      and a burst of the whole hold as the evidence
-- [ ] **Invincible freezes the clock and the meter.** *Asked for on 2026-09-11 as everything else
-      real · overturned the same day, [PLAYTEST-57](playtests/PLAYTEST-57.md): "when invincible the
-      timer should never go down and excitement should never go up. this is just noisy flashing of
-      alarms and the day gets dark."* Under `--invincible` the day clock stands still and excitement
-      never rises — nothing adds to it, so no cry, no alert, no halo charging — while sleepiness,
-      the crowd, the events, the closures and the checkpoints all still run; the HUD word and the
-      log note stay
-- [ ] **What is still dev-only inside `main.gd`.** `DevFlags` took the flag parsing out; what stayed
-      is the code that acts on it — `_first_event_position` and the `--spawn` target lookup, both of
-      which read the live city. Worth finishing the next time the file is opened for another reason
+      the release. **The answer is a flag, not a distance** *([PLAYTEST-58](playtests/PLAYTEST-58.md):
+      "she just spawns further away now? it should work that she has a flag 'just spawned' that
+      only resets once she leaves the area. that way she can't accidentally go back and we don't
+      need to place her far away")*: the release puts her on the far side just clear of the hut's
+      body, as close as she can stand, and a released flag for that hut suppresses re-detention
+      until she has once left its trigger area, after which the door re-arms as a toll in either
+      direction. All four against a rig that drives the hold end to end, and a burst of the whole
+      hold as the evidence
 
 **Drawings, as SVG:**
 
@@ -817,8 +803,16 @@ M103, the drawings the queue owes.
       rather than from a flag, the exit through the service door onto the city map at the home
       lot's side, the hallway windows that **flash** when an off-screen explosion goes off (the
       explosion row's cue indoors, one or two frames of `hallway_wall_window_flash.svg`), the
-      chandelier as the hallway's light, and the events — mice, the pursuers on the stairs, the
+      lighting response to the explosions, and the events — mice, the pursuers on the stairs, the
       fire on one stairwell, the steam
+- [ ] **The building's doors use the checkpoint's release flag.** *([PLAYTEST-58](playtests/PLAYTEST-58.md),
+      on the checkpoint's "just spawned" flag: "same mechanism can be reused in the escape scene
+      when going through doors".)* Today a door in the building fires only on the frame she newly
+      steps onto its trigger tile, which is what lets the arrival tile and the trigger tile be the
+      same tile. It becomes the same rule the checkpoint hut and the crowd's door hold use: on
+      arrival she carries a flag for the door she came out of that resets only once she has left
+      that door's area, so she cannot be sent straight back and the arrival point need not be
+      placed away from the door. One mechanism, shared rather than written twice
 - [ ] **A finale plan for the city map.** An ordered chain, not a `RouteTree`: service exit to
       first park to second to third to the edge, one street-walk between each pair and nothing
       else open. `RouteTree.for_day` and its redundancy guarantee (two distinct routes to each calm
