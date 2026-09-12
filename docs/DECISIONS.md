@@ -32,6 +32,12 @@ to clear a full meter:
 Day 9 (act III), where the streets have emptied: quiet pavement −3.16 → −5.74/s, precinct
 −5.04 → −8.79/s, main road +0.10 → +0.10/s, alley −0.37 → −0.35/s.
 
+Both halves of that table were taken on one tree with only the constants differing, which is what
+makes it a controlled comparison. **M110, the crowd goes round a seal, landed afterwards and moves
+the crowd term** — the same probe now reads the quiet pavement at −3.60/s and the main road at
++5.72/s, because walkers stepping round solid bodies stand somewhere slightly different. The ground
+half is untouched by it.
+
 **The numbers.** `EXCITEMENT_DECAY_WALKING` 3.5 → **6.0**. Every other ground is a ratio re-derived
 to hold its own absolute rate where it was put, so only the quiet ground moves:
 `EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` 0.6 → **0.35** (2.1/s, exactly today's), a new
@@ -96,12 +102,48 @@ now on the day's corridors with the ordinary expensive city, because it genuinel
 walk through than a dog walker does. `poster_crew` and the three detainers were exempted rather
 than made louder. The probe is parked under `tests/probes/`, which the runner never discovers.
 
-**Two things this narrows, reported rather than fixed.** `busker` (+2.9) and `alley_mouse` (+1.0)
-are now nearly free to walk through, and above a walking decay of about **6.7** they turn free
-outright — that is the ceiling on this number and the reason it is 6.0 and not 7.0. And
-`playground`, the only row in the catalogue that stands on calm ground, now clears the ground it
-stands on by three rather than by seven; its pulse runs down to a quarter of its intensity, so the
-middle of a playground is expensive at the top of its nine-second beat and free at the bottom.
+**Two rows the change made nearly free went back to the player and were retuned in the same
+milestone.** Reported as forks first — `busker` fell to +2.9 to walk through against the +13.3 it
+cost before, `alley_mouse` to +1.0 against +4.2 — with the note that above a walking decay of about
+**6.7** both turn free outright, which is the ceiling on this number and the reason it is 6.0 and
+not 7.0. The answer came in three sentences, the second revising the first and the third deciding
+how the question is asked at all:
+
+> busker should be adjusted. alley mouse can be nearly free
+
+> alley mouse is a bit above charging cat
+
+> consider that the mouse is in the alley but the cat is usually not
+
+**The third is the one that set the number, and it is a correction to the method.** The cost table
+nets every row against the same walking decay, but a row is met on the ground it is placed on:
+`alley_mouse` is `ALLEY`-only, where the ground gives back 3.5/s instead of 6.0 and
+`EXCITEMENT_FROM_ALLEY` (+3.0/s) is already being charged, while `cat_dash` is met on an ordinary
+street at 6.0/s. So the alley hands the mouse most of the gap before its own intensity is touched,
+and the raise needed is far smaller than the table implies — 21.0 rather than the ~29 that reading
+the table uniformly would have demanded. **`alley_mouse` 9.0 → 21.0**: it walks to **+19.9 in an
+alley** against the cat's **+17.6 on a street**, a bit above, as asked. On the table, which cannot
+say "on its own ground", it prints +12.7 against the cat's +17.6, and a note under the table names
+the three rows that reading misprices rather than changing the table's method — the same integral
+feeds the danger caret and a per-row ground would be two answers to one question. The large number
+on a 60px field is the idiom rather than a mistake: the crossing is a second and a third, there is
+no `impulse` field, and a spike here is bought in intensity.
+
+**`busker` 9.0 → 13.0**, the lowest round number above both of its floors, and low on purpose.
+It stands on calm ground, so what it has to beat is the park's 12.0/s — under that it is a park
+*bonus* with a picture of a nuisance on it — and it has to stay at least as expensive to cross as
+before M117. At 13.0 the core of it runs **+1.0/s** inside `inner_radius` at the top of its beat
+and it crosses at **+15.3** on the table against the +13.3 floor. **What every extra point costs is
+park**: `_denial_radius` is pinned at 7.7/s now, so intensity is the only thing that widens it, and
+this raise took the busker's denial radius from **100.1px to 137.6px** in a lot 704px across —
+nearly twice the area one of them takes out. Stated rather than hidden: along a *whole line* through
+one, on park ground, a busker is still net recovery (−9.5), because the rim is under the park's own
+decay. Its core costs and its rim pays back, which is a place to walk round rather than a wall.
+
+**What this still narrows, reported rather than fixed.** `playground`, the other row that stands on
+calm ground, clears it by three rather than by seven; its pulse runs down to a quarter of its
+intensity, so the middle of a playground is expensive at the top of its nine-second beat and free at
+the bottom. The busker's pulse does the same thing for the same reason.
 
 **Rejected on the way.** Raising the crowd's numbers to chase the decay (the entry's own
 instruction, and it would have moved the main-road crossing). Raising the detainers' and

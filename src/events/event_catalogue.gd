@@ -319,7 +319,21 @@ static func _alley_mouse() -> EventDef:
 	def.look = EventDef.Look.MOUSE
 	def.shape = GroundShape.point(4.0)
 	def.placement = [GameEnums.TileType.ALLEY]
-	def.intensity = 9.0
+	# **Priced against the cat on each row's own ground, which is not the same ground.** *(2026-09-12:
+	# "alley mouse is a bit above charging cat"; "consider that the mouse is in the alley but the cat
+	# is usually not".)* A cat is met on an ordinary street, where 6.0/s is given back; a mouse is
+	# only ever met in an alley, where 3.5/s is given back and the alley's own
+	# `Tuning.EXCITEMENT_FROM_ALLEY` (+3.0/s) is being charged on top. So the alley hands this row
+	# most of the gap for nothing, and 21.0 is what is left to buy: it walks to +19.9 in an alley
+	# against the cat's +17.6 on a street.
+	#
+	# **A tiny radius is why the number is large rather than a mistake.** The field is 60px, so the
+	# crossing is one and a third seconds — a spike is bought here in intensity, since there is no
+	# `impulse` field and a short, loud disc is how this project writes one.
+	#
+	# The cost table in `docs/EVENTS.md` nets every row against the *same* walking decay, so this
+	# row reads cheaper there than the cat does; the note under that table says why.
+	def.intensity = 21.0
 	def.inner_radius = 15.0
 	def.outer_radius = 60.0
 	# `Tuning.required_telegraph_time(15, 60, false, 200)` is ~1.09s (outer_radius · field_scale(e)
@@ -499,6 +513,25 @@ static func _delivery_van() -> EventDef:
 
 ## A park spoiler, and a pleasant one. Nothing about it is threatening; it is simply
 ## interesting, which is the whole problem.
+##
+## **It stands on calm ground, so the calm ground's decay is what its intensity has to beat**, the
+## same way `playground`'s does — 12.0/s, `EXCITEMENT_DECAY_WALKING` times the calm multiplier. At
+## 13.0 the core of it costs while she is inside `inner_radius`, and that is the whole claim: a
+## busker whose peak sat under the ground it stands on would be a park *bonus* with a picture of a
+## nuisance on it.
+##
+## **The number is the lowest one that clears both floors, and that is deliberate, because a louder
+## busker denies more park.** `EventScheduler._denial_radius` is stated against the fixed
+## `Tuning.CALM_ZONE_DENIAL_RATE` (7.7/s), so intensity is the only thing that moves how much calm
+## ground one of these takes out of a lot 704px across — 137.6px of it at 13.0. The other floor is
+## that crossing one has to stay worth routing around, which `tests/test_events.gd` reads off the
+## cost table.
+##
+## **What the pulse does to that, because it is easy to read the number as steadier than it is:**
+## `pulse_period` swings what it actually emits between a quarter and all of `intensity` every
+## seven seconds, so the middle of a busker's field is dearer than the park at the top of the beat
+## and cheaper at the bottom. Along a whole line through one it is the rim that decides, and the rim
+## is under the park's own decay — a busker is a place to walk round, not a wall.
 static func _busker() -> EventDef:
 	var def := EventDef.new()
 	def.id = "busker"
@@ -506,7 +539,9 @@ static func _busker() -> EventDef:
 	def.look = EventDef.Look.BUSKER
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.PARK, GameEnums.TileType.SQUARE]
-	def.intensity = 9.0
+	# Above the 12.0/s a park gives back, which is what a row standing on calm ground has to clear
+	# to cost anything at all. See the note above for why it is not higher.
+	def.intensity = 13.0
 	def.inner_radius = 45.0
 	def.outer_radius = 190.0
 	def.telegraph_time = 1.7

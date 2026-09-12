@@ -25,12 +25,16 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   alley: it is meant to be very nearly flat — neither pressure nor rest — which is the one of the
   five grounds with no obvious right answer. Record is `DECISIONS.md`, M117, excitement decays
   visibly on quiet ground; the burst is in `evidence/m117-visible-decay-2026-09-12/`.
-- **Stand in a playground and wait out its beat.** A playground pulses between a quarter and all
-  of its intensity every nine seconds, and calm ground now gives back 12.0/s against its 15.0 at
-  the peak — so the middle of a playground is expensive at the top of the beat and free at the
-  bottom, where it used to cost throughout. Does a park with a playground in it still feel
-  contested, or has the playground stopped mattering? Raising it was rejected on purpose: it
-  would deny more park than it does today. Same record.
+- **Stand in a playground, and beside a busker, and wait out each one's beat.** Both stand on calm
+  ground, both pulse between a quarter and all of their intensity — nine seconds for the
+  playground, seven for the busker — and calm ground now gives back 12.0/s against their 15.0 and
+  13.0 at the peak. So the middle of either is expensive at the top of the beat and free at the
+  bottom, and a whole line through a busker on grass is net recovery even though crossing one
+  costs on the table. Two questions: does a park with one of these in it still feel *contested*,
+  and is a busker still worth walking round? The busker was raised for exactly this and takes
+  nearly twice the park out of a lot that it used to (a denial radius of 138px against 100px);
+  the playground was deliberately left alone, because raising it would deny more park still. Same
+  record.
 
 - **Compare the mother carrying the baby with the mother pushing the stroller.** Use ordinary
   gameplay for pushing and `--start-escape floor:2` for carrying; walk and turn in both. Does she

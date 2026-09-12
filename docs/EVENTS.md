@@ -662,7 +662,7 @@ All implemented.
 | --- | --- | --- | --- |
 | `playground` | AMBIENT | 1 | Static aura in every park. The reason parks are not free wins. Sized (150px outer against a 256px park block) to dominate the middle and leave the far side genuinely calm. |
 | `cat_dash` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | Crouches (telegraph), then bolts across the traffic. Intensity 17, tiny radius, 1.8s duration — long enough to carry it the whole way across the street it starts at the edge of, and raised from 15 for a sharper startle spike once the barrier fields it used to be judged against went quiet. Its dash, driven straight at a standing player, still projects under `Tuning.EXPECTED_IMPACT_POINTS`, so the crouch's own silhouette carries the warning rather than a caret. Sited at `EventDef.ahead_of_player_lead()` rather than the flat `AHEAD_LEAD_DISTANCE`, which prices in the ground she covers while it holds its crouch, so it crosses where she actually is by the time it moves rather than behind her. The tutorial obstacle. |
-| `alley_mouse` | RECURRING | 1 | The cat's shape, `MAP`-placed on `ALLEY` tiles instead of director-sited — an alley she is routed through is already ground she is about to walk, unlike a `ROAD` tile that could be anywhere in the city. Half the cat's intensity (9, on a 60/15px field, the same 4:1 ratio) and half its cap (4), on top of the alley's own `Tuning.EXCITEMENT_FROM_ALLEY` (+3.0/s) ambient dread. No body, nothing lethal. Waits unclocked (`pursues_within` 150px, without `pursues`) until she is close, so a `MAP` placement streamed in from `EVENT_STREAM_RADIUS` does not telegraph and finish off screen before she arrives — see `EventDef.pursues_within` and `EventInstance._check_for_notice()`. Its two-point dash is read off `CityMap.alley_rects` and laid across whichever side of the alley is narrower — always the width, since she can only be walking the length — so it crosses her path rather than running down it (`EventInstance._alley_crossing_path()`). `EventScheduler._refuses_required_alleys`, stated over `def.placement == [ALLEY]` and shared with `alley_robbery`, keeps it off alleys she has no way around. |
+| `alley_mouse` | RECURRING | 1 | The cat's shape, `MAP`-placed on `ALLEY` tiles instead of director-sited — an alley she is routed through is already ground she is about to walk, unlike a `ROAD` tile that could be anywhere in the city. Intensity 21 on a 60/15px field (the cat's 4:1 ratio) and half its cap (4), on top of the alley's own `Tuning.EXCITEMENT_FROM_ALLEY` (+3.0/s) ambient dread. **Priced above the cat on each row's own ground**, which is not the same ground — *(2026-09-12: "alley mouse is a bit above charging cat"; "consider that the mouse is in the alley but the cat is usually not")*. A cat is met on a street that gives back 6.0/s; a mouse only ever in an alley, which gives back 3.5/s and is charging the dread as well, so the alley hands this row most of the gap before its intensity is touched. It walks to **+19.9 in an alley** against the cat's **+17.6 on a street**. The field is only 60px across, so the crossing is a second and a third and the spike has to be bought in intensity — there is no `impulse` field. No body, nothing lethal. Waits unclocked (`pursues_within` 150px, without `pursues`) until she is close, so a `MAP` placement streamed in from `EVENT_STREAM_RADIUS` does not telegraph and finish off screen before she arrives — see `EventDef.pursues_within` and `EventInstance._check_for_notice()`. Its two-point dash is read off `CityMap.alley_rects` and laid across whichever side of the alley is narrower — always the width, since she can only be walking the length — so it crosses her path rather than running down it (`EventInstance._alley_crossing_path()`). `EventScheduler._refuses_required_alleys`, stated over `def.placement == [ALLEY]` and shared with `alley_robbery`, keeps it off alleys she has no way around. |
 | `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Intensity 26 on a tight radius, barking on a 3.5s pulse: it owns the pavement it is on, so walking straight through it is never the cheap option. Deliberately given no `obstructs_radius` — a moving wall on a two-tile pavement pins the player against a building. |
 | `cafe_tables` | RECURRING | 1 | A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and the thing that forces a crossing. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. The people at the tables are drawn as well as the tables, because the tables are what obstructs and the conversation is what it emits — a real source, derived from the body itself: `inner_radius` 38px (touching the tables), `outer_radius` 64px (the pavement band's own centre to the carriageway's), so it bills somebody at the tables and not somebody across the street. |
 | `homeless_yeller` | RECURRING | 1 | Intensity 14 over a 210px field, yelling on a 5s **pulse**, and **pacing** eight tiles of pavement (`EventDef.paces`). A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. Mobile, so he has no body. His silhouette is his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. |
@@ -950,12 +950,12 @@ alone is answering a narrower question than it thinks.
 | `chatting_mother` | -2.7 | +14.8 |
 | `checkpoint_post` | -0.6 | +22.4 |
 | `checkpoint_hut` | -0.6 | +22.4 |
-| `alley_mouse` | +1.0 | +14.5 |
-| `busker` | +2.9 | +45.7 |
 | `police_patrol` | +5.9 | +46.2 |
 | `cafe_tables` | +6.1 | +18.2 |
 | `market_stall` | +8.5 | +19.5 |
 | `charging_dog` * | +8.8 | — |
+| `alley_mouse` | +12.7 | +20.9 |
+| `busker` | +15.3 | +52.5 |
 | `cyclist` * | +16.0 | +29.7 |
 | `playground` | +17.4 | +44.3 |
 | `cat_dash` | +17.6 | +37.5 |
@@ -975,6 +975,24 @@ alone is answering a narrower question than it thinks.
 | `night_raid` | +83.9 | +122.6 |
 | `fire_truck` | +97.0 | +132.0 |
 | `firefight` * | +132.1 | +159.2 |
+
+**Every figure above nets against the *same* walking decay, and three rows are never met on the
+ground that assumes.** *(2026-09-12: "consider that the mouse is in the alley but the cat is usually
+not".)* The table's method is uniform on purpose — it prices a **row**, and the same integral feeds
+the danger caret — so rather than give it a per-row ground, read these three against theirs:
+
+- **`alley_mouse`** is `ALLEY`-only. An alley gives back **3.5/s** instead of 6.0 and is charging
+  `EXCITEMENT_FROM_ALLEY` (+3.0/s) already, so its real walk is **+19.9**, not the +12.7 above —
+  a bit over `cat_dash`, which is met on an ordinary street and whose +17.6 is therefore honest as
+  printed.
+- **`alley_robbery`** is in the same alley and reads the same way.
+- **`busker`** stands on `PARK` or `SQUARE`, which gives back **12.0/s**, so a whole line through
+  one is net **recovery** there (−9.5) even though the table prints +15.3. What costs is its
+  **core**: inside `inner_radius` it out-emits the park at the top of its beat. A busker is a place
+  to walk round rather than a wall, and what it denies is decided by
+  `EventScheduler._denial_radius` against the fixed `Tuning.CALM_ZONE_DENIAL_RATE` instead.
+
+`tests/probes/m117_decay.gd` prints the table; the ground multipliers are in `docs/CITY.md`.
 
 **No column says which rows carry a caret, because no row does.** The caret is decided in play
 from a source's own projected course at wherever she is standing — `expected_impact_at()`
@@ -1398,10 +1416,12 @@ the destination was not a decision, this one that *which* destination was not on
 #### It has to cover the ground, not stand in it
 
 **What denies calm ground is not reaching it, it is out-emitting `Tuning.CALM_ZONE_DENIAL_RATE`**,
-7.7/s — so a busker at intensity 9 is useless past 100px however far his 190px
-field reaches, in a lot that is 704px across. One spoiler denies about three percent of a four-block
-calm zone: the day rolls its spoiler for the block she used, and she settles in that same block
-anyway.
+7.7/s — so a busker at intensity 13 is useless past 138px however far his 190px
+field reaches, in a lot that is 704px across. One spoiler is a small share of a four-block calm
+zone: the day rolls its spoiler for the block she used, and she settles in that same block anyway.
+**The rate is fixed and a row's intensity is not**, so intensity is the one thing that widens a
+denial radius — which is why a row that stands on calm ground is raised no further than it has to
+be.
 
 `EventScheduler._denial_radius()` is that arithmetic, and a spoiler is a **crowd** laid out on a grid
 over the calm ground, sized from what each of them actually denies and capped at

@@ -279,10 +279,12 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: i
 ## **It has to cover the ground, not stand in it**, and one event does not.
 ##
 ## What denies calm ground is holding the meter above `EXCITEMENT_CALM_THRESHOLD` against
-## `Tuning.CALM_ZONE_DENIAL_RATE`, 7.7/s — so a busker at intensity 9 has a *useful* radius of
-## 100px whatever his 190px reach says, in a lot 704px across, and denies about three percent of a
-## four-block calm zone. A day that rolls one spoiler for the block she used is a day she settles in
-## that same block.
+## `Tuning.CALM_ZONE_DENIAL_RATE`, 7.7/s — so a busker at intensity 13 has a *useful* radius of
+## 138px whatever his 190px reach says, in a lot 704px across. That is a small share of one, and a
+## day that rolls one spoiler for the block she used is still a day she settles in that same block.
+## **The rate is fixed and the intensity is not**, so raising a row's intensity is the one thing
+## that widens this: the busker's own reach grew by half when it was raised to clear the ground it
+## stands on.
 ##
 ## So a spoiler is a **crowd**: one thing per cell of a grid laid over the calm ground, sized from
 ## what each of them can actually deny, capped by `SPOILERS_TO_DENY_A_PARK`. Each cell rolls its own
