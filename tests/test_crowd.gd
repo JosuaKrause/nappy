@@ -414,32 +414,37 @@ func _test_the_strike_box_never_crosses_the_kerb(t) -> void:
 			"a car's strike box stops %.0fpx short of the kerb"
 			% [Tuning.carriageway_width() * 0.5 - reach])
 
-## M100: *"the dead zone of a car is trailing the car instead of leading the car?"* — the end-on
-## picture used to be drawn bottom-anchored at the node, the way every other standing sprite is,
-## which for a picture whose own *height* is its along-track length left the whole car north of the
-## node while `Crowd._strike()`'s box, the shadow and the field stayed centred on it. Sampled here
-## the same way `Sprites.draw_standing` itself builds the rect, rather than by rasterising a frame:
-## the end-on picture's own along-axis centre now sits on the node, which is where the strike box's
-## centre already is.
+## A front, back or diagonal picture is a standing elevation rather than a top-down one, so its own
+## canvas has to be anchored at the point on it that is the car's actual ground contact — see
+## `CrowdAgent._car_body_anchor()`'s own doc for the four cases. This pins the cardinal and side
+## cases against `Crowd._strike()`'s box, the shadow and the field, all of which are centred on the
+## node along the heading; `tests/test_car_views.gd` pins the diagonal case the same way for every
+## sector. Sampled the same way `Sprites.draw_standing` itself builds the rect, rather than by
+## rasterising a frame.
 func _test_the_car_picture_agrees_with_its_strike_box(t) -> void:
 	var agent := CrowdAgent.new()
 	agent.kind = CrowdAgent.Kind.CAR
 
-	var end_extent := CrowdAgent.CAR_BODY[0].get_size()
-	var end_anchor: Vector2 = agent._car_body_anchor(0)
-	var end_drawn := Rect2(end_anchor - Vector2(end_extent.x * 0.5, end_extent.y), end_extent)
-	var end_along_centre := end_drawn.position.y + end_drawn.size.y * 0.5
-	t.check(is_equal_approx(end_along_centre, 0.0),
-			"the end-on picture's own along-axis centre sits on the node (%.1fpx off)"
-			% end_along_centre)
-	t.check(end_drawn.position.y < 0.0 and end_drawn.end.y > 0.0,
-			"so the node — where the strike box, the shadow and the field are all centred — falls "
+	# A front or back view's own bottom edge is the car's south end, so it belongs
+	# `CAR_STRIKE_HALF_LENGTH` south of the node — exactly where the strike box's own south edge
+	# already sits for a car pointed along that axis.
+	var front_extent: Vector2 = CrowdAgent.CAR_BODY_BY_VIEW["front"].get_size()
+	var front_anchor: Vector2 = agent._car_body_anchor("front")
+	t.check(is_equal_approx(front_anchor.y, Tuning.CAR_STRIKE_HALF_LENGTH),
+			"the front/back anchor sits the strike box's own half-length south of the node (%.1f)"
+			% front_anchor.y)
+	var front_drawn := Rect2(front_anchor - Vector2(front_extent.x * 0.5, front_extent.y),
+			front_extent)
+	t.check(is_equal_approx(front_drawn.end.y, Tuning.CAR_STRIKE_HALF_LENGTH),
+			"so the drawn picture's own bottom edge lands exactly on the strike box's south edge")
+	t.check(front_drawn.position.y < 0.0 and front_drawn.end.y > 0.0,
+			"and the node — where the strike box, the shadow and the field are all centred — falls "
 			+ "inside the drawn footprint rather than at its southern edge")
 
 	# The side view needs no correction and this pins that it stays that way: its along-track
 	# length is the texture's own width, which `Sprites.draw_standing` already centres by default.
-	var side_extent := CrowdAgent.CAR_BODY[1].get_size()
-	var side_anchor: Vector2 = agent._car_body_anchor(1)
+	var side_extent: Vector2 = CrowdAgent.CAR_BODY_BY_VIEW["side"].get_size()
+	var side_anchor: Vector2 = agent._car_body_anchor("side")
 	t.check(side_anchor == Vector2.ZERO, "the side view's own anchor is left undisturbed")
 	var side_drawn := Rect2(side_anchor - Vector2(side_extent.x * 0.5, side_extent.y), side_extent)
 	var side_along_centre := side_drawn.position.x + side_drawn.size.x * 0.5

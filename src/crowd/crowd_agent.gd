@@ -42,14 +42,32 @@ const WALKER_VIEW_BY_SECTOR: Array[String] = [
 	"side", "front_diagonal", "front", "front_diagonal", "side",
 	"back_diagonal", "back", "back_diagonal",
 ]
-const CAR_BODY: Array[Texture2D] = [
-	preload("res://assets/crowd/car_end_body.svg"),
-	preload("res://assets/crowd/car_side_body.svg"),
+## Which authored view each of `EightDirection`'s eight sectors draws — identical to the walker's
+## own table above, since the crowd car shares the same five projections and the same west-mirror
+## convention (`docs/evidence/svg-vehicles-2026-09-10/facings.csv`, the `car` rows).
+const CAR_VIEW_BY_SECTOR: Array[String] = [
+	"side", "front_diagonal", "front", "front_diagonal", "side",
+	"back_diagonal", "back", "back_diagonal",
 ]
-const CAR_TRIM: Array[Texture2D] = [
-	preload("res://assets/crowd/car_end_trim.svg"),
-	preload("res://assets/crowd/car_side_trim.svg"),
-]
+## The car's five authored views, keyed by name the way the walker's own two tables are —
+## `CAR_VIEW_BY_SECTOR` above does the sector lookup. Body is tinted per car, trim is drawn
+## untinted above it (`_draw_body()`); front/back are 30x46, side is 52x30, the diagonals are
+## 52x42. `car_end_{body,trim}.svg`, the old two-view family's foreshortened top-down picture, is
+## no longer read by either table — see `docs/GRAPHICS.md` for where it stands now.
+const CAR_BODY_BY_VIEW := {
+	"front": preload("res://assets/crowd/car_front_body.svg"),
+	"back": preload("res://assets/crowd/car_back_body.svg"),
+	"side": preload("res://assets/crowd/car_side_body.svg"),
+	"front_diagonal": preload("res://assets/crowd/car_front_diagonal_body.svg"),
+	"back_diagonal": preload("res://assets/crowd/car_back_diagonal_body.svg"),
+}
+const CAR_TRIM_BY_VIEW := {
+	"front": preload("res://assets/crowd/car_front_trim.svg"),
+	"back": preload("res://assets/crowd/car_back_trim.svg"),
+	"side": preload("res://assets/crowd/car_side_trim.svg"),
+	"front_diagonal": preload("res://assets/crowd/car_front_diagonal_trim.svg"),
+	"back_diagonal": preload("res://assets/crowd/car_back_diagonal_trim.svg"),
+}
 
 ## How fast an agent closes on its lane centre. Slow enough that a corner reads as a turn.
 const STEER_SPEED := 90.0
@@ -1814,11 +1832,13 @@ func _entry_band_fits() -> bool:
 
 # ---------------------------------------------------------------- drawing ---
 
-## The sector a walker is currently drawn in — `EightDirection`'s own indexing, clockwise from
-## east — persisted across frames so `_update_walker_view()` can hold it through the boundary and
-## hysteresis `EightDirection.update()` applies. Unused for a car, which keeps its own two-frame
-## `_frame()` below.
+## The sector each kind is currently drawn in — `EightDirection`'s own indexing, clockwise from
+## east — persisted across frames so `_update_walker_view()`/`_update_car_view()` can hold it
+## through the boundary and hysteresis `EightDirection.update()` applies. A walker and a car keep
+## separate fields because they read different headings: a walker's is `_walker_heading()`'s
+## along-plus-cross blend, a car's is `velocity()` alone.
 var _walker_view := 2
+var _car_view := 2
 
 ## Below this speed a walker's own applied heading (`_walker_heading()`) is too close to zero to
 ## mean a facing, so it holds whatever it was last drawn as rather than chattering on the residual
@@ -1827,24 +1847,28 @@ var _walker_view := 2
 ## a queue, a halt — ever reads as idle.
 const WALKER_IDLE_SPEED := 5.0
 
-## Which sprite the agent is showing: for a car, side-on along a horizontal corridor, front or
-## back along a vertical one — a car has no front/back pair, since at this angle both ends of a
-## car are the same shape and the lights in the trim say which way it is pointing. For a walker,
-## one of `EightDirection`'s eight sectors, advanced here — `_process()` already calls `_frame()`
-## once every physics tick, so this is where the walker's own hold actually runs rather than in a
-## second per-frame hook. Calling it again — `_draw_body()`'s own call, and every halo ring atop
-## that — is safe: asking `EightDirection.update()` twice with the same starting sector and the
-## same heading always answers the same way.
+## The same hold for a car. `velocity()` is `heading()` — always unit length, cardinal in a lane or
+## the tangent of an arc mid-turn — times the actual speed, so a car braked to a stop reads as a
+## zero heading rather than whatever axis it last pointed along. Well under
+## `Tuning.CAR_STRIKE_MIN_SPEED` (20px/s, the floor below which a car cannot strike anybody) and far
+## under `Tuning.CAR_SPEED.x` (130px/s), so only a car actually stopped — a light, a gate, a
+## give-way — ever reads as idle.
+const CAR_IDLE_SPEED := 5.0
+
+## Which of `EightDirection`'s eight sectors the agent is showing, advanced here for whichever kind
+## it is — `_process()` already calls `_frame()` once every physics tick, so this is where the
+## hold actually runs rather than in a second per-frame hook. Calling it again — `_draw_body()`'s
+## own call, and every halo ring atop that — is safe: asking `EightDirection.update()` twice with
+## the same starting sector and the same heading always answers the same way.
 func _frame() -> int:
 	if kind == Kind.CAR:
-		return 1 if not _vertical else 0
+		_update_car_view()
+		return _car_view
 	_update_walker_view()
 	return _walker_view
 
 func _flipped() -> bool:
-	if kind == Kind.WALKER:
-		return EightDirection.is_mirrored(_walker_view)
-	return not _vertical and _direction < 0.0
+	return EightDirection.is_mirrored(_car_view if kind == Kind.CAR else _walker_view)
 
 ## The walker's own instantaneous heading this frame: its along-lane velocity (`velocity()`, the
 ## actual-motion quantity M111's own turning work already reads elsewhere) plus whatever its
@@ -1874,6 +1898,18 @@ func _walker_heading() -> Vector2:
 func _update_walker_view() -> void:
 	_walker_view = EightDirection.update(_walker_view, _walker_heading(), WALKER_IDLE_SPEED)
 
+## Advances `_car_view` for this frame. **There is no cross term the way a walker has one**: a
+## car's own `velocity()` already is its instantaneous line of travel — cardinal in a lane, the
+## tangent of its own arc mid-turn (`heading()`) — so the sector runs through the diagonal for
+## exactly the length of a turn and holds at whichever cardinal or diagonal it last pointed while
+## the car is at or under `CAR_IDLE_SPEED`. `setup()` and `_recycle()` place a car with no turn
+## running and its heading exactly on a lane axis — a sector centre 45° clear of its neighbours,
+## twice the hold's own reach — so the ordinary update below already replaces whatever sector was
+## drawn before, the same "no reset call needed" property `_update_walker_view()` documents for the
+## walker.
+func _update_car_view() -> void:
+	_car_view = EightDirection.update(_car_view, velocity(), CAR_IDLE_SPEED)
+
 func _draw() -> void:
 	_draw_body(self)
 	if kind == Kind.CAR:
@@ -1886,49 +1922,80 @@ func _draw_body(canvas: CanvasItem) -> void:
 	var flip := _flipped()
 	if kind == Kind.CAR:
 		_draw_shape_shadow(canvas, shape, Vector2.ZERO, _travel_axis())
-		var anchor := _car_body_anchor(frame)
-		Sprites.draw_standing(canvas, CAR_BODY[frame], anchor, Vector2.ZERO, flip, colour)
-		Sprites.draw_standing(canvas, CAR_TRIM[frame], anchor, Vector2.ZERO, flip)
+		var view: String = CAR_VIEW_BY_SECTOR[frame]
+		var anchor := _car_body_anchor(view)
+		Sprites.draw_standing(canvas, CAR_BODY_BY_VIEW[view], anchor, Vector2.ZERO, flip, colour)
+		Sprites.draw_standing(canvas, CAR_TRIM_BY_VIEW[view], anchor, Vector2.ZERO, flip)
 		return
 	_draw_shape_shadow(canvas, shape, Vector2.ZERO, Vector2.RIGHT)
 	var view: String = WALKER_VIEW_BY_SECTOR[frame]
 	Sprites.draw_standing(canvas, WALKER_BODY_BY_VIEW[view], Vector2.ZERO, Vector2.ZERO, flip, colour)
 	Sprites.draw_standing(canvas, WALKER_TRIM_BY_VIEW[view], Vector2.ZERO, Vector2.ZERO, flip)
 
-## Where a car's own body texture is anchored for `Sprites.draw_standing`, which is always
-## bottom-centred at the point it is given. **The side view needs no correction**: its along-track
-## length is the texture's own *width*, which `draw_standing` already centres by default. **The
-## end-on view draws that same along-track length as the texture's *height* instead** — the
-## "standing" convention reads it as receding away from the viewer, the way a person's height reads
-## as her standing on the ground — so bottom-anchoring it at `Vector2.ZERO` the way every other
-## standing sprite is anchored leaves the whole car north of the node, while the strike box
-## (`Tuning.CAR_STRIKE_HALF_LENGTH`), the shadow (`_car_shadow_shape`) and the field are all centred
-## on the node already. Shifting the anchor down by half the texture's own height is what makes the
-## four agree in the debug view; nothing else about the drawing changes.
-func _car_body_anchor(frame: int) -> Vector2:
-	if frame != 0:
-		return Vector2.ZERO
-	return Vector2(0.0, CAR_BODY[0].get_size().y * 0.5)
+## The strike box's own southernmost point when the heading is a diagonal, in px south of the
+## node — `Tuning.CAR_STRIKE_HALF_LENGTH` (26) and `Tuning.CAR_STRIKE_HALF_WIDTH` (14) each rotated
+## 45 degrees onto the screen's south axis, `(26 + 14) / sqrt(2)` ≈ 28.28, plus the 2px the
+## diagonal canvas leaves between its own alpha content and its own edge (`facings.csv`: content to
+## y40 of a 42-tall canvas) — so the anchor below lands the *drawn* corner, not the empty canvas
+## edge, on the strike box's own corner. A literal rather than a computed constant because GDScript
+## consts cannot call `sqrt()`; the value is `(CAR_STRIKE_HALF_LENGTH + CAR_STRIKE_HALF_WIDTH) /
+## sqrt(2.0) + 2.0` and this is asked back of `Tuning`'s own two constants by
+## `tests/test_car_views.gd` rather than pinned as a bare number there.
+const CAR_DIAGONAL_ANCHOR_Y := 30.284271247461902
 
-## A car's own shadow shape — a capsule along its travel axis, read off its own two textures
-## rather than a hand-picked radius: the side view's width is the car's along-track length, the
-## end view's is its across-track width, so `radius` is half the across and `half_length` is what
-## is left of half the along once the two end caps are accounted for.
+## Where a car's own body texture is anchored for `Sprites.draw_standing`, keyed by the view name
+## `CAR_VIEW_BY_SECTOR` names rather than by sector, since the two mirrored sectors of a standing
+## view need the same offset. `draw_standing` always bottom-centres a texture at the point it is
+## given, and each authored view puts a different part of the car at that edge:
+##
+## - **Side** needs no correction, as it never did: the car's along-track length is the texture's
+##   own *width*, which `draw_standing` centres by default, and its own alpha content already
+##   touches the canvas's bottom row (`facings.csv`'s own alpha bounds).
+## - **Front/back** are standing elevation pictures rather than the old flattened top-down end
+##   view: the canvas's own bottom edge is the car's south end — the near bumper for one heading
+##   and the far one for the other, which does not matter since the strike box is symmetric between
+##   them — so it belongs `CAR_STRIKE_HALF_LENGTH` south of the node, exactly where the box's own
+##   south edge already sits for a car pointed along that axis.
+## - **The diagonals** draw the car turned 45 degrees to the screen, so the strike box's own
+##   southernmost point is a *corner* rather than an edge — see `CAR_DIAGONAL_ANCHOR_Y`.
+func _car_body_anchor(view: String) -> Vector2:
+	match view:
+		"front", "back":
+			return Vector2(0.0, Tuning.CAR_STRIKE_HALF_LENGTH)
+		"front_diagonal", "back_diagonal":
+			return Vector2(0.0, CAR_DIAGONAL_ANCHOR_Y)
+		_:
+			return Vector2.ZERO
+
+## The car's own along-track length and across-track width for the shadow capsule below — fixed
+## constants rather than read off a texture. This used to take the side view's own width for the
+## along measurement and the end view's for the across one straight off `CAR_BODY[1]`/`CAR_BODY[0]`;
+## the side view (`car_side_body.svg`) is still 52px wide and still that same along-track
+## measurement, and 30px is the same across-track measurement the old end view carried, now pinned
+## here directly. Reading it off a texture again would mean reading it off one of the five standing
+## views' own width, which no longer has to agree with this number the way the old two-slot table's
+## did by construction — pinning it is what stops a binding a picture cannot resize.
+const CAR_SHADOW_ALONG := 52.0
+const CAR_SHADOW_ACROSS := 30.0
+
+## A car's own shadow shape — a capsule along its travel axis, sized from `CAR_SHADOW_ALONG`/
+## `CAR_SHADOW_ACROSS` rather than a hand-picked radius: `radius` is half the across measurement and
+## `half_length` is what is left of half the along once the two end caps are accounted for.
 ##
 ## **No body for a car.** A car's lethality is `TrafficIndex`'s, not a field's, and a `StaticBody2D`
 ## here would change the crowd's own collision rules rather than only how it looks — see
 ## docs/EVENTS.md and the **crowd-traffic** skill on why separation between bodies is positional,
 ## never a shape a car could get pinned against. This shape exists for the shadow alone.
 static func _car_shadow_shape() -> GroundShape:
-	var along := CAR_BODY[1].get_size().x
-	var across := CAR_BODY[0].get_size().x
-	var radius := across * 0.5
-	return GroundShape.segment(along * 0.5 - radius, radius)
+	var radius := CAR_SHADOW_ACROSS * 0.5
+	return GroundShape.segment(CAR_SHADOW_ALONG * 0.5 - radius, radius)
 
 ## Which way this car is travelling, on the ground plane — the axis its shadow's capsule sweeps
-## along. `_vertical` is the same flag `_frame()` reads to choose a side-on or end-on sprite.
+## along. `heading()` is already continuous — cardinal in a lane, the tangent of its own arc
+## mid-turn — so the capsule, and through `travel_axis()` below the debug view's own shadow layer,
+## rotates with the turn instead of snapping between two axes at the moment one starts or ends.
 func _travel_axis() -> Vector2:
-	return Vector2.DOWN if _vertical else Vector2.RIGHT
+	return heading()
 
 ## `_travel_axis()`, read by `DebugLayers` so its shadow layer rotates a car's capsule the same way
 ## `_draw_body()` already does, rather than a second guess at which axis this agent is travelling

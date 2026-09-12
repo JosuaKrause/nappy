@@ -55,11 +55,13 @@ view").
   seal on a road sends cars back). A car now drives to the mouth of the junction, eases to a turn
   speed, follows one arc onto the centre of the lane it is joining and picks up speed again; an
   about-face is a half circle inside the junction box, or, with no junction to reach, in the
-  street with its body over the kerb by a few pixels. The picture is still the cardinal one
-  until M108's vehicle item lands, so judge the *motion*: does a turn read as a car turning, does
-  the pause at the mouth read as slowing rather than stalling, and does a street about-face over
-  the kerb read as wrong? That last one is the open question in `TODO.md`, M111. Record is
-  `DECISIONS.md`, M111.
+  street with its body over the kerb by a few pixels. The crowd car's picture follows the arc
+  now — side, diagonal, front or back by its actual heading, standing pictures registered so the
+  box and shadow (`2` and `3` in the debug view) sit on the body — so judge both: does a turn
+  read as a car turning, does the pause at the mouth read as slowing rather than stalling, does
+  the picture ever jump a view or float off its shadow, and does a street about-face over the
+  kerb read as wrong? That last one is the open question in `TODO.md`, M111. Records are
+  `DECISIONS.md`, M111 and M108, the crowd car.
 - **Look at the people and animals in events from more than one side** (any day). The dog
   walker and his dog, the pacing yeller and the chatting mother, the cat, the loose dog, the
   charging dog, the cyclist and each pigeon now face the way they actually move, through the
