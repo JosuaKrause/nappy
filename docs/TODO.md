@@ -607,9 +607,14 @@ is still true.
       guard, where only the guard and she should go. The camera does not come back after the two
       seconds. And released on the far side without moving, she stands inside the hut's
       `detain_radius` and is detained again — the run log shows the same hut at 65px right after
-      the release — so the released side must put her outside the radius, or the row must not
-      re-arm until she has left it once. All four against a rig that drives the hold end to end,
-      and a burst of the whole hold as the evidence
+      the release. **The answer is a flag, not a distance** *([PLAYTEST-58](playtests/PLAYTEST-58.md):
+      "she just spawns further away now? it should work that she has a flag 'just spawned' that
+      only resets once she leaves the area. that way she can't accidentally go back and we don't
+      need to place her far away")*: the release puts her on the far side just clear of the hut's
+      body, as close as she can stand, and a released flag for that hut suppresses re-detention
+      until she has once left its trigger area, after which the door re-arms as a toll in either
+      direction. All four against a rig that drives the hold end to end, and a burst of the whole
+      hold as the evidence
 
 **Drawings, as SVG:**
 

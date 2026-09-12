@@ -38,3 +38,16 @@ And the shape of the hold itself, as states:
 So a held walker waits its turn, goes inside for the inspection the way she does, comes out on
 the far side of the door, and for a while after that cannot be taken by the same door again, so
 it walks on rather than turning round into a second hold.
+
+## Her own release, the same shape
+
+On the fourth fault of playtest 57's inspection item — released on the far side without moving,
+she was detained again — and the two answers that item had left open, putting her outside the
+radius or not re-arming until she has left it:
+
+> hmm, she just spawns further away now? it should work that she has a flag "just spawned" that
+> only resets once she leaves the area. that way she can't accidentally go back and we don't need
+> to place her far away
+
+So the release puts her close, just clear of the hut, and a flag keeps that hut from taking her
+again until she has once left its area. The walker's cooldown above is the same rule.
