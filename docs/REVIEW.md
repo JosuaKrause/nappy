@@ -17,9 +17,19 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 Each line is a thing to try or look at and the question it settles. `tools/run.sh` plays the
 desktop build; `--seed <n> --day <n>` puts a run where an item says; `1` to `4` in a debug build
 toggle the field, shadow, bounding-box and readout layers (`docs/TELEMETRY.md`, "The debug
-view"). `--invincible` is the way to walk this whole list in one sitting: nothing ends the day, so
-one run can stand next to every item below for as long as looking takes.
+view"). `--invincible` is the way to walk this whole list in one sitting: nothing ends the day,
+the clock stands still and the excitement meter never rises, so one run can stand next to every
+item below for as long as looking takes.
 
+- **Run `--invincible` for a couple of minutes beside a loud event** (any day). The clock and the
+  light stay where the day started and the excitement bar never rises, while the crowd, the
+  events, the closures and the checkpoints all still run. Does anything still flash or darken, and
+  is a held day still useful for looking at the rest of this list? Record is `DECISIONS.md`,
+  M100, invincible freezes the clock and the meter.
+- **Find a crossing alley walled at both mouths on day 7 or later** (`--seed 2199579682 --day 7`
+  has one). No chalk mark and no robber ever stands on its paving; the mark is offered somewhere
+  she can reach. Does the mark ever appear behind a band anywhere else — a closure, a soft seal?
+  Record is `DECISIONS.md`, M100, a blocked-off alley has no chalk mark.
 - **Stand by a sealed street and watch the crowd** (any day; seals are the bodies on the streets
   the day's route does not use). Walkers and cars turn back from a hard seal, a wall and a
   closure; a soft seal takes both pavements from walkers and leaves the road to cars; a door lets

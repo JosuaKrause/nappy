@@ -9,7 +9,30 @@ extends RefCounted
 ## the flag and cleared straight back to `null` after, or it leaks into every suite run afterwards.
 
 const SEED := 4242
+const STEP := 1.0 / 60.0
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
+
+## Stands in for the city, the same shape `tests/test_meters.gd`'s own `FakeWorld` uses: a live
+## noise source `Baby.excitement_sources_at()` can actually sum, so the meter test below drives
+## the real `_update_excitement()` path rather than asserting `DevFlags.invincible()` in isolation.
+class FakeWorld extends WorldContext:
+	var noise := 0.0
+
+	func total_excitement_at(_world_position: Vector2) -> float:
+		return noise
+
+	func excitement_sources_at(_world_position: Vector2) -> Array:
+		return [[self, noise]] if noise > 0.0 else []
+
+	func accumulate_landed(_points: float) -> void:
+		pass
+
+## A live `Baby` standing on a `FakeWorld`, for the meter half of the flag — see
+## `_build_meter_rig()`.
+class _MeterRig extends RefCounted:
+	var world: FakeWorld
+	var stroller: Stroller
+	var baby: Baby
 
 var _map: CityMap
 var _player: Node2D
@@ -21,8 +44,10 @@ func run(t) -> void:
 	_test_invincible_from_query(t)
 	_test_crying_does_not_end_the_day_under_invincible(t)
 	_test_hard_fail_does_not_end_the_day_under_invincible(t)
-	_test_timeout_holds_the_clock_at_zero_under_invincible(t)
+	_test_the_clock_never_moves_under_invincible(t)
 	_test_a_won_day_still_ends_under_invincible(t)
+	_test_the_meter_does_not_rise_under_invincible(t)
+	_test_the_clock_and_the_meter_both_move_with_the_flag_off(t)
 	_test_the_three_losses_still_end_the_day_with_the_flag_off(t)
 	_test_the_hud_names_the_mode_when_invincible(t)
 	_test_the_run_log_notes_the_flag_once_per_day(t)
@@ -69,6 +94,29 @@ func _teardown() -> void:
 	_day.free()
 	_player.free()
 
+## A `Baby` on a live `Stroller`, standing on a `FakeWorld` — the same shape `tests/test_meters.
+## gd`'s own `_build()` uses, kept local to this suite so a rig this small does not need a shared
+## fixture with a file whose meters are not about the flag.
+func _build_meter_rig(t) -> _MeterRig:
+	var rig := _MeterRig.new()
+	rig.world = FakeWorld.new()
+	t.add_child(rig.world)
+	rig.stroller = Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	rig.stroller.add_child(camera)
+	t.add_child(rig.stroller)
+	rig.stroller.set_physics_process(false)
+	rig.stroller.velocity = Vector2.ZERO
+	rig.baby = Baby.new()
+	rig.stroller.add_child(rig.baby)
+	rig.baby.set_physics_process(false)
+	return rig
+
+func _teardown_meter_rig(rig: _MeterRig) -> void:
+	rig.stroller.free()
+	rig.world.free()
+
 # ---------------------------------------------------------------- day loop ---
 
 func _test_crying_does_not_end_the_day_under_invincible(t) -> void:
@@ -92,18 +140,23 @@ func _test_hard_fail_does_not_end_the_day_under_invincible(t) -> void:
 	DevFlags._invincible_override = null
 	_teardown()
 
-func _test_timeout_holds_the_clock_at_zero_under_invincible(t) -> void:
+## PLAYTEST-57, "invincible, as played" — overturning the flag's own first build the same
+## evening: "when invincible the timer should never go down ... this is just noisy flashing of
+## alarms and the day gets dark." The clock does not merely hold at zero once it gets there — it
+## never moves at all, so the light never runs down to dusk in the first place.
+func _test_the_clock_never_moves_under_invincible(t) -> void:
 	_build(t)
 	_day.start(10.0)
 	DevFlags._invincible_override = true
 	_day._process(9.0)
-	t.check(_results.is_empty(), "the day is still running before dusk")
+	t.close_to(_day.time_remaining, 10.0,
+			"the clock has not moved even after what would be most of the day", 0.001)
+	t.check(_results.is_empty(), "and nothing ended the day either")
 	_day._process(5.0)
-	t.check(_results.is_empty(), "dusk does not end the day under --invincible")
+	t.close_to(_day.time_remaining, 10.0,
+			"or after running past what would have been dusk", 0.001)
+	t.check(_results.is_empty(), "dusk still never arrives")
 	t.check(_day.is_running(), "the day is still running")
-	t.close_to(_day.time_remaining, 0.0, "the clock holds at zero rather than going negative", 0.001)
-	_day._process(5.0)
-	t.close_to(_day.time_remaining, 0.0, "and stays there", 0.001)
 	DevFlags._invincible_override = null
 	_teardown()
 
@@ -116,6 +169,44 @@ func _test_a_won_day_still_ends_under_invincible(t) -> void:
 	t.check(_results == [GameEnums.DayResult.WON], "a won day still ends under --invincible")
 	DevFlags._invincible_override = null
 	_teardown()
+
+## PLAYTEST-57: "excitement should never go up" under the flag. `FakeWorld.noise` stands in for a
+## live event well above any walking decay, so a straight read of `Baby.excitement` after several
+## seconds against it is a read of `_update_excitement()`'s own arithmetic, not of the predicate.
+## Starts above zero so decay has something to do: the flag freezes what feeds the meter, never
+## the meter itself, so it may still fall.
+func _test_the_meter_does_not_rise_under_invincible(t) -> void:
+	var rig := _build_meter_rig(t)
+	rig.baby.excitement = 20.0
+	rig.world.noise = 50.0
+
+	DevFlags._invincible_override = true
+	for _i in int(round(3.0 / STEP)):
+		rig.baby._physics_process(STEP)
+	t.check(rig.baby.excitement <= 20.0 + 0.01,
+			"excitement never rises under --invincible, even against a live source (got %.2f)"
+			% rig.baby.excitement)
+	DevFlags._invincible_override = null
+	_teardown_meter_rig(rig)
+
+## The flag off: the same rig, the same source, moves both meters — the day clock and the
+## excitement meter — so the frozen behaviour above is the flag's doing and not a rig that cannot
+## move either number at all.
+func _test_the_clock_and_the_meter_both_move_with_the_flag_off(t) -> void:
+	_build(t)
+	_day.start(10.0)
+	DevFlags._invincible_override = false
+	_day._process(3.0)
+	t.check(_day.time_remaining < 10.0 - 0.01, "the clock counts down with the flag off")
+	_teardown()
+
+	var rig := _build_meter_rig(t)
+	rig.world.noise = 50.0
+	for _i in int(round(3.0 / STEP)):
+		rig.baby._physics_process(STEP)
+	t.check(rig.baby.excitement > 0.01, "and excitement rises too, against the same source")
+	DevFlags._invincible_override = null
+	_teardown_meter_rig(rig)
 
 ## Both an explicit `false` and the default (unset) override must leave the ordinary behaviour
 ## alone, so the predicate's off branch is exercised rather than just its default pass-through.

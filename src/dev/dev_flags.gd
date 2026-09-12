@@ -324,7 +324,14 @@ static var _invincible_override: Variant = null
 
 ## `--invincible` (or the page's own `?invincible=1`, a debug web build only) makes nothing end the
 ## day: `DayController._ignores_loss()` is the one predicate every losing path consults, and this
-## is the flag it reads. See docs/TODO.md, M100, "An invincible mode for playtesting".
+## is the flag it reads. **It also stands the day clock and the excitement meter still** —
+## `DayController._process()` skips the countdown outright rather than letting it run to dusk, and
+## `Baby._update_excitement()` never adds to the meter, though decay may still run it down — so a
+## capture waiting for a moment gets quiet held time rather than a flashing alarm and a darkening
+## day. *(2026-09-11, overturning the flag's own first build the same evening: "when invincible the
+## timer should never go down and excitement should never go up. this is just noisy flashing of
+## alarms and the day gets dark.")* The record is in docs/DECISIONS.md under M100, "an invincible
+## mode for playtesting" and "invincible freezes the clock and the meter".
 ##
 ## Gated behind `enabled()` explicitly, the same as `layers_override()` gates its own query read —
 ## unlike `svg_requested()`, which stays live in a release web build by design, this reaches the
