@@ -355,14 +355,30 @@ itself holds her the way a hut does, whatever it is doing for a car; and the wal
 the same huts in the player's four states, a few passing and some turning back, with the line
 kept short (`DECISIONS.md`, M110, walkers are held at a door). What is left is one question.
 
-- [ ] **Open question, the player's: does every other solid body divert the crowd too?** A café, a
-      construction band, a kerbed van are walked through the same way. Diverting the crowd at every
-      pavement obstacle spends the tell closures rely on — every obstructed street would read as
-      shut — and a walker stepping *round* a body within its pavement is a behaviour the lanes do
-      not have (`CrowdLanes` gives a walker one of four fixed lanes per corridor). The
-      recommendation is seals only in this milestone, with ordinary bodies asked about against a
-      played day; the alternative, treating any body that covers a whole lane as shut for that lane,
-      is one predicate more and is cheap to add if the player wants it
+- [ ] **Every solid body diverts the crowd, as far as avoiding it.** *(2026-09-12, asked whether
+      every other solid body diverts the crowd too: "yes every solid body should do that -- not
+      necessarily force a turn around but at least avoid the solid".)* A café, a construction band,
+      a kerbed van, a stall, a skip, a burnt-out car: today each is walked and driven through, and
+      the recommendation to leave them so — that diverting at every body spends the tell closures
+      rely on — was put to the player and overturned. **The shape**: a stationary solid body
+      (`EventInstance.is_solid()`, the rows with an `obstructs_radius`; mobile rows stay exempt as
+      the catalogue's *solid things are solid* already says) is recorded per tile for the day the
+      way `CityMap.soft_sealed_tiles` is, from the day's plans as they are built and from any body
+      placed later, and released when the body leaves. A **walker** whose own lane is obstructed
+      ahead sidesteps to a clear lane of the same footway inside `_pavement_band()`, the detour
+      `step_aside()` already keeps for her, and steps back after; a body that covers **every** lane
+      of its footway shuts that footway's segment to the walker the way a soft seal does, so it
+      turns at the last junction rather than walking into it — the other footway and the
+      carriageway stay open, which is the difference from a seal. A **car** whose own lane is
+      obstructed has no lane to step into — one lane per direction, the oncoming one is not an
+      option — so the body shuts that direction of the segment to cars and the car turns at the
+      last junction through `_plan_a_turn()` as it does for a closure; a car already in the street
+      with no junction left before the body stops behind it, the way it stops behind a queue, and
+      the M111 about-face is the last resort it already is. Nothing forces a turn-round that the
+      existing closure logic does not; *avoid* is the instruction. Tests: a walker sidesteps a
+      one-lane body and passes; a walker turns at the junction before a two-lane body; a car turns
+      before a body in its lane and the oncoming lane keeps flowing; zero crowd bodies inside any
+      solid body's footprint over a played day on several seeds
 
 ---
 
@@ -480,8 +496,27 @@ became the charging dog")* — sited on her line on day 3 so the lesson is unavo
       is not designed yet, and the measurement comes first** *(2026-09-11: "measure now, design
       after")*: the before-figures are in hand, taken with `tests/probes/m98_return_phase.gd` and
       recorded in `DECISIONS.md` under M98 — a return leg that spends a fifth to a third of the
-      day and meets the director's queue once or twice, zero on one leg in five — and the shape,
-      how many, where, at what cost, is the player's question now
+      day and meets the director's queue once or twice, zero on one leg in five. **Go ahead was
+      given on 2026-09-12** *("M98, too")* with the shape left to the orchestrator, so what
+      follows is a recommendation, pinned and open to overturn. **The shape: patrols owed to the
+      return.** When `EventBus.return_phase_started` fires on a day in act III or IV, the
+      director's single queue is handed `Tuning.RETURN_PATROLS_PER_ACT` (recommended `[0, 0, 2,
+      3]`) extra `police_patrol` rows at the day's own heat, sited `TOWARD_PLAYER` — a patrol car
+      coming down her own street toward her, on the carriageway, from outside the view, the way a
+      cyclist is sited today — and the queue's interval for the rest of the day is
+      `Tuning.RETURN_PATROL_INTERVAL` (recommended 9–16s) rather than `AHEAD_INTERVAL`'s 11–26s,
+      so the extra rows land inside a 33s or 47s leg rather than after she is home. A patrol
+      passing at 74px/s with `outer_radius` 185px is the encounter cost: never lethal, an amount
+      the sleeping baby can take once or twice and not four times, which is why the count is per
+      act and small. They are outside the day's budget on purpose — the budget is a variety
+      ledger, and the return's pressure is a second half the budget never priced — and they are
+      *met*, never ambient; the crowd table stays as it is. If the baby wakes and the phase drops
+      back to walking, the rows already owed stay owed; nothing is added twice on a day. Acts I
+      and II get nothing, so the teaching days and the return she learns on stay as they are.
+      **After-measurement on the same probe**: `tests/probes/m98_return_phase.gd` told the phase
+      has started, printing encounters per return and the leg's share of the clock beside the
+      before-figures; and a `REVIEW.md` entry, since whether a return in act IV reads as pressure
+      or as punishment is a played question
 
 ---
 
@@ -621,10 +656,19 @@ re-pitched:
 
 ## M102 — The finale: out of the apartment, out of the city · asked for 2026-09-09
 
-**Planned and not queued.** *("this is just a plan for now — we probably won't actually implement
-it for a while (there are a lot of milestones before that).")* Written down now so that M62
-(checkpoints that divide the map), M56 (the resistance is noticed) and M100's sound lines are
-built knowing they are also the finale's parts, as M101 (the fire found before the engine) was.
+**Queued on 2026-09-12, behind the flag.** *Planned and not queued on 2026-09-09 ("this is just a
+plan for now — we probably won't actually implement it for a while") · overturned by the player on
+2026-09-12: "also build the entire escape sequence to the end but make it playable only via flag
+today (what is now the apartment escape should continue)".* So the whole sequence is built —
+the building with its events, the service exit onto the city, the two chains through three parks
+each to the tunnel and the bridge, the explosions and their craters, the hint lines, the
+millisecond clock, the section restart and the epilogue — and **today it is reached only through
+`--start-escape`**, which already boots the empty building: from the service door that run now
+continues into the finale's city rather than returning to the title. The entry from day 14's own
+summary is the one item that stays open until the player says the finale is a run's ending, and it
+is marked below. Written down on 2026-09-09 so that M62 (checkpoints that divide the map), M56
+(the resistance is noticed) and M100's sound lines were built knowing they are also the finale's
+parts, as M101 (the fire found before the engine) was.
 
 **The brief, in the player's words:**
 
@@ -718,12 +762,15 @@ M103, the drawings the queue owes.
 - [ ] **The building is built and empty** — M112, the escape scene, walkable, in `DECISIONS.md`:
       one map with three hallways, two switchback stairwells, the lobby and the basement, doors
       that fade and teleport, her carrying the baby, all behind `--start-escape`. What this
-      milestone adds inside it: the entry from day 14's summary
-      rather than from a flag, the exit through the service door onto the city map at the home
+      milestone adds inside it: the exit through the service door onto the city map at the home
       lot's side, the hallway windows that **flash** when an off-screen explosion goes off (the
       explosion row's cue indoors, one or two frames of `hallway_wall_window_flash.svg`), the
       lighting response to the explosions, and the events — mice, the pursuers on the stairs, the
       fire on one stairwell, the steam
+- [ ] **The entry from day 14's summary rather than from the flag** — the one item held back on
+      2026-09-12 *("make it playable only via flag today")*: the good ending's last won day hands
+      over to the hallway instead of the ending screen. Everything else below is built behind
+      `--start-escape`, and this is the switch that makes it the run's ending
 - [ ] **A finale plan for the city map.** An ordered chain, not a `RouteTree`: service exit to
       first park to second to third to the edge, one street-walk between each pair and nothing
       else open. `RouteTree.for_day` and its redundancy guarantee (two distinct routes to each calm
