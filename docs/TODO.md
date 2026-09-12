@@ -160,12 +160,14 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    *(2026-09-10, playtest 52: "objects like fallen trees don't stop/redirect traffic or
    pedestrians.")* Placed here by the orchestrator because a sealed street the crowd walks
    through is the sealing's own legibility failing — open to the player moving it.
-3. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
+3. **M115**, streets with trees — asked for on 2026-09-11 in playtest 57 and placed here by the
+   orchestrator beside the city work, open to the player moving it.
+4. **M96 to M100**, in no order between them: the teaching day, the calm areas, the empty acts,
    the corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
    answered; the record of what was found built is in `DECISIONS.md` under "The queue
    reprioritised".
-4. **Reaching act III**, which M56's measurement against the nerves needs.
+5. **Reaching act III**, which M56's measurement against the nerves needs.
 
 **The regions, their walls and their checkpoints are built and nobody has walked through one.**
 The record, with its measurements and the choices open to overturn, is in `DECISIONS.md` under
@@ -368,6 +370,33 @@ itself holds her the way a hut does, whatever it is doing for a car. What is lef
 
 ---
 
+## M115 — Streets with trees · asked for 2026-09-11
+
+> "can we make only some streets have trees? it should be continuous segments of 3/4/5 blocks
+> randomly placed on the map in both directions. fallen trees should only be possible on streets
+> with trees and one spot should be empty (the fallen tree's spot)"
+
+[PLAYTEST-57](playtests/PLAYTEST-57.md). Today `StreetTrees` puts a pit at a fixed spacing along
+every pavement fronted by a residential or commercial block, and `ClosurePlanner` only *prefers*
+`fallen_tree` on a street that has trees (a weight, `_FALLEN_TREE_STREET_BIAS`).
+
+- [ ] **Only some streets have trees, in runs.** A tree-lined street is a straight run of three,
+      four or five consecutive blocks along one street line, horizontal or vertical, chosen from
+      the city's own seed at generation and fixed for the run like every other piece of geometry
+      she learns; runs are placed at random across the map in both directions, and the count of
+      runs is a `Tuning` constant chosen so that most streets are bare and a tree-lined one reads
+      as a place. Pits keep their current spacing and their mouth margins inside a run; a street
+      outside every run gets none. `StreetTrees` stays a pure function of `CityMap` and remains
+      the one source of truth `City._spawn_street_trees()` and the planner read.
+- [ ] **A fallen tree only where a tree stood.** `fallen_tree` closures and `fallen_tree_seal` are
+      offered only on a tree-lined segment, never merely preferred there, and the fallen tree
+      takes one of that street's own pits: that pit is left empty for the day — the tree that fell
+      is the one that is missing — so the picture and the planting agree. Which pit is chosen is
+      the planner's, nearest the closure's own centre; the seal's whole-street scene keeps its own
+      picture and empties the pit it covers.
+
+---
+
 ## M96 — The teaching day, and the dog after it · rewritten 2026-09-09
 
 Rewritten from M43. Two of M43's items turned out to be built when checked — the pause lesson no
@@ -530,6 +559,77 @@ stopped, and the seed-retry fact is stated in `docs/CITY.md`, so neither is here
 is still true.
 
 **Defects, each a few lines once found:**
+
+- [ ] **The pram's body sits closer to her, and the debug view draws it.** *([PLAYTEST-57](playtests/PLAYTEST-57.md):
+      "I don't like the stroller having a hitbox. it makes navigation clunky, I cannot get close to
+      walls anymore, and I get constantly stuck."; then "can we keep the stroller hitbox but move it
+      closer to the player (btw the hitbox right now is not drawn at all for some reason) -- that
+      way the stroller would go a little bit into objects (the part that is not covered) but it
+      wouldn't be completely wild like before".)* The pram's own body — built on 2026-09-10 from an
+      M1 engineering note, never asked for — stays, placed where the player said: *"place the center
+      of the stroller hitbox at the circumference of the player hitbox"*, *"and don't make it too
+      big"*. Her body is the 14px circle in `scenes/player/stroller.tscn`; `PramCollisionShape2D`'s
+      centre sits on that circle's edge, 14px out along her facing, and its radius comes down from
+      12px to something clearly smaller — 8px is the recommendation, stated in the commit and
+      pinned — so the pram's far half overlaps whatever it meets and she can stand against a wall
+      while the pram no longer clips through corners whole. The pram's *drawing*, shadow, cue and
+      field keep their 34px offset; only the body moves. **And the debug view draws every body
+      there is** *("and make sure *all* hitboxes are actually drawn")*: the bounding-box layer (`3`)
+      does not draw the pram's body today, so audit every `CollisionShape2D` and `StaticBody2D` the
+      scene tree holds — hers, the pram's, buildings, city bodies, event bodies, walls and doors —
+      against what the layer draws, and draw whatever is missing from the same source the physics
+      reads, so the layer cannot omit a body again; a test walks the tree and asserts the count
+      the layer draws equals the count of enabled shapes. And measure the roadblock band's and the region wall's bodies against
+      their drawn boxes: in the run's pictures she stops a pram's length short of a band across an
+      alley and short of the wall across a road with the boxes nowhere near touching, so whatever
+      body those rows carry beyond their picture is trimmed to it
+- [ ] **A roof's northern edge is ground she may step into, and a roof draws over what stands in
+      the street.** *(PLAYTEST-57: "allow going in a little bit for northern edges of roofs"; "roofs
+      also should be drawn over objects. the barrier looks on top of the roof in those pictures.")*
+      The northern edge of a roof is the top of a wall in this projection: inset the building's body
+      a few pixels along its north side so she overlaps that edge rather than stopping a tile short.
+      And a roadblock band across an alley is drawn wider than the alley, over the roof edges either
+      side; a roof is above everything at street level, so events and props that overlap a roof
+      draw beneath it — fit the band to its obstruction span where it crosses an alley, and sort the
+      roof above what it overlaps, whichever the pictures need; say which was done
+- [ ] **A blocked-off alley has no chalk mark.** *(PLAYTEST-57: "a blocked off alley must not
+      have a chalk mark.")* The resistance's mark was offered on the paving of an alley whose mouth
+      a roadblock band closes. The trap's and the mark's candidate ground refuses any tile she
+      cannot reach on the day — held segments, sealed alleys, the ground behind a band — the same
+      refusal the scheduler already applies to closed tiles, checked where the candidate is
+      offered rather than repaired afterwards
+- [ ] **The keyboard resets the pointer's aim.** *(PLAYTEST-57: "arrow keys should reset any mouse
+      click position. when pressing awsd or arrow keys right now the last pressed mouse position is
+      still active resulting in incorrect / drifting movement.")* A press on the arrows or `WASD`
+      clears whatever heading the last click or tap set, so the keys steer alone from that frame;
+      a later click sets a fresh heading as it does today
+- [ ] **The boom is drawn on the road, and the inspection starts as she approaches.**
+      *(PLAYTEST-57: "the gate for the cars is too high up. it needs to be further down"; "the
+      checkpoint should activate when I get close. with the new stroller hitbox I cannot reach the
+      checkpoint entrance.")* The gate's picture sits at the height of the road's upper kerb; it
+      belongs across the carriageway at the huts' own level. And the hut's `detain_radius` (48px)
+      starts the inspection only once her body is inside it, which a body stopped short of the hut
+      never reaches: start it on approach, from the distance she can actually stand at, re-checked
+      once the pram's body is gone
+- [ ] **The inspection, as played.** *(PLAYTEST-57, on M113's `REVIEW.md` item: "the camera makes a
+      huge jump from somewhere to the checkpoint. the checkpoint house disappears. the camera
+      doesn't move at all after the 2s. also, if I don't move I get sent back afterwards. all this
+      is incorrect.")* Four faults in one hold. The camera jumps rather than eases — the ease starts
+      from `_camera.global_position` the frame `top_level` is set, which is not where the camera was
+      drawn from, so find where it actually starts and ease from there. The hut vanishes with the
+      guard, where only the guard and she should go. The camera does not come back after the two
+      seconds. And released on the far side without moving, she stands inside the hut's
+      `detain_radius` and is detained again — the run log shows the same hut at 65px right after
+      the release — so the released side must put her outside the radius, or the row must not
+      re-arm until she has left it once. All four against a rig that drives the hold end to end,
+      and a burst of the whole hold as the evidence
+- [ ] **Invincible freezes the clock and the meter.** *Asked for on 2026-09-11 as everything else
+      real · overturned the same day, [PLAYTEST-57](playtests/PLAYTEST-57.md): "when invincible the
+      timer should never go down and excitement should never go up. this is just noisy flashing of
+      alarms and the day gets dark."* Under `--invincible` the day clock stands still and excitement
+      never rises — nothing adds to it, so no cry, no alert, no halo charging — while sleepiness,
+      the crowd, the events, the closures and the checkpoints all still run; the HUD word and the
+      log note stay
 
 - [ ] **A screenshot is named by the clock on the wall, not the clock in the game.**
       *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "phot capture must use real time not
