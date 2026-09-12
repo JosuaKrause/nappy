@@ -1,0 +1,7 @@
+<!-- Walking away, feet passing: the same coat and centre seam, lifted a pixel with the stride. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="38" viewBox="0 0 18 38" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M5 9 Q9 7 13 9 L16 12 L16 26 Q9 29 2 26 L2 12 Z" fill="#ffffff"/>
+  <path d="M2 22 Q9 24 16 22 L16 27 Q9 29 2 27 Z" fill="#e0e0e0"/>
+  <path d="M9 9 L9 27" stroke="#c9c9c9" stroke-width="1.2" fill="none"/>
+  <path d="M2 12 Q0 14 1 24 L4 25 L5 14 Z M16 12 Q18 14 17 24 L14 25 L13 14 Z" fill="#f2f2f2"/>
+</svg>

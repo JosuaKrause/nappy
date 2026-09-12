@@ -70,6 +70,9 @@ one run can stand next to every item below for as long as looking takes.
   their frontage's facing. Does a figure seen from behind still read as what it is, does the
   robber turning toward you read as a tell or as a glitch, and do the café sitters all facing one
   way read as a party or as a row? Record is `DECISIONS.md`, M108, the event people.
+- **Watch any walker on any pavement.** They stride now, two frames alternating at the mother's
+  own rate, frame a whenever one stops. Do the feet read as walking at street scale, and does a
+  queue of stopped walkers read as standing? Record is `DECISIONS.md`, M108, the walkers' stride.
 - **Watch walkers round a corner or step aside for you** (any day, any busy pavement). A walker
   now picks one of eight views from the way it is actually moving, so it shows a diagonal picture
   for the few tenths of a second it is steering across its lane, and a stopped one keeps its last
