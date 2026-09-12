@@ -1,0 +1,27 @@
+nappy rig log  2026-09-12T04:23:29  version v0.8.2-692-g0a86035-dirty
+
+day 7  act 2  run seed 2199579682  city seed 2199579682  length 144.0s  invincible
+   0.0  plan     regions: 31 boundary, 20 wall, 11 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  step 1 on offer at (132,53)
+   0.0  roll     chalk mark guarded: robber 79px away (band 66-176)
+   0.0  plan     closed: accident h(0,9), accident v(2,5)
+   0.0  plan     calm: 2 forest, 2 quiet_square, 3 courtyard, 3 park
+   0.0  plan     events: alley_mouse x4, burnt_out_car x40, burst_water_main x8, busker x10, cafe_tables x34, car_accident x8, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x11, checkpoint_hut x22, checkpoint_post x2, collapsed_frontage x16, construction x37, cyclist x8, delivery_van x22, dog_walker x21, fallen_tree x11, homeless_yeller x8, ice_cream_van x4, leaf_blower x11, loose_dog x12, market_stall x33, moving_van x49, pigeon_flock x5, playground x3, police_patrol x12, poster_crew x11, reversing_lorry x9, roadblock x76, scaffolding x13, skip x13
+   0.0  start    doorstep (62,16), facing 180°
+   0.0  chat     checkpoint_gate at (62,17), 2.0s, baby awake, meter +25
+   0.2  near     roadblock (telegraph) at (59,20), 162px, exc 2, in 16.5/s (crowd 0.0, events 16.5), sleep 0
+   0.2  near     roadblock (telegraph) at (61,20), 126px, exc 2, in 16.5/s (crowd 0.0, events 16.5), sleep 0
+   0.2  near     checkpoint_hut (telegraph) at (62,15), 59px, exc 2, in 16.5/s (crowd 0.0, events 16.5), sleep 0
+   0.2  near     checkpoint_gate (telegraph) at (62,17), 5px, exc 2, in 16.5/s (crowd 0.0, events 16.5), sleep 0
+   0.2  near     checkpoint_hut (telegraph) at (62,19), 69px, exc 2, in 16.5/s (crowd 0.0, events 16.5), sleep 0
+   0.3  shot     burst started: asked for an animation burst at (62,16) | exc 4, sleep 0 | playing | asked/burst-4010896-001
+   1.6  freeze   sleep stopped filling | exc 36, in 30.3/s (crowd 3.5, events 26.7), sleep 0 | near: checkpoint_gate 5px
+   2.0  checkpoint checkpoint_gate at (62,17), 2.0s, released on the west side
+   2.1  near     roadblock at (57,20), 169px, exc 51, in 43.3/s (crowd 7.3, events 36.0), sleep 0
+   2.9  crowd    a car sounded its horn at her in the road at (60,16) | exc 88, in 41.2/s (crowd 5.2, events 36.0), sleep 0
+   3.3  shot     burst complete: 36 frames | duration
+   4.5  cue      the mark over her head: soon for 1.5s (1.5s of it on the road) | a car, and she is in the road
+   5.0  shot     burst started: asked for an animation burst at (60,16) | exc 100, sleep 0 | playing | asked/burst-8726654-002
+   5.7  crowd    a car sounded its horn at her in the road at (60,16) | exc 100, in 57.6/s (crowd 5.2, events 36.0), sleep 0
+   8.0  shot     burst complete: 36 frames | duration
+   8.1  cue      the mark over her head: soon for 2.4s (2.3s of it on the road) | a car, and she is in the road

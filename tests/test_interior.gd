@@ -18,6 +18,7 @@ func run(t) -> void:
 	_test_a_sideways_press_on_a_flight_walks_its_slope(t)
 	_test_every_diagonal_step_has_both_its_pinch_corners_cleared(t)
 	_test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t)
+	_test_a_door_release_latch_keeps_a_door_from_retaking_her(t)
 
 func _test_the_map_builds(t: Node) -> void:
 	var f := InteriorMap.build()
@@ -338,6 +339,61 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: Node) -> voi
 
 		player.free()
 		scene.free()
+
+## `InteriorScene` arms a `ReleaseLatch` (`src/world/release_latch.gd`) on every arrival through a
+## door rather than tracking an edge-detected "last tile", so the arrival tile and the trigger tile
+## can be the same tile — see the class's own doc. `ReleaseLatch` itself, armed and updated with no
+## door around it, is proven in `tests/test_checkpoints.gd`'s `_test_the_release_latch`; this checks
+## only that `InteriorScene` wires it the way the milestone asks: armed on arrival with the stated
+## radius, holding while she stays close, and clearing once she has actually left.
+##
+## Drives `teleport_to_door()` and `process_player()` directly, the same functions the running game
+## calls every frame — see `_test_a_rig_walks_both_stairwells_from_her_door_to_the_exit`'s own doc
+## for why the fade tween's own timing is skipped. `player` is a plain `Node2D` rather than a
+## `Stroller`: `teleport_to_door()` falls back to a bare `global_position` assignment for anything
+## that is not a `Stroller`, and nothing here touches physics or the camera.
+func _test_a_door_release_latch_keeps_a_door_from_retaking_her(t: Node) -> void:
+	var f := InteriorMap.build()
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	scene.build()
+	var player := Node2D.new()
+	t.add_child(player)
+
+	var door_id := "hallway_third:left"
+	var centre := scene.tile_to_world(f.door(door_id).tile)
+
+	scene.teleport_to_door(door_id, player)
+	t.check(scene._door_release_latch.holds(), "arriving through a door arms its release latch")
+	scene.process_player(player, 0.0)
+	t.check(not scene._transitioning,
+			"standing where she arrived does not start a second transition")
+
+	# Stepping one tile off the door and straight back on, while still inside the radius the latch
+	# was armed with, fires nothing — an edge-detected "last tile" flag would refire here, since the
+	# tile she stepped onto in between differs from the one she arrived on.
+	player.global_position = centre + Vector2(InteriorScene.TILE, 0.0)
+	scene.process_player(player, 0.0)
+	player.global_position = centre
+	scene.process_player(player, 0.0)
+	t.check(not scene._transitioning, "stepping one tile off the door and straight back fires nothing")
+
+	# The latch is armed with the stated radius: one tile and a half, 48px, past the door's own
+	# tile centre.
+	player.global_position = centre + Vector2(47.0, 0.0)
+	scene.process_player(player, 0.0)
+	t.check(scene._door_release_latch.holds(), "47px out, inside the tile-and-a-half radius, still holds")
+	player.global_position = centre + Vector2(49.0, 0.0)
+	scene.process_player(player, 0.0)
+	t.check(not scene._door_release_latch.holds(), "49px out clears the latch")
+
+	# Leaving the radius and returning fires the door again.
+	player.global_position = centre
+	scene.process_player(player, 0.0)
+	t.check(scene._transitioning, "returning to the door after leaving the latch's radius fires it again")
+
+	player.free()
+	scene.free()
 
 ## A pure 8-directional flood fill (to match `Stroller`'s own two-axis input) that never crosses a
 ## door — the "walking alone" half of the reachability guarantee.

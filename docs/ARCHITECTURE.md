@@ -79,6 +79,9 @@ src/
 	telemetry_map.gd      the tile grid as a picture, drawn at dawn and again at dusk
   world/
 	world_context.gd      the only questions the baby may ask the world
+	release_latch.gd      "she has just come through this, leave her alone until she has left it":
+	                      the flag a door arms on the way out, cleared by her walking out of its
+	                      own reach. The region doors and the building's doors share it
   interior/               the escape scene's building, behind --start-escape
 	interior_tile.gd      the tile-kind enum and which kinds are walkable
 	interior_map_plan.gd  the whole building's plan: tiles, walls, doors, decals, waypoints

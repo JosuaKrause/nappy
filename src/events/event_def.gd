@@ -407,7 +407,7 @@ enum Pavement {
 ## position; see `EventManager._summon_what_has_been_sighted()`.
 @export var spawns_on_sight := ""
 
-## Seconds the player's movement input is locked for, on first contact within `detain_radius`.
+## Seconds the player's movement input is locked for, on first contact within `detain_distance()`.
 ## `0.0` means never — the default, and true of every row but `chatting_mother`.
 ##
 ## **The one mechanic in the catalogue that takes the controls away rather than costing a meter.**
@@ -416,18 +416,38 @@ enum Pavement {
 ## kill her or chase her has no business also deciding she cannot move. See `Stroller.detain()` for
 ## the lock itself, which runs out through the ordinary friction rather than stopping her dead.
 @export var detain_seconds := 0.0
-## How close she has to come before a conversation starts, in px.
+## How close she has to come **to this row's own solid edge** before a conversation starts, in px.
+## `detain_distance()` is the same reach as a distance between centres, which is the form every
+## caller actually wants.
 ##
-## Checked by `validate()` against `inner_radius`: it has to sit strictly inside the field she is
-## already fully charged for, so "she is captured" and "she is outside the ambient field" can never
-## both be true of the same instant. `chatting_mother`'s own value is chosen against the **32px**
-## spacing between the two lanes of a pavement (`Tuning.TILE_SIZE`, since a lane sits on its tile
-## centre) — under that, the far lane of a two-tile pavement is never inside it, whatever `paces`
-## does, and distance stays the counterplay it is everywhere else in the catalogue.
+## **Stated over the body rather than over her**, and that is the whole of why it is a reach past
+## `obstructs_radius` rather than a radius from the middle. A radius from the middle has to be
+## bigger than whatever she pushes in front of her, so it silently switches the mechanic off the
+## day that changes: *(PLAYTEST-57: "the checkpoint should activate when I get close. with the new
+## stroller hitbox I cannot reach the checkpoint entrance".)* Her centre stops
+## `obstructs_radius + PLAYER_BODY_RADIUS` from a body, or further with the pram between her and
+## it, and a reach measured from the edge is the same reach whichever of those it is.
+##
+## Checked by `validate()` against `inner_radius`, over `detain_distance()`: the capture has to
+## sit strictly inside the field she is already fully charged for, so "she is captured" and "she
+## is outside the ambient field" can never both be true of the same instant. `chatting_mother`
+## carries no body at all — nothing mobile may — so her 48px is a radius from her centre either
+## way, and it is chosen against the **32px** spacing between the two lanes of a pavement
+## (`Tuning.TILE_SIZE`, since a lane sits on its tile centre): under that, the far lane of a
+## two-tile pavement is never inside it, whatever `paces` does, and distance stays the counterplay
+## it is everywhere else in the catalogue.
 @export var detain_radius := 0.0
 
+## How close her own centre has to come to this instance's centre for the conversation to start —
+## `detain_radius` past the solid edge she cannot walk through. The one form
+## `EventManager._check_detentions()` and `_release_finished_door_detentions()` both measure, so
+## the trigger and the distance the release has to clear can never be derived differently.
+func detain_distance() -> float:
+	return obstructs_radius + detain_radius
+
 ## Whether an instance is armed again once she has been released and has moved outside
-## `detain_radius`, rather than spent for good after its first conversation like `chatting_mother`.
+## `detain_distance()`, rather than spent for good after its first conversation like
+## `chatting_mother`.
 ## `false` is the default and is right for almost every detainer: a toll booth she can pass again
 ## either way, which is the checkpoint's whole point, needs the opposite — *"it works in both
 ## directions with the same cost each time"* — so `checkpoint_hut` and `checkpoint_post` are the
@@ -622,10 +642,11 @@ func validate() -> bool:
 			push_error("event '%s' detains and is also %s: a conversation may not also be a threat"
 					% [id, "hard_fail" if hard_fail else "a pursuer"])
 			return false
-		if not (detain_radius < inner_radius and inner_radius <= outer_radius):
-			push_error(("event '%s' detains at %.0fpx, which does not sit inside its own field "
-					% [id, detain_radius])
-					+ ("(inner %.0f <= outer %.0f)" % [inner_radius, outer_radius]))
+		if not (detain_distance() < inner_radius and inner_radius <= outer_radius):
+			push_error(("event '%s' detains at %.0fpx (%.0fpx past a %.0fpx body), which does not "
+					% [id, detain_distance(), detain_radius, obstructs_radius])
+					+ ("sit inside its own field (inner %.0f <= outer %.0f)"
+					% [inner_radius, outer_radius]))
 			return false
 	if pursues and not Tuning.validate_pursuit(id, pursue_speed, duration, inner_radius,
 			telegraph_time, pursues_within, outer_radius):

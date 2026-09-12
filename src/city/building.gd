@@ -344,8 +344,25 @@ func _build_front() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("front:%d:%d:%d" % [variant, int(global_position.x), int(global_position.y)])
 	if district == GameEnums.BlockPurpose.COMMERCIAL and wall_tiles() >= 2:
+		# A shuffled bag gives one frontage a varied mixture while keeping the same building's
+		# storefront choices stable across redraws, day changes, and condition changes.
+		var bag: Array[int] = []
+		var previous_variant := -1
 		for col in range(0, cols - 1, 2):
-			_storefront_variant.append(rng.randi_range(0, STOREFRONT_TEXTURES.size() - 1))
+			if bag.is_empty():
+				for index in STOREFRONT_TEXTURES.size():
+					bag.append(index)
+				for index in range(bag.size() - 1, 0, -1):
+					var swap_index := rng.randi_range(0, index)
+					var swapped := bag[index]
+					bag[index] = bag[swap_index]
+					bag[swap_index] = swapped
+				if previous_variant >= 0 and bag.size() > 1 and bag[0] == previous_variant:
+					var swapped := bag[0]
+					bag[0] = bag[1]
+					bag[1] = swapped
+			_storefront_variant.append(bag.pop_front())
+			previous_variant = _storefront_variant[-1]
 			_storefront_awning.append(rng.randf() < STOREFRONT_AWNING_SHARE)
 			_storefront_shutter_severity.append(rng.randf())
 	elif district == GameEnums.BlockPurpose.RESIDENTIAL and wall_tiles() >= 2 \
