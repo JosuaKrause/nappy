@@ -4,13 +4,19 @@ extends CharacterBody2D
 ##
 ## `position` is the mother's feet on the ground plane; everything is drawn upward from
 ## there so that y-sorting against buildings and props matches where she actually stands.
-## The pram is drawn as an offset in the facing direction, foreshortened on Y by `OBLIQUE_Y` to
-## sell the oblique view (docs/CITY.md, "Rendering").
+## The pram is drawn ahead in the facing direction, with authored screen-axis distances and Y
+## foreshortening that keep the handle within the mother's reach in every projection.
 ##
 ## The SVG mother and pram below are the logical body and the complete drawing in every mode.
 
-## How far ahead of the mother the pram sits, on the ground plane.
-const PRAM_DISTANCE := 34.0
+## The illustrated family keeps different amounts of empty canvas around each projection, so its
+## functional hand-to-handle placement uses three distances and a small shared lift. Scaling
+## `facing` by these axes keeps the pram moving continuously through a turn; selecting offsets from
+## the eight texture views instead would make it jump at every view boundary.
+const PRAM_HORIZONTAL_DISTANCE := 22.0
+const PRAM_NORTH_DISTANCE := 14.0
+const PRAM_SOUTH_DISTANCE := 8.0
+const PRAM_VERTICAL_LIFT := -4.0
 ## Vertical squash applied to ground-plane offsets, i.e. the obliqueness of the view.
 const OBLIQUE_Y := 0.7
 ## Radians per second the rig turns to face a new input direction.
@@ -136,7 +142,7 @@ var slope_dir_at := Callable()
 ## radius for the whole rig, `Tuning.PLAYER_BODY_RADIUS` (14px) — already checked against the
 ## scene by `tests/test_events.gd`'s `_test_the_pram_is_the_size_the_rules_think_it_is` — and nothing
 ## here touches it. `pram_shape`'s own 12px radius still sizes the pram's shadow, cue and field,
-## which all keep the pram's drawn `PRAM_DISTANCE` (34px) offset; the pram's *collision* body is a
+## which all use the same presentation offset as its art; the pram's *collision* body is a
 ## separate, smaller datum — see `pram_body_shape` below.
 var shape := GroundShape.point(9.0)
 var pram_shape := GroundShape.point(12.0)
@@ -145,7 +151,7 @@ var pram_shape := GroundShape.point(12.0)
 ## recommendation, open to overturn** if the far half still reads as too much or too little to
 ## clip through. `PramCollisionShape2D`'s centre sits on the circumference of her own body
 ## (`Tuning.PLAYER_BODY_RADIUS`, 14px out along `facing`) rather than at the pram's drawn
-## `PRAM_DISTANCE` — *(PLAYTEST-57: "place the center of the stroller hitbox at the circumference
+## presentation offset — *(PLAYTEST-57: "place the center of the stroller hitbox at the circumference
 ## of the player hitbox", "and don't make it too big")* — so the pram's far half overlaps whatever
 ## it meets and she can stand against a wall while the pram no longer clips through a corner whole.
 ## `scenes/player/stroller.tscn`'s own `CircleShape2D` on `PramCollisionShape2D` carries this same
@@ -261,12 +267,11 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, Tuning.FRICTION * delta)
 	_update_view()
-	_pram_offset = Vector2.ZERO if carrying \
-			else Vector2(facing.x, facing.y * OBLIQUE_Y) * PRAM_DISTANCE
+	_pram_offset = pram_draw_offset()
 	if _pram_collision:
 		# Unsquashed, unlike `_pram_offset` above: the collision body stays in the plain 2D plane
 		# every other body in the game collides in, on the circumference of her own
-		# `Tuning.PLAYER_BODY_RADIUS` circle rather than out at the pram's drawn `PRAM_DISTANCE`.
+		# `Tuning.PLAYER_BODY_RADIUS` circle rather than out at the pram's drawn position.
 		_pram_collision.position = facing * Tuning.PLAYER_BODY_RADIUS
 	move_and_slide()
 
@@ -503,10 +508,10 @@ func baby_cue_aside() -> float:
 ## of the line, so a diagonal walk takes the southward lift, over a pram that was never behind her
 ## to begin with.
 ##
-## Asked as geometry instead, because it is a question about geometry: `pram_offset` carries
-## `facing.x` at full `PRAM_DISTANCE`, so the pram is 24px to one side on a diagonal and 34px on
-## a due east or west, and only a due north or south leaves it in her column at all. That is
-## **six of the eight facings** it has nothing to do on, where the axis test said four.
+## Asked as geometry instead, because it is a question about geometry: the presentation offset
+## carries a horizontal component on every diagonal, and only a due north or south leaves the pram
+## in her column. That is **six of the eight facings** it has nothing to do on, where the axis test
+## said four.
 ##
 ## It is a distance rather than `absf(facing.x) > absf(facing.y)` for a second reason worth
 ## keeping: `_turn_toward` rotates by an angle and normalises, so on a diagonal the two components
@@ -518,7 +523,7 @@ func _pram_shares_her_column() -> bool:
 	# position on every facing, so it shares her column on all eight rather than on two.
 	if carrying:
 		return true
-	return absf(facing.x) * PRAM_DISTANCE < Tuning.PLAYER_BODY_RADIUS
+	return absf(pram_draw_offset().x) < Tuning.PLAYER_BODY_RADIUS
 
 ## How far above the pram the cue floats, which is more on exactly one of the eight facings.
 ##
@@ -530,8 +535,8 @@ func _pram_shares_her_column() -> bool:
 ## unconditional.
 ##
 ## South**-east** and south-west are not that facing, whatever they have in common with it: the
-## pram is already 24px to one side, nothing is behind anything, and the extra `FIGURE_HEIGHT`
-## would lift the cue off a pram it is supposed to be sitting on.
+## pram already has enough horizontal separation to sit outside her column, and the extra
+## `FIGURE_HEIGHT` would lift the cue off a pram it is supposed to be sitting on.
 func baby_cue_lift() -> float:
 	if _pram_shares_her_column() and facing.y > 0.0:
 		return BABY_CUE_LIFT + FIGURE_HEIGHT
@@ -644,6 +649,19 @@ func run_excess_ratio() -> float:
 	if excess <= 0.0:
 		return 0.0
 	return clampf(excess / (Tuning.RUN_SPEED - Tuning.WALK_SPEED), 0.0, 1.0)
+
+## Where the visible pram, its shadow, baby cue and debug field sit relative to the mother's feet.
+## The south-facing view needs less depth than the north-facing view because its handle is higher
+## inside the registered texture. The sign choice remains continuous at east and west: the
+## directional Y contribution reaches zero before its distance changes, while the shared lift
+## remains fixed.
+func pram_draw_offset() -> Vector2:
+	if carrying:
+		return Vector2.ZERO
+	var vertical_distance: float = PRAM_SOUTH_DISTANCE if facing.y > 0.0 else PRAM_NORTH_DISTANCE
+	return Vector2(
+			facing.x * PRAM_HORIZONTAL_DISTANCE,
+			facing.y * vertical_distance * OBLIQUE_Y + PRAM_VERTICAL_LIFT)
 
 # ------------------------------------------------------------------ drawing ---
 
