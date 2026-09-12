@@ -1,0 +1,12 @@
+<!-- Open passage recess. 30x18, bottom-centre anchored at a south edge. Its unroofed U-shaped
+     mouth leaves floor visible into the dark passage, unlike the closed locked-apartment recess. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="18" viewBox="0 0 30 18" shape-rendering="crispEdges">
+  <rect x="5" width="20" height="18" fill="#25242b"/>
+  <rect x="1" y="2" width="5" height="16" fill="#a18f7c"/>
+  <rect x="24" y="2" width="5" height="16" fill="#a18f7c"/>
+  <path d="M2 3V17 M28 3V17" stroke="#3b3034" stroke-width="2"/>
+  <path d="M7 18L11 5H19L23 18Z" fill="#4f5157"/>
+  <path d="M8 15H22 M9 11H21 M10 7H20" stroke="#85817b" stroke-width="1"/>
+  <path d="M1 17H6 M24 17H29" stroke="#d1b99c" stroke-width="1"/>
+  <rect y="16" width="30" height="2" fill="#211d24"/>
+</svg>

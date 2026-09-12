@@ -79,6 +79,9 @@ const RIGHT_DOOR_COLUMN := HALLWAY_LENGTH - 1
 ## Her own apartment door, third floor only — implied on the south edge below the view, the same
 ## as every other apartment door on every floor.
 const HALLWAY_START_COLUMN := HALLWAY_LENGTH / 2
+## The sparse south-edge apartment recesses read as individual apartments instead of a repeated
+## floor trim. The starting recess is included so her home has the same visual language.
+const LOCKED_APARTMENT_COLUMNS: Array[int] = [2, 5, HALLWAY_START_COLUMN, 10]
 
 ## `id` is "hallway_third"/"hallway_second"/"hallway_first" — the part name every door and
 ## waypoint on this hallway is prefixed with, and the name `_build_stairwell()` reads back to wire
@@ -97,6 +100,8 @@ static func _build_hallway(f: InteriorMapPlan, id: String, origin: Vector2i, is_
 	# The two open notches — one at each end, opposite the sketch's both-at-the-right (playtest 55).
 	_add_door(f, "%s:left" % id, origin + Vector2i(LEFT_DOOR_COLUMN, 1), "stairwell_left:landing_%s" % id.trim_prefix("hallway_"))
 	_add_door(f, "%s:right" % id, origin + Vector2i(RIGHT_DOOR_COLUMN, 1), "stairwell_right:landing_%s" % id.trim_prefix("hallway_"))
+	for column in LOCKED_APARTMENT_COLUMNS:
+		f.locked_thresholds.append(origin + Vector2i(column, 1))
 
 	var start := origin + Vector2i(HALLWAY_START_COLUMN, 1)
 	f.waypoints[id] = start
@@ -199,11 +204,15 @@ static func _build_basement(f: InteriorMapPlan, origin: Vector2i) -> void:
 	# The jog right, into band B.
 	for y in [8, 9]:
 		f.tiles[origin + Vector2i(4, y)] = InteriorTile.Kind.BASEMENT_FLOOR
+	# This is an open mouth between the two bands, not a brick wall across a walkable passage.
+	f.walls.erase(origin + Vector2i(4, 10))
 	# Band B, shifted two east of band A — the sketch's rightward jog.
 	_lay_basement_band(f, origin, 2, 6, 6)
 	# The jog left, into band C.
 	for y in [2, 3, 4, 5]:
 		f.tiles[origin + Vector2i(2, y)] = InteriorTile.Kind.BASEMENT_FLOOR
+	# The second jog enters band B through another open mouth.
+	f.walls.erase(origin + Vector2i(2, 6))
 	# Band C, back under band A's own columns — the sketch's leftward jog, and the exit's band.
 	_lay_basement_band(f, origin, 0, 0, 4)
 

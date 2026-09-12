@@ -16,9 +16,9 @@ through `project_doc_fallback_filenames` in `.codex/config.toml`, and finds the 
 **Start with `git fetch --prune` and `gh pr list`.** A pull request still open either waits on its
 check or has gone `CONFLICTING` under a sibling that merged first, and the second kind needs a merge
 of `main` resolved by hand under the **merging-main** rules before auto-merge can take it; a session
-normally ends with its PRs merged, so an open one is worth a look. `docs/playtests/PLAYTEST-57.md`
-is the newest session: its findings are the M100 defects at the top of that milestone's list and
-M115, streets with trees, and they are the next work.
+normally ends with its PRs merged, so an open one is worth a look. Use `TODO.md` for the next
+implementation and `REVIEW.md` for the questions a playtest should cover; the player's original
+reports and reference instructions live in `docs/playtests/`.
 
 **Every branch is work in progress; nothing is parked on one.** The sealing measurement probes,
 `tests/probes/m64_measure.gd` and `tests/probes/m64_density.gd`, live under `tests/probes/`, where

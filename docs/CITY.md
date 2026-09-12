@@ -1402,9 +1402,9 @@ Top-down camera with a fake vertical extrusion:
   tile of either end of its street (which is already where every crossing and every fixed
   checkpoint mouth stands — see "What closes a street" above) and never within a tile of the
   home's own door. It is a `Prop` like a park tree, feet-anchored so she passes behind its canopy,
-  but it is the one prop in the game with an actual body: a small collision circle at the trunk,
-  distinct from the wider canopy shape the shadow reads, kept well inside the one tile it stands
-  on so the pavement's other tile stays a full lane wide. `FALLEN_TREE`'s own placement prefers a
+  and like a park tree it has no body: she walks through a street tree exactly as she walks
+  through one in a park, so a pavement with trees costs the route nothing a bare one does not.
+  `FALLEN_TREE`'s own placement prefers a
   street `StreetTrees` already put trees on, from the same function, so the closure marker's
   picture and the standing trees beside it are never two different species.
 - Everything is `y_sort_enabled`, so the player passes behind and in front of props

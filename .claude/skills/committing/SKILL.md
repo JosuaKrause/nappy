@@ -110,7 +110,7 @@ mention of it in any handoff still … since the work is done".)* `HANDOFF.md` h
 state and nothing else, so a merged item has no line there — not a "built and unwalked" bullet, not
 a distrust entry written for it, not its number. What a player should go and look at is a
 `TODO.md` item, a `DECISIONS.md` record, or an entry in `docs/REVIEW.md`, never a sentence in the
-handoff about work that is finished. Before merging, grep both handoffs for the item's number and
+handoff about work that is finished. Before merging, grep `HANDOFF.md` for the item's number and
 its nouns.
 
 **And work that only a person can judge adds its entry to `docs/REVIEW.md` in the same PR.**

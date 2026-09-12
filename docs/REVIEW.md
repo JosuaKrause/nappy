@@ -27,9 +27,9 @@ item below for as long as looking takes.
   corners, and does the far half clipping into a wall read as wrong? 8px is a guess. Record is
   `DECISIONS.md`, M100, the pram's body sits on her circumference.
 - **Turn on the bounding-box layer and look at everything** (`3`). It now draws every body physics
-  reads, from the collision nodes themselves: hers, the pram's, buildings, events, street-tree
-  trunks, closure barriers and the map's boundary. Is there any body you can walk into that has
-  no outline? Same record.
+  reads, from the collision nodes themselves: hers, the pram's, buildings, events, closure
+  barriers and the map's boundary. Is there any body you can walk into that has no outline? Same
+  record.
 - **Click to set a heading, then press an arrow or WASD while she walks** (either control mode).
   She walks in the key's direction only, and the joystick knob reads as stopped. Does a held Shift
   survive it, and does a click afterwards aim fresh? Record is `DECISIONS.md`, M100, the keyboard
@@ -123,10 +123,8 @@ item below for as long as looking takes.
   at a glance; industrial and civic are told apart by their roofs alone, which are small at play
   scale, and the portico was out of frame. Does each district read as a place, and does the
   street-tree density read as a street or as a hedge? Record is `DECISIONS.md`, M106.
-- **Walk into a street tree, and find a fallen tree.** A trunk has a small body now, so she walks
-  round it; a fallen tree closure prefers a street with standing trees. Does the trunk catch her
-  where the pavement is narrow, and does the fallen tree read as one of the standing ones down?
-  Record is `DECISIONS.md`, M106.
+- **Find a fallen tree.** A fallen tree closure prefers a street with standing trees. Does the
+  fallen tree read as one of the standing ones down? Record is `DECISIONS.md`, M106.
 - **Play or jump to day 5, day 9 and day 13 and look at the ground** (`--day 9`). The city
   degrades on one curve from day 5: cracks on pavement before road, in three levels; litter on
   pavements, alleys and squares; garbage sacks in alleys first and against building fronts from
@@ -143,16 +141,18 @@ item below for as long as looking takes.
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
 
-- **The building exists and nobody has walked it.** `tools/run.sh --start-escape` (debug only;
+- **Walk the apartment and judge the reference-based interior graphics.** `tools/run.sh --start-escape` (debug only;
   `--start-escape stairwell:left|stairwell:right|lobby|basement|floor:2|floor:1` boots into a
   part) puts her, carrying the baby, in front of her door on the third floor of a building with
   three hallways, two switchback stairwells at opposite ends, a barricaded lobby and a winding
   basement to the emergency exit — one map, the parts 64 tiles apart, every door a fade and a
-  teleport. Everything about it is checked by a rig and by seven captures: whether a diagonal
-  flight reads as *descending* when a sideways press walks it, whether the fade-and-teleport reads
-  as a door or as a cut, whether eight rows a floor reads as a stairwell, and whether five floors
-  is *"not excessively many"* are all played questions. The record is in `DECISIONS.md` under
-  M112; what M102, the finale, still adds inside it is in `TODO.md`.
+  teleport. Look at the open passage notches beside the locked apartment recesses, the lobby's
+  barricaded entrance, the broad stairs and level turn platforms, and the basement's short stair
+  and open corridor mouths. Do the stairs read as descending, are the doors easy to identify,
+  and does the building match the supplied sketches? Both stairwells have recorded physical
+  walks, but the feel of the sideways controls and fade-and-teleport still needs a person's
+  verdict. Records are in `DECISIONS.md` under M112, the escape scene and interior graphics;
+  what M102, the finale, still adds is in `TODO.md`.
 
 - **Every field has a shape now, and nobody has felt one.** A stationary body's field is a capsule
   about its own spine rather than a disc about its centre, and a moving thing's is an ellipse with

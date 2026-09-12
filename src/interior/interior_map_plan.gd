@@ -32,6 +32,9 @@ var walls: Dictionary = {}
 var start_tile := Vector2i.ZERO
 ## `id -> Door`, every door in the building.
 var doors: Dictionary = {}
+## Apartment recesses that look locked but do not change the hallway's floor or routing. They are
+## kept apart from `doors`: an apartment is scenery, while a `Door` is a playable transition.
+var locked_thresholds: Array[Vector2i] = []
 ## `Vector2i(-1, -1)` unless the basement's own exit has been placed.
 var exit_tile := Vector2i(-1, -1)
 ## Every barricaded entrance position — read by the renderer to place the barricade and by tests
