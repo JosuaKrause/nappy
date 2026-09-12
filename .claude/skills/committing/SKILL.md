@@ -40,12 +40,17 @@ wait for the first, or fold the two into one PR, or accept that the second needs
 after the first lands and do that merge before walking away. What is never right is arming a PR
 that cannot merge and leaving.
 
-**Wait exactly when the next work depends on the merge.** A branch that has to build on another
-PR's code waits for that PR rather than stacking on its branch, since GitHub closes a stacked PR
-when its base branch is deleted; a docs-only PR nothing depends on is armed and left. When a wait is
-right, one monitor that reports state changes beats an agent that polls: watcher agents were tried
-and cost more than they saved — one exited before the merge, one stopped at the first conflict, and
-each cost a spawn.
+**Wait exactly when the next work depends on the merge, and never in the orchestrating session.**
+*(2026-09-11: "you can use an agent to poll a ci/merge to retarget prs etc. but don't block the
+main agent for it"; "and don't forget the earlier instruction to wait for PRs via agent".)* A
+branch that has to build on another PR's code waits for that PR rather than stacking on its branch,
+since GitHub closes a stacked PR when its base branch is deleted; a docs-only PR nothing depends on
+is armed and left. The waiting itself is a background agent's or a monitor's: give it the PR
+numbers, the exact tidy steps — retarget, remove the worktree, pull `main` into the player's
+checkout — and a 90-second poll in a foreground loop, and carry on with something else; its report
+is the signal to act on. An agent told to poll must be told to loop in the foreground and to keep
+going through `UNKNOWN` states, since one that backgrounds its own loop exits at once and one that
+stops at the first `CONFLICTING` has reported a state the orchestrator then resolves by hand.
 
 **Leaving PRs open at the end of a session is not the standard** *(2026-09-11: "also this is not a
 general rule for *every* session")*: it happened once because the player asked for a break with the
