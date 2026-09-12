@@ -79,12 +79,6 @@ their single side picture by the choices recorded there.
       their gameplay owner needs them. M56, the resistance is noticed, owns guard/riot-van states;
       M102, the finale, owns the carrying mother and interior sequence. The protester's eight
       pointing poses are bound (`DECISIONS.md`, M65).
-      **And the capture nobody has managed**: native-scale crowd-car turns showing the intermediate
-      diagonal views at entry, apex and exit, with the debug view's shadow and box layers on. A
-      windowed `tools/shot.sh` has not caught one in six tries, because a turn is two seconds and
-      the day ends while a rig stands still; a probe that places a car on a synthetic arc and
-      renders it is the way, and the analytic per-sector footprint test in
-      `tests/test_car_views.gd` is the pin until then.
 
 ### M111 — Cars follow their turns
 
@@ -637,6 +631,18 @@ is still true.
       the crowd, the events, the closures and the checkpoints all still run; the HUD word and the
       log note stay
 
+- [ ] **A screenshot is named by the clock on the wall, not the clock in the game.**
+      *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "phot capture must use real time not
+      game time otherwise at the end of the day all pictures get overwritten")* `Telemetry.
+      snapshot_now()` and `snapshot()` name a picture from the day clock, `%03.0fs<attempt>-<kind>
+      .png`, so two pictures inside one second of the day collide and a day whose clock holds at
+      zero under `--invincible` overwrites every shot into one file. Name both from real time of
+      day with sub-second precision — the hour, minute, second and milliseconds the picture was
+      taken — with the attempt suffix kept and a guard that appends a serial rather than
+      overwriting if the name still exists; the burst folder already stamps itself from a
+      microsecond tick and stays as it is. The dusk map and the log keep their names. Update
+      `docs/TELEMETRY.md`'s description of the `asked/` and `auto/` names and any skill that
+      quotes the old pattern; playtest files quoting old names are primary sources and stay
 - [ ] **The riot van's side view faces the wrong way.** `facings.csv` records `riot_van.svg` as
       authored facing west, like the unmarked van and the army truck, but its selection keeps the
       east-native mirror sense, so a hunting riot van heading east shows a west-facing cab; the
