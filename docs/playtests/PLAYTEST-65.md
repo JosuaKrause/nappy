@@ -144,3 +144,8 @@ The leg poses are accepted. Correct the apparent body-size changes across animat
 preserving those poses, the three-pose loop, together idle and grounded stroller contact. Compare
 head and torso scale across all phases in both mother states; equal full-figure height alone is
 insufficient.
+
+> actually how it is right now is good
+
+The player accepts the current F — Hip motion and P2 — Three-pose push version. Keep the current
+artwork and registration; the proposed size correction is withdrawn before any asset changes.

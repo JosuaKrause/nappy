@@ -116,11 +116,6 @@ findings supported by the conversion and review.
       Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
-- [ ] Stabilize the mother's apparent size across walking frames. PLAYTEST-65 accepts the leg
-      poses but reports that she becomes big and small. Preserve the accepted contacts and together
-      pose while matching head, torso and clothing scale across A/C/B/C in carrying and pushing.
-      Keep the stroller grounded and hands connected. Diagnose the raw proportions and registration
-      before editing; retain named before/after loops, measurements and reproducible recipes.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The

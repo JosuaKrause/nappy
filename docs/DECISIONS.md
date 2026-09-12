@@ -1,5 +1,12 @@
 # Decisions
 
+## M109 — Current walking artwork accepted — 2026-09-12
+
+After accepting the leg movement and noting apparent size changes, the player clarified:
+"actually how it is right now is good" (PLAYTEST-65). The proposed size-stabilization item was
+withdrawn before any asset or registration changes. F — Hip motion and P2 — Three-pose push
+remain the accepted current version; no additional body-size adjustment is requested.
+
 ## M109 — Three-pose pushing and sidewalk continuity — 2026-09-12
 
 PLAYTEST-65 accepted the grounded stroller scale and requested the same three-pose walking
