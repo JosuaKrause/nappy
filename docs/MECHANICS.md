@@ -220,7 +220,9 @@ This makes the walk home a real second act rather than a victory lap.
 
 Controls: arrow keys or WASD to walk, hold **Shift** to run, **Esc** to pause. There is no
 interact key — touching a resistance chalk mark or a task's own contact is what completes it. The
-keyboard is a device rather than a scheme and works this way regardless of what a pointer does.
+keyboard is a device rather than a scheme and works this way regardless of what a pointer does. A
+press on the arrows or WASD resets whatever heading a click, tap or drag last locked in, so the
+keys steer alone from that frame; a later click sets a fresh heading as it does today.
 
 The title screen offers a choice of two pointer schemes, picked by pressing one of its two buttons
 — a direction key or `space` begins a run in the **tap** scheme instead. Both share the same shape:

@@ -41,6 +41,7 @@ func run(t) -> void:
 	_test_a_mouse_click_on_the_pause_button_is_not_also_a_direction(t)
 	_test_the_corner_is_an_ordinary_direction_press_where_the_button_is_not_drawn(t)
 	_test_no_input_path_presses_a_vector_shorter_than_one(t)
+	_test_a_keyboard_press_resets_a_clicked_heading(t)
 	_test_nearer_focus_is_picked_on_each_half(t)
 	_test_is_on_a_focus_catches_the_stop_radius_around_either_point(t)
 	_test_a_touch_aims_from_the_nearer_focus_not_from_her(t)
@@ -536,6 +537,47 @@ func _test_no_input_path_presses_a_vector_shorter_than_one(t) -> void:
 				"a press at %d degrees still presses a full unit vector (got length %.4f)"
 						% [degrees, pressed.length()])
 
+	controls.queue_free()
+	rig.free()
+
+## PLAYTEST-57: *"arrow keys should reset any mouse click position. when pressing awsd or arrow
+## keys right now the last pressed mouse position is still active resulting in incorrect /
+## drifting movement."* A click locks a heading in by pressing `move_*` actions synthetically, and
+## `Stroller` reads the same four actions through `Input.get_vector()`, which sums over whoever is
+## pressing them — so without the reset, a key held after a click would add to the click rather
+## than replace it. The resulting vector has to be the key's alone.
+func _test_a_keyboard_press_resets_a_clicked_heading(t) -> void:
+	var rig := _rig_at(t, Vector2.ZERO)
+	var controls := _controls(t)
+	controls._touch = false
+
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = controls.get_viewport().get_canvas_transform() * Vector2(0.0, -100.0)
+	controls._input(click)
+	t.check(Input.is_action_pressed("move_up"), "the click itself walks north first")
+
+	# The real trap this fix survives: the engine updates an action's own polled state before
+	# dispatching the event that changed it to any node's `_input()` — reproduced by hand here,
+	# since a bare `controls._input(key)` call never reaches `Input.parse_input_event()`'s own
+	# queue (nothing here is a real propagated event), so nothing would otherwise mark `move_right`
+	# pressed at all. See `_yield_to_the_keyboard()`'s own doc for why the fix cannot simply release
+	# every `move_*` action it finds pressed.
+	Input.action_press(&"move_right")
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_D
+	key.pressed = true
+	controls._input(key)
+
+	var pressed := Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down")
+	t.check(pressed.is_equal_approx(Vector2.RIGHT),
+			("the key's own direction alone, not the click's north added to the key's east "
+			+ "(got %s)") % pressed)
+	t.check(not controls._walking,
+			"the drawn focus knob reads as stopped, not still pointing at the stale click")
+
+	Input.action_release(&"move_right")
 	controls.queue_free()
 	rig.free()
 
