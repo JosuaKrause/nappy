@@ -71,24 +71,6 @@ their single side picture by the choices recorded there.
       (`EntityHalo` asks each owner for its `bob()`; the crowd's answers zero today). Crowd cars
       first, with the vehicle binding below; the event vehicles that move — the police car, the
       vans, the lorry, the fire engine — the same way, and a parked one sits still
-- [ ] **Bind the event vehicles and the police car.** The crowd car is bound
-      (`DECISIONS.md`, M108, the crowd car): it reads M111's continuous `heading()`, so the
-      picture runs through the diagonals on the arc, its standing front, back and diagonal views
-      are registered against the strike box rather than the old top-down end view, and its shadow
-      turns with it. What is left is the same for every event vehicle — delivery van, fire engine,
-      ice-cream van, lorry, the abduction van, the army truck, the moving-van seal pair — and the
-      police car: each family's explicit front/back/side/diagonal table from `facings.csv`,
-      including its documented side-facing convention, rather than assuming every side source
-      faces east; a moving vehicle from its travel heading, a parked one or a seal from its
-      placement axis, landing on the same view the axis chose before; registration per view
-      against the row's own `GroundShape` and obstruction, which do not change; the riot van's
-      octant selection generalised onto the shared helper rather than copied, with its output
-      identical. **And the capture nobody has managed**: native-scale turns showing the
-      intermediate diagonal views at entry, apex and exit, with the debug view's shadow and box
-      layers on. A windowed `tools/shot.sh` has not caught one in six tries, because a turn is two
-      seconds and the day ends while a rig stands still; a probe that places a car on a synthetic
-      arc and renders it is the way, and the analytic per-sector footprint test in
-      `tests/test_car_views.gd` is the pin until then.
 - [ ] **Verify and document each binding increment.** Update `GRAPHICS.md` from prepared to live
       only for callers actually wired. Check SVG override and illustrated fallback so an available
       cardinal PNG cannot replace a newly selected diagonal SVG or lose its state/registration.
@@ -549,21 +531,25 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **An invincible mode for playtesting.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md):
-      "can you add an invincible mode for playtesting? that way I can check off basically all items
-      in one go", "and it let's me inspect things more thoroughly")* A debug flag, `--invincible`
-      on the desktop and `?invincible=1` on a debug web build, on the same terms as every other
-      developer flag in `DevFlags`: unreadable in a release build, listed in its help table. With
-      it, nothing ends the day: the baby may reach 100 and cry and the day goes on, a car strike
-      or a capture that would raise a hard fail does not end it, and the clock runs to zero and
-      stays there. Everything else is real — the meters fill and drain, the halo, carets and badges
-      fire, closures and seals stand, the checkpoint hold holds — so what is being inspected is the
-      game and not a copy of it. The HUD shows the word so no capture from such a run reads as a
-      real one, and the run log notes the flag at the top the way it notes the seed, since a run
-      log from an invincible day answers nothing about cost. `REVIEW.md`'s intro names the flag as
-      the way to walk its whole list in one sitting. A test pins that each of the three loss paths
-      leaves the day running under the flag and ends it without
-
+- [ ] **A screenshot is named by the clock on the wall, not the clock in the game.**
+      *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "phot capture must use real time not
+      game time otherwise at the end of the day all pictures get overwritten")* `Telemetry.
+      snapshot_now()` and `snapshot()` name a picture from the day clock, `%03.0fs<attempt>-<kind>
+      .png`, so two pictures inside one second of the day collide and a day whose clock holds at
+      zero under `--invincible` overwrites every shot into one file. Name both from real time of
+      day with sub-second precision — the hour, minute, second and milliseconds the picture was
+      taken — with the attempt suffix kept and a guard that appends a serial rather than
+      overwriting if the name still exists; the burst folder already stamps itself from a
+      microsecond tick and stays as it is. The dusk map and the log keep their names. Update
+      `docs/TELEMETRY.md`'s description of the `asked/` and `auto/` names and any skill that
+      quotes the old pattern; playtest files quoting old names are primary sources and stay
+- [ ] **The riot van's side view faces the wrong way.** `facings.csv` records `riot_van.svg` as
+      authored facing west, like the unmarked van and the army truck, but its selection keeps the
+      east-native mirror sense, so a hunting riot van heading east shows a west-facing cab; the
+      evidence sheet `docs/evidence/m108-event-vehicles-2026-09-11/vehicles-security-3x.png` shows
+      it backwards beside the other two. One flag on its table — `side_faces_west` in
+      `EventInstance._draw_eight_view()` — and the octant test transcribed from M56's original
+      match updated to the corrected side mirror, with M56's own heat tests kept green
 - [ ] **What is still dev-only inside `main.gd`.** `DevFlags` took the flag parsing out; what stayed
       is the code that acts on it — `_first_event_position` and the `--spawn` target lookup, both of
       which read the live city. Worth finishing the next time the file is opened for another reason

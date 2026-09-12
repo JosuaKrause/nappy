@@ -17,7 +17,8 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 Each line is a thing to try or look at and the question it settles. `tools/run.sh` plays the
 desktop build; `--seed <n> --day <n>` puts a run where an item says; `1` to `4` in a debug build
 toggle the field, shadow, bounding-box and readout layers (`docs/TELEMETRY.md`, "The debug
-view").
+view"). `--invincible` is the way to walk this whole list in one sitting: nothing ends the day, so
+one run can stand next to every item below for as long as looking takes.
 
 - **Walk into a checkpoint on day 7 or later** (`--day 7`; the region walls stand from day 7 and
   a door is a hut on each pavement with a boom between). Both she and the guard vanish for two
@@ -62,6 +63,14 @@ view").
   the picture ever jump a view or float off its shadow, and does a street about-face over the
   kerb read as wrong? That last one is the open question in `TODO.md`, M111. Records are
   `DECISIONS.md`, M111 and M108, the crowd car.
+- **Look at a parked delivery van and, from day 7, a police car on patrol.** The delivery van and
+  the abduction van now face east when parked facing east; before, their west-authored pictures
+  were drawn unmirrored, so a van sited nose-east showed its nose west. Does the parked van read
+  as facing the right way along its kerb? The police car is the one event vehicle that turns
+  corners, so it shows the diagonal views: do its markings and light bar hold up from every
+  side, and does it sit on its shadow at the diagonal? Record is `DECISIONS.md`, M108, the event
+  vehicles. The riot van's side view faces the wrong way, known and filed under M100 — do not
+  report it again.
 - **Look at the people and animals in events from more than one side** (any day). The dog
   walker and his dog, the pacing yeller and the chatting mother, the cat, the loose dog, the
   charging dog, the cyclist and each pigeon now face the way they actually move, through the

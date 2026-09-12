@@ -50,9 +50,14 @@ func _process(delta: float) -> void:
 	time_remaining -= delta
 	EventBus.day_time_changed.emit(maxf(time_remaining, 0.0), time_total)
 	if time_remaining <= 0.0:
-		failure_reason = "Dusk. You are still out."
-		_end(GameEnums.DayResult.LOST_TIMEOUT)
-		return
+		if _ignores_loss(GameEnums.DayResult.LOST_TIMEOUT):
+			# Holds at zero rather than running arbitrarily negative, so the clock reads 0:00
+			# instead of counting a day nothing is measuring any more.
+			time_remaining = 0.0
+		else:
+			failure_reason = "Dusk. You are still out."
+			_end(GameEnums.DayResult.LOST_TIMEOUT)
+			return
 
 	if phase == GameEnums.DayPhase.RETURNING and _is_home():
 		_end(GameEnums.DayResult.WON)
@@ -96,6 +101,8 @@ func _on_baby_state_changed(state: GameEnums.BabyState) -> void:
 		return
 	match state:
 		GameEnums.BabyState.CRYING:
+			if _ignores_loss(GameEnums.DayResult.LOST_CRYING):
+				return
 			failure_reason = "She started crying. There is no settling her now."
 			_end(GameEnums.DayResult.LOST_CRYING)
 		GameEnums.BabyState.AWAKE:
@@ -106,8 +113,16 @@ func _on_baby_state_changed(state: GameEnums.BabyState) -> void:
 func _on_hard_fail(reason: String) -> void:
 	if not is_running():
 		return
+	if _ignores_loss(GameEnums.DayResult.LOST_HARD_FAIL):
+		return
 	failure_reason = _HARD_FAIL_TEXT.get(reason, "It went wrong.")
 	_end(GameEnums.DayResult.LOST_HARD_FAIL)
+
+## The one place all three losing paths ask before ending the day, so `--invincible` cannot drift
+## between them. Never suppresses `WON`: a won day still ends normally, so she can still walk home
+## asleep and the summary still shows. See `DevFlags.invincible()`.
+func _ignores_loss(result: GameEnums.DayResult) -> bool:
+	return result != GameEnums.DayResult.WON and DevFlags.invincible()
 
 const _HARD_FAIL_TEXT := {
 	"abduction": "The van door opened. Nobody saw where you went.",

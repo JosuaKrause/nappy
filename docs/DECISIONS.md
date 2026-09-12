@@ -1,5 +1,89 @@
 # Decisions
 
+## M108 — Eight-direction entity graphics · the crowd car's turn, captured as a burst 2026-09-11
+
+*(2026-09-11, playtest 56: "use burst mode for mid turn capture".)* Two branches had spent their
+capture budget on stills that landed beside a two-second turn, and the queue had proposed a probe
+that renders a car on a synthetic arc; the player chose the burst recorder instead. One agent
+commit on `feature/crowd-car-turn-burst`, one `tools/shot.sh` run: `--seed 4242 --spawn closure:0
+--layers 2,3 --press snapshot_burst 3`, standing at the mouth of the day's only closure, where
+every car on that street is forced to turn, so a turn happened in view inside the first second —
+the six earlier tries had stood at busy junctions waiting for ordinary traffic and been ended by the
+meter. The whole run folder is kept under `docs/evidence/m108-crowd-car-turn-burst-2026-09-11/`
+with its thirty-six frames, `burst.json` and the `tools/clip.sh` video. **What it shows**: frames 9
+to 11, at 0.71s to 0.85s by the recorded times, the strike box, the shadow capsule and the car's
+diagonal picture rotating together through an about-face, and frame 12 landing the car axis-aligned
+in the opposite lane; no view jumps and the picture never leaves its shadow. **What it also
+shows**: the half turn takes about four tenths of a second from frame 7's axis-aligned northbound
+car to frame 12, so this car entered the arc near cruise speed rather than at `CAR_TURN_SPEED`
+(60px/s) — the lookahead fork M111's own record lists, seen here rather than measured. The day-1
+tutorial banner overlaps the car's lower half in several frames; cosmetic. The analytic per-sector
+footprint test in `tests/test_car_views.gd` stays the pin; the burst is the evidence.
+
+## M108 — Eight-direction entity graphics · the event vehicles and the police car, built 2026-09-11
+
+The event half of the vehicle item. Four agent commits on `feature/eight-direction-event-vehicles`,
+reviewed here. **One helper, one extra bit.** Every family goes through
+`EventInstance._draw_eight_view()`, which gained a `side_faces_west` flag: `EightDirection.
+is_mirrored()` mirrors the three west sectors on the assumption of an east-authored side picture,
+and `facings.csv` records that the delivery van, fire engine, unmarked van and army truck are
+authored facing west, so for those the mirror on the side sector alone is inverted; every front,
+back and diagonal view is authored for its own compass point and mirrors the plain way. **Per
+family**: the delivery van and the ice-cream van are parked facing due east by their placement and
+only ever show the side view; the reversing lorry is sited exactly east or west against a building
+and the same; the fire engine and the army truck read their travel heading along their routes; the
+abduction van faces east while waiting and its chase heading once hunting, sharing one sector field
+with the victim, safe because the two are only ever aligned or opposed; the police car reads its
+patrol heading and is the one event vehicle whose diagonals are seen in play, since it turns corners.
+**The riot van is generalised, not copied**: `_draw_riot_van()` is gone, the family's table through
+the shared helper reproduces M56's hand-written octant match exactly, and a second test transcribed
+from that match pins it independently of the shared tables. **Left as they were, on purpose**: the
+moving-van seal keeps its side-or-vertical axis choice, since its vertical picture is an authored
+across-the-street scene rather than an end view, and its front, back and diagonals stay prepared;
+the burnt-out car was never in the family list.
+
+**Registration needed no offsets.** Every prepared vehicle source is bottom-centre anchored at
+canvas width over two and full height, the same convention as the side views and every family
+bound before, and the helper draws at the node the shadow is centred on; a test rasterises each
+front, back and diagonal source and asserts its ink reaches within 8px of the canvas bottom, the
+README's own tyre-contact figures being 2 to 5px. **Two things a person should know.** Binding the
+delivery van and the abduction van to the CSV's documented west authorship flips their rendered
+mirror: parked facing east they now face east, where the old code assumed east-native art and drew
+them facing west — a correction with no effect on shape, shadow or obstruction, in `REVIEW.md`.
+And the riot van's side picture is authored facing west by the same CSV while its selection keeps
+the east-native mirror sense, so a riot van heading east shows a west-facing cab — the evidence
+sheet shows it backwards beside the unmarked van and the army truck. The agent preserved it because
+the instruction was exact reproduction; it is filed as a defect under M100, one flag and one test
+expectation. **Tests**: `tests/test_event_views.gd` — every family's view and mirror per sector
+against `facings.csv`, the kerb-parked vans keeping their axis view, the lorry only ever side-on,
+the riot van's octant table, the grounding check. **Evidence**: four sheets and two `--layers 2,3`
+captures under `docs/evidence/m108-event-vehicles-2026-09-11/`, rendered by
+`tests/probes/m108_event_vehicles_sheet.gd`, a copy of the people probe with the extra flag.
+## M100 — Small, real, and nobody's · an invincible mode for playtesting, built 2026-09-11
+
+*(2026-09-11, playtest 56: "can you add an invincible mode for playtesting? that way I can check
+off basically all items in one go", "and it let's me inspect things more thoroughly".)* Three
+agent commits on `feature/invincible-mode`, reviewed here. **One predicate.**
+`DayController._ignores_loss(result)` answers true for any result but a win while
+`DevFlags.invincible()` is on, and the three losing paths ask it before `_end()`: the crying
+branch returns before setting a failure reason, so the baby stays crying with no text written; the
+hard-fail handler returns before its text lookup; the dusk check clamps the clock to exactly zero
+and falls through to the unchanged return-and-won logic. A won day ends as it always did. **The
+flag** is `--invincible` on the command line or `?invincible=1` in a debug web build, read through
+the same args-and-query split `--svg` uses, false in a release build like every dev flag, and a row
+in `DEV_FLAG_TABLE` so `tools/run.sh` and `tools/shot.sh` accept it unchanged — the CLI help test
+caught that `README.md`'s flag table needed the row too. **On screen**, the word `INVINCIBLE`
+rides the existing debug header string rather than a new label or colour; **in the run log**, the
+day header line carries `invincible` beside the seeds, once per day. **The test seam** is a static
+override on `DevFlags`, because the runner reads the same command-line list a test would otherwise
+have to fake; a test sets it, drives each loss path, asserts the day still runs, then asserts a win
+still ends it and that with the flag off each path ends the day as before. **Chosen where the
+entry was silent**: the day header rather than the run's first line, since that is where the seed
+is; the clock clamped at zero rather than run negative. **Evidence**: one capture under
+`docs/evidence/m100-invincible-2026-09-11/`, clock still counting, the word in the header, the
+status line reading crying with no summary screen. `REVIEW.md`'s intro names the flag as the way to
+walk its list in one sitting.
+
 ## M108 — Eight-direction entity graphics · the crowd car, built 2026-09-11
 
 The crowd half of the vehicle item, built once M111 had given a car a continuous heading. Four

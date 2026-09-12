@@ -151,6 +151,27 @@ somewhere.
 - **`--after` is in seconds, not frames.** The windowed build draws ~110fps, so a frame count is
   quietly useless.
 
+- **`--press snapshot_burst <seconds>` records a burst instead of a still.** *(2026-09-11: "use
+  burst mode for mid turn capture"; "add somewhere that taking burst captures is an option when
+  recording evidence / creating screenshots".)* A still lands on a two-second turn, a stride or a
+  wing beat by luck, and cannot establish that motion was smooth; the burst is the same rig with
+  thirty-six frames over three seconds and a timing record, so **evidence about anything that
+  moves is a burst, not a screenshot** — two branches spent their whole capture budget failing to
+  photograph a turn before anybody reached for it. `tools/shot.sh out.png 10 --seed 4242 --spawn
+  signal --layers 2,3 --press snapshot_burst 5` records from second five to eight and quits at
+  ten; `tools/clip.sh` makes the video, and the **session-captures** skill says what is kept and
+  what a frame may be said to prove.
+- **`--invincible` keeps the day running so the capture can wait for its moment.** *(2026-09-11:
+  "make future agents aware that invincibility exists to capture things where timing to avoid a
+  death screen would be difficult to do".)* A rig standing still at a busy junction pushes the
+  meter to a hundred inside ten seconds, and a `--after 13` shot lands on the summary screen —
+  that is how one branch lost its best try at a turn. Under the flag nothing ends the day: the
+  baby cries and stays crying, a car or a capture does not end it, the clock holds at zero. So
+  **any capture whose timing is hard to hit adds `--invincible`** and waits as long as it needs
+  to. The HUD shows `INVINCIBLE` and the run log says so in its day header, which is what stops
+  the picture being mistaken for a real run; a capture meant to show *cost* or a *loss* leaves
+  the flag off, since a meter that cannot end the day answers nothing about either.
+
 **Where a cue cannot be triggered on demand, relax its condition, look, and put it back.** The
 screen-edge badge needs something lethal off-screen and closing, which is not something a six-second
 screenshot can be asked for. Forcing it on for one shot is the only thing that finds a badge

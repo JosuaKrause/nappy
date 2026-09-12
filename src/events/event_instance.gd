@@ -33,21 +33,47 @@ const PROTESTER_POINT_SW := preload("res://assets/events/protester_point_sw.svg"
 const PROTESTER_POINT_W := preload("res://assets/events/protester_point_w.svg")
 const PROTESTER_POINT_NW := preload("res://assets/events/protester_point_nw.svg")
 const GUNMAN := preload("res://assets/events/gunman.svg")
+## The unsuffixed source is every family's own side view — see `docs/GRAPHICS.md`'s side-facing
+## convention, `docs/evidence/svg-vehicles-2026-09-10/facings.csv`. The four-way suffixed sets below
+## it are each family's front, back and two diagonals, bound through `_draw_eight_view()`; the old
+## `_end.svg` single foreshortened picture each of these four rows drew for *both* north and south
+## headings is superseded by the two-way `_front`/`_back` split and stays on disk unbound (see
+## `docs/GRAPHICS.md`, the events table).
 const DELIVERY_VAN := preload("res://assets/events/delivery_van.svg")
+const DELIVERY_VAN_FRONT := preload("res://assets/events/delivery_van_front.svg")
+const DELIVERY_VAN_BACK := preload("res://assets/events/delivery_van_back.svg")
+const DELIVERY_VAN_FRONT_DIAGONAL := preload("res://assets/events/delivery_van_front_diagonal.svg")
+const DELIVERY_VAN_BACK_DIAGONAL := preload("res://assets/events/delivery_van_back_diagonal.svg")
 const FIRE_ENGINE := preload("res://assets/events/fire_engine.svg")
-const FIRE_ENGINE_END := preload("res://assets/events/fire_engine_end.svg")
+const FIRE_ENGINE_FRONT := preload("res://assets/events/fire_engine_front.svg")
+const FIRE_ENGINE_BACK := preload("res://assets/events/fire_engine_back.svg")
+const FIRE_ENGINE_FRONT_DIAGONAL := preload("res://assets/events/fire_engine_front_diagonal.svg")
+const FIRE_ENGINE_BACK_DIAGONAL := preload("res://assets/events/fire_engine_back_diagonal.svg")
 const POLICE_CAR := preload("res://assets/events/police_car.svg")
-const POLICE_CAR_END := preload("res://assets/events/police_car_end.svg")
+const POLICE_CAR_FRONT := preload("res://assets/events/police_car_front.svg")
+const POLICE_CAR_BACK := preload("res://assets/events/police_car_back.svg")
+const POLICE_CAR_FRONT_DIAGONAL := preload("res://assets/events/police_car_front_diagonal.svg")
+const POLICE_CAR_BACK_DIAGONAL := preload("res://assets/events/police_car_back_diagonal.svg")
 const UNMARKED_VAN := preload("res://assets/events/unmarked_van.svg")
-const UNMARKED_VAN_END := preload("res://assets/events/unmarked_van_end.svg")
+const UNMARKED_VAN_FRONT := preload("res://assets/events/unmarked_van_front.svg")
+const UNMARKED_VAN_BACK := preload("res://assets/events/unmarked_van_back.svg")
+const UNMARKED_VAN_FRONT_DIAGONAL := preload("res://assets/events/unmarked_van_front_diagonal.svg")
+const UNMARKED_VAN_BACK_DIAGONAL := preload("res://assets/events/unmarked_van_back_diagonal.svg")
 const VAN_VICTIM := preload("res://assets/events/van_victim.svg")
+## The night raid's van: `_draw_eight_view()` reads `RIOT_VAN_BY_VIEW` below through the same
+## octant/mirror convention `EightDirection` gives every other family — see M56's own record for
+## why the side view mirrors on **west** here rather than on east as the other west-authored vans
+## below do (`side_faces_west` stays false for this family to keep that exact behaviour).
 const RIOT_VAN := preload("res://assets/events/riot_van.svg")
 const RIOT_VAN_FRONT := preload("res://assets/events/riot_van_front.svg")
 const RIOT_VAN_BACK := preload("res://assets/events/riot_van_back.svg")
 const RIOT_VAN_FRONT_DIAGONAL := preload("res://assets/events/riot_van_front_diagonal.svg")
 const RIOT_VAN_BACK_DIAGONAL := preload("res://assets/events/riot_van_back_diagonal.svg")
 const ARMY_TRUCK := preload("res://assets/events/army_truck.svg")
-const ARMY_TRUCK_END := preload("res://assets/events/army_truck_end.svg")
+const ARMY_TRUCK_FRONT := preload("res://assets/events/army_truck_front.svg")
+const ARMY_TRUCK_BACK := preload("res://assets/events/army_truck_back.svg")
+const ARMY_TRUCK_FRONT_DIAGONAL := preload("res://assets/events/army_truck_front_diagonal.svg")
+const ARMY_TRUCK_BACK_DIAGONAL := preload("res://assets/events/army_truck_back_diagonal.svg")
 const FLAME := preload("res://assets/events/flame.svg")
 const BARRIER_SEGMENT := preload("res://assets/events/barrier_segment.svg")
 const BARRIER_END := preload("res://assets/events/barrier_end.svg")
@@ -69,7 +95,17 @@ const LEAF_BLOWER := preload("res://assets/events/leaf_blower.svg")
 const PIGEON := preload("res://assets/events/pigeon.svg")
 const PIGEON_DOWN := preload("res://assets/events/pigeon_down.svg")
 const ICE_CREAM_VAN := preload("res://assets/events/ice_cream_van.svg")
+const ICE_CREAM_VAN_FRONT := preload("res://assets/events/ice_cream_van_front.svg")
+const ICE_CREAM_VAN_BACK := preload("res://assets/events/ice_cream_van_back.svg")
+const ICE_CREAM_VAN_FRONT_DIAGONAL := preload(
+		"res://assets/events/ice_cream_van_front_diagonal.svg")
+const ICE_CREAM_VAN_BACK_DIAGONAL := preload(
+		"res://assets/events/ice_cream_van_back_diagonal.svg")
 const LORRY := preload("res://assets/events/lorry.svg")
+const LORRY_FRONT := preload("res://assets/events/lorry_front.svg")
+const LORRY_BACK := preload("res://assets/events/lorry_back.svg")
+const LORRY_FRONT_DIAGONAL := preload("res://assets/events/lorry_front_diagonal.svg")
+const LORRY_BACK_DIAGONAL := preload("res://assets/events/lorry_back_diagonal.svg")
 const CHARGING_DOG := preload("res://assets/events/charging_dog.svg")
 const CHATTING_MOTHER_WALKING := preload("res://assets/events/chatting_mother_walking.svg")
 const CHATTING_MOTHER_TALKING := preload("res://assets/events/chatting_mother_talking.svg")
@@ -246,6 +282,75 @@ const PIGEON_DOWN_BY_VIEW := {
 	"side": PIGEON_DOWN,
 	"front_diagonal": preload("res://assets/events/pigeon_down_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/pigeon_down_back_diagonal.svg"),
+}
+## The vehicle-scale families below share the same five-view shape as every family above, but not
+## all of them share its mirror convention: `docs/evidence/svg-vehicles-2026-09-10/README.md` — "the
+## existing delivery van, fire engine, unmarked van, riot van, army truck and moving van side
+## pictures visibly place the cab at the left" — so their single `"side"` picture is authored facing
+## **west**, backwards from every side picture above. `_draw_eight_view()`'s own `side_faces_west`
+## parameter is the one bit that reads, per family, from `facings.csv`'s `mirror_x` column rather
+## than being assumed; every front, back and diagonal view is unaffected; each is its own picture
+## for its own compass point regardless of which way the side view faces.
+const DELIVERY_VAN_BY_VIEW := {
+	"front": DELIVERY_VAN_FRONT,
+	"back": DELIVERY_VAN_BACK,
+	"side": DELIVERY_VAN,
+	"front_diagonal": DELIVERY_VAN_FRONT_DIAGONAL,
+	"back_diagonal": DELIVERY_VAN_BACK_DIAGONAL,
+}
+const FIRE_ENGINE_BY_VIEW := {
+	"front": FIRE_ENGINE_FRONT,
+	"back": FIRE_ENGINE_BACK,
+	"side": FIRE_ENGINE,
+	"front_diagonal": FIRE_ENGINE_FRONT_DIAGONAL,
+	"back_diagonal": FIRE_ENGINE_BACK_DIAGONAL,
+}
+## East-authored, like `CYCLIST_BY_VIEW` above — no `side_faces_west` override at the call site.
+const ICE_CREAM_VAN_BY_VIEW := {
+	"front": ICE_CREAM_VAN_FRONT,
+	"back": ICE_CREAM_VAN_BACK,
+	"side": ICE_CREAM_VAN,
+	"front_diagonal": ICE_CREAM_VAN_FRONT_DIAGONAL,
+	"back_diagonal": ICE_CREAM_VAN_BACK_DIAGONAL,
+}
+## East-authored — see `ICE_CREAM_VAN_BY_VIEW` above.
+const LORRY_BY_VIEW := {
+	"front": LORRY_FRONT,
+	"back": LORRY_BACK,
+	"side": LORRY,
+	"front_diagonal": LORRY_FRONT_DIAGONAL,
+	"back_diagonal": LORRY_BACK_DIAGONAL,
+}
+const UNMARKED_VAN_BY_VIEW := {
+	"front": UNMARKED_VAN_FRONT,
+	"back": UNMARKED_VAN_BACK,
+	"side": UNMARKED_VAN,
+	"front_diagonal": UNMARKED_VAN_FRONT_DIAGONAL,
+	"back_diagonal": UNMARKED_VAN_BACK_DIAGONAL,
+}
+const ARMY_TRUCK_BY_VIEW := {
+	"front": ARMY_TRUCK_FRONT,
+	"back": ARMY_TRUCK_BACK,
+	"side": ARMY_TRUCK,
+	"front_diagonal": ARMY_TRUCK_FRONT_DIAGONAL,
+	"back_diagonal": ARMY_TRUCK_BACK_DIAGONAL,
+}
+## East-authored — see `ICE_CREAM_VAN_BY_VIEW` above.
+const POLICE_CAR_BY_VIEW := {
+	"front": POLICE_CAR_FRONT,
+	"back": POLICE_CAR_BACK,
+	"side": POLICE_CAR,
+	"front_diagonal": POLICE_CAR_FRONT_DIAGONAL,
+	"back_diagonal": POLICE_CAR_BACK_DIAGONAL,
+}
+## `_draw_eight_view(RIOT_VAN_BY_VIEW, _heading, canvas)` with no `side_faces_west` override
+## reproduces M56's own hand-written octant match exactly — see that const's own doc comment above.
+const RIOT_VAN_BY_VIEW := {
+	"front": RIOT_VAN_FRONT,
+	"back": RIOT_VAN_BACK,
+	"side": RIOT_VAN,
+	"front_diagonal": RIOT_VAN_FRONT_DIAGONAL,
+	"back_diagonal": RIOT_VAN_BACK_DIAGONAL,
 }
 
 ## The region door's own kit — see `RegionPlanner` and `docs/CITY.md`, "Regions and the wall".
@@ -1873,13 +1978,20 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.CAFE:
 			_draw_cafe(canvas)
 		EventDef.Look.DELIVERY_VAN:
-			_draw_simple(DELIVERY_VAN, canvas)
+			# Always sited facing east — `AT_THE_KERB` never overrides `EventScheduler.Planned.
+			# facing`'s own default — so `side_faces_west` now mirrors the parked van where
+			# `_draw_simple`'s old `_heading_is_west()` check never did: that check assumed every
+			# side picture faces east, and `delivery_van.svg` is one of the ones that does not (see
+			# `docs/evidence/svg-vehicles-2026-09-10/README.md`). A cosmetic change to an
+			# already-shipped picture, not a bug fix to gameplay: nothing about its shape, shadow or
+			# obstruction moves.
+			_draw_eight_view(DELIVERY_VAN_BY_VIEW, _heading, canvas, true)
 		EventDef.Look.BUSKER:
 			_draw_eight_view(BUSKER_BY_VIEW, _heading, canvas)
 		EventDef.Look.ROADWORKS:
 			_draw_spread(BARRIER_SEGMENT, BARRIER_END, canvas)
 		EventDef.Look.FIRE_ENGINE:
-			_draw_vehicle(FIRE_ENGINE, FIRE_ENGINE_END, canvas)
+			_draw_eight_view(FIRE_ENGINE_BY_VIEW, _heading, canvas, true)
 		EventDef.Look.BURNING_BUILDING:
 			_draw_fire(canvas)
 		EventDef.Look.BURNT_SHELL:
@@ -1895,15 +2007,25 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.CYCLIST:
 			_draw_eight_view(CYCLIST_BY_VIEW, _heading, canvas)
 		EventDef.Look.ICE_CREAM_VAN:
-			_draw_simple(ICE_CREAM_VAN, canvas)
+			# East-authored: always sited facing east, same as `DELIVERY_VAN` above, but
+			# `ice_cream_van.svg` is one of the sources that already faces east, so no
+			# `side_faces_west` override and no change to the picture it draws.
+			_draw_eight_view(ICE_CREAM_VAN_BY_VIEW, _heading, canvas)
 		EventDef.Look.LORRY:
-			_draw_simple(LORRY, canvas)
+			# `reversing_lorry`'s own facing is always exactly east or west — `AGAINST_THE_BUILDING`
+			# sets it to `-pavement_inward`, which `_wants_this_side` already refuses unless it is
+			# purely horizontal — so the diagonal and front/back views this table adds are never
+			# actually reachable; the row keeps drawing exactly the side view it always did.
+			_draw_eight_view(LORRY_BY_VIEW, _heading, canvas)
 		EventDef.Look.CHARGING_DOG:
 			_draw_eight_view(CHARGING_DOG_BY_VIEW, _heading, canvas)
 		EventDef.Look.CHATTING_MOTHER:
 			_draw_chatting_mother(canvas)
 		EventDef.Look.POLICE_CAR:
-			_draw_vehicle(POLICE_CAR, POLICE_CAR_END, canvas)
+			# East-authored — see `ICE_CREAM_VAN` above — and now a real octant: `police_patrol` is
+			# mobile and turns corners along its own patrol route, so this is the first vehicle row
+			# whose diagonal views are ordinarily reachable rather than a dead branch.
+			_draw_eight_view(POLICE_CAR_BY_VIEW, _heading, canvas)
 		EventDef.Look.POSTER_CREW:
 			_draw_eight_view(POSTER_CREW_BY_VIEW, _heading, canvas)
 		EventDef.Look.ROADBLOCK:
@@ -1913,9 +2035,11 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.ROBBER:
 			_draw_robber(canvas)
 		EventDef.Look.RIOT_VAN:
-			_draw_riot_van(canvas)
+			# Generalised onto the shared helper — see `RIOT_VAN_BY_VIEW`'s own doc comment above for
+			# why no `side_faces_west` override reproduces M56's hand-written octant match exactly.
+			_draw_eight_view(RIOT_VAN_BY_VIEW, _heading, canvas)
 		EventDef.Look.ARMY_TRUCK:
-			_draw_vehicle(ARMY_TRUCK, ARMY_TRUCK_END, canvas)
+			_draw_eight_view(ARMY_TRUCK_BY_VIEW, _heading, canvas, true)
 		EventDef.Look.BARRICADE:
 			_draw_spread(BARRICADE_PILE, null, canvas)
 		EventDef.Look.PROTEST:
@@ -1953,81 +2077,38 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 
 ## A shadow and a sprite, facing the way it is going. What most looks are, and having it once is
 ## what keeps a dozen near-identical three-line functions from existing.
-## A vehicle, drawn from whichever of its four sides is facing the camera.
-##
-## **One side-on sprite mirrored east and west is not enough**: a patrol car heading north drives up
-## the street showing its flank. The crowd's cars have an end-on view for the same reason
-## (`car_end_body.svg`, with the note that at that angle the front and the back of a car are the
-## same shape).
-##
-## **Each row keeps its own end-on picture rather than borrowing the crowd's.** One picture per row
-## bites hardest here: the whole content of a vehicle row is *which* vehicle it is, and a police car
-## that becomes a generic saloon the moment it turns north loses the one silhouette the screen-edge
-## badge exists to show, at the moment it starts coming towards her.
-##
-## The badge itself keeps the **side** view, which is deliberate: an icon is read at 40px against a
-## row of other icons, and a vehicle end-on is a box at any size.
-func _draw_vehicle(side: Texture2D, end: Texture2D, canvas: CanvasItem = self) -> void:
-	_draw_shape_shadow(canvas, def.shape)
-	if absf(_heading.y) > absf(_heading.x):
-		Sprites.draw_standing(canvas, end, Vector2.ZERO, Vector2.ZERO, false)
-		return
-	Sprites.draw_standing(canvas, side, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
-
 func _draw_simple(texture: Texture2D, canvas: CanvasItem = self) -> void:
 	_draw_shape_shadow(canvas, def.shape)
 	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
-## The five-view generalisation of `_draw_simple`, for a family that used to be one side
-## silhouette mirrored east and west and now has the full front/back/side/diagonal set —
-## `_select_view()` picks the view from `heading` and `EightDirection.is_mirrored()` says whether
-## it mirrors. `_draw_simple` itself is untouched and keeps drawing every row that has not been
-## given the rest of the family: `delivery_van`, `mouse`, `skip`, `ice_cream_van` and `lorry`.
-func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem = self) -> void:
+## The five-view generalisation of `_draw_simple`, for a family that has the full
+## front/back/side/diagonal set — `_select_view()` picks the view from `heading` and
+## `EightDirection.is_mirrored()` says whether it mirrors, for every sector but one.
+##
+## **`side_faces_west` is the one bit `EightDirection` cannot answer, because it is a property of
+## the art rather than of the geometry.** `is_mirrored()` mirrors exactly the three west sectors on
+## the assumption every family's `"side"` picture is authored facing east, which holds for most —
+## `police_car`, `ice_cream_van`, `lorry` and every person/animal/rider family bound before this one
+## — but not for `delivery_van`, `fire_engine`, `unmarked_van` and `army_truck`, whose side pictures
+## place the cab at the left (`docs/evidence/svg-vehicles-2026-09-10/README.md`). Passing `true`
+## flips the mirror flag for the `"side"` view alone; every diagonal and front/back view already
+## mirrors the same way regardless, since each is authored facing its own specific compass point
+## rather than shared between two.
+##
+## `night_raid`'s van reaches this same helper through `RIOT_VAN_BY_VIEW` with no `side_faces_west`
+## override — see that const's own doc comment for why the plain `is_mirrored()` sense is kept for
+## its `"side"` view rather than corrected to match `facings.csv`.
+##
+## `_draw_simple` itself is untouched and keeps drawing every row that has no directional family at
+## all: `mouse` and `skip`.
+func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem = self,
+		side_faces_west := false) -> void:
 	_draw_shape_shadow(canvas, def.shape)
 	var view := _select_view(heading)
-	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
-			EightDirection.is_mirrored(_view_sector))
-
-## The seed of M108, eight-direction entity graphics, scoped to `Look.RIOT_VAN` alone — the only
-## row that carries it — rather than a general `Look`-keyed table with one entry: front, back,
-## side and the two diagonals, the nearest of the eight to the van's own `_heading`, mirrored for
-## the three headings whose picture is authored facing the other way. The next row that needs more
-## than a side and an end view generalises this octant selection rather than copying it.
-##
-## The waiting-to-hunting state change is untouched — `_process()`'s generic pursuer rule already
-## moves `_heading` and drops the body the frame `night_raid` stops waiting, exactly as it did
-## before this — and so is the van's own ground registration, `def.shape` unchanged beneath it.
-func _draw_riot_van(canvas: CanvasItem = self) -> void:
-	_draw_shape_shadow(canvas, def.shape)
-	# `_heading`'s nearest 45° octant, east at zero and turning clockwise (Godot's Y grows south,
-	# so `Vector2.angle()` already runs that way). `front`/`back` name the direction the authored
-	# asset faces (`riot_van_front.svg` is the south-facing windscreen, `riot_van_back.svg` the
-	# north-facing cargo doors — see docs/GRAPHICS.md), not the octant that selects it.
-	var octant := roundi(_heading.angle() / (PI / 4.0))
-	octant = ((octant % 8) + 8) % 8
-	var texture: Texture2D = RIOT_VAN
-	var mirror := false
-	match octant:
-		1:  # south-east
-			texture = RIOT_VAN_FRONT_DIAGONAL
-		2:  # south
-			texture = RIOT_VAN_FRONT
-		3:  # south-west: mirrors the south-east picture
-			texture = RIOT_VAN_FRONT_DIAGONAL
-			mirror = true
-		4:  # west: the side view, mirrored
-			mirror = true
-		5:  # north-west: mirrors the north-east picture
-			texture = RIOT_VAN_BACK_DIAGONAL
-			mirror = true
-		6:  # north
-			texture = RIOT_VAN_BACK
-		7:  # north-east
-			texture = RIOT_VAN_BACK_DIAGONAL
-		_:  # east (0): the authored side view, unmirrored
-			pass
-	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, mirror)
+	var mirror := EightDirection.is_mirrored(_view_sector)
+	if view == "side" and side_faces_west:
+		mirror = not mirror
+	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO, mirror)
 
 ## A stationary vehicle projected along the axis of the street it occupies. Its side silhouette
 ## may mirror with its facing; an end-on silhouette keeps its authored proportions and orientation.
@@ -2429,10 +2510,18 @@ func _draw_dog_walker(canvas: CanvasItem = self) -> void:
 ## ever sets `_victim_taken_at`. Drawn first so the van's own silhouette is what she is left
 ## looking at once the walk ends, the same order `_draw_cafe` draws its sitters before its tables.
 ##
-## The van itself goes through `_draw_vehicle` rather than `_draw_simple`: a parked van never
-## needed an end-on picture, but a hunting one steers straight at her and that is not always down
-## a pavement — `_draw_vehicle`'s own note is that one side-on sprite mirrored east and west shows
-## a patrol car heading north its own flank, and the same is true of a van.
+## The van itself goes through `_draw_eight_view` rather than `_draw_simple`: a parked van never
+## needed more than one side-on picture, but a hunting one steers straight at her and that is not
+## always down a pavement, so it draws the full front/back/side/diagonal set the same way `police_car`
+## does once it turns off its own axis.
+## The victim and the van share one `_view_sector` field — safely, because both headings are always
+## exactly east or west by construction while they can ever be drawn together. `is_taking_a_victim()`
+## is only ever true while the van `is_waiting()` (`_update_the_take()` abandons it the instant a
+## `HUNTS`-heated copy starts hunting), and idling the van's own `_heading` is `Planned.facing`'s
+## untouched default, always due east — so the van's own `_select_view(_heading)` call below, after
+## the victim's, only ever asks for exactly the sector the victim's own call left it on (both facing
+## the same way) or its exact opposite (180° apart, always past `EightDirection`'s hold), never
+## anything a stale hold could get wrong.
 func _draw_abduction(canvas: CanvasItem = self) -> void:
 	if is_taking_a_victim():
 		var through := (age - _victim_taken_at) / VICTIM_TAKEN_OVER
@@ -2446,7 +2535,9 @@ func _draw_abduction(canvas: CanvasItem = self) -> void:
 		var view := _select_view(-standing)
 		Sprites.draw_standing(canvas, VAN_VICTIM_BY_VIEW[view], at, Vector2.ZERO,
 				EightDirection.is_mirrored(_view_sector))
-	_draw_vehicle(UNMARKED_VAN, UNMARKED_VAN_END, canvas)
+	# West-authored, like `delivery_van` and `fire_engine` above — see `_draw_eight_view()`'s own
+	# doc comment on `side_faces_west`.
+	_draw_eight_view(UNMARKED_VAN_BY_VIEW, _heading, canvas, true)
 
 ## Another mother with a pram — one picture, two postures. Strolling is what she looks like for the
 ## whole of her beat; talking is what she looks like for exactly the `detain_seconds` of a
