@@ -98,14 +98,35 @@ what makes the **noise floor emergent**. There is no city-wide "background noise
 anywhere; a street is loud in proportion to how busy it is, and a park is quiet because
 nobody is in it. Both facts are visible on screen, which a constant never could be.
 
-Excitement moves at the **net** rate, `incoming − decay`:
+Excitement moves at the **net** rate, `incoming − decay`, and the decay is two things multiplied:
+what she is doing, times what she is standing on.
 
 | Player state | Decay per second |
 | --- | --- |
-| Walking | `3.5` |
+| Walking | `6.0` |
 | Running | `0.5` |
 | Idle | `0.0` |
-| In a calm zone | decay × `2.2` |
+
+| Ground | × | Walking decay |
+| --- | ---: | ---: |
+| Calm zone | `2.0` | `12.0/s` |
+| Precinct | `1.5` | `9.0/s` |
+| Ordinary street | `1.0` | `6.0/s` |
+| Alley | `0.58` | `3.5/s` |
+| Main road | `0.35` | `2.1/s` |
+
+**The decay is what the bar shows.** A player watching the meter on a street with nothing on it is
+watching this number and nothing else, so it is set from a *net* measurement rather than from
+taste: the quietest ordinary pavement, with the day's own crowd on it and nothing authored in
+range, loads about 2.5/s, which leaves 3.8/s downward and a full meter in a little over
+twenty-five seconds of walking. Quiet ground has to read as recovery while she is on it, not
+merely come out negative on paper.
+
+**The multipliers are ratios; the rates on the right are the design.** Each ground is somewhere
+she is meant to be able to recover at a particular speed, so a change to the walking rate re-derives
+all five rather than leaving them alone. The park's own floor is that it stays a place rather than
+a switch: at `12.0/s` a full meter takes eight and a third seconds to clear, which is long enough
+to be somewhere she walks to and stays in.
 
 **The ordering is motion-shaped, and that is the model.** The pram is a rocking chair with wheels
 on: what settles a baby is being pushed. Walking settles her most, running is still motion and
@@ -113,9 +134,9 @@ settles a little, and standing still settles nothing at all.
 
 **An idle decay faster than walking is the trap here**, and it is the ordering a physical reading
 of "resting calms her" produces: it makes standing still the strongest move in the game — a full
-meter cleared in seventeen seconds for seventeen points of sleepiness, anywhere, including the
-middle of a street she has no business being on. A trace of that reads as a minute or more with no
-entry in it at all.
+meter cleared in under twenty seconds for a handful of points of sleepiness, anywhere, including
+the middle of a street she has no business being on. A trace of that reads as a minute or more with
+no entry in it at all.
 
 Netting rather than "decay only when nothing is happening" is what makes the decay column
 matter. Two consequences fall out of it, and both are wanted:
@@ -129,22 +150,28 @@ matter. Two consequences fall out of it, and both are wanted:
   times as hard. Panic is punished twice, everywhere except against the one thing that
   chases (see "Running that matters" below).
 
-It also sets a floor on what counts as an event: a source weaker than `3.5` cannot move
-the meter on a walking player at all. That is deliberate — it is what lets an empty alley
-apply constant *pressure* (`+3.0`) without ever being a threat on its own.
+It also sets a floor on what counts as a source: anything weaker than the decay on the ground she
+is on cannot move the meter on a walking player at all. That floor is a different number per
+ground, which is the point — an empty alley's `+3.0/s` of constant *pressure* sits just under the
+`3.5/s` an alley gives back, so it can never be a threat on its own and is never quite recovery
+either, while the same trickle on a park would be nothing at all.
 
-The crowd is pitched deliberately across that line. One person at arm's length is `4.2`,
-just over the walking decay, so brushing past somebody costs — and the pavement is two
-tiles wide, so *how close to pass* is a choice the player makes rather than a toll they
-pay. One car is `5.4`, over the walking decay but nowhere near enough to matter alone: no single car
-is dangerous. The danger is that on a main road there is always another one, and the arterial's
-mean load sits between one and three times the **walking** decay. Above three it fills the meter
-faster than the street can be crossed, which is a street nobody can use rather than a route
-decision; `tests/test_crowd.gd` holds both ends of that.
+**The crowd is pitched so that a contact and a busy pavement cost, and a lone passer-by does not.**
+One person at arm's length is `4.2`, under the walking decay, so somebody going past at the
+pavement's width is nearly nobody and an empty street reads as recovery — which is the whole
+sentence the decay was raised for. What costs is walking **into** them, `18/s` of jolt for a second
+and a bit, and that is a thing she did rather than a thing that happened; and what costs more is
+several of them, because the load is a sum and a crowded pavement never stops emitting. One car is
+`5.4`, and no single car is dangerous either. The danger is that on a main road there is always
+another one, and the arterial's mean load runs three to four times what the spine's own ground
+gives back. Above about half the meter to cross it, it is a street nobody can use rather than a
+route decision; `tests/test_crowd.gd` holds both ends of that.
 
-**Every one of those comparisons is against the *walking* decay**, because standing still settles
-nothing: the only question a street has to answer is what it costs to walk down, which is what a
-route is made of.
+**Every one of those comparisons is against the decay on the ground it is measured on**, not
+against the walking rate on its own. The spine gives back `2.1/s` and a back street `6.0/s`, so
+pricing a crowd load against the unmultiplied number flatters one street and libels the other — and
+standing still settles nothing at all, so the only question a street has to answer is what it costs
+to walk down, which is what a route is made of.
 
 At `excitement = 100` → **crying** → day lost.
 
@@ -624,7 +651,7 @@ view (`DebugLayers`, layer `1`) for where the boundary is checked by eye.
 
 **`(1 − t)²` is the shape that looks equally reasonable and inverts the game.** It puts a
 **quarter** of the intensity at the midpoint of the falloff band and six percent three quarters of
-the way out, so a café at 12/s sits under the 3.5/s walking decay across the whole outer 60% of its
+the way out, so a café at 12/s sits under the 6.0/s walking decay across the whole outer 70% of its
 own field — and a run log written at an event's own outer radius reads `events 0.0`. An event you
 are not charged for until you touch it is not something to route around, it is something to bump
 into.
@@ -841,19 +868,23 @@ Parks, quiet squares, forests and courtyards are `CALM` tiles. Inside them:
 - Sleepiness gain ×`21` in a four-block zone, more in a smaller one — a second in a park is worth
   twenty-one on the street. Only calm ground fills the sleepiness bar at all, which is why that half
   stays a threshold rather than a rate.
-- Excitement decay ×`2.2`, so the park reads on **both** bars.
+- Excitement decay ×`2.0`, so the park reads on **both** bars — a full meter clears in eight and a
+  third seconds of walking under the trees, which is fast enough to be worth the walk and slow
+  enough that a park is a place rather than a switch.
 
 **And the excitement half is a rate everywhere**, not calm-or-not:
 `WorldContext.decay_multiplier()` answers with what this ground does, and the order is
 
-    calm 2.2  >  precinct 1.5  >  ordinary street 1.0  >  main road 0.6
+    calm 2.0  >  precinct 1.5  >  ordinary street 1.0  >  alley 0.58  >  main road 0.35
 
-so a route is a **recovery rate** and not only a set of things to walk past. Two consequences worth
-holding on to. A precinct is worth walking to although it is loud — a retail street is busy, and it
-is still the best ground outside a park to bring a meter down on. And the main road is the same
-sentence inverted: it is the one ground in the city that is actively bad at letting her recover,
-which is what *"a main road is crossed, not walked"* means arithmetically. Walking its
-length loses a day in about fifteen seconds; that is the intent, measured.
+so a route is a **recovery rate** and not only a set of things to walk past. Three consequences
+worth holding on to. A precinct is worth walking to although it is loud — a retail street is busy,
+and it is still the best ground outside a park to bring a meter down on. An alley is the shortcut
+that is not recovery, which is what keeps the fast route a real choice rather than a free one. And
+the main road is the calm zone's sentence inverted: it is the one ground in the city that is
+actively bad at letting her recover, which is what *"a main road is crossed, not walked"* means
+arithmetically. Walking its length loses a day in about seventeen seconds at act I density; that is
+the intent, measured over three seeds with `tests/probes/m117_decay.gd`.
 
 But calm zones are contested — see `docs/CITY.md` (spoiling) and `docs/EVENTS.md`. The spoiling
 remembers a whole **act** rather than a night, and the city has one calm area per day of the longest

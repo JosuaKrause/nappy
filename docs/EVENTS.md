@@ -890,23 +890,24 @@ the figure is notional because nobody finishes the walk. `†` is a **flock**, w
 birds sharing `intensity` between them and wheeling inside `flock_spread`, so *all of the intensity
 is at the centre* — the assumption the rest of the table rests on — is false for it:
 
-- **Its row is computed from the birds**, not from one disc. Priced as a disc it reads +97 and
-  breaks the running rule on a row that in fact keeps it, which is exactly the kind of silent
-  breakage that rule exists to catch. `tests/test_events.gd` models the flock the same way, so the
-  two cannot drift.
+- **Its row is computed from the birds**, not from one disc. Priced as a disc it reads roughly
+  twice its true figure and breaks the running rule on a row that in fact keeps it, which is
+  exactly the kind of silent breakage that rule exists to catch. `tests/test_events.gd` models the
+  flock the same way, so the two cannot drift.
 - **The straight line through the middle is not the whole story for it.** Walked against the real
-  instance it costs about **+35** through the centre, **+8** eighty pixels off it and **nothing at
-  all** at the rim. Every other row falls away gently from the middle; a flock is a hot spot with a
-  wide quiet margin, and that gradient is the reason to build it out of eleven sources rather than
-  one.
+  instance it costs several times as much through the centre as eighty pixels off it, and nothing
+  at all at the rim. Every other row falls away gently from the middle; a flock is a hot spot with
+  a wide quiet margin, and that gradient is the reason to build it out of eleven sources rather
+  than one.
 
 **The ground every one of these rows stands on is the half the table does not show**, and it is
 large:
 
-- **An ordinary footway is net recovery to walk.** 55–87 points of crowd over forty seconds against
-  a walking decay that pays back 140, at every line from the frontage to the kerb. So an authored
-  row on an ordinary street is very nearly the *whole* of what that stretch costs, which is what the
-  figures below assume.
+- **An ordinary footway is net recovery to walk, and visibly so.** The quietest pavement in the
+  city charges 70–120 points of crowd over a forty-second walk against a decay that pays back 240
+  — measured over three seeds by `tests/probes/m117_decay.gd`, which is what to run again when a
+  rate moves. So an authored row on an ordinary street is very nearly the *whole* of what that
+  stretch costs, which is what the figures below assume.
 - **The middle of a pavement is the cheapest line along it**, by `CrowdLanes.SIDEWALK_LANE_SPREAD`,
   which spreads the walkers off it: an ordinary midline is 56 points per forty seconds.
 - **Crossing the main road costs about 30**, and the wait at its lights about 33 more — between them
@@ -918,38 +919,50 @@ alone is answering a narrower question than it thinks.
 
 | Event | walk through | run through |
 | --- | ---: | ---: |
-| `loudspeaker` | — | — |
 | `curfew_announce` | — | — |
-| `construction` | −15.2 | +32.1 |
-| `delivery_van` | −11.4 | +24.1 |
-| `barricade` | −9.1 | +19.3 |
-| `burnt_shell` | −2.7 | +14.3 |
-| `poster_crew` | +0.7 | +22.6 |
-| `alley_mouse` | +4.2 | +14.5 |
-| `cafe_tables` | +9.6 | +18.2 |
-| `market_stall` | +12.0 | +19.5 |
-| `busker` | +13.3 | +45.7 |
-| `police_patrol` | +15.9 | +46.2 |
-| `charging_dog` * | +16.9 | — |
-| `cyclist` * | +20.9 | +29.7 |
-| `cat_dash` | +24.1 | +37.5 |
-| `playground` | +25.5 | +44.3 |
-| `checkpoint` | +29.0 | +59.4 |
-| `homeless_yeller` | +31.2 | +59.6 |
-| `ice_cream_van` | +31.5 | +65.8 |
-| `reversing_lorry` * | +32.6 | +53.3 |
-| `alley_robbery` * | +34.6 | — |
-| `dog_walker` | +36.5 | +41.2 |
-| `protest` | +42.3 | +77.6 |
-| `leaf_blower` | +48.6 | +67.1 |
-| `pigeon_flock` † | +54.1 | +63.6 |
-| `burning_building` | +55.9 | +83.2 |
-| `loose_dog` | +61.2 | +61.9 |
-| `abduction` * | +61.3 | +84.1 |
-| `military_convoy` | +84.9 | +107.2 |
-| `night_raid` | +101.8 | +122.6 |
-| `fire_truck` | +115.4 | +132.0 |
-| `firefight` * | +152.4 | +159.2 |
+| `loudspeaker` | — | — |
+| `construction` | -26.1 | +32.1 |
+| `delivery_van` | -19.6 | +24.1 |
+| `collapsed_frontage` | -15.7 | +19.3 |
+| `burnt_out_car` | -15.7 | +19.3 |
+| `moving_van` | -15.7 | +19.3 |
+| `burst_water_main` | -15.7 | +19.3 |
+| `scaffolding` | -15.7 | +19.3 |
+| `skip` | -15.7 | +19.3 |
+| `car_accident` | -15.7 | +19.3 |
+| `fallen_tree` | -15.7 | +19.3 |
+| `barricade` | -15.7 | +19.3 |
+| `checkpoint_gate` | -15.7 | +19.3 |
+| `burnt_shell` | -6.9 | +14.3 |
+| `poster_crew` | -5.3 | +22.6 |
+| `chatting_mother` | -2.7 | +14.8 |
+| `checkpoint_post` | -0.6 | +22.4 |
+| `checkpoint_hut` | -0.6 | +22.4 |
+| `alley_mouse` | +1.0 | +14.5 |
+| `busker` | +2.9 | +45.7 |
+| `police_patrol` | +5.9 | +46.2 |
+| `cafe_tables` | +6.1 | +18.2 |
+| `market_stall` | +8.5 | +19.5 |
+| `charging_dog` * | +8.8 | — |
+| `cyclist` * | +16.0 | +29.7 |
+| `playground` | +17.4 | +44.3 |
+| `cat_dash` | +17.6 | +37.5 |
+| `ice_cream_van` | +18.4 | +65.8 |
+| `roadblock` | +18.5 | +51.7 |
+| `homeless_yeller` | +19.8 | +59.6 |
+| `reversing_lorry` * | +23.1 | +53.3 |
+| `alley_robbery` * | +23.8 | — |
+| `protest` | +27.6 | +77.6 |
+| `dog_walker` | +30.8 | +41.2 |
+| `leaf_blower` | +37.7 | +67.1 |
+| `burning_building` | +41.7 | +83.2 |
+| `pigeon_flock` † | +44.9 | +63.6 |
+| `abduction` * | +47.7 | +84.1 |
+| `loose_dog` | +53.6 | +61.9 |
+| `military_convoy` | +68.6 | +107.2 |
+| `night_raid` | +83.9 | +122.6 |
+| `fire_truck` | +97.0 | +132.0 |
+| `firefight` * | +132.1 | +159.2 |
 
 **No column says which rows carry a caret, because no row does.** The caret is decided in play
 from a source's own projected course at wherever she is standing — `expected_impact_at()`
@@ -963,9 +976,14 @@ costs 35 points from the lunge and less the sooner it is given. See `docs/MECHAN
 that matters", for the measured tables. The city-wide rows have no line through them at all, which
 is why `EventDef.walk_through_cost()` answers zero for them and this table says nothing.
 
-**One row is cheap to walk through by taste, and every zero-intensity row is cheap by
-construction.** `burnt_shell` and `poster_crew` are scenery asked to be nearly free on purpose —
-`tests/test_events.gd` names them as the sole exemptions among the rows that emit anything at all.
+**Two rows are cheap to walk through by taste, three are priced somewhere else, and every
+zero-intensity row is cheap by construction.** `burnt_shell` and `poster_crew` are scenery asked to
+be nearly free on purpose. `chatting_mother`, `checkpoint_hut` and `checkpoint_post` are the
+**detainers**, whose price is not their field at all: coming close locks her movement and charges
+`Tuning.CHAT_EXCITEMENT` flat over the hold, so a disc sized to clear the walking decay as well
+would be charging the same body twice. `tests/test_events.gd` names both lists, and holds the
+detainers to charging their capture instead — an exemption that owes no check of its own is a way
+of not being tested.
 `construction`, `delivery_van` and `barricade` sit well below zero for a different reason: **a
 thing whose whole job is to stand in the way costs route and nothing else**, so `intensity <= 0.0`
 is its own blanket exemption — walking "through" a solid body was never a real choice to price, and
@@ -976,21 +994,21 @@ is a decision about what a thing is (a pure obstruction) rather than a number no
 *positive* exemption is the one that still needs naming by hand.
 
 **Running is never correct** on any row here. It costs `EXCITEMENT_FROM_RUNNING` *and* collapses
-the decay from 3.5/s to 0.5/s, and together those beat the shorter exposure every time. Making
+the decay from 6.0/s to 0.5/s, and together those beat the shorter exposure every time. Making
 running necessary is therefore a mechanic to build rather than a number to tune: it needs something
 running escapes.
 
-**And what a *street* costs, which is the question this table does not answer.** A rig walked home
-to the furthest calm block and back — 7,500px, a real errand — through a real day with the crowd
-and the events both running: peak excitement **25 to 57** of a hundred across three seeds, the meter
-frozen for 0–14% of it, nobody cried. The same day, holding one arrow key east from the doorstep for
-fifteen seconds, loses; the trace names four pedestrian contacts and a car's horn, and the breakdown
-at the moment of each is `crowd 30–44/s` against `events 10–14/s`.
+**And what a *street* costs, which is the question this table does not answer.** An errand — home
+to the furthest calm block and back, 7,500px through a real day with the crowd and the events both
+running — is walked well inside the meter on an ordinary route, and the same day walked carelessly
+straight down a busy pavement loses in seconds. What separates them is the crowd rather than the
+catalogue: the breakdown at the moment of a contact reads `crowd 30–44/s` against `events 10–14/s`.
 
 **So the crowd is most of what a street costs, and the events are what make it a decision.** That
 ratio is the design working: careless is fatal in seconds, careful is nearly free, and the gap
 between them is where the game lives. None of it is in the table above — a contact with a pedestrian
-is ~15.6 points and a car's horn ~8, and neither is in the catalogue at all. See MECHANICS.md.
+lands about 10.8 points of jolt and a car's horn about 8, and neither is in the catalogue at all.
+See MECHANICS.md.
 
 **And every row prices walking through one event against walking around it**, which at one event
 per block is a move the player rarely has in front of her: going around one is often going through
@@ -1367,8 +1385,8 @@ the destination was not a decision, this one that *which* destination was not on
 
 #### It has to cover the ground, not stand in it
 
-**What denies calm ground is not reaching it, it is out-emitting the decay** the calm multiplier has
-already raised to 7.7/s — so a busker at intensity 9 is useless past 100px however far his 190px
+**What denies calm ground is not reaching it, it is out-emitting `Tuning.CALM_ZONE_DENIAL_RATE`**,
+7.7/s — so a busker at intensity 9 is useless past 100px however far his 190px
 field reaches, in a lot that is 704px across. One spoiler denies about three percent of a four-block
 calm zone: the day rolls its spoiler for the block she used, and she settles in that same block
 anyway.
