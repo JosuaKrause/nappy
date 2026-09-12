@@ -279,9 +279,8 @@ its measurement against the nerves left, and that waits for act III; M110, the c
 round a seal, keeps one open question behind it. The debug view (`1` to `4` in a debug build, `--layers 1,3` for
 a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow or a body is checked by
 eye, and every one of the three is now derived from the object's one `GroundShape`. Behind those, unordered: M96 (the teaching day and
-the dog after it), M97 (calm areas that hold), M98 (pressure in the empty acts), M99 (the corridor's
-density after the sealing) and M100 (the small work, the polish and the open design questions,
-consolidated).
+the dog after it), M97 (calm areas that hold), M99 (the corridor's density after the sealing) and
+M100 (the small work, the polish and the open design questions, consolidated).
 Reaching act III — which M56's measurement against the nerves needs — waits until
 that batch is done. SVG-to-PNG
 style transfer is Codex's parallel track. Prepared artwork and its source-review sheets are listed
