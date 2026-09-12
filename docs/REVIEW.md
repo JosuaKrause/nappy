@@ -14,6 +14,24 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
+- **Walk three kinds of ground with the excitement bar up and watch it, not the route.** Start
+  anywhere with the meter loaded (`--meters 0 90` puts it near the top) and spend twenty seconds
+  on each: an ordinary back street, the main road's pavement, and a park. Three questions, and
+  they are the whole of this change. Does a quiet street now read as **recovery** — the bar
+  visibly coming down while she walks, rather than a number that happens to be negative? Does the
+  main road still read as the ground that **does not** let her recover? And does the park now read
+  as a **switch** rather than a place: it clears a full meter in eight and a third seconds, which
+  the rig says is over the line and only a person can say is over the *felt* line. Then walk an
+  alley: it is meant to be very nearly flat — neither pressure nor rest — which is the one of the
+  five grounds with no obvious right answer. Record is `DECISIONS.md`, M117, excitement decays
+  visibly on quiet ground; the burst is in `evidence/m117-visible-decay-2026-09-12/`.
+- **Stand in a playground and wait out its beat.** A playground pulses between a quarter and all
+  of its intensity every nine seconds, and calm ground now gives back 12.0/s against its 15.0 at
+  the peak — so the middle of a playground is expensive at the top of the beat and free at the
+  bottom, where it used to cost throughout. Does a park with a playground in it still feel
+  contested, or has the playground stopped mattering? Raising it was rejected on purpose: it
+  would deny more park than it does today. Same record.
+
 - **Compare the mother carrying the baby with the mother pushing the stroller.** Use ordinary
   gameplay for pushing and `--start-escape floor:2` for carrying; walk and turn in both. Does she
   remain recognizably the same woman, with stable hair, clothes and proportions across directions

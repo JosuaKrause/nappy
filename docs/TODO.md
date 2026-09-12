@@ -138,9 +138,8 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
-0. **M117**, excitement decays visibly on quiet ground, and **M118**, a car crash is solid only
-   where the cars are — *(2026-09-12: "prioritize this fix"; "this round's feedbacks should all
-   be prioritized since I'm actively testing the changes as they come in")* — ahead of
+0. **M118**, a car crash is solid only where the cars are — *(2026-09-12: "this round's feedbacks
+   should all be prioritized since I'm actively testing the changes as they come in")* — ahead of
    everything, by the player's own word.
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
    related to the other items to work on right now.")* It waits, because reaching act III waits:
@@ -307,65 +306,6 @@ junction-paint and robber-placement records are filed there under M49 and the sm
 
 Everything below is in the order the gameplay queue above gives it, and was reassessed on
 2026-09-09.
-
----
-
-## M117 — Excitement decays visibly on quiet ground · asked for 2026-09-12
-
-> "the decay for excitement is too low anywhere -- except for the main street and maybe alleys
-> there excitement should go visibly down when no excitement source is around -- prioritize this
-> fix"
-
-[PLAYTEST-63](playtests/PLAYTEST-63.md). Placed first by the player's own word.
-
-**What is true today.** Walking decays excitement at `EXCITEMENT_DECAY_WALKING`, 3.5 a second,
-times what the ground does: calm ground 2.2, a precinct 1.5, an ordinary street 1.0, the main
-road 0.6 (`City.decay_multiplier()`; an alley has no multiplier of its own and decays as an
-ordinary street, while standing in one adds `EXCITEMENT_FROM_ALLEY`, 3.0 a second, so an alley
-is already net-slower than a street). Standing still decays nothing and running 0.5. The crowd
-on an ordinary pavement charges about 1.4 to 2.2 a second over a forty-second walk, so a quiet
-street nets only 1.3 to 2.1 a second downward — thirty points take fifteen to twenty seconds
-to leave the bar, which is the "too low" the player sees. **Every crowd number is pitched
-against the walking decay**: one person at arm's length is 4.2, just over it, so a close pass
-costs; one car 5.4; the arterial's floor between one and three times it; `tests/test_crowd.gd`
-and `tests/test_meters.gd` assert those relationships, and the calm-zone admission distance in
-`EventScheduler._denial_radius()` is the walking decay times the calm multiplier, 7.7 a second.
-
-- [ ] **Raise the walking decay on every ground but the main road, and hold the main road where
-      it is.** The target is a **net** rate on an ordinary pavement, with the day's own crowd on
-      it and nothing authored in range, that the bar shows: measure it first on a rig over
-      several seeds and forty-second walks (the `tests/test_crowd.gd` floor probes are the
-      instrument), then set `EXCITEMENT_DECAY_WALKING` so the net comes out around 4 a second
-      or better — a full meter in about twenty-five seconds of quiet walking — and reduce
-      `EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` in the same step so the main road's **absolute**
-      rate stays at today's 2.1 a second. Keep the ordering calm > precinct > street > main road
-      and re-measure the calm and precinct rates after; if the park clears a full meter in under
-      eight seconds the calm multiplier comes down to keep it a place rather than a switch.
-      **Decouple the calm-zone admission distance from the decay**: `_denial_radius()` gets its
-      own constant at today's 7.7 a second, so louder rows are not admitted beside parks as a
-      side effect of the pram settling faster. Regenerate the cost table in `EVENTS.md` ("What an
-      event actually costs"), rewrite the decay table and the crowd paragraphs in
-      `MECHANICS.md`, and re-state — not delete — every relationship test that the new number
-      breaks, with the reason beside it. Verify on a played rig, not by arithmetic: the same
-      walk before and after, net rate in the report.
-- [ ] **Three questions the instruction left open, put to the player on 2026-09-12 with a
-      recommendation each, and answered the same day: "build as recommended"** — so each is
-      a decision now, built with the item above and recorded beside it:
-      1. **Standing still.** Today it settles nothing, and that was a decision (playtest 07
-         finding 3: standing was the fastest of the three rates and made waiting the strongest
-         move in the game). Recommended: unchanged — the fix is on the walking rate, so the
-         bar visibly falls while she is being pushed, and waiting stays no plan.
-      2. **Alleys.** The player's "maybe". Recommended: an alley keeps today's absolute rate,
-         3.5 a second, through a multiplier of its own, so it sits between the main road and an
-         ordinary street — pressured ground, not a shortcut to recovery — and the constant dread
-         it already adds keeps meaning something.
-      3. **A single passer-by.** Once the decay outruns 4.2, one person at arm's length no
-         longer costs on their own; a contact (18 a second) and a busy pavement still do.
-         Playtest 07 finding 9 asked that brushing past somebody cost something. Recommended:
-         accept it — the player's sentence is that *no source around* should read as recovery,
-         and a lone passer-by at the pavement's width is the nearest thing to nobody — and keep
-         the crowd's own numbers where they are, since raising them to chase the decay raises
-         the main road's crossing cost with them.
 
 ---
 

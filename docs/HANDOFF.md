@@ -225,7 +225,12 @@ harder, two rows that could be walked straight past now catch you, and alleys ar
 the rate they were. That is the largest single change to what a day costs the project has made, and
 it was measured against a rig rather than felt. The record is in `DECISIONS.md` under M73, M74 and
 M75. **Its own test is the player's sentence**: *walking a seemingly empty pavement has to give the
-meter back*. If it still does not, the radii move next, not the density.
+meter back*. It now does, and visibly: a quiet street nets about 3.8/s downward with the day's own
+crowd on it, a full meter in a little over twenty-five seconds. The lever that got there was the
+**walking decay** and not the crowd's radii, which are untouched — `DECISIONS.md`, M117, excitement
+decays visibly on quiet ground, has the before-and-after and the ceiling the number is up against.
+Whether it *reads* as recovery rather than merely measuring as it is a question for a person, and
+it is in `REVIEW.md`.
 
 **Playtest 22's findings are built and unwalked underneath that** — the sealing that closes the city
 off the path, the trunk that keeps the doorstep joined to it, the ban on routing along the main
