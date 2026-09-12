@@ -21,6 +21,7 @@ func run(t) -> void:
 	_city.build(CityGenerator.generate(SEED))
 
 	_test_population_follows_the_act(t)
+	_test_a_walker_draws_its_own_answer_at_a_door(t)
 	_test_the_streets_empty_out_after_act_two(t)
 	_test_the_same_day_makes_the_same_crowd(t)
 	_test_walkers_stay_on_foot_and_cars_stay_on_the_road(t)
@@ -53,6 +54,15 @@ func run(t) -> void:
 	_test_nothing_walks_into_a_hard_blocker(t)
 	_test_a_hard_seal_shuts_its_street_to_the_crowd(t)
 	_test_a_region_wall_is_shut_and_a_door_is_carved_out(t)
+	# One door day, shared: building a city and planning days until one carries a door is most of a
+	# minute, and every test below places its own bodies at the same hut anyway.
+	var door_day := _open_a_door_day(t)
+	_test_a_walker_is_held_at_a_door_in_four_states(t, door_day)
+	_test_a_line_at_a_door_stays_short(t, door_day)
+	_test_a_car_still_stops_for_the_boom(t, door_day)
+	if not door_day.is_empty():
+		var door_city: City = door_day["city"]
+		door_city.free()
 	_test_a_soft_seal_shuts_both_pavements_to_walkers_only(t)
 	_test_the_doorstep_street_is_not_shut_by_its_own_hold(t)
 	_test_only_cars_go_over_the_bridge(t)
@@ -101,6 +111,52 @@ func _test_walkers_follow_the_selected_presentation(t) -> void:
 			t.check(not agent.has_node("ModularWalker"),
 				"car retains its legacy presentation")
 	t.check(walkers > 0 and cars > 0, "walker presentation invariant covers both live kinds")
+
+## M110: the three answers a walker may be given at a region door come out of the placement draw in
+## the fractions `Tuning` pins.
+##
+## Asserted against the constants rather than against literals — this is "the draw honours the
+## fractions", not "the fractions are 0.125 and 0.25" — and over a sweep of days rather than one
+## morning, because the question is about the draw and not about any one day's crowd. The sample is
+## every walker four days put on the streets, which is several hundred: the tolerance below is wide
+## enough that a correct draw cannot fail it by luck and narrow enough that swapping two of the
+## three answers cannot pass.
+const DOOR_ANSWER_TOLERANCE := 0.05
+
+func _test_a_walker_draws_its_own_answer_at_a_door(t) -> void:
+	var counts := {
+		CrowdAgent.DoorAnswer.HELD: 0,
+		CrowdAgent.DoorAnswer.PASSES: 0,
+		CrowdAgent.DoorAnswer.TURNS_BACK: 0,
+	}
+	var walkers := 0
+	var cars_with_an_answer := 0
+	for day in [1, 2, 5, 9]:
+		_city.crowd.start_day(day, _rng(day))
+		for agent: CrowdAgent in _city.crowd.agents():
+			if agent.kind != CrowdAgent.Kind.WALKER:
+				if agent._door_answer != CrowdAgent.DoorAnswer.HELD:
+					cars_with_an_answer += 1
+				continue
+			walkers += 1
+			counts[agent._door_answer] += 1
+	t.check(walkers > 300, "there were walkers to ask (%d)" % walkers)
+	var passing := float(counts[CrowdAgent.DoorAnswer.PASSES]) / float(maxi(1, walkers))
+	var turning := float(counts[CrowdAgent.DoorAnswer.TURNS_BACK]) / float(maxi(1, walkers))
+	var held := float(counts[CrowdAgent.DoorAnswer.HELD]) / float(maxi(1, walkers))
+	t.check(absf(passing - Tuning.WALKER_DOOR_PASS_FRACTION) < DOOR_ANSWER_TOLERANCE,
+			"about WALKER_DOOR_PASS_FRACTION of walkers walk through a door (%.3f vs %.3f)"
+			% [passing, Tuning.WALKER_DOOR_PASS_FRACTION])
+	t.check(absf(turning - Tuning.WALKER_DOOR_TURN_BACK_FRACTION) < DOOR_ANSWER_TOLERANCE,
+			"about WALKER_DOOR_TURN_BACK_FRACTION of them turn back (%.3f vs %.3f)"
+			% [turning, Tuning.WALKER_DOOR_TURN_BACK_FRACTION])
+	t.check(absf(held - (1.0 - Tuning.WALKER_DOOR_PASS_FRACTION
+			- Tuning.WALKER_DOOR_TURN_BACK_FRACTION)) < DOOR_ANSWER_TOLERANCE,
+			"and everybody else is held (%.3f)" % held)
+	# A car's own answer is never drawn — the boom is what stops a car, and a car that spent a
+	# number here would turn differently at every junction it has ever turned at.
+	t.check(cars_with_an_answer == 0,
+			"no car carries a door answer (%d did)" % cars_with_an_answer)
 
 ## The point of the number, not the number: from act III there is nobody left going out, and
 ## the city becomes an easier place to put a baby to sleep. If that ever inverts, the horror
@@ -1463,9 +1519,304 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 			"a walker is not turned away from today's region door")
 	t.check(not car._cannot_go_on(vertical, door_tile),
 			"and neither is a car — it brakes and queues for the gate instead of diverting")
+	# And the carve-out is the walker's own rather than the day's: one whose answer at a door is to
+	# turn back sees the same tile as wall, which is the whole of turning back — the machinery that
+	# turns it at the last junction is the one a wall already uses.
+	var turner := CrowdAgent.new()
+	turner.kind = CrowdAgent.Kind.WALKER
+	turner._map = map
+	turner.door_segments = {door_segment.key(): true}
+	turner._door_answer = CrowdAgent.DoorAnswer.TURNS_BACK
+	t.check(turner._cannot_go_on(vertical, door_tile),
+			"a walker that turns back at doors reads today's door as wall")
+	turner.free()
 	walker.free()
 	car.free()
 	city.free()
+
+## A city, a day whose region wall has an open door in it, and an **empty** crowd centred on that
+## door's mouth — the rig the walker-at-a-door tests below drive.
+##
+## Emptied on purpose. The day's own two hundred walkers are exactly what makes a queue at a door
+## unrepeatable, and every property here is about *which* walker is let in and *when*; the agents
+## put back are placed by hand, one at a time, on the lane the hut stands beside. `start_day` still
+## runs first, because that is what builds the day's huts out of the region plan.
+func _open_a_door_day(t) -> Dictionary:
+	var map := CityGenerator.generate(SEED)
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(map)
+	var door: StreetNetwork.Segment = null
+	var used_day := -1
+	for day in range(Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
+		var state := CityState.new()
+		state.begin_day(map.block_plans, day)
+		var closures_rng := RandomNumberGenerator.new()
+		closures_rng.seed = hash("crowd-door-closures:%d:%d" % [SEED, day])
+		city.start_day(state, day, closures_rng)
+		var events_rng := RandomNumberGenerator.new()
+		events_rng.seed = hash("crowd-door-events:%d:%d" % [SEED, day])
+		var consumed: Array[String] = []
+		city.events.start_day(day, events_rng, consumed)
+		if not city.region_plan().doors.is_empty():
+			door = city.region_plan().doors[0]
+			used_day = day
+			break
+	t.check(door != null, "a sampled day carries a region door for the crowd to cross")
+	if not door:
+		city.free()
+		return {}
+	var default_at_a := RegionPlanner.region_of_junction(map, door.a) \
+			< RegionPlanner.region_of_junction(map, door.b)
+	var at_a: bool = map.boundary_wall_at_a.get(door.key(), default_at_a)
+	var mouth := map.tile_rect_to_world(door.mouth_rect(at_a))
+	city.crowd.start_day(used_day, _rng(used_day), mouth.get_center())
+	city.crowd.set_gates(city.region_plan().gates)
+	city.crowd.clear()
+
+	var vertical := not door.horizontal
+	var huts: Array[WalkerDoorHold] = []
+	for hold: WalkerDoorHold in city.crowd._door_holds:
+		if not mouth.has_point(hold.position):
+			continue
+		var across: float = hold.position.x if vertical else hold.position.y
+		if CityMap.is_road_offset(
+				CityMap.corridor_offset(floori(across / float(Tuning.TILE_SIZE)))):
+			continue    # the boom over the roadway, which is the cars' own
+		huts.append(hold)
+	t.check(huts.size() == 2, "the door stands a hut on each of its two sidewalks (%d)"
+			% huts.size())
+	return {"city": city, "map": map, "day": used_day, "door": door, "at_a": at_a,
+			"vertical": vertical, "mouth": mouth, "huts": huts}
+
+## Puts a walker on the sidewalk lane `hut` stands beside, `back` px short of it and walking at it,
+## with the answer it is to have at the door. Added to the day's own (emptied) crowd, so
+## `Crowd.step()` walks it exactly as it walks anybody.
+func _walker_approaching(scene: Dictionary, hut: WalkerDoorHold, back: float,
+		answer: int) -> CrowdAgent:
+	var city: City = scene["city"]
+	var map: CityMap = scene["map"]
+	var vertical: bool = scene["vertical"]
+	var hut_across: float = hut.position.x if vertical else hut.position.y
+	var hut_along: float = hut.position.y if vertical else hut.position.x
+	var corridor := CrowdLanes.corridor_at(hut_across)
+	var lane := CrowdLanes.nearest_sidewalk(corridor, hut_across)
+	# Toward the mouth from inside the door's own segment, whichever end the mouth is at.
+	var direction := -1.0 if scene["at_a"] else 1.0
+	var agent := CrowdAgent.new()
+	agent.door_segments = city.crowd._door_segments
+	agent.setup(CrowdAgent.Kind.WALKER, map, city.crowd.field(), 1, 0.0)
+	agent._door_answer = answer
+	agent._vertical = vertical
+	agent._corridor = corridor
+	agent._lane = lane
+	agent._direction = direction
+	agent._lane_centre = CrowdLanes.walker_lane_centre(corridor, lane,
+			CrowdLanes.SIDEWALK_OFFSETS)
+	agent._speed = 60.0
+	agent._cruise = 60.0
+	agent._set_along(hut_along - direction * back)
+	agent._set_cross(agent._lane_centre)
+	agent._junction = -1
+	agent._scan_at = Vector2i(-9999, -9999)
+	city.add_entity(agent)
+	city.crowd._agents.append(agent)
+	return agent
+
+## How far past a hut a walker has got, along its own line of travel: negative while it is still
+## coming, positive once it is through.
+func _past_the_hut(agent: CrowdAgent, hut: WalkerDoorHold) -> float:
+	return (agent.global_position - hut.position).dot(agent.heading())
+
+## M110, the last item: a walker held at a door goes through the player's four states in order —
+## *("walking -> waiting -> inspection -> emerging on the other side (with cooldown to not go back
+## again) -> walking")* — the hut is occupied exactly while it is inside, and a walker whose answer
+## is to walk through does not stop at all.
+func _test_a_walker_is_held_at_a_door_in_four_states(t, scene: Dictionary) -> void:
+	if scene.is_empty():
+		return
+	var city: City = scene["city"]
+	city.crowd.clear()
+	var hut: WalkerDoorHold = scene["huts"][0]
+	var walker := _walker_approaching(scene, hut, 160.0, CrowdAgent.DoorAnswer.HELD)
+
+	var seen: Array[int] = [walker._door_state]
+	var occupied_off_inspection := 0
+	var drawn_during_inspection := 0
+	var waited_at := INF
+	for frame in int(round(8.0 / STEP)):
+		city.crowd.step(STEP)
+		var inspecting := walker._door_state == CrowdAgent.DoorState.INSPECTION
+		if (hut.inside == walker) != inspecting:
+			occupied_off_inspection += 1
+		if inspecting and walker.visible:
+			drawn_during_inspection += 1
+		if walker._door_state == CrowdAgent.DoorState.WAITING and walker.velocity().is_zero_approx():
+			waited_at = minf(waited_at, -_past_the_hut(walker, hut))
+		if walker._door_state != seen[seen.size() - 1]:
+			seen.append(walker._door_state)
+	t.check(seen == [CrowdAgent.DoorState.WALKING, CrowdAgent.DoorState.WAITING,
+			CrowdAgent.DoorState.INSPECTION, CrowdAgent.DoorState.EMERGING,
+			CrowdAgent.DoorState.WALKING],
+			"a held walker goes walking, waiting, inspection, emerging, walking (got %s)" % [seen])
+	t.check(occupied_off_inspection == 0,
+			"the hut is occupied exactly while somebody is being inspected in it (%d frames it "
+			% occupied_off_inspection + "was not)")
+	t.check(drawn_during_inspection == 0,
+			"and nobody is drawn while they are inside it (%d frames somebody was)"
+			% drawn_during_inspection)
+	# Beside the hut rather than inside its footprint, and short of the body that would otherwise
+	# stop her — a frame of travel either side of the distance it aims at.
+	t.check(absf(waited_at - Tuning.WALKER_DOOR_STOP_DISTANCE) < 4.0,
+			"it stops short of the hut's own body (%.1fpx against %.1f)"
+			% [waited_at, Tuning.WALKER_DOOR_STOP_DISTANCE])
+	t.check(_past_the_hut(walker, hut) > 0.0,
+			"and it comes out on the far side of the door (%.1fpx)" % _past_the_hut(walker, hut))
+	t.check(hut.inside == null and hut.waiting() == 0,
+			"the hut is free again once it has let somebody through")
+
+	# The cooldown: the same hut may not take it again until it has actually left the hut's area,
+	# which is why the flag is cleared by distance rather than by a clock.
+	var held_again := _walker_approaching(scene, hut, 0.0, CrowdAgent.DoorAnswer.HELD)
+	held_again._door_state = CrowdAgent.DoorState.EMERGING
+	held_again._door_hold = hut
+	held_again._set_along(held_again._along() + Tuning.WALKER_DOOR_STOP_DISTANCE
+			* held_again._direction)
+	city.crowd.step(STEP)
+	t.check(held_again._door_state == CrowdAgent.DoorState.EMERGING and hut.inside == null,
+			"a walker that has just come out is not taken again while it is still at the door")
+	for frame in int(round(4.0 / STEP)):
+		city.crowd.step(STEP)
+	t.check(held_again._door_hold == null,
+			"and it is only clear of that door once it has left the hut's area")
+
+	# And the answer the player asked to keep: a small fraction walk through as they always did.
+	var passing := _walker_approaching(scene, hut, 160.0, CrowdAgent.DoorAnswer.PASSES)
+	var stopped := 0
+	for frame in int(round(5.0 / STEP)):
+		city.crowd.step(STEP)
+		if passing._door_state != CrowdAgent.DoorState.WALKING \
+				or passing.velocity().is_zero_approx():
+			stopped += 1
+	t.check(stopped == 0,
+			"a walker that walks through a door never stops at the hut (%d frames it did)"
+			% stopped)
+	t.check(_past_the_hut(passing, hut) > 0.0, "and it is through the door")
+
+## M110, the last item's own third clause: *"don't want a queue that is long"*. A door's line is
+## short **by construction** — one walker inside, `Tuning.WALKER_DOOR_QUEUE_MAX` standing behind it,
+## and the next walker to see the door turns away at the door rather than joining. The line is
+## asserted against the constant rather than against a count, so moving the cap moves the test with
+## it; what would fail is a line that grows past whatever the cap says.
+func _test_a_line_at_a_door_stays_short(t, scene: Dictionary) -> void:
+	if scene.is_empty():
+		return
+	var city: City = scene["city"]
+	city.crowd.clear()
+	var hut: WalkerDoorHold = scene["huts"][0]
+	# One at the hut, `WALKER_DOOR_QUEUE_MAX` behind it, and one more than the door will take.
+	var line: Array[CrowdAgent] = []
+	for i in Tuning.WALKER_DOOR_QUEUE_MAX + 2:
+		line.append(_walker_approaching(scene, hut, 60.0 + 40.0 * float(i),
+				CrowdAgent.DoorAnswer.HELD))
+	var turned_away: CrowdAgent = line[line.size() - 1]
+	var away_at_the_start := turned_away.global_position.distance_to(hut.position)
+	# Measured against the way it was **originally** pointing, because turning away reverses its
+	# heading: "how far past the door" read off the current heading flips sign the moment it turns
+	# round, and a walker that correctly went home would read as one that sailed through.
+	var approach := turned_away.heading()
+
+	var longest := 0
+	var ever_joined := false
+	var ever_refused := false
+	var crossed := false
+	var spacing_seen := 0
+	for frame in int(round(6.0 / STEP)):
+		city.crowd.step(STEP)
+		longest = maxi(longest, hut.committed())
+		if hut.place_of(turned_away) >= 0:
+			ever_joined = true
+		if turned_away._refused_hut == hut:
+			ever_refused = true
+		if (turned_away.global_position - hut.position).dot(approach) > 0.0:
+			crossed = true
+		# Two waiting behind somebody inside: the second of them stands one spacing further back
+		# than the first, which is what makes a line a line rather than a heap.
+		if hut.inside != null and hut.waiting() >= 2:
+			var first: CrowdAgent = hut.queue[0]
+			var second: CrowdAgent = hut.queue[1]
+			if first.velocity().is_zero_approx() and second.velocity().is_zero_approx():
+				var gap := absf(_past_the_hut(second, hut)) - absf(_past_the_hut(first, hut))
+				if absf(gap - Tuning.WALKER_DOOR_QUEUE_SPACING) < 6.0:
+					spacing_seen += 1
+	t.check(longest <= Tuning.WALKER_DOOR_QUEUE_MAX + 1,
+			"a door never holds more than one walker inside and WALKER_DOOR_QUEUE_MAX behind it "
+			+ "(the most it held was %d)" % longest)
+	t.check(longest == Tuning.WALKER_DOOR_QUEUE_MAX + 1,
+			"and it does fill up, so the cap above was actually asked about (%d)" % longest)
+	t.check(not ever_joined, "the walker the door has no room for never joins the line")
+	t.check(ever_refused, "it decides against that door rather than walking up to the queue")
+	t.check(not crossed, "and it never reaches the door, let alone crosses it")
+	t.check(turned_away.global_position.distance_to(hut.position) > away_at_the_start,
+			"it is walking away from the door by the end")
+	t.check(spacing_seen > 0,
+			"a second walker waits behind the first at a walker's spacing (%d frames)"
+			% spacing_seen)
+
+## The boom over the roadway is the cars' own and is untouched by any of the above: a car still
+## comes to a full stop at a lowered gate and the gate still raises for it once it has been stopped
+## for `Tuning.GATE_STOP_SECONDS`. *(2026-09-02, the player: "cars need to slow down to a full stop
+## before the gate opens and they can go ahead again.")*
+func _test_a_car_still_stops_for_the_boom(t, scene: Dictionary) -> void:
+	if scene.is_empty():
+		return
+	var city: City = scene["city"]
+	city.crowd.clear()
+	var map: CityMap = scene["map"]
+	var vertical: bool = scene["vertical"]
+	var gate: RegionPlanner.GateState = city.region_plan().gates[0]
+	var gate_across: float = gate.position.x if vertical else gate.position.y
+	var gate_along: float = gate.position.y if vertical else gate.position.x
+	var corridor := CrowdLanes.corridor_at(gate_across)
+	var direction := -1.0 if scene["at_a"] else 1.0
+	var lane := CrowdLanes.road_lane(vertical, direction)
+	var car := CrowdAgent.new()
+	car.door_segments = city.crowd._door_segments
+	car.traffic = city.crowd.traffic()
+	car.setup(CrowdAgent.Kind.CAR, map, city.crowd.field(), 7, 0.0)
+	car._vertical = vertical
+	car._corridor = corridor
+	car._lane = lane
+	car._direction = direction
+	car._lane_centre = CrowdLanes.lane_centre(corridor, lane)
+	car._speed = Tuning.CAR_SPEED.x
+	car._cruise = Tuning.CAR_SPEED.x
+	car._set_along(gate_along - direction * 180.0)
+	car._set_cross(car._lane_centre)
+	car._junction = -1
+	car._scan_at = Vector2i(-9999, -9999)
+	city.add_entity(car)
+	city.crowd._agents.append(car)
+
+	# Watched against the moment the boom first goes up rather than against its state at the end:
+	# it comes back down behind a car that has gone through (`Crowd._stop_for_gates()` keeps it up
+	# only while somebody is within a car's length of it), so the final state of a gate says
+	# nothing about whether it ever opened.
+	var came_to_a_stop := false
+	var ever_raised := false
+	var crossed_before_it_raised := false
+	for frame in int(round(8.0 / STEP)):
+		city.crowd.step(STEP)
+		if gate.raised:
+			ever_raised = true
+			continue
+		if car.speed() < Tuning.CAR_STOPPED_SPEED and car.gate_hold < INF:
+			came_to_a_stop = true
+		if not ever_raised and (car.global_position - gate.position).dot(car.heading()) > 0.0:
+			crossed_before_it_raised = true
+	t.check(came_to_a_stop, "a car comes to a full stop at a lowered boom")
+	t.check(ever_raised, "and the boom then raises for it")
+	t.check(not crossed_before_it_raised, "and nothing drives under a boom that is still down")
 
 ## M110, item 3: a soft seal takes both pavements from the walkers and leaves the carriageway to
 ## the cars. `SealPlanner.plan_day` is driven directly here, off a real tree, since

@@ -15,6 +15,29 @@ extends Node2D
 
 enum Kind { WALKER, CAR }
 
+## What this walker does when the street it is on crosses a region wall at a door — drawn once, in
+## `_draw_the_door_answer()`, at the moment it is placed. *(Playtest 58: "Held at the hut like her";
+## "a small fraction can do that"; "others can turn back".)*
+##
+## **Drawn at placement rather than at the door**, so a walker's answer cannot change halfway down
+## the street it is walking: a person who turns back at the sight of a checkpoint decided that
+## before they got there, and one who is rolled again every frame would dither on the pavement.
+## Cars have no answer here — a car queues for the boom, which is `Crowd._stop_for_gates()`.
+enum DoorAnswer { HELD, PASSES, TURNS_BACK }
+
+## Where a held walker is in its crossing of a door — the player's own four states, *("four states
+## walking -> waiting -> inspection -> emerging on the other side (with cooldown to not go back
+## again) -> walking")*. Everything but `WALKING` belongs to one particular hut, the one in
+## `_door_hold`.
+##
+## - **WALKING** — on its way, or not crossing a door at all. Every car is permanently here.
+## - **WAITING** — stopped on its own lane beside the hut, in its last facing, the way a stopped
+##   walker already stands. It shuffles forward as the line in front of it goes in.
+## - **INSPECTION** — inside the hut and not drawn, for `Tuning.WALKER_DOOR_HOLD_SECONDS`.
+## - **EMERGING** — back on the far side of the door and walking again, but carrying the cooldown
+##   that keeps the same hut from taking it a second time until it has left the hut's area.
+enum DoorState { WALKING, WAITING, INSPECTION, EMERGING }
+
 ## The walker's five authored views, keyed by name rather than by sector — `WALKER_VIEW_BY_SECTOR`
 ## below does the sector-to-view lookup, so drawing never repeats an eight-way if-chain of its
 ## own to get here. All five share one 18x38 canvas and one (9, 38) feet anchor (see
@@ -138,7 +161,7 @@ var traffic: TrafficIndex
 ## does not make on its own: a wall segment and a hard seal's segment are shut outright, but a
 ## door is a crossing the day's structure means to keep open — a car brakes and queues for the
 ## gate (`Crowd._stop_for_gates()`) rather than being turned away at the last junction, and a
-## walker passes the hut the way she does.
+## walker crosses unless its own `DoorAnswer` is to turn back.
 var door_segments := {}
 
 ## The segments bordering the home block, the second carve-out `is_held_at` cannot make on its
@@ -191,6 +214,37 @@ var player_at := Vector2.INF
 
 func set_player_at(at: Vector2) -> void:
 	player_at = at
+
+## This walker's own answer at a door, from `DoorAnswer` — see that enum for why it is drawn once
+## per placement. Always `HELD` for a car, which never reads it.
+var _door_answer := DoorAnswer.HELD
+
+## The checkpoint hut standing in front of this walker right now, or `null` for none — written once
+## per frame by `Crowd._hold_walkers_at_doors()`, which owns the geometry, the same shape
+## `gate_hold` already is for a car. Null for a car, for an agent built by hand in a test, and on
+## every day before the region wall stands.
+var door_ahead: WalkerDoorHold = null
+
+## And how far along this walker's own line of travel that hut is, or `INF` for none. Written
+## beside `door_ahead` and only ever read together with it.
+var door_ahead_along := INF
+
+## Where this walker is in a crossing, from `DoorState`, and the hut it is doing it at. `_door_hold`
+## outlives the wait itself: it is what the cooldown is measured from while the walker is
+## `EMERGING`, and it is only let go once the walker is clear of the hut's own area.
+var _door_state := DoorState.WALKING
+var _door_hold: WalkerDoorHold = null
+## Seconds left of the inspection inside the hut.
+var _inspection_left := 0.0
+
+## The hut this walker has decided against because the line at it was already as long as a line is
+## allowed to get, and that door's own segment key — which is what `_segment_is_shut` reads, so a
+## refusal turns this walker away at the last junction exactly the way a wall does. Both are
+## dropped again once that hut is out of sight, since a later approach is a later decision.
+## `NO_DOOR` is "no refusal", and is a key no segment can have.
+const NO_DOOR := Vector3i(-9999, -9999, -9999)
+var _refused_hut: WalkerDoorHold = null
+var _refused_door_key := NO_DOOR
 
 var _map: CityMap
 ## Its own RNG, seeded from the day and its own index. Per-agent rather than shared so a
@@ -286,6 +340,7 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 	# as it takes to notice — but resetting it is free and keeps a placement deterministic for a
 	# given seed, the same reason `Stroller.reset_at()` zeroes `_walk_phase` for a new day.
 	_walker_gait_phase = 0.0
+	_draw_the_door_answer()
 	# Start somewhere along the field rather than at its edge, or the whole crowd arrives from
 	# one side in a wave on the first morning. Re-rolled if it lands somewhere it could not have
 	# walked to: behind a barrier, which reads as the barrier being fake, or in the middle of a
@@ -322,6 +377,27 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 		axis_roll = _rng.randf()
 	_settle_junction()
 	colour = _colour()
+
+## Rolls what this walker does at a region door, off its own RNG stream so a seed reproduces a
+## day's crowd answer for answer.
+##
+## **Drawn before the position is, and that ordering is load-bearing.** `_stands_on_a_street()`
+## refuses to place anybody on ground they treat as shut, and a walker that turns back at doors
+## treats a door's whole segment as shut — so an answer drawn *after* the placement loop can land
+## somebody inside a street they will not walk, where they pace between its two ends for the rest of
+## the day. That is the exact trap the refusal exists to prevent; a car does not draw at all, since
+## the boom is `Crowd._stop_for_gates()`'s business and a car spending a number here would turn
+## differently at every junction it has ever turned at correctly.
+func _draw_the_door_answer() -> void:
+	if kind != Kind.WALKER:
+		return
+	var roll := _rng.randf()
+	if roll < Tuning.WALKER_DOOR_PASS_FRACTION:
+		_door_answer = DoorAnswer.PASSES
+	elif roll < Tuning.WALKER_DOOR_PASS_FRACTION + Tuning.WALKER_DOOR_TURN_BACK_FRACTION:
+		_door_answer = DoorAnswer.TURNS_BACK
+	else:
+		_door_answer = DoorAnswer.HELD
 
 ## Marks the junction this agent is standing in, if it is standing in one, so that it does not
 ## roll a turn on its very first frame.
@@ -369,12 +445,19 @@ func _stands_on_a_street() -> bool:
 ## today (`CityMap.is_held_at` — a hard seal's segment, a region wall, a closure, or the streets
 ## around the home block) and neither of the two carve-outs `held_segments` cannot make on its
 ## own. A region door is a crossing anybody may still enter — a car brakes and queues for the gate
-## rather than turning away, and a walker passes the hut. The home block's own bordering streets
-## are held only so no catalogue row lands there, never because a body stands across one — she
-## walks out onto one of them every morning, and the home is a notch with one exit, so sealing it
-## would seal her in. Both lists are empty outside a real day (a hand-built test agent, a rig with
-## no city, or before the wall itself stands), which is a harmless no-op: nothing is held then
-## either.
+## rather than turning away, and so does a walker unless its own answer is to turn back. The home
+## block's own bordering streets are held only so no catalogue row lands there, never because a body stands
+## across one — she walks out onto one of them every morning, and the home is a notch with one exit,
+## so sealing it would seal her in. Both lists are empty outside a real day (a hand-built test agent,
+## a rig with no city, or before the wall itself stands), which is a harmless no-op: nothing is held
+## then either.
+##
+## **The door's carve-out is per walker**, which is the one thing here that is not a fact about the
+## day: a walker whose own answer is `TURNS_BACK` gets no carve-out at all, so a door reads to it
+## exactly like the wall either side of it and it turns away at the last junction with the machinery
+## that already does that. Nothing else about turning back needs writing — and a walker that has
+## decided against one particular door's queue (`_refuse_the_door`) is the same sentence for one
+## segment rather than for all of them.
 func _segment_is_shut(tile: Vector2i) -> bool:
 	if not _map.is_held_at(tile):
 		return false
@@ -382,7 +465,173 @@ func _segment_is_shut(tile: Vector2i) -> bool:
 	if segment == null:
 		return true
 	var key := segment.key()
-	return not door_segments.has(key) and not home_segments.has(key)
+	if home_segments.has(key):
+		return false
+	if door_segments.has(key):
+		return _door_answer == DoorAnswer.TURNS_BACK or key == _refused_door_key
+	return true
+
+# -------------------------------------------------------- checkpoint doors ---
+# A walker crossing a region door is held at the hut on its own sidewalk the way she is, in the
+# player's own four states — *("four states walking -> waiting -> inspection -> emerging on the
+# other side (with cooldown to not go back again) -> walking")*. See `DoorState` for what each one
+# is and `Crowd._hold_walkers_at_doors()` for the geometry that feeds them.
+#
+# **None of this is her detention.** `EventInstance`/`EventManager` hide her, ease the camera onto
+# the door, charge her meter and teleport her out past the body's own `detain_radius`; a walker is
+# not the one being looked for and shares only the shape of the wait. What a hut is to the crowd is
+# `WalkerDoorHold` — a point, somebody inside, and a line — and nothing here reads a catalogue row.
+
+## One frame of this walker's own crossing. Called by `Crowd._hold_walkers_at_doors()` the moment
+## after it has written `door_ahead`/`door_ahead_along`, so a state is always decided on this
+## frame's geometry rather than on the previous one's.
+func advance_the_door_hold(delta: float) -> void:
+	match _door_state:
+		DoorState.INSPECTION:
+			_inspection_left -= delta
+			if _inspection_left <= 0.0:
+				_emerge_from_the_hut()
+		DoorState.EMERGING:
+			# The cooldown, and it is a *distance* rather than a clock on purpose: what it has to
+			# rule out is this walker being turned round by the crowd's own steering a few pixels
+			# past the door and inspected all over again, and how long that takes is not something
+			# a number of seconds can know.
+			if not _door_hold or global_position.distance_to(_door_hold.position) \
+					> Tuning.WALKER_DOOR_COOLDOWN_RADIUS:
+				_door_hold = null
+				_door_state = DoorState.WALKING
+		DoorState.WAITING:
+			if _door_hold != door_ahead:
+				# The hut is no longer in front of it: it turned off at the junction, was turned
+				# round by a barrier, or was moved. Standing in a queue for a door it is no longer
+				# walking to would hold that door's line shut against everybody behind it.
+				_let_go_of_the_hut()
+			elif _door_hold.admit(self):
+				_enter_the_hut()
+		DoorState.WALKING:
+			_consider_the_hut_ahead()
+
+## The walking state's own decision: commit to the hut in front, and stop once this walker has
+## reached its own place in the line.
+##
+## **It joins the line at first sight, seven tiles off**, rather than on arrival at the hut. That
+## is where the lookahead sees a shut street too, and it is the only place a walker can still
+## decide against a door and turn at a junction — walking up to a full line and then about-facing
+## on the sidewalk is not a move a walker has.
+func _consider_the_hut_ahead() -> void:
+	if _refused_hut and _refused_hut != door_ahead:
+		# Out of sight of the door it turned away from — a fresh approach is a fresh decision.
+		_forget_the_refusal()
+	if _door_answer != DoorAnswer.HELD or door_ahead == null:
+		if _door_hold:
+			_let_go_of_the_hut()
+		return
+	if _refused_hut == door_ahead:
+		return
+	if _door_hold != door_ahead:
+		_let_go_of_the_hut()
+		if door_ahead.committed() > Tuning.WALKER_DOOR_QUEUE_MAX:
+			_refuse_the_door(door_ahead)
+			return
+		_door_hold = door_ahead
+		_door_hold.join(self)
+	if door_ahead_along <= _door_stop_distance():
+		_door_state = DoorState.WAITING
+
+## Decides against a door whose line is already as long as it is allowed to get — the player's
+## *"don't want a queue that is long"* — and does it by shutting that door's own **segment** to this
+## walker, which is exactly what turning back at a door already means (`_segment_is_shut`).
+##
+## **Nothing here waits at the hut and then gives up.** The decision is taken where the lookahead
+## first sees the door and the turn is the one a wall gets, so the ordinary case is a walker that
+## takes the junction rather than one that walks up to a queue and about-faces on the sidewalk.
+## Where there is no junction left between it and the door — it is already inside the door's own
+## street, because seven tiles is all anybody in the crowd sees a wall from either — it turns round
+## where it stands, immediately rather than at the hut, the same move a cul-de-sac gets.
+func _refuse_the_door(hold: WalkerDoorHold) -> void:
+	_refused_hut = hold
+	_refused_door_key = NO_DOOR
+	var segment := StreetNetwork.segment_containing(_map.world_to_tile(hold.position))
+	if segment:
+		_refused_door_key = segment.key()
+	# The lookahead is cached per tile and was worked out before this walker decided anything.
+	_scan_at = Vector2i(-9999, -9999)
+
+func _forget_the_refusal() -> void:
+	_refused_hut = null
+	_refused_door_key = NO_DOOR
+	_scan_at = Vector2i(-9999, -9999)
+
+## Where this walker stops short of the hut, in px along its own line of travel: beside the hut if
+## it is at the front of the line, and one spacing further back for everybody behind it. Recomputed
+## every frame rather than fixed on arrival, which is what makes a line *shuffle forward* when the
+## walker at the front is let in.
+func _door_stop_distance() -> float:
+	var place := _door_hold.place_of(self) if _door_hold else 0
+	return Tuning.WALKER_DOOR_STOP_DISTANCE \
+			+ float(maxi(0, place)) * Tuning.WALKER_DOOR_QUEUE_SPACING
+
+## Inside, and not drawn. **Standing on the hut's own ground point rather than hidden where it
+## stopped**: the hut's solid body keeps her further from that point than a contact can ever fire
+## from, so a walker in there cannot be walked into by somebody who cannot see it. It goes on
+## making its ordinary noise, the way her own meters keep running while she is inside — the body is
+## still there whether or not the player can see it.
+func _enter_the_hut() -> void:
+	_door_state = DoorState.INSPECTION
+	_inspection_left = Tuning.WALKER_DOOR_HOLD_SECONDS
+	visible = false
+	_set_along(_door_hold.position.y if _vertical else _door_hold.position.x)
+	_set_cross(_door_hold.position.x if _vertical else _door_hold.position.y)
+
+## Out again on the far side of the door, back on its own lane, just past the hut's body — the same
+## `WALKER_DOOR_STOP_DISTANCE` it waited at on the way in, so the two sides of a door are
+## symmetric. It keeps hold of the hut for the cooldown; `EMERGING` above is what lets go.
+func _emerge_from_the_hut() -> void:
+	_inspection_left = 0.0
+	visible = true
+	_door_state = DoorState.EMERGING
+	if not _door_hold:
+		_door_state = DoorState.WALKING
+		return
+	_door_hold.release(self)
+	var door_along: float = _door_hold.position.y if _vertical else _door_hold.position.x
+	_set_along(door_along + Tuning.WALKER_DOOR_STOP_DISTANCE * _direction)
+	_set_cross(_lane_centre)
+	# The lookahead is a cached answer about the tile it was standing on, and it is not standing
+	# there any more.
+	_scan_at = Vector2i(-9999, -9999)
+	door_ahead = null
+	door_ahead_along = INF
+
+## Gives up whatever claim this walker has on a hut and goes back to walking. **Every way a walker
+## can stop being where it was goes through here** — recycling at the edge of the field, being
+## streamed out, turning away — because a hut left occupied by somebody who no longer exists never
+## takes anybody again, and nothing about a walker that has gone would say so.
+func _let_go_of_the_hut() -> void:
+	if _door_hold:
+		_door_hold.release(self)
+	_door_hold = null
+	_door_state = DoorState.WALKING
+	_inspection_left = 0.0
+	visible = true
+
+## How fast this walker is going as a fraction of its own pace while a door has hold of it: nothing
+## at all inside the hut or standing in its line, and its ordinary speed otherwise.
+##
+## A factor beside `_yield_factor()` rather than a write to `_speed`, for the reason that one is:
+## nothing has to remember what the speed used to be, and a walker asked to stand still for a
+## second does not ratchet itself to a standstill it never recovers from.
+func _hold_factor() -> float:
+	if _door_state == DoorState.INSPECTION:
+		return 0.0
+	if _door_state == DoorState.WAITING and door_ahead_along <= _door_stop_distance():
+		return 0.0
+	return 1.0
+
+## True while this walker is being held at a door and is not walking anywhere — read by `_process`,
+## which has nothing to steer, look ahead for or turn at a junction while it is inside a hut.
+func _is_inside_a_hut() -> bool:
+	return _door_state == DoorState.INSPECTION
 
 func _process(delta: float) -> void:
 	_clock += delta
@@ -404,7 +653,16 @@ func _process(delta: float) -> void:
 			_claim_the_turn()
 			_redraw_if_the_picture_changed()
 			return
-	_set_along(_along() + _speed * _yield_factor() * _direction * delta)
+	# Inside a checkpoint hut there is no lane to steer to, no junction to turn at and no way ahead
+	# to look down — but the crowd's field still moves with the player, so a walker held at a door
+	# she has walked away from still has to be recycled like anybody else. That is the whole of what
+	# happens to it this frame. See `DoorState`.
+	if _is_inside_a_hut():
+		if _has_left_the_field():
+			_recycle()
+		_redraw_if_the_picture_changed()
+		return
+	_set_along(_along() + _speed * _yield_factor() * _hold_factor() * _direction * delta)
 	_set_cross(move_toward(_cross(), _lane_centre + _detour, STEER_SPEED * delta))
 	if kind == Kind.WALKER:
 		_consider_turning()
@@ -614,8 +872,13 @@ func speed() -> float:
 	return _speed
 
 ## How fast and which way it is actually travelling, for anything predicting where it will be.
+##
+## **A walker held at a checkpoint is travelling at nothing**, which is what makes the stopped pose
+## come out right for free: `_walker_gait_frame()` and `_update_walker_view()` both read this, so a
+## walker standing in a door's line holds its last facing and frame a the way every stopped walker
+## in the crowd already does, and its own field stops being stretched forward by `field_scale()`.
 func velocity() -> Vector2:
-	return heading() * _speed * _yield_factor()
+	return heading() * _speed * _yield_factor() * _hold_factor()
 
 ## True while travelling along a vertical corridor. What decides whether two cars at the same
 ## junction are crossing each other's path or merely queueing behind one another.
@@ -1131,7 +1394,8 @@ func _cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	# same way a dead end's own wall does — `_segment_is_shut` is the fact `_look_ahead` sees from
 	# `LOOKAHEAD_TILES` off, so both walkers and cars turn away at the last junction rather than
 	# walking or driving through what they cannot see through. A region door is carved out of the
-	# same check: it is a crossing the day means to keep open, not a wall with a picture on it.
+	# same check for everybody but a walker that turns back at doors: it is a crossing the day means
+	# to keep open, not a wall with a picture on it.
 	if _segment_is_shut(tile):
 		return true
 	# A soft seal takes both pavements and leaves the carriageway to the cars — walkers only.
@@ -1755,6 +2019,16 @@ func _recycle() -> void:
 	# stale would be, and doing it anyway keeps a recycled walker's stride deterministic per seed.
 	if kind == Kind.WALKER:
 		_walker_gait_phase = 0.0
+	# Whatever door had hold of this walker is at the other end of the field now, and a hut left
+	# occupied by somebody who has been recycled out of it never lets anybody else in again. A
+	# refusal goes with it: this is a fresh person walking in from the edge of the box, and the door
+	# it decided against is nowhere near the street it is about to be standing on.
+	_let_go_of_the_hut()
+	_forget_the_refusal()
+	# A recycled agent is a fresh person walking in from the edge of the box, so it draws a fresh
+	# answer — and draws it here, before the rolls below, for the reason `_draw_the_door_answer()`
+	# gives: the entry point is checked against ground this walker may actually walk.
+	_draw_the_door_answer()
 	for _attempt in 6:
 		_choose_lane(_rng.randf())
 		var bounds := field.along_bounds(_vertical)

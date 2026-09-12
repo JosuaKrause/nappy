@@ -778,6 +778,74 @@ const CAR_OUTER_RADIUS := 104.0
 ## junction. High enough that the crowd churns, low enough that streets still have flow.
 const PEDESTRIAN_TURN_CHANCE := 0.35
 
+# ------------------------------------------------- walkers at a region door ---
+# What a walker does when its street crosses a region wall at a door. *(Playtest 58: "walkers walk
+# through checkpoints..."; asked which rule they get, "Held at the hut like her"; then "a small
+# fraction can do that"; "others can turn back"; "don't want a queue that is long".)* The answer is
+# drawn once per walker, when it is placed, so a walker's answer at a door can never change halfway
+# down the street it is walking.
+
+## Of every walker placed, the fraction that walks through a door's hut without stopping — the
+## player's *"a small fraction can do that"*, one in eight. Small enough that walking through reads
+## as the exception rather than as the rule the hold is an exception to.
+const WALKER_DOOR_PASS_FRACTION := 0.125
+
+## And the fraction that turns back at the last junction instead, the way every walker turns away
+## from a wall — the player's *"others can turn back"*, one in four. Larger than the pass fraction
+## on purpose: a door that only ever collects people is a door with a permanent crowd at it, and
+## somebody who decides against the queue and goes another way is the cheapest thing there is to
+## read from a block away. Held is whatever is left, so these two must sum to under 1.0 —
+## `validate_traffic()` says so on boot.
+const WALKER_DOOR_TURN_BACK_FRACTION := 0.25
+
+## Seconds a held walker spends inside the hut, not drawn — the player's *inspection*. Shorter than
+## her own `CHECKPOINT_DETAIN_SECONDS` (2s) on purpose and for the reason that number is itself
+## short: a walker is not the one being looked for, so the guard has less to do. One second is the
+## recommendation rather than a number the player gave, and the relationship is what matters — a
+## walker's hold under hers, so a player watching a door sees the crowd cycle through it faster
+## than she is ever let through it herself.
+const WALKER_DOOR_HOLD_SECONDS := 1.0
+
+## How far short of a hut's own ground point the first walker in the line stops, in px. The hut's
+## solid body is `GroundShape.point(32.0)` and a walker's own is a 7px point, so 40 is the first
+## round number clear of the two of them touching — it stands beside the hut rather than inside its
+## footprint, which is what the frame reads as *waiting to be seen* rather than as *stuck on a
+## building*. It is also where a walker is put back down on the far side when it comes out, so the
+## two sides of a door are symmetric.
+const WALKER_DOOR_STOP_DISTANCE := 40.0
+
+## And how much further back each walker behind the first one stands. Comfortably over
+## `BUMP_RADIUS` (14px, where a crowd contact fires), so a line at a door is people standing near
+## each other rather than people standing inside each other — the separation between crowd bodies
+## is positional everywhere else in this file, and a queue placed at a spacing smaller than a body
+## would be asking a brake to open a gap that is not there.
+const WALKER_DOOR_QUEUE_SPACING := 26.0
+
+## How far a walker has to get from a hut before that hut may take it again, in px. *(Playtest 58,
+## on her own release: "it should work that she has a flag 'just spawned' that only resets once she
+## leaves the area.")* A walker comes out `WALKER_DOOR_STOP_DISTANCE` (40px) along its own lane and
+## some 24px across from the hut's centre line — about 47px away — so anything at or under that
+## would clear the moment it was set and buy nothing. Three tiles is comfortably past the whole
+## door structure, so a walker turned round by the crowd's own steering just past a door walks on
+## instead of being inspected a second time.
+const WALKER_DOOR_COOLDOWN_RADIUS := 96.0
+
+## The longest line a door is allowed to grow behind the walker inside it — the player's *"don't
+## want a queue that is long"*. Two is the recommendation rather than a number they gave, so a door
+## holds three people at the very most: one inside and two waiting. Anybody who first sees the door
+## while it is that busy turns back at the last junction instead of joining, so the line is short
+## **by construction** and never by a walker giving up once it is standing in one.
+const WALKER_DOOR_QUEUE_MAX := 2
+
+## How far to either side of its own line of travel a walker will look for a hut, in px. A tile: a
+## walker's lane sits exactly 24px across from the hut on its own sidewalk (the hut is on the
+## sidewalk band's centre line, the two walker lanes are `CrowdLanes.SIDEWALK_LANE_SPREAD` either
+## side of their tile centres), and the boom over the road is 64px further still — so a tile picks
+## out the hut on the walker's own sidewalk and nothing else. The car's own equivalent is
+## `GATE_LANE_TOLERANCE`, which is wide where this is narrow, because a carriageway is one lane of
+## traffic and a sidewalk has a door structure standing across it.
+const WALKER_DOOR_LANE_TOLERANCE := 32.0
+
 # ------------------------------------------------------- bodies on the street ---
 # A crowd you can walk through is a field with a picture attached: every pavement is identical, none
 # of them can hurt you, and the route is not a decision. See docs/MECHANICS.md, "The street has
@@ -1589,6 +1657,13 @@ func validate_traffic() -> bool:
 	if CAR_HORN_TIME + 0.001 < required:
 		push_error("Unfair traffic: CAR_HORN_TIME %.2fs < required %.2fs (carriageway %.0fpx)"
 				% [CAR_HORN_TIME, required, carriageway_width()])
+		return false
+	# The three answers a walker may be given at a door are one draw of one number, so the two
+	# fractions have to leave something over — held is the remainder, and a remainder of nothing is
+	# a door nobody is ever held at with no error anywhere to say so.
+	if WALKER_DOOR_PASS_FRACTION + WALKER_DOOR_TURN_BACK_FRACTION >= 1.0:
+		push_error("No walker is ever held at a door: pass %.3f + turn back %.3f leaves nothing"
+				% [WALKER_DOOR_PASS_FRACTION, WALKER_DOOR_TURN_BACK_FRACTION])
 		return false
 	return true
 

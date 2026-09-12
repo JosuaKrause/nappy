@@ -174,6 +174,27 @@ that draws her, so nothing about them needs its own switch. The meters keep runn
 sleepiness still drains at the idle rate and the hut's own field still charges the flat `Tuning.
 CHAT_EXCITEMENT`, because the baby is still there whether or not the player can see her.
 
+**The crowd is held at the same huts, and none of it is her machinery.** *(Playtest 58: "walkers
+walk through checkpoints..."; asked which rule they get, "Held at the hut like her"; then "a small
+fraction can do that"; "others can turn back"; "don't want a queue that is long".)* A walker draws
+its answer once, when it is placed: one in eight walks through, one in four turns back at the last
+junction the way it does at a wall, and the rest are held. A held walker walks up to the hut on its
+own sidewalk, waits stopped beside it in its last facing behind whoever is already in the line,
+goes **inside** for `Tuning.WALKER_DOOR_HOLD_SECONDS` (1s, shorter than her own two, because a
+walker is not the one being looked for) and is not drawn, and comes out on the far side of the door
+on the same lane with a cooldown that keeps that hut from taking it again until it has left the
+hut's area — so the crowd's own steering turning it round just past a door cannot put it through a
+second inspection. One inside at a time, and **the line is short by construction**: a door holds
+one walker inside and `Tuning.WALKER_DOOR_QUEUE_MAX` (2) behind it, and the next walker to see it
+turns back at the last junction instead of joining. The decision is taken where the lookahead first
+sees the door — the same seven tiles the crowd sees a wall from — rather than at the hut, because a
+walker has no about-face to make once it is standing in a queue.
+
+It is the crowd's own state throughout — `Crowd._hold_walkers_at_doors()`, `WalkerDoorHold` and
+`CrowdAgent`'s four `DoorState`s, keyed on the hut body's ground point from the region plan. It
+reads no catalogue row: not `detain_radius`, which is the reach *she* is caught at, and none of the
+detention above, which teleports her, hides her, moves the camera and charges her meter.
+
 **The camera eases onto the door instead of following her**, and back again once she is released —
 `Stroller.focus_camera_on()`/`release_camera_focus()`, a smooth-stepped ease over `Tuning.
 CAMERA_EASE_SECONDS` rather than a cut or the ordinary per-frame walking follow. This is the one
@@ -466,9 +487,12 @@ way to the traffic.** `CrowdAgent._cannot_go_on` treats a tile on a held segment
 ground, or a region wall's) exactly like a closed one: both walkers and cars turn off at the last
 junction rather than driving into a barrier they have no physics against. A soft seal takes only
 the pavements, so a car still crosses it while a walker turns away — the street reads quiet on
-foot and ordinary on the road. A region door is carved out of the same check entirely: a car
-brakes and queues for the gate the way it already does at a red light or a zebra, and a walker
-passes the hut.
+foot and ordinary on the road. A region door is carved out of the same check for whoever it means
+to let through: a car brakes and queues for the gate the way it already does at a red light or a
+zebra, and so does a walker — unless the answer it drew when it was placed is to turn back, which
+one in four do, and the door then reads to that walker exactly like the wall either side of it. A
+walker that crosses is held at the hut on its own sidewalk, one at a time; see "A checkpoint"
+above.
 
 ## The world near you
 
