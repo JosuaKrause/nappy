@@ -33,29 +33,10 @@ its linked people, vehicle/animal and environment inventories. The source-art re
 pictures to their actual runtime consumers. The crowd walkers and the event people, animals and
 riders are bound, through the shared `EightDirection` selector every family below extends
 (`DECISIONS.md`, M108, the crowd walkers; M108, the event people); the gunman and the mouse stay on
-their single side picture by the choices recorded there. The walkers also stride (`DECISIONS.md`,
-M108, the walkers' stride).
-- [ ] **Every living thing that moves has a stride.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md):
-      "can we do a similar one to what the player does?", then "all living things should have
-      movement animation")* The mother and now the crowd walkers alternate two frames per view,
-      mid-stride and feet passing, from a walk phase advanced by their own speed (`DECISIONS.md`,
-      M108, the walkers' stride, for the frame-authoring rule that worked: the b frame changes only
-      the legs and shoes, and the coat and head hold still); every event person, the cat, the dogs,
-      the mouse and the cyclist are still one static picture per facing that slides, and the pigeons
-      already alternate two wing phases. **Now the event people and the animals**, one second frame
-      per view per family — the dog walker's person, the chatting mother walking, the pacing yeller,
-      the robber and guard lunging, the protester, the leaf blower, the van victim when led, the cat
-      running, the dog, the charging dog, the mouse, the cyclist's pedal — each as SVG first, a `_b`
-      file beside the existing source the way the walker frames were added, reviewed on a native and
-      3× sheet beside its a frame. Then the same alternation on each in `EventInstance`: phase
-      advanced by applied speed at the mother's rate, frame a at rest and while stopped, so a queue,
-      a give-way or a posted guard holds a standing pose; actor and held thing swap frames together.
-      **The café sitters get an idle animation** *(same day: "cafe sitters should have an idle
-      animation, too")* — a second seated frame, a lean or a raised cup, alternated slowly on a
-      timer rather than on a speed, since they never move. **The busker strums** *(same day:
-      "busker should have a two frame animation strumming the guitar")*: two frames, the strumming
-      hand up and down, on the same timer. Whether a standing guard shifts is the player's to say;
-      until then he keeps one frame
+their single side picture by the choices recorded there. Every living thing that moves strides,
+two frames per view (`DECISIONS.md`, M108, the walkers' stride; M108, the event strides), the
+café sitters lean and the busker strums on a timer; whether a standing guard shifts is the
+player's to say, and until then he keeps one frame.
 - [ ] **Cars bob on their wheels.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "cars
       could bop up and down while the wheels stay in the same place")* A moving car's body rises
       and falls about a pixel on a phase advanced by its speed, and its wheels stay on the ground.
