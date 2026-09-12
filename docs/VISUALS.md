@@ -11,6 +11,9 @@ five authored views, supplying eight directions through explicit east/west mirro
 sack, sack pile and five litter decals also use registered PNGs. The outdoor ground catalogue
 under `assets/tiles/` has matching PNGs, including its damage and directional marking variants;
 other families use SVGs.
+The logo, social card and exported stroller icon sizes use the comic identity mark, documented
+with their SVG source mappings in the
+[identity generation record](evidence/comic-identity-2026-09-12/GENERATION.md).
 Compare directions, gait frames and state variants together so the mother
 carrying the baby reads as the same woman pushing the stroller.
 
@@ -33,23 +36,20 @@ Keep the game's perspective and the SVG subject's identity.
 back to the SVG. Drawing transforms, animation timing, mirroring, ground anchors, sorting,
 collision and camera framing remain the existing game's responsibility.
 
-Each PNG matches the SVG's native dimensions and functional anchors. Registration preserves
+Each runtime replacement matches the SVG's native dimensions and functional anchors.
+Identity/export variants retain their documented source-derived canvas sizes. Registration preserves
 the redrawn artwork's real transparency rather than stamping the SVG's primitive silhouette
 over it. Opaque ground stays opaque; outlines, transparent gaps, internal placement and visual
 quality require inspection alongside dimension and anchor checks.
-Generation and extraction are documented in
-[the cardinal generation record](evidence/style-transfer-2026-09-10/GENERATION.md) and
-[the diagonal generation record](evidence/style-transfer-eight-directions-2026-09-10/GENERATION.md).
-The [carrying generation record](evidence/style-transfer-player-family-2026-09-12/GENERATION.md)
-preserves the shared source grid, existing-family identity reference and background correction;
-its native and enlarged comparisons show both mother states across every direction and frame.
-The [litter generation record](evidence/style-transfer-litter-2026-09-12/GENERATION.md) compares
-the sack variants' materials and preserves each upright prop or ground decal's source anchor.
+The [comic rig record](evidence/comic-rig-2026-09-12/GENERATION.md) documents generation and
+extraction for both mother states and every stroller view. Its native and enlarged comparisons
+cover every direction and gait frame; stature stays consistent across the family. Its assembly
+sheets approximate source placement and do not establish live hand-to-handle contact.
+The [comic prop record](evidence/comic-props-2026-09-12/GENERATION.md) preserves the redrawn
+garbage and litter, their generated silhouettes and reproducible anchor registration.
 The [tile generation record](evidence/style-transfer-tiles-2026-09-12/GENERATION.md) preserves
 the terrain sheets, source-pair manifest and native/repeated-neighbor comparisons. Ground tiles
 use fixed cell extraction because every pixel belongs to a filled tile, including its edges.
-The [eight-direction source comparison](evidence/style-transfer-eight-directions-2026-09-10/eight-directions-comparison.png)
-shows both formats at matching scale and ground offsets.
 
 ## Review
 

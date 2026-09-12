@@ -134,10 +134,6 @@ findings supported by the conversion and review.
       Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
-- [ ] Rework all previously generated textures into the references' comic drawing style,
-      including the pushing and carrying mother, stroller, garbage and litter. PLAYTEST-63
-      explicitly applies the correction to the complete generated catalogue. Audit earlier
-      families too; source pairing and registration do not establish the requested appearance.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The

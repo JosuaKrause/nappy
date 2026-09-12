@@ -207,6 +207,9 @@ The exact tracked SVGs outside the live and prepared tables are `assets/icon_str
 `assets/logo.svg`. Neither is loaded by the game or an export resource. They are editable identity
 art counterparts: the active application icon is root `icon.svg`, while the README displays
 `assets/logo.png` and the web metadata publishes `assets/social-card.png`.
+The [comic identity record](evidence/comic-identity-2026-09-12/GENERATION.md) maps these raster
+derivatives and both exported stroller icon sizes to their SVG sources. The social card is
+the logo flattened onto opaque white; the rounded slate icon plate remains part of the mark.
 
 ## PNG replacements
 
@@ -229,15 +232,16 @@ The live replacement family is `assets/illustrated/svg-transfer/rig/`: `mother_f
 east-authored partners. The carrying set adds
 `mother_carrying_{front,back}_{a,b}.png` (24×46) and
 `mother_carrying_{side,front_diagonal,back_diagonal}_{a,b}.png` (26×46), selected by the same
-resolver during the escape scene. All use bottom-center anchors and preserve native SVG alpha.
-The [carrying generation record](evidence/style-transfer-player-family-2026-09-12/GENERATION.md)
-documents the identity comparison against the pushing mother and reproducible registration.
+resolver during the escape scene. All use bottom-center anchors and retain their redrawn
+silhouettes and true transparency. The [comic rig record](evidence/comic-rig-2026-09-12/GENERATION.md)
+documents shared identity across both mother states, directions and frames, plus reproducible
+registration within the native canvases.
 
 `assets/illustrated/svg-transfer/props/` supplies `garbage_sack.png` (28×34) and
 `garbage_sacks_pile.png` (42×34), bottom-center anchored, plus `litter_{can,apple,bag,newspaper,cup}.png`
-(32×32), center anchored. These use the existing `Prop` and `CityDecals` drawing paths with exact
-source alpha. Their [generation record](evidence/style-transfer-litter-2026-09-12/GENERATION.md)
-preserves the shared material reference and reproducible extraction.
+(32×32), center anchored. These use the existing `Prop` and `CityDecals` drawing paths with
+the comic redraw's own alpha. Their [generation record](evidence/comic-props-2026-09-12/GENERATION.md)
+preserves shared material references and reproducible extraction and anchor registration.
 Unconverted families retain SVG textures.
 
 [VISUALS.md](VISUALS.md) defines reference authority and the visual acceptance gate.

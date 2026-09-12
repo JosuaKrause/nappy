@@ -52,3 +52,12 @@ SVG's interior drawing. Rework the outdoor family and compare the actual native-
 Apply this correction to the complete generated texture catalogue, including the mother in
 both states, the stroller, garbage and litter, as well as ground tiles. Audit prior families
 and rework their drawing; do not treat the correction as a tiles-only instruction.
+
+## Tile redraw approval
+
+> yes I like the new versions
+
+> of the tiles
+
+The player approves the comic tile redraws. This approval covers the tiles specifically;
+the revised mother, stroller, props and identity assets still require their own review.

@@ -51,6 +51,12 @@ does not change who the character appears to be. Canvas registration does not pr
 faces, clothing or interior placement. Update this workflow with observed results;
 record experiments and rejected options in `docs/DECISIONS.md`.
 
+Measure stature across all facings and frames after registration. Fitting an over-wide pose
+into its canvas must not shrink the person when she turns. Redraw a compact pose with consistent
+proportions instead of stretching it or changing the runtime canvas. Inspect the native result,
+not only the enlarged atlas. An approximate assembly sheet does not prove live hand-to-handle
+contact or motion; label its coverage accurately.
+
 ## Asset contract
 
 - Read the imagegen skill and use the built-in generator for raster generation or editing.
@@ -73,6 +79,10 @@ record experiments and rejected options in `docs/DECISIONS.md`.
   removal script leaves residue, correct the background with imagegen and rerun extraction;
   preserve that edit's input and prompt. A plain white background can use the same neutral-region
   extraction when a generated transparency request produces an unusable painted checker.
+  Save the alpha before extending colors beneath transparent pixels; the color-extension
+  buffer is not an alpha mask. Do not erase every neutral pixel to remove background residue:
+  gray materials and enclosed light details are artwork too. Correct persistent background
+  artifacts with the generator and preserve that correction's input and prompt.
 - Commit runtime PNGs with their `.import` sidecars. Preserve sidecar settings and identity.
   `.godot/` is rebuildable and ignored; evidence under `docs/` is excluded by `docs/.gdignore`.
   Let Godot create sidecars for new PNGs; copying another asset's sidecar can retain its UID or

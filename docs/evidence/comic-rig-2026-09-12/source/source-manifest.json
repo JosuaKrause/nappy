@@ -1,0 +1,477 @@
+[
+  {
+    "name": "mother_front_a",
+    "svg": "assets/rig/mother_front_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_front_a.png",
+    "svg_sha256": "50f3bd36edcc73fd596304483ff0c2e415258598effa619af50643c2cf2c7aba",
+    "dimensions": [
+      24,
+      46
+    ],
+    "anchor": [
+      12,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      0,
+      0
+    ]
+  },
+  {
+    "name": "mother_back_a",
+    "svg": "assets/rig/mother_back_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_back_a.png",
+    "svg_sha256": "50ae8485bb0c6d3398b4f7f9220ea0b28e330e6088caf79bfdf177403d3f7315",
+    "dimensions": [
+      24,
+      46
+    ],
+    "anchor": [
+      12,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      1,
+      0
+    ]
+  },
+  {
+    "name": "mother_side_a",
+    "svg": "assets/rig/mother_side_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_side_a.png",
+    "svg_sha256": "053e85a0aa1a3c6761f260aeae8314f129f1bc57059b2849c733f34f4f15f129",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      2,
+      0
+    ]
+  },
+  {
+    "name": "mother_front_diagonal_a",
+    "svg": "assets/rig/mother_front_diagonal_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_front_diagonal_a.png",
+    "svg_sha256": "d1bf65e8b3d7af4074f7293aff500e1ba1f01416727d02772ba1ffd0be6ebb8f",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      3,
+      0
+    ]
+  },
+  {
+    "name": "mother_back_diagonal_a",
+    "svg": "assets/rig/mother_back_diagonal_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_back_diagonal_a.png",
+    "svg_sha256": "006440076808db05b40f2d65b9227bd5f490845704f72d1cb19dcc90ad33f934",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      4,
+      0
+    ]
+  },
+  {
+    "name": "mother_front_b",
+    "svg": "assets/rig/mother_front_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_front_b.png",
+    "svg_sha256": "734e7dcd296b11cc00c9b1563226d579ed200521bd1ab7424537a4cce8c9a908",
+    "dimensions": [
+      24,
+      46
+    ],
+    "anchor": [
+      12,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      0,
+      1
+    ]
+  },
+  {
+    "name": "mother_back_b",
+    "svg": "assets/rig/mother_back_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_back_b.png",
+    "svg_sha256": "c374453bcdfceafab813459503cf483164e8055c3318d8907b4980b8df8ea168",
+    "dimensions": [
+      24,
+      46
+    ],
+    "anchor": [
+      12,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      1,
+      1
+    ]
+  },
+  {
+    "name": "mother_side_b",
+    "svg": "assets/rig/mother_side_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_side_b.png",
+    "svg_sha256": "7dcf71e70b86c7611a67e1d05e27b3768bcaea94b2c06595a44b143000784616",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      2,
+      1
+    ]
+  },
+  {
+    "name": "mother_front_diagonal_b",
+    "svg": "assets/rig/mother_front_diagonal_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_front_diagonal_b.png",
+    "svg_sha256": "3fbad070c124ae05b4b69709f3ebde5030755e9d515aeb86d1984df7103c0224",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      3,
+      1
+    ]
+  },
+  {
+    "name": "mother_back_diagonal_b",
+    "svg": "assets/rig/mother_back_diagonal_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_back_diagonal_b.png",
+    "svg_sha256": "8a31da04a1d3c40ad51ab9a7c901ee4ef0cbe6c7d87a0fcbaa6267d8ea4214ce",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      4,
+      1
+    ]
+  },
+  {
+    "name": "mother_carrying_front_a",
+    "svg": "assets/rig/mother_carrying_front_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_front_a.png",
+    "svg_sha256": "1a6367ad9ad327a790c4d2e5d7bbbaff017ed6ee44456deed936e64325b3a18b",
+    "dimensions": [
+      24,
+      46
+    ],
+    "anchor": [
+      12,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      0,
+      2
+    ]
+  },
+  {
+    "name": "mother_carrying_back_a",
+    "svg": "assets/rig/mother_carrying_back_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_back_a.png",
+    "svg_sha256": "588d530450b598db263d508e08df90b79076b1364ae7b0e1a29b908900f02cc9",
+    "dimensions": [
+      24,
+      46
+    ],
+    "anchor": [
+      12,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      1,
+      2
+    ]
+  },
+  {
+    "name": "mother_carrying_side_a",
+    "svg": "assets/rig/mother_carrying_side_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_side_a.png",
+    "svg_sha256": "5d58d7ef0b4a4e99f9cf6c78b1728ce62606f244773abd7651e04963ebe6b6e9",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      2,
+      2
+    ]
+  },
+  {
+    "name": "mother_carrying_front_diagonal_a",
+    "svg": "assets/rig/mother_carrying_front_diagonal_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_front_diagonal_a.png",
+    "svg_sha256": "a4f3164f4756b1406d8279c117e5ff365275fe16913bc65a896910a4c00c63df",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      3,
+      2
+    ]
+  },
+  {
+    "name": "mother_carrying_back_diagonal_a",
+    "svg": "assets/rig/mother_carrying_back_diagonal_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_back_diagonal_a.png",
+    "svg_sha256": "f5b38c188da2cd1ba8c539e05e664f5dc3ba1781f4abcb0ac648e9e18233a62b",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      4,
+      2
+    ]
+  },
+  {
+    "name": "mother_carrying_front_b",
+    "svg": "assets/rig/mother_carrying_front_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_front_b.png",
+    "svg_sha256": "3faf44faa3867d9b2e4854ee9bd07b9a3623aa2de017a51d5ef5456ecd444175",
+    "dimensions": [
+      24,
+      46
+    ],
+    "anchor": [
+      12,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      0,
+      3
+    ]
+  },
+  {
+    "name": "mother_carrying_back_b",
+    "svg": "assets/rig/mother_carrying_back_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_back_b.png",
+    "svg_sha256": "84dd4134ebb988b8247f5956093f3e598eccbe06922861614ef284edb3b1fe27",
+    "dimensions": [
+      24,
+      46
+    ],
+    "anchor": [
+      12,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      1,
+      3
+    ]
+  },
+  {
+    "name": "mother_carrying_side_b",
+    "svg": "assets/rig/mother_carrying_side_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_side_b.png",
+    "svg_sha256": "00e13f321e034141123939152f14fc073c05f5713e521d037efdf879844ae9d6",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      2,
+      3
+    ]
+  },
+  {
+    "name": "mother_carrying_front_diagonal_b",
+    "svg": "assets/rig/mother_carrying_front_diagonal_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_front_diagonal_b.png",
+    "svg_sha256": "ffa59812846e800fb69a1cb63c2f662c9d1ddcd8c3417ba5575ea3a662a953e9",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      3,
+      3
+    ]
+  },
+  {
+    "name": "mother_carrying_back_diagonal_b",
+    "svg": "assets/rig/mother_carrying_back_diagonal_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_back_diagonal_b.png",
+    "svg_sha256": "8b0cf428ae89d7885785b56737286555143fba64639ee829c10d4170abc6b5ad",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "mother-atlas-generated.png",
+    "generated_cell": [
+      4,
+      3
+    ]
+  },
+  {
+    "name": "pram_front",
+    "svg": "assets/rig/pram_front.svg",
+    "png": "assets/illustrated/svg-transfer/rig/pram_front.png",
+    "svg_sha256": "7ef1588d0d95a5900130c5493bf7d799d61dabba81248009ebccb032991c50c8",
+    "dimensions": [
+      30,
+      30
+    ],
+    "anchor": [
+      15,
+      30
+    ],
+    "generated_atlas": "pram-atlas-background-corrected.png",
+    "generated_cell": [
+      0,
+      0
+    ]
+  },
+  {
+    "name": "pram_back",
+    "svg": "assets/rig/pram_back.svg",
+    "png": "assets/illustrated/svg-transfer/rig/pram_back.png",
+    "svg_sha256": "523742698017d3b7380699e32fa2c40f7391c89f02cf0026a874480a584bd133",
+    "dimensions": [
+      30,
+      30
+    ],
+    "anchor": [
+      15,
+      30
+    ],
+    "generated_atlas": "pram-atlas-background-corrected.png",
+    "generated_cell": [
+      1,
+      0
+    ]
+  },
+  {
+    "name": "pram_side",
+    "svg": "assets/rig/pram_side.svg",
+    "png": "assets/illustrated/svg-transfer/rig/pram_side.png",
+    "svg_sha256": "a100556fe579948cdb593bcd22d9a0ba639352c497ac7c6e46b92d6852041ad0",
+    "dimensions": [
+      36,
+      30
+    ],
+    "anchor": [
+      18,
+      30
+    ],
+    "generated_atlas": "pram-atlas-background-corrected.png",
+    "generated_cell": [
+      2,
+      0
+    ]
+  },
+  {
+    "name": "pram_front_diagonal",
+    "svg": "assets/rig/pram_front_diagonal.svg",
+    "png": "assets/illustrated/svg-transfer/rig/pram_front_diagonal.png",
+    "svg_sha256": "97794870723c51735dd7660d71d02e6d9dd799b8304aa7facebbd04fd565a32a",
+    "dimensions": [
+      36,
+      30
+    ],
+    "anchor": [
+      18,
+      30
+    ],
+    "generated_atlas": "pram-atlas-background-corrected.png",
+    "generated_cell": [
+      3,
+      0
+    ]
+  },
+  {
+    "name": "pram_back_diagonal",
+    "svg": "assets/rig/pram_back_diagonal.svg",
+    "png": "assets/illustrated/svg-transfer/rig/pram_back_diagonal.png",
+    "svg_sha256": "b60a4f9ba3d5dd3dd18f0136932613049876cf42f59448c24c0808839d938663",
+    "dimensions": [
+      36,
+      30
+    ],
+    "anchor": [
+      18,
+      30
+    ],
+    "generated_atlas": "pram-atlas-background-corrected.png",
+    "generated_cell": [
+      4,
+      0
+    ]
+  }
+]

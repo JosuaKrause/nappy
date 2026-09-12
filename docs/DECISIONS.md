@@ -1,5 +1,62 @@
 # Decisions
 
+## M109 — The complete generated catalogue uses comic drawings — 2026-09-12
+
+The PLAYTEST-63 correction was applied to all 95 existing PNG assets: 59 outdoor tiles,
+25 mother/stroller views and frames, seven garbage/litter props and four identity/export
+images. The player then said "yes I like the new versions", followed by "of the tiles".
+Tile appearance is approved; this does not approve the other families or authorize a PR merge.
+The remaining visual checks are in REVIEW, including moving across terrain joins.
+
+The mother and stroller were redrawn as one directional family. Review rejected wide,
+childlike poses whose uniform canvas fit made the mother shrink when turning. The selected
+adult proportions and compact poses keep every mother frame at 46 pixels of visible height,
+with widths of 19–24 pixels; stroller views remain 30 pixels tall. Generated silhouettes and
+transparent gaps replace SVG-alpha stamping while native canvases and bottom anchors stay fixed.
+Background correction replaces neutral-color erasure so gray and cream artwork survives.
+The selected atlases, source inputs, exact prompts, measurements and byte-reproducible
+registration are in `docs/evidence/comic-rig-2026-09-12/`.
+
+The integrated root checkout passed import/boot, 190,888 focused checks across visuals,
+stroller, presentation mode, orientation, event views, blocks and city decay, and 497 forced-SVG
+visual checks. These were partial runs; CI owns the full suite. Static comparison sheets cover
+the new art, but the rig assembly is approximate and does not establish live hand-to-handle
+contact or gait quality. The two earlier gameplay captures show the initial tile candidate,
+not this final redraw. All files are in the player's main checkout and the PR remains open.
+
+## M109 — The identity/export PNGs share the comic redraw — 2026-09-12
+
+The all-textures correction in PLAYTEST-63 also covers the four generated identity/export
+rasters outside the runtime replacement tree. The audit traced `logo.png` to `logo.svg`, both
+stroller PNG sizes to `icon_stroller.svg`, and the social card to the logo composited onto white.
+They were included rather than silently deferred as unbound gameplay art: the README uses the
+logo and web export uses the social card.
+
+One generated comic stroller mark supplies all four outputs. The authored wordmark, tagline,
+colors, canvas sizes and navy rounded backing plates stay intact. Review rejected an extraction
+that dropped the icon backing plate: its SVG explains why the cream mark needs that dark plate
+to remain readable on light pages. The social card is still opaque RGB at 1280×640; the logo
+and icon variants remain RGBA, with transparent space outside the badge. Inputs, the raw mark,
+exact prompt, mappings and reproducible registration live in
+`docs/evidence/comic-identity-2026-09-12/`.
+
+## M109 — Garbage and litter as comic drawings — 2026-09-12
+
+PLAYTEST-63 extended the style-transfer correction to every generated texture. The seven prop
+derivatives were redrawn from their existing SVG concepts with the urban and cardinal style
+references. A painterly first pass lost its forms in native-size mottling; the selected pass
+uses broad shadow planes, few folds and a gray metal can without invented red branding.
+Both raw candidates and prompts are preserved under `docs/evidence/comic-props-2026-09-12/`.
+
+The final registration preserves generated alpha, fits uniformly within the source footprint,
+bottom-aligns garbage sacks and centers ground litter. It does not stamp the source's round
+sack outline onto the new drawing. Review caught neutral background stripes caused by treating
+the color-extension output as RGBA; preserving the pre-extension alpha removed them. Blanket
+white removal was also rejected because it can erase enclosed white paper and metal highlights.
+The retained script removes only edge-connected white background and uses the existing
+checkerboard extractor. The actual root checkout reproduced all seven runtime files byte for
+byte from the saved clean atlas. Human acceptance and gameplay appearance remain separate.
+
 ## M109 — Outdoor tile materials and the meaning of style transfer — 2026-09-12
 
 PLAYTEST-63 asked for tiles next. The initial batch registered all 59 outdoor SVGs at 32×32,

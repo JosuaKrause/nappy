@@ -1,0 +1,877 @@
+[
+  {
+    "name": "mother_front_a",
+    "size": [
+      24,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      97,
+      306
+    ],
+    "svg_8x_occupancy_bounds": [
+      4,
+      4,
+      188,
+      368
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      22,
+      46
+    ],
+    "source_alpha_bounds": [
+      0,
+      0,
+      24,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.1764705882352942
+  },
+  {
+    "name": "mother_back_a",
+    "size": [
+      24,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      96,
+      305
+    ],
+    "svg_8x_occupancy_bounds": [
+      4,
+      4,
+      188,
+      368
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      22,
+      46
+    ],
+    "source_alpha_bounds": [
+      0,
+      0,
+      24,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.180327868852459
+  },
+  {
+    "name": "mother_side_a",
+    "size": [
+      26,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      125,
+      302
+    ],
+    "svg_8x_occupancy_bounds": [
+      12,
+      4,
+      208,
+      368
+    ],
+    "registered_alpha_bounds": [
+      1,
+      0,
+      25,
+      46
+    ],
+    "source_alpha_bounds": [
+      1,
+      0,
+      26,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.1920529801324504
+  },
+  {
+    "name": "mother_front_diagonal_a",
+    "size": [
+      26,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      102,
+      305
+    ],
+    "svg_8x_occupancy_bounds": [
+      19,
+      4,
+      204,
+      368
+    ],
+    "registered_alpha_bounds": [
+      3,
+      0,
+      23,
+      46
+    ],
+    "source_alpha_bounds": [
+      2,
+      0,
+      26,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.180327868852459
+  },
+  {
+    "name": "mother_back_diagonal_a",
+    "size": [
+      26,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      107,
+      305
+    ],
+    "svg_8x_occupancy_bounds": [
+      19,
+      4,
+      204,
+      368
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      24,
+      46
+    ],
+    "source_alpha_bounds": [
+      2,
+      0,
+      26,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.180327868852459
+  },
+  {
+    "name": "mother_front_b",
+    "size": [
+      24,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      96,
+      307
+    ],
+    "svg_8x_occupancy_bounds": [
+      4,
+      0,
+      188,
+      368
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      22,
+      46
+    ],
+    "source_alpha_bounds": [
+      0,
+      0,
+      24,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.1726384364820848
+  },
+  {
+    "name": "mother_back_b",
+    "size": [
+      24,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      97,
+      308
+    ],
+    "svg_8x_occupancy_bounds": [
+      4,
+      0,
+      188,
+      368
+    ],
+    "registered_alpha_bounds": [
+      3,
+      0,
+      22,
+      46
+    ],
+    "source_alpha_bounds": [
+      0,
+      0,
+      24,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.1688311688311688
+  },
+  {
+    "name": "mother_side_b",
+    "size": [
+      26,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      118,
+      306
+    ],
+    "svg_8x_occupancy_bounds": [
+      28,
+      0,
+      208,
+      368
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      24,
+      46
+    ],
+    "source_alpha_bounds": [
+      3,
+      0,
+      26,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.1764705882352942
+  },
+  {
+    "name": "mother_front_diagonal_b",
+    "size": [
+      26,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      102,
+      308
+    ],
+    "svg_8x_occupancy_bounds": [
+      19,
+      4,
+      204,
+      368
+    ],
+    "registered_alpha_bounds": [
+      3,
+      0,
+      23,
+      46
+    ],
+    "source_alpha_bounds": [
+      2,
+      0,
+      26,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.1688311688311688
+  },
+  {
+    "name": "mother_back_diagonal_b",
+    "size": [
+      26,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      108,
+      307
+    ],
+    "svg_8x_occupancy_bounds": [
+      19,
+      4,
+      204,
+      368
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      24,
+      46
+    ],
+    "source_alpha_bounds": [
+      2,
+      0,
+      26,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.1726384364820848
+  },
+  {
+    "name": "mother_carrying_front_a",
+    "size": [
+      24,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      98,
+      324
+    ],
+    "svg_8x_occupancy_bounds": [
+      11,
+      4,
+      181,
+      368
+    ],
+    "registered_alpha_bounds": [
+      3,
+      0,
+      22,
+      46
+    ],
+    "source_alpha_bounds": [
+      1,
+      0,
+      23,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.1111111111111112
+  },
+  {
+    "name": "mother_carrying_back_a",
+    "size": [
+      24,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      101,
+      324
+    ],
+    "svg_8x_occupancy_bounds": [
+      4,
+      4,
+      192,
+      368
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      22,
+      46
+    ],
+    "source_alpha_bounds": [
+      0,
+      0,
+      24,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.1111111111111112
+  },
+  {
+    "name": "mother_carrying_side_a",
+    "size": [
+      26,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      105,
+      298
+    ],
+    "svg_8x_occupancy_bounds": [
+      12,
+      4,
+      192,
+      368
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      23,
+      46
+    ],
+    "source_alpha_bounds": [
+      1,
+      0,
+      24,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.2080536912751678
+  },
+  {
+    "name": "mother_carrying_front_diagonal_a",
+    "size": [
+      26,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      99,
+      301
+    ],
+    "svg_8x_occupancy_bounds": [
+      28,
+      0,
+      200,
+      368
+    ],
+    "registered_alpha_bounds": [
+      3,
+      0,
+      23,
+      46
+    ],
+    "source_alpha_bounds": [
+      3,
+      0,
+      25,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.196013289036545
+  },
+  {
+    "name": "mother_carrying_back_diagonal_a",
+    "size": [
+      26,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      97,
+      301
+    ],
+    "svg_8x_occupancy_bounds": [
+      23,
+      0,
+      204,
+      368
+    ],
+    "registered_alpha_bounds": [
+      3,
+      0,
+      23,
+      46
+    ],
+    "source_alpha_bounds": [
+      2,
+      0,
+      26,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.196013289036545
+  },
+  {
+    "name": "mother_carrying_front_b",
+    "size": [
+      24,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      100,
+      308
+    ],
+    "svg_8x_occupancy_bounds": [
+      11,
+      0,
+      181,
+      368
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      22,
+      46
+    ],
+    "source_alpha_bounds": [
+      1,
+      0,
+      23,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.1688311688311688
+  },
+  {
+    "name": "mother_carrying_back_b",
+    "size": [
+      24,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      102,
+      311
+    ],
+    "svg_8x_occupancy_bounds": [
+      4,
+      0,
+      192,
+      368
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      22,
+      46
+    ],
+    "source_alpha_bounds": [
+      0,
+      0,
+      24,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.157556270096463
+  },
+  {
+    "name": "mother_carrying_side_b",
+    "size": [
+      26,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      109,
+      302
+    ],
+    "svg_8x_occupancy_bounds": [
+      28,
+      0,
+      192,
+      368
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      24,
+      46
+    ],
+    "source_alpha_bounds": [
+      3,
+      0,
+      24,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.1920529801324504
+  },
+  {
+    "name": "mother_carrying_front_diagonal_b",
+    "size": [
+      26,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      100,
+      309
+    ],
+    "svg_8x_occupancy_bounds": [
+      28,
+      0,
+      200,
+      368
+    ],
+    "registered_alpha_bounds": [
+      3,
+      0,
+      23,
+      46
+    ],
+    "source_alpha_bounds": [
+      3,
+      0,
+      25,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.1650485436893203
+  },
+  {
+    "name": "mother_carrying_back_diagonal_b",
+    "size": [
+      26,
+      46
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      99,
+      310
+    ],
+    "svg_8x_occupancy_bounds": [
+      23,
+      0,
+      204,
+      368
+    ],
+    "registered_alpha_bounds": [
+      3,
+      0,
+      23,
+      46
+    ],
+    "source_alpha_bounds": [
+      2,
+      0,
+      26,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 1.1612903225806452
+  },
+  {
+    "name": "pram_front",
+    "size": [
+      30,
+      30
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      301,
+      414
+    ],
+    "svg_8x_occupancy_bounds": [
+      12,
+      12,
+      228,
+      240
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      28,
+      30
+    ],
+    "source_alpha_bounds": [
+      1,
+      1,
+      29,
+      30
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 0.5507246376811594
+  },
+  {
+    "name": "pram_back",
+    "size": [
+      30,
+      30
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      320,
+      415
+    ],
+    "svg_8x_occupancy_bounds": [
+      12,
+      12,
+      228,
+      240
+    ],
+    "registered_alpha_bounds": [
+      1,
+      0,
+      29,
+      30
+    ],
+    "source_alpha_bounds": [
+      1,
+      1,
+      29,
+      30
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 0.5493975903614458
+  },
+  {
+    "name": "pram_side",
+    "size": [
+      36,
+      30
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      393,
+      383
+    ],
+    "svg_8x_occupancy_bounds": [
+      4,
+      0,
+      252,
+      236
+    ],
+    "registered_alpha_bounds": [
+      0,
+      0,
+      36,
+      30
+    ],
+    "source_alpha_bounds": [
+      0,
+      0,
+      32,
+      30
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 0.6161879895561357
+  },
+  {
+    "name": "pram_front_diagonal",
+    "size": [
+      36,
+      30
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      394,
+      436
+    ],
+    "svg_8x_occupancy_bounds": [
+      20,
+      0,
+      260,
+      236
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      34,
+      30
+    ],
+    "source_alpha_bounds": [
+      2,
+      0,
+      33,
+      30
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 0.5412844036697247
+  },
+  {
+    "name": "pram_back_diagonal",
+    "size": [
+      36,
+      30
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      376,
+      425
+    ],
+    "svg_8x_occupancy_bounds": [
+      20,
+      0,
+      260,
+      236
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      34,
+      30
+    ],
+    "source_alpha_bounds": [
+      2,
+      0,
+      33,
+      30
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 0.5552941176470588
+  }
+]
