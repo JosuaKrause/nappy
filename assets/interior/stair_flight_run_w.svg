@@ -1,10 +1,22 @@
 <!-- Four-tile west-descending flight deck, mirrored from stair_flight_run_e.svg with the same
-     top-landing registration. -->
+     top-landing registration. Treads are drawn as vertical lines, one per step, clipped to the
+     tread body and thickening toward the bottom landing so the flight still reads as descending. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" shape-rendering="crispEdges" stroke-linejoin="round">
+  <defs>
+    <clipPath id="tread_w">
+      <path d="M148 60L100 12H90L12 90V124L36 148H70L148 70Z"/>
+    </clipPath>
+  </defs>
   <path d="M160 50L110 0H84L0 84V136L24 160H76L160 76Z" fill="#2d3036"/>
   <path d="M156 52L108 4H88L4 88V132L28 156H72L156 72Z" fill="#696c70"/>
   <path d="M148 60L100 12H90L12 90V124L36 148H70L148 70Z" fill="#767a7d"/>
-  <path d="M136 66L94 24 M120 82L78 40 M104 98L62 56 M88 114L46 72 M72 130L30 88 M56 146L14 104" fill="none" stroke="#c2b7a5" stroke-width="4"/>
-  <path d="M133 70L91 28 M117 86L75 44 M101 102L59 60 M85 118L43 76 M69 134L27 92 M53 150L11 108" fill="none" stroke="#41434a" stroke-width="3"/>
+  <g clip-path="url(#tread_w)" fill="none">
+    <path d="M136 0V160 M120 0V160" stroke="#c2b7a5" stroke-width="3"/>
+    <path d="M133 0V160 M117 0V160" stroke="#41434a" stroke-width="2"/>
+    <path d="M104 0V160 M88 0V160" stroke="#c2b7a5" stroke-width="4"/>
+    <path d="M101 0V160 M85 0V160" stroke="#41434a" stroke-width="3"/>
+    <path d="M72 0V160 M56 0V160" stroke="#c2b7a5" stroke-width="5"/>
+    <path d="M69 0V160 M53 0V160" stroke="#41434a" stroke-width="4"/>
+  </g>
   <path d="M156 52L72 136 M108 4L24 88" fill="none" stroke="#a3988a" stroke-width="2"/>
 </svg>

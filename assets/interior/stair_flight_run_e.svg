@@ -1,10 +1,23 @@
 <!-- Four-tile east-descending flight deck. Its broad continuous tread surface overlays the fixed
-     diagonal walking cells without changing their graph or clearance. Origin: top landing NW corner. -->
+     diagonal walking cells without changing their graph or clearance. Origin: top landing NW corner.
+     Treads are drawn as vertical lines, one per step, clipped to the tread body and thickening
+     toward the bottom landing so the flight still reads as descending. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" shape-rendering="crispEdges" stroke-linejoin="round">
+  <defs>
+    <clipPath id="tread_e">
+      <path d="M12 60L60 12H70L148 90V124L124 148H90L12 70Z"/>
+    </clipPath>
+  </defs>
   <path d="M0 50L50 0H76L160 84V136L136 160H84L0 76Z" fill="#2d3036"/>
   <path d="M4 52L52 4H72L156 88V132L132 156H88L4 72Z" fill="#696c70"/>
   <path d="M12 60L60 12H70L148 90V124L124 148H90L12 70Z" fill="#767a7d"/>
-  <path d="M24 66L66 24 M40 82L82 40 M56 98L98 56 M72 114L114 72 M88 130L130 88 M104 146L146 104" fill="none" stroke="#c2b7a5" stroke-width="4"/>
-  <path d="M27 70L69 28 M43 86L85 44 M59 102L101 60 M75 118L117 76 M91 134L133 92 M107 150L149 108" fill="none" stroke="#41434a" stroke-width="3"/>
+  <g clip-path="url(#tread_e)" fill="none">
+    <path d="M24 0V160 M40 0V160" stroke="#c2b7a5" stroke-width="3"/>
+    <path d="M27 0V160 M43 0V160" stroke="#41434a" stroke-width="2"/>
+    <path d="M56 0V160 M72 0V160" stroke="#c2b7a5" stroke-width="4"/>
+    <path d="M59 0V160 M75 0V160" stroke="#41434a" stroke-width="3"/>
+    <path d="M88 0V160 M104 0V160" stroke="#c2b7a5" stroke-width="5"/>
+    <path d="M91 0V160 M107 0V160" stroke="#41434a" stroke-width="4"/>
+  </g>
   <path d="M4 52L88 136 M52 4L136 88" fill="none" stroke="#a3988a" stroke-width="2"/>
 </svg>

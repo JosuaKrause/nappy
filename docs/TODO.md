@@ -776,23 +776,6 @@ M103, the drawings the queue owes.
       explosion row's cue indoors, one or two frames of `hallway_wall_window_flash.svg`), the
       lighting response to the explosions, and the events — mice, the pursuers on the stairs, the
       fire on one stairwell, the steam
-- [ ] **The south-edge doors are indents, and the stairs are steps.** *([PLAYTEST-60](playtests/PLAYTEST-60.md):
-      "the downwards leading doors in the hallways are fronwards facing doors now. the placement
-      is good but they should be small indents in the wall -- nothing more -- where closed doors
-      should be the indent + a brown bar closing the indent (this is indicating the closed
-      door)"; "the staircase floor graphic should be vertical lines for steps".)* The apartment
-      recesses (`apartment_threshold.svg`, drawn at columns 2, 5, 7 and 10 of a hallway's south
-      edge) and the open passage notches (`open_threshold.svg`, drawn at a door's own tile) keep
-      their positions and their sizes, but each is redrawn as a small indent in the skirting and
-      wall and nothing more — no frame, no chain, no dark opening with a lintel, nothing that
-      reads as a door seen from the front. An open door is the indent alone; a closed door is
-      the same indent with a brown bar across its mouth, the bar being the whole of what says
-      *closed*. And every flight deck — `stair_flight_run_e.svg`, `stair_flight_run_w.svg` and
-      the basement's `stair_flight_short_e.svg` — draws its treads as vertical lines, one per
-      step, spaced along the flight's run, in place of the diagonal tread strokes; the deck's
-      outline, the rails and the landings are unchanged. Both are SVG edits with the source
-      sheets re-rendered, checked in the running building at `--start-escape floor:2` and on a
-      stairwell, and a still of each; no walking cell, body or door behaviour moves
 - [ ] **A finale plan for the city map.** An ordered chain, not a `RouteTree`: service exit to
       first park to second to third to the edge, one street-walk between each pair and nothing
       else open. `RouteTree.for_day` and its redundancy guarantee (two distinct routes to each calm
