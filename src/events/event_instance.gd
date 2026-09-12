@@ -190,16 +190,55 @@ const CHATTING_MOTHER_TALKING_BY_VIEW := {
 	"front_diagonal": preload("res://assets/events/chatting_mother_talking_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/chatting_mother_talking_back_diagonal.svg"),
 }
-## The dog-walker's own dog reuses the existing unsuffixed `DOG` constant as `"side"` — see the
-## fuller note beside the animal families' own tables, added with `loose_dog` in the next commit;
-## the dog-walker composite needs the same table a frame earlier, since `_draw_dog_walker()` is a
-## people function.
+## The animal/rider families below reuse the existing unsuffixed constant as `"side"` rather than
+## preloading a second copy of the same picture: `docs/evidence/svg-vehicles-2026-09-10/
+## facings.csv` marks every one of them "existing canonical source" rather than a new drawing, and
+## `docs/GRAPHICS.md` says to replace a preload only where the suffixed source is a different
+## picture from the one already live. `mouse` is the one family in this evidence set left out —
+## `EventCatalogue._alley_mouse()`'s own docstring documents, with its own reasoning, that the row
+## stays on `_draw_simple(MOUSE, ...)` rather than joining this table. `DOG_BY_VIEW` also serves the
+## dog-walker's own dog (`_draw_dog_walker()`), the same animal on a lead rather than loose.
 const DOG_BY_VIEW := {
 	"front": preload("res://assets/events/dog_front.svg"),
 	"back": preload("res://assets/events/dog_back.svg"),
 	"side": DOG,
 	"front_diagonal": preload("res://assets/events/dog_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/dog_back_diagonal.svg"),
+}
+const CAT_CROUCHED_BY_VIEW := {
+	"front": preload("res://assets/events/cat_crouched_front.svg"),
+	"back": preload("res://assets/events/cat_crouched_back.svg"),
+	"side": CAT_CROUCHED,
+	"front_diagonal": preload("res://assets/events/cat_crouched_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/cat_crouched_back_diagonal.svg"),
+}
+const CAT_RUNNING_BY_VIEW := {
+	"front": preload("res://assets/events/cat_running_front.svg"),
+	"back": preload("res://assets/events/cat_running_back.svg"),
+	"side": CAT_RUNNING,
+	"front_diagonal": preload("res://assets/events/cat_running_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/cat_running_back_diagonal.svg"),
+}
+const CHARGING_DOG_BY_VIEW := {
+	"front": preload("res://assets/events/charging_dog_front.svg"),
+	"back": preload("res://assets/events/charging_dog_back.svg"),
+	"side": CHARGING_DOG,
+	"front_diagonal": preload("res://assets/events/charging_dog_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/charging_dog_back_diagonal.svg"),
+}
+const PIGEON_BY_VIEW := {
+	"front": preload("res://assets/events/pigeon_front.svg"),
+	"back": preload("res://assets/events/pigeon_back.svg"),
+	"side": PIGEON,
+	"front_diagonal": preload("res://assets/events/pigeon_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/pigeon_back_diagonal.svg"),
+}
+const PIGEON_DOWN_BY_VIEW := {
+	"front": preload("res://assets/events/pigeon_down_front.svg"),
+	"back": preload("res://assets/events/pigeon_down_back.svg"),
+	"side": PIGEON_DOWN,
+	"front_diagonal": preload("res://assets/events/pigeon_down_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/pigeon_down_back_diagonal.svg"),
 }
 
 ## The region door's own kit — see `RegionPlanner` and `docs/CITY.md`, "Regions and the wall".
@@ -1092,6 +1131,11 @@ class Bird extends RefCounted:
 	## Wingbeats per second, and where in one it currently is.
 	var beat := 0.0
 	var phase := 0.0
+	## This bird's own held eight-view sector — one per bird rather than one shared with the
+	## instance's own `_view_sector`, since a flock is eleven bodies wheeling independently rather
+	## than one actor with one facing. See `EventInstance._select_view()`, the same hold applied
+	## per bird by `_draw_birds()`.
+	var view_sector := 2
 
 var _flock: Array[Bird] = []
 
@@ -1119,6 +1163,7 @@ func _build_the_flock() -> void:
 		var reach := def.flock_spread * (0.3 + 0.7 * _flock_roll(i, 2))
 		bird.at = Vector2(cos(angle), sin(angle) * GROUND_SQUASH) * reach
 		bird.heading = Vector2.from_angle(TAU * _flock_roll(i, 3))
+		bird.view_sector = EightDirection.nearest(bird.heading)
 		bird.speed = BIRD_GROUND_SPEED
 		# Half of them wheel each way, or the flock rotates as a body and reads as a carousel.
 		bird.turn = (1.2 + 1.4 * _flock_roll(i, 4)) * (1.0 if i % 2 == 0 else -1.0)
@@ -1847,7 +1892,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.LORRY:
 			_draw_simple(LORRY, canvas)
 		EventDef.Look.CHARGING_DOG:
-			_draw_simple(CHARGING_DOG, canvas)
+			_draw_eight_view(CHARGING_DOG_BY_VIEW, _heading, canvas)
 		EventDef.Look.CHATTING_MOTHER:
 			_draw_chatting_mother(canvas)
 		EventDef.Look.POLICE_CAR:
@@ -1998,9 +2043,13 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 func _draw_loose_dog(canvas: CanvasItem = self) -> void:
 	var behind := Vector2(26.0 if _heading_is_west() else -26.0, 0.0)
 	_draw_shape_shadow(canvas, def.shape)
-	# On the ground and slack, not held up at hip height. Nobody is holding it.
+	# On the ground and slack, not held up at hip height. Nobody is holding it. The lead's own
+	# offset stays a plain east/west span — a composite the picture underneath it does not own,
+	# same as `_draw_dog_walker`'s taut one.
 	canvas.draw_line(Vector2(0.0, -8.0), behind + Vector2(0.0, -2.0), Palette.OUTLINE, 2.0)
-	Sprites.draw_standing(canvas, DOG, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	var view := _select_view(_heading)
+	Sprites.draw_standing(canvas, DOG_BY_VIEW[view], Vector2.ZERO, Vector2.ZERO,
+			EightDirection.is_mirrored(_view_sector))
 
 ## Every bird, drawn where it actually is.
 ##
@@ -2022,13 +2071,17 @@ func _draw_birds(canvas: CanvasItem = self) -> void:
 			# Smaller and fainter the higher it is, and gone by the time it is over the rooftops.
 			var faded := 1.0 - bird.lift / BIRD_SHADOW_CEILING
 			_draw_shadow(canvas, bird.at, 5.0 * faded)
-		var wings := PIGEON if sin(bird.phase) >= 0.0 else PIGEON_DOWN
+		# Each bird holds its own sector — a flock is eleven bodies wheeling independently, not one
+		# actor with one facing — through the same hold `_select_view()` gives the instance itself.
+		bird.view_sector = EightDirection.update(bird.view_sector, bird.heading)
+		var view: String = EIGHT_VIEW_BY_SECTOR[bird.view_sector]
+		var mirror := EightDirection.is_mirrored(bird.view_sector)
+		var wings: Texture2D = PIGEON_BY_VIEW[view] if sin(bird.phase) >= 0.0 else PIGEON_DOWN_BY_VIEW[view]
 		if bird.lift <= 0.0:
 			# Standing. The upstroke is a bird in flight, and a pavement full of them is a flock
 			# that has already gone — which is the thing the telegraph exists to show her instead.
-			wings = PIGEON_DOWN
-		Sprites.draw_standing(canvas, wings, bird.at - Vector2(0.0, bird.lift),
-				Vector2.ZERO, bird.heading.x < 0.0)
+			wings = PIGEON_DOWN_BY_VIEW[view]
+		Sprites.draw_standing(canvas, wings, bird.at - Vector2(0.0, bird.lift), Vector2.ZERO, mirror)
 
 ## How high a bird's shadow survives to. Roughly first-floor height: above it, there is nothing on
 ## the pavement to cast one onto that the player can see.
@@ -2037,9 +2090,11 @@ const BIRD_SHADOW_CEILING := 46.0
 func _draw_cat(canvas: CanvasItem = self) -> void:
 	# Crouched while telegraphing, stretched out once it bolts. The crouch *is* the
 	# telegraph, so the two silhouettes have to differ at a glance, not by a scale factor.
-	var texture := CAT_CROUCHED if is_telegraphing() else CAT_RUNNING
+	var by_view := CAT_CROUCHED_BY_VIEW if is_telegraphing() else CAT_RUNNING_BY_VIEW
 	_draw_shape_shadow(canvas, def.shape)
-	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	var view := _select_view(_heading)
+	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
+			EightDirection.is_mirrored(_view_sector))
 
 ## Hood up and hands in the coat while he is only somewhere; leaning out over a forward leg once
 ## he has taken an interest.
