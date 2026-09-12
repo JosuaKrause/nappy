@@ -190,21 +190,14 @@ const CHATTING_MOTHER_TALKING_BY_VIEW := {
 	"front_diagonal": preload("res://assets/events/chatting_mother_talking_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/chatting_mother_talking_back_diagonal.svg"),
 }
+
 ## The animal/rider families below reuse the existing unsuffixed constant as `"side"` rather than
 ## preloading a second copy of the same picture: `docs/evidence/svg-vehicles-2026-09-10/
 ## facings.csv` marks every one of them "existing canonical source" rather than a new drawing, and
 ## `docs/GRAPHICS.md` says to replace a preload only where the suffixed source is a different
 ## picture from the one already live. `mouse` is the one family in this evidence set left out —
 ## `EventCatalogue._alley_mouse()`'s own docstring documents, with its own reasoning, that the row
-## stays on `_draw_simple(MOUSE, ...)` rather than joining this table. `DOG_BY_VIEW` also serves the
-## dog-walker's own dog (`_draw_dog_walker()`), the same animal on a lead rather than loose.
-const DOG_BY_VIEW := {
-	"front": preload("res://assets/events/dog_front.svg"),
-	"back": preload("res://assets/events/dog_back.svg"),
-	"side": DOG,
-	"front_diagonal": preload("res://assets/events/dog_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/dog_back_diagonal.svg"),
-}
+## stays on `_draw_simple(MOUSE, ...)` rather than joining this table.
 const CAT_CROUCHED_BY_VIEW := {
 	"front": preload("res://assets/events/cat_crouched_front.svg"),
 	"back": preload("res://assets/events/cat_crouched_back.svg"),
@@ -219,12 +212,26 @@ const CAT_RUNNING_BY_VIEW := {
 	"front_diagonal": preload("res://assets/events/cat_running_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/cat_running_back_diagonal.svg"),
 }
+const DOG_BY_VIEW := {
+	"front": preload("res://assets/events/dog_front.svg"),
+	"back": preload("res://assets/events/dog_back.svg"),
+	"side": DOG,
+	"front_diagonal": preload("res://assets/events/dog_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/dog_back_diagonal.svg"),
+}
 const CHARGING_DOG_BY_VIEW := {
 	"front": preload("res://assets/events/charging_dog_front.svg"),
 	"back": preload("res://assets/events/charging_dog_back.svg"),
 	"side": CHARGING_DOG,
 	"front_diagonal": preload("res://assets/events/charging_dog_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/charging_dog_back_diagonal.svg"),
+}
+const CYCLIST_BY_VIEW := {
+	"front": preload("res://assets/events/cyclist_front.svg"),
+	"back": preload("res://assets/events/cyclist_back.svg"),
+	"side": CYCLIST,
+	"front_diagonal": preload("res://assets/events/cyclist_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/cyclist_back_diagonal.svg"),
 }
 const PIGEON_BY_VIEW := {
 	"front": preload("res://assets/events/pigeon_front.svg"),
@@ -1886,7 +1893,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.BIRDS:
 			_draw_birds(canvas)
 		EventDef.Look.CYCLIST:
-			_draw_simple(CYCLIST, canvas)
+			_draw_eight_view(CYCLIST_BY_VIEW, _heading, canvas)
 		EventDef.Look.ICE_CREAM_VAN:
 			_draw_simple(ICE_CREAM_VAN, canvas)
 		EventDef.Look.LORRY:
