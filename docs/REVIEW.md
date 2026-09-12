@@ -165,8 +165,10 @@ item below for as long as looking takes.
   part) puts her, carrying the baby, in front of her door on the third floor of a building with
   three hallways, two switchback stairwells at opposite ends, a barricaded lobby and a winding
   basement to the emergency exit — one map, the parts 64 tiles apart, every door a fade and a
-  teleport. The graphics were judged in playtest 60 and the doors and stair treads are being
-  redrawn under M102 in `TODO.md`. Both stairwells have recorded physical walks, but the feel of
+  teleport. The south-edge doors are plain indents now, a brown bar across an indent being the
+  whole of what says closed, and every flight's treads are vertical lines, one per step: do the
+  bars read as closed doors and the lines as steps at play scale? Record is `DECISIONS.md`,
+  M102, the south-edge doors are indents. Both stairwells have recorded physical walks, but the feel of
   the sideways controls and fade-and-teleport still needs a person's verdict: does a diagonal
   flight read as *descending* when a sideways press walks it, and does the fade-and-teleport
   read as a door or as a cut? Records are in `DECISIONS.md` under M112, the escape scene and
