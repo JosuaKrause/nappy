@@ -15,14 +15,6 @@ const TREE_PIT := preload("res://assets/props/tree_pit.svg")
 const SACK := preload("res://assets/props/garbage_sack.svg")
 const SACK_PILE := preload("res://assets/props/garbage_sacks_pile.svg")
 
-## The trunk's own small collision circle, distinct from `shape` (the wider canopy field the
-## shadow reads) — she walks *under* the canopy and *around* the trunk, so only the trunk is a
-## body. Kept well inside one tile (16px each way) so a two-tile pavement keeps a full lane —
-## `Tuning.PLAYER_BODY_RADIUS` (14px) wide — clear on whichever tile the trunk is not in; see
-## `StreetTrees` for why a street tree always stands one tile in from the road, never spanning
-## both pavement tiles.
-const TRUNK_RADIUS := 6.0
-
 @export var kind := Kind.TREE
 ## Deterministic per-prop variation, so a park does not shimmer between frames.
 @export var variant := 0
@@ -32,17 +24,16 @@ const TRUNK_RADIUS := 6.0
 ## sack pile, sized off the same texture fraction the shadow always used; a capsule for the swing
 ## frame (`_playground_frame_shape()`). Computed once `_ready()` fires, by which point `city.gd`
 ## has already set `kind`, `variant` and `scale_factor` on the new node (`Prop.new()` then the
-## three exports, then `add_child()`), and read by `_draw()` for the shadow. Only a street tree
-## also has a body — `TRUNK_RADIUS`, not this shape — since a canopy is walked under and a trunk
-## is not; a sack or a pile carries neither, so the ground under it stays exactly as walkable as
-## the pavement or alley it stands on. Decoration only — see `GarbageSacks`' own class doc for why
-## a pile is not yet an obstruction.
+## three exports, then `add_child()`), and read by `_draw()` for the shadow. **No prop has a
+## body.** A tree on a pavement is walked past exactly like a tree in a park *(2026-09-12, the
+## player, PLAYTEST-58.md: "trees shouldn't have a hitbox at all. trees in parks don't why should
+## the ones in the street be treated differently?")*; a sack or a pile carries none either, so the
+## ground under it stays exactly as walkable as the pavement or alley it stands on. Decoration
+## only — see `GarbageSacks`' own class doc for why a pile is not yet an obstruction.
 var shape: GroundShape
 
 func _ready() -> void:
 	shape = _compute_shape()
-	if kind == Kind.STREET_TREE:
-		_add_trunk_body()
 
 func _compute_shape() -> GroundShape:
 	match kind:
@@ -59,19 +50,6 @@ func _compute_shape() -> GroundShape:
 			return GroundShape.point(SACK_PILE.get_size().x * 0.3)
 		_:
 			return GroundShape.point(0.0)
-
-## A street tree's only physical body: a small `StaticBody2D` at the node's own ground point, so
-## the player's `move_and_slide()` routes around the trunk the same way it already does a
-## building. Nothing else in `Prop` has a body — a park tree, a bollard and the swing frame carry
-## `shape` for their shadow alone (see the class doc), and stay exactly as walkable as before.
-func _add_trunk_body() -> void:
-	var body := StaticBody2D.new()
-	var collision := CollisionShape2D.new()
-	var circle := CircleShape2D.new()
-	circle.radius = TRUNK_RADIUS
-	collision.shape = circle
-	body.add_child(collision)
-	add_child(body)
 
 func _draw() -> void:
 	match kind:
