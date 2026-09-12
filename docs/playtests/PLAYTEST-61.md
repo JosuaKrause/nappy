@@ -8,7 +8,7 @@ The attached screenshot shows the commercial frontage beside the player at tile 
 day 1, seed 255862635. Each store should be twice its current width, with a doorway sized
 comparably to the home entrance.
 
-Evidence: [the supplied screenshot](../evidence/run-043335-seed255862635-v0.8.2-704-g4f3cfb7/asked/002-attempt2-asked.png).
+Evidence: [the supplied screenshot](../evidence/playtest-61-2026-09-12/run-043335-seed255862635-v0.8.2-704-g4f3cfb7/asked/002-attempt2-asked.png).
 The complete source run is preserved beside that image.
 
 ## Review of the wider fronts

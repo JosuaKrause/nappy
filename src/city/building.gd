@@ -444,7 +444,7 @@ func _cell(col: int, row: int) -> Vector2:
 ## cell's own fixed roll — the city's services failing ahead of any one block's arc, which is why
 ## this reads `condition` and `day` as two separate questions rather than one.
 func _ground_floor_texture(col: int) -> Texture2D:
-	if district != GameEnums.BlockPurpose.COMMERCIAL or wall_tiles() < 2:
+	if _storefront_variant.is_empty():
 		return WALL_BASE
 	if col % 2 == 1:
 		return null

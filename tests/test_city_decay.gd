@@ -177,6 +177,12 @@ func _test_boarded_storefronts_and_windows_shutter(t) -> void:
 	t.add_child(building)
 	building.condition = Building.Condition.BOARDED
 	building.day = Tuning.RUN_LENGTH_DAYS
+	t.check(building._storefront_variant.size() == building.columns() / 2,
+			"a three-column facade has one storefront variant per complete pair")
+	t.check(building._ground_floor_texture(1) == null,
+			"the second column of a storefront pair draws no duplicate texture")
+	t.check(building._ground_floor_texture(2) == Building.WALL_BASE,
+			"an odd final commercial column keeps the ordinary wall base")
 	for col in range(0, building.columns() - 1, 2):
 		var texture := building._ground_floor_texture(col)
 		t.check(Building.STOREFRONT_SHUTTERED_TEXTURES.has(texture),
@@ -273,6 +279,8 @@ func _test_storefront_variants_use_seeded_bags(t) -> void:
 	t.add_child(shallow)
 	t.check(shallow._storefront_variant.is_empty(),
 			"a one-row commercial facade keeps its ordinary wall base")
+	t.check(shallow._ground_floor_texture(0) == Building.WALL_BASE,
+			"a one-row commercial facade returns its ordinary wall base")
 	for building in sampled:
 		building.free()
 	same_seed.free()

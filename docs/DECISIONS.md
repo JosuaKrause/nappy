@@ -30,6 +30,14 @@ A subsequent clean merge takes main `105ef597927137cd475f950a2b9e4fc78be878f1`, 
 apartment Playtest 60 and its separate queue/review updates. Both playtests and their references
 remain distinct; this documentation-only update changes no gameplay or storefront source.
 
+PR 129's review also requested a named evidence parent and explicit texture-selection checks.
+The complete original run moved under `evidence/playtest-61-2026-09-12/`, with all six files
+byte-identical and its document links updated. The texture selector reads eligibility from the
+generated variant list, avoiding a duplicate commercial/height predicate. Focused checks cover
+one variant per complete column pair, a skipped partner column, an ordinary odd end column and
+an ordinary base on a shallow facade. Import/boot and the focused `city_decay` suite pass after
+these review fixes.
+
 Verification: import/boot, doc lint and focused `city_decay`, `checkpoints` and `interior`
 suites pass on the merged tree. The storefront regression samples different building seeds,
 checks complete groups and neighbors, and preserves the order across rebuilds and state changes.
@@ -42,7 +50,7 @@ temporary default-spawn override placed the rig at tile 70,57 and was removed af
 
 [PLAYTEST-61](playtests/PLAYTEST-61.md) asks: "store fronts have too small doors (compare eg
 with the home door) and are not wide enough stores should be double each."
-The [supplied frame](evidence/run-043335-seed255862635-v0.8.2-704-g4f3cfb7/asked/002-attempt2-asked.png)
+The [supplied frame](evidence/playtest-61-2026-09-12/run-043335-seed255862635-v0.8.2-704-g4f3cfb7/asked/002-attempt2-asked.png)
 shows a commercial frontage at tile 70,57 on day 1, seed 255862635. The complete player run is
 preserved with it. The old store occupied 32×32px with a 9×23px door, beside the home's 26×34px
 entrance.
