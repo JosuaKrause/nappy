@@ -1,19 +1,19 @@
 # E — Clear strides
 
-This record covers the carrying mother's three distinct gait poses and their four-phase runtime
-loop. The frame letters are gait labels inside version E: **A / contact 1**, **C / passing**, and
+This record preserves E's three gait poses and four-phase preview for comparison. The anatomical
+review and corrected whole-figure recipe are in
+[F — Hip motion](../comic-carrying-hip-motion-2026-09-12/GENERATION.md).
+The frame letters are gait labels inside version E: **A / contact 1**, **C / passing**, and
 **B / contact 2**. They are separate from the named carrying revisions A through D preserved in
 `docs/evidence/comic-carrying-redraw-2026-09-12/versions/`.
 
-The depicted and runtime loop is `A, C, B, C` over one full `TAU` turn of the existing
-distance-driven walk clock. The four equal 190 ms diagnostic frames show that order without
-changing its cadence. When movement stops, the carrying rig selects C so the feet settle together
-regardless of the saved phase. The pushing state retains its existing two-frame selector.
+The depicted loop is `A, C, B, C`, matching four quarters of the distance-driven walk clock.
+The four equal 190 ms diagnostic frames show that order. C is the together/idle pose.
 
 ## Source pose and identity contracts
 
-The five `mother_carrying_*_c.svg` files are the closed passing poses. The previous B SVG geometry
-supplied that concept. A and B legs and shoes are repaired as the two open contacts: front, rear and
+The five `mother_carrying_*_c.svg` files in E's pinned source checkout are the closed passing poses.
+A and B legs and shoes depict the two open contacts: front, rear and
 diagonal views alternate one lower/full-length leg with one higher/receding leg; profile views keep
 toes along travel while swapping the lighter near leg and darker far leg. Every SVG keeps its native
 24×46 or 26×46 canvas and bottom-center ground anchor. Godot renders the source family at native
@@ -43,10 +43,13 @@ chain. `convert.py` asserts all of those hashes before registration or installat
 
 ## Reproduction
 
-The deterministic extraction and review build can run without deleting retained evidence. From the
-repository root, choose a fresh output directory and use the root lockfile:
+The manifest checks E's original live SVG paths, so reproduction uses a detached source checkout
+containing those exact inputs. Choose fresh checkout and output directories:
 
 ```sh
+git worktree add --detach /tmp/nappy-carrying-e-source \
+  3e4b1f3ccd6422f444ab48255566bb81df5dd118
+cd /tmp/nappy-carrying-e-source
 ./tools/check.sh
 uv run --project . docs/evidence/comic-carrying-strides-2026-09-12/convert.py \
   register --output-dir /tmp/carrying-e-rebuild
@@ -61,7 +64,7 @@ if that manifest already exists. `install` copies a verified retained registrati
 asset folder; neither command is needed for the safe comparison above.
 
 The retained outputs reproduce byte-for-byte with uv 0.12.10, Python 3.14.7, Pillow 12.3.0 and
-Godot 4.7.2 stable (`ed1daf0bf`). The scripts use `/System/Library/Fonts/SFNS.ttf` at SHA-256
+Godot `4.7.2.stable.official.ed1daf0bf`. The scripts use `/System/Library/Fonts/SFNS.ttf` at SHA-256
 `2bfd40dc72e6759e248f82a52a40d551338979fffc9b5c070e685b4b7ad19e66`; the manifest asserts the
 same font before composing review sheets. Atlas extraction uses normalized 5×3 cell edges rounded
 against the selected 1380×1140 output. Each subject is fitted to 45 of the 46 source pixels, centered

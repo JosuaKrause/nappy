@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -145,7 +146,25 @@ def _eight_direction_outputs(scale: int) -> None:
 
 
 def main() -> None:
+    global SOURCE, RENDERED, STRIPS
+    parser = argparse.ArgumentParser(description=__doc__, epilog="Example: %(prog)s --output-dir /tmp/f-source-review")
+    parser.add_argument("--rendered-dir", type=Path, default=RENDERED, help="directory of the 30 Godot source renders")
+    parser.add_argument(
+        "--output-dir", type=Path, required=True, help="new review directory; existing paths are refused"
+    )
+    args = parser.parse_args()
+    if args.output_dir.exists():
+        parser.error(f"refusing existing output: {args.output_dir}")
     _assert_inputs()
+    RENDERED = args.rendered_dir.resolve()
+    for view in VIEWS:
+        for frame in FRAMES:
+            for scale in (1, 6):
+                _sprite(view, frame, scale).close()
+    _font(18)
+    SOURCE = args.output_dir.resolve()
+    STRIPS = SOURCE / "strips"
+    SOURCE.mkdir(parents=True)
     for scale in (1, 6):
         for view in VIEWS:
             _strip(view, scale)

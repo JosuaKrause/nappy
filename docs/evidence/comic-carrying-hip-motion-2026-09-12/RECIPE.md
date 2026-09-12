@@ -77,13 +77,14 @@ Run from the repository root through the locked environment, always with a fresh
 ```sh
 UV_CACHE_DIR=/tmp/nappy-uv uv run python \
   docs/evidence/comic-carrying-hip-motion-2026-09-12/register.py \
-  register --config /path/to/f-config.json --output-dir /tmp/carrying-f-registration
+  register --config docs/evidence/comic-carrying-hip-motion-2026-09-12/registration.json \
+  --output-dir /tmp/carrying-f-registration
 
 UV_CACHE_DIR=/tmp/nappy-uv uv run python \
   docs/evidence/comic-carrying-hip-motion-2026-09-12/register.py \
-  verify --config /path/to/f-config.json \
+  verify --config docs/evidence/comic-carrying-hip-motion-2026-09-12/registration.json \
   --registered-dir /tmp/carrying-f-registration \
-  --compare-to /path/to/retained-registration
+  --compare-to docs/evidence/comic-carrying-hip-motion-2026-09-12/registered
 ```
 
 `register` refuses any existing output path. `verify` writes nothing. Both commands support

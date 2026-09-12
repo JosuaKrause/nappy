@@ -64,6 +64,12 @@ proportions instead of stretching it or changing the runtime canvas. Inspect the
 not only the enlarged atlas. An approximate assembly sheet does not prove live hand-to-handle
 contact or motion; label its coverage accurately.
 
+Equal full-figure height alone does not establish equal proportions. Compare the head, coat hem
+and hands across contacts and the together frame: short legs in one generated cell make its
+upper body grow when every cell is fitted to the same height. Redraw the affected whole figures
+in a separate batch when a dense atlas constrains their stature. Register horizontal placement
+from stable body landmarks so changing leg spread does not move the hands sideways.
+
 ## Asset contract
 
 - Read the imagegen skill and use the built-in generator for raster generation or editing.

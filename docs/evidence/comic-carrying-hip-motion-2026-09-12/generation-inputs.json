@@ -1,0 +1,110 @@
+{
+  "version": "F \u2014 Hip motion",
+  "generator": "built-in image_gen.imagegen",
+  "prompt": "prompt.txt",
+  "prompt_sha256": "7bb1b18eaa465906f3b644e18ecdf9040c481036877e4aeffd6315fbf0d7771b",
+  "inputs": [
+    {
+      "path": "../comic-carrying-strides-2026-09-12/raw/carrying-acb-selected.png",
+      "role": "User-selected high-resolution edit target; preserve unmarked figures",
+      "sha256": "ada9b2764a99fdf4389f69a85470475fbeb085391b3d310d8371cb1a929e6ea2",
+      "dimensions": [
+        1380,
+        1140
+      ]
+    },
+    {
+      "path": "source/strips/front-acb-6x.png",
+      "role": "Reviewed SVG front A/C/B pose authority",
+      "sha256": "daef8e3c3302b120cbab9e2e55172b53f969214d1d44dcb852a85d1ec9a4873d",
+      "dimensions": [
+        774,
+        402
+      ]
+    },
+    {
+      "path": "source/strips/back-diagonal-acb-6x.png",
+      "role": "Reviewed SVG NE A/C/B pose authority",
+      "sha256": "57aa0211e23735609466d12f716ed13a3ed2ce065fe071c39659b1b02f6b0cb1",
+      "dimensions": [
+        774,
+        402
+      ]
+    },
+    {
+      "path": "../graphics-reference-urban-01.jpeg",
+      "role": "Comic style only",
+      "sha256": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d",
+      "dimensions": [
+        2816,
+        1536
+      ]
+    },
+    {
+      "path": "../graphics-reference-cardinal.jpeg",
+      "role": "Comic style only",
+      "sha256": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7",
+      "dimensions": [
+        2730,
+        1536
+      ]
+    }
+  ],
+  "output": {
+    "path": "raw/carrying-f-selected.png",
+    "sha256": "27ba7489bf0efbf9e475c72bbd7f7670841c7111a0703355641122873ad8f7fb",
+    "dimensions": [
+      1380,
+      1140
+    ]
+  },
+  "annotation": {
+    "path": "review/carrying-corrections-annotated.jpg",
+    "sha256": "4621c7ceb4695aaa553d6eefaf5174b5ae2b5491030c53839bf4d006d2b14c34",
+    "role": "Player annotation; not a generator input"
+  },
+  "proportion_edits": [
+    {
+      "prompt": "prompt-proportions.txt",
+      "prompt_sha256": "ef8b342cb0534375f2f7aa85cf156ac2c1c05d570de110724cfc19e52eae2dbf",
+      "inputs": [
+        {
+          "path": "raw/carrying-f-selected.png",
+          "role": "Whole-atlas proportion edit target",
+          "sha256": "27ba7489bf0efbf9e475c72bbd7f7670841c7111a0703355641122873ad8f7fb"
+        }
+      ],
+      "output": {
+        "path": "raw/carrying-f-proportions-attempt.png",
+        "sha256": "95012b2a3a3bf9a3ddee4a62028a6f55568f4d44fc77b1ba6e2101996f3a7ccb",
+        "dimensions": [1380, 1140],
+        "selection": "Preserved displayed candidate; not used for final frames"
+      }
+    },
+    {
+      "prompt": "prompt-c-row.txt",
+      "prompt_sha256": "782349f4a4405d2ee611e242ff0cef99b227cf1afef713a3b2958bcbb526bf43",
+      "inputs": [
+        {
+          "path": "source/proportion-inputs/c-row.png",
+          "role": "C/together whole-figure edit target",
+          "sha256": "1970da32afc545dd4c3c9f0c747a464eb74dce27e60cc67b093530b948757540",
+          "dimensions": [1380, 355]
+        },
+        {
+          "path": "source/proportion-inputs/a-row.png",
+          "role": "Adult stature, identity and material reference",
+          "sha256": "16a2395bc8f419de6b1cfa23ef1b248a151df4c805f40986aae95dca872b265a",
+          "dimensions": [1380, 400]
+        }
+      ],
+      "output": {
+        "path": "raw/carrying-f-c-row.png",
+        "sha256": "4d7bfa5d751f67ebab3eb6a2b93cc9870580d92380bf709d07ffcc703a12156e",
+        "dimensions": [2172, 724],
+        "selection": "Five whole together figures; registration.json records final extraction"
+      }
+    }
+  ],
+  "generation_reproducibility": "Nondeterministic edits; extraction and assembly reproduce from retained output bytes"
+}

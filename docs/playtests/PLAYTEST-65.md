@@ -129,3 +129,11 @@ Keep the accepted road-edge tiles. Redraw the sidewalk surface as a continuation
 material, slab pattern, scale and color. Review assembled road-edge/sidewalk neighbors and repeated
 sidewalk interiors, including damaged variants where they meet the same edge. Preserve tile sizes,
 road-edge geometry and runtime placement, with reproducible source/transfer and assembly recipes.
+
+> NE is now the same image in the to right and bottom right
+
+> Okay now it's better
+
+The player checks the high-resolution NE contact pair and then reports improvement. Keep the
+improved correction for scaled animation review; opposite leg ownership must remain visible
+through the full A/C/B/C cycle.
