@@ -90,3 +90,9 @@ of the phase at which movement ended. Do not hold an open-contact pose at rest.
 Keep the generation, extraction, registration and rollout recipes with their retained evidence,
 including all GIF and comparison-sheet scripts, and link them from a discoverable index.
 Preserve exact inputs, frame order, timing, tool requirements and regeneration commands.
+
+> the wheels of the stroller and the feet of the woman need to be on the same height. right now it looks like the stroller is floating. could potentially be solved without regenerating by scaling the stroller a little bit bigger so the handle wheel height difference is the same as the hand foot height difference
+
+Hand contact must preserve grounding: align the stroller wheels with the woman's feet rather
+than lifting the wheels to bring the handle up. Try a modest drawing scale so the handle-to-wheel
+height matches her hand-to-foot height, retaining the existing art if that satisfies both.

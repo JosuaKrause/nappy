@@ -17,6 +17,8 @@ with their SVG source mappings in the
 [identity generation record](evidence/comic-identity-2026-09-12/GENERATION.md).
 Compare directions, gait frames and state variants together so the mother
 carrying the baby reads as the same woman pushing the stroller.
+The carrying walk uses three distinct poses in four phases: open, together, opposite open,
+together. Stopping selects the together pose. The pushing walk uses its own two-frame family.
 
 ## Reference roles
 
@@ -54,8 +56,8 @@ The [comic prop record](evidence/comic-props-2026-09-12/GENERATION.md) preserves
 garbage and litter, their generated silhouettes and reproducible anchor registration.
 The [city prop record](evidence/comic-city-props-2026-09-12/GENERATION.md) covers trees,
 their opaque ground bed, the overhead bollard cap and rooftop equipment. The
-[carrying redraw record](evidence/comic-carrying-redraw-2026-09-12/GENERATION.md) documents
-the current carrying poses, their source pairings and comparison with the pushing mother.
+[carrying stride record](evidence/comic-carrying-strides-2026-09-12/GENERATION.md) documents
+the current three-pose carrying family, its source pairings and reproducible walking rollout.
 The [tile generation record](evidence/style-transfer-tiles-2026-09-12/GENERATION.md) preserves
 the terrain sheets, source-pair manifest and native/repeated-neighbor comparisons. Ground tiles
 use fixed cell extraction because every pixel belongs to a filled tile, including its edges.

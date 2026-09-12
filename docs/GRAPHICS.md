@@ -58,7 +58,7 @@ Some visible graphics are code rather than image files:
 | Assets | Runtime binding and behaviour |
 |---|---|
 | `assets/rig/mother_{front,back,side}_{a,b}.svg`, `mother_{front,back}_diagonal_{a,b}.svg` | `src/player/stroller.gd` chooses among eight upright views and alternates the two gait frames. East-authored side and diagonal views mirror explicitly for west. Mother canvases are 24×46 cardinal front/back, 26×46 side/diagonal, all bottom-centre grounded. |
-| `assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b}.svg` | `src/player/stroller.gd` draws these instead of the mother-and-pram pair, with no pram sprite at all, whenever `Stroller.carrying` is set — the escape scene's own rig, behind `--start-escape`. Same eight-view and two-gait selection and the same west mirrors as the ordinary set; the baby's own cue (`baby_{zzz,fuss,cry}.svg`) draws over the bundle at her own position rather than over a pram offset ahead of her. |
+| `assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b,c}.svg` | `src/player/stroller.gd` selects these when `Stroller.carrying` is set, including the escape scene behind `--start-escape`. Three distinct poses play A, C, B, C: open contact, feet together, opposite contact, feet together. Movement distance advances the loop; stopping selects C. Five authored views supply eight directions through the same west mirrors as the pushing set. The baby's cue (`baby_{zzz,fuss,cry}.svg`) draws over the bundle at her own position, with no pram sprite. |
 | `assets/rig/pram_{front,back,side}.svg`, `pram_{front,back}_diagonal.svg` | `src/player/stroller.gd` chooses the matching eight-direction pram view; east-authored side and diagonal views mirror explicitly for west. Pram canvases are 30×30 cardinal and 36×30 side/diagonal, bottom-centre grounded. |
 | `assets/props/baby_{zzz,fuss,cry}.svg` | `src/player/stroller.gd` chooses sleeping, awake/fussing or crying state above the pram. |
 | `assets/props/alert.svg`, `assets/props/alert_close.svg` | `src/player/stroller.gd` draws the exclamation over the player when an event is about her, using the close variant at the nearer threshold. |
@@ -230,13 +230,15 @@ The live replacement family is `assets/illustrated/svg-transfer/rig/`: `mother_f
 (36×30). `mother_{front,back}_diagonal_{a,b}.png` (26×46) and
 `pram_{front,back}_diagonal.png` (36×30) supply the diagonal views; west views mirror their
 east-authored partners. The carrying set adds
-`mother_carrying_{front,back}_{a,b}.png` (24×46) and
-`mother_carrying_{side,front_diagonal,back_diagonal}_{a,b}.png` (26×46), selected by the same
+`mother_carrying_{front,back}_{a,b,c}.png` (24×46) and
+`mother_carrying_{side,front_diagonal,back_diagonal}_{a,b,c}.png` (26×46), selected by the same
 resolver during the escape scene. All use bottom-center anchors and retain their redrawn
 silhouettes and true transparency. The [comic rig record](evidence/comic-rig-2026-09-12/GENERATION.md)
-documents the pushing mother and stroller. The current carrying family's sources,
-cradle poses and registration are in the
-[carrying redraw record](evidence/comic-carrying-redraw-2026-09-12/GENERATION.md).
+documents the pushing mother and stroller. The current carrying family is **E — Clear strides**;
+its SVG sources, three poses, closed idle frame, registration and eight-direction GIF recipe are
+in the [carrying stride record](evidence/comic-carrying-strides-2026-09-12/GENERATION.md).
+The [graphics recipe index](evidence/README.md#graphics-recipes) also locates the named comparison
+versions and their preserved rollouts.
 
 `assets/illustrated/svg-transfer/props/` supplies `garbage_sack.png` (28×34) and
 `garbage_sacks_pile.png` (42×34), bottom-center anchored, plus `litter_{can,apple,bag,newspaper,cup}.png`

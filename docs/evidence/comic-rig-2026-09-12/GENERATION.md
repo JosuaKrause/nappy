@@ -10,7 +10,7 @@ deliberate shadow planes.
 The pushing and pram derivatives supply the current runtime assets. The carrying rows and
 their registered PNGs are retained rejection evidence for PLAYTEST-65, not reference art or
 the current carrying textures. The active carrying family is documented in
-[the carrying redraw record](../comic-carrying-redraw-2026-09-12/GENERATION.md).
+[the carrying stride record](../comic-carrying-strides-2026-09-12/GENERATION.md).
 
 The registered derivatives keep every source canvas dimension and bottom-center anchor. They preserve
 the generated comic silhouettes and transparent gaps, so they do not reuse the SVG alpha. This is

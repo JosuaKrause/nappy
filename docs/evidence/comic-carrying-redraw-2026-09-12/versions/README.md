@@ -7,9 +7,12 @@
 - **C — Alternating stride** makes the second gait more distinct but retains the enlarged head and
   short proportions. Its generation source, selected edit, both prompts and registered previews
   are under `c/` for human comparison only.
-- **D — Matched proportions** edits the adult pushing atlas locally and is the current runtime
-  candidate. Its selected raw atlas, exact prompt, source inputs and previews live at the record's
+- **D — Matched proportions** preserves a localized edit of the adult pushing atlas with two gait
+  frames. Its selected raw atlas, exact prompt, source inputs and previews live at the record's
   top level.
+
+The current carrying family is [E — Clear strides](../../comic-carrying-strides-2026-09-12/GENERATION.md),
+with three poses and a feet-together idle frame. The four-version comparison remains fixed.
 
 B and C are evidence of human-visible alternatives. They are not style, identity or pose inputs
 for D or for future artwork.

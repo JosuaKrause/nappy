@@ -115,18 +115,11 @@ findings supported by the conversion and review.
       Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
-- [ ] Correct the carrying mother's A/B gait frames in every direction: PLAYTEST-65 clarifies
-      that the pictures differ but do not depict walking. The north view comes closest, yet
-      still fails to swap the left/right leg behind. Preserve each direction's head, torso,
-      arms and baby; alternate which anatomical leg leads and trails, and which overlaps the
-      other in each view. Sideways movement also needs spread and closed legs: use open,
-      passing, opposite open, passing, with three distinct source poses and a four-phase cycle.
-      At rest always select the together pose, regardless of the last moving phase.
-      Author and review each new passing-pose SVG before its PNG. Check readable leg motion at
-      native scale. Keep versions
-      A–D available for comparison; name the corrected family E, clear strides. Inspect all
-      five view cycles and west mirrors, publish the corrected full eight-direction rollout
-      with all three distinct poses, and verify animation in the running game.
+- [ ] Ground the connected stroller: PLAYTEST-65 finds that the upward placement makes its
+      wheels float above the mother's feet. Match wheel/foot height and hand/handle contact
+      together; try a modest stroller drawing scale to match handle-to-wheel and hand-to-foot
+      height without regenerating. Review both frames and all eight views, including turns,
+      and keep the collision and input contracts unchanged.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The

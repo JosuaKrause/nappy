@@ -1,11 +1,14 @@
 # Comic carrying-mother redraw
 
-This record covers **D — Matched proportions**, the current carrying-only redraw requested in
+This record preserves **D — Matched proportions**, the two-frame carrying redraw requested in
 PLAYTEST-65. The ten PNG derivatives use
 the same adult woman, directions and gait as the current pushing raster family while replacing her
 pushing arms with a secure two-arm cradle. The baby lies horizontally or diagonally in the front,
 profile and front-diagonal views. The direct back view hides the baby except for a narrow blanket
 edge; the back diagonal exposes only the outside edge of the bundle.
+The current runtime carrying family is documented in
+[E — Clear strides](../comic-carrying-strides-2026-09-12/GENERATION.md); D remains a fixed identity
+reference and comparison snapshot.
 
 The previous carrying result and its provenance remain intact under
 `docs/evidence/comic-rig-2026-09-12/`: `mother-atlas-generated.png` is its raw shared atlas and
@@ -78,8 +81,8 @@ The script saves generated alpha before extending colors beneath transparent pix
 the same alpha bytes afterward. It does not stamp, intersect or otherwise reuse SVG alpha.
 `registered/registration.json` records each fit and verifies generated alpha, aspect ratio, native
 canvas size and ground-line preservation. The ten files under `registered/rig/` are byte-for-byte
-the runtime PNGs copied into `assets/illustrated/svg-transfer/rig/`; their existing `.import`
-sidecars remain unchanged, preserving resource identities.
+the selected D snapshot. The runtime uses E's revised leg poses while preserving D's upper-body
+pixels and the existing asset resource identities.
 
 ## Review sheets
 

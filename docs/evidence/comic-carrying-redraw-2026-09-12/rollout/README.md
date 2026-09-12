@@ -1,7 +1,7 @@
 # D walking rollout
 
 This evidence assembles the registered D carrying pixels into the eight directions selected by
-the current gameplay drawing path. The static sheet shows each direction's two-frame loop as
+D's gameplay drawing path. The static sheet shows each direction's two-frame loop as
 `A → B → A → B`; the GIF shows the same loop in place at 190 ms per frame. The A and B PNGs are
 the individual GIF frames for inspection.
 
@@ -14,7 +14,7 @@ quiet slate background is added only for review, and all sprites share the regis
 baseline. West-facing sectors use the runtime mirror convention: SW, W, and NW mirror their
 front-diagonal, side, and back-diagonal source views respectively.
 
-The timing follows the current source behavior: `_walk_phase += velocity.length() * delta * 0.09`
+The timing follows D's preserved source behavior: `_walk_phase += velocity.length() * delta * 0.09`
 (the requested walking-speed shorthand is `92*dt*.09`) and stepping selects B when
 `sin(_walk_phase * 2.0) > 0.0`. The GIF is a source animation preview in place; it does not claim
 gameplay travel or approval. It deliberately exposes D's known insufficient stride and does not

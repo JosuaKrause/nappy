@@ -27,6 +27,7 @@ can produce different pixels on another call; extraction and assembly use the re
 | Carrying redraws and identity comparison | [Carrying generation and registration](comic-carrying-redraw-2026-09-12/GENERATION.md) |
 | Four named carrying versions | [Comparison script](comic-carrying-redraw-2026-09-12/versions/make-comparison.py) and [version inputs](comic-carrying-redraw-2026-09-12/versions/README.md) |
 | D's preserved two-frame walking GIF and rollout | [Recipe, timing and source manifest](comic-carrying-redraw-2026-09-12/rollout/README.md) |
+| E's three-pose carrying walk and GIF | [Generation, registration and safe rebuild commands](comic-carrying-strides-2026-09-12/GENERATION.md) |
 | Stroller hand-contact sheets in PNG and SVG | [Assembly script, placement and regeneration command](pram-contact-2026-09-12/MEASUREMENTS.md) |
 | Trees, bollard and rooftop equipment | [City prop generation and registration](comic-city-props-2026-09-12/GENERATION.md) |
 | Garbage and litter | [Comic prop generation and registration](comic-props-2026-09-12/GENERATION.md) |
