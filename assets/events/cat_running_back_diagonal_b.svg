@@ -1,0 +1,4 @@
+<!-- cat running back diagonal; ears, spine and tail viewed from behind. Bottom-centre ground anchor; prepared and unbound. Mid-stride. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="38" height="24" viewBox="0 0 38 24" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M21 7 L23 2 L26 5 L30 4 L32 9 L27 13 L22 11 Z" fill="#58524d" />  <path d="M9 17 Q12 10 23 8 L28 13 L16 21 Z" fill="#58524d" />  <path d="M13 17 L7 20 L9 22 M13 18 L10 23 M27 11 L33 11 L36 8 M20 13 L25 16 L29 15" fill="none" stroke="#3f3a36" stroke-width="2"/>  <path d="M11 17 Q6 13 4 18 Q3 21 1 20" fill="none" stroke="#58524d" stroke-width="2"/>
+</svg>
