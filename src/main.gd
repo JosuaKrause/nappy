@@ -28,9 +28,16 @@ var _debug := DevFlags.enabled()
 var _escape_scene_requested := DevFlags.start_escape()
 
 var _city: City
-## Set instead of `_city` under `--start-escape`; the two are never both non-null. See
-## `_ready_escape()`.
+## The escape scene's building. Under `--start-escape` it is built first and `_city` follows when
+## she walks out of the service exit, so the two *are* both non-null for the whole of the finale's
+## second section — the building stays on its own map with nobody on it. On an ordinary run
+## `_interior` is null and `_city` is the only world there is.
 var _interior: InteriorScene
+## The escape sequence's own clock and section, or null on an ordinary run. See `FinaleController`.
+var _finale: FinaleController
+## The events inside the building — mice, the pursuers, the fire, the steam and the off-screen
+## explosions — hosted on the interior map, since `InteriorScene` has no `EventManager`.
+var _interior_events: InteriorEvents
 var _player: Stroller
 var _baby: Baby
 var _day: DayController
@@ -204,22 +211,24 @@ func _ready() -> void:
 		return
 	_open_the_title()
 
-## `--start-escape`'s own boot: the third floor's hallway, her at the door with the baby in her
-## arms, and the way down — or, with `DevFlags.start_escape_at()`'s optional value, teleported
-## straight to any of the building's other six parts on the same map, so a rig or a person can look
-## at one without walking there. No title, no `City`, no events, no crowd, no `DayController` and
-## no `ResistanceDirector` — the milestone this exists for is judging the walking, the door
-## transitions and the stair tiles on their own, before the finale puts any pressure on top of
-## them, so nothing here builds a clock or an ending. The HUD still comes up: its two meters idle
-## exactly as `WorldContext`'s own defaults leave them (1.0 recovery everywhere, nothing charging
-## excitement), which is "meters idle" for free rather than a case this has to build.
+## `--start-escape`'s own boot: the whole escape sequence, which is the run's ending played behind
+## a flag rather than reached from day 14's summary. Section one is the building — the third
+## floor's hallway, her at the door with the baby asleep in her arms, and the way down past the
+## barricaded entrance into the basement — and the service door hands over to section two, the
+## city with nobody in it and one way out of it. `DevFlags.start_escape_at()`'s optional value
+## teleports straight to any of the building's other six parts, or to `city` for section two on
+## its own, so a rig or a person can look at one without walking there.
+##
+## No title and no `ResistanceDirector`: the run behind this is not played, so there is nothing to
+## resume and no subquest to advance. What *is* built is the clock (`FinaleController`), the HUD
+## it draws on, and the summary the epilogue needs.
 func _ready_escape() -> void:
 	# Guarded here too, not only at the call site in `_ready()` — the same shape
 	# `_add_debug_layers()` reads `_debug` in, so a test can call this directly and check the
 	# release shape without also driving the rest of `_ready()`.
 	if not _escape_scene_requested:
 		return
-	_status.visible = false
+	_status.visible = _debug and _layer_readout_on
 	GameState.start_run(DevFlags.seed_override())
 	# Same opt-out and the same reasoning as the ordinary run: a trace behind a flag nobody
 	# remembers to turn on is a trace nobody gets, and `P`/`B` (`_snapshot_now()`/`_start_burst()`)
@@ -228,6 +237,50 @@ func _ready_escape() -> void:
 	if not "--no-telemetry" in OS.get_cmdline_user_args():
 		Telemetry.begin_run(GameState.run_seed, _somebody_is_playing())
 
+	_hud = HUD.instantiate()
+	add_child(_hud)
+	# The one thing the escape changes about the HUD: the clock reads to the millisecond.
+	_hud.set_finale(true)
+	_add_touch_controls()
+	_summary = DAY_SUMMARY.instantiate()
+	add_child(_summary)
+	_summary.continued.connect(_on_finale_summary_continued)
+	_summary.restart_requested.connect(_restart_run)
+
+	# Built but not opened — same reasoning `_ready()` builds `_title` up front for the ordinary
+	# run: the epilogue's own continue button needs somewhere to send her rather than building a
+	# screen the moment it is first asked for.
+	_title = TITLE_SCREEN.instantiate()
+	add_child(_title)
+	_title.start_requested.connect(_on_escape_title_start)
+	_title.quit_requested.connect(_quit)
+
+	_finale = FinaleController.new()
+	_finale.name = "Finale"
+	add_child(_finale)
+	_pauses_with_the_game(_finale)
+	_finale.section_started.connect(_on_finale_section_started)
+	_finale.escaped.connect(_on_finale_escaped)
+
+	var start_at_the_city := _escape_start_part() == "city"
+	if start_at_the_city:
+		_build_the_finale_city()
+	else:
+		_build_the_escape_building()
+
+	_apply_orientation()
+	_finale.begin(FinaleController.Section.CITY if start_at_the_city
+			else FinaleController.Section.BUILDING)
+
+	if DevFlags.overview_requested() and _city:
+		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
+
+	var screenshot := AutoScreenshot.from_command_line()
+	if screenshot:
+		add_child(screenshot)
+
+## Section one's world: the building, her in it, and the events inside it.
+func _build_the_escape_building() -> void:
 	_interior = InteriorScene.new()
 	_interior.name = "Interior"
 	add_child(_interior)
@@ -242,24 +295,79 @@ func _ready_escape() -> void:
 	_player.set_camera_limits(_interior.camera_bounds())
 	_baby = _player.get_node("Baby")
 
-	_hud = HUD.instantiate()
-	add_child(_hud)
-	_add_touch_controls()
+	_interior_events = InteriorEvents.new()
+	_interior_events.name = "InteriorEvents"
+	add_child(_interior_events)
+	_pauses_with_the_game(_interior_events)
+	_interior_events.setup(_interior, GameState.day_rng(GameState.day, "finale-interior"))
 
-	# Built but not opened — same reasoning `_ready()` builds `_title` up front for the ordinary
-	# run: `_on_escape_exit_requested()` needs somewhere to send the emergency exit rather than
-	# building a screen the moment it is first asked for.
-	_title = TITLE_SCREEN.instantiate()
-	add_child(_title)
-	_title.start_requested.connect(_on_escape_title_start)
-	_title.quit_requested.connect(_quit)
+## Section two's world: the city she knows with nobody in it, and the finale's own plan on it.
+##
+## The city is generated from the run seed exactly as an ordinary run's is, so the streets, the
+## parks and the two exits are the ones she has walked for fourteen days. What is different is
+## everything laid *on* it: `City.start_finale()` dresses the blocks without growing a day's route
+## tree, closures or region wall; the crowd is cleared and never started, since *"no regular cars
+## or regular people on the street"*; and `EventManager.start_finale()` takes this scene's own plan
+## instead of the catalogue's day.
+func _build_the_finale_city() -> void:
+	_city = CITY.instantiate()
+	add_child(_city)
+	_pauses_with_the_game(_city)
+	_city.build(CityGenerator.generate(GameState.run_seed))
+	GameState.city_state.begin_day(_city.map.block_plans, GameState.day)
+	_city.start_finale(GameState.city_state, GameState.day)
+	_city.set_act(GameState.current_act())
+	# Night, and fixed there: the escape happens after the last day and the clock is the tension
+	# rather than the light, so the sky does not run itself down over the sequence.
+	_city.set_daylight(0.0)
+	# Never `Crowd.start_day()`: a cleared crowd is the whole of "nobody in it", and clearing is
+	# the one call this file makes into `src/crowd/`.
+	_city.crowd.clear()
 
+	if not _player:
+		_player = STROLLER.instantiate()
+		_player.carrying = true
+		_city.add_entity(_player)
+		_baby = _player.get_node("Baby")
+	else:
+		# Out of the building and onto the street: the same rig, reparented, with the stairwell's
+		# own slope redirection dropped — there are no flights outdoors, and a `Callable` left
+		# pointing at the interior would answer for tiles on a map she is no longer standing on.
+		_player.slope_dir_at = Callable()
+		_player.get_parent().remove_child(_player)
+		_city.add_entity(_player)
+	_player.set_camera_limits(_city.camera_bounds())
+	# The **tiles** the chains end on rather than the points `CityEdge` draws its pictures at: the
+	# portal's own face is anchored on the map edge, past the last ground she can stand on, so a
+	# reach measured from it would have to be wide enough to cover the difference and would then
+	# also cover the street before it. `FinalePlanner.exit_tile()` is the carriageway under the
+	# portal, which is where being out of the city actually happens.
+	_finale.set_exits(
+			_city.map.tile_to_world(FinalePlanner.exit_tile(_city.map, CityEdge.Kind.TUNNEL)),
+			_city.map.tile_to_world(FinalePlanner.exit_tile(_city.map, CityEdge.Kind.BRIDGE)))
+	_add_danger_edge()
+	_add_excitement_halo()
+	_add_debug_layers()
+	# Three of the layers above are `CanvasLayer`s built after the boot's own orientation pass, so
+	# the rotation is applied again rather than left for the next time the window changes shape —
+	# see `_apply_orientation()`, which is idempotent and is asked the same question every frame.
 	_apply_orientation()
-	_player.reset_at(_interior.part_world_position(_escape_start_part()), Vector2.UP)
+	_plan_the_finale_city()
 
-	var screenshot := AutoScreenshot.from_command_line()
-	if screenshot:
-		add_child(screenshot)
+## Today's finale plan, rebuilt from the run seed every time section two begins — on the first
+## walk out of the service door and on every restart after a loss. Deterministic, so a restarted
+## section is the same city rather than a thinner one: a plan that had been half spent would
+## quietly reward losing.
+func _plan_the_finale_city() -> void:
+	var elapsed := Time.get_ticks_msec()
+	var plan := FinalePlanner.plan(_city.map, GameState.day_rng(GameState.day, "finale"))
+	_city.events.start_finale(plan.placements, _finale_start_position())
+	# Printed as well as logged, for the same reason `_start_day()` prints the day it just built:
+	# the shape of the walk is the one thing worth knowing before anything else in the log means
+	# anything, and a run with telemetry off still has a console.
+	print("[Main] finale planned in %d ms (seed %d): %s"
+			% [Time.get_ticks_msec() - elapsed, _city.map.seed_used, plan.summary()])
+	Telemetry.note("plan", "finale: %s" % plan.summary())
 
 ## `DevFlags.start_escape_at()`'s raw word, mapped onto the `InteriorMap.PARTS` waypoint to
 ## teleport to before the first frame — `"hallway_third"`, her own door, for every word this does
@@ -268,9 +376,20 @@ func _ready_escape() -> void:
 ## agree without one calling the other. Kept here rather than in `DevFlags`, the same split
 ## `ending_override()` leaves to its own caller, since mapping a word onto a part name only this
 ## file's own `InteriorScene` understands is not that class's job.
+##
+## `"city"` is the one answer that is not a part of the building: it boots section two on its own,
+## with no building built at all, so a rig or a person can look at the finale's streets without
+## walking down three floors first. `_ready_escape()` is what reads it that way.
 func _escape_start_part() -> String:
-	var raw := DevFlags.start_escape_at()
+	return escape_part_for(DevFlags.start_escape_at())
+
+## The mapping itself, with the command line taken out of it — nothing in the suite can put a word
+## on a real `OS.get_cmdline_user_args()`, so the word and what it means are separated here the
+## same way `DevFlags.parse_layers()` separates `--layers`' own parsing from reading argv.
+static func escape_part_for(raw: String) -> String:
 	match raw:
+		"city":
+			return "city"
 		"stairwell:left":
 			return "stairwell_left"
 		"stairwell:right":
@@ -287,19 +406,71 @@ func _escape_start_part() -> String:
 			return "hallway_third"
 
 ## `InteriorScene.exit_requested` fires once the emergency exit's own fade has covered the screen
-## — see `InteriorScene._start_exit()`. Pausing and opening `_title` is what "returns to the title
-## screen" actually has to mean here: a scene reload would read `--start-escape` off the same
-## command line and boot straight back into this function, so the screen the spec names would
-## never actually appear on screen.
+## — see `InteriorScene._start_exit()`. The service door is the join between the two sections, so
+## what is behind the black is the street beside the home block rather than a title screen: the
+## city is built on this frame, the building is left standing on its own map with nobody on it,
+## and `FinaleController.enter_city()` carries the same clock across.
+##
+## The fade is not reversed here. `InteriorScene` holds the black at full opacity from the moment
+## it emits, and `_on_finale_section_started()` clears it once she has been put down on the street,
+## so nothing of the city is seen being assembled.
 func _on_escape_exit_requested() -> void:
+	_build_the_finale_city()
+	_finale.enter_city()
+
+## A section has begun — the first time, or again after a loss. Where she goes is this file's
+## answer because only this file holds both worlds; the hint line is said on the first entry only,
+## *"like normal tutorial hints"*, so a retry is not lectured about what it is already doing.
+func _on_finale_section_started(section: int, restarted: bool) -> void:
+	_summary.dismiss()
+	_hud.visible = true
+	if section == FinaleController.Section.BUILDING:
+		_player.reset_at(_interior.start_world_position(), Vector2.UP)
+		if _interior_events:
+			_interior_events.restart()
+		if not restarted:
+			_hud.say_once("Escape the apartment")
+	else:
+		# A restart of section two replans it: see `_plan_the_finale_city()`.
+		if restarted:
+			_plan_the_finale_city()
+		_player.reset_at(_finale_start_position(), Vector2.DOWN)
+		_city.events.stream_around(_player.global_position)
+		if not restarted:
+			_hud.say_once("Exit the city")
+	# The baby starts every attempt asleep with sleepiness full — *"the player holding the sleeping
+	# baby (sleep bar is full)"* — which is also what makes a restart playable at all: the meter
+	# that just reached a hundred is what lost the section.
+	_baby.reset()
+	_baby.force_sleep()
+	if _interior:
+		_interior.clear_fade()
+
+## Where section two starts and restarts: the service exit, on the street beside the home block.
+func _finale_start_position() -> Vector2:
+	return FinalePlanner.service_exit_world_position(_city.map)
+
+## The tunnel mouth or the bridge deck, reached. The sequence ends on a summary screen with the
+## way out behind her and nothing triumphant on it — see `DaySummary.show_finale()`.
+func _on_finale_escaped(exit_kind: int) -> void:
+	_hud.visible = false
+	_summary.show_finale(exit_kind, FinaleController.length() - _finale.time_remaining())
+
+## The epilogue's own continue button. Behind the flag there is no run for the escape to be the
+## ending *of*, so continuing goes back to where a run begins — the title screen, which then
+## reloads the scene and walks the whole sequence again. Opening the screen rather than reloading
+## straight away is what `_on_escape_exit_requested()`'s own note used to say about this boot: a
+## reload reads `--start-escape` off the same command line, so the screen would never be seen.
+func _on_finale_summary_continued() -> void:
+	_summary.dismiss()
 	get_tree().paused = true
 	_hud.visible = false
-	_title.open(false)
+	_title.open(true)
 
-## The title screen's own start button, reached after the emergency exit — there is no larger run
+## The title screen's own start button, reached after the epilogue — there is no larger run
 ## behind this debug entry to resume, so the only thing left worth doing with it is walking the
-## escape scene again from the top. `--start-escape` is read fresh on the reload, so this is also
-## "run it again" for anybody testing the walk down.
+## escape sequence again from the top. `--start-escape` is read fresh on the reload, so this is
+## also "run it again" for anybody testing the walk down.
 func _on_escape_title_start(mode: ControlsMode.Mode) -> void:
 	_touch_controls.set_mode(mode)
 	get_tree().paused = false
@@ -756,6 +927,9 @@ func _process(delta: float) -> void:
 		_apply_orientation()
 	if not _player or not _baby:
 		return
+	if _finale:
+		_process_the_finale(delta)
+		return
 	if _interior:
 		_interior.process_player(_player, delta)
 		return
@@ -814,6 +988,18 @@ func _process(delta: float) -> void:
 		"shift       run",
 		"esc         pause  (r restart, q quit)",
 	])
+
+## The escape's own per-frame work, in place of the day loop: the doors and the service exit while
+## she is in the building, and the two ways out of the city once she is on the street. The
+## `EventManager` streams itself around her (`EventManager._physics_process`), so section two needs
+## nothing here to keep its own events stocked.
+func _process_the_finale(delta: float) -> void:
+	if _finale.section == FinaleController.Section.BUILDING:
+		if _interior:
+			_interior.process_player(_player, delta)
+		return
+	if _city:
+		_finale.check_exit(_player.global_position)
 
 ## The closest live event and what it is currently doing — the readout that says whether a
 ## telegraph actually ended when it should have.
