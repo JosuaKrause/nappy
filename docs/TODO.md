@@ -372,13 +372,23 @@ one question.
       recommendation, pinned and open to overturn. **The queue is short by construction**: a
       walker that would be held while another is already held, or while more than a short line
       waits behind it — two is the recommendation — turns back instead of joining it, so a busy
-      door never grows a line down the pavement. The hold is the crowd's own state (`CrowdAgent`,
-      the way a car's gate stop is computed in `Crowd`), keyed on the door's hut position from the
-      region plan, never on the hut's `detain_radius` or her hold code, which detains her and not
-      them. A held walker stands in its last facing, frame a, the way a stopped walker already
-      does. Waits for the checkpoint fixes in M100 to land, since the hut's own approach geometry
-      is moving there and the walkers' hold should sit where hers does. Evidence is a burst at a
-      door on a busy street, with `--invincible`
+      door never grows a line down the pavement. **The hold is four states, the player's**
+      *("four states walking -> waiting -> inspection -> emerging on the other side (with cooldown
+      to not go back again) -> walking")*: a walker **walking** toward a door's hut reaches it and
+      is **waiting** — stopped beside the hut in its last facing, frame a, the way a stopped walker
+      already stands, behind whoever is inside; then **inspection** — the walker goes inside the
+      hut and is not drawn, for the hold's length, the way she does; then **emerging** — it
+      reappears on the far side of the door, on its own pavement, past the hut's body, and carries
+      a **cooldown** during which that door cannot take it again, so a walker that is turned round
+      by the crowd's own steering just past the door walks on instead of being inspected a second
+      time; then **walking**. One walker inside at a time, so the queue is whoever is waiting. The
+      hold is the crowd's own state (`CrowdAgent`, the way a car's gate stop is computed in
+      `Crowd`), keyed on the door's hut position from the region plan, never on the hut's
+      `detain_radius` or her hold code, which detains her and not them; the two-second hut hold
+      she gets is the model for the walker's shorter one. Waits for the checkpoint fixes in M100
+      to land, since the hut's own approach geometry is moving there and the walkers' hold should
+      sit where hers does. Evidence is a burst at a door on a busy street, with `--invincible`,
+      long enough to show one walker through all four states
 - [ ] **Open question, the player's: does every other solid body divert the crowd too?** A café, a
       construction band, a kerbed van are walked through the same way. Diverting the crowd at every
       pavement obstacle spends the tell closures rely on — every obstructed street would read as

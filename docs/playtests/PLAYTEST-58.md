@@ -29,3 +29,12 @@ So a walker arriving at a door's hut is held for a short time and continues, a s
 walk through as they do today, some turn back the way they do at a wall, and the queue that forms
 behind a held walker stays short. None of the fractions and none of the queue's length is a
 number the player gave.
+
+And the shape of the hold itself, as states:
+
+> four states walking -> waiting -> inspection -> emerging on the other side (with cooldown to not
+> go back again) -> walking
+
+So a held walker waits its turn, goes inside for the inspection the way she does, comes out on
+the far side of the door, and for a while after that cannot be taken by the same door again, so
+it walks on rather than turning round into a second hold.
