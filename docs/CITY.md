@@ -814,7 +814,7 @@ Both ends of the journey are exempt from being charged for their own doorway:
 | Kind | From | What it is |
 | --- | --- | --- |
 | `ROADWORKS` | day 1 | A trench, a spoil heap and a length of pipe. |
-| `FALLEN_TREE` | day 1 | A tree down across the road, roots and all. |
+| `FALLEN_TREE` | day 1 | A tree down across the road, roots and all — only on a street that has trees, and it takes one of their pits with it. |
 | `CRASH` | day 1 | Two cars that met. |
 | `CORDON` | day 4 | Barriers and an order. Act II closes streets on purpose. |
 | `RUBBLE` | day 12 | A facade in the road. |
@@ -824,12 +824,25 @@ bringing the building down. Mechanically they are identical — a street you can
 is a street you cannot walk down — and that is deliberate, because a closure that also had
 rules would be an event.
 
-**`FALLEN_TREE` prefers a street that already has standing trees on it.** `StreetTrees.planted()`
-is the one source of truth both `City` (what it draws) and `ClosurePlanner` (which segment a
-felled tree is more likely to land on) read, so the closure marker's picture and the standing
-trees beside it are the same species by construction — see "Rendering (2.5D)" below for where
-they stand. It is a preference, not a requirement: a street with no trees on it may still get a
-fallen one, the same way a `ROADWORKS` closure needs no dug-up ground to already be there.
+**`FALLEN_TREE` only happens where a tree stood, and the tree that fell is the one that is
+missing.** *(2026-09-11, the player: "fallen trees should only be possible on streets with trees
+and one spot should be empty (the fallen tree's spot)".)* `ClosurePlanner._pick_kind` drops the
+kind from the roll entirely on a street `StreetTrees` never planted — a gate, not a preference —
+and weights it up on one it did, since tree-lined streets are a small fraction of the city and a
+day closes between one and four of them. The closure then takes one of that street's own pits,
+**the one nearest the middle of the street it closed**, and that pit stands empty for the day:
+`City.refresh_street_trees()` does not draw the tree there. A gap at the far end of the street
+would read as two different trees, which is why the choice is the planner's rather than the first
+pit it finds.
+
+**`fallen_tree_seal` is the same rule in the other pass.** `SealPlanner` offers that picture only
+on a tree-lined street too, stands its whole-street scene on a pit rather than beside one, and
+empties it. It is the single exception to "a tree and an event never share ground" — see
+"Rendering (2.5D)" below, and `docs/EVENTS.md`, "Where in the city, and why".
+
+`StreetTrees.planted()` is the one source of truth all of them read — what `City` draws, which
+segment may carry a felled tree, and which pit that felled tree takes — so the closure marker's
+picture and the standing trees beside it can never be two different species.
 
 **A closure is silent.** It contributes nothing to the excitement meter. The noise of a
 street is the crowd on it and the danger of a street is the events on it; a closure is the
@@ -1406,6 +1419,12 @@ Top-down camera with a fake vertical extrusion:
   candidate is offered rather than moving something afterwards. So a van, a café, a market stall,
   a yeller, a dog walker or a seal is never in or behind a tree, and the only thing that ever
   stands in a pit is the tree that fell out of it.
+- **A pit the day emptied has no tree in it.** A `FALLEN_TREE` closure and a `fallen_tree_seal`
+  each take one of their street's own pits — see "What closes a street" above —
+  and `CityMap.is_tree_pit_emptied` is what `City.refresh_street_trees()` reads to leave that one
+  prop undrawn for the day. The planting itself never changes: where a city's trees stand is a
+  fact about the run, which one is lying in the road is a fact about the day, so the day's answer
+  lives beside `closed_tiles` rather than inside `StreetTrees`.
 - Everything is `y_sort_enabled`, so the player passes behind and in front of props
   correctly — with one deliberate exception. **Buildings are a layer of their own, beneath the
   entities, and sort against nothing but each other.** A building's origin is the south edge of its lot and its mass
