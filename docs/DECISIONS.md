@@ -43,6 +43,145 @@ kept out so a rig can still drive it with no autoloads. **What this did not do**
 table, the budget, or any other row — the entry's own rule that the return's pressure is *met*,
 never ambient.
 
+## M109 — Convert the SVG catalogue to PNG · the timed main integration, 2026-09-12
+
+PLAYTEST-62 requested a twenty-minute delay before picking up the storefront and finale updates.
+The timer fired at 13:52:51 UTC. The conversion tip was
+`caface6d71dc20447a8b2b247510f0bb992285d7`, fetched main was
+`0225a242b421d9b47f60d3365b4cd9b9190a18d9`, and their base was
+`105ef597927137cd475f950a2b9e4fc78be878f1`. The sole textual conflict was the independent
+history insertions at the top of this file; both sets remain intact. Main's storefront
+PLAYTEST-61 and the conversion's PLAYTEST-62 have distinct identities. The milestone and
+numbered-record audit found no independent identity collision requiring renumbering.
+
+The semantic review compared the pending tree with both tips. Main's wider, mixed storefronts
+and shallow hallway indents/vertical stair treads retain their SVG sources and existing callers;
+none has a corresponding PNG in this increment, so the resolver shows the updated source.
+The conversion adds only the carrying rig and garbage/litter resources, preserving their own
+canvases, anchors and alpha. Its recursive visual audit loads actual Godot resources and keeps
+the original-SVG fallback checks. No source or runtime drawing contract is replaced by the merge.
+
+Main also brings rare street-tree runs, event footprint exclusion, and daily emptied pits for
+fallen trees. Those placement and refresh changes remain intact. Sacks use building-front or
+alley positions, trees use the curb lane, and litter remains a decorative ground layer; the PNG
+replacement changes none of those rules. The current city/event docs and tree tuning references
+agree. Queue reconciliation retains main's completed tree and interior-item removals and the
+conversion's remaining catalogue work. Both sets of human visual-review questions remain open.
+
+The carrying motion capture used the pending merged tree above (`caface6-dirty`, with main's
+assets and runtime changes present), seed 4242, 1280×720, `--start-escape floor:2 --invincible
+--walk 1e1w1e1w --press snapshot_burst 1`, and a still after six seconds. Whole run:
+`docs/evidence/style-transfer-player-family-2026-09-12/runtime/rig-100126-seed4242-v0.8.2-739-gcaface6-dirty/`;
+the `asked/burst-2662283-001` sequence retains all 36 PNGs, `burst.json` and its sibling MP4.
+Recorded frames span 0.004674–2.920421 seconds, with completion at 2.986075 seconds. Ordered
+frames show east/west travel and gait changes with stable baby placement and recognizable hair
+and clothing, alongside the updated hallway indents. They do not cover all eight turns; the
+source comparison sheet supplies those static views. The interior log records only the burst
+and reports a zero city position, so actual travel is established by the frames, not that field.
+The final still is `docs/evidence/archive/session-captures/2026-09-12/m109-carrying-gameplay.png`.
+The capture skill records the integer-duration walk syntax after the rejected decimal script
+in the litter run; it passed frontmatter validation. Human appearance review remains open.
+
+The merged checkout passed import/boot, focused `blocks city_decay events routes seals visuals
+stroller presentation_mode orientation interior`, and `visuals --svg`, plus doc lint and
+whitespace/conflict-marker checks. The full suite remains the PR's CI gate.
+
+A final clean merge takes queue-only main `b5649bf5416bd1c389668997221872d87cfc9718` into
+`41bb53c7caed22c21dd63833e196763718b9b34e`, with base
+`0225a242b421d9b47f60d3365b4cd9b9190a18d9`. Main revises the existing M110 crowd-obstacle,
+M98 return-pressure and M102 finale instructions; it introduces no independent numbered record.
+The merged queue preserves those instructions and the conversion's M109 remainder separately.
+Comparison with both parents confirms no runtime, asset or test change in this second merge;
+the preceding placement sweeps therefore verify the same executable tree. Import/boot, focused
+visuals in both modes, doc lint and conflict-marker checks are the final merge gate.
+
+## M109 — Convert the SVG catalogue to PNG · litter and garbage materials, 2026-09-12
+
+The next increment of PLAYTEST-62's SVG-to-PNG continuation converts seven existing props:
+`garbage_sack`, `garbage_sacks_pile`, `litter_can`, `litter_apple`, `litter_bag`,
+`litter_newspaper` and `litter_cup`. One four-column/two-row atlas places the single sack and
+three-sack pile together so their charcoal plastic, ties and highlights share a treatment. The
+last cell stays empty. The two approved scene references supply style only. A plain white
+generation background avoids the painted checkerboard problem found in the carrying family.
+
+The source SVGs retain all content, geometry, dimensions and alpha. The sacks keep bottom-center
+anchors; litter keeps its center anchor and small footprint. `CityDecals` already resolves litter
+textures and `Prop` draws sacks through the resolving sprite helper, so the conversion needs no
+runtime code, new binding or placement change. The generation evidence, exact prompt, source
+rasters/hashes, manifest, extraction measurements and native/3× comparisons are in
+`docs/evidence/style-transfer-litter-2026-09-12/`. Remaining prop and environment families stay
+in M109, convert the SVG catalogue to PNG; storefront and finale artwork is picked up from main
+after the player's requested twenty-minute delay.
+
+Pre-integration pixel checks and focused suites passed, and all seven files reproduced byte for
+byte. Final review then found copied import metadata: one prop remapped to a mother texture,
+other props shared a UID, and carrying frames reused their pushing counterparts' UIDs. The
+registered PNG bytes were correct, but that alone did not prove the resources Godot would load.
+Only the seventeen newly introduced sidecars were regenerated by Godot. The existing visual
+suite's runtime-pair audit is extended from the rig directory to all registered transfer families,
+so a prop mapped to a wrong-sized or differently masked picture cannot hide outside its scope.
+The broader PNG/source ordering and non-mirrored-asset audit remains open in M109. The
+illustrated-PNG skill now distinguishes preserving existing resource identities from letting
+Godot create unique identities for new assets.
+
+After regeneration, all new sidecars have unique UIDs and point to their own PNG source and
+matching import destination; existing PNG identities are unchanged. Import/boot, focused
+`visuals stroller presentation_mode orientation`, `visuals --svg`, doc lint and whitespace
+checks passed. `visuals city_decay` passed for the prop integration. The full suite remains CI's
+gate on the proposed merge result.
+A temporary external Godot probe loaded all seventeen new resources and compared their images
+with the PNG files: dimensions and every alpha value matched, as did RGB on fully opaque pixels.
+Transparent RGB was excluded because Godot's alpha-border fixing legitimately changes it.
+
+Gameplay still: `docs/evidence/archive/session-captures/2026-09-12/m109-litter-gameplay.png`,
+captured from `a58a74b` in the primary checkout, 1280×720, seed 4242, day 14, `--spawn alley`,
+`--invincible --layers 2`, after 3.1 seconds. Whole telemetry run:
+`docs/evidence/style-transfer-litter-2026-09-12/runtime/rig-094855-seed4242-v0.8.2-738-ga58a74b/`.
+The decimal-duration script `--walk 0.3s0.8e0.8w` was rejected by the existing rig parser, so the capture is
+stationary. It shows single sacks, three-sack piles and small litter at gameplay scale, not
+movement, costs or a loss; no motion claim rests on it.
+
+## M109 — Convert the SVG catalogue to PNG · the carrying mother as one family, 2026-09-12
+
+[PLAYTEST-62](playtests/PLAYTEST-62.md) asks for consistency across directions, animation frames
+and state variants, explicitly the same mother carrying the baby and pushing the stroller. It
+suggests a shared grid and leaves the method to visual results. The ten carrying SVGs were
+already authored and bound; this increment adds their PNG derivatives without changing sources,
+runtime drawing, animation, mirroring, offsets or gameplay. The catalogue-wide conversion remains
+open in M109, convert the SVG catalogue to PNG.
+
+The generation evidence is
+`docs/evidence/style-transfer-player-family-2026-09-12/`: source SVG hashes and native/8× Godot
+rasters, a five-column/two-row source grid, a matching existing-PNG pushing-family reference,
+both raw generator outputs, exact prompts, extraction and registration code, and native/3×
+comparisons across eight directions and both gait frames. The columns are front, back, side,
+front diagonal and back diagonal; rows are frames a and b. Runtime mirroring supplies west views.
+The source SVG remains authoritative for the carrying pose and head turns. Existing pushing PNGs
+supply recognizable identity and rendering, and remain unchanged; the urban and cardinal images
+supply style only. This avoids regenerating an established family merely to extend its states.
+
+The first built-in imagegen output painted checkerboard and pale ghost outlines in its margins.
+The approved neutral-background extractor left residue that expanded the measured cell bounds,
+shrinking the actual character inside an exact source alpha mask. That result was rejected
+internally and its failed registered derivatives were kept outside the repository. A background-only
+imagegen edit produced a plain white background; the same extractor then removed it cleanly.
+The original raw image remains because it is an input to the accepted edit. This is why the
+illustrated-PNG skill now checks extracted bounds and interior placement as well as exact alpha.
+
+The shared grid and existing-family reference produced recognizable short brown hair, red coat,
+blue jeans, dark shoes and matching baby/blanket materials across the retained variants. A grid
+alone did not guarantee identical generated details between gait frames; comparison at native
+size and enlarged remains required. The carrying diagonals retain their SVG head turn rather
+than copying the more frontal rendering in the existing pushing PNG. Both art skills now require
+reviewing direction, frame and state families together; grid batching is a technique, not a
+mandatory output format. Human appearance and motion review remains in `REVIEW.md`.
+
+Integration verification: `./tools/check.sh`, focused `visuals stroller presentation_mode orientation`
+suites, `visuals --svg`, doc lint, the evidence converter's Ruff check and `git diff --check`
+passed. The visual suite checks every rig PNG against its native SVG size and alpha, including
+all ten carrying derivatives. Both modified skills passed the skill-creator frontmatter validator.
+Re-running registration from the corrected raw atlas reproduced all ten runtime PNGs byte for byte.
+
 ## M116 — A random mixture within each storefront row, 2026-09-12
 
 [PLAYTEST-61](playtests/PLAYTEST-61.md) first reports that the wider fronts lost their variety

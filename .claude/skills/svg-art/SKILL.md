@@ -44,6 +44,12 @@ For modular states, preserve the shared canvas and the meaningful fixed point: a
 a person's feet or a hut's ground anchor. Annotate non-default anchors inside the SVG. Ground
 decals use their centre; standing sprites usually use bottom centre through `Sprites`.
 
+Compare a character's state variants as one family: carrying the baby and pushing the stroller
+must preserve the mother's identity, clothing and proportions across every facing. Keep shared
+head and torso geometry identical between gait frames when only the legs move. Review the whole
+facing/frame/state matrix together before PNG transfer; the illustrated-png skill covers shared
+generation grids and matching existing derivatives.
+
 Use contact shadows beneath individual objects. A scene containing empty roadway should not
 inherit one full-width ellipse across its people, cars and gaps. Check whether runtime code adds
 a shadow or redraws the body for a halo before baking one into the texture.
