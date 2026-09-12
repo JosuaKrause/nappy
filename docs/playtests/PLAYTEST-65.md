@@ -224,3 +224,17 @@ review evidence. Preserve the separate source layers and their scripts.
 The rotation/offset asphalt blend is an offline asset-preparation step that saves one continuous
 road base texture. Only the curbstone, marking, crack and grass-feature compositing happens
 inside the engine.
+
+> also you updated the svgs for the player this PR. while the current svg graphics might be good as reference for high fidelity graphics creation. let's move those updated ones in a place dedicated for graphics creation and use the old svg graphics in game
+
+Preserve the player SVGs revised for this PR in a dedicated graphics-authoring location, where
+they remain usable as high-fidelity generation references. Restore the pre-PR SVG artwork for
+the in-game SVG presentation. Keep the accepted illustrated PNG player textures unchanged and
+update source-reference paths and reproduction instructions so the authoring graphics remain
+discoverable.
+
+> keep the ones that you introduced in this pr
+
+Restore only player SVG files that existed before this PR. Keep newly introduced player SVG
+files in the runtime catalogue. Preserve the complete creation-reference family separately so
+it can still guide high-fidelity generation.
