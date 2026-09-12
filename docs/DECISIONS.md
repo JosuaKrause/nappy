@@ -38,6 +38,14 @@ A temporary external Godot probe loaded all seventeen new resources and compared
 with the PNG files: dimensions and every alpha value matched, as did RGB on fully opaque pixels.
 Transparent RGB was excluded because Godot's alpha-border fixing legitimately changes it.
 
+Gameplay still: `docs/evidence/archive/session-captures/2026-09-12/m109-litter-gameplay.png`,
+captured from `a58a74b` in the primary checkout, 1280×720, seed 4242, day 14, `--spawn alley`,
+`--invincible --layers 2`, after 3.1 seconds. Whole telemetry run:
+`docs/evidence/style-transfer-litter-2026-09-12/runtime/rig-094855-seed4242-v0.8.2-738-ga58a74b/`.
+The decimal-duration script `--walk 0.3s0.8e0.8w` was rejected by the existing rig parser, so the capture is
+stationary. It shows single sacks, three-sack piles and small litter at gameplay scale, not
+movement, costs or a loss; no motion claim rests on it.
+
 ## M109 — Convert the SVG catalogue to PNG · the carrying mother as one family, 2026-09-12
 
 [PLAYTEST-62](playtests/PLAYTEST-62.md) asks for consistency across directions, animation frames

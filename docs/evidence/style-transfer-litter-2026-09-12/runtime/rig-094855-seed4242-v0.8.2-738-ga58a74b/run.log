@@ -1,0 +1,27 @@
+nappy rig log  2026-09-12T09:48:55  version v0.8.2-738-ga58a74b
+
+day 14 act 4  run seed 4242  city seed 4242  length 144.0s  invincible
+   0.0  arc      block (7,10) commercial -> boarded_up (scheduled)
+   0.0  arc      block (7,8) commercial -> boarded_up (scheduled)
+   0.0  arc      block (6,2) commercial -> boarded_up (scheduled)
+   0.0  arc      block (10,3) commercial -> boarded_up (scheduled)
+   0.0  arc      block (2,9) commercial -> boarded_up (scheduled)
+   0.0  arc      block (1,4) courtyard -> requisitioned (scheduled)
+   0.0  arc      block (9,9) courtyard -> requisitioned (scheduled)
+   0.0  plan     regions: 33 boundary, 25 wall, 8 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  step 1 on offer at (34,106)
+   0.0  roll     chalk mark guarded: robber 110px away (band 66-176)
+   0.0  plan     closed: fallen tree h(2,9), collapsed h(7,8), fallen tree h(1,1), roadworks v(11,7)
+   0.0  plan     calm: 1 courtyard, 2 forest, 2 park, 2 quiet_square
+   0.0  plan     events: abduction x4, alley_mouse x4, alley_robbery x4, barricade x22, burnt_out_car x64, burst_water_main x11, busker x5, cafe_tables x49, car_accident x11, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x8, checkpoint_hut x16, collapsed_frontage x12, construction x41, cyclist x11, delivery_van x30, dog_walker x25, fallen_tree x13, homeless_yeller x10, ice_cream_van x5, leaf_blower x12, loose_dog x17, market_stall x41, military_convoy, moving_van x29, pigeon_flock x5, playground x2, police_patrol x12, poster_crew x9, protest x12, reversing_lorry x10, roadblock x83, scaffolding x6, skip x6
+   0.0  start    doorstep (78,6), facing 180°
+   0.0  contact  step 1 moved to (78,6): never seen at (34,106)
+   0.0  roll     chalk mark guarded: robber 141px away (band 66-176)
+   0.0  near     roadblock (telegraph) at (76,3), 129px, exc 0, in 0.0/s (crowd 0.0, events 12.6), sleep 0
+   0.0  near     roadblock (telegraph) at (76,5), 80px, exc 0, in 0.0/s (crowd 0.0, events 12.6), sleep 0
+   0.0  near     alley_robbery at (79,10), 141px, exc 0, in 0.0/s (crowd 0.0, events 12.6), sleep 0
+   0.0  chase    charging_dog came for her at (61,5) | exc 0, in 0.0/s (crowd 0.0, events 12.6), sleep 0
+   0.0  contact  walked within 0px of the chalk mark at (78,6)
+   0.0  contact  step 1 completed
+   0.0  cue      edge badge: charging_dog at 542px, closing 94px/s
+   0.0  cue      edge badge gone: charging_dog after 0.0s, now 314px away
