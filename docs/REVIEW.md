@@ -21,6 +21,17 @@ view"). `--invincible` is the way to walk this whole list in one sitting: nothin
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Cross a region door on foot, from day 7** (`--day 7`; a door is the hut-boom-hut across a
+  boundary street). The boom hangs between its posts across the lanes, level with the huts; the
+  inspection starts as soon as she stands against the hut; the camera eases from where it was
+  drawing to the hut and back, the hut stays drawn with its guard gone, and she comes out on the
+  far side and is left alone until she walks away and back. Does the hold read as one move, and
+  does walking out of the door's area and back in, about a third of a second on a pavement, read
+  as a fair toll or as being charged twice for hesitating? Record is `DECISIONS.md`, M100, the
+  checkpoint as played.
+- **Walk the approach to a door with the field layer on** (`1`). A hut's field is a 98px disc,
+  grown from the invariant that a captured player is fully charged rather than from a balance
+  decision. Does the approach to a wall crossing now cost more than it should? Same record.
 - **Walk her into a wall, a corner and a barrier at an angle** (any day; `3` shows the bodies).
   The pram's body is an 8px circle centred on the edge of her own 14px one, so the pram's far
   half overlaps what it meets and she stands against a wall again. Does the pram still catch on
@@ -57,6 +68,14 @@ item below for as long as looking takes.
   ever look stuck against it? Record is `DECISIONS.md`, M110. **And the open question is
   yours**: should a café, a construction band or a kerbed van divert the crowd the same way?
   `TODO.md`, M110.
+- **Stand by a region door on a busy street and watch the walkers** (day 7 or later,
+  `--invincible`). Most stop beside the hut, vanish inside for a second, come out on the far side
+  and walk on; one in eight walks straight through; one in four turns off at the last junction;
+  never more than three are committed to one hut. At real density a hut was occupied only now and
+  then in the rig, so does the hold ever read on screen, and if a door should read as busy is the
+  lever the hold length or the fractions? Does a walker turning round where it stands, when it
+  meets a full door from inside the door's own street, read as wrong? Record is `DECISIONS.md`,
+  M110, walkers are held at a door.
 - **Find a roadblock on day 7 or later** (a 120px barrier across a road, drawn as one continuous
   barrier with end posts). Does it read as one barrier rather than blocks? At resistance progress
   3 of 4 performs, its guards leave the post and come for her on foot, standing then lunging —
@@ -146,13 +165,12 @@ item below for as long as looking takes.
   part) puts her, carrying the baby, in front of her door on the third floor of a building with
   three hallways, two switchback stairwells at opposite ends, a barricaded lobby and a winding
   basement to the emergency exit — one map, the parts 64 tiles apart, every door a fade and a
-  teleport. Look at the open passage notches beside the locked apartment recesses, the lobby's
-  barricaded entrance, the broad stairs and level turn platforms, and the basement's short stair
-  and open corridor mouths. Do the stairs read as descending, are the doors easy to identify,
-  and does the building match the supplied sketches? Both stairwells have recorded physical
-  walks, but the feel of the sideways controls and fade-and-teleport still needs a person's
-  verdict. Records are in `DECISIONS.md` under M112, the escape scene and interior graphics;
-  what M102, the finale, still adds is in `TODO.md`.
+  teleport. The graphics were judged in playtest 60 and the doors and stair treads are being
+  redrawn under M102 in `TODO.md`. Both stairwells have recorded physical walks, but the feel of
+  the sideways controls and fade-and-teleport still needs a person's verdict: does a diagonal
+  flight read as *descending* when a sideways press walks it, and does the fade-and-teleport
+  read as a door or as a cut? Records are in `DECISIONS.md` under M112, the escape scene and
+  interior graphics; what M102, the finale, still adds is in `TODO.md`.
 
 - **Every field has a shape now, and nobody has felt one.** A stationary body's field is a capsule
   about its own spine rather than a disc about its centre, and a moving thing's is an ellipse with

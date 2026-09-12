@@ -2812,11 +2812,13 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 		world.free()
 		manager.free()
 
-## `detain_radius` (33px) sits *past* `Tuning.TILE_SIZE` (32px), the far-lane distance the row
-## used to be tucked under — see `EventCatalogue._chatting_mother`, "the far-lane rule is
-## overturned". So the far lane now catches her, and this checks both halves of the new geometry:
-## the far lane triggers, and a point just outside `detain_radius` but still inside `inner_radius`
-## does not — the ambient field reaches her there and only the conversation must not.
+## `chatting_mother`'s capture reaches *past* `Tuning.TILE_SIZE` (32px), the spacing between the
+## two lanes of a pavement the row used to be tucked under — see
+## `EventCatalogue._chatting_mother`, "the far-lane rule is overturned". So the far lane catches
+## her, and this checks both halves of that geometry: the far lane triggers, and a point just
+## outside `EventDef.detain_distance()` but still inside `inner_radius` does not — the ambient
+## field reaches her there and only the conversation must not. She paces, so she carries no body
+## and her reach is measured from her own centre.
 func _test_a_conversation_only_starts_inside_detain_radius(t) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")
 	var at := Vector2(4000.0, 4000.0)
@@ -2842,13 +2844,16 @@ func _test_a_conversation_only_starts_inside_detain_radius(t) -> void:
 	var stroller := _chat_stroller(t)
 	manager._player = stroller
 
-	# Just outside detain_radius (33) and well inside inner_radius (34): the ambient field still
-	# reaches her and only the conversation must not.
-	stroller.global_position = at + Vector2(0.0, def.detain_radius + 0.5)
+	# Just outside the capture and well inside inner_radius: the ambient field still reaches her
+	# and only the conversation must not.
+	t.check(def.detain_distance() < def.inner_radius,
+			"there is ground outside her capture and inside her field to stand on (%.1f < %.1f)"
+			% [def.detain_distance(), def.inner_radius])
+	stroller.global_position = at + Vector2(0.0, def.detain_distance() + 0.5)
 	manager._tell_them_where_she_is()
 	manager._check_detentions()
 	t.check(not stroller.is_detained(),
-			"just outside detain_radius, no conversation starts")
+			"just outside the capture, no conversation starts")
 	t.check(not mother.is_chatting() and not mother.has_chatted(),
 			"and the instance is untouched by it")
 	mother.free()

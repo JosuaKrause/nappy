@@ -20,11 +20,15 @@ func run(t) -> void:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 251))
 	_test_every_door_has_its_three_bodies(t)
 	_test_door_bodies_stand_on_their_own_ground(t)
+	_test_the_boom_bars_the_carriageway(t)
 	_test_the_three_rows_validate_and_are_never_rolled(t)
 	_test_the_manager_actually_places_the_door_structure(t)
 	_test_a_hut_detains_and_releases_on_the_other_side(t)
+	_test_a_stroller_stopped_against_the_hut_is_detained(t)
 	_test_she_and_the_guard_are_gone_during_the_hold(t)
-	_test_the_camera_eases_onto_the_hut_and_back(t)
+	_test_the_whole_hold_reads_as_one_move(t)
+	_test_crossing_the_street_at_the_door_still_puts_her_through_it(t)
+	_test_the_release_latch(t)
 	_test_walking_back_redetains_her(t)
 	_test_the_chatting_mother_still_detains_once(t)
 	_test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t)
@@ -143,6 +147,92 @@ func _test_door_bodies_stand_on_their_own_ground(t) -> void:
 						"at %s (%.0fpx away)") % [map.seed_used, day, wall_body.position,
 						wall_body.def.obstructs_radius, segment.key(), distance])
 	t.check(checked > 0, "at least one door body was checked against its own segment (%d)" % checked)
+
+## *(PLAYTEST-57: "the gate for the cars is too high up. it needs to be further down".)* The boom
+## is the one body at a door whose picture is much wider than the body under it, so where the bar
+## actually lands is a question only the drawing can answer — and a headless run never calls
+## `_draw()` (see the **verify** skill), which is why `EventInstance.boom_arm_span()` states the
+## arm's own reach as a number the drawing and this check share.
+##
+## Three things about a street door, over every sampled day: the gate stands level with its two
+## huts along the street, its own ground point is on the carriageway's centre line, and the arm it
+## draws crosses the whole carriageway rather than lying along a kerb. The last one is what the
+## picture got wrong: hung from the near post, the arm sat entirely to one side of the ground
+## point, at the height of the road's upper kerb with the lanes open under it.
+func _test_the_boom_bars_the_carriageway(t) -> void:
+	var checked := 0
+	for pair in _sampled_days():
+		var map: CityMap = pair[0]
+		var day: int = pair[1]
+		_repaint_for(map, day)
+		var tree := RouteTree.for_day(map, day)
+		var plan := RegionPlanner.plan_day(map, day, tree)
+		for segment in plan.doors:
+			var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
+					< RegionPlanner.region_of_junction(map, segment.b)
+			var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
+			var mouth := map.tile_rect_to_world(segment.mouth_rect(at_a))
+			var gate: EventScheduler.Planned = null
+			var huts: Array[EventScheduler.Planned] = []
+			for body in plan.door_bodies:
+				if not mouth.has_point(body.position):
+					continue
+				if body.def.id == "checkpoint_gate":
+					gate = body
+				elif body.def.id == "checkpoint_hut":
+					huts.append(body)
+			if not gate or huts.size() != 2:
+				continue
+			checked += 1
+
+			# The cross-street axis, and the carriageway band on it: the middle of the street's own
+			# cross-section, with `Tuning.SIDEWALK_WIDTH` tiles of pavement on either side of it.
+			var across_low: float = (mouth.position.y if segment.horizontal else mouth.position.x) \
+					+ Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE
+			var road_width: float = (Tuning.STREET_WIDTH - 2 * Tuning.SIDEWALK_WIDTH) \
+					* Tuning.TILE_SIZE
+			var across_high := across_low + road_width
+			var gate_across: float = gate.position.y if segment.horizontal else gate.position.x
+			var gate_along: float = gate.position.x if segment.horizontal else gate.position.y
+
+			for hut in huts:
+				var hut_along: float = hut.position.x if segment.horizontal else hut.position.y
+				t.check(is_equal_approx(hut_along, gate_along),
+						"seed %d day %d: the gate stands level with its huts along the street "
+						% [map.seed_used, day] + "(gate %.1f, hut %.1f)" % [gate_along, hut_along])
+			t.check(gate_across > across_low and gate_across < across_high,
+					"seed %d day %d: the gate's ground point is on the carriageway, not a kerb "
+					% [map.seed_used, day] + "(%.1f in %.1f..%.1f)"
+					% [gate_across, across_low, across_high])
+
+			var span := EventInstance.boom_arm_span(
+					EventInstance.gate_runs_north_south(gate.facing))
+			var arm_near := gate_across + span.x
+			var arm_far := gate_across + span.y
+			t.check(arm_near <= across_low and arm_far >= across_high,
+					("seed %d day %d: the lowered arm crosses the whole carriageway (%.1f..%.1f " +
+					"over %.1f..%.1f)")
+					% [map.seed_used, day, arm_near, arm_far, across_low, across_high])
+			var arm_middle := 0.5 * (arm_near + arm_far)
+			t.check(arm_middle > across_low and arm_middle < across_high,
+					"seed %d day %d: and the middle of the bar is over the lanes, not a kerb "
+					% [map.seed_used, day] + "(%.1f in %.1f..%.1f)"
+					% [arm_middle, across_low, across_high])
+
+			# And the picture stays over ground the door is actually solid on: the three bodies
+			# tile the street edge to edge at `Tuning.TILE_SIZE` spacing, so an arm that reaches
+			# past the gate's own body is still over a hut's.
+			var solid_low := gate_across - gate.def.obstructs_radius
+			var solid_high := gate_across + gate.def.obstructs_radius
+			for hut in huts:
+				var hut_across: float = hut.position.y if segment.horizontal else hut.position.x
+				solid_low = minf(solid_low, hut_across - hut.def.obstructs_radius)
+				solid_high = maxf(solid_high, hut_across + hut.def.obstructs_radius)
+			t.check(arm_near >= solid_low and arm_far <= solid_high,
+					("seed %d day %d: the arm never reaches past the door's own solid line " +
+					"(%.1f..%.1f over %.1f..%.1f)")
+					% [map.seed_used, day, arm_near, arm_far, solid_low, solid_high])
+	t.check(checked > 0, "at least one street door's boom was measured (%d)" % checked)
 
 ## The three rows are `SCRIPTED`, `scripted_day 0`, like the seal pictures — so they validate on
 ## boot (already checked by `EventCatalogue.all()`, restated here explicitly) and the ordinary
@@ -275,8 +365,8 @@ func _advance_chat(manager: EventManager, seconds: float) -> void:
 
 ## The core rig: she walks into a hut, is detained for `Tuning.CHECKPOINT_DETAIN_SECONDS`, and
 ## comes out the other side, outside the band, on the same pavement lane — the mirror of where she
-## stood, reflected through the crossing's own cross-street line and pushed clear of
-## `detain_radius`. See `EventManager._release_finished_door_detentions()`.
+## stood, reflected through the crossing's own cross-street line and pushed clear of the hold's own
+## trigger. See `EventManager._release_finished_door_detentions()`.
 func _test_a_hut_detains_and_releases_on_the_other_side(t) -> void:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
@@ -293,7 +383,7 @@ func _test_a_hut_detains_and_releases_on_the_other_side(t) -> void:
 	stroller.global_position = entry
 	manager._tell_them_where_she_is()
 	manager._check_detentions()
-	t.check(stroller.is_detained(), "entering detain_radius locks her input")
+	t.check(stroller.is_detained(), "coming inside the hold's own trigger locks her input")
 	t.check(hut.is_chatting(), "and starts a conversation")
 	t.check(hut.has_chatted(), "which marks it as having chatted at least once")
 
@@ -312,23 +402,89 @@ func _test_a_hut_detains_and_releases_on_the_other_side(t) -> void:
 	var clearance := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
 			+ Tuning.CHECKPOINT_RELEASE_MARGIN
 	t.check(absf(released_along) >= clearance - 0.5,
-			"and clear of the body and of detain_radius (%.1f against %.1f)"
+			"and just clear of its body, as close to the door as she can stand (%.1f against %.1f)"
 			% [absf(released_along), clearance])
-	t.check(absf(released_along) > hut.def.detain_radius,
-			"clear enough that the same approach cannot re-trigger it (%.1f > %.1f)"
-			% [absf(released_along), hut.def.detain_radius])
+	t.check(absf(released_along) < hut.def.detain_distance(),
+			("which is *inside* the hold's own trigger, because the far side of a door is — the " +
+			"latch is what keeps her from being taken straight back in (%.1f against %.1f)")
+			% [absf(released_along), hut.def.detain_distance()])
 	t.check(released_cross.is_equal_approx(Vector2(0.0, 16.0)),
 			"on the same pavement lane she arrived on (%s)" % released_cross)
 	t.check(stroller.velocity == Vector2.ZERO, "the teleport zeroes her velocity")
 
-	# The moment of release does not re-trigger the same frame: she is already outside
-	# detain_radius by construction.
-	manager._check_detentions()
-	t.check(not hut.is_chatting(), "released, and not immediately re-captured")
+	# And she stands there, inside the trigger, for as long as she likes.
+	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS * 3.0)
+	t.check(not hut.is_chatting(),
+			"released, and standing still is not taken in again however long she stands there")
+	t.check(stroller.global_position.is_equal_approx(released),
+			"without having been moved again (%s)" % stroller.global_position)
 
 	hut.free()
 	stroller.free()
 	manager.free()
+
+## How far her own outline reaches ahead of her centre while she faces `facing` — her own body's
+## radius, or the pram's own body when that is what is between her and whatever she is walking at.
+## **Read off the real scene rather than restated here**: where the pram's body sits is another
+## milestone's number, and a rig that copied it would go on passing after it moved, which is the
+## exact shape of the defect this suite is checking. `Stroller._physics_process()` is the one place
+## that positions the pram's shape, so the rig drives one frame of it and measures the result.
+func _reach_ahead(t, stroller: Stroller, facing: Vector2) -> float:
+	stroller.facing = facing
+	stroller._physics_process(STEP)
+	var reach := Tuning.PLAYER_BODY_RADIUS
+	var pram := stroller.get_node_or_null("PramCollisionShape2D") as CollisionShape2D
+	t.check(pram != null, "the real stroller scene carries the pram's own collision shape")
+	if pram and not pram.disabled:
+		var circle := pram.shape as CircleShape2D
+		t.check(circle != null, "and it is a circle, so a reach can be read off it")
+		if circle:
+			reach = maxf(reach, pram.position.dot(facing) + circle.radius)
+	return reach
+
+## *(PLAYTEST-57: "the checkpoint should activate when I get close. with the new stroller hitbox I
+## cannot reach the checkpoint entrance".)* The hold used to start inside a radius measured from
+## the hut's centre, which meant the number had to be larger than whatever she was pushing in front
+## of her — so the pram's body stopped her outside a trigger she could then never reach, and the
+## door became a wall with no error anywhere.
+##
+## The assertion is the relationship rather than either number: **wherever she comes to rest
+## against the hut's body, that place is inside the trigger.** Both approaches are checked, because
+## the pram reaches further ahead of her along a street than across one (`Stroller.OBLIQUE_Y`
+## foreshortens the vertical component of everything she is drawn and shaped with).
+func _test_a_stroller_stopped_against_the_hut_is_detained(t) -> void:
+	var axis := Vector2.RIGHT
+	var centre := Vector2(4800.0, 4800.0)
+	# North is out of the carriageway and onto the pavement the hut stands on; east is along the
+	# street, straight at it.
+	var approaches: Array[Vector2] = [Vector2.UP, Vector2.RIGHT]
+	for approach in approaches:
+		var manager := _manager(t)
+		var stroller := _real_stroller(t)
+		manager._player = stroller
+		var hut := _door_instance(t, "checkpoint_hut", centre, axis)
+		manager._instances.append(hut)
+
+		var reach := _reach_ahead(t, stroller, approach)
+		t.check(reach > Tuning.PLAYER_BODY_RADIUS,
+				"walking %s she pushes something further ahead of her than her own body "
+				% approach + "(%.1f against %.1f) — otherwise this rig checks nothing"
+				% [reach, Tuning.PLAYER_BODY_RADIUS])
+		var stopped_at := hut.def.obstructs_radius + reach
+		t.check(stopped_at < hut.def.detain_distance(),
+				("walking %s, where the hut's body stops her (%.1fpx from its centre) is inside " +
+				"the trigger (%.1fpx)") % [approach, stopped_at, hut.def.detain_distance()])
+
+		stroller.global_position = centre - approach * stopped_at
+		manager._tell_them_where_she_is()
+		manager._check_detentions()
+		t.check(hut.is_chatting(),
+				"and stopped there, walking %s, the inspection actually starts" % approach)
+		t.check(stroller.is_detained(), "with her input locked")
+
+		hut.free()
+		stroller.free()
+		manager.free()
 
 ## M113, the inspection reads as one — *(2026-09-10, playtest 55: "both the guard and the player
 ## should disappear during the inspection ... after the inspection the player and the guard should
@@ -336,88 +492,237 @@ func _test_a_hut_detains_and_releases_on_the_other_side(t) -> void:
 ## reachable from a test that never calls `_draw()` (headless runs never call it — see the
 ## **verify** skill), so the state each of them reads is asserted directly instead.
 ##
-## The halo goes with the guard too — the checkpoint's own `EntityHalo` ring stayed up through the
-## hold in an earlier capture, which contradicted "both the guard and the player should disappear."
-## `is_suppressed_by_its_own_hold()` is the one condition `_draw()` and `_draw_body()` (the halo's
-## own re-draw entry point) both gate on, so asserting it here is asserting what the halo actually
-## does without a canvas.
+## **The hut is not the guard, and only the guard goes in** — *(PLAYTEST-57: "the checkpoint house
+## disappears ... all this is incorrect".)* A building that blinks out while she is inside it reads
+## as the door having been taken away rather than as her having gone through it. An alley post is
+## the one row where the two are the same thing: he is all it draws, so when he goes in there is
+## nothing left. `is_its_guard_inside()` and `is_suppressed_by_its_own_hold()` are the two
+## conditions `_draw_checkpoint_hut()`, `_draw()` and `_draw_body()` (the halo's own re-draw entry
+## point) gate on, so asserting them here is asserting what the halo and the picture actually do
+## without a canvas.
 func _test_she_and_the_guard_are_gone_during_the_hold(t) -> void:
+	var ids: Array[String] = ["checkpoint_hut", "checkpoint_post"]
+	for id in ids:
+		var manager := _manager(t)
+		var stroller := _real_stroller(t)
+		manager._player = stroller
+
+		var axis := Vector2.RIGHT
+		var centre := Vector2(4200.0, 4200.0)
+		var door := _door_instance(t, id, centre, axis)
+		manager._instances.append(door)
+		var is_a_guard_alone: bool = id == "checkpoint_post"
+
+		t.check(stroller.visible, "%s: she is visible before the hold starts" % id)
+		t.check(not door.is_its_guard_inside(), "%s: and its guard is outside" % id)
+		t.check(not door.is_suppressed_by_its_own_hold(), "%s: and it is drawn" % id)
+		stroller.global_position = centre + axis * 60.0
+		manager._tell_them_where_she_is()
+		manager._check_detentions()
+		t.check(door.is_chatting(), "%s: the hold starts" % id)
+		t.check(not stroller.visible, "%s: and she is hidden the instant it does" % id)
+		t.check(door.is_its_guard_inside(), "%s: with the guard, who takes her in" % id)
+		t.check(door.is_suppressed_by_its_own_hold() == is_a_guard_alone,
+				("%s: and the rest of it stays exactly where it is, unless the guard was the " +
+				"whole of it") % id)
+
+		_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
+		t.check(not door.is_chatting(), "%s: the hold ends" % id)
+		t.check(stroller.visible, "%s: and she is visible again the same frame" % id)
+		t.check(not door.is_its_guard_inside(), "%s: with the guard back at his post" % id)
+		t.check(not door.is_suppressed_by_its_own_hold(), "%s: and the whole of it drawn" % id)
+
+		door.free()
+		stroller.free()
+		manager.free()
+
+## One frame of the whole hold: every live instance's own clock, the manager's trigger and release,
+## and her camera, in the order a real frame runs them. `_advance_chat()` above drives the first
+## two only; a camera fault is invisible to it.
+func _advance_hold(manager: EventManager, stroller: Stroller, seconds: float) -> void:
+	for i in int(round(seconds / STEP)):
+		for instance in manager._instances:
+			instance._process(STEP)
+		manager._check_detentions()
+		stroller._update_camera(STEP)
+
+## The whole hold, end to end, against the four faults PLAYTEST-57 reported in it: *"the camera
+## makes a huge jump from somewhere to the checkpoint. the checkpoint house disappears. the camera
+## doesn't move at all after the 2s. also, if I don't move I get sent back afterwards. all this is
+## incorrect."*
+##
+## It stands a real street door — two huts and the gate between them, a tile apart across the
+## street, the geometry `RegionPlanner._add_door_bodies` builds — and walks her into it from where
+## her own body actually stops, so the approach, the trigger, the two seconds, the camera and the
+## release are all one run rather than four checks of four pieces.
+func _test_the_whole_hold_reads_as_one_move(t) -> void:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
 	manager._player = stroller
+	stroller._camera.make_current()
 
 	var axis := Vector2.RIGHT
-	var centre := Vector2(4200.0, 4200.0)
-	var hut := _door_instance(t, "checkpoint_hut", centre, axis)
+	var road := Vector2(5600.0, 5600.0)
+	var hut := _door_instance(t, "checkpoint_hut", road - Vector2(0.0, 64.0), axis)
+	var gate := _door_instance(t, "checkpoint_gate", road, axis)
+	var far_hut := _door_instance(t, "checkpoint_hut", road + Vector2(0.0, 64.0), axis)
 	manager._instances.append(hut)
+	manager._instances.append(gate)
+	manager._instances.append(far_hut)
 
-	t.check(stroller.visible, "she is visible before the hold starts")
-	t.check(not hut.is_suppressed_by_its_own_hold(), "and the hut's own halo is not suppressed yet")
-	stroller.global_position = centre + axis * 40.0
+	# Walking east along the northern pavement, stopped where the hut's own body stops her.
+	var heading := Vector2.RIGHT
+	var reach := _reach_ahead(t, stroller, heading)
+	stroller.global_position = hut.global_position - heading * (hut.def.obstructs_radius + reach)
+	# A camera that has been following her all morning, in a rig that is drawn no frames: smoothing
+	# is applied in the camera's **own** process callback, which never runs here, so its smoothed
+	# position would otherwise still be sitting at the world origin it was born at. `reset_smoothing()`
+	# is what "it has already caught up with her" looks like, and `force_update_scroll()` is what
+	# asks for the screen centre a drawn frame would have computed.
+	stroller._camera.reset_smoothing()
+	stroller._camera.force_update_scroll()
+	var drawn_before := stroller.camera_screen_center()
+	t.check(drawn_before.distance_to(stroller.global_position) < Tuning.TILE_SIZE,
+			"the rig's camera is looking at her (%s against %s) — otherwise the continuity check "
+			% [drawn_before, stroller.global_position] + "below has nothing to be continuous with")
+
 	manager._tell_them_where_she_is()
 	manager._check_detentions()
-	t.check(hut.is_chatting(), "the hold starts")
-	t.check(not stroller.visible, "and she is hidden the instant it does")
-	t.check(hut.is_suppressed_by_its_own_hold(),
-			"and the hut's own halo is suppressed the same instant, with the guard")
+	t.check(hut.is_chatting(), "walking up to the hut starts the inspection")
+	t.check(not gate.is_chatting() and not far_hut.is_chatting(),
+			"and only the nearest of the door's three bodies starts one")
+	t.check(not stroller.visible, "she goes inside for it")
+	# And no second body picks the hold up on the next frame, which is a different rule from the
+	# tie above and the one that was actually charging her twice for one crossing.
+	manager._check_detentions()
+	t.check(not gate.is_chatting() and not far_hut.is_chatting(),
+			"and nothing else takes her in on top of it the frame after")
 
-	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
-	t.check(not hut.is_chatting(), "the hold ends")
-	t.check(stroller.visible, "and she is visible again the same frame")
-	t.check(not hut.is_suppressed_by_its_own_hold(),
-			"and the halo is no longer suppressed, with the guard")
+	# **The camera jump.** `top_level` hands the camera its own transform and Godot keeps the
+	# node's *local* position when it does — `Vector2.ZERO`, a whole city away — so the ease has to
+	# put the camera where it was drawing from in the same breath, or every frame before the first
+	# `_update_camera()` is drawn from the corner of the map.
+	t.check(stroller._camera.top_level, "the camera comes off her for the hold")
+	t.check(stroller._camera.global_position.distance_to(drawn_before) < 1.0,
+			"and starts the ease from where it was drawing, not from wherever the switch left it "
+			+ "(%s against %s)" % [stroller._camera.global_position, drawn_before])
+	t.check(not stroller._camera.position_smoothing_enabled,
+			"with the camera's own smoothing off for the duration, so it is not chasing the ease "
+			+ "that is already smoothing the move")
+
+	# **The hut vanishing.** Only the guard goes in with her.
+	t.check(not hut.is_suppressed_by_its_own_hold(), "the hut is still drawn through the hold")
+	t.check(hut.is_its_guard_inside(), "and its guard is not")
+
+	_advance_hold(manager, stroller, Tuning.CAMERA_EASE_SECONDS)
+	var onto := stroller._camera.global_position.distance_to(hut.global_position)
+	t.check(onto < 1.0, "the camera arrives on the hut (%.1fpx away)" % onto)
+	t.check(hut.is_chatting(), "with time left on the hold once it gets there")
+
+	# **The camera not coming back.** The rest of the hold, then the ease home.
+	_advance_hold(manager, stroller, Tuning.CHECKPOINT_DETAIN_SECONDS + Tuning.CAMERA_EASE_SECONDS)
+	t.check(not hut.is_chatting(), "the hold ends on its own clock")
+	t.check(stroller.visible, "and she comes back out")
+	var released := stroller.global_position
+	t.check((released - hut.global_position).dot(axis) > 0.0,
+			"on the far side of the crossing from where she went in")
+	var home := stroller._camera.global_position.distance_to(released)
+	t.check(home < 1.0, "and the camera comes back onto her, wherever the release put her "
+			+ "(%.1fpx away)" % home)
+	t.check(not stroller._camera.top_level, "handed back to her own transform")
+	t.check(stroller._camera.position_smoothing_enabled, "with its own smoothing back on")
+
+	# **Sent back without moving.** She is set down just clear of the hut's body, which is well
+	# inside the trigger — the far side of a door is a body's width away and the trigger reaches
+	# further than that — so what keeps her out of it is the `ReleaseLatch` armed on the way out,
+	# not distance. Standing there for several times the length of the hold itself costs nothing.
+	t.check(released.distance_to(hut.global_position) < hut.def.detain_distance(),
+			"she is standing inside the trigger she was just let out of (%.1f against %.1f)"
+			% [released.distance_to(hut.global_position), hut.def.detain_distance()])
+	_advance_hold(manager, stroller, Tuning.CHECKPOINT_DETAIN_SECONDS * 4.0)
+	t.check(not hut.is_chatting() and not gate.is_chatting() and not far_hut.is_chatting(),
+			"and standing there is not another inspection, however long she stands — and not by "
+			+ "the gate beside the hut either: one crossing is one toll")
+	t.check(stroller.global_position.is_equal_approx(released),
+			"nor is she moved again (%s)" % stroller.global_position)
+
+	# And walking out of the door's reach and back in pays the toll again, which is the whole of
+	# what a door is.
+	var away := (released - hut.global_position).normalized()
+	stroller.global_position = hut.global_position + away * (hut.def.detain_distance() + 8.0)
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(not hut.is_chatting(), "one step outside its reach is not a toll")
+	stroller.global_position = released
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(hut.is_chatting(), "but stepping back in from there is")
 
 	hut.free()
+	gate.free()
+	far_hut.free()
 	stroller.free()
 	manager.free()
 
-## *"The camera should center on the hut ... use a smooth ease in out for non player caused camera
-## movement."* Drives `Stroller._update_camera()` directly, the same private-method stepping
-## `_advance_chat()` above already uses for `EventInstance._process()`, so the ease is checked
-## without also exercising `move_and_slide()` against the hut's own obstruction body.
-func _test_the_camera_eases_onto_the_hut_and_back(t) -> void:
-	var manager := _manager(t)
-	var stroller := _real_stroller(t)
-	manager._player = stroller
+## The crossing walked **across** rather than along it: she comes up out of the carriageway at a
+## hut, or straight up the middle of the road at the gate, so at the moment of capture she is
+## exactly level with the body along the street. There is no "other side" in that direction, and
+## the release used to multiply its clearance by `signf(0.0)` — which is zero, so it put her back
+## down exactly where it found her, inside the trigger, to be held again the next frame for as long
+## as she stood there. Level with the door is one of the two sides, picked the same way every time.
+##
+## Against a whole door — two huts and the gate between them — because that is also where the other
+## half of the rule is checked: a door's three reaches overlap, so being let out of one of them puts
+## her inside another, and **one crossing has to be one toll** whichever body took her in.
+func _test_crossing_the_street_at_the_door_still_puts_her_through_it(t) -> void:
+	# Two approaches, each the same door: stopped against the northern hut from the frontage behind
+	# it, dead level with it along the street; and stopped against the gate out on the carriageway,
+	# a few pixels off its centre line, which is the one that lands her release inside a *hut's*
+	# reach rather than the gate's.
+	var entries: Array[Vector2] = [Vector2(0.0, -110.0), Vector2(-46.0, -6.0)]
+	for from_road in entries:
+		var manager := _manager(t)
+		var stroller := _real_stroller(t)
+		manager._player = stroller
 
-	var axis := Vector2.RIGHT
-	var centre := Vector2(4400.0, 4400.0)
-	var hut := _door_instance(t, "checkpoint_hut", centre, axis)
-	manager._instances.append(hut)
+		var axis := Vector2.RIGHT
+		var road := Vector2(5200.0, 5200.0)
+		var doors: Array[EventInstance] = [
+			_door_instance(t, "checkpoint_hut", road - Vector2(0.0, 64.0), axis),
+			_door_instance(t, "checkpoint_gate", road, axis),
+			_door_instance(t, "checkpoint_hut", road + Vector2(0.0, 64.0), axis)]
+		for door in doors:
+			manager._instances.append(door)
+		var caught_by := doors[0] if is_zero_approx(from_road.x) else doors[1]
+		var entry := road + from_road
 
-	stroller.global_position = centre + axis * 40.0
-	var camera_before := stroller._camera.global_position
-	manager._tell_them_where_she_is()
-	manager._check_detentions()
-	t.check(hut.is_chatting(), "the hold starts")
+		stroller.global_position = entry
+		manager._tell_them_where_she_is()
+		manager._check_detentions()
+		t.check(caught_by.is_chatting(),
+				"crossing the street at %s starts the hold" % caught_by.def.id)
 
-	for i in int(round(Tuning.CAMERA_EASE_SECONDS / STEP)) + 5:
-		stroller._update_camera(STEP)
-	var eased_distance := stroller._camera.global_position.distance_to(hut.global_position)
-	t.check(eased_distance < 1.0,
-			"the camera arrives at the hut once the ease has run its course (%.1fpx away)"
-			% eased_distance)
-	t.check(stroller._camera.global_position.distance_to(camera_before) > 1.0,
-			"and it actually moved to get there, rather than having started there")
+		_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
+		var released := stroller.global_position
+		var crossed := (released - caught_by.global_position).dot(axis)
+		t.check(absf(crossed) > 1.0,
+				("%s: the release carries her across the crossing (%.1f along it) rather than " +
+				"setting her down exactly where it found her") % [caught_by.def.id, crossed])
 
-	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
-	t.check(not hut.is_chatting(), "the hold ends")
-	var released_position := stroller.global_position
+		_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS * 3.0)
+		for door in doors:
+			t.check(not door.is_chatting(),
+					"%s: nothing at the door holds her again where it let her out" % door.def.id)
 
-	for i in int(round(Tuning.CAMERA_EASE_SECONDS / STEP)) + 5:
-		stroller._update_camera(STEP)
-	var returned_distance := stroller._camera.global_position.distance_to(released_position)
-	t.check(returned_distance < 1.0,
-			"and eases back to her, on the released side of the door (%.1fpx away)"
-			% returned_distance)
-
-	hut.free()
-	stroller.free()
-	manager.free()
+		for door in doors:
+			door.free()
+		stroller.free()
+		manager.free()
 
 ## *"It works in both directions with the same cost each time."* Having just been released on the
-## far side, walking back into the same hut detains her again, for the same `detain_seconds`, and
-## returns her to (the clearance distance on) the original side.
+## far side, **leaving** the post's own reach re-arms it, and walking back in costs her the same
+## hold and returns her to the original side. The two halves are the whole of the latch's contract:
+## standing where she was let out is free, and the walk out and back is what pays again.
 func _test_walking_back_redetains_her(t) -> void:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
@@ -428,20 +733,29 @@ func _test_walking_back_redetains_her(t) -> void:
 	var post := _door_instance(t, "checkpoint_post", centre, axis)
 	manager._instances.append(post)
 
-	stroller.global_position = centre + axis * 30.0
+	stroller.global_position = centre + axis * 60.0
 	manager._tell_them_where_she_is()
 	manager._check_detentions()
 	t.check(post.is_chatting(), "the first approach detains her")
 	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
 	var first_release := stroller.global_position
+	var out_side := (first_release - centre).normalized()
 	t.check((first_release - centre).dot(axis) < 0.0, "released on the far side, first crossing")
 
-	# Walk back in from the side she is now on.
-	stroller.global_position = centre + (first_release - centre).normalized() * 30.0
+	# Standing where she was let out, inside the post's own reach, is free for as long as she likes.
+	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS * 3.0)
+	t.check(not post.is_chatting(), "and standing there is not a second toll")
+
+	# Walking out of its reach re-arms it, and walking back in pays again.
+	stroller.global_position = centre + out_side * (post.def.detain_distance() + 4.0)
 	manager._tell_them_where_she_is()
 	manager._check_detentions()
-	t.check(post.is_chatting(), "the return approach detains her again — redetains, in either "
-			+ "direction")
+	t.check(not post.is_chatting(), "one step outside its reach is not a toll either")
+	stroller.global_position = centre + out_side * 60.0
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(post.is_chatting(), "but walking back in from there detains her again — redetains, in "
+			+ "either direction")
 	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
 	var second_release := stroller.global_position
 	t.check((second_release - centre).dot(axis) > 0.0,
@@ -450,6 +764,32 @@ func _test_walking_back_redetains_her(t) -> void:
 	post.free()
 	stroller.free()
 	manager.free()
+
+## `ReleaseLatch` on its own, without a door around it — the one rule the escape scene will reuse
+## for its own doors *(2026-09-12: "same mechanism can be reused in the escape scene when going
+## through doors")*, so it is checked here as a thing rather than only through the checkpoint that
+## first needed it.
+func _test_the_release_latch(t) -> void:
+	var latch := ReleaseLatch.new()
+	t.check(not latch.holds(), "a fresh latch holds nothing")
+
+	var at := Vector2(100.0, 100.0)
+	latch.arm(at, 48.0)
+	t.check(latch.holds(), "armed, it holds")
+
+	latch.update(at)
+	t.check(latch.holds(), "and standing exactly where she was let out keeps holding it")
+	latch.update(at + Vector2(47.0, 0.0))
+	t.check(latch.holds(), "as does anywhere else inside the circle it was armed with")
+
+	latch.update(at + Vector2(49.0, 0.0))
+	t.check(not latch.holds(), "one step outside it clears the latch")
+	latch.update(at)
+	t.check(not latch.holds(),
+			"and walking back in does not re-hold it — that is the door's job, not the latch's")
+
+	latch.arm(at, 48.0)
+	t.check(latch.holds(), "which the door does by arming it again")
 
 ## The one row that keeps its old, once-only behaviour: `redetains` defaults to `false`, and
 ## `chatting_mother` never sets it, so a second approach to the same instance never starts a
@@ -563,10 +903,10 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t) -> void:
 ## own seal-avoidance: `checkpoint_gate` carried no `detain_seconds`/`detain_radius` of its own, so
 ## stepping onto the boom's own tiles while it stood up for a car started nothing — only the huts
 ## detained. *(2026-09-10, the player: "attempting to do that should just start a regular
-## checkpoint inspection".)* The gate now detains exactly like a hut, `redetains` included, so the
-## vanish (`Stroller.hide_for_inspection()`) and the halo suppression
-## (`is_suppressed_by_its_own_hold()`) both apply here too, the same way
-## `_test_she_and_the_guard_are_gone_during_the_hold` above checks them against a hut.
+## checkpoint inspection".)* The gate now detains exactly like a hut, `redetains` included, so her
+## own vanish (`Stroller.hide_for_inspection()`) applies here too — and, exactly as at a hut, the
+## structure does not go with her: a boom is a bar across a road, and the guard who takes her in is
+## at the hut. See `_test_she_and_the_guard_are_gone_during_the_hold` above for the same split.
 ##
 ## `gate_state.raised` is set here and never read anywhere in the detain path — only by the gate's
 ## own drawing (`_draw_checkpoint_gate()`) — so triggering the hold with it `true` is the whole of
@@ -604,12 +944,13 @@ func _test_a_raised_gate_still_detains_her_at_the_bar(t) -> void:
 	t.check(gate.is_chatting(), "inside the gate's own detain_radius, the hold starts")
 	t.check(gate.gate_state.raised, "with the bar still reading raised the whole time")
 	t.check(not stroller.visible, "and she is hidden, the same as at a hut")
-	t.check(gate.is_suppressed_by_its_own_hold(), "and the gate's own halo is suppressed too")
+	t.check(not gate.is_suppressed_by_its_own_hold(),
+			"while the boom itself stays drawn — it is a bar across a road, not a man who can go "
+			+ "inside")
 
 	_advance_chat(manager, Tuning.CHECKPOINT_DETAIN_SECONDS)
 	t.check(not gate.is_chatting(), "the hold ends")
 	t.check(stroller.visible, "and she is visible again")
-	t.check(not gate.is_suppressed_by_its_own_hold(), "with the halo no longer suppressed")
 
 	car_stand_in.free()
 	gate.free()
@@ -621,9 +962,11 @@ func _test_a_raised_gate_still_detains_her_at_the_bar(t) -> void:
 ## a way past her too. `checkpoint_gate` and `checkpoint_hut` share one crossing's `GateState`
 ## structurally (`RegionPlanner._add_door_bodies` builds one `GateState` per street door and hands
 ## it to the gate's own instance), but `EventManager._check_detentions()` never reads `gate_state`
-## or `raised` at all — the hut's hold is `def.detain_seconds`/`detain_radius` alone, so raising the
-## boom for the cars must leave it exactly as long. Drives her into the hut with the door's real
-## gate marked raised and asserts the inspection still starts and still runs its full length.
+## or `raised` at all — the hut's hold is `def.detain_seconds` and `detain_distance()` alone, so
+## raising the boom for the cars must leave it exactly as long. Drives her into the hut with the
+## door's real gate marked raised and asserts the inspection still starts and still runs its full
+## length. She stands on the hut's far side from the gate, since only the nearest eligible body
+## captures her and this check is about the hut's own hold.
 func _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t) -> void:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
@@ -641,7 +984,7 @@ func _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t) -> void:
 	gate.raised = true
 	gate_instance.gate_state = gate
 
-	stroller.global_position = centre + axis * 40.0
+	stroller.global_position = centre - axis * 60.0
 	manager._tell_them_where_she_is()
 	manager._check_detentions()
 	t.check(stroller.is_detained(),

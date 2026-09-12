@@ -20,10 +20,12 @@ extends WorldContext
 ## `_start_door_transition()`. There is no "current part" left in this class.
 ##
 ## **A door tile is both where she leaves from and where she arrives.** Nothing here makes the
-## arrival tile different from the trigger tile, because the trigger is edge-detected:
-## `process_player()` remembers her last tile and only fires when the current one is *newly* a
-## trigger, not merely *is* one, so being placed on a door the instant a transition finishes does
-## not immediately fire the next one. `_last_player_tile` carries that memory across frames.
+## arrival tile different from the trigger tile, because arrival arms a `ReleaseLatch`
+## (`src/world/release_latch.gd`) on the door's own tile centre — the same "just spawned" flag the
+## checkpoint hut and the crowd's own door hold use — and no door fires while it holds. Standing on
+## the tile she arrived on, or stepping off it and straight back within the latch's radius, costs
+## her nothing; leaving that radius clears it and every door, including the one she came through,
+## can take her again.
 
 signal exit_requested
 
@@ -81,10 +83,15 @@ var _fade_rect: ColorRect
 ## `process_player()` cannot fire a second one out from under the first while the teleport in the
 ## middle of it is still in flight.
 var _transitioning := false
-## The tile she stood on last frame, so a transition fires only on the frame she newly steps onto
-## a trigger tile rather than on every frame she merely stands on one — see this class's own doc
-## for why that is what lets the arrival tile and the trigger tile be the same tile.
-var _last_player_tile := Vector2i(-999999, -999999)
+## Armed on every arrival through a door, centred on that door's own tile — see this class's own
+## doc for why that is what lets the arrival tile and the trigger tile be the same tile. Updated
+## every `process_player()` call; no door fires while it holds.
+var _door_release_latch := ReleaseLatch.new()
+## How far the latch reaches from a door's own tile centre — one tile and a half, comfortably past
+## the trigger tile itself (`transition_at()` matches only the door's own tile) plus her body
+## (`Tuning.PLAYER_BODY_RADIUS`, 14px), so a step that only grazes the tile's edge still counts as
+## staying rather than as leaving and re-entering.
+const _DOOR_RELEASE_RADIUS := TILE * 1.5
 
 func _ready() -> void:
 	super()
@@ -480,12 +487,10 @@ func transition_at(tile: Vector2i) -> Dictionary:
 ## keep `main._process()`'s own call site uniform with every other per-frame update there; nothing
 ## here is a rate the fade `Tween` does not already own.
 func process_player(player: Node2D, _delta: float) -> void:
+	_door_release_latch.update(player.global_position)
+	if _transitioning or _door_release_latch.holds():
+		return
 	var tile := world_to_tile(player.global_position)
-	if tile == _last_player_tile:
-		return
-	_last_player_tile = tile
-	if _transitioning:
-		return
 	var result := transition_at(tile)
 	if result.is_empty():
 		return
@@ -523,7 +528,7 @@ func _start_exit() -> void:
 func teleport_to_door(door_id: String, player: Node2D) -> void:
 	var door := _plan.door(door_id)
 	var at := tile_to_world(door.tile)
-	_last_player_tile = door.tile
+	_door_release_latch.arm(at, _DOOR_RELEASE_RADIUS)
 	if player is Stroller:
 		(player as Stroller).reset_at(at, Vector2.UP)
 	else:

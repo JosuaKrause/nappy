@@ -353,42 +353,10 @@ through the one held-ground record the catalogue is already refused from; a door
 through one at a time under the boom the M62 gate already runs, and walkers pass the hut as she
 does; a soft seal takes both pavements from the walkers and leaves the carriageway to the cars;
 the streets around the home block, held for placement only, stay open to everyone; and the bar
-itself holds her the way a hut does, whatever it is doing for a car. What is left is one item and
-one question.
+itself holds her the way a hut does, whatever it is doing for a car; and the walkers are held at
+the same huts in the player's four states, a few passing and some turning back, with the line
+kept short (`DECISIONS.md`, M110, walkers are held at a door). What is left is one question.
 
-- [ ] **Walkers are held at the hut like her; a few walk through, some turn back, and the queue
-      stays short.** *([PLAYTEST-58](playtests/PLAYTEST-58.md): "walkers walk through
-      checkpoints..."; asked which rule they get, "Held at the hut like her"; then "a small
-      fraction can do that"; "others can turn back"; "don't want a queue that is long".)* Today a
-      walker passes a door's hut untouched, straight through its footprint, because the door is
-      carved out of the crowd's shut list so the street reads as open. What stands instead, drawn
-      per walker when it is placed so a walker's answer at a door never changes mid-street: most
-      walkers arriving at a door's hut stop beside it for a short hold — shorter than her own
-      `Tuning.CHECKPOINT_DETAIN_SECONDS`, since a walker is not the one being looked for; one
-      second is the recommendation, pinned and open to overturn — then continue, one at a time; a
-      small fraction walk through as they do today; and the rest turn back at the door the way
-      every walker turns back at a wall. The fractions are the player's *"small"* and *"others"*
-      and not numbers they gave — one in eight through and one in four turning back is the
-      recommendation, pinned and open to overturn. **The queue is short by construction**: a
-      walker that would be held while another is already held, or while more than a short line
-      waits behind it — two is the recommendation — turns back instead of joining it, so a busy
-      door never grows a line down the pavement. **The hold is four states, the player's**
-      *("four states walking -> waiting -> inspection -> emerging on the other side (with cooldown
-      to not go back again) -> walking")*: a walker **walking** toward a door's hut reaches it and
-      is **waiting** — stopped beside the hut in its last facing, frame a, the way a stopped walker
-      already stands, behind whoever is inside; then **inspection** — the walker goes inside the
-      hut and is not drawn, for the hold's length, the way she does; then **emerging** — it
-      reappears on the far side of the door, on its own pavement, past the hut's body, and carries
-      a **cooldown** during which that door cannot take it again, so a walker that is turned round
-      by the crowd's own steering just past the door walks on instead of being inspected a second
-      time; then **walking**. One walker inside at a time, so the queue is whoever is waiting. The
-      hold is the crowd's own state (`CrowdAgent`, the way a car's gate stop is computed in
-      `Crowd`), keyed on the door's hut position from the region plan, never on the hut's
-      `detain_radius` or her hold code, which detains her and not them; the two-second hut hold
-      she gets is the model for the walker's shorter one. Waits for the checkpoint fixes in M100
-      to land, since the hut's own approach geometry is moving there and the walkers' hold should
-      sit where hers does. Evidence is a burst at a door on a busy street, with `--invincible`,
-      long enough to show one walker through all four states
 - [ ] **Open question, the player's: does every other solid body divert the crowd too?** A café, a
       construction band, a kerbed van are walked through the same way. Diverting the crowd at every
       pavement obstacle spends the tell closures rely on — every obstructed street would read as
@@ -406,18 +374,41 @@ one question.
 > randomly placed on the map in both directions. fallen trees should only be possible on streets
 > with trees and one spot should be empty (the fallen tree's spot)"
 
-[PLAYTEST-57](playtests/PLAYTEST-57.md). Today `StreetTrees` puts a pit at a fixed spacing along
-every pavement fronted by a residential or commercial block, and `ClosurePlanner` only *prefers*
-`fallen_tree` on a street that has trees (a weight, `_FALLEN_TREE_STREET_BIAS`).
+[PLAYTEST-57](playtests/PLAYTEST-57.md). And, reshaping it, [PLAYTEST-58](playtests/PLAYTEST-58.md):
 
-- [ ] **Only some streets have trees, in runs.** A tree-lined street is a straight run of three,
-      four or five consecutive blocks along one street line, horizontal or vertical, chosen from
-      the city's own seed at generation and fixed for the run like every other piece of geometry
-      she learns; runs are placed at random across the map in both directions, and the count of
-      runs is a `Tuning` constant chosen so that most streets are bare and a tree-lined one reads
-      as a place. Pits keep their current spacing and their mouth margins inside a run; a street
-      outside every run gets none. `StreetTrees` stays a pure function of `CityMap` and remains
-      the one source of truth `City._spawn_street_trees()` and the planner read.
+> "trees should only be allowed to be placed if there is no other blocking event (or conversely
+> due to map consistency) events can only be placed where no trees are (except for the fallen
+> tree which must empty out one tree lot). so trees must be quite rare to be able to still place
+> vans restaurants etc. also, trees make it harder to spot events like yeller, dog walker, etc. so
+> we need to be careful about how many we are placing"
+
+Today `StreetTrees` puts a pit at a fixed spacing along every pavement fronted by a residential or
+commercial block, `ClosurePlanner` only *prefers* `fallen_tree` on a street that has trees (a
+weight, `_FALLEN_TREE_STREET_BIAS`), and nothing stops an event being placed on a tree's own
+ground, so a van or a café can stand in a tree and a yeller can hide behind one.
+
+- [ ] **Only some streets have trees, in runs, and few of them.** A tree-lined street is a
+      straight run of three, four or five consecutive blocks along one street line, horizontal or
+      vertical, chosen from the city's own seed at generation and fixed for the run like every
+      other piece of geometry she learns; runs are placed at random across the map in both
+      directions, and the count of runs is a `Tuning` constant chosen so that most streets are
+      bare and a tree-lined one reads as a place. **Rare**, in the player's word: few enough runs
+      and a wide enough spacing within one that the day's events still find room on the streets
+      the route uses, and a tree never stands where a yeller or a dog walker would be hidden by
+      it — a pit at most every other lot-length is the recommendation, pinned and open to
+      overturn, with the run count set so a quarter of the ordinary streets or fewer carry trees.
+      Pits keep their mouth margins inside a run; a street outside every run gets none.
+      `StreetTrees` stays a pure function of `CityMap` and remains the one source of truth
+      `City._spawn_street_trees()` and the planner read.
+- [ ] **A tree and an event never share ground.** The trees are the city's and fixed for the run;
+      the events are the day's. So the day's placement is what yields: the scheduler's candidate
+      ground refuses any tile a standing street tree occupies or that its footprint reaches
+      (the tree's own ground shape, the one the shadow reads), the same refusal it applies to
+      closed tiles, checked where the candidate is offered and never repaired afterwards — so a
+      van, a café, a market stall, a yeller or a dog walker is never placed in or behind a tree.
+      Seals are bodies of catalogue rows and are placed by the same ground query, so a seal on a
+      tree-lined street stands between the trees, not on one. The one exception is the fallen
+      tree, below
 - [ ] **A fallen tree only where a tree stood.** `fallen_tree` closures and `fallen_tree_seal` are
       offered only on a tree-lined segment, never merely preferred there, and the fallen tree
       takes one of that street's own pits: that pit is left empty for the day — the tree that fell
@@ -590,31 +581,11 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **The boom is drawn on the road, and the inspection starts as she approaches.**
-      *(PLAYTEST-57: "the gate for the cars is too high up. it needs to be further down"; "the
-      checkpoint should activate when I get close. with the new stroller hitbox I cannot reach the
-      checkpoint entrance.")* The gate's picture sits at the height of the road's upper kerb; it
-      belongs across the carriageway at the huts' own level. And the hut's `detain_radius` (48px)
-      starts the inspection only once her body is inside it, which a body stopped short of the hut
-      never reaches: start it on approach, from the distance she can actually stand at, re-checked
-      once the pram's body is gone
-- [ ] **The inspection, as played.** *(PLAYTEST-57, on M113's `REVIEW.md` item: "the camera makes a
-      huge jump from somewhere to the checkpoint. the checkpoint house disappears. the camera
-      doesn't move at all after the 2s. also, if I don't move I get sent back afterwards. all this
-      is incorrect.")* Four faults in one hold. The camera jumps rather than eases — the ease starts
-      from `_camera.global_position` the frame `top_level` is set, which is not where the camera was
-      drawn from, so find where it actually starts and ease from there. The hut vanishes with the
-      guard, where only the guard and she should go. The camera does not come back after the two
-      seconds. And released on the far side without moving, she stands inside the hut's
-      `detain_radius` and is detained again — the run log shows the same hut at 65px right after
-      the release. **The answer is a flag, not a distance** *([PLAYTEST-58](playtests/PLAYTEST-58.md):
-      "she just spawns further away now? it should work that she has a flag 'just spawned' that
-      only resets once she leaves the area. that way she can't accidentally go back and we don't
-      need to place her far away")*: the release puts her on the far side just clear of the hut's
-      body, as close as she can stand, and a released flag for that hut suppresses re-detention
-      until she has once left its trigger area, after which the door re-arms as a toll in either
-      direction. All four against a rig that drives the hold end to end, and a burst of the whole
-      hold as the evidence
+- [ ] **The gate detains but draws no guard.** Found while capturing the inspection: the boom's
+      own body takes her in, and nobody on screen is the one doing it — the guards stand at the
+      huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard
+      stepping to the arm, or the boom stops being a detaining body and the huts alone are the
+      toll, with the boom's picture still barring the lanes for the cars. The player's call
 
 **Drawings, as SVG:**
 
@@ -805,14 +776,23 @@ M103, the drawings the queue owes.
       explosion row's cue indoors, one or two frames of `hallway_wall_window_flash.svg`), the
       lighting response to the explosions, and the events — mice, the pursuers on the stairs, the
       fire on one stairwell, the steam
-- [ ] **The building's doors use the checkpoint's release flag.** *([PLAYTEST-58](playtests/PLAYTEST-58.md),
-      on the checkpoint's "just spawned" flag: "same mechanism can be reused in the escape scene
-      when going through doors".)* Today a door in the building fires only on the frame she newly
-      steps onto its trigger tile, which is what lets the arrival tile and the trigger tile be the
-      same tile. It becomes the same rule the checkpoint hut and the crowd's door hold use: on
-      arrival she carries a flag for the door she came out of that resets only once she has left
-      that door's area, so she cannot be sent straight back and the arrival point need not be
-      placed away from the door. One mechanism, shared rather than written twice
+- [ ] **The south-edge doors are indents, and the stairs are steps.** *([PLAYTEST-60](playtests/PLAYTEST-60.md):
+      "the downwards leading doors in the hallways are fronwards facing doors now. the placement
+      is good but they should be small indents in the wall -- nothing more -- where closed doors
+      should be the indent + a brown bar closing the indent (this is indicating the closed
+      door)"; "the staircase floor graphic should be vertical lines for steps".)* The apartment
+      recesses (`apartment_threshold.svg`, drawn at columns 2, 5, 7 and 10 of a hallway's south
+      edge) and the open passage notches (`open_threshold.svg`, drawn at a door's own tile) keep
+      their positions and their sizes, but each is redrawn as a small indent in the skirting and
+      wall and nothing more — no frame, no chain, no dark opening with a lintel, nothing that
+      reads as a door seen from the front. An open door is the indent alone; a closed door is
+      the same indent with a brown bar across its mouth, the bar being the whole of what says
+      *closed*. And every flight deck — `stair_flight_run_e.svg`, `stair_flight_run_w.svg` and
+      the basement's `stair_flight_short_e.svg` — draws its treads as vertical lines, one per
+      step, spaced along the flight's run, in place of the diagonal tread strokes; the deck's
+      outline, the rails and the landings are unchanged. Both are SVG edits with the source
+      sheets re-rendered, checked in the running building at `--start-escape floor:2` and on a
+      stairwell, and a still of each; no walking cell, body or door behaviour moves
 - [ ] **A finale plan for the city map.** An ordered chain, not a `RouteTree`: service exit to
       first park to second to third to the edge, one street-walk between each pair and nothing
       else open. `RouteTree.for_day` and its redundancy guarantee (two distinct routes to each calm

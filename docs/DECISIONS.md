@@ -1,5 +1,68 @@
 # Decisions
 
+## M100 — Small, real, and nobody's · the checkpoint as played: the boom, the approach, the hold and the latch, 2026-09-12
+
+*(2026-09-11, playtest 57: "the gate for the cars is too high up. it needs to be further down";
+"the checkpoint should activate when I get close. with the new stroller hitbox I cannot reach the
+checkpoint entrance."; and on M113's hold, "the camera makes a huge jump from somewhere to the
+checkpoint. the checkpoint house disappears. the camera doesn't move at all after the 2s. also,
+if I don't move I get sent back afterwards. all this is incorrect." Then 2026-09-12, playtest 58:
+"she just spawns further away now? it should work that she has a flag 'just spawned' that only
+resets once she leaves the area.")* Four agent commits on `feature/checkpoint-as-played`,
+reviewed here.
+
+**The boom.** The cause was the placement anchor, not the siting and not the SVG: the gate body
+already sits on the carriageway's centre line, level with both huts, and each boom SVG's
+documented ground anchor is the base of the post nearest the camera, but that anchor was used as
+the *placement* anchor, so the whole arm hung to one side of the gate, an east-west boom's arm
+running entirely above the carriageway. Each boom is now anchored midway between its two posts,
+read off the same post box, and the raised state shares the constant. Chosen where silent: the
+post midpoint rather than the arm's, since the posts are what stand on the ground. A test asserts
+over every street door of every sampled day that the boom is level with the huts, its ground
+point on the carriageway, its arm across the lanes and never past the door's solid line; the old
+anchor failed it hundreds of times.
+
+**The approach.** `detain_radius` had been a radius from the row's *centre* (48px) against a 32px
+body, so it worked only while it exceeded the body plus whatever she pushes: her bare body stops
+at 46px, the pram's stopped at 78px along a street and never reached it. It is now a reach past
+the row's own solid edge, `Tuning.CHECKPOINT_DETAIN_REACH` (48px, the same number measured from
+the right place), and `EventDef.detain_distance()` (body plus reach) is the one form validation,
+detection and release read. The rows' inner radii moved up to keep the invariant *captured means
+fully charged* (hut and post 84/98, gate 84/120), so a hut's field is now a 98px disc where it was
+66 — a cost taken to keep the invariant rather than relax it, and listed in `REVIEW.md`.
+`chatting_mother` has no body, so her number is unchanged. Also found and fixed: `_check_detentions`
+had no `break`, so every eligible body in range captured her on one frame; only the nearest does,
+and nothing captures while a hold runs. A test asserts the relationship rather than a number:
+wherever she comes to rest against the hut, on either approach, she is inside the trigger, read
+off the pram's live collision shape.
+
+**The four faults.** The camera jump: `top_level` leaves the node's local position as its global
+one, `Vector2.ZERO`, so the ease started from the world origin, a 7800px jump the rig measured.
+`Stroller.camera_screen_center()` now answers where the camera is drawing from (smoothing, the
+look-ahead offset, the limits), the camera is put on that point, its offset zeroed and its own
+smoothing switched off for the hold, since the ease is the smoothing. The hut vanishing: the
+suppression predicate is split into `is_its_guard_inside()`, which takes only the guard out of a
+hut's drawing, and `is_suppressed_by_its_own_hold()`, now true only of `checkpoint_post`, where the
+guard is the whole picture. The camera not returning and being sent back were one event seen
+twice, with two causes: `signf(0.0)` is zero, so crossing the street exactly level with the body
+multiplied the release clearance to nothing and set her down where she was; and a door's bodies
+queued up, the next body along starting a hold on top of the one just released, charging the meter
+twice. **The latch.** The agent's first answer, a release clearance stated against the trigger,
+was overturned by the player the same morning: she comes out exactly on the far side of the door,
+inside the trigger, `Tuning.CHECKPOINT_RELEASE_MARGIN` back at 8px, and `src/world/release_latch.gd`
+(`ReleaseLatch`: `arm`, `update`, `holds`) keeps the trigger off her until she is measured outside
+the circle. Found only by running it: a street door's three reaches overlap, so the boom's far
+side is inside a hut's reach and the first run let her out of the boom straight into the hut. The
+latch is therefore armed for every redetaining body whose reach she lands in, so one crossing is
+one toll. The class is shared on purpose: the crowd's door hold and the building's doors reuse the
+same rule. Tests drive the hold end to end and each fix was confirmed load-bearing by reverting
+it. Evidence: `docs/evidence/m100-inspection-2026-09-12/`, a README and the whole run folder
+with two bursts and their clips; the run log shows one `chat` and one `checkpoint` line in eleven
+seconds. Four windowed runs were spent where two were budgeted, because the release design changed
+twice mid-task. **Left open, filed in the queue**: the gate detains but draws no guard.
+`docs/EVENTS.md`'s cost table still lists a row called `checkpoint`, the `roadblock` row's old
+name, untouched here.
+
 ## One handoff entry point, 2026-09-12
 
 The player asked: "do we need LUNA_HANDOFF anymore? I think all the info is now repeated elsewhere
@@ -8,6 +71,51 @@ as well? can we remove it?" `docs/LUNA_HANDOFF.md` contained only pointers and r
 removed without moving any unique guidance; the committing skill now checks `HANDOFF.md`
 rather than referring to two handoffs. The old illustrated-work document snapshot stays in
 the rejected-graphics archive as historical evidence, not a working entry point.
+
+## M110 — The crowd goes round a seal · walkers are held at a door, built 2026-09-12
+
+*(2026-09-12, playtest 58: "walkers walk through checkpoints..."; asked which rule they get,
+"Held at the hut like her"; "a small fraction can do that"; "others can turn back"; "don't want a
+queue that is long"; "four states walking -> waiting -> inspection -> emerging on the other side
+(with cooldown to not go back again) -> walking".)* M110 had carved a door out of the crowd's
+shut list so the street would read as open, and a walker crossed straight through the hut's
+footprint. Three agent commits on `feature/walkers-held-at-doors`, reviewed here. **The answer is
+the walker's own**, drawn from its RNG stream when it is placed and again when it is recycled, so
+it never changes mid-street: `WALKER_DOOR_PASS_FRACTION` 0.125 passes, `WALKER_DOOR_TURN_BACK_FRACTION`
+0.25 turns back, the rest are held; `validate_traffic()` refuses a pair that leaves no remainder.
+Turning back needed no machinery: a turn-back walker gets no door carve-out in
+`_segment_is_shut()`, so a door reads to it like the wall either side, and it turns at the last
+junction. The draw happens *before* placement, since placement refuses ground a walker treats as
+shut and a walker handed turn-back afterwards could start inside the door's own street and pace
+it all day. **The four states** live in `CrowdAgent.advance_the_door_hold()` on
+`WalkerDoorHold`, a new class holding a hut's ground point, whoever is inside and the line;
+`Crowd._hold_walkers_at_doors()` writes each walker's door ahead from public geometry the way the
+car's gate stop is computed. Walking, then waiting stopped on its lane `WALKER_DOOR_STOP_DISTANCE`
+(40px) short of the hut plus `WALKER_DOOR_QUEUE_SPACING` (26px) per place in line, then
+inspection standing on the hut's own point and invisible for `WALKER_DOOR_HOLD_SECONDS` (1s), then
+emerging on the far side on the same lane with a cooldown that clears once it is
+`WALKER_DOOR_COOLDOWN_RADIUS` (96px) from the hut, then walking. The stopped pose came free by
+folding the hold into `velocity()`, which the gait frame and the eight-way view both read. **The
+line is short by construction**: `WALKER_DOOR_QUEUE_MAX` (2) is stated over everybody committed,
+inside plus waiting, because stated over the waiting line alone the first frame a door is seen lets
+an unbounded number commit while nobody is inside yet; a refused walker gets that one door's
+segment shut to it and turns like at a wall. Every way out releases the hut — inspection ending,
+recycling, streaming out, turning away, and `Crowd.clear()` — and a probe over a whole day with
+every walker held found the hidden count always equal to the inspected count. **Chosen where the
+design was silent**: every door body with `detain_seconds > 0` holds, hut, alley guard and boom,
+with the lane test deciding which is on a walker's line, so on an ordinary street only the hut
+ever is; alley guards hold nobody, since no walker enters an alley; inside means standing on the
+hut's point rather than hidden where it stopped, so a hidden walker is never a body in the street
+she can hit; a walker inside keeps its ordinary noise; two walkers approaching one hut from
+opposite sides share one line. **Left open**: the refusal turns a walker where it stands when it
+meets a full door from inside the door's own street, since seven tiles is all the crowd sees a
+wall from; widening that for doors alone would buy the junction. All five numbers are
+recommendations, open to overturn. Tests drive the answers' fractions over a four-day sweep, one
+walker through all four states with the hut occupied exactly during inspection, a line at the cap
+with the refused walker never joining, and a car still stopping for the boom. The burst
+(`rig-045244-seed4242…/asked/burst-32711603-001` in the scratch telemetry folder, not archived)
+shows a walker stopped beside the hut and then gone; a three-second burst is shorter than one
+walker's cycle, so the full cycle rests on the suite.
 
 ## M112 — Escape interior graphics from the references, 2026-09-12
 
@@ -54,6 +162,24 @@ interior caller; the new apartment door-flag request remains open under the fina
 being silently implemented by an art pass. Playtests 58 and 59 remain separate primary sources.
 The archive's prepend conflict retained both histories, and the merged boot, interior suite,
 document lint and whitespace checks passed.
+
+## M102 — The finale · the building's doors use the checkpoint's release latch, 2026-09-12
+
+*(2026-09-12, playtest 58, on the checkpoint's "just spawned" flag: "same mechanism can be reused
+in the escape scene when going through doors".)* A door in the building had its own guard: a
+transition fired only on the frame she newly stepped onto a trigger tile, tracked by the last
+tile she stood on, which let the arrival tile and the trigger tile be the same tile but re-fired
+the moment she stepped off and back. One agent commit on `feature/building-doors-latch`. **What
+stands**: `InteriorScene` holds one `ReleaseLatch`, armed on the arrival door's tile centre with
+`_DOOR_RELEASE_RADIUS`, one tile and a half (48px), updated with her position every frame, and no
+door fires while it holds; the fade's own `_transitioning` guard stays, since it guards the tween
+rather than re-entry. The arrival point is unchanged. **Chosen where the design was silent**: one
+latch rather than one per door, since only one door transition is ever recent in this scene and
+no door in today's plan stands within another's radius; revisit if a layout ever puts two doors
+that close. A test drives the teleport and the per-frame update directly: standing still does not
+re-fire, stepping one tile off and back inside the radius does not, 47px holds and 49px clears,
+and returning after leaving fires again. The latch primitive itself is proven in the checkpoint
+suite.
 
 ## M106 — Roofs, fronts and street trees · a street tree has no body, 2026-09-12
 

@@ -92,6 +92,21 @@ anywhere, and a car parked in a cul-de-sac for the rest of the day once it canno
 checked for a turnaround's worth of road, which is the same *nothing enters a junction it cannot
 leave* rule read one street further on.
 
+## A shared slot has to be given back on every way out, not on the way you were thinking of
+
+A checkpoint hut holds **one walker at a time** (`WalkerDoorHold`), so a walker occupying one that
+no longer exists shuts that door to the crowd for the rest of the day — and nothing about it looks
+wrong, because the hut is a point on the map and the walker was hidden anyway.
+
+**The way out you will write is the one you are thinking about** — the inspection ending. The ones
+that cost a door are the others: a walker **recycled** at the edge of the crowd's field (which is
+every walker eventually, and a stationary one sooner, since the field moves with the player and she
+walks faster than they do), a walker **turned away** by a barrier while it was still queueing, and
+the whole crowd being **cleared** at the end of a day. All four go through one `release`.
+
+**Ask what else ends a body's stay somewhere, and make every answer call the same function.** A
+slot handed back in only the expected case is a leak with a picture on it.
+
 ## The heading is the datum, and it is continuous
 
 `CrowdAgent.heading()` is a unit vector along the car's actual line of travel — cardinal in a lane,

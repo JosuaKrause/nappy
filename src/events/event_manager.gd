@@ -44,6 +44,13 @@ var _sighted: Dictionary = {}
 ## the frame the conversation ends. See `EventDef.redetains`.
 var _door_entry_side: Dictionary = {}
 
+## One `ReleaseLatch` per redetaining instance she has been let out of — `instance -> latch`. Armed
+## the frame the release teleports her, with that instance's own trigger circle, and holding until
+## she is measured outside it: the far side of a door is inside the door's own reach, so without
+## this she is taken in again the instant she is put down. See `_release_finished_door_detentions()`
+## and `ReleaseLatch`, which the escape scene's own doors reuse.
+var _door_release_latches: Dictionary = {}
+
 ## How close the player has to be for a planned event to exist. `INF` turns streaming off and
 ## puts the whole day in the world at once, which is what a test rig with no player wants —
 ## `tests/test_event_manager.gd` and `tests/test_full_run.gd` are about a day's whole event set
@@ -161,6 +168,7 @@ func clear() -> void:
 		plan.live = null
 	_plans.clear()
 	_door_entry_side.clear()
+	_door_release_latches.clear()
 	_sighted.clear()
 
 ## Brings into the world everything within reach of a point, and takes away what has gone out
@@ -650,24 +658,47 @@ func _tell_them_where_she_is() -> void:
 		instance.player_running = running
 		instance.baby_awake = awake
 
-## Entering `detain_radius` of an instance that has not yet chatted locks her controls for
-## `detain_seconds` — the one mechanic in the catalogue that takes them away rather than costing a
-## meter. This is the one place that can actually do it: `EventInstance` only ever gets handed a
-## point (`player_at`), never a `Stroller`, and `Stroller.detain()` needs the real thing. See
-## `EventDef.detain_seconds`, `EventInstance.start_chat()`.
+## Coming within `EventDef.detain_distance()` of an instance that has not yet chatted locks her
+## controls for `detain_seconds` — the one mechanic in the catalogue that takes them away rather
+## than costing a meter. This is the one place that can actually do it: `EventInstance` only ever
+## gets handed a point (`player_at`), never a `Stroller`, and `Stroller.detain()` needs the real
+## thing. See `EventDef.detain_seconds`, `EventInstance.start_chat()`.
 ##
-## **A `redetains` row is armed again once released**, in either direction — `checkpoint_hut` and
-## `checkpoint_post` are the two, and this is the whole of what makes a door a toll rather than a
-## one-time gate. `has_chatted()` is only the gate for everything else in the catalogue, since
-## `chatting_mother`'s own contract is one conversation for good; a redetaining instance is skipped
-## by `is_chatting()` alone, so the moment its own conversation ends and she has moved clear of
-## `detain_radius` (which `_release_finished_door_detentions()` always leaves her outside of), the
-## ordinary distance check below re-arms it exactly as if it had never fired.
+## **Only the nearest eligible instance captures her**, and it is not an optimisation. A street
+## door stands three bodies a tile apart across the street, each reaching a tile past its own edge,
+## so ground that is inside two of them at once exists — and two holds starting on the same frame
+## means two releases, the second reading the position the first teleported her to and sending her
+## back through the door she has just come out of.
+##
+## **A `redetains` row is armed again once released, and what re-arms it is her leaving** — in
+## either direction. `checkpoint_hut`, `checkpoint_gate` and `checkpoint_post` are the three, and
+## this is the whole of what makes a door a toll rather than a one-time gate. `has_chatted()` is
+## only the gate for everything else in the catalogue, since `chatting_mother`'s own contract is one
+## conversation for good. A redetaining instance is skipped while it is chatting and then while its
+## own `ReleaseLatch` holds — the far side of a door is a body's width away and the trigger reaches
+## further than that, so she is standing inside it the moment she is let out, and the latch is what
+## says *she has not walked back in, she has not left yet*. One step outside the circle clears it
+## and the ordinary distance check below re-arms the door exactly as if it had never fired.
 func _check_detentions() -> void:
 	var body := _player as Stroller
 	if not body:
 		return
 	_release_finished_door_detentions(body)
+	_update_door_release_latches(body)
+	# **One hold at a time, and it is not the same rule as the one below.** That one settles a tie
+	# inside a single frame; this one settles the *next* frame, where the body that captured her is
+	# skipped as already chatting and the next one along is free to start a hold of its own on top.
+	# A door's three bodies stand a tile apart and all three reach her in the middle of it, so the
+	# gate took her in, the hut took her in again a frame later, and the two released her in turn —
+	# the second reading the position the first had teleported her to, and charging her
+	# `Tuning.CHAT_EXCITEMENT` twice for one crossing. Asked of the instances rather than of
+	# `Stroller.is_detained()`, because a hold and the input lock it sets run on two clocks that can
+	# end a frame apart, and it is the hold that owns the release.
+	for instance in _instances:
+		if instance.is_chatting():
+			return
+	var nearest: EventInstance = null
+	var nearest_range := INF
 	for instance in _instances:
 		if instance.def.detain_seconds <= 0.0 or instance.is_finished or instance.is_leaving:
 			continue
@@ -675,26 +706,49 @@ func _check_detentions() -> void:
 			continue
 		if not instance.def.redetains and instance.has_chatted():
 			continue
-		if instance.global_position.distance_to(body.global_position) > instance.def.detain_radius:
+		var latch: ReleaseLatch = _door_release_latches.get(instance)
+		if latch and latch.holds():
 			continue
-		instance.start_chat()
-		if instance.def.redetains:
-			var axis := instance.facing_now()
-			var offset := body.global_position - instance.global_position
-			_door_entry_side[instance] = signf(offset.dot(axis))
-		body.detain(instance.def.detain_seconds)
-		Telemetry.note("chat", "%s at %s, %.1fs, baby %s, meter %s" % [
-			instance.def.id, TelemetryLog.tile(_map.world_to_tile(instance.global_position)),
-			instance.def.detain_seconds,
-			"awake" if instance.baby_awake else "asleep",
-			("+%.0f" % Tuning.CHAT_EXCITEMENT) if instance.baby_awake else "+0 (asleep)"])
+		var range_to := instance.global_position.distance_to(body.global_position)
+		if range_to > instance.def.detain_distance() or range_to >= nearest_range:
+			continue
+		nearest = instance
+		nearest_range = range_to
+	if not nearest:
+		return
+	nearest.start_chat()
+	if nearest.def.redetains:
+		var axis := nearest.facing_now()
+		var offset := body.global_position - nearest.global_position
+		# **Never `signf()`, which answers zero in the doorway.** Walking *across* a crossing —
+		# out of the carriageway at a hut, or straight up the middle of the road at the gate —
+		# puts her exactly level with the body along the street, and a zero here multiplies the
+		# release distance to nothing: she is set down where she was caught, inside the trigger,
+		# and held again the next frame for as long as she stands there. Level with the door is
+		# not a third side; it is one of the two, chosen the same way every time.
+		_door_entry_side[nearest] = -1.0 if offset.dot(axis) < 0.0 else 1.0
+	body.detain(nearest.def.detain_seconds)
+	Telemetry.note("chat", "%s at %s, %.1fs, baby %s, meter %s" % [
+		nearest.def.id, TelemetryLog.tile(_map.world_to_tile(nearest.global_position)),
+		nearest.def.detain_seconds,
+		"awake" if nearest.baby_awake else "asleep",
+		("+%.0f" % Tuning.CHAT_EXCITEMENT) if nearest.baby_awake else "+0 (asleep)"])
 
 ## The other half of `checkpoint_hut`/`checkpoint_post`'s own toll: the moment a redetaining
 ## instance's conversation ends, teleport her to the mirror of where she stood, reflected through
-## the crossing's own cross-street line and pushed out clear of the body and of `detain_radius` —
-## see `Tuning.CHECKPOINT_RELEASE_MARGIN`. Run *before* the ordinary detention pass above in the
-## same frame, so a distance check that would otherwise fire again this frame sees where she has
-## just been put rather than where she was captured.
+## the crossing's own cross-street line and set down **just clear of the body**, as close to the
+## door as she can stand — see `Tuning.CHECKPOINT_RELEASE_MARGIN`. Run *before* the ordinary
+## detention pass in the same frame, so a distance check that would otherwise fire again this frame
+## sees where she has just been put rather than where she was captured.
+##
+## **She is let out inside the door's own trigger, and that is on purpose.** The far side of a body
+## she cannot walk through is a body's width away and the trigger reaches further than that, so the
+## only way to land outside it is to throw her further than the door is wide — *(2026-09-12, the
+## player: "she just spawns further away now? it should work that she has a flag 'just spawned' that
+## only resets once she leaves the area".)* A `ReleaseLatch` armed here with that instance's own
+## trigger circle is that flag: it holds until she is measured outside the circle, so standing where
+## she was let out costs her nothing however long she stands there, and the toll comes back the
+## moment she leaves and walks in again.
 ##
 ## **The teleport, not `move_and_slide()`.** She is standing inside the band that is about to seal
 ## behind her — walking her out through the world would mean colliding with the very body that is
@@ -708,6 +762,8 @@ func _release_finished_door_detentions(body: Stroller) -> void:
 		var entry_sign: float = _door_entry_side[instance]
 		_door_entry_side.erase(instance)
 		var axis := instance.facing_now()
+		# Against the body, not against the trigger: the far side of the door is where the far side
+		# of the door is, and the latch below is what keeps her from being taken in again there.
 		var clearance := instance.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
 				+ Tuning.CHECKPOINT_RELEASE_MARGIN
 		var offset := body.global_position - instance.global_position
@@ -716,9 +772,47 @@ func _release_finished_door_detentions(body: Stroller) -> void:
 		var across := offset - axis * along
 		var released_at := instance.global_position + axis * released_along + across
 		body.teleport_to(released_at)
+		_latch_everything_she_was_let_out_into(released_at)
 		Telemetry.note("checkpoint", "%s at %s, %.1fs, released on the %s side" % [
 			instance.def.id, TelemetryLog.tile(_map.world_to_tile(instance.global_position)),
 			instance.def.detain_seconds, _compass_of(axis, released_along)])
+
+## Arms a `ReleaseLatch` for **every** redetaining body whose own trigger `at` is inside, not only
+## the one that just let her out.
+##
+## A street door is three bodies a tile apart and their reaches overlap, so the far side of the gate
+## is inside a hut's reach: latching only the releasing body means being let out of the boom and
+## taken straight into the hut beside it, which is one crossing charged twice and, to the player,
+## the door refusing to let go. **One crossing is one toll** — *"it works in both directions with
+## the same cost each time"* — so what she has just come out of is the whole door, and every part of
+## it waits until she has walked out of its own circle.
+func _latch_everything_she_was_let_out_into(at: Vector2) -> void:
+	for instance in _instances:
+		if not instance.def.redetains or instance.is_finished or instance.is_leaving:
+			continue
+		var reach := instance.def.detain_distance()
+		if instance.global_position.distance_to(at) > reach:
+			continue
+		var latch := ReleaseLatch.new()
+		latch.arm(instance.global_position, reach)
+		_door_release_latches[instance] = latch
+
+## Tells every live release latch where she is now, so one that she has walked out of clears itself
+## and its door is a toll again. Run once a frame from `_check_detentions()`, before anything asks
+## `holds()`: a latch only updated when somebody remembers is a latch that holds too long, and a
+## door that never re-arms is not a door. A latch whose instance has gone — streamed out, or the
+## day over — goes with it.
+func _update_door_release_latches(body: Stroller) -> void:
+	if _door_release_latches.is_empty():
+		return
+	var spent: Array = []
+	for instance in _door_release_latches:
+		var latch: ReleaseLatch = _door_release_latches[instance]
+		latch.update(body.global_position)
+		if not latch.holds() or not is_instance_valid(instance):
+			spent.append(instance)
+	for instance in spent:
+		_door_release_latches.erase(instance)
 
 ## Which compass direction `along` (a signed distance down `axis`) points at — `axis` is always
 ## `Vector2.RIGHT` (an east-west street) or `Vector2.DOWN` (north-south, since Y grows downward on
