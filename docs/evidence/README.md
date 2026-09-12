@@ -35,6 +35,7 @@ can produce different pixels on another call; extraction and assembly use the re
 | Garbage and litter | [Comic prop generation and registration](comic-props-2026-09-12/GENERATION.md) |
 | Outdoor ground tiles | [Tile generation and registration](style-transfer-tiles-2026-09-12/GENERATION.md) |
 | Sidewalk continuation of road-edge paving | [Source pairs, transfer, registration and neighbor panels](sidewalk-continuity-2026-09-12/GENERATION.md) |
+| Sidewalk joins in actual game layouts | [Generated-map tile selection, frozen inputs and street assemblies](sidewalk-layout-review-2026-09-12/GENERATION.md) |
 | Logo, social card and exported icons | [Identity generation and registration](comic-identity-2026-09-12/GENERATION.md) |
 
 ## What is here

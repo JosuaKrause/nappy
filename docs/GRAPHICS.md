@@ -241,9 +241,14 @@ closed idle frame, registration and eight-direction GIF recipe are in the
 The [graphics recipe index](evidence/README.md#graphics-recipes) also locates the named comparison
 versions and their preserved rollouts.
 
-The seven `sidewalk{,_cracked_*}.png` surfaces continue the accepted curb paving with the same
-slab scale and material. The [sidewalk continuity record](evidence/sidewalk-continuity-2026-09-12/GENERATION.md)
+The seven `sidewalk{,_cracked_*}.png` surfaces have a shared plain and damaged paving base.
+Their joins with the accepted curb artwork require correction under M109, convert the SVG
+catalogue to PNG, in `TODO.md`. The
+[sidewalk continuity record](evidence/sidewalk-continuity-2026-09-12/GENERATION.md)
 preserves SVG/PNG pairings and native neighbor comparisons against all eight curb directions.
+The [actual-map layout review](evidence/sidewalk-layout-review-2026-09-12/GENERATION.md) assembles
+the game's selected tiles into repeated streets and junction corners, exposing the remaining
+joint misalignment and material contrast.
 
 `assets/illustrated/svg-transfer/props/` supplies `garbage_sack.png` (28×34) and
 `garbage_sacks_pile.png` (42×34), bottom-center anchored, plus `litter_{can,apple,bag,newspaper,cup}.png`

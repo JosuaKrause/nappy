@@ -1,7 +1,10 @@
 # Sidewalk material continuity
 
-The seven 32×32 sidewalk PNGs continue the accepted normal- and main-road curb paving through
-their interiors. The accepted curb and road SVG/PNG controls remain unchanged. The sidewalk SVG
+This record preserves the seven current 32×32 sidewalk PNGs and their generation recipe.
+Their continuity with curb paving remains open in PLAYTEST-65 and `docs/TODO.md`.
+The [actual-map layout review](../sidewalk-layout-review-2026-09-12/GENERATION.md) shows these
+textures in repeated street runs and junction corners using the game's tile selector.
+The accepted curb and road SVG/PNG controls remain unchanged. The sidewalk SVG
 family also remains unchanged: all seven target sources and all eight curb sources already use the
 same warm gray fill, darker joints, and staggered seam coordinates. The recorded mismatch is
 between the independently generated PNG materials.
@@ -12,8 +15,8 @@ between the independently generated PNG materials.
 target SVG, all eight protected curb SVG/PNG controls, the normal and main road controls, the two
 approved style references, the accepted-control material panel, and the target PNGs present before
 this redraw. Godot 4.7.2 renders each SVG at native size and 6× before any generation. The source
-neighbor panel places road, curb, and sidewalk in the correct north, east, south, or west order; it
-shows that the editable SVG seam geometry already continues.
+neighbor panel places road, curb, and sidewalk in the correct north, east, south, or west order.
+These short strips expose individual joins; the actual-map review covers repetition and corners.
 
 The built-in imagegen tool performs the nondeterministic raster edits; it does not expose a model
 identifier. Each file under [`prompts/`](prompts/) is the exact prompt supplied for its matching raw

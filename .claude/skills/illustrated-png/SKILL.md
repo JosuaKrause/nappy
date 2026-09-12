@@ -120,6 +120,11 @@ road-line halves assembled as neighbors as well as repeated full tiles; alpha eq
 cannot reveal shifted markings, unwanted grid borders or a material that changes between variants.
 Keep low-contrast ground texture quiet enough for actors and route markings to remain legible.
 
+Review street-surface continuity in actual generated map layouts, using `GroundTiles.source_for`
+and the runtime TileSet mapping. Include repeated runs, both sidewalk lanes, both street axes and
+junction corners. Short isolated neighbor strips do not expose all repeated joints or corner
+transitions. Keep diagnostic labels and grid overlays separate from the clean assembled artwork.
+
 Resolve textures only. Keep original scale, offsets, animation, mirroring, sorting, shadows,
 camera and gameplay behavior. Missing or differently sized replacements fall back to the SVG;
 do not hide an unfinished family with unrelated generated art.
