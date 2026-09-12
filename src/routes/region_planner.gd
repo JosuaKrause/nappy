@@ -639,13 +639,33 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 		if info.is_empty():
 			continue
 		var vertical: bool = info[2]
-		plan.wall_bodies.append(SealPlanner.alley_mouth_wall(map, rect, vertical, true, _WALL_DEF_ID))
-		plan.wall_bodies.append(SealPlanner.alley_mouth_wall(map, rect, vertical, false, _WALL_DEF_ID))
+		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, true))
+		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, false))
 	for segment in plan.doors:
 		_add_door_bodies(map, segment, plan)
 	for rect in plan.alley_doors:
 		_add_alley_door_bodies(map, rect, plan)
 	return plan
+
+## The wall's own body at one mouth of a crossing alley — `SealPlanner.alley_mouth_wall()`'s own
+## placement, with its def's shape then overridden to a point of half the alley's own width
+## (`Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0`, 32px) rather than left at the catalogue
+## row's own 60px reach. Safe to mutate after the call: `SealPlanner.sealed_variant()` already
+## duplicated the def, so this touches nothing the catalogue or another instance shares.
+##
+## **The same reach `place_hard_on` already overrides, at the alley's own mouth this time.** The
+## catalogue `roadblock` row's band (`GroundShape.band(60.0)`) draws and collides at 120px across
+## — nearly double an alley's own `ALLEY_WIDTH_TILES` × `Tuning.TILE_SIZE` (64px) — so the barrier
+## used to lie across the roof edges of the lots either side of the mouth
+## (`docs/playtests/PLAYTEST-57.md`, "Roofs": *"the barrier looks on top of the roof in those
+## pictures"*). A point of 32px draws and collides at exactly 64px, edge to edge with the mouth's
+## own paving and no further — measured in `tests/test_regions.gd`,
+## `_test_alley_wall_bodies_fit_their_own_mouth`.
+static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
+		at_start: bool) -> EventScheduler.Planned:
+	var body := SealPlanner.alley_mouth_wall(map, rect, vertical, at_start, _WALL_DEF_ID)
+	body.def.solid(GroundShape.point(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0))
+	return body
 
 ## The along-street axis a door's own bodies share: `RIGHT` for a segment/alley that runs
 ## east-west (`horizontal`), `DOWN` for one that runs north-south. Carried on every door body's own

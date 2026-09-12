@@ -1001,7 +1001,12 @@ segment's wall stands at one of its two ends (`CityMap.boundary_wall_at_a`, deci
 a crossing alley's wall stands at both of its mouths. One tile deep is deliberate: the roadblock
 row's own width reaches roughly two tiles along a street each way, wide enough to cover a nearby
 alley's mouth outright from a segment's midpoint, and the mouth is where a barrier already stands for
-every other closure in the game. The whole of a boundary segment's ground therefore belongs to the
+every other closure in the game. **A crossing alley's own two wall bodies carry a narrower
+override again, to their own mouth rather than a neighbour's**: the row's shape becomes a point of
+half the alley's own width (`RegionPlanner._alley_mouth_wall_body()`), so the barrier draws and
+collides at exactly the alley's own `ALLEY_WIDTH_TILES × Tuning.TILE_SIZE` (64px) instead of the
+row's own 120px reach, which used to lie over the roof edges of the lots either side of the mouth
+(`docs/playtests/PLAYTEST-57.md`, "Roofs"). The whole of a boundary segment's ground therefore belongs to the
 region at its **far** end, away from the wall — which end carries it is nudged at generation so that
 matching an alley's other, real bordering street's ground keeps as many alleys as possible from
 becoming crossings at all.

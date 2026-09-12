@@ -32,6 +32,7 @@ func run(t) -> void:
 	_test_the_day_plan_shape(t)
 	_test_crossing_alleys_are_consistent(t)
 	_test_wall_bodies_never_cover_an_alley_mouth(t)
+	_test_alley_wall_bodies_fit_their_own_mouth(t)
 	_test_winnability_holds_with_the_wall_standing(t)
 	_test_closures_and_seals_never_land_on_a_boundary(t)
 
@@ -447,6 +448,41 @@ func _test_wall_bodies_never_cover_an_alley_mouth(t) -> void:
 								% [map.seed_used, day, body.position, body.def.obstructs_radius,
 								tile, distance])
 	t.check(checked > 0, "at least one wall body was checked against every alley mouth (%d)" % checked)
+
+## A crossing alley's own wall bodies draw and collide no wider than the alley's own paving — the
+## defect `docs/playtests/PLAYTEST-57.md`, "Roofs" reported: a barrier band drawn over the roof
+## edges of the lots either side of an alley mouth, because the wall's body kept the catalogue
+## `roadblock` row's own 120px reach (`GroundShape.band(60.0)`) rather than the alley's own 64px
+## width (`Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE`).
+## `RegionPlanner._alley_mouth_wall_body()` trims it to a point that draws and collides at exactly
+## the alley's own width, so this checks the drawn extent (`2 * obstructs_radius`, what
+## `EventInstance._draw_spread` actually paints) stays within the alley's own tile rect on the
+## across-alley axis — no tolerance needed, since the fit is exact rather than merely close.
+func _test_alley_wall_bodies_fit_their_own_mouth(t) -> void:
+	var checked := 0
+	for map in _maps:
+		for day in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS]:
+			_repaint_for(map, day)
+			var tree := RouteTree.for_day(map, day)
+			var plan := RegionPlanner.plan_day(map, day, tree)
+			for rect in plan.alley_walls:
+				var info := RegionPlanner._alley_border_segments(map, rect)
+				if info.is_empty():
+					continue
+				var vertical: bool = info[2]
+				var world := map.tile_rect_to_world(rect)
+				var low: float = world.position.x if vertical else world.position.y
+				var high: float = world.end.x if vertical else world.end.y
+				for at_start in [true, false]:
+					checked += 1
+					var body := RegionPlanner._alley_mouth_wall_body(map, rect, vertical, at_start)
+					var centre: float = body.position.x if vertical else body.position.y
+					var half := body.def.obstructs_radius
+					t.check(centre - half >= low - 0.01 and centre + half <= high + 0.01,
+							("seed %d day %d: alley wall body at %s (half-width %.0f) draws within " +
+							"the alley's own mouth %.0f..%.0f, not over the lots either side")
+							% [map.seed_used, day, body.position, half, low, high])
+	t.check(checked > 0, "at least one alley wall body was checked against its own mouth (%d)" % checked)
 
 ## The core guarantee, unconditionally: with the region wall standing alongside the day's closures
 ## and seals, some calm area is still reachable from the doorstep. The wall never stands on tree
