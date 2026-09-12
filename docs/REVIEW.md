@@ -39,9 +39,8 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   live motion and texture changes
   between directions still need a person's look. Collision positions and touch radii stay fixed.
 
-- **Walk and stop in each direction while pushing and while carrying.** Do F — Hip motion and
-  P2 — Three-pose push read as opposite steps separated by a clear together pose, and do they
-  remain the same woman when switching states? Use `--start-escape` for carrying. Exact native
+- **Compare pushing and carrying identity during a state change.** Do they remain the same woman?
+  Use `--start-escape` for carrying. Exact native
   and enlarged walking GIFs are linked from the
   [recipe index](evidence/README.md#graphics-recipes); they are sprite assemblies, not live captures.
 

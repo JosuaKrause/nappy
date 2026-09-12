@@ -137,3 +137,10 @@ road-edge geometry and runtime placement, with reproducible source/transfer and 
 The player checks the high-resolution NE contact pair and then reports improvement. Keep the
 improved correction for scaled animation review; opposite leg ownership must remain visible
 through the full A/C/B/C cycle.
+
+> legs look good -- she becomes big and small though
+
+The leg poses are accepted. Correct the apparent body-size changes across animation frames while
+preserving those poses, the three-pose loop, together idle and grounded stroller contact. Compare
+head and torso scale across all phases in both mother states; equal full-figure height alone is
+insufficient.
