@@ -175,19 +175,36 @@ one number covers both, and the hold cannot be switched off by a change to the p
 nearest of a door's bodies ever captures her, so one approach is one inspection.
 
 **She and the guard are both gone for the hold's duration**, reading as *inside* rather than as
-frozen in the street — `Stroller.hide_for_inspection()` and the door instance's own `_draw()`
-stop drawing the moment the hold starts, and both reappear the moment it ends, her on the far side
-of the door so being let out reads as being let through (`EventManager._release_finished_door_
-detentions()`). The pram's cue and the alert mark hidden along with her are the same drawing call
-that draws her, so nothing about them needs its own switch. The meters keep running throughout —
-sleepiness still drains at the idle rate and the hut's own field still charges the flat `Tuning.
-CHAT_EXCITEMENT`, because the baby is still there whether or not the player can see her.
+frozen in the street — `Stroller.hide_for_inspection()` and `EventInstance.is_its_guard_inside()`
+stop drawing the two of them the moment the hold starts, and both are back the moment it ends, her
+on the far side of the door so being let out reads as being let through
+(`EventManager._release_finished_door_detentions()`). The pram's cue and the alert mark hidden
+along with her are the same drawing call that draws her, so nothing about them needs its own
+switch. The meters keep running throughout — sleepiness still drains at the idle rate and the hut's
+own field still charges the flat `Tuning.CHAT_EXCITEMENT`, because the baby is still there whether
+or not the player can see her.
+
+**The hut, the boom and the shadow under them stay exactly where they are.** The guard is what goes
+inside, not the building he works in: a checkpoint that blinks out for two seconds reads as the
+door having been removed rather than as her having gone through it. The one row where the whole
+picture goes is `checkpoint_post`, an alley guard standing alone, since he *is* all of it —
+`EventInstance.is_suppressed_by_its_own_hold()` is that narrower question and the halo gates on it
+too.
 
 **The camera eases onto the door instead of following her**, and back again once she is released —
 `Stroller.focus_camera_on()`/`release_camera_focus()`, a smooth-stepped ease over `Tuning.
 CAMERA_EASE_SECONDS` rather than a cut or the ordinary per-frame walking follow. This is the one
 camera move in the game that is not her walking; any later one that is not either reuses the same
 two calls rather than a second camera.
+
+**An ease starts from where the camera was drawing, which is not where the camera is.** Three
+things sit between `Camera2D.global_position` and the point on screen — `position_smoothing_enabled`
+still catching up, the walking look-ahead in `offset`, and the city limits — so
+`Stroller.camera_screen_center()` is what the ease reads. Two more belong to the switch itself:
+taking the camera off her transform (`top_level`) leaves its *local* position, the world origin, as
+its new global one, so it is put back on the drawn point in the same call; and its own smoothing is
+switched off for the duration, because the ease is the smoothing and two of them in series make a
+half-second move read as a cut.
 
 ## Baby state machine
 

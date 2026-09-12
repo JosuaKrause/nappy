@@ -878,15 +878,28 @@ var _chat_seconds_left := 0.0
 func is_chatting() -> bool:
 	return _chat_seconds_left > 0.0
 
-## Whether a checkpoint's own hold is suppressing every drawing of this instance right now — she
-## and the guard both go inside for it, see `Stroller.hide_for_inspection()`. `def.redetains` is
-## the flag only `checkpoint_hut`/`checkpoint_post` carry, so `chatting_mother` — same mechanism,
-## no `redetains` — keeps her ordinary talking posture for the whole of her own conversation
-## instead. Named once and read by `_draw()`, by `_draw_body()` (the halo's own re-draw entry
-## point — see that function's doc for why the halo needs its own guard rather than inheriting
-## `_draw()`'s), and by a test, so the three can never drift apart from each other.
-func is_suppressed_by_its_own_hold() -> bool:
+## Whether the guard this instance draws is inside with her for its own hold right now — he is the
+## one taking her in, so he is not also standing in the street, see
+## `Stroller.hide_for_inspection()`. `def.redetains` is the flag only the three region-door rows
+## carry, so `chatting_mother` — same mechanism, no `redetains` — keeps her ordinary talking
+## posture for the whole of her own conversation instead.
+func is_its_guard_inside() -> bool:
 	return def.redetains and is_chatting()
+
+## Whether a checkpoint's own hold suppresses *every* drawing of this instance, halo included.
+##
+## **True only where the guard is the whole of what this row draws.** `checkpoint_post` is one
+## man at an alley mouth and nothing else, so when he goes in there is nothing left to draw; a hut
+## is a building and a gate is a boom across a road, and *(PLAYTEST-57: "the checkpoint house
+## disappears ... all this is incorrect".)* A structure that blinks out while she is inside it
+## reads as the door having been removed rather than as her having gone through it, which is the
+## opposite of what the hold is for.
+##
+## Read by `_draw()`, by `_draw_body()` (the halo's own re-draw entry point — see that function's
+## doc for why the halo needs its own guard rather than inheriting `_draw()`'s), and by a test, so
+## the three can never drift apart from each other.
+func is_suppressed_by_its_own_hold() -> bool:
+	return is_its_guard_inside() and def.look == EventDef.Look.CHECKPOINT_POST
 
 ## Whether this instance has ever detained anybody. See `_has_chatted`.
 func has_chatted() -> bool:
@@ -1981,12 +1994,13 @@ func _draw_mark() -> void:
 
 ## The single body-drawing entry point `_draw()` calls for the primary render and `EntityHalo`
 ## calls, repeatedly at a ring of offsets, for the halo — see `_build_halo()`. Gating it here
-## rather than only in `_draw()` is what actually hides the checkpoint's own halo during a
-## redetaining hold: `EntityHalo` never asks `_draw()`, it re-runs this function directly, and its
-## own alpha fades over `EntityHalo.FADE_OUT_SECONDS` (0.8s) rather than cutting, which would have
-## left a fading ring on screen for most of a two-second hold if this guard lived only in `_draw()`.
-## Drawing nothing is instant either way; the fade timer keeps running underneath, so the ring
-## reappears at whatever brightness it already had rather than fading back in.
+## rather than only in `_draw()` is what actually hides an alley post's own halo during its hold:
+## `EntityHalo` never asks `_draw()`, it re-runs this function directly, and its own alpha fades
+## over `EntityHalo.FADE_OUT_SECONDS` (0.8s) rather than cutting, which would have left a fading
+## ring around a man who is not there for most of a two-second hold if this guard lived only in
+## `_draw()`. Drawing nothing is instant either way; the fade timer keeps running underneath, so
+## the ring reappears at whatever brightness it already had rather than fading back in. A hut or a
+## gate keeps both its picture and its ring, because it never left.
 func _draw_body(canvas: CanvasItem = self) -> void:
 	if is_suppressed_by_its_own_hold():
 		return
@@ -2634,10 +2648,16 @@ func _hut_texture(doorway: Vector2i) -> Texture2D:
 ## The hut, doorway facing the carriageway, with a guard posted beside it on the pavement rather
 ## than in the doorway itself — offset along whichever axis the doorway does not face, so the two
 ## never overlap whichever of the four the doorway turns out to be.
+##
+## **The guard is the only part of it that goes inside for a hold.** The hut is a building: it
+## stays exactly where it is, casting the same shadow, so the two seconds read as her having gone
+## in rather than as the checkpoint having vanished.
 func _draw_checkpoint_hut(canvas: CanvasItem = self) -> void:
 	var doorway := _hut_doorway()
 	_draw_shape_shadow(canvas, def.shape)
 	_draw_at_anchor(canvas, _hut_texture(doorway), _HUT_ANCHOR)
+	if is_its_guard_inside():
+		return
 	var beside := Vector2(0.0, 22.0) if doorway.x == 0 else Vector2(22.0, 0.0)
 	# The guard's own shadow, not the row's shape — a per-part point beside the hut, same as the
 	# dog beside a dog walker.

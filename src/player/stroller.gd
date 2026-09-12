@@ -185,11 +185,18 @@ var _camera_ease_elapsed := 0.0
 ## per-frame follow `_update_camera()` gives her while walking — the one flag that keeps the two
 ## from fighting over `_camera.global_position` in the same frame.
 var _camera_easing_back := false
+## Whether the camera smooths its own follow when it is hers rather than parked on a focus.
+## `focus_camera_on()` switches smoothing off for the duration and this is what it is switched
+## back to, so the setting lives in the scene and never in two places.
+var _camera_smoothing_when_free := true
 
 func _ready() -> void:
 	add_to_group("player")
 	if _pram_collision:
 		_pram_collision.disabled = carrying
+	# Read off the scene rather than written down here, so the camera's own smoothing stays a
+	# property of the camera and a focus can switch it off without owning the default.
+	_camera_smoothing_when_free = _camera.position_smoothing_enabled
 
 ## Takes her out of the world without taking her out of the tree, for the title screen's attract
 ## mode: the home and the street in front of it, with nobody in it.
@@ -321,24 +328,54 @@ func hide_for_inspection() -> void:
 func show_after_inspection() -> void:
 	visible = true
 
-## Eases the camera onto `point` instead of following her — a checkpoint's hut or post, currently
-## the only caller — over `Tuning.CAMERA_EASE_SECONDS`, smooth-stepped rather than snapped or slid.
-## `top_level` is set so the camera's own `global_position` stops being computed from her transform
-## for the duration; `release_camera_focus()` is what hands it back.
+## Where her camera is actually drawing from, in world space.
+##
+## **Not `Camera2D.global_position`, and the difference is the whole of a jump cut.** That is where
+## the camera's *transform* sits; what the player is looking at is that point after
+## `position_smoothing_enabled` has finished catching up to it, plus the walking look-ahead in
+## `offset`, clamped to the city limits. Every one of the three can be worth a screenful. A camera
+## that is not the current one has no screen centre at all — Godot only recomputes it for the one
+## being drawn — so its transform is the honest answer there.
+func camera_screen_center() -> Vector2:
+	if _camera.is_current():
+		return _camera.get_screen_center_position()
+	return _camera.global_position
+
+## Eases the camera onto `point` instead of following her — a checkpoint's hut, gate or post,
+## currently the only caller — over `Tuning.CAMERA_EASE_SECONDS`, smooth-stepped rather than
+## snapped or slid. `release_camera_focus()` is what hands it back.
+##
+## **The ease starts from where the camera was drawing, and the camera is put there in the same
+## breath.** Two things otherwise happen between this call and the first frame of the ease, and
+## both are the jump the player sees. `top_level` stops the camera's transform being composed with
+## hers, and Godot keeps the node's *local* position when it does — which is `Vector2.ZERO`,
+## the world origin, a whole city away — so every frame drawn before `_update_camera()` next runs
+## is drawn from there. And smoothing is applied in the camera's **own** process callback, so even
+## once the ease starts writing positions the drawn point is chasing them from wherever the lurch
+## left it. So: read the drawn point first, take the look-ahead out of `offset` (the ease owns the
+## whole move now, and a leftover offset would arrive beside the hut rather than on it), put the
+## camera exactly there, and switch smoothing off for the duration — the ease *is* the smoothing,
+## and two of them in series is what made a half-second move read as a cut.
 func focus_camera_on(point: Vector2) -> void:
-	_camera_ease_from = _camera.global_position
+	var drawn_from := camera_screen_center()
+	_camera_smoothing_when_free = _camera.position_smoothing_enabled
+	_camera.position_smoothing_enabled = false
+	_camera.top_level = true
+	_camera.offset = Vector2.ZERO
+	_camera.global_position = drawn_from
+	_camera.reset_smoothing()
+	_camera_ease_from = drawn_from
 	_camera_ease_elapsed = 0.0
 	_camera_focused = true
 	_camera_focus_point = point
 	_camera_easing_back = false
-	_camera.top_level = true
 
 ## Eases the camera back onto her — the other half of `focus_camera_on()`. The target is her *own*
 ## `global_position`, read fresh every frame in `_update_camera()` rather than captured here, so a
 ## release that teleports her mid-ease (`teleport_to()`, the same frame a checkpoint's hold ends)
 ## still arrives at where she actually ends up rather than where she was caught.
 func release_camera_focus() -> void:
-	_camera_ease_from = _camera.global_position
+	_camera_ease_from = camera_screen_center()
 	_camera_ease_elapsed = 0.0
 	_camera_focused = false
 	_camera_easing_back = true
@@ -512,10 +549,12 @@ func _update_camera(delta: float) -> void:
 			# Arrived: hand the camera back to the ordinary parented follow rather than keep
 			# driving `global_position` by hand forever. `position = Vector2.ZERO` is exactly what
 			# `top_level = false` already means for a camera sitting on her — the ease's own target
-			# was her `global_position`, so there is nothing to reconcile.
+			# was her `global_position`, so there is nothing to reconcile. Smoothing comes back on
+			# here and nowhere else, since the ease was standing in for it.
 			_camera_easing_back = false
 			_camera.top_level = false
 			_camera.position = Vector2.ZERO
+			_camera.position_smoothing_enabled = _camera_smoothing_when_free
 			_camera.reset_smoothing()
 		return
 	var lead := Vector2(facing.x, facing.y * OBLIQUE_Y) * CAMERA_LOOK_AHEAD
@@ -540,6 +579,7 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 		_camera.top_level = false
 		_camera.position = Vector2.ZERO
 		_camera.offset = Vector2.ZERO
+		_camera.position_smoothing_enabled = _camera_smoothing_when_free
 		_camera.reset_smoothing()
 	# A reset has no preceding turn to preserve, so choose `look` directly instead of applying the
 	# moving-view hold from whichever direction the last day happened to finish facing.

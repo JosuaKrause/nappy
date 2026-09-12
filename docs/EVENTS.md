@@ -273,6 +273,13 @@ it costs her nothing — but it detains exactly as a hut does, because a raised 
 the car queue and never a way past her. See `docs/CITY.md`, "Regions and the wall", and
 `Crowd._stop_for_gates()`.
 
+**The guard goes inside with her; the door does not.** `EventInstance.is_its_guard_inside()` takes
+the guard out of a hut's drawing for the hold, and the hut, the boom and their shadows stay exactly
+where they are — a structure that blinks out for two seconds reads as the door having been removed
+rather than as her having passed through it. `is_suppressed_by_its_own_hold()` is the narrower
+question, true only of `checkpoint_post`, where the guard is the whole of what the row draws, and
+the halo gates on it for the same reason.
+
 **The boom hangs from a point midway between its own two posts, not from one of them.** A gate
 stands on the carriageway's centre line, level with the huts on either pavement, so a picture hung
 by the near post alone puts its whole arm to one side of where the body is — along a kerb, with the

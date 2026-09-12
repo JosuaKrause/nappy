@@ -1,0 +1,36 @@
+nappy rig log  2026-09-12T03:51:07  version v0.8.2-691-g12c5265-dirty
+
+day 7  act 2  run seed 2199579682  city seed 2199579682  length 144.0s  invincible
+   0.0  plan     regions: 31 boundary, 20 wall, 11 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  step 1 on offer at (132,53)
+   0.0  roll     chalk mark guarded: robber 79px away (band 66-176)
+   0.0  plan     closed: accident h(0,9), accident v(2,5)
+   0.0  plan     calm: 2 forest, 2 quiet_square, 3 courtyard, 3 park
+   0.0  plan     events: alley_mouse x4, burnt_out_car x40, burst_water_main x8, busker x10, cafe_tables x34, car_accident x8, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x11, checkpoint_hut x22, checkpoint_post x2, collapsed_frontage x16, construction x37, cyclist x8, delivery_van x22, dog_walker x21, fallen_tree x11, homeless_yeller x8, ice_cream_van x4, leaf_blower x11, loose_dog x12, market_stall x33, moving_van x49, pigeon_flock x5, playground x3, police_patrol x12, poster_crew x11, reversing_lorry x9, roadblock x76, scaffolding x13, skip x13
+   0.0  start    doorstep (62,16), facing 180°
+   0.0  chat     checkpoint_gate at (62,17), 2.0s, baby awake, meter +25
+   0.2  near     roadblock (telegraph) at (61,20), 163px, exc 2, in 14.1/s (crowd 0.0, events 14.1), sleep 0
+   0.2  near     checkpoint_hut (telegraph) at (62,15), 54px, exc 2, in 14.1/s (crowd 0.0, events 14.1), sleep 0
+   0.2  near     checkpoint_gate (telegraph) at (62,17), 46px, exc 2, in 14.1/s (crowd 0.0, events 14.1), sleep 0
+   0.2  near     checkpoint_hut (telegraph) at (62,19), 98px, exc 2, in 14.1/s (crowd 0.0, events 14.1), sleep 0
+   0.3  shot     burst started: asked for an animation burst at (63,16) | exc 4, sleep 0 | playing | asked/burst-3093602-001
+   2.0  checkpoint checkpoint_gate at (62,17), 2.0s, released on the west side
+   2.0  path     off the corridor at (59,16), after 2.0s on it
+   2.0  near     roadblock at (57,20), 152px, exc 34, in 13.2/s (crowd 7.3, events 21.7), sleep 0
+   2.0  near     roadblock at (59,20), 138px, exc 34, in 13.2/s (crowd 7.3, events 21.7), sleep 0
+   2.1  freeze   sleep stopped filling | exc 36, in 28.7/s (crowd 6.0, events 21.7), sleep 0 | near: checkpoint_gate 114px
+   2.3  near     checkpoint_hut at (62,15), 97px, exc 42, in 26.5/s (crowd 5.3, events 21.2), sleep 0
+   2.5  path     onto the corridor at (60,16), after 0.4s off it
+   2.5  chat     checkpoint_gate at (62,17), 2.0s, baby awake, meter +25
+   3.3  shot     burst complete: 36 frames | duration
+   4.0  shot     burst started: asked for an animation burst at (60,16) | exc 100, sleep 0 | playing | asked/burst-6823086-002
+   4.5  checkpoint checkpoint_gate at (62,17), 2.0s, released on the east side
+   4.5  contact  step 1 moved to (76,9): never seen at (132,53)
+   4.5  roll     chalk mark guarded: robber 79px away (band 66-176)
+   4.7  crowd    a car sounded its horn at her in the road at (66,16) | exc 100, in 41.6/s (crowd 0.1, events 0.0), sleep 0
+   5.9  crowd    a car sounded its horn at her in the road at (69,16) | exc 100, in 41.6/s (crowd 3.8, events 0.0), sleep 0
+   6.0  path     off the corridor at (70,16), after 3.5s on it
+   7.0  shot     burst complete: 36 frames | duration
+   7.4  crowd    walked into somebody at (74,16) | exc 100, in 41.6/s (crowd 34.4, events 0.0), sleep 0
+   8.1  path     onto the corridor at (76,16), after 2.1s off it
+   8.4  cue      the mark over her head: soon for 3.7s (3.7s of it on the road) | a car, and she is in the road

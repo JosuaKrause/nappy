@@ -675,6 +675,18 @@ func _check_detentions() -> void:
 	if not body:
 		return
 	_release_finished_door_detentions(body)
+	# **One hold at a time, and it is not the same rule as the one below.** That one settles a tie
+	# inside a single frame; this one settles the *next* frame, where the body that captured her is
+	# skipped as already chatting and the next one along is free to start a hold of its own on top.
+	# A door's three bodies stand a tile apart and all three reach her in the middle of it, so the
+	# gate took her in, the hut took her in again a frame later, and the two released her in turn —
+	# the second reading the position the first had teleported her to, and charging her
+	# `Tuning.CHAT_EXCITEMENT` twice for one crossing. Asked of the instances rather than of
+	# `Stroller.is_detained()`, because a hold and the input lock it sets run on two clocks that can
+	# end a frame apart, and it is the hold that owns the release.
+	for instance in _instances:
+		if instance.is_chatting():
+			return
 	var nearest: EventInstance = null
 	var nearest_range := INF
 	for instance in _instances:
@@ -695,7 +707,13 @@ func _check_detentions() -> void:
 	if nearest.def.redetains:
 		var axis := nearest.facing_now()
 		var offset := body.global_position - nearest.global_position
-		_door_entry_side[nearest] = signf(offset.dot(axis))
+		# **Never `signf()`, which answers zero in the doorway.** Walking *across* a crossing —
+		# out of the carriageway at a hut, or straight up the middle of the road at the gate —
+		# puts her exactly level with the body along the street, and a zero here multiplies the
+		# release distance to nothing: she is set down where she was caught, inside the trigger,
+		# and held again the next frame for as long as she stands there. Level with the door is
+		# not a third side; it is one of the two, chosen the same way every time.
+		_door_entry_side[nearest] = -1.0 if offset.dot(axis) < 0.0 else 1.0
 	body.detain(nearest.def.detain_seconds)
 	Telemetry.note("chat", "%s at %s, %.1fs, baby %s, meter %s" % [
 		nearest.def.id, TelemetryLog.tile(_map.world_to_tile(nearest.global_position)),
