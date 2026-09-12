@@ -1,0 +1,4 @@
+<!-- mouse front diagonal; authored upright projection. Bottom-centre ground anchor; prepared and unbound. Mid-stride. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 18" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M8 11 Q4 14 2 10 Q0 7 2 4" fill="none" stroke="#a48a7c" stroke-width="1.2"/>  <path d="M7 11 Q8 6 13 8 L22 14 L17 16 L9 14 Z" fill="#81736b" /><circle cx="15" cy="9" r="3" fill="#81736b"/><circle cx="15" cy="9" r="1.3" fill="#c4a99b"/><circle cx="19" cy="13" r="0.6" fill="#221f28"/>  <path d="M21 14 L23 14" fill="none" stroke="#221f28"/>
+</svg>
