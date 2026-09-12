@@ -1,0 +1,111 @@
+{
+  "source": "registered/rig/*.png",
+  "scale": "6x nearest-neighbor",
+  "directions": [
+    {
+      "direction": "E",
+      "view": "side",
+      "mirrored": false,
+      "frames": [
+        "a",
+        "b",
+        "a",
+        "b"
+      ]
+    },
+    {
+      "direction": "SE",
+      "view": "front_diagonal",
+      "mirrored": false,
+      "frames": [
+        "a",
+        "b",
+        "a",
+        "b"
+      ]
+    },
+    {
+      "direction": "S",
+      "view": "front",
+      "mirrored": false,
+      "frames": [
+        "a",
+        "b",
+        "a",
+        "b"
+      ]
+    },
+    {
+      "direction": "SW",
+      "view": "front_diagonal",
+      "mirrored": true,
+      "frames": [
+        "a",
+        "b",
+        "a",
+        "b"
+      ]
+    },
+    {
+      "direction": "W",
+      "view": "side",
+      "mirrored": true,
+      "frames": [
+        "a",
+        "b",
+        "a",
+        "b"
+      ]
+    },
+    {
+      "direction": "NW",
+      "view": "back_diagonal",
+      "mirrored": true,
+      "frames": [
+        "a",
+        "b",
+        "a",
+        "b"
+      ]
+    },
+    {
+      "direction": "N",
+      "view": "back",
+      "mirrored": false,
+      "frames": [
+        "a",
+        "b",
+        "a",
+        "b"
+      ]
+    },
+    {
+      "direction": "NE",
+      "view": "back_diagonal",
+      "mirrored": false,
+      "frames": [
+        "a",
+        "b",
+        "a",
+        "b"
+      ]
+    }
+  ],
+  "timing": {
+    "duration_ms_per_frame": 190,
+    "phase_rule": "_walk_phase += 92*dt*.09; sin(phase*2)>0"
+  },
+  "note": "Source animation preview in place; it does not claim gameplay travel or approval. D is the two-frame loop and retains the insufficient stride under review.",
+  "sha256": {
+    "mother_carrying_back_a.png": "aa9d45b2634e047d050390d2e3026620c390c05cd1ddea55f9a8eed1752e6a5a",
+    "mother_carrying_back_b.png": "c556b90b0bf8d64de1cf754f5d4203761be02206e2c3fbf8fd02986c8a96c93f",
+    "mother_carrying_back_diagonal_a.png": "577948ca2a055b8347c2bd6cf6cd35c22908ce83ca9e99e173b0cd4eab8b13ca",
+    "mother_carrying_back_diagonal_b.png": "f5ea61cc750ab7a478278d12cdf7e9437308794f5ea409f482a005252d387a63",
+    "mother_carrying_front_a.png": "403057ab3f01c29c82ce2330d4870396ac93fe4b9e69e225acd2ae7c905beccb",
+    "mother_carrying_front_b.png": "326ba36ee47aea3833bbb45374a010e18abd3e2a29bca92a470c529f7233adba",
+    "mother_carrying_front_diagonal_a.png": "6392f88beea3124406757c038372b0f00fddd7b31ebc686e18c9722cfa2a0ccf",
+    "mother_carrying_front_diagonal_b.png": "e39e116503862b4209d4cc542e39d6a3d3d85fe3c39a7b64bc51da849105dd73",
+    "mother_carrying_side_a.png": "57178326193fabeb3edb270d1b12a268052b2f65447b62042a8e393590c20c04",
+    "mother_carrying_side_b.png": "9a9a6fe1d80f198c6e9777e57dd3931f3665b1d424e452ff428ebe83f32d0822"
+  }
+}
