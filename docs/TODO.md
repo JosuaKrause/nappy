@@ -139,12 +139,6 @@ findings supported by the conversion and review.
       [actual-map layout recipe](evidence/sidewalk-layout-review-2026-09-12/GENERATION.md), keeping
       the previous comparison reproducible. The diagnosis is in `DECISIONS.md` under M109,
       sidewalk joins in actual street layouts.
-- [ ] Separate player SVG generation references from in-game SVG artwork. PLAYTEST-65 asks to
-      preserve the player SVGs revised by this PR in a dedicated graphics-authoring location and
-      restore the pre-PR SVG graphics in the game only for files that already existed. Keep new
-      SVG files introduced by this PR in the runtime catalogue. Keep the accepted illustrated PNG sprites
-      unchanged. Retain functional frame bindings and native dimensions, and update generation
-      source paths, pairing records and reproduction instructions to find the authoring references.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The

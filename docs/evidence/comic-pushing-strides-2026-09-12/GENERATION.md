@@ -12,7 +12,9 @@ ground-plane Y projection and zero vertical lift. The mother retains the 24×46 
 
 ## SVG source and P1 comparison
 
-The fifteen `assets/rig/mother_{view}_{a,c,b}.svg` files are the authoritative poses. Contact A and
+The fifteen `docs/graphics-creation/player/mother_{view}_{a,c,b}.svg` files preserve the generation
+poses; their [pairing manifest](../../graphics-creation/player/manifest.json) distinguishes the
+runtime SVG fallback from the high-fidelity target. Contact A and
 Contact B exchange complete legs from hip through knee and heel; C places both feet together on the
 ground. Northeast contacts retain an upper-right lead and lower-left trail, while southeast keeps
 the opposite screen axis. The coat hem and pelvis articulate with the legs, while the head, torso,
@@ -29,6 +31,11 @@ ground and pram transform as the registered sheet.
 `render-svg-sources.gd` renders through Godot's SVG parser. Both that script and
 `make-source-review.py` reject unknown arguments before creating output and require fresh output
 directories:
+
+Run this record's source-rendering and registration commands from a checkout of
+5210f6d828cf61d22c95516fbb1c34ff7d96529d. Its runtime SVG paths hold the generation targets
+whose hashes this recipe checks. The dedicated authoring folder preserves those same targets
+independently of the in-game SVG restoration; the accepted PNG outputs remain identical.
 
 ```sh
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . \
@@ -53,7 +60,7 @@ only the two accepted original pushing rows; rejected carrying rows never enter 
 `docs/evidence/graphics-reference-urban-01.jpeg` and
 `docs/evidence/graphics-reference-cardinal.jpeg` are style references only. The reviewed P2 SVG
 sheet supplies pose and leg-ownership guidance. `input-manifest.json` freezes the hashes and roles
-of these inputs, all prompts, all raw selected results, the P1 anchor art, current P2 SVGs, pram
+of these inputs, all prompts, all raw selected results, the P1 anchor art, P2 generation SVGs, pram
 PNGs, extraction code, recipe scripts, font, CPython 3.14.7 and Pillow 12.3.0.
 
 The exact prompts are retained beside this document. `prompt.txt` produces the first complete

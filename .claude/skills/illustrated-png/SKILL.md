@@ -29,6 +29,12 @@ Inspect it and both `docs/evidence/graphics-reference-urban-01.jpeg` and
 only: omit their interface and debug annotations. Do not substitute a different character identity,
 projection or composition. Archived experiments and unapproved outputs are not style references.
 
+Player generation targets and runtime SVG fallback artwork have separate roles. Preserve the
+revised creation-reference family in `docs/graphics-creation/player/`; its manifest links each
+creation SVG, runtime SVG and illustrated PNG. Existing runtime SVGs can retain their pre-PR
+art while new frame SVGs remain in the catalogue. Use the preserved creation target when
+reproducing its high-fidelity PNG, and keep the original source hashes and authoring order.
+
 ## Directions, frames and variants form one family
 
 Review the complete facing × animation × state matrix together. The mother carrying the baby
