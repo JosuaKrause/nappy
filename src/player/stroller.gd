@@ -35,18 +35,28 @@ const CAMERA_LOOK_AHEAD := 46.0
 ## physical facing remains continuous — `EightDirection.SECTOR_DEGREES` and
 ## `EightDirection.HYSTERESIS_DEGREES`, the same selector `CrowdAgent`'s walkers now share.
 
-## The SVG presentation, and the one a build draws unless the illustrated transfer is opted into.
-## Two frames per direction: mid-stride, then feet passing.
+## SVG source textures; `TextureResolver` supplies their matching illustrated PNGs by default.
+## Each direction has contact A, feet together C, then the opposite contact B.
 const MOTHER_FRONT: Array[Texture2D] = [
-	preload("res://assets/rig/mother_front_a.svg"), preload("res://assets/rig/mother_front_b.svg")]
+	preload("res://assets/rig/mother_front_a.svg"),
+	preload("res://assets/rig/mother_front_c.svg"),
+	preload("res://assets/rig/mother_front_b.svg")]
 const MOTHER_BACK: Array[Texture2D] = [
-	preload("res://assets/rig/mother_back_a.svg"), preload("res://assets/rig/mother_back_b.svg")]
+	preload("res://assets/rig/mother_back_a.svg"),
+	preload("res://assets/rig/mother_back_c.svg"),
+	preload("res://assets/rig/mother_back_b.svg")]
 const MOTHER_SIDE: Array[Texture2D] = [
-	preload("res://assets/rig/mother_side_a.svg"), preload("res://assets/rig/mother_side_b.svg")]
+	preload("res://assets/rig/mother_side_a.svg"),
+	preload("res://assets/rig/mother_side_c.svg"),
+	preload("res://assets/rig/mother_side_b.svg")]
 const MOTHER_FRONT_DIAGONAL: Array[Texture2D] = [
-	preload("res://assets/rig/mother_front_diagonal_a.svg"), preload("res://assets/rig/mother_front_diagonal_b.svg")]
+	preload("res://assets/rig/mother_front_diagonal_a.svg"),
+	preload("res://assets/rig/mother_front_diagonal_c.svg"),
+	preload("res://assets/rig/mother_front_diagonal_b.svg")]
 const MOTHER_BACK_DIAGONAL: Array[Texture2D] = [
-	preload("res://assets/rig/mother_back_diagonal_a.svg"), preload("res://assets/rig/mother_back_diagonal_b.svg")]
+	preload("res://assets/rig/mother_back_diagonal_a.svg"),
+	preload("res://assets/rig/mother_back_diagonal_c.svg"),
+	preload("res://assets/rig/mother_back_diagonal_b.svg")]
 
 ## The escape scene's rig — the baby in her arms, no pram. Selected in place of the sets above
 ## whenever `carrying` is set; see `_mother_texture()`.
@@ -72,7 +82,7 @@ const MOTHER_CARRYING_BACK_DIAGONAL: Array[Texture2D] = [
 	preload("res://assets/rig/mother_carrying_back_diagonal_b.svg")]
 
 ## One distance-driven turn visits both open contacts with the shared passing pose between them.
-const CARRYING_GAIT_LOOP: Array[int] = [0, 1, 2, 1]
+const MOTHER_GAIT_LOOP: Array[int] = [0, 1, 2, 1]
 
 const PRAM_SIDE := preload("res://assets/rig/pram_side.svg")
 const PRAM_FRONT := preload("res://assets/rig/pram_front.svg")
@@ -711,15 +721,13 @@ func _draw_mother(gait: float) -> void:
 func _advance_walk_phase(distance: float) -> void:
 	_walk_phase = wrapf(_walk_phase + distance * 0.09, 0.0, TAU)
 
-## Carrying uses contact, passing, opposite contact, passing over one full turn. Keeping that loop
-## on `TAU` preserves the old contact/passing change frequency instead of doubling the step rate.
+## Both mother states use contact, passing, opposite contact, passing over one full turn. Keeping
+## that loop on `TAU` preserves the contact/passing change frequency instead of doubling step rate.
 func _mother_gait_frame(gait: float) -> int:
 	if gait <= 0.05:
-		return 1 if carrying else 0
-	if carrying:
-		var quarter := int(floor(_walk_phase / (TAU / 4.0))) % CARRYING_GAIT_LOOP.size()
-		return CARRYING_GAIT_LOOP[quarter]
-	return 1 if sin(_walk_phase * 2.0) > 0.0 else 0
+		return 1
+	var quarter := int(floor(_walk_phase / (TAU / 4.0))) % MOTHER_GAIT_LOOP.size()
+	return MOTHER_GAIT_LOOP[quarter]
 
 ## The pram has authored front, back, side and diagonal projections. A hood belongs to its own
 ## three-quarter body plane, rather than sliding across an unchanged basket as the rig turns.

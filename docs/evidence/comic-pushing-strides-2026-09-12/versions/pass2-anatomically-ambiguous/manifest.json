@@ -1,0 +1,76 @@
+{
+  "version": "P2 \u2014 Three-pose push",
+  "selection": "pass2",
+  "recipe_version": "p2-pushing-registration-v2",
+  "input_manifest": "docs/evidence/comic-pushing-strides-2026-09-12/input-manifest.json",
+  "input_manifest_sha256": "7b4c996218ff5089bd05a46d73f01417b4e741e34f04c44702afa8173456a05a",
+  "loop": [
+    "a",
+    "c",
+    "b",
+    "c"
+  ],
+  "selected_whole_figures": {
+    "pass2": [
+      "mother_front_a",
+      "mother_back_a",
+      "mother_side_a",
+      "mother_front_diagonal_a",
+      "mother_back_diagonal_a",
+      "mother_front_b",
+      "mother_back_b",
+      "mother_side_b",
+      "mother_front_diagonal_b",
+      "mother_back_diagonal_b"
+    ],
+    "separate_c_row": [
+      "mother_front_c",
+      "mother_back_c",
+      "mother_side_c",
+      "mother_front_diagonal_c",
+      "mother_back_diagonal_c"
+    ],
+    "pass4": []
+  },
+  "prompts": {
+    "docs/evidence/comic-pushing-strides-2026-09-12/prompt-c-row.txt": "0ebd1600e833f713035c8585a085d546e62a1106f2c0a8cec4d2035b460db096",
+    "docs/evidence/comic-pushing-strides-2026-09-12/prompt-pass2.txt": "26620b1e6e7c2e74dcc866e57600477935f0f8aa9472db72fd47f162aff10986",
+    "docs/evidence/comic-pushing-strides-2026-09-12/prompt-pass4-side-ne.txt": "722df1dfce200b0963e3628c771781b4d77cce5d9432977dd6de332da9ea67f9",
+    "docs/evidence/comic-pushing-strides-2026-09-12/prompt.txt": "400e5f0181aee7a134d9ab579002dabec1d3425c7e97305bc35cb8d241304f88"
+  },
+  "style_references": {
+    "docs/evidence/graphics-reference-urban-01.jpeg": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d",
+    "docs/evidence/graphics-reference-cardinal.jpeg": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7"
+  },
+  "review_font": "/System/Library/Fonts/SFNS.ttf",
+  "review_font_sha256": "2bfd40dc72e6759e248f82a52a40d551338979fffc9b5c070e685b4b7ad19e66",
+  "outputs": {
+    "p2-acb-pass2-extracted.png": "f810a0b54821f7e3cb5669cce674c6c574d0f01656e9bc67bbd7fab5235b0c2d",
+    "p2-acb-pass4-side-ne-extracted.png": "b67f962870ee64cf4301c2eed1c448a47b6ab51259a086b5a8d1c5ae455db4a3",
+    "p2-animation-6x.gif": "14eb459aa4d923010e6cb99194d08549ffc1eb74fb2b56e10e8dde95f35408dd",
+    "p2-animation-native.gif": "584b1815f1fc2b28b39ce27bf6553f830634aa8913fe89bbc877999486c0bca6",
+    "p2-c-row-extracted.png": "536aecfca68ee188627dda9211a8bb7b597b43f7f1ce06cbbe976ca788d535a1",
+    "p2-frames-6x.png": "fa5be6192ef5d759cda1d8dd9333bf9ba73e49efb0d5f1ae14a1b98e157381fb",
+    "p2-frames-native.png": "8ae40210a28bf632f3f31fcf607e64aecc0fddb3c810d294c6cba8868113b08e",
+    "p2-grounded-contact-6x.png": "5416f7188dc1ada980e1f29e34f43184727f208f17da265736369f42e770b733",
+    "p2-grounded-contact-native.png": "b32dfd9d8c2b606f4056fc3f7c1d197ce8d99b8ec007a2f5b740ff69089ba4f8",
+    "p2-selected-generation.png": "143dd4808144d7585779922a7c563db72b15487ff6447fa3bda940dc0b986f70",
+    "registration.json": "7c1c6be39d6db2898082797a73f28ebd3da0d74508e6fb20392218de1bdee371",
+    "rig/mother_back_a.png": "1d6f193b801a45782548001ec1f1cbc32a4ddc2ac28033b23f72255fe80b167b",
+    "rig/mother_back_b.png": "bbe0394765106d9191eff2a1da9b23be159f61486c9647ee7fdafa51f2910096",
+    "rig/mother_back_c.png": "a4025963012cd2a8c23b3ff6abc8d3099f055f4d76504881386d73af3ca3cba3",
+    "rig/mother_back_diagonal_a.png": "d6e4fd94625ab269281c1d54d7ae01c56515618ac2c231e1612bc9736e1ea03a",
+    "rig/mother_back_diagonal_b.png": "b641a1d6391e767492b9153039b8cdd158cca2e59a67b3c56f3cc56994ab338c",
+    "rig/mother_back_diagonal_c.png": "10ab1f513fafe01a3e4500d12ed16db4c2b455bbafd07669a9571b663ddf67de",
+    "rig/mother_front_a.png": "9edecd24e53f5503f84a0ab3ce983f8f1cf016a9a01297eaac25b64ca473cf47",
+    "rig/mother_front_b.png": "f42c8f8b798cc1206f338c0bde689c80c964079db170644940c665b57c5781b1",
+    "rig/mother_front_c.png": "f13f5b9720b39897fa866971c70d57b30cc4c182b819cb5f8865be2104747abd",
+    "rig/mother_front_diagonal_a.png": "57127a33bf1fb5e14b4f6e7c753c90591e1363bfc800775d39a98b6ba3cc9e3c",
+    "rig/mother_front_diagonal_b.png": "f608ec9bca3701ce9735cc16438859d798457abbc7cf230eb6411f10acf897d9",
+    "rig/mother_front_diagonal_c.png": "67e021ac552e1c84e7ce437e32dfbfe1bd3b924b3f7dced77f308edb6ec52413",
+    "rig/mother_side_a.png": "924a6a42b02a6af1e218ed7547b6bd79a3a841ba752e829cd49fed6fa1de103f",
+    "rig/mother_side_b.png": "bf765ebdee3e837a97867e5bd0c0d8331782e8dd0e255c9c4738b450ae2fff1d",
+    "rig/mother_side_c.png": "f0d85d214919f39fd8dbcb7b13a96aad3272efc454d37e4da00d5d363c159cbb",
+    "shared-palette.png": "0c98f90b2835bcbf38321e2efb9d42b9eda610b26f33874794e7673e91222b22"
+  }
+}
