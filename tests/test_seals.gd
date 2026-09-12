@@ -37,6 +37,7 @@ func run(t) -> void:
 	_test_the_doorstep_still_reaches_the_corridor_after_thinning(t)
 	_test_hard_seals_cover_the_street_edge_to_edge(t)
 	_test_whole_scene_hard_seals_place_a_single_body(t)
+	_test_a_placed_crash_keeps_its_two_car_bodies(t)
 	_test_squeezing_past_a_crash_costs_more_than_half_the_meter(t)
 	_test_no_seal_body_stands_in_a_street_tree(t)
 	_test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t)
@@ -491,6 +492,32 @@ func _test_whole_scene_hard_seals_place_a_single_body(t) -> void:
 		t.check(positions.size() == 1,
 				"'%s' is one continuous scene, so it places exactly one body (got %d)"
 				% [id, positions.size()])
+
+## **A placed seal is a duplicate of its catalogue row, and a duplicate drops what is not stored.**
+## `SealPlanner.sealed_variant` carries `shape` and `solid_parts` across by hand because
+## `Resource.duplicate()` copies neither — both are plain `var`s holding `RefCounted`s, which have
+## no storage usage. Dropped, a crash falls back to one body spanning the street and **nothing
+## fails**: it simply seals the gaps its picture shows, which is the defect this milestone exists to
+## remove, wearing a green suite. Every other row has no parts to lose, so this is stated over the
+## one that does, on the only path it is ever placed by.
+func _test_a_placed_crash_keeps_its_two_car_bodies(t) -> void:
+	var expected := EventCatalogue.by_id("car_accident").solid_parts.size()
+	var found := 0
+	for map in _maps:
+		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+			_repaint_for(map, day)
+			var tree := RouteTree.for_day(map, day)
+			for plan in SealPlanner.plan_day(map, day, tree, _seal_rng(map, day)):
+				if plan.def.id != "car_accident":
+					continue
+				found += 1
+				t.check(plan.def.solid_parts.size() == expected,
+						"seed %d day %d: a placed crash still carries its %d car bodies (%d)"
+						% [map.seed_used, day, expected, plan.def.solid_parts.size()])
+				t.check(plan.def.shape != null,
+						"seed %d day %d: and the band its field and picture are stated over"
+						% [map.seed_used, day])
+	t.check(found > 0, "some day across the sweep sealed a street with a crash (%d)" % found)
 
 ## **The gap in a crash is a price, not a way through.** *(2026-09-12: "it should emanate an
 ## excitement field that prevents the player from walking past it".)* The body is the two cars, so

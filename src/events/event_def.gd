@@ -593,7 +593,10 @@ func at_heat(level: int) -> EventDef:
 	# a `RefCounted` (not a `Resource`) does not get that usage — it cannot round-trip through a
 	# `.tres`, so Godot excludes it. `shape` is never mutated in place, so sharing the reference
 	# with the original is exactly as safe as `duplicate()`'s own shallow copy of anything else.
+	# `solid_parts` is the same kind of field and needs the same hand — a heated row that lost its
+	# parts would quietly go back to one body spanning its whole shape.
 	hot.shape = shape
+	hot.solid_parts = solid_parts
 	match heat_response:
 		HeatResponse.PRESSES:
 			# More of them, and more expensive to be near. Population is the axis that changes the
