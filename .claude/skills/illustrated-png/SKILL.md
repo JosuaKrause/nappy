@@ -92,6 +92,14 @@ contact or motion; label its coverage accurately.
 
 ## Runtime and review
 
+Keep every script used to create retained graphics, comparison sheets, walking rollouts and GIFs
+beside its output under `docs/evidence/<family>/`. Include source paths and hashes, extraction
+bounds, frame order, mirroring, scale, GIF timing, tool/font requirements and exact regeneration
+commands. Preserve immutable inputs or fail loudly when their hashes change. Link each recipe
+from `docs/evidence/README.md` and the family's graphics documentation so it can be found again.
+Distinguish nondeterministic image generation from reproducible extraction and assembly of its
+saved output. A temporary script or chat-only command is insufficient provenance.
+
 For opaque ground tiles, extract fixed atlas cells rather than fitting visible bounding boxes.
 Cell edges are part of the texture's placement contract. Generated atlas dimensions need not
 divide evenly by the grid: record normalized cells and rounded pixel bounds. Compare opposite

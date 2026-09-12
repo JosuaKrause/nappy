@@ -69,3 +69,24 @@ leg A leads, legs together, leg B leads, legs together, then repeat.
 
 Show the currently published D family in all eight directions, with its actual two-frame
 walking cycle and west mirrors. Keep this review distinct from the E correction in progress.
+
+> errr, that still a two frame movement still -- should have three distinct frames in each direction
+
+The requested rollout must demonstrate the corrected three distinct poses in every direction,
+using the full open, together, opposite-open, together loop. The frozen D comparison does not
+satisfy that motion request.
+
+> also where can I see the connected stroller and hands?
+
+Publish the stroller hand-contact comparison with the placement change on the same PR.
+
+> also when stopping movement the animation should always go to the together frame
+
+When the walking animation stops, select the closed/together pose immediately, regardless
+of the phase at which movement ended. Do not hold an open-contact pose at rest.
+
+> make sure to keep things reproducible -- all scripts that you use to create those rollouts and graphics and gifs -- store them in a way that you will find them again
+
+Keep the generation, extraction, registration and rollout recipes with their retained evidence,
+including all GIF and comparison-sheet scripts, and link them from a discoverable index.
+Preserve exact inputs, frame order, timing, tool requirements and regeneration commands.

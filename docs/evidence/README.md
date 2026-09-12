@@ -15,6 +15,24 @@ guarded [`archive/rejected-graphics/`](archive/rejected-graphics/) archive.
 Keep the original filename. It carries the run's timestamp, seed and commit, which is most of what
 makes the file worth having.
 
+## Graphics recipes
+
+The scripts, retained inputs and regeneration commands for illustrated graphics and reviews are
+indexed here. Run Python recipes through the repository's locked `uv` environment. Image generation
+can produce different pixels on another call; extraction and assembly use the retained output.
+
+| Graphics or review | Recipe and inputs |
+| --- | --- |
+| Pushing mother and stroller | [Comic rig generation and registration](comic-rig-2026-09-12/GENERATION.md) |
+| Carrying redraws and identity comparison | [Carrying generation and registration](comic-carrying-redraw-2026-09-12/GENERATION.md) |
+| Four named carrying versions | [Comparison script](comic-carrying-redraw-2026-09-12/versions/make-comparison.py) and [version inputs](comic-carrying-redraw-2026-09-12/versions/README.md) |
+| D's preserved two-frame walking GIF and rollout | [Recipe, timing and source manifest](comic-carrying-redraw-2026-09-12/rollout/README.md) |
+| Stroller hand-contact sheets in PNG and SVG | [Assembly script, placement and regeneration command](pram-contact-2026-09-12/MEASUREMENTS.md) |
+| Trees, bollard and rooftop equipment | [City prop generation and registration](comic-city-props-2026-09-12/GENERATION.md) |
+| Garbage and litter | [Comic prop generation and registration](comic-props-2026-09-12/GENERATION.md) |
+| Outdoor ground tiles | [Tile generation and registration](style-transfer-tiles-2026-09-12/GENERATION.md) |
+| Logo, social card and exported icons | [Identity generation and registration](comic-identity-2026-09-12/GENERATION.md) |
+
 ## What is here
 
 | file | what it is | referenced by |
