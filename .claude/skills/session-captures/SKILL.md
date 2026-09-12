@@ -42,6 +42,8 @@ use the supported `-vsync vfr` conversion option rather than requiring newer `-f
 and retain the real encode/decode timing tests when changing encoder arguments.
 
 For a scripted check, trigger `--press snapshot_burst 1` through the existing screenshot rig.
+Use whole-number durations in `--walk` scripts, such as `1e1w1e1w`; decimal durations reject
+the whole script. Read the rig output and confirm travel before calling the result motion evidence.
 Keep an external timeout and let the burst finish before the rig quits. This is one bounded
 capture invocation, not authorization for repeated windowed runs. Preserve whole player run
 folders when citing them in docs, including sequence folders, sidecars and sibling videos.

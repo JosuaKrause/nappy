@@ -584,6 +584,10 @@ func _start_day() -> void:
 	var doorstep := _city.map.doorstep_world_position()
 	_city.events.start_day(GameState.day, GameState.day_rng(), GameState.consumed_one_shots,
 			doorstep)
+	# The day's seals are planned inside the call above, and a `fallen_tree_seal` takes a street
+	# tree's own pit. `City.start_day` already emptied the pits its own closures took, so this is
+	# the second half of one refresh rather than a repair of it — see `City.refresh_street_trees`.
+	_city.refresh_street_trees()
 	var start_at := DevRig.spawn_position(_city, _resistance) if _first_day else doorstep
 	_city.events.stream_around(start_at)
 	_city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"), start_at)
