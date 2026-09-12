@@ -108,9 +108,9 @@ enum Alert {
 ## The baby rides in the pram and the rig draws itself, so the rig asks her what to draw. Null
 ## in a test rig built without one, which is why every use is guarded.
 @onready var _baby: Baby = get_node_or_null("Baby")
-## The pram's own body, trailing at `_pram_offset` — see `pram_shape`'s doc for why this is a
-## second `CollisionShape2D` on the same rig rather than one wider combined radius. Null in a test
-## rig built without one.
+## The pram's own body, kept on the circumference of her own circle — see `PRAM_BODY_RADIUS`'s doc
+## for why this is a second `CollisionShape2D` on the same rig rather than one wider combined
+## radius. Null in a test rig built without one.
 @onready var _pram_collision: CollisionShape2D = get_node_or_null("PramCollisionShape2D")
 
 var facing := Vector2.DOWN
@@ -135,19 +135,31 @@ var slope_dir_at := Callable()
 ## `CircleShape2D` on `scenes/player/stroller.tscn`'s `CollisionShape2D` is one combined physics
 ## radius for the whole rig, `Tuning.PLAYER_BODY_RADIUS` (14px) — already checked against the
 ## scene by `tests/test_events.gd`'s `_test_the_pram_is_the_size_the_rules_think_it_is` — and nothing
-## here touches it. `pram_shape`'s own 12px radius is now also a real body: `PramCollisionShape2D`,
-## a second `CollisionShape2D` on the same `CharacterBody2D`, kept at `_pram_offset` every physics
-## frame — see `_physics_process()`. A second trailing body rather than one wider combined radius
-## because the pram sits `PRAM_DISTANCE` (34px) ahead of her on the facing axis, not concentric
-## with her own 14px circle, and a corner she hugs closely enough to clip her own body would not
-## yet clip a circle centred on her.
+## here touches it. `pram_shape`'s own 12px radius still sizes the pram's shadow, cue and field,
+## which all keep the pram's drawn `PRAM_DISTANCE` (34px) offset; the pram's *collision* body is a
+## separate, smaller datum — see `pram_body_shape` below.
 var shape := GroundShape.point(9.0)
 var pram_shape := GroundShape.point(12.0)
 
-## Where the pram sits relative to her this frame — `Vector2.ZERO` while `carrying`, since there is
-## no pram to be ahead of her. Computed once in `_physics_process()`, before `move_and_slide()`
-## moves the collision body that trails it, and read again by `_draw()` so the two can never
-## disagree about where the pram is.
+## The pram's own body radius, smaller than `pram_shape`'s 12px — **8px is the pinned
+## recommendation, open to overturn** if the far half still reads as too much or too little to
+## clip through. `PramCollisionShape2D`'s centre sits on the circumference of her own body
+## (`Tuning.PLAYER_BODY_RADIUS`, 14px out along `facing`) rather than at the pram's drawn
+## `PRAM_DISTANCE` — *(PLAYTEST-57: "place the center of the stroller hitbox at the circumference
+## of the player hitbox", "and don't make it too big")* — so the pram's far half overlaps whatever
+## it meets and she can stand against a wall while the pram no longer clips through a corner whole.
+## `scenes/player/stroller.tscn`'s own `CircleShape2D` on `PramCollisionShape2D` carries this same
+## number; `tests/test_stroller.gd` checks the scene against it directly, the same way
+## `tests/test_events.gd`'s `_test_the_pram_is_the_size_the_rules_think_it_is` already does for her
+## own body.
+const PRAM_BODY_RADIUS := 8.0
+
+## Where the pram is *drawn* relative to her this frame — `Vector2.ZERO` while `carrying`, since
+## there is no pram to be ahead of her. Computed once in `_physics_process()`, and read again by
+## `_draw()` so the two can never disagree about where the pram is drawn. **Not the collision
+## body's own offset any more** — `PramCollisionShape2D` now sits on her own circumference
+## (`facing * Tuning.PLAYER_BODY_RADIUS`, set alongside this in `_physics_process()`), unsquashed,
+## since physics stays in the plain 2D plane and only the drawn offset carries `OBLIQUE_Y`.
 var _pram_offset := Vector2.ZERO
 
 ## The current eight-direction projection, shared by both draw calls so mother and pram cannot
@@ -245,7 +257,10 @@ func _physics_process(delta: float) -> void:
 	_pram_offset = Vector2.ZERO if carrying \
 			else Vector2(facing.x, facing.y * OBLIQUE_Y) * PRAM_DISTANCE
 	if _pram_collision:
-		_pram_collision.position = _pram_offset
+		# Unsquashed, unlike `_pram_offset` above: the collision body stays in the plain 2D plane
+		# every other body in the game collides in, on the circumference of her own
+		# `Tuning.PLAYER_BODY_RADIUS` circle rather than out at the pram's drawn `PRAM_DISTANCE`.
+		_pram_collision.position = facing * Tuning.PLAYER_BODY_RADIUS
 	move_and_slide()
 
 	# The deflection is moved separately rather than added to `velocity`, which stays what she

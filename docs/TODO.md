@@ -556,43 +556,6 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **The pram's body sits closer to her, and the debug view draws it.** *([PLAYTEST-57](playtests/PLAYTEST-57.md):
-      "I don't like the stroller having a hitbox. it makes navigation clunky, I cannot get close to
-      walls anymore, and I get constantly stuck."; then "can we keep the stroller hitbox but move it
-      closer to the player (btw the hitbox right now is not drawn at all for some reason) -- that
-      way the stroller would go a little bit into objects (the part that is not covered) but it
-      wouldn't be completely wild like before".)* The pram's own body — built on 2026-09-10 from an
-      M1 engineering note, never asked for — stays, placed where the player said: *"place the center
-      of the stroller hitbox at the circumference of the player hitbox"*, *"and don't make it too
-      big"*. Her body is the 14px circle in `scenes/player/stroller.tscn`; `PramCollisionShape2D`'s
-      centre sits on that circle's edge, 14px out along her facing, and its radius comes down from
-      12px to something clearly smaller — 8px is the recommendation, stated in the commit and
-      pinned — so the pram's far half overlaps whatever it meets and she can stand against a wall
-      while the pram no longer clips through corners whole. The pram's *drawing*, shadow, cue and
-      field keep their 34px offset; only the body moves. **And the debug view draws every body
-      there is** *("and make sure *all* hitboxes are actually drawn")*: the bounding-box layer (`3`)
-      does not draw the pram's body today, so audit every `CollisionShape2D` and `StaticBody2D` the
-      scene tree holds — hers, the pram's, buildings, city bodies, event bodies, walls and doors —
-      against what the layer draws, and draw whatever is missing from the same source the physics
-      reads, so the layer cannot omit a body again; a test walks the tree and asserts the count
-      the layer draws equals the count of enabled shapes. And measure the roadblock band's and the region wall's bodies against
-      their drawn boxes: in the run's pictures she stops a pram's length short of a band across an
-      alley and short of the wall across a road with the boxes nowhere near touching, so whatever
-      body those rows carry beyond their picture is trimmed to it
-- [ ] **A roof's northern edge is ground she may step into, and a roof draws over what stands in
-      the street.** *(PLAYTEST-57: "allow going in a little bit for northern edges of roofs"; "roofs
-      also should be drawn over objects. the barrier looks on top of the roof in those pictures.")*
-      The northern edge of a roof is the top of a wall in this projection: inset the building's body
-      a few pixels along its north side so she overlaps that edge rather than stopping a tile short.
-      And a roadblock band across an alley is drawn wider than the alley, over the roof edges either
-      side; a roof is above everything at street level, so events and props that overlap a roof
-      draw beneath it — fit the band to its obstruction span where it crosses an alley, and sort the
-      roof above what it overlaps, whichever the pictures need; say which was done
-- [ ] **The keyboard resets the pointer's aim.** *(PLAYTEST-57: "arrow keys should reset any mouse
-      click position. when pressing awsd or arrow keys right now the last pressed mouse position is
-      still active resulting in incorrect / drifting movement.")* A press on the arrows or `WASD`
-      clears whatever heading the last click or tap set, so the keys steer alone from that frame;
-      a later click sets a fresh heading as it does today
 - [ ] **The boom is drawn on the road, and the inspection starts as she approaches.**
       *(PLAYTEST-57: "the gate for the cars is too high up. it needs to be further down"; "the
       checkpoint should activate when I get close. with the new stroller hitbox I cannot reach the
@@ -613,9 +576,6 @@ is still true.
       the release — so the released side must put her outside the radius, or the row must not
       re-arm until she has left it once. All four against a rig that drives the hold end to end,
       and a burst of the whole hold as the evidence
-- [ ] **What is still dev-only inside `main.gd`.** `DevFlags` took the flag parsing out; what stayed
-      is the code that acts on it — `_first_event_position` and the `--spawn` target lookup, both of
-      which read the live city. Worth finishing the next time the file is opened for another reason
 
 **Drawings, as SVG:**
 

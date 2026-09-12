@@ -129,7 +129,8 @@ static func day_override() -> int:
 	return clampi(int(args[index + 1]), 1, Tuning.RUN_LENGTH_DAYS)
 
 ## `--spawn <target>` — the raw target string, or "" if none was given. What each target means
-## reads `_city.map`, so that lookup stays in `main.gd`; this only extracts the word.
+## reads the live `City`, so that lookup stays in `src/dev/dev_rig.gd`'s `DevRig.spawn_position()`;
+## this only extracts the word.
 static func spawn_target() -> String:
 	var args := _args()
 	var index := args.find("--spawn")

@@ -1,0 +1,35 @@
+nappy rig log  2026-09-12T02:53:45  version v0.8.2-689-g54cab93-dirty
+
+day 7  act 2  run seed 2199579682  city seed 2199579682  length 144.0s  invincible
+   0.0  plan     regions: 31 boundary, 20 wall, 11 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  step 1 on offer at (132,53)
+   0.0  roll     chalk mark guarded: robber 79px away (band 66-176)
+   0.0  plan     closed: accident h(0,9), accident v(2,5)
+   0.0  plan     calm: 2 forest, 2 quiet_square, 3 courtyard, 3 park
+   0.0  plan     events: alley_mouse x4, burnt_out_car x40, burst_water_main x8, busker x10, cafe_tables x34, car_accident x8, cat_dash x8, charging_dog x3, chatting_mother x2, checkpoint_gate x11, checkpoint_hut x22, checkpoint_post x2, collapsed_frontage x16, construction x37, cyclist x8, delivery_van x22, dog_walker x21, fallen_tree x11, homeless_yeller x8, ice_cream_van x4, leaf_blower x11, loose_dog x12, market_stall x33, moving_van x49, pigeon_flock x5, playground x3, police_patrol x12, poster_crew x11, reversing_lorry x9, roadblock x76, scaffolding x13, skip x13
+   0.0  start    doorstep (80,84), facing 180°
+   0.6  cross    stepped into the road at (80,86), mid-block
+   2.8  contact  step 1 moved to (94,90): never seen at (132,53)
+   2.8  roll     chalk mark guarded: robber 120px away (band 66-176)
+   3.4  contact  step 1 seen at (94,90)
+   3.6  path     onto the corridor at (84,89), after 3.6s off it
+   4.2  path     off the corridor at (86,89), after 0.7s on it
+   4.2  cross    stepped into the road at (86,89), at a zebra
+   5.5  near     roadblock at (95,90), 177px, exc 0, in 0.5/s (crowd 0.0, events 0.5), sleep 2
+   5.5  chase    charging_dog came for her at (107,67) | exc 0, in 1.7/s (crowd 0.0, events 1.7), sleep 2
+   5.7  path     onto the corridor at (90,89), after 1.4s off it
+   5.9  contact  walked within 128px of the chalk mark at (94,90)
+   6.1  near     alley_robbery at (95,94), 199px, exc 2, in 10.9/s (crowd 0.0, events 10.9), sleep 3
+   6.1  cue      edge badge: charging_dog at 786px, closing 128px/s
+   6.4  near     roadblock at (95,90), 95px, exc 6, in 16.3/s (crowd 0.0, events 16.3), sleep 3
+   7.1  near     roadblock at (95,90), 52px, exc 15, in 18.9/s (crowd 0.0, events 18.9), sleep 3
+   8.4  freeze   sleep stopped filling | exc 35, in 15.6/s (crowd 0.0, events 15.6), sleep 4 | near: roadblock 67px
+   9.1  blocked  pressed 180° for 1.0s at (95,88) without moving
+  10.2  cue      edge badge gone: charging_dog after 4.1s, now 170px away
+  10.4  near     charging_dog at (97,84), 149px, exc 63, in 28.2/s (crowd 6.9, events 22.1), sleep 4
+  10.9  near     charging_dog at (96,86), 80px, exc 79, in 36.0/s (crowd 9.1, events 26.8), sleep 4
+  11.0  cue      the mark over her head: soon for 5.0s (0.0s of it on the road) | alley_robbery 199px
+  11.0  crowd    walked into somebody at (95,88) | exc 84, in 34.8/s (crowd 25.3, events 27.4), sleep 4
+  11.2  near     charging_dog at (95,87), 40px, exc 92, in 49.7/s (crowd 19.9, events 27.7), sleep 4
+  11.3  near     charging_dog at (95,87), 22px, exc 98, in 46.1/s (crowd 17.8, events 27.7), sleep 4
+  13.0  chase    charging_dog stopped chasing after 7.5s — closest 0px, she ran 0.0s of it | exc 100, in 45.0/s (crowd 5.4, events 15.7), sleep 4

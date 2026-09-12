@@ -11,6 +11,16 @@ extends Node2D
 ## travel axis, a jolt's own radii, `City`'s building and prop lists) each got the smallest
 ## read-only getter rather than a second copy of the geometry kept here.
 ##
+## **The bounding-box layer is the one exception, and reads the physics tree itself instead of a
+## query.** `collision_nodes_under()` walks every *enabled* `CollisionShape2D`/`CollisionPolygon2D`
+## under a `StaticBody2D` or `CharacterBody2D` anywhere in `_city`'s or `_player`'s own subtree —
+## hers, the pram's, every building, every street tree's trunk, a road closure's and the map
+## boundary's own barrier bodies, and every solid event's obstruction (a checkpoint hut or gate, a
+## region wall, a barricade) — so a body a future row grows needs nothing added here to be drawn,
+## and this layer cannot disagree with what she actually collides against. `_draw_bodies()` and
+## `body_outline_count()` both read this one list, and `tests/test_debug_layers.gd` counts the same
+## tree independently to check the two never drift apart.
+##
 ## **One node, three booleans, not three nodes.** Godot skips `_draw()` on an invisible `CanvasItem`
 ## entirely, so a plain `visible` flag per section already buys "no work happens while a layer is
 ## off" without a second node per layer to manage — `main.gd` owns the fourth layer (the developer
@@ -181,41 +191,83 @@ func _pram_position() -> Vector2:
 
 # ------------------------------------------------------------- bounding boxes ---
 
-## Every collision body's own outline — an event's obstruction, a building's footprint, her own
-## circle — plus a moving car's strike box, drawn in the field layer's own lethal colour because it
-## is not a body (`CrowdAgent._car_shadow_shape()`'s own doc: "no body for a car") but is exactly
-## what `will_be_lethal()` tests against. **Walkers and cars have no body; nothing is invented for
-## them.** The pram has no collision of its own either, and draws nothing here.
+## Every enabled collision shape a body in the tree could touch, traced from the actual
+## `CollisionShape2D`/`CollisionPolygon2D` nodes physics reads via `collision_nodes_under()` —
+## hers, the pram's, every building, every street tree's trunk, a road closure's and the map
+## boundary's own barrier bodies, and every solid event's obstruction — plus a moving car's strike
+## box, drawn in the field layer's own lethal colour because it is not a body
+## (`CrowdAgent._car_shadow_shape()`'s own doc: "no body for a car") but is exactly what
+## `will_be_lethal()` tests against. **Walkers and cars have no body; nothing is invented for
+## them.**
 func _draw_bodies() -> void:
-	for instance in _events.instances():
-		if not instance.is_solid():
-			continue
-		var shape := instance.def.shape
-		var axis := instance.solid_axis() if shape.half_length > 0.0 else Vector2.RIGHT
-		_draw_shape_outline(shape, instance.global_position, axis, BODY_COLOUR)
-	for building in _city.buildings():
-		# The lot's own centre, not the building's south-edge origin — `Building._rebuild()`'s own
-		# `_collision.position`, restated here so the outline and the real body cannot disagree.
-		var offset := Vector2(0.0, -building.shape.half_extents.y)
-		_draw_shape_outline(building.shape, building.global_position + offset, Vector2.RIGHT,
-				BODY_COLOUR)
-	draw_arc(_player.global_position, Tuning.PLAYER_BODY_RADIUS, 0.0, TAU, _CIRCLE_SEGMENTS,
-			BODY_COLOUR, LINE_WIDTH, true)
-	for agent in _crowd.agents():
-		if agent.kind != CrowdAgent.Kind.CAR or agent.speed() < Tuning.CAR_STRIKE_MIN_SPEED:
-			continue
+	for node in collision_nodes_under(_city):
+		_draw_collision_node(node)
+	for node in collision_nodes_under(_player):
+		_draw_collision_node(node)
+	for agent in _strike_box_agents():
 		_draw_closed_polyline(_rect_corners(agent.global_position, agent.heading(),
 				Vector2(Tuning.CAR_STRIKE_HALF_LENGTH, Tuning.CAR_STRIKE_HALF_WIDTH)), FIELD_LETHAL)
 
-func _draw_shape_outline(shape: GroundShape, at: Vector2, axis: Vector2, colour: Color) -> void:
-	match shape.kind:
-		GroundShape.Kind.POINT:
-			draw_arc(at, shape.radius, 0.0, TAU, _CIRCLE_SEGMENTS, colour, LINE_WIDTH, true)
-		GroundShape.Kind.RECT:
-			_draw_closed_polyline(_rect_corners(at, axis, shape.half_extents), colour)
-		_:
-			_draw_closed_polyline(_capsule_outline(at, axis, shape.half_length, shape.radius),
-					colour)
+## How many outlines `_draw_bodies()` draws right now — the same `collision_nodes_under()` lists it
+## draws from, plus a fast car's own strike box. The seam `tests/test_debug_layers.gd` checks
+## against an independent tree walk of its own, so a body this layer stops drawing is a number this
+## count would also drop.
+func body_outline_count() -> int:
+	return collision_nodes_under(_city).size() + collision_nodes_under(_player).size() \
+			+ _strike_box_agents().size()
+
+func _strike_box_agents() -> Array[CrowdAgent]:
+	var found: Array[CrowdAgent] = []
+	for agent in _crowd.agents():
+		if agent.kind == CrowdAgent.Kind.CAR and agent.speed() >= Tuning.CAR_STRIKE_MIN_SPEED:
+			found.append(agent)
+	return found
+
+## Every enabled `CollisionShape2D` (with a shape) or `CollisionPolygon2D`, under a `StaticBody2D`
+## or `CharacterBody2D`, anywhere in `root`'s own subtree — recursive rather than a per-kind list,
+## so a new body needs nothing added here to be found. This is the one place that decides what
+## counts as a body for the debug view; `_draw_bodies()` and `body_outline_count()` both read it,
+## and `tests/test_debug_layers.gd` walks the same tree by hand as an independent check.
+static func collision_nodes_under(root: Node) -> Array[Node]:
+	var found: Array[Node] = []
+	if root == null:
+		return found
+	if root is StaticBody2D or root is CharacterBody2D:
+		for child in root.get_children():
+			if child is CollisionShape2D and not child.disabled and child.shape != null:
+				found.append(child)
+			elif child is CollisionPolygon2D and not child.disabled:
+				found.append(child)
+	for child in root.get_children():
+		found.append_array(collision_nodes_under(child))
+	return found
+
+## Draws one collision node's own shape at its own `global_position` — never a second copy of its
+## geometry, so this cannot disagree with what the node actually collides as.
+func _draw_collision_node(node: Node) -> void:
+	var at: Vector2 = (node as Node2D).global_position
+	if node is CollisionPolygon2D:
+		_draw_closed_polyline(_polygon_world_points(node), BODY_COLOUR)
+		return
+	var shape: Shape2D = (node as CollisionShape2D).shape
+	if shape is CircleShape2D:
+		draw_arc(at, shape.radius, 0.0, TAU, _CIRCLE_SEGMENTS, BODY_COLOUR, LINE_WIDTH, true)
+	elif shape is RectangleShape2D:
+		var axis := Vector2.RIGHT.rotated((node as Node2D).global_rotation)
+		_draw_closed_polyline(_rect_corners(at, axis, shape.size * 0.5), BODY_COLOUR)
+	elif shape is CapsuleShape2D:
+		# Godot's capsule stands along local Y (`GroundShape.collision_shape()`'s own doc), so the
+		# spine's world axis is the node's rotated +Y, not its +X.
+		var axis := Vector2.UP.rotated((node as Node2D).global_rotation)
+		var half_length := maxf(0.0, shape.height * 0.5 - shape.radius)
+		_draw_closed_polyline(_capsule_outline(at, axis, half_length, shape.radius), BODY_COLOUR)
+
+func _polygon_world_points(node: CollisionPolygon2D) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	var xform := node.global_transform
+	for point in node.polygon:
+		points.append(xform * point)
+	return points
 
 # ------------------------------------------------------------------ geometry ---
 # Unsquashed — a bounding body and a field are both stated in the plain 2D plane the physics and

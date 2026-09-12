@@ -1,5 +1,101 @@
 # Decisions
 
+## M100 — Small, real, and nobody's · the pram's body sits on her circumference, and the debug view draws every body, 2026-09-12
+
+*(2026-09-11, playtest 57: "I don't like the stroller having a hitbox. it makes navigation clunky,
+I cannot get close to walls anymore, and I get constantly stuck."; then "can we keep the stroller
+hitbox but move it closer to the player (btw the hitbox right now is not drawn at all for some
+reason)"; "place the center of the stroller hitbox at the circumference of the player hitbox";
+"and don't make it too big"; "and make sure *all* hitboxes are actually drawn".)* The pram's own
+body had been built on 2026-09-10 from an M1 engineering note, never asked for, as a 12px circle
+34px ahead of her. Two agent commits on `feature/pram-body-and-keyboard`, reviewed here. **The
+body**: `PramCollisionShape2D`'s centre is `Tuning.PLAYER_BODY_RADIUS` (14px) out along her facing,
+on the edge of her own circle, at `Stroller.PRAM_BODY_RADIUS`, 8px, pinned and open to overturn.
+The drawing, shadow, cue and field keep their 34px offset; `pram_shape` stays 12px for the shadow.
+**Chosen where the design was silent**: the body's offset is unsquashed, where the old one applied
+the drawing's `OBLIQUE_Y` foreshortening to the physics offset too; every other body in the game
+is unsquashed and the debug layer's own doc says physics is. **The debug view** no longer keeps a
+list of body kinds to draw: `DebugLayers.collision_nodes_under()` walks the live tree under the
+city and the player for every enabled `CollisionShape2D` or `CollisionPolygon2D` under a
+`StaticBody2D` or `CharacterBody2D`, and draws each from its own `Shape2D` and global transform,
+so the layer cannot omit a body again. **The audit found four kinds it had been omitting**: the
+pram's body, a street tree's trunk, a road closure's two barrier bodies, and the four walls around
+the map's boundary. A test builds a day with region walls in play, counts enabled shapes by its
+own walk and asserts `body_outline_count()` matches. **Left open**: the escape scene's interior
+blockers are not wired to the layer at all, since `main` only hands it the city and the player;
+and the closure and boundary bodies are found by the walk rather than by a getter on `City`.
+**The band's body against its picture**, the tail of the same item, is recorded under the alley
+wall below: the wall across a road was already fitted, so the pram's own body was the whole of
+that gap.
+
+## M100 — Small, real, and nobody's · a region wall fits the alley mouth, and a roof's northern edge is ground, 2026-09-12
+
+*(2026-09-11, playtest 57: "also allow going in a little bit for northern edges of roofs"; "roofs
+also should be drawn over objects. the barrier looks on top of the roof in those pictures.")* Two
+agent commits on `feature/roof-edge-and-band`, reviewed here. **Measured first, both
+orientations, on seed 2199579682, day 7.** A region wall across a road is placed by
+`SealPlanner.place_hard_on()`, which already overrides the `roadblock` row's shape to a 32px point
+per body, three bodies at exactly 64px spacing across the 192px carriageway: body and picture
+agree and fit the street, so the gap the player measured there was the pram's body alone. A wall
+at a crossing alley's mouth was placed by `SealPlanner.alley_mouth_wall()` with the row's own
+`GroundShape.band(60.0)`, a 120px-wide capsule across a 64px alley, 28px onto each neighbouring
+lot: that is the barrier that read as standing on a roof. **What stands**:
+`RegionPlanner._alley_mouth_wall_body()` overrides the returned body's shape to a point of half the
+alley's width (32px), the same trim the road case already had, so the band draws and collides
+edge to edge with the alley's paving; a single 64px body across a 64px mouth still closes it, so
+no sealing guarantee moved. The override sits in `RegionPlanner` after the call because
+`SealPlanner` was outside the agent's fence; folding it into `alley_mouth_wall()` itself is a
+follow-up so a future caller cannot forget it. **Rejected**: sorting roofs above the entities
+layer. Buildings are drawn beneath the entities on purpose, since sorting a building against
+entities puts cues and the player under a roof (`City`'s top doc); fitting the band was enough.
+**The roof's northern edge**: `Building.NORTH_EDGE_INSET`, 6px, pinned and open to overturn. The
+body's south-north half-extent shrinks by half the inset and its centre shifts south by the same
+half, so the south edge stays on the lot's kerb and the north edge sits 6px inside the lot; no lot
+tile becomes walkable. Tests: every crossing alley's wall body draws within its own tile rect on
+the across-alley axis over the regions suite's seed sweep, and a built building's body north edge
+is the inset south of its lot's with the south edge and the east-west extent unchanged. Evidence:
+`docs/evidence/m100-alley-wall-2026-09-12/`, the run folder and `alley-wall.png`, the same
+alley playtest 57 stood at, with the bounding-box layer showing the wall's body flush inside the
+paving. Two attempts to frame a plain road wall landed on a building and a door, and the road
+case was already covered by the test, so no picture of it was kept.
+
+## M100 — Small, real, and nobody's · the keyboard resets the pointer's aim, fixed 2026-09-12
+
+*(2026-09-11, playtest 57: "arrow keys should reset any mouse click position. when pressing awsd
+or arrow keys right now the last pressed mouse position is still active resulting in incorrect /
+drifting movement.")* `TouchControls` locks a heading in by pressing the `move_*` actions
+synthetically, and the stroller reads one input vector, so a real key added to the stale press.
+One agent commit on `feature/pram-body-and-keyboard`. **What stands**: on any non-echo key press
+that maps to a movement action, `TouchControls._yield_to_the_keyboard()` releases the movement
+actions this node itself pressed, derived from the sign of its own locked heading, **except the
+action the key just pressed**, and clears the drag, the locked heading and the drawn knob. That
+exception is the ordering trap: `Input` updates an action's polled state before `_input()` sees
+the event, so releasing the key's own action would cancel the key rather than the click. `run` is
+released only if this node's own double press set it, so a physically held Shift is never touched.
+A test reproduces the engine's ordering by hand: a click north, then a `D` press, and the input
+vector is exactly right with the heading cleared.
+
+## M100 — Small, real, and nobody's · the dev rig moves out of main.gd, 2026-09-12
+
+The last of the queue's dev-only leftovers: `DevFlags` had taken the flag parsing out of `main.gd`
+and left the code that acts on the flags there, about a sixth of the file, tangled into the boot
+sequence. One agent commit on `feature/dev-rig-out-of-main`. **What stands**: `src/dev/dev_rig.gd`,
+class `DevRig`, holds the whole `--spawn` target lookup (park, alley, square, playground, event and
+`event:<id>`, arterial, `closure:<n>`, `zone:<n>`, landmark, signal, `edge:<side>`, precinct,
+`corner:<which>`, contact), `first_event_position`, `pavement_offset`, `nearest_walkable`, the
+`--follow` camera, the `--overview` camera, the `--meters` override and the `--day-length`
+override, every doc comment moved with its function and behaviour unchanged. It is a
+`RefCounted`: the follow camera and the event id it tracks are the only state that survives
+across calls, so those are instance members and everything else is static, taking the city, the
+resistance director, the baby or a parent node as arguments so it runs headless without booting
+`main`. `main.gd` keeps one-line calls and `_somebody_is_playing()`, which is about the run log
+rather than a rig. `tests/test_dev_rig.gd` builds a day on a fixed seed and checks the named
+targets land on walkable ground, an unknown target warns and falls back to the doorstep, and the
+pavement offset crosses the street's own width on both orientations, moved from `tests/test_main.gd`.
+Six smoke runs of the moved flags through `tools/shot.sh` each produced a picture and no script
+error. `DECISIONS.md`'s older record naming `main._pavement_offset()` is history and stands; the
+function is now `DevRig.pavement_offset()`.
+
 ## M100 — Small, real, and nobody's · a blocked-off alley has no chalk mark, fixed 2026-09-12
 
 *(2026-09-11, playtest 57: "a blocked off alley must not have a chalk mark.")* The mark lay on the

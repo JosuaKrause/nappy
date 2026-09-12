@@ -21,6 +21,26 @@ view"). `--invincible` is the way to walk this whole list in one sitting: nothin
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Walk her into a wall, a corner and a barrier at an angle** (any day; `3` shows the bodies).
+  The pram's body is an 8px circle centred on the edge of her own 14px one, so the pram's far
+  half overlaps what it meets and she stands against a wall again. Does the pram still catch on
+  corners, and does the far half clipping into a wall read as wrong? 8px is a guess. Record is
+  `DECISIONS.md`, M100, the pram's body sits on her circumference.
+- **Turn on the bounding-box layer and look at everything** (`3`). It now draws every body physics
+  reads, from the collision nodes themselves: hers, the pram's, buildings, events, street-tree
+  trunks, closure barriers and the map's boundary. Is there any body you can walk into that has
+  no outline? Same record.
+- **Click to set a heading, then press an arrow or WASD while she walks** (either control mode).
+  She walks in the key's direction only, and the joystick knob reads as stopped. Does a held Shift
+  survive it, and does a click afterwards aim fresh? Record is `DECISIONS.md`, M100, the keyboard
+  resets the pointer's aim.
+- **Find a crossing alley walled at its mouth on day 7 or later** (`--seed 2199579682 --day 7`,
+  tile 95,88). The band is 64px wide, flush with the alley's paving, no longer over the roof
+  edges either side. Does it still read as standing on a roof? Record is `DECISIONS.md`, M100, a
+  region wall fits the alley mouth.
+- **Walk north into the top of any building.** Her body goes 6px into the roof's northern edge
+  before stopping. Does that read as leaning into the top of a wall, or is it too little to
+  notice? Same record.
 - **Run `--invincible` for a couple of minutes beside a loud event** (any day). The clock and the
   light stay where the day started and the excitement bar never rises, while the crowd, the
   events, the closures and the checkpoints all still run. Does anything still flash or darken, and
