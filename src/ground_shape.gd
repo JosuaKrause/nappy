@@ -291,8 +291,19 @@ func shadow_outline(at: Vector2, axis: Vector2 = Vector2.RIGHT) -> PackedVector2
 
 ## Draws this shape's shadow at `at`, in `canvas`'s own coordinates — the filled polygon
 ## `shadow_outline()` traces, so the layer and the shadow cannot disagree about what shape it is.
+##
+## A shadow narrower than a pixel is not drawn at all. A radius that has shrunk toward zero — a
+## bird's contact shadow fading as it climbs to `BIRD_SHADOW_CEILING`, anything else that scales a
+## shadow away — collapses every sample of the outline onto one point, and the renderer refuses
+## the polygon with "Invalid polygon data, triangulation failed" once a frame for as long as it
+## lasts. Nothing is lost by skipping it: it would have covered no pixel.
 func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2 = Vector2.RIGHT) -> void:
+	if radius < MIN_DRAWN_SHADOW_RADIUS:
+		return
 	canvas.draw_colored_polygon(shadow_outline(at, axis), Palette.SHADOW)
+
+## Half a pixel: below this every sample of the outline rounds onto the same point.
+const MIN_DRAWN_SHADOW_RADIUS := 0.5
 
 func _ellipse_points(centre: Vector2) -> PackedVector2Array:
 	var points := PackedVector2Array()
