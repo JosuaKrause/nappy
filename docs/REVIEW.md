@@ -28,13 +28,20 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   stay underneath her and the pram while the trunk and canopy retain their upright sorting.
   Check the location pictured in [PLAYTEST-64](playtests/PLAYTEST-64.md), or any street-tree run.
 
+- **Look at trees, bollards and rooftop equipment at gameplay size.** Do the inked foliage,
+  water tank, HVAC units, skylights, vent and ducts fit the comic ground while staying readable?
+  Check both tree shapes and the roof variants in
+  `evidence/comic-city-props-2026-09-12/comparisons/`; `--svg` shows their source concepts.
+
 - **Compare the mother carrying the baby with the mother pushing the stroller.** Use ordinary
   gameplay for pushing and `--start-escape floor:2` for carrying; walk and turn in both. Does she
-  remain recognizably the same woman, with stable hair, clothes and proportions across directions
-  and gait frames? The native and enlarged comparisons in
-  `evidence/comic-rig-2026-09-12/registered/` show both states side by side;
-  check stature and hand-to-handle contact through turns at gameplay size too. `--svg` provides
-  the original source comparison. The assembly sheets approximate placement, not live contact.
+  remain the same adult woman, and does the baby read as a supported cradle with sensible
+  visibility from behind? Check stable hair, clothes, stature and bundle position through each
+  stride. The native and enlarged comparisons in
+  `evidence/comic-carrying-redraw-2026-09-12/registered/` show both states side by side.
+  `--svg` provides the source comparison. The pushing assembly sheets in
+  `evidence/comic-rig-2026-09-12/registered/` approximate placement; inspect live hand-to-handle
+  contact through turns too.
 
 - **Look at the garbage sacks and small litter from day 10.** Do the standalone sacks and
   piles look like the same material, and does the small ground litter remain quiet and readable?

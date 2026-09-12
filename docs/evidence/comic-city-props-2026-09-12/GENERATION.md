@@ -4,12 +4,13 @@ This record covers the 12 reviewed prop derivatives requested by PLAYTEST-65: tw
 variants, the tree bed, bollard cap, water tank, two HVAC units, vent stack, two skylights and
 two roof ducts. The SVG files remain the subject, native canvas, projection and functional
 anchor authority. The corrected white-background redraws in `raw/roof-white.png` and
-`raw/trees-white.png` supply the comic drawing language; `raw/tree_pit.png` is the opaque ground
+`raw/trees-white.png` supply the generated subjects; `raw/tree_pit.png` is the opaque ground
 tile. The original checker-background raws remain beside them as retained generation inputs.
 The OpenAI image generation tool created the redraws using the saved style-transfer and
 background-extraction prompts. `source/roof-atlas.png` and `source/trees-atlas.png` retain the
-atlas inputs supplied to generation; the urban and cardinal reference images are style inputs,
-not subject or layout references.
+atlas inputs supplied to generation. `docs/evidence/graphics-reference-urban-01.jpeg` and
+`docs/evidence/graphics-reference-cardinal.jpeg` supply the comic drawing style, not subjects
+or layouts.
 Exact prompts are preserved in `prompts/roof.txt`, `prompts/roof-background.txt`,
 `prompts/trees.txt`, `prompts/trees-background.txt` and `prompts/pit.txt`.
 
@@ -48,5 +49,5 @@ source placement and alpha; gameplay binding remains with the existing `Prop`, `
 `Building` callers through `TextureResolver`.
 
 Preparation uses Godot 4.7.2 and Python 3.14.7 with Pillow 12.3.0 from the locked `uv`
-environment. The final sheets were inspected at native size and 4× enlargement; no windowed
-gameplay capture is part of this unbound-asset registration.
+environment. The final sheets compare the bound assets at native size and 4× enlargement.
+Runtime capture provenance is recorded separately in `docs/DECISIONS.md`.

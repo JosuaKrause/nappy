@@ -234,14 +234,24 @@ east-authored partners. The carrying set adds
 `mother_carrying_{side,front_diagonal,back_diagonal}_{a,b}.png` (26×46), selected by the same
 resolver during the escape scene. All use bottom-center anchors and retain their redrawn
 silhouettes and true transparency. The [comic rig record](evidence/comic-rig-2026-09-12/GENERATION.md)
-documents shared identity across both mother states, directions and frames, plus reproducible
-registration within the native canvases.
+documents the pushing mother and stroller. The current carrying family's sources,
+cradle poses and registration are in the
+[carrying redraw record](evidence/comic-carrying-redraw-2026-09-12/GENERATION.md).
 
 `assets/illustrated/svg-transfer/props/` supplies `garbage_sack.png` (28×34) and
 `garbage_sacks_pile.png` (42×34), bottom-center anchored, plus `litter_{can,apple,bag,newspaper,cup}.png`
 (32×32), center anchored. These use the existing `Prop` and `CityDecals` drawing paths with
 the comic redraw's own alpha. Their [generation record](evidence/comic-props-2026-09-12/GENERATION.md)
 preserves shared material references and reproducible extraction and anchor registration.
+The same replacement directory contains `tree_a.png` (40×46), `tree_b.png` (40×52),
+`bollard.png` (12×12), `tree_pit.png` (32×32), `roof_water_tank.png` (32×48),
+`roof_hvac_unit.png`, `roof_hvac_unit_b.png`, `roof_skylight.png`, `roof_skylight_b.png`,
+`roof_vent_stack.png`, `roof_duct_corner.png` (all 32×32), and
+`roof_duct_straight.png` (64×32). `Prop` resolves the trees and overhead bollard cap;
+`CityDecals` draws the opaque tree bed on the ground; `Building` resolves the rooftop equipment.
+Standing canvases use bottom-center anchors; the tree bed uses its center. Their
+[generation record](evidence/comic-city-props-2026-09-12/GENERATION.md) preserves source
+pairings, transparent sprite extraction, fixed ground-tile extraction and review sheets.
 Unconverted families retain SVG textures.
 
 [VISUALS.md](VISUALS.md) defines reference authority and the visual acceptance gate.

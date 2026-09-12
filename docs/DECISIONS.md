@@ -1,5 +1,88 @@
 # Decisions
 
+## M109 — Named carrying redraws — 2026-09-12
+
+PLAYTEST-65 rejected the carrying mother without naming a particular defective facing. Source
+review identified an upright bundle, blended forearms and excessive baby visibility from the
+rear. The request covered all five authored views, both gait frames and their west mirrors.
+The player's follow-up requested the current build in a PR and names for every version.
+
+The carrying versions have these discussion names:
+
+| Version | Name | Distinguishing result |
+| --- | --- | --- |
+| A | Upright bundle | The prior runtime carrying set, retained with the original comic-rig evidence. |
+| B | Round silhouette | A clearer cradle, but a large head, broad coat and short legs. |
+| C | Alternating stride | Opposed A/B leg positions, still with the round proportions. |
+| D | Matched proportions | A localized edit of the pushing atlas: adult body and gait retained, arms and baby changed. |
+
+D supplies the ten runtime carrying textures. Generating a whole new person repeatedly
+changed her proportions despite explicit instructions and identity references. Editing the
+existing pushing atlas narrowed the change to the cradle and kept the same short hair, small
+head, red parka, long jeans and practical shoes. The baby is held across the torso, with
+hands and supporting forearms separated from the blanket; direct rear views hide the baby
+behind her body. Native and enlarged comparisons include all eight runtime directions and
+both gait frames next to the pushing mother. The raw outputs, exact prompts and named
+comparisons are retained in `docs/evidence/comic-carrying-redraw-2026-09-12/`; B and C are
+comparison evidence, not style references. A remains in `docs/evidence/comic-rig-2026-09-12/`.
+
+The previous graphics PR was merged independently while this work ran. The next branch
+incorporated main `83a60d1`, with local tip `fead323` and common ancestor `62d1c34`.
+Incoming main had no tree changes beyond that ancestor, so the merge was conflict-free and
+preserved the already reviewed café facing, idle frames, tree-bed layering and gameplay.
+No numbered records collided. This batch is proposed separately and remains open for review.
+
+The player then reported that most A/B gait pairs looked like the same picture. D's native
+and enlarged sheets established identity and support but did not establish sufficient stride
+contrast. The existing named versions remain unchanged; the gait correction is E, clear strides,
+tracked separately in TODO. Version names and gait-frame letters identify different axes.
+
+The integrated checkout passed import/boot, 783 focused checks across visuals, stroller,
+presentation mode and orientation, and 665 visual checks with `--svg`. The tests check loading,
+anchors and selection; they do not establish visibly distinct steps. D's seed-4242 capture used
+`--start-escape floor:2 --walk 1e1w1e1w --press snapshot_burst 1 --invincible`, finishing at six
+seconds. Its complete 36-frame burst records 2.983 seconds; the frames show travel and opposing
+profile views. The whole run, frames, timing sidecar, MP4 and final still are preserved under
+`docs/evidence/archive/session-captures/2026-09-12/rig-165450-seed4242-v0.8.2-807-g7f3dcb5-dirty/`.
+The dirty changes were documentation only. This records D and does not verify E or every facing.
+
+## M109 — Trees and rooftop equipment as comic drawings — 2026-09-12
+
+PLAYTEST-65 asked to continue SVG style transfer. This batch added twelve PNG derivatives:
+two trees, the ground tree bed, overhead bollard cap, water tank, two HVAC units, vent stack,
+two skylights and two ducts. The existing SVGs supplied subjects, projections, canvases and
+functional placement; the urban and cardinal references supplied comic forms, ink and shading.
+No SVG, runtime transform, collision body or animation changed for this batch. The existing
+texture resolver binds the trees and bollard through Prop, the bed through CityDecals and the
+roof equipment through Building.
+
+The tree crowns use authored foliage and branch shapes, with distinct broad and narrow forms.
+The opaque tree bed uses fixed full-tile extraction. Transparent props retain their generated
+silhouettes and gaps; roof canvases retain their native margins rather than forcing every
+visible object to the bottom edge. The standing runtime anchor remains bottom-center, and the
+ground bed remains center-anchored. These props have no collision bodies.
+
+Review rejected painted checker backgrounds with ghost outlines. Built-in image edits supplied
+white backgrounds before the authorized extractor ran, preserving gray roof materials. Review
+also caught crops containing neighboring subjects and an undersized vent, skylights and HVAC
+variant. Correct subject crops restored source-scale occupancy without stamping the SVG alpha
+onto the redraws. Native and enlarged comparisons cover all twelve final derivatives. Exact
+prompts, raw outputs, input atlases, source hashes, registration measurements and the extraction
+recipe are retained in `docs/evidence/comic-city-props-2026-09-12/`.
+
+The missing-PNG fallback test uses a synthetic texture path, because the bollard now has a
+replacement. The pairing audit asks Godot's resolver to load every discovered replacement so
+a duplicated import UID cannot silently substitute another prop. Prop checks distinguish the
+opaque ground bed, bottom-anchored trees, centered bollard disc and roof margins. Human
+appearance review remains in REVIEW.
+
+The final tree capture used seed 4242, `--spawn park --walk 1s1e --invincible`, at four seconds.
+Both tree silhouettes and their grounding are visible at gameplay scale; the camera does not
+cover rooftop equipment or street-tree beds. The whole run and final still are preserved under
+`docs/evidence/archive/session-captures/2026-09-12/rig-165213-seed4242-v0.8.2-806-g9959141-dirty/`.
+The dirty changes were documentation only. The twelve-prop source sheet supplies the remaining
+static asset coverage, and player acceptance remains separate.
+
 ## Graphics branch and gameplay integration — 2026-09-12
 
 The graphics tip was `3b2ad2561c097cf103220f0f7441c258babdbc70`, incoming main was

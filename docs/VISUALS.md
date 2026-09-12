@@ -9,8 +9,9 @@ forces original SVG graphics. The same drawing code handles both formats.
 The transferred artwork covers the mother's pushing and carrying animation frames and the pram's
 five authored views, supplying eight directions through explicit east/west mirroring. The garbage
 sack, sack pile and five litter decals also use registered PNGs. The outdoor ground catalogue
-under `assets/tiles/` has matching PNGs, including its damage and directional marking variants;
-other families use SVGs.
+under `assets/tiles/` has matching PNGs, including its damage and directional marking variants.
+Trees, the overhead bollard cap, the ground tree bed and the rooftop water tank, HVAC units,
+skylights, vent stack and ducts also have comic replacements. Other families use SVGs.
 The logo, social card and exported stroller icon sizes use the comic identity mark, documented
 with their SVG source mappings in the
 [identity generation record](evidence/comic-identity-2026-09-12/GENERATION.md).
@@ -42,11 +43,14 @@ the redrawn artwork's real transparency rather than stamping the SVG's primitive
 over it. Opaque ground stays opaque; outlines, transparent gaps, internal placement and visual
 quality require inspection alongside dimension and anchor checks.
 The [comic rig record](evidence/comic-rig-2026-09-12/GENERATION.md) documents generation and
-extraction for both mother states and every stroller view. Its native and enlarged comparisons
-cover every direction and gait frame; stature stays consistent across the family. Its assembly
-sheets approximate source placement and do not establish live hand-to-handle contact.
+extraction for the pushing mother and every stroller view. Its assembly sheets approximate
+source placement and do not establish live hand-to-handle contact.
 The [comic prop record](evidence/comic-props-2026-09-12/GENERATION.md) preserves the redrawn
 garbage and litter, their generated silhouettes and reproducible anchor registration.
+The [city prop record](evidence/comic-city-props-2026-09-12/GENERATION.md) covers trees,
+their opaque ground bed, the overhead bollard cap and rooftop equipment. The
+[carrying redraw record](evidence/comic-carrying-redraw-2026-09-12/GENERATION.md) documents
+the current carrying poses, their source pairings and comparison with the pushing mother.
 The [tile generation record](evidence/style-transfer-tiles-2026-09-12/GENERATION.md) preserves
 the terrain sheets, source-pair manifest and native/repeated-neighbor comparisons. Ground tiles
 use fixed cell extraction because every pixel belongs to a filled tile, including its edges.

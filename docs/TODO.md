@@ -109,22 +109,33 @@ findings supported by the conversion and review.
       Record SVG review and generation provenance so ordering is reviewable; reject PNG-only
       additions instead of accepting a later placeholder SVG.
 - [ ] Transfer the remaining entity SVGs and every directional/animation/state layer. The player
-      explicitly requests another carrying-mother redraw in PLAYTEST-65: cover all five views
-      and both gait frames, match the pushing mother's identity and proportions, and check the
-      baby's support, anatomy, visibility and direction at native scale and in motion.
-      Preserve the rejected derivatives and their generation provenance.
-      The player
-      rig's generation records are in `DECISIONS.md` under Eight-direction style transfer and
-      M109, the carrying mother as one family. Preserve native
+      rig's generation records are in `DECISIONS.md` under Eight-direction style transfer,
+      M109, the carrying mother as one family, and M109, named carrying redraws. Preserve native
       canvases and functional anchors, and keep tintable body/trim separation and authored identities.
       Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
+- [ ] Correct the carrying mother's A/B gait frames in every direction: PLAYTEST-65 clarifies
+      that the pictures differ but do not depict walking. The north view comes closest, yet
+      still fails to swap the left/right leg behind. Preserve each direction's head, torso,
+      arms and baby; alternate which anatomical leg leads and trails, and which overlaps the
+      other in each view. Sideways movement also needs spread and closed legs: use open,
+      passing, opposite open, passing, with three distinct source poses and a four-phase cycle.
+      Author and review each new passing-pose SVG before its PNG. Check readable leg motion at
+      native scale. Keep versions
+      A–D available for comparison; name the corrected family E, clear strides. Inspect all
+      five pairs and west mirrors, and verify animation in the running game.
+- [ ] Bring the stroller drawing closer so the mother's hands meet its handle, as requested
+      in PLAYTEST-65. Inspect both gait frames and all eight directions, including turns;
+      change visual placement and its dependent shadow/cue placement together. Preserve
+      collision positions, navigation, steering and gameplay costs. Compare PNG and SVG modes.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The
       garbage/litter generation record is in `DECISIONS.md` under M109, litter and garbage materials.
       The outdoor ground family record is under M109, outdoor tile materials.
+      The tree, bollard, ground-bed and roof-equipment record is under M109, trees and rooftop
+      equipment as comic drawings. Their source mappings identify the transferred props.
 - [ ] Convert UI, cue and identity SVGs while preserving their symbols, text, legibility and
       exact geometry. Keep code-drawn graphics and shader behavior under their current owners.
 - [ ] Audit all loading paths: shared drawing helpers, direct textures, TileSets, scenes/resources,

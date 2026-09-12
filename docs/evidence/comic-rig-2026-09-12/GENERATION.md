@@ -7,7 +7,12 @@ inputs rather than contours to trace. The two approved reference images define t
 language: expressive dark ink, purposeful anatomy and construction, painted material folds and
 deliberate shadow planes.
 
-The runtime derivatives keep every source canvas dimension and bottom-center anchor. They preserve
+The pushing and pram derivatives supply the current runtime assets. The carrying rows and
+their registered PNGs are retained rejection evidence for PLAYTEST-65, not reference art or
+the current carrying textures. The active carrying family is documented in
+[the carrying redraw record](../comic-carrying-redraw-2026-09-12/GENERATION.md).
+
+The registered derivatives keep every source canvas dimension and bottom-center anchor. They preserve
 the generated comic silhouettes and transparent gaps, so they do not reuse the SVG alpha. This is
 required for the newly drawn shoulders, elbows, legs, coat shapes, hood curves, bassinet depth and
 wheels to survive registration. `registered/registration.json` records the source occupancy,
@@ -103,8 +108,9 @@ uv run python docs/evidence/comic-rig-2026-09-12/convert.py register \
   docs/evidence/comic-rig-2026-09-12/pram-atlas-background-corrected.png
 ```
 
-The 25 files in `registered/rig/` are the bytes copied into
-`assets/illustrated/svg-transfer/rig/`. Existing `.import` files remain untouched, preserving each
+The pushing and pram files in `registered/rig/` match the bytes in
+`assets/illustrated/svg-transfer/rig/`; the carrying files preserve the rejected result.
+Existing `.import` files remain untouched, preserving each
 Godot resource identity. Import/boot and the focused visual, stroller, presentation and orientation
 suites verify that each derivative loads at its SVG's native dimensions, contains visible art,
 retains real transparency within its artwork bounds and touches its canvas-bottom ground line. The
