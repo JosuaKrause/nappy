@@ -39,8 +39,8 @@ func run(t) -> void:
 				_heading_row("abduction", EventInstance.UNMARKED_VAN_BY_VIEW, true)),
 		_row("army truck (west-authored side)",
 				_heading_row("military_convoy", EventInstance.ARMY_TRUCK_BY_VIEW, true)),
-		_row("riot van (side mirrors on west, unlike the vans above)",
-				_heading_row("night_raid", EventInstance.RIOT_VAN_BY_VIEW, false)),
+		_row("riot van (west-authored side)",
+				_heading_row("night_raid", EventInstance.RIOT_VAN_BY_VIEW, true)),
 	])
 
 	_render_sheet("police-car-native.png", "police-car-3x.png", [

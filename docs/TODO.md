@@ -543,13 +543,6 @@ is still true.
       microsecond tick and stays as it is. The dusk map and the log keep their names. Update
       `docs/TELEMETRY.md`'s description of the `asked/` and `auto/` names and any skill that
       quotes the old pattern; playtest files quoting old names are primary sources and stay
-- [ ] **The riot van's side view faces the wrong way.** `facings.csv` records `riot_van.svg` as
-      authored facing west, like the unmarked van and the army truck, but its selection keeps the
-      east-native mirror sense, so a hunting riot van heading east shows a west-facing cab; the
-      evidence sheet `docs/evidence/m108-event-vehicles-2026-09-11/vehicles-security-3x.png` shows
-      it backwards beside the other two. One flag on its table — `side_faces_west` in
-      `EventInstance._draw_eight_view()` — and the octant test transcribed from M56's original
-      match updated to the corrected side mirror, with M56's own heat tests kept green
 - [ ] **What is still dev-only inside `main.gd`.** `DevFlags` took the flag parsing out; what stayed
       is the code that acts on it — `_first_event_position` and the `--spawn` target lookup, both of
       which read the live city. Worth finishing the next time the file is opened for another reason
