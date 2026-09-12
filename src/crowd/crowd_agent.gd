@@ -1991,9 +1991,11 @@ static func _car_shadow_shape() -> GroundShape:
 	return GroundShape.segment(CAR_SHADOW_ALONG * 0.5 - radius, radius)
 
 ## Which way this car is travelling, on the ground plane — the axis its shadow's capsule sweeps
-## along. `_vertical` is the same flag `_frame()` reads to choose which standing view to draw.
+## along. `heading()` is already continuous — cardinal in a lane, the tangent of its own arc
+## mid-turn — so the capsule, and through `travel_axis()` below the debug view's own shadow layer,
+## rotates with the turn instead of snapping between two axes at the moment one starts or ends.
 func _travel_axis() -> Vector2:
-	return Vector2.DOWN if _vertical else Vector2.RIGHT
+	return heading()
 
 ## `_travel_axis()`, read by `DebugLayers` so its shadow layer rotates a car's capsule the same way
 ## `_draw_body()` already does, rather than a second guess at which axis this agent is travelling
