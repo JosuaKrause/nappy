@@ -110,7 +110,11 @@ A vague prompt returns work that cannot be merged. Every agent prompt contains, 
   motion — a turn, a gait, a wing beat, a shadow rotating — is a burst
   (`--press snapshot_burst <seconds>` on the same `shot.sh` call, see **verify** and
   **session-captures**), and an agent told to take a screenshot of motion will spend its budget
-  on stills that land beside the moment.
+  on stills that land beside the moment. **And say whether the capture may be invincible**:
+  `--invincible` keeps the day running while a rig waits for a junction, a chase or a crossing
+  to happen in front of it, where a rig left to itself dies to the meter or the clock before the
+  moment arrives; an agent not told about it will burn runs landing on the summary screen. Leave
+  it off only for a capture whose subject is a cost or a loss.
 - **Forks come back, never guessed.** If the design is ambiguous, or two recorded instructions
   conflict, the agent implements the unambiguous part and states the fork precisely in its report.
   Where the design is merely silent on a small detail, it chooses the smallest implementation
