@@ -73,6 +73,13 @@ enum Look {
 	CHECKPOINT_HUT,  ## The guard's hut at a region door, doorway facing the carriageway.
 	CHECKPOINT_GATE, ## The boom over the roadway between a door's two huts.
 	CHECKPOINT_POST, ## A single guard where a through-alley crosses a region boundary.
+	# ---- the finale ----
+	IMPACT_CRATER,   ## A hole in the road where an off-screen burst landed. Ground, not an object:
+	                 ## the only look in the catalogue drawn flat and centred rather than standing
+	                 ## on its own feet, and the only one with no shadow, because it *is* a shadow.
+	MASKED_PURSUER,  ## A masked man on foot, coming. The same two postures a roadblock's guards
+	                 ## take when they leave the post, on a body that was never a barrier.
+	STEAM,           ## A vent letting go. Nobody is in it and it is still somewhere to wait out.
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.

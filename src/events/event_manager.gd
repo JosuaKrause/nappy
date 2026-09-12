@@ -160,6 +160,34 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"))
 	stream_around(focus)
 
+## Clears whatever was here and takes the escape's whole plan as given.
+##
+## **Everything `start_day` works out, the finale has already decided**, which is the whole of why
+## this is a second entry point rather than a flag on that one. There is no route tree to grow and
+## no region plan to place against — the finale's route is an ordered chain and not a tree — no
+## closures, and no catalogue budget: `FinalePlanner` has already asked `SealPlanner` what closes
+## the city off the chains and `EventScheduler.build_finale` what stands on them, and what arrives
+## here is the result. Trying to express that as a mode inside `start_day` would mean skipping six
+## of its seven passes.
+##
+## The streaming, the successors, the scars, the detentions and the hard fails are all the day's
+## own and are untouched: an explosion leaves its crater through exactly the `spawns_on_finish`
+## mechanism a convoy leaves a barricade through.
+func start_finale(plans: Array[EventScheduler.Planned], focus := Vector2.ZERO) -> void:
+	clear()
+	_hard_failed = false
+	_day = GameState.day
+	# Nothing is held: a hold keeps the catalogue's own roll off ground something else has taken,
+	# and nothing rolls here. Cleared rather than left, so a rig that ran a day before the escape
+	# does not leave yesterday's holds on the map.
+	_map.clear_day_holds()
+	_plans = plans
+	# The director owes nothing — every finale placement is `MAP`-sited — but it is started anyway
+	# so that `owed_ahead()` and its own per-day state answer for this walk rather than for
+	# whatever ran before it.
+	_director.start_day(_day, _plans, GameState.day_rng(_day, "finale-ahead"))
+	stream_around(focus)
+
 func clear() -> void:
 	for instance in _instances:
 		instance.queue_free()
