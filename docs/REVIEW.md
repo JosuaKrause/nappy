@@ -69,8 +69,7 @@ one run can stand next to every item below for as long as looking takes.
   as facing the right way along its kerb? The police car is the one event vehicle that turns
   corners, so it shows the diagonal views: do its markings and light bar hold up from every
   side, and does it sit on its shadow at the diagonal? Record is `DECISIONS.md`, M108, the event
-  vehicles. The riot van's side view faces the wrong way, known and filed under M100 — do not
-  report it again.
+  vehicles.
 - **Look at the people and animals in events from more than one side** (any day). The dog
   walker and his dog, the pacing yeller and the chatting mother, the cat, the loose dog, the
   charging dog, the cyclist and each pigeon now face the way they actually move, through the
