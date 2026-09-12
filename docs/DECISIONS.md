@@ -43,6 +43,15 @@ The merged checkout passed import/boot, focused `blocks city_decay events routes
 stroller presentation_mode orientation interior`, and `visuals --svg`, plus doc lint and
 whitespace/conflict-marker checks. The full suite remains the PR's CI gate.
 
+A final clean merge takes queue-only main `b5649bf5416bd1c389668997221872d87cfc9718` into
+`41bb53c7caed22c21dd63833e196763718b9b34e`, with base
+`0225a242b421d9b47f60d3365b4cd9b9190a18d9`. Main revises the existing M110 crowd-obstacle,
+M98 return-pressure and M102 finale instructions; it introduces no independent numbered record.
+The merged queue preserves those instructions and the conversion's M109 remainder separately.
+Comparison with both parents confirms no runtime, asset or test change in this second merge;
+the preceding placement sweeps therefore verify the same executable tree. Import/boot, focused
+visuals in both modes, doc lint and conflict-marker checks are the final merge gate.
+
 ## M109 — Convert the SVG catalogue to PNG · litter and garbage materials, 2026-09-12
 
 The next increment of PLAYTEST-62's SVG-to-PNG continuation converts seven existing props:
