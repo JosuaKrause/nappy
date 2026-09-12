@@ -63,8 +63,12 @@ var _touch_layer: CanvasLayer
 var _summary: CanvasLayer
 var _pause: PauseScreen
 var _title: TitleScreen
-var _follow_camera: Camera2D
-var _follow_id := ""
+## Owns the `--follow` camera and the event id it tracks between frames — the one piece of
+## `DevRig` (`src/dev/dev_rig.gd`) that has to survive across calls, so it is the one piece kept
+## on an instance rather than called as a `static`. The `--spawn`/`--overview`/`--meters`/
+## `--day-length` lookups against the live city need no instance and are called on `DevRig`
+## itself.
+var _dev_rig := DevRig.new()
 ## Dev spawn and meter overrides apply to the opening day only; every later day starts on
 ## the doorstep with a fresh baby, like the game intends.
 var _first_day := true
@@ -178,8 +182,8 @@ func _ready() -> void:
 	_start_day()
 
 	if DevFlags.overview_requested():
-		_make_overview_camera()
-	_setup_follow_camera()
+		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
+	_dev_rig.setup_follow_camera(self)
 
 	var screenshot := AutoScreenshot.from_command_line()
 	if screenshot:
@@ -563,7 +567,7 @@ func _start_day() -> void:
 	# Before anything is placed, because placing it is what writes the day's `arc`, `roll` and
 	# `contact` entries and they belong under today's header rather than yesterday's.
 	Telemetry.begin_day(GameState.day, GameState.current_act(), GameState.run_seed,
-			_city.map.seed_used, _day_length())
+			_city.map.seed_used, DevRig.day_length(GameState.day))
 
 	# Events and the contact are placed before the player, so --spawn has something to find
 	# and so nothing spawns on top of her.
@@ -580,7 +584,7 @@ func _start_day() -> void:
 	var doorstep := _city.map.doorstep_world_position()
 	_city.events.start_day(GameState.day, GameState.day_rng(), GameState.consumed_one_shots,
 			doorstep)
-	var start_at := _spawn_position() if _first_day else doorstep
+	var start_at := DevRig.spawn_position(_city, _resistance) if _first_day else doorstep
 	_city.events.stream_around(start_at)
 	_city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"), start_at)
 	# The smallest wiring for the checkpoint gates: `City.region_plan()` is already valid by here
@@ -589,15 +593,15 @@ func _start_day() -> void:
 	_city.crowd.set_gates(_city.region_plan().gates)
 	_city.set_act(GameState.current_act())
 	_resistance.start_day(GameState.day, GameState.day_rng(GameState.day, "resistance"),
-			_day_length())
+			DevRig.day_length(GameState.day))
 	_player.reset_at(start_at)
 	_baby.reset()
-	_day.start(_day_length())
+	_day.start(DevRig.day_length(GameState.day))
 
 	# After the day is running, not before: the override can put the baby straight to
 	# sleep, and start() would have reset the phase that announcement just set.
 	if _first_day:
-		_apply_meter_override()
+		DevRig.apply_meter_override(_baby)
 	_first_day = false
 
 	print("[Main] day %d started in %d ms (act %d): %d events (%d live, %d ahead), %d crowd, %.0fs "
@@ -742,7 +746,7 @@ func _tree_is_paused() -> bool:
 	return loop is SceneTree and (loop as SceneTree).paused
 
 func _process(delta: float) -> void:
-	_update_follow_camera()
+	_dev_rig.update_follow_camera(_city)
 	# Re-asked every frame rather than only on `size_changed` — see `_apply_orientation()`'s own
 	# doc for why a signal alone can latch the wrong answer. The cost is one vector comparison.
 	# `get_window()` is null for the script-only instance `tests/test_main.gd` drives straight
@@ -858,257 +862,6 @@ func _somebody_is_playing() -> bool:
 		if rig in args:
 			return false
 	return true
-
-## Dev flag: `-- --follow <event id>` parks a camera on an event wherever it is. Needed for
-## anything that does not exist when the day starts — a mobile event mid-route, or the fire
-## a fire engine leaves behind when it stops.
-func _setup_follow_camera() -> void:
-	_follow_id = DevFlags.follow_target()
-	if _follow_id == "":
-		return
-	_follow_camera = Camera2D.new()
-	add_child(_follow_camera)
-	_follow_camera.make_current()
-
-func _update_follow_camera() -> void:
-	if not _follow_camera:
-		return
-	for instance in _city.events.instances():
-		if instance.def.id == _follow_id:
-			_follow_camera.position = instance.global_position
-			return
-
-## Dev flag: `-- --day-length N` compresses the day, so dusk and the timeout loss can be
-## looked at without sitting through the whole three minutes.
-func _day_length() -> float:
-	var override := DevFlags.day_length_override()
-	return override if override > 0.0 else Tuning.day_length(GameState.day)
-
-## Dev flag: `-- --spawn park|alley|square|arterial|closure|event` drops the player onto a
-## tile type or next to something live, so the WorldContext answers can be checked without
-## walking across the city to find one.
-func _spawn_position() -> Vector2:
-	var target := DevFlags.spawn_target()
-	if target == "":
-		return _city.map.doorstep_world_position()
-
-	# `event` takes the first non-ambient event; `event:<id>` targets a specific one.
-	if target.begins_with("event"):
-		return _first_event_position(target.get_slice(":", 1))
-	# The busiest pavement in the city, for looking at the crowd's noise floor without
-	# walking there. The arterial is where the floor is highest, so it is where the
-	# question "can a day be won on an ordinary street" is actually answered.
-	if target == "arterial":
-		return _nearest_walkable(CrowdLanes.arterial_pavement(_city.map))
-	# A closed street, from the junction outside its barrier — the place the closure is
-	# supposed to be readable from, which is the thing worth looking at.
-	# `closure:<n>` picks one of the day's closures, since only one of them is a street
-	# running the way you wanted to look at.
-	if target.begins_with("closure"):
-		var closures := _city.closures()
-		if closures.is_empty():
-			push_warning("no streets are closed on day %d" % GameState.day)
-			return _city.map.home_world_position()
-		var which := clampi(int(target.get_slice(":", 1)), 0, closures.size() - 1)
-		var mouth: Vector2 = closures[which].mouth_centres(_city.map)[0]
-		var junction := closures[which].cause_centre(_city.map)
-		return _nearest_walkable(mouth + (mouth - junction).normalized() * 64.0)
-	# The north-west corner of a multi-block calm zone, a couple of tiles outside it, which puts
-	# both of the things a zone has to get right in one frame: the T-junction where the absorbed
-	# street stops, and the calm behind it.
-	#
-	# `zone:<n>` picks which one, the way `closure:<n>` does, and it is not a convenience. A zone
-	# has a **shape** and the square is always placed first, so `keys()[0]` is always the square
-	# and no other shape can be looked at without the index.
-	if target.begins_with("zone"):
-		if _city.map.zone_rects.is_empty():
-			push_warning("this city has no multi-block calm zone")
-			return _city.map.home_world_position()
-		var keys := _city.map.zone_rects.keys()
-		var which := clampi(int(target.get_slice(":", 1)), 0, keys.size() - 1)
-		var anchor: Vector2i = keys[which]
-		var corner := CityMap.blocks_tile_rect(_city.map.zone_rects[anchor]).position
-		return _nearest_walkable(_city.map.tile_to_world(corner - Vector2i.ONE * 2))
-	# A big building, stood on the street running along the joined side of it, level with the
-	# street it was built over. The whole claim of a landmark is that it reads as **one mass**
-	# rather than as two blocks with the road missing between them, and this flag is the only way
-	# to point a camera at one.
-	if target == "landmark":
-		if _city.map.big_buildings.is_empty():
-			push_warning("this city has no big building")
-			return _city.map.home_world_position()
-		var pair: Rect2i = _city.map.big_buildings[0]
-		var mass := CityMap.blocks_tile_rect(pair)
-		# Off the **long** side, which is the one the joined seam runs the width of: a mass two
-		# blocks wide is looked at from the north, a mass two blocks deep from the west. Two tiles
-		# out and not three, because a corridor is `sidewalk | road | sidewalk` and three tiles off
-		# a frontage is the carriageway — `_nearest_walkable` will happily leave her standing on it,
-		# and a shot taken from there is a shot of the day ending.
-		# And a little off the middle of that side, because the middle of the mass is where the
-		# built-over street was, so the tile facing it across the corridor is a junction — which is
-		# somewhere a camera may stand and a pram should not.
-		var beside := Vector2i(mass.get_center().x - Tuning.STREET_WIDTH, mass.position.y - 2) \
-				if pair.size.x == 2 \
-				else Vector2i(mass.position.x - 2, mass.get_center().y - Tuning.STREET_WIDTH)
-		return _nearest_walkable(_city.map.tile_to_world(beside))
-	# A signalled junction on the spine, stood a little back down the side street, so that the
-	# main road, its lights and one of its zebras are all in the same frame. The lights
-	# are the only cue in the game whose whole content is *when*, so they cannot be judged from a
-	# still of one — take several seconds apart, or use `--walk` and watch the cycle.
-	if target == "signal":
-		var spine := _city.map.main_road
-		var down := clampi(Tuning.CITY_BLOCKS.y / 2, 1, Tuning.CITY_BLOCKS.y - 1)
-		# On the side street's own pavement, a couple of tiles east of the junction: the block
-		# east of corridor `spine` is block `spine`, and offset 1 of a corridor is footway.
-		var corner := Vector2i(CityMap.block_rect(Vector2i(spine, 0)).position.x + 2,
-				down * CityMap.period() + 1)
-		return _nearest_walkable(_city.map.tile_to_world(corner))
-	# The mouth of the tunnel the main road leaves by, from a few tiles down the spine. `edge:s`
-	# is the bridge at the other end and `edge:e` / `edge:w` the road simply running out.
-	if target.begins_with("edge"):
-		var side := target.get_slice(":", 1)
-		var spine_x := _city.map.main_road * CityMap.period() + Tuning.STREET_WIDTH / 2
-		var spine_y := CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.y) * CityMap.period() \
-				+ Tuning.STREET_WIDTH / 2
-		# Beside the carriageway, not on it: the exits are lethal, which is the point of them.
-		var at := Vector2i(spine_x - 2, 1)
-		match side:
-			"s": at = Vector2i(spine_x - 2, _city.map.size.y - 2)
-			"e": at = Vector2i(_city.map.size.x - 2, spine_y - 2)
-			"w": at = Vector2i(1, spine_y - 2)
-		return _nearest_walkable(_city.map.tile_to_world(at))
-	# The middle of a pedestrianised street, which is the other end of the same trade: paving
-	# frontage to frontage, no kerb, no asphalt and nothing on it that can kill you.
-	if target == "precinct":
-		if _city.map.precinct_spans.is_empty():
-			push_warning("this city has no precinct")
-			return _city.map.home_world_position()
-		var span: Vector4i = _city.map.precinct_spans[0]
-		var across := span.y * CityMap.period() + Tuning.STREET_WIDTH / 2
-		var along := (span.z + span.w) / 2 * CityMap.period() + Tuning.STREET_WIDTH
-		return _nearest_walkable(_city.map.tile_to_world(
-				Vector2i(across, along) if span.x == 1 else Vector2i(along, across)))
-	# A corner of the map, stood a couple of tiles inside it, so that two of the border's four
-	# bands and the join between them are in the same frame — the seam is where the mountain and
-	# the sea have to go on being themselves rather than turning diagonal. `corner:nw` is the
-	# default and `ne`, `sw`, `se` are the other three.
-	#
-	# It exists for the same reason `landmark` does: it is the only way to point a camera at the
-	# place where two bands meet, and nothing in the suite looks there.
-	if target.begins_with("corner"):
-		var which := target.get_slice(":", 1)
-		# The outermost pavement and not the outermost tile: the corridor is `sidewalk | road |
-		# sidewalk`, so anything past `SIDEWALK_WIDTH` is the carriageway of the boundary street
-		# and `_nearest_walkable` will happily leave her standing on it — a shot taken from there
-		# is a shot of the day ending, which is the trap the `landmark` target has too.
-		var near := Tuning.SIDEWALK_WIDTH - 1
-		var far := _city.map.size - Vector2i.ONE * Tuning.SIDEWALK_WIDTH
-		var at := Vector2i(near, near)
-		match which:
-			"ne": at = Vector2i(far.x, near)
-			"sw": at = Vector2i(near, far.y)
-			"se": at = far
-		return _nearest_walkable(_city.map.tile_to_world(at))
-	if target == "contact":
-		# A pickup's mark may not stay where this puts the camera: if she then walks away from
-		# it without it ever being seen, the re-placement rule in `ResistanceDirector` moves it
-		# to the next alley she comes near. Reading `contact_position()` again after the spawn
-		# answers wherever it currently is, not wherever this call found it.
-		var contact := _resistance.contact_position()
-		if contact == Vector2.INF:
-			push_warning("no resistance contact on day %d" % GameState.day)
-			return _city.map.home_world_position()
-		# Off to one side, so the chalk mark is not hidden under the pram.
-		return contact + Vector2(70.0, 30.0)
-
-	var wanted: int = {
-		"park": GameEnums.TileType.PARK,
-		"alley": GameEnums.TileType.ALLEY,
-		"square": GameEnums.TileType.SQUARE,
-		"playground": GameEnums.TileType.PLAYGROUND,
-	}.get(target, -1)
-	if wanted == -1:
-		push_warning("unknown --spawn target '%s'" % target)
-		return _city.map.home_world_position()
-
-	for y in _city.map.size.y:
-		for x in _city.map.size.x:
-			if _city.map.tile_at(Vector2i(x, y)) == wanted:
-				return _city.map.tile_to_world(Vector2i(x, y))
-	push_warning("no %s tile in this city" % target)
-	return _city.map.home_world_position()
-
-## Just outside a planned event, on the nearest walkable tile — an offset straight down its
-## radius lands inside a block as often as not.
-##
-## Reads the day's *plan* rather than what is live: nothing is live until the player is near it,
-## so the whole point of this flag is to go and stand where one is going to be.
-func _first_event_position(wanted_id: String = "") -> Vector2:
-	for plan in _city.events.plans():
-		if not plan.is_placed():
-			continue
-		if wanted_id != "" and wanted_id != "event":
-			if plan.def.id != wanted_id:
-				continue
-		elif plan.def.kind == GameEnums.EventKind.AMBIENT:
-			continue
-		var offset := _pavement_offset(_city.map, plan.position, plan.def.outer_radius)
-		return _nearest_walkable(plan.position + offset)
-	push_warning("no non-ambient events planned today")
-	return _city.map.home_world_position()
-
-## The step from a found event's position to somewhere just off it, **across the street it stands
-## on** rather than along local Y unconditionally. A fixed `Vector2(0.0, radius * 0.6)` is a step
-## along the street's own length on a north-south street — which never leaves the carriageway a
-## north-south corridor's width is measured across (`CityMap.corridor_offset(tile.x)`) — and only
-## happens to clear the road on an east-west one, whose width runs the other way. `_spread_is_vertical`
-## is the one place that already answers which axis a street's *width* is on — it is the same
-## question `EventInstance._spread_at()` asks to lay an obstruction across the carriageway it blocks
-## — so reusing it here is the same answer applied to the opposite side of the same obstruction,
-## rather than a second guess about the street's orientation.
-static func _pavement_offset(map: CityMap, at: Vector2, radius: float) -> Vector2:
-	var vertical := EventInstance._spread_is_vertical(map, at)
-	return Vector2(0.0, radius * 0.6) if vertical else Vector2(radius * 0.6, 0.0)
-
-func _nearest_walkable(near: Vector2) -> Vector2:
-	var start := _city.map.world_to_tile(near)
-	for radius in 12:
-		for dy in range(-radius, radius + 1):
-			for dx in range(-radius, radius + 1):
-				var tile := start + Vector2i(dx, dy)
-				if _city.map.is_walkable(tile):
-					return _city.map.tile_to_world(tile)
-	return _city.map.home_world_position()
-
-## Dev flag: `-- --overview` frames the whole city at once, so a generation bug that only
-## shows up at map scale (a walled-off quarter, parks bunched together) is visible.
-func _make_overview_camera() -> void:
-	var camera := Camera2D.new()
-	# The frontages outside the map are in frame too: the ring is what makes the boundary a
-	# street with two sides, and an overview that framed the walkable tiles alone would be a
-	# picture of a grid stopping at a wall rather than of a city.
-	var bounds := _city.camera_bounds()
-	var viewport := get_viewport_rect().size
-	camera.position = bounds.get_center()
-	camera.zoom = Vector2.ONE * minf(viewport.x / bounds.size.x, viewport.y / bounds.size.y)
-	add_child(camera)
-	camera.make_current()
-
-## Dev flag: `-- --meters <sleepiness> <excitement>` seeds the bars, so a UI state can be
-## screenshotted without having to play all the way to it. Applied before the HUD is
-## created, which reads the starting values.
-func _apply_meter_override() -> void:
-	if not _baby:
-		return
-	var override := DevFlags.meters_override()
-	if override.x < 0.0:
-		return
-	_baby.sleepiness = override.x
-	_baby.excitement = override.y
-	# A full meter means "show me the walk home". Left to settle on its own it never would:
-	# a stationary player drains sleepiness faster than the state check can fire.
-	if _baby.sleepiness >= Tuning.METER_MAX:
-		_baby.force_sleep()
 
 ## `Esc` opens the pause. Quitting is a key one step further in: the pause screen owns `Q`.
 ##
