@@ -35,6 +35,9 @@ func run(t) -> void:
 	_test_every_routed_event_is_a_straight_line(t)
 	_test_the_map_picture_reads_the_map_and_nothing_else(t)
 	_test_a_picture_asked_for_by_hand_is_never_capped(t)
+	_test_the_real_time_stem_is_readable_and_sortable_by_time_of_day(t)
+	_test_the_unique_path_guard_appends_a_serial_rather_than_overwriting(t)
+	_test_a_day_clock_held_at_zero_still_writes_two_distinct_files(t)
 	_test_the_trail_is_sampled_by_distance_not_by_frame(t)
 	_test_the_trail_carries_whether_she_was_running(t)
 	_test_a_lost_day_restarts_the_trail(t)
@@ -976,6 +979,64 @@ func _test_a_picture_asked_for_by_hand_is_never_capped(t) -> void:
 	Telemetry.end_run()
 	t.check(not Telemetry.is_active(), "and the suite is left dormant again")
 
+## *(2026-09-11, playtest 56: "phot capture must use real time not game time otherwise at the
+## end of the day all pictures get overwritten".)* `<HHMMSS>-<mmm><attempt suffix>-<kind>.png` —
+## hour, minute, second and millisecond of the moment the picture was taken, so a directory
+## listing already sorts by time of day and two pictures can only reuse a name if they land in
+## the same millisecond.
+func _test_the_real_time_stem_is_readable_and_sortable_by_time_of_day(t) -> void:
+	var stem := Telemetry._real_time_stem("lost_crying", "-attempt1")
+	var shape := RegEx.new()
+	shape.compile("^\\d{6}-\\d{3}-attempt1-lost_crying$")
+	t.check(shape.search(stem) != null,
+			"HHMMSS-mmm-attempt<N>-<kind> (got '%s')" % stem)
+
+## The guard `_real_time_stem()` alone cannot give: two calls in the same millisecond ask for the
+## same name, so `_unique_path()` appends a growing serial rather than handing the same path back
+## to overwrite whatever the first call already wrote.
+func _test_the_unique_path_guard_appends_a_serial_rather_than_overwriting(t) -> void:
+	var dir := _temporary_directory("unique-path")
+	var stem := "143022-057-attempt1-asked"
+	var first := Telemetry._unique_path(dir, stem)
+	t.check(first == "%s/%s.png" % [dir, stem],
+			"the first picture with a stem keeps the plain name (got '%s')" % first)
+	_touch(first)
+	var second := Telemetry._unique_path(dir, stem)
+	t.check(second == "%s/%s-2.png" % [dir, stem],
+			"a name already on disk gets a serial instead of being handed back again (got '%s')"
+			% second)
+	_touch(second)
+	var third := Telemetry._unique_path(dir, stem)
+	t.check(third == "%s/%s-3.png" % [dir, stem],
+			"a second collision grows the serial again rather than reusing -2 (got '%s')" % third)
+	_delete_recursive(dir)
+
+## `--invincible` clamps the countdown to exactly zero once a day runs out rather than ending it
+## (`DayController._process()`), which holds the elapsed day clock this file reads at the day's
+## own length for as long as the day keeps running afterward — so under the old `%03.0fs`-named
+## scheme, every picture taken past dusk that day asked for the exact same file and each one
+## silently overwrote the last. The collision only depends on the day clock repeating some value,
+## not on which value that is, so it is simulated more simply here by pinning `_clock` at zero
+## across two calls to the same helper `snapshot()`/`snapshot_now()` both name through, and
+## writing what the first `_capture()` would have written to disk in between so the second call's
+## guard has something to collide with.
+func _test_a_day_clock_held_at_zero_still_writes_two_distinct_files(t) -> void:
+	Telemetry.begin_memory_log()
+	Telemetry.begin_day(1, 1, 1, 1, 180.0)
+	Telemetry.set_clock(0.0)
+	var dir := _temporary_directory("invincible")
+	var first := Telemetry._real_time_path(dir, "asked")
+	_touch(first)
+	var second := Telemetry._real_time_path(dir, "asked")
+	t.check(Telemetry.clock() == 0.0,
+			"the day clock genuinely never moved between the two — the same way --invincible " +
+			"holds it at the day's length once the countdown clamps at zero")
+	t.check(first != second,
+			"two pictures asked for at the same held day clock still name two distinct files " +
+			"(got '%s' and '%s')" % [first, second])
+	Telemetry.end_run()
+	_delete_recursive(dir)
+
 # ---------------------------------------------------------------- one folder ---
 # *(docs/DECISIONS.md, M70 "A run is a folder": the run identity moved from
 # a shared filename stem to a folder, `<day>/<run>/`, and a day played twice — a nerve
@@ -999,6 +1060,23 @@ func _delete_recursive(path: String) -> void:
 		var above := DirAccess.open(ancestor)
 		if above and above.get_files().is_empty() and above.get_directories().is_empty():
 			DirAccess.remove_absolute(ancestor)
+
+## A scratch folder under `user://` for a test that has to ask the real filesystem a question
+## `begin_memory_log()` cannot — the same shape `tests/test_burst_capture.gd`'s own
+## `_temporary_directory()` uses, so a second suite touching real files does not invent a second
+## way to name one.
+func _temporary_directory(name: String) -> String:
+	var path := ProjectSettings.globalize_path(
+			"user://telemetry-test-%s-%d" % [name, Time.get_ticks_usec()])
+	DirAccess.make_dir_recursive_absolute(path)
+	return path
+
+## Stands in for the PNG `_capture()` would have written at `path`, so `_unique_path()` has a real
+## file on disk to collide with.
+func _touch(path: String) -> void:
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file:
+		file.close()
 
 ## The only way to check a folder actually landed where `begin_run()` says it does is to open a
 ## real run — `begin_memory_log()` has no path to inspect. `false` (a rig) because this is a
