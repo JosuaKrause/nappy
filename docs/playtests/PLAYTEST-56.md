@@ -95,3 +95,16 @@ which nothing ends the day lets one sitting walk past every item and stand next 
 for as long as looking takes. Filed under M100, small, real and nobody's, as a debug flag on the
 same terms as the rest of the developer furniture: never in a release build, marked on screen and
 in the run log so no capture from it can be mistaken for a real run.
+
+## A screenshot is named by the clock on the wall, not the clock in the game
+
+Playing invincible, where the day's clock holds at zero, every `P` screenshot landed on the same
+file:
+
+> phot capture must use real time not game time otherwise at the end of the day all pictures get
+> overwritten
+
+`Telemetry.snapshot_now()` and `snapshot()` name a picture `%03.0fs<attempt>-<kind>.png` from the
+day's own clock, so two pictures in the same second of the day overwrite each other, and a day
+whose clock no longer moves overwrites everything. A burst already names itself from a
+microsecond tick. Filed under M100 as a defect; the fix names every picture by real time.
