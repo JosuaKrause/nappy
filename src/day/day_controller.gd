@@ -47,12 +47,24 @@ func _process(delta: float) -> void:
 	if not is_running():
 		return
 
-	time_remaining -= delta
+	# **`--invincible` stands the clock still, never only lets it run past dusk.** *(2026-09-11,
+	# overturning the flag's own first build the same evening: "when invincible the timer should
+	# never go down ... this is just noisy flashing of alarms and the day gets dark.")* Skipping
+	# the countdown outright, rather than decrementing and clamping the result at zero, is what
+	# keeps `fraction_remaining()` at wherever the day started — the earlier build let the light
+	# run itself down to dusk and then held the number, which is the "day gets dark" the player
+	# was overturning. `DevFlags.invincible()` is asked directly rather than through
+	# `_ignores_loss()`, which answers a different question (does a *result* end the day) that a
+	# clock which never reaches zero never gets to ask.
+	if not DevFlags.invincible():
+		time_remaining -= delta
 	EventBus.day_time_changed.emit(maxf(time_remaining, 0.0), time_total)
 	if time_remaining <= 0.0:
 		if _ignores_loss(GameEnums.DayResult.LOST_TIMEOUT):
 			# Holds at zero rather than running arbitrarily negative, so the clock reads 0:00
-			# instead of counting a day nothing is measuring any more.
+			# instead of counting a day nothing is measuring any more. Unreachable in the
+			# ordinary invincible run now that the countdown never moves, since it never reaches
+			# zero to begin with; kept for a day started with no time left at all.
 			time_remaining = 0.0
 		else:
 			failure_reason = "Dusk. You are still out."
