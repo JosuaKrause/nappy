@@ -125,6 +125,15 @@ and the runtime TileSet mapping. Include repeated runs, both sidewalk lanes, bot
 junction corners. Short isolated neighbor strips do not expose all repeated joints or corner
 transitions. Keep diagnostic labels and grid overlays separate from the clean assembled artwork.
 
+Ground variants share their base material. Build sidewalk variants from one paving texture and
+road variants from one asphalt texture; use transparent layers for curbstones, red main-street
+edges, yellow lines, crosswalks and damage. Remove the ground background from detail artwork
+before alpha compositing it over the actual base. Preserve the layer inputs and composition
+recipe, including SVG sources for the components. Pixels outside the overlay remain identical
+to the base. Inspect repeated bases in both axes for lighting gradients and brightness jumps;
+a shared texture still needs to tile cleanly. Precomposed runtime tiles may retain the existing
+TileSet bindings while their editable components stay separate.
+
 Resolve textures only. Keep original scale, offsets, animation, mirroring, sorting, shadows,
 camera and gameplay behavior. Missing or differently sized replacements fall back to the SVG;
 do not hide an unfinished family with unrelated generated art.

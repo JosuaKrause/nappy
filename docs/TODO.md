@@ -121,7 +121,11 @@ findings supported by the conversion and review.
       blended during assembly. Remove backgrounds from cracks and other damage and composite them
       over the actual sidewalk, road or alley base. Road variants likewise share one asphalt base,
       with yellow lines and crosswalk stripes applied as transparent marking layers. Keep the
-      floor identical outside each overlay;
+      asphalt free of the main-road gradient that produces brightness jumps between repeats.
+      Build it from the current road texture at 0°, 90°, 180°, and 270°, blended with equal 25%
+      contributions as specified in PLAYTEST-65, preserving the original input and exact recipe.
+      Compare wrapped half-tile offsets as the player's alternative and retain the smoother repeat.
+      Check both repeat axes and keep the floor identical outside each overlay;
       preserve native tile geometry, curb detail, markings, selection and current mother graphics.
       Store component SVGs before their PNG derivatives, frozen input artwork and reproducible
       assembly scripts. Review repeated runs and corners using the

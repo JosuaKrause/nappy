@@ -179,3 +179,20 @@ layouts. The accepted mother graphics remain unchanged.
 Use one asphalt base for road variants and separate transparent yellow-line and crosswalk
 marking layers. Normal and main-road variants keep their functional marking geometry while
 sharing the underlying asphalt texture.
+
+> the main road's ground texture has a gradient that shows up as brightness skip between tiles
+
+The shared asphalt base must repeat without directional brightness gradients or visible jumps
+at tile boundaries. Check repeated road interiors along both axes, including the main road.
+
+> take the current road texture, rotate it four times and blend all of the 4 versions with 25% transparency over each other. that should get rid of jumps at the edges
+
+Build the shared asphalt base from the current road texture at 0°, 90°, 180°, and 270°, with
+equal 25% contributions. Preserve the source texture and exact blending recipe. Check repeated
+output in both axes before composing the markings and damage.
+
+> or offset the blends relative to each other
+
+Relative offsets are also an allowed blending approach. Compare the equal-weight rotational
+blend with a wrapped half-tile-offset blend in repeated patches and retain the smoother result
+with both recipes recorded.
