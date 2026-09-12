@@ -134,6 +134,18 @@ whose `obstructs_radius` is nonzero, or whose `outer_radius` reaches `Tuning.min
 wide would already be on her the moment it appeared, which is the one thing "she gets close and it
 arrives" cannot mean.
 
+**A `TOWARD_PLAYER` row whose `placement` names `ROAD` runs down the carriageway instead of her
+pavement.** `police_patrol` is the one row that does: `EventDirector.owe_the_return()` hands the
+return leg a few extra copies of it in acts III and IV, sited `TOWARD_PLAYER` by
+`_toward_her_on_the_road()` rather than `_toward_her()` — the same offscreen margin and the same
+"straighten onto the corridor's own axis" idea, but the lane it straightens onto is
+`CrowdLanes.road_lane()`'s own carriageway lane, driving opposite her heading so it meets her, on
+tiles `CityMap.is_driveable_at()` actually calls a road. Empty wherever there is no carriageway to
+drive on — a park, a square, a precinct — the same "retry later" the rest of the director's siting
+already does. The copy this hands out is its own duplicate, never the shared, cached row every
+ordinary `MAP` placement of `police_patrol` reads (`EventCatalogue.heated()`): only its `spawn_mode`
+differs, so the row's cost and picture are exactly the ones the day's own plan already uses.
+
 ### The return owes her patrols
 
 **The streets that go quiet from act III on get something back, on the walk home.** The crowd

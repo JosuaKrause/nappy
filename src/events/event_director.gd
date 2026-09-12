@@ -214,9 +214,18 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 	# a placement that fails must not spend the event.
 	var next := _owed[0] as EventDef
 	var heading := velocity / speed
-	var path := _toward_her(at, heading, next) \
-			if next.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER \
-			else _crossing_ahead_of(at, heading, next)
+	# A `TOWARD_PLAYER` row whose `placement` names `ROAD` is a car, not a bike — `police_patrol`
+	# is the one row `owe_the_return()` ever adds this way — and a car belongs on the carriageway
+	# lane that drives toward her rather than on her own pavement. `_toward_her()` is still what
+	# every `TOWARD_PLAYER` row on foot (`cyclist`, `loose_dog`) gets; only the road-placed ones
+	# take the road-aware sibling.
+	var path: PackedVector2Array
+	if next.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER:
+		path = _toward_her_on_the_road(at, heading, next) \
+				if next.placement.has(GameEnums.TileType.ROAD) \
+				else _toward_her(at, heading, next)
+	else:
+		path = _crossing_ahead_of(at, heading, next)
 	if path.is_empty():
 		# Nowhere to put it — she is in the middle of a park, or against the map edge. Try
 		# again shortly rather than burning the allowance on a place that would not read.
@@ -363,6 +372,63 @@ func _toward_her(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2A
 		return PackedVector2Array()
 	var behind := at - site_heading * lead
 	if not _map.in_bounds(_map.world_to_tile(behind)):
+		return PackedVector2Array()
+	return PackedVector2Array([far, behind])
+
+## The road-aware sibling of `_toward_her()`, for a `TOWARD_PLAYER` row whose `placement` names
+## `ROAD` — `owe_the_return()`'s own `police_patrol` copies, a car rather than a bike.
+## `_toward_her()` straightens the line onto *her* pavement; a car has no business on a pavement
+## at all, so this runs it down the **carriageway lane that drives toward her** instead, using
+## `CrowdLanes` for the lane geometry the same way `Crowd` sites one.
+##
+## Built the same way `_onto_her_side()` reads a corridor's own axis, then handed to
+## `CrowdLanes`: `pavement_inward()` says which axis the corridor she is beside runs on and which
+## way is into it, `corridor_at()` says which corridor that is, and `road_lane()` picks the lane
+## that legally runs the direction the car is coming from — **opposite her own heading**, since it
+## is meeting her rather than following her.
+##
+## Empty wherever there is nothing to run a car down: she is not beside a plain sidewalk edge at
+## all (`pavement_inward()` answers `Vector2i.ZERO` for a park, a square, a junction, or the
+## carriageway itself), her heading has no along-corridor component to pick a direction from, or
+## the corridor there has no carriageway to drive on — a precinct is paved kerb to kerb, so its
+## "road" tiles fail `is_driveable_at()` and this returns empty exactly where the brief asks it
+## to: a park, a square, a precinct.
+##
+## **No `hard_fail` branch.** `_toward_her()` sites a lethal row further out so its telegraph
+## outlasts the approach; `police_patrol` never gains `hard_fail` at any heat (`EventDef.at_heat()`
+## states it explicitly for the `PRESSES` rung), so the ordinary `Tuning.offscreen_lead()` margin
+## is all this owes today. A future lethal road row would need the same
+## `Tuning.outlasting_telegraph_lead()` branch `_toward_her()` carries.
+func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2Array:
+	var inward := _map.pavement_inward(_map.world_to_tile(at))
+	if inward == Vector2i.ZERO:
+		return PackedVector2Array()
+	var vertical := inward.x != 0
+	var along := Vector2(inward.y, inward.x)
+	var component := heading.dot(along)
+	if is_zero_approx(component):
+		return PackedVector2Array()
+	var site_heading := along * signf(component)
+	var index := CrowdLanes.corridor_at(at.x if vertical else at.y)
+	if index < 0:
+		return PackedVector2Array()
+	# The car drives opposite her own along-corridor heading — coming down the street as she
+	# walks up it — so its lane is the one `CrowdLanes.road_direction()` says legally runs that
+	# way, not merely a point somewhere in the road band.
+	var direction := -(site_heading.y if vertical else site_heading.x)
+	var lane_coordinate := CrowdLanes.lane_centre(index, CrowdLanes.road_lane(vertical, direction))
+	var closing := def.speed + Tuning.WALK_SPEED
+	var lead := Tuning.offscreen_lead(site_heading, closing, def.offscreen_notice)
+	var far := at + site_heading * lead
+	var behind := at - site_heading * lead
+	if vertical:
+		far.x = lane_coordinate
+		behind.x = lane_coordinate
+	else:
+		far.y = lane_coordinate
+		behind.y = lane_coordinate
+	if not _map.is_driveable_at(vertical, _map.world_to_tile(far)) \
+			or not _map.is_driveable_at(vertical, _map.world_to_tile(behind)):
 		return PackedVector2Array()
 	return PackedVector2Array([far, behind])
 
