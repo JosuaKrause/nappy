@@ -84,7 +84,9 @@ build could not decide alone.
 
 Follows M108, eight-direction entity graphics. Use the approved SVG-first workflow in
 [VISUALS.md](VISUALS.md) and the illustrated-png skill. The supplied diagonal urban and cardinal
-gameplay references define style only; each SVG defines content, geometry and placement.
+gameplay references define the comic drawing style; each SVG defines the subject and functional
+placement. PLAYTEST-64 requires transferring the idea, with redrawn forms and expressive ink
+and shadow shapes, rather than copying the primitive drawing and adding surface texture.
 **Every PNG asset must have a corresponding SVG asset, authored and reviewed first.** This is
 a permanent authoring requirement, not only a conversion step. Audit existing PNG-only assets
 and author their source SVG before generating a replacement; never backfill an SVG from a PNG
@@ -109,13 +111,15 @@ findings supported by the conversion and review.
 - [ ] Transfer the remaining entity SVGs and every directional/animation/state layer. The player
       rig's generation records are in `DECISIONS.md` under Eight-direction style transfer and
       M109, the carrying mother as one family. Preserve native
-      canvases and exact SVG alpha, and keep tintable body/trim separation and authored identities.
+      canvases and functional anchors, and keep tintable body/trim separation and authored identities.
+      Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
-- [ ] Transfer terrain, building tiles, props, closures, checkpoint structures and whole-street
+- [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The
       garbage/litter generation record is in `DECISIONS.md` under M109, litter and garbage materials.
+      The outdoor ground family record is under M109, outdoor tile materials.
 - [ ] Convert UI, cue and identity SVGs while preserving their symbols, text, legibility and
       exact geometry. Keep code-drawn graphics and shader behavior under their current owners.
 - [ ] Audit all loading paths: shared drawing helpers, direct textures, TileSets, scenes/resources,

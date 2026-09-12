@@ -1,0 +1,2193 @@
+{
+  "sheets": [
+    "tiles-sheet-01",
+    "tiles-sheet-02",
+    "tiles-sheet-03",
+    "tiles-sheet-04"
+  ],
+  "tiles": [
+    {
+      "name": "road_line_e",
+      "svg": "assets/tiles/road_line_e.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/road_line_e.png",
+      "svg_sha256": "55d7f89b18de0085666469186f00fe868d2bc982a98b9bb477719518212174d4",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-01",
+      "cell": [
+        0,
+        0
+      ],
+      "normalized_cell": [
+        0.0,
+        0.0,
+        0.25,
+        0.25
+      ],
+      "cell_pixels_at_8x": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-01.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "road_line_n",
+      "svg": "assets/tiles/road_line_n.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/road_line_n.png",
+      "svg_sha256": "c095c78baf00e53137a1f2d18855e6190c626556264d6557cbd0bf4e625e5179",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-01",
+      "cell": [
+        1,
+        0
+      ],
+      "normalized_cell": [
+        0.25,
+        0.0,
+        0.5,
+        0.25
+      ],
+      "cell_pixels_at_8x": [
+        256,
+        0,
+        512,
+        256
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-01.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "road_line_s",
+      "svg": "assets/tiles/road_line_s.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/road_line_s.png",
+      "svg_sha256": "f847d38160565298ca1990b763bad0f31fbf9bb5300a2c21c99597b23bd2b9ee",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-01",
+      "cell": [
+        2,
+        0
+      ],
+      "normalized_cell": [
+        0.5,
+        0.0,
+        0.75,
+        0.25
+      ],
+      "cell_pixels_at_8x": [
+        512,
+        0,
+        768,
+        256
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-01.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "road_line_w",
+      "svg": "assets/tiles/road_line_w.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/road_line_w.png",
+      "svg_sha256": "f1b23028c298f6ec7f2d2b8608280409907c450925fb9992d1f7336aa7825885",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-01",
+      "cell": [
+        3,
+        0
+      ],
+      "normalized_cell": [
+        0.75,
+        0.0,
+        1.0,
+        0.25
+      ],
+      "cell_pixels_at_8x": [
+        768,
+        0,
+        1024,
+        256
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-01.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "road_main_line_e",
+      "svg": "assets/tiles/road_main_line_e.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/road_main_line_e.png",
+      "svg_sha256": "8e4a4ab27550eb512cc38e6b55021ec413e8b74b8db20924c6369f08fb60b793",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-01",
+      "cell": [
+        0,
+        1
+      ],
+      "normalized_cell": [
+        0.0,
+        0.25,
+        0.25,
+        0.5
+      ],
+      "cell_pixels_at_8x": [
+        0,
+        256,
+        256,
+        512
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-01.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "road_main_line_n",
+      "svg": "assets/tiles/road_main_line_n.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/road_main_line_n.png",
+      "svg_sha256": "f2342f94d2e5769bd4a175731356ad80e639ced6b24d1c5a4ff91911df8372d1",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-01",
+      "cell": [
+        1,
+        1
+      ],
+      "normalized_cell": [
+        0.25,
+        0.25,
+        0.5,
+        0.5
+      ],
+      "cell_pixels_at_8x": [
+        256,
+        256,
+        512,
+        512
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-01.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "road_main_line_s",
+      "svg": "assets/tiles/road_main_line_s.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/road_main_line_s.png",
+      "svg_sha256": "5524996cdd47705855169de0e714c8b8ceae52a58211ff48b729639961ec9665",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-01",
+      "cell": [
+        2,
+        1
+      ],
+      "normalized_cell": [
+        0.5,
+        0.25,
+        0.75,
+        0.5
+      ],
+      "cell_pixels_at_8x": [
+        512,
+        256,
+        768,
+        512
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-01.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "road_main_line_w",
+      "svg": "assets/tiles/road_main_line_w.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/road_main_line_w.png",
+      "svg_sha256": "2f6a2206b8d50eef5daea840759475ae5e6faf6193fd76955f2fae4ab129b50b",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-01",
+      "cell": [
+        3,
+        1
+      ],
+      "normalized_cell": [
+        0.75,
+        0.25,
+        1.0,
+        0.5
+      ],
+      "cell_pixels_at_8x": [
+        768,
+        256,
+        1024,
+        512
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-01.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "crossing_h",
+      "svg": "assets/tiles/crossing_h.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/crossing_h.png",
+      "svg_sha256": "4ae0bfd3203e1c8bb21c380ae36cc398f7e3cb71190ae31eb3eb1baf7863c817",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-01",
+      "cell": [
+        0,
+        2
+      ],
+      "normalized_cell": [
+        0.0,
+        0.5,
+        0.25,
+        0.75
+      ],
+      "cell_pixels_at_8x": [
+        0,
+        512,
+        256,
+        768
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-01.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "crossing_v",
+      "svg": "assets/tiles/crossing_v.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/crossing_v.png",
+      "svg_sha256": "e462333394d43f95d9e376c0934c17ca55058d59b6b7870ad59b765a88e13f7d",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-01",
+      "cell": [
+        1,
+        2
+      ],
+      "normalized_cell": [
+        0.25,
+        0.5,
+        0.5,
+        0.75
+      ],
+      "cell_pixels_at_8x": [
+        256,
+        512,
+        512,
+        768
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-01.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "crossing_main_e",
+      "svg": "assets/tiles/crossing_main_e.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/crossing_main_e.png",
+      "svg_sha256": "bc0f8d17b6993354032ada55e9106550f98d4c2ab68351e15da0d0418d0b9e8f",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-01",
+      "cell": [
+        2,
+        2
+      ],
+      "normalized_cell": [
+        0.5,
+        0.5,
+        0.75,
+        0.75
+      ],
+      "cell_pixels_at_8x": [
+        512,
+        512,
+        768,
+        768
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-01.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "crossing_main_n",
+      "svg": "assets/tiles/crossing_main_n.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/crossing_main_n.png",
+      "svg_sha256": "9ecaa239aca3d149141186051d68c2a8a5a24d3af682081f4dde121e388b3e91",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-01",
+      "cell": [
+        3,
+        2
+      ],
+      "normalized_cell": [
+        0.75,
+        0.5,
+        1.0,
+        0.75
+      ],
+      "cell_pixels_at_8x": [
+        768,
+        512,
+        1024,
+        768
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-01.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "crossing_main_s",
+      "svg": "assets/tiles/crossing_main_s.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/crossing_main_s.png",
+      "svg_sha256": "fe47f595b97e944e2bf93bf76f952e8e75e30037e0d444d7eec8cd32a07aa5cd",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-01",
+      "cell": [
+        0,
+        3
+      ],
+      "normalized_cell": [
+        0.0,
+        0.75,
+        0.25,
+        1.0
+      ],
+      "cell_pixels_at_8x": [
+        0,
+        768,
+        256,
+        1024
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-01.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "crossing_main_w",
+      "svg": "assets/tiles/crossing_main_w.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/crossing_main_w.png",
+      "svg_sha256": "5f2140a8da577742cb3483bd24a2b4398c2f156e893cf856c633888d64669b4d",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-01",
+      "cell": [
+        1,
+        3
+      ],
+      "normalized_cell": [
+        0.25,
+        0.75,
+        0.5,
+        1.0
+      ],
+      "cell_pixels_at_8x": [
+        256,
+        768,
+        512,
+        1024
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-01.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "sidewalk",
+      "svg": "assets/tiles/sidewalk.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/sidewalk.png",
+      "svg_sha256": "98caaf561c4228f321bf4ddef01cbaa8cb93288f2dde0cc8a414c1bac31c7628",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-01",
+      "cell": [
+        2,
+        3
+      ],
+      "normalized_cell": [
+        0.5,
+        0.75,
+        0.75,
+        1.0
+      ],
+      "cell_pixels_at_8x": [
+        512,
+        768,
+        768,
+        1024
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-01.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "sidewalk_kerb_e",
+      "svg": "assets/tiles/sidewalk_kerb_e.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_e.png",
+      "svg_sha256": "449ab49df054b10e2e279d0d45cde04807e4fa71469ad2090f69231f17592207",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-01",
+      "cell": [
+        3,
+        3
+      ],
+      "normalized_cell": [
+        0.75,
+        0.75,
+        1.0,
+        1.0
+      ],
+      "cell_pixels_at_8x": [
+        768,
+        768,
+        1024,
+        1024
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-01.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "sidewalk_kerb_n",
+      "svg": "assets/tiles/sidewalk_kerb_n.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_n.png",
+      "svg_sha256": "dde031e8281ba8c44b6020b767fdec53a68ceaafc328342c0958f2e30d8fd25c",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-02",
+      "cell": [
+        0,
+        0
+      ],
+      "normalized_cell": [
+        0.0,
+        0.0,
+        0.25,
+        0.25
+      ],
+      "cell_pixels_at_8x": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-02.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "sidewalk_kerb_s",
+      "svg": "assets/tiles/sidewalk_kerb_s.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_s.png",
+      "svg_sha256": "3e31edfc35461a4ed4ae816f4f8e6ace1a467c80e2ea1b61c654900a7430f301",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-02",
+      "cell": [
+        1,
+        0
+      ],
+      "normalized_cell": [
+        0.25,
+        0.0,
+        0.5,
+        0.25
+      ],
+      "cell_pixels_at_8x": [
+        256,
+        0,
+        512,
+        256
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-02.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "sidewalk_kerb_w",
+      "svg": "assets/tiles/sidewalk_kerb_w.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_w.png",
+      "svg_sha256": "6c5932aae221801964a04a83782fe582d1833ae114d8b33c553b0cc7b020283e",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-02",
+      "cell": [
+        2,
+        0
+      ],
+      "normalized_cell": [
+        0.5,
+        0.0,
+        0.75,
+        0.25
+      ],
+      "cell_pixels_at_8x": [
+        512,
+        0,
+        768,
+        256
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-02.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "sidewalk_kerb_main_e",
+      "svg": "assets/tiles/sidewalk_kerb_main_e.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_e.png",
+      "svg_sha256": "2f436f29fb4fba1eab6a9f48ae1858236da5ffef126c779e913b1a6f347f30ab",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-02",
+      "cell": [
+        3,
+        0
+      ],
+      "normalized_cell": [
+        0.75,
+        0.0,
+        1.0,
+        0.25
+      ],
+      "cell_pixels_at_8x": [
+        768,
+        0,
+        1024,
+        256
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-02.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "sidewalk_kerb_main_n",
+      "svg": "assets/tiles/sidewalk_kerb_main_n.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_n.png",
+      "svg_sha256": "baf71e7e197fd24bc11936d676806536095fc2f9afb6759e6f9632e520c29ca2",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-02",
+      "cell": [
+        0,
+        1
+      ],
+      "normalized_cell": [
+        0.0,
+        0.25,
+        0.25,
+        0.5
+      ],
+      "cell_pixels_at_8x": [
+        0,
+        256,
+        256,
+        512
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-02.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "sidewalk_kerb_main_s",
+      "svg": "assets/tiles/sidewalk_kerb_main_s.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_s.png",
+      "svg_sha256": "394d335f80adb67550883abf5df63f3ed565e98f8bb573ec5bec168224875b25",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-02",
+      "cell": [
+        1,
+        1
+      ],
+      "normalized_cell": [
+        0.25,
+        0.25,
+        0.5,
+        0.5
+      ],
+      "cell_pixels_at_8x": [
+        256,
+        256,
+        512,
+        512
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-02.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "sidewalk_kerb_main_w",
+      "svg": "assets/tiles/sidewalk_kerb_main_w.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_w.png",
+      "svg_sha256": "64d9e59693b3d6d0e330af8bc72e163c1cc695c35fbdaccbfe56f38019a19684",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-02",
+      "cell": [
+        2,
+        1
+      ],
+      "normalized_cell": [
+        0.5,
+        0.25,
+        0.75,
+        0.5
+      ],
+      "cell_pixels_at_8x": [
+        512,
+        256,
+        768,
+        512
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-02.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "alley_cracked_hairline_a",
+      "svg": "assets/tiles/alley_cracked_hairline_a.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/alley_cracked_hairline_a.png",
+      "svg_sha256": "9afe0cbdde5cdda806b6b26bbe0ef1b3a873601c0bfee2b0509dbdf11acd0e03",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-02",
+      "cell": [
+        3,
+        1
+      ],
+      "normalized_cell": [
+        0.75,
+        0.25,
+        1.0,
+        0.5
+      ],
+      "cell_pixels_at_8x": [
+        768,
+        256,
+        1024,
+        512
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-02.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "alley_cracked_hairline_b",
+      "svg": "assets/tiles/alley_cracked_hairline_b.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/alley_cracked_hairline_b.png",
+      "svg_sha256": "0f6a53c11d02bd2f125f0b98c89a6f6b56ce1ac038946bacbcb6cb06db3831d0",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-02",
+      "cell": [
+        0,
+        2
+      ],
+      "normalized_cell": [
+        0.0,
+        0.5,
+        0.25,
+        0.75
+      ],
+      "cell_pixels_at_8x": [
+        0,
+        512,
+        256,
+        768
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-02.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "alley_cracked_cracked_a",
+      "svg": "assets/tiles/alley_cracked_cracked_a.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/alley_cracked_cracked_a.png",
+      "svg_sha256": "0abbdb645846251bc8bbad176fa59281ef33ece600ffe8db8578675f46bdddd0",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-02",
+      "cell": [
+        1,
+        2
+      ],
+      "normalized_cell": [
+        0.25,
+        0.5,
+        0.5,
+        0.75
+      ],
+      "cell_pixels_at_8x": [
+        256,
+        512,
+        512,
+        768
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-02.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "alley_cracked_cracked_b",
+      "svg": "assets/tiles/alley_cracked_cracked_b.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/alley_cracked_cracked_b.png",
+      "svg_sha256": "e835527d028e7488b6a07da43c2c5df829a39676b0d2493c352c1a17bc869fde",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-02",
+      "cell": [
+        2,
+        2
+      ],
+      "normalized_cell": [
+        0.5,
+        0.5,
+        0.75,
+        0.75
+      ],
+      "cell_pixels_at_8x": [
+        512,
+        512,
+        768,
+        768
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-02.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "alley_cracked_broken_a",
+      "svg": "assets/tiles/alley_cracked_broken_a.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/alley_cracked_broken_a.png",
+      "svg_sha256": "aafd77f23b227b90304f2dae1f5dfb91fb3c4caab3d30f5c12b44d7f95866c51",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-02",
+      "cell": [
+        3,
+        2
+      ],
+      "normalized_cell": [
+        0.75,
+        0.5,
+        1.0,
+        0.75
+      ],
+      "cell_pixels_at_8x": [
+        768,
+        512,
+        1024,
+        768
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-02.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "alley_cracked_broken_b",
+      "svg": "assets/tiles/alley_cracked_broken_b.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/alley_cracked_broken_b.png",
+      "svg_sha256": "880b2d4279d8ad1fb80cf755e5bf0e159352fefc15e1346b062c95846f654bb2",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-02",
+      "cell": [
+        0,
+        3
+      ],
+      "normalized_cell": [
+        0.0,
+        0.75,
+        0.25,
+        1.0
+      ],
+      "cell_pixels_at_8x": [
+        0,
+        768,
+        256,
+        1024
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-02.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "road_cracked_hairline_a",
+      "svg": "assets/tiles/road_cracked_hairline_a.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/road_cracked_hairline_a.png",
+      "svg_sha256": "3b35da0945b71671699f636c0b79ee11ce3e0e7d69d420be8612982a69ccd61d",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-02",
+      "cell": [
+        1,
+        3
+      ],
+      "normalized_cell": [
+        0.25,
+        0.75,
+        0.5,
+        1.0
+      ],
+      "cell_pixels_at_8x": [
+        256,
+        768,
+        512,
+        1024
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-02.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "road_cracked_hairline_b",
+      "svg": "assets/tiles/road_cracked_hairline_b.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/road_cracked_hairline_b.png",
+      "svg_sha256": "f10a2dd8af8cc287e0f21f86ca3177fd76fccc76021bef9400f227c96a4c71c8",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-02",
+      "cell": [
+        2,
+        3
+      ],
+      "normalized_cell": [
+        0.5,
+        0.75,
+        0.75,
+        1.0
+      ],
+      "cell_pixels_at_8x": [
+        512,
+        768,
+        768,
+        1024
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-02.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "road_cracked_cracked_a",
+      "svg": "assets/tiles/road_cracked_cracked_a.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/road_cracked_cracked_a.png",
+      "svg_sha256": "b5ceaa8fa20d5743b57ee34948d6e01c1ba4744385fc979f98f1a16bdb8f095c",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-02",
+      "cell": [
+        3,
+        3
+      ],
+      "normalized_cell": [
+        0.75,
+        0.75,
+        1.0,
+        1.0
+      ],
+      "cell_pixels_at_8x": [
+        768,
+        768,
+        1024,
+        1024
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-02.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "road_cracked_cracked_b",
+      "svg": "assets/tiles/road_cracked_cracked_b.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/road_cracked_cracked_b.png",
+      "svg_sha256": "6d5abc36f678a449e3fa8700fe52e8a44442c50a1dcdff5e21166d347934c113",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-03",
+      "cell": [
+        0,
+        0
+      ],
+      "normalized_cell": [
+        0.0,
+        0.0,
+        0.25,
+        0.25
+      ],
+      "cell_pixels_at_8x": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-03.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "road_cracked_broken_a",
+      "svg": "assets/tiles/road_cracked_broken_a.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/road_cracked_broken_a.png",
+      "svg_sha256": "1cc1f5952962c006716597bb476c7cca157c236bda336c0f08551ecc3091ef40",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-03",
+      "cell": [
+        1,
+        0
+      ],
+      "normalized_cell": [
+        0.25,
+        0.0,
+        0.5,
+        0.25
+      ],
+      "cell_pixels_at_8x": [
+        256,
+        0,
+        512,
+        256
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-03.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "road_cracked_broken_b",
+      "svg": "assets/tiles/road_cracked_broken_b.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/road_cracked_broken_b.png",
+      "svg_sha256": "efe8cc77ac8c060cd4bdbfac56ec95186ae270a093687d64d187b3797d3bf25b",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-03",
+      "cell": [
+        2,
+        0
+      ],
+      "normalized_cell": [
+        0.5,
+        0.0,
+        0.75,
+        0.25
+      ],
+      "cell_pixels_at_8x": [
+        512,
+        0,
+        768,
+        256
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-03.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "sidewalk_cracked_hairline_a",
+      "svg": "assets/tiles/sidewalk_cracked_hairline_a.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_hairline_a.png",
+      "svg_sha256": "616208ee9a36c06437f726665795d1462aaabaada790d6ba5d803d0e16406852",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-03",
+      "cell": [
+        3,
+        0
+      ],
+      "normalized_cell": [
+        0.75,
+        0.0,
+        1.0,
+        0.25
+      ],
+      "cell_pixels_at_8x": [
+        768,
+        0,
+        1024,
+        256
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-03.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "sidewalk_cracked_hairline_b",
+      "svg": "assets/tiles/sidewalk_cracked_hairline_b.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_hairline_b.png",
+      "svg_sha256": "33e9ab884a0c8e3141915da059d957969537164d2132f48db34ab36afd8e0df4",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-03",
+      "cell": [
+        0,
+        1
+      ],
+      "normalized_cell": [
+        0.0,
+        0.25,
+        0.25,
+        0.5
+      ],
+      "cell_pixels_at_8x": [
+        0,
+        256,
+        256,
+        512
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-03.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "sidewalk_cracked_cracked_a",
+      "svg": "assets/tiles/sidewalk_cracked_cracked_a.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_cracked_a.png",
+      "svg_sha256": "e4c70a4c65a2b3e58ed84e889388bae1039290ff50d59c38b4f59a218e066888",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-03",
+      "cell": [
+        1,
+        1
+      ],
+      "normalized_cell": [
+        0.25,
+        0.25,
+        0.5,
+        0.5
+      ],
+      "cell_pixels_at_8x": [
+        256,
+        256,
+        512,
+        512
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-03.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "sidewalk_cracked_cracked_b",
+      "svg": "assets/tiles/sidewalk_cracked_cracked_b.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_cracked_b.png",
+      "svg_sha256": "c8caa6fa8a5fc15d603613c88de27565c2cf5a157c00a662ae62bf7f7ff045ce",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-03",
+      "cell": [
+        2,
+        1
+      ],
+      "normalized_cell": [
+        0.5,
+        0.25,
+        0.75,
+        0.5
+      ],
+      "cell_pixels_at_8x": [
+        512,
+        256,
+        768,
+        512
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-03.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "sidewalk_cracked_broken_a",
+      "svg": "assets/tiles/sidewalk_cracked_broken_a.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_broken_a.png",
+      "svg_sha256": "39be1f475ed259ada9ddfe00e98cde8e82d72eb9d5ec2801239f43dee6c13ec9",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-03",
+      "cell": [
+        3,
+        1
+      ],
+      "normalized_cell": [
+        0.75,
+        0.25,
+        1.0,
+        0.5
+      ],
+      "cell_pixels_at_8x": [
+        768,
+        256,
+        1024,
+        512
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-03.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "sidewalk_cracked_broken_b",
+      "svg": "assets/tiles/sidewalk_cracked_broken_b.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_broken_b.png",
+      "svg_sha256": "d437d666e1c86c90fb00da58b3d4e187c4cd54584dae92bfebcb413bf1dc8eb0",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-03",
+      "cell": [
+        0,
+        2
+      ],
+      "normalized_cell": [
+        0.0,
+        0.5,
+        0.25,
+        0.75
+      ],
+      "cell_pixels_at_8x": [
+        0,
+        512,
+        256,
+        768
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-03.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "road",
+      "svg": "assets/tiles/road.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/road.png",
+      "svg_sha256": "1658776df4e091a5242cd1e700e8f1695385d8dba658411985f2ac9579d3efdf",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-03",
+      "cell": [
+        1,
+        2
+      ],
+      "normalized_cell": [
+        0.25,
+        0.5,
+        0.5,
+        0.75
+      ],
+      "cell_pixels_at_8x": [
+        256,
+        512,
+        512,
+        768
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-03.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "road_main",
+      "svg": "assets/tiles/road_main.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/road_main.png",
+      "svg_sha256": "e377dcd7a938886a06b8ae84117c1cb71c81f5cc4aae8bf8b694cabd330fc0d3",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-03",
+      "cell": [
+        2,
+        2
+      ],
+      "normalized_cell": [
+        0.5,
+        0.5,
+        0.75,
+        0.75
+      ],
+      "cell_pixels_at_8x": [
+        512,
+        512,
+        768,
+        768
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-03.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "alley",
+      "svg": "assets/tiles/alley.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/alley.png",
+      "svg_sha256": "c2b9035ea2f29b7c419e3ce9d693d7807b46734d7f04a51486bed2f7a7bb953f",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-03",
+      "cell": [
+        3,
+        2
+      ],
+      "normalized_cell": [
+        0.75,
+        0.5,
+        1.0,
+        0.75
+      ],
+      "cell_pixels_at_8x": [
+        768,
+        512,
+        1024,
+        768
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-03.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "alley_draft",
+      "svg": "assets/tiles/alley_draft.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/alley_draft.png",
+      "svg_sha256": "43d39aa34a9c16e9ad25cab4fc71d11bf041afcd65130a5268693676ca9684b6",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "prepared alley alternative; no runtime binding",
+      "source_sheet": "tiles-sheet-03",
+      "cell": [
+        0,
+        3
+      ],
+      "normalized_cell": [
+        0.0,
+        0.75,
+        0.25,
+        1.0
+      ],
+      "cell_pixels_at_8x": [
+        0,
+        768,
+        256,
+        1024
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-03.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "bulkhead",
+      "svg": "assets/tiles/bulkhead.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/bulkhead.png",
+      "svg_sha256": "84d2695ba0fe907f7caeceb2ee22670c9f936c3a8af88cd5af1bc2b964670a45",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-03",
+      "cell": [
+        1,
+        3
+      ],
+      "normalized_cell": [
+        0.25,
+        0.75,
+        0.5,
+        1.0
+      ],
+      "cell_pixels_at_8x": [
+        256,
+        768,
+        512,
+        1024
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-03.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "courtyard",
+      "svg": "assets/tiles/courtyard.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/courtyard.png",
+      "svg_sha256": "cc5029cf961ad20d0a1772c0a0bbbd11e19cb3e193227cbd095f0ec2f9b0c1f1",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-03",
+      "cell": [
+        2,
+        3
+      ],
+      "normalized_cell": [
+        0.5,
+        0.75,
+        0.75,
+        1.0
+      ],
+      "cell_pixels_at_8x": [
+        512,
+        768,
+        768,
+        1024
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-03.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "fence",
+      "svg": "assets/tiles/fence.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/fence.png",
+      "svg_sha256": "a9b90fe894fb91a3ae722119237594bc7968bf1b0ad0a9afc75bb56116470a13",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-03",
+      "cell": [
+        3,
+        3
+      ],
+      "normalized_cell": [
+        0.75,
+        0.75,
+        1.0,
+        1.0
+      ],
+      "cell_pixels_at_8x": [
+        768,
+        768,
+        1024,
+        1024
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-03.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "forest",
+      "svg": "assets/tiles/forest.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/forest.png",
+      "svg_sha256": "e08f72c7966d7587bc19f14151854169a65b145604312e419480bdc91e308e15",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-04",
+      "cell": [
+        0,
+        0
+      ],
+      "normalized_cell": [
+        0.0,
+        0.0,
+        0.25,
+        0.25
+      ],
+      "cell_pixels_at_8x": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-04.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "grass",
+      "svg": "assets/tiles/grass.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/grass.png",
+      "svg_sha256": "ad6a784bd1ca24b423db18d84d7049a5af904bcbe92aa875848a984e4a7be332",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-04",
+      "cell": [
+        1,
+        0
+      ],
+      "normalized_cell": [
+        0.25,
+        0.0,
+        0.5,
+        0.25
+      ],
+      "cell_pixels_at_8x": [
+        256,
+        0,
+        512,
+        256
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-04.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "mountain",
+      "svg": "assets/tiles/mountain.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/mountain.png",
+      "svg_sha256": "dd3287737bb87298b038e40fd1379cbb53ccc91921004ea53cee6247400d034e",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles; direct CityEdge terrain",
+      "source_sheet": "tiles-sheet-04",
+      "cell": [
+        2,
+        0
+      ],
+      "normalized_cell": [
+        0.5,
+        0.0,
+        0.75,
+        0.25
+      ],
+      "cell_pixels_at_8x": [
+        512,
+        0,
+        768,
+        256
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-04.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "plaza",
+      "svg": "assets/tiles/plaza.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/plaza.png",
+      "svg_sha256": "4cb42fbb66c9911bd95b94cb452159049a6a615ea18067a21c193a1ed6805d23",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-04",
+      "cell": [
+        3,
+        0
+      ],
+      "normalized_cell": [
+        0.75,
+        0.0,
+        1.0,
+        0.25
+      ],
+      "cell_pixels_at_8x": [
+        768,
+        0,
+        1024,
+        256
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-04.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "precinct",
+      "svg": "assets/tiles/precinct.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/precinct.png",
+      "svg_sha256": "b0279d1e49762be1aad0374b98814ae976c2ff561a31471389a4a2ca42a1c8a0",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-04",
+      "cell": [
+        0,
+        1
+      ],
+      "normalized_cell": [
+        0.0,
+        0.25,
+        0.25,
+        0.5
+      ],
+      "cell_pixels_at_8x": [
+        0,
+        256,
+        256,
+        512
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-04.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "quiet_square",
+      "svg": "assets/tiles/quiet_square.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/quiet_square.png",
+      "svg_sha256": "5de4784b50a78193d7e4c4b33b6f72397db526f5cd61d12e3827e4028c83300e",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-04",
+      "cell": [
+        1,
+        1
+      ],
+      "normalized_cell": [
+        0.25,
+        0.25,
+        0.5,
+        0.5
+      ],
+      "cell_pixels_at_8x": [
+        256,
+        256,
+        512,
+        512
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-04.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "sand",
+      "svg": "assets/tiles/sand.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/sand.png",
+      "svg_sha256": "059c5894bd8865af3bbe6bf13ea34247b126de20cab88b54310e1992b0ba4b9f",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-04",
+      "cell": [
+        2,
+        1
+      ],
+      "normalized_cell": [
+        0.5,
+        0.25,
+        0.75,
+        0.5
+      ],
+      "cell_pixels_at_8x": [
+        512,
+        256,
+        768,
+        512
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-04.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "scree",
+      "svg": "assets/tiles/scree.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/scree.png",
+      "svg_sha256": "2b4708c5774bfa421e48c897c520f3f3a12cdd54a02b216d6a29f8bfd1f17e9c",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-04",
+      "cell": [
+        3,
+        1
+      ],
+      "normalized_cell": [
+        0.75,
+        0.25,
+        1.0,
+        0.5
+      ],
+      "cell_pixels_at_8x": [
+        768,
+        256,
+        1024,
+        512
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-04.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "spoiled",
+      "svg": "assets/tiles/spoiled.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/spoiled.png",
+      "svg_sha256": "a383187142d6f0945c84e040ae5742d51a1bac6923953af82e2b2ab9b31e0f73",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-04",
+      "cell": [
+        0,
+        2
+      ],
+      "normalized_cell": [
+        0.0,
+        0.5,
+        0.25,
+        0.75
+      ],
+      "cell_pixels_at_8x": [
+        0,
+        512,
+        256,
+        768
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-04.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "stoop",
+      "svg": "assets/tiles/stoop.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/stoop.png",
+      "svg_sha256": "a39e55bc20b8e428ea9b6e88e06de1d0d990527dd83a2caaff8596ab1740b84d",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-04",
+      "cell": [
+        1,
+        2
+      ],
+      "normalized_cell": [
+        0.25,
+        0.5,
+        0.5,
+        0.75
+      ],
+      "cell_pixels_at_8x": [
+        256,
+        512,
+        512,
+        768
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-04.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    },
+    {
+      "name": "water",
+      "svg": "assets/tiles/water.svg",
+      "png": "assets/illustrated/svg-transfer/tiles/water.png",
+      "svg_sha256": "74c67eedb2309477c519fadcc0a6aa77990321665525cec6c69187efcbd75e9a",
+      "dimensions": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        16
+      ],
+      "usage": "assets/ground_tileset.tres via GroundTiles",
+      "source_sheet": "tiles-sheet-04",
+      "cell": [
+        2,
+        2
+      ],
+      "normalized_cell": [
+        0.5,
+        0.5,
+        0.75,
+        0.75
+      ],
+      "cell_pixels_at_8x": [
+        512,
+        512,
+        768,
+        768
+      ],
+      "review_evidence": [
+        "docs/evidence/style-transfer-tiles-2026-09-12/source/tiles-sheet-04.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-native.png",
+        "docs/evidence/style-transfer-tiles-2026-09-12/registered/tiles-comparison-4x.png"
+      ]
+    }
+  ]
+}

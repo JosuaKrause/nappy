@@ -14,16 +14,36 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
+- **Walk across neighboring ground variants.** Check repeated terrain, curb edges and road
+  markings for seams or distracting repetition during movement.
+  The current native pairs and neighbors are in
+  `evidence/style-transfer-tiles-2026-09-12/comic/registered/`.
+
+- **Look at café seating and roadworks along both street axes.** Each café sitter should
+  face its own table, including the right-hand chair and the vertical arrangement. Vertical
+  red barriers should read as a narrow continuous barrier, and a horizontal alley should be
+  closed across its short mouth. The original findings are in [PLAYTEST-64](playtests/PLAYTEST-64.md).
+
+- **Walk past a street tree with the stroller overlapping its bed.** The paving bed should
+  stay underneath her and the pram while the trunk and canopy retain their upright sorting.
+  Check the location pictured in [PLAYTEST-64](playtests/PLAYTEST-64.md), or any street-tree run.
+
 - **Compare the mother carrying the baby with the mother pushing the stroller.** Use ordinary
   gameplay for pushing and `--start-escape floor:2` for carrying; walk and turn in both. Does she
   remain recognizably the same woman, with stable hair, clothes and proportions across directions
   and gait frames? The native and enlarged comparisons in
-  `evidence/style-transfer-player-family-2026-09-12/registered/` show both states side by side;
-  check the result at gameplay size too. `--svg` provides the original source comparison.
+  `evidence/comic-rig-2026-09-12/registered/` show both states side by side;
+  check stature and hand-to-handle contact through turns at gameplay size too. `--svg` provides
+  the original source comparison. The assembly sheets approximate placement, not live contact.
 
 - **Look at the garbage sacks and small litter from day 10.** Do the standalone sacks and
   piles look like the same material, and does the small ground litter remain quiet and readable?
-  `evidence/style-transfer-litter-2026-09-12/registered/` compares the SVG and PNG sources.
+  `evidence/comic-props-2026-09-12/comparisons/` compares the SVG and PNG sources; use the
+  `unmasked` sheets for the current generated silhouettes.
+
+- **Compare the comic stroller identity mark at icon and logo sizes.** Does the cream stroller
+  remain clear against its navy plate, and does the redrawn symbol fit the preserved wordmark?
+  `evidence/comic-identity-2026-09-12/comparisons/` shows the logo and both export sizes.
 
 Each line is a thing to try or look at and the question it settles. `tools/run.sh` plays the
 desktop build; `--seed <n> --day <n>` puts a run where an item says; `1` to `4` in a debug build

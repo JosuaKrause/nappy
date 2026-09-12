@@ -126,7 +126,8 @@ A vague prompt returns work that cannot be merged. Every agent prompt contains, 
 - **What the final report must contain**: per item, what was built and how it was verified; every
   choice made where the design was silent; every fork left open. The report is the merge review's
   input — an outcome it does not mention is an outcome that did not happen.
-- **Do not merge, do not delete the branch.** The orchestrator merges `--no-ff`, reruns the gate on
+- **Do not merge, do not delete the branch.** Only with explicit permission in the current session,
+  the orchestrator merges `--no-ff`, reruns the gate on
   the merged tree, removes the worktree, deletes the branch, and moves the finished entry to
   `DECISIONS.md` — with the agent's silent choices recorded as open to overturn, not narrated as
   settled.
@@ -148,7 +149,9 @@ merging is what collides — so parallelism is planned at the file level, before
 - **Overlapping the event catalogue, `tuning.gd` or a shared test file means sequential.** Those
   are the repo's convergence points; two agents adding rows or checks to the same file will not
   auto-merge.
-- **Merge one at a time, and let CI gate each.** As each agent lands: push its branch, open a pull
+- **PR merges and auto-merge need explicit permission in the current session.** Without it,
+  push the work, open its PR and leave it open. Once authorized, merge one at a time and let CI
+  gate each. As each agent lands: push its branch, open a pull
   request, and merge it once the `test` check is green — GitHub runs that check on the merge result,
   which is exactly the "two green branches can still be wrong together" case. **A second agent's PR
   needs its branch brought up to date with the new `main` before it can merge**, since the ruleset

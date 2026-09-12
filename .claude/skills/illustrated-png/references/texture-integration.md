@@ -10,16 +10,22 @@ Generation need not reproduce identical pixels; extraction must be reproducible 
 output.
 
 The rig's generation inputs and commands are in
-`docs/evidence/style-transfer-2026-09-10/GENERATION.md`. Its `register-transfer.py` uses
-`tools/remove-checkerboard.py`, registers each cell to the SVG raster, restores the exact native
-SVG alpha and writes a fresh output directory. Run it with the repository's locked Python tools:
+`docs/evidence/comic-rig-2026-09-12/GENERATION.md`. Its `convert.py` uses
+`tools/remove-checkerboard.py`, preserves generated alpha and fits each drawing to its native
+canvas and ground anchor. Run it with the repository's locked Python tools:
 
 ```sh
-uv run python docs/evidence/style-transfer-2026-09-10/register-transfer.py /tmp/nappy-transfer-reproduction
+uv run python docs/evidence/comic-rig-2026-09-12/convert.py prepare /tmp/nappy-rig-sources
+uv run python docs/evidence/comic-rig-2026-09-12/convert.py register \
+  /tmp/nappy-rig-registration /tmp/nappy-rig-sources \
+  docs/evidence/comic-rig-2026-09-12/mother-atlas-generated.png \
+  docs/evidence/comic-rig-2026-09-12/pram-atlas-background-corrected.png
 ```
 
-Choose a new output path each time. Inspect retained highlights and transparent gaps; a matching
-alpha mask alone does not establish faithful interior geometry or sufficient gameplay detail.
+Choose new output paths each time. The prop recipe is in
+`docs/evidence/comic-props-2026-09-12/GENERATION.md`; the identity/export recipe is in
+`docs/evidence/comic-identity-2026-09-12/GENERATION.md`. Inspect retained highlights and transparent
+gaps; registration alone does not establish faithful interior geometry or sufficient gameplay detail.
 
 ## Integrate
 
@@ -45,6 +51,11 @@ Inspect every error, including resource import failures. The full suite runs in 
 default and `--svg` gameplay using the same seed, walk, capture time and window size.
 Keep captures bounded to one or two windowed runs. Preserve whole telemetry folders and record
 build, flags and coverage in `docs/DECISIONS.md` under the session-captures skill.
+
+For comic redraws, preserve generated alpha within the native canvas and align functional
+anchors. Do not reuse the older scripts' final SVG-alpha stamping step: it clips expressive
+outlines back to the primitive source. Save the actual registration script with each family.
+Opaque terrain retains full coverage and directional joins retain their functional alignment.
 
 Review appearance at gameplay scale, frame consistency, silhouettes, transparent gaps and ground
 contact. A still does not verify smooth motion or every facing. Keep unverified gates explicit,

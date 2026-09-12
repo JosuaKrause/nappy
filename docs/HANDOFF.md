@@ -13,10 +13,10 @@ Claude Code and Codex share `CLAUDE.md` and `.claude/skills/`; Codex reads `CLAU
 through `project_doc_fallback_filenames` in `.codex/config.toml`, and finds the skills through the
 `.agents/skills` link. Its repository hooks need review through `/hooks` before they execute.
 
-**Start with `git fetch --prune` and `gh pr list`.** A pull request still open either waits on its
-check or has gone `CONFLICTING` under a sibling that merged first, and the second kind needs a merge
-of `main` resolved by hand under the **merging-main** rules before auto-merge can take it; a session
-normally ends with its PRs merged, so an open one is worth a look. Use `TODO.md` for the next
+**Start with `git fetch --prune` and `gh pr list`.** Open pull requests may await review, checks or
+merge permission. Resolve conflicts with `main` under the **merging-main** rules. A PR stays open
+unless the user explicitly authorizes merging in the current session; enabling auto-merge and
+delegating a merge require the same permission. Use `TODO.md` for the next
 implementation and `REVIEW.md` for the questions a playtest should cover; the player's original
 reports and reference instructions live in `docs/playtests/`.
 

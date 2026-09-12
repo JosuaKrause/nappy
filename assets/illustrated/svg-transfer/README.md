@@ -1,17 +1,27 @@
 # Registered SVG style transfers
 
-These PNGs replace their matching `assets/rig/*.svg` textures by default; `--svg` forces SVGs.
-The ten mother animation frames and five authored pram views preserve each source SVG's native canvas
-and alpha silhouette. Missing or differently sized PNGs fall back to SVGs.
+These PNGs replace their matching SVG textures by default; `--svg` forces SVGs.
+The `rig/`, `props/` and `tiles/` subdirectories mirror the source family paths under `assets/`.
+The mother animation frames and authored pram views preserve each source SVG's native canvas
+and functional anchors. Comic redraws keep their own expressive silhouettes and true transparency.
+Missing or differently sized PNGs fall back to SVGs.
 
-The generation inputs, raw atlas, extraction, reproducible registration script and measured
-source/target bounds are in `docs/evidence/style-transfer-2026-09-10/`. Native PNG dimensions
-are intentional: these are drop-in replacements for the existing textures and draw transforms.
-The high-resolution generated atlas remains preserved for inspection.
+Native PNG dimensions are intentional: these are drop-in replacements for the existing textures
+and draw transforms. Generation inputs, raw atlases, exact prompts, reproducible registration
+scripts and measured source/target bounds accompany each family below.
 
-Diagonal inputs, exact prompt, source hashes and registration commands are in
-`docs/evidence/style-transfer-eight-directions-2026-09-10/`. Side and diagonal views mirror
-explicitly for west, supplying all eight directions without rotating upright artwork.
+Outdoor tile generation, source pairings and repeated-neighbor comparisons are in
+`docs/evidence/style-transfer-tiles-2026-09-12/`. The prepared alley alternative remains unbound
+in both formats.
+
+The comic mother/stroller family is in `docs/evidence/comic-rig-2026-09-12/`; prop redraws and
+their generated transparency are in `docs/evidence/comic-props-2026-09-12/`. The comic tile
+redraws and functional paint registration are in
+`docs/evidence/style-transfer-tiles-2026-09-12/comic/`. Identity/export PNGs live outside this
+runtime tree; their SVG mappings and recipe are in `docs/evidence/comic-identity-2026-09-12/`.
+
+Side and diagonal views mirror explicitly for west, supplying all eight directions without
+rotating upright artwork.
 
 SVG-first authoring followed by style transfer is the approved workflow. Every PNG asset needs
 a corresponding SVG authored and reviewed first. M108, eight-direction entity graphics, and

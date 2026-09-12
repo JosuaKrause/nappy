@@ -1,5 +1,148 @@
 # Decisions
 
+## M109 — The complete generated catalogue uses comic drawings — 2026-09-12
+
+The PLAYTEST-64 correction was applied to all 95 existing PNG assets: 59 outdoor tiles,
+25 mother/stroller views and frames, seven garbage/litter props and four identity/export
+images. The player then said "yes I like the new versions", followed by "of the tiles".
+Tile appearance is approved; this does not approve the other families or authorize a PR merge.
+The remaining visual checks are in REVIEW, including moving across terrain joins.
+
+The mother and stroller were redrawn as one directional family. Review rejected wide,
+childlike poses whose uniform canvas fit made the mother shrink when turning. The selected
+adult proportions and compact poses keep every mother frame at 46 pixels of visible height,
+with widths of 19–24 pixels; stroller views remain 30 pixels tall. Generated silhouettes and
+transparent gaps replace SVG-alpha stamping while native canvases and bottom anchors stay fixed.
+Background correction replaces neutral-color erasure so gray and cream artwork survives.
+The selected atlases, source inputs, exact prompts, measurements and byte-reproducible
+registration are in `docs/evidence/comic-rig-2026-09-12/`.
+
+The integrated root checkout passed import/boot, 190,888 focused checks across visuals,
+stroller, presentation mode, orientation, event views, blocks and city decay, and 497 forced-SVG
+visual checks. These were partial runs; CI owns the full suite. Static comparison sheets cover
+the new art, but the rig assembly is approximate and does not establish live hand-to-handle
+contact or gait quality. The two earlier gameplay captures show the initial tile candidate,
+not this final redraw. All files are in the player's main checkout and the PR remains open.
+
+## M109 — The identity/export PNGs share the comic redraw — 2026-09-12
+
+The all-textures correction in PLAYTEST-64 also covers the four generated identity/export
+rasters outside the runtime replacement tree. The audit traced `logo.png` to `logo.svg`, both
+stroller PNG sizes to `icon_stroller.svg`, and the social card to the logo composited onto white.
+They were included rather than silently deferred as unbound gameplay art: the README uses the
+logo and web export uses the social card.
+
+One generated comic stroller mark supplies all four outputs. The authored wordmark, tagline,
+colors, canvas sizes and navy rounded backing plates stay intact. Review rejected an extraction
+that dropped the icon backing plate: its SVG explains why the cream mark needs that dark plate
+to remain readable on light pages. The social card is still opaque RGB at 1280×640; the logo
+and icon variants remain RGBA, with transparent space outside the badge. Inputs, the raw mark,
+exact prompt, mappings and reproducible registration live in
+`docs/evidence/comic-identity-2026-09-12/`.
+
+## M109 — Garbage and litter as comic drawings — 2026-09-12
+
+PLAYTEST-64 extended the style-transfer correction to every generated texture. The seven prop
+derivatives were redrawn from their existing SVG concepts with the urban and cardinal style
+references. A painterly first pass lost its forms in native-size mottling; the selected pass
+uses broad shadow planes, few folds and a gray metal can without invented red branding.
+Both raw candidates and prompts are preserved under `docs/evidence/comic-props-2026-09-12/`.
+
+The final registration preserves generated alpha, fits uniformly within the source footprint,
+bottom-aligns garbage sacks and centers ground litter. It does not stamp the source's round
+sack outline onto the new drawing. Review caught neutral background stripes caused by treating
+the color-extension output as RGBA; preserving the pre-extension alpha removed them. Blanket
+white removal was also rejected because it can erase enclosed white paper and metal highlights.
+The retained script removes only edge-connected white background and uses the existing
+checkerboard extractor. The actual root checkout reproduced all seven runtime files byte for
+byte from the saved clean atlas. Human acceptance and gameplay appearance remain separate.
+
+## M109 — Outdoor tile materials and the meaning of style transfer — 2026-09-12
+
+PLAYTEST-64 asked for tiles next. The initial batch registered all 59 outdoor SVGs at 32×32,
+including 58 live TileSet textures and the unbound `alley_draft`. Source rasters, source hashes,
+four raw generated atlases, exact prompts and extraction measurements were preserved under
+`docs/evidence/style-transfer-tiles-2026-09-12/`. City and CityEdge already resolved these
+textures through the PNG/SVG selector, so no terrain behavior or drawing transforms changed.
+
+The player rejected the first result: "a lot of those textures are basically the exact same
+as the svg just with a nicer texture. style transfer means that the idea of the svg graphic
+gets transferred to the style of the comicesque reference images", then clarified "the same
+applies to all textures generated so far". The original prompts had explicitly constrained
+generation to material treatment while freezing the primitive drawing. That interpretation
+was overturned: the SVG supplies the subject and functional placement; the comic references
+supply the actual drawing language, including redrawn forms, outlines and shadow shapes.
+The correction covers the pushing/carrying mother, stroller, garbage/litter and ground family.
+
+Exact SVG-alpha stamping also imposed the primitive outlines on newly drawn anatomy and props.
+The comic registration contract therefore retains native canvases, functional anchors and true
+transparency without restoring those primitive silhouettes. Opaque terrain remains opaque;
+road marking joins still have to match their source coordinates. The illustrated-PNG skill
+and VISUALS carry this distinction rather than treating dimensional equality as art approval.
+
+The outdoor redraw uses four new comic atlases under `comic/`. Forest and grass use drawn
+leaves and blades, rock uses fractured planes, water uses curved ripple shapes, and damage
+uses illustrated fissures and broken rims. The first new road atlas misinterpreted the markings;
+its corrected generation and prompt are preserved too. `comic/register.py` trims measured atlas
+divider pixels, registers the individual generated paint strokes at their source coordinates
+over the generated asphalt, and registers the missing east curb from the generated west curb's
+stone strip. These are placement corrections, not a return to the source material drawing.
+The final comparison includes repeated opposing line halves and crosswalks. This is a new art
+candidate, not a record of player acceptance.
+
+Before the redraw, the actual checkout passed import/boot and the focused visuals,
+presentation_mode, orientation, event_views, blocks and city_decay suites (190709 checks,
+zero failures), plus forced-SVG visuals (390 checks, zero failures). Two four-second captures
+used seeds 1489549000 and 1489549001, day 2, `--spawn event:cafe_tables --invincible --layers 2`.
+Their full telemetry folders and external `capture.png` files are preserved under the tile
+evidence's `runtime/`. They contain collider overlays and stationary, partly obscured cafés.
+They show the initial tile candidate in gameplay, not the comic redraw, every café facing,
+tree/stroller overlap, or motion. No additional windowed capture is taken in this session.
+
+## Café sitters face their own tables; barriers follow the actual mouth — 2026-09-12
+
+PLAYTEST-64 reported a wrong-facing right sitter and sideways sitters in the vertical café.
+`EventInstance._cafe_seat_heading` derives a bearing from each alternating chair's offset
+toward its table. Horizontal seats use east/west views and vertical seats use south/north;
+the fixed screen-depth lift does not enter the facing calculation. Focused event-view tests
+cover each seat and its mirror. The available gameplay stills are partly occluded and do
+not establish every facing by eye, so that visual check remains in REVIEW.
+
+The same playtest showed horizontal boards stacked along vertical roadworks and barriers
+on the wrong axis in horizontal alleys. A new narrow `barrier_segment_vertical.svg` is the
+vertical roadworks panel; `barrier_end.svg` is an end post, not that panel's end-on drawing.
+Closure panels span their allocated repeat interval instead of stacking native-height boards.
+Alley rectangles now determine the spread axis before street-lattice inference: a horizontal
+alley gets a vertical obstruction across its short mouth, and vice versa. That shared axis
+also drives shadows and the collision capsule, so the picture and obstruction agree. Tests
+cover both alley axes, the texture selection and its aspect. Human appearance review remains
+open; no balance or obstruction-radius values change.
+
+## Street-tree beds are ground, not upright props — 2026-09-12
+
+PLAYTEST-64 shows the tree bed drawing over the stroller. The player asked for the bed to be
+a tile rather than an object. `CityDecals`, the existing flat ground layer between `Ground`
+and `Buildings`, now owns the tile-sized bed at its existing center anchor. `Prop` retains
+the tree's upright art, shadow and collision. This uses the existing ground-decal mechanism
+rather than adding a new terrain kind or changing which tiles can be walked on.
+
+The city registers the planted positions once and redraws the ground layer when the day's
+fallen-tree plan changes. Both the tree and its bed retain the existing hidden state for an
+emptied pit. The blocks suite verifies nonempty planted trees, one ground bed per tree, and
+the actual scene's z-index and sibling ordering beneath entities. Import/boot and the focused
+blocks suite passed in the isolated implementation checkout. Human appearance review remains
+in `REVIEW.md`; the supplied full telemetry run is preserved under
+`docs/evidence/playtest-64-2026-09-12/`.
+
+## PR merges require permission in the current session — 2026-09-12
+
+The player asked: "make a note where appropriate to not automatically merge PRs unless
+explicitly allowed in that session". Standing automatic merge authorization is overturned:
+creating and pushing PRs stays authorized, but merging, enabling auto-merge and delegating
+a merge require explicit permission in the current session. The committing, orchestration
+and cleanup skills and the handoff carry the same boundary. No merge is authorized in this
+session.
+
 ## M110 — The crowd goes round a seal · every solid body, built 2026-09-12
 
 *(2026-09-12, asked whether every other solid body diverts the crowd too: "yes every solid body
