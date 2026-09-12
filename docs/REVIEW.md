@@ -17,7 +17,8 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 Each line is a thing to try or look at and the question it settles. `tools/run.sh` plays the
 desktop build; `--seed <n> --day <n>` puts a run where an item says; `1` to `4` in a debug build
 toggle the field, shadow, bounding-box and readout layers (`docs/TELEMETRY.md`, "The debug
-view").
+view"). `--invincible` is the way to walk this whole list in one sitting: nothing ends the day, so
+one run can stand next to every item below for as long as looking takes.
 
 - **Walk into a checkpoint on day 7 or later** (`--day 7`; the region walls stand from day 7 and
   a door is a hut on each pavement with a boom between). Both she and the guard vanish for two

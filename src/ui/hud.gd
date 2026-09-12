@@ -369,7 +369,13 @@ func _refresh_header() -> void:
 	if not _debug:
 		_header.text = ""
 		return
-	_header.text = "day %d / %d      act %d      nerves %s" % [
+	var text := "day %d / %d      act %d      nerves %s" % [
 		GameState.day, Tuning.RUN_LENGTH_DAYS, GameState.current_act(),
 		"*".repeat(GameState.nerves) if GameState.nerves > 0 else "-",
 	]
+	# So no capture from an --invincible run reads as a real one — appended to the same debug
+	# label rather than a mark of its own, since the cues vocabulary is for the world she is
+	# walking through, not for developer furniture.
+	if DevFlags.invincible():
+		text += "      INVINCIBLE"
+	_header.text = text

@@ -44,6 +44,7 @@ extends RefCounted
 ##   --controls      1
 ##   --layers        1
 ##   --svg           0
+##   --invincible    0
 ##   --no-telemetry  0
 ##   --screenshot    1
 ##   --after         1
@@ -311,3 +312,36 @@ static func _layers_from_query(query: String) -> String:
 		if pair.size() == 2 and pair[0] == "layers":
 			return pair[1]
 	return ""
+
+## Set by a test to force `invincible()`'s own answer, bypassing the real command line.
+## `OS.get_cmdline_user_args()` is what `run_tests.gd` itself reads to pick which suites run, so a
+## test cannot drive this flag through actual argv the way a player would — this is the smallest
+## seam that lets one exercise `DayController`'s three loss paths under the flag anyway. `null`
+## (the default) means "answer normally"; a test sets this to `true` or `false` before exercising
+## the flag and clears it back to `null` when done, or the override leaks into every suite that
+## runs after it.
+static var _invincible_override: Variant = null
+
+## `--invincible` (or the page's own `?invincible=1`, a debug web build only) makes nothing end the
+## day: `DayController._ignores_loss()` is the one predicate every losing path consults, and this
+## is the flag it reads. See docs/TODO.md, M100, "An invincible mode for playtesting".
+##
+## Gated behind `enabled()` explicitly, the same as `layers_override()` gates its own query read —
+## unlike `svg_requested()`, which stays live in a release web build by design, this reaches the
+## whole of a day's losing behaviour and must not survive outside a debug build.
+static func invincible() -> bool:
+	if _invincible_override != null:
+		return bool(_invincible_override)
+	if not enabled():
+		return false
+	return _invincible_from_args(_args()) or _invincible_from_query(_web_query())
+
+static func _invincible_from_args(args: PackedStringArray) -> bool:
+	return "--invincible" in args
+
+static func _invincible_from_query(query: String) -> bool:
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() == 2 and pair[0] == "invincible" and pair[1] == "1":
+			return true
+	return false

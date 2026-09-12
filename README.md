@@ -103,6 +103,7 @@ going quietly stale.
 | `--controls joystick\|tap` | Force a control scheme, the command-line half of the page's own `?controls=` |
 | `--layers 1,3` | Set which of the three debug geometry layers start on, for a reproducible rig screenshot |
 | `--svg` | Force SVG presentation over PNG, even where a matching PNG asset exists (also reachable as a release web build's own `?svg=1`) |
+| `--invincible` | Nothing ends the day — crying, a hard fail and the clock reaching zero all leave it running; a won day still ends normally. Marked on the HUD and in the run log so no capture from it reads as a real run (also reachable on a debug web build as `?invincible=1`) |
 | `--start-escape [stairwell:left\|stairwell:right\|lobby\|basement\|floor:N]` | Start straight in the escape scene's interior instead of the title and the city, optionally at one of its seven parts |
 | `--title` | Open on the title screen even under a screenshot rig, which otherwise skips it |
 | `--no-title` | Skip the title screen |
