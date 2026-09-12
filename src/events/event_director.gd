@@ -34,6 +34,14 @@ var _rng := RandomNumberGenerator.new()
 ## The events the day has budgeted and not yet spent, in the order the scheduler asked for.
 var _owed: Array[EventDef] = []
 var _next_in := 0.0
+## Whether `owe_the_return()` has already handed today its return-phase patrols. Set once and
+## never cleared until `start_day()`, so a baby that wakes and settles again does not owe a
+## second batch — see that function's own doc.
+var _return_owed := false
+## Whether the queue is rolling `Tuning.RETURN_PATROL_INTERVAL` instead of `Tuning.AHEAD_INTERVAL`
+## for the rest of the day. Set by `owe_the_return()` and never cleared until `start_day()`: once
+## the return owes its pressure, the pacing stays tight even if the phase drops back to walking.
+var _return_pacing := false
 
 func _init(map: CityMap) -> void:
 	_map = map
@@ -52,6 +60,8 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 		rng: RandomNumberGenerator) -> void:
 	_owed.clear()
 	_rng = rng
+	_return_owed = false
+	_return_pacing = false
 	for plan in plans:
 		var mode := plan.def.spawn_mode_on(day)
 		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
@@ -130,6 +140,56 @@ const LESSON_DELAY := 6.0
 func owed() -> int:
 	return _owed.size()
 
+## Hands the day's return leg its own pressure — `docs/TODO.md`'s M98, pressure in the empty acts
+## — the moment `EventManager` hears `EventBus.return_phase_started`. `Tuning.RETURN_PATROLS_PER_
+## ACT[act - 1]` copies of `police_patrol`, at the day's own heat, are appended to the owed queue
+## sited `TOWARD_PLAYER` down her own carriageway rather than crossed — see
+## `_toward_her_on_the_road()` — and the interval the queue rolls for the rest of the day switches
+## from `Tuning.AHEAD_INTERVAL` to the tighter `Tuning.RETURN_PATROL_INTERVAL`, so the extra rows
+## land inside the leg rather than after she is home.
+##
+## Acts I and II are untouched: the array's first two entries are 0, so the teaching days and the
+## return she learns the mechanic on stay exactly as they were measured.
+##
+## **Idempotent for the day.** `return_phase_started` can fire more than once — the baby wakes and
+## is walked back down before settling again — and the return is owed exactly once; `_return_owed`
+## is what remembers that past the phase dropping back to `WALKING` and the rows already owed stay
+## owed regardless. **`--force` leaves the forced queue alone**: under it `_owed` holds only the
+## forced row and there is no ordinary queue for this to add to or re-pace.
+func owe_the_return(day: int, heat: int) -> void:
+	if _return_owed or _forced:
+		return
+	_return_owed = true
+	var act := Tuning.act_for_day(day)
+	if act < 3:
+		return
+	var count: int = Tuning.RETURN_PATROLS_PER_ACT[act - 1]
+	if count <= 0:
+		return
+	var cold := EventCatalogue.by_id("police_patrol")
+	if not cold:
+		push_error("owe_the_return: no 'police_patrol' row in the catalogue")
+		return
+	# The day's own heated copy — the same call `EventScheduler.build_day()` makes for every other
+	# placement of the row today — duplicated once more rather than mutated, because `heated()`
+	# caches its answer and shares it with every ordinary `MAP` placement of the row for the rest
+	# of the run: setting `spawn_mode` on that shared copy would turn every later patrol into a
+	# director-sited one, not just this day's return-owed rows. See `EventCatalogue._hot` and
+	# `EventDef.at_heat()`'s own note on why a heated row is a derived copy in the first place.
+	var heated := EventCatalogue.heated(cold, heat)
+	var for_return := heated.duplicate() as EventDef
+	for_return.shape = heated.shape
+	for_return.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
+	for i in count:
+		_owed.append(for_return)
+	_return_pacing = true
+	# Shortened immediately rather than left for the next ordinary roll to expire — `AHEAD_INTERVAL`
+	# can still be waiting out up to 26s when the phase turns, and a 33s return leg cannot afford
+	# to spend most of itself on a wait rolled under the pacing this call just replaced — but only
+	# ever shortened, never lengthened: a `minf` against whatever is already ticking down means the
+	# return can land its first row sooner than the ordinary pacing would have, never later.
+	_next_in = minf(_next_in, _roll_interval())
+
 ## Advances the clock and returns the event to place plus the path to place it on, or null when
 ## nothing is due. `heading` is the direction she is actually travelling, not the way she is
 ## facing: something that crosses in front of a player standing still is not in front of
@@ -178,6 +238,8 @@ func _roll_interval() -> float:
 	# the flag on and off, so what she walks past is the same city either way.
 	if _forced:
 		return _forced_interval
+	if _return_pacing:
+		return _rng.randf_range(Tuning.RETURN_PATROL_INTERVAL.x, Tuning.RETURN_PATROL_INTERVAL.y)
 	return _rng.randf_range(Tuning.AHEAD_INTERVAL.x, Tuning.AHEAD_INTERVAL.y)
 
 ## A run straight across her line, `AHEAD_LEAD_DISTANCE` in front of her.
