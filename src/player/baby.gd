@@ -95,14 +95,24 @@ func _physics_process(delta: float) -> void:
 ## reaches the bar this frame can be handed to its own `accumulate_landed()` — sensitivity
 ## included, so `ExcitementHalo`'s colour can never disagree with what the bar actually did.
 ## Running and the alley trickle have no source and are never attributed to anybody.
+##
+## **`--invincible` freezes this meter too, never only the clock.** *(2026-09-11, overturning the
+## flag's own first build the same evening: "when invincible the timer should never go down and
+## excitement should never go up. this is just noisy flashing of alarms and the day gets dark.")*
+## Nothing may add to `excitement` while the flag is on — decay still runs, since that is what
+## keeps the meter honest as a rate rather than turning it off. `sources` is emptied rather than
+## merely left unsummed, so `accumulate_landed()` below is never called either: a source that
+## charges the halo but never reaches the meter is the exact drift this guards against.
 func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
-	var sources := _world.excitement_sources_at(here) if _world else []
+	var invincible := DevFlags.invincible()
+	var sources := [] if invincible else (_world.excitement_sources_at(here) if _world else [])
 	var incoming := 0.0
-	for pair in sources:
-		incoming += pair[1]
-	incoming += Tuning.EXCITEMENT_FROM_RUNNING * _stroller.run_excess_ratio()
-	if in_alley:
-		incoming += Tuning.EXCITEMENT_FROM_ALLEY
+	if not invincible:
+		for pair in sources:
+			incoming += pair[1]
+		incoming += Tuning.EXCITEMENT_FROM_RUNNING * _stroller.run_excess_ratio()
+		if in_alley:
+			incoming += Tuning.EXCITEMENT_FROM_ALLEY
 	# A sleeping baby is harder to disturb, but not immune -- and whatever fraction of a source's
 	# own contribution actually reaches the meter is exactly the fraction that should reach that
 	# source's own accumulate_landed(), or the halo would read a cost the meter never took.
