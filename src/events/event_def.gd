@@ -134,6 +134,85 @@ func solid(new_shape: GroundShape) -> void:
 	shape = new_shape
 	obstructs_radius = new_shape.reach()
 
+## One solid piece of a row's body: where it sits along the scene's own spread axis, and the
+## `GroundShape` it collides and casts its shadow as there.
+##
+## **Almost every row is one piece at the origin**, which is what `parts()` answers for anything
+## that declares none, so `shape` is the body exactly as it always was. The list exists for the one
+## scene whose picture leaves real ground open inside its own span: a crash is two cars with debris
+## between them and an onlooker on each pavement, and a body spanning the whole street is a wall
+## where the picture shows a way through. *(2026-09-12: "the bounding box should only be the crashed
+## cars but it should emanate an excitement field that prevents the player from walking past it".)*
+##
+## **The pieces are a subset of `shape`, never more than it.** `validate()` refuses a part reaching
+## past the row's own `shape.reach()`, so `obstructs_radius` stays an upper bound on every body this
+## row actually puts down — which is what lets every planner go on reading that one disc without
+## knowing parts exist, and makes the change monotone in the safe direction: taking obstruction away
+## can only add reachable ground.
+##
+## **Two offsets, because a wide scene has two authored pictures.**
+## `EventInstance._wide_scene_texture` picks a composition per street axis rather than rotating one,
+## so where the cars sit across the street is a fact about the picture in use. `along` is read off
+## the north-south asset and `along_vertical` off its `_vertical` sibling, both at the scale
+## `EventInstance._draw_wide_scene` fits the picture to the street.
+class SolidPart extends RefCounted:
+	## Offset along the spread axis, in px from the scene's own centre, on a north-south street.
+	var along := 0.0
+	## The same, off the `_vertical` picture, on an east-west street.
+	var along_vertical := 0.0
+	var shape: GroundShape = null
+
+	## The offset the instance places this piece at, given its own `_spread_vertical`.
+	func offset_for(vertical: bool) -> float:
+		return along_vertical if vertical else along
+
+	## The furthest this piece reaches from the scene's own centre, on the worse of the two axes —
+	## what `EventDef.solid_reach()` maximises and what `validate()` holds inside `shape.reach()`.
+	func reach() -> float:
+		return maxf(absf(along), absf(along_vertical)) + shape.reach()
+
+static func part(along: float, along_vertical: float, part_shape: GroundShape) -> SolidPart:
+	var made := SolidPart.new()
+	made.along = along
+	made.along_vertical = along_vertical
+	made.shape = part_shape
+	return made
+
+## The pieces this row's body is made of, in the scene's own frame. Empty on the row itself means
+## **one piece at the origin**, which is every row but the crash — see `SolidPart`.
+##
+## A plain `var` for the same reason `shape` is one: `SolidPart` is a `RefCounted` rather than a
+## `Resource`, so it cannot export, and `at_heat()`'s `duplicate()` shares the list the way it
+## already shares `shape`. Neither is ever mutated in place.
+var solid_parts: Array[SolidPart] = []
+
+## `solid_parts` with the default filled in: the declared pieces, or one piece at the origin
+## carrying `shape`. The one form `EventInstance` builds its bodies, its shadows and its per-tile
+## record from, so a row that declares nothing cannot take a different path from one that does.
+func parts() -> Array[SolidPart]:
+	if not solid_parts.is_empty():
+		return solid_parts
+	return [part(0.0, 0.0, shape)] as Array[SolidPart]
+
+## The furthest any actual body of this row reaches from its own centre — `obstructs_radius` for
+## every row that is one piece, and less for one that is several.
+##
+## **This is the "where is she stopped" reading of a body, and `obstructs_radius` is the "how much
+## ground does this close" one.** The two are the same number for all but the crash, which closes a
+## whole street and is solid only where its two cars are. Anything asking where her centre comes to
+## rest — `validate()`'s lethal-radius check below — asks this; anything clearing or spacing ground
+## asks `obstructs_radius` and stays conservative by doing so.
+func solid_reach() -> float:
+	# A row with a `shape` and no `obstructs_radius` draws a shadow and stops nothing — a mobile
+	# one, or something with no body by design — so the reach of what she is stopped by is zero,
+	# whatever its picture is wide.
+	if shape == null or obstructs_radius <= 0.0:
+		return 0.0
+	var furthest := 0.0
+	for piece in parts():
+		furthest = maxf(furthest, piece.reach())
+	return furthest
+
 ## Day gating, 1-based and inclusive. `last_day = 0` means it never expires.
 @export var first_day := 1
 @export var last_day := 0
@@ -362,6 +441,13 @@ enum HeatResponse {
 ## for a capsule shape too, since every point of a capsule of a given reach lies inside the disc of
 ## the same reach. `solid(shape)` sets both together; `validate()` refuses the two disagreeing.
 ##
+## **It is the ground this row closes, which is not always the ground it is solid on.** A row
+## carrying `solid_parts` puts its bodies down inside this disc and leaves the rest of it open —
+## the crash, whose picture is two cars with gaps between and beside them — so *has a body* and
+## *closes ground* have come apart for exactly one row and `solid_reach()` is the first of the two.
+## Every planner here reads this one: they clear, space and refuse ground, and an upper bound is the
+## conservative answer for all three.
+##
 ## **Anything that stands still is solid at the width it is drawn.** It is a rule rather than a
 ## list, because the moment it is a list a delivery van is scenery and a man standing in a
 ## courtyard can be walked through. And the number is not a balance value: it is half of the
@@ -584,6 +670,20 @@ func validate() -> bool:
 				% [id, obstructs_radius, shape.reach() if shape else -1.0])
 				+ "picture would disagree about where she can walk")
 		return false
+	# **A row solid in parts is solid inside its own shape and nowhere else.** Every planner reads
+	# `obstructs_radius` — the disc bound — and none of them knows a part list exists, so a piece
+	# reaching past it would be ground nothing ever cleared. Held the other way round it is the one
+	# direction that is always safe: pieces inside the shape can only ever *remove* obstruction from
+	# what the planners already allowed for, and removing obstruction can only add reachable ground.
+	for piece in solid_parts:
+		if piece.shape == null:
+			push_error("event '%s' has a solid part with no shape" % id)
+			return false
+		if piece.reach() > obstructs_radius + 0.001:
+			push_error(("event '%s' has a solid part reaching %.1fpx, past the %.1fpx its own shape "
+					% [id, piece.reach(), obstructs_radius])
+					+ "claims: nothing cleared the ground it would stand on")
+			return false
 	if kind == GameEnums.EventKind.AMBIENT:
 		return true
 	# A city-wide event has no edge to walk out of, so the escape-distance rule is
@@ -629,10 +729,15 @@ func validate() -> bool:
 	# the "walk over the robber" complaint rather than a fix for it. Under it, the body is only
 	# ever felt during the telegraph, which is the phase where the event is not lethal yet and
 	# walking through a wall of metal would be the visible lie.
-	if hard_fail and obstructs_radius > 0.0 \
-			and obstructs_radius + Tuning.PLAYER_BODY_RADIUS >= inner_radius:
+	#
+	# **Stated over `solid_reach()` rather than `obstructs_radius`**, because this one is about
+	# where her centre actually comes to rest: a row solid only in parts leaves ground inside its
+	# own disc that she can walk onto, so the disc bound would refuse an arrangement that in fact
+	# lets the kill fire. The two numbers are the same for every row that is one piece.
+	if hard_fail and solid_reach() > 0.0 \
+			and solid_reach() + Tuning.PLAYER_BODY_RADIUS >= inner_radius:
 		push_error("event '%s' is lethal inside %.0fpx and solid to %.0fpx: with her own %.0fpx "
-				% [id, inner_radius, obstructs_radius, Tuning.PLAYER_BODY_RADIUS]
+				% [id, inner_radius, solid_reach(), Tuning.PLAYER_BODY_RADIUS]
 				+ "she is stopped before she can ever reach it")
 		return false
 	# A conversation is a cost, never a threat: it takes her controls rather than her body or her

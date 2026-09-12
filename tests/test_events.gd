@@ -13,6 +13,8 @@ func run(t) -> void:
 	_test_a_spread_never_lands_on_a_corner(t)
 	_test_a_spread_cap_matches_what_it_obstructs(t)
 	_test_a_wide_scene_faces_its_street(t)
+	_test_a_crash_is_solid_only_where_its_cars_are(t)
+	_test_every_other_row_is_one_body(t)
 	_test_telegraph_damps_emission(t)
 	_test_pulse_envelope(t)
 	_test_a_pursuer_leaves_room_to_answer(t)
@@ -398,6 +400,101 @@ func _test_a_wide_scene_faces_its_street(t) -> void:
 	t.check(EventInstance._wide_scene_shadow(
 			EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, false)) == null,
 			"a continuous fallen tree keeps the generic wide-scene shadow")
+
+## **A crash is solid only where the cars are.** *(2026-09-12: "a car crash right now has a full
+## bounding box even though there are gaps in the sprite. the bounding box should only be the
+## crashed cars".)*
+##
+## Stated as what the player asked for rather than as the offsets themselves: a body at the two
+## cars leaves a lane she can walk on each pavement and holds the middle of the road, and a body
+## spanning the street leaves neither. The offsets those lanes fall out of are read off the two
+## pictures (`EventCatalogue._car_accident_parts`) and checked by eye with the bounding-box layer
+## (`--layers 3`); what this holds is the thing that would be wrong if they drifted.
+func _test_a_crash_is_solid_only_where_its_cars_are(t) -> void:
+	var map := CityMap.new()
+	var crash := EventCatalogue.by_id("car_accident")
+	t.check(crash.solid_parts.size() == 2, "a crash is two cars, so it puts down two bodies")
+	t.check(crash.solid_reach() < crash.obstructs_radius,
+			"and it is solid to %.0fpx inside the %.0fpx of street it closes"
+			% [crash.solid_reach(), crash.obstructs_radius])
+
+	var carriageway := (float(Tuning.STREET_WIDTH) * 0.5 - Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE
+	for vertical in [false, true]:
+		var tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2) if vertical \
+				else Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
+		var instance := EventInstance.new()
+		instance.setup(crash, map.tile_to_world(tile), PackedVector2Array(), Vector2.RIGHT, map)
+		t.add_child(instance)
+		instance.set_process(false)
+		var street := "east-west" if vertical else "north-south"
+
+		var bodies := DebugLayers.collision_nodes_under(instance)
+		t.check(bodies.size() == 2,
+				"on a %s street the crash registers one collision shape per car (%d)"
+				% [street, bodies.size()])
+
+		var half: float = crash.obstructs_radius
+		var offsets := _lateral_offsets(instance)
+		for offset in offsets:
+			t.check(absf(offset) < carriageway,
+					"a wrecked car sits on the carriageway, not on a %s pavement (%.1fpx of %.0f)"
+					% [street, offset, carriageway])
+		t.check(_walkable_lane_beside(instance, half, -1.0) >= 2.0 * Tuning.PLAYER_BODY_RADIUS,
+				"a %s crash leaves her a lane on one side (%.0fpx)"
+				% [street, _walkable_lane_beside(instance, half, -1.0)])
+		t.check(_walkable_lane_beside(instance, half, 1.0) >= 2.0 * Tuning.PLAYER_BODY_RADIUS,
+				"and one on the other (%.0fpx)" % _walkable_lane_beside(instance, half, 1.0))
+		t.check(_is_blocked_at(instance, 0.0),
+				"while the middle of the road, where the cars are, is still shut on a %s street"
+				% street)
+		instance.free()
+
+## Every other row is exactly one piece at its own origin, so nothing but the crash changed shape.
+func _test_every_other_row_is_one_body(t) -> void:
+	var several := 0
+	for def in EventCatalogue.all():
+		if def.solid_parts.size() > 1:
+			several += 1
+			continue
+		t.check(def.parts().size() == 1, "'%s' is one body" % def.id)
+		if def.obstructs_radius > 0.0:
+			t.check(is_equal_approx(def.solid_reach(), def.obstructs_radius),
+					("'%s' is solid exactly as far as it closes ground (%.1f vs %.1f): the two "
+					+ "readings of a body only come apart for a row that is several")
+					% [def.id, def.solid_reach(), def.obstructs_radius])
+	t.check(several == 1,
+			"exactly one row in the catalogue is solid in parts (%d) — a second is a decision"
+			% several)
+
+## Where each of an instance's solid pieces sits along its own spread axis, in px from the scene's
+## centre.
+func _lateral_offsets(instance: EventInstance) -> PackedFloat32Array:
+	var vertical := instance.solid_axis() == Vector2.DOWN
+	var found := PackedFloat32Array()
+	for centre in instance.solid_part_centres():
+		var offset := centre - instance.global_position
+		found.append(offset.y if vertical else offset.x)
+	return found
+
+## Whether her centre may stand at `offset` along the spread axis — clear of every piece by her own
+## body radius.
+func _is_blocked_at(instance: EventInstance, offset: float) -> bool:
+	var offsets := _lateral_offsets(instance)
+	var shapes := instance.solid_part_shapes()
+	for i in offsets.size():
+		if absf(offset - offsets[i]) < shapes[i].reach() + Tuning.PLAYER_BODY_RADIUS:
+			return true
+	return false
+
+## How much walkable width the crash leaves on one side of itself (`side` −1 or +1), measured from
+## the far edge of the scene inward to the first body she cannot pass.
+func _walkable_lane_beside(instance: EventInstance, half: float, side: float) -> float:
+	var width := 0.0
+	var offset := side * (half - Tuning.PLAYER_BODY_RADIUS)
+	while absf(offset) <= half and not _is_blocked_at(instance, offset):
+		width += 1.0
+		offset -= side
+	return width
 
 # ------------------------------------------------------------------ emission ---
 

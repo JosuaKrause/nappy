@@ -1621,6 +1621,13 @@ static func _fallen_tree() -> EventDef:
 ## A hard seal: two cars locked together across the carriageway, debris between them and an
 ## onlooker on each pavement — the player's other own example. Same single-copy geometry as
 ## `fallen_tree`, for the same reason: one continuous scene rather than a repeated segment.
+##
+## **The one seal that is solid only in parts, and the one that emits.** *(2026-09-12: "a car crash
+## right now has a full bounding box even though there are gaps in the sprite. the bounding box
+## should only be the crashed cars but it should emanate an excitement field that prevents the
+## player from walking past it".)* `shape` stays the whole-street band — it is what the picture is
+## fitted to, what the field is stated over, and the disc every planner clears the street by — while
+## `solid_parts` puts a body under each car and leaves the debris and the two pavements open.
 static func _car_accident() -> EventDef:
 	var def := EventDef.new()
 	def.id = "car_accident"
@@ -1634,7 +1641,29 @@ static func _car_accident() -> EventDef:
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
 	def.solid(GroundShape.band(96.0))
+	def.solid_parts = _car_accident_parts()
 	return def
+
+## Where the two cars stand, read off the two authored pictures at the scale
+## `EventInstance._draw_wide_scene` fits each to the street — 192px of street over a 200px picture,
+## so a pixel of art is 0.96px of ground and the picture's own centre is the scene's centre.
+##
+## `car_accident.svg` (north-south street): the cars are drawn at x 63–91 and 92–120, and
+## `car_accident_shadow.svg` puts their ground contacts at 77 and 106, which agree — an end-on car
+## is drawn directly above its own patch of road. That is −22.1px and +5.8px from the centre.
+##
+## `car_accident_vertical.svg` (east-west street): the cars are side views, so their drawn bodies
+## sit **above** the road they stand on and only the shadow art says where that is — contacts at
+## y 88 and 110, which is −11.5px and +9.6px from the centre.
+##
+## 14px of radius apiece: a car is drawn 28px wide, 26.9px of ground at this scale, and the round
+## number is what makes the two bodies meet rather than leaving a one-pixel slot between them on the
+## north-south picture. Debris and onlookers carry no body at all — they are what the gaps are.
+static func _car_accident_parts() -> Array[EventDef.SolidPart]:
+	return [
+		EventDef.part(-22.1, -11.5, GroundShape.point(14.0)),
+		EventDef.part(5.8, 9.6, GroundShape.point(14.0)),
+	] as Array[EventDef.SolidPart]
 
 ## Half of a soft seal: a skip at the kerb, facing `scaffolding` on the other pavement. Kerb-pinned
 ## like `delivery_van`, so `EventInstance._centred_on_the_pavement_band` leaves it exactly where
