@@ -34,6 +34,26 @@ const WALKER_TRIM_BY_VIEW := {
 	"front_diagonal": preload("res://assets/crowd/walker_front_diagonal_trim.svg"),
 	"back_diagonal": preload("res://assets/crowd/walker_back_diagonal_trim.svg"),
 }
+## The walker's second gait frame, feet passing — the mother's own `_b` pose for each view. Only
+## the legs and shoes differ from the tables above; the coat stays put in the three-quarter views
+## and lifts a pixel in front/back/side, exactly the correction the mother's own frames needed
+## (`docs/DECISIONS.md`, "Eight-direction style transfer"). Kept as separate `_b`-suffixed files
+## beside the unsuffixed frame-a sources rather than renaming those into `_a`, so nothing that
+## already points at `walker_front_body.svg` and so on has to change.
+const WALKER_BODY_BY_VIEW_B := {
+	"front": preload("res://assets/crowd/walker_front_body_b.svg"),
+	"back": preload("res://assets/crowd/walker_back_body_b.svg"),
+	"side": preload("res://assets/crowd/walker_side_body_b.svg"),
+	"front_diagonal": preload("res://assets/crowd/walker_front_diagonal_body_b.svg"),
+	"back_diagonal": preload("res://assets/crowd/walker_back_diagonal_body_b.svg"),
+}
+const WALKER_TRIM_BY_VIEW_B := {
+	"front": preload("res://assets/crowd/walker_front_trim_b.svg"),
+	"back": preload("res://assets/crowd/walker_back_trim_b.svg"),
+	"side": preload("res://assets/crowd/walker_side_trim_b.svg"),
+	"front_diagonal": preload("res://assets/crowd/walker_front_diagonal_trim_b.svg"),
+	"back_diagonal": preload("res://assets/crowd/walker_back_diagonal_trim_b.svg"),
+}
 ## Which authored view each of `EightDirection`'s eight sectors draws — N back, NE/NW
 ## back_diagonal, E/W side, SE/SW front_diagonal, S front, the same N/NE/E/SE/S coverage the
 ## mother/pram family uses. Sectors 3 (SW), 4 (W) and 5 (NW) mirror their partner here rather
@@ -200,8 +220,9 @@ var _turn: CarTurn = null
 ## How much straight lane is left before the arc begins, in px. The car drives its own lane for
 ## this much and then curves, so the approach is ordinary travel with every ordinary rule on it.
 var _turn_run_up := 0.0
-## The frame and flip currently drawn, so a redraw only happens when they change.
-var _picture := Vector2i(-1, -1)
+## The sector, flip and (walker only) gait frame currently drawn, so a redraw only happens when
+## one of them changes. The third component is always 0 for a car, which never bobs a stride.
+var _picture := Vector3i(-1, -1, -1)
 ## Whether this car's own caret was up last frame, so it gets one redraw to come off with.
 var _was_marked := false
 
@@ -260,6 +281,11 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 	_map = map
 	field = crowd_field
 	_rng.seed = seed_value
+	# Unlike `_walker_view` above, holding this stale on purpose would cost nothing correct — a
+	# fresh walker's stride starting mid-cycle looks the same as one starting at rest for as long
+	# as it takes to notice — but resetting it is free and keeps a placement deterministic for a
+	# given seed, the same reason `Stroller.reset_at()` zeroes `_walk_phase` for a new day.
+	_walker_gait_phase = 0.0
 	# Start somewhere along the field rather than at its edge, or the whole crowd arrives from
 	# one side in a wave on the first morning. Re-rolled if it lands somewhere it could not have
 	# walked to: behind a barrier, which reads as the barrier being fake, or in the middle of a
@@ -382,6 +408,7 @@ func _process(delta: float) -> void:
 	_set_cross(move_toward(_cross(), _lane_centre + _detour, STEER_SPEED * delta))
 	if kind == Kind.WALKER:
 		_consider_turning()
+		_advance_walker_gait(delta)
 	_look_ahead()
 	if _blocked_in <= LOOKAHEAD_TILES:
 		_divert()
@@ -397,7 +424,8 @@ func _process(delta: float) -> void:
 ## replayed — so an agent only redraws when its picture actually changes. At this population that
 ## is the difference between five hundred redraws a frame and a handful.
 func _redraw_if_the_picture_changed() -> void:
-	var picture := Vector2i(_frame(), 1 if _flipped() else 0)
+	var gait := _walker_gait_frame() if kind == Kind.WALKER else 0
+	var picture := Vector3i(_frame(), 1 if _flipped() else 0, gait)
 	if picture != _picture:
 		_picture = picture
 		queue_redraw()
@@ -1723,6 +1751,10 @@ const ENTRY_SPREAD := 420.0
 ## job. It is only a preference: after six rolls it takes what it has, because an entry band with
 ## nothing free in it must still put the car somewhere.
 func _recycle() -> void:
+	# See `setup()`'s own comment: resetting this cannot be wrong the way holding `_walker_view`
+	# stale would be, and doing it anyway keeps a recycled walker's stride deterministic per seed.
+	if kind == Kind.WALKER:
+		_walker_gait_phase = 0.0
 	for _attempt in 6:
 		_choose_lane(_rng.randf())
 		var bounds := field.along_bounds(_vertical)
@@ -1840,6 +1872,11 @@ func _entry_band_fits() -> bool:
 var _walker_view := 2
 var _car_view := 2
 
+## A walker's stride, in the same units `Stroller._walk_phase` uses: wrapped 0..TAU, advanced by
+## distance actually covered (`_advance_walker_gait()`) rather than by time, so it stays in step
+## at any speed the way the mother's own does. Cars have no gait; only a walker reads this.
+var _walker_gait_phase := 0.0
+
 ## Below this speed a walker's own applied heading (`_walker_heading()`) is too close to zero to
 ## mean a facing, so it holds whatever it was last drawn as rather than chattering on the residual
 ## few px/s `_yield_factor()` and float noise can still leave in it. Well under
@@ -1898,6 +1935,26 @@ func _walker_heading() -> Vector2:
 func _update_walker_view() -> void:
 	_walker_view = EightDirection.update(_walker_view, _walker_heading(), WALKER_IDLE_SPEED)
 
+## Advances the walker's stride by how far it actually travelled this tick — `velocity()`, the
+## along-lane speed the crowd already stops to zero at a give-way, a queue or a light, the same
+## quantity `_current_reach()` and `contribution_at()` read. Called once from `_process()` rather
+## than from `_draw_body()`/`_walker_gait_frame()`, which a halo ring calls several times a frame:
+## unlike the sector hold above, adding a distance is not idempotent, so it must run once per tick
+## or a walker with three halo rings would stride three times as fast as one with none.
+## `Stroller._physics_process()`'s own `_walk_phase` uses the identical 0.09 rate, so the crowd and
+## the player share one stride length per pixel walked.
+func _advance_walker_gait(delta: float) -> void:
+	_walker_gait_phase = wrapf(_walker_gait_phase + velocity().length() * delta * 0.09, 0.0, TAU)
+
+## Which of the walker's two gait frames to draw right now: frame 1 (feet passing) for half of
+## every stride while actually moving, frame 0 (the rest pose) otherwise — `Stroller._draw_mother()`'s
+## own `stepping` test, read here off `WALKER_IDLE_SPEED` instead of the mother's own small gait
+## floor, since a walker already has that threshold for exactly "is this body actually moving".
+func _walker_gait_frame() -> int:
+	if velocity().length() <= WALKER_IDLE_SPEED:
+		return 0
+	return 1 if sin(_walker_gait_phase * 2.0) > 0.0 else 0
+
 ## Advances `_car_view` for this frame. **There is no cross term the way a walker has one**: a
 ## car's own `velocity()` already is its instantaneous line of travel — cardinal in a lane, the
 ## tangent of its own arc mid-turn (`heading()`) — so the sector runs through the diagonal for
@@ -1929,8 +1986,13 @@ func _draw_body(canvas: CanvasItem) -> void:
 		return
 	_draw_shape_shadow(canvas, shape, Vector2.ZERO, Vector2.RIGHT)
 	var view: String = WALKER_VIEW_BY_SECTOR[frame]
-	Sprites.draw_standing(canvas, WALKER_BODY_BY_VIEW[view], Vector2.ZERO, Vector2.ZERO, flip, colour)
-	Sprites.draw_standing(canvas, WALKER_TRIM_BY_VIEW[view], Vector2.ZERO, Vector2.ZERO, flip)
+	# One lookup decides both layers, so the coat and the legs can never show two different
+	# instants of the same stride.
+	var stepping := _walker_gait_frame() == 1
+	var body_by_view := WALKER_BODY_BY_VIEW_B if stepping else WALKER_BODY_BY_VIEW
+	var trim_by_view := WALKER_TRIM_BY_VIEW_B if stepping else WALKER_TRIM_BY_VIEW
+	Sprites.draw_standing(canvas, body_by_view[view], Vector2.ZERO, Vector2.ZERO, flip, colour)
+	Sprites.draw_standing(canvas, trim_by_view[view], Vector2.ZERO, Vector2.ZERO, flip)
 
 ## The strike box's own southernmost point when the heading is a diagonal, in px south of the
 ## node — `Tuning.CAR_STRIKE_HALF_LENGTH` (26) and `Tuning.CAR_STRIKE_HALF_WIDTH` (14) each rotated
