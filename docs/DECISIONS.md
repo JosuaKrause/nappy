@@ -2,7 +2,7 @@
 
 ## M109 — The complete generated catalogue uses comic drawings — 2026-09-12
 
-The PLAYTEST-63 correction was applied to all 95 existing PNG assets: 59 outdoor tiles,
+The PLAYTEST-64 correction was applied to all 95 existing PNG assets: 59 outdoor tiles,
 25 mother/stroller views and frames, seven garbage/litter props and four identity/export
 images. The player then said "yes I like the new versions", followed by "of the tiles".
 Tile appearance is approved; this does not approve the other families or authorize a PR merge.
@@ -26,7 +26,7 @@ not this final redraw. All files are in the player's main checkout and the PR re
 
 ## M109 — The identity/export PNGs share the comic redraw — 2026-09-12
 
-The all-textures correction in PLAYTEST-63 also covers the four generated identity/export
+The all-textures correction in PLAYTEST-64 also covers the four generated identity/export
 rasters outside the runtime replacement tree. The audit traced `logo.png` to `logo.svg`, both
 stroller PNG sizes to `icon_stroller.svg`, and the social card to the logo composited onto white.
 They were included rather than silently deferred as unbound gameplay art: the README uses the
@@ -42,7 +42,7 @@ exact prompt, mappings and reproducible registration live in
 
 ## M109 — Garbage and litter as comic drawings — 2026-09-12
 
-PLAYTEST-63 extended the style-transfer correction to every generated texture. The seven prop
+PLAYTEST-64 extended the style-transfer correction to every generated texture. The seven prop
 derivatives were redrawn from their existing SVG concepts with the urban and cardinal style
 references. A painterly first pass lost its forms in native-size mottling; the selected pass
 uses broad shadow planes, few folds and a gray metal can without invented red branding.
@@ -59,7 +59,7 @@ byte from the saved clean atlas. Human acceptance and gameplay appearance remain
 
 ## M109 — Outdoor tile materials and the meaning of style transfer — 2026-09-12
 
-PLAYTEST-63 asked for tiles next. The initial batch registered all 59 outdoor SVGs at 32×32,
+PLAYTEST-64 asked for tiles next. The initial batch registered all 59 outdoor SVGs at 32×32,
 including 58 live TileSet textures and the unbound `alley_draft`. Source rasters, source hashes,
 four raw generated atlases, exact prompts and extraction measurements were preserved under
 `docs/evidence/style-transfer-tiles-2026-09-12/`. City and CityEdge already resolved these
@@ -101,7 +101,7 @@ tree/stroller overlap, or motion. No additional windowed capture is taken in thi
 
 ## Café sitters face their own tables; barriers follow the actual mouth — 2026-09-12
 
-PLAYTEST-63 reported a wrong-facing right sitter and sideways sitters in the vertical café.
+PLAYTEST-64 reported a wrong-facing right sitter and sideways sitters in the vertical café.
 `EventInstance._cafe_seat_heading` derives a bearing from each alternating chair's offset
 toward its table. Horizontal seats use east/west views and vertical seats use south/north;
 the fixed screen-depth lift does not enter the facing calculation. Focused event-view tests
@@ -120,7 +120,7 @@ open; no balance or obstruction-radius values change.
 
 ## Street-tree beds are ground, not upright props — 2026-09-12
 
-PLAYTEST-63 shows the tree bed drawing over the stroller. The player asked for the bed to be
+PLAYTEST-64 shows the tree bed drawing over the stroller. The player asked for the bed to be
 a tile rather than an object. `CityDecals`, the existing flat ground layer between `Ground`
 and `Buildings`, now owns the tile-sized bed at its existing center anchor. `Prop` retains
 the tree's upright art, shadow and collision. This uses the existing ground-decal mechanism

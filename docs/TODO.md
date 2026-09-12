@@ -104,7 +104,7 @@ build could not decide alone.
 Follows M108, eight-direction entity graphics. Use the approved SVG-first workflow in
 [VISUALS.md](VISUALS.md) and the illustrated-png skill. The supplied diagonal urban and cardinal
 gameplay references define the comic drawing style; each SVG defines the subject and functional
-placement. PLAYTEST-63 requires transferring the idea, with redrawn forms and expressive ink
+placement. PLAYTEST-64 requires transferring the idea, with redrawn forms and expressive ink
 and shadow shapes, rather than copying the primitive drawing and adding surface texture.
 **Every PNG asset must have a corresponding SVG asset, authored and reviewed first.** This is
 a permanent authoring requirement, not only a conversion step. Audit existing PNG-only assets

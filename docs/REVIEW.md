@@ -22,11 +22,11 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 - **Look at café seating and roadworks along both street axes.** Each café sitter should
   face its own table, including the right-hand chair and the vertical arrangement. Vertical
   red barriers should read as a narrow continuous barrier, and a horizontal alley should be
-  closed across its short mouth. The original findings are in [PLAYTEST-63](playtests/PLAYTEST-63.md).
+  closed across its short mouth. The original findings are in [PLAYTEST-64](playtests/PLAYTEST-64.md).
 
 - **Walk past a street tree with the stroller overlapping its bed.** The paving bed should
   stay underneath her and the pram while the trunk and canopy retain their upright sorting.
-  Check the location pictured in [PLAYTEST-63](playtests/PLAYTEST-63.md), or any street-tree run.
+  Check the location pictured in [PLAYTEST-64](playtests/PLAYTEST-64.md), or any street-tree run.
 
 - **Compare the mother carrying the baby with the mother pushing the stroller.** Use ordinary
   gameplay for pushing and `--start-escape floor:2` for carrying; walk and turn in both. Does she
