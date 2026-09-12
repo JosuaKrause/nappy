@@ -196,3 +196,16 @@ output in both axes before composing the markings and damage.
 Relative offsets are also an allowed blending approach. Compare the equal-weight rotational
 blend with a wrapped half-tile-offset blend in repeated patches and retain the smoother result
 with both recipes recorded.
+
+> the versions of the [Image #1] etc from before this PR were actually pretty good -- just stencil them out
+
+The referenced image is `assets/illustrated/svg-transfer/tiles/sidewalk_cracked_broken_a.png`.
+Use the damage artwork from before the graphics PR as the extraction source. Stencil out the
+cracks, holes and debris from their floor background and blend those details over the shared
+base tiles. Preserve the pre-PR originals and extraction recipe; do not redraw the accepted
+damage forms.
+
+> all previous (before this PR) cracked ones were good
+
+This acceptance covers every pre-PR cracked variant across sidewalk, road and alley, including
+hairline, cracked and broken A/B forms. Use all of those originals as the stencil sources.
