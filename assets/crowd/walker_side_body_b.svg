@@ -1,0 +1,7 @@
+<!-- In profile, feet passing: the same coat lifted a pixel with the stride. Mirrored for west. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="38" viewBox="0 0 18 38" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M7 9 Q11 7 14 10 L16 13 L15 26 Q10 29 4 26 L4 12 Z" fill="#ffffff"/>
+  <path d="M4 22 Q10 24 15 22 L15 27 Q10 29 4 27 Z" fill="#e0e0e0"/>
+  <path d="M13 12 Q17 13 17 17 L14 18 L12 14 Z" fill="#f2f2f2"/>
+  <path d="M6 11 Q10 13 14 11" fill="none" stroke="#ffffff" stroke-width="1"/>
+</svg>

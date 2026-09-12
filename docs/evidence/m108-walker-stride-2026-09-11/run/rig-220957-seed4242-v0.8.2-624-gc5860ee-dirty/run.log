@@ -1,0 +1,15 @@
+nappy rig log  2026-09-11T22:09:57  version v0.8.2-624-gc5860ee-dirty
+
+day 1  act 1  run seed 4242  city seed 4242  length 180.0s
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  plan     closed: roadworks h(6,5)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burst_water_main x22, cafe_tables x66, car_accident x21, cat_dash x8, chatting_mother x2, delivery_van x38, dog_walker x23, fallen_tree x16, homeless_yeller x5, leaf_blower x15, loose_dog x12, market_stall x42, moving_van x34, pigeon_flock x5, playground x2, scaffolding x26, skip x23
+   0.0  start    doorstep (113,80), facing 180°
+   1.5  shot     burst started: asked for an animation burst at (113,80) | exc 8, sleep 0 | playing | asked/burst-4079262-001
+   3.8  crowd    walked into somebody at (113,80) | exc 24, in 12.7/s (crowd 30.7, events 0.0), sleep 0
+   4.2  freeze   sleep stopped filling | exc 36, in 45.0/s (crowd 44.9, events 0.0), sleep 0 | near: cafe_tables 128px (out of range)
+   4.5  shot     burst complete: 28 frames | duration
+   9.9  path     0% of her street time on the corridor (0.0s on, 9.8s off, 0.0s off the streets)
+   9.9  lost     lost_crying after 9.9s — She started crying. There is no settling her now. | exc 100, in 15.0/s (crowd 15.0, events 0.0), sleep 0 | near: cafe_tables 128px (out of range)
+   9.9  nerve    spent a nerve on day 1 (act 1); 4 left — day 1 again

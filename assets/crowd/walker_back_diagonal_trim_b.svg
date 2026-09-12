@@ -1,0 +1,11 @@
+<!-- Crowd walker back three-quarter trim, feet passing: the legs and shoes are redrawn crossing
+     (the only paths this frame changes), the hair unchanged the way the mother's own
+     back-diagonal b frame leaves it. Canvas 18x38; bottom-centre ground anchor (9,38). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="38" viewBox="0 0 18 38" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M7 28 L11 28 L10 36 L7 36 Z M9 27 L12 26 L13 33 L10 34 Z" fill="#46506b"/>
+  <path d="M7 35 L11 35 L12 37.5 L6 37.5 Z M10 33 L13 32 L15 34 L10 35 Z" fill="#2f2a2c"/>
+  <path d="M2 25 L5 26 L5 28 L2 27 Z M15 19 L17 18 L17 21 L15 22 Z" fill="#d9a878"/>
+  <path d="M13 3 Q16 4 15 8 L13 10 L11 7 Z" fill="#d9a878"/>
+  <path d="M4 6 Q4 0.5 10 0.5 Q14 0.5 15 4 L13 5 L13 9 Q10 12 6 10 Z" fill="#3a2b26"/>
+  <path d="M5 2 Q9 0 13 2 M6 9 Q9 11 12 9" fill="none" stroke="#654039"/>
+</svg>
