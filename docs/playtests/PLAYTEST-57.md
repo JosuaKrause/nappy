@@ -116,3 +116,10 @@ millisecond, `HHMMSS-mmm-attempt1-asked.png`, and the player rejected that shape
 
 So a picture is named by real seconds since the application started, in the old `042s` shape, and
 never by the day's clock.
+
+And a moment later, the simpler shape:
+
+> actually why not just count up the screenshot numbers?
+
+So a picture is numbered in the order it was taken, one counter for the run, and carries no clock
+of any kind; the run log's own `shot` entry says when it was.
