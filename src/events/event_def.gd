@@ -133,6 +133,9 @@ var shape: GroundShape = null
 func solid(new_shape: GroundShape) -> void:
 	shape = new_shape
 	obstructs_radius = new_shape.reach()
+	# `parts()` caches a one-piece default built from `shape`; replacing the shape has to drop it,
+	# or a row re-shaped after the first draw would keep colliding as the shape it used to be.
+	_default_parts = []
 
 ## One solid piece of a row's body: where it sits along the scene's own spread axis, and the
 ## `GroundShape` it collides and casts its shadow as there.
@@ -189,10 +192,19 @@ var solid_parts: Array[SolidPart] = []
 ## `solid_parts` with the default filled in: the declared pieces, or one piece at the origin
 ## carrying `shape`. The one form `EventInstance` builds its bodies, its shadows and its per-tile
 ## record from, so a row that declares nothing cannot take a different path from one that does.
+##
+## The default is built once per def rather than per call: `_draw_body_shadow()` asks this on every
+## `_draw()` of every visible event, and a fresh `SolidPart` and array per frame per entity is a
+## cost for nothing. `shape` is never mutated in place and `solid()` drops the cache when it
+## replaces one, so the cached piece cannot go stale.
 func parts() -> Array[SolidPart]:
 	if not solid_parts.is_empty():
 		return solid_parts
-	return [part(0.0, 0.0, shape)] as Array[SolidPart]
+	if _default_parts.is_empty():
+		_default_parts = [part(0.0, 0.0, shape)] as Array[SolidPart]
+	return _default_parts
+
+var _default_parts: Array[SolidPart] = []
 
 ## The furthest any actual body of this row reaches from its own centre — `obstructs_radius` for
 ## every row that is one piece, and less for one that is several.
