@@ -1340,7 +1340,10 @@ Top-down camera with a fake vertical extrusion:
   street. (It does *not* by itself keep an extrusion off the player: the mass is inside the lot and
   still north of the origin a y-sort would compare, which is why buildings are their own layer —
   see below.) A taller building therefore shows more wall and less roof, which is what an oblique
-  view of a taller building should look like.
+  view of a taller building should look like. **The collision body follows the lot with one
+  exception**: its own north edge — the top of the wall in this projection — sits
+  `Building.NORTH_EDGE_INSET` (6px) south of the lot's own north edge, so she can step a little
+  way into it rather than stop a tile short. The south edge is untouched.
 - **Building heights are whole tiles**, because a tiled facade cannot honour a continuous height
   without stretching a tile. Quantising also makes the "a roof always shows" rule exact instead of
   approximate: the wall takes at most `floor(depth * 0.55)`
