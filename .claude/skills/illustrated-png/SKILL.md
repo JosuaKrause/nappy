@@ -51,6 +51,13 @@ does not change who the character appears to be. Canvas registration does not pr
 faces, clothing or interior placement. Update this workflow with observed results;
 record experiments and rejected options in `docs/DECISIONS.md`.
 
+For walking figures, preserve identity through coherent full-figure edits. Do not composite fixed
+upper pixel rows over moving lower legs: the pelvis, coat hem, thighs and knees need continuous
+articulation. Check anatomical leg ownership from hip to shoe through both contacts; recoloring
+the same leg silhouettes does not establish an opposite step. Diagonal contacts retain the same
+projected travel axis while the legs exchange leading and trailing positions. Review three-quarter
+torso and pelvis silhouettes separately from front views.
+
 Measure stature across all facings and frames after registration. Fitting an over-wide pose
 into its canvas must not shrink the person when she turns. Redraw a compact pose with consistent
 proportions instead of stretching it or changing the runtime canvas. Inspect the native result,

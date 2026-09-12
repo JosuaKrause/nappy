@@ -33,16 +33,6 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   Check both tree shapes and the roof variants in
   `evidence/comic-city-props-2026-09-12/comparisons/`; `--svg` shows their source concepts.
 
-- **Compare the mother carrying the baby with the mother pushing the stroller.** Use ordinary
-  gameplay for pushing and `--start-escape floor:2` for carrying; walk and turn in both. Does she
-  remain the same adult woman, and does the baby read as a supported cradle with sensible
-  visibility from behind? Check stable hair, clothes, stature and bundle position through each
-  stride. The three-pose sheet and walking GIF in
-  `evidence/comic-carrying-strides-2026-09-12/registered/` show E in all eight directions.
-  Watch the open, together, opposite-open, together loop in motion and stop from different
-  phases: does it read as walking and settle naturally into the together pose?
-  `--svg` provides the source comparison.
-
 - **Watch the stroller handle through a turn and both pushing gait frames.** Do her hands stay
   connected while the stroller remains grounded? The PNG and SVG `grounding-*` sheets in
   `evidence/pram-contact-2026-09-12/` show the enlarged stroller and its ground anchors;

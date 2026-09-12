@@ -115,6 +115,15 @@ findings supported by the conversion and review.
       Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
+- [ ] Repair the carrying gait as continuous anatomy, **F — Hip motion**. PLAYTEST-65 rejects
+      E's stitched lower legs, fixed pelvis and disconnected leg colors. Redraw the hips,
+      thighs, knees, shoes and lower coat as coherent poses; do not splice fixed upper rows
+      over moving legs or substitute a color swap for a step. Preserve the adult identity and
+      supported baby through image editing, with head/arms stable and lower-body movement
+      continuous. NE/NW's open feet must follow their travel axis in both contacts; SE/SW need
+      real three-quarter silhouettes. Keep the other facings, three poses, A/C/B/C loop and
+      together idle. Review SVG sources first, then full generated poses at native scale and
+      as an eight-direction animation. Preserve E's named evidence and every reproducible recipe.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The

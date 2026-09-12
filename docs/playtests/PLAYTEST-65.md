@@ -96,3 +96,13 @@ Preserve exact inputs, frame order, timing, tool requirements and regeneration c
 Hand contact must preserve grounding: align the stroller wheels with the woman's feet rather
 than lifting the wheels to bring the handle up. Try a modest drawing scale so the handle-to-wheel
 height matches her hand-to-foot height, retaining the existing art if that satisfies both.
+
+> did you stitch them manually together? NE and NW open in the wrong direction. SE and SW basically use the same graphics as S. The others are fine ignoring the obvious seams and the fact that left and right legs  are just recolored versions of each other when they're in front and the connection at the hip doesn't do that recoloring leading to slightly odd looking legs. Her hip shows her not moving the legs in full swing even though the legs are trying to
+
+The E registration composites D's first 34 pixel rows over generated lower legs. This freezes
+the hips and creates a seam; recoloring the leading leg does not make the pelvis, thigh and leg
+move coherently. Redraw the pelvis, thighs, legs and lower coat together. Keep the adult identity,
+supported cradle, three distinct poses, four-phase loop and together idle pose. Correct the
+NE/NW travel axis in both open contacts and make SE/SW visibly three-quarter views rather than
+front-view substitutes. The other directions' facing is acceptable, but their continuous anatomy
+and hip motion still need correction. Preserve E as rejected review evidence.
