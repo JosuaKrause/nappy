@@ -59,11 +59,14 @@ def label(draw: ImageDraw.ImageDraw, text: str, x: int, y: int, anchor: str = "m
 
 def build_static() -> Image.Image:
     cell_w, cell_h = 192, 84
-    canvas = Image.new("RGBA", (4 * cell_w, 2 * cell_h), SLATE + (255,))
+    title_h = 30
+    canvas = Image.new("RGBA", (4 * cell_w, title_h + 2 * cell_h), SLATE + (255,))
     draw = ImageDraw.Draw(canvas)
+    draw.text((canvas.width // 2, 8), "D — MATCHED PROPORTIONS", font=LABEL, anchor="ma", fill=TEXT)
+    draw.text((canvas.width // 2, 22), "SOURCE-FRAME WALKING ROLLOUT", font=SMALL, anchor="ma", fill=MUTED)
     for index, (direction, view, mirrored) in enumerate(DIRECTIONS):
         col, row = index % 4, index // 4
-        left, top = col * cell_w, row * cell_h
+        left, top = col * cell_w, title_h + row * cell_h
         label(draw, direction, left + cell_w // 2, top + 8)
         draw.text((left + cell_w // 2, top + 24), "A → B → A → B", font=SMALL,
                   anchor="mm", fill=MUTED)
