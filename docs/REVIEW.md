@@ -96,9 +96,16 @@ item below for as long as looking takes.
   the day's route does not use). Walkers and cars turn back from a hard seal, a wall and a
   closure; a soft seal takes both pavements from walkers and leaves the road to cars; a door lets
   cars through one at a time. Does a street the crowd refuses read as *shut*, and does the crowd
-  ever look stuck against it? Record is `DECISIONS.md`, M110. **And the open question is
-  yours**: should a café, a construction band or a kerbed van divert the crowd the same way?
-  `TODO.md`, M110.
+  ever look stuck against it? Record is `DECISIONS.md`, M110.
+- **Walk past a café, a stall or a kerbed van on a day with several** (a precinct's pavements are
+  the busiest early in a day). A walker steps into the other lane of its own footway to get past
+  one and steps back after; a car in the body's own lane turns at the last junction while the
+  oncoming lane keeps flowing past it. Do both reads happen visibly rather than the walker or the
+  car simply not being there next time you look, does any street end up parked rather than turned,
+  and does diverting at every body — the recommendation the player overturned on 2026-09-12 —
+  blunt the tell a closure's own turn-away relies on? Record is `DECISIONS.md`, M110, every solid
+  body; the tunables are `Tuning.WALKER_BODY_SIDESTEP_TILES` (4 tiles) and
+  `CrowdAgent.BODY_TURN_CLEARANCE_TILES` (3 tiles), both open to overturn.
 - **Stand by a region door on a busy street and watch the walkers** (day 7 or later,
   `--invincible`). Most stop beside the hut, vanish inside for a second, come out on the far side
   and walk on; one in eight walks straight through; one in four turns off at the last junction;
@@ -153,6 +160,13 @@ item below for as long as looking takes.
 - **Watch any walker on any pavement.** They stride now, two frames alternating at the mother's
   own rate, frame a whenever one stops. Do the feet read as walking at street scale, and does a
   queue of stopped walkers read as standing? Record is `DECISIONS.md`, M108, the walkers' stride.
+- **Watch a dog walker, a cyclist, a running cat and a lunging robber, then sit by a café and a
+  busker** (any day; `--spawn event:dog_walker` puts one beside you). Every event person and
+  animal that moves now strides too, two frames at the same rate as the mother, and the walker
+  and his dog flip together; the café sitters lean every few seconds and the busker's strumming
+  hand goes up and down twice a second, each on its own timer. Do the strides read at street
+  scale, does the cyclist's pedal swap read as pedalling or as a twitch, and is the busker's
+  tempo right? Record is `DECISIONS.md`, M108, the event strides.
 - **Watch walkers round a corner or step aside for you** (any day, any busy pavement). A walker
   now picks one of eight views from the way it is actually moving, so it shows a diagonal picture
   for the few tenths of a second it is steering across its lane, and a stopped one keeps its last
@@ -195,6 +209,14 @@ item below for as long as looking takes.
 - **Look at a park or a forest block.** Trees keep at least a canopy's width apart now. Do the
   lots still read as *wooded*, or has the spacing made them look planted in rows? Record is
   `DECISIONS.md`, M100, the park trees.
+
+- **Walk a baby home in act III or IV** (`--day 9` or `--day 13`; settle the baby in a park, then
+  walk back). Two patrol cars on day 9, three on day 13, now come down her own street toward her
+  during the walk home, nine to sixteen seconds apart, on top of whatever the day already owed;
+  none is lethal. Does the return read as pressure — a reason to pick the quieter street home —
+  or as punishment for having found calm, and does the sleeping baby survive it often enough?
+  Record is `DECISIONS.md`, M98, the return owes her patrols; the counts and the interval are
+  `Tuning.RETURN_PATROLS_PER_ACT` and `RETURN_PATROL_INTERVAL`, both open to overturn.
 
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 

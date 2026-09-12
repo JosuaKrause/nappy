@@ -107,6 +107,40 @@ the whole crowd being **cleared** at the end of a day. All four go through one `
 **Ask what else ends a body's stay somewhere, and make every answer call the same function.** A
 slot handed back in only the expected case is a leak with a picture on it.
 
+## An approach arrives late, so the guarantee is positional
+
+**A brake and a sidestep both aim at a point and get there a frame after they should.** A car
+easing toward a blockage overshoots by whatever the last frame's speed bought it; a walker crossing
+to the other lane of its footway is still half way over when it draws level with a café's first
+table. So *"nothing ever stands inside a solid body"* cannot be bought by tuning either of them —
+`CrowdAgent._keep_out_of_a_body()` holds the step inside the tile the agent started the frame on,
+which is the same shape `nudge_back()` already has for the backward direction.
+
+**The sideways half is given up before the forward half, and the ordering is the whole of it.**
+Refusing both at once wedges a walker crossing a pavement beside a body for good, because its
+steering target does not move and the identical step is refused on every frame after. Undoing only
+the cross step leaves it walking along the street beside the body and crossing once it is past.
+
+**And an agent already standing somewhere it may not be is left alone**, or the guard turns a bad
+placement into a permanent one.
+
+## A lane decision is stated over the lane, not over where the body happens to be
+
+`CrowdAgent._detour` has already carried a walker off its own lane, so a scan taken from the tile it
+is **standing on** finds the clear lane it just moved into, lets the detour go, and steers it
+straight back into the body it was avoiding — a two-frame oscillation that looks like dithering and
+reads as a walker standing in a café.
+
+**`_lane` is where the walker belongs and the detour is how far off it currently is.** State the
+decision over the first and it is stable while the second is being acted on. Ties go to `_lane`,
+which is what makes *"and it steps back afterwards"* happen at all.
+
+**The same trap one level up: a turn has no runway.** A walker rounds a corner wherever its old
+along coordinate left it, which can be a few pixels from the next street's first tile — so the lane
+it lands on has to be **chosen at the turn**, and an arm whose landing is taken with no room left to
+cross is an arm the walker does not turn into. A sidestep cannot rescue a decision that left it
+nowhere to sidestep in.
+
 ## The heading is the datum, and it is continuous
 
 `CrowdAgent.heading()` is a unit vector along the car's actual line of travel — cardinal in a lane,

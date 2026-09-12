@@ -1,0 +1,4 @@
+<!-- Small mouse facing east, with rounded ears, pointed snout and thin curling tail. Bottom-centre ground anchor; prepared and unbound. Mid-stride. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="14" viewBox="0 0 24 14" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M8 10 Q3 12 2 8 Q1 5 4 4" fill="none" stroke="#a48a7c" stroke-width="1.2"/>  <path d="M7 11 Q7 5 14 6 L22 10 L17 12 Z" fill="#81736b" /><circle cx="14" cy="5" r="3" fill="#81736b"/><circle cx="14" cy="5" r="1.5" fill="#c4a99b"/><circle cx="19" cy="9" r="0.65" fill="#221f28"/>  <path d="M21 10 L23 10" fill="none" stroke="#221f28" stroke-width="1.2"/>  <path d="M11 12 L13 13 M15 12 L17 13" fill="none" stroke="#a48a7c"/>
+</svg>

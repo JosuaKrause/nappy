@@ -1,0 +1,4 @@
+<!-- dog front; muzzle and face lead the pose. Bottom-centre ground anchor; prepared and unbound. Mid-stride. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="28" viewBox="0 0 30 28" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M10 9 L20 9 L22 23 L8 23 Z" fill="#6b543f" />  <path d="M11 20 L10 25 M19 20 L20 25" fill="none" stroke="#3b2f26" stroke-width="2.5"/>  <path d="M9 5 L12 7 L18 7 L21 5 L21 15 L18 18 L12 18 L9 15 Z" fill="#6b543f" />  <path d="M11 13 L19 13 L19 16 L11 16 Z" fill="#81736b" />  <path d="M13 12 L17 12 L17 14 L13 14 Z" fill="#221f28" /><circle cx="12" cy="10" r="0.7" fill="#e8ddc8"/><circle cx="18" cy="10" r="0.7" fill="#e8ddc8"/>
+</svg>

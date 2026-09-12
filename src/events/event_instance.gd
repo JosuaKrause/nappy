@@ -12,6 +12,10 @@ const CAT_RUNNING := preload("res://assets/events/cat_running.svg")
 ## The single east-facing picture, mirrored west — see `EventCatalogue._alley_mouse()` for why the
 ## prepared directional family (`mouse_{front,back}[_diagonal].svg`) stays unbound here.
 const MOUSE := preload("res://assets/events/mouse.svg")
+## The dash's own second frame — the mouse's only picture is the side one this row actually draws;
+## its tail curls a little differently rather than crossing legs it does not have room to draw at
+## this scale, read by `_draw_simple()`'s own `texture_b` off `_gait_stepping()`.
+const MOUSE_B := preload("res://assets/events/mouse_b.svg")
 ## The only generic here, and it is not a look: it is the *walker* half of a dog walker, which is a
 ## picture of somebody holding a lead rather than a picture of nobody in particular. Every row draws
 ## something of its own.
@@ -151,6 +155,16 @@ const PERSON_BY_VIEW := {
 	"front_diagonal": preload("res://assets/events/person_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/person_back_diagonal.svg"),
 }
+## Feet-passing companion to `PERSON_BY_VIEW`, the walker frame-authoring rule applied to the dog
+## walker's own body: cardinal and side views lift the coat and head one pixel and cross the legs
+## and shoes, the two diagonals leave everything but the legs untouched. See `_gait_stepping()`.
+const PERSON_BY_VIEW_B := {
+	"front": preload("res://assets/events/person_front_b.svg"),
+	"back": preload("res://assets/events/person_back_b.svg"),
+	"side": preload("res://assets/events/person_side_b.svg"),
+	"front_diagonal": preload("res://assets/events/person_front_diagonal_b.svg"),
+	"back_diagonal": preload("res://assets/events/person_back_diagonal_b.svg"),
+}
 const YELLER_BY_VIEW := {
 	"front": preload("res://assets/events/yeller_front.svg"),
 	"back": preload("res://assets/events/yeller_back.svg"),
@@ -158,12 +172,30 @@ const YELLER_BY_VIEW := {
 	"front_diagonal": preload("res://assets/events/yeller_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/yeller_back_diagonal.svg"),
 }
+## See `PERSON_BY_VIEW_B` above for the frame-authoring rule.
+const YELLER_BY_VIEW_B := {
+	"front": preload("res://assets/events/yeller_front_b.svg"),
+	"back": preload("res://assets/events/yeller_back_b.svg"),
+	"side": preload("res://assets/events/yeller_side_b.svg"),
+	"front_diagonal": preload("res://assets/events/yeller_front_diagonal_b.svg"),
+	"back_diagonal": preload("res://assets/events/yeller_back_diagonal_b.svg"),
+}
 const BUSKER_BY_VIEW := {
 	"front": preload("res://assets/events/busker_front.svg"),
 	"back": preload("res://assets/events/busker_back.svg"),
 	"side": preload("res://assets/events/busker_side.svg"),
 	"front_diagonal": preload("res://assets/events/busker_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/busker_back_diagonal.svg"),
+}
+## The strumming hand raised — read by `_draw_busker()` off `_idle_stepping()`'s own timer rather
+## than `_gait_stepping()`'s distance, since he never moves. Everything but the hand/arm draped
+## over the guitar is byte-identical to frame a.
+const BUSKER_BY_VIEW_B := {
+	"front": preload("res://assets/events/busker_front_b.svg"),
+	"back": preload("res://assets/events/busker_back_b.svg"),
+	"side": preload("res://assets/events/busker_side_b.svg"),
+	"front_diagonal": preload("res://assets/events/busker_front_diagonal_b.svg"),
+	"back_diagonal": preload("res://assets/events/busker_back_diagonal_b.svg"),
 }
 const POSTER_CREW_BY_VIEW := {
 	"front": preload("res://assets/events/poster_crew_front.svg"),
@@ -179,12 +211,32 @@ const CAFE_SITTER_BY_VIEW := {
 	"front_diagonal": preload("res://assets/events/cafe_sitter_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/cafe_sitter_back_diagonal.svg"),
 }
+## A lean, not a stride: the sitters never move, so this alternates on `_idle_stepping()`'s own
+## timer rather than on `_gait_stepping()`'s distance. Everything but the lap/table-contact stays
+## put; the seated body above it leans a couple of pixels — see the SVG's own comment.
+const CAFE_SITTER_BY_VIEW_B := {
+	"front": preload("res://assets/events/cafe_sitter_front_b.svg"),
+	"back": preload("res://assets/events/cafe_sitter_back_b.svg"),
+	"side": preload("res://assets/events/cafe_sitter_side_b.svg"),
+	"front_diagonal": preload("res://assets/events/cafe_sitter_front_diagonal_b.svg"),
+	"back_diagonal": preload("res://assets/events/cafe_sitter_back_diagonal_b.svg"),
+}
 const VAN_VICTIM_BY_VIEW := {
 	"front": preload("res://assets/events/van_victim_front.svg"),
 	"back": preload("res://assets/events/van_victim_back.svg"),
 	"side": preload("res://assets/events/van_victim_side.svg"),
 	"front_diagonal": preload("res://assets/events/van_victim_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/van_victim_back_diagonal.svg"),
+}
+## See `PERSON_BY_VIEW_B` for the frame-authoring rule. Read by `_draw_abduction()` off
+## `_victim_gait_stepping()`, her own short scripted walk to the van rather than the ordinary
+## distance-driven gait — see that function's doc.
+const VAN_VICTIM_BY_VIEW_B := {
+	"front": preload("res://assets/events/van_victim_front_b.svg"),
+	"back": preload("res://assets/events/van_victim_back_b.svg"),
+	"side": preload("res://assets/events/van_victim_side_b.svg"),
+	"front_diagonal": preload("res://assets/events/van_victim_front_diagonal_b.svg"),
+	"back_diagonal": preload("res://assets/events/van_victim_back_diagonal_b.svg"),
 }
 const PROTESTER_BY_VIEW := {
 	"front": preload("res://assets/events/protester_front.svg"),
@@ -193,12 +245,32 @@ const PROTESTER_BY_VIEW := {
 	"front_diagonal": preload("res://assets/events/protester_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/protester_back_diagonal.svg"),
 }
+## The plain rank's own stride — see `PERSON_BY_VIEW_B` for the rule. The eight
+## `protester_point_*` poses stay single; `_draw_protest()` only reaches this table when
+## `_protester_texture()` answers its own `PROTESTER` sentinel.
+const PROTESTER_BY_VIEW_B := {
+	"front": preload("res://assets/events/protester_front_b.svg"),
+	"back": preload("res://assets/events/protester_back_b.svg"),
+	"side": preload("res://assets/events/protester_side_b.svg"),
+	"front_diagonal": preload("res://assets/events/protester_front_diagonal_b.svg"),
+	"back_diagonal": preload("res://assets/events/protester_back_diagonal_b.svg"),
+}
 const LEAF_BLOWER_BY_VIEW := {
 	"front": preload("res://assets/events/leaf_blower_front.svg"),
 	"back": preload("res://assets/events/leaf_blower_back.svg"),
 	"side": preload("res://assets/events/leaf_blower_side.svg"),
 	"front_diagonal": preload("res://assets/events/leaf_blower_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/leaf_blower_back_diagonal.svg"),
+}
+## See `PERSON_BY_VIEW_B` for the frame-authoring rule. `leaf_blower` never moves today, so this
+## is never actually reached in play — wired for uniformity the way `lorry`'s own diagonal views
+## are, in case a future site ever turns him.
+const LEAF_BLOWER_BY_VIEW_B := {
+	"front": preload("res://assets/events/leaf_blower_front_b.svg"),
+	"back": preload("res://assets/events/leaf_blower_back_b.svg"),
+	"side": preload("res://assets/events/leaf_blower_side_b.svg"),
+	"front_diagonal": preload("res://assets/events/leaf_blower_front_diagonal_b.svg"),
+	"back_diagonal": preload("res://assets/events/leaf_blower_back_diagonal_b.svg"),
 }
 const ROBBER_WAITING_BY_VIEW := {
 	"front": preload("res://assets/events/robber_waiting_front.svg"),
@@ -214,12 +286,31 @@ const ROBBER_LUNGING_BY_VIEW := {
 	"front_diagonal": preload("res://assets/events/robber_lunging_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/robber_lunging_back_diagonal.svg"),
 }
+## The lunge's own stride — see `PERSON_BY_VIEW_B`. The waiting posture stays single: a man only
+## watching the street is not moving yet.
+const ROBBER_LUNGING_BY_VIEW_B := {
+	"front": preload("res://assets/events/robber_lunging_front_b.svg"),
+	"back": preload("res://assets/events/robber_lunging_back_b.svg"),
+	"side": preload("res://assets/events/robber_lunging_side_b.svg"),
+	"front_diagonal": preload("res://assets/events/robber_lunging_front_diagonal_b.svg"),
+	"back_diagonal": preload("res://assets/events/robber_lunging_back_diagonal_b.svg"),
+}
 const CHATTING_MOTHER_WALKING_BY_VIEW := {
 	"front": preload("res://assets/events/chatting_mother_walking_front.svg"),
 	"back": preload("res://assets/events/chatting_mother_walking_back.svg"),
 	"side": preload("res://assets/events/chatting_mother_walking_side.svg"),
 	"front_diagonal": preload("res://assets/events/chatting_mother_walking_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/chatting_mother_walking_back_diagonal.svg"),
+}
+## The pacing walk's own stride — see `PERSON_BY_VIEW_B`. The talking posture stays single: she is
+## frozen for the whole of a conversation, `is_chatting()`'s own meaning.
+const CHATTING_MOTHER_WALKING_BY_VIEW_B := {
+	"front": preload("res://assets/events/chatting_mother_walking_front_b.svg"),
+	"back": preload("res://assets/events/chatting_mother_walking_back_b.svg"),
+	"side": preload("res://assets/events/chatting_mother_walking_side_b.svg"),
+	"front_diagonal":
+			preload("res://assets/events/chatting_mother_walking_front_diagonal_b.svg"),
+	"back_diagonal": preload("res://assets/events/chatting_mother_walking_back_diagonal_b.svg"),
 }
 const CHATTING_MOTHER_TALKING_BY_VIEW := {
 	"front": preload("res://assets/events/chatting_mother_talking_front.svg"),
@@ -250,12 +341,32 @@ const CAT_RUNNING_BY_VIEW := {
 	"front_diagonal": preload("res://assets/events/cat_running_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/cat_running_back_diagonal.svg"),
 }
+## The dash's own stride. Unlike the humanoid families (`PERSON_BY_VIEW_B`), a quadruped's low
+## silhouette has no coat or head to lift, so every view here only shifts the leg marks — the
+## distance-driven bob (`_current_bob()`) still supplies the vertical motion cue. The crouched
+## posture stays single: it is the telegraph, held still.
+const CAT_RUNNING_BY_VIEW_B := {
+	"front": preload("res://assets/events/cat_running_front_b.svg"),
+	"back": preload("res://assets/events/cat_running_back_b.svg"),
+	"side": preload("res://assets/events/cat_running_b.svg"),
+	"front_diagonal": preload("res://assets/events/cat_running_front_diagonal_b.svg"),
+	"back_diagonal": preload("res://assets/events/cat_running_back_diagonal_b.svg"),
+}
 const DOG_BY_VIEW := {
 	"front": preload("res://assets/events/dog_front.svg"),
 	"back": preload("res://assets/events/dog_back.svg"),
 	"side": DOG,
 	"front_diagonal": preload("res://assets/events/dog_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/dog_back_diagonal.svg"),
+}
+## Shared by the dog walker's own dog and the loose dog — see `CAT_RUNNING_BY_VIEW_B` for why a
+## quadruped's b frame only shifts the legs.
+const DOG_BY_VIEW_B := {
+	"front": preload("res://assets/events/dog_front_b.svg"),
+	"back": preload("res://assets/events/dog_back_b.svg"),
+	"side": preload("res://assets/events/dog_b.svg"),
+	"front_diagonal": preload("res://assets/events/dog_front_diagonal_b.svg"),
+	"back_diagonal": preload("res://assets/events/dog_back_diagonal_b.svg"),
 }
 const CHARGING_DOG_BY_VIEW := {
 	"front": preload("res://assets/events/charging_dog_front.svg"),
@@ -264,12 +375,29 @@ const CHARGING_DOG_BY_VIEW := {
 	"front_diagonal": preload("res://assets/events/charging_dog_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/charging_dog_back_diagonal.svg"),
 }
+## See `CAT_RUNNING_BY_VIEW_B`.
+const CHARGING_DOG_BY_VIEW_B := {
+	"front": preload("res://assets/events/charging_dog_front_b.svg"),
+	"back": preload("res://assets/events/charging_dog_back_b.svg"),
+	"side": preload("res://assets/events/charging_dog_b.svg"),
+	"front_diagonal": preload("res://assets/events/charging_dog_front_diagonal_b.svg"),
+	"back_diagonal": preload("res://assets/events/charging_dog_back_diagonal_b.svg"),
+}
 const CYCLIST_BY_VIEW := {
 	"front": preload("res://assets/events/cyclist_front.svg"),
 	"back": preload("res://assets/events/cyclist_back.svg"),
 	"side": CYCLIST,
 	"front_diagonal": preload("res://assets/events/cyclist_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/cyclist_back_diagonal.svg"),
+}
+## The pedal's own two positions — rider and bike are one picture, so one phase swaps both without
+## anything here needing to know they are drawn together.
+const CYCLIST_BY_VIEW_B := {
+	"front": preload("res://assets/events/cyclist_front_b.svg"),
+	"back": preload("res://assets/events/cyclist_back_b.svg"),
+	"side": preload("res://assets/events/cyclist_b.svg"),
+	"front_diagonal": preload("res://assets/events/cyclist_front_diagonal_b.svg"),
+	"back_diagonal": preload("res://assets/events/cyclist_back_diagonal_b.svg"),
 }
 const PIGEON_BY_VIEW := {
 	"front": preload("res://assets/events/pigeon_front.svg"),
@@ -582,6 +710,23 @@ var _path_travelled := 0.0
 var _telegraph_announced := false
 var _activation_announced := false
 
+## One gait phase per instance, advanced by the distance actually covered this frame — the
+## mother's and the walker's own 0.09-per-px rate (`GAIT_RATE`), pinned again here rather than
+## shared because neither exposes it as a constant reachable from this file. Reset in `setup()`
+## and `resume()` so a stride never starts mid-cycle — see `_advance_gait()`.
+var _gait_phase := 0.0
+## Whether this instance actually covered ground the most recent `_process()` tick — the gate that
+## makes a stopped figure (a queue, a give-way, a waiting robber, a chatting mother, a stationary
+## yeller, the dog walker's own stop) hold frame a rather than whatever `_gait_phase` last landed
+## on. See `_advance_gait()` and `_gait_stepping()`.
+var _gait_moving := false
+## A deterministic 0..1 drawn once, in `setup()`, from this instance's own siting position — the
+## same position-hash approach `_flock_roll()` uses, since the day's own RNG is not reachable from
+## here and streaming an instance out and back in must not draw twice from it. Offsets the café
+## sitters' and the busker's own idle timer (`_idle_stepping()`) so two of either kind placed on
+## the same day do not lean or strum in lockstep.
+var _idle_phase_offset := 0.0
+
 ## The city, for the one question a chase needs answered that nothing here ever asked before:
 ## whether the ground a step would land on is somewhere anybody can stand. `null` in every
 ## data-level test that builds an instance without one — a rig that walks a straight line on
@@ -639,6 +784,10 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_map = map
 	_spread_vertical = _spread_is_vertical(map, position)
 	_stationary_vehicle_side = _stationary_vehicle_uses_side(definition.look, map, position, face)
+	# A stride never starts mid-cycle — the mother's own `reset_at()` precedent.
+	_gait_phase = 0.0
+	_gait_moving = false
+	_idle_phase_offset = _position_roll(101)
 	if definition.look == EventDef.Look.MOUSE:
 		# `alley_mouse` is `MAP`-placed rather than director-sited, so it arrives here with no
 		# route at all (`EventScheduler._build_placement`'s default case) — this is the one place
@@ -803,6 +952,10 @@ func _process(delta: float) -> void:
 		return
 	_clock += delta
 	age += delta
+	# The gait phase advances by whatever this tick actually adds to `_path_travelled` below,
+	# whichever branch does the adding (`_leave`, `_advance_along_path`, `_chase`) or none of them
+	# — see `_advance_gait()`, called once at every exit from this function.
+	var _travelled_before := _path_travelled
 
 	if not _activation_announced and not is_telegraphing():
 		_activation_announced = true
@@ -811,6 +964,7 @@ func _process(delta: float) -> void:
 	if is_leaving:
 		_leave(delta)
 		_fly_the_flock(delta)
+		_advance_gait(_path_travelled - _travelled_before)
 		queue_redraw()
 		return
 
@@ -831,6 +985,9 @@ func _process(delta: float) -> void:
 			_leave_inspection()
 		if _chat_seconds_left <= 0.0 and not def.redetains:
 			_be_done()
+		# Frozen, so no distance is covered — `_advance_gait(0.0)` marks the frame stopped rather
+		# than leaving `_gait_moving` at whatever it read the tick before the conversation started.
+		_advance_gait(0.0)
 		queue_redraw()
 		return
 
@@ -867,6 +1024,7 @@ func _process(delta: float) -> void:
 	if def.look == EventDef.Look.UNMARKED_VAN:
 		_update_the_take()
 
+	_advance_gait(_path_travelled - _travelled_before)
 	if _has_expired():
 		_be_done()
 	queue_redraw()
@@ -1184,6 +1342,11 @@ func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> v
 	age = from_age
 	_path_travelled = from_travelled
 	_noticed_at = from_noticed_at
+	# A stride never starts mid-cycle, the same reason `setup()` resets it — a resumed instance is
+	# a fresh object (see this function's own doc), so this is normally already true, but the rule
+	# is stated at both entry points rather than left to rely on that.
+	_gait_phase = 0.0
+	_gait_moving = false
 	if def.mobile and path.size() > 1:
 		_advance_along_path(0.0)
 
@@ -1838,6 +2001,76 @@ func _current_bob() -> float:
 		return -absf(sin(_path_travelled * BOB_PER_PX)) * BOB_HEIGHT
 	return 0.0
 
+# ------------------------------------------------------------------- the gait ---
+# The event half of "every living thing that moves has a stride" — the walker's own two-frame
+# alternation (`CrowdAgent._advance_walker_gait()`/`_walker_gait_frame()`), applied generally to
+# whichever family a `_draw_*` below reads it from. The bob above is unchanged and stays the cue
+# for every family that was not given a second frame this round.
+
+## The mother's and the walker's own rate, in radians of gait phase per pixel walked. Pinned again
+## here rather than shared: neither `Stroller` nor `CrowdAgent` exposes it as a constant reachable
+## from this file, and a cross-file literal agreement is worth restating rather than importing.
+const GAIT_RATE := 0.09
+
+## A few seconds per swap — slow enough that a café frontage reads as sitting rather than
+## fidgeting. See `_idle_stepping()`.
+const SITTER_IDLE_PERIOD := 3.4
+## A strum's own tempo. See `_idle_stepping()`.
+const BUSKER_STRUM_PERIOD := 0.5
+
+## Advances `_gait_phase` by `moved` (px covered this tick, positive or exactly zero — `_process()`
+## passes `_path_travelled`'s own delta, which is never negative) and records whether anything
+## moved at all, which is the "stopped" gate `_gait_stepping()` reads. Called once per tick, at
+## every exit from `_process()`, the same "add the distance once, however the caller reached this
+## point" shape `CrowdAgent._advance_walker_gait()` has — asking `_draw_body()` to do it would
+## double the addition once per halo ring, exactly the trap that function's own doc names.
+func _advance_gait(moved: float) -> void:
+	_gait_moving = moved > 0.0
+	_gait_phase = wrapf(_gait_phase + moved * GAIT_RATE, 0.0, TAU)
+
+## Which of a family's two gait frames to draw right now: frame b (mid-stride) for half of every
+## stride while `_advance_gait()` last saw ground covered, frame a (rest) otherwise — the walker's
+## own `_walker_gait_frame()` test, `sin(phase * 2.0) > 0.0`, gated on "did anything move this
+## tick" instead of a speed floor, since an event's own stop states (`is_waiting()`, `is_chatting()`,
+## `is_telegraphing_still()`) already read as zero distance covered rather than a small residual
+## speed to floor against. A pure query on state `_process()` already settled this tick, so calling
+## it more than once — the main draw, then once per halo ring — always agrees with itself.
+func _gait_stepping() -> bool:
+	return _gait_moving and sin(_gait_phase * 2.0) > 0.0
+
+## The victim's own short scripted walk to the van (`VICTIM_STANDING_OFFSET` over
+## `VICTIM_TAKEN_OVER` seconds, `_update_the_take()`) is a straight-line lerp on `age` rather than
+## anything that touches `_path_travelled`, so it gets its own derived stride instead of sharing
+## `_gait_phase` — a persistent field would have nothing to reset between takes that `age -
+## _victim_taken_at` restarting at zero does not already give it. The walk is at a constant speed
+## by construction (linear interpolation over a fixed time), so the distance covered by moment
+## `t` is exactly `t * (VICTIM_STANDING_OFFSET / VICTIM_TAKEN_OVER)`, fed through the same
+## `GAIT_RATE` and doubled-phase test `_gait_stepping()` uses. `sin(0) == 0`, so the walk always
+## starts on frame a rather than mid-stride.
+func _victim_gait_stepping() -> bool:
+	if not is_taking_a_victim():
+		return false
+	var elapsed := age - _victim_taken_at
+	var speed := VICTIM_STANDING_OFFSET / VICTIM_TAKEN_OVER
+	return sin(elapsed * speed * GAIT_RATE * 2.0) > 0.0
+
+## A deterministic 0..1 from this instance's own siting position, an index and a salt — the same
+## hash `_flock_roll()` already uses for a flock's own scatter, generalised to one index (0) since
+## nothing outside a flock needs more than one draw. No global RNG is reachable from here, and
+## streaming an instance out and back in must not draw from one twice; a hash of where the day
+## placed it answers the same way every time the same plan places the same instance.
+func _position_roll(salt: int) -> float:
+	var mixed := int(position.x) * 73856093 + int(position.y) * 19349663 + salt * 2971215073
+	return float(absi(mixed) % 4096) / 4096.0
+
+## Whether the café sitters' or the busker's own idle frame is up right now: a plain 50/50 split of
+## `period` seconds, offset per instance by `_idle_phase_offset` so two placed the same day do not
+## swap in lockstep. Driven by `_clock` rather than `age`, the same simulated-time clock `landed()`
+## already measures against, so a paused game holds the frame rather than drifting it.
+func _idle_stepping(period: float) -> bool:
+	var phase := fmod(_clock + _idle_phase_offset * period, period)
+	return phase >= period * 0.5
+
 # ------------------------------------------------------------------ the halo ---
 # The ring itself is `EntityHalo`'s job now, shared with `CrowdAgent` — see that class for the
 # offsets, the shared material, and why a `canvas_item` shader on this entity's own sprite could
@@ -2020,9 +2253,9 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.CAT:
 			_draw_cat(canvas)
 		EventDef.Look.MOUSE:
-			_draw_simple(MOUSE, canvas)
+			_draw_simple(MOUSE, canvas, MOUSE_B)
 		EventDef.Look.YELLER:
-			_draw_eight_view(YELLER_BY_VIEW, _heading, canvas)
+			_draw_eight_view(YELLER_BY_VIEW, _heading, canvas, false, YELLER_BY_VIEW_B)
 		EventDef.Look.DOG_WALKER:
 			_draw_dog_walker(canvas)
 		EventDef.Look.CAFE:
@@ -2037,7 +2270,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			# obstruction moves.
 			_draw_eight_view(DELIVERY_VAN_BY_VIEW, _heading, canvas, true)
 		EventDef.Look.BUSKER:
-			_draw_eight_view(BUSKER_BY_VIEW, _heading, canvas)
+			_draw_busker(canvas)
 		EventDef.Look.ROADWORKS:
 			_draw_spread(_roadwork_segment_texture(_spread_vertical), BARRIER_END, canvas)
 		EventDef.Look.FIRE_ENGINE:
@@ -2051,11 +2284,11 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.STALL:
 			_draw_spread(STALL, null, canvas)
 		EventDef.Look.LEAF_BLOWER:
-			_draw_eight_view(LEAF_BLOWER_BY_VIEW, _heading, canvas)
+			_draw_eight_view(LEAF_BLOWER_BY_VIEW, _heading, canvas, false, LEAF_BLOWER_BY_VIEW_B)
 		EventDef.Look.BIRDS:
 			_draw_birds(canvas)
 		EventDef.Look.CYCLIST:
-			_draw_eight_view(CYCLIST_BY_VIEW, _heading, canvas)
+			_draw_eight_view(CYCLIST_BY_VIEW, _heading, canvas, false, CYCLIST_BY_VIEW_B)
 		EventDef.Look.ICE_CREAM_VAN:
 			# East-authored: always sited facing east, same as `DELIVERY_VAN` above, but
 			# `ice_cream_van.svg` is one of the sources that already faces east, so no
@@ -2068,7 +2301,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			# actually reachable; the row keeps drawing exactly the side view it always did.
 			_draw_eight_view(LORRY_BY_VIEW, _heading, canvas)
 		EventDef.Look.CHARGING_DOG:
-			_draw_eight_view(CHARGING_DOG_BY_VIEW, _heading, canvas)
+			_draw_eight_view(CHARGING_DOG_BY_VIEW, _heading, canvas, false, CHARGING_DOG_BY_VIEW_B)
 		EventDef.Look.CHATTING_MOTHER:
 			_draw_chatting_mother(canvas)
 		EventDef.Look.POLICE_CAR:
@@ -2128,9 +2361,15 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 
 ## A shadow and a sprite, facing the way it is going. What most looks are, and having it once is
 ## what keeps a dozen near-identical three-line functions from existing.
-func _draw_simple(texture: Texture2D, canvas: CanvasItem = self) -> void:
+##
+## `texture_b` is `mouse`'s own second frame, read off `_gait_stepping()` when given; `null` for
+## everything else this draws (`skip`, and `mouse` before its own dash starts), which keeps every
+## other caller exactly as it was.
+func _draw_simple(texture: Texture2D, canvas: CanvasItem = self,
+		texture_b: Texture2D = null) -> void:
 	_draw_shape_shadow(canvas, def.shape)
-	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	var drawn := texture_b if texture_b and _gait_stepping() else texture
+	Sprites.draw_standing(canvas, drawn, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 ## The five-view generalisation of `_draw_simple`, for a family that has the full
 ## front/back/side/diagonal set — `_select_view()` picks the view from `heading` and
@@ -2152,14 +2391,21 @@ func _draw_simple(texture: Texture2D, canvas: CanvasItem = self) -> void:
 ##
 ## `_draw_simple` itself is untouched and keeps drawing every row that has no directional family at
 ## all: `mouse` and `skip`.
+##
+## `by_view_b` is the family's own feet-passing set, read off `_gait_stepping()` when given —
+## empty for every vehicle family, which never got a stride this round, so the lookup falls
+## through to `by_view` exactly as before.
 func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem = self,
-		side_faces_west := false) -> void:
+		side_faces_west := false, by_view_b: Dictionary = {}) -> void:
 	_draw_shape_shadow(canvas, def.shape)
 	var view := _select_view(heading)
 	var mirror := EightDirection.is_mirrored(_view_sector)
 	if view == "side" and side_faces_west:
 		mirror = not mirror
-	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO, mirror)
+	var texture: Texture2D = by_view[view]
+	if not by_view_b.is_empty() and _gait_stepping():
+		texture = by_view_b[view]
+	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, mirror)
 
 ## A stationary vehicle projected along the axis of the street it occupies. Its side silhouette
 ## may mirror with its facing; an end-on silhouette keeps its authored proportions and orientation.
@@ -2187,7 +2433,8 @@ func _draw_loose_dog(canvas: CanvasItem = self) -> void:
 	# same as `_draw_dog_walker`'s taut one.
 	canvas.draw_line(Vector2(0.0, -8.0), behind + Vector2(0.0, -2.0), Palette.OUTLINE, 2.0)
 	var view := _select_view(_heading)
-	Sprites.draw_standing(canvas, DOG_BY_VIEW[view], Vector2.ZERO, Vector2.ZERO,
+	var by_view := DOG_BY_VIEW_B if _gait_stepping() else DOG_BY_VIEW
+	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
 
 ## Every bird, drawn where it actually is.
@@ -2229,7 +2476,12 @@ const BIRD_SHADOW_CEILING := 46.0
 func _draw_cat(canvas: CanvasItem = self) -> void:
 	# Crouched while telegraphing, stretched out once it bolts. The crouch *is* the
 	# telegraph, so the two silhouettes have to differ at a glance, not by a scale factor.
-	var by_view := CAT_CROUCHED_BY_VIEW if is_telegraphing() else CAT_RUNNING_BY_VIEW
+	var telegraphing := is_telegraphing()
+	var by_view := CAT_CROUCHED_BY_VIEW if telegraphing else CAT_RUNNING_BY_VIEW
+	# The crouch holds still by construction (`still_while_telegraphing`), so only the dash gets a
+	# second frame — a crouching cat has nothing to stride into yet.
+	if not telegraphing and _gait_stepping():
+		by_view = CAT_RUNNING_BY_VIEW_B
 	_draw_shape_shadow(canvas, def.shape)
 	var view := _select_view(_heading)
 	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
@@ -2245,12 +2497,17 @@ func _draw_cat(canvas: CanvasItem = self) -> void:
 ## frame he notices her, before the telegraph has finished and well before he moves.
 func _draw_robber(canvas: CanvasItem = self) -> void:
 	_draw_shape_shadow(canvas, def.shape)
-	var by_view := ROBBER_WAITING_BY_VIEW if is_waiting() else ROBBER_LUNGING_BY_VIEW
+	var waiting := is_waiting()
+	var by_view := ROBBER_WAITING_BY_VIEW if waiting else ROBBER_LUNGING_BY_VIEW
+	# The waiting posture holds still by construction — he has nothing to stride toward yet — so
+	# only the lunge gets a second frame.
+	if not waiting and _gait_stepping():
+		by_view = ROBBER_LUNGING_BY_VIEW_B
 	# Once he has noticed her, `_chase()` already keeps `_heading` pointed at her for every frame of
 	# the telegraph and the lunge alike — `_draw_body()`'s ordinary reading, `_heading`. Before that
 	# he has nothing of his own to face except the alley he was sited in, and a man only watching
 	# the street is worth nothing next to a man watching *her* — see `_robber_waiting_heading()`.
-	var heading := _robber_waiting_heading() if is_waiting() else _heading
+	var heading := _robber_waiting_heading() if waiting else _heading
 	var view := _select_view(heading)
 	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
@@ -2388,6 +2645,7 @@ static func _cap_offset(half: float, cap_along: float, side: float) -> float:
 func _draw_cafe(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
 	_draw_shape_shadow(canvas, def.shape)
+	var by_view := CAFE_SITTER_BY_VIEW_B if _idle_stepping(SITTER_IDLE_PERIOD) else CAFE_SITTER_BY_VIEW
 	var segment := CAFE_TABLE.get_size()
 	var along_natural := segment.y if _spread_vertical else segment.x
 	var thickness := segment.x if _spread_vertical else segment.y
@@ -2403,7 +2661,7 @@ func _draw_cafe(canvas: CanvasItem = self) -> void:
 		var sitter_heading := _cafe_seat_heading(_spread_vertical, alternate)
 		var sitter_sector := EightDirection.nearest(sitter_heading)
 		var view: String = EIGHT_VIEW_BY_SECTOR[sitter_sector]
-		var sitter: Texture2D = CAFE_SITTER_BY_VIEW[view]
+		var sitter: Texture2D = by_view[view]
 		var mirror := EightDirection.is_mirrored(sitter_sector)
 		Sprites.draw_standing(canvas, sitter, _spread_at(chair_along) + Vector2(0.0, -7.0),
 				Vector2.ZERO, mirror)
@@ -2419,6 +2677,17 @@ func _draw_cafe(canvas: CanvasItem = self) -> void:
 static func _cafe_seat_heading(spread_vertical: bool, alternate: bool) -> Vector2:
 	var toward_table := Vector2.DOWN if spread_vertical else Vector2.RIGHT
 	return -toward_table if alternate else toward_table
+
+## The busker's own site facing and idle strum — he never moves, so this reads `_idle_stepping()`
+## rather than `_gait_stepping()`, the same timer the café sitters use above at a faster tempo
+## (`BUSKER_STRUM_PERIOD`). Kept as its own function rather than routed through `_draw_eight_view()`
+## because that helper's own `by_view_b` parameter is keyed to the gait, not the idle timer.
+func _draw_busker(canvas: CanvasItem = self) -> void:
+	_draw_shape_shadow(canvas, def.shape)
+	var view := _select_view(_heading)
+	var mirror := EightDirection.is_mirrored(_view_sector)
+	var by_view := BUSKER_BY_VIEW_B if _idle_stepping(BUSKER_STRUM_PERIOD) else BUSKER_BY_VIEW
+	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO, mirror)
 
 ## The eight pointing poses, in the bearing order `_protester_texture()` indexes into: north
 ## first, then clockwise. Kept beside the poses themselves rather than built in the function, so
@@ -2495,7 +2764,8 @@ func _draw_protest(canvas: CanvasItem = self) -> void:
 	# authored direction rather than a member of the mirrored five-view family.
 	if texture == PROTESTER:
 		var view := _select_view(_heading)
-		texture = PROTESTER_BY_VIEW[view]
+		var by_view := PROTESTER_BY_VIEW_B if _gait_stepping() else PROTESTER_BY_VIEW
+		texture = by_view[view]
 		mirror = EightDirection.is_mirrored(_view_sector)
 	# Spaced off the body rather than off the sprite, so the rank ends where the ground it takes
 	# ends. A crowd drawn at its own natural spacing overhangs its own body by most of a person,
@@ -2561,8 +2831,13 @@ func _draw_dog_walker(canvas: CanvasItem = self) -> void:
 	# since it is being led rather than watching anything of its own.
 	var view := _select_view(_heading)
 	var mirror := EightDirection.is_mirrored(_view_sector)
-	Sprites.draw_standing(canvas, PERSON_BY_VIEW[view], Vector2.ZERO, Vector2.ZERO, mirror)
-	Sprites.draw_standing(canvas, DOG_BY_VIEW[view], to_the_dog, Vector2.ZERO, mirror)
+	# One phase for the pair, so the walker's own legs and the dog's never disagree about which of
+	# them is mid-stride.
+	var stepping := _gait_stepping()
+	var person_by_view := PERSON_BY_VIEW_B if stepping else PERSON_BY_VIEW
+	var dog_by_view := DOG_BY_VIEW_B if stepping else DOG_BY_VIEW
+	Sprites.draw_standing(canvas, person_by_view[view], Vector2.ZERO, Vector2.ZERO, mirror)
+	Sprites.draw_standing(canvas, dog_by_view[view], to_the_dog, Vector2.ZERO, mirror)
 
 ## The van, and the bystander it is taking while there is one to draw.
 ##
@@ -2595,7 +2870,8 @@ func _draw_abduction(canvas: CanvasItem = self) -> void:
 		# by construction (`standing` never has a Y component), so this always resolves to the same
 		# side view `_heading_is_west()` picked before, now read off the shared table.
 		var view := _select_view(-standing)
-		Sprites.draw_standing(canvas, VAN_VICTIM_BY_VIEW[view], at, Vector2.ZERO,
+		var by_view := VAN_VICTIM_BY_VIEW_B if _victim_gait_stepping() else VAN_VICTIM_BY_VIEW
+		Sprites.draw_standing(canvas, by_view[view], at, Vector2.ZERO,
 				EightDirection.is_mirrored(_view_sector))
 	# West-authored, like `delivery_van` and `fire_engine` above — see `_draw_eight_view()`'s own
 	# doc comment on `side_faces_west`.
@@ -2608,7 +2884,12 @@ func _draw_abduction(canvas: CanvasItem = self) -> void:
 ## `docs/EVENTS.md`, "The visual vocabulary".
 func _draw_chatting_mother(canvas: CanvasItem = self) -> void:
 	_draw_shape_shadow(canvas, def.shape)
-	var by_view := CHATTING_MOTHER_TALKING_BY_VIEW if is_chatting() else CHATTING_MOTHER_WALKING_BY_VIEW
+	var chatting := is_chatting()
+	var by_view := CHATTING_MOTHER_TALKING_BY_VIEW if chatting else CHATTING_MOTHER_WALKING_BY_VIEW
+	# Talking holds still by construction — `_process()` freezes her pacing the instant a
+	# conversation starts — so only the walking posture gets a second frame.
+	if not chatting and _gait_stepping():
+		by_view = CHATTING_MOTHER_WALKING_BY_VIEW_B
 	var view := _select_view(_heading)
 	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))

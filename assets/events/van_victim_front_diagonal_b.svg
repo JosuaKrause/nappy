@@ -1,0 +1,9 @@
+<!-- Slumped van victim, front diagonal. Lowered head, brown clothing and held upper arm retain the abduction posture. Ground anchor (9,42) Feet passing. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="42" viewBox="0 0 18 42" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <g transform="translate(2 0)"><path d="M5 29 L9 29 L8 40 L4 40Z" fill="#5c4a44"/></g><g transform="translate(-2 0)"><path d="M10 29 L14 29 L16 40 L11 40Z" fill="#5c4a44"/></g>
+  <g transform="translate(2 0)"><path d="M3 40 L9 40 L9 42 L2 42Z" fill="#221f28"/></g><g transform="translate(-2 0)"><path d="M10 40 L16 40 L17 42 L10 42Z" fill="#221f28"/></g>
+  <path d="M3 17 L9 14 L15 18 L16 30 L9 32 L2 29Z" fill="#7a6258"/>
+  <path d="M2 25 L9 28 L16 25 L16 30 L9 32 L2 29Z" fill="#6a5449"/>
+  <path d="M11 18 L16 20 L17 29 L13 31 L11 26Z" fill="#7a6258"/>
+  <path d="M5 8 Q10 4 15 9 L15 13 L17 15 L13 18 L7 18 L4 14Z" fill="#d9a878"/><path d="M4 14 Q3 6 10 5 Q15 5 15 12 Q10 10 7 14 L6 16Z" fill="#2c2420"/>
+</svg>
