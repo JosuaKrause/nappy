@@ -173,3 +173,9 @@ it. Remove the background from crack artwork before applying it to sidewalk, roa
 This replaces preserving the complete curb PNG with preserving the curb detail over a shared
 floor. Keep layer inputs and assembly scripts reproducible, and check the resulting actual-map
 layouts. The accepted mother graphics remain unchanged.
+
+> same for road textures -- add the yellow lines / zebra crossings via blending
+
+Use one asphalt base for road variants and separate transparent yellow-line and crosswalk
+marking layers. Normal and main-road variants keep their functional marking geometry while
+sharing the underlying asphalt texture.

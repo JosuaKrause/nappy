@@ -119,7 +119,9 @@ findings supported by the conversion and review.
 - [ ] Assemble ground variants from shared bases and transparent overlays. PLAYTEST-65 asks for
       one sidewalk floor texture, a curbstone-only texture and a red main-street edge-line texture,
       blended during assembly. Remove backgrounds from cracks and other damage and composite them
-      over the actual sidewalk, road or alley base. Keep the floor identical outside each overlay;
+      over the actual sidewalk, road or alley base. Road variants likewise share one asphalt base,
+      with yellow lines and crosswalk stripes applied as transparent marking layers. Keep the
+      floor identical outside each overlay;
       preserve native tile geometry, curb detail, markings, selection and current mother graphics.
       Store component SVGs before their PNG derivatives, frozen input artwork and reproducible
       assembly scripts. Review repeated runs and corners using the
