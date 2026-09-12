@@ -10,8 +10,11 @@ the orchestrating session designs, specifies, reviews integration and maintains 
 The split gives implementation fresh context and a fenced scope while orchestration retains
 the whole queue and the player's words.
 
-Use Sonnet in Claude Code; in Codex, use its available delegation tool and an appropriate
-available model. The contract is the same: fresh context, a bounded scope and an isolated
+Use Sonnet in Claude Code for implementation, Haiku for a wait — polling a check, retargeting a
+PR, removing a worktree, pulling `main` — and a stronger model when a milestone's geometry or
+contracts warrant it, by judgement *(2026-09-11: "for wait tasks like this haiku makes more sense
+-- use your judgement")*; in Codex, use its available delegation tool and an appropriate available
+model. The contract is the same: fresh context, a bounded scope and an isolated
 checkout for implementation. Create the worktree explicitly if the tool does not create one.
 Read-only review can share a checkout. If delegation is unavailable, do the bounded work locally
 and retain the same verification gate. Tool or model names do not require changing hosts.
