@@ -106,3 +106,13 @@ was the entry's own choice; played, the real meters mean the baby cries at once 
 the alert flashes for the rest of the run, and the clock runs the light down to dusk. *Asked for as
 everything else real · overturned on 2026-09-11*: under the flag the clock does not move and
 excitement does not rise.
+
+## The screenshot's name counts from launch
+
+The fix for playtest 56's overwritten pictures was first built as the time of day to the
+millisecond, `HHMMSS-mmm-attempt1-asked.png`, and the player rejected that shape on sight:
+
+> HHMMSS-mmm- errrrr why this? just count the seconds from beginning of the app
+
+So a picture is named by real seconds since the application started, in the old `042s` shape, and
+never by the day's clock.
