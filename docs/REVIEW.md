@@ -76,9 +76,16 @@ item below for as long as looking takes.
   the day's route does not use). Walkers and cars turn back from a hard seal, a wall and a
   closure; a soft seal takes both pavements from walkers and leaves the road to cars; a door lets
   cars through one at a time. Does a street the crowd refuses read as *shut*, and does the crowd
-  ever look stuck against it? Record is `DECISIONS.md`, M110. **And the open question is
-  yours**: should a café, a construction band or a kerbed van divert the crowd the same way?
-  `TODO.md`, M110.
+  ever look stuck against it? Record is `DECISIONS.md`, M110.
+- **Walk past a café, a stall or a kerbed van on a day with several** (a precinct's pavements are
+  the busiest early in a day). A walker steps into the other lane of its own footway to get past
+  one and steps back after; a car in the body's own lane turns at the last junction while the
+  oncoming lane keeps flowing past it. Do both reads happen visibly rather than the walker or the
+  car simply not being there next time you look, does any street end up parked rather than turned,
+  and does diverting at every body — the recommendation the player overturned on 2026-09-12 —
+  blunt the tell a closure's own turn-away relies on? Record is `DECISIONS.md`, M110, every solid
+  body; the tunables are `Tuning.WALKER_BODY_SIDESTEP_TILES` (4 tiles) and
+  `CrowdAgent.BODY_TURN_CLEARANCE_TILES` (3 tiles), both open to overturn.
 - **Stand by a region door on a busy street and watch the walkers** (day 7 or later,
   `--invincible`). Most stop beside the hut, vanish inside for a second, come out on the far side
   and walk on; one in eight walks straight through; one in four turns off at the last junction;
