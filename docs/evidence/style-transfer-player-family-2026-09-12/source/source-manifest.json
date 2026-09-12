@@ -1,0 +1,202 @@
+[
+  {
+    "svg": "assets/rig/mother_carrying_front_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_front_a.png",
+    "svg_sha256": "1a6367ad9ad327a790c4d2e5d7bbbaff017ed6ee44456deed936e64325b3a18b",
+    "dimensions": [
+      24,
+      46
+    ],
+    "anchor": [
+      12,
+      46
+    ],
+    "usage": "src/player/stroller.gd carrying mother state, eight-direction view and gait frame",
+    "review_evidence": [
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/carrying-sheet-svg.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/pushing-family-reference-sheet.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-native.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-3x.png"
+    ]
+  },
+  {
+    "svg": "assets/rig/mother_carrying_back_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_back_a.png",
+    "svg_sha256": "588d530450b598db263d508e08df90b79076b1364ae7b0e1a29b908900f02cc9",
+    "dimensions": [
+      24,
+      46
+    ],
+    "anchor": [
+      12,
+      46
+    ],
+    "usage": "src/player/stroller.gd carrying mother state, eight-direction view and gait frame",
+    "review_evidence": [
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/carrying-sheet-svg.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/pushing-family-reference-sheet.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-native.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-3x.png"
+    ]
+  },
+  {
+    "svg": "assets/rig/mother_carrying_side_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_side_a.png",
+    "svg_sha256": "5d58d7ef0b4a4e99f9cf6c78b1728ce62606f244773abd7651e04963ebe6b6e9",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "usage": "src/player/stroller.gd carrying mother state, eight-direction view and gait frame",
+    "review_evidence": [
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/carrying-sheet-svg.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/pushing-family-reference-sheet.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-native.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-3x.png"
+    ]
+  },
+  {
+    "svg": "assets/rig/mother_carrying_front_diagonal_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_front_diagonal_a.png",
+    "svg_sha256": "a4f3164f4756b1406d8279c117e5ff365275fe16913bc65a896910a4c00c63df",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "usage": "src/player/stroller.gd carrying mother state, eight-direction view and gait frame",
+    "review_evidence": [
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/carrying-sheet-svg.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/pushing-family-reference-sheet.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-native.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-3x.png"
+    ]
+  },
+  {
+    "svg": "assets/rig/mother_carrying_back_diagonal_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_back_diagonal_a.png",
+    "svg_sha256": "f5b38c188da2cd1ba8c539e05e664f5dc3ba1781f4abcb0ac648e9e18233a62b",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "usage": "src/player/stroller.gd carrying mother state, eight-direction view and gait frame",
+    "review_evidence": [
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/carrying-sheet-svg.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/pushing-family-reference-sheet.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-native.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-3x.png"
+    ]
+  },
+  {
+    "svg": "assets/rig/mother_carrying_front_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_front_b.png",
+    "svg_sha256": "3faf44faa3867d9b2e4854ee9bd07b9a3623aa2de017a51d5ef5456ecd444175",
+    "dimensions": [
+      24,
+      46
+    ],
+    "anchor": [
+      12,
+      46
+    ],
+    "usage": "src/player/stroller.gd carrying mother state, eight-direction view and gait frame",
+    "review_evidence": [
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/carrying-sheet-svg.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/pushing-family-reference-sheet.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-native.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-3x.png"
+    ]
+  },
+  {
+    "svg": "assets/rig/mother_carrying_back_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_back_b.png",
+    "svg_sha256": "84dd4134ebb988b8247f5956093f3e598eccbe06922861614ef284edb3b1fe27",
+    "dimensions": [
+      24,
+      46
+    ],
+    "anchor": [
+      12,
+      46
+    ],
+    "usage": "src/player/stroller.gd carrying mother state, eight-direction view and gait frame",
+    "review_evidence": [
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/carrying-sheet-svg.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/pushing-family-reference-sheet.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-native.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-3x.png"
+    ]
+  },
+  {
+    "svg": "assets/rig/mother_carrying_side_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_side_b.png",
+    "svg_sha256": "00e13f321e034141123939152f14fc073c05f5713e521d037efdf879844ae9d6",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "usage": "src/player/stroller.gd carrying mother state, eight-direction view and gait frame",
+    "review_evidence": [
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/carrying-sheet-svg.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/pushing-family-reference-sheet.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-native.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-3x.png"
+    ]
+  },
+  {
+    "svg": "assets/rig/mother_carrying_front_diagonal_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_front_diagonal_b.png",
+    "svg_sha256": "ffa59812846e800fb69a1cb63c2f662c9d1ddcd8c3417ba5575ea3a662a953e9",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "usage": "src/player/stroller.gd carrying mother state, eight-direction view and gait frame",
+    "review_evidence": [
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/carrying-sheet-svg.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/pushing-family-reference-sheet.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-native.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-3x.png"
+    ]
+  },
+  {
+    "svg": "assets/rig/mother_carrying_back_diagonal_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_back_diagonal_b.png",
+    "svg_sha256": "8b0cf428ae89d7885785b56737286555143fba64639ee829c10d4170abc6b5ad",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "usage": "src/player/stroller.gd carrying mother state, eight-direction view and gait frame",
+    "review_evidence": [
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/carrying-sheet-svg.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/source/pushing-family-reference-sheet.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-native.png",
+      "docs/evidence/style-transfer-player-family-2026-09-12/registered/eight-directions-both-states-3x.png"
+    ]
+  }
+]

@@ -1,0 +1,135 @@
+[
+  {
+    "svg": "assets/props/garbage_sack.svg",
+    "png": "assets/illustrated/svg-transfer/props/garbage_sack.png",
+    "svg_sha256": "7a8191e6826a04d68b08cbaf3cc573c897f23dace080e4f86a3155e914c00ac3",
+    "dimensions": [
+      28,
+      34
+    ],
+    "anchor": [
+      14,
+      34
+    ],
+    "usage": "src/city/garbage_sacks.gd via Prop",
+    "review_evidence": [
+      "docs/evidence/style-transfer-litter-2026-09-12/source/litter-sheet-svg.png",
+      "docs/evidence/style-transfer-litter-2026-09-12/registered/litter-comparison-native.png",
+      "docs/evidence/style-transfer-litter-2026-09-12/registered/litter-comparison-3x.png"
+    ]
+  },
+  {
+    "svg": "assets/props/garbage_sacks_pile.svg",
+    "png": "assets/illustrated/svg-transfer/props/garbage_sacks_pile.png",
+    "svg_sha256": "5fdee393c5024ed1a0492ea55e4a59c359a6cc5177d7909d2299a50a8e91b311",
+    "dimensions": [
+      42,
+      34
+    ],
+    "anchor": [
+      21,
+      34
+    ],
+    "usage": "src/city/garbage_sacks.gd via Prop",
+    "review_evidence": [
+      "docs/evidence/style-transfer-litter-2026-09-12/source/litter-sheet-svg.png",
+      "docs/evidence/style-transfer-litter-2026-09-12/registered/litter-comparison-native.png",
+      "docs/evidence/style-transfer-litter-2026-09-12/registered/litter-comparison-3x.png"
+    ]
+  },
+  {
+    "svg": "assets/props/litter_can.svg",
+    "png": "assets/illustrated/svg-transfer/props/litter_can.png",
+    "svg_sha256": "81cb37589e9f15e52bfee7cf5b13c5a0cca6cbc88934b540755ddec510926aa5",
+    "dimensions": [
+      32,
+      32
+    ],
+    "anchor": [
+      16,
+      16
+    ],
+    "usage": "src/city/litter.gd via CityDecals",
+    "review_evidence": [
+      "docs/evidence/style-transfer-litter-2026-09-12/source/litter-sheet-svg.png",
+      "docs/evidence/style-transfer-litter-2026-09-12/registered/litter-comparison-native.png",
+      "docs/evidence/style-transfer-litter-2026-09-12/registered/litter-comparison-3x.png"
+    ]
+  },
+  {
+    "svg": "assets/props/litter_apple.svg",
+    "png": "assets/illustrated/svg-transfer/props/litter_apple.png",
+    "svg_sha256": "fccfb49b72dc8ab8905e5f402e889237841d45c14e6c2be8ab470cbd8a6e52d1",
+    "dimensions": [
+      32,
+      32
+    ],
+    "anchor": [
+      16,
+      16
+    ],
+    "usage": "src/city/litter.gd via CityDecals",
+    "review_evidence": [
+      "docs/evidence/style-transfer-litter-2026-09-12/source/litter-sheet-svg.png",
+      "docs/evidence/style-transfer-litter-2026-09-12/registered/litter-comparison-native.png",
+      "docs/evidence/style-transfer-litter-2026-09-12/registered/litter-comparison-3x.png"
+    ]
+  },
+  {
+    "svg": "assets/props/litter_bag.svg",
+    "png": "assets/illustrated/svg-transfer/props/litter_bag.png",
+    "svg_sha256": "a7910da03dbe94371fb5dc47477cf17c15d322ecccd8059c6741c90e20c2bfbe",
+    "dimensions": [
+      32,
+      32
+    ],
+    "anchor": [
+      16,
+      16
+    ],
+    "usage": "src/city/litter.gd via CityDecals",
+    "review_evidence": [
+      "docs/evidence/style-transfer-litter-2026-09-12/source/litter-sheet-svg.png",
+      "docs/evidence/style-transfer-litter-2026-09-12/registered/litter-comparison-native.png",
+      "docs/evidence/style-transfer-litter-2026-09-12/registered/litter-comparison-3x.png"
+    ]
+  },
+  {
+    "svg": "assets/props/litter_newspaper.svg",
+    "png": "assets/illustrated/svg-transfer/props/litter_newspaper.png",
+    "svg_sha256": "7b851d3f853da964bb00e76adaedc7f2228ae2589bebe567866044938db68ac1",
+    "dimensions": [
+      32,
+      32
+    ],
+    "anchor": [
+      16,
+      16
+    ],
+    "usage": "src/city/litter.gd via CityDecals",
+    "review_evidence": [
+      "docs/evidence/style-transfer-litter-2026-09-12/source/litter-sheet-svg.png",
+      "docs/evidence/style-transfer-litter-2026-09-12/registered/litter-comparison-native.png",
+      "docs/evidence/style-transfer-litter-2026-09-12/registered/litter-comparison-3x.png"
+    ]
+  },
+  {
+    "svg": "assets/props/litter_cup.svg",
+    "png": "assets/illustrated/svg-transfer/props/litter_cup.png",
+    "svg_sha256": "8272d611f319996ba986f79e7bc9ff02a2f69e2d7ce076c271ef3feb647cdf8a",
+    "dimensions": [
+      32,
+      32
+    ],
+    "anchor": [
+      16,
+      16
+    ],
+    "usage": "src/city/litter.gd via CityDecals",
+    "review_evidence": [
+      "docs/evidence/style-transfer-litter-2026-09-12/source/litter-sheet-svg.png",
+      "docs/evidence/style-transfer-litter-2026-09-12/registered/litter-comparison-native.png",
+      "docs/evidence/style-transfer-litter-2026-09-12/registered/litter-comparison-3x.png"
+    ]
+  }
+]

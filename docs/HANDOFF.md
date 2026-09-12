@@ -179,10 +179,12 @@ M88.
 
 **SVG-first style transfer is the graphics workflow.** The game selects native-size PNG
 replacements where available; `--svg`, or `?svg=1` on the web, forces original SVGs.
-The existing drawing transforms and animation remain in charge. Other families use SVGs.
+The existing drawing transforms and animation remain in charge. Unconverted families use SVGs.
 Read [VISUALS.md](VISUALS.md) for reference roles and the replacement contract, and
 M108, eight-direction entity graphics, then M109, convert the SVG catalogue to PNG, in
 [TODO.md](TODO.md) for the remaining work. Every PNG asset needs a corresponding SVG authored first.
+Compare each character's directions, gait frames and state variants as one family; the
+illustrated-PNG skill describes the identity references and extraction checks that keep them aligned.
 
 **M76 is also built and released, on top of it.** Both the pause screen and the day summary carry a
 continue button and a held restart that acknowledges the press before the day it starts blocks the
@@ -284,8 +286,7 @@ Reaching act III — which M56's measurement against the nerves needs — waits 
 that batch is done. SVG-to-PNG
 style transfer is Codex's parallel track. Prepared artwork and its source-review sheets are listed
 in `GRAPHICS.md`; the integration table in `TODO.md` assigns each family to its gameplay owner.
-**M115, streets with trees, stands in front of that batch** by the orchestrator's placement, since
-a played day asked for it; playtest 57's other findings are built. The crowd goes round seals, walls
+The crowd goes round seals, walls
 and doors (`DECISIONS.md`, M110), and a car follows an arc through a turn with its heading
 continuous throughout (`DECISIONS.md`, M111), drawn through side, diagonal and end views on the
 way (`DECISIONS.md`, M108, the crowd car); M111's one open question — a street about-face

@@ -110,6 +110,10 @@ var _buildings: Array[Building] = []
 ## street tree is frontage, not a block's own purpose, so it stands whatever the block behind it
 ## becomes.
 var _street_trees: Array[Prop] = []
+## The same props, keyed by the pit tile they stand in — what `refresh_street_trees()` looks a
+## fallen tree's own pit up in. Keyed by tile rather than by world position because that is what
+## the planners hand back, and a float position is not a key.
+var _street_tree_pits := {}
 
 const DOOR_TEXTURE := preload("res://assets/props/door.svg")
 
@@ -277,6 +281,21 @@ func _spawn_street_trees() -> void:
 		tree.variant = hash(planted_tree.position)
 		_entities.add_child(tree)
 		_street_trees.append(tree)
+		_street_tree_pits[planted_tree.tile] = tree
+
+## Hides the street tree in every pit today's plan emptied, and shows every other one — so the
+## tree lying across a closed street is the one missing from the row beside it.
+##
+## **Called twice a day, and both times are load-bearing.** `start_day` below runs it once the
+## closures are planned, which is where a `FALLEN_TREE` closure's own pit is decided; `Main`
+## runs it again once `EventManager.start_day` has planned the seals, because a `fallen_tree_seal`
+## is chosen later and takes a pit of its own. Reading `CityMap.is_tree_pit_emptied` rather than
+## keeping a list here is what lets the second call be a plain refresh rather than a second
+## bookkeeping path.
+func refresh_street_trees() -> void:
+	for tile: Vector2i in _street_tree_pits:
+		var tree: Prop = _street_tree_pits[tile]
+		tree.visible = not map.is_tree_pit_emptied(tile)
 
 ## What is on the far side of the streets that run along the boundary.
 ##
@@ -425,6 +444,9 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 	# Last, and after the repaint: which blocks are calm is what the closure invariant is
 	# stated over, and a requisitioned park is not one of them.
 	_close_streets(day, rng)
+	# And after the closures, since a `FALLEN_TREE` closure is what empties a pit. `Main` runs it
+	# once more after the day's seals are planned — see `refresh_street_trees()`.
+	refresh_street_trees()
 
 ## Today's closed streets. The whole street comes out of the network; the barriers stand at
 ## its two mouths, where they can be seen from the junction rather than found half way down.

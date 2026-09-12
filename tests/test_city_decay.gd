@@ -20,6 +20,7 @@ func run(t) -> void:
 	_test_the_mouse_prefers_a_pile(t)
 	_test_boarded_storefronts_and_windows_shutter(t)
 	_test_ambient_shuttering_waits_for_the_curve(t)
+	_test_storefront_variants_use_seeded_bags(t)
 
 # ---------------------------------------------------------------------- the curve ---
 
@@ -176,7 +177,13 @@ func _test_boarded_storefronts_and_windows_shutter(t) -> void:
 	t.add_child(building)
 	building.condition = Building.Condition.BOARDED
 	building.day = Tuning.RUN_LENGTH_DAYS
-	for col in building.columns():
+	t.check(building._storefront_variant.size() == building.columns() / 2,
+			"a three-column facade has one storefront variant per complete pair")
+	t.check(building._ground_floor_texture(1) == null,
+			"the second column of a storefront pair draws no duplicate texture")
+	t.check(building._ground_floor_texture(2) == Building.WALL_BASE,
+			"an odd final commercial column keeps the ordinary wall base")
+	for col in range(0, building.columns() - 1, 2):
 		var texture := building._ground_floor_texture(col)
 		t.check(Building.STOREFRONT_SHUTTERED_TEXTURES.has(texture),
 				"a boarded commercial ground floor shows a shuttered storefront")
@@ -209,3 +216,73 @@ func _test_ambient_shuttering_waits_for_the_curve(t) -> void:
 	t.check(not any_shuttered_early, "a lived-in block shows no shuttered storefront on day 1")
 	t.check(any_shuttered_late,
 			"by the last day some lived-in commercial storefronts have shuttered ahead of any block turning")
+
+func _test_storefront_variants_use_seeded_bags(t) -> void:
+	var sampled: Array[Building] = []
+	var first_orders := {}
+	var bag_width := Building.STOREFRONT_TEXTURES.size()
+	for i in 16:
+		var building := Building.new()
+		building.district = GameEnums.BlockPurpose.COMMERCIAL
+		building.footprint = Vector2(512.0, 96.0)
+		building.height = 64.0
+		building.position = Vector2(7000.0 + i * 137.0, 7100.0 + i * 89.0)
+		t.add_child(building)
+		sampled.append(building)
+		for storefront_index in building._storefront_variant.size():
+			if storefront_index > 0:
+				t.check(building._storefront_variant[storefront_index] != building._storefront_variant[storefront_index - 1],
+						"neighboring storefronts use different variants")
+			if storefront_index % bag_width != 0 \
+					or storefront_index + bag_width > building._storefront_variant.size():
+				continue
+			var bag := building._storefront_variant.slice(storefront_index, storefront_index + bag_width)
+			var unique_bag := {}
+			for storefront_variant in bag:
+				unique_bag[storefront_variant] = true
+			t.check(unique_bag.size() == bag_width,
+					"each complete storefront bag uses every available variant once")
+		var order_key := ""
+		for storefront_variant in building._storefront_variant.slice(0, bag_width):
+			order_key += "%d," % storefront_variant
+		first_orders[order_key] = true
+	t.check(first_orders.size() > 1,
+			"different building seeds produce more than one storefront bag order")
+
+	var same_seed := Building.new()
+	same_seed.district = GameEnums.BlockPurpose.COMMERCIAL
+	same_seed.footprint = Vector2(512.0, 96.0)
+	same_seed.height = 64.0
+	same_seed.position = sampled[0].position
+	t.add_child(same_seed)
+	t.check(sampled[0]._storefront_variant == same_seed._storefront_variant,
+			"a storefront variant bag is reproducible from the building seed")
+	var variants_before_state_changes := sampled[0]._storefront_variant.duplicate()
+	sampled[0].height = 96.0
+	sampled[0].height = 64.0
+	sampled[0].day = Tuning.RUN_LENGTH_DAYS
+	sampled[0].condition = Building.Condition.BOARDED
+	t.check(sampled[0]._storefront_variant == variants_before_state_changes,
+			"day and condition changes preserve storefront variants")
+
+	var odd := Building.new()
+	odd.district = GameEnums.BlockPurpose.COMMERCIAL
+	odd.footprint = Vector2(160.0, 96.0)
+	odd.height = 64.0
+	t.add_child(odd)
+	t.check(odd._storefront_variant.size() == 2,
+			"an odd-width facade leaves its final wall column without a storefront")
+	var shallow := Building.new()
+	shallow.district = GameEnums.BlockPurpose.COMMERCIAL
+	shallow.footprint = Vector2(160.0, 32.0)
+	shallow.height = 32.0
+	t.add_child(shallow)
+	t.check(shallow._storefront_variant.is_empty(),
+			"a one-row commercial facade keeps its ordinary wall base")
+	t.check(shallow._ground_floor_texture(0) == Building.WALL_BASE,
+			"a one-row commercial facade returns its ordinary wall base")
+	for building in sampled:
+		building.free()
+	same_seed.free()
+	odd.free()
+	shallow.free()

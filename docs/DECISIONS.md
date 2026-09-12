@@ -41,6 +41,291 @@ folder under the same evidence path, a dog walker beside her from frame one; fra
 show the walker and his dog flip together at 1.76s and hold, and the README says the flip back
 was not caught inside the run. Whether the strides read at street scale is in `REVIEW.md`.
 
+## M109 — Convert the SVG catalogue to PNG · the timed main integration, 2026-09-12
+
+PLAYTEST-62 requested a twenty-minute delay before picking up the storefront and finale updates.
+The timer fired at 13:52:51 UTC. The conversion tip was
+`caface6d71dc20447a8b2b247510f0bb992285d7`, fetched main was
+`0225a242b421d9b47f60d3365b4cd9b9190a18d9`, and their base was
+`105ef597927137cd475f950a2b9e4fc78be878f1`. The sole textual conflict was the independent
+history insertions at the top of this file; both sets remain intact. Main's storefront
+PLAYTEST-61 and the conversion's PLAYTEST-62 have distinct identities. The milestone and
+numbered-record audit found no independent identity collision requiring renumbering.
+
+The semantic review compared the pending tree with both tips. Main's wider, mixed storefronts
+and shallow hallway indents/vertical stair treads retain their SVG sources and existing callers;
+none has a corresponding PNG in this increment, so the resolver shows the updated source.
+The conversion adds only the carrying rig and garbage/litter resources, preserving their own
+canvases, anchors and alpha. Its recursive visual audit loads actual Godot resources and keeps
+the original-SVG fallback checks. No source or runtime drawing contract is replaced by the merge.
+
+Main also brings rare street-tree runs, event footprint exclusion, and daily emptied pits for
+fallen trees. Those placement and refresh changes remain intact. Sacks use building-front or
+alley positions, trees use the curb lane, and litter remains a decorative ground layer; the PNG
+replacement changes none of those rules. The current city/event docs and tree tuning references
+agree. Queue reconciliation retains main's completed tree and interior-item removals and the
+conversion's remaining catalogue work. Both sets of human visual-review questions remain open.
+
+The carrying motion capture used the pending merged tree above (`caface6-dirty`, with main's
+assets and runtime changes present), seed 4242, 1280×720, `--start-escape floor:2 --invincible
+--walk 1e1w1e1w --press snapshot_burst 1`, and a still after six seconds. Whole run:
+`docs/evidence/style-transfer-player-family-2026-09-12/runtime/rig-100126-seed4242-v0.8.2-739-gcaface6-dirty/`;
+the `asked/burst-2662283-001` sequence retains all 36 PNGs, `burst.json` and its sibling MP4.
+Recorded frames span 0.004674–2.920421 seconds, with completion at 2.986075 seconds. Ordered
+frames show east/west travel and gait changes with stable baby placement and recognizable hair
+and clothing, alongside the updated hallway indents. They do not cover all eight turns; the
+source comparison sheet supplies those static views. The interior log records only the burst
+and reports a zero city position, so actual travel is established by the frames, not that field.
+The final still is `docs/evidence/archive/session-captures/2026-09-12/m109-carrying-gameplay.png`.
+The capture skill records the integer-duration walk syntax after the rejected decimal script
+in the litter run; it passed frontmatter validation. Human appearance review remains open.
+
+The merged checkout passed import/boot, focused `blocks city_decay events routes seals visuals
+stroller presentation_mode orientation interior`, and `visuals --svg`, plus doc lint and
+whitespace/conflict-marker checks. The full suite remains the PR's CI gate.
+
+A final clean merge takes queue-only main `b5649bf5416bd1c389668997221872d87cfc9718` into
+`41bb53c7caed22c21dd63833e196763718b9b34e`, with base
+`0225a242b421d9b47f60d3365b4cd9b9190a18d9`. Main revises the existing M110 crowd-obstacle,
+M98 return-pressure and M102 finale instructions; it introduces no independent numbered record.
+The merged queue preserves those instructions and the conversion's M109 remainder separately.
+Comparison with both parents confirms no runtime, asset or test change in this second merge;
+the preceding placement sweeps therefore verify the same executable tree. Import/boot, focused
+visuals in both modes, doc lint and conflict-marker checks are the final merge gate.
+
+## M109 — Convert the SVG catalogue to PNG · litter and garbage materials, 2026-09-12
+
+The next increment of PLAYTEST-62's SVG-to-PNG continuation converts seven existing props:
+`garbage_sack`, `garbage_sacks_pile`, `litter_can`, `litter_apple`, `litter_bag`,
+`litter_newspaper` and `litter_cup`. One four-column/two-row atlas places the single sack and
+three-sack pile together so their charcoal plastic, ties and highlights share a treatment. The
+last cell stays empty. The two approved scene references supply style only. A plain white
+generation background avoids the painted checkerboard problem found in the carrying family.
+
+The source SVGs retain all content, geometry, dimensions and alpha. The sacks keep bottom-center
+anchors; litter keeps its center anchor and small footprint. `CityDecals` already resolves litter
+textures and `Prop` draws sacks through the resolving sprite helper, so the conversion needs no
+runtime code, new binding or placement change. The generation evidence, exact prompt, source
+rasters/hashes, manifest, extraction measurements and native/3× comparisons are in
+`docs/evidence/style-transfer-litter-2026-09-12/`. Remaining prop and environment families stay
+in M109, convert the SVG catalogue to PNG; storefront and finale artwork is picked up from main
+after the player's requested twenty-minute delay.
+
+Pre-integration pixel checks and focused suites passed, and all seven files reproduced byte for
+byte. Final review then found copied import metadata: one prop remapped to a mother texture,
+other props shared a UID, and carrying frames reused their pushing counterparts' UIDs. The
+registered PNG bytes were correct, but that alone did not prove the resources Godot would load.
+Only the seventeen newly introduced sidecars were regenerated by Godot. The existing visual
+suite's runtime-pair audit is extended from the rig directory to all registered transfer families,
+so a prop mapped to a wrong-sized or differently masked picture cannot hide outside its scope.
+The broader PNG/source ordering and non-mirrored-asset audit remains open in M109. The
+illustrated-PNG skill now distinguishes preserving existing resource identities from letting
+Godot create unique identities for new assets.
+
+After regeneration, all new sidecars have unique UIDs and point to their own PNG source and
+matching import destination; existing PNG identities are unchanged. Import/boot, focused
+`visuals stroller presentation_mode orientation`, `visuals --svg`, doc lint and whitespace
+checks passed. `visuals city_decay` passed for the prop integration. The full suite remains CI's
+gate on the proposed merge result.
+A temporary external Godot probe loaded all seventeen new resources and compared their images
+with the PNG files: dimensions and every alpha value matched, as did RGB on fully opaque pixels.
+Transparent RGB was excluded because Godot's alpha-border fixing legitimately changes it.
+
+Gameplay still: `docs/evidence/archive/session-captures/2026-09-12/m109-litter-gameplay.png`,
+captured from `a58a74b` in the primary checkout, 1280×720, seed 4242, day 14, `--spawn alley`,
+`--invincible --layers 2`, after 3.1 seconds. Whole telemetry run:
+`docs/evidence/style-transfer-litter-2026-09-12/runtime/rig-094855-seed4242-v0.8.2-738-ga58a74b/`.
+The decimal-duration script `--walk 0.3s0.8e0.8w` was rejected by the existing rig parser, so the capture is
+stationary. It shows single sacks, three-sack piles and small litter at gameplay scale, not
+movement, costs or a loss; no motion claim rests on it.
+
+## M109 — Convert the SVG catalogue to PNG · the carrying mother as one family, 2026-09-12
+
+[PLAYTEST-62](playtests/PLAYTEST-62.md) asks for consistency across directions, animation frames
+and state variants, explicitly the same mother carrying the baby and pushing the stroller. It
+suggests a shared grid and leaves the method to visual results. The ten carrying SVGs were
+already authored and bound; this increment adds their PNG derivatives without changing sources,
+runtime drawing, animation, mirroring, offsets or gameplay. The catalogue-wide conversion remains
+open in M109, convert the SVG catalogue to PNG.
+
+The generation evidence is
+`docs/evidence/style-transfer-player-family-2026-09-12/`: source SVG hashes and native/8× Godot
+rasters, a five-column/two-row source grid, a matching existing-PNG pushing-family reference,
+both raw generator outputs, exact prompts, extraction and registration code, and native/3×
+comparisons across eight directions and both gait frames. The columns are front, back, side,
+front diagonal and back diagonal; rows are frames a and b. Runtime mirroring supplies west views.
+The source SVG remains authoritative for the carrying pose and head turns. Existing pushing PNGs
+supply recognizable identity and rendering, and remain unchanged; the urban and cardinal images
+supply style only. This avoids regenerating an established family merely to extend its states.
+
+The first built-in imagegen output painted checkerboard and pale ghost outlines in its margins.
+The approved neutral-background extractor left residue that expanded the measured cell bounds,
+shrinking the actual character inside an exact source alpha mask. That result was rejected
+internally and its failed registered derivatives were kept outside the repository. A background-only
+imagegen edit produced a plain white background; the same extractor then removed it cleanly.
+The original raw image remains because it is an input to the accepted edit. This is why the
+illustrated-PNG skill now checks extracted bounds and interior placement as well as exact alpha.
+
+The shared grid and existing-family reference produced recognizable short brown hair, red coat,
+blue jeans, dark shoes and matching baby/blanket materials across the retained variants. A grid
+alone did not guarantee identical generated details between gait frames; comparison at native
+size and enlarged remains required. The carrying diagonals retain their SVG head turn rather
+than copying the more frontal rendering in the existing pushing PNG. Both art skills now require
+reviewing direction, frame and state families together; grid batching is a technique, not a
+mandatory output format. Human appearance and motion review remains in `REVIEW.md`.
+
+Integration verification: `./tools/check.sh`, focused `visuals stroller presentation_mode orientation`
+suites, `visuals --svg`, doc lint, the evidence converter's Ruff check and `git diff --check`
+passed. The visual suite checks every rig PNG against its native SVG size and alpha, including
+all ten carrying derivatives. Both modified skills passed the skill-creator frontmatter validator.
+Re-running registration from the corrected raw atlas reproduced all ten runtime PNGs byte for byte.
+
+## M116 — A random mixture within each storefront row, 2026-09-12
+
+[PLAYTEST-61](playtests/PLAYTEST-61.md) first reports that the wider fronts lost their variety
+and look empty, then accepts the four source variants: "those are fine for now". The remaining
+request is "a single house front should sample randomly from the variants", because "the
+example picture shows only one variant applied four times". The larger doors and all twelve
+SVG sources remain unchanged.
+
+The picker independently rolled each store, which allowed the pictured facade to select the
+same type four times. Each building now shuffles the four variants, uses each once, then
+reshuffles when a longer facade needs another group. An immediate repeat at the group boundary
+is swapped away. **Chosen where the request was silent:** sampling without replacement inside
+each group, rather than independent draws that can produce another identical row. The seed
+still comes from the building's variant and position, so rebuilding or advancing the day does
+not change its store identities. Awnings and shutter severity remain seeded per storefront.
+
+**Merge review:** incoming main `05c733b2317bb3708a0e7220c25d2aee29805efe` and the storefront
+tip `90e20055effd24a6ae99263d9c54567449017ba7` share base
+`b9d3805e68e28f8a11749ea2d5cea684359ecf43`. Both inserted records at the top of `DECISIONS.md`;
+both records are retained. Main's checkpoint reach, shared release latch, walker hold and
+interior-door changes remain intact, including their tests. `CITY.md` combines its walker-door
+documentation with the storefront contract. The reviewed size question leaves `REVIEW.md`.
+The storefront playtest is renumbered from 60 to 61 to avoid the separate apartment-graphics
+record numbered 60 on the concurrent documentation branch; its original words, date and
+evidence remain intact. Milestone identities do not collide.
+
+A subsequent clean merge takes main `105ef597927137cd475f950a2b9e4fc78be878f1`, which adds that
+apartment Playtest 60 and its separate queue/review updates. Both playtests and their references
+remain distinct; this documentation-only update changes no gameplay or storefront source.
+
+PR 129's review also requested a named evidence parent and explicit texture-selection checks.
+The complete original run moved under `evidence/playtest-61-2026-09-12/`, with all six files
+byte-identical and its document links updated. The texture selector reads eligibility from the
+generated variant list, avoiding a duplicate commercial/height predicate. Focused checks cover
+one variant per complete column pair, a skipped partner column, an ordinary odd end column and
+an ordinary base on a shallow facade. Import/boot and the focused `city_decay` suite pass after
+these review fixes.
+
+Verification: import/boot, doc lint and focused `city_decay`, `checkpoints` and `interior`
+suites pass on the merged tree. The storefront regression samples different building seeds,
+checks complete groups and neighbors, and preserves the order across rebuilds and state changes.
+The [updated gameplay still](evidence/archive/session-captures/2026-09-12/m116-storefront-mix-seed255862635-day1.png)
+shows the same facade using pharmacy, café, grocer and sign-front variants from left to right.
+Capture: seed 255862635, day 1, 1280×720, four seconds, `--svg --invincible --no-title`; a
+temporary default-spawn override placed the rig at tile 70,57 and was removed afterward.
+
+## M116 — Wider storefronts and human-sized doors, 2026-09-12
+
+[PLAYTEST-61](playtests/PLAYTEST-61.md) asks: "store fronts have too small doors (compare eg
+with the home door) and are not wide enough stores should be double each."
+The [supplied frame](evidence/playtest-61-2026-09-12/run-043335-seed255862635-v0.8.2-704-g4f3cfb7/asked/002-attempt2-asked.png)
+shows a commercial frontage at tile 70,57 on day 1, seed 255862635. The complete player run is
+preserved with it. The old store occupied 32×32px with a 9×23px door, beside the home's 26×34px
+entrance.
+
+Each store now occupies two columns: a 64×36px SVG with a 26×34px entrance, across all four
+plain, awning and shuttered families. The renderer seeds one variant, awning roll and shutter
+severity per store, and paints its whole frontage after the wall cells so a neighboring cell
+cannot cover half of it. Source height determines the offset to the existing ground line;
+ordinary wall bases keep their original placement. Windows immediately above a storefront move
+2px north, including an odd end column's window, so tall and shuttered sills stay complete.
+
+**Choices where the request was silent:** an odd final column remains ordinary wall, and a
+one-row facade carries no storefront because a full-height entrance cannot fit. These are
+presentation choices open to revision; building footprints, sidewalk collision and degradation
+rules do not change. The complete stores retain the four existing display identities and muted
+materials. A scaled old drawing with a larger door layered on top was rejected internally
+because it collided with displays and canopy geometry; the final family uses native coordinates.
+
+The import/boot check, doc/XML lint and focused `city_decay` suite verify the renderer and
+degradation wiring. All twelve final sources were rendered by Godot and inspected at
+[native scale](evidence/m116-storefronts-2026-09-12/storefronts_1x.png) and
+[3× scale](evidence/m116-storefronts-2026-09-12/storefronts_3x.png): columns are grocer, café,
+pharmacy and sign shop; rows are plain, awning and shuttered. The remaining human scale judgment
+is listed in `REVIEW.md`.
+
+The [gameplay still](evidence/archive/session-captures/2026-09-12/m116-storefronts-seed255862635-day1.png)
+shows the same commercial block at normal 1280×720 scale, day 1 and seed 255862635. A temporary
+DevRig spawn target placed the player at tile 70,57; the capture waited four seconds with
+`--svg --invincible --no-title`, and the temporary target was removed. The row shows four
+complete stores in the space occupied by eight in the original frame. This is visual evidence,
+not a played verdict on difficulty.
+## M115 — Streets with trees · built 2026-09-12
+
+*(2026-09-11, playtest 57: "can we make only some streets have trees? it should be continuous
+segments of 3/4/5 blocks randomly placed on the map in both directions. fallen trees should only
+be possible on streets with trees and one spot should be empty (the fallen tree's spot)". Then
+2026-09-12, playtest 58: "trees should only be allowed to be placed if there is no other blocking
+event (or conversely due to map consistency) events can only be placed where no trees are (except
+for the fallen tree which must empty out one tree lot). so trees must be quite rare to be able to
+still place vans restaurants etc. also, trees make it harder to spot events like yeller, dog
+walker, etc. so we need to be careful about how many we are placing".)* Before this, every
+pavement fronted by housing or shops carried pits at a fixed spacing, a fallen tree merely
+preferred a street with trees, and nothing stopped an event standing in a tree. Four agent
+commits on `feature/streets-with-trees`, reviewed here.
+
+**Runs, and few of them.** `StreetTrees.runs()` picks `Tuning.STREET_TREE_RUNS` (6) straight runs
+of three to five consecutive blocks along one street line, either axis, from the city seed at
+generation; a run is rejected whole rather than trimmed when any of its streets is absent, not
+ordinary, not fronting housing or shops, or already taken, bounded at 240 tries so a hostile seed
+ends with fewer runs. Runs never overlap. Planting walks the whole run, skipping junctions, so
+`STREET_TREE_PIT_SPACING` (896px, two lot-lengths read as block plus street) crosses block
+boundaries; under the old per-segment loop a wide spacing would have changed almost nothing on a
+256px segment. **Measured** with `tests/probes/m115_tree_rarity.gd` over thirty seeds: about six
+per cent of ordinary streets are tree-lined, the worst seed seven, about six runs and
+twenty-seven pits in a city of some two hundred and thirty ordinary streets; the entry's quarter
+is asserted as a ceiling, `STREET_TREE_MAX_LINED_FRACTION`. All four numbers are pinned and open
+to overturn, six runs deliberately at the rare end.
+
+**A tree and an event never share ground.** `EventScheduler._open_ground_for` gains a fifth
+outright refusal beside closed, doorstep, held and home-block ground: any tile a standing tree's
+own `GroundShape` footprint covers, the point the shadow reads, not merely the trunk tile; cached
+once per day. **The seals took their own path**: `SealPlanner.plan_day` puts a body on every
+off-tree street regardless of what the catalogue would be offered and asks none of the scheduler's
+placement questions, so the refusal went into `SealPlanner._seal_along_tile`, which walks out from
+the street's midpoint to the nearest cross-section with no pit in it; soft pairs carry that tile
+into the thinning pass so `soft_sealed_tiles` marks where the bodies stand. `_hard_positions` took
+an optional along-tile, default the midpoint, so the edge-to-edge tests are untouched. No sealing
+guarantee was made hard: a street is eight tiles and the spacing allows at most one pit per kerb
+on it, so a clear cross-section always exists and the midpoint fallback is never reached. The one
+test where the scheduler's rule and the seal planner's rule must agree asks every catalogue
+placement and every seal body over full days and seeds whether it stands in a tree.
+
+**A fallen tree only where a tree stood.** `ClosurePlanner._pick_kind` drops `FALLEN_TREE` from
+the roll on a bare street, a gate rather than a weight, and `SealPlanner._pick_candidate` drops
+`fallen_tree_seal` the same way. **Chosen where the design was silent, and the most overturnable
+choice here**: `_FALLEN_TREE_STREET_BIAS` (6.0) survives on top of the gate, because tree-lined
+streets are six per cent of the city and a day closes one to four streets, so at the plain weight
+the picture would be near-unreachable. Both planners take the pit nearest the closure's or seal's
+own centre through `StreetTrees.pit_nearest()`, and the seal stands on that pit so picture and gap
+coincide. The day's emptied pits are two small sets on `CityMap`, handed over whole each day so
+neither pass accumulates yesterday and their order does not matter; `StreetTrees.planted()` is
+never mutated; `City` keys its tree props by pit and `refresh_street_trees()` hides the emptied
+ones. **One line outside the agent's fence**: `main.gd` calls that refresh after the seals are
+planned, since seals are planned after `City.start_day` and without it a seal's pit kept its tree
+until the next day; the alternatives were reordering the day, a per-frame poll or a signal, and
+the line was the smallest honest fix. **An emptied pit draws nothing at all**, pit decal included,
+as the entry specified; drawing the bare pit without its tree is one branch in `Prop._draw()` and
+would say more directly that the tree here is the one in the road, so it is in `REVIEW.md`.
+Tests sweep twelve seeds by fourteen days for the gate and the empty pit, and a day whose closures
+are all on bare streets still shuts the act's full quota. Evidence in
+`docs/evidence/archive/session-captures/2026-09-12/`: an overview on seed 4229 establishing the
+rarity, and a fallen tree at that seed's day-one closure with standing trees beside it; the
+emptied pit is out of that frame, since the spawn target stands at the closure's mouth and the pit
+is nearest the street's middle, so it is held by assertion. `docs/GRAPHICS.md`'s street tree row
+says where the pits are now.
 ## M102 — The finale · the south-edge doors are indents, and the stairs are steps, 2026-09-12
 
 *(2026-09-12, playtest 60, on the M112 graphics pass: "the downwards leading doors in the
