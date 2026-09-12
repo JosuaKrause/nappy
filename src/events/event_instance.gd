@@ -92,6 +92,162 @@ const CAR_ACCIDENT_VERTICAL := preload("res://assets/events/car_accident_vertica
 const CAR_ACCIDENT_VERTICAL_SHADOW := preload(
 		"res://assets/events/car_accident_vertical_shadow.svg")
 const BURST_MAIN_VERTICAL := preload("res://assets/events/burst_water_main_vertical.svg")
+
+# ---------------------------------------------------------- eight-view families ---
+# Every family below shares the crowd walker's own convention (`docs/GRAPHICS.md`, "the crowd
+# walkers"; `CrowdAgent.WALKER_VIEW_BY_SECTOR`): N back, NE/NW back_diagonal, E/W side, SE/SW
+# front_diagonal, S front, the three west sectors mirroring their east-authored partner about the
+# feet anchor (`EightDirection.is_mirrored()`). `EIGHT_VIEW_BY_SECTOR` is that same table, copied
+# rather than shared — an event and a walker have no common base to hang one array on — and
+# `_select_view()` below is `CrowdAgent._update_walker_view()`'s own shape applied generally: one
+# held sector per instance, since only one `Look` is ever live on a given instance.
+const EIGHT_VIEW_BY_SECTOR: Array[String] = [
+	"side", "front_diagonal", "front", "front_diagonal", "side",
+	"back_diagonal", "back", "back_diagonal",
+]
+
+const PERSON_BY_VIEW := {
+	"front": preload("res://assets/events/person_front.svg"),
+	"back": preload("res://assets/events/person_back.svg"),
+	"side": preload("res://assets/events/person_side.svg"),
+	"front_diagonal": preload("res://assets/events/person_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/person_back_diagonal.svg"),
+}
+const YELLER_BY_VIEW := {
+	"front": preload("res://assets/events/yeller_front.svg"),
+	"back": preload("res://assets/events/yeller_back.svg"),
+	"side": preload("res://assets/events/yeller_side.svg"),
+	"front_diagonal": preload("res://assets/events/yeller_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/yeller_back_diagonal.svg"),
+}
+const BUSKER_BY_VIEW := {
+	"front": preload("res://assets/events/busker_front.svg"),
+	"back": preload("res://assets/events/busker_back.svg"),
+	"side": preload("res://assets/events/busker_side.svg"),
+	"front_diagonal": preload("res://assets/events/busker_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/busker_back_diagonal.svg"),
+}
+const POSTER_CREW_BY_VIEW := {
+	"front": preload("res://assets/events/poster_crew_front.svg"),
+	"back": preload("res://assets/events/poster_crew_back.svg"),
+	"side": preload("res://assets/events/poster_crew_side.svg"),
+	"front_diagonal": preload("res://assets/events/poster_crew_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/poster_crew_back_diagonal.svg"),
+}
+const CAFE_SITTER_BY_VIEW := {
+	"front": preload("res://assets/events/cafe_sitter_front.svg"),
+	"back": preload("res://assets/events/cafe_sitter_back.svg"),
+	"side": preload("res://assets/events/cafe_sitter_side.svg"),
+	"front_diagonal": preload("res://assets/events/cafe_sitter_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/cafe_sitter_back_diagonal.svg"),
+}
+const VAN_VICTIM_BY_VIEW := {
+	"front": preload("res://assets/events/van_victim_front.svg"),
+	"back": preload("res://assets/events/van_victim_back.svg"),
+	"side": preload("res://assets/events/van_victim_side.svg"),
+	"front_diagonal": preload("res://assets/events/van_victim_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/van_victim_back_diagonal.svg"),
+}
+const PROTESTER_BY_VIEW := {
+	"front": preload("res://assets/events/protester_front.svg"),
+	"back": preload("res://assets/events/protester_back.svg"),
+	"side": preload("res://assets/events/protester_side.svg"),
+	"front_diagonal": preload("res://assets/events/protester_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/protester_back_diagonal.svg"),
+}
+const LEAF_BLOWER_BY_VIEW := {
+	"front": preload("res://assets/events/leaf_blower_front.svg"),
+	"back": preload("res://assets/events/leaf_blower_back.svg"),
+	"side": preload("res://assets/events/leaf_blower_side.svg"),
+	"front_diagonal": preload("res://assets/events/leaf_blower_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/leaf_blower_back_diagonal.svg"),
+}
+const ROBBER_WAITING_BY_VIEW := {
+	"front": preload("res://assets/events/robber_waiting_front.svg"),
+	"back": preload("res://assets/events/robber_waiting_back.svg"),
+	"side": preload("res://assets/events/robber_waiting_side.svg"),
+	"front_diagonal": preload("res://assets/events/robber_waiting_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/robber_waiting_back_diagonal.svg"),
+}
+const ROBBER_LUNGING_BY_VIEW := {
+	"front": preload("res://assets/events/robber_lunging_front.svg"),
+	"back": preload("res://assets/events/robber_lunging_back.svg"),
+	"side": preload("res://assets/events/robber_lunging_side.svg"),
+	"front_diagonal": preload("res://assets/events/robber_lunging_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/robber_lunging_back_diagonal.svg"),
+}
+const CHATTING_MOTHER_WALKING_BY_VIEW := {
+	"front": preload("res://assets/events/chatting_mother_walking_front.svg"),
+	"back": preload("res://assets/events/chatting_mother_walking_back.svg"),
+	"side": preload("res://assets/events/chatting_mother_walking_side.svg"),
+	"front_diagonal": preload("res://assets/events/chatting_mother_walking_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/chatting_mother_walking_back_diagonal.svg"),
+}
+const CHATTING_MOTHER_TALKING_BY_VIEW := {
+	"front": preload("res://assets/events/chatting_mother_talking_front.svg"),
+	"back": preload("res://assets/events/chatting_mother_talking_back.svg"),
+	"side": preload("res://assets/events/chatting_mother_talking_side.svg"),
+	"front_diagonal": preload("res://assets/events/chatting_mother_talking_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/chatting_mother_talking_back_diagonal.svg"),
+}
+
+## The animal/rider families below reuse the existing unsuffixed constant as `"side"` rather than
+## preloading a second copy of the same picture: `docs/evidence/svg-vehicles-2026-09-10/
+## facings.csv` marks every one of them "existing canonical source" rather than a new drawing, and
+## `docs/GRAPHICS.md` says to replace a preload only where the suffixed source is a different
+## picture from the one already live. `mouse` is the one family in this evidence set left out —
+## `EventCatalogue._alley_mouse()`'s own docstring documents, with its own reasoning, that the row
+## stays on `_draw_simple(MOUSE, ...)` rather than joining this table.
+const CAT_CROUCHED_BY_VIEW := {
+	"front": preload("res://assets/events/cat_crouched_front.svg"),
+	"back": preload("res://assets/events/cat_crouched_back.svg"),
+	"side": CAT_CROUCHED,
+	"front_diagonal": preload("res://assets/events/cat_crouched_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/cat_crouched_back_diagonal.svg"),
+}
+const CAT_RUNNING_BY_VIEW := {
+	"front": preload("res://assets/events/cat_running_front.svg"),
+	"back": preload("res://assets/events/cat_running_back.svg"),
+	"side": CAT_RUNNING,
+	"front_diagonal": preload("res://assets/events/cat_running_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/cat_running_back_diagonal.svg"),
+}
+const DOG_BY_VIEW := {
+	"front": preload("res://assets/events/dog_front.svg"),
+	"back": preload("res://assets/events/dog_back.svg"),
+	"side": DOG,
+	"front_diagonal": preload("res://assets/events/dog_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/dog_back_diagonal.svg"),
+}
+const CHARGING_DOG_BY_VIEW := {
+	"front": preload("res://assets/events/charging_dog_front.svg"),
+	"back": preload("res://assets/events/charging_dog_back.svg"),
+	"side": CHARGING_DOG,
+	"front_diagonal": preload("res://assets/events/charging_dog_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/charging_dog_back_diagonal.svg"),
+}
+const CYCLIST_BY_VIEW := {
+	"front": preload("res://assets/events/cyclist_front.svg"),
+	"back": preload("res://assets/events/cyclist_back.svg"),
+	"side": CYCLIST,
+	"front_diagonal": preload("res://assets/events/cyclist_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/cyclist_back_diagonal.svg"),
+}
+const PIGEON_BY_VIEW := {
+	"front": preload("res://assets/events/pigeon_front.svg"),
+	"back": preload("res://assets/events/pigeon_back.svg"),
+	"side": PIGEON,
+	"front_diagonal": preload("res://assets/events/pigeon_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/pigeon_back_diagonal.svg"),
+}
+const PIGEON_DOWN_BY_VIEW := {
+	"front": preload("res://assets/events/pigeon_down_front.svg"),
+	"back": preload("res://assets/events/pigeon_down_back.svg"),
+	"side": PIGEON_DOWN,
+	"front_diagonal": preload("res://assets/events/pigeon_down_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/pigeon_down_back_diagonal.svg"),
+}
+
 ## The region door's own kit — see `RegionPlanner` and `docs/CITY.md`, "Regions and the wall".
 const HUT_NORTH := preload("res://assets/checkpoints/hut_north.svg")
 const HUT_SOUTH := preload("res://assets/checkpoints/hut_south.svg")
@@ -287,6 +443,12 @@ var gate_state: RegionPlanner.GateState = null
 
 ## Facing, for art with a front and a back. Only a mobile event ever changes it.
 var _heading := Vector2.RIGHT
+
+## The eight-view sector this instance is currently drawn in, for whichever family reads
+## `EIGHT_VIEW_BY_SECTOR` instead of a single side-mirrored picture — see `_select_view()`. Reset
+## in `setup()` to the exact nearest sector for the instance's own siting, the same "no prior-view
+## hold on a fresh placement" rule `EightDirection.nearest()`'s own doc names.
+var _view_sector := 2
 var _path_travelled := 0.0
 var _telegraph_announced := false
 var _activation_announced := false
@@ -344,6 +506,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 		start = _centred_on_the_pavement_band(map, start)
 	position = start
 	_heading = face
+	_view_sector = EightDirection.nearest(face)
 	_map = map
 	_spread_vertical = _spread_is_vertical(map, position)
 	_stationary_vehicle_side = _stationary_vehicle_uses_side(definition.look, map, position, face)
@@ -975,6 +1138,11 @@ class Bird extends RefCounted:
 	## Wingbeats per second, and where in one it currently is.
 	var beat := 0.0
 	var phase := 0.0
+	## This bird's own held eight-view sector — one per bird rather than one shared with the
+	## instance's own `_view_sector`, since a flock is eleven bodies wheeling independently rather
+	## than one actor with one facing. See `EventInstance._select_view()`, the same hold applied
+	## per bird by `_draw_birds()`.
+	var view_sector := 2
 
 var _flock: Array[Bird] = []
 
@@ -1002,6 +1170,7 @@ func _build_the_flock() -> void:
 		var reach := def.flock_spread * (0.3 + 0.7 * _flock_roll(i, 2))
 		bird.at = Vector2(cos(angle), sin(angle) * GROUND_SQUASH) * reach
 		bird.heading = Vector2.from_angle(TAU * _flock_roll(i, 3))
+		bird.view_sector = EightDirection.nearest(bird.heading)
 		bird.speed = BIRD_GROUND_SPEED
 		# Half of them wheel each way, or the flock rotates as a body and reads as a carousel.
 		bird.turn = (1.2 + 1.4 * _flock_roll(i, 4)) * (1.0 if i % 2 == 0 else -1.0)
@@ -1698,7 +1867,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.MOUSE:
 			_draw_simple(MOUSE, canvas)
 		EventDef.Look.YELLER:
-			_draw_simple(YELLER, canvas)
+			_draw_eight_view(YELLER_BY_VIEW, _heading, canvas)
 		EventDef.Look.DOG_WALKER:
 			_draw_dog_walker(canvas)
 		EventDef.Look.CAFE:
@@ -1706,7 +1875,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.DELIVERY_VAN:
 			_draw_simple(DELIVERY_VAN, canvas)
 		EventDef.Look.BUSKER:
-			_draw_simple(BUSKER, canvas)
+			_draw_eight_view(BUSKER_BY_VIEW, _heading, canvas)
 		EventDef.Look.ROADWORKS:
 			_draw_spread(BARRIER_SEGMENT, BARRIER_END, canvas)
 		EventDef.Look.FIRE_ENGINE:
@@ -1720,23 +1889,23 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.STALL:
 			_draw_spread(STALL, null, canvas)
 		EventDef.Look.LEAF_BLOWER:
-			_draw_simple(LEAF_BLOWER, canvas)
+			_draw_eight_view(LEAF_BLOWER_BY_VIEW, _heading, canvas)
 		EventDef.Look.BIRDS:
 			_draw_birds(canvas)
 		EventDef.Look.CYCLIST:
-			_draw_simple(CYCLIST, canvas)
+			_draw_eight_view(CYCLIST_BY_VIEW, _heading, canvas)
 		EventDef.Look.ICE_CREAM_VAN:
 			_draw_simple(ICE_CREAM_VAN, canvas)
 		EventDef.Look.LORRY:
 			_draw_simple(LORRY, canvas)
 		EventDef.Look.CHARGING_DOG:
-			_draw_simple(CHARGING_DOG, canvas)
+			_draw_eight_view(CHARGING_DOG_BY_VIEW, _heading, canvas)
 		EventDef.Look.CHATTING_MOTHER:
 			_draw_chatting_mother(canvas)
 		EventDef.Look.POLICE_CAR:
 			_draw_vehicle(POLICE_CAR, POLICE_CAR_END, canvas)
 		EventDef.Look.POSTER_CREW:
-			_draw_simple(POSTER_CREW, canvas)
+			_draw_eight_view(POSTER_CREW_BY_VIEW, _heading, canvas)
 		EventDef.Look.ROADBLOCK:
 			_draw_roadblock(canvas)
 		EventDef.Look.UNMARKED_VAN:
@@ -1809,6 +1978,17 @@ func _draw_simple(texture: Texture2D, canvas: CanvasItem = self) -> void:
 	_draw_shape_shadow(canvas, def.shape)
 	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
+## The five-view generalisation of `_draw_simple`, for a family that used to be one side
+## silhouette mirrored east and west and now has the full front/back/side/diagonal set —
+## `_select_view()` picks the view from `heading` and `EightDirection.is_mirrored()` says whether
+## it mirrors. `_draw_simple` itself is untouched and keeps drawing every row that has not been
+## given the rest of the family: `delivery_van`, `mouse`, `skip`, `ice_cream_van` and `lorry`.
+func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem = self) -> void:
+	_draw_shape_shadow(canvas, def.shape)
+	var view := _select_view(heading)
+	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
+			EightDirection.is_mirrored(_view_sector))
+
 ## The seed of M108, eight-direction entity graphics, scoped to `Look.RIOT_VAN` alone — the only
 ## row that carries it — rather than a general `Look`-keyed table with one entry: front, back,
 ## side and the two diagonals, the nearest of the eight to the van's own `_heading`, mirrored for
@@ -1870,9 +2050,13 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 func _draw_loose_dog(canvas: CanvasItem = self) -> void:
 	var behind := Vector2(26.0 if _heading_is_west() else -26.0, 0.0)
 	_draw_shape_shadow(canvas, def.shape)
-	# On the ground and slack, not held up at hip height. Nobody is holding it.
+	# On the ground and slack, not held up at hip height. Nobody is holding it. The lead's own
+	# offset stays a plain east/west span — a composite the picture underneath it does not own,
+	# same as `_draw_dog_walker`'s taut one.
 	canvas.draw_line(Vector2(0.0, -8.0), behind + Vector2(0.0, -2.0), Palette.OUTLINE, 2.0)
-	Sprites.draw_standing(canvas, DOG, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	var view := _select_view(_heading)
+	Sprites.draw_standing(canvas, DOG_BY_VIEW[view], Vector2.ZERO, Vector2.ZERO,
+			EightDirection.is_mirrored(_view_sector))
 
 ## Every bird, drawn where it actually is.
 ##
@@ -1894,13 +2078,17 @@ func _draw_birds(canvas: CanvasItem = self) -> void:
 			# Smaller and fainter the higher it is, and gone by the time it is over the rooftops.
 			var faded := 1.0 - bird.lift / BIRD_SHADOW_CEILING
 			_draw_shadow(canvas, bird.at, 5.0 * faded)
-		var wings := PIGEON if sin(bird.phase) >= 0.0 else PIGEON_DOWN
+		# Each bird holds its own sector — a flock is eleven bodies wheeling independently, not one
+		# actor with one facing — through the same hold `_select_view()` gives the instance itself.
+		bird.view_sector = EightDirection.update(bird.view_sector, bird.heading)
+		var view: String = EIGHT_VIEW_BY_SECTOR[bird.view_sector]
+		var mirror := EightDirection.is_mirrored(bird.view_sector)
+		var wings: Texture2D = PIGEON_BY_VIEW[view] if sin(bird.phase) >= 0.0 else PIGEON_DOWN_BY_VIEW[view]
 		if bird.lift <= 0.0:
 			# Standing. The upstroke is a bird in flight, and a pavement full of them is a flock
 			# that has already gone — which is the thing the telegraph exists to show her instead.
-			wings = PIGEON_DOWN
-		Sprites.draw_standing(canvas, wings, bird.at - Vector2(0.0, bird.lift),
-				Vector2.ZERO, bird.heading.x < 0.0)
+			wings = PIGEON_DOWN_BY_VIEW[view]
+		Sprites.draw_standing(canvas, wings, bird.at - Vector2(0.0, bird.lift), Vector2.ZERO, mirror)
 
 ## How high a bird's shadow survives to. Roughly first-floor height: above it, there is nothing on
 ## the pavement to cast one onto that the player can see.
@@ -1909,9 +2097,11 @@ const BIRD_SHADOW_CEILING := 46.0
 func _draw_cat(canvas: CanvasItem = self) -> void:
 	# Crouched while telegraphing, stretched out once it bolts. The crouch *is* the
 	# telegraph, so the two silhouettes have to differ at a glance, not by a scale factor.
-	var texture := CAT_CROUCHED if is_telegraphing() else CAT_RUNNING
+	var by_view := CAT_CROUCHED_BY_VIEW if is_telegraphing() else CAT_RUNNING_BY_VIEW
 	_draw_shape_shadow(canvas, def.shape)
-	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	var view := _select_view(_heading)
+	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
+			EightDirection.is_mirrored(_view_sector))
 
 ## Hood up and hands in the coat while he is only somewhere; leaning out over a forward leg once
 ## he has taken an interest.
@@ -1922,9 +2112,28 @@ func _draw_cat(canvas: CanvasItem = self) -> void:
 ## is a man there" but *which of the two men that is* — so the change of posture happens on the
 ## frame he notices her, before the telegraph has finished and well before he moves.
 func _draw_robber(canvas: CanvasItem = self) -> void:
-	var texture := ROBBER_WAITING if is_waiting() else ROBBER_LUNGING
 	_draw_shape_shadow(canvas, def.shape)
-	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	var by_view := ROBBER_WAITING_BY_VIEW if is_waiting() else ROBBER_LUNGING_BY_VIEW
+	# Once he has noticed her, `_chase()` already keeps `_heading` pointed at her for every frame of
+	# the telegraph and the lunge alike — `_draw_body()`'s ordinary reading, `_heading`. Before that
+	# he has nothing of his own to face except the alley he was sited in, and a man only watching
+	# the street is worth nothing next to a man watching *her* — see `_robber_waiting_heading()`.
+	var heading := _robber_waiting_heading() if is_waiting() else _heading
+	var view := _select_view(heading)
+	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
+			EightDirection.is_mirrored(_view_sector))
+
+## Which way the waiting posture faces: her, from the moment a caller has told this instance where
+## she is (`set_player_at()`), since that is the one thing worth turning toward before he has
+## actually noticed her — `_chase()`'s own `is_waiting()` branch does not move `_heading` until she
+## is inside `pursues_within`, see that function's doc. Falls back to the site's own authored
+## facing where no player position is known at all, the harmless default a data-level rig gets.
+func _robber_waiting_heading() -> Vector2:
+	if player_at != Vector2.INF:
+		var toward := player_at - global_position
+		if toward.length_squared() > 0.0001:
+			return toward
+	return _heading
 
 ## The band while its guards are still posted, a guard once they leave — `is_waiting()` is the same
 ## switch `_draw_robber()` reads above, then `is_telegraphing()` again within that for which of the
@@ -2047,6 +2256,11 @@ static func _cap_offset(half: float, cap_along: float, side: float) -> float:
 func _draw_cafe(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
 	_draw_shape_shadow(canvas, def.shape)
+	# Every sitter shares one view and one mirror — the frontage is sited once and never turns, and
+	# a party at the same table facing in different directions is not a picture this row ever drew.
+	var view := _select_view(_heading)
+	var sitter: Texture2D = CAFE_SITTER_BY_VIEW[view]
+	var mirror := EightDirection.is_mirrored(_view_sector)
 	var segment := CAFE_TABLE.get_size()
 	var along_natural := segment.y if _spread_vertical else segment.x
 	var thickness := segment.x if _spread_vertical else segment.y
@@ -2056,7 +2270,8 @@ func _draw_cafe(canvas: CanvasItem = self) -> void:
 		var along := -half + width * (i + 0.5)
 		# The chair is drawn at one end of the table sprite and turns round with it.
 		var chair_along := along + width * (0.26 if i % 2 == 1 else -0.26)
-		Sprites.draw_standing(canvas, CAFE_SITTER, _spread_at(chair_along) + Vector2(0.0, -7.0))
+		Sprites.draw_standing(canvas, sitter, _spread_at(chair_along) + Vector2(0.0, -7.0),
+				Vector2.ZERO, mirror)
 	for i in segments:
 		var along := -half + width * (i + 0.5)
 		Sprites.draw_standing(canvas, CAFE_TABLE,
@@ -2127,6 +2342,18 @@ func _draw_protest(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
 	_draw_shape_shadow(canvas, def.shape)
 	var texture := _protester_texture(global_position, _protest_objective())
+	var mirror := false
+	# `PROTESTER` is `_protester_texture()`'s own sentinel for "nothing to point at" — a mark step
+	# or no step at all — which is exactly a stationary actor with no target: the rank's own site
+	# facing picks its view instead, the same as `busker` or `poster_crew`. Left as a sentinel check
+	# rather than a change to `_protester_texture()` itself, so `tests/test_protest.gd`'s own
+	# contract (a plain pose is exactly `EventInstance.PROTESTER`) keeps holding: the eight
+	# `protester_point_*` poses stay exactly as M65 bound them, unmirrored, since each is its own
+	# authored direction rather than a member of the mirrored five-view family.
+	if texture == PROTESTER:
+		var view := _select_view(_heading)
+		texture = PROTESTER_BY_VIEW[view]
+		mirror = EightDirection.is_mirrored(_view_sector)
 	# Spaced off the body rather than off the sprite, so the rank ends where the ground it takes
 	# ends. A crowd drawn at its own natural spacing overhangs its own body by most of a person,
 	# which is the lie `_draw_spread` exists to avoid in the other direction. Off `texture`'s own
@@ -2139,7 +2366,7 @@ func _draw_protest(canvas: CanvasItem = self) -> void:
 		var shift := step * 0.5 if back else 0.0
 		for i in across - (1 if back else 0):
 			var x := -half + step * (i + 0.5) + shift
-			Sprites.draw_standing(canvas, texture, Vector2(x, lift))
+			Sprites.draw_standing(canvas, texture, Vector2(x, lift), Vector2.ZERO, mirror)
 
 ## People behind cover, shooting at each other. Not a building on fire, which is what it drew for
 ## fourteen milestones — the same five flames as `burning_building`, on the one event in the
@@ -2178,6 +2405,8 @@ const MUZZLE_FLASH := Color("e8b64a")
 ## leads on the side the walker is heading, so the pair reads as being dragged along.
 func _draw_dog_walker(canvas: CanvasItem = self) -> void:
 	var reach := def.inner_radius * 0.8
+	# The lead's own span stays a plain east/west offset — a composite the walker's own picture
+	# does not own, unaffected by which of the eight views that picture now is.
 	var to_the_dog := Vector2(-reach if _heading_is_west() else reach, 0.0)
 	_draw_shape_shadow(canvas, def.shape)
 	# The dog's own shadow, not the row's shape — a two-body composite has no single shape to be
@@ -2185,8 +2414,12 @@ func _draw_dog_walker(canvas: CanvasItem = self) -> void:
 	_draw_shadow(canvas, to_the_dog, 9.0)
 	# Slack in the middle, so it reads as a lead rather than as a bar.
 	canvas.draw_line(Vector2(0.0, -26.0), to_the_dog + Vector2(0.0, -6.0), Palette.OUTLINE, 2.0)
-	Sprites.draw_standing(canvas, PERSON, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
-	Sprites.draw_standing(canvas, DOG, to_the_dog, Vector2.ZERO, _heading_is_west())
+	# The dog faces the walker's own travel — the same heading, the same view, the same mirror —
+	# since it is being led rather than watching anything of its own.
+	var view := _select_view(_heading)
+	var mirror := EightDirection.is_mirrored(_view_sector)
+	Sprites.draw_standing(canvas, PERSON_BY_VIEW[view], Vector2.ZERO, Vector2.ZERO, mirror)
+	Sprites.draw_standing(canvas, DOG_BY_VIEW[view], to_the_dog, Vector2.ZERO, mirror)
 
 ## The van, and the bystander it is taking while there is one to draw.
 ##
@@ -2207,7 +2440,12 @@ func _draw_abduction(canvas: CanvasItem = self) -> void:
 				-VICTIM_STANDING_OFFSET if _heading_is_west() else VICTIM_STANDING_OFFSET, 0.0)
 		var at := standing.lerp(Vector2.ZERO, through)
 		_draw_shadow(canvas, at, 8.0)
-		Sprites.draw_standing(canvas, VAN_VICTIM, at, Vector2.ZERO, _heading_is_west())
+		# She faces the van, which is the only place she is walking to — a pure east/west direction
+		# by construction (`standing` never has a Y component), so this always resolves to the same
+		# side view `_heading_is_west()` picked before, now read off the shared table.
+		var view := _select_view(-standing)
+		Sprites.draw_standing(canvas, VAN_VICTIM_BY_VIEW[view], at, Vector2.ZERO,
+				EightDirection.is_mirrored(_view_sector))
 	_draw_vehicle(UNMARKED_VAN, UNMARKED_VAN_END, canvas)
 
 ## Another mother with a pram — one picture, two postures. Strolling is what she looks like for the
@@ -2217,13 +2455,28 @@ func _draw_abduction(canvas: CanvasItem = self) -> void:
 ## `docs/EVENTS.md`, "The visual vocabulary".
 func _draw_chatting_mother(canvas: CanvasItem = self) -> void:
 	_draw_shape_shadow(canvas, def.shape)
-	var texture := CHATTING_MOTHER_TALKING if is_chatting() else CHATTING_MOTHER_WALKING
-	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	var by_view := CHATTING_MOTHER_TALKING_BY_VIEW if is_chatting() else CHATTING_MOTHER_WALKING_BY_VIEW
+	var view := _select_view(_heading)
+	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
+			EightDirection.is_mirrored(_view_sector))
 
 ## Which way a mobile event is travelling, for art that has a front and a back. A
 ## stationary event never flips.
 func _heading_is_west() -> bool:
 	return _heading.x < 0.0
+
+## Advances `_view_sector` from `heading` and returns the view name to read out of whichever
+## family's own `_BY_VIEW` table is live — `CrowdAgent._update_walker_view()`'s own shape, copied
+## rather than shared since an event and a walker have no common base to hang one field on. No
+## idle floor of its own: every `heading` a caller below feeds in is already a unit vector that is
+## never actually zero — a moving actor's `_heading` is only ever overwritten by an actual step or
+## an actual notice, and a stationary one's is its own fixed siting — the same reason `Stroller`
+## never passes one either (`EightDirection.update()`'s own doc). Safe to call more than once a
+## frame with the same heading: `EntityHalo` redraws `_draw_body()` once per ring, and asking
+## `EightDirection.update()` twice from the same starting sector always answers the same way.
+func _select_view(heading: Vector2) -> String:
+	_view_sector = EightDirection.update(_view_sector, heading)
+	return EIGHT_VIEW_BY_SECTOR[_view_sector]
 
 # ------------------------------------------------------------- the region door ---
 # The checkpoint kit: `docs/GRAPHICS.md` binds each row to the file it draws. See `RegionPlanner`
