@@ -569,8 +569,10 @@ is still true.
 - [ ] **The pram has no body of its own; the wall's body is its picture.** *Asked for on
       2026-09-10 as the pram's own collision · overturned on 2026-09-11, [PLAYTEST-57](playtests/PLAYTEST-57.md):
       "I don't like the stroller having a hitbox. it makes navigation clunky, I cannot get close to
-      walls anymore, and I get constantly stuck."* Remove `PramCollisionShape2D` and the physics
-      step that keeps it at the pram's offset; the pram's shadow, cue and field keep their offset.
+      walls anymore, and I get constantly stuck."; then "also maybe not 'no hitbox at all' just how it
+      was before"* — her own body stays exactly as it was; remove `PramCollisionShape2D` and the
+      physics step that keeps it at the pram's offset, and nothing else about her collision. The
+      pram's shadow, cue and field keep their offset.
       And measure the roadblock band's and the region wall's bodies against their drawn boxes:
       in the run's pictures she stops a pram's length short of a band across an alley and short of
       the wall across a road with the boxes nowhere near touching, so whatever body those rows

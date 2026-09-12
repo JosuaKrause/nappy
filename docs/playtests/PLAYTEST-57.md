@@ -27,7 +27,12 @@ collision* and listed in `REVIEW.md` for exactly this judgement:
 > I don't like the stroller having a hitbox. it makes navigation clunky, I cannot get close to
 > walls anymore, and I get constantly stuck.
 
-So the pram's collision body goes: *asked for on 2026-09-10 · overturned on 2026-09-11*. The gap
+So the pram's collision body goes: *asked for on 2026-09-10 · overturned on 2026-09-11*. Asked
+whether that means no body at all:
+
+> also maybe not "no hitbox at all" just how it was before
+
+So her own body stays exactly as it was before the pram got one; only the pram's added body goes. The gap
 in the pictures is bigger than the pram alone explains — the band's body stops her a pram's length
 short of the band's drawn box — so the wall's own body is to be measured against its picture too.
 
