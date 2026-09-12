@@ -1,0 +1,1142 @@
+{
+  "format": 1,
+  "python_version": "3.14.7",
+  "pillow_version": "12.3.0",
+  "script_sha256": "fcc8e8c796175d0477c6120be1abe4bb5b850b6a504ec2b566371148bfe89792",
+  "tile_size": [
+    32,
+    32
+  ],
+  "inputs": {
+    "runtime-target:alley": {
+      "path": "assets/illustrated/svg-transfer/tiles/alley.png",
+      "sha256": "292d99485db258e60d497e42e2e36411b0ec6a07d1f187c487eba99e4a09dfa5",
+      "frozen_path": "frozen-inputs/runtime-targets/alley.png"
+    },
+    "tile:alley": {
+      "path": "assets/illustrated/svg-transfer/tiles/alley.png",
+      "sha256": "292d99485db258e60d497e42e2e36411b0ec6a07d1f187c487eba99e4a09dfa5",
+      "frozen_path": "frozen-inputs/tiles/alley.png"
+    },
+    "runtime-target:alley_cracked_broken_a": {
+      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_broken_a.png",
+      "sha256": "a7532618a6c5dbe8b2584f121cad83e3a153767fa1c3d07f6b410d7b81eb4ea3",
+      "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_broken_a.png"
+    },
+    "pre-pr-damage:alley_cracked_broken_a": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_broken_a.png",
+      "sha256": "a7532618a6c5dbe8b2584f121cad83e3a153767fa1c3d07f6b410d7b81eb4ea3",
+      "frozen_path": "frozen-inputs/tiles/alley_cracked_broken_a.png"
+    },
+    "runtime-target:alley_cracked_broken_b": {
+      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_broken_b.png",
+      "sha256": "cfe8e84989cd296ecb95d9b03ce40b9e502bf5cb313c702ccf978fd049991a25",
+      "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_broken_b.png"
+    },
+    "pre-pr-damage:alley_cracked_broken_b": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_broken_b.png",
+      "sha256": "cfe8e84989cd296ecb95d9b03ce40b9e502bf5cb313c702ccf978fd049991a25",
+      "frozen_path": "frozen-inputs/tiles/alley_cracked_broken_b.png"
+    },
+    "runtime-target:alley_cracked_cracked_a": {
+      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_cracked_a.png",
+      "sha256": "5f03d7d628e61c0677d19af72feb182b3126fe974392885e8c8c4e2900ec0423",
+      "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_cracked_a.png"
+    },
+    "pre-pr-damage:alley_cracked_cracked_a": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_cracked_a.png",
+      "sha256": "5f03d7d628e61c0677d19af72feb182b3126fe974392885e8c8c4e2900ec0423",
+      "frozen_path": "frozen-inputs/tiles/alley_cracked_cracked_a.png"
+    },
+    "runtime-target:alley_cracked_cracked_b": {
+      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_cracked_b.png",
+      "sha256": "04ae3d0019be09d91568e89c1042cfe81ac8413694b8d6a1eb2666e99acf80f0",
+      "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_cracked_b.png"
+    },
+    "pre-pr-damage:alley_cracked_cracked_b": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_cracked_b.png",
+      "sha256": "04ae3d0019be09d91568e89c1042cfe81ac8413694b8d6a1eb2666e99acf80f0",
+      "frozen_path": "frozen-inputs/tiles/alley_cracked_cracked_b.png"
+    },
+    "runtime-target:alley_cracked_hairline_a": {
+      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_hairline_a.png",
+      "sha256": "4c781b5c8e635b65a2d52f13bb2dc725bd6dc7378bc0167428128e3885164599",
+      "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_hairline_a.png"
+    },
+    "pre-pr-damage:alley_cracked_hairline_a": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_hairline_a.png",
+      "sha256": "4c781b5c8e635b65a2d52f13bb2dc725bd6dc7378bc0167428128e3885164599",
+      "frozen_path": "frozen-inputs/tiles/alley_cracked_hairline_a.png"
+    },
+    "runtime-target:alley_cracked_hairline_b": {
+      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_hairline_b.png",
+      "sha256": "9fbcc5b9a2046bf9a1df430b78e7a23f7663356ae3f36a33fa90a70107b3efc3",
+      "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_hairline_b.png"
+    },
+    "pre-pr-damage:alley_cracked_hairline_b": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_hairline_b.png",
+      "sha256": "9fbcc5b9a2046bf9a1df430b78e7a23f7663356ae3f36a33fa90a70107b3efc3",
+      "frozen_path": "frozen-inputs/tiles/alley_cracked_hairline_b.png"
+    },
+    "runtime-target:crossing_h": {
+      "path": "assets/illustrated/svg-transfer/tiles/crossing_h.png",
+      "sha256": "ef0832040f37c30ccfe5ea12f5e0292185324161394b9575fe960d82de916a18",
+      "frozen_path": "frozen-inputs/runtime-targets/crossing_h.png"
+    },
+    "tile:crossing_h": {
+      "path": "assets/illustrated/svg-transfer/tiles/crossing_h.png",
+      "sha256": "ef0832040f37c30ccfe5ea12f5e0292185324161394b9575fe960d82de916a18",
+      "frozen_path": "frozen-inputs/tiles/crossing_h.png"
+    },
+    "runtime-target:crossing_main_e": {
+      "path": "assets/illustrated/svg-transfer/tiles/crossing_main_e.png",
+      "sha256": "1973575a0f1fbab27fa1e306279f53cbdfc1fbb9622f4c7a6f40bcebf48ff064",
+      "frozen_path": "frozen-inputs/runtime-targets/crossing_main_e.png"
+    },
+    "tile:crossing_main_e": {
+      "path": "assets/illustrated/svg-transfer/tiles/crossing_main_e.png",
+      "sha256": "1973575a0f1fbab27fa1e306279f53cbdfc1fbb9622f4c7a6f40bcebf48ff064",
+      "frozen_path": "frozen-inputs/tiles/crossing_main_e.png"
+    },
+    "runtime-target:crossing_main_n": {
+      "path": "assets/illustrated/svg-transfer/tiles/crossing_main_n.png",
+      "sha256": "865b79212869f148e47699ecc747b4c3bf1c5ef4f7a67ac7dac7c28b1ca2cb19",
+      "frozen_path": "frozen-inputs/runtime-targets/crossing_main_n.png"
+    },
+    "tile:crossing_main_n": {
+      "path": "assets/illustrated/svg-transfer/tiles/crossing_main_n.png",
+      "sha256": "865b79212869f148e47699ecc747b4c3bf1c5ef4f7a67ac7dac7c28b1ca2cb19",
+      "frozen_path": "frozen-inputs/tiles/crossing_main_n.png"
+    },
+    "runtime-target:crossing_main_s": {
+      "path": "assets/illustrated/svg-transfer/tiles/crossing_main_s.png",
+      "sha256": "b3244654e42876b62ce3185b8a42d30928eb7f79797a57e917d8071747ba9e19",
+      "frozen_path": "frozen-inputs/runtime-targets/crossing_main_s.png"
+    },
+    "tile:crossing_main_s": {
+      "path": "assets/illustrated/svg-transfer/tiles/crossing_main_s.png",
+      "sha256": "b3244654e42876b62ce3185b8a42d30928eb7f79797a57e917d8071747ba9e19",
+      "frozen_path": "frozen-inputs/tiles/crossing_main_s.png"
+    },
+    "runtime-target:crossing_main_w": {
+      "path": "assets/illustrated/svg-transfer/tiles/crossing_main_w.png",
+      "sha256": "e6e8f6634e6523338cf89ff804289a120d0828310d05192bb56f84a3d2f50a04",
+      "frozen_path": "frozen-inputs/runtime-targets/crossing_main_w.png"
+    },
+    "tile:crossing_main_w": {
+      "path": "assets/illustrated/svg-transfer/tiles/crossing_main_w.png",
+      "sha256": "e6e8f6634e6523338cf89ff804289a120d0828310d05192bb56f84a3d2f50a04",
+      "frozen_path": "frozen-inputs/tiles/crossing_main_w.png"
+    },
+    "runtime-target:crossing_v": {
+      "path": "assets/illustrated/svg-transfer/tiles/crossing_v.png",
+      "sha256": "11a692b0bfb8e7ea472b5c3932093d78aa5d085ef3f777794782d73a4cdeea98",
+      "frozen_path": "frozen-inputs/runtime-targets/crossing_v.png"
+    },
+    "tile:crossing_v": {
+      "path": "assets/illustrated/svg-transfer/tiles/crossing_v.png",
+      "sha256": "11a692b0bfb8e7ea472b5c3932093d78aa5d085ef3f777794782d73a4cdeea98",
+      "frozen_path": "frozen-inputs/tiles/crossing_v.png"
+    },
+    "runtime-target:grass": {
+      "path": "assets/illustrated/svg-transfer/tiles/grass.png",
+      "sha256": "12f3701784fcc146b0b3d97d4b6252d5d35921cc345f27a1bb6b2ccb06bb8f2d",
+      "frozen_path": "frozen-inputs/runtime-targets/grass.png"
+    },
+    "tile:grass": {
+      "path": "assets/illustrated/svg-transfer/tiles/grass.png",
+      "sha256": "12f3701784fcc146b0b3d97d4b6252d5d35921cc345f27a1bb6b2ccb06bb8f2d",
+      "frozen_path": "frozen-inputs/tiles/grass.png"
+    },
+    "runtime-target:road": {
+      "path": "assets/illustrated/svg-transfer/tiles/road.png",
+      "sha256": "f4b2cda6783db283b0d73ec05fd0b9a36ee777b3c284aa34802505c166c52db1",
+      "frozen_path": "frozen-inputs/runtime-targets/road.png"
+    },
+    "tile:road": {
+      "path": "assets/illustrated/svg-transfer/tiles/road.png",
+      "sha256": "f4b2cda6783db283b0d73ec05fd0b9a36ee777b3c284aa34802505c166c52db1",
+      "frozen_path": "frozen-inputs/tiles/road.png"
+    },
+    "runtime-target:road_cracked_broken_a": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_broken_a.png",
+      "sha256": "1f4a5047cc31d8cdcb40accd3f4afbb59ba1dfcd5de84f4d72d3243cc626f160",
+      "frozen_path": "frozen-inputs/runtime-targets/road_cracked_broken_a.png"
+    },
+    "pre-pr-damage:road_cracked_broken_a": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_broken_a.png",
+      "sha256": "1f4a5047cc31d8cdcb40accd3f4afbb59ba1dfcd5de84f4d72d3243cc626f160",
+      "frozen_path": "frozen-inputs/tiles/road_cracked_broken_a.png"
+    },
+    "runtime-target:road_cracked_broken_b": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_broken_b.png",
+      "sha256": "0f971bd164e889c16673f36c8abb8d02ad4603c54b2f3a11f714663a607a9e22",
+      "frozen_path": "frozen-inputs/runtime-targets/road_cracked_broken_b.png"
+    },
+    "pre-pr-damage:road_cracked_broken_b": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_broken_b.png",
+      "sha256": "0f971bd164e889c16673f36c8abb8d02ad4603c54b2f3a11f714663a607a9e22",
+      "frozen_path": "frozen-inputs/tiles/road_cracked_broken_b.png"
+    },
+    "runtime-target:road_cracked_cracked_a": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_cracked_a.png",
+      "sha256": "ba9b8d9d296fb750f60d0fc49b2ba71e5bcc537126b078e88a113eca6eb96d92",
+      "frozen_path": "frozen-inputs/runtime-targets/road_cracked_cracked_a.png"
+    },
+    "pre-pr-damage:road_cracked_cracked_a": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_cracked_a.png",
+      "sha256": "ba9b8d9d296fb750f60d0fc49b2ba71e5bcc537126b078e88a113eca6eb96d92",
+      "frozen_path": "frozen-inputs/tiles/road_cracked_cracked_a.png"
+    },
+    "runtime-target:road_cracked_cracked_b": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_cracked_b.png",
+      "sha256": "8b85a7eb0cf78b9aead92a8b90d1b57755232a65416a7824f4ef2188aff72e1c",
+      "frozen_path": "frozen-inputs/runtime-targets/road_cracked_cracked_b.png"
+    },
+    "pre-pr-damage:road_cracked_cracked_b": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_cracked_b.png",
+      "sha256": "8b85a7eb0cf78b9aead92a8b90d1b57755232a65416a7824f4ef2188aff72e1c",
+      "frozen_path": "frozen-inputs/tiles/road_cracked_cracked_b.png"
+    },
+    "runtime-target:road_cracked_hairline_a": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_hairline_a.png",
+      "sha256": "13e8b3ac1cc7eb41e0f5568e0d2867633c91bdae6bdab1b744f4ad48a2b01132",
+      "frozen_path": "frozen-inputs/runtime-targets/road_cracked_hairline_a.png"
+    },
+    "pre-pr-damage:road_cracked_hairline_a": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_hairline_a.png",
+      "sha256": "13e8b3ac1cc7eb41e0f5568e0d2867633c91bdae6bdab1b744f4ad48a2b01132",
+      "frozen_path": "frozen-inputs/tiles/road_cracked_hairline_a.png"
+    },
+    "runtime-target:road_cracked_hairline_b": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_hairline_b.png",
+      "sha256": "f77ed28b95137db20149bed871b6e0c7abd092ea7357e4e88b07d546ff70d5c0",
+      "frozen_path": "frozen-inputs/runtime-targets/road_cracked_hairline_b.png"
+    },
+    "pre-pr-damage:road_cracked_hairline_b": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_hairline_b.png",
+      "sha256": "f77ed28b95137db20149bed871b6e0c7abd092ea7357e4e88b07d546ff70d5c0",
+      "frozen_path": "frozen-inputs/tiles/road_cracked_hairline_b.png"
+    },
+    "runtime-target:road_line_e": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_line_e.png",
+      "sha256": "fdf74bbdcacc0a96e6e8bfac8699bf0cd6534a9d418ef913dedb742fc6b74fe7",
+      "frozen_path": "frozen-inputs/runtime-targets/road_line_e.png"
+    },
+    "tile:road_line_e": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_line_e.png",
+      "sha256": "fdf74bbdcacc0a96e6e8bfac8699bf0cd6534a9d418ef913dedb742fc6b74fe7",
+      "frozen_path": "frozen-inputs/tiles/road_line_e.png"
+    },
+    "runtime-target:road_line_n": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_line_n.png",
+      "sha256": "a929deaf3d3fcae3750cd1f298cc7414700c2089d527979028b89d612e02b163",
+      "frozen_path": "frozen-inputs/runtime-targets/road_line_n.png"
+    },
+    "tile:road_line_n": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_line_n.png",
+      "sha256": "a929deaf3d3fcae3750cd1f298cc7414700c2089d527979028b89d612e02b163",
+      "frozen_path": "frozen-inputs/tiles/road_line_n.png"
+    },
+    "runtime-target:road_line_s": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_line_s.png",
+      "sha256": "8594f9ed35b48fc57b7b14da2381dfdc92e5c8b559a4fccf4800f97dcd1d1167",
+      "frozen_path": "frozen-inputs/runtime-targets/road_line_s.png"
+    },
+    "tile:road_line_s": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_line_s.png",
+      "sha256": "8594f9ed35b48fc57b7b14da2381dfdc92e5c8b559a4fccf4800f97dcd1d1167",
+      "frozen_path": "frozen-inputs/tiles/road_line_s.png"
+    },
+    "runtime-target:road_line_w": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_line_w.png",
+      "sha256": "e05d3bf68a59a483568b59ad32e6c766a102a17c4b57284bf6ec3f6dca7cc61d",
+      "frozen_path": "frozen-inputs/runtime-targets/road_line_w.png"
+    },
+    "tile:road_line_w": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_line_w.png",
+      "sha256": "e05d3bf68a59a483568b59ad32e6c766a102a17c4b57284bf6ec3f6dca7cc61d",
+      "frozen_path": "frozen-inputs/tiles/road_line_w.png"
+    },
+    "runtime-target:road_main": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_main.png",
+      "sha256": "2ee12bec9b02328e04f6b97984d90bc60dbc342a87070122fe224113b16d9acd",
+      "frozen_path": "frozen-inputs/runtime-targets/road_main.png"
+    },
+    "tile:road_main": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_main.png",
+      "sha256": "2ee12bec9b02328e04f6b97984d90bc60dbc342a87070122fe224113b16d9acd",
+      "frozen_path": "frozen-inputs/tiles/road_main.png"
+    },
+    "runtime-target:road_main_line_e": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_main_line_e.png",
+      "sha256": "4316c995efe7ee1fa9bac161f8da9be95bf6a9e4bdf7aa7a6a8c53a62175953c",
+      "frozen_path": "frozen-inputs/runtime-targets/road_main_line_e.png"
+    },
+    "tile:road_main_line_e": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_main_line_e.png",
+      "sha256": "4316c995efe7ee1fa9bac161f8da9be95bf6a9e4bdf7aa7a6a8c53a62175953c",
+      "frozen_path": "frozen-inputs/tiles/road_main_line_e.png"
+    },
+    "runtime-target:road_main_line_n": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_main_line_n.png",
+      "sha256": "5422f72efd1c19f07f59d1d94fd13725f381c01058e49f6bcc5c457ed7b1b8a6",
+      "frozen_path": "frozen-inputs/runtime-targets/road_main_line_n.png"
+    },
+    "tile:road_main_line_n": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_main_line_n.png",
+      "sha256": "5422f72efd1c19f07f59d1d94fd13725f381c01058e49f6bcc5c457ed7b1b8a6",
+      "frozen_path": "frozen-inputs/tiles/road_main_line_n.png"
+    },
+    "runtime-target:road_main_line_s": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_main_line_s.png",
+      "sha256": "5173f098a00898ab41e57282ab60c2d9f88b260895da30e8290ac8dac6f3053a",
+      "frozen_path": "frozen-inputs/runtime-targets/road_main_line_s.png"
+    },
+    "tile:road_main_line_s": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_main_line_s.png",
+      "sha256": "5173f098a00898ab41e57282ab60c2d9f88b260895da30e8290ac8dac6f3053a",
+      "frozen_path": "frozen-inputs/tiles/road_main_line_s.png"
+    },
+    "runtime-target:road_main_line_w": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_main_line_w.png",
+      "sha256": "e0624d1392f82649c5cee43ae872092d24e2d274fd7038c3f2c09f7c22738b74",
+      "frozen_path": "frozen-inputs/runtime-targets/road_main_line_w.png"
+    },
+    "tile:road_main_line_w": {
+      "path": "assets/illustrated/svg-transfer/tiles/road_main_line_w.png",
+      "sha256": "e0624d1392f82649c5cee43ae872092d24e2d274fd7038c3f2c09f7c22738b74",
+      "frozen_path": "frozen-inputs/tiles/road_main_line_w.png"
+    },
+    "runtime-target:sidewalk": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk.png",
+      "sha256": "8dcc80cc6fce4e7487185430fa256dc0c9da5379d65dc215c0a78ab8f0d0afe8",
+      "frozen_path": "frozen-inputs/runtime-targets/sidewalk.png"
+    },
+    "tile:sidewalk": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk.png",
+      "sha256": "8dcc80cc6fce4e7487185430fa256dc0c9da5379d65dc215c0a78ab8f0d0afe8",
+      "frozen_path": "frozen-inputs/tiles/sidewalk.png"
+    },
+    "runtime-target:sidewalk_cracked_broken_a": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_broken_a.png",
+      "sha256": "f972c4420deefa7e32664870f71fab2ae152417d3d0ef50554067702f1cb097c",
+      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_broken_a.png"
+    },
+    "pre-pr-damage:sidewalk_cracked_broken_a": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_broken_a.png",
+      "sha256": "c8edf668f6ec2ed38ba5f9f3c793bca554c9dd157c602f30d03a965224981403",
+      "frozen_path": "frozen-inputs/tiles/sidewalk_cracked_broken_a.png"
+    },
+    "runtime-target:sidewalk_cracked_broken_b": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_broken_b.png",
+      "sha256": "a4b160812f11173e63d531657ab0a3e617002db638ad1138fb9c0dc2d2bf6002",
+      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_broken_b.png"
+    },
+    "pre-pr-damage:sidewalk_cracked_broken_b": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_broken_b.png",
+      "sha256": "53afedd4f212a4d8517c00f42bea288ccf6548b33ecfb3e45c96efc4cbdd520c",
+      "frozen_path": "frozen-inputs/tiles/sidewalk_cracked_broken_b.png"
+    },
+    "runtime-target:sidewalk_cracked_cracked_a": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_cracked_a.png",
+      "sha256": "f95a24b6e66fa0d8a05f6e83672431f167a0a3c4090e7954d7eab28ca6c0d034",
+      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_cracked_a.png"
+    },
+    "pre-pr-damage:sidewalk_cracked_cracked_a": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_cracked_a.png",
+      "sha256": "f874583c8ffcfb442217ddf9027037073dff59217b8a994cdf3b7d539a5603ef",
+      "frozen_path": "frozen-inputs/tiles/sidewalk_cracked_cracked_a.png"
+    },
+    "runtime-target:sidewalk_cracked_cracked_b": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_cracked_b.png",
+      "sha256": "dbe3b33e5bb1d6a5c2e37ce42723801e6c2b0a66aef1f66f48916130ab643952",
+      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_cracked_b.png"
+    },
+    "pre-pr-damage:sidewalk_cracked_cracked_b": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_cracked_b.png",
+      "sha256": "c078eedc01627567f53b18e8117a4fdfc6a545910e6545b815a450accd97db30",
+      "frozen_path": "frozen-inputs/tiles/sidewalk_cracked_cracked_b.png"
+    },
+    "runtime-target:sidewalk_cracked_hairline_a": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_hairline_a.png",
+      "sha256": "9f587b00dccf034bc81224108b028f7177881bd4d27e97ec6d0f592097759d51",
+      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_hairline_a.png"
+    },
+    "pre-pr-damage:sidewalk_cracked_hairline_a": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_hairline_a.png",
+      "sha256": "515e519854dfe91e668c1f14ba1c734766b16f766c816ec9318357aebe9257c5",
+      "frozen_path": "frozen-inputs/tiles/sidewalk_cracked_hairline_a.png"
+    },
+    "runtime-target:sidewalk_cracked_hairline_b": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_hairline_b.png",
+      "sha256": "9f13f670effeb4892a9b13d42dd142851d542e18f5aa69511290388c6cfd395a",
+      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_hairline_b.png"
+    },
+    "pre-pr-damage:sidewalk_cracked_hairline_b": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_hairline_b.png",
+      "sha256": "cf9c33ee2072a14345288ad6a4b0b5b6d135cfb282d67f82ce4478f8e0da722d",
+      "frozen_path": "frozen-inputs/tiles/sidewalk_cracked_hairline_b.png"
+    },
+    "runtime-target:sidewalk_kerb_e": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_e.png",
+      "sha256": "dea7f6cf21cc42ec805a881a879c151187dc12a66bd4945791d977ce692ef3c4",
+      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_kerb_e.png"
+    },
+    "tile:sidewalk_kerb_e": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_e.png",
+      "sha256": "dea7f6cf21cc42ec805a881a879c151187dc12a66bd4945791d977ce692ef3c4",
+      "frozen_path": "frozen-inputs/tiles/sidewalk_kerb_e.png"
+    },
+    "runtime-target:sidewalk_kerb_main_e": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_e.png",
+      "sha256": "f830d8e33482c51bde5908f0501d8694a5bf6058b5ce4252ea8fd0428501dced",
+      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_kerb_main_e.png"
+    },
+    "tile:sidewalk_kerb_main_e": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_e.png",
+      "sha256": "f830d8e33482c51bde5908f0501d8694a5bf6058b5ce4252ea8fd0428501dced",
+      "frozen_path": "frozen-inputs/tiles/sidewalk_kerb_main_e.png"
+    },
+    "runtime-target:sidewalk_kerb_main_n": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_n.png",
+      "sha256": "96fe2e5620db6d90e8cb0a55c3e206de4995acda336b168cb0b063813d4681cf",
+      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_kerb_main_n.png"
+    },
+    "tile:sidewalk_kerb_main_n": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_n.png",
+      "sha256": "96fe2e5620db6d90e8cb0a55c3e206de4995acda336b168cb0b063813d4681cf",
+      "frozen_path": "frozen-inputs/tiles/sidewalk_kerb_main_n.png"
+    },
+    "runtime-target:sidewalk_kerb_main_s": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_s.png",
+      "sha256": "81a699bdb41789e137f40f2814e43d50104ab2404c9398d23a42217ea566c600",
+      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_kerb_main_s.png"
+    },
+    "tile:sidewalk_kerb_main_s": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_s.png",
+      "sha256": "81a699bdb41789e137f40f2814e43d50104ab2404c9398d23a42217ea566c600",
+      "frozen_path": "frozen-inputs/tiles/sidewalk_kerb_main_s.png"
+    },
+    "runtime-target:sidewalk_kerb_main_w": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_w.png",
+      "sha256": "4a14f9c25b2022666eeef64665ba221b107b0c00e69549446b6d233a5ed66a28",
+      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_kerb_main_w.png"
+    },
+    "tile:sidewalk_kerb_main_w": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_w.png",
+      "sha256": "4a14f9c25b2022666eeef64665ba221b107b0c00e69549446b6d233a5ed66a28",
+      "frozen_path": "frozen-inputs/tiles/sidewalk_kerb_main_w.png"
+    },
+    "runtime-target:sidewalk_kerb_n": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_n.png",
+      "sha256": "9a5e4acda0b3b867f815f17f041843abfbd8ac1151e9af2bc7954b8905e152d6",
+      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_kerb_n.png"
+    },
+    "tile:sidewalk_kerb_n": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_n.png",
+      "sha256": "9a5e4acda0b3b867f815f17f041843abfbd8ac1151e9af2bc7954b8905e152d6",
+      "frozen_path": "frozen-inputs/tiles/sidewalk_kerb_n.png"
+    },
+    "runtime-target:sidewalk_kerb_s": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_s.png",
+      "sha256": "b039ee2bee69e7468261a081055c240ec89e3bd98db49008f78d65bddad76977",
+      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_kerb_s.png"
+    },
+    "tile:sidewalk_kerb_s": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_s.png",
+      "sha256": "b039ee2bee69e7468261a081055c240ec89e3bd98db49008f78d65bddad76977",
+      "frozen_path": "frozen-inputs/tiles/sidewalk_kerb_s.png"
+    },
+    "runtime-target:sidewalk_kerb_w": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_w.png",
+      "sha256": "5945dbc4e9f86ab6680cae3bf97c4d6b7c05673b32f3cf616606e6963d8b073b",
+      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_kerb_w.png"
+    },
+    "tile:sidewalk_kerb_w": {
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_kerb_w.png",
+      "sha256": "5945dbc4e9f86ab6680cae3bf97c4d6b7c05673b32f3cf616606e6963d8b073b",
+      "frozen_path": "frozen-inputs/tiles/sidewalk_kerb_w.png"
+    },
+    "pre-pr-base:sidewalk": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/sidewalk.png",
+      "sha256": "a86c9cdff2ca96f1d5016a7b997d506e0a1452174a06cadd9a51b50eafff0c28",
+      "frozen_path": "frozen-inputs/pre-pr-bases/sidewalk.png"
+    },
+    "pre-pr-base:road": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/road.png",
+      "sha256": "f4b2cda6783db283b0d73ec05fd0b9a36ee777b3c284aa34802505c166c52db1",
+      "frozen_path": "frozen-inputs/pre-pr-bases/road.png"
+    },
+    "pre-pr-base:alley": {
+      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "path": "assets/illustrated/svg-transfer/tiles/alley.png",
+      "sha256": "292d99485db258e60d497e42e2e36411b0ec6a07d1f187c487eba99e4a09dfa5",
+      "frozen_path": "frozen-inputs/pre-pr-bases/alley.png"
+    },
+    "svg-render:alley": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/alley-svg.png",
+      "sha256": "9d38db0b0462028bdff1a99e20aa584ddf7a21c5d6f7c2860d2e981487b5b0e1",
+      "frozen_path": "frozen-inputs/svg-renders/alley-svg.png"
+    },
+    "svg-render:alley_cracked_broken_a": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/alley_cracked_broken_a-svg.png",
+      "sha256": "751c43aa2f38cfcb193249a18d4bde51d6873d5690a7c36175d32efb30635f48",
+      "frozen_path": "frozen-inputs/svg-renders/alley_cracked_broken_a-svg.png"
+    },
+    "svg-render:alley_cracked_broken_b": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/alley_cracked_broken_b-svg.png",
+      "sha256": "b25cd8c9d25b75807f62f883fed19bab5572c2b61f318ac0162bdd1d18ceb7db",
+      "frozen_path": "frozen-inputs/svg-renders/alley_cracked_broken_b-svg.png"
+    },
+    "svg-render:alley_cracked_cracked_a": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/alley_cracked_cracked_a-svg.png",
+      "sha256": "53c522fd6603a9ba45beff113cb83af44679d2de0e176476e73a0ec11427a7ef",
+      "frozen_path": "frozen-inputs/svg-renders/alley_cracked_cracked_a-svg.png"
+    },
+    "svg-render:alley_cracked_cracked_b": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/alley_cracked_cracked_b-svg.png",
+      "sha256": "b659aa6ff7ae9c2beda4d5d035f2c594455bff0e007a06e0492f960afff0111d",
+      "frozen_path": "frozen-inputs/svg-renders/alley_cracked_cracked_b-svg.png"
+    },
+    "svg-render:alley_cracked_hairline_a": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/alley_cracked_hairline_a-svg.png",
+      "sha256": "c7e760fa5e719fe36250ddd76a116af948ad4a8e13c281f23a6f156e9a02732f",
+      "frozen_path": "frozen-inputs/svg-renders/alley_cracked_hairline_a-svg.png"
+    },
+    "svg-render:alley_cracked_hairline_b": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/alley_cracked_hairline_b-svg.png",
+      "sha256": "856f41cc9da034f604dcf584d1d605dd8451ed2447ca6b2b9d2b4ebec0ce8369",
+      "frozen_path": "frozen-inputs/svg-renders/alley_cracked_hairline_b-svg.png"
+    },
+    "svg-render:crossing_h": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/crossing_h-svg.png",
+      "sha256": "adac4b8b4963c7df3a7a9c3180623b74053f99349354038bc1d2b41c5fce402a",
+      "frozen_path": "frozen-inputs/svg-renders/crossing_h-svg.png"
+    },
+    "svg-render:crossing_main_e": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/crossing_main_e-svg.png",
+      "sha256": "8ec0d91983e6c74ff9f18dedf740c053a155582e6393dd5a6af63a48fb397043",
+      "frozen_path": "frozen-inputs/svg-renders/crossing_main_e-svg.png"
+    },
+    "svg-render:crossing_main_n": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/crossing_main_n-svg.png",
+      "sha256": "e09108d7e64987b63c6ed116febc4c19610ada38dec44a1eb00651498da4e8c0",
+      "frozen_path": "frozen-inputs/svg-renders/crossing_main_n-svg.png"
+    },
+    "svg-render:crossing_main_s": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/crossing_main_s-svg.png",
+      "sha256": "7569fac33587de526c27e939b13e79be3faa58a1dba4cacc250ca05ed6fefa98",
+      "frozen_path": "frozen-inputs/svg-renders/crossing_main_s-svg.png"
+    },
+    "svg-render:crossing_main_w": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/crossing_main_w-svg.png",
+      "sha256": "e082ba790d1e026436b2ef810a99033877ab8d7b7893cc5bd07bba557ea4e500",
+      "frozen_path": "frozen-inputs/svg-renders/crossing_main_w-svg.png"
+    },
+    "svg-render:crossing_v": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/crossing_v-svg.png",
+      "sha256": "40bd6bfe9b62db24d640d150107a83fdab7fd3793e63e0c2fd997b81eb24ebee",
+      "frozen_path": "frozen-inputs/svg-renders/crossing_v-svg.png"
+    },
+    "svg-render:grass": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/grass-svg.png",
+      "sha256": "ace281a424b633341fa8191c8f770006d0692b8657e830dd7eabadddb5b20598",
+      "frozen_path": "frozen-inputs/svg-renders/grass-svg.png"
+    },
+    "svg-render:road": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/road-svg.png",
+      "sha256": "10c0cd580eac1a79f492b89d2786f85cb5948952cfa3f34be9e80df6b71aec90",
+      "frozen_path": "frozen-inputs/svg-renders/road-svg.png"
+    },
+    "svg-render:road_cracked_broken_a": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/road_cracked_broken_a-svg.png",
+      "sha256": "108290168f4551faaac6ecbd720a50375973f0f028ba2cee053ae89d3646be6a",
+      "frozen_path": "frozen-inputs/svg-renders/road_cracked_broken_a-svg.png"
+    },
+    "svg-render:road_cracked_broken_b": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/road_cracked_broken_b-svg.png",
+      "sha256": "af5c8cfda6555999073c369aca5d0199a72977c72d84f7643e60db8dac32eff5",
+      "frozen_path": "frozen-inputs/svg-renders/road_cracked_broken_b-svg.png"
+    },
+    "svg-render:road_cracked_cracked_a": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/road_cracked_cracked_a-svg.png",
+      "sha256": "575017129a3f37273a7bba6ad906f565fbe3179c487a05f8dd999aef8dd01dbe",
+      "frozen_path": "frozen-inputs/svg-renders/road_cracked_cracked_a-svg.png"
+    },
+    "svg-render:road_cracked_cracked_b": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/road_cracked_cracked_b-svg.png",
+      "sha256": "bb5f40f951b5a7c45398b3d49e64e6bf03ef829195a1b16cdc81f25aacd68d59",
+      "frozen_path": "frozen-inputs/svg-renders/road_cracked_cracked_b-svg.png"
+    },
+    "svg-render:road_cracked_hairline_a": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/road_cracked_hairline_a-svg.png",
+      "sha256": "510a87fa6850d1102814f9f8d80c33aaa186f68544f5ff5e21777b05108acaa7",
+      "frozen_path": "frozen-inputs/svg-renders/road_cracked_hairline_a-svg.png"
+    },
+    "svg-render:road_cracked_hairline_b": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/road_cracked_hairline_b-svg.png",
+      "sha256": "48c33b1f9771ec03112ce873a427c5c918048b62e23062d8577f638f6a570786",
+      "frozen_path": "frozen-inputs/svg-renders/road_cracked_hairline_b-svg.png"
+    },
+    "svg-render:road_line_e": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/road_line_e-svg.png",
+      "sha256": "bc00445321aa7f5818fbde03a1269ed0c104b8b1e72809ca0df55aca8ec92743",
+      "frozen_path": "frozen-inputs/svg-renders/road_line_e-svg.png"
+    },
+    "svg-render:road_line_n": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/road_line_n-svg.png",
+      "sha256": "81c33fccac226ba5a7e79ca37b566607fbe2f53b4489bcee1b0ec746a6f3b832",
+      "frozen_path": "frozen-inputs/svg-renders/road_line_n-svg.png"
+    },
+    "svg-render:road_line_s": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/road_line_s-svg.png",
+      "sha256": "5992583e7cb0fdbc42181ad160b48822134e657ad968d3b3c500a5ada530510c",
+      "frozen_path": "frozen-inputs/svg-renders/road_line_s-svg.png"
+    },
+    "svg-render:road_line_w": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/road_line_w-svg.png",
+      "sha256": "3588c78381f39c941688cf404ca4373ec9d2991d5d76ee3d5d61874def85282d",
+      "frozen_path": "frozen-inputs/svg-renders/road_line_w-svg.png"
+    },
+    "svg-render:road_main": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/road_main-svg.png",
+      "sha256": "709d98103b6e458e789c4662d7723ccc55f88634e8290a03bc6f2ea6eda1dd37",
+      "frozen_path": "frozen-inputs/svg-renders/road_main-svg.png"
+    },
+    "svg-render:road_main_line_e": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/road_main_line_e-svg.png",
+      "sha256": "21161314140036c86f529fb0e93f8246639160fe885ef8a26097d2788aa070ad",
+      "frozen_path": "frozen-inputs/svg-renders/road_main_line_e-svg.png"
+    },
+    "svg-render:road_main_line_n": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/road_main_line_n-svg.png",
+      "sha256": "d1545526102038b6e702afee0853156b7a2357896a60a80ce92284142d2232d7",
+      "frozen_path": "frozen-inputs/svg-renders/road_main_line_n-svg.png"
+    },
+    "svg-render:road_main_line_s": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/road_main_line_s-svg.png",
+      "sha256": "40dd53d49effd25ed3ce8afbd58b74bcab3ede97df465613c910895645e8e6f3",
+      "frozen_path": "frozen-inputs/svg-renders/road_main_line_s-svg.png"
+    },
+    "svg-render:road_main_line_w": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/road_main_line_w-svg.png",
+      "sha256": "94b07f3ff956b1e04a762d95b33706c179d88b28dc5467fc4c7d51cbc0182d95",
+      "frozen_path": "frozen-inputs/svg-renders/road_main_line_w-svg.png"
+    },
+    "svg-render:sidewalk": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/sidewalk-svg.png",
+      "sha256": "6c7f00818ca81fd60fde8a871432b6fbb5c18b38abd3e6d5a6088ab5d3278b01",
+      "frozen_path": "frozen-inputs/svg-renders/sidewalk-svg.png"
+    },
+    "svg-render:sidewalk_cracked_broken_a": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/sidewalk_cracked_broken_a-svg.png",
+      "sha256": "e395ffa8a66b056811b5c110df16da10ed3ad8ecaea837d018d528410b6495c8",
+      "frozen_path": "frozen-inputs/svg-renders/sidewalk_cracked_broken_a-svg.png"
+    },
+    "svg-render:sidewalk_cracked_broken_b": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/sidewalk_cracked_broken_b-svg.png",
+      "sha256": "c85d2963b208660526fd628465fc23cf71ffbbe7a1963b8741f26b74d84b7261",
+      "frozen_path": "frozen-inputs/svg-renders/sidewalk_cracked_broken_b-svg.png"
+    },
+    "svg-render:sidewalk_cracked_cracked_a": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/sidewalk_cracked_cracked_a-svg.png",
+      "sha256": "3dc8958717c4dabeb0385c2a4efa736fdebec8306a740b22f1e9e2d774587e6e",
+      "frozen_path": "frozen-inputs/svg-renders/sidewalk_cracked_cracked_a-svg.png"
+    },
+    "svg-render:sidewalk_cracked_cracked_b": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/sidewalk_cracked_cracked_b-svg.png",
+      "sha256": "7a8d53bf00cc6a2f9ffce575e46cb4143bb7f6b4ce9078af1f58c180f8b00f0f",
+      "frozen_path": "frozen-inputs/svg-renders/sidewalk_cracked_cracked_b-svg.png"
+    },
+    "svg-render:sidewalk_cracked_hairline_a": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/sidewalk_cracked_hairline_a-svg.png",
+      "sha256": "75292a63588023eec6f6748dc62c7af747fa14ed7b1503f2c68c64f56f238943",
+      "frozen_path": "frozen-inputs/svg-renders/sidewalk_cracked_hairline_a-svg.png"
+    },
+    "svg-render:sidewalk_cracked_hairline_b": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/sidewalk_cracked_hairline_b-svg.png",
+      "sha256": "0db734da747a5f79b155cd7cc2ba160f3f6c193fd0fcb83c8b26edebde47fbf5",
+      "frozen_path": "frozen-inputs/svg-renders/sidewalk_cracked_hairline_b-svg.png"
+    },
+    "svg-render:sidewalk_kerb_e": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/sidewalk_kerb_e-svg.png",
+      "sha256": "6b3cfaedf7e2f71ef6eb4e7e0a2b58eb86e417b9d440c7d5531117e392a42efa",
+      "frozen_path": "frozen-inputs/svg-renders/sidewalk_kerb_e-svg.png"
+    },
+    "svg-render:sidewalk_kerb_main_e": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/sidewalk_kerb_main_e-svg.png",
+      "sha256": "d0e9d2b25ace11ebe9104ed9bff8aa650f8fa518b27a540a2cff1bfb41a83e3c",
+      "frozen_path": "frozen-inputs/svg-renders/sidewalk_kerb_main_e-svg.png"
+    },
+    "svg-render:sidewalk_kerb_main_n": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/sidewalk_kerb_main_n-svg.png",
+      "sha256": "0c7fc076c95615a1af3ec7a65c09e60879a093f787c15ad1a8efb24ed340f3ad",
+      "frozen_path": "frozen-inputs/svg-renders/sidewalk_kerb_main_n-svg.png"
+    },
+    "svg-render:sidewalk_kerb_main_s": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/sidewalk_kerb_main_s-svg.png",
+      "sha256": "2d8d82b1b700f39f1bdc11c34354fbef7665898d719cbe4e986d2bb6ed05924c",
+      "frozen_path": "frozen-inputs/svg-renders/sidewalk_kerb_main_s-svg.png"
+    },
+    "svg-render:sidewalk_kerb_main_w": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/sidewalk_kerb_main_w-svg.png",
+      "sha256": "8641b83392757fbbcc3844092186eb8f49678f5a95ffa4590bf7ca9ba1b46dc7",
+      "frozen_path": "frozen-inputs/svg-renders/sidewalk_kerb_main_w-svg.png"
+    },
+    "svg-render:sidewalk_kerb_n": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/sidewalk_kerb_n-svg.png",
+      "sha256": "8f2ad7c6957025679f6bdaf930058e13e1dd261ccc5cce6d4f392be038bcd00c",
+      "frozen_path": "frozen-inputs/svg-renders/sidewalk_kerb_n-svg.png"
+    },
+    "svg-render:sidewalk_kerb_s": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/sidewalk_kerb_s-svg.png",
+      "sha256": "c5efb7c4471cfde45ec17ffecdf0e818507a0317af040e2e5de4a730f4819bb5",
+      "frozen_path": "frozen-inputs/svg-renders/sidewalk_kerb_s-svg.png"
+    },
+    "svg-render:sidewalk_kerb_w": {
+      "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/sidewalk_kerb_w-svg.png",
+      "sha256": "66b182ebdb08fea24fb7602cbe16c5c69fc1e272894bdf177071b3d78bd30c6a",
+      "frozen_path": "frozen-inputs/svg-renders/sidewalk_kerb_w-svg.png"
+    },
+    "svg-source:alley": {
+      "path": "assets/tiles/alley.svg",
+      "sha256": "c2b9035ea2f29b7c419e3ce9d693d7807b46734d7f04a51486bed2f7a7bb953f"
+    },
+    "svg-source:road": {
+      "path": "assets/tiles/road.svg",
+      "sha256": "1658776df4e091a5242cd1e700e8f1695385d8dba658411985f2ac9579d3efdf"
+    },
+    "svg-source:road_main": {
+      "path": "assets/tiles/road_main.svg",
+      "sha256": "e377dcd7a938886a06b8ae84117c1cb71c81f5cc4aae8bf8b694cabd330fc0d3"
+    },
+    "svg-source:sidewalk": {
+      "path": "assets/tiles/sidewalk.svg",
+      "sha256": "98caaf561c4228f321bf4ddef01cbaa8cb93288f2dde0cc8a414c1bac31c7628"
+    },
+    "svg-source:curbstone": {
+      "path": "assets/tiles/sidewalk_kerb_n.svg",
+      "sha256": "dde031e8281ba8c44b6020b767fdec53a68ceaafc328342c0958f2e30d8fd25c"
+    },
+    "svg-source:main_edge_red": {
+      "path": "assets/tiles/sidewalk_kerb_main_n.svg",
+      "sha256": "baf71e7e197fd24bc11936d676806536095fc2f9afb6759e6f9632e520c29ca2"
+    },
+    "svg-source:yellow_half_line": {
+      "path": "assets/tiles/road_line_n.svg",
+      "sha256": "c095c78baf00e53137a1f2d18855e6190c626556264d6557cbd0bf4e625e5179"
+    },
+    "svg-source:yellow_main_line": {
+      "path": "assets/tiles/road_main_line_n.svg",
+      "sha256": "f2342f94d2e5769bd4a175731356ad80e639ced6b24d1c5a4ff91911df8372d1"
+    },
+    "svg-source:crosswalk": {
+      "path": "assets/tiles/crossing_h.svg",
+      "sha256": "4ae0bfd3203e1c8bb21c380ae36cc398f7e3cb71190ae31eb3eb1baf7863c817"
+    },
+    "svg-source:main_crosswalk": {
+      "path": "assets/tiles/crossing_main_n.svg",
+      "sha256": "9ecaa239aca3d149141186051d68c2a8a5a24d3af682081f4dde121e388b3e91"
+    },
+    "svg-source:sidewalk_cracked_hairline_a": {
+      "path": "assets/tiles/sidewalk_cracked_hairline_a.svg",
+      "sha256": "616208ee9a36c06437f726665795d1462aaabaada790d6ba5d803d0e16406852"
+    },
+    "svg-source:sidewalk_cracked_hairline_b": {
+      "path": "assets/tiles/sidewalk_cracked_hairline_b.svg",
+      "sha256": "33e9ab884a0c8e3141915da059d957969537164d2132f48db34ab36afd8e0df4"
+    },
+    "svg-source:sidewalk_cracked_cracked_a": {
+      "path": "assets/tiles/sidewalk_cracked_cracked_a.svg",
+      "sha256": "e4c70a4c65a2b3e58ed84e889388bae1039290ff50d59c38b4f59a218e066888"
+    },
+    "svg-source:sidewalk_cracked_cracked_b": {
+      "path": "assets/tiles/sidewalk_cracked_cracked_b.svg",
+      "sha256": "c8caa6fa8a5fc15d603613c88de27565c2cf5a157c00a662ae62bf7f7ff045ce"
+    },
+    "svg-source:sidewalk_cracked_broken_a": {
+      "path": "assets/tiles/sidewalk_cracked_broken_a.svg",
+      "sha256": "39be1f475ed259ada9ddfe00e98cde8e82d72eb9d5ec2801239f43dee6c13ec9"
+    },
+    "svg-source:sidewalk_cracked_broken_b": {
+      "path": "assets/tiles/sidewalk_cracked_broken_b.svg",
+      "sha256": "d437d666e1c86c90fb00da58b3d4e187c4cd54584dae92bfebcb413bf1dc8eb0"
+    },
+    "svg-source:road_cracked_hairline_a": {
+      "path": "assets/tiles/road_cracked_hairline_a.svg",
+      "sha256": "3b35da0945b71671699f636c0b79ee11ce3e0e7d69d420be8612982a69ccd61d"
+    },
+    "svg-source:road_cracked_hairline_b": {
+      "path": "assets/tiles/road_cracked_hairline_b.svg",
+      "sha256": "f10a2dd8af8cc287e0f21f86ca3177fd76fccc76021bef9400f227c96a4c71c8"
+    },
+    "svg-source:road_cracked_cracked_a": {
+      "path": "assets/tiles/road_cracked_cracked_a.svg",
+      "sha256": "b5ceaa8fa20d5743b57ee34948d6e01c1ba4744385fc979f98f1a16bdb8f095c"
+    },
+    "svg-source:road_cracked_cracked_b": {
+      "path": "assets/tiles/road_cracked_cracked_b.svg",
+      "sha256": "6d5abc36f678a449e3fa8700fe52e8a44442c50a1dcdff5e21166d347934c113"
+    },
+    "svg-source:road_cracked_broken_a": {
+      "path": "assets/tiles/road_cracked_broken_a.svg",
+      "sha256": "1cc1f5952962c006716597bb476c7cca157c236bda336c0f08551ecc3091ef40"
+    },
+    "svg-source:road_cracked_broken_b": {
+      "path": "assets/tiles/road_cracked_broken_b.svg",
+      "sha256": "efe8cc77ac8c060cd4bdbfac56ec95186ae270a093687d64d187b3797d3bf25b"
+    },
+    "svg-source:alley_cracked_hairline_a": {
+      "path": "assets/tiles/alley_cracked_hairline_a.svg",
+      "sha256": "9afe0cbdde5cdda806b6b26bbe0ef1b3a873601c0bfee2b0509dbdf11acd0e03"
+    },
+    "svg-source:alley_cracked_hairline_b": {
+      "path": "assets/tiles/alley_cracked_hairline_b.svg",
+      "sha256": "0f6a53c11d02bd2f125f0b98c89a6f6b56ce1ac038946bacbcb6cb06db3831d0"
+    },
+    "svg-source:alley_cracked_cracked_a": {
+      "path": "assets/tiles/alley_cracked_cracked_a.svg",
+      "sha256": "0abbdb645846251bc8bbad176fa59281ef33ece600ffe8db8578675f46bdddd0"
+    },
+    "svg-source:alley_cracked_cracked_b": {
+      "path": "assets/tiles/alley_cracked_cracked_b.svg",
+      "sha256": "e835527d028e7488b6a07da43c2c5df829a39676b0d2493c352c1a17bc869fde"
+    },
+    "svg-source:alley_cracked_broken_a": {
+      "path": "assets/tiles/alley_cracked_broken_a.svg",
+      "sha256": "aafd77f23b227b90304f2dae1f5dfb91fb3c4caab3d30f5c12b44d7f95866c51"
+    },
+    "svg-source:alley_cracked_broken_b": {
+      "path": "assets/tiles/alley_cracked_broken_b.svg",
+      "sha256": "880b2d4279d8ad1fb80cf755e5bf0e159352fefc15e1346b062c95846f654bb2"
+    }
+  },
+  "bases": {
+    "sidewalk": {
+      "frozen_input": "frozen-inputs/tiles/sidewalk.png",
+      "sha256": "8dcc80cc6fce4e7487185430fa256dc0c9da5379d65dc215c0a78ab8f0d0afe8"
+    },
+    "alley": {
+      "frozen_input": "frozen-inputs/tiles/alley.png",
+      "sha256": "292d99485db258e60d497e42e2e36411b0ec6a07d1f187c487eba99e4a09dfa5"
+    },
+    "asphalt": {
+      "frozen_input": "frozen-inputs/tiles/road.png",
+      "method": "equal channel-wise mean of rotations 0,90,180,270",
+      "offset_candidate": [
+        [
+          0,
+          0
+        ],
+        [
+          16,
+          16
+        ],
+        [
+          8,
+          24
+        ],
+        [
+          24,
+          8
+        ]
+      ],
+      "plain_seam_error": 0.625,
+      "offset_seam_error": 0.7916666666666666,
+      "selected": "plain",
+      "edge_means": {
+        "top": 73.5625,
+        "bottom": 73.5625,
+        "left": 73.5625,
+        "right": 73.5625
+      },
+      "sha256": "8165adc4a457aabb43101f8e701aa202438e3bbef2d9b1c02e317af031aae468"
+    },
+    "grass": {
+      "frozen_input": "frozen-inputs/tiles/grass.png",
+      "method": "Gaussian blur radius 4 preserves soft color variation while removing clumps",
+      "sha256": "0e10b1a5495896ac4b57ff85faf6df3f7b22b1e77c7b795fa6bb96b88a346a98"
+    }
+  },
+  "components": {
+    "curbstone": {
+      "base": "sidewalk",
+      "source_svg": "assets/tiles/sidewalk_kerb_n.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_kerb_n.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_kerb_n-svg.png",
+      "mask_rule": "SVG component placement with a one-pixel illustrated edge rim",
+      "sha256": "6366decff4d78e025061d0fb7591197faa77adc5a360fe9b4622a6b5ae29da0d"
+    },
+    "main_edge_red": {
+      "base": "sidewalk",
+      "source_svg": "assets/tiles/sidewalk_kerb_main_n.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_kerb_main_n.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_kerb_main_n-svg.png",
+      "mask_rule": "illustrated red/yellow color separation with a one-pixel illustrated edge rim; SVG is provenance only",
+      "sha256": "43460b692d3f429b1e9bd0313956124e3ac141a12fd8bde40066a96e325ad12f"
+    },
+    "yellow_half_line": {
+      "base": "road",
+      "source_svg": "assets/tiles/road_line_n.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/road_line_n.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/road_line_n-svg.png",
+      "mask_rule": "illustrated red/yellow color separation with a one-pixel illustrated edge rim; SVG is provenance only",
+      "sha256": "67430c773a3c04a570b26de72d0835f85c3c48f800b18726c03c3eed145ee947"
+    },
+    "yellow_main_line": {
+      "base": "road",
+      "source_svg": "assets/tiles/road_main_line_n.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/road_main_line_n.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/road_main_line_n-svg.png",
+      "mask_rule": "illustrated red/yellow color separation with a one-pixel illustrated edge rim; SVG is provenance only",
+      "sha256": "ec3596778dcef9653727647ab75a8564ef511bf12c78434c4c9f332ebe684145"
+    },
+    "crosswalk": {
+      "base": "road",
+      "source_svg": "assets/tiles/crossing_h.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/crossing_h.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/crossing_h-svg.png",
+      "mask_rule": "illustrated red/yellow color separation with a one-pixel illustrated edge rim; SVG is provenance only",
+      "sha256": "58712f4ee873d456a0df2a72ebde25672bc1f05009cf8426ceab0049513576d9"
+    },
+    "main_crosswalk": {
+      "base": "road",
+      "source_svg": "assets/tiles/crossing_main_n.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/crossing_main_n.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/crossing_main_n-svg.png",
+      "mask_rule": "illustrated red/yellow color separation with a one-pixel illustrated edge rim; SVG is provenance only",
+      "sha256": "ba2794ca3ef812615d73f9d57d148c86d45a4fb00907e0c9bd5ac4298082b2bf"
+    },
+    "sidewalk_cracked_hairline_a": {
+      "base": "sidewalk",
+      "source_svg": "assets/tiles/sidewalk_cracked_hairline_a.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_hairline_a.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_hairline_a-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "4d39a624e120bd84032b5afee61c03dc45da8cb820c059be9fde016ecef942af"
+    },
+    "sidewalk_cracked_hairline_b": {
+      "base": "sidewalk",
+      "source_svg": "assets/tiles/sidewalk_cracked_hairline_b.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_hairline_b.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_hairline_b-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "a8e97fea969e92f9ab763a2308c44a023ebb774134c63e78b15f53bac0b86c1c"
+    },
+    "sidewalk_cracked_cracked_a": {
+      "base": "sidewalk",
+      "source_svg": "assets/tiles/sidewalk_cracked_cracked_a.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_cracked_a.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_cracked_a-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "41a75679e60d1ea27b10acc8bb77afb1116a234d5872fed6fba7f385337536f2"
+    },
+    "sidewalk_cracked_cracked_b": {
+      "base": "sidewalk",
+      "source_svg": "assets/tiles/sidewalk_cracked_cracked_b.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_cracked_b.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_cracked_b-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "f30d9245913d7b99c985d92f7cf96e638b91bda4abb240151aa514a3ae670548"
+    },
+    "sidewalk_cracked_broken_a": {
+      "base": "sidewalk",
+      "source_svg": "assets/tiles/sidewalk_cracked_broken_a.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_broken_a.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_broken_a-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "9008a4b549fa72d17cec8384c74f5a553f8d3bb08ccf81c11b40fe23804f6082"
+    },
+    "sidewalk_cracked_broken_b": {
+      "base": "sidewalk",
+      "source_svg": "assets/tiles/sidewalk_cracked_broken_b.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_broken_b.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_broken_b-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "dca7789be613078ca9a883a0368f32aabc74b06e9e6b893e34a7b59179e0a530"
+    },
+    "road_cracked_hairline_a": {
+      "base": "road",
+      "source_svg": "assets/tiles/road_cracked_hairline_a.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/road_cracked_hairline_a.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/road_cracked_hairline_a-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "2bb1701a07c46d88d21c813e015a3f59df62e04bcdf3f13337c6c004de90fa96"
+    },
+    "road_cracked_hairline_b": {
+      "base": "road",
+      "source_svg": "assets/tiles/road_cracked_hairline_b.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/road_cracked_hairline_b.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/road_cracked_hairline_b-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "b424e122ed47ceeec402375fc3ca71648669d851d77e1e7e3748145f22ce9d2d"
+    },
+    "road_cracked_cracked_a": {
+      "base": "road",
+      "source_svg": "assets/tiles/road_cracked_cracked_a.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/road_cracked_cracked_a.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/road_cracked_cracked_a-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "9b3743c72dce622e231bfeb490cc16c229e87a7e8c3afc2fd52b5a9498b55d1e"
+    },
+    "road_cracked_cracked_b": {
+      "base": "road",
+      "source_svg": "assets/tiles/road_cracked_cracked_b.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/road_cracked_cracked_b.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/road_cracked_cracked_b-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "fbadc4828004ff8f2e76f2f16ccadfb2970fb01135444c732906b086ba56206b"
+    },
+    "road_cracked_broken_a": {
+      "base": "road",
+      "source_svg": "assets/tiles/road_cracked_broken_a.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/road_cracked_broken_a.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/road_cracked_broken_a-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "ac9ba22f52b689b39217372aca198380688e95543720d9a221816ed2ea4c66d1"
+    },
+    "road_cracked_broken_b": {
+      "base": "road",
+      "source_svg": "assets/tiles/road_cracked_broken_b.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/road_cracked_broken_b.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/road_cracked_broken_b-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "d157ad7baba5abb108c243366556c4e83726c3cf50b55437a250f483292b87f5"
+    },
+    "alley_cracked_hairline_a": {
+      "base": "alley",
+      "source_svg": "assets/tiles/alley_cracked_hairline_a.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/alley_cracked_hairline_a.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/alley_cracked_hairline_a-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "da036664d92b398d9147f234e893f625eb278530d44f045db1dbd826ef69aff0"
+    },
+    "alley_cracked_hairline_b": {
+      "base": "alley",
+      "source_svg": "assets/tiles/alley_cracked_hairline_b.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/alley_cracked_hairline_b.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/alley_cracked_hairline_b-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "521e47ad459c7ffaea0177d14a513574fb9e1dcde7290927fe00f0558f3bb745"
+    },
+    "alley_cracked_cracked_a": {
+      "base": "alley",
+      "source_svg": "assets/tiles/alley_cracked_cracked_a.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/alley_cracked_cracked_a.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/alley_cracked_cracked_a-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "6b4bc6e4e00fcf9464dbb05ea2962dfc25e9dc9ce60231d038e0e4031d46c602"
+    },
+    "alley_cracked_cracked_b": {
+      "base": "alley",
+      "source_svg": "assets/tiles/alley_cracked_cracked_b.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/alley_cracked_cracked_b.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/alley_cracked_cracked_b-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "ef330cd376b5d25786bf55eca3e7e27634f0cb6c134c52c53b9f4f2d3e750781"
+    },
+    "alley_cracked_broken_a": {
+      "base": "alley",
+      "source_svg": "assets/tiles/alley_cracked_broken_a.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/alley_cracked_broken_a.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/alley_cracked_broken_a-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "59e8dafdcc94d0994a2373b67d70d447c35545e6f9bc0763ce17bf83a283df80"
+    },
+    "alley_cracked_broken_b": {
+      "base": "alley",
+      "source_svg": "assets/tiles/alley_cracked_broken_b.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/alley_cracked_broken_b.png",
+      "svg_mask_input": "frozen-inputs/svg-renders/alley_cracked_broken_b-svg.png",
+      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "sha256": "8398a991ca7e1ad9e03888105fccbac42b00085ce0fbeeda9f97640e80d59eae"
+    },
+    "grass_feature_a": {
+      "base": "grass",
+      "source_svg": "assets/tiles/layers/grass_feature_a.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/grass.png",
+      "mask_rule": "audited illustrated clump region; retained pixels come from the illustrated grass PNG",
+      "sha256": "da01b54d5e2f07bcf70d5a054de3032eb3084d860ed3ad222994c3270830f208"
+    },
+    "grass_feature_b": {
+      "base": "grass",
+      "source_svg": "assets/tiles/layers/grass_feature_b.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/grass.png",
+      "mask_rule": "audited illustrated clump region; retained pixels come from the illustrated grass PNG",
+      "sha256": "89627dfbcfb231d473040f18ba8805a82ce28f7f3f3dffd3f91831ab5a86e995"
+    },
+    "grass_feature_c": {
+      "base": "grass",
+      "source_svg": "assets/tiles/layers/grass_feature_c.svg",
+      "frozen_illustrated_input": "frozen-inputs/tiles/grass.png",
+      "mask_rule": "audited illustrated clump region; retained pixels come from the illustrated grass PNG",
+      "sha256": "9e46491fd67f4780a9889e7c4c50583edc8c39080b4776ff99b7b694faa2d825"
+    }
+  },
+  "compiled": {
+    "sidewalk": "8dcc80cc6fce4e7487185430fa256dc0c9da5379d65dc215c0a78ab8f0d0afe8",
+    "road": "8165adc4a457aabb43101f8e701aa202438e3bbef2d9b1c02e317af031aae468",
+    "road_main": "8165adc4a457aabb43101f8e701aa202438e3bbef2d9b1c02e317af031aae468",
+    "sidewalk_kerb_n": "46d8179ba498beddca9bde496d637e3432e6fd21915f76198db3661bb3be43ff",
+    "sidewalk_kerb_s": "8b346f0f8647af558700534f2ff33ae79bf554211f3a82a92b8154e8843b90d8",
+    "sidewalk_kerb_e": "49c4ffddaf5e8b3bf6906e2975e42a51d005f8a2faeaf8b3ad1336405d8af1f6",
+    "sidewalk_kerb_w": "e54f5053a5c34c3c3c292213d49d1f38ee1d221856805dc04cf121f67192cdd2",
+    "sidewalk_kerb_main_n": "e4b9fd896a69821d9e7ff917fbeda44736cc70f49b7120743acfcdbb36393976",
+    "sidewalk_kerb_main_s": "d9bc7d47b37cfdc5feaccaa646ff005e3eb65de15b2299e78e3453e7b98adeb0",
+    "sidewalk_kerb_main_e": "dafc9055ce67e66372c3debc574c0e268bfe8de3568fcded3d5870d72a5c8634",
+    "sidewalk_kerb_main_w": "7c25583b8c4d448dd4bcd61cbae7b023b00bd892f0143db8176f78c07a176792",
+    "road_line_e": "c11254fcd6118135904aceef5b4afc82b24190cb1e3f91131e1209540a7698c9",
+    "road_line_w": "d133e94281fc75234526c2fdd8d23cb000160d3cc867857b1d035b27defb1303",
+    "road_line_n": "020abc6069e9a407d1df4b75600efe60dca99adbe49dd36ff139d495337e6b27",
+    "road_line_s": "e9558aaa159583873d4d768b761909ef808a02e1d857f8ac550feaf677271627",
+    "crossing_h": "e0d33d1183956e6912dc81089899c1b5c1c862b1683d88092b33645de6188928",
+    "crossing_v": "10429b3ed11c08afca78b669383e56a8c1842c2ca3d2c9fa54e7143c066fbf3d",
+    "road_main_line_e": "4715c9c9445310fa41d52fa5a1a4cdb6c6e887bde1194a1c922bec5ae249ebc7",
+    "road_main_line_w": "42988551dfe9c879cdc811e97db25f6ab33e6d007209c3abab50da548352876d",
+    "road_main_line_n": "62484ccd9f92127f568a7ad947db28a2b2acf78aa82f155f16a8f1cce430ee09",
+    "road_main_line_s": "68b87ca1aa29c8bfb1ddd47d1068dc8a3a250de9b9037540b3a82007dda3199a",
+    "crossing_main_n": "840cd7e89b8d9d8473b56ee7cb31aefee35fba93cae2974c0d69d1a7c5a802d9",
+    "crossing_main_s": "7b66f5087d09c5ff2c8e67baa149b1096617c3a5de933f2bebdd8f962c8945e6",
+    "crossing_main_e": "7d5b27fe794c893a7a17c1847adae4506c0640a801d2b619b3e15f021cceed8e",
+    "crossing_main_w": "e29e52495414afbc315f2c399316ffbed02ac253e202fe9762e4128ffd94fa73",
+    "sidewalk_cracked_hairline_a": "07ae503d97b4bbdd8a2e133b1bcb777a04b51bd3a3ca89e606e2407d94e12457",
+    "sidewalk_cracked_hairline_b": "eee0babfaf3e621a16692bfdd0ef4ff10200d338c8a6b57b8a7d769299926f8c",
+    "sidewalk_cracked_cracked_a": "7e53d397abda4704b57245f9989874609163bbe5a28245e7656fc0d24e674e75",
+    "sidewalk_cracked_cracked_b": "59c52fcc1022854e22a68f08141f33e77b16950c1e95ebc68d016545b10384c1",
+    "sidewalk_cracked_broken_a": "ea15478546f1e79a4e8c7db774e64d96e469d464f2c125842eb2e9760230c475",
+    "sidewalk_cracked_broken_b": "e3d8397c88f230a8df60a17ce9c3ea65317cd9bdc9dc0ddf9114cc2a93ccf98f",
+    "road_cracked_hairline_a": "b02048337298c7e17048b2206d3232b4a6470f7251b42c93701698d94e3b996c",
+    "road_cracked_hairline_b": "84c412ef4f90d6ae14afee49fc79299928824e32f4633fcf1a98191bb650f329",
+    "road_cracked_cracked_a": "026f7b8a7751da904abd7c5065fe8e5c82e600fc95f44e3cb7de57f461e4ca90",
+    "road_cracked_cracked_b": "8c6966c448e18007237f212bc9778233ec291e25ce38fb7d26b557203896f963",
+    "road_cracked_broken_a": "935c4a0212180887fdcf3a3663057a0765ebe503ee7479ece3259ad71ecf513f",
+    "road_cracked_broken_b": "afd7a6b62e3b6c8714652a43d748cb9aaef0548f90c52591e7614f8db9ca6934",
+    "alley_cracked_hairline_a": "e38fc71f17f3da6aedc59a8704bb0cb603433e4ad1dab7b0b56aabd202152f88",
+    "alley_cracked_hairline_b": "de69a69d6d29dad5da1ca4adfe1205f33010b69cf87d5029ed4847c41fe571e5",
+    "alley_cracked_cracked_a": "df450727146a1eee82d32a7bee1244f8ca01a1ff9bd5bdce7490b77e3fa270b5",
+    "alley_cracked_cracked_b": "9f15ea5577293a0064c2c801739ad5766fddecf025167f03726eb4aa0f62e3f4",
+    "alley_cracked_broken_a": "c7172996f72eeab47ad4fc5fc2b188411c3f20e523d3993de3c1773293f6f99b",
+    "alley_cracked_broken_b": "be6f87ff4ac6105c3d52fc8750f5b7e41d2740996caac4e4a364569238d8ca73"
+  }
+}
