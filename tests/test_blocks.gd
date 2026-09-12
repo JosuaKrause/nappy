@@ -37,6 +37,7 @@ func run(t) -> void:
 	_test_pits_keep_their_spacing_across_a_whole_run(t)
 	_test_a_pit_is_never_on_a_junction_or_a_mouth(t)
 	_test_the_planner_and_the_prop_agree_on_a_tree_footprint(t)
+	_test_street_tree_beds_are_ground_decals(t)
 
 func _map(index: int = 0) -> CityMap:
 	return _maps[index]
@@ -379,6 +380,32 @@ func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t) -> void:
 				"a street tree reaches %.2fpx, over the %.2fpx the planners keep clear"
 				% [prop.shape.reach() if prop.shape else -1.0, StreetTrees.footprint_radius()])
 	t.check(checked > 0, "the city built street trees to check (%d)" % checked)
+	city.free()
+
+## A street tree keeps its upright art in the y-sorted entity layer, while the bed it stands in is
+## owned by the flat decal layer. This is the rendering boundary that keeps a one-tile bed from
+## covering the stroller while preserving the tree's ordinary sorting behavior.
+func _test_street_tree_beds_are_ground_decals(t) -> void:
+	var map := CityGenerator.generate(BASE_SEED)
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(map)
+	var decals: CityDecals = city.get_node("Decals")
+	var planted := StreetTrees.planted(map)
+	var tree_count := 0
+	for prop in city.props():
+		if prop.kind == Prop.Kind.STREET_TREE:
+			tree_count += 1
+	t.check(planted.size() > 0, "the rendering contract has a planted tree to inspect")
+	t.check(tree_count == planted.size() and tree_count > 0,
+			"each planted street tree keeps one upright entity")
+	t.check(decals._street_tree_pits.size() == planted.size() and not decals._street_tree_pits.is_empty(),
+			"each planted street tree has one ground-layer bed")
+	var entities: Node2D = city.get_node("Entities")
+	t.check(decals.get_parent() == city and entities.get_parent() == city,
+			"beds and upright trees share the city but use separate layers")
+	t.check(decals.z_index < entities.z_index and decals.get_index() < entities.get_index(),
+			"beds draw below upright trees and the stroller")
 	city.free()
 
 # ------------------------------------------------------------------ helpers ---

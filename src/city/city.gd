@@ -274,7 +274,9 @@ func _spawn_home() -> void:
 ## rebuilt in `_dress_blocks()`, unlike a park's trees, because a street tree belongs to the
 ## street's own frontage rather than to what the block behind it currently is.
 func _spawn_street_trees() -> void:
-	for planted_tree in StreetTrees.planted(map):
+	var planted_trees := StreetTrees.planted(map)
+	_decals.set_street_tree_pits(planted_trees, map)
+	for planted_tree in planted_trees:
 		var tree := Prop.new()
 		tree.kind = Prop.Kind.STREET_TREE
 		tree.position = planted_tree.position
@@ -296,6 +298,7 @@ func refresh_street_trees() -> void:
 	for tile: Vector2i in _street_tree_pits:
 		var tree: Prop = _street_tree_pits[tile]
 		tree.visible = not map.is_tree_pit_emptied(tile)
+	_decals.refresh_street_tree_pits()
 
 ## What is on the far side of the streets that run along the boundary.
 ##

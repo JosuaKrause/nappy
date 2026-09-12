@@ -14,6 +14,10 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
+- **Walk past a street tree with the stroller overlapping its bed.** The paving bed should
+  stay underneath her and the pram while the trunk and canopy retain their upright sorting.
+  Check the location pictured in [PLAYTEST-63](playtests/PLAYTEST-63.md), or any street-tree run.
+
 - **Compare the mother carrying the baby with the mother pushing the stroller.** Use ordinary
   gameplay for pushing and `--start-escape floor:2` for carrying; walk and turn in both. Does she
   remain recognizably the same woman, with stable hair, clothes and proportions across directions
