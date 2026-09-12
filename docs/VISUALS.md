@@ -7,8 +7,9 @@ editable and record each SVG/PNG pair; generated source sheets are generation ev
 The game uses a registered PNG when one exists. `--svg`, or `?svg=1` on the web,
 forces original SVG graphics. The same drawing code handles both formats.
 The transferred artwork covers the mother's pushing and carrying animation frames and the pram's
-five authored views, supplying eight directions through explicit east/west mirroring. Other
-families use SVGs. Compare directions, gait frames and state variants together so the mother
+five authored views, supplying eight directions through explicit east/west mirroring. The garbage
+sack, sack pile and five litter decals also use registered PNGs; other families use SVGs.
+Compare directions, gait frames and state variants together so the mother
 carrying the baby reads as the same woman pushing the stroller.
 
 ## Reference roles
@@ -34,6 +35,8 @@ Generation and extraction are documented in
 The [carrying generation record](evidence/style-transfer-player-family-2026-09-12/GENERATION.md)
 preserves the shared source grid, existing-family identity reference and background correction;
 its native and enlarged comparisons show both mother states across every direction and frame.
+The [litter generation record](evidence/style-transfer-litter-2026-09-12/GENERATION.md) compares
+the sack variants' materials and preserves each upright prop or ground decal's source anchor.
 The [eight-direction source comparison](evidence/style-transfer-eight-directions-2026-09-10/eight-directions-comparison.png)
 shows both formats at matching scale and ground offsets.
 

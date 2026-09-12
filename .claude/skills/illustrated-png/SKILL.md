@@ -65,6 +65,10 @@ record experiments and rejected options in `docs/DECISIONS.md`.
   extraction when a generated transparency request produces an unusable painted checker.
 - Commit runtime PNGs with their `.import` sidecars. Preserve sidecar settings and identity.
   `.godot/` is rebuildable and ignored; evidence under `docs/` is excluded by `docs/.gdignore`.
+  Let Godot create sidecars for new PNGs; copying another asset's sidecar can retain its UID or
+  source/remap path and load the wrong picture. Check each new resource's own source path and
+  unique identity, and verify through Godot's texture loader as well as reading the PNG bytes.
+  Preserve existing assets' identities when extending a family.
 
 ## Runtime and review
 

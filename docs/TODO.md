@@ -133,7 +133,8 @@ findings supported by the conversion and review.
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
 - [ ] Transfer terrain, building tiles, props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
-      alignment. Convert prepared assets too without prematurely binding their gameplay.
+      alignment. Convert prepared assets too without prematurely binding their gameplay. The
+      garbage/litter generation record is in `DECISIONS.md` under M109, litter and garbage materials.
 - [ ] Convert UI, cue and identity SVGs while preserving their symbols, text, legibility and
       exact geometry. Keep code-drawn graphics and shader behavior under their current owners.
 - [ ] Audit all loading paths: shared drawing helpers, direct textures, TileSets, scenes/resources,

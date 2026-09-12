@@ -7,3 +7,5 @@
 > and merge in latest main
 
 > and clean up local branches that you are done with
+
+> the storefront and finale pictures are going to be updated on main soon so pick them up later -- set a timer to 20min to $merging-main

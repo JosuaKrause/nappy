@@ -135,7 +135,11 @@ def register(output: Path, generated: Path) -> None:
         draw.text((cx + 4, 4), name.removeprefix("mother_carrying_"), fill="white")
         for column, image in enumerate((native, final)):
             enlarged = image.resize((image.width * 4, image.height * 4), Image.Resampling.NEAREST)
-            comparison.paste(enlarged, (cx + column * 120 + (120 - enlarged.width) // 2, 250 - enlarged.height), enlarged)
+            comparison.paste(
+                enlarged,
+                (cx + column * 120 + (120 - enlarged.width) // 2, 250 - enlarged.height),
+                enlarged,
+            )
     (output / "registration.json").write_text(json.dumps(measurements, indent=2) + "\n")
     comparison.save(output / "carrying-comparison.png")
     _direction_review(output)
@@ -164,7 +168,8 @@ def _direction_review(output: Path) -> None:
                 x = 24 + (state * 2 + frame_index) * 80
                 sheet.alpha_composite(raster, (x + (80 - raster.width) // 2, row_y + 58 - raster.height))
     sheet.save(output / "eight-directions-both-states-native.png")
-    sheet.resize((sheet.width * 3, sheet.height * 3), Image.Resampling.NEAREST).save(output / "eight-directions-both-states-3x.png")
+    enlarged_sheet = sheet.resize((sheet.width * 3, sheet.height * 3), Image.Resampling.NEAREST)
+    enlarged_sheet.save(output / "eight-directions-both-states-3x.png")
 
 
 def main() -> None:

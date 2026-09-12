@@ -179,7 +179,7 @@ M88.
 
 **SVG-first style transfer is the graphics workflow.** The game selects native-size PNG
 replacements where available; `--svg`, or `?svg=1` on the web, forces original SVGs.
-The existing drawing transforms and animation remain in charge. Other families use SVGs.
+The existing drawing transforms and animation remain in charge. Unconverted families use SVGs.
 Read [VISUALS.md](VISUALS.md) for reference roles and the replacement contract, and
 M108, eight-direction entity graphics, then M109, convert the SVG catalogue to PNG, in
 [TODO.md](TODO.md) for the remaining work. Every PNG asset needs a corresponding SVG authored first.

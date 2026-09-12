@@ -18,6 +18,9 @@ only, and the existing pushing PNG family supplies identity and rendering contin
 raw output is retained as `carrying-sheet-generated.png`; the corrected background-only output is
 `carrying-sheet-background-corrected.png`.
 
+Both raw outputs are 1717×916 RGB images. Registration extracts the corrected white background,
+resamples the atlas to the 1920×1024 source layout, then registers individual cells.
+
 Preparation used Godot 4.7.2 for SVG rasterization. Registration used CPython 3.14.7, Pillow
 12.3.0 and the locked `uv` environment, reusing `tools/remove-checkerboard.py` and the prior
 registration algorithm. The source manifest records dimensions, bottom-center anchors, runtime
@@ -26,7 +29,7 @@ usage, source hashes and review evidence for every carrying frame.
 Prepare the source evidence with the locked Python environment:
 
 ```sh
-uv run python docs/evidence/style-transfer-player-family-2026-09-12/convert.py prepare docs/evidence/style-transfer-player-family-2026-09-12/source
+uv run python docs/evidence/style-transfer-player-family-2026-09-12/convert.py prepare /tmp/nappy-player-source-reproduction
 ```
 
 The generator input is `source/carrying-sheet-svg.png`; it has a genuinely transparent background
@@ -39,10 +42,13 @@ downsamples to native dimensions, and reapplies the native SVG alpha:
 
 ```sh
 uv run python docs/evidence/style-transfer-player-family-2026-09-12/convert.py register \
-  docs/evidence/style-transfer-player-family-2026-09-12/registered \
+  /tmp/nappy-player-registration-reproduction \
   docs/evidence/style-transfer-player-family-2026-09-12/carrying-sheet-background-corrected.png
 ```
 
 The registration output contains ten native PNGs, measurements, an extracted atlas and an
 SVG-left/PNG-right comparison. `convert.py` rejects unknown modes and refuses to overwrite an
 existing output directory.
+
+Choose fresh output paths for each reproduction. The saved `source/` and `registered/`
+directories are the original integration evidence and must not be overwritten.

@@ -223,8 +223,15 @@ east-authored partners. The carrying set adds
 `mother_carrying_{front,back}_{a,b}.png` (24×46) and
 `mother_carrying_{side,front_diagonal,back_diagonal}_{a,b}.png` (26×46), selected by the same
 resolver during the escape scene. All use bottom-center anchors and preserve native SVG alpha.
-Other families retain SVG textures. The [carrying generation record](evidence/style-transfer-player-family-2026-09-12/GENERATION.md)
+The [carrying generation record](evidence/style-transfer-player-family-2026-09-12/GENERATION.md)
 documents the identity comparison against the pushing mother and reproducible registration.
+
+`assets/illustrated/svg-transfer/props/` supplies `garbage_sack.png` (28×34) and
+`garbage_sacks_pile.png` (42×34), bottom-center anchored, plus `litter_{can,apple,bag,newspaper,cup}.png`
+(32×32), center anchored. These use the existing `Prop` and `CityDecals` drawing paths with exact
+source alpha. Their [generation record](evidence/style-transfer-litter-2026-09-12/GENERATION.md)
+preserves the shared material reference and reproducible extraction.
+Unconverted families retain SVG textures.
 
 [VISUALS.md](VISUALS.md) defines reference authority and the visual acceptance gate.
 [The generation record](evidence/style-transfer-2026-09-10/GENERATION.md) preserves raw outputs,

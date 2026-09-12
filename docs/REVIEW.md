@@ -21,6 +21,10 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   `evidence/style-transfer-player-family-2026-09-12/registered/` show both states side by side;
   check the result at gameplay size too. `--svg` provides the original source comparison.
 
+- **Look at the garbage sacks and small litter from day 10.** Do the standalone sacks and
+  piles look like the same material, and does the small ground litter remain quiet and readable?
+  `evidence/style-transfer-litter-2026-09-12/registered/` compares the SVG and PNG sources.
+
 Each line is a thing to try or look at and the question it settles. `tools/run.sh` plays the
 desktop build; `--seed <n> --day <n>` puts a run where an item says; `1` to `4` in a debug build
 toggle the field, shadow, bounding-box and readout layers (`docs/TELEMETRY.md`, "The debug
