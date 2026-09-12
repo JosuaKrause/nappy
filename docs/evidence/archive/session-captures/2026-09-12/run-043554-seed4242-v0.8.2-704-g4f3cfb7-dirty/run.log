@@ -1,0 +1,5 @@
+nappy run log  2026-09-12T04:35:54  version v0.8.2-704-g4f3cfb7-dirty
+   0.0  shot     burst started: asked for an animation burst at (0,0) | exc 0, sleep 0 | playing | asked/burst-6944956-001
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  shot     burst started: asked for an animation burst at (0,0) | exc 0, sleep 1 | playing | asked/burst-11132409-002
+   0.0  shot     burst complete: 36 frames | duration

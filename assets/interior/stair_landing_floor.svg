@@ -1,0 +1,8 @@
+<!-- Three-by-one-tile floor landing strip. It fits the existing cleared door, landing and joining
+     corner cells, so its visual platform is never wider than the truthful standing ground. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="32" viewBox="0 0 96 32" shape-rendering="crispEdges">
+  <rect width="96" height="32" fill="#30343a"/>
+  <rect x="3" y="3" width="90" height="26" fill="#686c70"/>
+  <path d="M4 10H92 M4 22H92 M32 4V28 M64 4V28" stroke="#4a4e54" stroke-width="2"/>
+  <path d="M3 3H93V29H3Z" fill="none" stroke="#c2b7a5" stroke-width="2"/>
+</svg>

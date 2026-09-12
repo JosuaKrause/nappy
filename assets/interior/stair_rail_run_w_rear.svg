@@ -1,0 +1,7 @@
+<!-- Rear joined rail for stair_flight_run_w.svg, mirrored with the shared deck registration. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M117 2L2 117" stroke="#30292f" stroke-width="8"/>
+  <path d="M106 12L106 30 M86 32L86 50 M66 52L66 70 M46 72L46 90 M26 92L26 110" stroke="#30292f" stroke-width="5"/>
+  <path d="M119 2L2 119" stroke="#958879" stroke-width="3"/>
+  <path d="M106 12L106 30 M86 32L86 50 M66 52L66 70 M46 72L46 90 M26 92L26 110" stroke="#c1ad90" stroke-width="1.5"/>
+</svg>

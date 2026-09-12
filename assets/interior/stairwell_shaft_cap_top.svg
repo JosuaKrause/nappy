@@ -1,0 +1,11 @@
+<!-- Nine-tile-wide upper shaft cap, registered one 64px bay above the top landing. It gives the
+     landing door a wall and ceiling to belong to instead of leaving its upper frame in empty black. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="288" height="64" viewBox="0 0 288 64" shape-rendering="crispEdges">
+  <rect width="288" height="64" fill="#353940"/>
+  <rect x="8" width="272" height="64" fill="#474b50"/>
+  <path d="M12 0V64 M276 0V64" stroke="#716c67" stroke-width="5"/>
+  <path d="M21 0V64 M267 0V64" stroke="#282c32" stroke-width="3"/>
+  <path d="M36 18H252 M36 38H252" stroke="#5c6063" stroke-width="2"/>
+  <rect y="56" width="288" height="8" fill="#292d33"/>
+  <path d="M8 55H280" stroke="#a3988a" stroke-width="2"/>
+</svg>

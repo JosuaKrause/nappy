@@ -35,15 +35,27 @@ const ENTRANCE_DOOR_TEXTURE := preload("res://assets/interior/entrance_door.svg"
 const ENTRANCE_BARRICADE_TEXTURE := preload("res://assets/interior/entrance_barricade.svg")
 const BRICK_WALL := preload("res://assets/interior/basement_wall_brick.svg")
 const DOOR_TEXTURE := preload("res://assets/interior/stairwell_door.svg")
+const APARTMENT_THRESHOLD_TEXTURE := preload("res://assets/interior/apartment_threshold.svg")
+const OPEN_THRESHOLD_TEXTURE := preload("res://assets/interior/open_threshold.svg")
 const EMERGENCY_EXIT_TEXTURE := preload("res://assets/interior/emergency_exit_door.svg")
 const PUDDLE_TEXTURE := preload("res://assets/interior/puddle.svg")
 const DEBRIS_TEXTURE := preload("res://assets/interior/basement_debris.svg")
 const RAT_TEXTURE := preload("res://assets/interior/rat.svg")
 const CHANDELIER_TEXTURE := preload("res://assets/interior/chandelier.svg")
-const RAIL_E := preload("res://assets/interior/stair_rail_e.svg")
-const RAIL_W := preload("res://assets/interior/stair_rail_w.svg")
-const RAIL_LEVEL := preload("res://assets/interior/stair_rail_level.svg")
-const NEWEL := preload("res://assets/interior/stair_newel.svg")
+const STAIRWELL_SEGMENT_BACKDROP := preload("res://assets/interior/stairwell_segment_backdrop.svg")
+const STAIRWELL_SHAFT_CAP_TOP := preload("res://assets/interior/stairwell_shaft_cap_top.svg")
+const STAIRWELL_SHAFT_CAP_BOTTOM := preload("res://assets/interior/stairwell_shaft_cap_bottom.svg")
+const STAIR_FLIGHT_RUN_E := preload("res://assets/interior/stair_flight_run_e.svg")
+const STAIR_FLIGHT_RUN_W := preload("res://assets/interior/stair_flight_run_w.svg")
+const STAIR_LANDING_FLOOR := preload("res://assets/interior/stair_landing_floor.svg")
+const STAIR_LANDING_TURN := preload("res://assets/interior/stair_landing_turn.svg")
+const STAIR_RAIL_RUN_E := preload("res://assets/interior/stair_rail_run_e.svg")
+const STAIR_RAIL_RUN_W := preload("res://assets/interior/stair_rail_run_w.svg")
+const STAIR_RAIL_RUN_E_REAR := preload("res://assets/interior/stair_rail_run_e_rear.svg")
+const STAIR_RAIL_RUN_W_REAR := preload("res://assets/interior/stair_rail_run_w_rear.svg")
+const STAIR_FLIGHT_SHORT_E := preload("res://assets/interior/stair_flight_short_e.svg")
+const STAIR_RAIL_SHORT_E := preload("res://assets/interior/stair_rail_short_e.svg")
+const STAIR_RAIL_SHORT_E_REAR := preload("res://assets/interior/stair_rail_short_e_rear.svg")
 
 const TILE := float(Tuning.TILE_SIZE)
 ## How long the fade to black takes, each way — brisk, since it stands in for a flight of stairs
@@ -53,7 +65,9 @@ const FADE_SECONDS := 0.35
 var _plan: InteriorMapPlan
 var _tile_set: TileSet
 var _ground: TileMapLayer
+var _backdrops: Node2D
 var _walls: Node2D
+var _structure: Node2D
 var _entities: Node2D
 ## Plain `StaticBody2D` blockers, one per non-walkable cell in a margin around the building's own
 ## footprint — the physical half of `InteriorMapPlan.is_walkable()`. A `TileMapLayer` only gives
@@ -85,10 +99,18 @@ func build() -> void:
 	_ground = TileMapLayer.new()
 	_ground.name = "Ground"
 	add_child(_ground)
+	_backdrops = Node2D.new()
+	_backdrops.name = "StairwellBackdrops"
+	_backdrops.z_index = -1
+	add_child(_backdrops)
 	_walls = Node2D.new()
 	_walls.name = "Walls"
 	_walls.z_index = 1
 	add_child(_walls)
+	_structure = Node2D.new()
+	_structure.name = "StairStructure"
+	_structure.z_index = 1
+	add_child(_structure)
 	_entities = Node2D.new()
 	_entities.name = "Entities"
 	_entities.z_index = 2
@@ -116,6 +138,7 @@ func build() -> void:
 		if source >= 0:
 			_ground.set_cell(tile, source, Vector2i.ZERO)
 	_rebuild_walls()
+	_rebuild_stairwell_structure()
 	_rebuild_overlays()
 	_rebuild_collision()
 
@@ -155,17 +178,19 @@ func _rebuild_collision() -> void:
 			_collision.add_child(body)
 
 func _rebuild_walls() -> void:
+	# Wide doors are drawn after the repeating 32px wall strips. Their own centre registration keeps
+	# both leaves visible instead of letting a neighbouring wall crop one side.
 	for at: Vector2i in _plan.walls:
 		var kind: InteriorTile.Kind = _plan.walls[at]
-		var texture := _wall_texture(kind)
-		if not texture:
+		if kind == InteriorTile.Kind.LIFT_DOOR or kind == InteriorTile.Kind.ENTRANCE_DOOR:
 			continue
-		var sprite := Sprite2D.new()
-		sprite.texture = texture
-		sprite.centered = false
-		sprite.offset = Vector2(-TILE * 0.5, -texture.get_height())
-		sprite.position = Vector2((at.x + 0.5) * TILE, at.y * TILE)
-		_walls.add_child(sprite)
+		var texture := _wall_texture(kind)
+		_add_wall_sprite(at, texture)
+	for at: Vector2i in _plan.walls:
+		var kind: InteriorTile.Kind = _plan.walls[at]
+		if kind != InteriorTile.Kind.LIFT_DOOR and kind != InteriorTile.Kind.ENTRANCE_DOOR:
+			continue
+		_add_wall_sprite(at, _wall_texture(kind))
 	for at: Vector2i in _plan.entrance_tiles:
 		var barricade := Sprite2D.new()
 		barricade.texture = ENTRANCE_BARRICADE_TEXTURE
@@ -174,6 +199,16 @@ func _rebuild_walls() -> void:
 				-ENTRANCE_BARRICADE_TEXTURE.get_height())
 		barricade.position = Vector2((at.x + 0.5) * TILE, at.y * TILE + TILE * 0.5)
 		_walls.add_child(barricade)
+
+func _add_wall_sprite(at: Vector2i, texture: Texture2D) -> void:
+	if not texture:
+		return
+	var sprite := Sprite2D.new()
+	sprite.texture = texture
+	sprite.centered = false
+	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
+	sprite.position = Vector2((at.x + 0.5) * TILE, at.y * TILE)
+	_walls.add_child(sprite)
 
 func _wall_texture(kind: InteriorTile.Kind) -> Texture2D:
 	match kind:
@@ -198,7 +233,12 @@ func _wall_texture(kind: InteriorTile.Kind) -> Texture2D:
 func _rebuild_overlays() -> void:
 	for id: String in _plan.doors:
 		var door: InteriorMapPlan.Door = _plan.doors[id]
-		_add_standing(door.tile, DOOR_TEXTURE)
+		if _is_edge_threshold(door.id):
+			_add_threshold(door.tile, OPEN_THRESHOLD_TEXTURE)
+		else:
+			_add_standing(door.tile, DOOR_TEXTURE)
+	for tile: Vector2i in _plan.locked_thresholds:
+		_add_threshold(tile, APARTMENT_THRESHOLD_TEXTURE)
 	if _plan.exit_tile.x >= 0:
 		_add_standing(_plan.exit_tile, EMERGENCY_EXIT_TEXTURE)
 	for tile: Vector2i in _plan.decals:
@@ -207,15 +247,16 @@ func _rebuild_overlays() -> void:
 		sprite.texture = _decal_texture(kind)
 		sprite.position = tile_to_world(tile)
 		_entities.add_child(sprite)
-	_add_stairwell_rails()
 	_add_chandeliers()
 
-## A chandelier at each hallway's and the lobby's own midpoint — the three hallway waypoints plus
-## `"lobby"`, read back from `_plan.waypoints` rather than a second list of parts (each waypoint
-## sits at that part's own mid-column, one row south of where the chandelier hangs), so a new
-## hallway-family part picks one up for free by naming its own waypoint the same way.
+func _is_edge_threshold(door_id: String) -> bool:
+	return door_id.begins_with("hallway_") or door_id.begins_with("lobby:") \
+			or door_id == "basement:entry"
+
+## A chandelier at each hallway midpoint. The lobby's entrance has the same central column, so its
+## chandelier would overlap the barricade that needs to read as the closed main way out.
 func _add_chandeliers() -> void:
-	for id in ["hallway_third", "hallway_second", "hallway_first", "lobby"]:
+	for id in ["hallway_third", "hallway_second", "hallway_first"]:
 		if not _plan.waypoints.has(id):
 			continue
 		var chandelier := Sprite2D.new()
@@ -244,40 +285,128 @@ func _add_standing(tile: Vector2i, texture: Texture2D) -> void:
 	sprite.position = tile_to_world(tile)
 	_entities.add_child(sprite)
 
-## Rails over every flight and landing tile in both stairwells, and a newel at each `LANDING`
-## (every turn is one, since a door tile is a full landing in its own right and does not get one).
-##
-## Each rail's y-sort key is pinned to its tile's own **south edge** rather than its centre, so a
-## walker standing anywhere in that tile's row — her feet somewhere between the row's north and
-## south edge — sorts behind it: the key the rail competes with is always the far edge of her own
-## row, never the near one, which is what keeps her reading as walking *behind* the rail rather
-## than sometimes in front of it depending on where in the tile she stands.
-func _add_stairwell_rails() -> void:
-	for tile: Vector2i in _plan.tiles:
-		var kind: InteriorTile.Kind = _plan.tiles[tile]
-		match kind:
-			InteriorTile.Kind.STAIR_FLIGHT_E:
-				_add_rail(tile, RAIL_E)
-			InteriorTile.Kind.STAIR_FLIGHT_W:
-				_add_rail(tile, RAIL_W)
-			InteriorTile.Kind.LANDING:
-				_add_rail(tile, RAIL_LEVEL)
-				_add_newel(tile)
-
-func _add_rail(tile: Vector2i, texture: Texture2D) -> void:
+## A threshold sits at a floor tile's south boundary. Its origin is intentionally lower than an
+## upright stairwell door's: the opening belongs to the wall beyond the corridor, not the floor.
+func _add_threshold(tile: Vector2i, texture: Texture2D) -> void:
 	var sprite := Sprite2D.new()
 	sprite.texture = texture
 	sprite.centered = false
-	sprite.offset = Vector2(-TILE * 0.5, -TILE)
+	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 	sprite.position = Vector2((tile.x + 0.5) * TILE, (tile.y + 1) * TILE)
 	_entities.add_child(sprite)
 
-func _add_newel(at_turn: Vector2i) -> void:
+## Draws one broad architectural bay behind every landing that has a flight below it, then puts a
+## continuous deck over the same four diagonal cells. The cells, collision clearance and slope
+## callback remain exactly the map's existing walkable graph; this only gives their presentation
+## the breadth and enclosure the references call for.
+func _rebuild_stairwell_structure() -> void:
+	# A named floor landing owns its enclosed eight-row backdrop. Turn landings need no second
+	# backdrop, but both kinds own a broad half-flight assembly below.
+	for id: String in _plan.waypoints:
+		if not id.begins_with("stairwell_") or not id.contains(":landing_"):
+			continue
+		var landing: Vector2i = _plan.waypoints[id]
+		var east: int = _plan.tiles.get(landing + Vector2i(1, 1), InteriorTile.Kind.NONE)
+		var west: int = _plan.tiles.get(landing + Vector2i(-1, 1), InteriorTile.Kind.NONE)
+		if east != InteriorTile.Kind.STAIR_FLIGHT_E and west != InteriorTile.Kind.STAIR_FLIGHT_W:
+			continue
+		var backdrop := Sprite2D.new()
+		backdrop.texture = STAIRWELL_SEGMENT_BACKDROP
+		backdrop.centered = false
+		backdrop.position = Vector2((landing.x - 4) * TILE, landing.y * TILE)
+		_backdrops.add_child(backdrop)
+	for side in ["left", "right"]:
+		var top: Vector2i = _plan.waypoints["stairwell_%s" % side]
+		_add_shaft_cap(top, STAIRWELL_SHAFT_CAP_TOP, Vector2(0, -64))
+		var bottom: Vector2i = _plan.waypoints["stairwell_%s:landing_lobby" % side]
+		_add_shaft_cap(bottom, STAIRWELL_SHAFT_CAP_BOTTOM, Vector2.ZERO)
+	_add_basement_entry_stair()
+	for landing: Vector2i in _plan.tiles:
+		if _plan.tiles[landing] != InteriorTile.Kind.LANDING:
+			continue
+		var east: int = _plan.tiles.get(landing + Vector2i(1, 1), InteriorTile.Kind.NONE)
+		var west: int = _plan.tiles.get(landing + Vector2i(-1, 1), InteriorTile.Kind.NONE)
+		if east != InteriorTile.Kind.STAIR_FLIGHT_E and west != InteriorTile.Kind.STAIR_FLIGHT_W:
+			continue
+		var descends_east := east == InteriorTile.Kind.STAIR_FLIGHT_E
+		var deck: Texture2D = STAIR_FLIGHT_RUN_E if descends_east else STAIR_FLIGHT_RUN_W
+		var origin := _flight_origin(landing, descends_east)
+		_add_flight_deck(origin, deck)
+		if _is_floor_landing(landing):
+			var rear_rail: Texture2D = STAIR_RAIL_RUN_E_REAR if descends_east else STAIR_RAIL_RUN_W_REAR
+			_add_flight_rear_rail(origin, rear_rail)
+		var rail: Texture2D = STAIR_RAIL_RUN_E if descends_east else STAIR_RAIL_RUN_W
+		_add_flight_rail(origin, rail)
+	for landing: Vector2i in _plan.tiles:
+		if _plan.tiles[landing] != InteriorTile.Kind.LANDING:
+			continue
+		if _is_floor_landing(landing):
+			_add_floor_landing_platform(landing)
+			continue
+		var east: int = _plan.tiles.get(landing + Vector2i(1, 1), InteriorTile.Kind.NONE)
+		_add_turn_landing_platform(landing, east == InteriorTile.Kind.STAIR_FLIGHT_E)
+
+func _is_floor_landing(landing: Vector2i) -> bool:
+	for id: String in _plan.waypoints:
+		if id.begins_with("stairwell_") and id.contains(":landing_") and _plan.waypoints[id] == landing:
+			return true
+	return false
+
+func _add_shaft_cap(landing: Vector2i, texture: Texture2D, offset: Vector2) -> void:
 	var sprite := Sprite2D.new()
-	sprite.texture = NEWEL
+	sprite.texture = texture
 	sprite.centered = false
-	sprite.offset = Vector2(-NEWEL.get_width() * 0.5, -NEWEL.get_height())
-	sprite.position = Vector2((at_turn.x + 1) * TILE, (at_turn.y + 1) * TILE)
+	sprite.position = Vector2((landing.x - 4) * TILE, landing.y * TILE) + offset
+	_backdrops.add_child(sprite)
+
+func _add_floor_landing_platform(landing: Vector2i) -> void:
+	var sprite := Sprite2D.new()
+	sprite.texture = STAIR_LANDING_FLOOR
+	sprite.centered = false
+	sprite.position = Vector2((landing.x - 1) * TILE, landing.y * TILE)
+	_structure.add_child(sprite)
+
+func _add_turn_landing_platform(landing: Vector2i, descends_east: bool) -> void:
+	var sprite := Sprite2D.new()
+	sprite.texture = STAIR_LANDING_TURN
+	sprite.centered = false
+	var x := landing.x if descends_east else landing.x - 1
+	sprite.position = Vector2(x * TILE, (landing.y - 1) * TILE)
+	_structure.add_child(sprite)
+
+func _add_basement_entry_stair() -> void:
+	var entry: InteriorMapPlan.Door = _plan.door("basement:entry")
+	var top: Vector2i = entry.tile - Vector2i(2, 2)
+	var origin: Vector2 = Vector2(top) * TILE
+	_add_flight_deck(origin, STAIR_FLIGHT_SHORT_E)
+	_add_flight_rear_rail(origin, STAIR_RAIL_SHORT_E_REAR)
+	_add_flight_rail(origin, STAIR_RAIL_SHORT_E)
+
+func _flight_origin(landing: Vector2i, descends_east: bool) -> Vector2:
+	var x := landing.x if descends_east else landing.x - 4
+	return Vector2(x * TILE, landing.y * TILE)
+
+func _add_flight_deck(origin: Vector2, texture: Texture2D) -> void:
+	var sprite := Sprite2D.new()
+	sprite.texture = texture
+	sprite.centered = false
+	sprite.position = origin
+	_structure.add_child(sprite)
+
+func _add_flight_rear_rail(origin: Vector2, texture: Texture2D) -> void:
+	var sprite := Sprite2D.new()
+	sprite.texture = texture
+	sprite.centered = false
+	sprite.position = origin
+	_structure.add_child(sprite)
+
+func _add_flight_rail(origin: Vector2, texture: Texture2D) -> void:
+	var sprite := Sprite2D.new()
+	sprite.texture = texture
+	sprite.centered = false
+	# The bottom-edge sort key leaves the walker behind the foreground rail throughout the flight.
+	sprite.offset = Vector2(0, -texture.get_height())
+	sprite.position = origin + Vector2(0, texture.get_height())
 	_entities.add_child(sprite)
 
 # ------------------------------------------------------------------ placement and queries ---

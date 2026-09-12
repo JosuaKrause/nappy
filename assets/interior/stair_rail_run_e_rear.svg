@@ -1,0 +1,8 @@
+<!-- Rear joined rail for stair_flight_run_e.svg. It shares the deck registration and is drawn
+     beneath walkers, leaving their feet visible on the broad treads. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M43 2L158 117" stroke="#30292f" stroke-width="8"/>
+  <path d="M54 12L54 30 M74 32L74 50 M94 52L94 70 M114 72L114 90 M134 92L134 110" stroke="#30292f" stroke-width="5"/>
+  <path d="M41 2L158 119" stroke="#958879" stroke-width="3"/>
+  <path d="M54 12L54 30 M74 32L74 50 M94 52L94 70 M114 72L114 90 M134 92L134 110" stroke="#c1ad90" stroke-width="1.5"/>
+</svg>

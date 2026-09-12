@@ -1,0 +1,7 @@
+<!-- Rear rail for the short basement flight, structurally behind the walker and deck. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M30 2L96 68" stroke="#30292f" stroke-width="8"/>
+  <path d="M40 12L40 30 M58 30L58 48 M76 48L76 66" stroke="#30292f" stroke-width="5"/>
+  <path d="M28 2L96 70" stroke="#958879" stroke-width="3"/>
+  <path d="M40 12L40 30 M58 30L58 48 M76 48L76 66" stroke="#c1ad90" stroke-width="1.5"/>
+</svg>
