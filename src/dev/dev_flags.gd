@@ -330,7 +330,8 @@ static var _invincible_override: Variant = null
 ## capture waiting for a moment gets quiet held time rather than a flashing alarm and a darkening
 ## day. *(2026-09-11, overturning the flag's own first build the same evening: "when invincible the
 ## timer should never go down and excitement should never go up. this is just noisy flashing of
-## alarms and the day gets dark.")* See docs/TODO.md, M100, "An invincible mode for playtesting".
+## alarms and the day gets dark.")* The record is in docs/DECISIONS.md under M100, "an invincible
+## mode for playtesting" and "invincible freezes the clock and the meter".
 ##
 ## Gated behind `enabled()` explicitly, the same as `layers_override()` gates its own query read —
 ## unlike `svg_requested()`, which stays live in a release web build by design, this reaches the

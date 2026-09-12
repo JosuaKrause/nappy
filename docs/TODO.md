@@ -588,12 +588,6 @@ is still true.
       side; a roof is above everything at street level, so events and props that overlap a roof
       draw beneath it — fit the band to its obstruction span where it crosses an alley, and sort the
       roof above what it overlaps, whichever the pictures need; say which was done
-- [ ] **A blocked-off alley has no chalk mark.** *(PLAYTEST-57: "a blocked off alley must not
-      have a chalk mark.")* The resistance's mark was offered on the paving of an alley whose mouth
-      a roadblock band closes. The trap's and the mark's candidate ground refuses any tile she
-      cannot reach on the day — held segments, sealed alleys, the ground behind a band — the same
-      refusal the scheduler already applies to closed tiles, checked where the candidate is
-      offered rather than repaired afterwards
 - [ ] **The keyboard resets the pointer's aim.** *(PLAYTEST-57: "arrow keys should reset any mouse
       click position. when pressing awsd or arrow keys right now the last pressed mouse position is
       still active resulting in incorrect / drifting movement.")* A press on the arrows or `WASD`
@@ -619,13 +613,6 @@ is still true.
       the release — so the released side must put her outside the radius, or the row must not
       re-arm until she has left it once. All four against a rig that drives the hold end to end,
       and a burst of the whole hold as the evidence
-- [ ] **Invincible freezes the clock and the meter.** *Asked for on 2026-09-11 as everything else
-      real · overturned the same day, [PLAYTEST-57](playtests/PLAYTEST-57.md): "when invincible the
-      timer should never go down and excitement should never go up. this is just noisy flashing of
-      alarms and the day gets dark."* Under `--invincible` the day clock stands still and excitement
-      never rises — nothing adds to it, so no cry, no alert, no halo charging — while sleepiness,
-      the crowd, the events, the closures and the checkpoints all still run; the HUD word and the
-      log note stay
 - [ ] **What is still dev-only inside `main.gd`.** `DevFlags` took the flag parsing out; what stayed
       is the code that acts on it — `_first_event_position` and the `--spawn` target lookup, both of
       which read the live city. Worth finishing the next time the file is opened for another reason
