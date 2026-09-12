@@ -57,6 +57,14 @@ item below for as long as looking takes.
   ever look stuck against it? Record is `DECISIONS.md`, M110. **And the open question is
   yours**: should a café, a construction band or a kerbed van divert the crowd the same way?
   `TODO.md`, M110.
+- **Stand by a region door on a busy street and watch the walkers** (day 7 or later,
+  `--invincible`). Most stop beside the hut, vanish inside for a second, come out on the far side
+  and walk on; one in eight walks straight through; one in four turns off at the last junction;
+  never more than three are committed to one hut. At real density a hut was occupied only now and
+  then in the rig, so does the hold ever read on screen, and if a door should read as busy is the
+  lever the hold length or the fractions? Does a walker turning round where it stands, when it
+  meets a full door from inside the door's own street, read as wrong? Record is `DECISIONS.md`,
+  M110, walkers are held at a door.
 - **Find a roadblock on day 7 or later** (a 120px barrier across a road, drawn as one continuous
   barrier with end posts). Does it read as one barrier rather than blocks? At resistance progress
   3 of 4 performs, its guards leave the post and come for her on foot, standing then lunging —
