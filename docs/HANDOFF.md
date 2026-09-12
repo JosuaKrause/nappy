@@ -174,7 +174,7 @@ M88.
 replacements where available; `--svg`, or `?svg=1` on the web, forces original SVGs.
 The existing drawing transforms and animation remain in charge. Other families use SVGs.
 Read [VISUALS.md](VISUALS.md) for reference roles and the replacement contract, and
-M108, eight-direction entity graphics, M111, cars follow their turns, then M109, convert the SVG catalogue to PNG, in
+M108, eight-direction entity graphics, then M109, convert the SVG catalogue to PNG, in
 [TODO.md](TODO.md) for the remaining work. Every PNG asset needs a corresponding SVG authored first.
 
 **M76 is also built and released, on top of it.** Both the pause screen and the day summary carry a
@@ -277,8 +277,10 @@ Reaching act III — which M56's measurement against the nerves needs — waits 
 that batch is done. SVG-to-PNG
 style transfer is Codex's parallel track. Prepared artwork and its source-review sheets are listed
 in `GRAPHICS.md`; the integration table in `TODO.md` assigns each family to its gameplay owner.
-The crowd goes round seals, walls and doors (`DECISIONS.md`, M110); M111, cars follow their
-turns, owns continuous turn paths and diagonal presentation in the same traffic code.
+The crowd goes round seals, walls and doors (`DECISIONS.md`, M110), and a car follows an arc
+through a turn with its heading continuous throughout (`DECISIONS.md`, M111); the diagonal car
+pictures on that arc are M108's vehicle item, and M111's one open question — a street about-face
+that crosses a kerb, or a reverse gear — is the player's, in `TODO.md`.
 
 ## What to distrust
 

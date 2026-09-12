@@ -82,7 +82,10 @@ pictures to their actual runtime consumers. The crowd walkers are bound, through
       supplied by M111, cars follow their turns; changing the picture alone does not close that
       item. Preserve native scale, contact point, sorting and per-view halo geometry. Keep
       `GroundShape` as the independent ground datum; changing sprite view must not resize the
-      shape or lethal strike box. Orient shape-derived shadows with the continuous travel heading.
+      shape or lethal strike box. Orient shape-derived shadows with the continuous travel heading. Capture
+      native-scale turns showing intermediate diagonal views, including body/trim and police
+      markings, and inspect grounding and heading at entry, apex and exit; update `GRAPHICS.md`
+      with the resulting binding contract.
 - [ ] **Verify and document each binding increment.** Update `GRAPHICS.md` from prepared to live
       only for callers actually wired. Check SVG override and illustrated fallback so an available
       cardinal PNG cannot replace a newly selected diagonal SVG or lose its state/registration.
@@ -94,49 +97,26 @@ pictures to their actual runtime consumers. The crowd walkers are bound, through
 
 ### M111 — Cars follow their turns
 
-[PLAYTEST-53](playtests/PLAYTEST-53.md) asks for proper turns and turnarounds using diagonal
-sprites. This is the motion work needed alongside M108, eight-direction entity graphics.
-`CrowdAgent._divert()` immediately swaps the travel axis and lane, and `_turn_round()` immediately
-reverses direction before steering to the opposite lane. The heading exposed to drawing remains
-cardinal. A continuous turn must change the travelled path and the body facing together.
+The motion is built — a car plans one arc tangent to both lanes and follows it, its heading the
+tangent throughout, nothing committed before the swept strike box has been checked against the
+ground — and the record, with its measurements and the turn geometry's own reasoning, is in
+`DECISIONS.md` under M111. The diagonal *pictures* on the curve are M108's vehicle item, which
+reads `CrowdAgent.heading()`, the unit vector along actual travel. What stands here is what the
+build could not decide alone.
 
-**The full model below is wanted as written**, swept footprint and reserved turn space included —
-a review had offered the smaller reading of an arc with the sprite on its tangent, and the player
-kept this one *(2026-09-10, playtest 54: "the car turn overcommittment that you flagged is good
-and we should do that")*. `CrowdAgent.velocity()` and `EventInstance.travel_velocity()`, built
-under M61, are the actual-motion velocities the third item asks for.
-
-Coordinate implementation with M110, the crowd goes round a seal: it supplies which lanes and
-segments are blocked to each crowd kind; this item supplies how a car physically follows the
-chosen diversion. Preserve its distinction between hard seals and passable soft-seal carriageways,
-and keep its open question about ordinary solid obstacles with that item's owner.
-
-- [ ] **Plan a continuous path before entering a turn.** Cover left/right junction diversions
-      and 180-degree returns at dead ends, closures and precinct boundaries from both road axes.
-      Join the incoming and correct outgoing lane with continuous position and heading; the car
-      follows the curve and its sprite follows the tangent through diagonal sectors. No instant
-      reversal, lateral lane jump, rotation of an upright side sprite or cosmetic diagonal frame
-      over unchanged right-angle movement. Keep current route choices and straight-through travel.
-- [ ] **Fit the manoeuvre to legal road space.** Validate the swept vehicle footprint against
-      pavement, closures, walls and other cars before committing. Check destination room and
-      reserve conflicting turn space, including same-frame claims. If a turnaround cannot fit,
-      stop safely before the obstruction and choose a feasible earlier turning place; never drive
-      through a barrier or use separation to repair a knowingly invalid turn. Document any space
-      constraint that needs a different manoeuvre before broadening the driving behavior.
-- [ ] **Keep traffic rules coherent throughout the curve.** Adapt lane indexing, box occupancy,
-      following gaps and conflict tests that currently assume a cardinal axis. Keep a turning
-      car claimed until its tail clears; do not enter a junction without room to leave. Preserve
-      signal/amber clearance, zebra stopping, right-of-way, horn warning and lethal carriageway
-      contracts. Derive velocity from actual motion for collision and approach calculations.
-      Measure any required turn-speed/radius choices under the balance rules; do not retune
-      population, light timing or cruise speeds as an incidental graphics change.
-- [ ] **Prove movement and presentation together.** Step the whole crowd with `Crowd.step()` in
-      focused traffic rigs: left/right turns and U-turns from every approach, a blocked exit,
-      simultaneous arrivals, queues, signals, zebras and boundary closures. Assert continuous
-      travel, legal swept space, correct exit lanes, no overlaps/deadlock and finite completion
-      when the path is free. Capture native-scale turns showing intermediate diagonal views,
-      including body/trim and police markings, and inspect grounding and heading at entry/apex/exit.
-      Update traffic documentation and `GRAPHICS.md` with the resulting motion/binding contract.
+- [ ] **Open question, the player's: the street about-face crosses a kerb, or the traffic gets a
+      reverse gear.** A half turn between two lanes 32px apart is a 16px arc, and a car's corners
+      then reach 40px from its centre against 32px to the kerb, so a car turning round *in a
+      street* — only where a barrier leaves it no junction to reach — overhangs open pavement by
+      8px, every hard blocker still refused. Refusing that too was measured: 33 of 34 cars at a
+      standstill inside ninety seconds, because one nose-to-wall car holds its junction and the
+      street behind it queues. The manoeuvre it really wants is a three-point turn, and the
+      traffic has no reverse gear. The overhang cannot kill her — a strike counts only on a road
+      tile, the same kerb read from her side — so the question is whether the picture is
+      acceptable, or whether reversing is worth building. **And one instant reversal survives**
+      as the last resort for a car already stopped with less than a half turn's room in front of
+      it, reachable only by a placement or a barrier that arrived after the car did; the
+      alternative was a car that never moves again
 
 ### M109 — Convert the SVG catalogue to PNG
 
