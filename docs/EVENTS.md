@@ -1136,19 +1136,21 @@ Three rules underneath the table, in the order they matter:
    `obstructs_radius` from the silhouette, on the other half of the vocabulary: a field that is
    only ever *reached for* is a list wearing a rule's clothes.
 
-   **A vehicle needs two pictures the moment it can face more than one way.** One side-on sprite
-   mirrored east and west shows a patrol car heading north its own flank. `police_patrol`,
-   `fire_truck` and `military_convoy` travel from the moment they are placed and have an `_end`
-   picture each; `abduction` earns its own the same way once it hunts, since a pursuer steers
-   straight at her and a parked van never had to face anything but the kerb. `night_raid` hunts
-   on the same rung and has no end view yet — the one open exception to this rule, filed in
-   `docs/TODO.md` under M56. Each is *its own*
-   picture rather than the crowd's (whose cars are end-on because at that angle the front and the
-   back of a car are the same shape): the whole content of a vehicle row is which vehicle it is,
-   and a van that becomes a generic box the moment it turns north loses the one silhouette the
-   badge exists to show at the moment it starts coming towards her. The **badge keeps the side
-   view**, because an icon is read at 40px against a row of other icons and a vehicle end-on is a
-   box at any size.
+   **A vehicle needs more than one picture the moment it can face more than one way.** One
+   side-on sprite mirrored east and west shows a patrol car heading north its own flank, so every
+   vehicle row draws a front, a back, a side and two diagonals through the same
+   `EventInstance._draw_eight_view()` every other eight-view family in the catalogue uses.
+   `police_patrol`, `fire_truck` and `military_convoy` read the octant from their own actual
+   travel, turning corners along their routes; `abduction` and `night_raid` read it from their
+   placement heading while idling or closing to their stand-off and from the chase direction once
+   they hunt; `delivery_van`, `ice_cream_van` and `reversing_lorry` read it from their own
+   placement heading too, which in play never actually turns away from the kerb or the wall the
+   lorry backs into, so only their side view is ever seen. Each is *its own* picture rather than
+   the crowd's (whose cars are end-on because at that angle the front and the back of a car are
+   the same shape): the whole content of a vehicle row is which vehicle it is, and a van that
+   becomes a generic box the moment it turns north loses the one silhouette the badge exists to
+   show at the moment it starts coming towards her. The **badge keeps the side view**, because an
+   icon is read at 40px against a row of other icons and a vehicle end-on is a box at any size.
 
 **The traffic pays for its own warning.** The vocabulary's first row is *the entity itself carries
 most of it*, and the traffic is the place that is easiest to miss: the caret is drawn by
