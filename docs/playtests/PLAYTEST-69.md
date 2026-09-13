@@ -91,3 +91,19 @@ seeing it crouch and reaching where it bolts. Playtest 19 said the same of cycli
 screen because they come *at* her; the cat and the flock cross her line and kept the on-screen
 lead. For a flock that is the wrong answer: birds appear from nothing on a pavement she was
 already looking at. M131 in `TODO.md`.
+
+## Day 5: who gets the note
+
+> I have no clue how to find the person on day 5 I need to pass the note to
+
+What the game does (`docs/NARRATIVE.md`, the subquest; `ResistanceSteps`): day 4's chalk mark,
+in an alley behind a robber, says on the summary of the day it was touched — the *won* day's
+summary only — *"Give it to the one who won't stop shouting. Any of them might be him."* From
+day 5 the header reads *somewhere out there: a note for a stranger*, and the contact rides on
+one of the several `homeless_yeller` rows live that day: the pacing man shouting on a sidewalk
+or a square. He looks exactly like the others by design — *"a wrong candidate costs full price
+and returns nothing"* — and walking into his reach is the touch. Nothing on screen marks him,
+which is the standing decision (`CLAUDE.md`, no quest log or marker for the resistance; *the
+first encounter comes with no hint at all, after that the resistance speaks*). Whether the
+mark's sentence was seen at all is the M100 open design question about a chalk touch that
+shows nothing on a lost day; this report is its second sighting.
