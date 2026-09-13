@@ -22,6 +22,7 @@ func run(t) -> void:
 	_test_parse_layers_drops_malformed_entries_without_crashing(t)
 	_test_apply_initial_state_sets_only_the_listed_layers(t)
 	_test_no_layer_node_exists_outside_a_debug_build(t)
+	_test_the_readout_flag_alone_does_not_unlock_the_layer_node(t)
 	_test_a_debug_build_builds_the_layers_off_by_default(t)
 	_test_the_layer_keys_resolve_to_their_own_index(t)
 	_test_number_keys_toggle_their_own_layer(t)
@@ -159,6 +160,23 @@ func _test_no_layer_node_exists_outside_a_debug_build(t) -> void:
 	main._add_debug_layers()
 	t.check(main._debug_layers == null,
 			"a release build never builds the layer node at all, not merely leaves it invisible")
+	main._city.free()
+	main._player.free()
+	main.free()
+
+## M133, "the readout on the live page": `?debug=1` (`_readout_requested`) reaches only the
+## readout `_status` draws. This layer node — the three geometry overlays a debug build's own `1`,
+## `2` and `3` keys toggle — stays behind `_debug` alone, so a release build carrying the flag
+## still builds none of it.
+func _test_the_readout_flag_alone_does_not_unlock_the_layer_node(t) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._debug = false
+	main._readout_requested = true
+	main._city = City.new()
+	main._player = Stroller.new()
+	main._add_debug_layers()
+	t.check(main._debug_layers == null,
+			"?debug=1 turns the readout on without also unlocking the geometry layers")
 	main._city.free()
 	main._player.free()
 	main.free()

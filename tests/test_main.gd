@@ -18,6 +18,7 @@ const SEED := 4242
 
 func run(t) -> void:
 	_test_the_readout_is_not_assembled_outside_a_debug_build(t)
+	_test_the_readout_flag_shows_it_on_a_release_build(t)
 	_test_add_touch_controls_builds_the_one_control_reader(t)
 	_test_on_title_start_sets_the_controls_mode(t)
 	_test_the_summary_and_pause_restart_signals_are_both_connected(t)
@@ -66,6 +67,7 @@ func _test_the_readout_is_not_assembled_outside_a_debug_build(t) -> void:
 	main._in_the_title = false
 
 	main._debug = false
+	main._readout_requested = false
 	main._process(0.016)
 	t.check(main._status.text == "",
 			"the release shape never assembles the readout, not even into a hidden label")
@@ -77,6 +79,57 @@ func _test_the_readout_is_not_assembled_outside_a_debug_build(t) -> void:
 
 	# `_status` was never added under `main` as a child — it stands in for the `@onready` label
 	# `_ready()` would otherwise have wired up — so freeing `main` does not reach it.
+	main._status.free()
+	main.free()
+	hud.free()
+	day.free()
+	stroller.free()
+	city.free()
+
+## `_readout_requested` (`DevFlags.readout_requested()`, the page's own `?debug=1` or `--debug`) is
+## read independently of `_debug` — M133, "the readout on the live page" — so a release build
+## (`_debug == false`) still assembles the readout the moment this holds. Same rig as the test
+## above, with the two flags' roles swapped.
+func _test_the_readout_flag_shows_it_on_a_release_build(t) -> void:
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	var stroller := Stroller.new()
+	stroller.add_child(camera)
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+	var baby := Baby.new()
+	baby.name = "Baby"
+	stroller.add_child(baby)
+	baby.set_physics_process(false)
+
+	var day := DayController.new()
+	t.add_child(day)
+	day.set_process(false)
+	day.setup(city.map, stroller)
+
+	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	t.add_child(hud)
+	hud.set_process(false)
+
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._status = Label.new()
+	main._city = city
+	main._player = stroller
+	main._baby = baby
+	main._day = day
+	main._hud = hud
+	main._in_the_title = false
+
+	main._debug = false
+	main._readout_requested = true
+	main._process(0.016)
+	t.check("seed" in main._status.text and "fps" in main._status.text,
+			"?debug=1 on a release build assembles the same readout a debug build gets")
+
 	main._status.free()
 	main.free()
 	hud.free()
