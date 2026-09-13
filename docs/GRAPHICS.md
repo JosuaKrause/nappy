@@ -255,6 +255,8 @@ The [southern wheel arrangement](evidence/stroller-southern-wheel-swap-2026-09-1
 owns the final SE/SW wheel pixels. Final SE uses the frozen input's displayed SW wheels; final
 SW uses its displayed SE wheels. Each body, canopy, handle and grounded height stays fixed.
 Rebuild from the hash-checked frozen source only, never exchange the installed wheels again.
+In SW, the leftmost wheel is shadowed and the other two show red axles on their right sides.
+In SE, the rightmost wheel is shadowed and the other two show red axles on their left sides.
 
 Ground components live under `assets/illustrated/svg-transfer/tiles/layers/`, paired with SVGs
 under `assets/tiles/layers/`. The component manifest maps each ground source to a shared sidewalk,

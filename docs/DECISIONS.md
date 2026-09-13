@@ -15,6 +15,10 @@ using the output as a new input, and fresh builds reproduce identical pixels. Do
 identifies this final stage explicitly instead of instructing a future session to swap installed
 textures. The upstream direction assignment and donor extraction remain reproducible stages.
 
+The player's visual confirmation defines the final cues: SW has its leftmost wheel in shadow
+and red axles on the right of the other two wheels; SE has its rightmost wheel in shadow and
+red axles on the left of the other two. The final paired comparison matches these cues.
+
 
 ## M109 — Southern diagonal stroller wheel reuse — 2026-09-12
 

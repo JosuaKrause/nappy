@@ -398,3 +398,8 @@ hash-checked frozen inputs and reproduce the same result, never exchange install
 
 The player accepts the rest of the current graphics, including northern diagonal stroller
 contact and the stoop bottom face. Keep the remaining correction limited to SE/SW wheels.
+
+> as a visual confirmation. in SW the leftmost wheel is in the shadow and the two other wheels have red axle visible on their right side. in SE the rightmost wheel is in the shadow and the two other wheels have red axle visible on the left side
+
+This visible shadow-and-axle arrangement defines the final southern wheel directions independently
+of filenames or transformation history.

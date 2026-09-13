@@ -7,6 +7,14 @@ displayed SW wheel pixels, and final displayed SW wheel pixels equal the frozen 
 SE wheel pixels. Re-running the recipe from the frozen source reproduces this same final
 arrangement; it never reads the installed output and never toggles the swap a second time.
 
+The final visual contract uses screen-left and screen-right:
+
+- **SW:** the leftmost wheel is in shadow; the other two wheels show their red axles on the right.
+- **SE:** the rightmost wheel is in shadow; the other two wheels show their red axles on the left.
+
+These cues describe the intended result directly. They are not instructions to reflect the
+installed texture again.
+
 The body, canopy, handle, canvas, and height remain from the frozen source. The wheel assembly is
 the reflection-closed union of the recorded half-open masks `(5, 22, 13, 29)`, `(13, 23, 23, 30)`,
 and `(24, 21, 32, 29)`, together with their horizontal canvas-center reflections. Every target
