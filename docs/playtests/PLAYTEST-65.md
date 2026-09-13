@@ -353,3 +353,31 @@ Document the final visual direction contract, not an instruction to swap mutable
 N/NE/NW show the baby and canopy opening; S/SE/SW show the outside of the hood. E/W retain the
 original side picture. Runtime labels mean travel direction. Regeneration reads frozen source
 images and applies the saved assignment once; never repeat the swap on installed textures.
+
+> so minor fixes for the stroller the NE/W position of the stroller is a little bit too high (the hands don't connect).
+> while the SE/W don't connect either a fix there would make it look like floating so we don't fix that in those
+> directions. however, the wheels of the SE/W direction are rotated 90 wrt to the movement direction. is there an easy
+> fix we could do?
+
+Lower the northeast/northwest stroller drawing slightly to connect its handle to the hands.
+Keep southeast/southwest placement unchanged despite its hand gap, because changing that height
+would lose the accepted grounding. Investigate a small wheel-only orientation correction for
+southeast/southwest. Preserve the established travel-direction assignment and the other artwork.
+
+> the stoop should have a brown line (vertical step wall) at its bottom -- copy one of the other brown lines append it at the bottom and rescale the texture to compress the vertical size back to the correct height
+
+Add a vertical step-face band along the stoop's bottom by copying one of its existing brown bands,
+appending it below the tile, and compressing the taller result vertically back to 32×32. Preserve
+the material and save the chosen source strip, resampling method and reproducible transformation.
+
+> Try the pixel mirror first (Recommended)
+
+For the southeast/southwest wheel correction, the player selects a trial that mirrors the
+existing wheel and axle pixels while keeping the stroller body and height fixed. Inspect it for
+chassis seams and wheel grounding before retaining the result.
+
+> you can probably reuse the wheels from the NE/W picture
+
+Compare the correctly drawn northeast/northwest wheels as a donor for the southeast/southwest
+wheel correction. Preserve the destination body, handle, canopy and ground height; retain the
+donor source and exact wheel extraction/placement in the recipe.
