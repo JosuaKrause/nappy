@@ -83,14 +83,23 @@ standing on.
 
 | Ground | × decay | Walking decay |
 | --- | ---: | ---: |
-| Calm (park, forest, quiet square, courtyard, playground) | 2.2 | 7.7/s |
-| Precinct | 1.5 | 5.25/s |
-| Ordinary street | 1.0 | 3.5/s |
-| Main road | 0.6 | 2.1/s |
+| Calm (park, forest, quiet square, courtyard, playground) | 2.0 | 12.0/s |
+| Precinct | 1.5 | 9.0/s |
+| Ordinary street | 1.0 | 6.0/s |
+| Alley | 0.58 | 3.5/s |
+| Main road | 0.35 | 2.1/s |
 
 A rate rather than a state is what makes a precinct worth walking to although it is loud.
 `is_calm_zone` stays a threshold beside it, because the *sleepiness* half genuinely is one: only
 calm ground puts a baby to sleep.
+
+**The multipliers are ratios; the absolute rates on the right are the design.** A change to the
+walking decay moves all five to keep each ground's own rate where it was put — which is why the
+main road still gives back 2.1/s and an alley 3.5/s after the walking rate went from 3.5 to 6.0.
+An alley is worse ground than the street it cuts between and better than the spine, so the
+shortcut is pressured ground rather than a way of recovering faster than the streets either side
+of it; the `+3.0/s` of constant dread it adds sits just under its own 3.5, so an empty alley is
+very nearly flat.
 
 Tile types:
 
@@ -255,7 +264,7 @@ rather than three that drift apart — `CityGenerator._calm_may_sit_here`. Three
   the ring is **40 of the lattice's 121 blocks**.
 - **Never in either block column beside the main road.** Worth only **eight** blocks on top of the
   ring, because the spine runs down the middle where the home clearance has already taken a 5×5
-  out — so this one is justified on design rather than on density. `decay_multiplier` is 0.6 on
+  out — so this one is justified on design rather than on density. `decay_multiplier` is 0.35 on
   the spine, so a park you can hear the main road from is not calm ground; and if calm never sits
   beside it, **crossing it always leads somewhere worth crossing for**, which is what makes it a
   soft block rather than a wall. It is the expendable clause by the player's own words — *"the not
@@ -990,7 +999,7 @@ refuses to grow a strand along the spine's own length — she may still cross it
 which is unchanged and unrestricted — so the main road is off every day's tree by construction.
 Sealing it as well would wall the one street the design deliberately leaves open, so `SealPlanner`
 refuses it outright rather than treating "off the tree" as reason enough. It is already the worst
-ground in the game to stand on (0.6× decay against an ordinary street's 1.0), which is why making
+ground in the game to stand on (0.35× decay against an ordinary street's 1.0), which is why making
 it *not a route* is the whole of the fix.
 
 **Alleys are not streets, so they are never sealed — a through-alley's *mouth* can be, and only

@@ -393,11 +393,13 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: i
 ##
 ## **It has to cover the ground, not stand in it**, and one event does not.
 ##
-## What denies calm ground is holding the meter above `EXCITEMENT_CALM_THRESHOLD` against a decay
-## the calm multiplier has raised to 7.7/s — so a busker at intensity 9 has a *useful* radius of
-## 100px whatever his 190px reach says, in a lot 704px across, and denies about three percent of a
-## four-block calm zone. A day that rolls one spoiler for the block she used is a day she settles in
-## that same block.
+## What denies calm ground is holding the meter above `EXCITEMENT_CALM_THRESHOLD` against
+## `Tuning.CALM_ZONE_DENIAL_RATE`, 7.7/s — so a busker at intensity 13 has a *useful* radius of
+## 138px whatever his 190px reach says, in a lot 704px across. That is a small share of one, and a
+## day that rolls one spoiler for the block she used is still a day she settles in that same block.
+## **The rate is fixed and the intensity is not**, so raising a row's intensity is the one thing
+## that widens this: the busker's own reach grew by half when it was raised to clear the ground it
+## stands on.
 ##
 ## So a spoiler is a **crowd**: one thing per cell of a grid laid over the calm ground, sized from
 ## what each of them can actually deny, capped by `SPOILERS_TO_DENY_A_PARK`. Each cell rolls its own
@@ -508,12 +510,17 @@ static func _spoiling_grid(ground: Rect2, pool: Array[EventDef]) -> Array[Vector
 
 ## How far from a source calm ground stops being usable.
 ##
-## **Not the outer radius**, which is where it stops reaching at all. Calm ground fills the meter at
-## `EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` times the walking decay, so anywhere a source emits less
-## than that is somewhere she can still settle — and for every act I row that is most of its own
-## field. Getting this wrong is how one busker was ever thought to spoil a park.
+## **Not the outer radius**, which is where it stops reaching at all. Anywhere a source emits less
+## than `Tuning.CALM_ZONE_DENIAL_RATE` (7.7/s) is somewhere she can still settle — and for every
+## act I row that is most of its own field. Getting this wrong is how one busker was ever thought
+## to spoil a park.
+##
+## **The rate is its own constant rather than the calm ground's live decay**, because *which rows
+## may stand beside a park* is a decision about the parks and not about how fast the pram settles.
+## Read off the decay, every rise in the walking rate would admit louder rows here as a side
+## effect of a change nobody made about parks.
 static func _denial_radius(def: EventDef) -> float:
-	var decay := Tuning.EXCITEMENT_DECAY_WALKING * Tuning.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
+	var decay := Tuning.CALM_ZONE_DENIAL_RATE
 	if def.intensity <= decay:
 		return def.inner_radius
 	# `Tuning.falloff` is `1 - t²`, inverted for the t at which it equals the decay.

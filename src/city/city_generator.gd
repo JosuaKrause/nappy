@@ -512,7 +512,7 @@ static func _touches_a_precinct(precinct_spans: Array[Vector4i], footprint: Rect
 ## - **Never in either block column beside the main road.** This one is not about density — it adds
 ##   only eight blocks on top of the ring, because the spine runs down the middle where the home
 ##   clearance has already taken a 5x5 out. It is about what crossing the spine is *for*:
-##   `decay_multiplier` is 0.6 there, so a park you can hear the main road from is not calm ground,
+##   `decay_multiplier` is 0.35 there, so a park you can hear the main road from is not calm ground,
 ##   and if calm never sits beside it then **crossing it always leads somewhere worth crossing
 ##   for**, which is what makes it a soft block rather than a wall. It is also **the expendable
 ##   clause**, by the player's decision: if the eligible field ever gets too tight, this comes out

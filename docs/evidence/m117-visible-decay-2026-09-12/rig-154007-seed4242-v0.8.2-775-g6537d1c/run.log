@@ -1,0 +1,14 @@
+nappy rig log  2026-09-12T15:40:07  version v0.8.2-775-g6537d1c
+
+day 1  act 1  run seed 4242  city seed 4242  length 180.0s  invincible
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  plan     closed: roadworks h(6,5)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burst_water_main x20, cafe_tables x59, car_accident x20, cat_dash x8, chatting_mother x2, delivery_van x54, dog_walker x23, fallen_tree, homeless_yeller x5, leaf_blower x15, loose_dog x12, market_stall x53, moving_van x50, pigeon_flock x5, playground x2, scaffolding x26, skip x22
+   0.0  start    doorstep (1,1), facing 180°
+   0.0  crowd    walked into somebody at (1,1) | exc 90, in 0.0/s (crowd 31.1, events 0.0), sleep 0
+   0.0  freeze   sleep stopped filling | exc 89, in 0.0/s (crowd 31.7, events 0.0), sleep 0 | near: market_stall 280px (out of range)
+   0.0  near     market_stall at (1,10), 64px, exc 75, in 0.0/s (crowd 0.7, events 0.5), sleep 0
+   0.0  shot     burst started: asked for an animation burst at (1,9) | exc 72, sleep 0 | playing | asked/burst-7114275-001
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  cross    stepped into the road at (2,9), mid-block

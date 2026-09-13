@@ -115,7 +115,7 @@ which is a scheduler decision and not a change to what a closure is.
 
 `CityGenerator._assign_street_kinds` decides *where* (`CityMap.main_road`,
 `CityMap.precinct_spans`); `Tuning.PRECINCT_BLOCKS`, `PRECINCT_BUSYNESS`, `EVENT_PRECINCT_WEIGHT`
-and the `EXCITEMENT_DECAY_*_MULTIPLIER` trio decide *what it means*.
+and the `EXCITEMENT_DECAY_*_MULTIPLIER` family decides *what it means*.
 
 **Five places have to agree and the failure mode of each is silent:**
 
@@ -136,10 +136,16 @@ the real one but with no lights, no dark asphalt and no clearway.
 
 ## The ground is a rate, not a category
 
-Calm 2.2, precinct 1.5, ordinary street 1.0, main road 0.6, multiplying the excitement decay — so
-choosing a route is choosing a **recovery rate** and not only a set of things to walk past. It is
-what makes a precinct worth walking to although it is loud, and most of what *"a main road is
-crossed, not walked"* means arithmetically.
+Calm 2.0, precinct 1.5, ordinary street 1.0, alley 0.58, main road 0.35, multiplying the excitement
+decay — so choosing a route is choosing a **recovery rate** and not only a set of things to walk
+past. It is what makes a precinct worth walking to although it is loud, what keeps an alley a
+shortcut rather than a rest, and most of what *"a main road is crossed, not walked"* means
+arithmetically.
+
+**The multipliers are ratios and the absolute rates are the design.** Move the walking decay and
+every one of them is re-derived to hold its own ground's rate — the spine gives back 2.1/s and an
+alley 3.5/s whatever the walking rate is. `tests/probes/m117_decay.gd` walks each ground and prints
+what it actually does, which is how the rates are set rather than guessed.
 
 ## Adding things
 
