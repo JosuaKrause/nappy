@@ -42,6 +42,7 @@ can produce different pixels on another call; extraction and assembly use the re
 | Shared damage variations across floor materials | [Stencil extraction and runtime atlas review](shared-damage-2026-09-12/GENERATION.md) |
 | Stroller travel-direction assignment | [Final visual contract, frozen inputs and eight-facing review](stroller-view-assignment-2026-09-12/GENERATION.md) |
 | Northeast/northwest stroller hand contact | [Continuous placement adjustment and frozen three-pose comparison](stroller-diagonal-contact-2026-09-12/GENERATION.md) |
+| Southeast/southwest stroller wheels | [NE donor pixels, exact replacement bounds and paired view comparison](stroller-wheel-mirror-2026-09-12/GENERATION.md) |
 | Muted quiet-square paving | [Generation prompt, raw image and repeat-neighbor registration](quiet-square-2026-09-12/GENERATION.md) |
 | Muted plaza paving | [Generation prompt, raw image and repeat-neighbor registration](plaza-paving-2026-09-12/GENERATION.md) |
 | Composed streets and varied grass in generated layouts | [In-engine composition and repeatable layout review](layered-ground-layout-2026-09-12/GENERATION.md) |

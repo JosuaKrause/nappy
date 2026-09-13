@@ -28,6 +28,11 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   a consistent material? The [stoop comparison](evidence/stoop-bottom-face-2026-09-12/GENERATION.md)
   records the strip copy and compression back to the native tile height.
 
+- **Push southeast and southwest at gameplay scale.** Do the reused wheels read along the
+  travel direction, with clean joins to the chassis? The
+  [wheel comparison](evidence/stroller-wheel-mirror-2026-09-12/GENERATION.md) shows both views;
+  their body height and hand gap remain fixed.
+
 - **Look at a park and a wooded calm area while walking past them.** Do the sparse grass clumps give variety while the
   soft base stays quiet enough to keep people and routes clear? Check neighboring cells and
   revisit the same seed to compare their stable arrangement.

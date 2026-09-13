@@ -251,6 +251,9 @@ The [north-diagonal contact recipe](evidence/stroller-diagonal-contact-2026-09-1
 records the downward NE/NW correction across all pushing poses. The continuous adjustment vanishes
 at cardinal directions and throughout the southern half; SE/SW grounding takes priority over
 closing the remaining hand gap.
+The [southern wheel recipe](evidence/stroller-wheel-mirror-2026-09-12/GENERATION.md) owns the
+final SE/SW wheel pixels after view assignment. It reuses the NE wheels and lower attachments,
+keeping the body, canopy, handle and grounded height fixed.
 
 Ground components live under `assets/illustrated/svg-transfer/tiles/layers/`, paired with SVGs
 under `assets/tiles/layers/`. The component manifest maps each ground source to a shared sidewalk,

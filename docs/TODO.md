@@ -116,9 +116,6 @@ findings supported by the conversion and review.
       Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
-- [ ] Refine SE/SW stroller wheel orientation per PLAYTEST-65 with a small wheel-only correction
-      while keeping its grounded height and body untouched. Try existing-pixel mirroring or reuse
-      the NE/NW wheels as the player suggests; preserve exact donor and transformation inputs.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The
