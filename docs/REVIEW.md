@@ -14,86 +14,6 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-- **Walk an alley and look at the ground beside every building.** Each building now casts a
-  one-tile shade to its south and west, flat black at `Tuning.BUILDING_SHADOW_ALPHA`, with the
-  corner under its south-eastern edge cut on the diagonal; joined buildings shade as one. Two
-  questions. Does an alley read as *more obvious* for the band running down its eastern side,
-  which was the point of asking for it? And is the shade at the right strength — visible without
-  reading as a second ground material — or should the number move, or the shade take the ground's
-  own colour down a step instead of laying black over it? Record is `DECISIONS.md`, M122; the
-  stills are `evidence/m122-building-shadows-before-seed4242-day1.png` and `-after-`.
-- **Look at a burst water main.** It draws no body shadow now, on the player's word; the two
-  barriers and the crater stand as they did. Does the scene still sit on the road without one?
-  Same record.
-
-- **Walk three kinds of ground with the excitement bar up and watch it, not the route.** Start
-  anywhere with the meter loaded (`--meters 0 90` puts it near the top) and spend twenty seconds
-  on each: an ordinary back street, the main road's pavement, and a park. Three questions, and
-  they are the whole of this change. Does a quiet street now read as **recovery** — the bar
-  visibly coming down while she walks, rather than a number that happens to be negative? Does the
-  main road still read as the ground that **does not** let her recover? And does the park now read
-  as a **switch** rather than a place: it clears a full meter in eight and a third seconds, which
-  the rig says is over the line and only a person can say is over the *felt* line. Then walk an
-  alley: it is meant to be very nearly flat — neither pressure nor rest — which is the one of the
-  five grounds with no obvious right answer. Record is `DECISIONS.md`, M117, excitement decays
-  visibly on quiet ground; the burst is in `evidence/m117-visible-decay-2026-09-12/`.
-- **Stand in a playground, and beside a busker, and wait out each one's beat.** Both stand on calm
-  ground, both pulse between a quarter and all of their intensity — nine seconds for the
-  playground, seven for the busker — and calm ground now gives back 12.0/s against their 15.0 and
-  13.0 at the peak. So the middle of either is expensive at the top of the beat and free at the
-  bottom, and a whole line through a busker on grass is net recovery even though crossing one
-  costs on the table. Two questions: does a park with one of these in it still feel *contested*,
-  and is a busker still worth walking round? The busker was raised for exactly this and takes
-  nearly twice the park out of a lot that it used to (a denial radius of 138px against 100px);
-  the playground was deliberately left alone, because raising it would deny more park still. Same
-  record.
-
-- **Compare damaged road, sidewalk and alley tiles.** Do the shared crack and hole variations
-  sit naturally over each material, without carrying pieces of another floor's slab grid?
-  The [damage atlas review](evidence/shared-damage-2026-09-12/GENERATION.md) shows every variation
-  over each supported base.
-
-- **Look at a park and a wooded calm area while walking past them.** Do the sparse grass clumps give variety while the
-  soft base stays quiet enough to keep people and routes clear? Check neighboring cells and
-  revisit the same seed to compare their stable arrangement.
-
-- **Look at café seating and roadworks along both street axes.** Each café sitter should
-  face its own table, including the right-hand chair and the vertical arrangement. Vertical
-  red barriers should read as a narrow continuous barrier, and a horizontal alley should be
-  closed across its short mouth. The original findings are in [PLAYTEST-64](playtests/PLAYTEST-64.md).
-
-- **Walk past a street tree with the stroller overlapping its bed.** The paving bed should
-  stay underneath her and the pram while the trunk and canopy retain their upright sorting.
-  Check the location pictured in [PLAYTEST-64](playtests/PLAYTEST-64.md), or any street-tree run.
-
-- **Look at trees, bollards and rooftop equipment at gameplay size.** Do the inked foliage,
-  water tank, HVAC units, skylights, vent and ducts fit the comic ground while staying readable?
-  Check both tree shapes and the roof variants in
-  `evidence/comic-city-props-2026-09-12/comparisons/`; `--svg` shows their source concepts.
-
-- **Compare pushing and carrying identity during a state change.** Do they remain the same woman?
-  Use `--start-escape` for carrying. Exact native
-  and enlarged walking GIFs are linked from the
-  [recipe index](evidence/README.md#graphics-recipes); they are sprite assemblies, not live captures.
-
-- **Look at the garbage sacks and small litter from day 10.** Do the standalone sacks and
-  piles look like the same material, and does the small ground litter remain quiet and readable?
-  `evidence/comic-props-2026-09-12/comparisons/` compares the SVG and PNG sources; use the
-  `unmasked` sheets for the current generated silhouettes.
-
-- **Compare the comic stroller identity mark at icon and logo sizes.** Does the cream stroller
-  remain clear against its navy plate, and does the redrawn symbol fit the preserved wordmark?
-  `evidence/comic-identity-2026-09-12/comparisons/` shows the logo and both export sizes.
-
-- **Find a crash and walk at it.** The boot log names the street it sealed — `closed: accident`
-  with the segment beside it — or press `3` and look for the two circles. Three questions, and the
-  meter has to be live for the last two, so leave `--invincible` off for them. Do the bodies sit
-  where the cars are drawn, on both a north-south and an east-west street? Walking through the gap
-  on either pavement costs a little over half the meter: does that read as a **price** — something
-  you choose once and pay for — or as a wall you were not told about? And would you rather it
-  killed? The switch is one line (`Tuning.CAR_ACCIDENT_GAPS_ARE_LETHAL`), and the expensive
-  reading is what was built.
-
 Each line is a thing to try or look at and the question it settles. `tools/run.sh` plays the
 desktop build; `--seed <n> --day <n>` puts a run where an item says; `1` to `4` in a debug build
 toggle the field, shadow, bounding-box and readout layers (`docs/TELEMETRY.md`, "The debug
@@ -197,21 +117,13 @@ item below for as long as looking takes.
 - **Walk a precinct end to end** (a pedestrian street with bollards at each mouth). Nothing is
   built over its paving any more. Does it read as one paved place? Record is `DECISIONS.md`,
   M100, a precinct's pavement.
-- **Meet the dog on day 4 or later** (`--day 4`). It is placed on the map now, never on her
-  line, and it charges from off screen the moment she passes within a block of it. Does it read
-  as *a dog that was somewhere* or as the lesson again? That is the open question in `TODO.md`,
-  M96, whether it should wait to be routed into; a played answer decides it. Record is
-  `DECISIONS.md`, M96.
-- **Watch a car pause at a junction mouth, and one turn round in a street** (any day; a closure
-  or a seal on a road sends cars back). A car drives to the mouth of the junction, eases to a
-  turn speed, follows one arc onto the centre of the lane it is joining and picks up speed
-  again; an about-face is a half circle inside the junction box, or, with no junction to reach,
-  in the street with its body over the kerb by a few pixels. Does the pause at the mouth read as
-  slowing rather than stalling, and does a street about-face over the kerb read as wrong? That
-  last one is the open question in `TODO.md`, M111. Whether the picture jumps a view or floats
-  off its shadow on the arc was answered by [PLAYTEST-66](playtests/PLAYTEST-66.md) — it did,
-  and the halo with it — and built as `DECISIONS.md`, M121. Records are `DECISIONS.md`, M111 and
-  M108, the crowd car.
+- **Watch a car pause at a junction mouth** (any day). A car drives to the mouth of the
+  junction, eases to a turn speed, follows one arc onto the centre of the lane it is joining and
+  picks up speed again. Does the pause at the mouth read as slowing rather than stalling? Whether
+  the picture jumps a view or floats off its shadow on the arc was answered by
+  [PLAYTEST-66](playtests/PLAYTEST-66.md) and built as `DECISIONS.md`, M121; the street
+  about-face over the kerb is decided as built (`DECISIONS.md`, M111, the kerb overhang stays).
+  Records are `DECISIONS.md`, M111 and M108, the crowd car.
 - **Stand close to a car as it turns, and under a flock, and watch the rim.** The halo now
   re-traces its owner's body every frame it is drawn, so a turning car's rim should sweep through
   the diagonal with the picture and a flock's rim should fly with the birds. And every car and
@@ -232,29 +144,6 @@ item below for as long as looking takes.
   corners, so it shows the diagonal views: do its markings and light bar hold up from every
   side, and does it sit on its shadow at the diagonal? Record is `DECISIONS.md`, M108, the event
   vehicles.
-- **Look at the people and animals in events from more than one side** (any day). The dog
-  walker and his dog, the pacing yeller and the chatting mother, the cat, the loose dog, the
-  charging dog, the cyclist and each pigeon now face the way they actually move, through the
-  same eight views the mother has; a stationary busker, poster crew, leaf blower or protest rank
-  faces the way its site was placed; the waiting robber turns to face *you*; café sitters share
-  their frontage's facing. Does a figure seen from behind still read as what it is, does the
-  robber turning toward you read as a tell or as a glitch, and do the café sitters all facing one
-  way read as a party or as a row? Record is `DECISIONS.md`, M108, the event people.
-- **Watch any walker on any pavement.** They stride now, two frames alternating at the mother's
-  own rate, frame a whenever one stops. Do the feet read as walking at street scale, and does a
-  queue of stopped walkers read as standing? Record is `DECISIONS.md`, M108, the walkers' stride.
-- **Watch a dog walker, a cyclist, a running cat and a lunging robber, then sit by a café and a
-  busker** (any day; `--spawn event:dog_walker` puts one beside you). Every event person and
-  animal that moves now strides too, two frames at the same rate as the mother, and the walker
-  and his dog flip together; the café sitters lean every few seconds and the busker's strumming
-  hand goes up and down twice a second, each on its own timer. Do the strides read at street
-  scale, does the cyclist's pedal swap read as pedalling or as a twitch, and is the busker's
-  tempo right? Record is `DECISIONS.md`, M108, the event strides.
-- **Watch walkers round a corner or step aside for you** (any day, any busy pavement). A walker
-  now picks one of eight views from the way it is actually moving, so it shows a diagonal picture
-  for the few tenths of a second it is steering across its lane, and a stopped one keeps its last
-  facing. Does the diagonal moment read as *turning* or as a flicker, and does a walker ever face
-  the wrong way while standing? Record is `DECISIONS.md`, M108, the crowd walkers.
 - **Walk through an alley in act I.** A mouse waits in some of them and darts across once she is
   within 150px, after a short telegraph. Does it read as a startle rather than a threat, and does
   the dash read as *across her path*? Record is `DECISIONS.md`, M100, the mouse in the alley.
@@ -490,53 +379,12 @@ item below for as long as looking takes.
 - **Nobody has measured the web build, only confirmed it runs.** It boots and plays at the live
   address; what has not been checked is frame rate at the game's scale on a machine that is not the
   one it was built on, and whether a stranger arriving at the page understands what it is.
-- **The scheme a thumb actually drives has been walked once, and every part of it has moved since.**
-  Playtest 33 is the one session on it, and it is what M85 answers — so the focal points are 120px
-  out and 120px down from where that thumb met them, both circles are drawn where nothing was, a
-  held finger re-aims where it did not, and the middle of the screen stops her where it used to
-  steer her. **Four questions only a thumb settles.** Whether a drawn ring at `STOP_RADIUS` (48px)
-  with a knob in it is read as *this is what is locked in* or as furniture. Whether a stop band
-  nobody can see reads as a deliberate stop or as the game dropping an input. Whether the band and
-  the two focus discs together take enough of the screen that ordinary aiming gets refused. And
-  whether losing *tap her to stop* in joystick mode is felt as a loss at all, since the band is the
-  same ground and the lesson no longer teaches either.
-- **Nobody has chosen a mode, and the choice is now the first thing the game asks.** M88 offers
-  joystick and tap on every device, so **tap on a phone and joystick on a desktop are both playable
-  for the first time and neither has been played** — a thumb aiming from her own position across a
-  whole phone screen is exactly the reach problem the two focal points were invented to solve, and a
-  mouse driving a focal point is a hand that never had the reach problem being asked to use the
-  answer to it. **The captions are the other half of it.** Two sentences on a title screen are all a
-  first-time player gets to tell the modes apart, and whether *"aims from the nearer of two fixed
-  points"* means anything before you have played either one is a question no rig can answer.
-- **The restart path is guarded twice now and nobody has fumbled a tap at it.** A stray press after
-  an ending can no longer begin a run just by landing anywhere, since only the two mode discs do
-  that — but it can still land *on a disc*, so the 0.35s window (`TouchControls
-  .DOUBLE_TAP_SECONDS`) that swallows a press right after a restart-triggered reload is kept rather
-  than deleted along with the headline defect. **"Often" was the player's own word**, so what is left
-  is a race with a much smaller target, and the window is still the thing to distrust in both
-  directions: too short and an ending tap still reaches a disc, too long and a deliberate press
-  feels ignored.
-- **A phone held upright gets one rotation now, and nobody has held a phone since.** The three
-  disagreeing rotations playtest 23 met are gone: one transform is applied to every `CanvasLayer`,
-  the camera is no longer a second implementation, and the choice is re-asked every frame rather
-  than on a `size_changed` that could arrive stale. The record is in `DECISIONS.md` under M60.
-  **The one thing a rig cannot settle is the one that shipped three of those four symptoms** —
-  `tests/test_orientation.gd` proves the input remap by construction and says outright that it
-  cannot catch a sign error the transform and the drawing share. `tools/shot.sh` takes a resolution
-  now, so the rotated branch can at least be photographed; it wants a person holding a phone.
 - **The social card has been unfurled once, in a messaging app, and it failed.** The cause was the
   image's alpha channel — its transparent pixels carry RGB `(0, 0, 0)`, so a client that ignores
   alpha paints the card black — and the published copy is now flattened onto an opaque background,
   with its dimensions and type declared and a `twitter:image` beside the `og:` pair. **The fix has
   not itself been unfurled.** Paste the address into a chat client and see what comes back; the
   record of what was wrong and what was ruled out is in `DECISIONS.md` under M80.
-- **There is no main menu.** There is a title screen — the doorstep with the traffic and the events
-  running behind it — and it asks exactly one question: which of the two control schemes. Two
-  circular discs with a caption each, and the hint under them reads `press a button to begin`. That
-  is the whole of it: no options, no seed box, no load game. `WASD`, the arrows and `space` begin a
-  run too and choose tap, and nothing on screen says so — deliberately, the same way nothing in the
-  game names a key. **Nobody has met this screen on a phone**, so whether two discs and two
-  sentences are enough to pick between schemes you have not played is unanswered.
 - **A release build carries no modifiers, and nothing has confirmed that on a real release build.**
   `?telemetry=1` answers only when `OS.is_debug_build()` is true. The truth table is asserted in the
   suites, so the *predicate* is proven; the build type itself has no seam to fake and is therefore

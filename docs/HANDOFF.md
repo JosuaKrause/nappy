@@ -322,8 +322,8 @@ in `GRAPHICS.md`; the integration table in `TODO.md` assigns each family to its 
 The crowd goes round every solid body it meets, not only a seal (`DECISIONS.md`, M110), and a
 car follows an arc through a turn with its heading
 continuous throughout (`DECISIONS.md`, M111), drawn through side, diagonal and end views on the
-way (`DECISIONS.md`, M108, the crowd car); M111's one open question — a street about-face
-that crosses a kerb, or a reverse gear — is the player's, in `TODO.md`.
+way (`DECISIONS.md`, M108, the crowd car), and a street about-face crosses the kerb by design
+(`DECISIONS.md`, M111, the kerb overhang stays).
 
 ## What to distrust
 

@@ -58,29 +58,6 @@ player's to say, and until then he keeps one frame.
       M102, the finale, owns the carrying mother and interior sequence. The protester's eight
       pointing poses are bound (`DECISIONS.md`, M65).
 
-### M111 — Cars follow their turns
-
-The motion is built — a car plans one arc tangent to both lanes and follows it, its heading the
-tangent throughout, nothing committed before the swept strike box has been checked against the
-ground — and the record, with its measurements and the turn geometry's own reasoning, is in
-`DECISIONS.md` under M111. The diagonal *pictures* on the curve are M108's vehicle item, which
-reads `CrowdAgent.heading()`, the unit vector along actual travel. What stands here is what the
-build could not decide alone.
-
-- [ ] **Open question, the player's: the street about-face crosses a kerb, or the traffic gets a
-      reverse gear.** A half turn between two lanes 32px apart is a 16px arc, and a car's corners
-      then reach 40px from its centre against 32px to the kerb, so a car turning round *in a
-      street* — only where a barrier leaves it no junction to reach — overhangs open pavement by
-      8px, every hard blocker still refused. Refusing that too was measured: 33 of 34 cars at a
-      standstill inside ninety seconds, because one nose-to-wall car holds its junction and the
-      street behind it queues. The manoeuvre it really wants is a three-point turn, and the
-      traffic has no reverse gear. The overhang cannot kill her — a strike counts only on a road
-      tile, the same kerb read from her side — so the question is whether the picture is
-      acceptable, or whether reversing is worth building. **And one instant reversal survives**
-      as the last resort for a car already stopped with less than a half turn's room in front of
-      it, reachable only by a placement or a barrier that arrived after the car did; the
-      alternative was a car that never moves again
-
 ### M109 — Convert the SVG catalogue to PNG
 
 Follows M108, eight-direction entity graphics. Use the approved SVG-first workflow in
@@ -316,6 +293,43 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
+---
+
+## M128 — The playground is free, and the busker is quieter from the street · asked for 2026-09-13
+
+> "Playground should be free since otherwise small parks really have no way of ever getting to
+> sleep. The busker is a bit intense. We should nerf it a bit but keep it so the baby cannot fall
+> asleep in the park with it. But on a street with a busker closeby should cause less excitement"
+
+[PLAYTEST-68](playtests/PLAYTEST-68.md), answering the M117 review question. The **balance** rule
+governs every number here; `tests/probes/` holds the instruments M117 used, and the record of
+what M117 set and why is in `DECISIONS.md` under M117, the two rows the change made nearly free.
+
+**What is true today.** `playground` is an `AMBIENT` row with no picture of its own (the park's
+swing frame draws it) at intensity 15.0 on a nine-second pulse, `inner_radius` 40 and
+`outer_radius` 150 in a park block 256px across, placed by the park itself; its whole purpose
+was to make the middle of a park contested. `busker` is placed on `PARK` or `SQUARE` at
+intensity 13.0 on a seven-second pulse, `inner_radius` 45 and `outer_radius` 190, so its rim
+reaches the pavement of the street beside its lot; its denial radius — where its cost beats the
+park's 12.0/s decay — is about 138px, and along a whole line through one on grass it is still
+net recovery. The baby settles only under `EXCITEMENT_CALM_THRESHOLD` (35), so "cannot fall
+asleep" is a claim about where the meter can be held under 35, not about the cost table.
+
+- [ ] **The playground costs nothing.** A one-block park with a playground in it has no ground
+      left to settle the baby on, which is the player's reason. The smallest change that makes
+      it true is the row's intensity at zero or the row gone, whichever leaves the park's swing
+      frame drawn and `_ensure_one_usable_park` and the spoiling logic unchanged; say which in
+      the commit and why. Whatever `tests/test_balance.gd` pins about the playground is repinned
+      to *free*, and the sleepiness table in `docs/MECHANICS.md` follows.
+- [ ] **The busker comes down a bit, and mostly from the street.** Two constraints, measured
+      with the M117 probes before a number is chosen: inside its lot, standing anywhere within
+      its denial radius still cannot hold the meter under 35 — the park with a busker in it is
+      still not a place to sleep — and on the pavement of the street beside the lot the busker's
+      contribution falls to a fraction of today's. The lever for the second is `outer_radius`
+      (190 reaches across the lot's edge) and the falloff between the radii, not intensity
+      alone; the lever for "a bit" is intensity, which stays above the park's 12.0/s or the
+      busker becomes a park bonus with a nuisance's picture on it (`DECISIONS.md`, M117). Record
+      the before-and-after denial radius and the street-side contribution in `DECISIONS.md`.
 
 ---
 
@@ -483,23 +497,27 @@ longer fires while she is detained or while the tree is paused, and the run less
 flag is reset on every attempt at the teaching day — and the record is in `DECISIONS.md` under "The
 queue reprioritised". What is left is one decision nobody implemented and one measurement.
 
-- [ ] **The later dog charges the moment it streams in; whether it should wait to be routed into
-      is the player's call.** *"The tutorial dog may appear later but not as tutorial"* (confirmed
-      2026-09-09) is built as far as placement goes (`DECISIONS.md`, M96): from day 4
-      `charging_dog` is a map placement like `alley_robbery`, never sited on her heading, and day 3
-      keeps its unavoidable siting. What the placement does not give it is the robber's *waiting*:
-      the dog carries no `pursues_within`, because day 3's lesson depends on it charging at once and
-      `tests/test_danger.gd` pins that, so on day 4 and after it begins its telegraph and charge
-      the moment it streams in — `Tuning.EVENT_STREAM_RADIUS` (900px) from her, past the edge of
-      the view — rather than when she comes inside its own field. That is met by *proximity*, not
-      by routing into it, which the decision's own words asked for. **The recommendation** is a
-      trigger the dog gains on the same day-keyed switch its spawn mode already uses — waiting
-      inside its own outer radius from day 4, so a dog she can see is a dog she can route around,
-      exactly the robber's shape — built as a derived answer on the def rather than a mutation, the
-      way `spawn_mode_on(day)` is; the alternative is to leave it, if a dog that comes from off
-      screen whenever she passes within a block is the encounter wanted after the lesson. The
-      lead-time gap playtest 20 measured (1.5s to evade against 0.8–0.9s on the days it killed her)
-      is closed by M77 already; the figures are in `DECISIONS.md` under M96
+- [ ] **From day 4 the dog waits to be routed into, and the day-3 charge is sprinkled in now
+      and then.** *(2026-09-13, [PLAYTEST-68](playtests/PLAYTEST-68.md): "The waiting is good.
+      But we can sprinkle the day 3 charging dog in every now and then, too. Since they always
+      come from offscreen the only difference now is that day 3 dog is guaranteed to happen and
+      has a tutorial tip.")* What is built (`DECISIONS.md`, M96): from day 4 `charging_dog` is a
+      map placement like `alley_robbery`, never sited on her heading, and day 3 keeps its
+      unavoidable siting; but the dog carries no `pursues_within`, because day 3's lesson depends
+      on it charging at once and `tests/test_danger.gd` pins that, so on day 4 and after it begins
+      its telegraph and charge the moment it streams in — `Tuning.EVENT_STREAM_RADIUS` (900px)
+      from her, past the edge of the view — rather than when she comes inside its own field. Two
+      things to build. **The map-placed dog waits** inside its own outer radius from day 4, so a
+      dog she can see is a dog she can route around, exactly the robber's shape — a trigger the
+      def gains on the same day-keyed switch its spawn mode already uses, derived the way
+      `spawn_mode_on(day)` is rather than a mutation, with day 3's at-once charge and its test
+      untouched. **And the day-3 shape does not retire**: on later days the director now and then
+      also sends the off-screen charge along her heading — the same row in its day-3 siting,
+      unguaranteed and without the tip — so the lesson's dog and the later dogs are one animal
+      and the guarantee plus the tip are the whole difference. How often is a balance number set
+      against the M99 caps probe (`tests/probes/m99_caps.gd`), recorded in `DECISIONS.md`; the
+      lead time playtest 20 measured (1.5s to evade) is held by M77 already and stays the floor
+      for both shapes
 **The run is taught on day 3, and stays there.** *Asked for as `RUN_TAUGHT_DAY` 3 → 2 · overturned
 on 2026-09-09: "run taught goes to 3 not 2."* The constant gates everything that pursues, and day 3
 is where act I stops being a nice neighbourhood; the options weighed when the move was first
