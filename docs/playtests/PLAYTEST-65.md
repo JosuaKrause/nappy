@@ -381,3 +381,10 @@ chassis seams and wheel grounding before retaining the result.
 Compare the correctly drawn northeast/northwest wheels as a donor for the southeast/southwest
 wheel correction. Preserve the destination body, handle, canopy and ground height; retain the
 donor source and exact wheel extraction/placement in the recipe.
+
+> use the wheels you have in SE for SW
+
+> and vice versa
+
+Exchange the displayed SE and SW wheel artwork while keeping each view's body, canopy, handle
+and grounded height fixed. Preserve the source images and exact swap as a reproducible recipe.
