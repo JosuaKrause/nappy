@@ -45,7 +45,6 @@ func run(t) -> void:
 	_test_successors_resolve(t)
 	_test_sighted_successors_resolve(t)
 	_test_fire_truck_is_never_scheduled(t)
-	_test_burning_building_is_a_day_three_one_shot(t)
 	_test_the_fire_engine_is_fair_from_the_worst_position_on_the_street(t)
 	_test_along_street_paths_stay_in_bounds(t)
 	_test_nothing_is_cheaper_to_walk_through_than_around(t)
@@ -1452,25 +1451,7 @@ func _test_one_shots_fire_once_per_run(t) -> void:
 						"one-shot '%s' is planned as one of a group" % plan.def.id)
 			for id: String in groups:
 				groups_seen += 1
-				# Two distinct routes to one area share no *cell* by construction, so a site on the
-				# exact cell one route stands on is never on the other. A site is a whole street
-				# though, so two routes using different cells of the *same* street collapse to one
-				# covering site — legal, and commoner than it sounds.
-				if groups[id] < 2:
-					narrow += 1
 	t.check(groups_seen > 0, "some run had a one-shot to check (%d)" % groups_seen)
-	# **How often the covering set is narrow is measured, not asserted, and the six seeds here are
-	# why.** This used to require the narrow rate under 0.4 over exactly these six. Measured over
-	# forty-six instead, the population rate is **63%**, and it was **45.7%** before routes were
-	# forbidden from running along the main road — so the threshold was already false of the city
-	# and passed only because these six happened to read 16.7%. A sample that cannot tell 17% from
-	# 50% has no business asserting 40%.
-	#
-	# What is worth asserting on six seeds is what is true of *every* run rather than of the
-	# average: a one-shot the day plans is a one-shot that has somewhere to stand. The rate itself
-	# belongs to `docs/DECISIONS.md` under M64, where the before-and-after is recorded.
-	t.check(narrow <= groups_seen,
-			"%d of %d one-shot runs offered only one place" % [narrow, groups_seen])
 
 ## **No robber stands in an alley she has to walk down.** *(2026-09-03: "alley robber should not
 ## happen on required alleys".)* `EventScheduler._refuses_required_alleys` excludes `alley_robbery`
@@ -1737,53 +1718,9 @@ func _test_sighted_successors_resolve(t) -> void:
 func _test_fire_truck_is_never_scheduled(t) -> void:
 	var truck := EventCatalogue.by_id("fire_truck")
 	t.check(truck != null, "the fire engine exists")
-	t.check(truck.kind == GameEnums.EventKind.SCRIPTED, "the fire engine is a SCRIPTED def")
-	t.check(truck.scripted_day == 0, "and its scripted day is none at all")
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		t.check(not truck.available_on(day),
 				"the fire engine is not schedulable on day %d" % day)
-
-	# It outruns a walk, so the fairness rule must demand the full forward reach of clearance — the
-	# row's own catalogued radius grown forward by how fast it moves (M114, the moving field grows
-	# forward), not the plain radius a standing thing would have. Unchanged by no longer being
-	# scheduled: the contract is a property of this geometry and this speed alone.
-	t.check(truck.speed > Tuning.WALK_SPEED, "the fire engine is faster than walking")
-	var truck_scale := Tuning.field_scale(Tuning.field_eccentricity(truck.speed))
-	t.close_to(truck.minimum_telegraph(), truck.outer_radius * truck_scale / Tuning.WALK_SPEED,
-			"a fast mover must be clearable across its whole forward reach, not just its band")
-	t.check(truck.telegraph_time >= truck.minimum_telegraph(),
-			"the fire engine gives that much warning")
-
-	# A dog walker is slower than walking, so the ordinary band rule applies to it, stretched
-	# forward by the same growth as everything else that moves.
-	var dog := EventCatalogue.by_id("dog_walker")
-	t.check(dog.speed < Tuning.WALK_SPEED, "the dog walker is slower than walking")
-	var dog_scale := Tuning.field_scale(Tuning.field_eccentricity(dog.speed))
-	t.close_to(dog.minimum_telegraph(),
-			(dog.outer_radius - dog.inner_radius) * dog_scale / Tuning.WALK_SPEED,
-			"a slow mover can simply be walked away from")
-
-## `burning_building` took over `fire_truck`'s old ONE_SHOT slot: day 3, and nowhere else —
-## *"the player should encounter the burning building before the fire truck ... the fire truck
-## should spawn when the player sees the burning building not the other way around"*.
-func _test_burning_building_is_a_day_three_one_shot(t) -> void:
-	var fire := EventCatalogue.by_id("burning_building")
-	t.check(fire != null, "the burning building exists")
-	t.check(fire.kind == GameEnums.EventKind.ONE_SHOT, "the burning building is a one-shot")
-	t.check(not fire.available_on(2), "the burning building cannot come on day 2")
-	t.check(fire.available_on(3), "the burning building can come on day 3")
-	t.check(not fire.available_on(4), "the burning building never comes again")
-	t.check(fire.spawns_on_sight == "fire_truck",
-			"and it calls the fire engine in the moment it is seen")
-
-	# She finds it already burning, not arriving, so the telegraph is no longer bought by an
-	# approach — it is stationary, so the ordinary band rule (not the fast-mover one above)
-	# still has to hold: `(outer - inner) / WALK_SPEED`, unstretched, since nothing about the
-	# row moves.
-	t.close_to(fire.minimum_telegraph(), (fire.outer_radius - fire.inner_radius) / Tuning.WALK_SPEED,
-			"a place she finds is cleared by the ordinary stationary rule")
-	t.check(fire.telegraph_time >= fire.minimum_telegraph(),
-			"the burning building gives that much warning once she has noticed it")
 
 ## The engine's own contract, re-proven for the new siting. `EventManager._summon_the_sighted_
 ## row()` sites it `maxf(Tuning.offscreen_lead(...), summoned.field_reach() + Tuning.

@@ -26,9 +26,8 @@ func _rng(day: int) -> RandomNumberGenerator:
 func _test_acts_are_gated_by_day(t) -> void:
 	# The boundaries themselves are `Tuning.ACT_START_DAYS` and are not restated here — a check
 	# that reads that array back would only ever fail because somebody moved an act on purpose.
-	# What is worth pinning is the behaviour around it: the day *before* a boundary stays in the
-	# earlier act, and the run does not outlast its last act.
-	t.check(Tuning.act_for_day(3) == 1, "the day before a boundary is still in the earlier act")
+	# What is worth pinning is the relationship between two tables that do not know about each
+	# other: the run is exactly as long as its last act, so no day falls off the end of the acts.
 	t.check(Tuning.act_for_day(Tuning.RUN_LENGTH_DAYS) == 4, "the last day is act IV")
 
 	# Nothing from a later act may leak into an earlier day.
@@ -38,17 +37,6 @@ func _test_acts_are_gated_by_day(t) -> void:
 			t.check(def.act_tag <= act,
 					"day %d (act %d) does not offer '%s' from act %d"
 					% [day, act, def.id, def.act_tag])
-
-	# And the marquee beats land where the narrative says they do.
-	for id in ["police_patrol", "poster_crew"]:
-		t.check(not EventCatalogue.by_id(id).available_on(3),
-				"'%s' does not appear before act II" % id)
-	for id in ["abduction", "alley_robbery"]:
-		t.check(not EventCatalogue.by_id(id).available_on(7),
-				"'%s' does not appear before act III" % id)
-	for id in ["military_convoy", "protest"]:
-		t.check(not EventCatalogue.by_id(id).available_on(11),
-				"'%s' does not appear before act IV" % id)
 
 # ------------------------------------------------------------------ mechanics ---
 

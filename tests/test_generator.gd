@@ -71,9 +71,13 @@ func _overlaps(rects: Array) -> bool:
 				return true
 	return false
 
+## `corridor_offset` is the one piece of layout arithmetic everything else reads a tile through, so
+## the three places its answer changes meaning are checked. Its own definition — that a period is a
+## block plus a street, that a block is `BLOCK_SIZE` square — is not restated: those are
+## `CityMap.period()` and `CityMap.block_rect()` written out a second time, and would only ever go
+## red because somebody resized the city on purpose.
 func _test_layout_maths(t) -> void:
 	var period := CityMap.period()
-	t.check(period == Tuning.BLOCK_SIZE + Tuning.STREET_WIDTH, "period is a block plus a street")
 	t.check(CityMap.corridor_offset(0) == 0, "the map starts with a street corridor")
 	t.check(CityMap.corridor_offset(Tuning.STREET_WIDTH) == -1,
 			"the first block starts where the corridor ends")
@@ -81,7 +85,6 @@ func _test_layout_maths(t) -> void:
 
 	var lot := CityMap.block_rect(Vector2i.ZERO)
 	t.check(lot.position == Vector2i.ONE * Tuning.STREET_WIDTH, "block 0 sits past the first street")
-	t.check(lot.size == Vector2i.ONE * Tuning.BLOCK_SIZE, "a block is BLOCK_SIZE square")
 
 # --------------------------------------------------------------- guarantees ---
 
