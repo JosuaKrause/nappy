@@ -283,13 +283,11 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 `git worktree list` are the truth; this is the map. The session ended at the player's word
 with two green PRs left to merge and a patch release owed.
 
-- **Two PRs were green and unmerged when the session stopped**: the busker and playground
-  (M128, `feature/m128-park-beats`, whose worktree under `.claude/worktrees/` still holds the
-  branch) and the playtest 69 findings that filed M131, M132 and M133 with this handoff. Merge
-  both under the usual rules, remove the worktree, then **cut a patch release**
-  (`tools/release.sh patch push`) — the player asked for one carrying everything since
-  v0.10.0: the map-edge entries, the dog, the CI matrix, the busker, and the playtest 69 records.
-  Watch `main`'s own CI run after the batch.
+- **A patch release is owed** once the playtest 69 findings that filed M131, M132 and M133 with
+  this handoff are on `main`: `tools/release.sh patch push`. The player asked for one carrying
+  everything since v0.10.0 — the map-edge entries, the dog, the CI matrix, the busker and
+  playground (M128, `DECISIONS.md`), and the playtest 69 records. Watch `main`'s own CI run
+  after the batch.
 - **M129, a path through the city never has to cost, is the next session's work** at the
   player's word *("let's the route fixing in the next session")*. Its first item is a probe,
   not a rule: measure over many seeds how often a zero-cost line exists along a route today and
