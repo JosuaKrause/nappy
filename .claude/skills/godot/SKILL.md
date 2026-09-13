@@ -136,8 +136,14 @@ as idle and starts making sleep progress. **A second displacement goes through i
 `move_and_collide()`**, which respects walls and touches nothing.
 
 **A negative-width `Rect2` does not flip `draw_texture_rect`.** It is normalised on the way through,
-so the sprite lands a full width to one side. Mirror with `draw_set_transform(at, 0, Vector2(-1,
-1))` around the anchor instead.
+so the sprite lands a full width to one side. Mirror by setting a transform that scales x by −1
+about the anchor instead.
+
+**`draw_set_transform` replaces the canvas transform and there is no getter to read the old one
+back.** So a helper that sets an absolute matrix silently discards whatever its caller had already
+set, and the caller cannot defend itself — it can only hand the helper what it set. `Sprites`
+carries the base transform for exactly this reason; see the **cues** skill, "Drawing traps", for
+the cue that went missing on half the headings in the game before it did.
 
 **Y-sorting compares origins**, so a thing whose mass extends away from its own origin sorts wrong.
 Before reaching for a better comparison, ask whether the two things can ever legitimately be on

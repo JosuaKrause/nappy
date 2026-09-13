@@ -53,6 +53,7 @@ func run(t) -> void:
 	_test_a_plugged_arm_is_refused_rather_than_driven_into(t)
 	_test_the_heading_is_the_direction_it_is_actually_travelling(t)
 	_test_a_queue_keeps_its_distance_behind_a_turning_car(t)
+	_test_a_turn_merges_into_a_lane_without_resetting_it(t)
 	_test_two_cars_arriving_together_do_not_share_the_box(t)
 	_test_a_turning_car_still_gives_way_at_a_zebra(t)
 	_test_a_red_light_still_holds_a_car_that_is_turning(t)
@@ -263,6 +264,147 @@ func _test_a_queue_keeps_its_distance_behind_a_turning_car(t) -> void:
 		if car.speed() > Tuning.CAR_STOPPED_SPEED:
 			moving += 1
 	t.check(moving > 0, "the queue is not deadlocked behind the turn")
+
+## **A car turning into a lane that already has traffic in it may not rearrange that traffic.**
+## *(2026-09-12, [PLAYTEST-66](playtests/PLAYTEST-66.md): "a car doing a u-turn into a lane with
+## traffic reset the other lane".)*
+##
+## The room a turn lands in is checked when the turn **commits**, which is a run-up plus a whole arc
+## before the car is standing there, and the other lane keeps moving in the meantime. Landing on top
+## of somebody then went to `Crowd.space_out_the_traffic()`'s front-to-back resolve, which can only
+## move a body — and it compounds, so every car behind the newcomer is shunted by the overlap *plus*
+## everything moved ahead of it. One arrival rearranges a whole queue.
+##
+## **The lane makes room by its own following rule**: while the booking stands, the nearest car
+## behind it measures `gap_ahead` to the booked spot rather than to the next real car, so it eases
+## off exactly as it would for anything else in front of it and the gap is open by the time the turn
+## arrives. That is what is asserted first, because it is the mechanism; then the two properties a
+## player can see — the incumbents keep their order and none of them ever moves further in a frame
+## than a car can drive in one.
+##
+## **Both arms are left open and the queue is placed once the turn has booked a lane**, rather than
+## the scenario choosing the arm. A car only ever turns because the way ahead is shut, so the ground
+## *behind* a turn's landing is open road for an arm turn and is the blockage itself for an
+## about-face — there is nowhere to stand a queue behind a half turn's landing. The code path is one
+## and the same either way: `_land_the_turn()` merges, and `Crowd._keep_room_for_the_turning()` reads
+## `turn_lane_key()` without caring which manoeuvre produced it.
+func _test_a_turn_merges_into_a_lane_without_resetting_it(t) -> void:
+	_clear_the_holds()
+	_hold(_ahead_of(true, 1.0))
+	var turner := _place_a_car(true, 1.0)
+	# Parked well back up the same street until there is a lane to put them in: the exit lane is not
+	# known until the turn has been planned, and the placement helper can only place a car in a lane
+	# a car is already travelling down.
+	var queue: Array[CrowdAgent] = []
+	for i in 3:
+		var car := _place_a_car(true, 1.0)
+		car.position.y = turner.position.y - 400.0 - float(i) * Tuning.CAR_GAP_MIN * 1.6
+		queue.append(car)
+
+	# Close enough that the queue closes on the booked spot while the arc is still running, which is
+	# the timing the whole defect lives in: free when the turn committed, taken when it arrived.
+	var booked := INF
+	for frame in int(round(6.0 / STEP)):
+		if turner.is_turning() and turner.turn_lane_key() != turner.lane_key():
+			booked = turner.turn_landing()
+			for i in queue.size():
+				_join_the_lane(queue[i], turner.turn_lane_key(),
+						booked - 150.0 - float(i) * Tuning.CAR_GAP_MIN * 1.6)
+			break
+		_city.crowd.set_focus(turner.position)
+		_city.crowd.step(STEP)
+	t.check(booked != INF, "the car booked a place in a lane it was not already in")
+
+	var worst_jump := 0.0
+	var worst_backwards := 0.0
+	var order := _queue_order(queue)
+	var order_held := true
+	var room_made := false
+	var came_for_the_spot := false
+	var landed := false
+	for frame in int(round(4.0 / STEP)):
+		var before: Array[Vector2] = []
+		var positions: Array[float] = []
+		for car in queue:
+			before.append(car.position)
+			positions.append(car.queue_position())
+		_city.crowd.set_focus(turner.position)
+		_city.crowd.step(STEP)
+		if turner.is_turning():
+			var follower := _nearest_behind(queue, turner.turn_landing())
+			if follower:
+				var to_the_booking := turner.turn_landing() - follower.queue_position()
+				room_made = room_made or absf(follower.gap_ahead - to_the_booking) < 0.5
+				came_for_the_spot = came_for_the_spot or to_the_booking < Tuning.CAR_GAP_MIN * 2.0
+		else:
+			landed = landed or turner.lane_key() == queue[0].lane_key()
+		for i in queue.size():
+			worst_jump = maxf(worst_jump, before[i].distance_to(queue[i].position))
+			worst_backwards = maxf(worst_backwards, positions[i] - queue[i].queue_position())
+		order_held = order_held and _queue_order(queue) == order
+
+	t.check(came_for_the_spot,
+			"the queue really did close on the booked spot while the turn was still running, so "
+			+ "this is the collision the player saw rather than a car turning into an empty street")
+	t.check(room_made,
+			"the car behind the booking keeps a headway to it, so the lane opens the gap by driving "
+			+ "rather than by being rearranged when the turn arrives")
+	t.check(landed, "the turn completed and the car took up the lane it had booked")
+	# One frame's travel at the fastest a car in this rig is ever going. A shunt is a car's own
+	# length or more; ordinary driving is three pixels.
+	var a_frames_travel := Tuning.CAR_SPEED.y * STEP + 0.01
+	t.check(worst_jump <= a_frames_travel,
+			"no car already in that lane moves further in a frame than it could drive (%.1fpx "
+			% worst_jump + "against %.1fpx)" % a_frames_travel)
+	t.check(worst_backwards <= 0.01,
+			"and none of them is pushed backwards at all to make room (%.2fpx)" % worst_backwards)
+	t.check(order_held, "the queue keeps its order the whole way through")
+	var tightest := INF
+	for car in queue:
+		tightest = minf(tightest, absf(car.queue_position() - turner.queue_position()))
+	t.check(tightest >= Tuning.CAR_GAP_MIN - 1.0,
+			"and the car that joined ends up a full gap clear of everybody that was already there "
+			+ "(%.0fpx against %.0f)" % [tightest, Tuning.CAR_GAP_MIN])
+
+## Moves `car` into the lane `key` names, at `at` on that lane's own queue axis — the rig's way of
+## standing traffic in a lane a turn has just booked a place in, which is not a lane the placement
+## helper could have known about before the turn was planned. `CrowdAgent.queue_position()` is
+## `along * direction`, and therefore its own inverse for a direction of plus or minus one.
+func _join_the_lane(car: CrowdAgent, key: String, at: float) -> void:
+	var parts := key.split(":")
+	car._vertical = parts[0] == "v"
+	car._corridor = int(parts[1])
+	car._lane = int(parts[2])
+	car._direction = float(int(parts[3]))
+	car._lane_centre = CrowdLanes.lane_centre(car._corridor, car._lane)
+	car._turn = null
+	car._turn_run_up = 0.0
+	car._scan_at = Vector2i(-9999, -9999)
+	car.position = CarTurn.world(car._vertical, at * car._direction, car._lane_centre)
+
+## The car in `queue` closest behind `at` on its own lane's queue axis, or `null` when they are all
+## in front of it. "Behind" is smaller, since `CrowdAgent.queue_position()` is signed so that ahead
+## is larger.
+func _nearest_behind(queue: Array[CrowdAgent], at: float) -> CrowdAgent:
+	var found: CrowdAgent = null
+	var closest := INF
+	for car in queue:
+		var behind := at - car.queue_position()
+		if behind > 0.0 and behind < closest:
+			closest = behind
+			found = car
+	return found
+
+## The cars of a queue by their own queue positions, front first — the ordering the separation pass
+## sorts on, read back so a test can say whether anybody overtook or was overtaken.
+func _queue_order(queue: Array[CrowdAgent]) -> Array:
+	var sorted: Array[CrowdAgent] = queue.duplicate()
+	sorted.sort_custom(func(a: CrowdAgent, b: CrowdAgent) -> bool:
+		return a.queue_position() > b.queue_position())
+	var order: Array = []
+	for car in sorted:
+		order.append(car.get_instance_id())
+	return order
 
 ## Two cars at one box, one turning across the other's path. The box is rationed, so the turn holds
 ## the whole of it until its tail is clear — and what the crossing car does is wait, not arrive.

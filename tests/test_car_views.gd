@@ -23,7 +23,9 @@ func run(t) -> void:
 	_test_a_stopped_car_keeps_its_view(t)
 	_test_a_fresh_heading_clears_the_previous_hold_in_one_step(t)
 	_test_every_sector_picture_agrees_with_the_strike_box(t)
+	_test_the_registration_is_continuous_across_a_sector_boundary(t)
 	_test_the_halo_redraws_the_same_body(t)
+	_test_the_rim_is_re_traced_under_a_steady_glow(t)
 	_test_unpaired_car_views_still_fall_back_to_svg(t)
 
 func _car(t) -> CrowdAgent:
@@ -166,38 +168,114 @@ func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
 ## the heading) and the drawn picture's own footprint agree at every sector, not only the two the
 ## old family drew. Sampled the way `Sprites.draw_standing` itself builds the rect, rather than by
 ## rasterising a frame.
+##
+## **One rule for all five views**, stated over the heading: the drawn content's bottom edge is the
+## car's nearest ground contact and lands on the strike box's own southernmost point. The side view
+## is in it on the same terms as the rest — an east-facing car's box reaches
+## `CAR_STRIKE_HALF_WIDTH` south of the node and its picture's wheels belong there, not on the node.
 func _test_every_sector_picture_agrees_with_the_strike_box(t) -> void:
 	var agent := _car(t)
 	for sector in range(8):
 		var view: String = CrowdAgent.CAR_VIEW_BY_SECTOR[sector]
-		var anchor := agent._car_body_anchor(view)
+		var heading := Vector2.from_angle(deg_to_rad(sector * 45.0))
+		var anchor := agent._car_body_anchor(view, heading)
 		var extent: Vector2 = CrowdAgent.CAR_BODY_BY_VIEW[view].get_size()
 		var drawn := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent)
-		if view == "side":
-			# The along-track axis is screen-horizontal for a side view, already centred by
-			# `Sprites.draw_standing`'s own width handling — nothing south of the node to check.
-			t.check(anchor == Vector2.ZERO, "sector %d's side anchor is undisturbed" % sector)
-			continue
 		# The node always falls inside the drawn footprint rather than sitting at its own edge —
 		# `Sprites.draw_standing` builds a rect that runs from `anchor.y - extent.y` to `anchor.y`.
 		t.check(drawn.position.y < 0.0 and drawn.end.y > 0.0,
 				"sector %d's node falls inside its own drawn footprint (%.1f, %.1f)"
 				% [sector, drawn.position.y, drawn.end.y])
-		if view in ["front", "back"]:
-			t.check(is_equal_approx(anchor.y, Tuning.CAR_STRIKE_HALF_LENGTH),
-					"sector %d's front/back anchor sits the strike box's own half-length south" % sector)
-		else:
-			# A diagonal heading's own strike-box corner, rotated onto the screen's south axis —
-			# `(HALF_LENGTH * |heading.y| + HALF_WIDTH * |heading.x|)`, which is `(L+W)/sqrt(2)` at
-			# exactly 45 degrees — plus the 2px the diagonal canvas leaves between its alpha content
-			# and its own edge, the same margin `CAR_DIAGONAL_ANCHOR_Y`'s own doc states.
-			var heading := Vector2.from_angle(deg_to_rad(sector * 45.0))
-			var south_reach := Tuning.CAR_STRIKE_HALF_LENGTH * absf(heading.y) \
-					+ Tuning.CAR_STRIKE_HALF_WIDTH * absf(heading.x)
-			t.check(is_equal_approx(anchor.y, south_reach + 2.0),
-					("sector %d's diagonal anchor sits the rotated strike box's own corner, plus the "
-					+ "canvas's own alpha margin, south of the node (%.2f)") % [sector, anchor.y])
+		# The rotated strike box's own southernmost point — `HALF_LENGTH * |heading.y| + HALF_WIDTH
+		# * |heading.x|`, which is 26 along a vertical lane, 14 along a horizontal one and
+		# `(L+W)/sqrt(2)` at exactly 45 degrees — plus whatever empty canvas that view leaves below
+		# its own alpha content, so it is the drawn corner that lands on the box rather than the edge.
+		var south_reach := Tuning.CAR_STRIKE_HALF_LENGTH * absf(heading.y) \
+				+ Tuning.CAR_STRIKE_HALF_WIDTH * absf(heading.x)
+		var margin: float = CrowdAgent.CAR_CANVAS_BOTTOM_MARGIN[view]
+		t.check(is_equal_approx(anchor.y, south_reach + margin),
+				("sector %d's %s anchor sits the rotated strike box's own south point, plus that "
+				+ "canvas's own alpha margin, south of the node (%.2f)") % [sector, view, anchor.y])
+		t.check(is_equal_approx(drawn.end.y - margin, south_reach),
+				"so sector %d's drawn content lands exactly on the box's south point" % sector)
+		if view == "side":
+			# The along-track axis is screen-horizontal for a side view, centred by
+			# `Sprites.draw_standing`'s own width handling — pinned so a correction added to the
+			# anchor's x, which none of the five views needs, is a red test rather than a slid car.
+			t.check(is_equal_approx(anchor.x, 0.0),
+					"sector %d's side view keeps its along-track centre on the node" % sector)
 	agent.free()
+
+## **The registration does not jump at a sector boundary, because it is read off the live heading
+## rather than off the view the heading was quantised to.** A car on an arc crosses a boundary every
+## 45 degrees; with a per-view anchor the picture moved by the whole difference between two views'
+## ground lines in the frame the texture swapped, which is the player's "while turning the car might
+## get weirdly offset". Sampled either side of all eight boundaries, one hundredth of a degree apart:
+## whatever the texture does, the ground line may not move further than the strike box's own south
+## point moved over the same hundredth of a degree.
+func _test_the_registration_is_continuous_across_a_sector_boundary(t) -> void:
+	var agent := _car(t)
+	var step := 0.01
+	for boundary in range(8):
+		var angle := 22.5 + 45.0 * float(boundary)
+		var ground := []
+		for side in [-step, step]:
+			var heading := Vector2.from_angle(deg_to_rad(angle + side))
+			var sector := EightDirection.nearest(heading)
+			var view: String = CrowdAgent.CAR_VIEW_BY_SECTOR[sector]
+			var anchor := agent._car_body_anchor(view, heading)
+			ground.append(anchor.y - float(CrowdAgent.CAR_CANVAS_BOTTOM_MARGIN[view]))
+		var moved: float = absf(ground[1] - ground[0])
+		t.check(moved < 0.5,
+				("crossing the %.1f degree boundary moves the drawn ground line by %.3fpx, which is "
+				+ "the boundary's own share of the box's rotation rather than a jump")
+				% [angle, moved])
+	agent.free()
+
+## **A steady glow is not a steady body, and the rim has to follow the body.** The rim is traced by
+## re-running the owner's own `_draw_body()` (pinned by the test above), and `_draw()` is retained —
+## so a rim that is only re-traced while a channel is easing keeps whatever silhouette the owner had
+## when the glow settled. That is the player's "a turning car will have the original halo while
+## turning". Headless never calls `_draw()`, so what is asserted here is the state the drawing reads
+## — the same division `tests/test_checkpoints.gd` draws for the checkpoint hut's own suppression.
+func _test_the_rim_is_re_traced_under_a_steady_glow(t) -> void:
+	var agent := _car(t)
+	agent.set_halo_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	var halo: EntityHalo = agent._halo
+	var step := 1.0 / 60.0
+	for i in int(round(EntityHalo.FADE_IN_SECONDS / step)) + 2:
+		halo._process(step)
+	t.check(halo.has_settled(),
+			"the glow has finished easing — the exact state a rim used to stop re-tracing in")
+	t.check(halo.is_showing(),
+			"and it is still drawn, which is what makes `_process()` ask for another trace anyway")
+
+	# And the silhouette genuinely changes underneath it: the same car, one sector on.
+	agent._vertical = false
+	agent._direction = 1.0
+	agent._speed = 130.0
+	agent._turn = null
+	agent._car_view = 4
+	var standing := _silhouette(agent)
+	agent._turn = _turn_facing(1)
+	agent._turn_run_up = 0.0
+	agent._speed = Tuning.CAR_TURN_SPEED
+	var turning := _silhouette(agent)
+	t.check(standing != turning,
+			("a car that has turned onto an arc draws a different picture at a different anchor "
+			+ "(%s against %s), so a rim traced before the turn is the wrong rim")
+			% [standing, turning])
+	# Freed with the halo still attached, for the reason `_test_the_halo_redraws_the_same_body()`
+	# states: driving the fade-out to zero here would queue the child's own `free()` into a race
+	# with `agent.free()`. `tests/test_halo.gd` holds the far end of the fade on a standalone rim.
+	agent.free()
+
+## Everything about the rim `EntityHalo` would trace for this car right now — the texture pair it
+## looks up, whether it is mirrored, and where it is anchored. `_draw_body()` reads exactly these
+## three and nothing else, so two different answers here are two different silhouettes.
+func _silhouette(agent: CrowdAgent) -> Array:
+	var view: String = CrowdAgent.CAR_VIEW_BY_SECTOR[agent._frame()]
+	return [view, agent._flipped(), agent._car_body_anchor(view, agent.heading())]
 
 ## `EntityHalo` traces whichever silhouette `_draw_body()` currently draws, once per ring offset —
 ## `set_halo_strength()` builds it with that exact bound method, so per-view halo geometry follows

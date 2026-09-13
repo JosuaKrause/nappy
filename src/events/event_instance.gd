@@ -2019,8 +2019,15 @@ func _draw() -> void:
 	if is_suppressed_by_its_own_hold():
 		return
 	var bob := _current_bob()
-	draw_set_transform(Vector2(0.0, bob), 0.0, Vector2.ONE)
+	# Told to `Sprites` as well as to the canvas, for the reason `Sprites._base_transform` gives:
+	# the mirror inside `draw_standing()` sets an absolute matrix and can read nothing back, so a
+	# west-facing family that was not handed this lift would drop it — a dog walker heading west
+	# drawn flat while the same walker heading east bobs.
+	var lift := Transform2D(0.0, Vector2(0.0, bob))
+	Sprites.set_base_transform(lift)
+	draw_set_transform_matrix(lift)
 	_draw_body()
+	Sprites.set_base_transform(Transform2D.IDENTITY)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	_draw_mark()
 

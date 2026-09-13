@@ -35,6 +35,8 @@ func run(t) -> void:
 	_test_select_sources_takes_a_mixed_candidate_set(t)
 	_test_a_cat_dash_is_selected_and_lands(t)
 	_test_a_flock_is_selected_and_lands(t)
+	_test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t)
+	_test_the_rims_mirrored_copies_land_on_the_ring(t)
 
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
 	var def := EventDef.new()
@@ -247,6 +249,9 @@ func _test_entity_halo_eases_toward_its_target(t) -> void:
 			"a target held for the whole of FADE_IN_SECONDS is reached", 0.01)
 	t.check(halo._colour.is_equal_approx(Palette.HALO_STRONG),
 			"colour eases to its own target on the same clock as alpha, not left to jump on its own")
+	t.check(halo.has_settled() and halo.is_showing(),
+			"a rim holding a steady target is settled *and* drawn — the pair `_process()` still asks "
+			+ "for a fresh trace on, because the body under a steady glow moves")
 
 	halo.set_glow(0.0, Palette.HALO_WEAK)
 	var steps_out := int(round(EntityHalo.FADE_OUT_SECONDS / STEP))
@@ -258,6 +263,9 @@ func _test_entity_halo_eases_toward_its_target(t) -> void:
 	t.check(halo.is_faded_out(),
 			"is_faded_out() agrees once the fade is actually over, which is what lets CrowdAgent " +
 			"free the halo without cutting a fade off mid-way")
+	t.check(not halo.is_showing(),
+			"and a rim drawing nothing stops asking to be traced, so the per-frame trace is paid "
+			+ "for by the handful of sources that are actually lit rather than by every body")
 	halo.free()
 
 # ------------------------------------------------------------ the crowd joins ---
@@ -366,3 +374,94 @@ func _test_a_flock_is_selected_and_lands(t) -> void:
 	t.check(flock.landed() > 10.0,
 			"a flock that stood over her whole telegraph and whole burst lands well above zero")
 	flock.free()
+
+## *(2026-09-12, the player: "the halo issue is not specific to cars you can see the same for when
+## you walk close to birds you will get a freeze frame of their position as halo while they keep
+## flying".)* A flock is the clearest case of a body that moves under a perfectly steady glow: the
+## instance's own `global_position` never changes, so nothing about the owner looks like it is
+## moving, while every bird is somewhere new every frame. `_draw()` is retained, so a rim traced
+## once is that frame's birds until something asks for another trace — which `EntityHalo._process()`
+## now does on every frame the rim is showing at all, easing or not.
+##
+## Headless never calls `_draw()`, so what is asserted is the state the drawing reads: the bird
+## positions `EventInstance._draw_body()` traces really are different one frame on, and the rim over
+## them is settled and lit — the pair the old rule threw the frame away on.
+func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t) -> void:
+	var def := EventCatalogue.by_id("pigeon_flock")
+	var flock := _rig_instance(t, def, Vector2.ZERO)
+	# Past the telegraph, so the birds are up and flying rather than pecking about on the ground.
+	flock._process(def.telegraph_time + 0.1)
+
+	var before: Array[Vector2] = []
+	for bird in flock._flock:
+		before.append(bird.at)
+	flock._process(STEP)
+	var moved := 0
+	for i in flock._flock.size():
+		if not flock._flock[i].at.is_equal_approx(before[i]):
+			moved += 1
+	t.check(flock._flock.size() > 0 and moved == flock._flock.size(),
+			"every one of the %d birds is somewhere new one frame on, so the silhouette the rim "
+			% flock._flock.size()
+			+ "traces is a different silhouette every frame")
+
+	# And the rim over them is exactly the state that used to stop re-tracing.
+	flock.set_halo_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	var halo: EntityHalo = flock._halo
+	for i in int(round(EntityHalo.FADE_IN_SECONDS / STEP)) + 2:
+		halo._process(STEP)
+	t.check(halo.has_settled() and halo.is_showing(),
+			"the flock's own rim is settled and drawn while its birds keep moving, which is the "
+			+ "freeze frame the player reported")
+	flock.free()
+
+# ------------------------------------------------------- the mirrored half of the ring ---
+
+## **A rim has to survive being drawn through a mirror**, and for half of every eight-view family it
+## did not. `Sprites.draw_standing()`'s flipped branch is the only mirrored draw path in the game —
+## the mother, the crowd's walkers and cars and every eight-view event family all reach it — and it
+## sets an *absolute* canvas transform, because `draw_set_transform` replaces rather than composes
+## and Godot exposes no way to read back what it replaced. So each of `EntityHalo`'s twelve ring
+## offsets was thrown away on a mirrored view: twelve copies landed on one another at the body, and
+## the three west-facing sectors of every family drew no rim at all.
+##
+## Headless never calls `_draw()`, so the composition is asserted where it is computed rather than
+## on pixels: `EntityHalo.trace_offsets()` is the ring and `Sprites.mirrored_transform()` is what the
+## flipped branch actually sets. Both are pure, and between them they are the whole of where a
+## mirrored copy lands.
+##
+## The assertions are the two things that were false: every copy lands somewhere of its own, and the
+## mirrored ring covers the same ground as the unmirrored one. **A distinctness check alone would
+## not hold it** — a ring that composed the offset the wrong way round is still twelve distinct
+## points, just not around the body.
+func _test_the_rims_mirrored_copies_land_on_the_ring(t) -> void:
+	var bob := -2.5
+	var anchor := Vector2(0.0, 26.0)
+	var ring := EntityHalo.trace_offsets(bob)
+	t.check(ring.size() == EntityHalo.HALO_OFFSETS,
+			"the ring is the whole of `HALO_OFFSETS` (%d) rather than a subset" % ring.size())
+
+	var landed := {}
+	for offset in ring:
+		Sprites.set_base_transform(Transform2D(0.0, offset))
+		var mirrored := Sprites.mirrored_transform(anchor)
+		# The flipped branch draws its rect in the mirrored frame, so where the sprite's own anchor
+		# ends up is that frame's origin: the ring offset plus the anchor, and nothing else.
+		t.check(mirrored.origin.is_equal_approx(offset + anchor),
+				"a mirrored copy at ring offset %s lands at %s, the offset the unmirrored copy "
+				% [offset, mirrored.origin] + "lands at too")
+		t.check(is_equal_approx(mirrored.x.x, -1.0) and is_equal_approx(mirrored.y.y, 1.0),
+				"and it is still mirrored on x only — composing the offset in may not undo the flip")
+		landed[mirrored.origin.snapped(Vector2.ONE * 0.001)] = true
+	Sprites.set_base_transform(Transform2D.IDENTITY)
+	t.check(landed.size() == ring.size(),
+			("all %d mirrored copies land on points of their own (%d distinct), which is what makes "
+			+ "a rim rather than one silhouette re-drawn on itself") % [ring.size(), landed.size()])
+
+	# And the ring itself is a ring: every offset exactly `HALO_MARGIN` from the body's own lift,
+	# which is what "a few pixels out and no further" means in arithmetic.
+	for offset in ring:
+		var out := (offset - Vector2(0.0, bob)).length()
+		t.check(is_equal_approx(out, EntityHalo.HALO_MARGIN),
+				"every copy sits exactly HALO_MARGIN (%.1fpx) out from the bobbing body (%.3f)"
+				% [EntityHalo.HALO_MARGIN, out])
