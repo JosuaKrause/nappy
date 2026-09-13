@@ -412,6 +412,43 @@ that cannot spawn at an ahead-of-player row names the flock for the same reason.
 
 ---
 
+## M134 — A lost day gives the resistance back · asked for 2026-09-13
+
+> "a lost day shouldn't retain the touch mark -- a task is only complete if it is done on the
+> day that won. but also it should reset if lost so the player can try again"
+
+[PLAYTEST-69](playtests/PLAYTEST-69.md), on reading M132's record. *Asked for as "what the run
+has spent stays spent" · overturned for the resistance on 2026-09-13.* The **godot** and
+**verify** rules govern; the resistance director and `GameState` are the files.
+
+**What is true today.** `GameState.finish_day()` on a loss spends a nerve, erases where she
+settled, and keeps everything else: `completed_resistance_steps`, `resistance_progress`,
+`failed_resistance_steps`, `resistance_carrying_package`, `sabotage_done` and the queued
+brief all survive the nerve, and a mark once in `completed_resistance_steps` is never offered
+again, so a mark touched on a lost day is both kept and unrepeatable. The lost day's summary
+reads the queued brief and clears it (`DECISIONS.md`, M132).
+
+- [ ] **Nothing the resistance did on a lost day counts, and the retry offers it again.** At
+      the start of each day `GameState` takes a snapshot of the resistance's run state — the
+      six fields above — and a loss restores it before the retry begins, so a mark touched, a
+      step performed, a contact lost to its deadline, a package picked up or the last night's
+      sabotage on a lost day are all undone, and the same mark or contact is offered on the
+      retry exactly as the day first offered it. A won day commits the snapshot. The rule in
+      `finish_day()`'s docstring gains the resistance as its second exception beside
+      `settled_in`, with the player's sentence as the reason. `tests/test_day_loop.gd` holds
+      it: touch a mark, lose the day, the mark is untouched and on offer again; perform a step,
+      lose, progress is back where it was; win, and both stand.
+- [ ] **The brief on a lost day: shown once, or not at all?** M132 shows the mark's words on
+      the lost day's summary at the player's word (*"it should show also when dying so if
+      missed on the first try it can be seen on the second try"*). With the touch taken back,
+      the retry re-finds the mark and the won summary reads the words in any case. The
+      recommendation is to keep showing them on the lost summary — both instructions hold and
+      the words are hers to keep once found — and the alternative is that a lost day says
+      nothing and the words wait for the touch that counts. The player's call; until it is
+      made, the first item leaves the summary as M132 built it.
+
+---
+
 ## M133 — The readout on the live page · asked for 2026-09-13
 
 > "let's add a ?debug=1 flag" — readout only — "with a note on the screen that this is debug
