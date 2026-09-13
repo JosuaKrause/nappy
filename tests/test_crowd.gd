@@ -1482,9 +1482,10 @@ func _test_a_hard_seal_shuts_its_street_to_the_crowd(t) -> void:
 # "pedestrians with nowhere to go (all four sides of the intersection are blocked off) should just
 # despawn (or never spawn in the first place) right now they're accumulating in one place and move
 # back and forth or worth flicker … the same with cars" (playtest 66, 2026-09-12). A junction whose
-# every arm is held is a **pocket**: legal ground with no street out of it. The two tests below are
-# the two halves of the answer — nobody is put in one, and whoever is in one leaves — and both are
-# stated over `Crowd.pockets()`, which is where the day's flood actually lives.
+# every arm is held is a **pocket**: legal ground with no street out of it. The three tests below
+# are the three parts of the answer — nobody is put in one, whoever is in one leaves, and an
+# about-face costs a stride whether or not the ground it is on is a pocket. All three stand a
+# junction sealed on every side, which is the only place the last of them can be asked about at all.
 
 ## M119, item 1: nobody is placed inside a junction sealed on every side, on the morning or on any
 ## recycle after it.
