@@ -1,0 +1,17 @@
+{
+  "inputs": {
+    "pram_side.svg": "a100556fe579948cdb593bcd22d9a0ba639352c497ac7c6e46b92d6852041ad0",
+    "pram_side.png": "c869c90248de26b9d9563b9365d026fcd2961e9b490395e762e7ce76b53be9af"
+  },
+  "script_sha256": "49e321373030caf6406dda23ff4b8bfa68c80a8f9650d07dcddc511c8e19cf83",
+  "pillow": "12.3.0",
+  "horizontal_flip_box_exclusive": [
+    11,
+    0,
+    33,
+    16
+  ],
+  "output_sha256": "10ca6a1cb44fdfac22c8d81706910206165203b6224240a856533e24c4fca25f",
+  "west": "mirror complete corrected east texture",
+  "review": "static texture comparison; nearest-neighbor 12x; Pillow default font"
+}
