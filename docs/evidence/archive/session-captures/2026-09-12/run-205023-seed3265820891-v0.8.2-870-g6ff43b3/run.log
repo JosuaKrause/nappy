@@ -1,0 +1,457 @@
+nappy run log  2026-09-12T20:50:23  version v0.8.2-870-g6ff43b3
+
+day 1  act 1  run seed 3265820891  city seed 3265820891  length 180.0s  invincible
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 0]
+   0.0  plan     closed: roadworks h(1,9)
+   0.0  plan     calm: 1 forest, 2 courtyard, 2 quiet_square, 3 park
+   0.0  plan     events: alley_mouse x4, burst_water_main x17, cafe_tables x56, car_accident x26, cat_dash x8, chatting_mother x2, delivery_van x69, dog_walker x22, homeless_yeller x8, leaf_blower x15, loose_dog x11, market_stall x52, moving_van x42, pigeon_flock x5, playground x3, scaffolding x23, skip x20
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  crowd    walked into somebody at (79,84) | exc 0, in 0.0/s (crowd 26.4, events 0.0), sleep 0
+   0.0  path     onto the corridor at (75,85), after 0.0s off it
+   0.0  cross    stepped into the road at (73,85), at a zebra
+   0.0  path     off the corridor at (73,86), after 0.0s on it
+   0.0  crowd    a car sounded its horn at her in the road at (73,86) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 1
+   0.0  path     onto the corridor at (71,87), after 0.0s off it
+   0.0  path     off the corridor at (69,87), after 0.0s on it
+   0.0  cue      the mark over her head: soon for 0.0s (1.6s of it on the road) | a car, and she is in the road
+   0.0  crowd    a car sounded its horn at her in the road at (67,87) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 2
+   0.0  near     market_stall at (66,89), 63px, exc 0, in 0.0/s (crowd 11.9, events 3.2), sleep 2
+   0.0  near     market_stall at (66,85), 64px, exc 0, in 0.0/s (crowd 22.4, events 4.5), sleep 2
+   0.0  cue      the mark over her head: soon for 0.0s (2.2s of it on the road) | a car, and she is in the road
+   0.0  cross    stepped into the road at (59,85), at a zebra
+   0.0  near     cafe_tables at (52,89), 64px, exc 0, in 0.0/s (crowd 0.0, events 0.1), sleep 4
+   0.0  cross    stepped into the road at (53,87), mid-block
+   0.0  path     onto the corridor at (47,87), after 0.0s off it
+   0.0  path     off the corridor at (43,98), after 0.0s on it
+   0.0  path     onto the corridor at (41,99), after 0.0s off it
+   0.0  ahead    pigeon_flock crosses 184px in front of her at (37,99)
+   0.0  path     off the corridor at (31,99), after 0.0s on it
+   0.0  cross    stepped into the road at (31,99), at a zebra
+   0.0  cross    stepped into the road at (29,100), at a zebra
+   0.0  near     delivery_van at (24,99), 149px, exc 0, in 0.0/s (crowd 9.1, events 0.0), sleep 2
+   0.0  near     delivery_van at (24,102), 150px, exc 0, in 0.0/s (crowd 6.3, events 0.0), sleep 2
+   0.0  near     delivery_van at (24,102), 82px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 2
+   0.0  near     delivery_van at (24,99), 82px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 2
+   0.0  turn     doubled back 45°
+   0.0  shot     burst started: asked for an animation burst at (28,98) | exc 0, sleep 0 | playing | asked/burst-88125247-001
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  shot     burst started: asked for an animation burst at (28,98) | exc 0, sleep 0 | playing | asked/burst-98341701-002
+   0.0  near     delivery_van at (24,102), 150px, exc 0, in 0.0/s (crowd 2.2, events 0.0), sleep 0
+   0.0  cross    stepped into the road at (27,100), mid-block
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  cross    stepped into the road at (30,102), at a zebra
+   0.0  path     onto the corridor at (32,102), after 0.0s off it
+   0.0  path     off the corridor at (42,102), after 0.0s on it
+   0.0  cross    stepped into the road at (44,102), at a zebra
+   0.0  near     moving_van at (52,102), 120px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 4
+   0.0  near     moving_van at (52,102), 65px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 4
+   0.0  near     moving_van at (52,99), 120px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 4
+   0.0  cross    stepped into the road at (54,101), mid-block
+   0.0  cross    stepped into the road at (58,99), at a zebra
+   0.0  near     car_accident at (59,94), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 5
+   0.0  near     car_accident at (59,94), 64px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 6
+   0.0  near     alley_mouse (telegraph) at (65,94), 59px, exc 0, in 0.0/s (crowd 0.0, events 0.4), sleep 7
+   0.0  near     alley_mouse at (65,94), 31px, exc 0, in 0.0/s (crowd 0.0, events 8.9), sleep 7
+   0.0  near     alley_mouse at (65,94), 17px, exc 0, in 0.0/s (crowd 0.0, events 9.0), sleep 7
+   0.0  path     onto the corridor at (70,95), after 0.0s off it
+   0.0  ahead    loose_dog comes at her from 0px in front of her at (70,90)
+   0.0  path     off the corridor at (69,89), after 0.0s on it
+   0.0  near     loose_dog (telegraph) at (70,84), 139px, exc 0, in 0.0/s (crowd 1.2, events 1.4), sleep 9
+   0.0  near     loose_dog (telegraph) at (70,86), 76px, exc 0, in 0.0/s (crowd 1.2, events 4.1), sleep 9
+   0.0  cross    stepped into the road at (68,87), mid-block
+   0.0  near     market_stall at (66,89), 64px, exc 0, in 0.0/s (crowd 0.0, events 5.7), sleep 9
+   0.0  shot     burst started: asked for an animation burst at (59,87) | exc 0, sleep 10 | playing | asked/burst-126024891-003
+   0.0  shot     burst complete: 36 frames | frame_cap
+   0.0  near     cafe_tables at (52,89), 64px, exc 0, in 0.0/s (crowd 0.0, events 0.2), sleep 3
+   0.0  path     onto the corridor at (45,89), after 0.0s off it
+   0.0  path     off the corridor at (43,89), after 0.0s on it
+   0.0  path     onto the corridor at (42,90), after 0.0s off it
+   0.0  path     off the corridor at (42,98), after 0.0s on it
+   0.0  path     onto the corridor at (41,99), after 0.0s off it
+   0.0  cross    stepped into the road at (41,100), mid-block
+   0.0  path     off the corridor at (31,100), after 0.0s on it
+   0.0  near     delivery_van at (24,99), 150px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 8
+   0.0  near     delivery_van at (24,102), 149px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 8
+   0.0  near     delivery_van at (24,99), 82px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 8
+   0.0  near     delivery_van at (24,102), 81px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 8
+   0.0  shot     burst started: asked for an animation burst at (18,100) | exc 0, sleep 9 | playing | asked/burst-151995311-004
+   0.0  ahead    pigeon_flock crosses 184px in front of her at (18,100)
+   0.0  turn     doubled back 180°
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  cross    stepped into the road at (18,100), at a zebra
+   0.0  cross    stepped into the road at (17,102), at a zebra
+   0.0  near     market_stall at (10,103), 64px, exc 0, in 0.0/s (crowd 0.0, events 1.0), sleep 10
+   0.0  cross    stepped into the road at (11,101), mid-block
+   0.0  shot     asked for a picture at (0,101) | exc 0, sleep 9 | playing
+   0.0  near     delivery_van at (1,94), 149px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 9
+   0.0  near     delivery_van at (4,94), 150px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 9
+   0.0  near     delivery_van at (1,94), 81px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 9
+   0.0  cross    stepped into the road at (2,96), mid-block
+   0.0  near     delivery_van at (4,94), 82px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 10
+   0.0  near     delivery_van at (1,94), 44px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 10
+   0.0  near     car_accident at (3,80), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 11
+   0.0  near     delivery_van at (10,85), 149px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 12
+   0.0  cross    stepped into the road at (6,86), mid-block
+   0.0  near     delivery_van at (10,88), 149px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 12
+   0.0  near     delivery_van at (10,85), 81px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 13
+   0.0  near     delivery_van at (10,88), 81px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 13
+   0.0  near     delivery_van at (10,85), 44px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 13
+   0.0  cross    stepped into the road at (16,83), mid-block
+   0.0  near     cafe_tables at (15,80), 64px, exc 0, in 0.0/s (crowd 0.0, events 0.2), sleep 14
+   0.0  ahead    pigeon_flock crosses 184px in front of her at (15,74)
+   0.0  cross    stepped into the road at (15,73), at a zebra
+   0.0  near     delivery_van at (15,66), 149px, exc 0, in 0.0/s (crowd 2.6, events 0.0), sleep 16
+   0.0  near     delivery_van at (15,66), 81px, exc 0, in 0.0/s (crowd 2.0, events 0.0), sleep 16
+   0.0  cross    stepped into the road at (16,68), mid-block
+   0.0  crowd    a car sounded its horn at her in the road at (16,68) | exc 0, in 0.0/s (crowd 6.0, events 0.0), sleep 16
+   0.0  cue      the mark over her head: soon for 0.0s (2.1s of it on the road) | a car, and she is in the road
+   0.0  near     moving_van at (10,60), 120px, exc 0, in 0.0/s (crowd 38.9, events 0.0), sleep 18
+   0.0  near     moving_van at (10,60), 65px, exc 0, in 0.0/s (crowd 9.2, events 0.0), sleep 18
+   0.0  cross    stepped into the road at (12,59), mid-block
+   0.0  near     car_accident at (3,52), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 19
+   0.0  turn     doubled back 180°
+   0.0  crowd    a car sounded its horn at her in the road at (16,56) | exc 0, in 0.0/s (crowd 2.9, events 0.0), sleep 21
+   0.0  cross    stepped into the road at (16,56), at a zebra
+   0.0  near     cafe_tables at (19,52), 63px, exc 0, in 0.0/s (crowd 4.9, events 0.5), sleep 21
+   0.0  near     delivery_van at (18,48), 150px, exc 0, in 0.0/s (crowd 2.2, events 6.7), sleep 22
+   0.0  crowd    a car sounded its horn at her in the road at (17,52) | exc 0, in 0.0/s (crowd 0.9, events 7.5), sleep 22
+   0.0  near     delivery_van at (18,48), 82px, exc 0, in 0.0/s (crowd 13.4, events 0.0), sleep 22
+   0.0  cue      the mark over her head: soon for 0.0s (4.9s of it on the road) | a car, and she is in the road
+   0.0  cross    stepped into the road at (15,45), at a zebra
+   0.0  near     cafe_tables at (10,43), 63px, exc 0, in 0.0/s (crowd 0.0, events 0.4), sleep 23
+   0.0  near     moving_van at (4,38), 120px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 24
+   0.0  cross    stepped into the road at (3,41), mid-block
+   0.0  near     moving_van at (1,38), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 24
+   0.0  near     moving_van at (4,38), 65px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 24
+   0.0  ahead    loose_dog comes at her from 0px in front of her at (3,40)
+   0.0  near     leaf_blower at (1,33), 199px, exc 0, in 0.0/s (crowd 0.0, events 1.1), sleep 24
+   0.0  near     loose_dog (telegraph) at (3,34), 139px, exc 0, in 0.0/s (crowd 0.0, events 2.6), sleep 24
+   0.0  near     moving_van at (1,38), 64px, exc 0, in 0.0/s (crowd 0.0, events 3.4), sleep 24
+   0.0  near     loose_dog (telegraph) at (3,36), 76px, exc 0, in 0.0/s (crowd 0.0, events 10.1), sleep 25
+   0.0  near     loose_dog (telegraph) at (3,36), 40px, exc 0, in 0.0/s (crowd 0.0, events 13.9), sleep 25
+   0.0  near     loose_dog (telegraph) at (3,37), 19px, exc 0, in 0.0/s (crowd 0.0, events 15.8), sleep 25
+   0.0  near     leaf_blower at (1,33), 109px, exc 0, in 0.0/s (crowd 0.0, events 18.7), sleep 25
+   0.0  near     leaf_blower at (1,33), 59px, exc 0, in 0.0/s (crowd 0.0, events 14.4), sleep 25
+   0.0  near     leaf_blower at (1,33), 32px, exc 0, in 0.0/s (crowd 2.6, events 9.8), sleep 25
+   0.0  near     market_stall at (10,29), 63px, exc 0, in 0.0/s (crowd 0.1, events 1.3), sleep 27
+   0.0  crowd    a car sounded its horn at her in the road at (9,30) | exc 0, in 0.0/s (crowd 9.4, events 10.7), sleep 27
+   0.0  cross    stepped into the road at (9,30), mid-block
+   0.0  crowd    a car sounded its horn at her in the road at (10,30) | exc 0, in 0.0/s (crowd 28.4, events 9.9), sleep 27
+   0.0  near     market_stall at (10,33), 63px, exc 0, in 0.0/s (crowd 45.1, events 6.3), sleep 28
+   0.0  cue      the mark over her head: soon for 0.0s (1.6s of it on the road) | a car, and she is in the road
+   0.0  crowd    a car sounded its horn at her in the road at (16,25) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 29
+   0.0  cross    stepped into the road at (16,25), mid-block
+   0.0  near     market_stall at (15,23), 64px, exc 0, in 0.0/s (crowd 11.6, events 2.7), sleep 29
+   0.0  near     market_stall at (19,23), 64px, exc 0, in 0.0/s (crowd 20.6, events 7.0), sleep 29
+   0.0  cue      the mark over her head: soon for 0.0s (2.2s of it on the road) | a car, and she is in the road
+   0.0  cross    stepped into the road at (14,17), at a zebra
+   0.0  near     market_stall at (10,19), 64px, exc 0, in 0.0/s (crowd 0.0, events 3.9), sleep 31
+   0.0  near     market_stall at (10,15), 63px, exc 0, in 0.0/s (crowd 0.0, events 5.7), sleep 31
+   0.0  cross    stepped into the road at (3,13), mid-block
+   0.0  near     cafe_tables at (5,10), 63px, exc 0, in 0.0/s (crowd 0.0, events 0.2), sleep 32
+   0.0  near     cafe_tables at (1,10), 64px, exc 0, in 0.0/s (crowd 0.0, events 0.1), sleep 32
+   0.0  shot     burst started: asked for an animation burst at (0,0) | exc 0, sleep 25 | playing | asked/burst-243207881-005
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  shot     burst started: asked for an animation burst at (0,0) | exc 0, sleep 18 | playing | asked/burst-250015190-006
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  shot     burst started: asked for an animation burst at (1,0) | exc 0, sleep 15 | playing | asked/burst-253374605-007
+   0.0  crowd    a car sounded its horn at her in the road at (4,2) | exc 0, in 0.0/s (crowd 6.7, events 0.0), sleep 15
+   0.0  cross    stepped into the road at (4,2), at a zebra
+   0.0  shot     burst refused: another burst is active
+   0.0  shot     burst complete: 36 frames | frame_cap
+   0.0  near     delivery_van at (10,4), 149px, exc 0, in 0.0/s (crowd 10.2, events 0.0), sleep 15
+   0.0  cue      the mark over her head: soon for 0.0s (1.0s of it on the road) | a car, and she is in the road
+   0.0  ahead    cat_dash crosses 332px in front of her at (6,4)
+   0.0  near     delivery_van at (10,1), 150px, exc 0, in 0.0/s (crowd 8.0, events 0.0), sleep 15
+   0.0  near     delivery_van at (10,4), 81px, exc 0, in 0.0/s (crowd 5.1, events 0.0), sleep 15
+   0.0  near     delivery_van at (10,4), 44px, exc 0, in 0.0/s (crowd 3.3, events 0.0), sleep 16
+   0.0  cross    stepped into the road at (16,4), at a zebra
+   0.0  near     cat_dash at (17,8), 120px, exc 0, in 0.0/s (crowd 5.0, events 13.2), sleep 17
+   0.0  near     cat_dash at (19,6), 65px, exc 0, in 0.0/s (crowd 1.5, events 0.0), sleep 17
+   0.0  near     cat_dash at (20,5), 36px, exc 0, in 0.0/s (crowd 2.5, events 0.0), sleep 17
+   0.0  cross    stepped into the road at (21,3), mid-block
+   0.0  near     cafe_tables at (24,5), 63px, exc 0, in 0.0/s (crowd 0.0, events 0.5), sleep 18
+   0.0  near     leaf_blower at (33,7), 199px, exc 0, in 0.0/s (crowd 0.0, events 0.1), sleep 19
+   0.0  near     moving_van at (38,4), 119px, exc 0, in 0.0/s (crowd 0.0, events 6.2), sleep 20
+   0.0  near     moving_van at (38,1), 120px, exc 0, in 0.0/s (crowd 0.0, events 5.1), sleep 20
+   0.0  crowd    a car sounded its horn at her in the road at (35,3) | exc 0, in 0.0/s (crowd 0.0, events 8.1), sleep 18
+   0.0  shot     burst started: asked for an animation burst at (35,3) | exc 0, sleep 18 | playing | asked/burst-269374644-008
+   0.0  near     moving_van at (38,1), 120px, exc 0, in 0.0/s (crowd 21.2, events 10.6), sleep 18
+   0.0  near     moving_van at (38,4), 64px, exc 0, in 0.0/s (crowd 20.4, events 4.1), sleep 18
+   0.0  near     moving_van at (38,1), 65px, exc 0, in 0.0/s (crowd 20.1, events 1.0), sleep 18
+   0.0  near     leaf_blower at (43,6), 198px, exc 0, in 0.0/s (crowd 14.9, events 0.3), sleep 18
+   0.0  crowd    a car sounded its horn at her in the road at (38,2) | exc 0, in 0.0/s (crowd 14.2, events 0.7), sleep 18
+   0.0  cue      the mark over her head: soon for 0.0s (2.7s of it on the road) | a car, and she is in the road
+   0.0  shot     burst complete: 36 frames | frame_cap
+   0.0  near     leaf_blower at (53,1), 199px, exc 0, in 0.0/s (crowd 16.9, events 0.1), sleep 19
+   0.0  shot     burst started: asked for an animation burst at (48,1) | exc 0, sleep 19 | playing | asked/burst-275757888-009
+   0.0  shot     burst complete: 36 frames | frame_cap
+   0.0  turn     doubled back 248°
+   0.0  near     leaf_blower at (43,6), 200px, exc 0, in 0.0/s (crowd 40.3, events 0.0), sleep 16
+   0.0  ahead    cat_dash crosses 332px in front of her at (46,1)
+   0.0  cross    stepped into the road at (46,2), at a zebra
+   0.0  near     leaf_blower at (53,1), 200px, exc 0, in 0.0/s (crowd 4.1, events 1.1), sleep 17
+   0.0  crowd    a car sounded its horn at her in the road at (50,3) | exc 0, in 0.0/s (crowd 7.7, events 8.2), sleep 17
+   0.0  cross    stepped into the road at (50,3), mid-block
+   0.0  near     market_stall at (52,5), 64px, exc 0, in 0.0/s (crowd 21.9, events 16.0), sleep 18
+   0.0  near     leaf_blower at (53,1), 109px, exc 0, in 0.0/s (crowd 23.3, events 19.2), sleep 18
+   0.0  crowd    a car sounded its horn at her in the road at (52,3) | exc 0, in 0.0/s (crowd 27.6, events 27.6), sleep 18
+   0.0  near     market_stall at (52,1), 64px, exc 0, in 0.0/s (crowd 46.3, events 21.6), sleep 18
+   0.0  near     leaf_blower at (53,1), 59px, exc 0, in 0.0/s (crowd 46.3, events 22.0), sleep 18
+   0.0  cue      the mark over her head: soon for 0.0s (1.7s of it on the road) | a car, and she is in the road
+   0.0  cross    stepped into the road at (59,2), mid-block
+   0.0  crowd    a car sounded its horn at her in the road at (60,2) | exc 0, in 0.0/s (crowd 4.9, events 0.0), sleep 19
+   0.0  path     onto the corridor at (62,2), after 0.0s off it
+   0.0  near     cafe_tables at (66,1), 64px, exc 0, in 0.0/s (crowd 22.7, events 0.1), sleep 20
+   0.0  cue      the mark over her head: soon for 0.0s (2.8s of it on the road) | a car, and she is in the road
+   0.0  path     off the corridor at (70,0), after 0.0s on it
+   0.0  path     onto the corridor at (72,0), after 0.0s off it
+   0.0  path     off the corridor at (74,2), after 0.0s on it
+   0.0  cross    stepped into the road at (74,2), at a zebra
+   0.0  path     onto the corridor at (76,2), after 0.0s off it
+   0.0  near     market_stall at (77,1), 63px, exc 0, in 0.0/s (crowd 0.0, events 2.6), sleep 22
+   0.0  near     homeless_yeller at (84,4), 210px, exc 0, in 0.0/s (crowd 0.0, events 11.3), sleep 22
+   0.0  path     off the corridor at (84,1), after 0.0s on it
+   0.0  near     homeless_yeller at (87,4), 115px, exc 0, in 0.0/s (crowd 0.0, events 7.0), sleep 23
+   0.0  cross    stepped into the road at (86,1), at a signalled crossing
+   0.0  crowd    a car sounded its horn at her in the road at (86,1) | exc 0, in 0.0/s (crowd 0.0, events 9.7), sleep 23
+   0.0  crowd    a car sounded its horn at her in the road at (86,1) | exc 0, in 0.0/s (crowd 0.0, events 9.9), sleep 23
+   0.0  cue      the mark over her head: soon for 0.0s (0.6s of it on the road) | a car, and she is in the road
+   0.0  path     onto the corridor at (90,1), after 0.0s off it
+   0.0  path     off the corridor at (98,1), after 0.0s on it
+   0.0  path     onto the corridor at (104,1), after 0.0s off it
+   0.0  ahead    loose_dog comes at her from 0px in front of her at (110,1)
+   0.0  path     off the corridor at (112,1), after 0.0s on it
+   0.0  near     loose_dog (telegraph) at (118,1), 140px, exc 0, in 0.0/s (crowd 0.0, events 2.7), sleep 27
+   0.0  near     loose_dog (telegraph) at (116,1), 76px, exc 0, in 0.0/s (crowd 0.0, events 4.2), sleep 27
+   0.0  near     loose_dog (telegraph) at (115,1), 41px, exc 0, in 0.0/s (crowd 0.0, events 3.7), sleep 27
+   0.0  cross    stepped into the road at (115,2), mid-block
+   0.0  crowd    a car sounded its horn at her in the road at (119,2) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 28
+   0.0  crowd    a car sounded its horn at her in the road at (120,2) | exc 0, in 0.0/s (crowd 16.0, events 0.0), sleep 28
+   0.0  crowd    a car sounded its horn at her in the road at (124,2) | exc 0, in 0.0/s (crowd 6.5, events 0.0), sleep 29
+   0.0  cue      the mark over her head: soon for 0.0s (2.4s of it on the road) | a car, and she is in the road
+   0.0  cross    stepped into the road at (126,2), at a zebra
+   0.0  crowd    a car sounded its horn at her in the road at (127,2) | exc 0, in 0.0/s (crowd 5.1, events 0.0), sleep 29
+   0.0  near     delivery_van at (136,4), 149px, exc 0, in 0.0/s (crowd 12.4, events 0.0), sleep 30
+   0.0  cue      the mark over her head: soon for 0.0s (2.2s of it on the road) | a car, and she is in the road
+   0.0  near     delivery_van at (136,4), 81px, exc 0, in 0.0/s (crowd 1.0, events 0.0), sleep 30
+   0.0  near     delivery_van at (136,4), 44px, exc 0, in 0.0/s (crowd 2.5, events 0.0), sleep 31
+   0.0  crowd    a car sounded its horn at her in the road at (135,3) | exc 0, in 0.0/s (crowd 4.5, events 0.0), sleep 31
+   0.0  cross    stepped into the road at (135,3), mid-block
+   0.0  cue      the mark over her head: soon for 0.0s (1.9s of it on the road) | a car, and she is in the road
+   0.0  cross    stepped into the road at (142,2), mid-block
+   0.0  near     scaffolding at (150,5), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 33
+   0.0  turn     doubled back 270°
+   0.0  near     skip at (150,1), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 34
+   0.0  cross    stepped into the road at (147,2), mid-block
+   0.0  near     scaffolding at (150,5), 120px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 34
+   0.0  near     skip at (150,1), 65px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 34
+   0.0  near     scaffolding at (150,5), 66px, exc 0, in 0.0/s (crowd 1.9, events 0.0), sleep 34
+   0.0  crowd    a car sounded its horn at her in the road at (153,3) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 35
+   0.0  near     delivery_van at (158,6), 150px, exc 0, in 0.0/s (crowd 20.2, events 0.0), sleep 35
+   0.0  near     delivery_van at (158,6), 82px, exc 0, in 0.0/s (crowd 53.7, events 0.0), sleep 35
+   0.0  cue      the mark over her head: soon for 0.0s (3.3s of it on the road) | a car, and she is in the road
+   0.0  crowd    a car sounded its horn at her in the road at (157,3) | exc 0, in 0.0/s (crowd 37.1, events 0.0), sleep 33
+   0.0  cue      the mark over her head: soon for 0.0s (0.7s of it on the road) | a car, and she is in the road
+   0.0  turn     doubled back 225°
+   0.0  near     delivery_van at (158,6), 150px, exc 0, in 0.0/s (crowd 9.5, events 0.0), sleep 34
+   0.0  cross    stepped into the road at (157,2), mid-block
+   0.0  crowd    a car sounded its horn at her in the road at (157,2) | exc 0, in 0.0/s (crowd 9.8, events 0.0), sleep 34
+   0.0  cue      the mark over her head: soon for 0.0s (0.2s of it on the road) | a car, and she is in the road
+   0.0  near     delivery_van at (158,6), 82px, exc 0, in 0.0/s (crowd 24.0, events 0.0), sleep 34
+   0.0  near     delivery_van at (158,6), 45px, exc 0, in 0.0/s (crowd 5.5, events 0.0), sleep 34
+   0.0  turn     doubled back 0°
+   0.0  shot     burst started: asked for an animation burst at (159,1) | exc 0, sleep 29 | playing | asked/burst-340857841-010
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  near     delivery_van at (158,6), 149px, exc 0, in 0.0/s (crowd 1.2, events 0.0), sleep 24
+   0.0  turn     doubled back 180°
+   0.0  near     delivery_van at (158,6), 82px, exc 0, in 0.0/s (crowd 10.6, events 0.0), sleep 24
+   0.0  shot     burst started: asked for an animation burst at (159,4) | exc 0, sleep 24 | playing | asked/burst-347054672-011
+   0.0  near     delivery_van at (158,6), 43px, exc 0, in 0.0/s (crowd 8.1, events 0.0), sleep 24
+   0.0  near     delivery_van at (158,10), 149px, exc 0, in 0.0/s (crowd 3.3, events 0.0), sleep 25
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  turn     doubled back 315°
+   0.0  cross    stepped into the road at (157,4), at a zebra
+   0.0  turn     doubled back 90°
+   0.0  shot     burst started: asked for an animation burst at (155,4) | exc 0, sleep 27 | playing | asked/burst-353674523-012
+   0.0  near     delivery_van at (155,10), 147px, exc 0, in 0.0/s (crowd 136.2, events 0.0), sleep 27
+   0.0  near     delivery_van at (158,10), 150px, exc 0, in 0.0/s (crowd 41.8, events 0.0), sleep 27
+   0.0  near     delivery_van at (155,10), 80px, exc 0, in 0.0/s (crowd 28.1, events 0.0), sleep 27
+   0.0  cross    stepped into the road at (156,9), mid-block
+   0.0  near     delivery_van at (155,10), 43px, exc 0, in 0.0/s (crowd 13.1, events 0.0), sleep 27
+   0.0  near     delivery_van at (158,10), 80px, exc 0, in 0.0/s (crowd 12.7, events 0.0), sleep 27
+   0.0  near     delivery_van at (158,10), 43px, exc 0, in 0.0/s (crowd 8.9, events 0.0), sleep 28
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  path     onto the corridor at (159,20), after 0.0s off it
+   0.0  path     off the corridor at (159,28), after 0.0s on it
+   0.0  path     onto the corridor at (158,27), after 0.0s off it
+   0.0  turn     doubled back 7°
+   0.0  path     off the corridor at (159,28), after 0.0s on it
+   0.0  path     onto the corridor at (157,33), after 0.0s off it
+   0.0  cross    stepped into the road at (157,33), at a zebra
+   0.0  crowd    a car sounded its horn at her in the road at (157,33) | exc 0, in 0.0/s (crowd 2.3, events 0.0), sleep 32
+   0.0  ahead    cat_dash crosses 332px in front of her at (157,33)
+   0.0  crowd    a car sounded its horn at her in the road at (157,34) | exc 0, in 0.0/s (crowd 3.7, events 0.0), sleep 33
+   0.0  cue      the mark over her head: soon for 0.0s (1.0s of it on the road) | a car, and she is in the road
+   0.0  cross    stepped into the road at (157,36), mid-block
+   0.0  crowd    a car sounded its horn at her in the road at (157,36) | exc 0, in 0.0/s (crowd 4.1, events 0.0), sleep 33
+   0.0  crowd    a car sounded its horn at her in the road at (156,37) | exc 0, in 0.0/s (crowd 22.8, events 0.0), sleep 33
+   0.0  cue      the mark over her head: soon for 0.0s (1.0s of it on the road) | a car, and she is in the road
+   0.0  path     off the corridor at (159,42), after 0.0s on it
+   0.0  crowd    a car sounded its horn at her in the road at (157,50) | exc 0, in 0.0/s (crowd 11.2, events 0.0), sleep 36
+   0.0  cross    stepped into the road at (157,50), mid-block
+   0.0  crowd    a car sounded its horn at her in the road at (157,50) | exc 0, in 0.0/s (crowd 28.8, events 0.0), sleep 36
+   0.0  near     market_stall at (159,52), 63px, exc 0, in 0.0/s (crowd 44.1, events 2.2), sleep 36
+   0.0  crowd    a car sounded its horn at her in the road at (156,52) | exc 0, in 0.0/s (crowd 31.3, events 3.2), sleep 36
+   0.0  near     market_stall at (155,52), 63px, exc 0, in 0.0/s (crowd 29.6, events 3.3), sleep 36
+   0.0  crowd    a car sounded its horn at her in the road at (156,55) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 37
+   0.0  near     delivery_van at (155,66), 150px, exc 0, in 0.0/s (crowd 12.0, events 0.0), sleep 38
+   0.0  near     delivery_van at (158,66), 149px, exc 0, in 0.0/s (crowd 9.3, events 0.0), sleep 38
+   0.0  near     delivery_van at (155,66), 81px, exc 0, in 0.0/s (crowd 13.0, events 0.0), sleep 38
+   0.0  near     delivery_van at (158,66), 82px, exc 0, in 0.0/s (crowd 15.8, events 0.0), sleep 38
+   0.0  near     delivery_van at (155,66), 44px, exc 0, in 0.0/s (crowd 16.1, events 0.0), sleep 38
+   0.0  crowd    a car sounded its horn at her in the road at (156,70) | exc 0, in 0.0/s (crowd 2.6, events 0.0), sleep 39
+   0.0  cue      the mark over her head: soon for 0.0s (9.5s of it on the road) | a car, and she is in the road
+   0.0  near     car_accident at (157,80), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 40
+   0.0  near     car_accident at (157,80), 64px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 40
+   0.0  near     scaffolding at (150,75), 120px, exc 0, in 0.0/s (crowd 2.3, events 0.0), sleep 41
+   0.0  near     scaffolding at (150,75), 66px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 41
+   0.0  near     skip at (150,71), 120px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 41
+   0.0  cross    stepped into the road at (151,73), mid-block
+   0.0  near     skip at (150,71), 65px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 41
+   0.0  near     car_accident at (143,80), 120px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 43
+   0.0  ahead    cat_dash crosses 332px in front of her at (144,79)
+   0.0  near     car_accident at (143,80), 65px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 43
+   0.0  cross    stepped into the road at (143,79), mid-block
+   0.0  near     scaffolding at (136,75), 120px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 44
+   0.0  near     skip at (136,71), 120px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 44
+   0.0  cross    stepped into the road at (138,73), mid-block
+   0.0  near     scaffolding at (136,75), 65px, exc 0, in 0.0/s (crowd 0.6, events 0.0), sleep 44
+   0.0  near     skip at (136,71), 66px, exc 0, in 0.0/s (crowd 1.8, events 0.0), sleep 45
+   0.0  near     delivery_van at (130,80), 150px, exc 0, in 0.0/s (crowd 58.2, events 0.0), sleep 46
+   0.0  near     delivery_van at (127,80), 148px, exc 0, in 0.0/s (crowd 24.5, events 0.0), sleep 46
+   0.0  cross    stepped into the road at (129,77), mid-block
+   0.0  near     delivery_van at (130,80), 82px, exc 0, in 0.0/s (crowd 10.2, events 0.0), sleep 46
+   0.0  near     delivery_van at (127,80), 81px, exc 0, in 0.0/s (crowd 13.2, events 0.0), sleep 46
+   0.0  near     delivery_van at (130,80), 45px, exc 0, in 0.0/s (crowd 12.6, events 0.0), sleep 46
+   0.0  near     dog_walker at (129,88), 104px, exc 0, in 0.0/s (crowd 78.6, events 1.1), sleep 47
+   0.0  near     dog_walker at (129,88), 57px, exc 0, in 0.0/s (crowd 40.8, events 16.1), sleep 47
+   0.0  near     dog_walker at (128,88), 31px, exc 0, in 0.0/s (crowd 0.0, events 13.6), sleep 47
+   0.0  cross    stepped into the road at (132,87), mid-block
+   0.0  near     market_stall at (136,89), 63px, exc 0, in 0.0/s (crowd 0.0, events 0.9), sleep 49
+   0.0  near     homeless_yeller at (140,92), 210px, exc 0, in 0.0/s (crowd 0.0, events 4.2), sleep 49
+   0.0  near     homeless_yeller at (140,91), 114px, exc 0, in 0.0/s (crowd 0.0, events 3.4), sleep 49
+   0.0  cross    stepped into the road at (142,90), mid-block
+   0.0  near     moving_van at (141,94), 120px, exc 0, in 0.0/s (crowd 0.0, events 10.7), sleep 50
+   0.0  near     moving_van at (144,94), 120px, exc 0, in 0.0/s (crowd 0.0, events 11.5), sleep 50
+   0.0  near     moving_van at (141,94), 66px, exc 0, in 0.0/s (crowd 0.0, events 13.4), sleep 50
+   0.0  near     moving_van at (144,94), 65px, exc 0, in 0.0/s (crowd 0.0, events 13.4), sleep 50
+   0.0  crowd    a car sounded its horn at her in the road at (142,96) | exc 0, in 0.0/s (crowd 0.0, events 8.4), sleep 51
+   0.0  path     onto the corridor at (142,98), after 0.0s off it
+   0.0  path     off the corridor at (141,100), after 0.0s on it
+   0.0  cue      the mark over her head: soon for 0.0s (1.6s of it on the road) | a car, and she is in the road
+   0.0  path     onto the corridor at (141,104), after 0.0s off it
+   0.0  near     homeless_yeller at (145,115), 209px, exc 0, in 0.0/s (crowd 12.6, events 0.0), sleep 53
+   0.0  path     off the corridor at (141,112), after 0.0s on it
+   0.0  cross    stepped into the road at (141,114), at a zebra
+   0.0  ahead    cat_dash crosses 332px in front of her at (141,114)
+   0.0  near     delivery_van at (141,120), 150px, exc 0, in 0.0/s (crowd 0.0, events 3.0), sleep 54
+   0.0  path     onto the corridor at (141,116), after 0.0s off it
+   0.0  near     homeless_yeller at (145,117), 115px, exc 0, in 0.0/s (crowd 3.0, events 2.9), sleep 54
+   0.0  crowd    a car sounded its horn at her in the road at (142,117) | exc 0, in 0.0/s (crowd 4.4, events 3.0), sleep 54
+   0.0  cross    stepped into the road at (142,117), at a zebra
+   0.0  near     delivery_van at (141,120), 82px, exc 0, in 0.0/s (crowd 12.0, events 3.8), sleep 54
+   0.0  crowd    a car sounded its horn at her in the road at (143,118) | exc 0, in 0.0/s (crowd 10.4, events 5.3), sleep 54
+   0.0  near     homeless_yeller at (145,118), 63px, exc 0, in 0.0/s (crowd 26.5, events 7.0), sleep 54
+   0.0  crowd    a car sounded its horn at her in the road at (143,119) | exc 0, in 0.0/s (crowd 24.0, events 7.5), sleep 54
+   0.0  cue      the mark over her head: soon for 0.0s (1.0s of it on the road) | a car, and she is in the road
+   0.0  path     switched routes at (144,120), branch [7] -> [4]
+   0.0  near     cat_dash at (145,124), 118px, exc 0, in 0.0/s (crowd 17.3, events 18.3), sleep 55
+   0.0  cross    stepped into the road at (144,128), at a zebra
+   0.0  path     off the corridor at (144,140), after 0.0s on it
+   0.0  cross    stepped into the road at (144,142), at a zebra
+   0.0  near     leaf_blower at (138,145), 200px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 58
+   0.0  cross    stepped into the road at (143,146), mid-block
+   0.0  crowd    a car sounded its horn at her in the road at (143,146) | exc 0, in 0.0/s (crowd 0.0, events 2.4), sleep 58
+   0.0  near     cafe_tables at (141,150), 64px, exc 0, in 0.0/s (crowd 12.8, events 1.4), sleep 59
+   0.0  near     cafe_tables at (145,150), 64px, exc 0, in 0.0/s (crowd 0.0, events 0.2), sleep 59
+   0.0  cue      the mark over her head: soon for 0.0s (2.0s of it on the road) | a car, and she is in the road
+   0.0  cross    stepped into the road at (145,156), at a zebra
+   0.0  ahead    loose_dog comes at her from 0px in front of her at (147,157)
+   0.0  crowd    a car sounded its horn at her in the road at (148,157) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 60
+   0.0  near     market_stall at (150,159), 64px, exc 0, in 0.0/s (crowd 17.9, events 2.4), sleep 61
+   0.0  near     loose_dog (telegraph) at (153,157), 138px, exc 0, in 0.0/s (crowd 21.4, events 16.5), sleep 61
+   0.0  near     loose_dog (telegraph) at (152,157), 75px, exc 0, in 0.0/s (crowd 22.9, events 17.4), sleep 61
+   0.0  near     loose_dog (telegraph) at (152,157), 40px, exc 0, in 0.0/s (crowd 23.2, events 16.7), sleep 61
+   0.0  near     loose_dog (telegraph) at (151,157), 21px, exc 0, in 0.0/s (crowd 23.2, events 15.8), sleep 61
+   0.0  cue      the mark over her head: soon for 0.0s (3.6s of it on the road) | a car, and she is in the road
+   0.0  crowd    a car sounded its horn at her in the road at (157,157) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 62
+   0.0  turn     doubled back 270°
+   0.0  cue      the mark over her head: soon for 0.0s (1.3s of it on the road) | a car, and she is in the road
+   0.0  shot     asked for a picture at (159,159) | exc 0, sleep 62 | playing
+   0.0  cross    stepped into the road at (153,157), mid-block
+   0.0  near     market_stall at (150,155), 64px, exc 0, in 0.0/s (crowd 0.0, events 2.9), sleep 63
+   0.0  near     skip at (136,155), 120px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 64
+   0.0  near     scaffolding at (136,159), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 65
+   0.0  near     skip at (136,155), 66px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 65
+   0.0  near     skip at (136,155), 36px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 65
+   0.0  near     skip at (127,150), 120px, exc 0, in 0.0/s (crowd 11.3, events 0.0), sleep 66
+   0.0  near     skip at (127,150), 65px, exc 0, in 0.0/s (crowd 5.4, events 0.0), sleep 67
+   0.0  near     scaffolding at (131,150), 119px, exc 0, in 0.0/s (crowd 7.9, events 0.0), sleep 67
+   0.0  cross    stepped into the road at (128,151), mid-block
+   0.0  path     onto the corridor at (126,145), after 0.0s off it
+   0.0  ahead    loose_dog comes at her from 0px in front of her at (118,145)
+   0.0  path     off the corridor at (117,145), after 0.0s on it
+   0.0  near     delivery_van at (116,150), 150px, exc 0, in 0.0/s (crowd 2.9, events 0.0), sleep 69
+   0.0  cross    stepped into the road at (115,146), mid-block
+   0.0  near     delivery_van at (113,150), 150px, exc 0, in 0.0/s (crowd 0.0, events 1.5), sleep 70
+   0.0  near     loose_dog (telegraph) at (111,145), 139px, exc 0, in 0.0/s (crowd 0.0, events 2.5), sleep 70
+   0.0  near     delivery_van at (116,150), 82px, exc 0, in 0.0/s (crowd 0.0, events 2.3), sleep 70
+   0.0  near     delivery_van at (113,150), 82px, exc 0, in 0.0/s (crowd 0.0, events 1.4), sleep 70
+   0.0  near     delivery_van at (113,150), 45px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 70
+   0.0  cross    stepped into the road at (112,156), at a zebra
+   0.0  near     car_accident at (108,157), 120px, exc 0, in 0.0/s (crowd 36.1, events 0.0), sleep 71
+   0.0  near     delivery_van at (113,150), 149px, exc 0, in 0.0/s (crowd 4.8, events 0.0), sleep 72
+   0.0  near     delivery_van at (116,150), 149px, exc 0, in 0.0/s (crowd 21.0, events 0.0), sleep 72
+   0.0  cross    stepped into the road at (114,153), mid-block
+   0.0  near     delivery_van at (113,150), 82px, exc 0, in 0.0/s (crowd 5.4, events 0.0), sleep 72
+   0.0  near     delivery_van at (116,150), 82px, exc 0, in 0.0/s (crowd 5.4, events 0.0), sleep 72
+   0.0  near     delivery_van at (113,150), 45px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 73
+   0.0  near     delivery_van at (108,144), 150px, exc 0, in 0.0/s (crowd 4.9, events 0.0), sleep 73
+   0.0  path     onto the corridor at (112,145), after 0.0s off it
+   0.0  path     off the corridor at (111,145), after 0.0s on it
+   0.0  near     delivery_van at (108,141), 149px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 74
+   0.0  near     delivery_van at (108,144), 82px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 74
+   0.0  near     leaf_blower at (105,141), 199px, exc 0, in 0.0/s (crowd 0.0, events 0.2), sleep 74
+   0.0  near     delivery_van at (108,144), 44px, exc 0, in 0.0/s (crowd 0.0, events 1.7), sleep 74
+   0.0  cross    stepped into the road at (101,145), at a zebra
+   0.0  near     cafe_tables at (99,150), 64px, exc 0, in 0.0/s (crowd 0.0, events 0.1), sleep 76
+   0.0  near     leaf_blower at (91,159), 200px, exc 0, in 0.0/s (crowd 0.0, events 0.1), sleep 77
+   0.0  near     market_stall at (94,155), 64px, exc 0, in 0.0/s (crowd 0.0, events 17.6), sleep 77
+   0.0  near     market_stall at (94,159), 64px, exc 0, in 0.0/s (crowd 0.0, events 20.1), sleep 77
+   0.0  near     leaf_blower at (91,159), 108px, exc 0, in 0.0/s (crowd 0.0, events 19.4), sleep 77
+   0.0  near     leaf_blower at (91,159), 59px, exc 0, in 0.0/s (crowd 0.0, events 20.6), sleep 78
+   0.0  near     leaf_blower at (91,159), 32px, exc 0, in 0.0/s (crowd 0.0, events 6.2), sleep 78
+   0.0  near     moving_van at (80,158), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 79
+   0.0  near     moving_van at (80,155), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 79
+   0.0  near     moving_van at (80,155), 65px, exc 0, in 0.0/s (crowd 41.1, events 0.0), sleep 79
+   0.0  near     moving_van at (80,158), 65px, exc 0, in 0.0/s (crowd 20.2, events 0.0), sleep 79
+   0.0  ahead    cat_dash crosses 332px in front of her at (79,156)
+   0.0  near     cafe_tables at (77,155), 63px, exc 0, in 0.0/s (crowd 15.7, events 0.2), sleep 80
+   0.0  turn     doubled back 90°
+   0.0  near     moving_van at (80,155), 120px, exc 0, in 0.0/s (crowd 23.6, events 0.0), sleep 79
+   0.0  turn     doubled back 270°
+   0.0  near     delivery_van at (71,153), 150px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 82
+   0.0  near     delivery_van at (71,153), 149px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 81
+   0.0  ahead    cat_dash crosses 332px in front of her at (70,156)
+   0.0  near     delivery_van at (71,153), 82px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 80
+   0.0  near     delivery_van at (71,150), 149px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 81
+   0.0  near     delivery_van at (71,153), 44px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 81
+   0.0  near     cafe_tables at (68,155), 63px, exc 0, in 0.0/s (crowd 0.0, events 0.8), sleep 65
+   0.0  turn     doubled back 225°
+   0.0  shot     asked for a picture at (69,155) | exc 0, sleep 66 | playing
+   0.0  shot     asked for a picture at (68,157) | exc 0, sleep 66 | playing
+   0.0  near     cafe_tables at (66,159), 64px, exc 0, in 0.0/s (crowd 0.0, events 0.3), sleep 66
+   0.0  shot     asked for a picture at (67,157) | exc 0, sleep 66 | playing
+   0.0  shot     asked for a picture at (67,157) | exc 0, sleep 66 | playing
+   0.0  shot     asked for a picture at (67,157) | exc 0, sleep 63 | playing
