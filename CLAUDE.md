@@ -89,9 +89,13 @@ is the moment somebody is about to touch the file.
 | `src/telemetry/**` | **telemetry** |
 | `src/autoload/tuning.gd` | **balance** |
 | `tools/*.py`, `pyproject.toml`, `uv.lock`, `.python-version` | **python-tooling** |
-| `tools/**`, `src/dev/dev_flags.gd` | **cli-tools** |
+| `tools/**`, `src/dev/dev_flags.gd`, `src/dev/auto_screenshot.gd` | **cli-tools** |
 | `tests/**` | **verify** |
 | `docs/playtests/PLAYTEST-*.md`, `docs/TODO.md` | **playtest-feedback** |
+| `assets/illustrated/**`, `src/visuals/**` | **illustrated-png** |
+| `docs/evidence/archive/rejected-graphics/**` | **rejected-graphics** |
+| `docs/evidence/archive/session-captures/**` | **session-captures** |
+| `docs/reference/**` | **reference-photos** |
 | any `*.gd` | **godot** |
 | any `*.svg` | **svg-art** |
 | spawning a sub-agent (the `Agent`/`Task` tool — a tool, not a path) | **orchestrating** |

@@ -67,8 +67,3 @@ static func is_calm(purpose: GameEnums.BlockPurpose) -> bool:
 			or purpose == GameEnums.BlockPurpose.FOREST \
 			or purpose == GameEnums.BlockPurpose.QUIET_SQUARE \
 			or purpose == GameEnums.BlockPurpose.COURTYARD
-
-## Whether a purpose is built over: the block is mostly buildings, with at most a carved
-## square, alley or court in it.
-static func is_built(purpose: GameEnums.BlockPurpose) -> bool:
-	return not is_calm(purpose) and purpose != GameEnums.BlockPurpose.REQUISITIONED

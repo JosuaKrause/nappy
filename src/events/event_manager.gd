@@ -44,8 +44,8 @@ var _sighted: Dictionary = {}
 
 ## Which side of a redetaining instance's own crossing she was on when its conversation started —
 ## `instance -> signf(...)`, the sign of her offset from the body against `facing_now()`. Present
-## only while that instance's own detention is running; `_release_from_door()` reads and clears it
-## the frame the conversation ends. See `EventDef.redetains`.
+## only while that instance's own detention is running; `_release_finished_door_detentions()` reads
+## and clears it the frame the conversation ends. See `EventDef.redetains`.
 var _door_entry_side: Dictionary = {}
 
 ## One `ReleaseLatch` per redetaining instance she has been let out of — `instance -> latch`. Armed
