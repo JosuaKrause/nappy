@@ -173,6 +173,8 @@ static func _place_precincts(map: CityMap, rng: RandomNumberGenerator) -> void:
 		map.precinct_spans.append(
 				Vector4i(1 if vertical else 0, corridor, start, start + length - 1))
 		return
+	push_error("no inland precinct span found in 24 attempts for seed %d; city has one precinct" \
+			% map.seed_used)
 
 static func _lay_streets(map: CityMap) -> void:
 	# The offsets are a modulo and the kinds are a short scan of the precinct list, so both are
