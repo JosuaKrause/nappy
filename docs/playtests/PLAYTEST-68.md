@@ -28,3 +28,16 @@ scene still sit on the road, or does it look pasted on beside things that are gr
 > Sits fine on the road
 
 Closed as fine; no shadow stays the rule for it. Same record.
+
+## Excitement decay on three kinds of ground
+
+Asked: with the walking decay raised (`DECISIONS.md`, M117), a quiet back street nets about 3.8
+points a second downward with the day's crowd on it, the main road's pavement still does not let
+her recover, and a park clears a full meter in 8.3 seconds — does a quiet street read as
+*recovery*, does the main road still read as ground that does not, and does the park read as a
+switch rather than a place? The recommendation offered if the park felt like a switch was to
+slow the park and leave the street.
+
+> All three read right
+
+Closed as fine: the street recovers, the main road does not, the park is a place. Nothing moves.

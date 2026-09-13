@@ -14,17 +14,6 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-- **Walk three kinds of ground with the excitement bar up and watch it, not the route.** Start
-  anywhere with the meter loaded (`--meters 0 90` puts it near the top) and spend twenty seconds
-  on each: an ordinary back street, the main road's pavement, and a park. Three questions, and
-  they are the whole of this change. Does a quiet street now read as **recovery** — the bar
-  visibly coming down while she walks, rather than a number that happens to be negative? Does the
-  main road still read as the ground that **does not** let her recover? And does the park now read
-  as a **switch** rather than a place: it clears a full meter in eight and a third seconds, which
-  the rig says is over the line and only a person can say is over the *felt* line. Then walk an
-  alley: it is meant to be very nearly flat — neither pressure nor rest — which is the one of the
-  five grounds with no obvious right answer. Record is `DECISIONS.md`, M117, excitement decays
-  visibly on quiet ground; the burst is in `evidence/m117-visible-decay-2026-09-12/`.
 - **Stand in a playground, and beside a busker, and wait out each one's beat.** Both stand on calm
   ground, both pulse between a quarter and all of their intensity — nine seconds for the
   playground, seven for the busker — and calm ground now gives back 12.0/s against their 15.0 and
