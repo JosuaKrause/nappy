@@ -279,29 +279,25 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
 ## Where the last session stopped, 2026-09-13
 
-**This section is the pick-up for the next session and is removed by it.** The session that
-wrote it ended with work in flight, so `gh pr list` and `git worktree list` are the truth and
-this is the map.
+**This section is the pick-up for the next session and is removed by it.** Nothing is in
+flight: no open PR, no worktree, and v0.10.0 is the release on the live page.
 
-- **The player asked to be walked through `REVIEW.md` one question at a time** *(2026-09-13:
-  "ask me a couple of questions (one at a time) for things that need a human eye. I might be
-  able to answer them. Go one by one through the questions file")*. Start there: take the first
-  item, ask it with all the context its entry carries and a recommendation, file the answer as a
-  finding in `playtests/PLAYTEST-67.md` (or the next file) and remove the item in the same
-  commit, then the next. The **playtest-feedback** rule governs.
-- **Three agents were running when the session closed**, each briefed from its `TODO.md`
-  entry: M125 (pruning `tests/**`, on its own feature branch), M124's measurement half (readout,
-  run-log line and a per-suspect profile, on its own feature branch), and M126's read-only
-  audit. **The audit is filed**: its report is `evidence/audit-2026-09-13/AUDIT.md`, 28
-  findings with file and line, a failure scenario and a fix size each, plus what was found
-  clean; each finding is now fixed, filed as a queue item under the milestone that owns the
-  code or a defect under M100, or asked as a question, and the record is in `DECISIONS.md`
-  under M126. **M124's desktop measurement and its two fixes are built and recorded**
-  (`DECISIONS.md`, M124, where a frame goes, and M124, the two fixes built): events redraw only
-  when their picture changes and the building shadows are culled per chunk, and M124's entry in
-  `TODO.md` holds the phone half of the measurement, the atlas item gated on that phone half,
-  and the audit's per-frame findings. M125's five suites are pruned and recorded
-  (`DECISIONS.md`, M125); its entry holds the four suites still over the runner's budget.
+- **The review questions continue where playtest 68 stopped**, at the player's word *("let's
+  stop with questions for now. We will continue with that later")*. The rule for them is in
+  [PLAYTEST-68.md](playtests/PLAYTEST-68.md): one item at a time with its context and a
+  recommendation; an answered item closes on the answer even though later play may overturn it;
+  an unasked item stays. The phone sessions have reached several days of act I, so the act I
+  items in `REVIEW.md` are askable and the day-7-and-later, act III, ending and escape items
+  are not yet.
+- **The player is going to play v0.10.0 with the frame readout**, on the desktop and on the
+  phone through `tools/serve-web.sh`; that is the phone half of M124's measurement, and its
+  entry says what to read off the screen.
+- **One question waits under M100's open design questions**, from the audit: whether the crowd
+  moves to the physics tick so its right-of-way rules run at the cadence of the motion they
+  govern, at the cost of re-measuring the crowd's numbers.
+- **Ready for an agent**: M128, the playground is free and the busker is quieter from the
+  street; M96's dog item, the waiting dog from day 4 with the day-3 charge sprinkled in; M125's
+  four suites over budget; and M124's per-frame audit items.
 
 ## The queue, as prioritised on 2026-09-09
 
