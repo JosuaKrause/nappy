@@ -1,0 +1,85 @@
+{
+	"command": "godot --headless --path . res://docs/evidence/layered-ground-layout-2026-09-12/layout_capture.tscn -- --output-dir DIRECTORY",
+	"crops": [
+		{
+			"name": "normal_junction",
+			"rect": "[P: (25, 25), S: (12, 12)]"
+		},
+		{
+			"name": "main_junction",
+			"rect": "[P: (109, 25), S: (12, 12)]"
+		},
+		{
+			"name": "normal_vertical_run",
+			"rect": "[P: (28, 28), S: (6, 14)]"
+		},
+		{
+			"name": "normal_horizontal_run",
+			"rect": "[P: (28, 28), S: (14, 6)]"
+		},
+		{
+			"name": "main_vertical_run",
+			"rect": "[P: (112, 28), S: (6, 14)]"
+		},
+		{
+			"name": "park_grass",
+			"rect": "[P: (60, 116), S: (8, 8)]"
+		}
+	],
+	"days": [
+		1,
+		14
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"grass_atlas_size": [
+		256,
+		32
+	],
+	"grass_variants": 8,
+	"inputs_sha256": {
+		"res://assets/ground_tileset.tres": "5bd48cca14ea51ea4ae5c624fd0cfcc924d693b3b815be716532a35d122412ed",
+		"res://assets/illustrated/svg-transfer/tiles/layers/alley_base.png": "292d99485db258e60d497e42e2e36411b0ec6a07d1f187c487eba99e4a09dfa5",
+		"res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_broken_a.png": "59e8dafdcc94d0994a2373b67d70d447c35545e6f9bc0763ce17bf83a283df80",
+		"res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_broken_b.png": "8398a991ca7e1ad9e03888105fccbac42b00085ce0fbeeda9f97640e80d59eae",
+		"res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_cracked_a.png": "6b4bc6e4e00fcf9464dbb05ea2962dfc25e9dc9ce60231d038e0e4031d46c602",
+		"res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_cracked_b.png": "ef330cd376b5d25786bf55eca3e7e27634f0cb6c134c52c53b9f4f2d3e750781",
+		"res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_hairline_a.png": "da036664d92b398d9147f234e893f625eb278530d44f045db1dbd826ef69aff0",
+		"res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_hairline_b.png": "521e47ad459c7ffaea0177d14a513574fb9e1dcde7290927fe00f0558f3bb745",
+		"res://assets/illustrated/svg-transfer/tiles/layers/asphalt_base.png": "8165adc4a457aabb43101f8e701aa202438e3bbef2d9b1c02e317af031aae468",
+		"res://assets/illustrated/svg-transfer/tiles/layers/crosswalk.png": "58712f4ee873d456a0df2a72ebde25672bc1f05009cf8426ceab0049513576d9",
+		"res://assets/illustrated/svg-transfer/tiles/layers/curbstone.png": "6366decff4d78e025061d0fb7591197faa77adc5a360fe9b4622a6b5ae29da0d",
+		"res://assets/illustrated/svg-transfer/tiles/layers/grass_base.png": "0e10b1a5495896ac4b57ff85faf6df3f7b22b1e77c7b795fa6bb96b88a346a98",
+		"res://assets/illustrated/svg-transfer/tiles/layers/grass_feature_a.png": "da01b54d5e2f07bcf70d5a054de3032eb3084d860ed3ad222994c3270830f208",
+		"res://assets/illustrated/svg-transfer/tiles/layers/grass_feature_b.png": "89627dfbcfb231d473040f18ba8805a82ce28f7f3f3dffd3f91831ab5a86e995",
+		"res://assets/illustrated/svg-transfer/tiles/layers/grass_feature_c.png": "9e46491fd67f4780a9889e7c4c50583edc8c39080b4776ff99b7b694faa2d825",
+		"res://assets/illustrated/svg-transfer/tiles/layers/main_crosswalk.png": "ba2794ca3ef812615d73f9d57d148c86d45a4fb00907e0c9bd5ac4298082b2bf",
+		"res://assets/illustrated/svg-transfer/tiles/layers/main_edge_red.png": "43460b692d3f429b1e9bd0313956124e3ac141a12fd8bde40066a96e325ad12f",
+		"res://assets/illustrated/svg-transfer/tiles/layers/manifest.json": "56c7e7983fb21df1f723d20ca08fb1342278c5b251375c76f26cc1985f0fbdd1",
+		"res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_broken_a.png": "ac9ba22f52b689b39217372aca198380688e95543720d9a221816ed2ea4c66d1",
+		"res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_broken_b.png": "d157ad7baba5abb108c243366556c4e83726c3cf50b55437a250f483292b87f5",
+		"res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_cracked_a.png": "9b3743c72dce622e231bfeb490cc16c229e87a7e8c3afc2fd52b5a9498b55d1e",
+		"res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_cracked_b.png": "fbadc4828004ff8f2e76f2f16ccadfb2970fb01135444c732906b086ba56206b",
+		"res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_hairline_a.png": "2bb1701a07c46d88d21c813e015a3f59df62e04bcdf3f13337c6c004de90fa96",
+		"res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_hairline_b.png": "b424e122ed47ceeec402375fc3ca71648669d851d77e1e7e3748145f22ce9d2d",
+		"res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_base.png": "8dcc80cc6fce4e7487185430fa256dc0c9da5379d65dc215c0a78ab8f0d0afe8",
+		"res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_broken_a.png": "9008a4b549fa72d17cec8384c74f5a553f8d3bb08ccf81c11b40fe23804f6082",
+		"res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_broken_b.png": "dca7789be613078ca9a883a0368f32aabc74b06e9e6b893e34a7b59179e0a530",
+		"res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_cracked_a.png": "41a75679e60d1ea27b10acc8bb77afb1116a234d5872fed6fba7f385337536f2",
+		"res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_cracked_b.png": "f30d9245913d7b99c985d92f7cf96e638b91bda4abb240151aa514a3ae670548",
+		"res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_hairline_a.png": "4d39a624e120bd84032b5afee61c03dc45da8cb820c059be9fde016ecef942af",
+		"res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_hairline_b.png": "a8e97fea969e92f9ab763a2308c44a023ebb774134c63e78b15f53bac0b86c1c",
+		"res://assets/illustrated/svg-transfer/tiles/layers/yellow_half_line.png": "67430c773a3c04a570b26de72d0835f85c3c48f800b18726c03c3eed145ee947",
+		"res://assets/illustrated/svg-transfer/tiles/layers/yellow_main_line.png": "ec3596778dcef9653727647ab75a8564ef511bf12c78434c4c9f332ebe684145",
+		"res://docs/evidence/layered-ground-layout-2026-09-12/layout_capture.gd": "bd1dbf873c3b57c332a4dea9d2ddb129b5f87a74f15b8cea824821eb5b8ac780",
+		"res://src/autoload/tuning.gd": "fdd307d40ec1a28e0cb304e4861e806d4805a61cdebafbb92ee65825c7901bfe",
+		"res://src/city/city_generator.gd": "4450b629cd3fb34f3ce3e8a5f358f6295ee119f428a09fbb37dfcc08922028d2",
+		"res://src/city/city_map.gd": "7541914a16336c6453c13907949e3d8250d9cb0a40b66a54b8b1c42684c06207",
+		"res://src/city/city_state.gd": "03954c03185fb814e908dbd958757bc6d6a8ac167f2c38d6fe6a3393f4d9d028",
+		"res://src/city/ground_tiles.gd": "86eeee9c5c7871b7b9d1f8509c06b378016f50334625c9f7bec57cfd4b121e2c",
+		"res://src/visuals/ground_layers.gd": "50bb60fc2525abce05d70ac4f6e09ee29bf7d7b9dd8dee61c1947975cfbea222",
+		"res://src/visuals/texture_resolver.gd": "63869497f3655bf9a5bc6fbbac4130e8825fca90c781c62aeace83aeb9440c66"
+	},
+	"seed_requested": 4242,
+	"seed_used": 4242,
+	"tile_size": 32
+}

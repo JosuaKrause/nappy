@@ -67,6 +67,11 @@ func _test_every_transfer_has_a_native_svg_pair(t) -> void:
 					_check_redrawn_rig_alpha(t, transfer_image, relative_path)
 				elif relative_path.begins_with("props/"):
 					_check_redrawn_prop_alpha(t, transfer_image, relative_path)
+				elif relative_path.begins_with("tiles/layers/"):
+					if relative_path.get_file().ends_with("_base.png"):
+						_check_opaque_ground_tile(t, transfer_image, relative_path)
+					else:
+						_check_ground_layer_alpha(t, transfer_image, relative_path)
 				elif relative_path.begins_with("tiles/"):
 					_check_opaque_ground_tile(t, transfer_image, relative_path)
 				else:
@@ -126,6 +131,21 @@ func _check_opaque_ground_tile(t, image: Image, relative_path: String) -> void:
 		for x in image.get_width():
 			is_opaque = is_opaque and image.get_pixel(x, y).a >= 0.99
 	t.check(is_opaque, "ground tile covers its full opaque canvas: %s" % relative_path)
+
+## Shared bases cover their cells, while layer inputs require both visible art and empty pixels so
+## the engine can preserve the base material wherever a curb, marking, crack or grass clump is absent.
+func _check_ground_layer_alpha(t, image: Image, relative_path: String) -> void:
+	t.check(image.get_size() == Vector2i(32, 32),
+			"ground layer keeps the tile's native 32px component canvas: %s" % relative_path)
+	var has_opaque := false
+	var has_clear := false
+	for y in image.get_height():
+		for x in image.get_width():
+			var alpha := image.get_pixel(x, y).a
+			has_opaque = has_opaque or alpha >= 0.95
+			has_clear = has_clear or alpha <= 0.01
+	t.check(has_opaque and has_clear,
+			"ground layer has visible detail and genuine transparency: %s" % relative_path)
 
 func _check_bottom_center_anchor(
 		t, image: Image, bounds: Rect2i, relative_path: String) -> void:
