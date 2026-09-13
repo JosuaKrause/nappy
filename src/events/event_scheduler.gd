@@ -394,8 +394,8 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: i
 ## **It has to cover the ground, not stand in it**, and one event does not.
 ##
 ## What denies calm ground is holding the meter above `EXCITEMENT_CALM_THRESHOLD` against
-## `Tuning.CALM_ZONE_DENIAL_RATE`, 7.7/s — so a busker at intensity 13 has a *useful* radius of
-## 138px whatever his 190px reach says, in a lot 704px across. That is a small share of one, and a
+## `Tuning.CALM_ZONE_DENIAL_RATE`, 7.7/s — so a busker at intensity 19.3 has a *useful* radius of
+## 157px whatever his 190px reach says, in a lot 704px across. That is a small share of one, and a
 ## day that rolls one spoiler for the block she used is still a day she settles in that same block.
 ## **The rate is fixed and the intensity is not**, so raising a row's intensity is the one thing
 ## that widens this: the busker's own reach grew by half when it was raised to clear the ground it

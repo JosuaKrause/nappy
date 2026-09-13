@@ -512,24 +512,36 @@ static func _delivery_van() -> EventDef:
 ## A park spoiler, and a pleasant one. Nothing about it is threatening; it is simply
 ## interesting, which is the whole problem.
 ##
-## **It stands on calm ground, so the calm ground's decay is what its intensity has to beat**, the
-## same way `playground`'s does — 12.0/s, `EXCITEMENT_DECAY_WALKING` times the calm multiplier. At
-## 13.0 the core of it costs while she is inside `inner_radius`, and that is the whole claim: a
-## busker whose peak sat under the ground it stands on would be a park *bonus* with a picture of a
-## nuisance on it.
+## **The question is not "does the meter come down", it is "can a whole day's worth of dipping
+## below `EXCITEMENT_CALM_THRESHOLD` add up to a full sleep meter" — and those are different
+## questions.** `Baby._update_sleepiness()` only fills while excitement is under the threshold, at
+## whatever rate the calm ground's own lot size sets (`Tuning.sleepiness_calm_multiplier()` — 42x
+## for a one-block park, the loudest of the three), and is otherwise frozen while awake, never
+## given back. A dip below the threshold lasting a few tenths of a second, repeated every
+## seven-second beat, is worth far more over a whole day than a beat that merely "averages flat"
+## suggests — *(the player, refining the floor a second time: "can we do a net sleep gain that is
+## slow enough to never reach 100% in the allotted time?")*.
 ##
-## **The number is the lowest one that clears both floors, and that is deliberate, because a louder
-## busker denies more park.** `EventScheduler._denial_radius` is stated against the fixed
-## `Tuning.CALM_ZONE_DENIAL_RATE` (7.7/s), so intensity is the only thing that moves how much calm
-## ground one of these takes out of a lot 704px across — 137.6px of it at 13.0. The other floor is
-## that crossing one has to stay worth routing around, which `tests/test_events.gd` reads off the
-## cost table.
+## **19.3 is the lowest tenth, measured with `Baby`'s own real update functions rather than a
+## rate, at which a whole day never fills the sleep meter standing at his own core.**
+## `tests/probes/m128_park_beats.gd` simulates exactly that: one busker, alone, at `inner_radius`,
+## starting at the calm threshold with an empty sleep meter, `Tuning.DAY_LENGTH_SECONDS` (180s)
+## plus a margin. At the previous number (13.0) the sleep meter already fills in **under six
+## seconds** standing there — nowhere near "does not go down" in the sense that matters. The
+## sweep's own bare crossing is 19.2, which is not a coincidence: it is exactly `12.0 / 0.625`,
+## the same beat-mean zero a cruder check once used, and every intensity below it fills within
+## 200s while every one at or above it never does across the whole sweep to 19.5 — 19.3 is one
+## tenth above that crossing, so the choice is not sitting on the exact line either version of
+## this floor shares.
 ##
-## **What the pulse does to that, because it is easy to read the number as steadier than it is:**
-## `pulse_period` swings what it actually emits between a quarter and all of `intensity` every
-## seven seconds, so the middle of a busker's field is dearer than the park at the top of the beat
-## and cheaper at the bottom. Along a whole line through one it is the rim that decides, and the rim
-## is under the park's own decay — a busker is a place to walk round, not a wall.
+## **The radii are back at their original size — 45/190 — because the street-side answer is the
+## intensity's problem now, not theirs.** A prior version of this row pulled both radii in to make
+## the street quieter without touching the number; the player's own floor overturned that shape
+## rather than the row's existence, so the radii are the ones from before the M117 review and the
+## street-side reach moves only because 19.3 is louder than 13.0 was, not because the field is a
+## different size. See `tests/probes/m128_park_beats.gd` for the exact figures — quieter from the
+## street is not what this number buys, and saying otherwise here would be a claim the code does
+## not keep.
 static func _busker() -> EventDef:
 	var def := EventDef.new()
 	def.id = "busker"
@@ -537,9 +549,9 @@ static func _busker() -> EventDef:
 	def.look = EventDef.Look.BUSKER
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.PARK, GameEnums.TileType.SQUARE]
-	# Above the 12.0/s a park gives back, which is what a row standing on calm ground has to clear
-	# to cost anything at all. See the note above for why it is not higher.
-	def.intensity = 13.0
+	# The lowest tenth, with a small margin above the sweep's own crossing, whose day never fills
+	# a sleep meter standing at his own core. See the note above for how this was measured.
+	def.intensity = 19.3
 	def.inner_radius = 45.0
 	def.outer_radius = 190.0
 	def.telegraph_time = 1.7

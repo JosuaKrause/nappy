@@ -1008,7 +1008,6 @@ alone is answering a narrower question than it thinks.
 | `charging_dog` * | +8.8 | — |
 | `basement_steam` | +9.0 | +25.8 |
 | `alley_mouse` | +12.7 | +20.9 |
-| `busker` | +15.3 | +52.5 |
 | `cyclist` * | +16.0 | +29.7 |
 | `cat_dash` | +17.6 | +37.5 |
 | `ice_cream_van` | +18.4 | +65.8 |
@@ -1019,6 +1018,7 @@ alone is answering a narrower question than it thinks.
 | `alley_robbery` * | +23.8 | — |
 | `protest` | +27.6 | +77.6 |
 | `dog_walker` | +30.8 | +41.2 |
+| `busker` | +34.7 | +63.1 |
 | `leaf_blower` | +37.7 | +67.1 |
 | `burning_building` | +41.7 | +83.2 |
 | `pigeon_flock` † | +44.9 | +63.6 |
@@ -1469,7 +1469,7 @@ the destination was not a decision, this one that *which* destination was not on
 #### It has to cover the ground, not stand in it
 
 **What denies calm ground is not reaching it, it is out-emitting `Tuning.CALM_ZONE_DENIAL_RATE`**,
-7.7/s — so a busker at intensity 13 is useless past 138px however far his 190px
+7.7/s — so a busker at intensity 19.3 is useless past 157px however far his 190px
 field reaches, in a lot that is 704px across. One spoiler is a small share of a four-block calm
 zone: the day rolls its spoiler for the block she used, and she settles in that same block anyway.
 **The rate is fixed and a row's intensity is not**, so intensity is the one thing that widens a
