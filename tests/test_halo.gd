@@ -35,6 +35,7 @@ func run(t) -> void:
 	_test_select_sources_takes_a_mixed_candidate_set(t)
 	_test_a_cat_dash_is_selected_and_lands(t)
 	_test_a_flock_is_selected_and_lands(t)
+	_test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t)
 
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
 	var def := EventDef.new()
@@ -247,6 +248,9 @@ func _test_entity_halo_eases_toward_its_target(t) -> void:
 			"a target held for the whole of FADE_IN_SECONDS is reached", 0.01)
 	t.check(halo._colour.is_equal_approx(Palette.HALO_STRONG),
 			"colour eases to its own target on the same clock as alpha, not left to jump on its own")
+	t.check(halo.has_settled() and halo.is_showing(),
+			"a rim holding a steady target is settled *and* drawn — the pair `_process()` still asks "
+			+ "for a fresh trace on, because the body under a steady glow moves")
 
 	halo.set_glow(0.0, Palette.HALO_WEAK)
 	var steps_out := int(round(EntityHalo.FADE_OUT_SECONDS / STEP))
@@ -258,6 +262,9 @@ func _test_entity_halo_eases_toward_its_target(t) -> void:
 	t.check(halo.is_faded_out(),
 			"is_faded_out() agrees once the fade is actually over, which is what lets CrowdAgent " +
 			"free the halo without cutting a fade off mid-way")
+	t.check(not halo.is_showing(),
+			"and a rim drawing nothing stops asking to be traced, so the per-frame trace is paid "
+			+ "for by the handful of sources that are actually lit rather than by every body")
 	halo.free()
 
 # ------------------------------------------------------------ the crowd joins ---
@@ -365,4 +372,44 @@ func _test_a_flock_is_selected_and_lands(t) -> void:
 			flock.accumulate_landed(contribution * STEP)
 	t.check(flock.landed() > 10.0,
 			"a flock that stood over her whole telegraph and whole burst lands well above zero")
+	flock.free()
+
+## *(2026-09-12, the player: "the halo issue is not specific to cars you can see the same for when
+## you walk close to birds you will get a freeze frame of their position as halo while they keep
+## flying".)* A flock is the clearest case of a body that moves under a perfectly steady glow: the
+## instance's own `global_position` never changes, so nothing about the owner looks like it is
+## moving, while every bird is somewhere new every frame. `_draw()` is retained, so a rim traced
+## once is that frame's birds until something asks for another trace — which `EntityHalo._process()`
+## now does on every frame the rim is showing at all, easing or not.
+##
+## Headless never calls `_draw()`, so what is asserted is the state the drawing reads: the bird
+## positions `EventInstance._draw_body()` traces really are different one frame on, and the rim over
+## them is settled and lit — the pair the old rule threw the frame away on.
+func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t) -> void:
+	var def := EventCatalogue.by_id("pigeon_flock")
+	var flock := _rig_instance(t, def, Vector2.ZERO)
+	# Past the telegraph, so the birds are up and flying rather than pecking about on the ground.
+	flock._process(def.telegraph_time + 0.1)
+
+	var before: Array[Vector2] = []
+	for bird in flock._flock:
+		before.append(bird.at)
+	flock._process(STEP)
+	var moved := 0
+	for i in flock._flock.size():
+		if not flock._flock[i].at.is_equal_approx(before[i]):
+			moved += 1
+	t.check(flock._flock.size() > 0 and moved == flock._flock.size(),
+			"every one of the %d birds is somewhere new one frame on, so the silhouette the rim "
+			% flock._flock.size()
+			+ "traces is a different silhouette every frame")
+
+	# And the rim over them is exactly the state that used to stop re-tracing.
+	flock.set_halo_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	var halo: EntityHalo = flock._halo
+	for i in int(round(EntityHalo.FADE_IN_SECONDS / STEP)) + 2:
+		halo._process(STEP)
+	t.check(halo.has_settled() and halo.is_showing(),
+			"the flock's own rim is settled and drawn while its birds keep moving, which is the "
+			+ "freeze frame the player reported")
 	flock.free()

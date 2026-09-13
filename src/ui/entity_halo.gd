@@ -22,8 +22,12 @@ extends Node2D
 ## `_colour` the same amount, so a burst brightens and reddens together and drains together rather
 ## than one channel snapping ahead of the other.
 ##
-## **The entity's ordinary body is traced.** Transfer textures use this same drawing path, so
-## the halo follows the active silhouette without a second presentation node.
+## **The entity's ordinary body is traced, on every frame it is visible at all.** Transfer textures
+## use this same drawing path, so the halo follows the active silhouette without a second
+## presentation node — and because `_draw()` is retained, following it means re-tracing it: the rim
+## is re-drawn every frame while its own alpha is above zero rather than only while a fade is
+## running, so a car changing view on an arc, a flock whose birds have moved, or a walker swapping
+## gait frame is wearing the rim of the body it is drawing *now*. See `_process()`.
 ##
 ## **`show_behind_parent`** places the rim behind the entity, the crowd and the player the same
 ## way each entity's own shadow is placed, so it stays a hint rather than a wall. **The shared
@@ -101,35 +105,64 @@ func set_glow(alpha: float, colour: Color) -> void:
 func is_faded_out() -> bool:
 	return _target_alpha <= 0.0 and _alpha <= 0.001
 
+## Whether the eased alpha and colour have both arrived at whatever `set_glow()` last asked for.
+## The two channels are asked together because they ease together — see the class doc.
+func has_settled() -> bool:
+	return is_equal_approx(_alpha, _target_alpha) and _colour.is_equal_approx(_target_colour)
+
+## Whether this rim is putting anything on the screen right now — its **drawn** alpha rather than
+## the target it was last told, so a rim on its way down is still showing until the fade is over.
+##
+## Two things read it and they are the pair that makes the rim follow its owner: `_on_draw()` traces
+## nothing below it, and `_process()` asks for a fresh trace on every frame it is true, whether or
+## not either channel is still easing. Nothing about a steady glow says the body under it is
+## steady — see `_process()`.
+func is_showing() -> bool:
+	return _alpha > 0.0
+
 ## Eases the drawn alpha and colour toward their targets, one shared per-frame step size driving
-## both — see the class doc for why neither channel may snap ahead of the other. **`move_toward`
-## per channel, not `Color.lerp`**: a proportional lerp only ever closes a fraction of whatever gap
-## remains, so it never actually arrives — after a full `FADE_IN_SECONDS` of stepping by 1/18th of
-## the remaining distance each frame (at 60fps) a third of the original gap is still open. Moving a
-## fixed distance per second, the way `_alpha` already does, is what makes "reaches its target in
-## about the stated seconds" true rather than approximately true forever. Skipped once everything
-## has already settled, so an entity with nothing to show does not pay for a redraw every frame.
+## both — see the class doc for why neither channel may snap ahead of the other — and re-traces the
+## rim for as long as anything is drawn at all. **`move_toward` per channel, not `Color.lerp`**: a
+## proportional lerp only ever closes a fraction of whatever gap remains, so it never actually
+## arrives — after a full `FADE_IN_SECONDS` of stepping by 1/18th of the remaining distance each
+## frame (at 60fps) a third of the original gap is still open. Moving a fixed distance per second,
+## the way `_alpha` already does, is what makes "reaches its target in about the stated seconds"
+## true rather than approximately true forever.
+##
+## **The redraw is not conditional on the fade, because the body is not.** `_draw()` is retained,
+## so a rim traced once stays exactly as it was traced until something asks for another one — and
+## the owner's drawn body moves under a perfectly steady glow all the time: a car changes view as
+## its heading sweeps round an arc, a flock's birds are at new positions every frame, a walker's
+## stride swaps frames. Redrawing only while a channel was still easing left every one of those
+## wearing the silhouette it happened to have when the glow settled. So the rule is *while anything
+## is drawn*: at `_alpha` zero nothing is traced anyway (see `_on_draw()`), and above it the rim is
+## re-traced every frame. The cost is bounded by the selection rather than by the crowd —
+## `ExcitementHalo.MAX_SOURCES` (8) rims of `HALO_OFFSETS` (12) body re-draws apiece, whatever is
+## happening on screen.
 func _process(delta: float) -> void:
-	if is_equal_approx(_alpha, _target_alpha) and _colour.is_equal_approx(_target_colour):
-		return
-	var fading_in := _target_alpha > _alpha
-	var duration := FADE_IN_SECONDS if fading_in else FADE_OUT_SECONDS
-	# A channel spans 0..1, so covering the whole of it in `duration` seconds is a step of
-	# `delta / duration` per frame -- the same shape `_alpha`'s own step takes, scaled to its own
-	# 0..MAX_ALPHA range instead.
-	var channel_step := delta / duration
-	_alpha = move_toward(_alpha, _target_alpha, ExcitementHalo.MAX_ALPHA * channel_step)
-	_colour.r = move_toward(_colour.r, _target_colour.r, channel_step)
-	_colour.g = move_toward(_colour.g, _target_colour.g, channel_step)
-	_colour.b = move_toward(_colour.b, _target_colour.b, channel_step)
-	set_instance_shader_parameter("halo_colour", Color(_colour.r, _colour.g, _colour.b, _alpha))
-	queue_redraw()
+	var settled := has_settled()
+	if not settled:
+		var fading_in := _target_alpha > _alpha
+		var duration := FADE_IN_SECONDS if fading_in else FADE_OUT_SECONDS
+		# A channel spans 0..1, so covering the whole of it in `duration` seconds is a step of
+		# `delta / duration` per frame -- the same shape `_alpha`'s own step takes, scaled to its own
+		# 0..MAX_ALPHA range instead.
+		var channel_step := delta / duration
+		_alpha = move_toward(_alpha, _target_alpha, ExcitementHalo.MAX_ALPHA * channel_step)
+		_colour.r = move_toward(_colour.r, _target_colour.r, channel_step)
+		_colour.g = move_toward(_colour.g, _target_colour.g, channel_step)
+		_colour.b = move_toward(_colour.b, _target_colour.b, channel_step)
+		set_instance_shader_parameter("halo_colour", Color(_colour.r, _colour.g, _colour.b, _alpha))
+	# The frame a fade finally reaches zero still redraws once, which is what clears the last rim
+	# off the screen; after that a dark halo costs nothing at all.
+	if not settled or is_showing():
+		queue_redraw()
 
 ## Re-runs the owner's own body drawing at a ring of offsets around it, flattened to a silhouette
 ## by the shared shader. Skipped entirely at zero drawn alpha, which is what lets `CrowdAgent` leave
 ## this node built and simply never pay for a redraw between one startle and the next.
 func _on_draw() -> void:
-	if _alpha <= 0.0:
+	if not is_showing():
 		return
 	var bob: float = _bob.call()
 	for i in HALO_OFFSETS:
