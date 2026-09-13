@@ -288,7 +288,7 @@ this is the map.
   able to answer them. Go one by one through the questions file")*. Start there: take the first
   item, ask it with all the context its entry carries and a recommendation, file the answer as a
   finding in `playtests/PLAYTEST-67.md` (or the next file) and remove the item in the same
-  commit, then the next. The **feedback** rule governs.
+  commit, then the next. The **playtest-feedback** rule governs.
 - **M127, the first press walks her, is the smallest and goes first** among the round's
   implementation work. Its entry names the two mechanisms to look at.
 - **Three agents were running when the session closed**, each briefed from its `TODO.md`
