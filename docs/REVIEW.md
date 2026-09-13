@@ -19,11 +19,6 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   The [damage atlas review](evidence/shared-damage-2026-09-12/GENERATION.md) shows every variation
   over each supported base.
 
-- **Push southeast and southwest at gameplay scale.** Do the reused wheels read along the
-  travel direction, with clean joins to the chassis? The
-  [wheel comparison](evidence/stroller-southern-wheel-swap-2026-09-12/GENERATION.md) shows both views;
-  their body height and hand gap remain fixed.
-
 - **Look at a park and a wooded calm area while walking past them.** Do the sparse grass clumps give variety while the
   soft base stays quiet enough to keep people and routes clear? Check neighboring cells and
   revisit the same seed to compare their stable arrangement.

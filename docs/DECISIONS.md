@@ -18,6 +18,7 @@ textures. The upstream direction assignment and donor extraction remain reproduc
 The player's visual confirmation defines the final cues: SW has its leftmost wheel in shadow
 and red axles on the right of the other two wheels; SE has its rightmost wheel in shadow and
 red axles on the left of the other two. The final paired comparison matches these cues.
+The player then confirms the main checkout looks correct, accepting this wheel arrangement.
 
 
 ## M109 — Southern diagonal stroller wheel reuse — 2026-09-12

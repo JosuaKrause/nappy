@@ -403,3 +403,7 @@ contact and the stoop bottom face. Keep the remaining correction limited to SE/S
 
 This visible shadow-and-axle arrangement defines the final southern wheel directions independently
 of filenames or transformation history.
+
+> from what I see in the checkout it looks correct to me
+
+The player accepts the final SE/SW wheel arrangement in the main checkout.
