@@ -279,7 +279,9 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
 ## The queue, as prioritised on 2026-09-09
 
-**Below them, `TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56 has only
+**`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** Playtest
+66's four milestones are all built and released (`DECISIONS.md`, M119 to M122); what only a walk
+can judge about them is in `REVIEW.md`. M56 has only
 its measurement against the nerves left, and that waits for act III. The debug view (`1` to `4` in a debug build, `--layers 1,3` for
 a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow or a body is checked by
 eye, and every one of the three is derived from the object's own `GroundShape` — one apiece for
