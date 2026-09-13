@@ -298,19 +298,13 @@ this is the map.
   findings with file and line, a failure scenario and a fix size each, plus what was found
   clean; nothing has been filed from it yet, and M126's own item says how — each finding becomes
   a queue item under the milestone that owns the code, or a defect under M100, and the record
-  goes to `DECISIONS.md`. **M124's measurement half also finished and is on an open PR**, not
-  merged: the readout and a once-a-second `frame` log entry are built, and the profile says the
-  frame is spent rebuilding draw lists, not switching textures — every live event calls
-  `queue_redraw()` every tick where the crowd already gates it, and the building shadows submit
-  about two thousand rects a frame, mostly off screen; the two together are worth about thirty
-  per cent on the desktop rig, and no atlas is indicated by the numbers. Before it merges it owes
-  its `DECISIONS.md` record with the table (the PR body and
-  `evidence/m124-frame-cost-2026-09-13/README.md` carry it) and a rewrite of M124's entry to hold
-  those two fixes and the phone measurement. For M125: if its branch has a PR, review it, file its
-  record and merge under the usual rules; if a worktree under `.claude/worktrees/` holds
-  uncommitted work, the agent was cut off — read what is there before re-briefing.
-- **The M124 atlas item is gated on the measurement**: nothing is atlased until the numbers say
-  texture switches are the cost.
+  goes to `DECISIONS.md`. **M124's desktop measurement is built and recorded** (`DECISIONS.md`,
+  M124, where a frame goes): the frame is spent rebuilding draw lists, not switching textures,
+  and M124's entry in `TODO.md` holds the two fixes the numbers name, the phone half of the
+  measurement, and the atlas item gated on that phone half. For M125: if its branch has a PR,
+  review it, file its record and merge under the usual rules; if a worktree under
+  `.claude/worktrees/` holds uncommitted work, the agent was cut off — read what is there before
+  re-briefing.
 
 ## The queue, as prioritised on 2026-09-09
 

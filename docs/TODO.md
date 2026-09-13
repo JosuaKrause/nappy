@@ -362,35 +362,42 @@ is also read as a walk direction, so she is already walking when play resumes.
 
 [PLAYTEST-67](playtests/PLAYTEST-67.md). Closes M100's *frame rate on somebody else's machine*.
 
-**What is true today.** Every SVG and PNG under `assets/` is its own texture — several hundred
-of them, preloaded per class — and every entity draws itself from its own `_draw()` with
-`draw_texture_rect`, so the renderer's batching, which only joins consecutive draws that share a
-texture, is broken at nearly every sprite. Nothing is packed into an atlas. Each of those draws
-goes through `TextureResolver.resolve()`, a dictionary lookup keyed by the texture's path string,
-per draw per frame. The renderer is `gl_compatibility` on every platform. Two things the last
-two days added to a frame: `EntityHalo` re-traces up to eight rims of twelve body copies every
-frame it is drawn (M121), and `BuildingShadows` draws a few hundred rects once per frame (M122).
-The debug readout shows fps; nothing reports draw calls, texture switches or where a frame's
-time goes.
+**What is true today.** The desktop half is measured and the record, with its table, is in
+`DECISIONS.md` under M124, where a frame goes. The readout (`4` in a debug build, on by default)
+shows the frame's draw calls, renderable objects, primitives and the process and physics times,
+and the run log carries them once a second as a `frame` entry. On the desktop rig the frame is
+spent **rebuilding draw lists on the CPU, not switching textures**: every live event calls
+`queue_redraw()` every tick where the crowd already gates it (+19% frame rate when it fires
+once), and the building shadows are 1,918 rects covering the whole city, re-submitted every
+frame as one item (+6%; the two together +30%). The resolver's per-draw lookup and the halo's
+re-trace are both inside the run-to-run noise and are struck. Everything under `assets/` is still
+an individually loaded texture and nothing is atlased, which is the answer to the player's
+question; whether that matters is a phone's question, not a desktop's.
 
-- [ ] **Measure before touching anything.** The readout (`4` in a debug build) gains the
-      frame's draw calls (`Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME`), objects and primitives,
-      and the process and physics times, and the run log notes them once a second so a phone
-      session can be read afterwards. One number for the desktop rig and one for the phone on
-      the live page, on the same seed and day, recorded in `DECISIONS.md` — the audit's own
-      findings say which of the suspects below is the cost, and nothing is atlased on a guess.
-- [ ] **The known suspects, each measured and then fixed or struck.** The resolver's per-draw
-      string lookup (resolve once at preload, or cache on the texture); the halo's ninety-six
-      body draws a frame (trace to a texture once per view change and draw that, or reduce the
-      copies); building shadows as one mesh or one texture rather than rects; the crowd's
-      two-hundred-odd `_draw()` calls each switching texture; anything the profile shows above
-      them.
-- [ ] **Atlases, if the measurement says texture switches are the cost.** A family per atlas —
-      the crowd, the event people, the vehicles, the ground props — packed by a tool under
-      `tools/` from the same sources the M109 transfer pipeline reads, with an `AtlasTexture`
-      per sprite so every caller's `draw_texture_rect` is unchanged and the SVG-first rule and
-      the `--svg` override still hold. The **cli-tools** and **python-tooling** rules govern the
-      tool; the illustrated-png skill says what a transfer owes.
+- [~] **Events redraw only when their picture changes.** `EventInstance` gets the crowd's gate
+      — `CrowdAgent._redraw_if_the_picture_changed()`, a key over everything `_draw()` reads
+      that changes over time, and `queue_redraw()` only when the key moves — so a stationary
+      seal, hut, café or stall is drawn from a retained list. Every animated row must animate at
+      the same rate: strides, the strum, the sitters' lean, the caret, the telegraph, a leaving
+      fade, the robber turning to face her. Measured on the same walk as the record's table.
+- [~] **Building shadows are not re-submitted whole every frame.** Split into per-chunk canvas
+      items so the renderer's own rect culling drops the off-screen ones, or built once as a
+      mesh — whichever keeps the picture pixel-identical for less; `Tuning.BUILDING_SHADOW_ALPHA`,
+      the diagonal corner and joined buildings shading as one (`DECISIONS.md`, M122) survive.
+- [ ] **The phone half of the measurement.** The same six numbers off a phone: `tools/serve-web.sh`
+      serves a debug web build on the local network, the readout is on by default there, and a
+      screenshot of it standing on any day-1 street beside the desktop's is the comparison
+      (`?telemetry=1` writes the `frame` line into the browser's own storage and nothing collects
+      it back, so the screen is the instrument). If the phone's draw calls and primitives match
+      the desktop's and only its frame rate does not, the cost is fill rate or resolution and no
+      batching touches it; the table goes to `DECISIONS.md` under M124 either way.
+- [ ] **Atlases, only if the phone says texture switches are the cost.** The desktop says they
+      are not. If a phone does: a family per atlas — the crowd, the event people, the vehicles,
+      the ground props — packed by a tool under `tools/` from the same sources the M109 transfer
+      pipeline reads, with an `AtlasTexture` per sprite so every caller's `draw_texture_rect` is
+      unchanged and the SVG-first rule and the `--svg` override still hold. The **cli-tools**
+      and **python-tooling** rules govern the tool; the illustrated-png skill says what a
+      transfer owes.
 
 ---
 
