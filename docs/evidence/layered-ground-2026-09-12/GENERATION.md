@@ -33,8 +33,10 @@ diff -r docs/evidence/layered-ground-2026-09-12/bundle /tmp/layered-ground-rebui
 The bundle creates four 32×32 opaque bases: reusable sidewalk, alley, grass, and asphalt. Asphalt
 is the equal channel-wise mean of the frozen normal-road image at rotations 0°, 90°, 180°, and
 270°. A wrapped-offset candidate is scored against the plain rotational mean and retained in the
-bundle manifest; the smoother candidate becomes the base. Grass is a soft Gaussian-blurred green
-base plus three full illustrated clump cutouts.
+bundle manifest; the smoother candidate becomes the base. Grass is a Gaussian-blurred green base
+followed by the same equal quarter-turn mean, plus three full illustrated clump cutouts. The
+manifest records its edge means and repeat seam error; `grass-base-repeat-native.png` and its 4×
+counterpart review the repeated base along both axes.
 
 Curb and paint overlays use their existing SVG source only for functional placement. Their pixels
 come from the illustrated PNG. Damage uses broad audited regions and foreground color segmentation
@@ -56,4 +58,13 @@ docs/evidence/layered-ground-2026-09-12/assemble.py publish \
 uv run python \
 docs/evidence/layered-ground-2026-09-12/assemble.py verify \
 --bundle-dir /tmp/layered-ground-build --component-dir /tmp/layered-ground-components
+```
+
+To replace only a verified grass base in the existing component directory, preserving every other
+published base, transparent component, and the engine contract:
+
+```sh
+uv run python docs/evidence/layered-ground-2026-09-12/assemble.py install-grass-base \
+--bundle-dir /tmp/layered-ground-build \
+--component-dir assets/illustrated/svg-transfer/tiles/layers --replace
 ```

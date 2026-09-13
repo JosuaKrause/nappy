@@ -64,12 +64,17 @@ def _repeat_sheet(tile: Image.Image, neighbors: dict[str, Image.Image]) -> Image
 	return sheet
 
 
-def build(raw: Path, svg_render: Path | None, output_dir: Path, input_bundle: Path | None) -> None:
+def build(
+	raw: Path, svg_render: Path | None, brightness_reference: Path | None,
+	output_dir: Path, input_bundle: Path | None,
+) -> None:
 	_fresh(output_dir)
 	if not raw.is_file():
 		raise ValueError(f"missing generated raw image: {raw}")
 	if input_bundle is None and (svg_render is None or not svg_render.is_file()):
 		raise ValueError("initial build requires --svg-render from render-quiet-square-source.gd")
+	if brightness_reference is not None and not brightness_reference.is_file():
+		raise ValueError(f"missing quiet-square brightness reference: {brightness_reference}")
 	output_dir.mkdir(parents=True)
 	raw_image = Image.open(raw).convert("RGBA")
 	if raw_image.width != raw_image.height:
@@ -83,7 +88,10 @@ def build(raw: Path, svg_render: Path | None, output_dir: Path, input_bundle: Pa
 	inputs = output_dir / "frozen-inputs"
 	if input_bundle is None:
 		inputs.mkdir()
-		shutil.copyfile(RUNTIME / "quiet_square.png", inputs / "quiet_square_brightness_reference.png")
+		shutil.copyfile(
+			brightness_reference or RUNTIME / "quiet_square.png",
+			inputs / "quiet_square_brightness_reference.png",
+		)
 		for name, path in NEIGHBOR_FILES.items():
 			shutil.copyfile(path, inputs / f"{name}.png")
 		shutil.copyfile(ROOT / "assets/tiles/quiet_square.svg", inputs / "quiet_square.svg")
@@ -148,6 +156,7 @@ def main() -> None:
 	build_parser = commands.add_parser("build", help="register one generated raw image into a new evidence bundle")
 	build_parser.add_argument("--raw", type=Path, required=True)
 	build_parser.add_argument("--svg-render", type=Path)
+	build_parser.add_argument("--brightness-reference", type=Path, help="preserve a saved quiet-square comparison input")
 	build_parser.add_argument("--output-dir", type=Path, required=True)
 	build_parser.add_argument("--input-bundle", type=Path, help="reuse frozen references instead of reading runtime artwork")
 	verify_parser = commands.add_parser("verify", help="verify a bundle and optional runtime target")
@@ -162,6 +171,7 @@ def main() -> None:
 		build(
 			arguments.raw.resolve(),
 			arguments.svg_render.resolve() if arguments.svg_render else None,
+			arguments.brightness_reference.resolve() if arguments.brightness_reference else None,
 			arguments.output_dir.resolve(),
 			arguments.input_bundle.resolve() if arguments.input_bundle else None,
 		)

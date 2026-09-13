@@ -2,7 +2,7 @@
   "format": 1,
   "python_version": "3.14.7",
   "pillow_version": "12.3.0",
-  "script_sha256": "5f51a74f6e4f20421f0bbb1cff6902159eb59001992baa12f9b269872ef4d8fc",
+  "script_sha256": "75410a1971566c8635f77817fb9348cd202856f2acdf11e02e15f6c1a0f3481c",
   "tile_size": [
     32,
     32
@@ -875,8 +875,16 @@
     },
     "grass": {
       "frozen_input": "frozen-inputs/tiles/grass.png",
-      "method": "Gaussian blur radius 4 preserves soft color variation while removing clumps",
-      "sha256": "0e10b1a5495896ac4b57ff85faf6df3f7b22b1e77c7b795fa6bb96b88a346a98"
+      "method": "Gaussian blur radius 4 followed by equal channel-wise mean of rotations 0,90,180,270",
+      "mean_luma": 109.22916666666667,
+      "seam_error": 1.5833333333333333,
+      "edge_means": {
+        "top": 110.625,
+        "bottom": 110.625,
+        "left": 110.625,
+        "right": 110.625
+      },
+      "sha256": "566c0e7169f4fd34e81af5396d9a15a379e6e47ee853e68dbaace1c56fbb8a19"
     }
   },
   "components": {

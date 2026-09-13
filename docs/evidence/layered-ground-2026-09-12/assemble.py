@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
-from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, __version__ as PILLOW_VERSION
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageStat, __version__ as PILLOW_VERSION
 
 
 HERE = Path(__file__).resolve().parent
@@ -288,6 +288,10 @@ def _edge_means(tile: Image.Image) -> dict[str, float]:
 	}
 
 
+def _mean_luma(tile: Image.Image) -> float:
+	return sum(ImageStat.Stat(tile.convert("RGB")).mean) / 3
+
+
 def _compose(base: Image.Image, layer: Image.Image) -> Image.Image:
 	result = base.copy()
 	result.alpha_composite(layer)
@@ -340,6 +344,13 @@ def _panel(bundle: Path, bases: dict[str, Image.Image], layers: dict[str, Image.
 	street.save(bundle / "street-montage-native.png")
 	street.resize((street.width * 4, street.height * 4), Image.Resampling.NEAREST).save(
 		bundle / "street-montage-4x.png")
+	grass_repeat = Image.new("RGBA", (8 * 32, 4 * 32))
+	for y in range(4):
+		for x in range(8):
+			grass_repeat.alpha_composite(bases["grass"], (x * 32, y * 32))
+	grass_repeat.save(bundle / "grass-base-repeat-native.png")
+	grass_repeat.resize((grass_repeat.width * 4, grass_repeat.height * 4), Image.Resampling.NEAREST).save(
+		bundle / "grass-base-repeat-4x.png")
 
 
 def _foreground_review(bundle: Path, frozen_tiles: Path, bases: dict[str, Image.Image], layers: dict[str, Image.Image]) -> None:
@@ -430,9 +441,10 @@ def build(output_dir: Path, input_bundle: Path | None = None) -> None:
 	# The offset candidate is retained for review.  Use its seam score only when it improves on the
 	# non-offset rotational mean, so an offset never wins merely because it looks busier.
 	chosen_asphalt = offset_asphalt if _seam_error(offset_asphalt) < _seam_error(plain_asphalt) else plain_asphalt
-	# A broad Gaussian blur leaves only soft green variation in the shared grass base. The three
-	# preserved illustrated clumps below are restored only where the seeded placer asks for one.
-	grass_base = grass_seed.filter(ImageFilter.GaussianBlur(radius=4)).convert("RGBA")
+	# A broad Gaussian blur leaves only soft green variation. Equal quarter-turn averaging then
+	# balances its edge brightness while the three preserved illustrated clumps remain independent.
+	soft_grass = grass_seed.filter(ImageFilter.GaussianBlur(radius=4)).convert("RGBA")
+	grass_base = _mean_rotations(soft_grass, ((0, 0),) * 4)
 	bases = {"sidewalk": plain_sidewalk, "road": chosen_asphalt, "alley": plain_alley, "grass": grass_base}
 	layers: dict[str, Image.Image] = {}
 	layer_records: dict[str, dict[str, object]] = {}
@@ -476,7 +488,7 @@ def build(output_dir: Path, input_bundle: Path | None = None) -> None:
 		}
 	for index, suffix in enumerate(("a", "b", "c")):
 		name = f"grass_feature_{suffix}"
-		layer = _extract_component(grass_seed, _grass_feature_mask(grass_seed, grass_base, index))
+		layer = _extract_component(grass_seed, _grass_feature_mask(grass_seed, soft_grass, index))
 		layer.save(component_dir / f"{name}.png")
 		layers[name] = layer
 		layer_records[name] = {
@@ -535,7 +547,13 @@ def build(output_dir: Path, input_bundle: Path | None = None) -> None:
 				"offset_seam_error": _seam_error(offset_asphalt), "selected": "offset" if chosen_asphalt == offset_asphalt else "plain",
 				"edge_means": _edge_means(chosen_asphalt), "sha256": _sha256(compiled_dir / "road.png"),
 			},
-			"grass": {"frozen_input": "frozen-inputs/tiles/grass.png", "method": "Gaussian blur radius 4 preserves soft color variation while removing clumps", "sha256": _sha256(bases_dir / "grass_base.png")},
+			"grass": {
+				"frozen_input": "frozen-inputs/tiles/grass.png",
+				"method": "Gaussian blur radius 4 followed by equal channel-wise mean of rotations 0,90,180,270",
+				"mean_luma": _mean_luma(grass_base), "seam_error": _seam_error(grass_base),
+				"edge_means": _edge_means(grass_base),
+				"sha256": _sha256(bases_dir / "grass_base.png"),
+			},
 		},
 		"components": layer_records,
 		"compiled": {name: _sha256(compiled_dir / f"{name}.png") for name in COMPILED_NAMES},
@@ -643,6 +661,25 @@ def publish(bundle: Path, component_dir: Path) -> None:
 	verify(bundle, component_dir)
 
 
+def install_grass_base(bundle: Path, component_dir: Path, replace: bool) -> None:
+	"""Replace only the verified grass base while preserving the published layer contract."""
+	if not replace:
+		raise ValueError("grass-base replacement requires --replace")
+	verify(bundle, None)
+	contract = _engine_contract(bundle)
+	if json.loads((component_dir / "manifest.json").read_text()) != contract:
+		raise ValueError("published engine manifest differs from the retained contract")
+	for name, expected in _read_manifest(bundle)["bases"].items():
+		filename = "asphalt_base.png" if name == "asphalt" else f"{name}_base.png"
+		if name != "grass" and _sha256(component_dir / filename) != expected["sha256"]:
+			raise ValueError(f"published base differs: {filename}")
+	for name, expected in _read_manifest(bundle)["components"].items():
+		if _sha256(component_dir / f"{name}.png") != expected["sha256"]:
+			raise ValueError(f"published component differs: {name}")
+	shutil.copyfile(bundle / "bases/grass_base.png", component_dir / "grass_base.png")
+	verify(bundle, component_dir)
+
+
 def main() -> None:
 	parser = argparse.ArgumentParser(description=__doc__)
 	subparsers = parser.add_subparsers(dest="command", required=True)
@@ -655,13 +692,19 @@ def main() -> None:
 	publish_parser = subparsers.add_parser("publish", help="publish bases and transparent components without runtime composites")
 	publish_parser.add_argument("--bundle-dir", type=Path, required=True)
 	publish_parser.add_argument("--component-dir", type=Path, required=True)
+	install_parser = subparsers.add_parser("install-grass-base", help="replace one verified grass base in an existing component directory")
+	install_parser.add_argument("--bundle-dir", type=Path, required=True)
+	install_parser.add_argument("--component-dir", type=Path, required=True)
+	install_parser.add_argument("--replace", action="store_true")
 	arguments = parser.parse_args()
 	if arguments.command == "build":
 		build(arguments.output_dir.resolve(), arguments.input_bundle.resolve() if arguments.input_bundle else None)
 	elif arguments.command == "verify":
 		verify(arguments.bundle_dir.resolve(), arguments.component_dir.resolve() if arguments.component_dir else None)
-	else:
+	elif arguments.command == "publish":
 		publish(arguments.bundle_dir.resolve(), arguments.component_dir.resolve())
+	else:
+		install_grass_base(arguments.bundle_dir.resolve(), arguments.component_dir.resolve(), arguments.replace)
 
 
 if __name__ == "__main__":

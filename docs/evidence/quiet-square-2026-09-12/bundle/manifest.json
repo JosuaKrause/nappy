@@ -2,7 +2,7 @@
   "format": 1,
   "python_version": "3.14.7",
   "pillow_version": "12.3.0",
-  "script_sha256": "39dda746cd2526797b21223d5f3696823f7902e572896d5ca9dc3ce1ab277010",
+  "script_sha256": "71495a59e5df1387250deb84c43c07c36b7b0ebe4904e6b3cdc365b141c0c221",
   "method": "built-in imagegen raw output, direct LANCZOS downsample to 32x32; no recoloring or paint-over",
   "raw": {
     "path": "raw/quiet-square-generated.png",
@@ -17,7 +17,7 @@
     "graphics-reference-cardinal.jpeg": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7",
     "graphics-reference-urban-01.jpeg": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d",
     "graphics-reference-urban-02.jpeg": "aa3c926fa79c20f20946dbcd56e7a5b5d1a650a0c385bebddb89d2757b048610",
-    "grass_base.png": "0e10b1a5495896ac4b57ff85faf6df3f7b22b1e77c7b795fa6bb96b88a346a98",
+    "grass_base.png": "566c0e7169f4fd34e81af5396d9a15a379e6e47ee853e68dbaace1c56fbb8a19",
     "quiet_square-svg-8x.png": "dac7d0d4b6f82e59eef2f57f80da5bd573cea2ba47c29f197fb3e16758a4c6e5",
     "quiet_square.svg": "5de4784b50a78193d7e4c4b33b6f72397db526f5cd61d12e3827e4028c83300e",
     "quiet_square_brightness_reference.png": "5185b1628229f8053b9c768cca79cd4728e4009cf0a7abc9b1761940c22ce222",
@@ -38,6 +38,6 @@
     "quiet_square_brightness_reference": 127.2796,
     "sidewalk_base": 127.0785,
     "asphalt_base": 73.4635,
-    "grass_base": 109.2025
+    "grass_base": 109.2292
   }
 }

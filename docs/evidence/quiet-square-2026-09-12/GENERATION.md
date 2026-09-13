@@ -41,6 +41,9 @@ records raw and source hashes, registered tile geometry and opacity, plus mean m
 for this review. A later build may use `--input-bundle` to copy only the retained frozen references;
 it never needs the installed runtime quiet-square PNG.
 
+When refreshing a neighboring shared base while retaining the recorded quiet-square brightness
+comparison input, pass that saved image through `--brightness-reference` on the fresh build.
+
 Install only from a verified bundle. The explicit flag records that this command replaces the
 existing runtime artwork:
 
