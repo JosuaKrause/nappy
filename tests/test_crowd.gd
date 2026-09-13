@@ -53,6 +53,7 @@ func run(t) -> void:
 	_test_cars_do_not_enter_a_junction_they_cannot_leave(t)
 	_test_nothing_walks_into_a_hard_blocker(t)
 	_test_a_hard_seal_shuts_its_street_to_the_crowd(t)
+	_test_nobody_is_placed_in_a_sealed_junction(t)
 	_test_a_region_wall_is_shut_and_a_door_is_carved_out(t)
 	# One door day, shared: building a city and planning days until one carries a door is most of a
 	# minute, and every test below places its own bodies at the same hut anyway.
@@ -1474,6 +1475,92 @@ func _test_a_hard_seal_shuts_its_street_to_the_crowd(t) -> void:
 			+ "traffic (%d frames it did)" % frames_inside)
 
 	_city.map.clear_day_holds()
+
+# ------------------------------------------------------------- M119: pockets ---
+# "pedestrians with nowhere to go (all four sides of the intersection are blocked off) should just
+# despawn (or never spawn in the first place) right now they're accumulating in one place and move
+# back and forth or worth flicker … the same with cars" (playtest 66, 2026-09-12). A junction whose
+# every arm is held is a **pocket**: legal ground with no street out of it. The two tests below are
+# the two halves of the answer — nobody is put in one, and whoever is in one leaves — and both are
+# stated over `Crowd.pockets()`, which is where the day's flood actually lives.
+
+## M119, item 1: nobody is placed inside a junction sealed on every side, on the morning or on any
+## recycle after it.
+func _test_nobody_is_placed_in_a_sealed_junction(t) -> void:
+	var sealed := _seal_a_junction(t)
+	if sealed.is_empty():
+		return
+	var rect: Rect2i = sealed["rect"]
+	var at: Vector2 = sealed["at"]
+	_city.crowd.start_day(1, _rng(1), at)
+	_city.crowd.set_focus(at)
+
+	var pockets := _city.crowd.pockets()
+	# The guard against a vacuous sweep: "nobody stands in a pocket" passes on its own where the
+	# seals made no pocket at all.
+	t.check(pockets.tile_count(false) > 0 and pockets.tile_count(true) > 0,
+			"sealing every arm of a junction pockets ground for both kinds (%d walker tiles, %d car)"
+			% [pockets.tile_count(false), pockets.tile_count(true)])
+	t.check(pockets.holds(rect.get_center(), false) and pockets.holds(rect.get_center(), true),
+			"and the junction box itself is inside the pocket")
+
+	var placed_inside := 0
+	for agent in _city.crowd.agents():
+		if rect.has_point(_city.map.world_to_tile(agent.position)):
+			placed_inside += 1
+	t.check(placed_inside == 0,
+			"nobody is placed inside it on the morning (%d were)" % placed_inside)
+
+	var frames_inside := 0
+	for frame in int(round(20.0 / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		for agent in _city.crowd.agents():
+			if rect.has_point(_city.map.world_to_tile(agent.position)):
+				frames_inside += 1
+	t.check(frames_inside == 0,
+			("and nobody is recycled into it over twenty seconds of the field sitting on it "
+			+ "(%d agent-frames inside)") % frames_inside)
+
+	_city.map.clear_day_holds()
+
+## Holds every arm of one ordinary junction for the day and says where it is: the junction's own
+## box as a tile rect, and its centre in world coordinates.
+##
+## Picked rather than taken: a junction on the spine has the tunnel and the bridge past the end of
+## it, one bordering the home block has a carve-out on one arm, and one on a precinct's own corridor
+## is not ground a car may be on in the first place — none of the three is the plain four-armed
+## crossroads the finding is about. Empty, with a failed check, where this city has none.
+func _seal_a_junction(t) -> Dictionary:
+	var home := {}
+	for segment in StreetNetwork.around_blocks(Rect2i(_city.map.home_block, Vector2i.ONE)):
+		home[segment.key()] = true
+	var count := StreetNetwork.junction_count()
+	for y in range(1, count.y - 1):
+		for x in range(1, count.x - 1):
+			var junction := Vector2i(x, y)
+			if junction.x == _city.map.main_road:
+				continue
+			var arms := StreetNetwork.at_junction(junction)
+			if arms.size() != 4:
+				continue
+			var ordinary := true
+			for arm in arms:
+				if not _city.map.has_street(arm.key()) or home.has(arm.key()):
+					ordinary = false
+					break
+			if not ordinary:
+				continue
+			var rect := Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
+			var centre := rect.get_center()
+			if not _city.map.is_street(centre) or not _city.map.is_driveable_at(true, centre):
+				continue
+			_city.map.clear_day_holds()
+			for arm in arms:
+				_city.map.hold_segment(arm.key())
+			return {"rect": rect, "at": _city.map.tile_rect_to_world(rect).get_center()}
+	t.check(false, "this city has a plain four-armed junction to seal")
+	return {}
 
 ## M110, item 1: a region wall is shut to the crowd the way a hard seal is, and a region door is
 ## carved out of the same check — a car still brakes and queues for the gate

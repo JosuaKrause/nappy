@@ -58,6 +58,13 @@ var _door_segments := {}
 ## `main.gd` has or has not called yet.
 var _home_segments := {}
 
+## Where today's seals have left ground the crowd can get into and not out of, for each kind — a
+## junction with all four arms held, and whatever stub of lane is shut in with it. Built here
+## because both carve-outs above are part of the question (a street the crowd may still cross is not
+## a wall of a pocket) and kept as one object for the day, handed to every agent the way the two
+## carve-outs are. See `CrowdPockets`.
+var _pockets := CrowdPockets.new()
+
 ## Today's checkpoint huts, as the crowd sees them — one `WalkerDoorHold` per door body that
 ## detains, rebuilt every `start_day` from `City.region_plan().door_bodies`. Empty before the wall
 ## stands or for a rig with no city, which then holds nobody at anything. See
@@ -123,6 +130,12 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> vo
 	_home_segments = {}
 	for segment in StreetNetwork.around_blocks(Rect2i(_map.home_block, Vector2i.ONE)):
 		_home_segments[segment.key()] = true
+	# Before either `_populate` call for the same reason the carve-outs above are: `setup()` refuses
+	# a spot in a pocket the way it refuses one behind a barrier, and a record built afterwards would
+	# refuse nothing on the morning it is most needed. Today's seals are already planned by here —
+	# `EventManager.start_day` runs before this in `main._start_day()` — and `refresh()` is what
+	# catches one that arrives later anyway.
+	_pockets.refresh(_map, _crossable_segments())
 	var act := Tuning.act_for_day(day)
 	_populate(CrowdAgent.Kind.WALKER, Tuning.crowd_pedestrians(act), rng)
 	_populate(CrowdAgent.Kind.CAR, Tuning.crowd_cars(act), rng)
@@ -137,6 +150,19 @@ func field() -> CrowdField:
 
 func traffic() -> TrafficIndex:
 	return _traffic
+
+## Where the crowd cannot get out of today. Public so a suite can ask whether the pocket it has just
+## sealed is actually a pocket before asserting anything about who is standing in it.
+func pockets() -> CrowdPockets:
+	return _pockets
+
+## The held segments the crowd crosses anyway: the region's doors and the streets around the home
+## block. Both are held so that no catalogue row lands on them, and neither has a body across it, so
+## neither is a wall of a pocket. See `_door_segments` and `_home_segments`.
+func _crossable_segments() -> Dictionary:
+	var crossable := _home_segments.duplicate()
+	crossable.merge(_door_segments)
+	return crossable
 
 ## The lights, for a suite that has a `Crowd` and wants to ask what the junction ahead is doing.
 func signals_for_tests() -> TrafficSignals:
@@ -163,6 +189,7 @@ func _populate(kind: CrowdAgent.Kind, count: int, rng: RandomNumberGenerator) ->
 		agent.traffic = _traffic
 		agent.door_segments = _door_segments
 		agent.home_segments = _home_segments
+		agent.pockets = _pockets
 		agent.setup(kind, _map, _field, rng.randi(), 0.0 if i % 2 == 0 else 1.0)
 		_city.add_entity(agent)
 		_agents.append(agent)
@@ -197,6 +224,7 @@ func _populate(kind: CrowdAgent.Kind, count: int, rng: RandomNumberGenerator) ->
 func step(delta: float) -> void:
 	if _signals:
 		_signals.advance(delta)
+	_pockets.refresh(_map, _crossable_segments())
 	for agent in _agents:
 		agent._process(delta)
 	space_out_the_traffic(delta)
@@ -547,6 +575,10 @@ func _is_to_the_right_of(a: CrowdAgent, b: CrowdAgent) -> bool:
 func _physics_process(delta: float) -> void:
 	if _signals:
 		_signals.advance(delta)
+	# A no-op on every frame but the one after a seal moves — see `CrowdPockets.refresh()`. Beside
+	# the signal clock rather than inside `space_out_the_traffic()`, since it is a fact about the
+	# day's map that both kinds read and not part of resolving a queue.
+	_pockets.refresh(_map, _crossable_segments())
 	# Before the player check, because traffic has to queue whether or not anybody is watching:
 	# a car driving through another one at the far end of the street is still a car driving
 	# through another one, and a test rig has no player in it.

@@ -1315,6 +1315,19 @@ is loud, and the reason a park is quiet.
   which is `Crowd._hold_walkers_at_doors()` and `WalkerDoorHold` rather than anything the tile map
   says: the hut's own ground point, one body inside at a time, and the line waiting behind it.
 
+- **And nobody is put somewhere they could never leave.** A junction whose every arm is shut —
+  held for the day, or soft-sealed a few tiles in — is a **pocket**: legal ground with no street out
+  of it. `CrowdPockets` floods the lanes each kind actually travels once per day, from the same
+  `held_segments` and `soft_sealed_tiles` the crowd already reads, and labels every connected piece
+  that reaches at most one junction. A placement — the morning's and every recycle after it —
+  refuses a spot inside one the way it refuses a spot with no room, because somebody put there walks
+  to one seal, turns, walks to the next, and does that until the day ends. **The two kinds get
+  different answers**, because a soft seal takes both pavement lanes and leaves the carriageway: a
+  junction soft-sealed all round is a pocket to a walker and open road to a car, and a precinct is
+  the same sentence the other way up. A sealed-off junction is therefore a junction with nobody on
+  it, which is the same thing an empty street already says about a closure: *the street with nobody
+  on it is the street that is shut*.
+
 - **Bodies are solid, and cars are lethal.** Walking into somebody displaces you both and startles
   them; stepping into the carriageway in front of a moving car ends the day; traffic gives way at a
   zebra somebody is waiting at. **A contact deflects rather than blocking** — the separation is
