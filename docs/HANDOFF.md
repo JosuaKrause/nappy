@@ -225,7 +225,12 @@ harder, two rows that could be walked straight past now catch you, and alleys ar
 the rate they were. That is the largest single change to what a day costs the project has made, and
 it was measured against a rig rather than felt. The record is in `DECISIONS.md` under M73, M74 and
 M75. **Its own test is the player's sentence**: *walking a seemingly empty pavement has to give the
-meter back*. If it still does not, the radii move next, not the density.
+meter back*. It now does, and visibly: a quiet street nets about 3.8/s downward with the day's own
+crowd on it, a full meter in a little over twenty-five seconds. The lever that got there was the
+**walking decay** and not the crowd's radii, which are untouched — `DECISIONS.md`, M117, excitement
+decays visibly on quiet ground, has the before-and-after and the ceiling the number is up against.
+Whether it *reads* as recovery rather than merely measuring as it is a question for a person, and
+it is in `REVIEW.md`.
 
 **Playtest 22's findings are built and unwalked underneath that** — the sealing that closes the city
 off the path, the trunk that keeps the doorstep joined to it, the ban on routing along the main
@@ -277,7 +282,9 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56 has only
 its measurement against the nerves left, and that waits for act III. The debug view (`1` to `4` in a debug build, `--layers 1,3` for
 a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow or a body is checked by
-eye, and every one of the three is now derived from the object's one `GroundShape`. Behind those, unordered: M96 (the teaching day and
+eye, and every one of the three is derived from the object's own `GroundShape` — one apiece for
+everything but the car crash, which is solid in two pieces because its picture is two cars with
+gaps between them (`DECISIONS.md`, M118). Behind those, unordered: M96 (the teaching day and
 the dog after it), M97 (calm areas that hold), M99 (the corridor's density after the sealing) and
 M100 (the small work, the polish and the open design questions, consolidated).
 Reaching act III — which M56's measurement against the nerves needs — waits until

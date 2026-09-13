@@ -31,6 +31,9 @@ signal exit_requested
 
 const HALLWAY_WALL := preload("res://assets/interior/hallway_wall.svg")
 const HALLWAY_WINDOW := preload("res://assets/interior/hallway_wall_window.svg")
+## The same window with the street outside it lit. Swapped in for a fraction of a second whenever
+## an explosion goes off — see `flash_windows()`.
+const HALLWAY_WINDOW_FLASH := preload("res://assets/interior/hallway_wall_window_flash.svg")
 const WALL_LAMP_TEXTURE := preload("res://assets/interior/wall_lamp.svg")
 const LIFT_DOOR_TEXTURE := preload("res://assets/interior/lift_door_dead.svg")
 const ENTRANCE_DOOR_TEXTURE := preload("res://assets/interior/entrance_door.svg")
@@ -187,12 +190,15 @@ func _rebuild_collision() -> void:
 func _rebuild_walls() -> void:
 	# Wide doors are drawn after the repeating 32px wall strips. Their own centre registration keeps
 	# both leaves visible instead of letting a neighbouring wall crop one side.
+	_window_sprites.clear()
 	for at: Vector2i in _plan.walls:
 		var kind: InteriorTile.Kind = _plan.walls[at]
 		if kind == InteriorTile.Kind.LIFT_DOOR or kind == InteriorTile.Kind.ENTRANCE_DOOR:
 			continue
 		var texture := _wall_texture(kind)
-		_add_wall_sprite(at, texture)
+		var sprite := _add_wall_sprite(at, texture)
+		if sprite and kind == InteriorTile.Kind.WINDOW:
+			_window_sprites.append(sprite)
 	for at: Vector2i in _plan.walls:
 		var kind: InteriorTile.Kind = _plan.walls[at]
 		if kind != InteriorTile.Kind.LIFT_DOOR and kind != InteriorTile.Kind.ENTRANCE_DOOR:
@@ -207,15 +213,52 @@ func _rebuild_walls() -> void:
 		barricade.position = Vector2((at.x + 0.5) * TILE, at.y * TILE + TILE * 0.5)
 		_walls.add_child(barricade)
 
-func _add_wall_sprite(at: Vector2i, texture: Texture2D) -> void:
+func _add_wall_sprite(at: Vector2i, texture: Texture2D) -> Sprite2D:
 	if not texture:
-		return
+		return null
 	var sprite := Sprite2D.new()
 	sprite.texture = texture
 	sprite.centered = false
 	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 	sprite.position = Vector2((at.x + 0.5) * TILE, at.y * TILE)
 	_walls.add_child(sprite)
+	return sprite
+
+# ------------------------------------------------------------------ the flash ---
+
+## Every hallway window in the building, kept so an explosion can light all of them at once.
+var _window_sprites: Array[Sprite2D] = []
+## Seconds of lit window left, or 0 for none. Counted down in `_process()` rather than handed to a
+## `SceneTreeTimer`, so the flash freezes with the rest of the game behind a pause screen instead
+## of burning down while nothing is being played.
+var _window_flash_left := 0.0
+
+## **The explosion's own cue indoors.** *"The hallway windows that flash when an explosion goes
+## off"* — there is no burst on the street to see and no arc drawn for the noise yet, so what says
+## a bomb has gone off somewhere out there is every window in the building going white at once for
+## a frame or two.
+##
+## All of them, not the ones she can see: the building is one map with three hallways 64 tiles
+## apart, and which hallway she is standing in is not something this has to know. The two she is
+## not in are off screen and cost two texture assignments.
+func flash_windows() -> void:
+	_window_flash_left = Tuning.FINALE_WINDOW_FLASH_SECONDS
+	for sprite in _window_sprites:
+		sprite.texture = HALLWAY_WINDOW_FLASH
+
+## Whether a flash is on screen right now — what `tests/test_interior.gd` asks, since a texture
+## swap is not something a headless run can see.
+func windows_are_flashing() -> bool:
+	return _window_flash_left > 0.0
+
+func _process(delta: float) -> void:
+	if _window_flash_left <= 0.0:
+		return
+	_window_flash_left = maxf(0.0, _window_flash_left - delta)
+	if _window_flash_left > 0.0:
+		return
+	for sprite in _window_sprites:
+		sprite.texture = HALLWAY_WINDOW
 
 func _wall_texture(kind: InteriorTile.Kind) -> Texture2D:
 	match kind:
@@ -447,6 +490,86 @@ func part_world_position(part: String) -> Vector2:
 		return tile_to_world(_plan.waypoints[part])
 	return start_world_position()
 
+## What `waypoint()` answers for a name the plan does not have. Off every part's own footprint by
+## several map widths, so a caller that forgets to check it puts something nowhere at all rather
+## than on the ground beside her.
+const NOWHERE := Vector2i(-999999, -999999)
+
+## An `InteriorMapPlan` waypoint by name — a stairwell's landing, a hallway's midpoint, the lobby
+## floor — or `NOWHERE`. The escape's events are sited against these rather than against tile
+## arithmetic of their own, so a change to the building's layout moves them with it.
+func waypoint(id: String) -> Vector2i:
+	return _plan.waypoints.get(id, NOWHERE)
+
+## The half-landings of one shaft: every `LANDING` tile inside it that is not one of the four named
+## floor landings. What tells them apart is the plan's own waypoint list rather than the
+## switchback's arithmetic, so a change to `InteriorMap.STAIRWELL_FLIGHT_LEN` needs no change here.
+func turn_landings(part_id: String) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	var top: Vector2i = waypoint(part_id)
+	var bottom: Vector2i = waypoint("%s:landing_lobby" % part_id)
+	if top == NOWHERE or bottom == NOWHERE:
+		return found
+	var named := {}
+	for id: String in _plan.waypoints:
+		named[_plan.waypoints[id]] = true
+	# The switchback swings a flight either side of the landing column and never further, so the
+	# shaft's own tiles are the box between its top and bottom landings, widened by that swing.
+	var swing := InteriorMap.STAIRWELL_FLIGHT_LEN + 1
+	for tile: Vector2i in _plan.tiles:
+		if _plan.tiles[tile] != InteriorTile.Kind.LANDING or named.has(tile):
+			continue
+		if absi(tile.x - top.x) <= swing and tile.y >= top.y and tile.y <= bottom.y:
+			found.append(tile)
+	found.sort()
+	return found
+
+## The basement's corridor, entry to exit, tile by tile. The corridor has no branches, so its
+## shortest walk *is* the corridor, and anything sited a fraction of the way along it stands
+## somewhere she has to pass rather than somewhere she might.
+func basement_walk() -> Array[Vector2i]:
+	var entry := _plan.door("basement:entry")
+	if not entry or _plan.exit_tile.x < 0:
+		return []
+	return _shortest_walk(entry.tile, _plan.exit_tile)
+
+## Breadth-first over walkable tiles, unwound into the path itself — `from` first, `to` last, or
+## empty when there is no walk between them.
+##
+## **Eight-connected, not four.** A flight is a run of diagonal steps — the kit's tile drops one
+## tile height over one tile width — so the basement's own entry flight touches the floor above it
+## only at a corner, and a four-connected walk finds no route out of the door at all. She walks
+## those corners (`InteriorMap._mark_diagonal_clearances()` is what frees them physically), so a
+## walk that could not is not the walk she takes.
+func _shortest_walk(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
+	var previous := {from: from}
+	var queue: Array[Vector2i] = [from]
+	var head := 0
+	while head < queue.size():
+		var tile: Vector2i = queue[head]
+		head += 1
+		if tile == to:
+			break
+		for dx in range(-1, 2):
+			for dy in range(-1, 2):
+				if dx == 0 and dy == 0:
+					continue
+				var next := tile + Vector2i(dx, dy)
+				if previous.has(next) or not _plan.is_walkable(next):
+					continue
+				previous[next] = tile
+				queue.append(next)
+	if not previous.has(to):
+		return []
+	var path: Array[Vector2i] = []
+	var at := to
+	while at != from:
+		path.append(at)
+		at = previous[at]
+	path.append(from)
+	path.reverse()
+	return path
+
 ## The whole building's own footprint, grown by a wide margin — **wider than it looks like it
 ## needs to be, on purpose.** `Stroller`'s `Camera2D` is authored at `zoom = Vector2(2, 2)`
 ## (`scenes/player/stroller.tscn`), so its own visible world footprint is 640×360, not the
@@ -465,6 +588,24 @@ func camera_bounds() -> Rect2:
 ## Joins the y-sorted layer everything standing in this scene lives on.
 func add_entity(node: Node) -> void:
 	_entities.add_child(node)
+
+# ------------------------------------------------------------------ the meters ---
+# `InteriorScene` is a `WorldContext`, so the baby asks it how loud it is here. With nothing in the
+# building the base class's own defaults are already the right answer — 1.0 recovery everywhere and
+# nothing charging excitement — and the escape's own events are what make them say otherwise.
+
+## The events inside the building, or null while the building is walked empty. The same
+## relationship `City` has to its own `EventManager`: the world holds the events and the events
+## hold the world, because an event has to be added to the scene it stands in.
+var events: InteriorEvents = null
+
+func total_excitement_at(world_position: Vector2) -> float:
+	return events.total_excitement_at(world_position) if events else 0.0
+
+func excitement_sources_at(world_position: Vector2) -> Array:
+	if not events:
+		return []
+	return events.excitement_sources_at(world_position)
 
 # ------------------------------------------------------------------ transitions ---
 
@@ -513,6 +654,22 @@ func _start_exit() -> void:
 	var tween := create_tween()
 	tween.tween_property(_fade_rect, "modulate:a", 1.0, FADE_SECONDS)
 	tween.tween_callback(func() -> void: exit_requested.emit())
+
+## Lifts the black the service exit left over the screen, once whoever listened to
+## `exit_requested` has finished building whatever is behind it. **The exit's own tween stops at
+## full opacity on purpose** — a door fades back in by itself because its counterpart is already
+## on this map, and the way out has to hold the black for however long the city takes to be
+## assembled, or the first frame of it is seen being built.
+##
+## Also the way back in after a lost section: she is put at the hallway's own start, and a fade
+## rect left opaque from a transition that was interrupted would leave the retry playing behind a
+## black screen.
+func clear_fade() -> void:
+	_transitioning = false
+	if _fade_rect.modulate.a <= 0.0:
+		return
+	var tween := create_tween()
+	tween.tween_property(_fade_rect, "modulate:a", 0.0, FADE_SECONDS)
 
 ## Moves `player` to the door named `door_id`'s own tile — "just inside its counterpart door," in
 ## the TODO's own words, since the door tile is exactly where she is placed. Exposed rather than

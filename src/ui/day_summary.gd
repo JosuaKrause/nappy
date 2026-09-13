@@ -178,6 +178,40 @@ func show_ending(ending: GameEnums.Ending) -> void:
 	_showing_ending = true
 	_present()
 
+## The escape's own last screen: the tunnel or the bridge behind her, and **nothing triumphant**
+## (`docs/NARRATIVE.md`, "No triumphalism"). Two lines, one for the way she took, and the clock she
+## took it on to the millisecond — the only number this screen carries, and the reason the finale's
+## clock reads that way at all.
+##
+## Not a fourth `GameEnums.Ending`: an ending is a *run's* outcome and `GameState.ending` picks one
+## of three from the nerves and the sabotage. This is the last screen of a sequence that the run
+## hands over to, so it is its own entry point on the same screen — the smallest thing that keeps
+## `show_ending()`'s own table saying exactly what it says now.
+##
+## `exit_kind` is a `CityEdge.Kind`, passed as an `int` because a cross-script enum is not the same
+## type as itself as a parameter — see the **godot** skill.
+func show_finale(exit_kind: int, seconds: float) -> void:
+	_heading.text = "THE END"
+	_heading.show()
+	_title.text = "You are out."
+	_showing_ending = false
+	_body.text = "%s\n\nOut in: %s" % [
+		_FINALE_BODY.get(exit_kind, _FINALE_BODY[CityEdge.Kind.BRIDGE]),
+		GameState.format_clock(seconds)]
+	_hint.text = ""
+	_present()
+
+## What is behind her, and it is the same sentence either way: she is out, nobody is following,
+## and the city is still there. The two differ only in what she is standing on.
+const _FINALE_BODY := {
+	CityEdge.Kind.TUNNEL:
+		"The mountain closes over the road behind you.\n"
+		+ "She does not wake.",
+	CityEdge.Kind.BRIDGE:
+		"The water is under you and the city is behind you.\n"
+		+ "She does not wake.",
+}
+
 func _present() -> void:
 	_root.show()
 	_refresh_buttons()

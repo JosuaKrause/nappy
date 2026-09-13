@@ -30,6 +30,31 @@ stops costing on their own while the crowd's numbers stay — and answered:
 
 > None — build as recommended
 
+### Two rows the raised decay made nearly free
+
+Building it turned up two rows the change made cheap enough to be worth asking about, and both
+went back to the player with their numbers. At the new walking decay of 6.0/s, walking a straight
+line through a **busker** costs +2.9 against the +13.3 it cost before, and above a decay of about
+6.7/s it would be free outright; an **alley mouse** costs +1.0 against +4.2. Neither row's own
+design had changed — the ground under both had.
+
+> busker should be adjusted. alley mouse can be nearly free
+
+Then, revising the second half of it:
+
+> alley mouse is a bit above charging cat
+
+Read as the `cat_dash` row's cost, which is +17.6 walking on the table as it then stood. And then,
+on how the two are to be compared at all:
+
+> consider that the mouse is in the alley but the cat is usually not
+
+Which is the correction that decided the number: a cat is met on an ordinary street and a mouse
+only ever in an alley, where the ground gives back 3.5/s instead of 6.0 and the alley's own +3.0/s
+dread is already being charged — so the alley hands that row most of the gap before its own
+intensity is touched at all. The record, with both rows' before and after on their own ground, is
+in `DECISIONS.md` under M117.
+
 ## A car crash is solid where its picture is empty
 
 > a car crash right now has a full bounding box even though there are gaps in the sprite. the

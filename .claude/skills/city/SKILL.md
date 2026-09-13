@@ -95,6 +95,16 @@ is the crowd, the danger is the events, the shape is the closures. A noisy roadw
 as the `construction` event. **Do not let a closure emit**; it would be a third thing for
 `City.total_excitement_at` to sum, and that list is exactly two long on purpose.
 
+**One seal is loud, and it is the shape of the exception that matters.** *(2026-09-12: "a car crash
+right now has a full bounding box even though there are gaps in the sprite. the bounding box should
+only be the crashed cars but it should emanate an excitement field that prevents the player from
+walking past it".)* `car_accident` is solid only where its two cars are, so its picture's own gaps
+are walkable and `Tuning.CAR_ACCIDENT_INTENSITY` is what stands in them. **That is a catalogue row
+emitting, not a closure emitting** — a seal is an `EventDef` and always was, so nothing was added to
+the sum. A `RoadClosure` still contributes nothing, and a seal whose picture leaves no gap
+(`fallen_tree`, `burst_water_main`) still carries `intensity = 0.0`. The test for a new one is
+whether the body can match the picture: where it can, the silence stands.
+
 This is **consistent** with the diversion design in `docs/CITY.md`, "Guiding her to the calm". A
 road closure there is *"not lethal but prevents full access"* — an absolute stop that does not kill
 and does not shout. The things that guide by being **expensive** are ordinary catalogue events, and
@@ -105,7 +115,7 @@ which is a scheduler decision and not a change to what a closure is.
 
 `CityGenerator._assign_street_kinds` decides *where* (`CityMap.main_road`,
 `CityMap.precinct_spans`); `Tuning.PRECINCT_BLOCKS`, `PRECINCT_BUSYNESS`, `EVENT_PRECINCT_WEIGHT`
-and the `EXCITEMENT_DECAY_*_MULTIPLIER` trio decide *what it means*.
+and the `EXCITEMENT_DECAY_*_MULTIPLIER` family decides *what it means*.
 
 **Five places have to agree and the failure mode of each is silent:**
 
@@ -126,10 +136,16 @@ the real one but with no lights, no dark asphalt and no clearway.
 
 ## The ground is a rate, not a category
 
-Calm 2.2, precinct 1.5, ordinary street 1.0, main road 0.6, multiplying the excitement decay — so
-choosing a route is choosing a **recovery rate** and not only a set of things to walk past. It is
-what makes a precinct worth walking to although it is loud, and most of what *"a main road is
-crossed, not walked"* means arithmetically.
+Calm 2.0, precinct 1.5, ordinary street 1.0, alley 0.58, main road 0.35, multiplying the excitement
+decay — so choosing a route is choosing a **recovery rate** and not only a set of things to walk
+past. It is what makes a precinct worth walking to although it is loud, what keeps an alley a
+shortcut rather than a rest, and most of what *"a main road is crossed, not walked"* means
+arithmetically.
+
+**The multipliers are ratios and the absolute rates are the design.** Move the walking decay and
+every one of them is re-derived to hold its own ground's rate — the spine gives back 2.1/s and an
+alley 3.5/s whatever the walking rate is. `tests/probes/m117_decay.gd` walks each ground and prints
+what it actually does, which is how the rates are set rather than guessed.
 
 ## Adding things
 

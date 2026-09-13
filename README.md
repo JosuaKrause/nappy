@@ -104,7 +104,7 @@ going quietly stale.
 | `--layers 1,3` | Set which of the three debug geometry layers start on, for a reproducible rig screenshot |
 | `--svg` | Force SVG presentation over PNG, even where a matching PNG asset exists (also reachable as a release web build's own `?svg=1`) |
 | `--invincible` | Nothing ends the day — crying and a hard fail leave it running, the clock never moves and the excitement meter never rises; a won day still ends normally. Marked on the HUD and in the run log so no capture from it reads as a real run (also reachable on a debug web build as `?invincible=1`) |
-| `--start-escape [stairwell:left\|stairwell:right\|lobby\|basement\|floor:N]` | Start straight in the escape scene's interior instead of the title and the city, optionally at one of its seven parts |
+| `--start-escape [stairwell:left\|stairwell:right\|lobby\|basement\|floor:N\|city]` | Start straight in the escape sequence instead of the title and a day: the building, optionally at one of its seven parts, or `city` for the second section on its own |
 | `--title` | Open on the title screen even under a screenshot rig, which otherwise skips it |
 | `--no-title` | Skip the title screen |
 | `--ending bad\|neutral\|good` | Put the given ending screen up at boot, to screenshot one without playing a run out to reach it |

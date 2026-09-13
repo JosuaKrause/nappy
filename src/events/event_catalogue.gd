@@ -141,27 +141,39 @@ static func _build() -> Array[EventDef]:
 		_moving_van(),
 		_burnt_out_car(),
 		_collapsed_frontage(),
+
+		# The finale — never rolled by the ordinary scheduler, placed only by `FinalePlanner` and
+		# `InteriorEvents`. See "the finale" below.
+		_finale_explosion(),
+		_impact_crater(),
+		_masked_pursuer(),
+		_basement_steam(),
 	]
 
 ## The reason parks are not a free win. Permanent, wide, and sitting in the middle of the
 ## calmest ground in the city.
 ##
-## **This is the one ambient row that lives on calm ground, and that decides its intensity.**
+## **This is the one ambient row that lives on calm ground, and two different rates price it.**
 ## `PLAYGROUND` is on `Tile._CALM`, so the decay under it is
-## `EXCITEMENT_DECAY_WALKING × EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` — **7.7/s**. A row that emits
-## less than that at the peak of its pulse never out-emits the ground it stands on, at any distance
-## or any phase of its beat: its denial radius collapses to its own **inner radius**, and standing in
-## a playground is a net *benefit*.
+## `EXCITEMENT_DECAY_WALKING × EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` — **12.0/s** — and that is
+## what it has to beat at the peak of its pulse to cost anything at all to stand in. A row under it
+## at the peak never out-emits the ground it stands on at any distance or any phase of its beat, and
+## standing in a playground would be a net *benefit*. At 15 it clears that by three.
 ##
-## **So it moves whenever the calm multiplier moves**, and that is the trap — the multiplier is
-## tuned for the park and this row is the only thing in the catalogue that stands in one, so nothing
-## else in the balance goes wrong to point at it. `EventScheduler._denial_radius` is the same
-## arithmetic for spoilers.
+## **The radius it denies is the other rate, and it is deliberately not this one.**
+## `EventScheduler._denial_radius` asks `Tuning.CALM_ZONE_DENIAL_RATE` (7.7/s), which is fixed:
+## which rows may deny park ground is a decision about parks rather than about how fast the pram
+## settles, so the walking decay moving does not move it. At 15 the denial radius is 117px at the
+## top of the beat and 86px at the middle, against a park block 256px across. It dominates the
+## middle of a park and leaves the far side genuinely calm, and `tests/test_balance.gd` still finds
+## a day winnable, because the ground is contested rather than removed.
 ##
-## Set from what it should deny rather than by taste: at 15 the denial radius is 117px at the top of
-## the beat and 86px at the middle, against a park block 256px across. It dominates the middle of a
-## park and leaves the far side genuinely calm, and `tests/test_balance.gd` still finds a day
-## winnable, because the ground is contested rather than removed.
+## **The trap is that the two rates can drift apart under this row and nothing else would say so**:
+## it is the only thing in the catalogue that stands on calm ground, so no other part of the balance
+## goes wrong to point at it. Its pulse runs 0.25 to 1.0 of `intensity`, so what it charges swings
+## across the ground's own decay over its nine seconds — the middle of a playground is expensive at
+## the top of the beat and free at the bottom, which is a rhythm to walk through rather than a
+## constant tax.
 static func _playground() -> EventDef:
 	var def := EventDef.new()
 	def.id = "playground"
@@ -169,7 +181,7 @@ static func _playground() -> EventDef:
 	def.kind = GameEnums.EventKind.AMBIENT
 	def.ambient_source = EventDef.AmbientSource.PLAYGROUND
 	def.look = EventDef.Look.NONE  # The park's swing frame already draws it.
-	# Above the decay on the ground it stands on (7.7/s), which is the whole of what an event on
+	# Above the decay on the ground it stands on (12.0/s), which is the whole of what an event on
 	# calm ground has to clear to exist at all. See the note above.
 	def.intensity = 15.0
 	# Sized so it dominates the middle of a park but leaves the far side genuinely calm —
@@ -314,7 +326,21 @@ static func _alley_mouse() -> EventDef:
 	def.look = EventDef.Look.MOUSE
 	def.shape = GroundShape.point(4.0)
 	def.placement = [GameEnums.TileType.ALLEY]
-	def.intensity = 9.0
+	# **Priced against the cat on each row's own ground, which is not the same ground.** *(2026-09-12:
+	# "alley mouse is a bit above charging cat"; "consider that the mouse is in the alley but the cat
+	# is usually not".)* A cat is met on an ordinary street, where 6.0/s is given back; a mouse is
+	# only ever met in an alley, where 3.5/s is given back and the alley's own
+	# `Tuning.EXCITEMENT_FROM_ALLEY` (+3.0/s) is being charged on top. So the alley hands this row
+	# most of the gap for nothing, and 21.0 is what is left to buy: it walks to +19.9 in an alley
+	# against the cat's +17.6 on a street.
+	#
+	# **A tiny radius is why the number is large rather than a mistake.** The field is 60px, so the
+	# crossing is one and a third seconds — a spike is bought here in intensity, since there is no
+	# `impulse` field and a short, loud disc is how this project writes one.
+	#
+	# The cost table in `docs/EVENTS.md` nets every row against the *same* walking decay, so this
+	# row reads cheaper there than the cat does; the note under that table says why.
+	def.intensity = 21.0
 	def.inner_radius = 15.0
 	def.outer_radius = 60.0
 	# `Tuning.required_telegraph_time(15, 60, false, 200)` is ~1.09s (outer_radius · field_scale(e)
@@ -378,10 +404,11 @@ static func _homeless_yeller() -> EventDef:
 
 ## Slow, and it owns the pavement it is on.
 ##
-## **The intensity is the wall, and it has to beat the walking decay.** At 7 it does not: walking
-## *through* a dog walker beats walking around it by 0.1 of a point, because 3.5/s of decay outruns
-## what it emits. An obstacle that is cheaper to walk into than to avoid is not an obstacle, and
-## what this row is for is being worth turning round and crossing at the zebra for.
+## **The intensity is the wall, and it has to beat the walking decay.** At 7 it does not: what it
+## means along a line through the middle falls under the 6.0/s an ordinary street gives back, so
+## walking *through* a dog walker beats walking around it. An obstacle that is cheaper to walk into
+## than to avoid is not an obstacle, and what this row is for is being worth turning round and
+## crossing at the zebra for.
 ##
 ## Deliberately **not** given an `obstructs_radius`: a mobile static body wide enough to matter
 ## on a two-tile pavement can pin the player against a building, and being pinned by something
@@ -493,6 +520,25 @@ static func _delivery_van() -> EventDef:
 
 ## A park spoiler, and a pleasant one. Nothing about it is threatening; it is simply
 ## interesting, which is the whole problem.
+##
+## **It stands on calm ground, so the calm ground's decay is what its intensity has to beat**, the
+## same way `playground`'s does — 12.0/s, `EXCITEMENT_DECAY_WALKING` times the calm multiplier. At
+## 13.0 the core of it costs while she is inside `inner_radius`, and that is the whole claim: a
+## busker whose peak sat under the ground it stands on would be a park *bonus* with a picture of a
+## nuisance on it.
+##
+## **The number is the lowest one that clears both floors, and that is deliberate, because a louder
+## busker denies more park.** `EventScheduler._denial_radius` is stated against the fixed
+## `Tuning.CALM_ZONE_DENIAL_RATE` (7.7/s), so intensity is the only thing that moves how much calm
+## ground one of these takes out of a lot 704px across — 137.6px of it at 13.0. The other floor is
+## that crossing one has to stay worth routing around, which `tests/test_events.gd` reads off the
+## cost table.
+##
+## **What the pulse does to that, because it is easy to read the number as steadier than it is:**
+## `pulse_period` swings what it actually emits between a quarter and all of `intensity` every
+## seven seconds, so the middle of a busker's field is dearer than the park at the top of the beat
+## and cheaper at the bottom. Along a whole line through one it is the rim that decides, and the rim
+## is under the park's own decay — a busker is a place to walk round, not a wall.
 static func _busker() -> EventDef:
 	var def := EventDef.new()
 	def.id = "busker"
@@ -500,7 +546,9 @@ static func _busker() -> EventDef:
 	def.look = EventDef.Look.BUSKER
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.PARK, GameEnums.TileType.SQUARE]
-	def.intensity = 9.0
+	# Above the 12.0/s a park gives back, which is what a row standing on calm ground has to clear
+	# to cost anything at all. See the note above for why it is not higher.
+	def.intensity = 13.0
 	def.inner_radius = 45.0
 	def.outer_radius = 190.0
 	def.telegraph_time = 1.7
@@ -1621,6 +1669,23 @@ static func _fallen_tree() -> EventDef:
 ## A hard seal: two cars locked together across the carriageway, debris between them and an
 ## onlooker on each pavement — the player's other own example. Same single-copy geometry as
 ## `fallen_tree`, for the same reason: one continuous scene rather than a repeated segment.
+##
+## **The one seal that is solid only in parts, and the one that emits.** *(2026-09-12: "a car crash
+## right now has a full bounding box even though there are gaps in the sprite. the bounding box
+## should only be the crashed cars but it should emanate an excitement field that prevents the
+## player from walking past it".)* `shape` stays the whole-street band — it is what the picture is
+## fitted to, what the field is stated over, and the disc every planner clears the street by — while
+## `solid_parts` puts a body under each car and leaves the debris and the two pavements open. The
+## price of walking through one of those gaps is the field, not a wall: see
+## `Tuning.CAR_ACCIDENT_INTENSITY`, which is what overturns *a closure is silent* for this row alone
+## (`docs/CITY.md`, "A closure is silent").
+##
+## **The field is stated over the band and not over the cars.** `inner_radius` is
+## `GroundShape.BAND_RADIUS` — the band's own surface, since a segment's field is priced from its
+## spine — so everything inside the scene's own footprint is charged at the full rate, gaps
+## included, and the shoulder outside it is short: 72px, under half a street's width, so the crash
+## is felt walking up to it rather than from down the street. A sealed street still has to be
+## discoverable by walking into it, which is the reason closures are silent in the first place.
 static func _car_accident() -> EventDef:
 	var def := EventDef.new()
 	def.id = "car_accident"
@@ -1629,12 +1694,41 @@ static func _car_accident() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.CAR_ACCIDENT
 	def.act_tag = 1
-	def.intensity = 0.0
-	def.inner_radius = 40.0
-	def.outer_radius = 120.0
+	def.intensity = Tuning.CAR_ACCIDENT_INTENSITY
+	def.inner_radius = GroundShape.BAND_RADIUS
+	def.outer_radius = 96.0
 	def.telegraph_time = 0.9
 	def.solid(GroundShape.band(96.0))
+	def.solid_parts = _car_accident_parts()
+	if Tuning.CAR_ACCIDENT_GAPS_ARE_LETHAL:
+		# The other answer to *prevents*, off by default — see the constant. The lethal radius has
+		# to clear the cars' own bodies with her 14px to spare or the kill can never fire
+		# (`EventDef.validate()`), and the telegraph has to buy the walk out of the doubled margin.
+		def.hard_fail = true
+		def.inner_radius = Tuning.CAR_ACCIDENT_LETHAL_INNER_RADIUS
+		def.telegraph_time = 1.2
 	return def
+
+## Where the two cars stand, read off the two authored pictures at the scale
+## `EventInstance._draw_wide_scene` fits each to the street — 192px of street over a 200px picture,
+## so a pixel of art is 0.96px of ground and the picture's own centre is the scene's centre.
+##
+## `car_accident.svg` (north-south street): the cars are drawn at x 63–91 and 92–120, and
+## `car_accident_shadow.svg` puts their ground contacts at 77 and 106, which agree — an end-on car
+## is drawn directly above its own patch of road. That is −22.1px and +5.8px from the centre.
+##
+## `car_accident_vertical.svg` (east-west street): the cars are side views, so their drawn bodies
+## sit **above** the road they stand on and only the shadow art says where that is — contacts at
+## y 88 and 110, which is −11.5px and +9.6px from the centre.
+##
+## 14px of radius apiece: a car is drawn 28px wide, 26.9px of ground at this scale, and the round
+## number is what makes the two bodies meet rather than leaving a one-pixel slot between them on the
+## north-south picture. Debris and onlookers carry no body at all — they are what the gaps are.
+static func _car_accident_parts() -> Array[EventDef.SolidPart]:
+	return [
+		EventDef.part(-22.1, -11.5, GroundShape.point(14.0)),
+		EventDef.part(5.8, 9.6, GroundShape.point(14.0)),
+	] as Array[EventDef.SolidPart]
 
 ## Half of a soft seal: a skip at the kerb, facing `scaffolding` on the other pavement. Kerb-pinned
 ## like `delivery_van`, so `EventInstance._centred_on_the_pavement_band` leaves it exactly where
@@ -1778,12 +1872,14 @@ static func _collapsed_frontage() -> EventDef:
 ## detainer's does, and the ambient field is the milestone's own "a bit of excitement": a small
 ## `intensity` over a tight band, small enough that the real price stays the flat
 ## `Tuning.CHAT_EXCITEMENT` the detention charges through the ordinary chat mechanism, and standing
-## still on its own pays nothing back (`EXCITEMENT_DECAY_IDLE`) — but not so small that walking
-## through the field for free undercuts `tests/test_events.gd`'s own catalogue-wide rule that
-## nothing is cheaper to walk through than around: with most of the 84-98px band held at peak
-## against `EXCITEMENT_DECAY_WALKING` (3.5/s), 6.0 is the smallest round number that clears it with
-## a margin rather than by luck. The band stays 14px wide, which is what the telegraph is priced
-## on; the disc moved out with the capture so the two keep the order `validate()` requires.
+## still on its own pays nothing back (`EXCITEMENT_DECAY_IDLE`). **The field is not what makes this
+## row expensive and must not be asked to be**: at 6.0 over an 84–98px band it means less along the
+## line than the 6.0/s an ordinary street gives back, so `walk_through_cost()` reads it as free —
+## and it is, because the price is the detention. `tests/test_events.gd` exempts the detainers from
+## its catalogue-wide "nothing is cheaper to walk through than around" rule by name and for that
+## reason, and holds them to charging their capture instead. The band stays 14px wide, which is what
+## the telegraph is priced on; the disc moved out with the capture so the two keep the order
+## `validate()` requires.
 ## `redetains` is what tells `EventManager` this instance is armed again once she is outside
 ## `detain_distance()`, in either direction, rather than spent after one conversation like
 ## `chatting_mother`.
@@ -1857,4 +1953,170 @@ static func _checkpoint_post() -> EventDef:
 	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
 	def.detain_radius = Tuning.CHECKPOINT_DETAIN_REACH
 	def.redetains = true
+	return def
+
+# ------------------------------------------------------------------ the finale ---
+# Two rows the escape places and nothing else does. Both are `SCRIPTED` with `scripted_day = 0`,
+# the same gate the eight seal pictures and the checkpoint kit use: `EventDef.available_on()` asks
+# `scripted_day == day` for a `SCRIPTED` row and no day of a fourteen-day run is day zero, so the
+# ordinary scheduler can never roll either one. `FinalePlanner` places them by id.
+
+## The bang she hears and does not see. *"Explosions happen off screen (but loud enough to cause
+## excitement) leaving craters on the street."*
+##
+## **It draws nothing at all**, which is the whole of the brief: there is no burst on the street,
+## only the noise and the hole afterwards. `Look.NONE` — the fourth row in the catalogue with no
+## picture, alongside the playground and the two loudspeaker sources — so it needs no shape either,
+## and `tests/test_events.gd` names all four by id.
+##
+## **Off screen is bought with the streaming radius rather than with a rule.** A `MAP` placement
+## comes into the world at `Tuning.EVENT_STREAM_RADIUS` (900px), where the camera at zoom 2 sees
+## 640×360 — so an explosion begins its telegraph roughly two and a half screens away, spends
+## `telegraph_time` + `duration` (3.7s, about 340px of walking) getting to its bang, and is over
+## while it is still well outside the view. Nothing has to site it "off screen": walking toward it
+## takes longer than it lasts.
+##
+## **The radii are sized against that distance and not against taste.** `outer_radius` 520 reaches
+## a screen and a half; `inner_radius` 300 puts the whole of the near half of that band at close to
+## full strength, so a burst that goes off just beyond the screen edge (about 360px on the long
+## axis) still lands roughly 22 of its 24 points per second on her. A narrower band would be an
+## explosion she could be next to and not hear. `telegraph_time` is the contract's own minimum for
+## that band — `(520 − 300) / WALK_SPEED` is 2.39s — with the ordinary margin on top.
+##
+## **Not lethal, and that is the tone rule rather than an omission** (`docs/NARRATIVE.md`: *the
+## danger is always noise*). The thing that ends a section is being taken; an explosion wakes the
+## baby.
+static func _finale_explosion() -> EventDef:
+	var def := EventDef.new()
+	def.id = "finale_explosion"
+	def.display_name = "Explosion"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.NONE
+	def.act_tag = 4
+	def.placement = [GameEnums.TileType.ROAD]
+	def.intensity = 24.0
+	def.inner_radius = 300.0
+	def.outer_radius = 520.0
+	def.telegraph_time = 2.5
+	# Short and over: a sharp spike is a short `duration` at high `intensity`, since there is no
+	# `impulse` field and none is wanted (`CLAUDE.md`, "Things deliberately not done").
+	def.duration = 1.2
+	def.spawns_on_finish = "impact_crater"
+	return def
+
+## What is left in the road afterwards, and it stays there for the rest of the sequence: `duration`
+## 0 is "lasts the whole day", so a crater is a fact about the street from the moment it is made.
+##
+## **Silent and solid**, exactly like the eight seal pictures it sits beside — a hole in the road
+## makes no noise, and its radii are `barricade`'s own (inner 40, outer 120, telegraph 0.9) because
+## `EventDef.validate()` still wants a falloff band to exist even at zero intensity.
+##
+## **The body is the picture.** `impact_crater_2x2.svg` is 64px across, so `point(32)` is exactly
+## half of it and the ground she cannot walk on is the hole she can see — *anything that stands
+## still is solid at the width it is drawn*, read in the one direction a hole can be read in. The
+## 32px and 96px sources stay prepared and unbound: `spawns_on_finish` names one row, a second
+## crater row would need a second explosion row to leave it, and three sizes of the same hole would
+## be three looks that no reader could tell apart on the screen-edge badge.
+##
+## **No `scar_id`.** A scar is how the *run* remembers a fire on day 3; the escape is the last
+## thing that happens in a run, so a crater has nothing left to persist into and recording one
+## would only put an entry in `GameState.scars` that no later day ever reads.
+static func _impact_crater() -> EventDef:
+	var def := EventDef.new()
+	def.id = "impact_crater"
+	def.display_name = "Crater"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.IMPACT_CRATER
+	def.act_tag = 4
+	def.intensity = 0.0
+	def.inner_radius = 40.0
+	def.outer_radius = 120.0
+	def.telegraph_time = 0.9
+	def.solid(GroundShape.point(32.0))
+	return def
+
+## A masked man running up the stairwell. *"Some masked pursuers that run up the stairs that can be
+## avoided by going into a corridor and letting them pass."*
+##
+## **Mobile, not `pursues`, and that is the whole counterplay.** A pursuer steers at her, so the
+## only answer to one is speed; this runs a line — the shaft, bottom landing to top — and the
+## answer to it is *not being on that line*, which in a building whose stairwell doors are a fade
+## and a teleport means stepping through the nearest one and letting him go past. It is
+## `loose_dog`'s contract indoors: a thing coming down the corridor you are in, answered by
+## leaving the corridor.
+##
+## **Faster than a walk, so it cannot be out-walked**, which is what makes stepping aside the
+## answer rather than a preference — and what makes the telegraph the long one: at 130px/s the
+## contract prices the escape as the field's whole forward reach rather than its falloff band, so
+## `outer_radius` 120 at `TELEGRAPH_HARD_FAIL_MARGIN` needs 3.53s and this carries a little over
+## it. Three and a half seconds is also what the picture wants: she hears him a floor below.
+##
+## **No body**, like every other mobile row: a moving wall on a stairwell one tile wide would pin
+## her against the shaft. What stops her walking into him is that it ends the section.
+static func _masked_pursuer() -> EventDef:
+	var def := EventDef.new()
+	def.id = "masked_pursuer"
+	def.display_name = "Masked man"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.MASKED_PURSUER
+	def.shape = GroundShape.point(9.0)
+	def.act_tag = 4
+	def.intensity = 18.0
+	def.inner_radius = 28.0
+	def.outer_radius = 120.0
+	def.telegraph_time = 3.6
+	def.mobile = true
+	def.speed = Tuning.HEAT_HUNTS_SPEED
+	# **He waits at the foot of the shaft until she is in it**, rather than running his line the
+	# moment the section begins and being gone before she has come down a floor. `pursues_within`
+	# is the field's own name for that state and is wider than its name — a row that sets it
+	# without `pursues` stands unclocked until she is in range and then runs its ordinary path,
+	# which is exactly `alley_mouse`'s shape at a stairwell's scale. 900px is the shaft's own
+	# height (three floors of eight tiles is 768px) with room over it, so he notices her the moment
+	# she is anywhere in the same stairwell and never from the hallway two parts away.
+	def.pursues_within = 900.0
+	# And the notice is spent standing, not approaching: a man already running when he first
+	# becomes visible has given no notice at all.
+	def.still_while_telegraphing = true
+	def.hard_fail = true
+	return def
+
+## Steam in the basement: *"maybe some steam in the basement etc."* A field on a corridor she has
+## to walk down, which is the one kind of pressure a passage with no branches can carry.
+##
+## **It drifts, and that is what buys it out of the solidity rule rather than a number.** *Anything
+## that stands still is solid at the width it is drawn* — and `steam.svg` is 32px across, so a
+## standing vent would be a 16px body in a basement corridor two tiles (64px) wide, which leaves
+## her 28px of pram and body a four-pixel lane to aim at. That is the "no line to walk" failure
+## exactly, in the one place in the building where there is no second route to take instead. So it
+## **paces** its own stretch of corridor, which takes the body away by the rule
+## `EventDef.paces` states — *the price of pacing is the body* — and pays it back in intensity.
+##
+## **And it pulses on top of that**, so the counterplay is timing a pass between two vents rather
+## than a fixed toll for the passage: the same thing `homeless_yeller`'s beat asks for, at the
+## scale of a corridor rather than a street.
+static func _basement_steam() -> EventDef:
+	var def := EventDef.new()
+	def.id = "basement_steam"
+	def.display_name = "Steam"
+	def.kind = GameEnums.EventKind.SCRIPTED
+	def.scripted_day = 0
+	def.look = EventDef.Look.STEAM
+	def.shape = GroundShape.point(10.0)
+	def.act_tag = 4
+	def.intensity = 14.0
+	def.inner_radius = 24.0
+	def.outer_radius = 90.0
+	# Well under a walk, so the escape distance is the falloff band: `(90 − 24) / WALK_SPEED` is
+	# 0.72s, and this carries the same kind of margin every other slow row in the catalogue does.
+	def.telegraph_time = 1.2
+	def.pulse_period = 4.0
+	def.mobile = true
+	def.paces = true
+	# A drift rather than a walk — slower than anything else that moves in the game, because what
+	# it is is air and not somebody going somewhere.
+	def.speed = 18.0
 	return def

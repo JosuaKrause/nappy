@@ -175,6 +175,121 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 	_ensure_the_city_is_still_walkable(map, planned)
 	return planned
 
+# --------------------------------------------------------------- the finale ---
+
+## The escape's own event set: what stands on the streets the two chains run through.
+##
+## **A budget is the wrong shape for this and that is why it is a separate entry.** `build_day`
+## spends a per-block allowance over the whole city on a weighted roll, because a day is about
+## variety and about not knowing which street she will take. The finale knows exactly which
+## streets she can take — everything else is sealed — and it is the climax, so what it wants is a
+## fixed count of a fixed handful of rows *per open street*: army trucks on the carriageways,
+## masked men on foot and in vans, and the bursts that leave craters.
+##
+## **Four rows, three of which already exist and are not changed.** `military_convoy` is the truck,
+## with the barricade it ordinarily leaves stripped — on an ordinary day that aftermath is the
+## point of the row, and here a convoy is traffic rather than the thing that closed a street.
+## `abduction` is the masked men in a van. `roadblock` at full heat is the masked men on foot: at
+## `Tuning.RESISTANCE_GOAL` its guards leave the post, so it stands as a band across the road until
+## she comes within `Tuning.HEAT_HUNTS_WITHIN` and then comes at her on foot as
+## `guard_standing.svg` and `guard_lunging.svg` — see `EventInstance._draw_roadblock()`. Only the
+## explosion is new.
+##
+## **Every density rule a day keeps is kept here.** `_build_placement` sites each one, `_room_around`
+## refuses anything drawn inside something else, and the telegraph contract is the def's own and
+## was checked at boot. The off-corridor exemption is untouched: these are on the corridor, and
+## nothing here bypasses `_keeps_its_field_clear` — the two lethal rows in the list are a pursuer
+## and a `WALL`, which is how they were already exempt on an ordinary day.
+static func build_finale(map: CityMap, rng: RandomNumberGenerator,
+		streets: Array[StreetNetwork.Segment]) -> Array[Planned]:
+	var planned: Array[Planned] = []
+	var trucks := _without_its_aftermath(EventCatalogue.by_id("military_convoy"))
+	var vans := EventCatalogue.by_id("abduction")
+	var masked := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
+	var bursts := EventCatalogue.by_id("finale_explosion")
+	# **A tree and an event never share ground**, the finale's streets included — `docs/CITY.md`,
+	# "Street trees". Scanned once for the whole plan rather than once per street per row: a city
+	# plants its trees in `City.build()` and nothing in a walk moves them.
+	var trees := StreetTrees.footprint_tiles(map)
+	for segment in streets:
+		_fill_a_finale_street(map, rng, segment, trucks, Tuning.FINALE_TRUCKS_PER_STREET, trees,
+				planned)
+		_fill_a_finale_street(map, rng, segment, vans, Tuning.FINALE_VANS_PER_STREET, trees,
+				planned)
+		_fill_a_finale_street(map, rng, segment, masked, Tuning.FINALE_GUARDS_PER_STREET, trees,
+				planned)
+		_fill_a_finale_street(map, rng, segment, bursts, Tuning.FINALE_EXPLOSIONS_PER_STREET,
+				trees, planned)
+	return planned
+
+## `count` copies of one row on one street, sited the same way `_place_one` sites a day's: roll a
+## tile of the right kind, build the placement, take the first that satisfies every rule and
+## otherwise the roomiest one the tries found. A street with no ground of the right kind simply
+## gets none of that row, which is the same failure direction a day's own placement has.
+static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
+		segment: StreetNetwork.Segment, def: EventDef, count: int, trees: Dictionary,
+		planned: Array[Planned]) -> void:
+	var candidates := _finale_ground(map, segment, def, trees)
+	if candidates.is_empty():
+		return
+	for _copy in count:
+		var best: Planned = null
+		var best_room := -INF
+		for _try in Tuning.EVENT_PLACEMENT_TRIES:
+			var tile: Vector2i = candidates[rng.randi_range(0, candidates.size() - 1)]
+			var candidate := _build_placement(def, map, tile, rng)
+			if not candidate:
+				continue
+			candidate.role = _role_for(def)
+			var room := _room_around(candidate, planned)
+			if room == INF:
+				best = candidate
+				break
+			if room > best_room:
+				best_room = room
+				best = candidate
+		if best:
+			planned.append(best)
+
+## The tiles of one street a given row may stand on. Stated over the street's own rect rather than
+## over the whole city the way `_open_ground_for` is, because the finale already knows which
+## streets exist for it — there is no corridor weighting to apply and no closure to avoid, since
+## the finale plans no closures at all.
+##
+## `trees` is `StreetTrees.footprint_tiles()`, refused here for the same reason
+## `_open_ground_for` refuses it on a day: *(2026-09-12, the player: "trees read like obstacles
+## (they add noise) so it makes detecting actual obstacles harder")*, and the climax is the one
+## walk where telling an obstacle from scenery matters most. The footprint rather than the trunk
+## tile, because the ground the canopy reaches over is ground a van would be standing in.
+static func _finale_ground(map: CityMap, segment: StreetNetwork.Segment, def: EventDef,
+		trees: Dictionary) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	var rect := segment.tile_rect()
+	for y in range(rect.position.y, rect.end.y):
+		for x in range(rect.position.x, rect.end.x):
+			var tile := Vector2i(x, y)
+			if trees.has(tile):
+				continue
+			if def.placement.has(map.tile_at(tile)) and map.is_open(tile):
+				found.append(tile)
+	return found
+
+## A row with whatever it ordinarily leaves behind taken off it — the scar it records against the
+## run and the successor it spawns when it finishes. The convoy is the only caller: what it leaves
+## on an ordinary day is a barricade that closes that street for the rest of the run, which is a
+## statement about a city that has thirteen more mornings in it.
+##
+## A **derived copy, never a mutation**, for the reason `EventDef.at_heat()` gives: the catalogue's
+## rows are shared by every day of the run and validated once at boot. `shape` is carried across by
+## hand because it is a plain `RefCounted` field with no storage usage, so `Resource.duplicate()`
+## does not copy it; sharing the reference is safe, since a shape is never mutated in place.
+static func _without_its_aftermath(def: EventDef) -> EventDef:
+	var variant: EventDef = def.duplicate()
+	variant.shape = def.shape
+	variant.scar_id = ""
+	variant.spawns_on_finish = ""
+	return variant
+
 ## What the day is placing a row **for**, which is the only thing that makes *wall* and *friction*
 ## mean anything. See `docs/CITY.md`, "The words for it".
 ##
@@ -278,11 +393,13 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: i
 ##
 ## **It has to cover the ground, not stand in it**, and one event does not.
 ##
-## What denies calm ground is holding the meter above `EXCITEMENT_CALM_THRESHOLD` against a decay
-## the calm multiplier has raised to 7.7/s — so a busker at intensity 9 has a *useful* radius of
-## 100px whatever his 190px reach says, in a lot 704px across, and denies about three percent of a
-## four-block calm zone. A day that rolls one spoiler for the block she used is a day she settles in
-## that same block.
+## What denies calm ground is holding the meter above `EXCITEMENT_CALM_THRESHOLD` against
+## `Tuning.CALM_ZONE_DENIAL_RATE`, 7.7/s — so a busker at intensity 13 has a *useful* radius of
+## 138px whatever his 190px reach says, in a lot 704px across. That is a small share of one, and a
+## day that rolls one spoiler for the block she used is still a day she settles in that same block.
+## **The rate is fixed and the intensity is not**, so raising a row's intensity is the one thing
+## that widens this: the busker's own reach grew by half when it was raised to clear the ground it
+## stands on.
 ##
 ## So a spoiler is a **crowd**: one thing per cell of a grid laid over the calm ground, sized from
 ## what each of them can actually deny, capped by `SPOILERS_TO_DENY_A_PARK`. Each cell rolls its own
@@ -393,12 +510,17 @@ static func _spoiling_grid(ground: Rect2, pool: Array[EventDef]) -> Array[Vector
 
 ## How far from a source calm ground stops being usable.
 ##
-## **Not the outer radius**, which is where it stops reaching at all. Calm ground fills the meter at
-## `EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` times the walking decay, so anywhere a source emits less
-## than that is somewhere she can still settle — and for every act I row that is most of its own
-## field. Getting this wrong is how one busker was ever thought to spoil a park.
+## **Not the outer radius**, which is where it stops reaching at all. Anywhere a source emits less
+## than `Tuning.CALM_ZONE_DENIAL_RATE` (7.7/s) is somewhere she can still settle — and for every
+## act I row that is most of its own field. Getting this wrong is how one busker was ever thought
+## to spoil a park.
+##
+## **The rate is its own constant rather than the calm ground's live decay**, because *which rows
+## may stand beside a park* is a decision about the parks and not about how fast the pram settles.
+## Read off the decay, every rise in the walking rate would admit louder rows here as a side
+## effect of a change nobody made about parks.
 static func _denial_radius(def: EventDef) -> float:
-	var decay := Tuning.EXCITEMENT_DECAY_WALKING * Tuning.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
+	var decay := Tuning.CALM_ZONE_DENIAL_RATE
 	if def.intensity <= decay:
 		return def.inner_radius
 	# `Tuning.falloff` is `1 - t²`, inverted for the t at which it equals the decay.

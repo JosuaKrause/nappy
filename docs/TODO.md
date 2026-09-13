@@ -145,16 +145,13 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
-0. **M117**, excitement decays visibly on quiet ground, and **M118**, a car crash is solid only
-   where the cars are — *(2026-09-12: "prioritize this fix"; "this round's feedbacks should all
-   be prioritized since I'm actively testing the changes as they come in")* — ahead of
-   everything, by the player's own word. **[PLAYTEST-66](playtests/PLAYTEST-66.md)'s four stand
-   on the same footing**, played the same day on the same word: **M119**, the crowd with nowhere
-   to go leaves, **M120**, the map edge, **M121**, the halo follows its owner and a turning car's
-   picture and lane, and
-   **M122**, the shadows buildings cast and the one a burst main does not. The three that
-   touch the crowd (M119, M120, M121) share `src/crowd/` and run one after another; M122 is
-   drawing and runs beside them.
+0. **[PLAYTEST-66](playtests/PLAYTEST-66.md)'s four**, ahead of everything on the player's own
+   word for the round *(2026-09-12: "this round's feedbacks should all be prioritized since I'm
+   actively testing the changes as they come in")*: **M119**, the crowd with nowhere to go
+   leaves, **M120**, the map edge, **M121**, the halo follows its owner and a turning car's
+   picture and lane, and **M122**, the shadows buildings cast and the one a burst main does not.
+   The three that touch the crowd (M119, M120, M121) share `src/crowd/` and run one after
+   another; M122 is drawing and runs beside them.
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
    related to the other items to work on right now.")* It waits, because reaching act III waits:
    *"I wanna wait reaching act III until those things are done."*
@@ -192,12 +189,10 @@ anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified 
 | Owner | Integration work and acceptance |
 |---|---|
 | M100 — Small, real, and nobody's | Review `chalk_mark.svg` beside `chalk_mark_touched.svg`, then bind the touched state to the acknowledgement she adds when contact counts. Keep the original mark visible and readable on the pavement. Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family with the alley event and the sound arcs with their event timing; source availability does not decide either behavior. |
-| M102 — The finale: out of the apartment, out of the city | Extend the playable interior and its carrying-mother rig into the finale. Bind normal/flash windows to explosion timing and steam to its pulse. Reuse mouse, guards, vehicles and crater sources. Decide whether the optional `explosion_preview.svg` is needed; the off-screen explosion brief does not require a visible burst. Check event state changes and their layering in the interior at runtime. |
 
-The impact-crater decals `assets/props/impact_crater_1x1.svg`,
-`impact_crater_2x2.svg` and `impact_crater_3x3.svg` (32×32, 64×64 and 96×96 footprints) are the
-finale's: the marks its off-screen explosions leave on the street. M102 also owns the `assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b,c}.svg`
-set, documented in GRAPHICS.md and bound by the playable apartment's carrying rig.
+M102, the finale, owns the impact-crater decals and the carrying-mother set and has bound what it
+needs of them behind `--start-escape`; `GRAPHICS.md` names which sources are live and which stay
+prepared, and whether the interior's event layering reads is a `REVIEW.md` question.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
 no artist.
@@ -206,12 +201,11 @@ no artist.
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
 with the code's constraints in hand. It is not queued and it is not rejected.
 
-**M102, the finale, is planned and not queued.** *(2026-09-09: "this is just a plan for now — we
-probably won't actually implement it for a while (there are a lot of milestones before that)".)* It
-is the good ending's last scene — out of the apartment, out of the city — written down in full so
-that the milestones before it can be built knowing what they are building towards. Its four
-collisions with the good ending as written today were asked and answered the same day, and the
-entry records the answers in the player's words.
+**M102, the finale, is built and reached only through `--start-escape`.** It is the good ending's
+last scene — out of the apartment, out of the city — and its section holds the brief, the four
+answered collisions, and the one item still open: the entry from day 14's own summary, which is
+what would make it a run's ending rather than a flag's. The record of what was built is in
+`DECISIONS.md`.
 
 **[PLAYTEST-50.md](playtests/PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
@@ -319,121 +313,6 @@ junction-paint and robber-placement records are filed there under M49 and the sm
 
 Everything below is in the order the gameplay queue above gives it, and was reassessed on
 2026-09-09.
-
----
-
-## M117 — Excitement decays visibly on quiet ground · asked for 2026-09-12
-
-> "the decay for excitement is too low anywhere -- except for the main street and maybe alleys
-> there excitement should go visibly down when no excitement source is around -- prioritize this
-> fix"
-
-[PLAYTEST-63](playtests/PLAYTEST-63.md). Placed first by the player's own word.
-
-**What is true today.** Walking decays excitement at `EXCITEMENT_DECAY_WALKING`, 3.5 a second,
-times what the ground does: calm ground 2.2, a precinct 1.5, an ordinary street 1.0, the main
-road 0.6 (`City.decay_multiplier()`; an alley has no multiplier of its own and decays as an
-ordinary street, while standing in one adds `EXCITEMENT_FROM_ALLEY`, 3.0 a second, so an alley
-is already net-slower than a street). Standing still decays nothing and running 0.5. The crowd
-on an ordinary pavement charges about 1.4 to 2.2 a second over a forty-second walk, so a quiet
-street nets only 1.3 to 2.1 a second downward — thirty points take fifteen to twenty seconds
-to leave the bar, which is the "too low" the player sees. **Every crowd number is pitched
-against the walking decay**: one person at arm's length is 4.2, just over it, so a close pass
-costs; one car 5.4; the arterial's floor between one and three times it; `tests/test_crowd.gd`
-and `tests/test_meters.gd` assert those relationships, and the calm-zone admission distance in
-`EventScheduler._denial_radius()` is the walking decay times the calm multiplier, 7.7 a second.
-
-- [ ] **Raise the walking decay on every ground but the main road, and hold the main road where
-      it is.** The target is a **net** rate on an ordinary pavement, with the day's own crowd on
-      it and nothing authored in range, that the bar shows: measure it first on a rig over
-      several seeds and forty-second walks (the `tests/test_crowd.gd` floor probes are the
-      instrument), then set `EXCITEMENT_DECAY_WALKING` so the net comes out around 4 a second
-      or better — a full meter in about twenty-five seconds of quiet walking — and reduce
-      `EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` in the same step so the main road's **absolute**
-      rate stays at today's 2.1 a second. Keep the ordering calm > precinct > street > main road
-      and re-measure the calm and precinct rates after; if the park clears a full meter in under
-      eight seconds the calm multiplier comes down to keep it a place rather than a switch.
-      **Decouple the calm-zone admission distance from the decay**: `_denial_radius()` gets its
-      own constant at today's 7.7 a second, so louder rows are not admitted beside parks as a
-      side effect of the pram settling faster. Regenerate the cost table in `EVENTS.md` ("What an
-      event actually costs"), rewrite the decay table and the crowd paragraphs in
-      `MECHANICS.md`, and re-state — not delete — every relationship test that the new number
-      breaks, with the reason beside it. Verify on a played rig, not by arithmetic: the same
-      walk before and after, net rate in the report.
-- [ ] **Three questions the instruction left open, put to the player on 2026-09-12 with a
-      recommendation each, and answered the same day: "build as recommended"** — so each is
-      a decision now, built with the item above and recorded beside it:
-      1. **Standing still.** Today it settles nothing, and that was a decision (playtest 07
-         finding 3: standing was the fastest of the three rates and made waiting the strongest
-         move in the game). Recommended: unchanged — the fix is on the walking rate, so the
-         bar visibly falls while she is being pushed, and waiting stays no plan.
-      2. **Alleys.** The player's "maybe". Recommended: an alley keeps today's absolute rate,
-         3.5 a second, through a multiplier of its own, so it sits between the main road and an
-         ordinary street — pressured ground, not a shortcut to recovery — and the constant dread
-         it already adds keeps meaning something.
-      3. **A single passer-by.** Once the decay outruns 4.2, one person at arm's length no
-         longer costs on their own; a contact (18 a second) and a busy pavement still do.
-         Playtest 07 finding 9 asked that brushing past somebody cost something. Recommended:
-         accept it — the player's sentence is that *no source around* should read as recovery,
-         and a lone passer-by at the pavement's width is the nearest thing to nobody — and keep
-         the crowd's own numbers where they are, since raising them to chase the decay raises
-         the main road's crossing cost with them.
-
----
-
-## M118 — A car crash is solid only where the cars are · asked for 2026-09-12
-
-> "a car crash right now has a full bounding box even though there are gaps in the sprite. the
-> bounding box should only be the crashed cars but it should emanate an excitement field that
-> prevents the player from walking past it"
-
-[PLAYTEST-63](playtests/PLAYTEST-63.md). Prioritised with everything from that round.
-
-**What is true today.** `car_accident` is a hard seal: `SealPlanner._hard_positions` stands one
-copy of it across the carriageway, and its body is `GroundShape.band(96.0)` — one capsule 192px
-kerb to kerb, the width of the street, like the fallen tree's and the burst water main's. The
-picture (`assets/events/car_accident.svg`, 200×50, and its `_vertical` sibling) is two cars locked
-side by side with debris between them and an onlooker on each pavement, so the body covers
-pavement and debris the picture leaves open. Its `intensity` is 0.0, by the rule in `CITY.md`
-that **a closure is silent** — the shape of the route and nothing else — and the crowd is kept
-off the street through `CityMap.held_segments`, not through the body.
-
-**What this overturns, on the player's word.** *A closure is silent* · overturned for the
-accident on 2026-09-12, because a body that matches the picture leaves gaps, and the player wants
-the gaps closed by a field rather than by a wall nobody can see. The fallen tree (one trunk kerb
-to kerb) and the burst main (a crater between two barriers) are not named and stay as they are;
-whether they follow is the player's question, not this item's.
-
-- [ ] **Two car bodies, not one band.** The def carries a list of solid parts — each an offset in
-      the scene's own frame and a `GroundShape` — in place of one shape, and `EventInstance`
-      registers a collision body per part and records each part's tiles in M110's per-tile
-      solid record (`CityMap`, the record the crowd reads) so the crowd steps round the cars and
-      not the debris. Every other row keeps exactly one part, so nothing else changes; `reach()`
-      over the parts is what the planners' disc-shaped guarantees are stated over, and it stays
-      96 for the accident so no placement rule moves. The parts' positions are read off the
-      picture, per axis, at the scale `_draw_wide_scene` fits it to the street: the two cars,
-      nothing else. The debug view's bounding-box layer draws each part, which is how the fit is
-      checked by eye.
-- [ ] **The scene emits.** `Tuning.CAR_ACCIDENT_INTENSITY`, with the field stated over the
-      scene's own band — inner radius at the band's edge, a short shoulder outside it — so it is
-      felt in the gaps and beside the cars and not from down the street; a sealed street must
-      still be discoverable by walking up to it, which is why closures were silent. The number
-      is chosen by the walk, the way the main-road crossing is: measure what squeezing through
-      the pavement gap and the debris gap costs at a walk, over several seeds, and set it so the
-      pass costs **more than half the meter** — the line `tests/test_crowd.gd` draws between
-      expensive and fatal, on the fatal side of it — and state that as the test. **One open
-      question, built the recommended way and switchable by one number:** whether *prevents*
-      means *costs more than she can carry* (recommended: the nearly-crying cue at the pram is
-      the turn-back signal, and a fresh meter can still force it at the price of the day) or
-      *lethal* (a `hard_fail` inner radius over the gaps, the mechanism a fire already uses —
-      stricter, and it makes a crash a thing that kills). `CITY.md`'s closure section and
-      `EVENTS.md`'s "Solid things are solid" carry the exception in the same commit.
-- [ ] **The seal still seals.** `ClosurePlanner` goes on counting the street as closed for the
-      route guarantee and the crowd is still held off it; both are conservative once the street
-      is passable at a price, and the direction argument — a pass that only ever removes
-      obstruction can only add reachable ground — is written beside the change. A test walks the
-      gap on a rig and asserts the cost, and `tests/test_events.gd`'s solidity checks accept a
-      row whose silhouette is wider than any one of its parts.
 
 ---
 
@@ -845,19 +724,14 @@ re-pitched:
 
 ## M102 — The finale: out of the apartment, out of the city · asked for 2026-09-09
 
-**Queued on 2026-09-12, behind the flag.** *Planned and not queued on 2026-09-09 ("this is just a
-plan for now — we probably won't actually implement it for a while") · overturned by the player on
-2026-09-12: "also build the entire escape sequence to the end but make it playable only via flag
-today (what is now the apartment escape should continue)".* So the whole sequence is built —
-the building with its events, the service exit onto the city, the two chains through three parks
-each to the tunnel and the bridge, the explosions and their craters, the hint lines, the
-millisecond clock, the section restart and the epilogue — and **today it is reached only through
-`--start-escape`**, which already boots the empty building: from the service door that run now
-continues into the finale's city rather than returning to the title. The entry from day 14's own
-summary is the one item that stays open until the player says the finale is a run's ending, and it
-is marked below. Written down on 2026-09-09 so that M62 (checkpoints that divide the map), M56
-(the resistance is noticed) and M100's sound lines were built knowing they are also the finale's
-parts, as M101 (the fire found before the engine) was.
+**The sequence exists and is reached only through `--start-escape`** *(2026-09-12: "also build the
+entire escape sequence to the end but make it playable only via flag today (what is now the
+apartment escape should continue)")*: the building with its events, the service exit onto the city,
+the two chains through three calm areas each to the tunnel and the bridge, the explosions and their
+craters, the two hint lines, the millisecond clock, the section restart and the epilogue. What it
+does, what was measured and what was chosen where the design was silent is in `DECISIONS.md` under
+M102, the finale built behind the flag; what only a play can settle is in `REVIEW.md`. **One item
+is open**, and it is the switch that makes the sequence a run's ending rather than a flag's.
 
 **The brief, in the player's words:**
 
@@ -882,101 +756,13 @@ parts, as M101 (the fire found before the engine) was.
 > like normal tutorial hints). the timer shows milli second precision for dramatic effect (instead
 > of the regular second precision of the main game)"
 
-**What it is, in the game's own terms.** A fifteenth walk that is not a day: no route to a calm
-area and home, but one way out, played in two sections that each open with one hint line and share
-one clock. The verb is unchanged — *where do I walk* — and the pressure is the same two meters: the
-baby starts asleep with sleepiness full, and everything on the way is a reason for her to wake.
+**What is still open:**
 
-**Section one — the apartment.** *"escape the apartment"*, said once at the start, the way the
-HUD's `_say()` teaches tapping and running on day 1 and then never again. The building is the
-home lot's own block, seen from inside for the first and only time in the run: the hallway outside
-the door at night, a dead lift, and two stairwells: one at the building's left side and one at its
-right side. Within each stairwell, flights zigzag sideways across the view with landings between
-them, as in the two stair references in `docs/reference/` (`stairwell-switchback-interior-01.jpg`,
-`fire-escape-switchback-exterior-01.jpg`). They do not recede front-to-back.
-The two egresses (*"all buildings have two egresses"*) lead down a few
-floors — three or four, *"not excessively many"*. The main entrance is barricaded, so the way out
-is down past the ground floor into the basement, along its corridors to the service entrance on
-the side of the building. Events here are *"relatively minimal"*: mice; masked pursuers who run up
-a staircase and can be let past by stepping into a corridor, a moving wall she avoids by not being
-on its line; a fire on one staircase that closes it and forces the other; steam in the basement.
-Each is the existing vocabulary indoors — a pursuer is a mobile row on a path, a fire is
-`burning_building`'s flame at a stairwell, steam is a stationary field on a corridor — and the
-section wants at most one of each.
-
-**Section two — the city.** *"exit the city"*, said once at the service exit. The city she knows,
-with nobody in it: `CROWD_PEDESTRIANS_PER_ACT` and `CROWD_CARS_PER_ACT` give act IV 70 walkers and
-16 cars, and this scene has zero of both — *"no regular cars or regular people on the street"*. In
-their place, army trucks on the carriageways, masked men on foot and in vans trying to take her,
-and explosions off screen, loud enough to reach the meter, each leaving a crater on a street. Off
-the one open route everything is sealed with the finale's own pictures — burnt cars, blockades,
-craters — which is `SealPlanner`'s existing job with a different candidate list: it already seals
-every street off the day's tree. **But the finale's route is not a tree.** *(2026-09-09: "the
-finale route is *not* a tree any more. it's a single path going to the first park, then the second,
-then the third, then the exit. no overlapping routes".)* A day grows several strands to several
-calm areas and counts two distinct routes to each as a max flow; the finale has one ordered chain
-— service exit, first park, second park, third park, edge — with no branch, no second way to any
-of them, and everything off the chain sealed. The parks are the only calm on the way and are for
-*"calm down or get the baby back to sleep if it wakes up"*; the edge is the tunnel at the north
-end of the main road or the bridge at its south end, the two exits `CityEdge` already draws and
-already lets her walk into.
-*"Lots of lethal and dangerous events"*: this is the climax, and the density rules that keep a day
-fair (`_room_around`, the telegraph contract, off-corridor exemption) still hold — lethal things
-are dense, not unfair.
-
-**The clock shows milliseconds** — `HUD._on_day_time_changed()` formats `%d:%02d` today and the
-finale formats `%d:%02d.%03d` — *"for dramatic effect"*, and nothing else about it changes.
-
-**The parts that already exist, so nobody draws or builds them twice.** The impact craters at
-three sizes, `assets/props/impact_crater_1x1.svg`, `_2x2` and `_3x3` (32, 64 and 96px, ground-centred,
-catalogued in `GRAPHICS.md` as prepared with no owner), are the explosions' marks and this
-milestone is their owner. `burnt_out_car.svg` with its vertical sibling, `barricade_pile.svg` and
-`checkpoint_block.svg` are the finale's seals and are already seal candidates or barrier rows.
-`army_truck.svg` and `army_truck_end.svg` are the trucks; `unmarked_van.svg`, `unmarked_van_end.svg`
-and the `abduction` row are the masked men in vans; `guard_standing.svg` and `guard_lunging.svg`
-are masked men on foot; `flame.svg` is the staircase fire; `sound_pulse.svg` is the arc an
-off-screen explosion draws, once M100's sound lines bind it. The player herself is drawn:
-`assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b,c}.svg` are the mother's fifteen sources with
-the baby in her arms and no pram, on the same canvases and feet anchors as the walking set, so
-`Stroller` can swap them in facing for facing. Prepared drawings, each listed with its contract in
-`GRAPHICS.md`: the hallway with its flashing windows and its floor edge that implies the apartment doors,
-the stairwell with its mechanical floor and its door seen only from inside, the entrance and the
-furniture heaped against it, a chandelier, the basement's gloomy floor, brick walls and puddles, the
-emergency exit, a dead lift door, mice, steam, and an explosion row's own picture if one is wanted
-beyond the arc and the crater. The original room list is preserved in `DECISIONS.md` under
-M103, the drawings the queue owes.
-
-**What is genuinely new, and the order to build it in:**
-
-- [ ] **The building is built and empty** — M112, the escape scene, walkable, in `DECISIONS.md`:
-      one map with three hallways, two switchback stairwells, the lobby and the basement, doors
-      that fade and teleport, her carrying the baby, all behind `--start-escape`. What this
-      milestone adds inside it: the exit through the service door onto the city map at the home
-      lot's side, the hallway windows that **flash** when an off-screen explosion goes off (the
-      explosion row's cue indoors, one or two frames of `hallway_wall_window_flash.svg`), the
-      lighting response to the explosions, and the events — mice, the pursuers on the stairs, the
-      fire on one stairwell, the steam
 - [ ] **The entry from day 14's summary rather than from the flag** — the one item held back on
       2026-09-12 *("make it playable only via flag today")*: the good ending's last won day hands
-      over to the hallway instead of the ending screen. Everything else below is built behind
-      `--start-escape`, and this is the switch that makes it the run's ending
-- [ ] **A finale plan for the city map.** An ordered chain, not a `RouteTree`: service exit to
-      first park to second to third to the edge, one street-walk between each pair and nothing
-      else open. `RouteTree.for_day` and its redundancy guarantee (two distinct routes to each calm
-      area, counted as a max flow) are exactly what the finale must *not* do, so the chain is its
-      own small planner that reuses the reachability grid and hands `SealPlanner` the set of open
-      cells — a route *out* must never count as a route to a calm area, which is the rule
-      `CityEdge` and `tests/test_blocks.gd` already keep. Crowd at zero, and a scheduler budget of
-      army trucks, abductions and explosions rather than the act's ordinary catalogue
-- [ ] **An explosion row.** Off screen, a short burst of intensity high enough to reach her from
-      out of view, a sound arc when M100's sound lines exist, and a crater left behind as a scar
-      the way `barricade` leaves one — `spawns_on_finish` naming a crater row whose picture is one
-      of the three prepared sizes, obstructing at the size it is drawn
-- [ ] **The two hint lines, the millisecond clock and the section restart**, each a small change
-      to `HUD` and `DayController`: the clock formats milliseconds, and the day-lost path restarts
-      the section rather than ending a day
-- [ ] **The summary after it**, which is the good ending's epilogue: the tunnel or the bridge
-      behind her, and nothing triumphant
+      over to the hallway instead of the ending screen. Everything the sequence itself needs is
+      built behind `--start-escape`, so this is the one switch left: it waits on the player saying
+      the finale is a run's ending rather than a flag's
 
 **Four things the brief collided with in the finale as `docs/NARRATIVE.md` writes it today, each
 asked and each answered by the player on 2026-09-09:**

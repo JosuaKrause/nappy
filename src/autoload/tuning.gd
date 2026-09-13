@@ -91,8 +91,8 @@ const EXCITEMENT_WAKE_THRESHOLD := 60.0
 ##
 ## Nearly crying is the last band before `METER_MAX` ends the day. Far enough up that it is not
 ## a second name for "loud street" — a pavement sits under the calm threshold and a bad moment
-## reaches the fifties — and far enough from 100 to be worth acting on: at the walking decay it
-## is about six seconds of quiet ground back to safety.
+## reaches the fifties — and far enough from 100 to be worth acting on: the forty-five points back
+## to the calm threshold are about four seconds of a park, or seven and a half of a quiet street.
 const EXCITEMENT_NEARLY_CRYING := 80.0
 ## And how far below the wake threshold a sleeping baby starts to stir. Waking costs
 ## `WAKE_SLEEPINESS_PENALTY` — half the bar — so this is the most expensive thing in the return
@@ -117,22 +117,59 @@ const SLEEPING_SENSITIVITY := 0.55
 ## bad idea. The ordering is motion-shaped rather than arbitrary: walking calms most, running calms
 ## a little, standing calms nothing.
 const EXCITEMENT_DECAY_IDLE := 0.0
-const EXCITEMENT_DECAY_WALKING := 3.5
+## **The bar has to be seen falling on ground with nothing on it.** The walking rate is set from a
+## *net* measurement rather than from taste: the quietest ordinary pavement with the day's own
+## crowd on it and nothing authored in range loads about 2.5/s, so this is what is left over, and
+## what is left over is what the player watches. At 6.0 a quiet street nets about 3.8/s downward —
+## a full meter in a little over twenty-five seconds of walking — where 3.5 left 1.2/s and
+## eighty-five seconds, which reads as a bar that is not moving.
+##
+## **Its ceiling is the catalogue, and it is close.** A row costs more to walk through than around
+## exactly while its mean emission along the line beats this number, and the two quietest rows that
+## still have to cost — `busker` and `alley_mouse` — mean 6.71 and 6.75. Above about 6.7 they turn
+## free and the catalogue loses two rows rather than gaining a rate; `tests/test_events.gd` is what
+## says so out loud.
+const EXCITEMENT_DECAY_WALKING := 6.0
 const EXCITEMENT_DECAY_RUNNING := 0.5
-## What the **ground** does to the decay, best to worst: calm, then precinct, then ordinary
-## street, then main road.
+## What the **ground** does to the decay, best to worst: calm, precinct, ordinary street, alley,
+## main road.
 ##
 ## This is what makes a route a **recovery rate** rather than only a set of things to walk past,
 ## and what makes a precinct worth walking to although it is loud: a retail street is busy, and it
 ## is still the best place in the city that is not a park to bring a meter down.
 ##
+## **The multipliers are ratios and the absolute rates are the design**, so a change to the walking
+## rate above moves every one of these to keep its own ground where it was put:
+##
+##     calm 12.0/s   precinct 9.0/s   street 6.0/s   alley 3.5/s   main road 2.1/s
+##
 ## The park has to read on *both* bars, not just the sleepiness one — half of "this is working" is
-## the excitement visibly falling away as she walks in under the trees. The main road is the same
-## sentence inverted: it is the one ground in the city that is actively bad at letting her recover,
-## which is most of what "a main road is crossed, not walked" now means arithmetically.
-const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.2
+## the excitement visibly falling away as she walks in under the trees. **Its floor is that a park
+## must stay a place rather than a switch**: at 12.0/s a full meter takes eight and a third seconds
+## to clear, which is long enough to be somewhere she walks to and stays in. Much faster and the
+## park is a button she taps.
+##
+## The main road is the same sentence inverted: it is the one ground in the city that is actively
+## bad at letting her recover, which is most of what "a main road is crossed, not walked" means
+## arithmetically. **An alley sits between the two** — pressured ground rather than a shortcut to
+## recovery, which is what keeps `EXCITEMENT_FROM_ALLEY` (3.0/s of constant dread) meaning
+## something: it sits just under the 3.5/s an alley gives back, so an empty alley is very nearly
+## flat and is never quite recovery.
+const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.0
 const EXCITEMENT_DECAY_PRECINCT_MULTIPLIER := 1.5
-const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.6
+const EXCITEMENT_DECAY_ALLEY_MULTIPLIER := 0.58
+const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.35
+
+## The rate a source has to beat before it is counted as denying the calm ground near it —
+## `EventScheduler._denial_radius`, and `EventCatalogue`'s own reasoning for the one ambient row
+## that stands in a park.
+##
+## **Its own number rather than the calm ground's live decay, and the decoupling is the point.**
+## Read off the decay, every rise in the walking rate would quietly admit louder rows beside parks:
+## the pram settling faster is a statement about the pram, and *which events may stand next to a
+## park* is a statement about the parks. Tying the two put the second decision inside the first,
+## where nobody making it would see it.
+const CALM_ZONE_DENIAL_RATE := 7.7
 
 ## Layered on top of the ground's own multiplier for the rest of a day once the resistance's
 ## package is picked up (`GameState.resistance_carrying_package`) — the one cost in the subquest
@@ -153,7 +190,9 @@ const RESISTANCE_PACKAGE_DECAY_MULTIPLIER := 0.5
 ## of the two. `tests/test_events.gd` asserts the ordering row by row rather than leaving it in a
 ## document, because that is how it can break silently.
 const EXCITEMENT_FROM_RUNNING := 14.0
-## Constant dread while standing in an alley.
+## Constant dread while standing in an alley, and it is set against the ground it is felt on: an
+## alley gives back 3.5/s, so the trickle sits just under its own decay and an empty alley is very
+## nearly flat rather than a place to recover in. The pressure is that it is never quite recovery.
 const EXCITEMENT_FROM_ALLEY := 3.0
 
 ## What a `chatting_mother` conversation adds over its whole `detain_seconds`, while the baby is
@@ -661,6 +700,46 @@ const SEAL_THINNING_FRACTION := 0.08
 ## player was explicit that the event and the physical blockage are two different things wearing one
 ## word.
 const ALLEY_MOUTH_SEAL_CHANCE := 0.15
+
+## What a car crash emits, per second at the middle of its own band — the one seal that makes any
+## noise at all, and the one place *a closure is silent* (`docs/CITY.md`) does not hold.
+## *(2026-09-12: "a car crash right now has a full bounding box even though there are gaps in the
+## sprite. the bounding box should only be the crashed cars but it should emanate an excitement
+## field that prevents the player from walking past it".)* Its body is now the two cars only
+## (`EventCatalogue._car_accident_parts`), so the picture's own gaps are walkable ground and this
+## is what stands in the way instead.
+##
+## **Set by the walk, not derived.** `tests/probes/m118_crash_gap.gd` walks the pavement gap and
+## the gap beside the cars at `WALK_SPEED` across several seeds, and reports the **cheapest** line
+## through them, since a guarantee about a price is a guarantee about the price she can get. At
+## this number that line costs a little over 54 of the hundred-point meter, against the
+## `METER_MAX / 2` line
+## `tests/test_crowd.gd` draws between *expensive* and *fatal* — deliberately on the fatal side, so
+## a meter that is not fresh cannot carry it. `tests/test_seals.gd` asserts that walk rather than
+## this number, so a change to the falloff or the geometry fails where it is felt.
+##
+## **What it buys is the meter, not the day**, which is the recommended reading of the player's
+## *prevents*: the pram's nearly-crying cue is the turn-back signal, and a fresh meter can still
+## force the pass at the price of the rest of the day. `CAR_ACCIDENT_GAPS_ARE_LETHAL` below is the
+## other reading, left switchable rather than argued about.
+const CAR_ACCIDENT_INTENSITY := 50.0
+
+## The other answer to *prevents the player from walking past it*: **off**, and one line from being
+## on. True makes the crash a `hard_fail` row — the mechanism a fire already uses — so the gaps end
+## the day rather than costing more of it than she can carry. It is a design question the player
+## has not answered yet, and the recommendation built is the expensive one, because a wall that
+## kills has no price to weigh and the whole verb of this game is *where do I walk*.
+##
+## Flipping it takes the row's `inner_radius` to `CAR_ACCIDENT_LETHAL_INNER_RADIUS` and its
+## telegraph to the doubled hard-fail margin — see `EventCatalogue._car_accident()`, which is the
+## only reader of either.
+const CAR_ACCIDENT_GAPS_ARE_LETHAL := false
+
+## The radius that would end the day under `CAR_ACCIDENT_GAPS_ARE_LETHAL`, measured from the scene's
+## own centre. Above the cars' own 36.1px reach plus her 14px body, so she can actually reach the
+## thing that kills (`EventDef.validate()` refuses a lethal row whose body holds her outside its own
+## inner radius), and inside the 96px band so the gaps either side of the cars are what it covers.
+const CAR_ACCIDENT_LETHAL_INNER_RADIUS := 56.0
 
 # ------------------------------------------------------------------- regions ---
 # `RegionPlanner` partitions the lattice's junctions once at generation and turns that partition
@@ -1426,29 +1505,37 @@ const CLOSURE_GAP_BIAS := 4.0
 ## to *how expensive is this* is how two tables of the same fact drift apart.
 ##
 ## **Setting it to a row's own `walk_through_cost()` line for the caret is the mistake with the
-## good argument.** The caret's own threshold (`EXPECTED_IMPACT_POINTS`, which happens to be the
-## same 0.4 of the meter as this constant — a coincidence of two felt numbers, not one question
-## asked twice: the caret is read off a projected position and this is read off a row's own static
-## integral) is where the game raises a caret — *this is worth going round* — so sharing the
+## good argument.** The caret's own threshold, `EXPECTED_IMPACT_POINTS`, is a near neighbour of
+## this one and is not the same question: the caret is read off a **projected position** and this
+## is read off a row's own **static integral**, so the two move independently and have. It is where
+## the game raises a caret — *this is worth going round* — so sharing the
 ## question, not merely the value, would make the cue and the placement say one sentence. What
 ## sharing the question did instead was empty the routes: at 25 points, the caret's line before
 ## this milestone raised it, **two thirds of every day becomes a wall**, and day 1's corridor drops
 ## from 69.6 placements to 27.8 of 113. The ground off the paths is what was asked to be closed;
 ## nobody asked for the paths to be cleared.
 ##
-## The line is set by one row instead, and by the right one. **`dog_walker` costs 36.5 and has to
+## The line is set by two rows instead, and by the right two. **`dog_walker` costs 30.8 and has to
 ## stay friction**: the dog-walker decision arriving twice on day one is the route decision this
-## game is made of, and a dog walker that is never on her route is that decision deleted. So the
-## line goes above it, and the first row above it is `loose_dog` (61.2, raised from 43.3 for a
-## bigger startle without moving out of this bracket) — which is where *very costly* starts reading
-## as a different thing from *costly*. Forty points is four tenths of the meter to walk through the
-## middle of.
+## game is made of, and a dog walker that is never on her route is that decision deleted. **And
+## `leaf_blower` at 37.7 has to stay a wall**, because without it the non-lethal half of the range
+## is act III and later rows only, and *"very costly to deadly"* stops being a range anybody meets
+## — `tests/test_events.gd` samples five days and counts both kinds. The line goes between them.
+##
+## **It is in points of the meter, so it moves when the meter's own arithmetic does.** Raising the
+## walking decay lowers every row's cost, and not evenly: the decay is netted off over the *time*
+## the crossing takes, so a wide, moderate row loses far more of its price than a narrow, intense
+## one. That is why `protest` (269px of 15/s) fell from 42.3 to 27.6 and crossed under
+## `dog_walker` (105px of 26/s), which no threshold can undo — a protest now genuinely costs less
+## to walk through than a dog walker does, so it is on the routes with the rest of the ordinary
+## expensive city.
 ##
 ## What that leaves on the corridor is `cafe_tables`, `market_stall`, `homeless_yeller`,
-## `delivery_van` and the dog walker — the ordinary expensive city — and what it puts off it is
-## `loose_dog`, `leaf_blower`, `burning_building`, `protest`, `military_convoy`, `night_raid` and
-## every lethal row. Re-measure with a probe if the cost table moves; do not re-derive it.
-const WALL_WORTH_OF_COST := METER_MAX * 0.4
+## `delivery_van`, `protest` and the dog walker, and what it puts off it is `leaf_blower`,
+## `burning_building`, `pigeon_flock`, `loose_dog`, `military_convoy`, `night_raid`, `fire_truck`
+## and every lethal row. Re-measure with `tests/probes/m117_decay.gd` if the cost table moves; do
+## not re-derive it.
+const WALL_WORTH_OF_COST := METER_MAX * 0.35
 
 # ----------------------------------------------------- solid things are solid ---
 # The rule is in `EventDef.obstructs_radius`: **anything that stands still is solid at the width it
@@ -1978,7 +2065,7 @@ func field_scale(e: float) -> float:
 ##
 ## **`(1−t)²` is the shape that looks equally reasonable and inverts the game.** It puts a quarter of
 ## the intensity at the midpoint of the band and six percent three quarters of the way out, so a café
-## at 12/s sits under the 3.5/s walking decay across the whole outer 60% of its own field — and a
+## at 12/s sits under the 6.0/s walking decay across the whole outer 70% of its own field — and a
 ## `near` entry written at an event's outer radius reads `events 0.0`. An event you are not charged
 ## for until you touch it is not a thing to route around, it is a thing to bump into.
 ##
@@ -1995,3 +2082,48 @@ func falloff(d: float, intensity: float, inner_radius: float, outer_radius: floa
 		return 0.0
 	var t := (d - inner_radius) / (outer_radius - inner_radius)
 	return intensity * (1.0 - t * t)
+
+# ----------------------------------------------------------------- the finale ---
+# The fifteenth walk, which is not a day: out of the building and out of the city, on one clock,
+# with one way through. Every number here is stated against something that already exists rather
+# than chosen — the finale reuses the day's own clock, the catalogue's own rows and the sealing's
+# own placement, so what it needs of its own is a length, a density and two reaches.
+
+## How long the whole sequence is, both sections together — a day's own length, because the
+## player's answer to the collision was *"the timer for the sequence is the same length"*. Not a
+## second number: read through here so the finale and a day can never drift apart.
+const FINALE_LENGTH_SECONDS := DAY_LENGTH_SECONDS
+
+## How many calm blocks each chain runs through between the service exit and its edge — *"a single
+## path through the city that crosses three parks"*. The chains are built one street-walk at a
+## time between consecutive stops, so this is also how many intermediate stops each chain has.
+const FINALE_PARKS_PER_CHAIN := 3
+
+## How close her own centre has to come to the last walkable tile of the spine, at either end of
+## the map, for the sequence to be over. One tile and a half — comfortably past her own body
+## (`PLAYER_BODY_RADIUS`, 14px) so standing anywhere on that tile is out, and under two tiles so
+## the tile before it is not. The same reasoning, and the same figure, as the radius the building's
+## own doors hold her with.
+const FINALE_EXIT_REACH := TILE_SIZE * 1.5
+
+## Seconds between two off-screen explosions inside the building. Section one is *"relatively
+## minimal"* and an explosion is its only city-wide beat, so it is spaced like the director's own
+## `AHEAD_INTERVAL` band rather than more often: four of them over a 180s clock is enough for the
+## hallway windows to flash more than once without the basement becoming a drum.
+const FINALE_EXPLOSION_INTERVAL := 22.0
+
+## How long a hallway window holds its lit picture when an explosion goes off — *"one or two
+## frames"* at 60fps, taken as a span in seconds so it does not depend on the frame rate.
+const FINALE_WINDOW_FLASH_SECONDS := 0.12
+
+## How many of each kind of danger the finale's own plan puts on one open chain street. *"Lots of
+## lethal and dangerous events"*: a street is `BLOCK_SIZE` (8) tiles long, so one truck, one van
+## and one pair of masked men on a street is roughly one lethal thing every two tiles of walking
+## — several times an ordinary day's own one-event-per-block, which is what the climax asks for,
+## while `EventScheduler._room_around()` still refuses anything it cannot give room to.
+const FINALE_TRUCKS_PER_STREET := 1
+const FINALE_VANS_PER_STREET := 1
+const FINALE_GUARDS_PER_STREET := 2
+## And how many explosions are sited off the chain per open street. Off screen by definition, so
+## these are placed *beside* the corridor rather than on it — see `FinalePlanner`.
+const FINALE_EXPLOSIONS_PER_STREET := 1

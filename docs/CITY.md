@@ -83,14 +83,23 @@ standing on.
 
 | Ground | × decay | Walking decay |
 | --- | ---: | ---: |
-| Calm (park, forest, quiet square, courtyard, playground) | 2.2 | 7.7/s |
-| Precinct | 1.5 | 5.25/s |
-| Ordinary street | 1.0 | 3.5/s |
-| Main road | 0.6 | 2.1/s |
+| Calm (park, forest, quiet square, courtyard, playground) | 2.0 | 12.0/s |
+| Precinct | 1.5 | 9.0/s |
+| Ordinary street | 1.0 | 6.0/s |
+| Alley | 0.58 | 3.5/s |
+| Main road | 0.35 | 2.1/s |
 
 A rate rather than a state is what makes a precinct worth walking to although it is loud.
 `is_calm_zone` stays a threshold beside it, because the *sleepiness* half genuinely is one: only
 calm ground puts a baby to sleep.
+
+**The multipliers are ratios; the absolute rates on the right are the design.** A change to the
+walking decay moves all five to keep each ground's own rate where it was put — which is why the
+main road still gives back 2.1/s and an alley 3.5/s after the walking rate went from 3.5 to 6.0.
+An alley is worse ground than the street it cuts between and better than the spine, so the
+shortcut is pressured ground rather than a way of recovering faster than the streets either side
+of it; the `+3.0/s` of constant dread it adds sits just under its own 3.5, so an empty alley is
+very nearly flat.
 
 Tile types:
 
@@ -255,7 +264,7 @@ rather than three that drift apart — `CityGenerator._calm_may_sit_here`. Three
   the ring is **40 of the lattice's 121 blocks**.
 - **Never in either block column beside the main road.** Worth only **eight** blocks on top of the
   ring, because the spine runs down the middle where the home clearance has already taken a 5×5
-  out — so this one is justified on design rather than on density. `decay_multiplier` is 0.6 on
+  out — so this one is justified on design rather than on density. `decay_multiplier` is 0.35 on
   the spine, so a park you can hear the main road from is not calm ground; and if calm never sits
   beside it, **crossing it always leads somewhere worth crossing for**, which is what makes it a
   soft block rather than a wall. It is the expendable clause by the player's own words — *"the not
@@ -860,11 +869,31 @@ empties it. It is the single exception to "a tree and an event never share groun
 segment may carry a felled tree, and which pit that felled tree takes — so the closure marker's
 picture and the standing trees beside it can never be two different species.
 
-**A closure is silent.** It contributes nothing to the excitement meter. The noise of a
-street is the crowd on it and the danger of a street is the events on it; a closure is the
-*shape* of the route and nothing else. A noisy roadworks already exists as the `construction`
-event, which emits and obstructs; keeping the two apart is what stops `City` growing a third
-thing to sum, and keeps "excitement is a pure query" true.
+**A closure is silent, and so is every seal but one.** A `RoadClosure` contributes nothing to the
+excitement meter: the noise of a street is the crowd on it and the danger of a street is the events
+on it, and a closure is the *shape* of the route and nothing else. A noisy roadworks already exists
+as the `construction` event, which emits and obstructs; keeping the two apart is what stops `City`
+growing a third thing to sum, and keeps "excitement is a pure query" true. All five kinds in the
+table above are silent, `CRASH` included — the two cars it leaves in the road are a picture.
+
+**The one exception is the `car_accident` seal, and it is the player's own.** *(2026-09-12: "a car
+crash right now has a full bounding box even though there are gaps in the sprite. the bounding box
+should only be the crashed cars but it should emanate an excitement field that prevents the player
+from walking past it".)* That row is a `SealPlanner` scene rather than a `RoadClosure` — see
+"Sealing the tree" — and it is now solid only where its two cars are, so the debris and the
+pavements either side of them are ground she can walk. What closes them is
+`Tuning.CAR_ACCIDENT_INTENSITY`, a field over the scene's own band that costs more than half the
+meter to squeeze past. **It is still not a third thing to sum**: a seal is a catalogue row, so it
+emits the way every event does and `City.total_excitement_at` is unchanged. What has changed is
+that a seal may be loud, and only this one is — the fallen tree (one trunk kerb to kerb) and the
+burst main (a crater between two barriers) leave no gaps to close and stay at zero.
+
+**The seal still seals.** `ClosurePlanner` goes on counting a closed street as closed for the route
+guarantee, and `CityMap.held_segments` still keeps the crowd off a hard seal's street; both are
+stated over `obstructs_radius` — the ground the scene *closes*, unmoved at 96px — rather than over
+the bodies it puts down. That is the conservative direction and deliberately so: taking obstruction
+away can only add reachable ground, so a day proved winnable against the whole-street band is still
+winnable with two cars standing in it.
 
 ### How heavy
 
@@ -970,7 +999,7 @@ refuses to grow a strand along the spine's own length — she may still cross it
 which is unchanged and unrestricted — so the main road is off every day's tree by construction.
 Sealing it as well would wall the one street the design deliberately leaves open, so `SealPlanner`
 refuses it outright rather than treating "off the tree" as reason enough. It is already the worst
-ground in the game to stand on (0.6× decay against an ordinary street's 1.0), which is why making
+ground in the game to stand on (0.35× decay against an ordinary street's 1.0), which is why making
 it *not a route* is the whole of the fix.
 
 **Alleys are not streets, so they are never sealed — a through-alley's *mouth* can be, and only
@@ -991,6 +1020,49 @@ well — so nothing a seal does can cut the corridor. `EventScheduler._ensure_th
 walkable` stays what it always was, a repair pass for the catalogue's own placements; sealing needs
 no equivalent; `tests/test_seals.gd` measures the guarantee over many seeds and days instead of
 asserting it at runtime.
+
+### The escape is a chain, not a tree
+
+The walk out of the city on the last night is planned by `FinalePlanner`
+(`src/finale/finale_planner.gd`) and is the one route in the game that is **not** a `RouteTree`.
+
+**A day grows a tree because a day has to stay winnable whichever way she goes**: several strands
+to several calm areas, with two distinct routes to each counted as a max flow. The escape asks the
+opposite question — *which single walk does she take, and what does it cost* — so it grows **two
+ordered chains** instead: the service exit, three calm areas one after another, and an edge. One
+street-walk between consecutive stops and nothing else open, with no branch and no second way to
+any of them.
+
+**Two chains, and they share no cell after the door.** One ends at the tunnel at the north end of
+the spine and one at the bridge at its south end — the two exits `CityEdge` already draws and
+already lets her walk into. The second is grown with every cell of the first treated as wall, so
+they part at the service exit, or as near it as the lattice allows, and the choice is made once, at
+the door. The home lot sits between the two ends of the spine, so neither exit is trivially nearer.
+
+**A stop is a connected component of calm ground**, which is a park lot, a four-block zone, a
+forest, a quiet square or a courtyard without the planner having to know which. Distinctness then
+needs no rule: two stops are different components or they are the same stop. Slivers under
+`FinalePlanner._SMALLEST_CALM_AREA` are dropped, because a calm area has to be big enough to have a
+route through it.
+
+**The rule that makes any of this legal is the one that was already there: a route *out* of the
+city is never a route to a calm area.** The tunnel and the bridge are the last stretch of the
+spine, walkable and lethal like every other carriageway, and `tests/test_blocks.gd` holds that they
+never count as calm — which is why an edge can be the end of a chain without a day's own guarantees
+having anything to say about it.
+
+**Everything off the chains is sealed**, by `SealPlanner.plan_finale()`, which takes the chains'
+open cells where `plan_day` takes a tree. Three differences, each for a reason the escape changes:
+seals are all **hard**, since a soft one leaves the carriageway open and the brief is a single path;
+the **main road is sealed like anything else**, because the chains *end* on the spine and leaving
+the rest of it open would join them at the one street that touches both exits; and **every alley
+mouth off the chains** is walled rather than a fraction of the qualifying ones. The doorstep stays
+exempt for the reason it always is.
+
+**A street is spared only where a chain walks it**, measured at the street's own midpoint, which is
+where a hard seal stands. Asking the looser question — does a chain touch this street at all —
+spares every street at every junction the walk turns at, which is several times as much open ground
+as the chains themselves.
 
 ### Regions and the wall
 
@@ -1445,7 +1517,13 @@ Top-down camera with a fake vertical extrusion:
   seal's bodies along the street to the nearest clear cross-section. Both refuse where the
   candidate is offered rather than moving something afterwards. So a van, a café, a market stall,
   a yeller, a dog walker or a seal is never in or behind a tree, and the only thing that ever
-  stands in a pit is the tree that fell out of it.
+  stands in a pit is the tree that fell out of it. The escape's own plan keeps the same rule
+  through the same two functions — `EventScheduler._finale_ground` refuses a tree's ground and
+  `SealPlanner.plan_finale` steps its seals off one — **with one exception the escape has and a
+  day does not**: a seal stepped off a tree may land on ground one of the chains walks, and there
+  it stands in the tree instead, since a picture overlapping a picture is better than the one way
+  out of the city being walled. `tests/test_finale.gd` holds that exception to a small share of
+  the escape's bodies rather than letting it become the ordinary case.
 - **A pit the day emptied has no tree in it.** A `FALLEN_TREE` closure and a `fallen_tree_seal`
   each take one of their street's own pits — see "What closes a street" above —
   and `CityMap.is_tree_pit_emptied` is what `City.refresh_street_trees()` reads to leave that one

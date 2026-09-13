@@ -13,6 +13,8 @@ func run(t) -> void:
 	_test_a_spread_never_lands_on_a_corner(t)
 	_test_a_spread_cap_matches_what_it_obstructs(t)
 	_test_a_wide_scene_faces_its_street(t)
+	_test_a_crash_is_solid_only_where_its_cars_are(t)
+	_test_every_other_row_is_one_body(t)
 	_test_telegraph_damps_emission(t)
 	_test_pulse_envelope(t)
 	_test_a_pursuer_leaves_room_to_answer(t)
@@ -398,6 +400,101 @@ func _test_a_wide_scene_faces_its_street(t) -> void:
 	t.check(EventInstance._wide_scene_shadow(
 			EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, false)) == null,
 			"a continuous fallen tree keeps the generic wide-scene shadow")
+
+## **A crash is solid only where the cars are.** *(2026-09-12: "a car crash right now has a full
+## bounding box even though there are gaps in the sprite. the bounding box should only be the
+## crashed cars".)*
+##
+## Stated as what the player asked for rather than as the offsets themselves: a body at the two
+## cars leaves a lane she can walk on each pavement and holds the middle of the road, and a body
+## spanning the street leaves neither. The offsets those lanes fall out of are read off the two
+## pictures (`EventCatalogue._car_accident_parts`) and checked by eye with the bounding-box layer
+## (`--layers 3`); what this holds is the thing that would be wrong if they drifted.
+func _test_a_crash_is_solid_only_where_its_cars_are(t) -> void:
+	var map := CityMap.new()
+	var crash := EventCatalogue.by_id("car_accident")
+	t.check(crash.solid_parts.size() == 2, "a crash is two cars, so it puts down two bodies")
+	t.check(crash.solid_reach() < crash.obstructs_radius,
+			"and it is solid to %.0fpx inside the %.0fpx of street it closes"
+			% [crash.solid_reach(), crash.obstructs_radius])
+
+	var carriageway := (float(Tuning.STREET_WIDTH) * 0.5 - Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE
+	for vertical in [false, true]:
+		var tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2) if vertical \
+				else Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
+		var instance := EventInstance.new()
+		instance.setup(crash, map.tile_to_world(tile), PackedVector2Array(), Vector2.RIGHT, map)
+		t.add_child(instance)
+		instance.set_process(false)
+		var street := "east-west" if vertical else "north-south"
+
+		var bodies := DebugLayers.collision_nodes_under(instance)
+		t.check(bodies.size() == 2,
+				"on a %s street the crash registers one collision shape per car (%d)"
+				% [street, bodies.size()])
+
+		var half: float = crash.obstructs_radius
+		var offsets := _lateral_offsets(instance)
+		for offset in offsets:
+			t.check(absf(offset) < carriageway,
+					"a wrecked car sits on the carriageway, not on a %s pavement (%.1fpx of %.0f)"
+					% [street, offset, carriageway])
+		t.check(_walkable_lane_beside(instance, half, -1.0) >= 2.0 * Tuning.PLAYER_BODY_RADIUS,
+				"a %s crash leaves her a lane on one side (%.0fpx)"
+				% [street, _walkable_lane_beside(instance, half, -1.0)])
+		t.check(_walkable_lane_beside(instance, half, 1.0) >= 2.0 * Tuning.PLAYER_BODY_RADIUS,
+				"and one on the other (%.0fpx)" % _walkable_lane_beside(instance, half, 1.0))
+		t.check(_is_blocked_at(instance, 0.0),
+				"while the middle of the road, where the cars are, is still shut on a %s street"
+				% street)
+		instance.free()
+
+## Every other row is exactly one piece at its own origin, so nothing but the crash changed shape.
+func _test_every_other_row_is_one_body(t) -> void:
+	var several := 0
+	for def in EventCatalogue.all():
+		if def.solid_parts.size() > 1:
+			several += 1
+			continue
+		t.check(def.parts().size() == 1, "'%s' is one body" % def.id)
+		if def.obstructs_radius > 0.0:
+			t.check(is_equal_approx(def.solid_reach(), def.obstructs_radius),
+					("'%s' is solid exactly as far as it closes ground (%.1f vs %.1f): the two "
+					+ "readings of a body only come apart for a row that is several")
+					% [def.id, def.solid_reach(), def.obstructs_radius])
+	t.check(several == 1,
+			"exactly one row in the catalogue is solid in parts (%d) — a second is a decision"
+			% several)
+
+## Where each of an instance's solid pieces sits along its own spread axis, in px from the scene's
+## centre.
+func _lateral_offsets(instance: EventInstance) -> PackedFloat32Array:
+	var vertical := instance.solid_axis() == Vector2.DOWN
+	var found := PackedFloat32Array()
+	for centre in instance.solid_part_centres():
+		var offset := centre - instance.global_position
+		found.append(offset.y if vertical else offset.x)
+	return found
+
+## Whether her centre may stand at `offset` along the spread axis — clear of every piece by her own
+## body radius.
+func _is_blocked_at(instance: EventInstance, offset: float) -> bool:
+	var offsets := _lateral_offsets(instance)
+	var shapes := instance.solid_part_shapes()
+	for i in offsets.size():
+		if absf(offset - offsets[i]) < shapes[i].reach() + Tuning.PLAYER_BODY_RADIUS:
+			return true
+	return false
+
+## How much walkable width the crash leaves on one side of itself (`side` −1 or +1), measured from
+## the far edge of the scene inward to the first body she cannot pass.
+func _walkable_lane_beside(instance: EventInstance, half: float, side: float) -> float:
+	var width := 0.0
+	var offset := side * (half - Tuning.PLAYER_BODY_RADIUS)
+	while absf(offset) <= half and not _is_blocked_at(instance, offset):
+		width += 1.0
+		offset -= side
+	return width
 
 # ------------------------------------------------------------------ emission ---
 
@@ -1760,12 +1857,28 @@ func _test_along_street_paths_stay_in_bounds(t) -> void:
 ## that is cheaper to walk into than to walk around is a bribe, and the player learns to take
 ## it. Naming them explicitly is the point: one more has to be a decision.
 ##
-## **Down to one row in playtest 07.** `falloff`'s new shoulder lifted `poster_crew` to +0.7 and
-## `barricade` to +3.0, so neither needs the exemption any more — both are still nearly free to
-## walk through, which is all the design ever asked of them. A burnt-out shell is the last row
-## that is genuinely cheaper to walk through than around, and it is a reminder rather than an
-## obstacle. (`loudspeaker` is `city_wide` and has no line to walk through at all.)
-const _SCENERY := ["burnt_shell"]
+## **Two rows, and both are meant to be free.** A burnt-out shell is a reminder rather than an
+## obstacle, and a poster crew is there so a street *looks* like a city under a curfew. Neither
+## has ever been more than nearly free to walk through, which is all the design asked of them.
+## *(Playtest 63 raised the walking decay past what a poster crew emits, so "nearly free" became
+## "free" and the row needs the exemption it used to sit just above. Nothing about the row moved;
+## the ground under it did.)* (`barricade` and the other pure obstructions emit nothing at all and
+## are covered by the blanket `intensity <= 0.0` exemption; `loudspeaker` is `city_wide` and has
+## no line to walk through at all.)
+const _SCENERY := ["burnt_shell", "poster_crew"]
+
+## The other exemption, and it is a different sentence: these rows are not cheap, they are **not
+## priced by their field at all**. A detainer's cost is `Tuning.CHAT_EXCITEMENT` charged flat over
+## the seconds it holds her still, through the conversation mechanism — the ambient disc around it
+## is atmosphere, and the catalogue's own notes on `chatting_mother` and `checkpoint_hut` say so.
+##
+## *(Playtest 63 is what made it visible: with the walking decay raised to 6.0/s their fields no
+## longer clear the ground they stand on, and the rule above called four rows a bribe. Sizing a
+## detainer's field to clear the decay would have been charging the same body twice, at a number
+## driven by a test rather than by what the row is.)* The exemption is not a hole because the
+## check below replaces it: a row that is excused from costing something to walk past has to
+## actually cost something to walk **into**.
+const _PRICED_BY_THEIR_CAPTURE := ["chatting_mother", "checkpoint_hut", "checkpoint_post"]
 
 ## Net excitement from walking straight through the centre of an event at walking pace, in
 ## points of a hundred-point meter. This is what produced the table in docs/EVENTS.md, and the
@@ -1803,9 +1916,31 @@ func _cost_to_run_through(def: EventDef) -> float:
 ## fast — and the two answers give opposite outcomes rather than the same outcome at two prices.
 ## `Tuning.validate_pursuit` is the contract and it runs on load; this is the part of it that is
 ## about the *catalogue* rather than about one row.
+##
+## **`car_accident` is named as the one row where running is cheaper, and it is arithmetic rather
+## than taste.** Running beats walking on any field whose mean emission along the line clears about
+## 24/s: `EXCITEMENT_FROM_RUNNING` (14.0) plus the collapsed decay is a fixed price per second, so
+## past that rate the shorter exposure wins. The crash was asked to cost more than half the meter to
+## squeeze past (`tests/test_seals.gd`), and no field short and fierce enough to do that inside its
+## own short shoulder sits under that rate — a field wide enough to charge fifty points at a walk
+## would be felt from down the street, which is the thing the row's own design refuses. **So the
+## choice was made by the entry's contract rather than by retuning something else**: sprinting past
+## a crash costs 54 where walking costs 63, nine points of a hundred, against a field she is meant
+## to route around rather than push through. It is open to overturn — the alternative is a wider,
+## quieter field, and the cost of that is a sealed street announcing itself half a block away.
+const _RUNNING_IS_CHEAPER := ["car_accident"]
+
 func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t) -> void:
 	var pursuers := 0
+	var running_is_cheaper := 0
 	for def in EventCatalogue.all():
+		if def.id in _RUNNING_IS_CHEAPER:
+			running_is_cheaper += 1
+			t.check(_cost_to_run_through(def) < _cost_to_walk_through(def),
+					("'%s' is named as the row running is cheaper on (%.1f running, %.1f walking) — "
+					+ "if that has stopped being true, take it off the list rather than keeping it")
+					% [def.id, _cost_to_run_through(def), _cost_to_walk_through(def)])
+			continue
 		if def.city_wide:
 			continue   # No line through it, so no crossing to compare.
 		if def.pursues:
@@ -1827,6 +1962,12 @@ func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t) -> void:
 				"running through '%s' (%.1f) costs more than walking (%.1f)"
 				% [def.id, _cost_to_run_through(def), _cost_to_walk_through(def)])
 	t.check(pursuers > 0, "and there is something in the game that running is the answer to")
+	t.check(running_is_cheaper == _RUNNING_IS_CHEAPER.size(),
+			"every row named as a running exemption is still in the catalogue (%d of %d)"
+			% [running_is_cheaper, _RUNNING_IS_CHEAPER.size()])
+	t.check(_RUNNING_IS_CHEAPER.size() == 1,
+			"and there is exactly one of them (%d): a second is a decision somebody takes"
+			% _RUNNING_IS_CHEAPER.size())
 
 ## *(Playtest 07: "on day 3 we introduce the running key (it is possible to run before but not
 ## required)" and "so on day 1 we only introduce arrow keys".)*
@@ -1848,6 +1989,14 @@ func _test_nothing_chases_her_before_the_run_is_taught(t) -> void:
 func _test_nothing_is_cheaper_to_walk_through_than_around(t) -> void:
 	for def in EventCatalogue.all():
 		if def.city_wide or def.intensity <= 0.0 or def.id in _SCENERY:
+			continue
+		if def.id in _PRICED_BY_THEIR_CAPTURE:
+			# The exemption owes its own check, or it is a way of not being tested: a row excused
+			# from costing something to walk past has to cost something to walk into.
+			t.check(def.detain_seconds > 0.0 and Tuning.CHAT_EXCITEMENT > 0.0,
+					"'%s' is excused the field because the detention is what it charges (%.1f "
+					% [def.id, Tuning.CHAT_EXCITEMENT]
+					+ "over %.1fs)" % def.detain_seconds)
 			continue
 		t.check(_cost_to_walk_through(def) > 0.0,
 				"walking through '%s' costs more than walking around it (%.1f)"
@@ -2512,9 +2661,10 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 ## any more — a row that forgets to choose one is invisible, which is the quietest way for an
 ## event to stop working.
 func _test_no_two_rows_draw_the_same_picture(t) -> void:
-	# Three rows are legitimately invisible: something else already draws the ground they stand
-	# on, or there is nothing to draw because the whole city is inside them.
-	var invisible := ["playground", "loudspeaker", "curfew_announce"]
+	# Four rows are legitimately invisible: something else already draws the ground they stand
+	# on, the whole city is inside them, or — the finale's explosion — the whole of the row is that
+	# it happens somewhere she cannot see, and what it leaves behind is a different row.
+	var invisible := ["playground", "loudspeaker", "curfew_announce", "finale_explosion"]
 	var owner_of := {}
 	for def in EventCatalogue.all():
 		if def.look == EventDef.Look.NONE:
