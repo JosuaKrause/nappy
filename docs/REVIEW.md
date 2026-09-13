@@ -14,11 +14,6 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-- **Compare pushing and carrying identity during a state change.** Do they remain the same woman?
-  Use `--start-escape` for carrying. Exact native
-  and enlarged walking GIFs are linked from the
-  [recipe index](evidence/README.md#graphics-recipes); they are sprite assemblies, not live captures.
-
 - **Look at the garbage sacks and small litter from day 10.** Do the standalone sacks and
   piles look like the same material, and does the small ground litter remain quiet and readable?
   `evidence/comic-props-2026-09-12/comparisons/` compares the SVG and PNG sources; use the

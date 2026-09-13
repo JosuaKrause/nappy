@@ -113,3 +113,12 @@ they are drawn on screen?
 > All read at play size
 
 Closed as fine.
+
+## Pushing and carrying, one woman
+
+Asked, against [PLAYTEST-62](PLAYTEST-62.md)'s requirement: does the carrying mother of the
+finale read as the same woman who pushes the stroller, across every direction and stride frame?
+
+> Same woman
+
+Closed as fine.
