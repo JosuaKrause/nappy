@@ -145,6 +145,13 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
+0. **[PLAYTEST-67](playtests/PLAYTEST-67.md)'s three**, on the same footing as the round before
+   it: **M124**, the game on a phone,
+   measured and then made cheaper; **M125**, the test suite is slow again; **M126**, the
+   codebase audit. M124 and M126 begin as read-only audits whose findings become items; M125
+   is the standing rule in the **verify** skill applied to the suite as it is. **M127**, the
+   first press walks her, was reported later the same day and is a defect in the controls:
+   small, and first.
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
    related to the other items to work on right now.")* It waits, because reaching act III waits:
    *"I wanna wait reaching act III until those things are done."*
@@ -309,6 +316,128 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
+
+---
+
+## M127 — The first press walks her · asked for 2026-09-13
+
+> "Also the player direction should be reset to zero when the game starts. Right now it always
+> starts already walking (probably from clicking the button) same with exiting pause or any
+> other screen"
+
+> "Pause can keep the last direction just don't overwrite it from the button press"
+
+[PLAYTEST-67](playtests/PLAYTEST-67.md). A defect in the controls, reported while the round is
+being tested as it lands.
+
+**What is true today.** A press sets a direction she walks until the next press
+(`TouchControls.set_direction()`, locked in at the press and cleared only by a stop or the next
+press); a run begins from a press on a title-screen disc, a day continues from the summary's
+button, and the pause screen closes from its own button or `Esc`. `TouchControls._release_all()`
+force-releases every held direction when a pause lands, and `ModeButton` lets a press reach the
+screen underneath it (`MOUSE_FILTER_IGNORE`, so both screens read every press in
+`_unhandled_input()`; `DECISIONS.md`, M83). The report is that the press that dismisses a screen
+is also read as a walk direction, so she is already walking when play resumes.
+
+- [ ] **Her direction is zero when a run starts.** The press on the title disc, and the
+      keyboard's `space`/direction start, begin the run with her standing; the first press
+      *after* the title screen has gone is the first heading. The same for the summary's continue
+      and the held restart. `tests/test_touch.gd` presses the disc and asserts `input_dir` is zero
+      on the first frame of play.
+- [ ] **A screen's button never overwrites the heading.** The press that closes the pause screen
+      (button or key) leaves whatever direction was locked in before the pause standing — *"Pause
+      can keep the last direction"* — and is not itself a press on the world. Find where the
+      press falls through: the `_unhandled_input` order between the screen and `TouchControls`,
+      the release that fires the button landing after the screen has already hidden, or
+      `_release_all()` clearing and then the same release re-aiming. Test: pause while walking
+      east, press the button, assert she resumes east; pause while standing, press, assert she
+      stands.
+
+---
+
+## M124 — The game on a phone, measured and then made cheaper · asked for 2026-09-13
+
+> "I played a few sessions on mobile. It is a bit laggy now. Are we using proper texture atlases
+> or is everything an individual loaded texture? Maybe we can optimize the game a bit more."
+
+[PLAYTEST-67](playtests/PLAYTEST-67.md). Closes M100's *frame rate on somebody else's machine*.
+
+**What is true today.** Every SVG and PNG under `assets/` is its own texture — several hundred
+of them, preloaded per class — and every entity draws itself from its own `_draw()` with
+`draw_texture_rect`, so the renderer's batching, which only joins consecutive draws that share a
+texture, is broken at nearly every sprite. Nothing is packed into an atlas. Each of those draws
+goes through `TextureResolver.resolve()`, a dictionary lookup keyed by the texture's path string,
+per draw per frame. The renderer is `gl_compatibility` on every platform. Two things the last
+two days added to a frame: `EntityHalo` re-traces up to eight rims of twelve body copies every
+frame it is drawn (M121), and `BuildingShadows` draws a few hundred rects once per frame (M122).
+The debug readout shows fps; nothing reports draw calls, texture switches or where a frame's
+time goes.
+
+- [ ] **Measure before touching anything.** The readout (`4` in a debug build) gains the
+      frame's draw calls (`Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME`), objects and primitives,
+      and the process and physics times, and the run log notes them once a second so a phone
+      session can be read afterwards. One number for the desktop rig and one for the phone on
+      the live page, on the same seed and day, recorded in `DECISIONS.md` — the audit's own
+      findings say which of the suspects below is the cost, and nothing is atlased on a guess.
+- [ ] **The known suspects, each measured and then fixed or struck.** The resolver's per-draw
+      string lookup (resolve once at preload, or cache on the texture); the halo's ninety-six
+      body draws a frame (trace to a texture once per view change and draw that, or reduce the
+      copies); building shadows as one mesh or one texture rather than rects; the crowd's
+      two-hundred-odd `_draw()` calls each switching texture; anything the profile shows above
+      them.
+- [ ] **Atlases, if the measurement says texture switches are the cost.** A family per atlas —
+      the crowd, the event people, the vehicles, the ground props — packed by a tool under
+      `tools/` from the same sources the M109 transfer pipeline reads, with an `AtlasTexture`
+      per sprite so every caller's `draw_texture_rect` is unchanged and the SVG-first rule and
+      the `--svg` override still hold. The **cli-tools** and **python-tooling** rules govern the
+      tool; the illustrated-png skill says what a transfer owes.
+
+---
+
+## M125 — The test suite is slow again · asked for 2026-09-13
+
+> "Also the tests are slow again, too. Tests that only restate numbers in tables etc can be
+> completely removed."
+
+[PLAYTEST-67](playtests/PLAYTEST-67.md). The rule is the **verify** skill's, from 2026-09-03:
+*a test that only doubles the work of a change is deleted, not maintained* — one that reads a
+design decision back to itself, where "you changed a number" is all it could ever say. What it
+keeps: a guard that a sweep was not vacuous, an ordering between two constants, and anything the
+skill's incident list names.
+
+**What is true today.** `tests/run_tests.gd` prints each suite's time, and main's CI run on the
+M121 merge shows the suite over a million checks, with `test_events` near twelve minutes,
+`test_crowd` eight, `test_routes` and `test_generator` six each and `test_regions` three;
+`tests/test_events.gd` alone is over three thousand lines.
+
+- [ ] **Every check that restates a table goes.** Read every suite against the verify skill's
+      test and delete what only pins a constant, a row's field, or an enum's order; the commit
+      message names each deleted test and which of the two sentences it could have said.
+- [ ] **The seed loops are sized to what they prove.** A guarantee over 200 seeds that a
+      generator property holds is worth its minutes once; a loop that walks every row of the
+      catalogue through every day of every seed is not. Each loop that survives says in its
+      docstring what count it needs and why; the rest shrink. `test_full_run` keeps its three
+      seeds through fourteen days, by the skill's own rule.
+- [ ] **The suite's time is recorded and the runner keeps saying it.** The per-suite times
+      before and after go to `DECISIONS.md`, and the top of `tests/run_tests.gd` says what a
+      suite may cost before it is a suite to split or cut.
+
+---
+
+## M126 — The codebase audit · asked for 2026-09-13
+
+> "Other than that do a thorough audit of the codebase."
+
+[PLAYTEST-67](playtests/PLAYTEST-67.md). A read-only pass over `src/`, `tests/` and `tools/`
+whose output is a list, not a rewrite: dead code and unreachable branches, duplicated logic that
+has drifted apart, per-frame work that could be per-day, leaks and retained references, contracts
+a docstring claims and no test holds, and anything the **godot** skill's trap list names that is
+still present.
+
+- [ ] **The audit, filed.** Each finding becomes an item here under the milestone that owns the
+      code, with the file and the sentence that is wrong, or a defect under M100; findings the
+      player must decide come back as questions. The audit's own record — what was looked at and
+      found clean — goes to `DECISIONS.md` so the next one starts from it.
 
 ---
 
@@ -513,11 +642,11 @@ re-pitched:
       rather than design); there is a title screen and no menu, on purpose
 - [ ] Accessibility: colourblind-safe meters, a telegraph-time multiplier, reduced motion
 - [ ] Controller support
-- [ ] **The web build measured on a machine that did not build it.** Playtests 27 onward have
-      played the live address on a laptop browser and a phone, so *it boots and takes input* is
-      answered. What is not is frame rate at the game's scale on somebody else's machine, and
-      whether a stranger arriving at the page understands what it is. itch.io stays the fallback
-      host, since it sets the isolation headers a threaded build would need
+- [ ] **Whether a stranger arriving at the page understands what it is.** Playtests 27 onward
+      have played the live address on a laptop browser and a phone, so *it boots and takes
+      input* is answered, and playtest 67 answered the frame rate on a phone — *"a bit laggy"*,
+      which is M124. itch.io stays the fallback host, since it sets the isolation headers a
+      threaded build would need
 
 **Open design questions**, each answered by a played run rather than by more arithmetic:
 

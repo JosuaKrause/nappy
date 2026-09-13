@@ -68,7 +68,7 @@ The three cases where the orchestrating session implements directly, and they ar
   the orchestrator's, always — see "What the orchestrator keeps".
 
 **Everything else is an agent's**, and a milestone that is not ready for one is a milestone whose
-`TODO.md` entry is not finished yet. That is the same test the feedback rules already impose:
+`TODO.md` entry is not finished yet. That is the same test the **playtest-feedback** rules already impose:
 *somebody opening the repo cold could build the thing that was asked for.* Writing the brief until
 an agent can take it is not overhead on top of the work — it **is** the orchestrating half of it.
 

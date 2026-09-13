@@ -102,7 +102,7 @@ case "$path" in
 	*/tests/*)                 wanted+=(verify) ;;
 esac
 case "$path" in
-	*/docs/playtests/PLAYTEST-*.md|*/docs/TODO.md)    wanted+=(feedback) ;;
+	*/docs/playtests/PLAYTEST-*.md|*/docs/TODO.md)    wanted+=(playtest-feedback) ;;
 esac
 case "$path" in
 	*.gd)                      wanted+=(godot) ;;
