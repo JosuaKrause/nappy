@@ -300,10 +300,8 @@ this is the map.
   (`DECISIONS.md`, M124, where a frame goes, and M124, the two fixes built): events redraw only
   when their picture changes and the building shadows are culled per chunk, and M124's entry in
   `TODO.md` holds the phone half of the measurement, the atlas item gated on that phone half,
-  and the audit's per-frame findings. For M125: if its branch has a PR,
-  review it, file its record and merge under the usual rules; if a worktree under
-  `.claude/worktrees/` holds uncommitted work, the agent was cut off — read what is there before
-  re-briefing.
+  and the audit's per-frame findings. M125's five suites are pruned and recorded
+  (`DECISIONS.md`, M125); its entry holds the four suites still over the runner's budget.
 
 ## The queue, as prioritised on 2026-09-09
 

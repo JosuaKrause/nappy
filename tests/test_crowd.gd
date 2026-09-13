@@ -223,9 +223,15 @@ func _test_walkers_stay_on_foot_and_cars_stay_on_the_road(t) -> void:
 
 ## The whole crowd is on the street lattice, so a park keeps its quiet. This is the
 ## structural half of "a park is quiet because nobody is in it".
+##
+## **Fifteen seconds, because what is read is one instant.** The advance is settling — the morning
+## places everybody on their corridors and the first frames are them sorting themselves out — and
+## fifteen seconds is several hundred pixels of walking, long enough that nobody is still standing
+## where the day put them. The check is a single reading of the field at each park centre, so
+## running the crowd three times as long collects no extra evidence for it.
 func _test_a_park_is_out_of_earshot_of_the_traffic(t) -> void:
 	_city.crowd.start_day(1, _rng(1))
-	_advance(45.0)
+	_advance(15.0)
 	for block in _city.map.calm_blocks:
 		var centre := _city.map.tile_rect_to_world(CityMap.block_rect(block)).get_center()
 		# Against what a park gives back rather than against the flat walking rate: calm ground
@@ -356,16 +362,25 @@ func _test_a_busy_street_never_lets_the_meter_fall(t) -> void:
 ## The crowd is a population of the box around the player, so a floor is only a floor where she
 ## is standing. Focusing it is what makes the number mean anything: the same point reads 3.12
 ## rather than 0.00.
+##
+## **Thirty seconds, which is eighteen hundred samples of the street.** The number this returns is a
+## mean, and the three checks it feeds compare it either to the decay or to the other street's
+## floor — a factor of two apart at the nearest. A mean over eighteen hundred frames cannot move far
+## enough to cross any of those bars by luck, and the minute this used to average over was buying
+## precision no assertion here reads.
 func _floor_on(at: Vector2) -> float:
 	_city.crowd.start_day(1, _rng(1), at)
-	return _mean_excitement(at, 60.0)
+	return _mean_excitement(at, 30.0)
 
 ## What a kerb-to-kerb crossing of the main road actually costs her, worst of eight attempts.
 ##
 ## Walked rather than asserted, and the **worst** rather than the mean, because the rule is about
 ## whether the road is passable at all — a mean crossing that is cheap and a worst one that ends
-## the day is a road she cannot use, and the mean would hide it. Fifteen seconds of traffic
-## between attempts, so each crossing meets a different road rather than the same eight cars.
+## the day is a road she cannot use, and the mean would hide it. **Eight attempts, which is the
+## sample a worst case needs and does not shrink**; what shrank is the gap between them, from
+## fifteen seconds to eight, because eight seconds is already more than the slowest car takes to
+## clear a whole block (`CAR_SPEED.x` against `BLOCK_SIZE + STREET_WIDTH` tiles) so each crossing
+## still meets a different road rather than the same eight cars.
 ##
 ## The ground's own decay is netted off inside the loop: the spine is `EXCITEMENT_DECAY_MAIN_ROAD_
 ## MULTIPLIER` ground, so what she pays is what the crowd loads minus what that ground gives back,
@@ -378,7 +393,7 @@ func _crossing_the_main_road_costs() -> float:
 	_city.crowd.start_day(1, _rng(1), start)
 	var worst := 0.0
 	for attempt in 8:
-		for i in int(round(15.0 / STEP)):
+		for i in int(round(8.0 / STEP)):
 			_city.crowd.step(STEP)
 		var walker := start
 		var paid := 0.0
@@ -914,8 +929,12 @@ func _test_a_precinct_has_no_cars_in_it(t) -> void:
 	var across := chosen.y * CityMap.period() + Tuning.STREET_WIDTH / 2
 	var at := _city.map.tile_to_world(Vector2i(across, along) if vertical
 			else Vector2i(along, across))
+	# Twenty seconds, because what is read below is the single frame this leaves behind — the
+	# advance is there to let the morning's placement disperse and to give the divert rule a few
+	# hundred junctions to have refused, not to accumulate evidence. Its sibling below counts every
+	# second and is the one that watches over time.
 	_city.crowd.start_day(1, _rng(1), at)
-	_advance(45.0)
+	_advance(20.0)
 
 	# **An intruder is a car on ground no axis lets it drive on, not a car whose tile is inside the
 	# span.** *(Corrected under M51.)* A span covers the junctions between its blocks, and a car
@@ -1102,8 +1121,12 @@ func _agents_in_front_of(field: CrowdField) -> int:
 ##
 ## Two checks, because the mechanism and the thing the player feels are different statements and
 ## either could hold while the other fails. The first is the rule itself and is free. The second
-## is short on purpose — five seconds of settling and five of counting, which is enough to
-## separate a doubling and not enough to pin a value, and pinning a value is not what it is for.
+## is a measurement and its window is **ten seconds of settling and ten of counting**, which is the
+## least it can hold: the count is walkers-on-screen averaged over frames, and a walled corridor
+## and an open one differ by well under the factor of 1.5 the check allows, so the noise is the
+## binding constraint rather than the wall clock. Halved, a correct build reads 105 against 64 and
+## fails — measured, not guessed. It is still not enough to pin a value, and pinning a value is not
+## what it is for.
 func _test_the_crowd_does_not_bunch_against_the_wall(t) -> void:
 	var field := _city.crowd.field()
 	var extent := _city.map.world_size()
@@ -2226,9 +2249,15 @@ func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t) -> void:
 	var at := map.doorstep_world_position()
 	city.crowd.start_day(day, _rng(day), at)
 
+	# Twelve seconds. The two checks below are *presence* — somebody uses these streets, and so does
+	# something on four wheels — so what the loop needs is long enough for either to be seen, not a
+	# rate. The field is centred on the doorstep and the home block's own bordering streets are
+	# inside it from the first frame, so both are answered in the first second or two on a street
+	# that is open at all; the rest is margin for a morning whose placement started everybody
+	# further up the corridor.
 	var walkers_seen := 0
 	var cars_seen := 0
-	for frame in int(round(30.0 / STEP)):
+	for frame in int(round(12.0 / STEP)):
 		city.crowd.set_focus(at)
 		city.crowd.step(STEP)
 		for agent in city.crowd.agents():
@@ -2295,8 +2324,11 @@ func _test_the_crowd_agrees_a_zone_absorbed_the_corridor(t) -> void:
 	var at := _city.map.tile_rect_to_world(footprint).get_center()
 	_city.crowd.start_day(1, _rng(1), at)
 
+	# Fifteen seconds of the field sitting on the zone: every car in the box is recycled or drives
+	# past the absorbed corridor several times over in that, which is what gives the count
+	# something to be zero about. A longer watch is the same refusal asked again.
 	var cars_inside := 0
-	for frame in int(round(30.0 / STEP)):
+	for frame in int(round(15.0 / STEP)):
 		_city.crowd.set_focus(at)
 		_city.crowd.step(STEP)
 		for agent in _city.crowd.agents():
@@ -2336,8 +2368,15 @@ func _test_agents_do_not_overrun_an_ordinary_edge(t) -> void:
 ## way `_test_only_cars_go_over_the_bridge` and `_test_agents_do_not_overrun_an_ordinary_edge`
 ## already check — `CrowdAgent._cannot_go_on` now refuses every out-of-bounds tile outright, with
 ## one exception, so the new claim is that nobody else reaches one **at all**. Checked directly
-## against `CityMap.in_bounds` at all four edges rather than by a pixel tolerance: the spine's own
-## band (north and south) may still carry a car past it, and nowhere else may carry anybody.
+## against `CityMap.in_bounds` rather than by a pixel tolerance: the spine's own band (north and
+## south) may still carry a car past it, and nowhere else may carry anybody.
+##
+## **The two edges the spine runs off, and only those.** The exception is what this test is for,
+## and it exists nowhere else — so the plain west and east edges it used to stand on as well are
+## exactly the two that `_test_nobody_enters_across_a_plain_edge` below stands on, at the same two
+## coordinates, for the same twenty seconds, asserting a strictly stronger version of the same
+## sentence (nobody at all, rather than no walker and no off-spine car). Running both was the same
+## refusal paid for twice.
 func _test_out_of_bounds_is_blocked_except_a_car_on_the_spine(t) -> void:
 	var spine_lo := _city.map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
 	var spine_hi := spine_lo + Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
@@ -2345,8 +2384,6 @@ func _test_out_of_bounds_is_blocked_except_a_car_on_the_spine(t) -> void:
 	var edges: Array[Vector2] = [
 		Vector2((spine_lo + spine_hi) * 0.5, Tuning.TILE_SIZE),
 		Vector2((spine_lo + spine_hi) * 0.5, size.y - Tuning.TILE_SIZE),
-		Vector2(Tuning.TILE_SIZE, size.y * 0.5),
-		Vector2(size.x - Tuning.TILE_SIZE, size.y * 0.5),
 	]
 	for i in edges.size():
 		var at: Vector2 = edges[i]

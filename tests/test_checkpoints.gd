@@ -234,16 +234,14 @@ func _test_the_boom_bars_the_carriageway(t) -> void:
 					% [map.seed_used, day, arm_near, arm_far, solid_low, solid_high])
 	t.check(checked > 0, "at least one street door's boom was measured (%d)" % checked)
 
-## The three rows are `SCRIPTED`, `scripted_day 0`, like the seal pictures — so they validate on
-## boot (already checked by `EventCatalogue.all()`, restated here explicitly) and the ordinary
-## catalogue roll never schedules one, over several seeds and days.
+## The three rows exist and the ordinary catalogue roll never schedules one, over several seeds
+## and days. What makes that true — `SCRIPTED`, `scripted_day 0`, like the seal pictures — is not
+## restated: reading those two fields back off the row could only ever say somebody edited the
+## catalogue, while the sweep below says whether a checkpoint can reach the map by the wrong door.
+## Their fairness is `EventCatalogue.all()`'s own sweep in `tests/test_events.gd`.
 func _test_the_three_rows_validate_and_are_never_rolled(t) -> void:
 	for id in ["checkpoint_hut", "checkpoint_gate", "checkpoint_post"]:
-		var def := EventCatalogue.by_id(id)
-		t.check(def != null, "'%s' is in the catalogue" % id)
-		t.check(def.validate(), "'%s' gives the player time to walk clear" % id)
-		t.check(def.kind == GameEnums.EventKind.SCRIPTED and def.scripted_day == 0,
-				"'%s' is SCRIPTED, scripted_day 0, like the seal pictures" % id)
+		t.check(EventCatalogue.by_id(id) != null, "'%s' is in the catalogue" % id)
 
 	var rolled := 0
 	for pair in _sampled_days():

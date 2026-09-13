@@ -425,22 +425,19 @@ design decision back to itself, where "you changed a number" is all it could eve
 keeps: a guard that a sweep was not vacuous, an ordering between two constants, and anything the
 skill's incident list names.
 
-**What is true today.** `tests/run_tests.gd` prints each suite's time, and main's CI run on the
-M121 merge shows the suite over a million checks, with `test_events` near twelve minutes,
-`test_crowd` eight, `test_routes` and `test_generator` six each and `test_regions` three;
-`tests/test_events.gd` alone is over three thousand lines.
+**What is true today.** The five suites the report named are pruned and their loops sized to
+what they prove — the per-suite times before and after are in `DECISIONS.md` under M125 — and
+the head of `tests/run_tests.gd` says the budget: a suite over two minutes serial is a suite to
+split or cut, because the longest suite sets the floor every other shard waits on. Four suites
+are still over that budget and were outside the report's own list.
 
-- [ ] **Every check that restates a table goes.** Read every suite against the verify skill's
-      test and delete what only pins a constant, a row's field, or an enum's order; the commit
-      message names each deleted test and which of the two sentences it could have said.
-- [ ] **The seed loops are sized to what they prove.** A guarantee over 200 seeds that a
-      generator property holds is worth its minutes once; a loop that walks every row of the
-      catalogue through every day of every seed is not. Each loop that survives says in its
-      docstring what count it needs and why; the rest shrink. `test_full_run` keeps its three
-      seeds through fourteen days, by the skill's own rule.
-- [ ] **The suite's time is recorded and the runner keeps saying it.** The per-suite times
-      before and after go to `DECISIONS.md`, and the top of `tests/run_tests.gd` says what a
-      suite may cost before it is a suite to split or cut.
+- [ ] **The four suites over budget get the same pass.** `test_resistance.gd`,
+      `test_balance.gd`, `test_seals.gd` and `test_checkpoints.gd` each run over two minutes
+      serial on CI. Read each against the verify skill's test, delete what restates a table,
+      and size each seed or day loop to the question it asks — a rule asked per placement needs
+      fewer maps than a property of a layout — with the count and its reason in the docstring,
+      and a sweep never made vacuous. The CI per-suite line before and after goes to
+      `DECISIONS.md` under M125.
 
 ---
 
