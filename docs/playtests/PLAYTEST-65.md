@@ -388,3 +388,13 @@ donor source and exact wheel extraction/placement in the recipe.
 
 Exchange the displayed SE and SW wheel artwork while keeping each view's body, canopy, handle
 and grounded height fixed. Preserve the source images and exact swap as a reproducible recipe.
+
+> make sure the text reads in a way it can't get double apllied
+
+Describe the final wheel arrangement relative to immutable source images. Rebuilding must read
+hash-checked frozen inputs and reproduce the same result, never exchange installed wheels again.
+
+> the rest looks good
+
+The player accepts the rest of the current graphics, including northern diagonal stroller
+contact and the stoop bottom face. Keep the remaining correction limited to SE/SW wheels.

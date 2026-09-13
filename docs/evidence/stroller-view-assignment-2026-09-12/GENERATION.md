@@ -26,10 +26,10 @@ assigning the opposite diagonal requires a horizontal mirror as well as exchangi
 `inputs/manifest.json` records the immutable source revision and hashes of all five original
 PNGs and their SVG sources. The [comic rig recipe](../comic-rig-2026-09-12/GENERATION.md) owns
 upstream generation and registration; this recipe owns the final runtime view assignment.
-The [wheel reuse recipe](../stroller-wheel-mirror-2026-09-12/GENERATION.md) applies the final
-SE/SW wheel and lower attachment pixels after this assignment. Its verifier checks the final
-derivative and the other four unchanged runtime PNGs. The bundle here preserves the assignment
-inputs to that refinement; rebuilding it alone does not reproduce the final SE/SW wheels.
+The [wheel arrangement recipe](../stroller-southern-wheel-swap-2026-09-12/GENERATION.md) owns
+the final SE/SW wheel and lower attachment pixels after this assignment and donor extraction.
+It reads a hash-checked frozen input; do not exchange installed wheels again. The bundle here
+preserves the view assignment inputs; rebuilding it alone does not reproduce the final wheels.
 The operation preserves native dimensions, color/alpha pixels and bottom-center anchors, with
 no rescaling, redrawing or changes to the mother or the runtime's drawing transforms.
 

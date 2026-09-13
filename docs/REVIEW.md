@@ -19,18 +19,9 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   The [damage atlas review](evidence/shared-damage-2026-09-12/GENERATION.md) shows every variation
   over each supported base.
 
-- **Push northeast and northwest through all three poses and a turn.** Does the small downward
-  adjustment keep the handle connected without a visible jump as the facing changes? The
-  [north-diagonal comparison](evidence/stroller-diagonal-contact-2026-09-12/GENERATION.md) shows
-  the static pose check. SE/SW retain their grounded height and accepted hand gap.
-
-- **Look at the doorstep.** Does the copied brown bottom band read as a vertical step face with
-  a consistent material? The [stoop comparison](evidence/stoop-bottom-face-2026-09-12/GENERATION.md)
-  records the strip copy and compression back to the native tile height.
-
 - **Push southeast and southwest at gameplay scale.** Do the reused wheels read along the
   travel direction, with clean joins to the chassis? The
-  [wheel comparison](evidence/stroller-wheel-mirror-2026-09-12/GENERATION.md) shows both views;
+  [wheel comparison](evidence/stroller-southern-wheel-swap-2026-09-12/GENERATION.md) shows both views;
   their body height and hand gap remain fixed.
 
 - **Look at a park and a wooded calm area while walking past them.** Do the sparse grass clumps give variety while the

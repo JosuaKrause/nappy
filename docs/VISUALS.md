@@ -71,9 +71,10 @@ The [north-diagonal contact review](evidence/stroller-diagonal-contact-2026-09-1
 records the small downward NE/NW placement adjustment across all three pushing poses. It fades
 smoothly to zero at N/E/W; southern placements stay fixed to preserve wheel grounding, including
 the accepted SE/SW hand gap.
-The [southern wheel recipe](evidence/stroller-wheel-mirror-2026-09-12/GENERATION.md) applies NE
-wheel pixels to the SE view after direction assignment; SW uses its runtime reflection. Only
-wheel and lower attachment regions change, preserving body height and the canopy/handle geometry.
+The [southern wheel arrangement](evidence/stroller-southern-wheel-swap-2026-09-12/GENERATION.md)
+defines final SE wheels from the frozen input's displayed SW and final SW wheels from its
+displayed SE. Only wheel and lower attachment regions change. Rebuild from the immutable
+source, never swap installed pixels; body height and canopy/handle geometry stay fixed.
 The [hand-contact comparison](evidence/pram-contact-2026-09-12/MEASUREMENTS.md) assembles both
 formats at the current continuous stroller offset. Shadows and cues share that drawing position;
 the uniformly enlarged stroller retains its bottom ground anchor, and the collision body retains
