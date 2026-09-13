@@ -33,3 +33,48 @@ ground with the stroller icon, the wordmark, the tagline *"Fourteen days. One pr
 sleep and get her home."*, then the title and description under it. The unfurl that failed
 black before M80's flattening (`DECISIONS.md`, M80) now comes back whole in a chat client; the
 `REVIEW.md` item that waited on exactly this closes.
+
+## The busker's loop, refined twice
+
+While M128 was being built. Shown that the agent had pulled the busker's reach from 190px to
+55px, so that most of a one-block park with a busker in it became a place to sleep:
+
+> keep the radius the same but tweak the excitement number. the excitement inside the park
+> doesn't need to go up by a lot it just needs to be enough to not go down
+
+Then, asked what the loop should do:
+
+> can we make the pulse so a full loop leaves a net sleep decrease / excitement increase but at
+> the quieter parts the sleep meter might fill up in the park. so it doesn't continuously
+> decrease the sleep but rather let the sleep go up a but and then go down again in equal
+> parts. that way we can push the number down even further
+
+And, shown the arithmetic — the pulse averages 62.5% of its peak over a loop, the park gives
+back 12 points a second, so at a peak of 13 a full loop at his core already nets sleep gain and
+a net excitement gain with the quiet half kept needs a peak near 20, not lower:
+
+> can we do a net sleep gain that is slow enough to never reach 100% in the alotted time?
+
+So the busker's radii stay at 45 and 190px and the pulse stays; over a loop the meter drifts
+toward sleep, the quiet half filling and the loud half taking it back, and the peak is the
+lowest at which standing at his core from arrival cannot fill the sleep meter inside a day.
+Built under M128 (`DECISIONS.md`, M128).
+
+## A path through the city never has to cost
+
+> also framing from a different point of view a path through the city must never hit
+> excitement -- so all obstacles should be routable around by eg crossing to the other side of
+> the street which in turn means the other side of the street must be open enough so we can
+> walk on it unimpeded. a yeller must loop in a way that the desired path has an opening where
+> the yeller is not present for example. also, the routing should only cross the street at
+> intersections. in block crossings are possible in game but shouldn't be counted on by the
+> routing algorithm
+
+A guarantee the day does not make today. What exists (`DECISIONS.md`, M64, M69, M99): the
+day's routes are grown on cells and checked for *reachability* — every closure and every
+obstructing body is accepted only if the home still reaches two calm areas — and each event
+pays a telegraph contract of its own; nothing asks whether a route can be walked at no cost.
+The player's framing is a *cost* guarantee on the corridor: for every costly thing standing on
+a route's pavement there is a line past it on the other pavement, that pavement is itself clear
+for the stretch, the crossings the line relies on are at intersections and never mid-block, and
+a pacing row leaves the line open for part of its beat. M129 in `TODO.md`.

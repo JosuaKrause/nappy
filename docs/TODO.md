@@ -334,6 +334,63 @@ asleep" is a claim about where the meter can be held under 35, not about the cos
 
 ---
 
+## M129 — A path through the city never has to cost · asked for 2026-09-13
+
+> "also framing from a different point of view a path through the city must never hit
+> excitement -- so all obstacles should be routable around by eg crossing to the other side of
+> the street which in turn means the other side of the street must be open enough so we can
+> walk on it unimpeded. a yeller must loop in a way that the desired path has an opening where
+> the yeller is not present for example. also, the routing should only cross the street at
+> intersections. in block crossings are possible in game but shouldn't be counted on by the
+> routing algorithm"
+
+[PLAYTEST-69](playtests/PLAYTEST-69.md). The **city** and **events** rules govern; the
+**balance** rule governs any number it moves.
+
+**What is true today.** The day's routes are a corridor of two-tile cells grown on the
+reachability grid (`DECISIONS.md`, M69); `ClosurePlanner` accepts a closure only if the home
+still reaches two calm areas, `EventScheduler._ensure_the_city_is_still_walkable` drops
+obstructing bodies, widest first, until a park is reachable, and a `hard_fail` row keeps its
+whole field clear of other events (`_room_around`). Every one of those is about *reaching*, and
+a route that reaches through three friction fields in a row is as legal as an empty one. Costly
+rows land inside the corridor on purpose (the `friction` role); a kerbed van takes 44px of a
+64px footway so *the answer is the other side of the street* (`docs/EVENTS.md`), but nothing
+checks that the other side is open where it is needed. `homeless_yeller` `paces` between the
+ends of its route for ever at intensity 14 and a 210px reach. Crossings exist at every junction
+(a zebra, or the spine's signalled lines) and she can cross anywhere in play; the corridor's
+cells can already cut a corner through a park or an alley.
+
+- [ ] **The guarantee, stated and measured before anything moves.** A probe under
+      `tests/probes/` that, for each planned day over a set of seeds, walks every route from
+      the home to its calm area and asks whether a *zero-cost line* exists along it: a line
+      that stays out of every placed row's outer radius at the top of its beat, moves between
+      pavements only at intersections, never mid-block, and treats the corridor's own
+      park-and-alley cuts as ground like any other. It reports the fraction of routes that
+      have one, and for those that do not, which row and which stretch broke it — a van with
+      the far pavement also taken, two friction fields on facing pavements, a yeller whose beat
+      never leaves an opening. The numbers and the failing shapes go to `DECISIONS.md` first;
+      the rules below are chosen against them, and a rule whose case the probe never finds is
+      not written.
+- [ ] **A friction row on a route's pavement is accepted only if the far pavement is open for
+      the stretch.** Checked before the row is placed, never repaired after (the city rule): the
+      opposite pavement between the two nearest intersections holds no costly or impassable
+      body and is reachable from the route by an intersection crossing at each end. Where the
+      corridor runs along a precinct, a park edge or an alley, say what "the other side" is
+      there or refuse the row that ground. Pursuers, `AHEAD_OF_PLAYER` rows and city-wide rows
+      are outside this — they pay the telegraph contract instead — and so is anything off the
+      corridor, where the wall role is the design.
+- [ ] **A pacing row leaves the line open for part of its beat.** The yeller's route is sited
+      and sized so that the pavement it paces is clear at one end for a readable share of each
+      loop, or its loop runs on the pavement the route does not use; the choice is measured
+      with the probe and the reach the line needs at the far end of its beat is the number. The
+      same for any other row that `paces`.
+- [ ] **Mid-block crossings are not counted on.** The route tree's cells and the probe's line
+      cross a carriageway only at a junction; in play she may still cross anywhere. If the
+      corridor grower already cuts across a street mid-block, that is a finding for the probe
+      to name and this item to fix.
+
+---
+
 ## M124 — The game on a phone, measured and then made cheaper · asked for 2026-09-13
 
 > "I played a few sessions on mobile. It is a bit laggy now. Are we using proper texture atlases
