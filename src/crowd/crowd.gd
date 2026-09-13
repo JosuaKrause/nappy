@@ -500,7 +500,7 @@ func _stop_for_gates(delta: float) -> void:
 ##
 ## *(Playtest 58: "Held at the hut like her"; "four states walking -> waiting -> inspection ->
 ## emerging on the other side (with cooldown to not go back again) -> walking".)* **The four states
-## are the walker's own** — see `CrowdAgent._advance_the_door_hold()` — and what is decided here is
+## are the walker's own** — see `CrowdAgent.advance_the_door_hold()` — and what is decided here is
 ## only the two facts a walker cannot work out for itself: which hut is its, and how far away.
 ##
 ## Two clauses in the filter below are load-bearing:

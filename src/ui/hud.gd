@@ -29,7 +29,7 @@ extends CanvasLayer
 ## shapes without needing an actual debug build — the test process itself always is one, so asking
 ## `OS.is_debug_build()` from inside `_refresh_header()` et al. would leave the release shape
 ## covered by nothing.
-var _debug := OS.is_debug_build()
+var _debug := DevFlags.enabled()
 
 ## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
 ## `DaySummary` and `PauseScreen` use. No longer chosen between two wordings for the walking,

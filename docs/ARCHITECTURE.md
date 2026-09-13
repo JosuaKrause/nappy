@@ -29,9 +29,9 @@ src/
 	stroller.gd           movement, input, speed state
 	baby.gd               the two meters + baby state machine
   city/
-	city_map.gd           tile data, queries (is_calm, is_alley, walkable)
+	city_map.gd           tile data, queries (walkable)
 	city_generator.gd     seeded generation
-	city.gd               the scene: ground, buildings, props, boundary
+	city.gd               the scene: ground, buildings, props, boundary, queries (is_calm_zone, is_alley)
 	block_plan.gd         one block's arc, planned at generation
 	block_layout.gd       one block's carves, also fixed at generation
 	city_state.gd         run-scoped: how far along each arc the run has got
@@ -75,6 +75,8 @@ src/
 	resistance_steps.gd     the eleven steps (five tasks, two beats each, plus the finale)
 	contact_point.gd        touch to complete — a chalk mark, or a task's own event instance
   telemetry/
+	frame_cost.gd         what a frame cost the renderer and the two loops, read off Godot's
+	                      Performance monitors in one place for both the readout and the log
 	telemetry_log.gd      one run's ordered lines, and the file they go to
 	telemetry_observer.gd watches the player: turns, runs, crossings, encounters, where she
 	                      went and which events she met
@@ -298,18 +300,11 @@ Pure constants + `validate_event()`. No state. Everything balance-related lives 
 designer touches one file.
 
 ### `EventBus`
-Global signal hub. Decouples systems that should not know about each other.
-
-```gdscript
-signal excitement_changed(value: float)
-signal sleepiness_changed(value: float)
-signal baby_state_changed(state: Baby.State)
-signal day_started(day: int)
-signal event_telegraphed(instance: EventInstance)
-signal event_activated(instance: EventInstance)
-signal hard_fail_triggered(reason: String)
-signal resistance_progress_changed(value: int)
-```
+Global signal hub. Decouples systems that should not know about each other. Every signal is
+declared in `src/autoload/event_bus.gd`, grouped by what it reports — meters, day/run state,
+events, bodies, resistance — read it directly for the current list and each signal's payload
+type; `event_telegraphed` and `event_activated` are deliberately untyped, since this autoload
+loads before `EventInstance`'s class does.
 
 ### `Telemetry`
 The run log: one plain-text file per run, written as it happens. **Inert until
@@ -347,12 +342,20 @@ can be unit-tested against a fake world.
 `Baby` does not know about event types. Each frame it asks the world for total stimulus:
 
 ```gdscript
-# EventManager keeps a list of active EventInstances
-func total_excitement_at(pos: Vector2) -> float:
-	var sum := 0.0
-	for inst in _active:
-		sum += inst.contribution_at(pos)
-	return sum
+# EventManager keeps a list of active EventInstances in _instances
+func excitement_sources_at(world_position: Vector2) -> Array:
+	var sources: Array = []
+	for instance in _instances:
+		var contribution := instance.contribution_at(world_position)
+		if contribution > 0.0:
+			sources.append([instance, contribution])
+	return sources
+
+func total_excitement_at(world_position: Vector2) -> float:
+	var total := 0.0
+	for pair in excitement_sources_at(world_position):
+		total += pair[1]
+	return total
 ```
 
 `EventInstance.contribution_at()` implements the falloff from `docs/MECHANICS.md` and
@@ -415,9 +418,9 @@ needs `Tuning`. The runner loads every `tests/test_*.gd`, calls its `run(t)`, an
 non-zero on any failure.
 
 - `test_meters.gd` — falloff shape, the telegraph fairness contract, and every meter rule
-  in docs/MECHANICS.md, driven at a fixed timestep against a fake world. *(done)*
+  in docs/MECHANICS.md, driven at a fixed timestep against a fake world.
 - `test_generator.gd` — 200 seeds: connectivity, park count/spread, home-to-park distance,
-  exact building coverage, and route redundancy under street closures. *(done)*
+  exact building coverage, and route redundancy under street closures.
 - `test_events.gd` — catalogue fairness, the emission model (telegraph damping, pulse
   envelope, duration, paths, hard-fail gating), and scheduler determinism, placement,
   one-shot consumption and the usable-park rule.

@@ -96,7 +96,7 @@ esac
 # Every command-line entry point, shell or Python, and the game's own dev-flag parser: help on
 # --help/-h, and rejection of anything unknown before any work starts.
 case "$path" in
-	*/tools/*|*/src/dev/dev_flags.gd) wanted+=(cli-tools) ;;
+	*/tools/*|*/src/dev/dev_flags.gd|*/src/dev/auto_screenshot.gd) wanted+=(cli-tools) ;;
 esac
 case "$path" in
 	*/tests/*)                 wanted+=(verify) ;;
