@@ -18,8 +18,24 @@ extends Node2D
 ## does — see `EventInstance._draw_body_shadow()`. Computed once by `City.build()`, since building
 ## footprints are fixed for the run (`docs/DECISIONS.md`, M61); nothing here changes per day or
 ## per frame.
+##
+## **Drawn in chunks, because a `CanvasItem`'s draw list is culled as one item by its own rect.**
+## The whole city's shadow set is nearly two thousand commands, and the visible world holds a
+## couple of hundred tiles — so one item covering the map submits every off-screen command of it,
+## every frame, and no per-command culling reaches inside. This node draws nothing itself; it holds
+## one child `CanvasItem` per `CHUNK_TILES`-square patch of city that has any shadow in it, and the
+## renderer's own rect culling drops the ones that are not on screen. The picture is identical
+## because the drawing is: each chunk runs the same `draw_rect`/`draw_colored_polygon` pair over
+## its own share of the same tile sets, in world coordinates.
 
 const TILE := float(Tuning.TILE_SIZE)
+
+## How many tiles square one chunk is. 512px against a 640x360 visible world at zoom 2 means a
+## handful of chunks are on screen at once, which is the number that matters: smaller chunks cull
+## tighter but add items for the renderer to walk over the whole map, larger ones drag more
+## off-screen commands on screen with them. The city is about 160 tiles square, so this is a
+## hundred chunks of which a hundred minus a handful cost nothing per frame.
+const CHUNK_TILES := 16
 
 ## One shadow tile set: tiles fully covered, and tiles cut on the diagonal from their north-east
 ## corner to their south-west corner with the upper-left half filled.
@@ -30,10 +46,55 @@ class Tiles extends RefCounted:
 var _tiles := Tiles.new()
 
 ## Builds the shadow tile sets from `rects` — a city's building footprints, in tile coordinates
-## (`CityMap.building_rects`) — and redraws.
+## (`CityMap.building_rects`) — and rebuilds the chunks that draw them.
 func set_buildings(rects: Array[Rect2i]) -> void:
 	_tiles = compute(rects)
-	queue_redraw()
+	_rebuild_chunks()
+
+## The one `CanvasItem` per occupied chunk that the culling works on. Freed and rebuilt whole rather
+## than updated, since `set_buildings()` is called once per run with a fixed footprint set and the
+## alternative is bookkeeping for a case that never happens.
+##
+## A chunk is a plain `Node2D` with its `draw` signal connected to a closure over its own two tile
+## lists — the shape `EntityHalo` already uses to give a node a `_draw()` without a script of its
+## own. The tiles keep their world coordinates and every chunk sits at the origin, so the drawing
+## below is the same arithmetic it was when one item held all of it.
+func _rebuild_chunks() -> void:
+	for child in get_children():
+		remove_child(child)
+		child.free()
+	var by_chunk := split(_tiles)
+	for key in by_chunk:
+		var tiles: Tiles = by_chunk[key]
+		var chunk := Node2D.new()
+		chunk.name = "Chunk%d_%d" % [key.x, key.y]
+		chunk.draw.connect(_draw_chunk.bind(chunk, tiles))
+		add_child(chunk)
+
+## `tiles` dealt out into one `Tiles` per occupied chunk, keyed by the chunk's own coordinates —
+## pulled out of `_rebuild_chunks()` for the same reason `compute()` is pulled out of
+## `set_buildings()`: `tests/test_building_shadows.gd` can then hold the one property the split has
+## to have, that it is a **partition** of what `compute()` produced and not a filter of it. A tile
+## dropped here is a shadow that silently stops being drawn, and nothing else in the frame would
+## say so.
+##
+## `floori` rather than integer division, which truncates toward zero and would fold the two chunks
+## either side of an axis into one. The map's own tile coordinates are never negative today and
+## nothing here depends on that.
+static func split(tiles: Tiles) -> Dictionary:
+	var by_chunk := {}
+	for tile in tiles.full:
+		_chunk_for(by_chunk, tile).full.append(tile)
+	for tile in tiles.triangles:
+		_chunk_for(by_chunk, tile).triangles.append(tile)
+	return by_chunk
+
+static func _chunk_for(by_chunk: Dictionary, tile: Vector2i) -> Tiles:
+	var key := Vector2i(floori(float(tile.x) / CHUNK_TILES), floori(float(tile.y) / CHUNK_TILES))
+	if not by_chunk.has(key):
+		by_chunk[key] = Tiles.new()
+	var chunk: Tiles = by_chunk[key]
+	return chunk
 
 ## The geometry, pulled out of `set_buildings()` so `tests/test_building_shadows.gd` can assert the
 ## tile sets directly without building a scene. Tile `y` increases downward, the same convention
@@ -70,17 +131,17 @@ static func compute(rects: Array[Rect2i]) -> Tiles:
 			tiles.triangles.append(triangle_candidate)
 	return tiles
 
-func _draw() -> void:
+func _draw_chunk(canvas: CanvasItem, tiles: Tiles) -> void:
 	var colour := Color(Palette.SHADOW.r, Palette.SHADOW.g, Palette.SHADOW.b,
 			Tuning.BUILDING_SHADOW_ALPHA)
-	for tile in _tiles.full:
-		draw_rect(Rect2(Vector2(tile) * TILE, Vector2.ONE * TILE), colour)
-	for tile in _tiles.triangles:
+	for tile in tiles.full:
+		canvas.draw_rect(Rect2(Vector2(tile) * TILE, Vector2.ONE * TILE), colour)
+	for tile in tiles.triangles:
 		var origin := Vector2(tile) * TILE
 		# North-west, north-east, south-west: the half of the tile on the building's own side of
 		# the north-east-to-south-west cut, which is why the whole top edge — the edge shared with
 		# the building to the north — is one side of this triangle rather than split by it.
-		draw_colored_polygon(PackedVector2Array([
+		canvas.draw_colored_polygon(PackedVector2Array([
 			origin,
 			origin + Vector2(TILE, 0.0),
 			origin + Vector2(0.0, TILE),
