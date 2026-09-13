@@ -3,8 +3,9 @@ extends Node
 ##
 ## See docs/MECHANICS.md for the reasoning behind these numbers.
 
-## The catalogue validates itself when it is first asked for; traffic has no catalogue to
-## hang that on, so the one contract that is not about an event is checked here on boot.
+## The catalogue validates itself when it is first asked for; traffic, signals and the return
+## patrols have no catalogue to hang that on, so the three contracts that are not about an event
+## are checked here on boot instead.
 func _ready() -> void:
 	validate_traffic()
 	validate_signals()

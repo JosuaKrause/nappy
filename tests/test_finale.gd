@@ -29,6 +29,7 @@ func run(t) -> void:
 	_test_the_clock_reads_milliseconds_only_in_the_finale(t)
 	_test_a_lost_section_starts_again_and_costs_no_nerve(t)
 	_test_the_city_word_boots_the_second_section(t)
+	_test_every_part_word_reaches_its_own_walkable_position(t)
 	_test_the_escape_owes_no_return_leg(t)
 	_test_nothing_the_escape_places_stands_in_a_street_tree(t)
 
@@ -345,6 +346,21 @@ func _test_the_city_word_boots_the_second_section(t) -> void:
 			"and a bare flag is still her own door")
 	t.check(MAIN_SCRIPT.escape_part_for("nonsense") == "hallway_third",
 			"as is anything this does not recognise")
+
+## The suite above pins the *mapping*; this pins the *teleport* the mapping exists for — every
+## part word `--start-escape` recognises has to actually move her, onto ground she can stand on.
+func _test_every_part_word_reaches_its_own_walkable_position(t) -> void:
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	scene.build()
+	var start := scene.start_world_position()
+	for word in ["stairwell:left", "stairwell:right", "lobby", "basement", "floor:2", "floor:1"]:
+		var part: String = MAIN_SCRIPT.escape_part_for(word)
+		var at := scene.part_world_position(part)
+		t.check(at != start, "'%s' (part '%s') teleports away from her own door" % [word, part])
+		t.check(scene.is_walkable(scene.world_to_tile(at)),
+				"'%s' (part '%s') lands on a walkable tile" % [word, part])
+	scene.free()
 
 ## **The escape is outbound from its first frame, so it owes no return leg.** `EventDirector.owe_
 ## the_return()` hands acts III and IV extra `police_patrol` rows when `EventBus.return_phase_
