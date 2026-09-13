@@ -1784,6 +1784,10 @@ static func _burst_water_main() -> EventDef:
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
 	def.solid(GroundShape.band(96.0))
+	# "don't draw a shadow for water main breaks" — the crater is sunk into the road, not standing
+	# above it, so the body and the barriers keep their ordinary geometry and only the shadow patch
+	# is refused.
+	def.draws_body_shadow = false
 	return def
 
 ## A soft seal, both bodies the same row: a moving van with its ramp down on each pavement —

@@ -232,6 +232,14 @@ func solid_reach() -> float:
 		furthest = maxf(furthest, piece.reach())
 	return furthest
 
+## Whether `EventInstance._draw_body_shadow()` puts anything down for this row at all. `true` for
+## every row but `burst_water_main`, whose picture is a crater sunk into the road rather than an
+## object standing on it — a shadow under a hole would read as a mound. **The body and the
+## collision are untouched**: this governs the shadow patch alone, the same way `IMPACT_CRATER`
+## is "the only look with no shadow, because it *is* a shadow" without needing a body of its own to
+## turn off.
+@export var draws_body_shadow := true
+
 ## Day gating, 1-based and inclusive. `last_day = 0` means it never expires.
 @export var first_day := 1
 @export var last_day := 0
