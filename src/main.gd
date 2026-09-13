@@ -957,9 +957,11 @@ func _process(delta: float) -> void:
 	_city.set_daylight(_day.fraction_remaining())
 	_hud.set_home_guidance(_day.phase == GameEnums.DayPhase.RETURNING,
 			_city.map.home_world_position())
-	# The developer readout, gated rather than merely hidden: it is a seed, a frame rate and a
-	# meter breakdown, which a released build has no business assembling every frame even behind
-	# a label nobody can see — and `_nearest_event_text()` below is a scan of every live event.
+	# The developer readout, gated rather than merely hidden: it is a seed, a meter breakdown and
+	# what the frame cost (`FrameCost.readout_lines()` — fps, draw calls, objects, primitives and
+	# the two loop times, the same six quantities the run log's own `frame` entry carries), which a
+	# released build has no business assembling every frame even behind a label nobody can see —
+	# and `_nearest_event_text()` below is a scan of every live event.
 	# `_layer_readout_on` is this layer's own `4` key: off, the string is not assembled either,
 	# the same "gated rather than merely hidden" rule `_debug` already gets.
 	if not _debug or not _layer_readout_on:
@@ -981,8 +983,9 @@ func _process(delta: float) -> void:
 			_city.events.active_count(), _city.events.planned_count()],
 		"ahead owed  %6d" % _city.events.owed_ahead(),
 		"crowd       %6d" % _city.crowd.agent_count(),
-		"fps         %6d" % Engine.get_frames_per_second(),
 		"nearest     %s" % _nearest_event_text(),
+		"",
+	] + FrameCost.readout_lines() + [
 		"",
 		"incoming    %6.2f /s" % _baby.last_incoming,
 		"decay       %6.2f /s" % _baby.last_decay,

@@ -75,6 +75,8 @@ src/
 	resistance_steps.gd     the eleven steps (five tasks, two beats each, plus the finale)
 	contact_point.gd        touch to complete — a chalk mark, or a task's own event instance
   telemetry/
+	frame_cost.gd         what a frame cost the renderer and the two loops, read off Godot's
+	                      Performance monitors in one place for both the readout and the log
 	telemetry_log.gd      one run's ordered lines, and the file they go to
 	telemetry_observer.gd watches the player: turns, runs, crossings, encounters, where she
 	                      went and which events she met
