@@ -2,7 +2,7 @@
   "format": 1,
   "python_version": "3.14.7",
   "pillow_version": "12.3.0",
-  "script_sha256": "fcc8e8c796175d0477c6120be1abe4bb5b850b6a504ec2b566371148bfe89792",
+  "script_sha256": "5f51a74f6e4f20421f0bbb1cff6902159eb59001992baa12f9b269872ef4d8fc",
   "tile_size": [
     32,
     32
@@ -23,7 +23,7 @@
       "sha256": "a7532618a6c5dbe8b2584f121cad83e3a153767fa1c3d07f6b410d7b81eb4ea3",
       "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_broken_a.png"
     },
-    "pre-pr-damage:alley_cracked_broken_a": {
+    "accepted-damage:alley_cracked_broken_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_broken_a.png",
       "sha256": "a7532618a6c5dbe8b2584f121cad83e3a153767fa1c3d07f6b410d7b81eb4ea3",
@@ -34,7 +34,7 @@
       "sha256": "cfe8e84989cd296ecb95d9b03ce40b9e502bf5cb313c702ccf978fd049991a25",
       "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_broken_b.png"
     },
-    "pre-pr-damage:alley_cracked_broken_b": {
+    "accepted-damage:alley_cracked_broken_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_broken_b.png",
       "sha256": "cfe8e84989cd296ecb95d9b03ce40b9e502bf5cb313c702ccf978fd049991a25",
@@ -45,7 +45,7 @@
       "sha256": "5f03d7d628e61c0677d19af72feb182b3126fe974392885e8c8c4e2900ec0423",
       "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_cracked_a.png"
     },
-    "pre-pr-damage:alley_cracked_cracked_a": {
+    "accepted-damage:alley_cracked_cracked_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_cracked_a.png",
       "sha256": "5f03d7d628e61c0677d19af72feb182b3126fe974392885e8c8c4e2900ec0423",
@@ -56,7 +56,7 @@
       "sha256": "04ae3d0019be09d91568e89c1042cfe81ac8413694b8d6a1eb2666e99acf80f0",
       "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_cracked_b.png"
     },
-    "pre-pr-damage:alley_cracked_cracked_b": {
+    "accepted-damage:alley_cracked_cracked_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_cracked_b.png",
       "sha256": "04ae3d0019be09d91568e89c1042cfe81ac8413694b8d6a1eb2666e99acf80f0",
@@ -67,7 +67,7 @@
       "sha256": "4c781b5c8e635b65a2d52f13bb2dc725bd6dc7378bc0167428128e3885164599",
       "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_hairline_a.png"
     },
-    "pre-pr-damage:alley_cracked_hairline_a": {
+    "accepted-damage:alley_cracked_hairline_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_hairline_a.png",
       "sha256": "4c781b5c8e635b65a2d52f13bb2dc725bd6dc7378bc0167428128e3885164599",
@@ -78,7 +78,7 @@
       "sha256": "9fbcc5b9a2046bf9a1df430b78e7a23f7663356ae3f36a33fa90a70107b3efc3",
       "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_hairline_b.png"
     },
-    "pre-pr-damage:alley_cracked_hairline_b": {
+    "accepted-damage:alley_cracked_hairline_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_hairline_b.png",
       "sha256": "9fbcc5b9a2046bf9a1df430b78e7a23f7663356ae3f36a33fa90a70107b3efc3",
@@ -169,7 +169,7 @@
       "sha256": "1f4a5047cc31d8cdcb40accd3f4afbb59ba1dfcd5de84f4d72d3243cc626f160",
       "frozen_path": "frozen-inputs/runtime-targets/road_cracked_broken_a.png"
     },
-    "pre-pr-damage:road_cracked_broken_a": {
+    "accepted-damage:road_cracked_broken_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/road_cracked_broken_a.png",
       "sha256": "1f4a5047cc31d8cdcb40accd3f4afbb59ba1dfcd5de84f4d72d3243cc626f160",
@@ -180,7 +180,7 @@
       "sha256": "0f971bd164e889c16673f36c8abb8d02ad4603c54b2f3a11f714663a607a9e22",
       "frozen_path": "frozen-inputs/runtime-targets/road_cracked_broken_b.png"
     },
-    "pre-pr-damage:road_cracked_broken_b": {
+    "accepted-damage:road_cracked_broken_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/road_cracked_broken_b.png",
       "sha256": "0f971bd164e889c16673f36c8abb8d02ad4603c54b2f3a11f714663a607a9e22",
@@ -191,7 +191,7 @@
       "sha256": "ba9b8d9d296fb750f60d0fc49b2ba71e5bcc537126b078e88a113eca6eb96d92",
       "frozen_path": "frozen-inputs/runtime-targets/road_cracked_cracked_a.png"
     },
-    "pre-pr-damage:road_cracked_cracked_a": {
+    "accepted-damage:road_cracked_cracked_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/road_cracked_cracked_a.png",
       "sha256": "ba9b8d9d296fb750f60d0fc49b2ba71e5bcc537126b078e88a113eca6eb96d92",
@@ -202,7 +202,7 @@
       "sha256": "8b85a7eb0cf78b9aead92a8b90d1b57755232a65416a7824f4ef2188aff72e1c",
       "frozen_path": "frozen-inputs/runtime-targets/road_cracked_cracked_b.png"
     },
-    "pre-pr-damage:road_cracked_cracked_b": {
+    "accepted-damage:road_cracked_cracked_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/road_cracked_cracked_b.png",
       "sha256": "8b85a7eb0cf78b9aead92a8b90d1b57755232a65416a7824f4ef2188aff72e1c",
@@ -213,7 +213,7 @@
       "sha256": "13e8b3ac1cc7eb41e0f5568e0d2867633c91bdae6bdab1b744f4ad48a2b01132",
       "frozen_path": "frozen-inputs/runtime-targets/road_cracked_hairline_a.png"
     },
-    "pre-pr-damage:road_cracked_hairline_a": {
+    "accepted-damage:road_cracked_hairline_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/road_cracked_hairline_a.png",
       "sha256": "13e8b3ac1cc7eb41e0f5568e0d2867633c91bdae6bdab1b744f4ad48a2b01132",
@@ -224,7 +224,7 @@
       "sha256": "f77ed28b95137db20149bed871b6e0c7abd092ea7357e4e88b07d546ff70d5c0",
       "frozen_path": "frozen-inputs/runtime-targets/road_cracked_hairline_b.png"
     },
-    "pre-pr-damage:road_cracked_hairline_b": {
+    "accepted-damage:road_cracked_hairline_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/road_cracked_hairline_b.png",
       "sha256": "f77ed28b95137db20149bed871b6e0c7abd092ea7357e4e88b07d546ff70d5c0",
@@ -335,7 +335,7 @@
       "sha256": "f972c4420deefa7e32664870f71fab2ae152417d3d0ef50554067702f1cb097c",
       "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_broken_a.png"
     },
-    "pre-pr-damage:sidewalk_cracked_broken_a": {
+    "accepted-damage:sidewalk_cracked_broken_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_broken_a.png",
       "sha256": "c8edf668f6ec2ed38ba5f9f3c793bca554c9dd157c602f30d03a965224981403",
@@ -346,7 +346,7 @@
       "sha256": "a4b160812f11173e63d531657ab0a3e617002db638ad1138fb9c0dc2d2bf6002",
       "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_broken_b.png"
     },
-    "pre-pr-damage:sidewalk_cracked_broken_b": {
+    "accepted-damage:sidewalk_cracked_broken_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_broken_b.png",
       "sha256": "53afedd4f212a4d8517c00f42bea288ccf6548b33ecfb3e45c96efc4cbdd520c",
@@ -357,7 +357,7 @@
       "sha256": "f95a24b6e66fa0d8a05f6e83672431f167a0a3c4090e7954d7eab28ca6c0d034",
       "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_cracked_a.png"
     },
-    "pre-pr-damage:sidewalk_cracked_cracked_a": {
+    "accepted-damage:sidewalk_cracked_cracked_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_cracked_a.png",
       "sha256": "f874583c8ffcfb442217ddf9027037073dff59217b8a994cdf3b7d539a5603ef",
@@ -368,7 +368,7 @@
       "sha256": "dbe3b33e5bb1d6a5c2e37ce42723801e6c2b0a66aef1f66f48916130ab643952",
       "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_cracked_b.png"
     },
-    "pre-pr-damage:sidewalk_cracked_cracked_b": {
+    "accepted-damage:sidewalk_cracked_cracked_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_cracked_b.png",
       "sha256": "c078eedc01627567f53b18e8117a4fdfc6a545910e6545b815a450accd97db30",
@@ -379,7 +379,7 @@
       "sha256": "9f587b00dccf034bc81224108b028f7177881bd4d27e97ec6d0f592097759d51",
       "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_hairline_a.png"
     },
-    "pre-pr-damage:sidewalk_cracked_hairline_a": {
+    "accepted-damage:sidewalk_cracked_hairline_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_hairline_a.png",
       "sha256": "515e519854dfe91e668c1f14ba1c734766b16f766c816ec9318357aebe9257c5",
@@ -390,7 +390,7 @@
       "sha256": "9f13f670effeb4892a9b13d42dd142851d542e18f5aa69511290388c6cfd395a",
       "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_hairline_b.png"
     },
-    "pre-pr-damage:sidewalk_cracked_hairline_b": {
+    "accepted-damage:sidewalk_cracked_hairline_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_hairline_b.png",
       "sha256": "cf9c33ee2072a14345288ad6a4b0b5b6d135cfb282d67f82ce4478f8e0da722d",
@@ -476,23 +476,23 @@
       "sha256": "5945dbc4e9f86ab6680cae3bf97c4d6b7c05673b32f3cf616606e6963d8b073b",
       "frozen_path": "frozen-inputs/tiles/sidewalk_kerb_w.png"
     },
-    "pre-pr-base:sidewalk": {
+    "accepted-surface-base:sidewalk": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/sidewalk.png",
       "sha256": "a86c9cdff2ca96f1d5016a7b997d506e0a1452174a06cadd9a51b50eafff0c28",
-      "frozen_path": "frozen-inputs/pre-pr-bases/sidewalk.png"
+      "frozen_path": "frozen-inputs/accepted-surface-bases/sidewalk.png"
     },
-    "pre-pr-base:road": {
+    "accepted-surface-base:road": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/road.png",
       "sha256": "f4b2cda6783db283b0d73ec05fd0b9a36ee777b3c284aa34802505c166c52db1",
-      "frozen_path": "frozen-inputs/pre-pr-bases/road.png"
+      "frozen_path": "frozen-inputs/accepted-surface-bases/road.png"
     },
-    "pre-pr-base:alley": {
+    "accepted-surface-base:alley": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/alley.png",
       "sha256": "292d99485db258e60d497e42e2e36411b0ec6a07d1f187c487eba99e4a09dfa5",
-      "frozen_path": "frozen-inputs/pre-pr-bases/alley.png"
+      "frozen_path": "frozen-inputs/accepted-surface-bases/alley.png"
     },
     "svg-render:alley": {
       "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/alley-svg.png",
@@ -933,7 +933,7 @@
       "source_svg": "assets/tiles/sidewalk_cracked_hairline_a.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_hairline_a.png",
       "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_hairline_a-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "4d39a624e120bd84032b5afee61c03dc45da8cb820c059be9fde016ecef942af"
     },
     "sidewalk_cracked_hairline_b": {
@@ -941,7 +941,7 @@
       "source_svg": "assets/tiles/sidewalk_cracked_hairline_b.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_hairline_b.png",
       "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_hairline_b-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "a8e97fea969e92f9ab763a2308c44a023ebb774134c63e78b15f53bac0b86c1c"
     },
     "sidewalk_cracked_cracked_a": {
@@ -949,7 +949,7 @@
       "source_svg": "assets/tiles/sidewalk_cracked_cracked_a.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_cracked_a.png",
       "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_cracked_a-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "41a75679e60d1ea27b10acc8bb77afb1116a234d5872fed6fba7f385337536f2"
     },
     "sidewalk_cracked_cracked_b": {
@@ -957,7 +957,7 @@
       "source_svg": "assets/tiles/sidewalk_cracked_cracked_b.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_cracked_b.png",
       "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_cracked_b-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "f30d9245913d7b99c985d92f7cf96e638b91bda4abb240151aa514a3ae670548"
     },
     "sidewalk_cracked_broken_a": {
@@ -965,7 +965,7 @@
       "source_svg": "assets/tiles/sidewalk_cracked_broken_a.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_broken_a.png",
       "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_broken_a-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "9008a4b549fa72d17cec8384c74f5a553f8d3bb08ccf81c11b40fe23804f6082"
     },
     "sidewalk_cracked_broken_b": {
@@ -973,7 +973,7 @@
       "source_svg": "assets/tiles/sidewalk_cracked_broken_b.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_broken_b.png",
       "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_broken_b-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "dca7789be613078ca9a883a0368f32aabc74b06e9e6b893e34a7b59179e0a530"
     },
     "road_cracked_hairline_a": {
@@ -981,7 +981,7 @@
       "source_svg": "assets/tiles/road_cracked_hairline_a.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/road_cracked_hairline_a.png",
       "svg_mask_input": "frozen-inputs/svg-renders/road_cracked_hairline_a-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "2bb1701a07c46d88d21c813e015a3f59df62e04bcdf3f13337c6c004de90fa96"
     },
     "road_cracked_hairline_b": {
@@ -989,7 +989,7 @@
       "source_svg": "assets/tiles/road_cracked_hairline_b.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/road_cracked_hairline_b.png",
       "svg_mask_input": "frozen-inputs/svg-renders/road_cracked_hairline_b-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "b424e122ed47ceeec402375fc3ca71648669d851d77e1e7e3748145f22ce9d2d"
     },
     "road_cracked_cracked_a": {
@@ -997,7 +997,7 @@
       "source_svg": "assets/tiles/road_cracked_cracked_a.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/road_cracked_cracked_a.png",
       "svg_mask_input": "frozen-inputs/svg-renders/road_cracked_cracked_a-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "9b3743c72dce622e231bfeb490cc16c229e87a7e8c3afc2fd52b5a9498b55d1e"
     },
     "road_cracked_cracked_b": {
@@ -1005,7 +1005,7 @@
       "source_svg": "assets/tiles/road_cracked_cracked_b.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/road_cracked_cracked_b.png",
       "svg_mask_input": "frozen-inputs/svg-renders/road_cracked_cracked_b-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "fbadc4828004ff8f2e76f2f16ccadfb2970fb01135444c732906b086ba56206b"
     },
     "road_cracked_broken_a": {
@@ -1013,7 +1013,7 @@
       "source_svg": "assets/tiles/road_cracked_broken_a.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/road_cracked_broken_a.png",
       "svg_mask_input": "frozen-inputs/svg-renders/road_cracked_broken_a-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "ac9ba22f52b689b39217372aca198380688e95543720d9a221816ed2ea4c66d1"
     },
     "road_cracked_broken_b": {
@@ -1021,7 +1021,7 @@
       "source_svg": "assets/tiles/road_cracked_broken_b.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/road_cracked_broken_b.png",
       "svg_mask_input": "frozen-inputs/svg-renders/road_cracked_broken_b-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "d157ad7baba5abb108c243366556c4e83726c3cf50b55437a250f483292b87f5"
     },
     "alley_cracked_hairline_a": {
@@ -1029,7 +1029,7 @@
       "source_svg": "assets/tiles/alley_cracked_hairline_a.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/alley_cracked_hairline_a.png",
       "svg_mask_input": "frozen-inputs/svg-renders/alley_cracked_hairline_a-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "da036664d92b398d9147f234e893f625eb278530d44f045db1dbd826ef69aff0"
     },
     "alley_cracked_hairline_b": {
@@ -1037,7 +1037,7 @@
       "source_svg": "assets/tiles/alley_cracked_hairline_b.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/alley_cracked_hairline_b.png",
       "svg_mask_input": "frozen-inputs/svg-renders/alley_cracked_hairline_b-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "521e47ad459c7ffaea0177d14a513574fb9e1dcde7290927fe00f0558f3bb745"
     },
     "alley_cracked_cracked_a": {
@@ -1045,7 +1045,7 @@
       "source_svg": "assets/tiles/alley_cracked_cracked_a.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/alley_cracked_cracked_a.png",
       "svg_mask_input": "frozen-inputs/svg-renders/alley_cracked_cracked_a-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "6b4bc6e4e00fcf9464dbb05ea2962dfc25e9dc9ce60231d038e0e4031d46c602"
     },
     "alley_cracked_cracked_b": {
@@ -1053,7 +1053,7 @@
       "source_svg": "assets/tiles/alley_cracked_cracked_b.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/alley_cracked_cracked_b.png",
       "svg_mask_input": "frozen-inputs/svg-renders/alley_cracked_cracked_b-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "ef330cd376b5d25786bf55eca3e7e27634f0cb6c134c52c53b9f4f2d3e750781"
     },
     "alley_cracked_broken_a": {
@@ -1061,7 +1061,7 @@
       "source_svg": "assets/tiles/alley_cracked_broken_a.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/alley_cracked_broken_a.png",
       "svg_mask_input": "frozen-inputs/svg-renders/alley_cracked_broken_a-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "59e8dafdcc94d0994a2373b67d70d447c35545e6f9bc0763ce17bf83a283df80"
     },
     "alley_cracked_broken_b": {
@@ -1069,7 +1069,7 @@
       "source_svg": "assets/tiles/alley_cracked_broken_b.svg",
       "frozen_illustrated_input": "frozen-inputs/tiles/alley_cracked_broken_b.png",
       "svg_mask_input": "frozen-inputs/svg-renders/alley_cracked_broken_b-svg.png",
-      "mask_rule": "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
+      "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
       "sha256": "8398a991ca7e1ad9e03888105fccbac42b00085ce0fbeeda9f97640e80d59eae"
     },
     "grass_feature_a": {

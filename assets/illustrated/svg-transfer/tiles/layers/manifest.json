@@ -223,84 +223,84 @@
     "38": [
       {
         "component": "main_crosswalk",
-        "rotation_degrees": 90
+        "rotation_degrees": 270
       }
     ],
     "39": [
       {
         "component": "main_crosswalk",
-        "rotation_degrees": 270
+        "rotation_degrees": 90
       }
     ],
     "40": [
-      {
-        "component": "sidewalk_cracked_hairline_a",
-        "rotation_degrees": 0
-      }
-    ],
-    "41": [
-      {
-        "component": "sidewalk_cracked_hairline_b",
-        "rotation_degrees": 0
-      }
-    ],
-    "42": [
-      {
-        "component": "sidewalk_cracked_cracked_a",
-        "rotation_degrees": 0
-      }
-    ],
-    "43": [
-      {
-        "component": "sidewalk_cracked_cracked_b",
-        "rotation_degrees": 0
-      }
-    ],
-    "44": [
-      {
-        "component": "sidewalk_cracked_broken_a",
-        "rotation_degrees": 0
-      }
-    ],
-    "45": [
-      {
-        "component": "sidewalk_cracked_broken_b",
-        "rotation_degrees": 0
-      }
-    ],
-    "46": [
       {
         "component": "road_cracked_hairline_a",
         "rotation_degrees": 0
       }
     ],
-    "47": [
+    "41": [
       {
         "component": "road_cracked_hairline_b",
         "rotation_degrees": 0
       }
     ],
-    "48": [
+    "42": [
       {
         "component": "road_cracked_cracked_a",
         "rotation_degrees": 0
       }
     ],
-    "49": [
+    "43": [
       {
         "component": "road_cracked_cracked_b",
         "rotation_degrees": 0
       }
     ],
-    "50": [
+    "44": [
       {
         "component": "road_cracked_broken_a",
         "rotation_degrees": 0
       }
     ],
-    "51": [
+    "45": [
       {
         "component": "road_cracked_broken_b",
+        "rotation_degrees": 0
+      }
+    ],
+    "46": [
+      {
+        "component": "sidewalk_cracked_hairline_a",
+        "rotation_degrees": 0
+      }
+    ],
+    "47": [
+      {
+        "component": "sidewalk_cracked_hairline_b",
+        "rotation_degrees": 0
+      }
+    ],
+    "48": [
+      {
+        "component": "sidewalk_cracked_cracked_a",
+        "rotation_degrees": 0
+      }
+    ],
+    "49": [
+      {
+        "component": "sidewalk_cracked_cracked_b",
+        "rotation_degrees": 0
+      }
+    ],
+    "50": [
+      {
+        "component": "sidewalk_cracked_broken_a",
+        "rotation_degrees": 0
+      }
+    ],
+    "51": [
+      {
+        "component": "sidewalk_cracked_broken_b",
         "rotation_degrees": 0
       }
     ],
@@ -342,8 +342,8 @@
     ]
   },
   "grass_features": [
-    "grass_feature_a.png",
-    "grass_feature_b.png",
-    "grass_feature_c.png"
+    "grass_feature_a",
+    "grass_feature_b",
+    "grass_feature_c"
   ]
 }

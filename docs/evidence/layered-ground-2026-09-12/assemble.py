@@ -26,7 +26,7 @@ TILE_SIZE = (32, 32)
 RUNTIME_DIR = ROOT / "assets/illustrated/svg-transfer/tiles"
 SVG_RENDER_DIR = ROOT / "docs/evidence/style-transfer-tiles-2026-09-12/source"
 ASPHALT_OFFSETS = ((0, 0), (16, 16), (8, 24), (24, 8))
-PRE_PR_DAMAGE_REVISION = "83a60d1522574714ce038dff3a607a536d800614"
+ACCEPTED_DAMAGE_SOURCE_REVISION = "83a60d1522574714ce038dff3a607a536d800614"
 
 
 @dataclass(frozen=True)
@@ -93,7 +93,7 @@ def _copy_frozen(path: Path, destination: Path) -> dict[str, str]:
 
 
 def _frozen_git_file(revision: str, relative: str, destination: Path) -> dict[str, str]:
-	"""Copy an accepted pre-PR PNG without depending on a mutable checkout file."""
+	"""Copy an accepted source PNG without depending on a mutable checkout file."""
 	destination.parent.mkdir(parents=True, exist_ok=True)
 	data = subprocess.check_output(["git", "show", f"{revision}:{relative}"], cwd=ROOT)
 	destination.write_bytes(data)
@@ -383,45 +383,43 @@ def _foreground_review(bundle: Path, frozen_tiles: Path, bases: dict[str, Image.
 		bundle / "grass-original-features-recomposed-4x.png")
 
 
-def build(output_dir: Path) -> None:
+def build(output_dir: Path, input_bundle: Path | None = None) -> None:
 	_fresh(output_dir)
 	output_dir.mkdir(parents=True)
 	frozen_tiles = output_dir / "frozen-inputs/tiles"
-	pre_pr_bases = output_dir / "frozen-inputs/pre-pr-bases"
+	accepted_surface_bases = output_dir / "frozen-inputs/accepted-surface-bases"
 	frozen_runtime = output_dir / "frozen-inputs/runtime-targets"
 	frozen_svg = output_dir / "frozen-inputs/svg-renders"
-	inputs: dict[str, dict[str, str]] = {}
-	for name in FROZEN_NAMES:
-		runtime_record = _copy_frozen(RUNTIME_DIR / f"{name}.png", frozen_runtime / f"{name}.png")
-		runtime_record["frozen_path"] = str((frozen_runtime / f"{name}.png").relative_to(output_dir))
-		inputs[f"runtime-target:{name}"] = runtime_record
-		if name in DAMAGE:
-			record = _frozen_git_file(
-				PRE_PR_DAMAGE_REVISION,
-				f"assets/illustrated/svg-transfer/tiles/{name}.png",
-				frozen_tiles / f"{name}.png",
-			)
-		else:
-			record = _copy_frozen(RUNTIME_DIR / f"{name}.png", frozen_tiles / f"{name}.png")
-		record["frozen_path"] = str((frozen_tiles / f"{name}.png").relative_to(output_dir))
-		inputs[(f"pre-pr-damage:{name}" if name in DAMAGE else f"tile:{name}")] = record
-	for surface in ("sidewalk", "road", "alley"):
-		record = _frozen_git_file(
-			PRE_PR_DAMAGE_REVISION,
-			f"assets/illustrated/svg-transfer/tiles/{surface}.png",
-			pre_pr_bases / f"{surface}.png",
-		)
-		record["frozen_path"] = str((pre_pr_bases / f"{surface}.png").relative_to(output_dir))
-		inputs[f"pre-pr-base:{surface}"] = record
-	for name in FROZEN_NAMES:
-		record = _copy_frozen(
-			SVG_RENDER_DIR / f"{name}-svg.png", frozen_svg / f"{name}-svg.png")
-		record["frozen_path"] = str((frozen_svg / f"{name}-svg.png").relative_to(output_dir))
-		inputs[f"svg-render:{name}"] = record
-	for name in sorted({"sidewalk", "road", "road_main", "alley"}):
-		inputs[f"svg-source:{name}"] = {"path": f"assets/tiles/{name}.svg", "sha256": _sha256(ROOT / f"assets/tiles/{name}.svg")}
-	for spec in LAYER_SPECS:
-		inputs[f"svg-source:{spec.name}"] = {"path": spec.source_svg, "sha256": _sha256(ROOT / spec.source_svg)}
+	if input_bundle is not None:
+		reference = _read_manifest(input_bundle)
+		if reference["script_sha256"] != _sha256(Path(__file__)):
+			raise ValueError("retained input bundle was built by a different assembly script")
+		shutil.copytree(input_bundle / "frozen-inputs", output_dir / "frozen-inputs")
+		inputs = reference["inputs"]
+	else:
+		inputs: dict[str, dict[str, str]] = {}
+		for name in FROZEN_NAMES:
+			runtime_record = _copy_frozen(RUNTIME_DIR / f"{name}.png", frozen_runtime / f"{name}.png")
+			runtime_record["frozen_path"] = str((frozen_runtime / f"{name}.png").relative_to(output_dir))
+			inputs[f"runtime-target:{name}"] = runtime_record
+			if name in DAMAGE:
+				record = _frozen_git_file(ACCEPTED_DAMAGE_SOURCE_REVISION, f"assets/illustrated/svg-transfer/tiles/{name}.png", frozen_tiles / f"{name}.png")
+			else:
+				record = _copy_frozen(RUNTIME_DIR / f"{name}.png", frozen_tiles / f"{name}.png")
+			record["frozen_path"] = str((frozen_tiles / f"{name}.png").relative_to(output_dir))
+			inputs[(f"accepted-damage:{name}" if name in DAMAGE else f"tile:{name}")] = record
+		for surface in ("sidewalk", "road", "alley"):
+			record = _frozen_git_file(ACCEPTED_DAMAGE_SOURCE_REVISION, f"assets/illustrated/svg-transfer/tiles/{surface}.png", accepted_surface_bases / f"{surface}.png")
+			record["frozen_path"] = str((accepted_surface_bases / f"{surface}.png").relative_to(output_dir))
+			inputs[f"accepted-surface-base:{surface}"] = record
+		for name in FROZEN_NAMES:
+			record = _copy_frozen(SVG_RENDER_DIR / f"{name}-svg.png", frozen_svg / f"{name}-svg.png")
+			record["frozen_path"] = str((frozen_svg / f"{name}-svg.png").relative_to(output_dir))
+			inputs[f"svg-render:{name}"] = record
+		for name in sorted({"sidewalk", "road", "road_main", "alley"}):
+			inputs[f"svg-source:{name}"] = {"path": f"assets/tiles/{name}.svg", "sha256": _sha256(ROOT / f"assets/tiles/{name}.svg")}
+		for spec in LAYER_SPECS:
+			inputs[f"svg-source:{spec.name}"] = {"path": spec.source_svg, "sha256": _sha256(ROOT / spec.source_svg)}
 
 	plain_sidewalk = _load(frozen_tiles / "sidewalk.png")
 	plain_alley = _load(frozen_tiles / "alley.png")
@@ -432,9 +430,8 @@ def build(output_dir: Path) -> None:
 	# The offset candidate is retained for review.  Use its seam score only when it improves on the
 	# non-offset rotational mean, so an offset never wins merely because it looks busier.
 	chosen_asphalt = offset_asphalt if _seam_error(offset_asphalt) < _seam_error(plain_asphalt) else plain_asphalt
-	# Averaging rotations keeps the current grass's soft color variation while spreading the four
-	# sparse feature sites out of the reusable base.  The preserved cutouts below restore them only
-	# where the future seeded placer asks for one.
+	# A broad Gaussian blur leaves only soft green variation in the shared grass base. The three
+	# preserved illustrated clumps below are restored only where the seeded placer asks for one.
 	grass_base = grass_seed.filter(ImageFilter.GaussianBlur(radius=4)).convert("RGBA")
 	bases = {"sidewalk": plain_sidewalk, "road": chosen_asphalt, "alley": plain_alley, "grass": grass_base}
 	layers: dict[str, Image.Image] = {}
@@ -454,11 +451,11 @@ def build(output_dir: Path) -> None:
 			layer = _extract_component(_load(frozen_tiles / f"{spec.source_name}.png"), mask)
 		else:
 			# Damage is deliberately not SVG-stamped: the accepted illustration decides every branch,
-			# broken rim, and loose debris pixel by comparison with its own pre-PR shared surface.
+			# broken rim, and loose debris pixel by comparison with its accepted source surface.
 			mask = _damage_mask(
 				spec.source_name, _load(frozen_tiles / f"{spec.source_name}.png"), spec.base,
 				_load(frozen_svg / f"{spec.base}-svg.png"),
-				_load(pre_pr_bases / f"{spec.base}.png"),
+				_load(accepted_surface_bases / f"{spec.base}.png"),
 			)
 			layer = _extract_component(_load(frozen_tiles / f"{spec.source_name}.png"), mask)
 		layer.save(component_dir / f"{spec.name}.png")
@@ -473,7 +470,7 @@ def build(output_dir: Path) -> None:
 				if spec.method == "svg-mask"
 				else "illustrated red/yellow color separation with a one-pixel illustrated edge rim; SVG is provenance only"
 				if spec.method == "paint-color"
-				else "accepted pre-PR foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base"
+				else "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base"
 			),
 			"sha256": _sha256(component_dir / f"{spec.name}.png"),
 		}
@@ -550,6 +547,51 @@ def _read_manifest(bundle: Path) -> dict[str, object]:
 	return json.loads((bundle / "manifest.json").read_text())
 
 
+def _engine_contract(bundle: Path) -> dict[str, object]:
+	"""Return the one source-ID-to-layer contract consumed by the engine."""
+	components = {name: f"{name}.png" for name in _read_manifest(bundle)["components"]}
+	source_layers: dict[str, list[dict[str, object]]] = {}
+	rotations = {"n": 0, "e": 90, "s": 180, "w": 270}
+	for source_id, direction in ((8, "n"), (9, "s"), (10, "e"), (11, "w")):
+		source_layers[str(source_id)] = [{"component": "curbstone", "rotation_degrees": rotations[direction]}]
+	for source_id, direction in ((26, "n"), (27, "s"), (28, "e"), (29, "w")):
+		source_layers[str(source_id)] = [
+			{"component": "curbstone", "rotation_degrees": rotations[direction]},
+			{"component": "main_edge_red", "rotation_degrees": rotations[direction]},
+		]
+	for source_id, direction in ((1, "e"), (2, "w"), (3, "n"), (4, "s")):
+		source_layers[str(source_id)] = [{"component": "yellow_half_line", "rotation_degrees": rotations[direction]}]
+	for source_id, direction in ((22, "e"), (23, "w"), (24, "n"), (25, "s")):
+		source_layers[str(source_id)] = [{"component": "yellow_main_line", "rotation_degrees": rotations[direction]}]
+	source_layers["6"] = [{"component": "crosswalk", "rotation_degrees": 0}]
+	source_layers["5"] = [{"component": "crosswalk", "rotation_degrees": 90}]
+	for source_id, direction in ((36, "n"), (37, "s"), (38, "w"), (39, "e")):
+		source_layers[str(source_id)] = [{"component": "main_crosswalk", "rotation_degrees": rotations[direction]}]
+	for source_id, name in zip(range(40, 46), (name for name in DAMAGE if name.startswith("road_")), strict=True):
+		source_layers[str(source_id)] = [{"component": name, "rotation_degrees": 0}]
+	for source_id, name in zip(range(46, 52), (name for name in DAMAGE if name.startswith("sidewalk_")), strict=True):
+		source_layers[str(source_id)] = [{"component": name, "rotation_degrees": 0}]
+	for source_id, name in zip(range(52, 58), (name for name in DAMAGE if name.startswith("alley_")), strict=True):
+		source_layers[str(source_id)] = [{"component": name, "rotation_degrees": 0}]
+	return {
+		"version": 1,
+		"tile_size": 32,
+		"bases": {"sidewalk": "sidewalk_base.png", "asphalt": "asphalt_base.png", "alley": "alley_base.png", "grass": "grass_base.png"},
+		"source_bases": {
+			"0": "asphalt", "1": "asphalt", "2": "asphalt", "3": "asphalt", "4": "asphalt", "5": "asphalt", "6": "asphalt",
+			"7": "sidewalk", "8": "sidewalk", "9": "sidewalk", "10": "sidewalk", "11": "sidewalk", "12": "grass", "14": "alley",
+			"21": "asphalt", "22": "asphalt", "23": "asphalt", "24": "asphalt", "25": "asphalt", "26": "sidewalk", "27": "sidewalk", "28": "sidewalk", "29": "sidewalk",
+			"36": "asphalt", "37": "asphalt", "38": "asphalt", "39": "asphalt",
+			**{str(source_id): "asphalt" for source_id in range(40, 46)},
+			**{str(source_id): "sidewalk" for source_id in range(46, 52)},
+			**{str(source_id): "alley" for source_id in range(52, 58)},
+		},
+		"components": components,
+		"source_layers": source_layers,
+		"grass_features": [f"grass_feature_{suffix}" for suffix in "abc"],
+	}
+
+
 def verify(bundle: Path, component_dir: Path | None) -> None:
 	manifest = _read_manifest(bundle)
 	if manifest["script_sha256"] != _sha256(Path(__file__)):
@@ -584,6 +626,8 @@ def verify(bundle: Path, component_dir: Path | None) -> None:
 		for name, expected in manifest["components"].items():
 			if _sha256(component_dir / f"{name}.png") != expected["sha256"]:
 				raise ValueError(f"published component differs: {name}")
+		if json.loads((component_dir / "manifest.json").read_text()) != _engine_contract(bundle):
+			raise ValueError("published engine manifest differs from the retained contract")
 
 
 def publish(bundle: Path, component_dir: Path) -> None:
@@ -595,44 +639,7 @@ def publish(bundle: Path, component_dir: Path) -> None:
 	manifest_path = component_dir / "manifest.json"
 	for source in sorted((bundle / "bases").glob("*.png")) + sorted((bundle / "components").glob("*.png")):
 		shutil.copyfile(source, component_dir / source.name)
-	components = {name: f"{name}.png" for name in _read_manifest(bundle)["components"]}
-	source_layers: dict[str, list[dict[str, object]]] = {}
-	for source_id, direction in ((8, "n"), (9, "s"), (10, "e"), (11, "w")):
-		source_layers[str(source_id)] = [{"component": "curbstone", "rotation_degrees": {"n": 0, "e": 90, "s": 180, "w": 270}[direction]}]
-	for source_id, direction in ((26, "n"), (27, "s"), (28, "e"), (29, "w")):
-		rotation = {"n": 0, "e": 90, "s": 180, "w": 270}[direction]
-		source_layers[str(source_id)] = [
-			{"component": "curbstone", "rotation_degrees": rotation},
-			{"component": "main_edge_red", "rotation_degrees": rotation},
-		]
-	for source_id, direction in ((1, "e"), (2, "w"), (3, "n"), (4, "s")):
-		source_layers[str(source_id)] = [{"component": "yellow_half_line", "rotation_degrees": {"n": 0, "e": 90, "s": 180, "w": 270}[direction]}]
-	for source_id, direction in ((22, "e"), (23, "w"), (24, "n"), (25, "s")):
-		source_layers[str(source_id)] = [{"component": "yellow_main_line", "rotation_degrees": {"n": 0, "e": 90, "s": 180, "w": 270}[direction]}]
-	source_layers["6"] = [{"component": "crosswalk", "rotation_degrees": 0}]
-	source_layers["5"] = [{"component": "crosswalk", "rotation_degrees": 90}]
-	for source_id, direction in ((36, "n"), (37, "s"), (38, "e"), (39, "w")):
-		source_layers[str(source_id)] = [{"component": "main_crosswalk", "rotation_degrees": {"n": 0, "e": 90, "s": 180, "w": 270}[direction]}]
-	for source_id, name in zip(range(40, 58), DAMAGE, strict=True):
-		source_layers[str(source_id)] = [{"component": name, "rotation_degrees": 0}]
-	contract = {
-		"version": 1,
-		"tile_size": 32,
-		"bases": {"sidewalk": "sidewalk_base.png", "asphalt": "asphalt_base.png", "alley": "alley_base.png", "grass": "grass_base.png"},
-		"source_bases": {
-			"0": "asphalt", "1": "asphalt", "2": "asphalt", "3": "asphalt", "4": "asphalt", "5": "asphalt", "6": "asphalt",
-			"7": "sidewalk", "8": "sidewalk", "9": "sidewalk", "10": "sidewalk", "11": "sidewalk", "12": "grass", "14": "alley",
-			"21": "asphalt", "22": "asphalt", "23": "asphalt", "24": "asphalt", "25": "asphalt", "26": "sidewalk", "27": "sidewalk", "28": "sidewalk", "29": "sidewalk",
-			"36": "asphalt", "37": "asphalt", "38": "asphalt", "39": "asphalt",
-			**{str(source_id): "asphalt" for source_id in range(40, 46)},
-			**{str(source_id): "sidewalk" for source_id in range(46, 52)},
-			**{str(source_id): "alley" for source_id in range(52, 58)},
-		},
-		"components": components,
-		"source_layers": source_layers,
-		"grass_features": [f"grass_feature_{suffix}.png" for suffix in "abc"],
-	}
-	manifest_path.write_text(json.dumps(contract, indent=2) + "\n")
+	manifest_path.write_text(json.dumps(_engine_contract(bundle), indent=2) + "\n")
 	verify(bundle, component_dir)
 
 
@@ -641,6 +648,7 @@ def main() -> None:
 	subparsers = parser.add_subparsers(dest="command", required=True)
 	build_parser = subparsers.add_parser("build", help="freeze inputs and build a new evidence bundle")
 	build_parser.add_argument("--output-dir", type=Path, required=True)
+	build_parser.add_argument("--input-bundle", type=Path, help="rebuild solely from an existing bundle's frozen inputs")
 	verify_parser = subparsers.add_parser("verify", help="verify a retained bundle and optional published components")
 	verify_parser.add_argument("--bundle-dir", type=Path, required=True)
 	verify_parser.add_argument("--component-dir", type=Path)
@@ -649,7 +657,7 @@ def main() -> None:
 	publish_parser.add_argument("--component-dir", type=Path, required=True)
 	arguments = parser.parse_args()
 	if arguments.command == "build":
-		build(arguments.output_dir.resolve())
+		build(arguments.output_dir.resolve(), arguments.input_bundle.resolve() if arguments.input_bundle else None)
 	elif arguments.command == "verify":
 		verify(arguments.bundle_dir.resolve(), arguments.component_dir.resolve() if arguments.component_dir else None)
 	else:
