@@ -391,6 +391,39 @@ cells can already cut a corner through a park or an alley.
 
 ---
 
+## M130 — An eastbound car sits south of its halo · asked for 2026-09-13
+
+> "just confirmed on current mobile a car going west to east that is offset by a few pixel
+> south and the halo is at the regular position"
+
+[PLAYTEST-69](playtests/PLAYTEST-69.md), on v0.10.0; the sighting M123 closed on waiting for
+(`DECISIONS.md`, M123). The **cues**, **crowd-traffic** and **svg-art** or **illustrated-png**
+rules govern, depending on where it lands.
+
+**What is true today.** `CrowdAgent._car_body_anchor()` registers every car view by one rule
+read off the live heading: the drawn content's bottom edge lands on the strike box's
+southernmost point, `26·|heading.y| + 14·|heading.x|`, plus that canvas's bottom alpha margin
+(`CAR_CANVAS_BOTTOM_MARGIN`), which put east- and west-bound pictures 14px further south than
+before M121 and was recorded as open to the player's eye. `EntityHalo` re-traces its owner's
+body every frame by calling the owner's body drawing, so its rim is meant to follow whatever
+anchor the picture uses. The phone runs the release build with the PNG transfers; the desktop
+debug build does too unless `--svg`.
+
+- [ ] **Find which of the two is at the wrong place, and make them one.** Three suspects, each
+      answered by a burst of an eastbound car under a halo with the bodies layer on (`3`), taken
+      with and without `--svg`: the halo's trace does not go through `_car_body_anchor()` for
+      the side view, so the rim sits at the pre-M121 position while the picture moved; the
+      side-view PNG's bottom alpha margin differs from its SVG's, so `CAR_CANVAS_BOTTOM_MARGIN`
+      registers the transfer a few pixels off where the SVG lands, which is why the desktop
+      captures under `--svg` looked right; or the 14px registration to the strike box is itself
+      the wrong datum for the side view and the halo, traced from the body, is right. The fix
+      follows the finding: one anchor both the picture and the rim read, or a per-texture
+      margin read off the texture rather than a constant. `tests/test_car_views.gd` holds that
+      the traced rim's bounds and the drawn picture's bounds agree for every view, with the PNG
+      and the SVG both.
+
+---
+
 ## M124 — The game on a phone, measured and then made cheaper · asked for 2026-09-13
 
 > "I played a few sessions on mobile. It is a bit laggy now. Are we using proper texture atlases
