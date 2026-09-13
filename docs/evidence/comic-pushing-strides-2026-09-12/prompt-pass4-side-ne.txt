@@ -1,0 +1,32 @@
+Edit the first input image, the 5-column by 3-row P2 pushing atlas. It is the binding
+adult identity, clothing, proportions, rendering, direction, canvas, and layout reference. The
+second input is the reviewed P2 SVG pose sheet; use it only to understand which anatomical leg
+owns the opposite B contact. The third and fourth inputs are approved comic style references only.
+
+Change exactly two complete figures in the BOTTOM ROW (Contact B):
+
+1. Column 3, strict right-facing SIDE profile: redraw both complete legs continuously from pelvis
+through thigh, knee, shin, heel, and shoe. In the existing top-row A pose, the near/outboard leg
+owns the forward screen-right contact. Make B anatomically opposite: the near/outboard thigh must
+clearly emerge from the visible near hip and sweep backward toward screen-left, ending in the
+trailing screen-left foot with lifted heel. The far leg must begin behind the pelvis, partly
+occluded at the upper thigh, then step forward screen-right to the planted leading shoe. Preserve
+right-facing toe direction and walking direction. Do not merely change a shoe, knee mark, color,
+or outline; exchange the complete hip-to-shoe leg ownership and its overlap order.
+
+2. Column 5, northeast-facing BACK DIAGONAL: redraw both complete legs continuously from pelvis
+through thigh, knee, shin, heel, and shoe while preserving the northeast travel axis. Make the
+near/outboard thigh emerge from the visible near hip and step forward toward the UPPER RIGHT,
+ending in a planted upper-right shoe whose toe points northeast. Make the far thigh begin behind
+the pelvis and trail toward the LOWER LEFT, ending with the far heel or sole visible. This must be
+the anatomical opposite of the top-row A pose. Do not reverse the travel axis and do not make a
+second variation of the same near-leg-trailing pose.
+
+Keep every figure a complete, uncut full adult on white. Keep the same 5 columns and 3 rows. Keep
+all other thirteen figures exactly as the first input, especially the approved front B and every
+C figure. In the two edited figures preserve the same woman, 45-pixel target stature proportions,
+head size, hair, red coat length and width, blue jeans, black shoes, upper-body angle, hands, grip
+height, hand X position, and transparent-edge-friendly clean silhouette. Do not edit arms, hands,
+head, torso, coat, background, spacing, or any stroller. Do not paste a new lower body onto a fixed
+upper pixel band; redraw each of the two requested complete figures coherently while retaining the
+identity and landmarks.

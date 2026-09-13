@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://docs/evidence/shared-damage-2026-09-12/damage_atlas_review.gd" id="1"]
+
+[node name="DamageAtlasReview" type="Node"]
+script = ExtResource("1")

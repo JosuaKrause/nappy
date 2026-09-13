@@ -18,7 +18,10 @@ extracts normalized quarter-sheet cells with a three-pixel atlas-divider allowan
 opaque 32×32 derivatives. Individual generated paint strokes are registered to the source
 marking rectangles on the generated plain asphalt. The east curb uses the generated west
 curb's stone strip at its source edge anchor. `registered/registration.json` under `comic/`
-records these actual crops and destinations. The source SVGs are unchanged.
+records these actual crops and destinations. The source SVGs are unchanged. The baked
+crack-and-floor PNG family is no longer a runtime asset; accepted pre-PR damage artwork remains
+in the layered-ground frozen inputs for stencil reproduction, while runtime uses transparent
+damage components over shared bases.
 
 The full run folders under `runtime/` preserve the initial candidate's gameplay evidence,
 including each external shot output as `capture.png`. These commands produced them:
@@ -68,4 +71,6 @@ uv run python docs/evidence/style-transfer-tiles-2026-09-12/convert.py register 
 Preparation uses Godot 4.7.2. Registration uses CPython 3.14.7 and Pillow 12.3.0 from the
 locked repository environment. `City` resolves the TileSet sources through `TextureResolver`;
 the separate mountain drawing in `CityEdge` uses the same resolver. `alley_draft` remains
-prepared and unbound. Each runtime PNG has Godot-generated import metadata with its own UID.
+prepared and unbound. Runtime PNGs have Godot-generated import metadata with their own UID;
+damage variants are supplied by the layered-ground component directory rather than baked
+crack-and-floor PNGs.

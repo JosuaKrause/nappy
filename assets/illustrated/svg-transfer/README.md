@@ -23,6 +23,11 @@ runtime tree; their SVG mappings and recipe are in `docs/evidence/comic-identity
 Side and diagonal views mirror explicitly for west, supplying all eight directions without
 rotating upright artwork.
 
+The carrying mother's current redraw is documented in
+`docs/evidence/comic-carrying-redraw-2026-09-12/`. Trees, their opaque ground bed, the
+overhead bollard cap and rooftop equipment use the source mappings and extraction recipe in
+`docs/evidence/comic-city-props-2026-09-12/`.
+
 SVG-first authoring followed by style transfer is the approved workflow. Every PNG asset needs
 a corresponding SVG authored and reviewed first. M108, eight-direction entity graphics, and
 M109, convert the SVG catalogue to PNG, hold the remaining catalogue work in `docs/TODO.md`.

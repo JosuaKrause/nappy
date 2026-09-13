@@ -2,9 +2,7 @@ extends RefCounted
 ## Focused contracts for default PNG style transfer textures and explicit SVG fallback.
 
 const MOTHER: Texture2D = preload("res://assets/rig/mother_side_a.svg")
-## An SVG with no PNG transfer under `assets/illustrated/svg-transfer/`, for the fallback check:
-## bollard remains outside the registered transfer catalogue.
-const UNTRANSFERRED: Texture2D = preload("res://assets/props/bollard.svg")
+## A synthetic path with no PNG transfer, for the fallback check without adding a fake asset.
 const TRANSFER_ROOT := "res://assets/illustrated/svg-transfer"
 const ANCHOR_TOLERANCE := 1.5
 const SOURCES: Array[Texture2D] = [
@@ -30,8 +28,14 @@ func run(t) -> void:
 		var transfer: Texture2D = TextureResolver.resolve(source)
 		t.check(transfer != source and transfer.get_size() == source.get_size(),
 			"each supplied transfer replaces its SVG at native dimensions")
-	t.check(TextureResolver.resolve(UNTRANSFERRED) == UNTRANSFERRED,
-		"a missing PNG transfer falls back to the authored SVG")
+	var synthetic_image: Image = Image.create(2, 2, false, Image.FORMAT_RGBA8)
+	var synthetic_fallback: ImageTexture = ImageTexture.create_from_image(synthetic_image)
+	synthetic_fallback.resource_path = "res://assets/__tests__/missing-transfer.svg"
+	var fallback_path := TextureResolver.transfer_path_for(synthetic_fallback)
+	t.check(not fallback_path.is_empty() and not ResourceLoader.exists(fallback_path),
+		"a source with no registered replacement has a missing transfer path")
+	t.check(TextureResolver.resolve(synthetic_fallback) == synthetic_fallback,
+		"a missing PNG transfer falls back to the source texture")
 	t.check(TextureResolver.resolve(resolved) == resolved,
 		"a resolved PNG is idempotent and does not construct a second transfer path")
 	t.check(TextureResolver.resolve(MOTHER) == resolved,
@@ -50,6 +54,8 @@ func _test_every_transfer_has_a_native_svg_pair(t) -> void:
 		t.check(source != null and transfer != null,
 			"runtime PNG has a loadable SVG pair: %s" % relative_path)
 		if source != null and transfer != null:
+			t.check(TextureResolver.resolve(source) == transfer,
+				"default resolver loads every discovered PNG pair: %s" % relative_path)
 			var dimensions_match := transfer.get_size() == source.get_size()
 			t.check(dimensions_match,
 				"runtime PNG keeps native dimensions: %s" % relative_path)
@@ -61,6 +67,11 @@ func _test_every_transfer_has_a_native_svg_pair(t) -> void:
 					_check_redrawn_rig_alpha(t, transfer_image, relative_path)
 				elif relative_path.begins_with("props/"):
 					_check_redrawn_prop_alpha(t, transfer_image, relative_path)
+				elif relative_path.begins_with("tiles/layers/"):
+					if relative_path.get_file().ends_with("_base.png"):
+						_check_opaque_ground_tile(t, transfer_image, relative_path)
+					else:
+						_check_ground_layer_alpha(t, transfer_image, relative_path)
 				elif relative_path.begins_with("tiles/"):
 					_check_opaque_ground_tile(t, transfer_image, relative_path)
 				else:
@@ -80,12 +91,21 @@ func _check_redrawn_rig_alpha(t, image: Image, relative_path: String) -> void:
 		"redrawn rig PNG keeps real transparency within its artwork bounds: %s" % relative_path)
 
 func _check_redrawn_prop_alpha(t, image: Image, relative_path: String) -> void:
+	var name := relative_path.get_file().trim_suffix(".png")
+	if name == "tree_pit":
+		_check_opaque_ground_tile(t, image, relative_path)
+		return
 	var bounds := _check_redrawn_alpha(t, image, relative_path)
 	if not bounds.has_area():
 		return
-	if relative_path.get_file().begins_with("garbage_"):
+	if name.begins_with("garbage_") or name.begins_with("tree_"):
 		_check_bottom_center_anchor(t, image, bounds, relative_path)
-	else:
+	elif name == "bollard":
+		var visible_center := Vector2(bounds.position) + Vector2(bounds.size) / 2.0
+		var canvas_center := Vector2(image.get_size()) / 2.0
+		t.check(visible_center.distance_to(canvas_center) <= ANCHOR_TOLERANCE,
+			"bollard artwork stays centered in its source disc canvas: %s" % relative_path)
+	elif name.begins_with("litter_"):
 		var visible_center := Vector2(bounds.position) + Vector2(bounds.size) / 2.0
 		var canvas_center := Vector2(image.get_size()) / 2.0
 		t.check(visible_center.distance_to(canvas_center) <= ANCHOR_TOLERANCE,
@@ -111,6 +131,21 @@ func _check_opaque_ground_tile(t, image: Image, relative_path: String) -> void:
 		for x in image.get_width():
 			is_opaque = is_opaque and image.get_pixel(x, y).a >= 0.99
 	t.check(is_opaque, "ground tile covers its full opaque canvas: %s" % relative_path)
+
+## Shared bases cover their cells, while layer inputs require both visible art and empty pixels so
+## the engine can preserve the base material wherever a curb, marking, crack or grass clump is absent.
+func _check_ground_layer_alpha(t, image: Image, relative_path: String) -> void:
+	t.check(image.get_size() == Vector2i(32, 32),
+			"ground layer keeps the tile's native 32px component canvas: %s" % relative_path)
+	var has_opaque := false
+	var has_clear := false
+	for y in image.get_height():
+		for x in image.get_width():
+			var alpha := image.get_pixel(x, y).a
+			has_opaque = has_opaque or alpha >= 0.95
+			has_clear = has_clear or alpha <= 0.01
+	t.check(has_opaque and has_clear,
+			"ground layer has visible detail and genuine transparency: %s" % relative_path)
 
 func _check_bottom_center_anchor(
 		t, image: Image, bounds: Rect2i, relative_path: String) -> void:

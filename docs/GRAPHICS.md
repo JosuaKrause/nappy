@@ -57,12 +57,12 @@ Some visible graphics are code rather than image files:
 
 | Assets | Runtime binding and behaviour |
 |---|---|
-| `assets/rig/mother_{front,back,side}_{a,b}.svg`, `mother_{front,back}_diagonal_{a,b}.svg` | `src/player/stroller.gd` chooses among eight upright views and alternates the two gait frames. East-authored side and diagonal views mirror explicitly for west. Mother canvases are 24×46 cardinal front/back, 26×46 side/diagonal, all bottom-centre grounded. |
-| `assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b}.svg` | `src/player/stroller.gd` draws these instead of the mother-and-pram pair, with no pram sprite at all, whenever `Stroller.carrying` is set — the escape scene's own rig, behind `--start-escape`. Same eight-view and two-gait selection and the same west mirrors as the ordinary set; the baby's own cue (`baby_{zzz,fuss,cry}.svg`) draws over the bundle at her own position rather than over a pram offset ahead of her. |
-| `assets/rig/pram_{front,back,side}.svg`, `pram_{front,back}_diagonal.svg` | `src/player/stroller.gd` chooses the matching eight-direction pram view; east-authored side and diagonal views mirror explicitly for west. Pram canvases are 30×30 cardinal and 36×30 side/diagonal, bottom-centre grounded. |
+| `assets/rig/mother_{front,back,side,front_diagonal,back_diagonal}_{a,b,c}.svg` | `src/player/stroller.gd` chooses among eight upright views and plays A/C/B/C: opposite open contacts separated by the feet-together pose. Movement distance advances the loop; stopping selects C. East-authored side and diagonal views mirror explicitly for west. Mother canvases are 24×46 cardinal front/back, 26×46 side/diagonal, all bottom-center grounded. |
+| `assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b,c}.svg` | `src/player/stroller.gd` selects these when `Stroller.carrying` is set, including the escape scene behind `--start-escape`. Three distinct poses play A, C, B, C: open contact, feet together, opposite contact, feet together. Movement distance advances the loop; stopping selects C. Five authored views supply eight directions through the same west mirrors as the pushing set. The baby's cue (`baby_{zzz,fuss,cry}.svg`) draws over the bundle at her own position, with no pram sprite. |
+| `assets/rig/pram_{front,back,side}.svg`, `pram_{front,back}_diagonal.svg` | `src/player/stroller.gd` chooses the matching eight-direction pram view; east-authored side and diagonal views mirror explicitly for west. Native canvases are 30×30 cardinal and 36×30 side/diagonal. A uniform 7/6 drawing scale about the bottom-center anchor gives 35×35 and 42×35 rectangles, connecting the handle without lifting the wheels. The side views share the mother's ground baseline; other directions retain projected ground depth. |
 | `assets/props/baby_{zzz,fuss,cry}.svg` | `src/player/stroller.gd` chooses sleeping, awake/fussing or crying state above the pram. |
 | `assets/props/alert.svg`, `assets/props/alert_close.svg` | `src/player/stroller.gd` draws the exclamation over the player when an event is about her, using the close variant at the nearer threshold. |
-| `assets/crowd/walker_{front,back,side,front_diagonal,back_diagonal}_{body,trim}.svg`, `walker_{front,back,side,front_diagonal,back_diagonal}_{body,trim}_b.svg` | `src/crowd/crowd_agent.gd` chooses one of `EightDirection`'s eight sectors from the walker's own applied travel — its along-lane `velocity()` plus whatever its steering is doing across the lane this instant, not the lane axis alone — so a walker rounding a corner or nudged aside by `step_aside()` shows a diagonal view before its lane assignment itself turns, and a stopped walker (a give-way, a queue, a halt) keeps its last one. Each view also has a second gait frame, `_b`, the mother's own two-frame stride extended to the crowd: `_walker_gait_phase` advances by distance actually covered (`velocity().length()`, the same 0.09 rate `Stroller._walk_phase` uses) and `_walker_gait_frame()` alternates between the rest pose and feet passing while moving, holding the rest pose the instant `velocity()` drops to or below `WALKER_IDLE_SPEED` — the same give-way, queue or halt that holds the view. The `_b` frame changes only the legs and shoes in the trim layer, redrawn crossing; the front, back and side coats and heads lift a pixel with the stride the way the mother's own front/back/side `_b` frames do, while the two three-quarter views leave the coat and head untouched, matching the mother's own diagonal frames. Body and trim are bound with one transform apiece: tinted body first, untinted trim above it, both bottom-centre at the node, and one `stepping` lookup picks both layers' gait frame together so they can never disagree. West-of-centre sectors mirror their east-authored partner rather than being separately drawn. All five views and both gait frames share one 18×38 canvas and one (9, 38) feet anchor. |
+| `assets/crowd/walker_{front,back,side,front_diagonal,back_diagonal}_{body,trim}.svg`, `walker_{front,back,side,front_diagonal,back_diagonal}_{body,trim}_b.svg` | `src/crowd/crowd_agent.gd` chooses one of `EightDirection`'s eight sectors from applied travel, including steering across the lane. A stopped walker keeps its last view. `_walker_gait_phase` advances with traveled distance at the 0.09 rate also used by `Stroller._walk_phase`; `_walker_gait_frame()` alternates two crowd poses while moving and holds the rest pose at or below `WALKER_IDLE_SPEED`. The `_b` legs and shoes cross in the trim layer; front, back and side heads and coats rise one pixel, while diagonal upper bodies stay level. One `stepping` lookup selects both tinted body and untinted trim with matching transforms. West sectors mirror their east-authored partners. Every view and frame shares an 18×38 canvas and (9, 38) feet anchor. |
 | `assets/crowd/car_{front,back,side,front_diagonal,back_diagonal}_{body,trim}.svg` | `src/crowd/crowd_agent.gd` chooses one of `EightDirection`'s eight sectors from the car's own `velocity()` — `heading()` (cardinal in a lane, the tangent of its own arc mid-turn) times its actual speed — so a turning car's picture sweeps through the diagonal for the length of the manoeuvre and a car stopped at a light, a gate or a give-way keeps its last view. Body and trim are bound with one transform: tinted body first, untinted trim above it. West-of-centre sectors mirror their east-authored partner. Side is 52×30 and needs no anchor correction, already grounded at its own canvas edge; front/back are 30×46 standing pictures anchored `CAR_STRIKE_HALF_LENGTH` (26px) south of the node, where the strike box's own south edge sits for a car pointed along that axis; the diagonals are 52×42, anchored at the strike box's own south corner rotated onto the screen (`(CAR_STRIKE_HALF_LENGTH + CAR_STRIKE_HALF_WIDTH) / sqrt(2)`, ≈28.28px) plus the 2px the canvas leaves between its alpha content and its own edge. The shadow capsule and the strike box stay independent of the picture — `_car_shadow_shape()`'s own 52×30 along/across measurement is unchanged, and both now orient with the same continuous heading the picture reads. `car_end_{body,trim}.svg`, the old two-view family's foreshortened top-down picture, is unbound — see the prepared table below. |
 | `assets/ui/{pause,restart,continue,joystick,tap}.svg` | `src/ui/touch_controls.gd` draws `pause.svg`; `src/ui/mode_button.gd` selects the other four for pause, summary and control-mode buttons. |
 | `icon.svg` | `project.godot` uses the root SVG as the application icon, including the exported icon generated by Godot. |
@@ -214,8 +214,8 @@ the logo flattened onto opaque white; the rounded slate icon plate remains part 
 ## PNG replacements
 
 `assets/illustrated/svg-transfer/tiles/` contains native 32×32 replacements for the outdoor
-ground SVG family. `City._ground_tile_set_with_transfers()` substitutes textures without
-changing TileSet source IDs or atlas regions, and `CityEdge` resolves the mountain texture
+ground SVG family. `GroundLayers` builds the city's presentation TileSet from its authored
+sources, retaining source IDs and native cell geometry. `CityEdge` resolves the mountain texture
 for its separate repeated drawing. The prepared `alley_draft` has a PNG but remains unbound.
 The [generation record](evidence/style-transfer-tiles-2026-09-12/GENERATION.md) links source
 pairings, exact prompts, raw outputs and repeated-tile comparisons.
@@ -224,24 +224,87 @@ pairings, exact prompts, raw outputs and repeated-tile comparisons.
 `assets/illustrated/svg-transfer/<family>/<name>.png` for a corresponding SVG. Missing or
 differently sized PNGs fall back to the SVG. Existing draw transforms and animation still apply.
 
-The live replacement family is `assets/illustrated/svg-transfer/rig/`: `mother_front_a.png`,
-`mother_front_b.png`, `mother_back_a.png`, `mother_back_b.png` (24×46), `mother_side_a.png` and
-`mother_side_b.png` (26×46), `pram_front.png` and `pram_back.png` (30×30), and `pram_side.png`
-(36×30). `mother_{front,back}_diagonal_{a,b}.png` (26×46) and
+The live replacement family is `assets/illustrated/svg-transfer/rig/`:
+`mother_{front,back}_{a,b,c}.png` (24×46), `mother_side_{a,b,c}.png` (26×46),
+`pram_front.png` and `pram_back.png` (30×30), and `pram_side.png`
+(36×30). `mother_{front,back}_diagonal_{a,b,c}.png` (26×46) and
 `pram_{front,back}_diagonal.png` (36×30) supply the diagonal views; west views mirror their
 east-authored partners. The carrying set adds
-`mother_carrying_{front,back}_{a,b}.png` (24×46) and
-`mother_carrying_{side,front_diagonal,back_diagonal}_{a,b}.png` (26×46), selected by the same
+`mother_carrying_{front,back}_{a,b,c}.png` (24×46) and
+`mother_carrying_{side,front_diagonal,back_diagonal}_{a,b,c}.png` (26×46), selected by the same
 resolver during the escape scene. All use bottom-center anchors and retain their redrawn
-silhouettes and true transparency. The [comic rig record](evidence/comic-rig-2026-09-12/GENERATION.md)
-documents shared identity across both mother states, directions and frames, plus reproducible
-registration within the native canvases.
+silhouettes and true transparency. **P2 — Three-pose push** and its grounded contact sheets are
+documented in the [pushing stride record](evidence/comic-pushing-strides-2026-09-12/GENERATION.md).
+The current carrying family is **F — Hip motion**; its SVG sources, three whole-figure poses,
+closed idle frame, registration and eight-direction GIF recipe are in the
+[carrying hip-motion record](evidence/comic-carrying-hip-motion-2026-09-12/GENERATION.md).
+The [graphics recipe index](evidence/README.md#graphics-recipes) also locates the named comparison
+versions and their preserved rollouts.
+The [player authoring directory](graphics-creation/player/README.md) holds the high-fidelity SVG
+generation targets and their runtime/PNG pairings. The runtime SVG catalogue supplies vector
+artwork for contact and together poses. The PNG presentation uses the accepted F and P2 textures.
+The [stroller view recipe](evidence/stroller-view-assignment-2026-09-12/GENERATION.md) defines the
+final illustrated facing contract: N/NE/NW show the baby and canopy opening; S/SE/SW show the
+outside of the hood; E/W retain the original side image. These names mean travel direction.
+Rebuild from frozen originals; do not swap the runtime textures again based on source filenames.
+The [north-diagonal contact recipe](evidence/stroller-diagonal-contact-2026-09-12/GENERATION.md)
+records the downward NE/NW correction across all pushing poses. The continuous adjustment vanishes
+at cardinal directions and throughout the southern half; SE/SW grounding takes priority over
+closing the remaining hand gap.
+The [southern wheel arrangement](evidence/stroller-southern-wheel-swap-2026-09-12/GENERATION.md)
+owns the final SE/SW wheel pixels. Final SE uses the frozen input's displayed SW wheels; final
+SW uses its displayed SE wheels. Each body, canopy, handle and grounded height stays fixed.
+Rebuild from the hash-checked frozen source only, never exchange the installed wheels again.
+In SW, the leftmost wheel is shadowed and the other two show red axles on their right sides.
+In SE, the rightmost wheel is shadowed and the other two show red axles on their left sides.
+
+Ground components live under `assets/illustrated/svg-transfer/tiles/layers/`, paired with SVGs
+under `assets/tiles/layers/`. The component manifest maps each ground source to a shared sidewalk,
+asphalt or alley base and transparent curbstones, red edge paint, yellow lines, crosswalks or
+damage. The engine composites those layers when building the TileSet. Clear overlay pixels
+leave the base intact, so neighboring variants share the same floor material.
+The asphalt and soft grass bases are prepared offline by equally blending four quarter-turn
+orientations. Parks and forests use that soft green base and three extracted clumps; the engine makes sparse arrangements
+and selects them deterministically from the city seed and cell coordinates.
+The [component recipe](evidence/layered-ground-2026-09-12/GENERATION.md) preserves the source
+artwork, stencils and base preparation. The
+[engine layout recipe](evidence/layered-ground-layout-2026-09-12/GENERATION.md) reviews composed
+tiles in generated streets, junctions and parks. `--svg` selects the authored vector TileSet.
+Baked damage-and-floor PNGs are excluded from runtime assets; the accepted source artwork lives
+in the component recipe's frozen inputs. Runtime damage uses transparent stencils over the base.
+Hairline, cracked and broken damage each share a variation pool across all three surfaces,
+selected deterministically by city seed and cell. The
+[damage atlas review](evidence/shared-damage-2026-09-12/GENERATION.md) shows every combination.
+The [paving joint recipe](evidence/paving-boundary-joints-2026-09-12/GENERATION.md) preserves the
+accepted sidewalk material and complete boundary joints across all rectangular paving. It owns
+the final runtime registration after the quiet-square and plaza material generation steps below.
+The [stoop step-face recipe](evidence/stoop-bottom-face-2026-09-12/GENERATION.md) adds its bottom
+brown riser from an existing band and compresses the taller image back to 32×32. Its verifier
+checks that derivative and the rest of the unchanged registered paving together.
+
+`assets/illustrated/svg-transfer/tiles/quiet_square.png` supplies muted cool-stone paving with
+large slab joints. Its [generation and registration recipe](evidence/quiet-square-2026-09-12/GENERATION.md)
+preserves the SVG subject, style references, raw image and repeated-tile comparisons beside the
+shared ground bases.
+
+`assets/illustrated/svg-transfer/tiles/plaza.png` supplies darker muted stone with the plaza's
+larger slab layout. Its [generation and registration recipe](evidence/plaza-paving-2026-09-12/GENERATION.md)
+retains the raw artwork, SVG subject, quiet-square material reference and neighboring floor inputs.
 
 `assets/illustrated/svg-transfer/props/` supplies `garbage_sack.png` (28×34) and
 `garbage_sacks_pile.png` (42×34), bottom-center anchored, plus `litter_{can,apple,bag,newspaper,cup}.png`
 (32×32), center anchored. These use the existing `Prop` and `CityDecals` drawing paths with
 the comic redraw's own alpha. Their [generation record](evidence/comic-props-2026-09-12/GENERATION.md)
 preserves shared material references and reproducible extraction and anchor registration.
+The same replacement directory contains `tree_a.png` (40×46), `tree_b.png` (40×52),
+`bollard.png` (12×12), `tree_pit.png` (32×32), `roof_water_tank.png` (32×48),
+`roof_hvac_unit.png`, `roof_hvac_unit_b.png`, `roof_skylight.png`, `roof_skylight_b.png`,
+`roof_vent_stack.png`, `roof_duct_corner.png` (all 32×32), and
+`roof_duct_straight.png` (64×32). `Prop` resolves the trees and overhead bollard cap;
+`CityDecals` draws the opaque tree bed on the ground; `Building` resolves the rooftop equipment.
+Standing canvases use bottom-center anchors; the tree bed uses its center. Their
+[generation record](evidence/comic-city-props-2026-09-12/GENERATION.md) preserves source
+pairings, transparent sprite extraction, fixed ground-tile extraction and review sheets.
 Unconverted families retain SVG textures.
 
 [VISUALS.md](VISUALS.md) defines reference authority and the visual acceptance gate.

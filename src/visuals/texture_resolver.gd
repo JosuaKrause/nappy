@@ -35,6 +35,13 @@ static func resolve(texture: Texture2D) -> Texture2D:
 	_cache[source_path] = replacement
 	return replacement
 
+## Reports the resolved presentation mode so composite callers can keep an authored SVG intact.
+static func svg_requested() -> bool:
+	if not _initialized:
+		_svg_requested = DevFlags.svg_requested()
+		_initialized = true
+	return _svg_requested
+
 static func transfer_path_for(texture: Texture2D) -> String:
 	if texture == null or not texture.resource_path.begins_with("res://assets/") \
 			or not texture.resource_path.ends_with(".svg"):

@@ -29,6 +29,12 @@ Inspect it and both `docs/evidence/graphics-reference-urban-01.jpeg` and
 only: omit their interface and debug annotations. Do not substitute a different character identity,
 projection or composition. Archived experiments and unapproved outputs are not style references.
 
+Player generation targets and runtime SVG fallback artwork have separate roles. Preserve the
+creation-reference family in `docs/graphics-creation/player/`; its manifest links each
+creation SVG, runtime SVG and illustrated PNG. Both families provide contact and together poses.
+Use the preserved creation target when
+reproducing its high-fidelity PNG, and keep the original source hashes and authoring order.
+
 ## Directions, frames and variants form one family
 
 Review the complete facing × animation × state matrix together. The mother carrying the baby
@@ -51,11 +57,30 @@ does not change who the character appears to be. Canvas registration does not pr
 faces, clothing or interior placement. Update this workflow with observed results;
 record experiments and rejected options in `docs/DECISIONS.md`.
 
+For the illustrated stroller, direction means travel direction: N/NE/NW show the baby and canopy
+opening; S/SE/SW show the outside of the hood; E/W use the original side picture. Preserve this
+visual contract when generating or assigning views. Upstream front/back filenames do not override
+it. The final assignment recipe is `docs/evidence/stroller-view-assignment-2026-09-12/GENERATION.md`;
+it reads frozen originals. Never apply another N/S or opposite-diagonal swap to installed textures.
+
+For walking figures, preserve identity through coherent full-figure edits. Do not composite fixed
+upper pixel rows over moving lower legs: the pelvis, coat hem, thighs and knees need continuous
+articulation. Check anatomical leg ownership from hip to shoe through both contacts; recoloring
+the same leg silhouettes does not establish an opposite step. Diagonal contacts retain the same
+projected travel axis while the legs exchange leading and trailing positions. Review three-quarter
+torso and pelvis silhouettes separately from front views.
+
 Measure stature across all facings and frames after registration. Fitting an over-wide pose
 into its canvas must not shrink the person when she turns. Redraw a compact pose with consistent
 proportions instead of stretching it or changing the runtime canvas. Inspect the native result,
 not only the enlarged atlas. An approximate assembly sheet does not prove live hand-to-handle
 contact or motion; label its coverage accurately.
+
+Equal full-figure height alone does not establish equal proportions. Compare the head, coat hem
+and hands across contacts and the together frame: short legs in one generated cell make its
+upper body grow when every cell is fitted to the same height. Redraw the affected whole figures
+in a separate batch when a dense atlas constrains their stature. Register horizontal placement
+from stable body landmarks so changing leg spread does not move the hands sideways.
 
 ## Asset contract
 
@@ -92,12 +117,48 @@ contact or motion; label its coverage accurately.
 
 ## Runtime and review
 
+Keep every script used to create retained graphics, comparison sheets, walking rollouts and GIFs
+beside its output under `docs/evidence/<family>/`. Include source paths and hashes, extraction
+bounds, frame order, mirroring, scale, GIF timing, tool/font requirements and exact regeneration
+commands. Preserve immutable inputs or fail loudly when their hashes change. Link each recipe
+from `docs/evidence/README.md` and the family's graphics documentation so it can be found again.
+Distinguish nondeterministic image generation from reproducible extraction and assembly of its
+saved output. A temporary script or chat-only command is insufficient provenance.
+
 For opaque ground tiles, extract fixed atlas cells rather than fitting visible bounding boxes.
 Cell edges are part of the texture's placement contract. Generated atlas dimensions need not
 divide evenly by the grid: record normalized cells and rounded pixel bounds. Compare opposite
 road-line halves assembled as neighbors as well as repeated full tiles; alpha equality alone
 cannot reveal shifted markings, unwanted grid borders or a material that changes between variants.
 Keep low-contrast ground texture quiet enough for actors and route markings to remain legible.
+Rectangular paving needs complete slab joints across tile boundaries as well as inside each tile.
+Inspect repeated patches in both axes: center-only seams can merge neighboring rectangles into
+larger unintended slabs. Preserve the selected material when completing its boundary joints.
+
+Review street-surface continuity in actual generated map layouts, using `GroundTiles.source_for`
+and the runtime TileSet mapping. Include repeated runs, both sidewalk lanes, both street axes and
+junction corners. Short isolated neighbor strips do not expose all repeated joints or corner
+transitions. Keep diagnostic labels and grid overlays separate from the clean assembled artwork.
+
+Ground variants share their base material. Build sidewalk variants from one paving texture and
+road variants from one asphalt texture; use transparent layers for curbstones, red main-street
+edges, yellow lines, crosswalks and damage. Remove the ground background from detail artwork
+before alpha compositing it over the actual base. Preserve the layer inputs and composition
+recipe, including SVG sources for the components. Pixels outside the overlay remain identical
+to the base. Damage variations share pools by severity across floor materials; inspect each
+stencil over every supported base so extracted slab joints do not become a second floor grid.
+Keep final registered paving inputs separate from the original material inputs used to extract
+damage. Rebuilding components must retain the reviewed base's boundary joints.
+Inspect repeated bases in both axes for lighting gradients and brightness jumps;
+a shared texture still needs to tile cleanly. Blend curbstones, markings, damage and grass
+features over their bases in the engine, retaining the separate component graphics. The
+rotation/offset blend that smooths the asphalt and grass bases is an offline preparation step.
+Separate existing grass features from a soft green base and place them sparsely with stable
+city-seed variation, keeping grass detail quieter than the actors and route markings.
+Validate component IDs and rotations against the authored TileSet and ground selector rather
+than inferring their order from filenames. Verify the composed grass atlas itself as well as
+its selection logic; a missing component can leave a valid-looking fallback in place. Crop
+grass features to their visible bounds before placing them so their clumps remain whole.
 
 Resolve textures only. Keep original scale, offsets, animation, mirroring, sorting, shadows,
 camera and gameplay behavior. Missing or differently sized replacements fall back to the SVG;

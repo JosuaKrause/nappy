@@ -1,0 +1,12 @@
+Precise sprite-atlas leg edit. Image 1 is the exact illustrated identity and upper-body target: the same adult mother carrying a baby, five directional columns and two rows. Image 2 is the authoritative A/C/B leg-pose sheet: five columns labeled front, back, side, front diagonal, back diagonal and three rows labeled A, C, B.
+
+Create a clean FIVE-COLUMN BY THREE-ROW atlas on a uniform plain white background. Columns, left to right: front, back, right profile, front three-quarter, back three-quarter. Rows, top to bottom: A open contact, C closed passing, B opposite open contact.
+
+Preserve Image 1's adult woman above the red coat hem: same narrow 6–7 native-pixel head proportion, short brown hair, face/facing, slim long-legged adult body, red coat, arms, hands, horizontal blue-gray baby cradle, baby head support, line art, color, scale, cell centers, and baseline. Change only blue-jean legs and dark shoes below the coat hem. The upper body in each column must be the same between all three rows except Image 1's subtle one-pixel-equivalent gait bob; no body morph, head growth, coat growth, or baby movement.
+
+Follow Image 2's leg geometry exactly:
+- Row A is the first open contact. In front, back, and both diagonals, one leg/shoe is visibly lower and full-length while the other is visibly higher/shortened in depth. In profile, one leg extends forward along travel and one extends backward.
+- Row C is a narrow passing pose: both legs close together under the hips, nearly parallel, with compact adjacent shoes. It must be visibly closed between the two open contacts.
+- Row B is the opposite open contact. Front, back, and diagonals swap which screen-side shoe is lower/leading and which is higher/receding. Profile keeps the forward/back spread but swaps which anatomical near/far leg owns the positions, shown by reversed lighter/darker denim and overlap order.
+
+Both open rows must have comparable stride extent. Use a lighter near leg and darker far leg consistently so anatomical ownership can be tracked. One sensible knee per leg; clean cloth planes. Avoid crossed X legs, lateral splits in front/back, parallel standing legs in open rows, extra limbs, shadows, labels, guides, or objects. Both arms remain visibly supporting the same cradled baby.

@@ -1,0 +1,20 @@
+{
+  "canvas": [36, 30],
+  "operation": "simultaneous horizontal reflection of reflection-closed wheel assembly mask",
+  "input": {
+    "path": "frozen-inputs/pram_front_diagonal-se-before.png",
+    "sha256": "adb38bc65fd1b3850ec7e45847e0224a9bf26700b4afa899531b362378db322d"
+  },
+  "output": {
+    "path": "../../../assets/illustrated/svg-transfer/rig/pram_front_diagonal.png",
+    "sha256": "e60f151730e0ef0e56e9f42a088f32aa5105caf8c8d340453569aa6fb256dc63"
+  },
+  "masks_half_open": [[5, 22, 13, 29], [13, 23, 23, 30], [24, 21, 32, 29]],
+  "reflection_closed_masks_half_open": [[5, 22, 13, 29], [13, 23, 23, 30], [24, 21, 32, 29], [23, 22, 31, 29], [13, 23, 23, 30], [4, 21, 12, 29]],
+  "fixed_contract": ["body outside wheel union", "canopy", "handle", "canvas", "height", "runtime direction assignment"],
+  "script": {
+    "path": "swap.py",
+    "sha256": "dc7e1f1321672e93a3ff805759f2548f793f1ede610388456f4b6dc7d4918dd6"
+  },
+  "tool": "CPython 3.14.7 with Pillow 12.3.0"
+}

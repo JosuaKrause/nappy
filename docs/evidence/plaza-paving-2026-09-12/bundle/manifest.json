@@ -1,0 +1,43 @@
+{
+  "format": 1,
+  "python_version": "3.14.7",
+  "pillow_version": "12.3.0",
+  "script_sha256": "e5d8cd310bff03647a0c9591f417108e59a991f7e1cd74658af4af335b52443c",
+  "method": "built-in imagegen raw output, direct LANCZOS downsample to 32x32; no recoloring or paint-over",
+  "raw": {
+    "path": "raw/plaza-generated.png",
+    "sha256": "677248eff526ce86db926ddf8dd8d903a4af3ca63b003296d47489261ccd31b4",
+    "size": [
+      1254,
+      1254
+    ]
+  },
+  "sources": {
+    "asphalt_base.png": "8165adc4a457aabb43101f8e701aa202438e3bbef2d9b1c02e317af031aae468",
+    "graphics-reference-cardinal.jpeg": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7",
+    "graphics-reference-urban-01.jpeg": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d",
+    "grass_base.png": "566c0e7169f4fd34e81af5396d9a15a379e6e47ee853e68dbaace1c56fbb8a19",
+    "plaza-svg-8x.png": "b44aec267fe2fc55ca6350a792d051008a7bcec14b58e8d31e2e78894946ec3a",
+    "plaza.svg": "4cb42fbb66c9911bd95b94cb452159049a6a615ea18067a21c193a1ed6805d23",
+    "plaza_brightness_reference.png": "43febbdc50ceefe28f13efdb31f87352f2e956382a2b073ed74b58b5df506d9a",
+    "quiet_square_identity_reference.png": "ab2778c32eba5d5719211a501baeb6fd85153a34cf736370c62174f568961029",
+    "render-plaza-source.gd": "910be8f244d6f133379d0c4fd19a67d1d276b89c5371e1b40b39eb1daa9cd515",
+    "sidewalk_base.png": "a86c9cdff2ca96f1d5016a7b997d506e0a1452174a06cadd9a51b50eafff0c28"
+  },
+  "registered": {
+    "path": "registered/plaza.png",
+    "sha256": "50a0feadd9b8ec433e329e58b53e1bf36b9cf3e1cfcfacbe847cb4918f9c2150",
+    "size": [
+      32,
+      32
+    ],
+    "opaque": true
+  },
+  "mean_luma": {
+    "plaza": 93.6289,
+    "plaza_brightness_reference": 149.5589,
+    "sidewalk_base": 139.2884,
+    "asphalt_base": 73.4635,
+    "grass_base": 109.2292
+  }
+}

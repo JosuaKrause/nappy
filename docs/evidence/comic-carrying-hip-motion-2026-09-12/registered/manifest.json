@@ -1,0 +1,521 @@
+{
+  "recipe": "F - Hip motion",
+  "config_sha256": "70de6fc780d01bab04182937ed4ac631ce517eb8a748fd1356539b07c187b1b1",
+  "frames": [
+    "mother_carrying_front_a",
+    "mother_carrying_front_c",
+    "mother_carrying_front_b",
+    "mother_carrying_back_a",
+    "mother_carrying_back_c",
+    "mother_carrying_back_b",
+    "mother_carrying_side_a",
+    "mother_carrying_side_c",
+    "mother_carrying_side_b",
+    "mother_carrying_front_diagonal_a",
+    "mother_carrying_front_diagonal_c",
+    "mother_carrying_front_diagonal_b",
+    "mother_carrying_back_diagonal_a",
+    "mother_carrying_back_diagonal_c",
+    "mother_carrying_back_diagonal_b"
+  ],
+  "frame_order": [
+    "a",
+    "c",
+    "b",
+    "c"
+  ],
+  "directions": [
+    "north",
+    "northeast",
+    "east",
+    "southeast",
+    "south",
+    "southwest",
+    "west",
+    "northwest"
+  ],
+  "direction_views": [
+    "back",
+    "back_diagonal",
+    "side",
+    "front_diagonal",
+    "front",
+    "front_diagonal",
+    "side",
+    "back_diagonal"
+  ],
+  "west_mirror": "runtime mirrors east-authored views",
+  "timing_ms": 190,
+  "pillow_version": "12.3.0",
+  "font": "Pillow embedded default bitmap font; labels are composed before nearest-neighbor enlargement",
+  "checkerboard_remover": {
+    "path": "../../../tools/remove-checkerboard.py",
+    "sha256": "34e03aefd5aa2b3ed0025ce5801cb25bc3fa6ab9ce00669727e57c9b8fe71716"
+  },
+  "raw_inputs": {
+    "raw/carrying-f-selected.png": {
+      "sha256": "27ba7489bf0efbf9e475c72bbd7f7670841c7111a0703355641122873ad8f7fb",
+      "dimensions": [
+        1380,
+        1140
+      ]
+    },
+    "raw/carrying-f-c-row.png": {
+      "sha256": "4d7bfa5d751f67ebab3eb6a2b93cc9870580d92380bf709d07ffcc703a12156e",
+      "dimensions": [
+        2172,
+        724
+      ]
+    }
+  },
+  "extraction": {
+    "mother_carrying_front_a": "neutral-connected-region",
+    "mother_carrying_front_c": "neutral-connected-region",
+    "mother_carrying_front_b": "neutral-connected-region",
+    "mother_carrying_back_a": "neutral-connected-region",
+    "mother_carrying_back_c": "neutral-connected-region",
+    "mother_carrying_back_b": "neutral-connected-region",
+    "mother_carrying_side_a": "neutral-connected-region",
+    "mother_carrying_side_c": "neutral-connected-region",
+    "mother_carrying_side_b": "neutral-connected-region",
+    "mother_carrying_front_diagonal_a": "neutral-connected-region",
+    "mother_carrying_front_diagonal_c": "neutral-connected-region",
+    "mother_carrying_front_diagonal_b": "neutral-connected-region",
+    "mother_carrying_back_diagonal_a": "neutral-connected-region",
+    "mother_carrying_back_diagonal_c": "neutral-connected-region",
+    "mother_carrying_back_diagonal_b": "neutral-connected-region"
+  },
+  "measurements": {
+    "mother_carrying_front_a": {
+      "cell_visible_bounds": [
+        107,
+        21,
+        238,
+        392
+      ],
+      "visible_height": 45,
+      "fitted_width": 16,
+      "horizontal_offset": 0,
+      "raw_path": "raw/carrying-f-selected.png",
+      "raw_bounds": [
+        0,
+        0,
+        276,
+        400
+      ],
+      "svg": "source/svg/mother_carrying_front_a.svg",
+      "svg_sha256": "ff5b3348f3c61361d34df9e0860cc8c00dc24cc4a6be91dbdcf6602eb177523a",
+      "dimensions": [
+        24,
+        46
+      ],
+      "png": "rig/mother_carrying_front_a.png"
+    },
+    "mother_carrying_front_c": {
+      "cell_visible_bounds": [
+        169,
+        61,
+        372,
+        668
+      ],
+      "visible_height": 45,
+      "fitted_width": 15,
+      "horizontal_offset": 0,
+      "raw_path": "raw/carrying-f-c-row.png",
+      "raw_bounds": [
+        0,
+        0,
+        434,
+        724
+      ],
+      "svg": "source/svg/mother_carrying_front_c.svg",
+      "svg_sha256": "342dc8ab64eb393661fa589bc9ddb68d7b980693bdd77ad8be9485e5dbd78db3",
+      "dimensions": [
+        24,
+        46
+      ],
+      "png": "rig/mother_carrying_front_c.png"
+    },
+    "mother_carrying_front_b": {
+      "cell_visible_bounds": [
+        107,
+        8,
+        238,
+        365
+      ],
+      "visible_height": 45,
+      "fitted_width": 17,
+      "horizontal_offset": 0,
+      "raw_path": "raw/carrying-f-selected.png",
+      "raw_bounds": [
+        0,
+        755,
+        276,
+        1140
+      ],
+      "svg": "source/svg/mother_carrying_front_b.svg",
+      "svg_sha256": "319d5e512e8be56257301b3a239cfc408c6d310666e7c8341aa62fda35f64b26",
+      "dimensions": [
+        24,
+        46
+      ],
+      "png": "rig/mother_carrying_front_b.png"
+    },
+    "mother_carrying_back_a": {
+      "cell_visible_bounds": [
+        86,
+        20,
+        215,
+        389
+      ],
+      "visible_height": 45,
+      "fitted_width": 16,
+      "horizontal_offset": 0,
+      "raw_path": "raw/carrying-f-selected.png",
+      "raw_bounds": [
+        276,
+        0,
+        552,
+        400
+      ],
+      "svg": "source/svg/mother_carrying_back_a.svg",
+      "svg_sha256": "f8a4401ba90a2d51e280b452087da759d1ddaa577f91f3300308540d5d177658",
+      "dimensions": [
+        24,
+        46
+      ],
+      "png": "rig/mother_carrying_back_a.png"
+    },
+    "mother_carrying_back_c": {
+      "cell_visible_bounds": [
+        135,
+        61,
+        335,
+        668
+      ],
+      "visible_height": 45,
+      "fitted_width": 15,
+      "horizontal_offset": 0,
+      "raw_path": "raw/carrying-f-c-row.png",
+      "raw_bounds": [
+        434,
+        0,
+        869,
+        724
+      ],
+      "svg": "source/svg/mother_carrying_back_c.svg",
+      "svg_sha256": "4d42aacbcd634f4b1e897fdf40627bd20036a3a2879754d854073206f8c0d3c8",
+      "dimensions": [
+        24,
+        46
+      ],
+      "png": "rig/mother_carrying_back_c.png"
+    },
+    "mother_carrying_back_b": {
+      "cell_visible_bounds": [
+        86,
+        9,
+        215,
+        366
+      ],
+      "visible_height": 45,
+      "fitted_width": 16,
+      "horizontal_offset": 0,
+      "raw_path": "raw/carrying-f-selected.png",
+      "raw_bounds": [
+        276,
+        755,
+        552,
+        1140
+      ],
+      "svg": "source/svg/mother_carrying_back_b.svg",
+      "svg_sha256": "b1ab7caebec6264e1c2080e903cdf93a473a334e05ac519fadc0a988553f3840",
+      "dimensions": [
+        24,
+        46
+      ],
+      "png": "rig/mother_carrying_back_b.png"
+    },
+    "mother_carrying_side_a": {
+      "cell_visible_bounds": [
+        58,
+        21,
+        223,
+        385
+      ],
+      "visible_height": 45,
+      "fitted_width": 20,
+      "horizontal_offset": 0,
+      "raw_path": "raw/carrying-f-selected.png",
+      "raw_bounds": [
+        552,
+        0,
+        828,
+        400
+      ],
+      "svg": "source/svg/mother_carrying_side_a.svg",
+      "svg_sha256": "5f38a2c3af60921644adee4faeb66debd029c435300c7164a914d9417ae31ee5",
+      "dimensions": [
+        26,
+        46
+      ],
+      "png": "rig/mother_carrying_side_a.png"
+    },
+    "mother_carrying_side_c": {
+      "cell_visible_bounds": [
+        129,
+        61,
+        327,
+        668
+      ],
+      "visible_height": 45,
+      "fitted_width": 15,
+      "horizontal_offset": 0,
+      "raw_path": "raw/carrying-f-c-row.png",
+      "raw_bounds": [
+        869,
+        0,
+        1303,
+        724
+      ],
+      "svg": "source/svg/mother_carrying_side_c.svg",
+      "svg_sha256": "262ffe7c6cc75d4fc662c8d983895aedf1542d28a38aa060d013dc20bc09cb69",
+      "dimensions": [
+        26,
+        46
+      ],
+      "png": "rig/mother_carrying_side_c.png"
+    },
+    "mother_carrying_side_b": {
+      "cell_visible_bounds": [
+        49,
+        9,
+        220,
+        360
+      ],
+      "visible_height": 45,
+      "fitted_width": 22,
+      "horizontal_offset": -1,
+      "raw_path": "raw/carrying-f-selected.png",
+      "raw_bounds": [
+        552,
+        755,
+        828,
+        1140
+      ],
+      "svg": "source/svg/mother_carrying_side_b.svg",
+      "svg_sha256": "57d444768168f2afde0302903dd4c03475adb5c27d25eb73faaae6e2d387009f",
+      "dimensions": [
+        26,
+        46
+      ],
+      "png": "rig/mother_carrying_side_b.png"
+    },
+    "mother_carrying_front_diagonal_a": {
+      "cell_visible_bounds": [
+        67,
+        21,
+        196,
+        392
+      ],
+      "visible_height": 45,
+      "fitted_width": 16,
+      "horizontal_offset": 0,
+      "raw_path": "raw/carrying-f-selected.png",
+      "raw_bounds": [
+        828,
+        0,
+        1104,
+        400
+      ],
+      "svg": "source/svg/mother_carrying_front_diagonal_a.svg",
+      "svg_sha256": "393bb575a18a2ce7d98c02bd481858789ad27dd11c6990044f34061b4aaf3bc1",
+      "dimensions": [
+        26,
+        46
+      ],
+      "png": "rig/mother_carrying_front_diagonal_a.png"
+    },
+    "mother_carrying_front_diagonal_c": {
+      "cell_visible_bounds": [
+        107,
+        61,
+        307,
+        669
+      ],
+      "visible_height": 45,
+      "fitted_width": 15,
+      "horizontal_offset": 0,
+      "raw_path": "raw/carrying-f-c-row.png",
+      "raw_bounds": [
+        1303,
+        0,
+        1738,
+        724
+      ],
+      "svg": "source/svg/mother_carrying_front_diagonal_c.svg",
+      "svg_sha256": "05a5ea6962356b9bb41f560cb68db04762ed8ccb49368fdf90af5f1ce4643929",
+      "dimensions": [
+        26,
+        46
+      ],
+      "png": "rig/mother_carrying_front_diagonal_c.png"
+    },
+    "mother_carrying_front_diagonal_b": {
+      "cell_visible_bounds": [
+        66,
+        9,
+        195,
+        366
+      ],
+      "visible_height": 45,
+      "fitted_width": 16,
+      "horizontal_offset": 0,
+      "raw_path": "raw/carrying-f-selected.png",
+      "raw_bounds": [
+        828,
+        755,
+        1104,
+        1140
+      ],
+      "svg": "source/svg/mother_carrying_front_diagonal_b.svg",
+      "svg_sha256": "41969ca15ad5dc5ff01d116cab910f3a80d8706df1ea7a86d425532e2066db59",
+      "dimensions": [
+        26,
+        46
+      ],
+      "png": "rig/mother_carrying_front_diagonal_b.png"
+    },
+    "mother_carrying_back_diagonal_a": {
+      "cell_visible_bounds": [
+        48,
+        21,
+        177,
+        389
+      ],
+      "visible_height": 45,
+      "fitted_width": 16,
+      "horizontal_offset": 0,
+      "raw_path": "raw/carrying-f-selected.png",
+      "raw_bounds": [
+        1104,
+        0,
+        1380,
+        400
+      ],
+      "svg": "source/svg/mother_carrying_back_diagonal_a.svg",
+      "svg_sha256": "fa7427d3de8e63044fda15e33614d99a0825da1427fbd9fb780d20deac4287d2",
+      "dimensions": [
+        26,
+        46
+      ],
+      "png": "rig/mother_carrying_back_diagonal_a.png"
+    },
+    "mother_carrying_back_diagonal_c": {
+      "cell_visible_bounds": [
+        77,
+        62,
+        279,
+        669
+      ],
+      "visible_height": 45,
+      "fitted_width": 15,
+      "horizontal_offset": 0,
+      "raw_path": "raw/carrying-f-c-row.png",
+      "raw_bounds": [
+        1738,
+        0,
+        2172,
+        724
+      ],
+      "svg": "source/svg/mother_carrying_back_diagonal_c.svg",
+      "svg_sha256": "d98102fc1f8479d743cad6aa1d5bfe624ca6444f78bcd764d19806cd210b1db8",
+      "dimensions": [
+        26,
+        46
+      ],
+      "png": "rig/mother_carrying_back_diagonal_c.png"
+    },
+    "mother_carrying_back_diagonal_b": {
+      "cell_visible_bounds": [
+        35,
+        10,
+        178,
+        363
+      ],
+      "visible_height": 45,
+      "fitted_width": 18,
+      "horizontal_offset": -1,
+      "raw_path": "raw/carrying-f-selected.png",
+      "raw_bounds": [
+        1104,
+        755,
+        1380,
+        1140
+      ],
+      "svg": "source/svg/mother_carrying_back_diagonal_b.svg",
+      "svg_sha256": "47028cd374ee3e571ee8d2845e40176143e458d22bf0f00d085f924634d3d4a3",
+      "dimensions": [
+        26,
+        46
+      ],
+      "png": "rig/mother_carrying_back_diagonal_b.png"
+    }
+  },
+  "animation": {
+    "frame_count": 4,
+    "frame_size": [
+      270,
+      80
+    ],
+    "durations_ms": [
+      190,
+      190,
+      190,
+      190
+    ],
+    "decoded_rgba_sha256": [
+      "3ebe2874af5c3a5915366c7db15f4a4b14a92c219305f95c84eeb62ff4e0e8f5",
+      "30fbb4f29de3077af34d6f82159c5aa5c5bbf07190214a58a97ad4451c204fc9",
+      "963fddb11e663aeb2f2f6ad76f3f41d9d2cd21b7115852179eaff58664c59b58",
+      "30fbb4f29de3077af34d6f82159c5aa5c5bbf07190214a58a97ad4451c204fc9"
+    ]
+  },
+  "output_sha256": {
+    "rig/mother_carrying_front_a.png": "478dba576293c8cdd6b45fa36950556bb15535aada7b4a2a685187486086a674",
+    "extracted/mother_carrying_front_a.png": "6674b8cea6b6828937928b2545d1860fbf1f6589ddc9f6b7237dbfc716863788",
+    "rig/mother_carrying_front_c.png": "95d19434aa17ce864eb71d34c5581a5d028b858a31091e1470bf76fcbea2a37f",
+    "extracted/mother_carrying_front_c.png": "bb02801cf9d500b55a7943e8979ee0ac4d944c133c528fc5a71c533a520dcca8",
+    "rig/mother_carrying_front_b.png": "ea80673ebfb5cf7d78272c78b22404399d48146e4307c22c12235f469245373e",
+    "extracted/mother_carrying_front_b.png": "8356134208d0fcb0ae0537f33cdfa2b9fdb08d1b7d7592166cb966c0571450a4",
+    "rig/mother_carrying_back_a.png": "f6297d0b69692f2711081fa0e3322ce4cc402ca31950e44a25d134069644f968",
+    "extracted/mother_carrying_back_a.png": "b612a83499685e451c8e473b85ff926d63cfc516a0e9979c258b62489c6daa65",
+    "rig/mother_carrying_back_c.png": "9aa6357c2376d23da4e8d2ee7780cb774678e09cc5714fc465d3c4bee9c5ee67",
+    "extracted/mother_carrying_back_c.png": "f619a693a9aa6be10e412428a7e9352bf869e6e3ac6fdeb3f8b78063e351b3b9",
+    "rig/mother_carrying_back_b.png": "2f69da1c135027f6024fc18f3bbf969edbcdfbef25967e9171c91cfe0a4d861d",
+    "extracted/mother_carrying_back_b.png": "18fdce01de9ba5f1ffc7876d1ca52976750ff877991305d0a5ef172abc670cc4",
+    "rig/mother_carrying_side_a.png": "ad9278e490028da949555ee860e94dfdd8301a7044ff429813b12a7dcb37a686",
+    "extracted/mother_carrying_side_a.png": "b2d51edd9938c5f786d8d0370d136122d724729762f0740c76ef53522ef9925d",
+    "rig/mother_carrying_side_c.png": "b3dc500a13db5f78db4af04d7b80fcd86ceeb0c63a6f46675f8cd4ee4263563f",
+    "extracted/mother_carrying_side_c.png": "dee421ebd9fe0c23308cf2accda6bbf0c67bc9ac82d6fec6fa6602655410a74d",
+    "rig/mother_carrying_side_b.png": "01607b9e3c32e50ae7d209115a794dfa2d02afde6925068954a98988ab37f3ae",
+    "extracted/mother_carrying_side_b.png": "1f097869a20714f8aa61227ddd017c2b462fe80c6e01e0cae72414b43bc8d62b",
+    "rig/mother_carrying_front_diagonal_a.png": "0bb3ee956a310ebf10c486685d93d5e58e53f95e1aa101b1e954ea520d45269f",
+    "extracted/mother_carrying_front_diagonal_a.png": "72bdff73c001cdef4886a0dca9f97ab10f1737f549fe4fd932a80415a3010745",
+    "rig/mother_carrying_front_diagonal_c.png": "d2d0ae50ed7f6b4eaceac8883d0df019daf66e2ce9b5663db156c04212d9b542",
+    "extracted/mother_carrying_front_diagonal_c.png": "80e01c482900dbaece27558b875604fda13e5b3b65550b7b470467d9dbb8fbae",
+    "rig/mother_carrying_front_diagonal_b.png": "e2016ddec2fde50a66a81bd217403cf5f729a509ac08e4b563347268124ab907",
+    "extracted/mother_carrying_front_diagonal_b.png": "35a94b492679dcdcac2abce53bea904deee8e55fa65a3392d534a60d8294eaed",
+    "rig/mother_carrying_back_diagonal_a.png": "97d3f0990421cf290a16cfa144445395a12ff8f43e011b622f9ed3ab9c234d9e",
+    "extracted/mother_carrying_back_diagonal_a.png": "fff654f47a4c28f6939782e1470b86a79e1ad5364bd828dd4b9663bc6114cce2",
+    "rig/mother_carrying_back_diagonal_c.png": "c7a0697696605866bd53b7213b44c73129b872d7f978975a99eeee44ab692006",
+    "extracted/mother_carrying_back_diagonal_c.png": "cf09cf731ec4f39f84b9f87c948b6bdd7590474299037e022e4a82cb687bc020",
+    "rig/mother_carrying_back_diagonal_b.png": "63699122008b383bbbfbb419e72cc31d2a9f08d8d4f6b373d94a21eb4a10e5d5",
+    "extracted/mother_carrying_back_diagonal_b.png": "5c823c6a52ab01e2d0c40362558e37052910d194b249be5a2c35b48455399c46",
+    "extracted-preview.png": "1285932546253653160dcfee613117a413d4c7a5ba1f2b556b8cbfcba52c4820",
+    "registered-native.png": "0bbf84179532fd64a65d86c7e8fdc296ce1a3108cc9486455c5420bf3091cdeb",
+    "registered-6x.png": "9da9b40be8bf61c813a942da89f411dabcb8e19602d561947e0e83cbb00ce266",
+    "animation-native.gif": "d1a9ffcdaf04a4f65e84af2b5c1387a1509027fdf0653b117628cfc366db4fd1",
+    "animation-6x.gif": "9e56b5ca2c45d9f44298f35c73abd0e778eb7621d347b5ae3b52072dba709c05"
+  }
+}

@@ -14,10 +14,14 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-- **Walk across neighboring ground variants.** Check repeated terrain, curb edges and road
-  markings for seams or distracting repetition during movement.
-  The current native pairs and neighbors are in
-  `evidence/style-transfer-tiles-2026-09-12/comic/registered/`.
+- **Compare damaged road, sidewalk and alley tiles.** Do the shared crack and hole variations
+  sit naturally over each material, without carrying pieces of another floor's slab grid?
+  The [damage atlas review](evidence/shared-damage-2026-09-12/GENERATION.md) shows every variation
+  over each supported base.
+
+- **Look at a park and a wooded calm area while walking past them.** Do the sparse grass clumps give variety while the
+  soft base stays quiet enough to keep people and routes clear? Check neighboring cells and
+  revisit the same seed to compare their stable arrangement.
 
 - **Look at café seating and roadworks along both street axes.** Each café sitter should
   face its own table, including the right-hand chair and the vertical arrangement. Vertical
@@ -28,13 +32,15 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   stay underneath her and the pram while the trunk and canopy retain their upright sorting.
   Check the location pictured in [PLAYTEST-64](playtests/PLAYTEST-64.md), or any street-tree run.
 
-- **Compare the mother carrying the baby with the mother pushing the stroller.** Use ordinary
-  gameplay for pushing and `--start-escape floor:2` for carrying; walk and turn in both. Does she
-  remain recognizably the same woman, with stable hair, clothes and proportions across directions
-  and gait frames? The native and enlarged comparisons in
-  `evidence/comic-rig-2026-09-12/registered/` show both states side by side;
-  check stature and hand-to-handle contact through turns at gameplay size too. `--svg` provides
-  the original source comparison. The assembly sheets approximate placement, not live contact.
+- **Look at trees, bollards and rooftop equipment at gameplay size.** Do the inked foliage,
+  water tank, HVAC units, skylights, vent and ducts fit the comic ground while staying readable?
+  Check both tree shapes and the roof variants in
+  `evidence/comic-city-props-2026-09-12/comparisons/`; `--svg` shows their source concepts.
+
+- **Compare pushing and carrying identity during a state change.** Do they remain the same woman?
+  Use `--start-escape` for carrying. Exact native
+  and enlarged walking GIFs are linked from the
+  [recipe index](evidence/README.md#graphics-recipes); they are sprite assemblies, not live captures.
 
 - **Look at the garbage sacks and small litter from day 10.** Do the standalone sacks and
   piles look like the same material, and does the small ground litter remain quiet and readable?

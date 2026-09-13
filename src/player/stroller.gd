@@ -4,13 +4,29 @@ extends CharacterBody2D
 ##
 ## `position` is the mother's feet on the ground plane; everything is drawn upward from
 ## there so that y-sorting against buildings and props matches where she actually stands.
-## The pram is drawn as an offset in the facing direction, foreshortened on Y by `OBLIQUE_Y` to
-## sell the oblique view (docs/CITY.md, "Rendering").
+## The pram is drawn ahead in the facing direction, with authored screen-axis distances and Y
+## foreshortening that preserve ground depth and the authored hand-contact placement.
 ##
 ## The SVG mother and pram below are the logical body and the complete drawing in every mode.
 
-## How far ahead of the mother the pram sits, on the ground plane.
-const PRAM_DISTANCE := 34.0
+## The illustrated family keeps different amounts of empty canvas around each projection, so its
+## functional hand-to-handle placement uses three screen-axis distances. Scaling `facing` by these
+## axes keeps the pram moving continuously through a turn; selecting offsets from the eight texture
+## views instead would make it jump at every view boundary.
+const PRAM_HORIZONTAL_DISTANCE := 24.0
+const PRAM_NORTH_DISTANCE := 17.0
+const PRAM_SOUTH_DISTANCE := 9.0
+## The north diagonal hand contact needs a small screen-Y correction. The squared axis
+## factors make it vanish at north and east/west, while the north-only factor keeps every south
+## facing at its grounded placement.
+const PRAM_NORTH_DIAGONAL_CONTACT_ADJUSTMENT := 2.0
+## The texture grows uniformly about its bottom-center ground anchor. Seven-sixths turns the native
+## 36×30 side and diagonal canvases into exact 42×35px rectangles, avoiding fractional raster sizes
+## while making the handle-to-wheel reach match the mother's hand-to-foot reach.
+const PRAM_VISUAL_SCALE := 7.0 / 6.0
+## A fixed Y adjustment is part of the continuous offset formula, but grounding the scaled wheels
+## beside her feet needs no lift.
+const PRAM_VERTICAL_LIFT := 0.0
 ## Vertical squash applied to ground-plane offsets, i.e. the obliqueness of the view.
 const OBLIQUE_Y := 0.7
 ## Radians per second the rig turns to face a new input direction.
@@ -23,36 +39,54 @@ const CAMERA_LOOK_AHEAD := 46.0
 ## physical facing remains continuous — `EightDirection.SECTOR_DEGREES` and
 ## `EightDirection.HYSTERESIS_DEGREES`, the same selector `CrowdAgent`'s walkers now share.
 
-## The SVG presentation, and the one a build draws unless the illustrated transfer is opted into.
-## Two frames per direction: mid-stride, then feet passing.
+## SVG source textures; `TextureResolver` supplies their matching illustrated PNGs by default.
+## Each direction has contact A, feet together C, then the opposite contact B.
 const MOTHER_FRONT: Array[Texture2D] = [
-	preload("res://assets/rig/mother_front_a.svg"), preload("res://assets/rig/mother_front_b.svg")]
+	preload("res://assets/rig/mother_front_a.svg"),
+	preload("res://assets/rig/mother_front_c.svg"),
+	preload("res://assets/rig/mother_front_b.svg")]
 const MOTHER_BACK: Array[Texture2D] = [
-	preload("res://assets/rig/mother_back_a.svg"), preload("res://assets/rig/mother_back_b.svg")]
+	preload("res://assets/rig/mother_back_a.svg"),
+	preload("res://assets/rig/mother_back_c.svg"),
+	preload("res://assets/rig/mother_back_b.svg")]
 const MOTHER_SIDE: Array[Texture2D] = [
-	preload("res://assets/rig/mother_side_a.svg"), preload("res://assets/rig/mother_side_b.svg")]
+	preload("res://assets/rig/mother_side_a.svg"),
+	preload("res://assets/rig/mother_side_c.svg"),
+	preload("res://assets/rig/mother_side_b.svg")]
 const MOTHER_FRONT_DIAGONAL: Array[Texture2D] = [
-	preload("res://assets/rig/mother_front_diagonal_a.svg"), preload("res://assets/rig/mother_front_diagonal_b.svg")]
+	preload("res://assets/rig/mother_front_diagonal_a.svg"),
+	preload("res://assets/rig/mother_front_diagonal_c.svg"),
+	preload("res://assets/rig/mother_front_diagonal_b.svg")]
 const MOTHER_BACK_DIAGONAL: Array[Texture2D] = [
-	preload("res://assets/rig/mother_back_diagonal_a.svg"), preload("res://assets/rig/mother_back_diagonal_b.svg")]
+	preload("res://assets/rig/mother_back_diagonal_a.svg"),
+	preload("res://assets/rig/mother_back_diagonal_c.svg"),
+	preload("res://assets/rig/mother_back_diagonal_b.svg")]
 
 ## The escape scene's rig — the baby in her arms, no pram. Selected in place of the sets above
 ## whenever `carrying` is set; see `_mother_texture()`.
 const MOTHER_CARRYING_FRONT: Array[Texture2D] = [
 	preload("res://assets/rig/mother_carrying_front_a.svg"),
+	preload("res://assets/rig/mother_carrying_front_c.svg"),
 	preload("res://assets/rig/mother_carrying_front_b.svg")]
 const MOTHER_CARRYING_BACK: Array[Texture2D] = [
 	preload("res://assets/rig/mother_carrying_back_a.svg"),
+	preload("res://assets/rig/mother_carrying_back_c.svg"),
 	preload("res://assets/rig/mother_carrying_back_b.svg")]
 const MOTHER_CARRYING_SIDE: Array[Texture2D] = [
 	preload("res://assets/rig/mother_carrying_side_a.svg"),
+	preload("res://assets/rig/mother_carrying_side_c.svg"),
 	preload("res://assets/rig/mother_carrying_side_b.svg")]
 const MOTHER_CARRYING_FRONT_DIAGONAL: Array[Texture2D] = [
 	preload("res://assets/rig/mother_carrying_front_diagonal_a.svg"),
+	preload("res://assets/rig/mother_carrying_front_diagonal_c.svg"),
 	preload("res://assets/rig/mother_carrying_front_diagonal_b.svg")]
 const MOTHER_CARRYING_BACK_DIAGONAL: Array[Texture2D] = [
 	preload("res://assets/rig/mother_carrying_back_diagonal_a.svg"),
+	preload("res://assets/rig/mother_carrying_back_diagonal_c.svg"),
 	preload("res://assets/rig/mother_carrying_back_diagonal_b.svg")]
+
+## One distance-driven turn visits both open contacts with the shared passing pose between them.
+const MOTHER_GAIT_LOOP: Array[int] = [0, 1, 2, 1]
 
 const PRAM_SIDE := preload("res://assets/rig/pram_side.svg")
 const PRAM_FRONT := preload("res://assets/rig/pram_front.svg")
@@ -136,7 +170,7 @@ var slope_dir_at := Callable()
 ## radius for the whole rig, `Tuning.PLAYER_BODY_RADIUS` (14px) — already checked against the
 ## scene by `tests/test_events.gd`'s `_test_the_pram_is_the_size_the_rules_think_it_is` — and nothing
 ## here touches it. `pram_shape`'s own 12px radius still sizes the pram's shadow, cue and field,
-## which all keep the pram's drawn `PRAM_DISTANCE` (34px) offset; the pram's *collision* body is a
+## which all use the same presentation offset as its art; the pram's *collision* body is a
 ## separate, smaller datum — see `pram_body_shape` below.
 var shape := GroundShape.point(9.0)
 var pram_shape := GroundShape.point(12.0)
@@ -145,7 +179,7 @@ var pram_shape := GroundShape.point(12.0)
 ## recommendation, open to overturn** if the far half still reads as too much or too little to
 ## clip through. `PramCollisionShape2D`'s centre sits on the circumference of her own body
 ## (`Tuning.PLAYER_BODY_RADIUS`, 14px out along `facing`) rather than at the pram's drawn
-## `PRAM_DISTANCE` — *(PLAYTEST-57: "place the center of the stroller hitbox at the circumference
+## presentation offset — *(PLAYTEST-57: "place the center of the stroller hitbox at the circumference
 ## of the player hitbox", "and don't make it too big")* — so the pram's far half overlaps whatever
 ## it meets and she can stand against a wall while the pram no longer clips through a corner whole.
 ## `scenes/player/stroller.tscn`'s own `CircleShape2D` on `PramCollisionShape2D` carries this same
@@ -261,12 +295,11 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, Tuning.FRICTION * delta)
 	_update_view()
-	_pram_offset = Vector2.ZERO if carrying \
-			else Vector2(facing.x, facing.y * OBLIQUE_Y) * PRAM_DISTANCE
+	_pram_offset = pram_draw_offset()
 	if _pram_collision:
 		# Unsquashed, unlike `_pram_offset` above: the collision body stays in the plain 2D plane
 		# every other body in the game collides in, on the circumference of her own
-		# `Tuning.PLAYER_BODY_RADIUS` circle rather than out at the pram's drawn `PRAM_DISTANCE`.
+		# `Tuning.PLAYER_BODY_RADIUS` circle rather than out at the pram's drawn position.
 		_pram_collision.position = facing * Tuning.PLAYER_BODY_RADIUS
 	move_and_slide()
 
@@ -276,7 +309,7 @@ func _physics_process(delta: float) -> void:
 	if _shove != Vector2.ZERO:
 		move_and_collide(_shove * delta)
 		_shove = _shove.move_toward(Vector2.ZERO, Tuning.FRICTION * delta)
-	_walk_phase = wrapf(_walk_phase + velocity.length() * delta * 0.09, 0.0, TAU)
+	_advance_walk_phase(velocity.length() * delta)
 
 	# Stride cadence is driven by distance covered, so it stays in step at any speed.
 	_alert_phase = wrapf(_alert_phase + delta, 0.0, 1.0)
@@ -503,10 +536,10 @@ func baby_cue_aside() -> float:
 ## of the line, so a diagonal walk takes the southward lift, over a pram that was never behind her
 ## to begin with.
 ##
-## Asked as geometry instead, because it is a question about geometry: `pram_offset` carries
-## `facing.x` at full `PRAM_DISTANCE`, so the pram is 24px to one side on a diagonal and 34px on
-## a due east or west, and only a due north or south leaves it in her column at all. That is
-## **six of the eight facings** it has nothing to do on, where the axis test said four.
+## Asked as geometry instead, because it is a question about geometry: the presentation offset
+## carries a horizontal component on every diagonal, and only a due north or south leaves the pram
+## in her column. That is **six of the eight facings** it has nothing to do on, where the axis test
+## said four.
 ##
 ## It is a distance rather than `absf(facing.x) > absf(facing.y)` for a second reason worth
 ## keeping: `_turn_toward` rotates by an angle and normalises, so on a diagonal the two components
@@ -518,7 +551,7 @@ func _pram_shares_her_column() -> bool:
 	# position on every facing, so it shares her column on all eight rather than on two.
 	if carrying:
 		return true
-	return absf(facing.x) * PRAM_DISTANCE < Tuning.PLAYER_BODY_RADIUS
+	return absf(pram_draw_offset().x) < Tuning.PLAYER_BODY_RADIUS
 
 ## How far above the pram the cue floats, which is more on exactly one of the eight facings.
 ##
@@ -530,8 +563,8 @@ func _pram_shares_her_column() -> bool:
 ## unconditional.
 ##
 ## South**-east** and south-west are not that facing, whatever they have in common with it: the
-## pram is already 24px to one side, nothing is behind anything, and the extra `FIGURE_HEIGHT`
-## would lift the cue off a pram it is supposed to be sitting on.
+## pram already has enough horizontal separation to sit outside her column, and the extra
+## `FIGURE_HEIGHT` would lift the cue off a pram it is supposed to be sitting on.
 func baby_cue_lift() -> float:
 	if _pram_shares_her_column() and facing.y > 0.0:
 		return BABY_CUE_LIFT + FIGURE_HEIGHT
@@ -645,6 +678,25 @@ func run_excess_ratio() -> float:
 		return 0.0
 	return clampf(excess / (Tuning.RUN_SPEED - Tuning.WALK_SPEED), 0.0, 1.0)
 
+## Where the visible pram, its shadow, baby cue and debug field sit relative to the mother's feet.
+## The south-facing view needs less depth than the north-facing view because its handle is higher
+## inside the registered texture. The sign choice remains continuous at east and west: the
+## directional Y contribution reaches zero before its distance changes.
+func pram_draw_offset() -> Vector2:
+	if carrying:
+		return Vector2.ZERO
+	var vertical_distance: float = PRAM_SOUTH_DISTANCE if facing.y > 0.0 else PRAM_NORTH_DISTANCE
+	var north_diagonal_adjustment := 0.0
+	if facing.y < 0.0:
+		# The normalized x² * y² term peaks at a 45° diagonal, so the selected maximum is the
+		# visually selected correction without introducing a view-sector snap.
+		north_diagonal_adjustment = (4.0 * facing.x * facing.x * facing.y * facing.y
+				* PRAM_NORTH_DIAGONAL_CONTACT_ADJUSTMENT)
+	return Vector2(
+			facing.x * PRAM_HORIZONTAL_DISTANCE,
+			facing.y * vertical_distance * OBLIQUE_Y + PRAM_VERTICAL_LIFT
+			+ north_diagonal_adjustment)
+
 # ------------------------------------------------------------------ drawing ---
 
 func _draw() -> void:
@@ -671,19 +723,31 @@ func _draw() -> void:
 	_draw_baby_cue(pram_offset)
 	_draw_alert()
 
-## The stride is two frames rather than a procedural swing: with the legs drawn into the sprite
-## there is nothing left to swing. The frames carry the body's bob too, which is why nothing here
-## offsets her vertically. The source texture's native size supplies the complete geometry.
+## The source texture supplies the complete body geometry, including the stride and its small bob.
 func _draw_mother(gait: float) -> void:
-	var stepping := gait > 0.05 and sin(_walk_phase * 2.0) > 0.0
-	var frame := 1 if stepping else 0
-	Sprites.draw_standing(self, _mother_texture(frame), Vector2.ZERO, Vector2.ZERO,
+	Sprites.draw_standing(self, _mother_texture(_mother_gait_frame(gait)), Vector2.ZERO, Vector2.ZERO,
 			_mother_is_mirrored())
+
+## Distance advances the gait so slowing down changes cadence without changing the depicted loop.
+func _advance_walk_phase(distance: float) -> void:
+	_walk_phase = wrapf(_walk_phase + distance * 0.09, 0.0, TAU)
+
+## Both mother states use contact, passing, opposite contact, passing over one full turn. Keeping
+## that loop on `TAU` preserves the contact/passing change frequency instead of doubling step rate.
+func _mother_gait_frame(gait: float) -> int:
+	if gait <= 0.05:
+		return 1
+	var quarter := int(floor(_walk_phase / (TAU / 4.0))) % MOTHER_GAIT_LOOP.size()
+	return MOTHER_GAIT_LOOP[quarter]
 
 ## The pram has authored front, back, side and diagonal projections. A hood belongs to its own
 ## three-quarter body plane, rather than sliding across an unchanged basket as the rig turns.
 func _draw_pram(at: Vector2) -> void:
-	Sprites.draw_standing(self, _pram_texture(), at, Vector2.ZERO, _pram_is_mirrored())
+	var texture := _pram_texture()
+	Sprites.draw_standing(self, texture, at, _pram_draw_size(), _pram_is_mirrored())
+
+func _pram_draw_size() -> Vector2:
+	return _pram_texture().get_size() * PRAM_VISUAL_SCALE
 
 ## The mother texture selected by the live drawing path for a gait frame.
 func _mother_texture(frame: int) -> Texture2D:

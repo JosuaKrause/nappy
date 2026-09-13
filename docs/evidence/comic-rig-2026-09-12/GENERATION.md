@@ -7,7 +7,14 @@ inputs rather than contours to trace. The two approved reference images define t
 language: expressive dark ink, purposeful anatomy and construction, painted material folds and
 deliberate shadow planes.
 
-The runtime derivatives keep every source canvas dimension and bottom-center anchor. They preserve
+The pram derivatives supply the runtime stroller assets. The pushing derivatives preserve
+**P1 — Two-pose push**; the current family is
+[P2 — Three-pose push](../comic-pushing-strides-2026-09-12/GENERATION.md).
+The carrying rows and their registered PNGs are retained rejection evidence for PLAYTEST-65.
+The active carrying family is documented in
+[F — Hip motion](../comic-carrying-hip-motion-2026-09-12/GENERATION.md).
+
+The registered derivatives keep every source canvas dimension and bottom-center anchor. They preserve
 the generated comic silhouettes and transparent gaps, so they do not reuse the SVG alpha. This is
 required for the newly drawn shoulders, elbows, legs, coat shapes, hood curves, bassinet depth and
 wheels to survive registration. `registered/registration.json` records the source occupancy,
@@ -59,6 +66,10 @@ style reference or runtime source.
 `pram-atlas-generated-v2.png`, is 2172×724 RGB with one row ordered front, back, east profile,
 southeast three-quarter and northeast three-quarter. The five views share one low navy bassinet,
 cream hood, short handle and small wheel family. The baby appears only through the front openings.
+The labels here identify upstream generation cells. The
+[stroller view recipe](../stroller-view-assignment-2026-09-12/GENERATION.md) owns their final
+runtime travel directions: the baby/opening is visible in N/NE/NW, the outside hood in S/SE/SW,
+and E/W retain the side image. Do not infer a runtime reassignment from these source labels.
 
 The pram generator painted a neutral checkerboard despite the prompt requesting transparency.
 `pram-background-prompt.txt` uses the built-in image generator to replace that background with
@@ -103,8 +114,9 @@ uv run python docs/evidence/comic-rig-2026-09-12/convert.py register \
   docs/evidence/comic-rig-2026-09-12/pram-atlas-background-corrected.png
 ```
 
-The 25 files in `registered/rig/` are the bytes copied into
-`assets/illustrated/svg-transfer/rig/`. Existing `.import` files remain untouched, preserving each
+The pram files in `registered/rig/` match the bytes in
+`assets/illustrated/svg-transfer/rig/`; the mother files preserve the named review snapshots.
+Existing `.import` files remain untouched, preserving each
 Godot resource identity. Import/boot and the focused visual, stroller, presentation and orientation
 suites verify that each derivative loads at its SVG's native dimensions, contains visible art,
 retains real transparency within its artwork bounds and touches its canvas-bottom ground line. The

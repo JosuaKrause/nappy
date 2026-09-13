@@ -1,0 +1,42 @@
+{
+  "source": {
+    "path": "/Users/krause/workspace/nappy-codex/docs/evidence/comic-carrying-hip-motion-2026-09-12/raw/carrying-f-selected.png",
+    "sha256": "27ba7489bf0efbf9e475c72bbd7f7670841c7111a0703355641122873ad8f7fb",
+    "dimensions": [
+      1380,
+      1140
+    ]
+  },
+  "pillow_version": "12.3.0",
+  "operation": "whole-row crop only; source pixels are not edited",
+  "rows": {
+    "a": {
+      "path": "a-row.png",
+      "bounds": [
+        0,
+        0,
+        1380,
+        400
+      ],
+      "dimensions": [
+        1380,
+        400
+      ],
+      "sha256": "16a2395bc8f419de6b1cfa23ef1b248a151df4c805f40986aae95dca872b265a"
+    },
+    "c": {
+      "path": "c-row.png",
+      "bounds": [
+        0,
+        400,
+        1380,
+        755
+      ],
+      "dimensions": [
+        1380,
+        355
+      ],
+      "sha256": "1970da32afc545dd4c3c9f0c747a464eb74dce27e60cc67b093530b948757540"
+    }
+  }
+}

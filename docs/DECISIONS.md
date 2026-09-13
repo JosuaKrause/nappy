@@ -1,5 +1,636 @@
 # Decisions
 
+## M109 — Southern wheel arrangement from frozen views — 2026-09-12
+
+PLAYTEST-65 asks to use the displayed SE wheels for SW “and vice versa”, then explicitly
+requests wording that cannot cause a second application. The final arrangement is defined
+relative to a frozen source: SE takes that source's displayed SW wheel assembly, and SW takes
+its displayed SE assembly. Each body, canopy, handle and grounded height stays fixed. The
+player says “the rest looks good”, accepting the northern contact adjustment and stoop face.
+
+The recipe reflects the complete wheel footprint about the canvas center using simultaneous
+RGBA replacement over the union of original and reflected attachment masks. The runtime's
+ordinary SW reflection supplies the reciprocal result. Frozen-source hash validation rejects
+using the output as a new input, and fresh builds reproduce identical pixels. Documentation
+identifies this final stage explicitly instead of instructing a future session to swap installed
+textures. The upstream direction assignment and donor extraction remain reproducible stages.
+
+The player's visual confirmation defines the final cues: SW has its leftmost wheel in shadow
+and red axles on the right of the other two wheels; SE has its rightmost wheel in shadow and
+red axles on the left of the other two. The final paired comparison matches these cues.
+The player then confirms the main checkout looks correct, accepting this wheel arrangement.
+
+
+## M109 — Southern diagonal stroller wheel reuse — 2026-09-12
+
+PLAYTEST-65 requests correcting the SE/SW wheel plane without changing its grounded height,
+first trying pixel mirroring and then suggesting the NE/NW wheels as donors. The final SE
+derivative copies the NE wheel and lower attachment pixels without mirroring; runtime supplies
+the SW reflection. The three half-open donor bounds are (5,22,13,29), (13,23,23,30) and
+(24,21,32,29). The body above those attachments, canopy, handle, canvas and occupied height stay
+fixed. The direction assignment remains authoritative and must not be reversed again.
+
+Review rejected the mirrored donor and a partial transplant that left old wheel pixels beneath
+transparent donor pixels. Exact RGBA replacement, including donor transparency, clears those
+remnants and includes the complete wheel edges. Frozen inputs, masks, hashes, native comparisons
+and the paired SE/SW enlarged review are retained in the wheel reuse recipe. Its rebuild matches
+the installed PNG byte-for-byte; the other four stroller PNGs retain their assignment hashes.
+
+
+## M109 — Stoop bottom step face — 2026-09-12
+
+PLAYTEST-65 requests copying an existing brown step-wall band below the stoop and compressing the
+result back to its native height. The final recipe takes rows 19–24 from the accepted registered
+stoop, appends them as rows 32–37, then uses nearest-neighbor resampling from 32×38 to 32×32.
+The complete dark edge and brown face create the bottom riser without inventing colors. Review
+rejected an initial one-row seam and corrected an input that bypassed accepted joint registration.
+The installed derivative starts from the accepted tile; the other six paving PNGs and shared
+sidewalk/alley bases remain byte-identical.
+
+The dedicated recipe validates the registered input hash, records strip bounds, source/output/
+script hashes and Pillow version, and verifies the final runtime paving family. The earlier
+paving registration remains immutable upstream. Native-size verification and enlarged before/after
+review pass, and the frozen rebuild matches the installed stoop exactly.
+
+## M109 — Northern diagonal stroller hand contact — 2026-09-12
+
+PLAYTEST-65 asks to lower NE/NW slightly and explicitly retains the SE/SW hand gap because
+closing it would make the stroller float. The selected north-diagonal correction is 2 screen
+pixels downward. It is chosen visually across frozen P2 contact A, together C and contact B
+assemblies, not inferred from an unrecorded landmark-distance measurement. The term is
+`4*x*x*y*y*2` for northward normalized facing and zero for every southern facing. It peaks at
+the two northern diagonals and fades smoothly to zero at N/E/W without consulting texture sectors.
+The 24/17/9 axis distances, 0.7 projection, 7/6 scale and physical body remain unchanged.
+
+The initial proposed normalization peaked above its stated bound; review replaced it with the
+squared-axis product and added a bound sweep plus explicit SE/SW preservation checks. The
+saved comparison, frozen sources and metadata reproduce exactly. Root import/boot and focused
+stroller, orientation, visuals and presentation-mode checks verify integration; the static
+review does not establish live-turn appearance.
+
+## Codex delegation after visible usage-limit messages — 2026-09-12
+
+During the graphics work the orchestrator treated earlier delegated-agent usage-limit messages
+as continued unavailability and finished bounded implementation locally. The player corrects that
+assumption: “when you see usage limit errors that means they are already resolved. if the usage
+limit was reached you wouldn't see anything.” The orchestrating skill now explicitly treats
+visible limit messages as resolved and resumes normal cheaper-model delegation for the next
+bounded task. Final read-only graphics verification is delegated to gpt-5.6-luna at medium effort.
+
+## M109 — Stroller travel-direction assignment — 2026-09-12
+
+PLAYTEST-65 overturns the canopy correction after identifying the direction mismatch: the
+original side texture was correct, while the other six directions belonged to their opposites.
+Asked for a side-canopy flip · overturned by the player on 2026-09-12 to restoration of the side
+image and N ↔ S, NE ↔ SW, NW ↔ SE assignment. The side image is restored byte-for-byte.
+The end-view files exchange without pixel changes. Diagonal files exchange and mirror horizontally,
+because the runtime stores east-authored slots and derives west through its own mirror.
+Mother artwork, draw transforms, dimensions, ground anchors and accepted paving stay unchanged.
+
+The final visual contract is recorded in the illustrated-PNG skill, GRAPHICS, VISUALS and the
+new recipe: N/NE/NW show the baby and canopy opening; S/SE/SW show the outside of the hood;
+E/W retain the original side image. Direction means travel, and upstream front/back filenames
+are not a reason to invert this assignment. The player explicitly asks for notes that prevent a
+future session from repeating the swap and undoing the correction. The deterministic recipe reads
+frozen originals only, validates their hashes and cannot toggle installed runtime files.
+
+The canopy experiment and script are committed before deletion as requested; they remain
+recoverable from commit f47af18. Their working-tree directory and live recipe links are removed
+in this following correction commit. `docs/evidence/stroller-view-assignment-2026-09-12/` keeps
+the useful final mapping, immutable PNG/SVG inputs and labeled eight-direction comparison.
+Its frozen rebuild is byte-identical. Static view review establishes assignment, while live-turn
+appearance remains a human-review item.
+The root import/boot check, focused visuals, stroller/gait, orientation and presentation-mode
+suites, lint and whitespace checks pass. The restored side texture matches its source bytes,
+and the accepted paving has no diff during this correction.
+
+## M109 — Accepted paving joints and shared damage variations — 2026-09-12
+
+PLAYTEST-65 asks for boundary joints on every rectangular floor and selects the sidewalk material
+from PR #138. The registered sidewalk, quiet square, precinct, courtyard, alley and stoop copy
+their existing interior joint pixels to the appropriate tile boundaries, preserving staggered
+courses. The plaza already has complete joints and keeps its pixels. Matching authored SVGs
+express the same closed slab layout. The player reviewed the main checkout and accepted the
+family: “the tiles look good we can use them.” The paving and quiet-square review items close.
+
+The paving recipe freezes immutable material inputs and records exact source-to-destination
+pixel copies for each accepted 32×32 output, plus hashes and native/enlarged repeat reviews.
+An intermediate agent input set was contaminated by edited runtime outputs and was discarded.
+The final recipe recovers the reviewed arrangement from immutable originals; its frozen rebuild
+is byte-identical and verifies against all seven installed tiles and the sidewalk/alley layer bases.
+The separate layer assembly recipe freezes these final registered floors so regeneration cannot
+restore incomplete boundary joints. Original material inputs remain separate for damage extraction.
+
+Damage uses six shared variations per severity across road, sidewalk and alley. Existing source
+IDs preserve their base and severity; city seed and cell select a stable common-pool variant.
+Six sidewalk-origin stencils remove residual pale slab-grid pixels while retaining dark fissures
+and green growth at crossings. A stale color variable in an intermediate cleanup clipped the
+foreground and was corrected before integration. Runtime atlas strips review all nine
+surface/severity combinations. Unwanted baked PR composites are removed from frozen runtime
+targets too, while accepted original damage artwork remains available to reproduce the stencils.
+
+The combined layer bundle rebuilds byte-for-byte and verifies every installed base, component
+and source-ID contract. Root import/boot, focused ground-layers, visuals and presentation-mode
+suites in PNG and SVG modes pass. Full-suite verification remains CI's merge-result gate.
+
+## M109 — Side-facing stroller canopy — 2026-09-12
+
+PLAYTEST-65 identifies the reversed canopy in the two side views and explicitly requests an
+upper-texture flip excluding the handle. The side PNG mirrors rectangle `(11, 0, 33, 16)` with
+exclusive bounds. Pixels outside it, including the handle and lower chassis/wheels, are identical.
+The runtime's existing west mirror supplies the other corrected side. Other stroller facings,
+mother sprites, ground anchors and animation are unchanged. The existing SVG already places the
+hood beside the handle and remains the subject authority.
+
+`docs/evidence/stroller-side-canopy-2026-09-12/` preserves inputs, their hashes, the deterministic
+pixel operation and labeled east/west 12× comparison. The canopy closes beside the handle in both
+reviewed textures. Root import and focused visual checks pass; its in-game appearance waits in
+`REVIEW.md`.
+
+## M109 — Forest ground and runtime damage assets — 2026-09-12
+
+PLAYTEST-65 re-reports noisy grass and provides a running-game screenshot from seed 3339657913.
+The screenshot matches `forest.png`, source 17, rather than park grass, source 12. Both files
+are unchanged by the sidewalk selection; the omission is in the layer binding. Forest now uses
+the same soft, rotationally averaged grass base and sparse clump atlas as parks. Its source ID,
+calm behavior, tree placement and other gameplay properties remain unchanged.
+
+`docs/evidence/grass-runtime-2026-09-12/` boots the actual Main scene without overriding the
+texture mode and records the live Ground node's atlas and cells. In the shared checkout, the
+reported seed loads 256×32 park and forest atlases and selects varied cells around the reported
+location. The photographed player cell (42,26) is precinct paving; the wooded cells to its west
+are source 17. The root import/boot and runtime probe pass, and its ground-only crop shows the
+soft forest surface. The complete player's run is retained under the dated session-capture
+archive, including its screenshot, day map and run log.
+
+The player also points out that baked crack-and-floor PNGs no longer belong in runtime assets.
+All eighteen road, sidewalk and alley baked damage PNGs and their import sidecars are removed.
+The accepted source drawings from 83a60d1522574714ce038dff3a607a536d800614 remain frozen inputs
+to the stencils; redundant PR composites are deleted without a new archive, as explicitly asked.
+Transparent components and authored SVG fallbacks remain. Import/boot, focused ground/visual
+checks and lint pass with the baked family absent.
+
+## M109 — Muted plaza material and selected sidewalk source — 2026-09-12
+
+PLAYTEST-65 asks for plaza paving with the quiet square's muted, low-contrast stone constraints.
+The retained generator output uses a larger single slab with edge joints and a cool slate palette.
+Direct LANCZOS registration makes an opaque 32×32 PNG; mean RGB brightness falls from 149.5589
+to 93.6289. The raw image, exact prompt, source SVG, approved quiet-square input and neighboring
+materials are retained in `docs/evidence/plaza-paving-2026-09-12/`. Its portable frozen-input
+rebuild reproduces the complete bundle byte for byte. Root import/boot and focused visual checks
+pass. The player's subsequent boundary-joint instruction applies to this material too.
+
+The same playtest selects the sidewalk from PR #138, revision
+62d1c344dccbf77e7cb8052ea09b337a76ce994e, as the shared floor. The source PNG blob is
+af36579547f3f1795a7549c4f3227a2a9e9f58db and SHA-256 is
+a86c9cdff2ca96f1d5016a7b997d506e0a1452174a06cadd9a51b50eafff0c28.
+It is installed byte for byte in the normal sidewalk path and shared layer path; every overlay
+remains separate. Frozen layer, quiet-square and plaza bundles rebuild byte for byte with these
+neighbor inputs. Repeated layout review and the player's report then identify missing boundary
+joints: center joints alone let adjacent rectangles merge. The follow-up preserves this selected
+material while completing the paving family's boundary joints.
+
+## M109 — Rotational smoothing for the grass base — 2026-09-12
+
+PLAYTEST-65 applies the asphalt smoothing method to the soft grass base. The preparation recipe
+now takes the radius-four blurred grass and averages its 0°, 90°, 180° and 270° orientations with
+equal RGB-channel contributions. This is an offline base operation; clumps remain separate
+transparent components placed by the engine.
+
+The base's mean RGB-channel brightness is 109.2292, and all four edge means are 110.625.
+Mean absolute difference between opposite edge pixels across both axes is 1.5833 on the 0–255
+channel scale. Native and 4× repeats show a continuous soft green field without a directional
+brightness step. The installed base hash is
+566c0e7169f4fd34e81af5396d9a15a379e6e47ee853e68dbaace1c56fbb8a19.
+
+The grass component pixels, source-ID contract, asphalt and damage artwork remain unchanged.
+The quiet-square comparison uses the smoothed grass base while preserving its generated paving,
+SVG input and brightness reference. The retained-input rebuild reproduces both evidence bundles,
+and component verification, import/boot and lint pass. The runtime park review uses the retained
+engine-layout capture recipe with the shared floor materials.
+
+## M109 — Muted quiet-square paving — 2026-09-12
+
+PLAYTEST-65 reports that the illustrated quiet square is too bright and stands out negatively.
+The built-in image generator redraws the existing four-slab SVG concept as darker cool slate,
+using the approved urban/cardinal references for style and the sidewalk for neighboring material
+values. The native 32×32 tile stays fully opaque with large, low-contrast slab joints and no
+objects, curb or street paint. Registration is a direct LANCZOS downsample of the retained output;
+the runtime uses the same source mapping and geometry.
+
+The RGB-channel mean falls from 127.2796 to 99.7236. A separate weighted brightness measurement
+using 0.2126R + 0.7152G + 0.0722B falls from 130.0525 to 98.5561. Repeated native and enlarged
+tiles retain clean joins and sit between the darker asphalt and warmer sidewalk without a pale
+focal patch. These measurements describe the images before the game's palette modulation.
+
+`docs/evidence/quiet-square-2026-09-12/` retains the exact prompt, raw generator output, approved
+style references, rendered SVG input and its renderer, frozen comparison materials, and guarded
+registration/install scripts. Its frozen-input rebuild is independent of the installed PNG.
+The runtime asset's SHA-256 is ab2778c32eba5d5719211a501baeb6fd85153a34cf736370c62174f568961029.
+The shared checkout passes import/boot, the focused visual suite and doc/XML lint.
+The open visual question is whether its muted stone remains recognizable as a quiet square in
+gameplay; that is recorded in `REVIEW.md`.
+
+## M109 — Shared ground bases and engine-composed details — 2026-09-12
+
+PLAYTEST-65 replaces independently textured ground variants with one base per material and
+transparent detail layers. Sidewalks share one floor beneath curbstones, red main-street edge
+paint and damage. Normal and main roads share one asphalt beneath yellow lines and crosswalks;
+alleys have their own base. The player explicitly places those blends, and grass-feature placement,
+inside the engine. Only smoothing the asphalt base is an offline graphics operation.
+
+The asphalt recipe averages the normal-road texture at 0°, 90°, 180° and 270° with equal channel
+weights. A wrapped-offset candidate uses offsets (0,0), (16,16), (8,24) and (24,8). Comparing
+opposite edge pixels in both axes gives mean absolute RGB errors of 0.625 for the plain rotational
+mean and 0.792 for the offset candidate. The plain mean is selected; each edge's mean RGB-channel
+brightness is 73.5625. Repeated native and enlarged previews show no directional brightness skip.
+
+All eighteen sidewalk, road and alley hairline/cracked/broken A/B damage stencils retain the
+illustrated artwork accepted by the player from 83a60d1522574714ce038dff3a607a536d800614.
+Independent-base image differences retained too much floor, and tight color thresholds broke
+fissures into dots. Audited foreground regions and color segmentation preserve the original crack,
+hole, debris and growth pixels while excluding floor-only joints. Three complete grass clumps are
+extracted from the illustrated grass tile; a Gaussian blur of radius four supplies its soft base.
+Fixed crop boxes based on SVG clump locations clipped the illustrated plants and were rejected.
+
+`GroundLayers` composes the separate 32×32 PNG components into a presentation TileSet. The authored
+TileSet remains the input for each repaint, preventing repeated blending. Empty overlay pixels
+preserve the base exactly. Grass uses eight generated atlas arrangements containing zero, one or
+two whole clumps, with cell selection hashed from the city seed and coordinates. This bounded
+atlas is an implementation choice for sparse variation without per-frame image work. Component
+placement keeps each clump's visible bounds inside the tile. Source IDs, map selection and
+gameplay geometry stay fixed; SVG mode retains authored vector textures.
+
+The component manifest's source mappings are checked against the authored TileSet. Integration
+review caught reversed road/sidewalk damage groups, reversed east/west main crossings and grass
+filenames where component IDs were required. Focused checks cover those distinctions and verify
+that the actual grass atlas exists, so a fallback cannot silently hide a failed composition.
+The JSON manifest has an explicit export include rule; a local web export contains the manifest
+and component resources without publishing a release.
+
+`docs/evidence/layered-ground-2026-09-12/` keeps component SVG/PNG pairings, frozen inputs, exact
+stencils, both asphalt recipes and an assembly script whose retained-input rebuild matches the
+bundle byte for byte. `docs/evidence/layered-ground-layout-2026-09-12/` captures the engine's
+composed texture pixels in seed 4242 streets, junctions and parks on days 1 and 14. Native and 4×
+ground-only assemblies show shared paving through curb joins, aligned markings and sparse grass.
+They establish static layout appearance; playtest questions remain in `REVIEW.md`.
+
+The shared checkout passes import/boot, focused `ground_layers`, `visuals` and `presentation_mode`
+suites in both PNG and forced-SVG modes, and doc/XML lint. The frozen-input component rebuild
+matches the retained bundle byte for byte, and the installed manifest and PNG hashes verify
+against it. Repeating the engine capture in the shared checkout reproduces every saved PNG and
+source-grid JSON byte for byte. The full suite remains CI's gate.
+
+## M109 — Player SVG creation references and runtime artwork — 2026-09-12
+
+PLAYTEST-65 asks to preserve the SVGs revised for high-fidelity player graphics separately and
+restore the older in-game SVGs, then clarifies that newly introduced SVGs should stay. The twenty
+pre-existing mother SVGs are restored byte-for-byte to the PR base,
+83a60d1522574714ce038dff3a607a536d800614. The ten new together-frame SVGs remain unchanged.
+All thirty high-fidelity creation SVGs are preserved in `docs/graphics-creation/player/`, with
+runtime/source/PNG pairings, hashes, dimensions and F/P2 recipe links in its manifest.
+
+The accepted illustrated PNGs, their registration, animation bindings and pram placement do not
+change. The runtime SVGs remain the explicit SVG-mode and missing-PNG fallback; the dedicated
+creation folder stays outside runtime imports. XML validation, import/boot, the focused SVG
+visuals/stroller suites and doc lint pass. The byte comparisons establish the requested restoration;
+the generation-reference family remains available without replacing the runtime SVG art.
+
+## M109 — Sidewalk joins in actual street layouts — 2026-09-12
+
+PLAYTEST-65 reports that the sidewalk is still not continuous and requests tiles placed as they
+appear in the game. The earlier three-cell neighbor strips were insufficient to establish
+continuity through repeated runs and junction corners. The review now uses the actual generated
+map and `GroundTiles.source_for`, retaining both two-tile sidewalk bands and the six-tile street.
+The accepted F/P2 mother artwork, curb textures and runtime placement remain unchanged.
+
+Inspection of the current 32×32 PNGs finds the plain sidewalk's strongest middle horizontal joint
+at row 15, east/west curb joints at row 14, the south curb at row 13 and the north curb at row 15.
+The measurement takes the minimum row-mean RGB brightness over rows 10–19 and columns 4–27,
+excluding the side curb strips. Thus a family can share a broad paving pattern and still have
+misaligned joints. Actual-layout evidence is a diagnosis of the current tiles, not a claim that
+the remaining material and seam correction is complete.
+
+`docs/evidence/sidewalk-layout-review-2026-09-12/` retains seed 4242 at days 1 and 14, with
+12×12 ordinary and main-road junction crops at `[25,25,12,12]` and `[109,25,12,12]`, plus
+6×14 vertical and 14×6 horizontal street runs. The capture uses the game's generator, day repaint,
+ground selector, TileSet and texture resolver. Native and nearest-neighbor 4× CPU assemblies place
+the selected 32×32 PNGs edge-to-edge, with labels outside the tile areas. They are ground-only
+assemblies, not gameplay screenshots; building-covered cells have no ground tile.
+
+Visual review confirms a brighter, more textured curb-paving band beside the plain interior and
+misaligned slab joints through repeated runs. Day 14 also records all six damaged sidewalk
+variants in their actual map positions. The saved source-ID grids, resolved texture paths, input
+hashes and frozen PNGs make the exact comparisons reproducible. A fresh rebuild matches the layout,
+input tiles, ten crops and four sheets byte for byte; CLI rejection checks, Python static checks
+and doc lint pass. No runtime texture or code changes are part of this review. Sidewalk repair
+remains in `TODO.md`, with the accepted curb and mother artwork preserved.
+
+## M109 — Current walking artwork accepted — 2026-09-12
+
+After accepting the leg movement and noting apparent size changes, the player clarified:
+"actually how it is right now is good" (PLAYTEST-65). The proposed size-stabilization item was
+withdrawn before any asset or registration changes. F — Hip motion and P2 — Three-pose push
+remain the accepted current version; no additional body-size adjustment is requested.
+The player then confirmed "in game it looks nice" and specified "whatever is checked out in
+this folder right now". The shared checkout's runtime assets and code are byte-identical to
+6ae1a3c4ce8e4b67497822b90466cce0786bb606; subsequent commits through this acceptance contain
+documentation only. This is acceptance of the actual in-game result, not just its review GIF.
+
+## M109 — Three-pose pushing and sidewalk continuity — 2026-09-12
+
+PLAYTEST-65 accepted the grounded stroller scale and requested the same three-pose walking
+structure for pushing. P1 — Two-pose push is preserved as the original family; P2 — Three-pose
+push supplies fifteen SVG-first full-figure PNGs. A and B are opposite contacts, with C between
+them and selected whenever the mother stops. Both carrying and pushing share the distance-driven
+A/C/B/C selector. The existing walk-clock rate, pram drawing scale and offsets, collision geometry,
+controls and touch radii remain unchanged.
+
+The first pushing generation repeated leading legs. Targeted full-figure edits corrected the
+front contact, then profile and northeast hip-to-shoe ownership. The standing row was generated
+separately to retain adult proportions. Horizontal registration uses the original upper-body
+centroid so changing foot spread cannot shift her grip. The final selection combines whole
+figures from the recorded batches without anatomical splicing. Source sheets, displayed review
+passes, raw inputs, exact prompts, extraction scripts, native/enlarged GIFs and grounded contact
+sheets are retained in `docs/evidence/comic-pushing-strides-2026-09-12/`.
+
+The same playtest found that the sidewalk did not continue the accepted road-edge paving.
+Source review showed the SVGs already shared their slab layout, fill and joints; the mismatch was
+in the generated PNG materials. The seven sidewalk surfaces now share paving edited from the
+accepted north curb, with damage variants edited from that same base. All eight curb textures
+and the road controls remain byte-identical. The accepted east curb retains its brighter material
+variation. Tile size, full opacity and placement remain fixed, and no city behavior changes.
+
+`docs/evidence/sidewalk-continuity-2026-09-12/` preserves before/source/after neighbor panels,
+repeated and isolated damaged cells, raw edits, prompts, source hashes and fixed-cell registration.
+New-directory rebuilds compare the saved tile and panel bytes and reject changed source, raw,
+reference and dependency inputs. The source/before comparison uses its pinned source revision,
+so installing the new sidewalk does not silently change what the before panel depicts.
+
+Focused runtime checks cover both state selectors, all facings, together idle and PNG/SVG
+resolution. Native assemblies cover the art and ground contact; live turns and state transitions
+remain human visual-review questions in `docs/REVIEW.md`. The full test suite runs in PR CI.
+
+## M109 — Whole-figure carrying registration — 2026-09-12
+
+F — Hip motion applies the player's annotated correction to E's high-resolution atlas: the front
+contacts alternate the leading leg, front C stands with both feet planted, and the northeast
+contact retains its travel axis. The player first flagged the NE pair as repeated, then said
+"Okay now it's better" (PLAYTEST-65). The improved atlas supplies the ten whole contact figures;
+the registered PNGs do not use E's fixed-upper-row splice.
+
+The first direct registration exposed short legs in the generated C row. Fitting all figures to
+45 pixels made C's head and coat larger. A whole-atlas proportion edit did not supply sufficient
+room, so the final C row was generated separately from exact A/C whole-row crops. The final
+registered coat hem is around y27 for C and y29–30 for the contacts, with continuous full figures
+and comparable heads; these are posed drawings, not identical upper pixels. The workflow rule
+now compares head, coat and hand landmarks as well as total stature.
+
+`docs/evidence/comic-carrying-hip-motion-2026-09-12/` preserves the annotation, frozen SVGs,
+source renderers, exact prompts and input roles, displayed raw outputs, whole-row crop script,
+registration configs and native/enlarged A/C/B/C sheets and GIFs. Fifteen runtime PNGs are exact
+copies of the final registration; import identities are unchanged. The final and first-pass
+registrations reproduce from frozen inputs. GIF validation checks the actual four 190 ms frames,
+three distinct states, the duplicate C phase and the eight runtime directions. These are sprite
+assemblies; no additional live gameplay capture accompanies F.
+
+## M109 — Carrying gait anatomy review — 2026-09-12
+
+The player's annotated high-resolution E atlas narrowed the illustrated correction to its
+front A/C/B column and back-diagonal B legs: "If you fix those two issues the scaled down version
+should look good." This superseded the broader redraw brief. E's high-resolution figures became
+the explicit edit target, preserving unmarked poses; the low-resolution fixed-row splice remains
+rejected. The stroller grounding was accepted separately, while the same leading-leg/two-frame
+problem was reported in the pushing animation and entered the queue as its own correction.
+
+PLAYTEST-65 rejected E's NE/NW stride direction, SE/SW's resemblance to the south view, visible
+seams and recolored legs joined to fixed hips. The registration script preserved D's upper
+34 pixel rows and composited newly generated lower legs underneath. That kept the pelvis and
+coat hem fixed while the lower legs attempted a full swing. The player correctly identified
+the assembly; the fixed-row invariant was an implementation choice, not a requested constraint.
+
+The opposite back-diagonal contact also reversed the diagonal foot alignment. Along NE travel,
+the leading ground position must remain upper right and the trailing position lower left in
+both open contacts; the anatomical legs exchange those positions. Reversing which end of that
+axis is lower depicts a different direction. SE similarly keeps its leading position lower right
+and trailing position upper left, with a three-quarter pelvis and torso. West views mirror these.
+
+The correction is named F — Hip motion. Its source review covers the hips, thighs, knees, shoes
+and lower coat as continuous anatomy before illustrated transfer. D supplies identity through
+its source concept and reviewed rendering; preserving identity does not require freezing an
+image across a moving joint. E's raw outputs, registered sprites, source previews and assembly
+recipes remain intact as the reviewed evidence. The runtime's three-pose A/C/B/C selection and
+together idle already satisfy the requested frame order and remain independent of this art repair.
+
+## M109 — Grounded stroller scale — 2026-09-12
+
+PLAYTEST-65 identified floating wheels after the hand-contact adjustment and suggested enlarging
+the stroller so its handle-to-wheel height matches the mother's hand-to-foot height. The selected
+drawing scale is 7/6 about the unchanged bottom-center anchor: 42×35 side/diagonal and 35×35
+front/back draw rectangles from the existing PNGs and SVGs. No art was regenerated. Placement
+uses horizontal distance 24px, north 17px, south 9px, the existing 0.7 Y projection and no fixed lift.
+
+East and west wheels and feet reach the same baseline. The nearest hand/handle landmarks remain
+under one native pixel apart in both gait frames and the diagonal views. North/south anchor depth
+continues to project the stroller ahead of her on the ground; flattening those positions to screen
+Y=0 would reopen approximately 8.5px/4.2px north-east/south-east grip gaps. This keeps projection
+consistent while removing the four-pixel side-view float. The uniform scale is open to visual
+judgment, with the final PNG/SVG `grounding-*` comparisons in
+`docs/evidence/pram-contact-2026-09-12/`.
+
+Collision remains the separate unsquashed 14px body-center offset and 8px radius. Touch-stop
+keeps its 24px radius; the side-view pram ground center is about 33px from the stop circle's lifted
+center. Shadows, cues and debug anchors follow the same visible ground position. Tests preserve
+aspect ratio, integer draw extents, continuous offset and collision/input separation. The root
+import/boot and 1,017 focused graphics, stroller/gait, touch, orientation and presentation checks
+passed, with 120 stroller/gait checks in forced-SVG mode. No additional live capture was taken;
+travel and turn appearance remain in REVIEW.
+
+The frozen recipe retains every source PNG/SVG, local rasterizer, tool/font versions, placements
+and forty-three SHA-256 records. All six PNG/SVG contact, original-snapshot and grounding variants
+regenerate without a hash mismatch. The original PNG review snapshots are byte-identical to the
+first committed sheets, including their footer; primary comparisons use the runtime facing-based
+draw order. The script and safe regeneration commands are linked from the graphics recipe index.
+
+## M109 — Three distinct carrying poses — 2026-09-12
+
+PLAYTEST-65 clarified that walking needs three distinct pictures in every direction and a loop
+of open, together, opposite open, together. A preserved rollout of D's two-frame cycle did not
+satisfy that request. The corrected family is E — Clear strides; the named A–D snapshots remain
+unchanged. The player also required stopping to select the together pose from every phase.
+
+Five new C SVGs supply the passing pose, while repaired A and B SVG legs depict opposite open
+contacts. The PNG transfer follows those reviewed source poses and retains exact D RGBA rows
+0–33 above the coat hem. The front and back alternate the lower/leading and higher/receding foot;
+the profile changes near/far leg ownership while keeping the toes along travel. A manual mirrored
+leg draft was rejected because it reversed the shoes. Targeted built-in image edits corrected
+the profile and back diagonal B cells before registration. The three generated passes, exact
+prompts, source renders, hashes, scripts and measured registration are retained in
+`docs/evidence/comic-carrying-strides-2026-09-12/`.
+
+The carrying texture arrays contain A, C, B and the runtime selects indices 0, 1, 2, 1 over one
+TAU of the existing distance-driven clock. This preserves the phase-change frequency while
+including both contacts and both passing phases. Idle selects C; the pushing family keeps its
+own two-frame selector. New SVG and PNG imports have fresh identities, and existing identities
+stay intact. The eight-direction source GIF contains four equal 190ms phases and three distinct
+images, including the repeated passing frame and exact runtime west mirrors.
+
+The integrated checkout passed import/boot, 1,001 focused visuals, stroller, touch, presentation
+and orientation checks, and 814 visuals/stroller checks with forced SVG. These include the new
+gait selector, distance progression and stopping behavior. A fresh registration directory
+reproduced all twenty retained sprite/review hashes; regeneration refuses stale source inputs
+and uses recorded font/tool versions. No live gameplay capture accompanies E. The source GIF
+establishes its exact frame sequence; appearance while traveling and turning remains in REVIEW.
+
+## M109 — Stroller hand contact — 2026-09-12
+
+PLAYTEST-65 asked to draw the stroller much closer so the mother's hands connect. The canonical
+PNG and SVG source assemblies cover both pushing gait frames and all eight directions. The
+selected continuous projection uses horizontal distance 22px, north 14px, south 8px, the existing
+0.7 Y factor and a shared 4px upward lift. A single 22px lead left the south grip disconnected;
+the vertical lift fixed the profile gap, and reducing north to 14px also aligned the diagonal grip.
+The side A hand and handle tip coincide; B is one native pixel apart, with diagonal pairs under
+half a pixel apart. These placement choices remain open to visual judgment.
+
+`pram_draw_offset()` supplies the art, shadow, baby cue and debug field position. Its directional
+Y contribution reaches zero at east and west, so changing north/south distance does not make the
+stroller jump while turning. The unsquashed collision body remains `facing * PLAYER_BODY_RADIUS`
+(14px), with its existing 8px radius. Touch stop keeps its 24px radius and lifted center; the
+side-view pram center remains about 29px from that center and a tap there steers.
+
+The integrated root checkout passed import/boot and 273 focused stroller, touch, orientation and
+presentation checks. Relationship tests cover collision independence, shared drawing offset and
+continuity at east/west sign boundaries. The reproducible PNG/SVG assemblies and measurements are
+in `docs/evidence/pram-contact-2026-09-12/`. They establish canonical source contact, not live-turn
+appearance; that remaining human check is in REVIEW. No additional windowed run was taken.
+
+The player also required every graphics, rollout and GIF script to remain reproducible and easy
+to find. The illustrated-PNG skill now requires retained recipes, immutable inputs or hash guards,
+exact timing and regeneration commands; `docs/evidence/README.md` indexes the families and reviews.
+
+The player then identified floating wheels in the connected drawing and suggested increasing the
+stroller's scale to match the handle-to-wheel and hand-to-foot heights. The grounded stroller scale
+record above covers that correction. The first comparison recipe also selected draw order from lifted screen Y
+instead of facing Y. The corrected primary sheets use the runtime's facing rule; the original
+review assemblies and their fixed inputs remain reproducible snapshots.
+
+## M109 — Named carrying redraws — 2026-09-12
+
+PLAYTEST-65 rejected the carrying mother without naming a particular defective facing. Source
+review identified an upright bundle, blended forearms and excessive baby visibility from the
+rear. The request covered all five authored views, both gait frames and their west mirrors.
+The player's follow-up requested the current build in a PR and names for every version.
+
+The carrying versions have these discussion names:
+
+| Version | Name | Distinguishing result |
+| --- | --- | --- |
+| A | Upright bundle | The prior runtime carrying set, retained with the original comic-rig evidence. |
+| B | Round silhouette | A clearer cradle, but a large head, broad coat and short legs. |
+| C | Alternating stride | Opposed A/B leg positions, still with the round proportions. |
+| D | Matched proportions | A localized edit of the pushing atlas: adult body and gait retained, arms and baby changed. |
+
+D supplied the ten runtime carrying textures before E's leg correction. Generating a whole new person repeatedly
+changed her proportions despite explicit instructions and identity references. Editing the
+existing pushing atlas narrowed the change to the cradle and kept the same short hair, small
+head, red parka, long jeans and practical shoes. The baby is held across the torso, with
+hands and supporting forearms separated from the blanket; direct rear views hide the baby
+behind her body. Native and enlarged comparisons include all eight runtime directions and
+both gait frames next to the pushing mother. The raw outputs, exact prompts and named
+comparisons are retained in `docs/evidence/comic-carrying-redraw-2026-09-12/`; B and C are
+comparison evidence, not style references. A remains in `docs/evidence/comic-rig-2026-09-12/`.
+
+The previous graphics PR was merged independently while this work ran. The next branch
+incorporated main `83a60d1`, with local tip `fead323` and common ancestor `62d1c34`.
+Incoming main had no tree changes beyond that ancestor, so the merge was conflict-free and
+preserved the already reviewed café facing, idle frames, tree-bed layering and gameplay.
+No numbered records collided. This batch is proposed separately and remains open for review.
+
+The player then reported that most A/B gait pairs looked like the same picture. D's native
+and enlarged sheets established identity and support but did not establish sufficient stride
+contrast. The existing named versions remain unchanged; E, clear strides, supplies the correction
+recorded above. Version names and gait-frame letters identify different axes.
+
+The player requested D's full walking rollout in all eight directions. The frozen D textures
+are assembled in `docs/evidence/comic-carrying-redraw-2026-09-12/rollout/`: a repeating GIF,
+individual animation frames and a four-phase static sheet. These use the exact registered
+pixels, runtime west mirrors and 190ms frame intervals at walking speed, enlarged by nearest
+neighbor. They expose D's existing two-frame motion; they are source animation previews,
+not gameplay captures or evidence that the gait finding is fixed.
+
+The integrated checkout passed import/boot, 783 focused checks across visuals, stroller,
+presentation mode and orientation, and 665 visual checks with `--svg`. The tests check loading,
+anchors and selection; they do not establish visibly distinct steps. D's seed-4242 capture used
+`--start-escape floor:2 --walk 1e1w1e1w --press snapshot_burst 1 --invincible`, finishing at six
+seconds. Its complete 36-frame burst records 2.983 seconds; the frames show travel and opposing
+profile views. The whole run, frames, timing sidecar, MP4 and final still are preserved under
+`docs/evidence/archive/session-captures/2026-09-12/rig-165450-seed4242-v0.8.2-807-g7f3dcb5-dirty/`.
+The dirty changes were documentation only. This records D and does not verify E or every facing.
+
+## M109 — Trees and rooftop equipment as comic drawings — 2026-09-12
+
+PLAYTEST-65 asked to continue SVG style transfer. This batch added twelve PNG derivatives:
+two trees, the ground tree bed, overhead bollard cap, water tank, two HVAC units, vent stack,
+two skylights and two ducts. The existing SVGs supplied subjects, projections, canvases and
+functional placement; the urban and cardinal references supplied comic forms, ink and shading.
+No SVG, runtime transform, collision body or animation changed for this batch. The existing
+texture resolver binds the trees and bollard through Prop, the bed through CityDecals and the
+roof equipment through Building.
+
+The tree crowns use authored foliage and branch shapes, with distinct broad and narrow forms.
+The opaque tree bed uses fixed full-tile extraction. Transparent props retain their generated
+silhouettes and gaps; roof canvases retain their native margins rather than forcing every
+visible object to the bottom edge. The standing runtime anchor remains bottom-center, and the
+ground bed remains center-anchored. These props have no collision bodies.
+
+Review rejected painted checker backgrounds with ghost outlines. Built-in image edits supplied
+white backgrounds before the authorized extractor ran, preserving gray roof materials. Review
+also caught crops containing neighboring subjects and an undersized vent, skylights and HVAC
+variant. Correct subject crops restored source-scale occupancy without stamping the SVG alpha
+onto the redraws. Native and enlarged comparisons cover all twelve final derivatives. Exact
+prompts, raw outputs, input atlases, source hashes, registration measurements and the extraction
+recipe are retained in `docs/evidence/comic-city-props-2026-09-12/`.
+
+The missing-PNG fallback test uses a synthetic texture path, because the bollard now has a
+replacement. The pairing audit asks Godot's resolver to load every discovered replacement so
+a duplicated import UID cannot silently substitute another prop. Prop checks distinguish the
+opaque ground bed, bottom-anchored trees, centered bollard disc and roof margins. Human
+appearance review remains in REVIEW.
+
+The final tree capture used seed 4242, `--spawn park --walk 1s1e --invincible`, at four seconds.
+Both tree silhouettes and their grounding are visible at gameplay scale; the camera does not
+cover rooftop equipment or street-tree beds. The whole run and final still are preserved under
+`docs/evidence/archive/session-captures/2026-09-12/rig-165213-seed4242-v0.8.2-806-g9959141-dirty/`.
+The dirty changes were documentation only. The twelve-prop source sheet supplies the remaining
+static asset coverage, and player acceptance remains separate.
+
+## Graphics branch and gameplay integration — 2026-09-12
+
+The graphics tip was `3b2ad2561c097cf103220f0f7441c258babdbc70`, incoming main was
+`3fdcb50c2de1003cb4ce412cab63443769f03335`, and their base was
+`28fe84596ab10b06ac7814de3114c0b193cb332b`. Preparation commit
+`98faaaa` renumbered the graphics Playtest 63 to Playtest 64, preserving every quote and
+the evidence paths; main independently used 63 for decay and crash-body feedback.
+No milestone identity collided: repeated M109 headings describe distinct dated work.
+
+The archive conflict retains both sets of records. The graphics inventory combines the new
+event stride and idle frames with per-seat café facing. The café drawing chooses its idle
+frame family once, then the correct view and mirror for each table-facing seat. Both the
+musician's idle drawing and the café's facing helper survive. Alley-aware barrier selection
+also survives; the solid-body footprint computation uses that same spread axis. Tree beds
+remain ground decals, separate from upright tree drawings and their shadows; props have no
+collision bodies. Fallen-tree visibility updates both layers. Return patrols and stationary
+crowd obstructions retain main's implementations.
+The queue keeps main's open decay/crash work and removes its finished stride, crowd and
+return work while retaining the graphics branch's comic-transfer requirements.
+
+The concurrent remote integration `62d1c34` was reconciled with local `f1ef463` before
+pushing. Both independently integrated the same main tip, so the two merge bases were
+`3fdcb50` and `3b2ad25`; Git synthesized an ancestor containing conflict text. The result
+keeps the remote's matching Playtest 64 evidence-folder rename and café explanation, plus
+this local review and the new Playtest 65 requests. The executable source is identical to
+the remote integration; both preserve per-seat café facing and shared idle timing.
+
 ## M109 — The complete generated catalogue uses comic drawings — 2026-09-12
 
 The PLAYTEST-64 correction was applied to all 95 existing PNG assets: 59 outdoor tiles,

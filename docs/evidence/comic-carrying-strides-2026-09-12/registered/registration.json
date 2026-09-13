@@ -1,0 +1,407 @@
+[
+  {
+    "name": "mother_carrying_front_a",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      130,
+      359
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      22,
+      46
+    ],
+    "upper_identity_source": "D A",
+    "upper_rows_preserved": [
+      0,
+      33
+    ],
+    "generated_alpha_preserved_before_upper_composite": true,
+    "ground_line_preserved": true,
+    "fit_scale": 0.7520891364902507
+  },
+  {
+    "name": "mother_carrying_back_a",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      129,
+      360
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      22,
+      46
+    ],
+    "upper_identity_source": "D A",
+    "upper_rows_preserved": [
+      0,
+      33
+    ],
+    "generated_alpha_preserved_before_upper_composite": true,
+    "ground_line_preserved": true,
+    "fit_scale": 0.75
+  },
+  {
+    "name": "mother_carrying_side_a",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      165,
+      359
+    ],
+    "registered_alpha_bounds": [
+      0,
+      0,
+      26,
+      46
+    ],
+    "upper_identity_source": "D A",
+    "upper_rows_preserved": [
+      0,
+      33
+    ],
+    "generated_alpha_preserved_before_upper_composite": true,
+    "ground_line_preserved": true,
+    "fit_scale": 0.7520891364902507
+  },
+  {
+    "name": "mother_carrying_front_diagonal_a",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      129,
+      359
+    ],
+    "registered_alpha_bounds": [
+      3,
+      0,
+      23,
+      46
+    ],
+    "upper_identity_source": "D A",
+    "upper_rows_preserved": [
+      0,
+      33
+    ],
+    "generated_alpha_preserved_before_upper_composite": true,
+    "ground_line_preserved": true,
+    "fit_scale": 0.7520891364902507
+  },
+  {
+    "name": "mother_carrying_back_diagonal_a",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      128,
+      359
+    ],
+    "registered_alpha_bounds": [
+      3,
+      0,
+      23,
+      46
+    ],
+    "upper_identity_source": "D A",
+    "upper_rows_preserved": [
+      0,
+      33
+    ],
+    "generated_alpha_preserved_before_upper_composite": true,
+    "ground_line_preserved": true,
+    "fit_scale": 0.7520891364902507
+  },
+  {
+    "name": "mother_carrying_front_c",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      130,
+      363
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      22,
+      46
+    ],
+    "upper_identity_source": "D B",
+    "upper_rows_preserved": [
+      0,
+      33
+    ],
+    "generated_alpha_preserved_before_upper_composite": true,
+    "ground_line_preserved": true,
+    "fit_scale": 0.743801652892562
+  },
+  {
+    "name": "mother_carrying_back_c",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      130,
+      363
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      22,
+      46
+    ],
+    "upper_identity_source": "D B",
+    "upper_rows_preserved": [
+      0,
+      33
+    ],
+    "generated_alpha_preserved_before_upper_composite": true,
+    "ground_line_preserved": true,
+    "fit_scale": 0.743801652892562
+  },
+  {
+    "name": "mother_carrying_side_c",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      127,
+      363
+    ],
+    "registered_alpha_bounds": [
+      4,
+      0,
+      23,
+      46
+    ],
+    "upper_identity_source": "D B",
+    "upper_rows_preserved": [
+      0,
+      33
+    ],
+    "generated_alpha_preserved_before_upper_composite": true,
+    "ground_line_preserved": true,
+    "fit_scale": 0.743801652892562
+  },
+  {
+    "name": "mother_carrying_front_diagonal_c",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      128,
+      364
+    ],
+    "registered_alpha_bounds": [
+      3,
+      0,
+      23,
+      46
+    ],
+    "upper_identity_source": "D B",
+    "upper_rows_preserved": [
+      0,
+      33
+    ],
+    "generated_alpha_preserved_before_upper_composite": true,
+    "ground_line_preserved": true,
+    "fit_scale": 0.7417582417582418
+  },
+  {
+    "name": "mother_carrying_back_diagonal_c",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      129,
+      364
+    ],
+    "registered_alpha_bounds": [
+      3,
+      0,
+      23,
+      46
+    ],
+    "upper_identity_source": "D B",
+    "upper_rows_preserved": [
+      0,
+      33
+    ],
+    "generated_alpha_preserved_before_upper_composite": true,
+    "ground_line_preserved": true,
+    "fit_scale": 0.7417582417582418
+  },
+  {
+    "name": "mother_carrying_front_b",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      130,
+      358
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      22,
+      46
+    ],
+    "upper_identity_source": "D B",
+    "upper_rows_preserved": [
+      0,
+      33
+    ],
+    "generated_alpha_preserved_before_upper_composite": true,
+    "ground_line_preserved": true,
+    "fit_scale": 0.7541899441340782
+  },
+  {
+    "name": "mother_carrying_back_b",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      129,
+      357
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      22,
+      46
+    ],
+    "upper_identity_source": "D B",
+    "upper_rows_preserved": [
+      0,
+      33
+    ],
+    "generated_alpha_preserved_before_upper_composite": true,
+    "ground_line_preserved": true,
+    "fit_scale": 0.7563025210084033
+  },
+  {
+    "name": "mother_carrying_side_b",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      171,
+      352
+    ],
+    "registered_alpha_bounds": [
+      0,
+      0,
+      26,
+      46
+    ],
+    "upper_identity_source": "D B",
+    "upper_rows_preserved": [
+      0,
+      33
+    ],
+    "generated_alpha_preserved_before_upper_composite": true,
+    "ground_line_preserved": true,
+    "fit_scale": 0.7670454545454546
+  },
+  {
+    "name": "mother_carrying_front_diagonal_b",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      129,
+      358
+    ],
+    "registered_alpha_bounds": [
+      3,
+      0,
+      23,
+      46
+    ],
+    "upper_identity_source": "D B",
+    "upper_rows_preserved": [
+      0,
+      33
+    ],
+    "generated_alpha_preserved_before_upper_composite": true,
+    "ground_line_preserved": true,
+    "fit_scale": 0.7541899441340782
+  },
+  {
+    "name": "mother_carrying_back_diagonal_b",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      132,
+      360
+    ],
+    "registered_alpha_bounds": [
+      2,
+      0,
+      23,
+      46
+    ],
+    "upper_identity_source": "D B",
+    "upper_rows_preserved": [
+      0,
+      33
+    ],
+    "generated_alpha_preserved_before_upper_composite": true,
+    "ground_line_preserved": true,
+    "fit_scale": 0.75
+  }
+]
