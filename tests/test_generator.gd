@@ -4,10 +4,37 @@ extends RefCounted
 ## A city that violates these is not merely ugly — it makes a run unwinnable in ways the
 ## player cannot see, so it is checked across many seeds rather than by looking at one.
 
-## Seeds to validate. Each is one BFS over the map, so this stays quick.
+## Seeds the guarantee sweep validates. Two hundred is the one long loop in this suite that earns
+## its minutes: `CityGenerator.validate()` is the whole of `docs/CITY.md`'s layout contract, the
+## failures it exists to catch are one-seed-in-a-hundred arrangements, and a city that fails it is a
+## run nobody can win. Nothing else here needs a number anywhere near it.
 const SEEDS_TO_VALIDATE := 200
 ## Seeds for the expensive route-redundancy sweep, which is O(segments x BFS).
 const SEEDS_TO_STRESS := 3
+
+## How many of `_seed(i)`'s cities are kept once generated.
+##
+## **Every loop in this file walks the same seed sequence from the same end**, so the twelve-seed
+## checks, the twenty-four-seed checks and the sixty-seed one are all asking about cities the
+## validate sweep above already built and threw away — nineteen loops regenerating the same maps,
+## at a quarter of a second each, for two thirds of the suite's whole running time.
+##
+## Sixty-four rather than all two hundred because sixty is the largest any *other* loop here asks
+## for, and a city is not small: keeping the sweep's whole tail alive would trade the minutes back
+## for hundreds of megabytes to no purpose, since nothing ever asks for `_seed(120)` twice.
+const CACHED_SEEDS := 64
+
+var _cities := {}
+
+## The city for seed index `i`, generated once. Pristine: nothing in this file repaints, closes or
+## holds anything on a generated map, which is what makes one copy safe to hand round.
+func _map(i: int) -> CityMap:
+	if i >= CACHED_SEEDS:
+		return CityGenerator.generate(_seed(i))
+	if not _cities.has(i):
+		_cities[i] = CityGenerator.generate(_seed(i))
+	var found: CityMap = _cities[i]
+	return found
 
 func run(t) -> void:
 	_test_rect_subtraction(t)
@@ -91,7 +118,7 @@ func _test_layout_maths(t) -> void:
 func _test_guarantees_hold_across_seeds(t) -> void:
 	var failures: Array[String] = []
 	for i in SEEDS_TO_VALIDATE:
-		var map := CityGenerator.generate(_seed(i))
+		var map := _map(i)
 		var reason := CityGenerator.validate(map)
 		if reason != "":
 			failures.append("seed %d: %s" % [_seed(i), reason])
@@ -112,7 +139,7 @@ func _test_determinism(t) -> void:
 
 func _test_buildings_tile_the_blocks(t) -> void:
 	for i in 12:
-		var map := CityGenerator.generate(_seed(i))
+		var map := _map(i)
 		var building_tiles := map.size.x * map.size.y - map.count_walkable()
 		t.check(_area(map.building_rects) == building_tiles,
 				"seed %d: building rects cover every BUILDING tile exactly once" % _seed(i))
@@ -127,7 +154,7 @@ func _test_buildings_tile_the_blocks(t) -> void:
 
 func _test_home_opens_onto_the_street(t) -> void:
 	for i in 12:
-		var map := CityGenerator.generate(_seed(i))
+		var map := _map(i)
 		for tile in map.rect_tiles(map.home_rect):
 			t.check(map.tile_at(tile) == GameEnums.TileType.HOME,
 					"seed %d: the home rect is all HOME tiles" % _seed(i))
@@ -152,13 +179,17 @@ func _test_home_opens_onto_the_street(t) -> void:
 ## check.
 func _test_a_precincts_own_ground_is_never_built_over(t) -> void:
 	var seeds := 40
-	var checked := {24757: true}
+	# The sweep's own cities, plus the one seed that is here by name rather than by index. Built as
+	# `[map, seed]` pairs rather than as a set of seed numbers so the forty come out of `_map()`,
+	# which the guarantee sweep above has already generated and kept.
+	var checked: Array = [[CityGenerator.generate(24757), 24757]]
 	for i in seeds:
-		checked[_seed(i)] = true
+		checked.append([_map(i), _seed(i)])
 	var precincts_found := 0
 	var big_buildings_found := 0
-	for seed_value: int in checked:
-		var map := CityGenerator.generate(seed_value)
+	for pair: Array in checked:
+		var map: CityMap = pair[0]
+		var seed_value: int = pair[1]
 		precincts_found += map.precinct_spans.size()
 		big_buildings_found += map.big_buildings.size()
 		for span in map.precinct_spans:
@@ -173,9 +204,9 @@ func _test_a_precincts_own_ground_is_never_built_over(t) -> void:
 				t.check(map.is_walkable(tile),
 						"seed %d: %s in precinct %s is walkable" % [seed_value, tile, span])
 	t.check(precincts_found > 0,
-			"at least one precinct was found across the %d seeds checked" % checked.size())
+			"at least one precinct was found across the %d cities checked" % checked.size())
 	t.check(big_buildings_found > 0,
-			"at least one big building was found across the %d seeds checked" % checked.size())
+			"at least one big building was found across the %d cities checked" % checked.size())
 
 ## `docs/DECISIONS.md`, M100, "Nothing on the home block": no alley is carved into the home block at all,
 ## decided where alleys are rolled (`CityGenerator._build_block`) rather than slid sideways
@@ -185,7 +216,7 @@ func _test_no_alley_on_the_home_block(t) -> void:
 	var on_home_block := 0
 	var elsewhere := 0
 	for i in 60:
-		var map := CityGenerator.generate(_seed(i))
+		var map := _map(i)
 		var home_lot := map.lot_rect(map.home_block)
 		for alley in map.alley_rects:
 			if home_lot.intersects(alley):
@@ -214,7 +245,7 @@ func _test_the_home_is_in_the_middle_of_a_city_worth_walking(t) -> void:
 			"the lattice is odd on both axes, so there is a middle block to put the home in")
 	var middle := (Tuning.CITY_BLOCKS - Vector2i.ONE) / 2
 	for i in 24:
-		var map := CityGenerator.generate(_seed(i))
+		var map := _map(i)
 		t.check(map.home_block == middle,
 				"seed %d: the home is in the middle block %s, not %s"
 				% [_seed(i), middle, map.home_block])
@@ -247,7 +278,7 @@ func _test_the_home_is_in_the_middle_of_a_city_worth_walking(t) -> void:
 ## city satisfy M21 with a thing you cannot walk across.
 func _test_calm_zones_are_one_lot_of_one_thing(t) -> void:
 	for i in 12:
-		var map := CityGenerator.generate(_seed(i))
+		var map := _map(i)
 		var squares := 0
 		var open_zones := 0
 		var complexes := 0
@@ -438,7 +469,7 @@ func _test_a_calm_zone_is_a_route_rather_than_a_lap(t) -> void:
 ## place a barricade, not a flaw in the layout — see docs/CITY.md.
 func _test_no_single_street_closure_isolates_the_parks(t) -> void:
 	for i in SEEDS_TO_STRESS:
-		var map := CityGenerator.generate(_seed(i))
+		var map := _map(i)
 		var parks := map.calm_tiles()
 		var doorstep := Vector2i(map.home_rect.position.x, map.home_rect.end.y)
 		var worst := ""
@@ -491,7 +522,7 @@ func _test_a_dead_end_is_a_dead_end(t) -> void:
 	var total := 0
 	var seeds := 12
 	for i in seeds:
-		var map := CityGenerator.generate(_seed(i))
+		var map := _map(i)
 		var home := ClosurePlanner.home_street(map)
 		var calm := {}
 		for anchor in map.calm_blocks:
@@ -575,7 +606,7 @@ func _test_a_big_building_joins_two_blocks(t) -> void:
 	var seeds := 12
 	var total := 0
 	for i in seeds:
-		var map := CityGenerator.generate(_seed(i))
+		var map := _map(i)
 		t.check(not map.big_buildings.is_empty(), "seed %d has a landmark in it" % _seed(i))
 		t.check(map.big_buildings.size() <= Tuning.MAX_BIG_BUILDINGS,
 				"seed %d has at most %d (%d)"
@@ -645,7 +676,7 @@ func _test_a_big_building_joins_two_blocks(t) -> void:
 func _test_a_missing_arm_has_no_crossing_on_it(t) -> void:
 	var seeds := 12
 	for i in seeds:
-		var map := CityGenerator.generate(_seed(i))
+		var map := _map(i)
 		var footprints: Array[Rect2i] = []
 		for anchor: Vector2i in map.zone_rects:
 			footprints.append(CityMap.blocks_tile_rect(map.zone_rects[anchor]))
@@ -671,7 +702,7 @@ func _test_a_missing_arm_has_no_crossing_on_it(t) -> void:
 func _test_nothing_goes_into_a_precinct(t) -> void:
 	var seeds := 25
 	for i in seeds:
-		var map := CityGenerator.generate(_seed(i))
+		var map := _map(i)
 		t.check(not map.precinct_spans.is_empty(),
 				"seed %d: a city has at least one precinct" % _seed(i))
 		for span in map.precinct_spans:
@@ -706,7 +737,7 @@ func _test_a_precincts_end_is_a_t_junction(t) -> void:
 	var seeds := 25
 	var road_band := Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH * 2
 	for i in seeds:
-		var map := CityGenerator.generate(_seed(i))
+		var map := _map(i)
 		for span in map.precinct_spans:
 			var vertical := span.x == 1
 			var across_lo := span.y * CityMap.period() + Tuning.SIDEWALK_WIDTH
@@ -745,7 +776,7 @@ func _along_across_rect(vertical: bool, along_lo: int, along_size: int,
 func _test_bollards_stand_where_the_paving_begins(t) -> void:
 	var seeds := 25
 	for i in seeds:
-		var map := CityGenerator.generate(_seed(i))
+		var map := _map(i)
 		var positions := City.bollard_positions(map)
 		for span in map.precinct_spans:
 			var vertical := span.x == 1
@@ -787,7 +818,7 @@ func _test_bollards_stand_where_the_paving_begins(t) -> void:
 func _test_an_alley_is_exactly_one_cell_wide(t) -> void:
 	var checked := 0
 	for i in 40:
-		var map := CityGenerator.generate(_seed(i))
+		var map := _map(i)
 		for alley in map.alley_rects:
 			checked += 1
 			var vertical := alley.size.x == Tuning.ALLEY_WIDTH_TILES
@@ -832,7 +863,7 @@ func _seed(index: int) -> int:
 func _test_calm_is_never_at_the_edge_or_beside_the_spine(t) -> void:
 	var last := Tuning.CITY_BLOCKS - Vector2i.ONE
 	for i in 24:
-		var map := CityGenerator.generate(_seed(i))
+		var map := _map(i)
 		for anchor in map.calm_blocks:
 			var lot := map.lot_blocks(anchor)
 			for block in CityGenerator._blocks_in(lot):
@@ -862,7 +893,7 @@ func _test_calm_is_never_at_the_edge_or_beside_the_spine(t) -> void:
 ## forty and takes calm areas per city from 9.22 to 9.18.
 func _test_no_two_calm_areas_are_in_each_others_ring(t) -> void:
 	for i in 24:
-		var map := CityGenerator.generate(_seed(i))
+		var map := _map(i)
 		var owner := {}
 		for block in map.calm_blocks:
 			var lot := map.lot_blocks(block)
