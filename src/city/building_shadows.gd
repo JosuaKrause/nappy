@@ -1,7 +1,8 @@
 class_name BuildingShadows
 extends Node2D
 ## The one-tile shadow every building casts to its south and west, from a light standing to the
-## north-east. See `docs/CITY.md`, "Carving is rect subtraction", and `docs/TODO.md`, M122.
+## north-east. See `docs/CITY.md`, "Carving is rect subtraction", and `docs/DECISIONS.md`, M122,
+## for the reading of the player's shape and why the north-western corner is square.
 ##
 ## **The union of every building's own footprint tiles is the only surface asked about — never one
 ## building at a time.** A tile outside that union is fully shaded when the tile to its north-east
