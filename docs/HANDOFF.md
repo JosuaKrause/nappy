@@ -306,9 +306,8 @@ this is the map.
   per cent on the desktop rig, and no atlas is indicated by the numbers. Before it merges it owes
   its `DECISIONS.md` record with the table (the PR body and
   `evidence/m124-frame-cost-2026-09-13/README.md` carry it) and a rewrite of M124's entry to hold
-  those two fixes and the phone measurement. For M125: if its branch has a PR, review it, file its
-  record and merge under the usual rules; if a worktree under `.claude/worktrees/` holds
-  uncommitted work, the agent was cut off — read what is there before re-briefing.
+  those two fixes and the phone measurement. M125's five suites are pruned and recorded
+  (`DECISIONS.md`, M125); its entry holds the four suites still over the runner's budget.
 - **The M124 atlas item is gated on the measurement**: nothing is atlased until the numbers say
   texture switches are the cost.
 
