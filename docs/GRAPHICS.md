@@ -247,6 +247,10 @@ The [stroller view recipe](evidence/stroller-view-assignment-2026-09-12/GENERATI
 final illustrated facing contract: N/NE/NW show the baby and canopy opening; S/SE/SW show the
 outside of the hood; E/W retain the original side image. These names mean travel direction.
 Rebuild from frozen originals; do not swap the runtime textures again based on source filenames.
+The [north-diagonal contact recipe](evidence/stroller-diagonal-contact-2026-09-12/GENERATION.md)
+records the downward NE/NW correction across all pushing poses. The continuous adjustment vanishes
+at cardinal directions and throughout the southern half; SE/SW grounding takes priority over
+closing the remaining hand gap.
 
 Ground components live under `assets/illustrated/svg-transfer/tiles/layers/`, paired with SVGs
 under `assets/tiles/layers/`. The component manifest maps each ground source to a shared sidewalk,

@@ -67,6 +67,10 @@ final illustrated direction assignment. Direction means travel: N/NE/NW show the
 opening, S/SE/SW show the outside of the hood, and E/W use the original side image. Rebuild from
 its frozen inputs; do not swap the installed textures again or infer direction from upstream
 front/back source filenames.
+The [north-diagonal contact review](evidence/stroller-diagonal-contact-2026-09-12/GENERATION.md)
+records the small downward NE/NW placement adjustment across all three pushing poses. It fades
+smoothly to zero at N/E/W; southern placements stay fixed to preserve wheel grounding, including
+the accepted SE/SW hand gap.
 The [hand-contact comparison](evidence/pram-contact-2026-09-12/MEASUREMENTS.md) assembles both
 formats at the current continuous stroller offset. Shadows and cues share that drawing position;
 the uniformly enlarged stroller retains its bottom ground anchor, and the collision body retains

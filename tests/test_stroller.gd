@@ -11,6 +11,7 @@ func run(t) -> void:
 	_test_reset_settles_direction(t)
 	_test_wrap_boundary_holds(t)
 	_test_pram_offset_stays_continuous_through_side_facings(t)
+	_test_north_diagonal_contact_adjustment(t)
 	_test_the_pram_has_its_own_trailing_body(t)
 
 func _rig(t) -> Stroller:
@@ -134,6 +135,62 @@ func _test_pram_offset_stays_continuous_through_side_facings(t) -> void:
 				"the pram reaches side facing continuously from one turn direction")
 		t.check(after.distance_to(at_side) <= largest_axis_distance * epsilon,
 				"the pram leaves side facing continuously in the other turn direction")
+	rig.free()
+
+func _test_north_diagonal_contact_adjustment(t) -> void:
+	var rig := _rig(t)
+	rig.facing = Vector2.UP
+	var north := rig.pram_draw_offset()
+	var east := Vector2.RIGHT
+	rig.facing = east
+	var east_offset := rig.pram_draw_offset()
+	var west := Vector2.LEFT
+	rig.facing = west
+	var west_offset := rig.pram_draw_offset()
+	var south := Vector2.DOWN
+	rig.facing = south
+	var south_offset := rig.pram_draw_offset()
+	rig.facing = Vector2(1.0, 1.0).normalized()
+	var south_east_offset := rig.pram_draw_offset()
+	rig.facing = Vector2(-1.0, 1.0).normalized()
+	var south_west_offset := rig.pram_draw_offset()
+	var north_east := Vector2(1.0, -1.0).normalized()
+	rig.facing = north_east
+	var north_east_offset := rig.pram_draw_offset()
+	var north_west := Vector2(-1.0, -1.0).normalized()
+	rig.facing = north_west
+	var north_west_offset := rig.pram_draw_offset()
+
+	t.check(is_equal_approx(north.y, -Stroller.PRAM_NORTH_DISTANCE * Stroller.OBLIQUE_Y),
+			"north keeps its grounded screen-Y placement")
+	t.check(is_equal_approx(east_offset.y, Stroller.PRAM_VERTICAL_LIFT)
+			and is_equal_approx(west_offset.y, Stroller.PRAM_VERTICAL_LIFT),
+			"east and west keep their grounded screen-Y placement")
+	t.check(is_equal_approx(south_offset.y, Stroller.PRAM_SOUTH_DISTANCE * Stroller.OBLIQUE_Y),
+			"south keeps its grounded screen-Y placement")
+	t.check(is_equal_approx(south_east_offset.y, south_west_offset.y)
+			and is_equal_approx(south_east_offset.y,
+					Stroller.PRAM_SOUTH_DISTANCE * Stroller.OBLIQUE_Y / sqrt(2.0)),
+			"south-east and south-west preserve the grounded placement symmetrically")
+	t.close_to(north_east_offset.y,
+			north.y / sqrt(2.0) + Stroller.PRAM_NORTH_DIAGONAL_CONTACT_ADJUSTMENT,
+			"north-east receives the full two-pixel contact correction", 0.001)
+	t.close_to(north_west_offset.y,
+			north.y / sqrt(2.0) + Stroller.PRAM_NORTH_DIAGONAL_CONTACT_ADJUSTMENT,
+			"north-west receives the full two-pixel contact correction", 0.001)
+	var north_adjustment_max := 0.0
+	for degrees in range(0, 181):
+		var angle := deg_to_rad(-float(degrees))
+		rig.facing = Vector2.from_angle(angle)
+		var base_y: float = rig.facing.y * Stroller.PRAM_NORTH_DISTANCE * Stroller.OBLIQUE_Y
+		north_adjustment_max = maxf(north_adjustment_max, rig.pram_draw_offset().y - base_y)
+	t.close_to(north_adjustment_max, Stroller.PRAM_NORTH_DIAGONAL_CONTACT_ADJUSTMENT,
+			"north diagonal correction peaks at its measured bound", 0.001)
+	var near_east := Vector2.from_angle(-0.001)
+	rig.facing = near_east
+	var near_east_offset := rig.pram_draw_offset()
+	t.check(absf(near_east_offset.y - Stroller.PRAM_VERTICAL_LIFT) < 0.02,
+			"the north correction fades continuously into east")
 	rig.free()
 
 ## The pram's physical body and visible position are separate contracts. The body stays on the

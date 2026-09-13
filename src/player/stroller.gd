@@ -5,7 +5,7 @@ extends CharacterBody2D
 ## `position` is the mother's feet on the ground plane; everything is drawn upward from
 ## there so that y-sorting against buildings and props matches where she actually stands.
 ## The pram is drawn ahead in the facing direction, with authored screen-axis distances and Y
-## foreshortening that keep the handle within the mother's reach in every projection.
+## foreshortening that preserve ground depth and the authored hand-contact placement.
 ##
 ## The SVG mother and pram below are the logical body and the complete drawing in every mode.
 
@@ -16,6 +16,10 @@ extends CharacterBody2D
 const PRAM_HORIZONTAL_DISTANCE := 24.0
 const PRAM_NORTH_DISTANCE := 17.0
 const PRAM_SOUTH_DISTANCE := 9.0
+## The north diagonal hand contact needs a small screen-Y correction. The squared axis
+## factors make it vanish at north and east/west, while the north-only factor keeps every south
+## facing at its grounded placement.
+const PRAM_NORTH_DIAGONAL_CONTACT_ADJUSTMENT := 2.0
 ## The texture grows uniformly about its bottom-center ground anchor. Seven-sixths turns the native
 ## 36×30 side and diagonal canvases into exact 42×35px rectangles, avoiding fractional raster sizes
 ## while making the handle-to-wheel reach match the mother's hand-to-foot reach.
@@ -682,9 +686,16 @@ func pram_draw_offset() -> Vector2:
 	if carrying:
 		return Vector2.ZERO
 	var vertical_distance: float = PRAM_SOUTH_DISTANCE if facing.y > 0.0 else PRAM_NORTH_DISTANCE
+	var north_diagonal_adjustment := 0.0
+	if facing.y < 0.0:
+		# The normalized x² * y² term peaks at a 45° diagonal, so the selected maximum is the
+		# visually selected correction without introducing a view-sector snap.
+		north_diagonal_adjustment = (4.0 * facing.x * facing.x * facing.y * facing.y
+				* PRAM_NORTH_DIAGONAL_CONTACT_ADJUSTMENT)
 	return Vector2(
 			facing.x * PRAM_HORIZONTAL_DISTANCE,
-			facing.y * vertical_distance * OBLIQUE_Y + PRAM_VERTICAL_LIFT)
+			facing.y * vertical_distance * OBLIQUE_Y + PRAM_VERTICAL_LIFT
+			+ north_diagonal_adjustment)
 
 # ------------------------------------------------------------------ drawing ---
 

@@ -1,7 +1,9 @@
 # Pram hand-contact assembly
 
 This record preserves contact-only and grounded assemblies of the registered mother and pram.
-The runtime uses the **grounded placement** below: uniform 7/6 stroller scale and no fixed lift.
+The runtime uses uniform 7/6 stroller scale and no fixed lift, with the
+[north-diagonal contact correction](../stroller-diagonal-contact-2026-09-12/GENERATION.md).
+The **grounded placement** below is the base formula preserved in these frozen P1 sheets.
 The sheets cover the two frozen P1 pushing frames and all eight views, with runtime west mirrors
 and draw order. [P2's three-pose contact sheets](../comic-pushing-strides-2026-09-12/GENERATION.md)
 cover the current mother sprites at the same grounded placement. Neither assembly establishes

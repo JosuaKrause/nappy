@@ -116,10 +116,7 @@ findings supported by the conversion and review.
       Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
-- [ ] Refine diagonal stroller contact per PLAYTEST-65: lower NE/NW slightly until the handle
-      meets the hands, preserving continuous turns and every south-facing placement. Keep the
-      accepted travel-direction assignment. Measure all three pushing poses and retain the
-      reproducible contact review. Investigate a small SE/SW wheel-only orientation correction
+- [ ] Refine SE/SW stroller wheel orientation per PLAYTEST-65 with a small wheel-only correction
       while keeping its grounded height and body untouched. Try existing-pixel mirroring or reuse
       the NE/NW wheels as the player suggests; preserve exact donor and transformation inputs.
 - [ ] Add the stoop's bottom vertical step face per PLAYTEST-65: copy an existing brown band,
