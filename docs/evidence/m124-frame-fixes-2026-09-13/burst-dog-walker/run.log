@@ -1,0 +1,24 @@
+nappy rig log  2026-09-13T12:39:15  version v0.9.1-6-ge85eb99f-dirty
+
+day 1  act 1  run seed 4242  city seed 4242  length 180.0s  invincible
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  plan     closed: roadworks h(6,5)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burst_water_main x20, cafe_tables x59, car_accident x20, cat_dash x8, chatting_mother x2, delivery_van x54, dog_walker x23, fallen_tree, homeless_yeller x5, leaf_blower x15, loose_dog x12, market_stall x53, moving_van x50, pigeon_flock x5, playground x2, scaffolding x26, skip x22
+   0.0  start    doorstep (96,115), facing 180°
+   0.0  near     dog_walker (telegraph) at (96,113), 64px, exc 0, in 0.0/s (crowd 4.8, events 1.0), sleep 0
+   0.0  near     leaf_blower (telegraph) at (99,110), 179px, exc 0, in 0.0/s (crowd 4.8, events 1.0), sleep 0
+   0.0  crowd    a car sounded its horn at her in the road at (96,115) | exc 0, in 0.0/s (crowd 4.8, events 1.0), sleep 0
+   0.0  frame    fps 39, worst frame 150.0ms, draws 935, objects 2288, primitives 4941, process 19.84ms, physics 1.66ms
+   0.0  frame    fps 118, worst frame 11.2ms, draws 912, objects 2265, primitives 4895, process 15.01ms, physics 1.24ms
+   0.0  shot     burst started: asked for an animation burst at (96,115) | exc 0, sleep 0 | playing | asked/burst-6380048-001
+   0.0  frame    fps 116, worst frame 15.5ms, draws 908, objects 2251, primitives 4987, process 13.91ms, physics 1.20ms
+   0.0  cue      the mark over her head: soon for 0.0s (3.1s of it on the road) | a car, and she is in the road
+   0.0  frame    fps 67, worst frame 61.4ms, draws 901, objects 2242, primitives 4918, process 61.37ms, physics 1.21ms
+   0.0  frame    fps 41, worst frame 52.6ms, draws 895, objects 2236, primitives 4858, process 59.36ms, physics 1.11ms
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  frame    fps 39, worst frame 62.5ms, draws 898, objects 2237, primitives 4884, process 60.38ms, physics 1.16ms
+   0.0  frame    fps 79, worst frame 14.6ms, draws 878, objects 2171, primitives 4800, process 60.54ms, physics 1.24ms
+   0.0  frame    fps 111, worst frame 13.4ms, draws 881, objects 2176, primitives 4834, process 14.95ms, physics 1.25ms
+   0.0  frame    fps 118, worst frame 15.6ms, draws 882, objects 2177, primitives 4821, process 15.56ms, physics 1.05ms
+   0.0  crowd    a car sounded its horn at her in the road at (96,115) | exc 0, in 0.0/s (crowd 5.4, events 4.9), sleep 0

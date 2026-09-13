@@ -1,0 +1,154 @@
+{
+	"context": "asked for an animation burst at (96,115) | exc 0, sleep 0 | playing",
+	"duration_seconds": 3.012582,
+	"frames": [
+		{
+			"elapsed_seconds": 0.009668,
+			"file": "frame-0001.png"
+		},
+		{
+			"elapsed_seconds": 0.092403,
+			"file": "frame-0002.png"
+		},
+		{
+			"elapsed_seconds": 0.167504,
+			"file": "frame-0003.png"
+		},
+		{
+			"elapsed_seconds": 0.260128,
+			"file": "frame-0004.png"
+		},
+		{
+			"elapsed_seconds": 0.343506,
+			"file": "frame-0005.png"
+		},
+		{
+			"elapsed_seconds": 0.427502,
+			"file": "frame-0006.png"
+		},
+		{
+			"elapsed_seconds": 0.516322,
+			"file": "frame-0007.png"
+		},
+		{
+			"elapsed_seconds": 0.592103,
+			"file": "frame-0008.png"
+		},
+		{
+			"elapsed_seconds": 0.667554,
+			"file": "frame-0009.png"
+		},
+		{
+			"elapsed_seconds": 0.749721,
+			"file": "frame-0010.png"
+		},
+		{
+			"elapsed_seconds": 0.842681,
+			"file": "frame-0011.png"
+		},
+		{
+			"elapsed_seconds": 0.923501,
+			"file": "frame-0012.png"
+		},
+		{
+			"elapsed_seconds": 1.001072,
+			"file": "frame-0013.png"
+		},
+		{
+			"elapsed_seconds": 1.096788,
+			"file": "frame-0014.png"
+		},
+		{
+			"elapsed_seconds": 1.177047,
+			"file": "frame-0015.png"
+		},
+		{
+			"elapsed_seconds": 1.260148,
+			"file": "frame-0016.png"
+		},
+		{
+			"elapsed_seconds": 1.341098,
+			"file": "frame-0017.png"
+		},
+		{
+			"elapsed_seconds": 1.417618,
+			"file": "frame-0018.png"
+		},
+		{
+			"elapsed_seconds": 1.512957,
+			"file": "frame-0019.png"
+		},
+		{
+			"elapsed_seconds": 1.600665,
+			"file": "frame-0020.png"
+		},
+		{
+			"elapsed_seconds": 1.674758,
+			"file": "frame-0021.png"
+		},
+		{
+			"elapsed_seconds": 1.750755,
+			"file": "frame-0022.png"
+		},
+		{
+			"elapsed_seconds": 1.827362,
+			"file": "frame-0023.png"
+		},
+		{
+			"elapsed_seconds": 1.917405,
+			"file": "frame-0024.png"
+		},
+		{
+			"elapsed_seconds": 2.008494,
+			"file": "frame-0025.png"
+		},
+		{
+			"elapsed_seconds": 2.098909,
+			"file": "frame-0026.png"
+		},
+		{
+			"elapsed_seconds": 2.176986,
+			"file": "frame-0027.png"
+		},
+		{
+			"elapsed_seconds": 2.258578,
+			"file": "frame-0028.png"
+		},
+		{
+			"elapsed_seconds": 2.341722,
+			"file": "frame-0029.png"
+		},
+		{
+			"elapsed_seconds": 2.410725,
+			"file": "frame-0030.png"
+		},
+		{
+			"elapsed_seconds": 2.508223,
+			"file": "frame-0031.png"
+		},
+		{
+			"elapsed_seconds": 2.591071,
+			"file": "frame-0032.png"
+		},
+		{
+			"elapsed_seconds": 2.675311,
+			"file": "frame-0033.png"
+		},
+		{
+			"elapsed_seconds": 2.745813,
+			"file": "frame-0034.png"
+		},
+		{
+			"elapsed_seconds": 2.842869,
+			"file": "frame-0035.png"
+		},
+		{
+			"elapsed_seconds": 2.93387,
+			"file": "frame-0036.png"
+		}
+	],
+	"reason": "duration",
+	"schema_version": 1,
+	"status": "complete",
+	"target_fps": 12
+}

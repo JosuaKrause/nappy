@@ -1,0 +1,48 @@
+nappy rig log  2026-09-13T12:38:29  version v0.9.1-6-ge85eb99f-dirty
+
+day 1  act 1  run seed 3265820891  city seed 3265820891  length 180.0s
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 0]
+   0.0  plan     closed: roadworks h(1,9)
+   0.0  plan     calm: 1 forest, 2 courtyard, 2 quiet_square, 3 park
+   0.0  plan     events: alley_mouse x4, burst_water_main x17, cafe_tables x56, car_accident x26, cat_dash x8, chatting_mother x2, delivery_van x69, dog_walker x22, homeless_yeller x8, leaf_blower x15, loose_dog x11, market_stall x52, moving_van x42, pigeon_flock x5, playground x3, scaffolding x23, skip x20
+   0.0  start    doorstep (80,84), facing 180°
+   0.6  cross    stepped into the road at (80,86), mid-block
+   1.0  frame    fps 29, worst frame 150.0ms, draws 792, objects 1850, primitives 4456, process 31.60ms, physics 2.28ms
+   2.0  frame    fps 85, worst frame 15.5ms, draws 582, objects 1601, primitives 3790, process 15.53ms, physics 1.97ms
+   2.7  blocked  pressed 180° for 1.0s at (80,89) without moving
+   3.0  frame    fps 94, worst frame 14.1ms, draws 817, objects 2048, primitives 4710, process 14.08ms, physics 2.08ms
+   4.0  frame    fps 96, worst frame 14.6ms, draws 515, objects 1527, primitives 3696, process 14.90ms, physics 2.59ms
+   4.5  path     onto the corridor at (84,89), after 4.5s off it
+   5.0  frame    fps 94, worst frame 16.7ms, draws 657, objects 1772, primitives 4156, process 16.70ms, physics 2.37ms
+   5.2  cross    stepped into the road at (86,89), at a signalled crossing
+   5.2  crowd    a car sounded its horn at her in the road at (86,89) | exc 2, in 3.1/s (crowd 3.1, events 0.0), sleep 2
+   5.8  crowd    a car sounded its horn at her in the road at (87,89) | exc 8, in 25.8/s (crowd 25.8, events 0.0), sleep 2
+   5.9  cue      the mark over her head: soon for 0.6s (0.6s of it on the road) | a car, and she is in the road
+   6.0  frame    fps 84, worst frame 18.7ms, draws 735, objects 1855, primitives 4373, process 16.90ms, physics 2.45ms
+   7.1  frame    fps 76, worst frame 14.8ms, draws 576, objects 1522, primitives 3785, process 15.00ms, physics 2.32ms
+   8.1  frame    fps 89, worst frame 13.0ms, draws 524, objects 1468, primitives 3656, process 17.57ms, physics 2.23ms
+   9.1  frame    fps 99, worst frame 13.5ms, draws 507, objects 1453, primitives 3491, process 14.16ms, physics 2.15ms
+   9.5  near     leaf_blower at (104,89), 200px, exc 15, in 0.0/s (crowd 0.0, events 0.0), sleep 4
+  10.1  cross    stepped into the road at (100,89), at a zebra
+  10.1  frame    fps 103, worst frame 15.4ms, draws 475, objects 1436, primitives 3190, process 13.27ms, physics 2.09ms
+  10.3  crowd    a car sounded its horn at her in the road at (100,89) | exc 18, in 14.4/s (crowd 0.0, events 14.4), sleep 4
+  10.5  near     leaf_blower at (104,89), 109px, exc 18, in 15.1/s (crowd 0.2, events 14.8), sleep 4
+  10.8  path     off the corridor at (102,89), after 6.3s on it
+  10.8  cue      the mark over her head: soon for 0.4s (0.4s of it on the road) | a car, and she is in the road
+  10.8  near     cafe_tables at (103,91), 63px, exc 22, in 16.6/s (crowd 2.3, events 14.2), sleep 5
+  11.0  near     leaf_blower at (104,89), 59px, exc 24, in 15.8/s (crowd 1.5, events 14.2), sleep 5
+  11.1  frame    fps 103, worst frame 12.3ms, draws 604, objects 1685, primitives 3691, process 14.79ms, physics 2.29ms
+  11.4  near     leaf_blower at (104,89), 31px, exc 26, in 8.7/s (crowd 0.0, events 8.6), sleep 5
+  11.4  near     delivery_van at (108,88), 149px, exc 27, in 7.8/s (crowd 0.0, events 7.7), sleep 5
+  12.1  frame    fps 94, worst frame 15.0ms, draws 556, objects 1609, primitives 3539, process 15.24ms, physics 2.32ms
+  12.6  blocked  pressed 90° for 1.0s at (104,89) without moving
+  13.1  frame    fps 97, worst frame 17.8ms, draws 559, objects 1614, primitives 3573, process 15.73ms, physics 2.51ms
+  13.7  freeze   sleep stopped filling | exc 35, in 18.9/s (crowd 0.0, events 19.0), sleep 6 | near: leaf_blower 25px
+  14.1  frame    fps 91, worst frame 13.3ms, draws 557, objects 1662, primitives 3642, process 14.54ms, physics 2.33ms
+  15.1  frame    fps 100, worst frame 10.9ms, draws 560, objects 1665, primitives 3672, process 14.64ms, physics 2.21ms
+  15.6  blocked  pressed 90° for 4.0s at (104,89) without moving
+  16.1  frame    fps 100, worst frame 11.8ms, draws 560, objects 1663, primitives 3671, process 14.59ms, physics 2.03ms
+  17.1  frame    fps 101, worst frame 13.3ms, draws 560, objects 1665, primitives 3675, process 13.83ms, physics 2.08ms
+  18.1  frame    fps 94, worst frame 16.1ms, draws 557, objects 1662, primitives 3642, process 14.90ms, physics 2.25ms
+  18.6  blocked  pressed 90° for 7.0s at (104,89) without moving
+  19.1  frame    fps 90, worst frame 17.7ms, draws 554, objects 1657, primitives 3608, process 15.38ms, physics 2.35ms

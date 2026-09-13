@@ -296,12 +296,12 @@ this is the map.
   findings with file and line, a failure scenario and a fix size each, plus what was found
   clean; each finding is now fixed, filed as a queue item under the milestone that owns the
   code or a defect under M100, or asked as a question, and the record is in `DECISIONS.md`
-  under M126. **M124's desktop measurement is built and recorded** (`DECISIONS.md`,
-  M124, where a frame goes): the frame is spent rebuilding draw lists, not switching textures,
-  and M124's entry in `TODO.md` holds the two fixes the numbers name, the phone half of the
-  measurement, and the atlas item gated on that phone half. M125's five suites are pruned and
-  recorded (`DECISIONS.md`, M125); its entry holds the four suites still over the runner's
-  budget.
+  under M126. **M124's desktop measurement and its two fixes are built and recorded**
+  (`DECISIONS.md`, M124, where a frame goes, and M124, the two fixes built): events redraw only
+  when their picture changes and the building shadows are culled per chunk, and M124's entry in
+  `TODO.md` holds the phone half of the measurement, the atlas item gated on that phone half,
+  and the audit's per-frame findings. M125's five suites are pruned and recorded
+  (`DECISIONS.md`, M125); its entry holds the four suites still over the runner's budget.
 
 ## The queue, as prioritised on 2026-09-09
 

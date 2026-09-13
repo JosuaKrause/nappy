@@ -340,28 +340,18 @@ asleep" is a claim about where the meter can be held under 35, not about the cos
 
 [PLAYTEST-67](playtests/PLAYTEST-67.md). Closes M100's *frame rate on somebody else's machine*.
 
-**What is true today.** The desktop half is measured and the record, with its table, is in
-`DECISIONS.md` under M124, where a frame goes. The readout (`4` in a debug build, on by default)
-shows the frame's draw calls, renderable objects, primitives and the process and physics times,
-and the run log carries them once a second as a `frame` entry. On the desktop rig the frame is
-spent **rebuilding draw lists on the CPU, not switching textures**: every live event calls
-`queue_redraw()` every tick where the crowd already gates it (+19% frame rate when it fires
-once), and the building shadows are 1,918 rects covering the whole city, re-submitted every
-frame as one item (+6%; the two together +30%). The resolver's per-draw lookup and the halo's
-re-trace are both inside the run-to-run noise and are struck. Everything under `assets/` is still
-an individually loaded texture and nothing is atlased, which is the answer to the player's
-question; whether that matters is a phone's question, not a desktop's.
+**What is true today.** The desktop half is measured and its two fixes are built; the records,
+with their tables, are in `DECISIONS.md` under M124, where a frame goes, and M124, the two fixes
+built. The readout (`4` in a debug build, on by default) shows the frame's draw calls,
+renderable objects, primitives and the process and physics times, and the run log carries them
+once a second as a `frame` entry. An event redraws only when its picture changes, the way the
+crowd always has, and the building shadows are drawn per 16-tile chunk so the renderer culls
+the off-screen ones; together they are worth about 40% of the desktop frame rate on the
+measurement walk. The resolver's per-draw lookup and the halo's re-trace are inside the
+run-to-run noise and are struck. Everything under `assets/` is still an individually loaded
+texture and nothing is atlased, which is the answer to the player's question; whether that
+matters is a phone's question, not a desktop's.
 
-- [~] **Events redraw only when their picture changes.** `EventInstance` gets the crowd's gate
-      — `CrowdAgent._redraw_if_the_picture_changed()`, a key over everything `_draw()` reads
-      that changes over time, and `queue_redraw()` only when the key moves — so a stationary
-      seal, hut, café or stall is drawn from a retained list. Every animated row must animate at
-      the same rate: strides, the strum, the sitters' lean, the caret, the telegraph, a leaving
-      fade, the robber turning to face her. Measured on the same walk as the record's table.
-- [~] **Building shadows are not re-submitted whole every frame.** Split into per-chunk canvas
-      items so the renderer's own rect culling drops the off-screen ones, or built once as a
-      mesh — whichever keeps the picture pixel-identical for less; `Tuning.BUILDING_SHADOW_ALPHA`,
-      the diagonal corner and joined buildings shading as one (`DECISIONS.md`, M122) survive.
 - [ ] **The phone half of the measurement.** The same six numbers off a phone: `tools/serve-web.sh`
       serves a debug web build on the local network, the readout is on by default there, and a
       screenshot of it standing on any day-1 street beside the desktop's is the comparison

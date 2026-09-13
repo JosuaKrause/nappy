@@ -7,6 +7,8 @@ func run(t) -> void:
 	_test_a_single_rectangle_casts_the_read_shape(t)
 	_test_two_edge_joined_buildings_shade_as_one_with_no_seam(t)
 	_test_a_disjoint_building_is_unaffected_by_a_neighbour(t)
+	_test_the_chunks_are_a_partition_of_the_tile_sets(t)
+	_test_a_chunk_holds_only_its_own_tiles(t)
 
 ## The exact reading of the shape the entry gives: a band along the bottom edge one tile past the
 ## western corner, a band up the western edge stopping one tile short of the top, and a triangle
@@ -66,6 +68,63 @@ func _test_a_disjoint_building_is_unaffected_by_a_neighbour(t) -> void:
 		expected_full[tile] = true
 	t.check(_to_set(combined.full) == expected_full,
 			"two buildings that do not touch each shade exactly as they would alone")
+
+# -------------------------------------------------------------------- the chunks ---
+# The shadows are drawn by one `CanvasItem` per patch of city rather than one for the whole of it,
+# so the renderer's own rect culling drops the off-screen ones — see `BuildingShadows`' class doc.
+# The picture may not move a pixel for it, and what makes that true is that the split is a
+# **partition**: every tile `compute()` produced is drawn by exactly one chunk, and none is drawn
+# twice. A dropped tile is a shadow that silently stops being drawn and a duplicated one is a tile
+# shaded twice over, and nothing else in a frame would report either.
+
+## Buildings scattered far enough apart to land in several chunks, and one straddling a chunk
+## boundary so the split is actually exercised rather than handed a set that fits in one.
+func _spread_out_buildings() -> Array[Rect2i]:
+	return [
+		Rect2i(1, 1, 4, 4),
+		Rect2i(BuildingShadows.CHUNK_TILES - 2, 3, 5, 3), # straddles the first vertical boundary
+		Rect2i(3, BuildingShadows.CHUNK_TILES * 2 + 1, 6, 4),
+		Rect2i(BuildingShadows.CHUNK_TILES * 3, BuildingShadows.CHUNK_TILES * 3, 7, 7),
+	]
+
+func _test_the_chunks_are_a_partition_of_the_tile_sets(t) -> void:
+	var tiles := BuildingShadows.compute(_spread_out_buildings())
+	var by_chunk := BuildingShadows.split(tiles)
+	t.check(by_chunk.size() > 1,
+			"the buildings were spread over more than one chunk (%d)" % by_chunk.size())
+	var full: Array[Vector2i] = []
+	var triangles: Array[Vector2i] = []
+	for key in by_chunk:
+		var chunk: BuildingShadows.Tiles = by_chunk[key]
+		full.append_array(chunk.full)
+		triangles.append_array(chunk.triangles)
+	t.check(full.size() == tiles.full.size(),
+			"the chunks hold every full tile exactly once (%d of %d)" % [full.size(), tiles.full.size()])
+	t.check(triangles.size() == tiles.triangles.size(),
+			"the chunks hold every corner triangle exactly once (%d of %d)"
+					% [triangles.size(), tiles.triangles.size()])
+	t.check(_to_set(full) == _to_set(tiles.full),
+			"and they are the same full tiles, not a different set of the same size")
+	t.check(_to_set(triangles) == _to_set(tiles.triangles),
+			"and the same corner triangles")
+
+## Each chunk's key is the patch its tiles actually fall in, which is what makes the renderer's rect
+## culling correct: a tile filed under a neighbour's key would be drawn by an item whose rect is
+## somewhere else, so it would come and go with the wrong patch of city.
+func _test_a_chunk_holds_only_its_own_tiles(t) -> void:
+	var by_chunk := BuildingShadows.split(BuildingShadows.compute(_spread_out_buildings()))
+	var size := BuildingShadows.CHUNK_TILES
+	var checked := 0
+	for key in by_chunk:
+		var chunk: BuildingShadows.Tiles = by_chunk[key]
+		var all: Array[Vector2i] = []
+		all.append_array(chunk.full)
+		all.append_array(chunk.triangles)
+		for tile in all:
+			checked += 1
+			t.check(Vector2i(floori(float(tile.x) / size), floori(float(tile.y) / size)) == key,
+					"%s belongs to chunk %s" % [tile, key])
+	t.check(checked > 0, "there were tiles to ask about (%d)" % checked)
 
 func _to_set(tiles: Array[Vector2i]) -> Dictionary:
 	var set := {}
