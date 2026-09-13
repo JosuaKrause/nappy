@@ -1,0 +1,100 @@
+{
+	"command": "godot --headless --path . res://docs/evidence/shared-damage-2026-09-12/damage_atlas_review.tscn -- --output-dir DIRECTORY",
+	"damage_variants": 6,
+	"godot_version": "4.7.2-stable (official)",
+	"inputs_sha256": {
+		"res://assets/ground_tileset.tres": "5bd48cca14ea51ea4ae5c624fd0cfcc924d693b3b815be716532a35d122412ed",
+		"res://assets/illustrated/svg-transfer/tiles/layers/manifest.json": "7de53117f71d212574b3e40abf870997cc06a55312fcb07224f178663881464a",
+		"res://docs/evidence/shared-damage-2026-09-12/damage_atlas_review.gd": "3aa060e92e544ca488d975494456a1a79e86af5b33ebe9bb4be55c0e28ca359e",
+		"res://src/visuals/ground_layers.gd": "44622a7fc537ca38726695c086811266cf4736d13c1a71a6a5db1fbb07917a2b",
+		"res://src/visuals/texture_resolver.gd": "63869497f3655bf9a5bc6fbbac4130e8825fca90c781c62aeace83aeb9440c66"
+	},
+	"presentation_mode": "default PNG composition",
+	"records": [
+		{
+			"atlas_cells": 6,
+			"atlas_size": [
+				192,
+				32
+			],
+			"name": "road-hairline",
+			"source_id": 40
+		},
+		{
+			"atlas_cells": 6,
+			"atlas_size": [
+				192,
+				32
+			],
+			"name": "road-cracked",
+			"source_id": 42
+		},
+		{
+			"atlas_cells": 6,
+			"atlas_size": [
+				192,
+				32
+			],
+			"name": "road-broken",
+			"source_id": 44
+		},
+		{
+			"atlas_cells": 6,
+			"atlas_size": [
+				192,
+				32
+			],
+			"name": "sidewalk-hairline",
+			"source_id": 46
+		},
+		{
+			"atlas_cells": 6,
+			"atlas_size": [
+				192,
+				32
+			],
+			"name": "sidewalk-cracked",
+			"source_id": 48
+		},
+		{
+			"atlas_cells": 6,
+			"atlas_size": [
+				192,
+				32
+			],
+			"name": "sidewalk-broken",
+			"source_id": 50
+		},
+		{
+			"atlas_cells": 6,
+			"atlas_size": [
+				192,
+				32
+			],
+			"name": "alley-hairline",
+			"source_id": 52
+		},
+		{
+			"atlas_cells": 6,
+			"atlas_size": [
+				192,
+				32
+			],
+			"name": "alley-cracked",
+			"source_id": 54
+		},
+		{
+			"atlas_cells": 6,
+			"atlas_size": [
+				192,
+				32
+			],
+			"name": "alley-broken",
+			"source_id": 56
+		}
+	],
+	"tile_size": [
+		32,
+		32
+	]
+}

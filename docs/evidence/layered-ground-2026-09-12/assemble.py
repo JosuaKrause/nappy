@@ -614,12 +614,16 @@ def _engine_contract(bundle: Path) -> dict[str, object]:
 	source_layers["5"] = [{"component": "crosswalk", "rotation_degrees": 90}]
 	for source_id, direction in ((36, "n"), (37, "s"), (38, "w"), (39, "e")):
 		source_layers[str(source_id)] = [{"component": "main_crosswalk", "rotation_degrees": rotations[direction]}]
-	for source_id, name in zip(range(40, 46), (name for name in DAMAGE if name.startswith("road_")), strict=True):
-		source_layers[str(source_id)] = [{"component": name, "rotation_degrees": 0}]
-	for source_id, name in zip(range(46, 52), (name for name in DAMAGE if name.startswith("sidewalk_")), strict=True):
-		source_layers[str(source_id)] = [{"component": name, "rotation_degrees": 0}]
-	for source_id, name in zip(range(52, 58), (name for name in DAMAGE if name.startswith("alley_")), strict=True):
-		source_layers[str(source_id)] = [{"component": name, "rotation_degrees": 0}]
+	damage_pools = {
+		state: [name for name in DAMAGE if f"_cracked_{state}_" in name]
+		for state in ("hairline", "cracked", "broken")
+	}
+	source_damage_types = {
+		str(source_id): state
+		for first_source in (40, 46, 52)
+		for source_id, state in zip(range(first_source, first_source + 6),
+			("hairline", "hairline", "cracked", "cracked", "broken", "broken"), strict=True)
+	}
 	return {
 		"version": 1,
 		"tile_size": 32,
@@ -634,6 +638,8 @@ def _engine_contract(bundle: Path) -> dict[str, object]:
 			**{str(source_id): "alley" for source_id in range(52, 58)},
 		},
 		"components": components,
+		"damage_pools": damage_pools,
+		"source_damage_types": source_damage_types,
 		"source_layers": source_layers,
 		"grass_features": [f"grass_feature_{suffix}" for suffix in "abc"],
 	}

@@ -7,6 +7,8 @@ const TILE_SIZE := Vector2i(32, 32)
 const GRASS_SOURCE_ID := 12
 const FOREST_SOURCE_ID := 17
 const GRASS_VARIANTS := 8
+const DAMAGE_VARIANTS := 6
+const DAMAGE_SOURCE_IDS := [40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
 
 ## Duplicates `authored` before replacing its SVG transfers and composing the available layer set.
 ## A malformed or incomplete layer set leaves that source on the resolver's normal PNG/SVG fallback;
@@ -26,9 +28,13 @@ static func build_tile_set(authored: TileSet) -> TileSet:
 		var source := result.get_source(source_id) as TileSetAtlasSource
 		if source == null:
 			continue
-		var replacement := _composed_texture(source_id, manifest)
+		var replacement := _damage_atlas(source_id, manifest) if source_id in DAMAGE_SOURCE_IDS \
+				else _composed_texture(source_id, manifest)
 		if replacement != null:
 			source.texture = replacement
+			if source_id in DAMAGE_SOURCE_IDS:
+				for variant in range(1, DAMAGE_VARIANTS):
+					source.create_tile(Vector2i(variant, 0))
 	var grass_atlas := _grass_atlas(manifest)
 	if grass_atlas != null:
 		for source_id in [GRASS_SOURCE_ID, FOREST_SOURCE_ID]:
@@ -40,17 +46,25 @@ static func build_tile_set(authored: TileSet) -> TileSet:
 				grass.create_tile(Vector2i(variant, 0))
 	return result
 
-## Returns the atlas coordinate selected for a ground cell. The source ID stays the map's own ID,
-## and grass-like ground sources have extra atlas cells, so collision and every semantic selector
-## stay unchanged.
+## Returns the atlas coordinate selected for a ground cell. The source ID stays the map's own ID;
+## grass and damage sources add visual-only atlas cells, so collision and semantic selection stay
+## unchanged while their shared details can vary by city seed and coordinate.
 static func atlas_coords_for(source_id: int, city_seed: int, tile: Vector2i,
 		tile_set: TileSet) -> Vector2i:
-	if source_id not in [GRASS_SOURCE_ID, FOREST_SOURCE_ID]:
-		return Vector2i.ZERO
-	var grass := tile_set.get_source(source_id) as TileSetAtlasSource
-	if grass == null or grass.texture == null or grass.texture.get_width() < TILE_SIZE.x * 2:
-		return Vector2i.ZERO
-	return Vector2i(posmod(hash("grass:%d:%d:%d" % [city_seed, tile.x, tile.y]), GRASS_VARIANTS), 0)
+	if source_id in [GRASS_SOURCE_ID, FOREST_SOURCE_ID]:
+		var grass := tile_set.get_source(source_id) as TileSetAtlasSource
+		if grass == null or grass.texture == null or grass.texture.get_width() < TILE_SIZE.x * 2:
+			return Vector2i.ZERO
+		return Vector2i(posmod(hash("grass:%d:%d:%d" % [city_seed, tile.x, tile.y]), GRASS_VARIANTS), 0)
+	if source_id in DAMAGE_SOURCE_IDS:
+		var damage := tile_set.get_source(source_id) as TileSetAtlasSource
+		if damage == null or damage.texture == null or damage.texture.get_width() < TILE_SIZE.x * DAMAGE_VARIANTS \
+				or not damage.has_tile(Vector2i(DAMAGE_VARIANTS - 1, 0)):
+			return Vector2i.ZERO
+		# Surface and A/B source IDs retain GroundTiles' placement semantics; this seed/cell hash only
+		# selects the shared drawing, so one coordinate has the same variation on every material.
+		return Vector2i(posmod(hash("damage:%d:%d:%d" % [city_seed, tile.x, tile.y]), DAMAGE_VARIANTS), 0)
+	return Vector2i.ZERO
 
 ## Alpha-composites opaque `base` and transparent layers without changing base pixels where an
 ## overlay is empty. Public for the focused pixel-level contract tests.
@@ -122,6 +136,27 @@ static func _composed_texture(source_id: int, manifest: Dictionary) -> Texture2D
 		overlays.append(rotated)
 	var composed := compose_image(base, overlays)
 	return ImageTexture.create_from_image(composed) if composed != null else null
+
+## Composes every accepted stencil in the source's severity pool over its own semantic base.
+## The source ID still tells GroundTiles which material and severity it placed; only the atlas cell
+## is visual variation, so an unavailable pool leaves the authored SVG source untouched.
+static func _damage_atlas(source_id: int, manifest: Dictionary) -> Texture2D:
+	var source_bases: Dictionary = manifest.get("source_bases", {})
+	var base := _base_image(str(source_bases.get(str(source_id), "")), manifest)
+	var damage_types: Dictionary = manifest.get("source_damage_types", {})
+	var damage_type: String = str(damage_types.get(str(source_id), ""))
+	var pools: Dictionary = manifest.get("damage_pools", {})
+	var pool: Array = pools.get(damage_type, [])
+	if base == null or pool.size() != DAMAGE_VARIANTS:
+		return null
+	var atlas := Image.create(TILE_SIZE.x * DAMAGE_VARIANTS, TILE_SIZE.y, false, Image.FORMAT_RGBA8)
+	for variant in DAMAGE_VARIANTS:
+		var overlay := _component_image(str(pool[variant]), manifest)
+		var composed := compose_image(base, [overlay]) if overlay != null else null
+		if composed == null:
+			return null
+		atlas.blit_rect(composed, Rect2i(Vector2i.ZERO, TILE_SIZE), Vector2i(variant * TILE_SIZE.x, 0))
+	return ImageTexture.create_from_image(atlas)
 
 static func _grass_atlas(manifest: Dictionary) -> Texture2D:
 	var base := _base_image("grass", manifest)

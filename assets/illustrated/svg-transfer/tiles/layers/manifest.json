@@ -84,6 +84,37 @@
     "grass_feature_b": "grass_feature_b.png",
     "grass_feature_c": "grass_feature_c.png"
   },
+  "damage_pools": {
+    "hairline": [
+      "sidewalk_cracked_hairline_a",
+      "sidewalk_cracked_hairline_b",
+      "road_cracked_hairline_a",
+      "road_cracked_hairline_b",
+      "alley_cracked_hairline_a",
+      "alley_cracked_hairline_b"
+    ],
+    "cracked": [
+      "sidewalk_cracked_cracked_a",
+      "sidewalk_cracked_cracked_b",
+      "road_cracked_cracked_a",
+      "road_cracked_cracked_b",
+      "alley_cracked_cracked_a",
+      "alley_cracked_cracked_b"
+    ],
+    "broken": [
+      "sidewalk_cracked_broken_a",
+      "sidewalk_cracked_broken_b",
+      "road_cracked_broken_a",
+      "road_cracked_broken_b",
+      "alley_cracked_broken_a",
+      "alley_cracked_broken_b"
+    ]
+  },
+  "source_damage_types": {
+    "40": "hairline", "41": "hairline", "42": "cracked", "43": "cracked", "44": "broken", "45": "broken",
+    "46": "hairline", "47": "hairline", "48": "cracked", "49": "cracked", "50": "broken", "51": "broken",
+    "52": "hairline", "53": "hairline", "54": "cracked", "55": "cracked", "56": "broken", "57": "broken"
+  },
   "source_layers": {
     "8": [
       {
@@ -231,114 +262,6 @@
       {
         "component": "main_crosswalk",
         "rotation_degrees": 90
-      }
-    ],
-    "40": [
-      {
-        "component": "road_cracked_hairline_a",
-        "rotation_degrees": 0
-      }
-    ],
-    "41": [
-      {
-        "component": "road_cracked_hairline_b",
-        "rotation_degrees": 0
-      }
-    ],
-    "42": [
-      {
-        "component": "road_cracked_cracked_a",
-        "rotation_degrees": 0
-      }
-    ],
-    "43": [
-      {
-        "component": "road_cracked_cracked_b",
-        "rotation_degrees": 0
-      }
-    ],
-    "44": [
-      {
-        "component": "road_cracked_broken_a",
-        "rotation_degrees": 0
-      }
-    ],
-    "45": [
-      {
-        "component": "road_cracked_broken_b",
-        "rotation_degrees": 0
-      }
-    ],
-    "46": [
-      {
-        "component": "sidewalk_cracked_hairline_a",
-        "rotation_degrees": 0
-      }
-    ],
-    "47": [
-      {
-        "component": "sidewalk_cracked_hairline_b",
-        "rotation_degrees": 0
-      }
-    ],
-    "48": [
-      {
-        "component": "sidewalk_cracked_cracked_a",
-        "rotation_degrees": 0
-      }
-    ],
-    "49": [
-      {
-        "component": "sidewalk_cracked_cracked_b",
-        "rotation_degrees": 0
-      }
-    ],
-    "50": [
-      {
-        "component": "sidewalk_cracked_broken_a",
-        "rotation_degrees": 0
-      }
-    ],
-    "51": [
-      {
-        "component": "sidewalk_cracked_broken_b",
-        "rotation_degrees": 0
-      }
-    ],
-    "52": [
-      {
-        "component": "alley_cracked_hairline_a",
-        "rotation_degrees": 0
-      }
-    ],
-    "53": [
-      {
-        "component": "alley_cracked_hairline_b",
-        "rotation_degrees": 0
-      }
-    ],
-    "54": [
-      {
-        "component": "alley_cracked_cracked_a",
-        "rotation_degrees": 0
-      }
-    ],
-    "55": [
-      {
-        "component": "alley_cracked_cracked_b",
-        "rotation_degrees": 0
-      }
-    ],
-    "56": [
-      {
-        "component": "alley_cracked_broken_a",
-        "rotation_degrees": 0
-      }
-    ],
-    "57": [
-      {
-        "component": "alley_cracked_broken_b",
-        "rotation_degrees": 0
       }
     ]
   },

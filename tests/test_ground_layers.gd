@@ -12,7 +12,8 @@ func run(t) -> void:
 	_test_sparse_grass_selection_is_stable_and_varied(t)
 	_test_manifest_covers_the_authored_ground_sources(t)
 	_test_directional_component_pairs_match_ground_tiles(t)
-	_test_damage_components_match_their_source_surface(t)
+	_test_damage_pools_are_shared_without_changing_source_semantics(t)
+	_test_damage_atlas_selection_is_stable_and_shared(t)
 	_test_composed_sources_keep_ids_and_visible_detail(t)
 	_test_svg_override_and_repaint_source_are_idempotent(t)
 
@@ -59,17 +60,36 @@ func _test_sparse_grass_selection_is_stable_and_varied(t) -> void:
 	t.check(GroundLayers.atlas_coords_for(0, 4242, Vector2i(3, 5), tile_set) == Vector2i.ZERO,
 			"non-grass sources retain their authored atlas coordinate")
 
-func _test_damage_components_match_their_source_surface(t) -> void:
-	var parser := JSON.new()
-	t.check(parser.parse(FileAccess.get_file_as_string(MANIFEST_PATH)) == OK,
-		"the runtime layer manifest parses before source selection uses it")
-	if parser.data is not Dictionary:
+func _test_damage_pools_are_shared_without_changing_source_semantics(t) -> void:
+	var manifest := _layer_manifest(t)
+	if manifest.is_empty():
 		return
-	var manifest: Dictionary = parser.data
+	var components: Dictionary = manifest.get("components", {})
+	var pools: Dictionary = manifest.get("damage_pools", {})
+	for damage_type in ["hairline", "cracked", "broken"]:
+		var pool: Array = pools.get(damage_type, [])
+		t.check(pool.size() == GroundLayers.DAMAGE_VARIANTS,
+				"the shared %s pool retains all six accepted stencils" % damage_type)
+		var provenance: Dictionary = {}
+		for component_value in pool:
+			var component: String = str(component_value)
+			provenance[component.get_slice("_", 0)] = true
+			t.check(components.has(component),
+					"the shared %s pool names a published transparent component" % damage_type)
+		t.check(provenance.has_all(["road", "sidewalk", "alley"]),
+				"the shared %s pool makes every accepted surface drawing available on every base" % damage_type)
+	var source_types: Dictionary = manifest.get("source_damage_types", {})
 	var source_layers: Dictionary = manifest.get("source_layers", {})
-	_check_damage_surface(t, source_layers, 40, 45, "road")
-	_check_damage_surface(t, source_layers, 46, 51, "sidewalk")
-	_check_damage_surface(t, source_layers, 52, 57, "alley")
+	for first_source in [40, 46, 52]:
+		for offset in range(6):
+			var source_id: int = int(first_source) + offset
+			var expected: String = ["hairline", "hairline", "cracked", "cracked", "broken", "broken"][offset]
+			t.check(str(source_types.get(str(source_id), "")) == expected,
+					"damage source %d retains its authored severity and A/B gameplay slot" % source_id)
+			t.check(not source_layers.has(str(source_id)),
+					"damage source %d selects a shared pool instead of a surface-bound layer" % source_id)
+			t.check(AUTHORED_GROUND.get_source(source_id) != null,
+					"damage source %d remains an authored GroundTiles source" % source_id)
 
 func _test_directional_component_pairs_match_ground_tiles(t) -> void:
 	var manifest := _layer_manifest(t)
@@ -139,15 +159,6 @@ func _layer_manifest(t) -> Dictionary:
 		"the runtime layer manifest parses before source selection uses it")
 	return parser.data if parser.data is Dictionary else {}
 
-func _check_damage_surface(t, source_layers: Dictionary, first: int, last: int, surface: String) -> void:
-	for source_id in range(first, last + 1):
-		var layers: Array = source_layers.get(str(source_id), [])
-		var component: String = ""
-		if not layers.is_empty() and layers[0] is Dictionary:
-			component = str((layers[0] as Dictionary).get("component", ""))
-		t.check(component.begins_with(surface + "_cracked_"),
-			"damage source %d retains its %s surface component" % [source_id, surface])
-
 func _test_composed_sources_keep_ids_and_visible_detail(t) -> void:
 	TextureResolver.reset_for_tests(false)
 	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND)
@@ -174,13 +185,69 @@ func _test_composed_sources_keep_ids_and_visible_detail(t) -> void:
 				t.check(curbed_image.get_pixel(x, y) == base_image.get_pixel(x, y),
 						"curbstone transparency leaves sidewalk base intact at %s" % Vector2i(x, y))
 	t.check(visible, "the curbstone component remains visible in the engine-composed source")
+	var manifest := _layer_manifest(t)
+	var source_bases: Dictionary = manifest.get("source_bases", {})
+	var pools: Dictionary = manifest.get("damage_pools", {})
+	var source_types: Dictionary = manifest.get("source_damage_types", {})
+	for source_id in [40, 46, 52]:
+		var damage := composed.get_source(source_id) as TileSetAtlasSource
+		var damage_image := damage.texture.get_image() if damage and damage.texture else null
+		t.check(damage_image != null and damage_image.get_width() == GroundLayers.TILE_SIZE.x * GroundLayers.DAMAGE_VARIANTS,
+				"damage source %d receives a six-cell shared-stencil atlas" % source_id)
+		for variant in GroundLayers.DAMAGE_VARIANTS:
+			t.check(damage.has_tile(Vector2i(variant, 0)),
+					"damage source %d exposes atlas cell %d to TileMapLayer" % [source_id, variant])
+		if damage_image == null:
+			continue
+		var base_name: String = str(source_bases.get(str(source_id), ""))
+		var base_path: String = "res://assets/illustrated/svg-transfer/tiles/layers/%s_base.png" % base_name
+		var base_texture: Texture2D = load(base_path) as Texture2D
+		var pool: Array = pools.get(str(source_types.get(str(source_id), "")), [])
+		for variant in GroundLayers.DAMAGE_VARIANTS:
+			var overlay_path: String = "res://assets/illustrated/svg-transfer/tiles/layers/%s" % _components_filename(manifest, str(pool[variant]))
+			var overlay_texture: Texture2D = load(overlay_path) as Texture2D
+			_check_damage_base_pixels(t, damage_image, base_texture.get_image(), overlay_texture.get_image(), source_id, variant)
+
+func _test_damage_atlas_selection_is_stable_and_shared(t) -> void:
+	TextureResolver.reset_for_tests(false)
+	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND)
+	var tile := Vector2i(3, 5)
+	var road := GroundLayers.atlas_coords_for(40, 4242, tile, composed)
+	t.check(road == GroundLayers.atlas_coords_for(40, 4242, tile, composed),
+			"the same city seed and damage coordinate select the same shared atlas cell")
+	for source_id in [46, 52]:
+		t.check(road == GroundLayers.atlas_coords_for(source_id, 4242, tile, composed),
+				"one seed and coordinate select the same shared variation regardless of its material")
+	var seen: Dictionary = {}
+	for x in range(16):
+		var coords := GroundLayers.atlas_coords_for(40, 4242, Vector2i(x, 5), composed)
+		seen[coords] = true
+		t.check(coords.x >= 0 and coords.x < GroundLayers.DAMAGE_VARIANTS and coords.y == 0,
+				"damage source 40 selects an atlas coordinate within its six available cells")
+	t.check(seen.size() > 1, "nearby damage cells use more than one shared stencil variation")
+	TextureResolver.reset_for_tests(DevFlags.svg_requested())
+
+func _components_filename(manifest: Dictionary, component: String) -> String:
+	var components: Dictionary = manifest.get("components", {})
+	return str(components.get(component, ""))
+
+func _check_damage_base_pixels(t, atlas: Image, base: Image, overlay: Image, source_id: int,
+		variant: int) -> void:
+	for y in GroundLayers.TILE_SIZE.y:
+		for x in GroundLayers.TILE_SIZE.x:
+			if overlay.get_pixel(x, y).a <= 0.01:
+				t.check(atlas.get_pixel(x + variant * GroundLayers.TILE_SIZE.x, y) == base.get_pixel(x, y),
+						"damage atlas %d cell %d preserves its semantic base outside the stencil at %s" % [source_id, variant, Vector2i(x, y)])
 
 func _test_svg_override_and_repaint_source_are_idempotent(t) -> void:
 	TextureResolver.reset_for_tests(true)
 	var svg := GroundLayers.build_tile_set(AUTHORED_GROUND)
 	var svg_curb := svg.get_source(8) as TileSetAtlasSource
 	t.check(svg_curb.texture.resource_path.ends_with("assets/tiles/sidewalk_kerb_n.svg"),
-		"the SVG override retains the authored ground source without a PNG composite")
+			"the SVG override retains the authored ground source without a PNG composite")
+	var svg_damage := svg.get_source(40) as TileSetAtlasSource
+	t.check(svg_damage.texture.resource_path.ends_with("assets/tiles/road_cracked_hairline_a.svg"),
+			"the SVG override keeps the authored damage source instead of a shared PNG atlas")
 	TextureResolver.reset_for_tests(false)
 	var first := GroundLayers.build_tile_set(AUTHORED_GROUND)
 	var second := GroundLayers.build_tile_set(AUTHORED_GROUND)
