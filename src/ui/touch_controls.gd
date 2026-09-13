@@ -366,6 +366,26 @@ const _MOUSE_POINTER_INDEX := -2
 ## currently holding the button.
 func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 	if pressed:
+		if get_tree().paused:
+			# A press that lands while a screen has the day paused never reaches the world —
+			# `_on_tap()`'s own guard already no-ops it, and this returns *before* the pause
+			# button's own corner catch or `_drag_pointer_index` below, rather than after.
+			# **This is the fix for M127's "already walking" report.** Without this early
+			# return, a press dismissing a screen (the title's own disc, the summary's
+			# continue, the pause's own continue) still fell through to `_drag_pointer_index
+			# = index` below and armed drag-tracking for this pointer even though `_on_tap()`
+			# did nothing with the press itself — so a finger or a mouse button still down a
+			# frame or two later, once the screen's own two-frame acknowledge delay has
+			# unpaused the tree, generates an ordinary `InputEventScreenDrag`/
+			# `InputEventMouseMotion` for the *same* index, `_on_drag()` reads it as a live
+			# re-aim (nothing about it said "this pointer's opening press was swallowed"), and
+			# she starts the resumed day walking toward wherever that follow-up nudge landed.
+			# A single pixel of sensor noise was enough — confirmed against a scratch rig that
+			# reproduced it every time a motion event followed the dismiss press by as little
+			# as (2, 1)px, which is why the report reads as *always* rather than *sometimes* on
+			# a real touchscreen, where a finger held for even a couple of frames essentially
+			# never reports the exact same point twice.
+			return
 		if visible:
 			# The one correction a rotated presentation needs on the input side — see
 			# `ScreenOrientation`'s own doc for why this is the only file in `src/ui/` that needs it.
@@ -384,6 +404,10 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 		# when I'm back.")* A stop used to leave nothing tracked, so a finger landing in a circle
 		# was never followed and every motion event after it was discarded — see `_on_drag()`'s own
 		# doc for the boundary crossing this now makes live in both directions.
+		#
+		# **Never armed for a press `get_tree().paused` already refused above** — the same press
+		# this line's own `_on_tap()` call just turned into a no-op. Arming a drag off a press the
+		# world never saw is exactly the M127 leak: see the guard above this call.
 		_drag_pointer_index = index
 		return
 	if index == _drag_pointer_index:
