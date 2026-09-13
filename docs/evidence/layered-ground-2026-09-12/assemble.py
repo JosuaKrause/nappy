@@ -626,7 +626,7 @@ def _engine_contract(bundle: Path) -> dict[str, object]:
 		"bases": {"sidewalk": "sidewalk_base.png", "asphalt": "asphalt_base.png", "alley": "alley_base.png", "grass": "grass_base.png"},
 		"source_bases": {
 			"0": "asphalt", "1": "asphalt", "2": "asphalt", "3": "asphalt", "4": "asphalt", "5": "asphalt", "6": "asphalt",
-			"7": "sidewalk", "8": "sidewalk", "9": "sidewalk", "10": "sidewalk", "11": "sidewalk", "12": "grass", "14": "alley",
+			"7": "sidewalk", "8": "sidewalk", "9": "sidewalk", "10": "sidewalk", "11": "sidewalk", "12": "grass", "14": "alley", "17": "grass",
 			"21": "asphalt", "22": "asphalt", "23": "asphalt", "24": "asphalt", "25": "asphalt", "26": "sidewalk", "27": "sidewalk", "28": "sidewalk", "29": "sidewalk",
 			"36": "asphalt", "37": "asphalt", "38": "asphalt", "39": "asphalt",
 			**{str(source_id): "asphalt" for source_id in range(40, 46)},

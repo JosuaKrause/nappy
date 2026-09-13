@@ -162,6 +162,9 @@ func _test_composed_sources_keep_ids_and_visible_detail(t) -> void:
 	var grass := composed.get_source(GroundLayers.GRASS_SOURCE_ID) as TileSetAtlasSource
 	t.check(grass.texture.get_width() == GroundLayers.TILE_SIZE.x * GroundLayers.GRASS_VARIANTS,
 			"PNG ground mode installs the sparse grass variation atlas")
+	var forest := composed.get_source(GroundLayers.FOREST_SOURCE_ID) as TileSetAtlasSource
+	t.check(forest.texture.get_width() == GroundLayers.TILE_SIZE.x * GroundLayers.GRASS_VARIANTS,
+			"PNG ground mode gives forest the same sparse grass variation atlas")
 	var visible := false
 	for y in GroundLayers.TILE_SIZE.y:
 		for x in GroundLayers.TILE_SIZE.x:

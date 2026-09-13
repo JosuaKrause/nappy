@@ -5,6 +5,7 @@ extends RefCounted
 const MANIFEST_PATH := "res://assets/illustrated/svg-transfer/tiles/layers/manifest.json"
 const TILE_SIZE := Vector2i(32, 32)
 const GRASS_SOURCE_ID := 12
+const FOREST_SOURCE_ID := 17
 const GRASS_VARIANTS := 8
 
 ## Duplicates `authored` before replacing its SVG transfers and composing the available layer set.
@@ -28,22 +29,25 @@ static func build_tile_set(authored: TileSet) -> TileSet:
 		var replacement := _composed_texture(source_id, manifest)
 		if replacement != null:
 			source.texture = replacement
-	var grass := result.get_source(GRASS_SOURCE_ID) as TileSetAtlasSource
-	if grass != null:
-		var grass_atlas := _grass_atlas(manifest)
-		if grass_atlas != null:
+	var grass_atlas := _grass_atlas(manifest)
+	if grass_atlas != null:
+		for source_id in [GRASS_SOURCE_ID, FOREST_SOURCE_ID]:
+			var grass := result.get_source(source_id) as TileSetAtlasSource
+			if grass == null:
+				continue
 			grass.texture = grass_atlas
 			for variant in range(1, GRASS_VARIANTS):
 				grass.create_tile(Vector2i(variant, 0))
 	return result
 
 ## Returns the atlas coordinate selected for a ground cell. The source ID stays the map's own ID,
-## and only grass has extra atlas cells, so collision and every semantic selector stay unchanged.
+## and grass-like ground sources have extra atlas cells, so collision and every semantic selector
+## stay unchanged.
 static func atlas_coords_for(source_id: int, city_seed: int, tile: Vector2i,
 		tile_set: TileSet) -> Vector2i:
-	if source_id != GRASS_SOURCE_ID:
+	if source_id not in [GRASS_SOURCE_ID, FOREST_SOURCE_ID]:
 		return Vector2i.ZERO
-	var grass := tile_set.get_source(GRASS_SOURCE_ID) as TileSetAtlasSource
+	var grass := tile_set.get_source(source_id) as TileSetAtlasSource
 	if grass == null or grass.texture == null or grass.texture.get_width() < TILE_SIZE.x * 2:
 		return Vector2i.ZERO
 	return Vector2i(posmod(hash("grass:%d:%d:%d" % [city_seed, tile.x, tile.y]), GRASS_VARIANTS), 0)
@@ -92,7 +96,7 @@ static func _load_manifest() -> Dictionary:
 	return data if data is Dictionary and int(data.get("version", 0)) == 1 else {}
 
 static func _composed_texture(source_id: int, manifest: Dictionary) -> Texture2D:
-	if source_id == GRASS_SOURCE_ID:
+	if source_id in [GRASS_SOURCE_ID, FOREST_SOURCE_ID]:
 		return null
 	var source_bases: Dictionary = manifest.get("source_bases", {})
 	var base_name: String = source_bases.get(str(source_id), "")
