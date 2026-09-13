@@ -781,6 +781,44 @@ static func _release_movement() -> void:
 	Input.action_release(&"move_down")
 	Input.action_release(&"run")
 
+## What was locked in the moment `PauseScreen` last called `remember_before_pause()` — read back by
+## `resume_after_pause()` once that same screen closes. `Vector2.ZERO`/`false` reads as "she was
+## standing," which needs no further distinction from "nothing has been remembered yet": either way
+## there is nothing to press back.
+var _direction_before_pause := Vector2.ZERO
+var _run_before_pause := false
+
+## *"Pause can keep the last direction."* Called by `PauseScreen.open()`, before `_process()`'s own
+## pause-transition check reaches `_release_all()` and zeroes `_direction` for the duration of the
+## pause exactly as it always has — this stashes what `_release_all()` is about to erase, rather
+## than changing what `_release_all()` does, since the day-ending summary and the title screen both
+## still want that same zeroing with nothing to restore afterwards. See `resume_after_pause()` for
+## the other half.
+func remember_before_pause() -> void:
+	_direction_before_pause = _direction
+	_run_before_pause = _run_active
+
+## The other half of *"Pause can keep the last direction just don't overwrite it from the button
+## press."* Called by `PauseScreen.close()`, once the tree is actually running again, so the
+## heading that was locked in before the pause is what she walks off with — **not** the press that
+## dismissed the screen, which `_on_pointer()`'s own `get_tree().paused` guard already keeps from
+## ever being armed for a heading of its own (see that function's own doc). A no-op while standing:
+## `_direction_before_pause == Vector2.ZERO` covers both "she was standing" and "nothing was ever
+## remembered," and both mean there is nothing to press back.
+func resume_after_pause() -> void:
+	if _direction_before_pause == Vector2.ZERO:
+		return
+	_direction = _direction_before_pause
+	_walking = true
+	_set_axis(&"move_left", &"move_right", _direction.x)
+	_set_axis(&"move_up", &"move_down", _direction.y)
+	_run_active = _run_before_pause
+	if _run_active:
+		Input.action_press(&"run")
+	else:
+		Input.action_release(&"run")
+	queue_redraw()
+
 ## Whether a release at `at` lands the pause, or a slide-off cancels it. Pulled out to a pure,
 ## static function so a test can ask the geometry question on its own — `Input.parse_input_event()`
 ## queues the event for the engine's own next flush rather than updating anything a test can poll
