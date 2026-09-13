@@ -249,3 +249,9 @@ SVGs. Keep change history in `DECISIONS.md`; current docs explain the current ar
 Regenerate the illustrated quiet-square paving with a darker, muted material that sits naturally
 beside the surrounding street ground. Preserve its cool stone identity, native tile dimensions,
 opaque coverage and repeatable slab joins. Compare repeated tiles and their street neighbors.
+
+> use the same trick you used for the asphalt one the grass base texture
+
+Smooth the soft grass base with the same equal-weight blend of four quarter-turn orientations
+used for asphalt. Keep this base preparation offline and the separate grass clumps composed
+in the engine. Review repeated grass bases and the runtime park arrangement for brightness jumps.

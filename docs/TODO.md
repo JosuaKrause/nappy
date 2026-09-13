@@ -116,6 +116,9 @@ findings supported by the conversion and review.
       Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
+- [ ] Blend the soft grass base equally at 0°, 90°, 180° and 270°, applying the asphalt recipe
+      requested in PLAYTEST-65 to remove brightness jumps between grass cells. Preserve sparse
+      in-engine clump placement, store the preparation recipe and review repeated bases and parks.
 - [ ] Regenerate the quiet-square PNG as muted, darker cool stone paving. PLAYTEST-65 reports
       that its brightness stands out negatively. Preserve native dimensions, opaque coverage,
       slab joins and source identity; review repeated tiles beside the shared sidewalk and road
