@@ -126,11 +126,9 @@ findings supported by the conversion and review.
       existing joint artwork; retain reproducible native and enlarged repeated-tile checks.
 - [ ] Trace the noisy-grass re-report in PLAYTEST-65 through the loaded texture and fallback.
       Use the soft grass base as input to the equal four-quarter-turn blend; keep clumps separate
-      for engine composition. Verify the material in the player's actual viewing path.
-- [ ] Regenerate plaza paving with the muted quiet-square constraints in PLAYTEST-65: darker
-      low-contrast stone, flat lighting, no bright patch or directional gradient, clean repetition
-      and opaque native coverage. Preserve the plaza SVG's larger slab layout, compare neighboring
-      ground materials, and retain the raw image, exact prompt and reproducible registration.
+      for engine composition. The supplied running-game screenshot identifies forest ground,
+      which must share this material treatment with parks while retaining its tree placement
+      and gameplay type. Verify the actual City scene at the screenshot's seed and location.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The

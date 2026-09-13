@@ -38,6 +38,7 @@ can produce different pixels on another call; extraction and assembly use the re
 | Sidewalk join comparison in generated layouts | [Tile selection, frozen inputs and street assemblies](sidewalk-layout-review-2026-09-12/GENERATION.md) |
 | Shared ground bases and transparent details | [Frozen artwork, stencils and component assembly](layered-ground-2026-09-12/GENERATION.md) |
 | Muted quiet-square paving | [Generation prompt, raw image and repeat-neighbor registration](quiet-square-2026-09-12/GENERATION.md) |
+| Muted plaza paving | [Generation prompt, raw image and repeat-neighbor registration](plaza-paving-2026-09-12/GENERATION.md) |
 | Composed streets and varied grass in generated layouts | [In-engine composition and repeatable layout review](layered-ground-layout-2026-09-12/GENERATION.md) |
 | Player generation-reference SVG family | [Authoring sources, runtime pairings and frame roles](../graphics-creation/player/README.md) |
 | Logo, social card and exported icons | [Identity generation and registration](comic-identity-2026-09-12/GENERATION.md) |

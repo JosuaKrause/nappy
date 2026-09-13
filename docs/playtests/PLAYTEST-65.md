@@ -291,3 +291,12 @@ quiet square and plaza, while preserving each material and its authored slab lay
 
 The player reports the noisy grass in the running game launched from this repository with
 `./tools/run.sh`, without additional flags.
+
+> [Image #1] here is an example -- maybe when you reverted some of the sidewalk tiles you accidentally reverted more than just that?
+
+The screenshot is `asked/001-attempt1-asked.png` in the retained run
+`../evidence/archive/session-captures/2026-09-12/run-203740-seed3339657913-v0.8.2-863-g7f66b33-dirty/`.
+The pictured wooded ground matches the separate forest texture. Apply the shared soft grass
+base and separate clump composition to forests as well as parks, preserving forest semantics
+and tree placement. Audit complete joints in the other rectangular paving materials too,
+including brick pedestrian streets.

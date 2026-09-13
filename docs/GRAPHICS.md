@@ -262,6 +262,10 @@ large slab joints. Its [generation and registration recipe](evidence/quiet-squar
 preserves the SVG subject, style references, raw image and repeated-tile comparisons beside the
 shared ground bases.
 
+`assets/illustrated/svg-transfer/tiles/plaza.png` supplies darker muted stone with the plaza's
+larger slab layout. Its [generation and registration recipe](evidence/plaza-paving-2026-09-12/GENERATION.md)
+retains the raw artwork, SVG subject, quiet-square material reference and neighboring floor inputs.
+
 `assets/illustrated/svg-transfer/props/` supplies `garbage_sack.png` (28×34) and
 `garbage_sacks_pile.png` (42×34), bottom-center anchored, plus `litter_{can,apple,bag,newspaper,cup}.png`
 (32×32), center anchored. These use the existing `Prop` and `CityDecals` drawing paths with

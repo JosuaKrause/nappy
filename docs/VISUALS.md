@@ -85,6 +85,8 @@ The [engine layout recipe](evidence/layered-ground-layout-2026-09-12/GENERATION.
 the actual runtime textures in generated streets, junctions and grass patches.
 The [quiet-square recipe](evidence/quiet-square-2026-09-12/GENERATION.md) documents its muted
 cool-stone paving and repeated-neighbor review.
+The [plaza recipe](evidence/plaza-paving-2026-09-12/GENERATION.md) retains its larger slab layout
+and the same muted-stone constraints, with frozen neighboring materials for repeat review.
 
 ## Review
 

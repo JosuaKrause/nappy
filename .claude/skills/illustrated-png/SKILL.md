@@ -125,6 +125,9 @@ divide evenly by the grid: record normalized cells and rounded pixel bounds. Com
 road-line halves assembled as neighbors as well as repeated full tiles; alpha equality alone
 cannot reveal shifted markings, unwanted grid borders or a material that changes between variants.
 Keep low-contrast ground texture quiet enough for actors and route markings to remain legible.
+Rectangular paving needs complete slab joints across tile boundaries as well as inside each tile.
+Inspect repeated patches in both axes: center-only seams can merge neighboring rectangles into
+larger unintended slabs. Preserve the selected material when completing its boundary joints.
 
 Review street-surface continuity in actual generated map layouts, using `GroundTiles.source_for`
 and the runtime TileSet mapping. Include repeated runs, both sidewalk lanes, both street axes and
