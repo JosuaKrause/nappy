@@ -122,13 +122,14 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
-0. **[PLAYTEST-67](playtests/PLAYTEST-67.md)'s three**, on the same footing as the round before
-   it: **M124**, the game on a phone,
-   measured and then made cheaper; **M125**, the test suite is slow again; **M126**, the
-   codebase audit. M124 began as a read-only audit; its findings are the items in its own
-   entry above. M126's audit is filed — its findings are fixed, filed under the milestone that
-   owns the code, or asked as a question, and its record is in `DECISIONS.md`. M125
-   is the standing rule in the **verify** skill applied to the suite as it is.
+0. **What [PLAYTEST-67](playtests/PLAYTEST-67.md) and [PLAYTEST-68](playtests/PLAYTEST-68.md)
+   left open**, on the same footing as the round before it: **M124**, the game on a phone —
+   its desktop half is measured and fixed (`DECISIONS.md`, M124), and what stands is the phone
+   half of the measurement, the atlas item gated on it, and the audit's per-frame findings;
+   **M125**, the test suite is slow again — five suites pruned (`DECISIONS.md`, M125), four
+   still over the runner's budget; and **M128**, the playground is free and the busker is
+   quieter from the street, the one design instruction playtest 68's answers produced. M126's
+   audit is filed and M127's first press is fixed; both records are in `DECISIONS.md`.
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
    related to the other items to work on right now.")* It waits, because reaching act III waits:
    *"I wanna wait reaching act III until those things are done."*
