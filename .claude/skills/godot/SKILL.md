@@ -30,6 +30,12 @@ var scene: PackedScene = load(path)
 var node: Node = scene.instantiate()
 ```
 
+**`.slice()` on a typed `Array` drops the element type.** `for map in _maps.slice(0, 3):` over
+an `Array[CityMap]` leaves `map` untyped under 4.7's static inference, so the first `:=` further
+down the call chain — `var centre := map.tile_rect_to_world(...).get_center()` — is the
+Variant-inference error above, and in a test that aborts `_ready()` before it can quit, so the
+runner sits printing nothing. Annotate the loop variable: `for map: CityMap in _maps.slice(0, 3):`.
+
 **A cross-script enum is not the same type as itself.** `static func f(side: Side)` in one script,
 called from another where `x` came from `OtherScript.Side`, fails to parse: *"argument 2 should be
 Side but is StreetNetwork.Side"*. Widen the parameter to `int` and say why in a comment.

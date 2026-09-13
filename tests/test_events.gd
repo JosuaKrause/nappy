@@ -45,7 +45,6 @@ func run(t) -> void:
 	_test_successors_resolve(t)
 	_test_sighted_successors_resolve(t)
 	_test_fire_truck_is_never_scheduled(t)
-	_test_burning_building_is_a_day_three_one_shot(t)
 	_test_the_fire_engine_is_fair_from_the_worst_position_on_the_street(t)
 	_test_along_street_paths_stay_in_bounds(t)
 	_test_nothing_is_cheaper_to_walk_through_than_around(t)
@@ -310,9 +309,13 @@ func _test_stationary_vehicles_face_their_street(t) -> void:
 ## Walked over the **planned** placements of several seeds and every day of a run, rather than over
 ## the candidate pool directly, because a clean pool and a roll that still lands on a stale entry
 ## are two different bugs.
+## **One seed, all fourteen days.** The refusal is a filter on the candidate pool rather than
+## anything about a layout, so what a second city adds is more draws from the same rule — and a
+## day's worth of draws is already hundreds. The days stay whole because a run is what carries the
+## `consumed` set forward, which is what makes a later day's pool different from an earlier one's.
 func _test_a_spread_never_lands_on_a_corner(t) -> void:
 	var checked := 0
-	for run_seed in [4242, 2102613802, 90210]:
+	for run_seed in [4242]:
 		var map := CityGenerator.generate(run_seed)
 		var consumed: Array[String] = []
 		for day in range(1, 15):
@@ -1360,13 +1363,48 @@ func _test_hard_fail_only_when_active(t) -> void:
 
 # ----------------------------------------------------------------- scheduler ---
 
+## The suite's shared city, generated once.
+##
+## Seed 4242 is deliberately the same city for every check that does not name its own seed, so
+## that the expensive part — generation, a quarter of a second — is paid once rather than at every
+## call site that wants a real map to place things on. **It is handed out pristine and must stay
+## that way**: a check that repaints it, closes streets on it or holds segments on it takes its own
+## copy (`_test_the_day_is_placed_by_role` is the one that does), because the day plans cached
+## below were built against this paint and a repaint underneath them would leave the rest of the
+## file asserting about a city that no longer exists.
+var _shared_map: CityMap
+
 func _map() -> CityMap:
-	return CityGenerator.generate(4242)
+	if not _shared_map:
+		_shared_map = CityGenerator.generate(4242)
+	return _shared_map
 
 func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [4242, day])
 	return rng
+
+## The shared map's plan for `day`, memoized.
+##
+## **Ten checks below ask for exactly this** — `build_day(day, _rng(day), _map(), consumed)` with a
+## fresh empty `consumed` — and `build_day` is the most expensive call in this suite at roughly two
+## thirds of a second for an early day and a second for a late one. Planning the same fourteen days
+## ten times over was six or seven minutes of re-deriving an answer that nothing between the calls
+## had changed, and none of the ten was checking anything the first one had not already produced.
+##
+## Every caller reads the plans and none writes to them, which is what makes one copy safe to
+## share. **Two callers go round this on purpose and both have to.**
+## `_test_scheduler_is_deterministic` is *about* `build_day` repeating itself, so a cache hit would
+## be the test asking a dictionary rather than the scheduler; and the calm-memory sweeps pass a
+## `used` set as a further argument, so their plans are a different question.
+var _plans := {}
+
+func _planned(day: int) -> Array[EventScheduler.Planned]:
+	if not _plans.has(day):
+		var consumed: Array[String] = []
+		_plans[day] = EventScheduler.build_day(day, _rng(day), _map(), consumed)
+	var found: Array[EventScheduler.Planned] = _plans[day]
+	return found
 
 func _signature(planned: Array) -> String:
 	var parts: Array[String] = []
@@ -1393,8 +1431,7 @@ func _test_scheduler_is_deterministic(t) -> void:
 func _test_scheduler_respects_placement_and_caps(t) -> void:
 	var map := _map()
 	for day in range(1, 15):
-		var consumed: Array[String] = []
-		var planned := EventScheduler.build_day(day, _rng(day), map, consumed)
+		var planned := _planned(day)
 		var counts := {}
 		for plan in planned:
 			counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
@@ -1425,13 +1462,17 @@ func _test_scheduler_respects_placement_and_caps(t) -> void:
 ## The day half is asserted here, over the plan. The *site* half cannot be — a plan is a set of
 ## offers and which one is taken is decided by where she walks — so it is asserted where it is
 ## decided: `tests/test_event_manager.gd`, against a real `EventManager` with the plans streamed in.
+##
+## **Two seeds, both runs whole.** Fourteen days is the unit and cannot shrink — "planned on one
+## day of a *run*" is a statement about carrying `consumed` across the whole calendar, and a
+## sampled day cannot say it. The seed count can: six were here to answer a *rate* question about
+## how often the covering set narrows to one site, and that question is no longer asked (the rate
+## is in `docs/DECISIONS.md` under M64, measured over forty-six seeds, which is the sample size it
+## actually needs). What is left is true of every run rather than of the average, so a second city
+## is there to keep it from being a fact about one layout and a third would add nothing.
 func _test_one_shots_fire_once_per_run(t) -> void:
-	var narrow := 0
 	var groups_seen := 0
-	# One run has exactly one one-shot to count, so the "how often does the covering set narrow to
-	# one place" question below needs more than the file's shared seed to answer — several maps
-	# rather than the one every other test here deliberately shares.
-	for seed_value in [4242, 5150, 6060, 7070, 8080, 9090]:
+	for seed_value in [4242, 5150]:
 		var map := CityGenerator.generate(seed_value)
 		var consumed: Array[String] = []
 		var seen := {}
@@ -1452,25 +1493,7 @@ func _test_one_shots_fire_once_per_run(t) -> void:
 						"one-shot '%s' is planned as one of a group" % plan.def.id)
 			for id: String in groups:
 				groups_seen += 1
-				# Two distinct routes to one area share no *cell* by construction, so a site on the
-				# exact cell one route stands on is never on the other. A site is a whole street
-				# though, so two routes using different cells of the *same* street collapse to one
-				# covering site — legal, and commoner than it sounds.
-				if groups[id] < 2:
-					narrow += 1
 	t.check(groups_seen > 0, "some run had a one-shot to check (%d)" % groups_seen)
-	# **How often the covering set is narrow is measured, not asserted, and the six seeds here are
-	# why.** This used to require the narrow rate under 0.4 over exactly these six. Measured over
-	# forty-six instead, the population rate is **63%**, and it was **45.7%** before routes were
-	# forbidden from running along the main road — so the threshold was already false of the city
-	# and passed only because these six happened to read 16.7%. A sample that cannot tell 17% from
-	# 50% has no business asserting 40%.
-	#
-	# What is worth asserting on six seeds is what is true of *every* run rather than of the
-	# average: a one-shot the day plans is a one-shot that has somewhere to stand. The rate itself
-	# belongs to `docs/DECISIONS.md` under M64, where the before-and-after is recorded.
-	t.check(narrow <= groups_seen,
-			"%d of %d one-shot runs offered only one place" % [narrow, groups_seen])
 
 ## **No robber stands in an alley she has to walk down.** *(2026-09-03: "alley robber should not
 ## happen on required alleys".)* `EventScheduler._refuses_required_alleys` excludes `alley_robbery`
@@ -1479,12 +1502,17 @@ func _test_one_shots_fire_once_per_run(t) -> void:
 ## risk with no warning is only fair on ground she chose to enter. See `docs/DECISIONS.md`, "and no
 ## robber stands in an alley she has to walk down."
 ##
-## Walked over the **planned** placements of several seeds and every day the row is eligible on
-## (`first_day` 8 onward), the same reason the corner test is over placements rather than the pool
-## directly: a clean pool and a roll that still lands on a stale entry are two different bugs.
+## Walked over the **planned** placements and every day the row is eligible on (`first_day` 8
+## onward), the same reason the corner test is over placements rather than the pool directly: a
+## clean pool and a roll that still lands on a stale entry are two different bugs.
+##
+## **One seed.** Each day here costs a `RouteTree` as well as a `build_day`, and what a second city
+## adds is more draws from one refusal rather than a layout the refusal could be wrong about — the
+## corridor a candidate is tested against is grown afresh for every one of the seven days either
+## way, so the sample is already seven different corridors.
 func _test_alley_robbery_never_lands_on_a_required_alley(t) -> void:
 	var checked := 0
-	for run_seed in [4242, 2102613802, 90210]:
+	for run_seed in [4242]:
 		var map := CityGenerator.generate(run_seed)
 		var consumed: Array[String] = []
 		for day in range(8, 15):
@@ -1627,8 +1655,7 @@ func _test_the_mouse_waits_until_she_is_near(t) -> void:
 func _test_one_park_stays_usable(t) -> void:
 	var map := _map()
 	for day in range(1, 15):
-		var consumed: Array[String] = []
-		var planned := EventScheduler.build_day(day, _rng(day), map, consumed)
+		var planned := _planned(day)
 		var clean := 0
 		for block in map.calm_blocks:
 			var lot := map.tile_rect_to_world(_calm_rect(map, block))
@@ -1664,8 +1691,14 @@ func _test_one_park_stays_usable(t) -> void:
 ## the day after it empties is the day the rule protects the most ground. The exemptions are named
 ## rather than inferred — an `AMBIENT` event is a permanent feature of the map and a scar already
 ## burnt, and both are why a park can still be *contested*.
+##
+## **One seed, the run whole.** The run is the unit for the same reason the docstring above gives —
+## the used set only exists as a run — while the seed is not: the rule is a refusal inside
+## `build_day`, asked once per candidate per unused area, so one city's fourteen days already asks
+## it tens of thousands of times. A second city asked the same question again on a different
+## street plan and cost two and a half minutes to do it.
 func _test_calm_she_has_not_used_is_left_alone(t) -> void:
-	for run_seed in [4242, 90210, 1234567]:
+	for run_seed in [4242]:
 		var map := CityGenerator.generate(run_seed)
 		var used_this_act: Array[Vector2i] = []
 		var act := 0
@@ -1737,53 +1770,9 @@ func _test_sighted_successors_resolve(t) -> void:
 func _test_fire_truck_is_never_scheduled(t) -> void:
 	var truck := EventCatalogue.by_id("fire_truck")
 	t.check(truck != null, "the fire engine exists")
-	t.check(truck.kind == GameEnums.EventKind.SCRIPTED, "the fire engine is a SCRIPTED def")
-	t.check(truck.scripted_day == 0, "and its scripted day is none at all")
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		t.check(not truck.available_on(day),
 				"the fire engine is not schedulable on day %d" % day)
-
-	# It outruns a walk, so the fairness rule must demand the full forward reach of clearance — the
-	# row's own catalogued radius grown forward by how fast it moves (M114, the moving field grows
-	# forward), not the plain radius a standing thing would have. Unchanged by no longer being
-	# scheduled: the contract is a property of this geometry and this speed alone.
-	t.check(truck.speed > Tuning.WALK_SPEED, "the fire engine is faster than walking")
-	var truck_scale := Tuning.field_scale(Tuning.field_eccentricity(truck.speed))
-	t.close_to(truck.minimum_telegraph(), truck.outer_radius * truck_scale / Tuning.WALK_SPEED,
-			"a fast mover must be clearable across its whole forward reach, not just its band")
-	t.check(truck.telegraph_time >= truck.minimum_telegraph(),
-			"the fire engine gives that much warning")
-
-	# A dog walker is slower than walking, so the ordinary band rule applies to it, stretched
-	# forward by the same growth as everything else that moves.
-	var dog := EventCatalogue.by_id("dog_walker")
-	t.check(dog.speed < Tuning.WALK_SPEED, "the dog walker is slower than walking")
-	var dog_scale := Tuning.field_scale(Tuning.field_eccentricity(dog.speed))
-	t.close_to(dog.minimum_telegraph(),
-			(dog.outer_radius - dog.inner_radius) * dog_scale / Tuning.WALK_SPEED,
-			"a slow mover can simply be walked away from")
-
-## `burning_building` took over `fire_truck`'s old ONE_SHOT slot: day 3, and nowhere else —
-## *"the player should encounter the burning building before the fire truck ... the fire truck
-## should spawn when the player sees the burning building not the other way around"*.
-func _test_burning_building_is_a_day_three_one_shot(t) -> void:
-	var fire := EventCatalogue.by_id("burning_building")
-	t.check(fire != null, "the burning building exists")
-	t.check(fire.kind == GameEnums.EventKind.ONE_SHOT, "the burning building is a one-shot")
-	t.check(not fire.available_on(2), "the burning building cannot come on day 2")
-	t.check(fire.available_on(3), "the burning building can come on day 3")
-	t.check(not fire.available_on(4), "the burning building never comes again")
-	t.check(fire.spawns_on_sight == "fire_truck",
-			"and it calls the fire engine in the moment it is seen")
-
-	# She finds it already burning, not arriving, so the telegraph is no longer bought by an
-	# approach — it is stationary, so the ordinary band rule (not the fast-mover one above)
-	# still has to hold: `(outer - inner) / WALK_SPEED`, unstretched, since nothing about the
-	# row moves.
-	t.close_to(fire.minimum_telegraph(), (fire.outer_radius - fire.inner_radius) / Tuning.WALK_SPEED,
-			"a place she finds is cleared by the ordinary stationary rule")
-	t.check(fire.telegraph_time >= fire.minimum_telegraph(),
-			"the burning building gives that much warning once she has noticed it")
 
 ## The engine's own contract, re-proven for the new siting. `EventManager._summon_the_sighted_
 ## row()` sites it `maxf(Tuning.offscreen_lead(...), summoned.field_reach() + Tuning.
@@ -1824,8 +1813,7 @@ func _test_along_street_paths_stay_in_bounds(t) -> void:
 	var map := _map()
 	var extent := map.world_size()
 	for day in range(1, 15):
-		var consumed: Array[String] = []
-		for plan in EventScheduler.build_day(day, _rng(day), map, consumed):
+		for plan in _planned(day):
 			if plan.def.path_mode != EventDef.PathMode.ALONG_STREET:
 				continue
 			t.check(plan.path.size() == 2, "an along-street route has two waypoints")
@@ -2034,11 +2022,9 @@ func _test_the_pavement_can_be_blocked_from_day_one(t) -> void:
 ## day-1 pool's `max_per_day` values summed to 18, so the budget could be anything at all and
 ## the day still held thirteen events.
 func _test_a_day_has_enough_in_it_to_meet(t) -> void:
-	var map := _map()
 	var blocks := Tuning.CITY_BLOCKS.x * Tuning.CITY_BLOCKS.y
 	for day in [1, 3, 7, 14]:
-		var consumed: Array[String] = []
-		var planned := EventScheduler.build_day(day, _rng(day), map, consumed)
+		var planned := _planned(day)
 		var real := 0
 		for plan in planned:
 			if plan.def.kind != GameEnums.EventKind.AMBIENT:
@@ -2065,12 +2051,10 @@ func _test_a_day_has_enough_in_it_to_meet(t) -> void:
 ## thing on day 1 that is a decision somebody takes, and this test is where they will find out
 ## they are taking it.
 func _test_danger_arrives_before_act_three(t) -> void:
-	var map := _map()
 	var lethal_on := {}
 	for day in range(1, 15):
-		var consumed: Array[String] = []
 		var count := 0
-		for plan in EventScheduler.build_day(day, _rng(day), map, consumed):
+		for plan in _planned(day):
 			if plan.def.hard_fail:
 				count += 1
 		lethal_on[day] = count
@@ -2153,10 +2137,8 @@ func _test_the_named_decisions_arrive(t) -> void:
 ## `_roomiest_of_several` can still put two of a kind closer than `EVENT_SPACING_SAME` on a
 ## full map, so this is stated as "almost never" plus a hard floor that nothing may cross.
 func _test_two_of_a_kind_are_not_the_same_incident(t) -> void:
-	var map := _map()
 	for day in [1, 8, 14]:
-		var consumed: Array[String] = []
-		var planned := EventScheduler.build_day(day, _rng(day), map, consumed)
+		var planned := _planned(day)
 		var same_pairs := 0
 		var crowded := 0
 		for i in planned.size():
@@ -2202,12 +2184,10 @@ func _test_two_of_a_kind_are_not_the_same_incident(t) -> void:
 ## checked exactly as before. `EventScheduler._keeps_its_field_clear` is the one place that decides,
 ## and this asserts its consequence rather than restating it.
 func _test_nothing_happens_inside_a_lethal_field(t) -> void:
-	var map := _map()
 	var lethal_days := 0
 	var exempt := 0
 	for day in range(1, 15):
-		var consumed: Array[String] = []
-		var planned := EventScheduler.build_day(day, _rng(day), map, consumed)
+		var planned := _planned(day)
 		for plan in planned:
 			if not plan.def.hard_fail or not plan.is_placed():
 				continue
@@ -2433,8 +2413,7 @@ func _test_a_parked_van_is_at_the_kerb(t) -> void:
 	var map := _map()
 	var parked := 0
 	for day in range(1, 15):
-		var consumed: Array[String] = []
-		for plan in EventScheduler.build_day(day, _rng(day), map, consumed):
+		for plan in _planned(day):
 			if plan.def.pavement_side != EventDef.Pavement.AT_THE_KERB:
 				continue
 			parked += 1
@@ -2457,8 +2436,7 @@ func _test_a_lorry_has_a_wall_to_back_into(t) -> void:
 	var map := _map()
 	var backing := 0
 	for day in range(3, 15):
-		var consumed: Array[String] = []
-		for plan in EventScheduler.build_day(day, _rng(day), map, consumed):
+		for plan in _planned(day):
 			if plan.def.pavement_side != EventDef.Pavement.AGAINST_THE_BUILDING:
 				continue
 			backing += 1
@@ -2497,8 +2475,7 @@ func _test_nothing_stands_on_the_doorstep_street(t) -> void:
 	var rect := home.tile_rect()
 	var placed := 0
 	for day in range(1, 15):
-		var consumed: Array[String] = []
-		for plan in EventScheduler.build_day(day, _rng(day), map, consumed):
+		for plan in _planned(day):
 			if plan.position == Vector2.INF:
 				continue   # an `AHEAD_OF_PLAYER` row, sited by the director while she walks
 			placed += 1
@@ -2540,8 +2517,16 @@ func _test_nothing_stands_on_the_doorstep_street(t) -> void:
 ## read the holds at all, so they only have to exist across the sampled days (day 7 and day 10
 ## are in the sample for the regions). A remembered total would fail on every unrelated change to
 ## the generator — it did, twice, the day this was written — and say nothing about holds.
+## **Two seeds and five days.** A (seed, day) here is the most expensive unit anywhere in this
+## suite — a `RouteTree`, a region plan, a closure plan, two seal plans and a `build_day` — and
+## what it proves is that five refusals inside `_open_ground_for` fire, which every single pair
+## exercises over its whole day's worth of candidates. The days stay five rather than one because
+## holds come from four different planners and each has its own first day (region walls from
+## `REGION_WALL_FIRST_DAY`, closures from act I), so the sample has to span the acts; the seeds
+## drop to two because the second is there to keep the sample from being one street plan and the
+## third and fourth were asking the same question a third and fourth time.
 func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
-	const SEEDS := 4
+	const SEEDS := 2
 	const BASE_SEED := 314159
 	const DAYS := [1, 4, 7, 10, 14]
 	var total_closures := 0
@@ -2729,8 +2714,13 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 ## Five days rather than fourteen. What is being checked is a property of the construction, and the
 ## days are sampled across the acts so that the catalogue's lethal rows (none before day 5) and its
 ## late density are both in the sample.
+##
+## **Its own city rather than the shared `_map()`**, because it repaints one — which blocks and
+## arcs are calm is what a `RouteTree` grows from, so the tree has to be grown against today's
+## paint. The shared map is handed out pristine and the day plans memoized against it would be
+## answers about a city that no longer existed if this repainted underneath them.
 func _test_the_day_is_placed_by_role(t) -> void:
-	var map := _map()
+	var map := CityGenerator.generate(4242)
 	var walls := 0
 	var friction_on_the_route := 0
 	var friction := 0

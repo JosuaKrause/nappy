@@ -16,6 +16,13 @@ extends Node
 ## check you only run at the end tells you *that* something broke rather than *what*. It says
 ## so loudly on every filtered run: a partial pass has to be impossible to mistake for a green
 ## build, or the filter becomes a way of not running the tests.
+##
+## **A suite over two minutes serial is a suite to split or to cut, not a suite to leave.**
+## `tools/test.sh` shards the full run across four processes, and the longest suite alone sets
+## the floor every other shard waits on — a two-minute suite costs the run two minutes no matter
+## how quickly the other three shards clear, and past that floor a suite is buying itself nothing
+## a fourth process would not buy back faster. The per-suite line below, printed for every suite
+## on every run, is what says which one that is.
 
 var checks := 0
 var failures: Array[String] = []

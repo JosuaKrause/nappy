@@ -15,6 +15,16 @@ extends RefCounted
 ## `alley_mouth_ground_region` and the day's `alley_doors`/`alley_walls` split.
 
 const SEEDS := 6
+## How many maps the sweeps that walk every day of a run (`_test_winnability_holds_with_the_
+## wall_standing`, `_test_closures_and_seals_never_land_on_a_boundary`) use, rather than the full
+## `_maps`. Half of `SEEDS`: both loops recompute a full `RouteTree` and `RegionPlanner.plan_day`
+## for all fourteen days on every map, which is the two most expensive functions in the suite by
+## a wide margin, and both assert an **unconditional** rule about one day's own plan — "this
+## closure is not on a wall segment", "some calm area is reachable" — rather than a claim about
+## the *layout*, so a seed here is a repeat of the same question rather than a new one the way a
+## `test_generator.gd` seed is. Three still spans the acts every day already does and keeps more
+## than one map from being the whole evidence.
+const RULE_SEEDS := 3
 const BASE_SEED := 260917
 
 var _maps: Array[CityMap] = []
@@ -500,10 +510,18 @@ func _test_alley_wall_bodies_fit_their_own_mouth(t) -> void:
 ## out of ground of its own. This is not the two-calm-areas-reachable invariant weakening — that one
 ## is the hard check above and it holds everywhere sampled — it is a narrower, stronger property the
 ## region wall's own contracts never promised, so it is reported as a rate rather than asserted.
+##
+## **`RULE_SEEDS` maps, every day of each.** Costliest loop in the file — a `RouteTree`, a region
+## plan, a closure plan, a seal plan and two `ReachabilityGrid` floods, fourteen times over — and
+## its own first paragraph says why a fourth map buys nothing a third does not: the hard check
+## cannot fail on its own, only as a symptom of the tree/closure/seal guarantees those suites
+## already sweep at their own seed counts, and the measured rate is a rate over (seed, day) pairs
+## rather than over layouts, so three maps' worth of fourteen days is already the wide sample it
+## wants.
 func _test_winnability_holds_with_the_wall_standing(t) -> void:
 	var without_main_road_days := 0
 	var without_main_road_held := 0
-	for map in _maps:
+	for map: CityMap in _maps.slice(0, RULE_SEEDS):
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
@@ -550,8 +568,14 @@ func _test_winnability_holds_with_the_wall_standing(t) -> void:
 
 ## Closures and seals are checked before acceptance against the same tree; this checks the region
 ## boundary is one more thing neither may land on, over the same sweep of days.
+##
+## **`RULE_SEEDS` maps.** The second of the file's two full-run sweeps and the same reasoning as
+## its neighbour above: what is being asked of every (seed, day) pair is a gate on one placement at
+## a time — "this segment is not a boundary segment" — not a fact about the layout underneath it, so
+## three maps' fourteen days each is a wide sample of the gate and a fourth map asks it again rather
+## than asking something new.
 func _test_closures_and_seals_never_land_on_a_boundary(t) -> void:
-	for map in _maps:
+	for map: CityMap in _maps.slice(0, RULE_SEEDS):
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)

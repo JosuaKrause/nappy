@@ -299,10 +299,9 @@ this is the map.
   under M126. **M124's desktop measurement is built and recorded** (`DECISIONS.md`,
   M124, where a frame goes): the frame is spent rebuilding draw lists, not switching textures,
   and M124's entry in `TODO.md` holds the two fixes the numbers name, the phone half of the
-  measurement, and the atlas item gated on that phone half. For M125: if its branch has a PR,
-  review it, file its record and merge under the usual rules; if a worktree under
-  `.claude/worktrees/` holds uncommitted work, the agent was cut off — read what is there before
-  re-briefing.
+  measurement, and the atlas item gated on that phone half. M125's five suites are pruned and
+  recorded (`DECISIONS.md`, M125); its entry holds the four suites still over the runner's
+  budget.
 
 ## The queue, as prioritised on 2026-09-09
 
