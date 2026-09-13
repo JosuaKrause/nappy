@@ -129,6 +129,9 @@ findings supported by the conversion and review.
       for engine composition. The supplied running-game screenshot identifies forest ground,
       which must share this material treatment with parks while retaining its tree placement
       and gameplay type. Verify the actual City scene at the screenshot's seed and location.
+- [ ] Remove baked crack-and-floor PNGs and import sidecars from runtime assets, as requested
+      in PLAYTEST-65. Preserve accepted source artwork in frozen evidence; verify road, sidewalk
+      and alley damage through transparent components over their shared bases.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The

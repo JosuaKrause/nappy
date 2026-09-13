@@ -300,3 +300,10 @@ The pictured wooded ground matches the separate forest texture. Apply the shared
 base and separate clump composition to forests as well as parks, preserving forest semantics
 and tree placement. Audit complete joints in the other rectangular paving materials too,
 including brick pedestrian streets.
+
+> <image name=[Image #1] path="assets/illustrated/svg-transfer/tiles/sidewalk_cracked_broken_a.png"> hmm, none of [Image #1] should exist anymore, no?
+
+Remove the baked crack-and-floor PNG family from runtime assets. Keep accepted full source
+images in frozen generation evidence and retain transparent crack components for engine
+composition over the shared floor. Verify all road, sidewalk and alley damage variants after
+removing the baked PNGs and their import sidecars.
