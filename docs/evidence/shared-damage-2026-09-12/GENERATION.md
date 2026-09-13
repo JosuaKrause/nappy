@@ -9,9 +9,9 @@ gameplay review of damage placement.
 Run from the repository root with a fresh output path:
 
 ```sh
-godot --headless --path . \
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . \
   res://docs/evidence/shared-damage-2026-09-12/damage_atlas_review.tscn -- \
-  --output-dir docs/evidence/shared-damage-2026-09-12/review
+  --output-dir /tmp/shared-damage-review
 ```
 
 The probe rejects an existing output path and every unsupported argument. Its `manifest.json`
