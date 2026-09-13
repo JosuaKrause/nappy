@@ -147,6 +147,10 @@ func _ready() -> void:
 	# unpause it. It inherits ALWAYS from this node, which is what it wants.
 	_pause = PAUSE_SCREEN.instantiate()
 	add_child(_pause)
+	# So `_pause.open()`/`close()` can stash and restore the heading she carried into an ordinary
+	# Esc-pause — see `PauseScreen._touch_controls`'s own doc. `_add_touch_controls()` already ran
+	# above, so `_touch_controls` exists by now.
+	_pause.set_touch_controls(_touch_controls)
 
 	_connect_summary_and_pause_signals()
 
