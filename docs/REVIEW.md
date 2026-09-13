@@ -14,11 +14,6 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-- **Look at trees, bollards and rooftop equipment at gameplay size.** Do the inked foliage,
-  water tank, HVAC units, skylights, vent and ducts fit the comic ground while staying readable?
-  Check both tree shapes and the roof variants in
-  `evidence/comic-city-props-2026-09-12/comparisons/`; `--svg` shows their source concepts.
-
 - **Compare pushing and carrying identity during a state change.** Do they remain the same woman?
   Use `--start-escape` for carrying. Exact native
   and enlarged walking GIFs are linked from the

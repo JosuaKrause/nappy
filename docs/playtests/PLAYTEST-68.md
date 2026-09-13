@@ -103,3 +103,13 @@ underneath her and the pram while the trunk and canopy keep their upright sortin
 > Sorts right
 
 Closed as fine.
+
+## The comic props at play size
+
+Asked: do the inked trees in both shapes, the bollards and the rooftop equipment — water tank,
+HVAC units, skylights, vent and ducts — fit the comic ground while staying readable at the size
+they are drawn on screen?
+
+> All read at play size
+
+Closed as fine.
