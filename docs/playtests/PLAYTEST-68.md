@@ -210,9 +210,9 @@ pedalling, and is the busker's tempo right?
 
 Closed as fine, both items.
 
-## Everything else act I shows, closed on one sentence
+## How an answer is treated
 
-Sent while the questions were being asked, and it decides how the rest of the file is handled:
+Sent while the questions were being asked:
 
 > Btw all answers and feels I give you might get overturned later after more playing but we
 > shouldn't keep those items open until more play testing surfaces issues
@@ -222,20 +222,12 @@ Sent while the questions were being asked, and it decides how the rest of the fi
 
 > Technically I played multiple days on the phone but I didn't skip ahead or did the ending
 
-So every `REVIEW.md` item about something the first days of a phone run put in front of the
-player — the pram against walls and corners, the roof's northern edge, the crowd turning back
-from a seal and leaving a sealed junction empty, the map's edges, the sidestep past a café or a
-van, the burning building on day 3, a precinct, the halo's rim through a turn and under a flock,
-a car about-facing into a queue, the parked van's facing, the alley mouse, the districts, the
-tree-lined streets and the fallen tree, the park trees' spacing, the shaped fields and shadows,
-the sealed city and its half-open walls, the corridor grown on cells, the closures kept off calm
-areas, the off-screen starts and the day-3 dog, the biker, the difficulty and the five nerves,
-the spoiled park, the robber and the pacing man, the pavement obstacles and the solid street,
-the silhouettes, the flock, the calm ground's speed, the cheaper city and its four retuned
-rows, and the bollards at the border — closes as *nothing stands out*, and a later complaint
-reopens any of them as a new finding. What stays in `REVIEW.md` is what the phone sessions did
-not reach: day 7's doors, walls and roadblocks, act III's heat and hunts, the endings, the
-escape, and the desktop's debug layers.
+So an item that has been asked and answered closes on the answer, even though later play may
+overturn it, and a later complaint reopens it as a new finding. An item that has not been asked
+stays in `REVIEW.md` *(2026-09-13, on a first reading that closed forty unasked act I items:
+"I didn't say you should close items that you didn't ask")*. The sessions reached several days
+of act I on the phone, so the unasked act I items are askable next time; day 7 and later, act
+III, the endings and the escape are not yet.
 
 ## The dog from day 4
 
@@ -268,6 +260,5 @@ a reverse gear? The recommendation was to accept it.
 
 Decided: the overhang stays and no reverse gear is built. M111's section leaves `TODO.md` and
 the decision goes to `DECISIONS.md` under M111. The other half of the review item — whether the
-pause at a junction mouth reads as slowing rather than stalling — closes under the sentence
-above about act I. The questions stop here; what remains in `REVIEW.md` waits for a later
-sitting.
+pause at a junction mouth reads as slowing rather than stalling — was not asked and stays in
+`REVIEW.md`. The questions stop here; what remains waits for a later sitting.
