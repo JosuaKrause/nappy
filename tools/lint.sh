@@ -2,10 +2,12 @@
 # tools/lint.sh — the volatile-fact linter.
 #
 # CLAUDE.md: "every document states what is true now and only what is true now" — no commit
-# hash, no branch name, no check count, no ticked box, no status word in a heading. Those are
-# exactly the sentence shapes that go stale the moment somebody merges, because nothing
-# rereads a doc after the fact that made it true has passed. This scans for those shapes and
-# fails loudly instead of waiting for the next reader to notice a lie.
+# hash, no branch name, no check count, no ticked box, no status marker anywhere in the doc.
+# Those are exactly the sentence shapes that go stale the moment somebody merges, because
+# nothing rereads a doc after the fact that made it true has passed. This scans for those
+# shapes and fails loudly instead of waiting for the next reader to notice a lie. A named file
+# that does not exist is the same kind of lie waiting to happen and is also a hard failure,
+# rather than a silently skipped check.
 #
 #   tools/lint.sh              # the whole governed set
 #   tools/lint.sh a.md b.md    # just these files (how the PostToolUse hook calls it)
@@ -30,10 +32,11 @@ usage() {
 usage: tools/lint.sh [--help|-h] [file...]
 
 Scans governed docs for volatile-fact sentence shapes (a commit hash, a branch name, a check
-count, a ticked box, a status word in a heading) and every tracked SVG for well-formed XML. With
-no arguments, scans the whole governed set (AGENTS.md, CLAUDE.md, README.md, every
+count, a ticked box, a status marker anywhere in the doc) and every tracked SVG for well-formed
+XML. With no arguments, scans the whole governed set (AGENTS.md, CLAUDE.md, README.md, every
 .claude/skills/*/SKILL.md, every docs/*.md except DECISIONS.md and the playtests). Given file
-arguments, scans only those -- how the PostToolUse hook calls it after an edit.
+arguments, scans only those -- how the PostToolUse hook calls it after an edit. A named file
+that does not exist is an error, not a silent skip.
 
   tools/lint.sh
   tools/lint.sh docs/CITY.md README.md
@@ -127,18 +130,33 @@ lint_heading_status() {
     done < <(grep -nE '^#{1,4} .*·' "$f")
 }
 
+# A status marker anywhere in a governed doc, not only after a middot in a heading: a
+# parenthetical status word — `(done)`, optionally wrapped in emphasis asterisks — or a `Done:`
+# paragraph prefix. CLAUDE.md: "a 'Done:' paragraph ... or a status word in a heading is a quest
+# log wherever it stands."
+lint_status_marker() {
+    local f="$1" n content
+    while IFS=: read -r n content; do
+        report "$f" "$n" "status marker" "$content"
+    done < <(grep -nE '\*?\((in progress|not started|partly built|done)\)\*?|^[[:space:]]*Done:' "$f")
+}
+
 for f in "${files[@]}"; do
     case "$f" in
         docs/DECISIONS.md|docs/playtests/PLAYTEST-*.md|docs/evidence/README.md)
             continue
             ;;
     esac
-    [[ -f "$f" ]] || continue
+    if [[ ! -f "$f" ]]; then
+        echo "tools/lint.sh: no such file: $f" >&2
+        exit 2
+    fi
     lint_hex "$f"
     lint_branch "$f"
     lint_checks "$f"
     lint_ticked "$f"
     lint_heading_status "$f"
+    lint_status_marker "$f"
 done
 
 # Every tracked SVG is well-formed XML. Godot's importer forgives a comment containing `--`, which
