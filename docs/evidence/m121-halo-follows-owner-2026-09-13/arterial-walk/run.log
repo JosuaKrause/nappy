@@ -1,0 +1,31 @@
+nappy rig log  2026-09-13T09:40:41  version v0.9.0-13-gb5f72da2
+
+day 1  act 1  run seed 3265820891  city seed 3265820891  length 180.0s  invincible
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 0]
+   0.0  plan     closed: roadworks h(1,9)
+   0.0  plan     calm: 1 forest, 2 courtyard, 2 quiet_square, 3 park
+   0.0  plan     events: alley_mouse x4, burst_water_main x17, cafe_tables x56, car_accident x26, cat_dash x8, chatting_mother x2, delivery_van x69, dog_walker x22, homeless_yeller x8, leaf_blower x15, loose_dog x11, market_stall x52, moving_van x42, pigeon_flock x5, playground x3, scaffolding x23, skip x20
+   0.0  start    doorstep (85,80), facing 180°
+   0.0  cross    stepped into the road at (86,80), mid-block
+   0.0  crowd    a car sounded its horn at her in the road at (86,80) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0
+   0.0  crowd    a car sounded its horn at her in the road at (86,80) | exc 0, in 0.0/s (crowd 4.7, events 0.0), sleep 0
+   0.0  cue      the mark over her head: soon for 0.0s (0.6s of it on the road) | a car, and she is in the road
+   0.0  shot     burst started: asked for an animation burst at (89,80) | exc 0, sleep 1 | playing | asked/burst-5916162-001
+   0.0  turn     doubled back 270°
+   0.0  crowd    a car sounded its horn at her in the road at (87,80) | exc 0, in 0.0/s (crowd 15.1, events 0.0), sleep 2
+   0.0  cross    stepped into the road at (87,80), mid-block
+   0.0  crowd    a car sounded its horn at her in the road at (87,80) | exc 0, in 0.0/s (crowd 23.6, events 0.0), sleep 2
+   0.0  shot     burst complete: 36 frames | frame_cap
+   0.0  cue      the mark over her head: soon for 0.0s (0.6s of it on the road) | a car, and she is in the road
+   0.0  shot     burst started: asked for an animation burst at (84,80) | exc 0, sleep 4 | playing | asked/burst-11917089-002
+   0.0  turn     doubled back 90°
+   0.0  cross    stepped into the road at (86,80), mid-block
+   0.0  crowd    a car sounded its horn at her in the road at (86,80) | exc 0, in 0.0/s (crowd 5.1, events 0.0), sleep 4
+   0.0  cue      the mark over her head: soon for 0.0s (0.5s of it on the road) | a car, and she is in the road
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  shot     burst started: asked for an animation burst at (89,80) | exc 0, sleep 6 | playing | asked/burst-17929264-003
+   0.0  turn     doubled back 270°
+   0.0  cross    stepped into the road at (87,80), mid-block
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  shot     burst started: asked for an animation burst at (84,80) | exc 0, sleep 8 | playing | asked/burst-22920224-004
+   0.0  shot     burst complete: 36 frames | frame_cap
