@@ -250,12 +250,14 @@ asphalt or alley base and transparent curbstones, red edge paint, yellow lines, 
 damage. The engine composites those layers when building the TileSet. Clear overlay pixels
 leave the base intact, so neighboring variants share the same floor material.
 The asphalt and soft grass bases are prepared offline by equally blending four quarter-turn
-orientations. Grass uses that soft green base and three extracted clumps; the engine makes sparse arrangements
+orientations. Parks and forests use that soft green base and three extracted clumps; the engine makes sparse arrangements
 and selects them deterministically from the city seed and cell coordinates.
 The [component recipe](evidence/layered-ground-2026-09-12/GENERATION.md) preserves the source
 artwork, stencils and base preparation. The
 [engine layout recipe](evidence/layered-ground-layout-2026-09-12/GENERATION.md) reviews composed
 tiles in generated streets, junctions and parks. `--svg` selects the authored vector TileSet.
+Baked damage-and-floor PNGs are excluded from runtime assets; the accepted source artwork lives
+in the component recipe's frozen inputs. Runtime damage uses transparent stencils over the base.
 
 `assets/illustrated/svg-transfer/tiles/quiet_square.png` supplies muted cool-stone paving with
 large slab joints. Its [generation and registration recipe](evidence/quiet-square-2026-09-12/GENERATION.md)

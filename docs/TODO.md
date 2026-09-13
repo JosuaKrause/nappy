@@ -124,14 +124,6 @@ findings supported by the conversion and review.
 - [ ] Complete boundary joints across the rectangular paving family, including quiet square
       and plaza, as requested in PLAYTEST-65. Preserve each material and slab layout, reusing
       existing joint artwork; retain reproducible native and enlarged repeated-tile checks.
-- [ ] Trace the noisy-grass re-report in PLAYTEST-65 through the loaded texture and fallback.
-      Use the soft grass base as input to the equal four-quarter-turn blend; keep clumps separate
-      for engine composition. The supplied running-game screenshot identifies forest ground,
-      which must share this material treatment with parks while retaining its tree placement
-      and gameplay type. Verify the actual City scene at the screenshot's seed and location.
-- [ ] Remove baked crack-and-floor PNGs and import sidecars from runtime assets, as requested
-      in PLAYTEST-65. Preserve accepted source artwork in frozen evidence; verify road, sidewalk
-      and alley damage through transparent components over their shared bases.
 - [ ] Share damage stencil variation pools across road, sidewalk and alley materials, per
       PLAYTEST-65. Preserve the existing drawings as common hairline, cracked and broken
       variations, composed over each base in the engine with stable city-seed/cell selection.

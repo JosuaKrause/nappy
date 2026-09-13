@@ -20,7 +20,7 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   [engine layout review](evidence/layered-ground-layout-2026-09-12/GENERATION.md) shows the
   composed ground textures in generated layouts.
 
-- **Look at a park while walking past it.** Do the sparse grass clumps give variety while the
+- **Look at a park and a wooded calm area while walking past them.** Do the sparse grass clumps give variety while the
   soft base stays quiet enough to keep people and routes clear? Check neighboring cells and
   revisit the same seed to compare their stable arrangement.
 

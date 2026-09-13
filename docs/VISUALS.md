@@ -9,7 +9,7 @@ forces original SVG graphics. The same drawing code handles both formats.
 The transferred artwork covers the mother's pushing and carrying animation frames and the pram's
 five authored views, supplying eight directions through explicit east/west mirroring. The garbage
 sack, sack pile and five litter decals also use registered PNGs. The outdoor ground catalogue
-under `assets/tiles/` has matching PNGs. Shared ground bases and transparent damage, markings
+under `assets/tiles/` uses registered PNG materials and components. Shared ground bases and transparent damage, markings
 and grass features are composed in the engine through `GroundLayers`.
 Trees, the overhead bollard cap, the ground tree bed and the rooftop water tank, HVAC units,
 skylights, vent stack and ducts also have comic replacements. Other families use SVGs.
@@ -48,7 +48,7 @@ collision and camera framing remain the existing game's responsibility.
 `GroundLayers` builds a presentation TileSet from the authored source resource. Its component
 manifest in `assets/illustrated/svg-transfer/tiles/layers/` assigns a shared base and transparent
 overlays to each supported source ID. Curbstones, street paint, crosswalks and damage blend in
-the engine; pixels outside their alpha remain the base's own pixels. Grass has sparse clump
+the engine; pixels outside their alpha remain the base's own pixels. Parks and forests have sparse clump
 arrangements selected by city seed and tile coordinates. Daily repaints start from the authored
 resource, keeping composition stable. Missing components retain the normal PNG/SVG fallback,
 and `--svg` uses the authored vector textures. Source IDs and gameplay geometry stay fixed.
@@ -83,6 +83,8 @@ the asphalt and soft grass bases offline by blending four quarter-turn orientati
 contributions.
 The [engine layout recipe](evidence/layered-ground-layout-2026-09-12/GENERATION.md) assembles
 the actual runtime textures in generated streets, junctions and grass patches.
+The [forest runtime probe](evidence/grass-runtime-2026-09-12/GENERATION.md) checks the actual
+Main scene's loaded forest and park materials and records the ground cells around a reported location.
 The [quiet-square recipe](evidence/quiet-square-2026-09-12/GENERATION.md) documents its muted
 cool-stone paving and repeated-neighbor review.
 The [plaza recipe](evidence/plaza-paving-2026-09-12/GENERATION.md) retains its larger slab layout
