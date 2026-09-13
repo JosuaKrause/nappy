@@ -151,9 +151,7 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    codebase audit. M124 began as a read-only audit; its findings are the items in its own
    entry above. M126's audit is filed — its findings are fixed, filed under the milestone that
    owns the code, or asked as a question, and its record is in `DECISIONS.md`. M125
-   is the standing rule in the **verify** skill applied to the suite as it is. **M127**, the
-   first press walks her, was reported later the same day and is a defect in the controls:
-   small, and first.
+   is the standing rule in the **verify** skill applied to the suite as it is.
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
    related to the other items to work on right now.")* It waits, because reaching act III waits:
    *"I wanna wait reaching act III until those things are done."*
@@ -318,42 +316,6 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
-
----
-
-## M127 — The first press walks her · asked for 2026-09-13
-
-> "Also the player direction should be reset to zero when the game starts. Right now it always
-> starts already walking (probably from clicking the button) same with exiting pause or any
-> other screen"
-
-> "Pause can keep the last direction just don't overwrite it from the button press"
-
-[PLAYTEST-67](playtests/PLAYTEST-67.md). A defect in the controls, reported while the round is
-being tested as it lands.
-
-**What is true today.** A press sets a direction she walks until the next press
-(`TouchControls.set_direction()`, locked in at the press and cleared only by a stop or the next
-press); a run begins from a press on a title-screen disc, a day continues from the summary's
-button, and the pause screen closes from its own button or `Esc`. `TouchControls._release_all()`
-force-releases every held direction when a pause lands, and `ModeButton` lets a press reach the
-screen underneath it (`MOUSE_FILTER_IGNORE`, so both screens read every press in
-`_unhandled_input()`; `DECISIONS.md`, M83). The report is that the press that dismisses a screen
-is also read as a walk direction, so she is already walking when play resumes.
-
-- [ ] **Her direction is zero when a run starts.** The press on the title disc, and the
-      keyboard's `space`/direction start, begin the run with her standing; the first press
-      *after* the title screen has gone is the first heading. The same for the summary's continue
-      and the held restart. `tests/test_touch.gd` presses the disc and asserts `input_dir` is zero
-      on the first frame of play.
-- [ ] **A screen's button never overwrites the heading.** The press that closes the pause screen
-      (button or key) leaves whatever direction was locked in before the pause standing — *"Pause
-      can keep the last direction"* — and is not itself a press on the world. Find where the
-      press falls through: the `_unhandled_input` order between the screen and `TouchControls`,
-      the release that fires the button landing after the screen has already hidden, or
-      `_release_all()` clearing and then the same release re-aiming. Test: pause while walking
-      east, press the button, assert she resumes east; pause while standing, press, assert she
-      stands.
 
 ---
 

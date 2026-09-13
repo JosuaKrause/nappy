@@ -35,6 +35,7 @@ func run(t) -> void:
 	_test_a_close_quick_second_tap_runs_and_a_far_or_late_one_does_not(t)
 	_test_a_tap_during_a_pause_does_nothing(t)
 	_test_a_pause_force_releases_a_held_direction(t)
+	_test_a_press_while_paused_is_never_the_first_heading(t)
 	_test_a_mouse_click_stands_in_for_a_tap(t)
 	_test_a_touch_devices_own_emulated_click_is_ignored(t)
 	_test_a_press_on_the_pause_button_is_not_also_a_direction(t)
@@ -396,6 +397,48 @@ func _test_a_pause_force_releases_a_held_direction(t) -> void:
 	t.get_tree().paused = false
 	controls.queue_free()
 	rig.free()
+
+## **"Her direction is zero when a run starts."** *(PLAYTEST-67, "The first press walks her": "Right
+## now it always starts already walking (probably from clicking the button) same with exiting
+## pause or any other screen".)* The title screen's own disc, the summary's own continue and the
+## pause's own continue all dismiss a screen through the same shape: a press that lands while
+## `get_tree().paused` is true, acknowledged two frames later by the screen that read it
+## (`TitleScreen._acknowledge_and_begin()`, `DaySummary._acknowledge_and_continue()`,
+## `PauseScreen._acknowledge_and_resume()`). **The leak this guards against:** `_on_pointer()` used
+## to arm `_drag_pointer_index` for that press regardless of whether `_on_tap()` did anything with
+## it, so a finger or a mouse button still down once the tree is running again generated an
+## ordinary `InputEventScreenDrag`/`InputEventMouseMotion` for the same pointer, and `_on_drag()`
+## read it as her first heading — which is exactly *"probably from clicking the button."* `_rig`
+## already known (a real walk on an earlier day) is what makes the leak reachable at all here —
+## the day summary's own continue button keeps one running `TouchControls` across days rather than
+## rebuilding it the way a restart does, unlike a fresh title screen's own `_rig`, which starts
+## null and cannot be steered by a drag until a first ordinary press resolves it. Compare
+## `_test_a_tap_during_a_pause_does_nothing`, the plain press-while-paused case this builds on.
+func _test_a_press_while_paused_is_never_the_first_heading(t) -> void:
+	var rig := _rig_at(t, Vector2.ZERO)
+	var controls := _controls(t)
+	controls._touch = true
+	controls._mode = ControlsMode.Mode.TAP
+	controls.set_direction(Vector2(100.0, 0.0), false)
+	t.get_tree().paused = true
+	controls._process(0.0) # the day ending force-releases the held direction, same as ever
+	t.check(Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down") == Vector2.ZERO,
+			"standing once the day has ended")
+
+	controls._input(_touch_event(0, Vector2(500.0, 0.0), true))
+	t.check(controls._drag_pointer_index == -1,
+			"the press that dismisses the screen is never tracked for a later drag")
+
+	t.get_tree().paused = false
+	controls._input(_drag_event(0, Vector2(502.0, 1.0)))
+	t.check(Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down") == Vector2.ZERO,
+			"and the finger's own drift, once the next day is running, is not read as her first heading")
+
+	controls._input(_touch_event(0, Vector2(502.0, 1.0), false))
+	t.get_tree().paused = false
+	controls.queue_free()
+	rig.free()
+	_release_actions()
 
 ## "On non-mobile we can try clicking with the mouse instead of tapping" -- a left click reaches
 ## `_on_tap()` exactly the way a finger's own `InputEventScreenTouch` does. This suite's own process

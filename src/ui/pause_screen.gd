@@ -42,6 +42,17 @@ var _can_quit := QuitOption.available()
 ## `_handle_restart_touch()`) even though it no longer chooses between two bodies or two hints.
 var _touch := TouchInput.available()
 
+## Set once by `main._ready()`, the same way `_connect_summary_and_pause_signals()` wires the
+## signals this screen fires — null in a test that builds a bare `PauseScreen`, which is why every
+## use below is guarded. *"Pause can keep the last direction just don't overwrite it from the
+## button press."* `open()` and `close()` are the only two places this is read, so a run that never
+## reaches a real `main` (most of this file's own suite) never remembers or restores anything and
+## behaves exactly as it always has.
+var _touch_controls: TouchControls
+
+func set_touch_controls(controls: TouchControls) -> void:
+	_touch_controls = controls
+
 ## One body for every device. *(2026-09-06, the player: "in fact I said to remove the keyboard
 ## inputs altogether but I'm willing to compromise on letting them stay silently".)* The keyboard
 ## still walks, runs, pauses and restarts — nothing here stops reading `KEY_R`/`KEY_Q` or the
@@ -113,6 +124,11 @@ func open() -> void:
 	visible = true
 	_show_where_the_run_stands()
 	_restart_button.cancel_hold()
+	# Before anything else touches the tree's own `paused` flag: `TouchControls._process()`'s own
+	# pause-transition check zeroes the held direction on the very next process tick, and this has
+	# to see it before that happens — see `remember_before_pause()`'s own doc.
+	if _touch_controls:
+		_touch_controls.remember_before_pause()
 	# A press that closed this screen before can leave the continue button's own forced-pressed
 	# look set — see `_acknowledge_and_resume()`'s own doc for why the frame that would clear it may
 	# never actually run before this screen hides. Cleared on the way back in rather than left to
@@ -132,6 +148,11 @@ const DIM_OVER_THE_CITY := 0.78
 func close() -> void:
 	visible = false
 	get_tree().paused = _was_paused
+	# The heading she carried in, not the press that just dismissed this screen — see
+	# `resume_after_pause()`'s own doc. Already a no-op when this opened over an already-paused
+	# summary, since `remember_before_pause()` found nothing but standing to remember there too.
+	if _touch_controls:
+		_touch_controls.resume_after_pause()
 	_restart_button.cancel_hold()
 
 ## Whether the screen's own layer is presenting rotated — computed fresh rather than pushed in from
