@@ -290,6 +290,27 @@ static func _without_its_aftermath(def: EventDef) -> EventDef:
 	variant.spawns_on_finish = ""
 	return variant
 
+## A `MAP` placement's own answer to `EventDef.pursues_within_on(day)` — a derived copy for the same
+## reason `at_heat()`'s is one: the catalogue's rows are shared by every day of the run and validated
+## once at boot, so a placement past `spawn_mode_switches_after_day` cannot set `pursues_within` on
+## the shared resource itself without changing what every other day's placement of the row sees.
+##
+## Almost every row's `pursues_within_on(day)` agrees with its own `pursues_within` — the check
+## below is `def` unchanged for all of them — because almost nothing sets
+## `spawn_mode_switches_after_day` at all. `charging_dog` past `Tuning.RUN_TAUGHT_DAY` is the row
+## that does not: `EventInstance.is_waiting()` and `_chase()` read `pursues_within` off whichever
+## `EventDef` an instance was actually handed, so the day answer has to arrive as a different def
+## rather than as a fact this function keeps to itself.
+static func _for_day(def: EventDef, day: int) -> EventDef:
+	var within := def.pursues_within_on(day)
+	if is_equal_approx(within, def.pursues_within):
+		return def
+	var variant: EventDef = def.duplicate()
+	variant.shape = def.shape
+	variant.solid_parts = def.solid_parts
+	variant.pursues_within = within
+	return variant
+
 ## What the day is placing a row **for**, which is the only thing that makes *wall* and *friction*
 ## mean anything. See `docs/CITY.md`, "The words for it".
 ##
@@ -760,6 +781,7 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 	# for.
 	if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
 		return Planned.new(def, Vector2.INF)
+	def = _for_day(def, day)
 
 	var open_candidates := _ground_for(def, map, ground, corridor, role, site)
 	if open_candidates.is_empty():
