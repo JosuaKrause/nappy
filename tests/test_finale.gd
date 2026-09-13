@@ -225,7 +225,12 @@ func _test_the_finale_city_has_nobody_in_it(t) -> void:
 	t.check(city.crowd.agent_count() == 0, "and the escape's city has nobody in it")
 	t.check(city.route_tree() == null and city.closures().is_empty(),
 			"the escape grows no corridor and closes no street")
-	city.queue_free()
+	# `.free()`, not `queue_free()`: a suite's `run()` is synchronous and the runner quits without
+	# ever reaching an idle frame, so a queued deletion never happens at all. `City` is a
+	# `WorldContext`, and `WorldContext._ready()` adds it to the "world" group — the group
+	# `Baby._ready()` takes its world from, first node wins. A city left standing here is therefore
+	# the world every later suite's hand-built baby asks about the ground, instead of its own fake.
+	city.free()
 
 ## *"Explosions happen off screen (but loud enough to cause excitement) leaving craters on the
 ## street."* Both halves: the row names its successor, and what the successor obstructs is exactly
@@ -268,7 +273,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 			craters += 1
 			t.check(instance.is_solid(), "and the crater it left is solid")
 	t.check(craters == 1, "exactly one crater is left where the burst was")
-	city.queue_free()
+	city.free()
 
 # ------------------------------------------------------------------ the clock ---
 
@@ -286,7 +291,9 @@ func _test_the_clock_reads_milliseconds_only_in_the_finale(t) -> void:
 	EventBus.day_time_changed.emit(65.5, 180.0)
 	t.check(clock.text == "1:05.500",
 			"the escape's clock reads to the millisecond (got '%s')" % clock.text)
-	hud.queue_free()
+	# Freed rather than queued for the same reason the cities are: nothing here yields a frame, and
+	# a HUD left listening to `EventBus.day_time_changed` answers the next suite's emit as well.
+	hud.free()
 
 # ------------------------------------------------------------- the sections ---
 
@@ -323,7 +330,9 @@ func _test_a_lost_section_starts_again_and_costs_no_nerve(t) -> void:
 			"the service exit begins the second section")
 	t.check(is_equal_approx(finale.time_remaining(), carried),
 			"on the same clock, not a fresh one")
-	finale.queue_free()
+	# And the controller, whose `DayController` child listens on `EventBus` for the hard fail this
+	# test emits: one left in the tree restarts a section on the next suite's fail as well.
+	finale.free()
 	DevFlags._invincible_override = null
 
 ## `--start-escape city` is the one word that is not a part of the building: it boots the second
@@ -370,7 +379,7 @@ func _test_the_escape_owes_no_return_leg(t) -> void:
 			"and the escape owes nothing to a return it does not have (got %d)"
 					% city.events.owed_ahead())
 	GameState.day = was_the_day
-	city.queue_free()
+	city.free()
 
 ## **A tree and an event never share ground** (`docs/CITY.md`, "Street trees"), and the escape's
 ## own plan is a second placement path that does not go through `EventScheduler._open_ground_for`
