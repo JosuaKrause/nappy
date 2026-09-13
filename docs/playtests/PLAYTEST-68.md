@@ -83,3 +83,14 @@ people and routes clear?
 > Varied and quiet
 
 Closed as fine.
+
+## Café seating and roadworks on both axes
+
+Asked, from [PLAYTEST-64](PLAYTEST-64.md)'s findings: does each café sitter face its own table,
+the right-hand chair and the vertical arrangement included; does a north-south roadworks band
+read as one narrow continuous barrier rather than blocks; and is a horizontal alley closed
+across its short mouth?
+
+> All three read right
+
+Closed as fine.
