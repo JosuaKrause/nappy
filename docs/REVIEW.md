@@ -66,16 +66,6 @@ item below for as long as looking takes.
   3 of 4 performs, its guards leave the post and come for her on foot, standing then lunging —
   nobody has reached that state. Does a guard on foot read as *the roadblock coming for her*, and
   does the street it left read as open? Record is `DECISIONS.md`, M56, the roadblock hunts.
-- **Watch a car pause at a junction mouth, and one turn round in a street** (any day; a closure
-  or a seal on a road sends cars back). A car drives to the mouth of the junction, eases to a
-  turn speed, follows one arc onto the centre of the lane it is joining and picks up speed
-  again; an about-face is a half circle inside the junction box, or, with no junction to reach,
-  in the street with its body over the kerb by a few pixels. Does the pause at the mouth read as
-  slowing rather than stalling, and does a street about-face over the kerb read as wrong? That
-  last one is the open question in `TODO.md`, M111. Whether the picture jumps a view or floats
-  off its shadow on the arc was answered by [PLAYTEST-66](playtests/PLAYTEST-66.md) — it did,
-  and the halo with it — and built as `DECISIONS.md`, M121. Records are `DECISIONS.md`, M111 and
-  M108, the crowd car.
 - **Reach any ending and read the last line.** The run clock is there, to the millisecond, and
   nowhere else — not the HUD, not the pause screen, not a day summary. It counts only while a day
   is being walked: a retried day's first attempt counts, a minute on the summary does not. Does

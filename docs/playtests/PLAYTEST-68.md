@@ -253,3 +253,21 @@ around. And the day-3 shape — a charge from off screen along her heading — d
 after the lesson: it is sprinkled in now and then on later days, unguaranteed and without the
 tip, so that the lesson's dog and the later dogs are the same animal with the guarantee and the
 tip being the whole of the difference. Both go to M96 in `TODO.md`; the review item closes.
+
+## A car turning round in a street
+
+Asked, against M111's one open question: where a barrier leaves a car no junction to reach it
+turns round in the street, and a half turn between two lanes 32px apart puts its corners 8px
+over the kerb onto open pavement, every hard blocker still refused; refusing that too was
+measured at 33 of 34 cars at a standstill inside ninety seconds. Accept the overhang, or build
+a reverse gear? The recommendation was to accept it.
+
+> Going over the curb is actually quite realistic. Let's keep doing that. What would be the
+> purpose of reversing? It would make things more complicated. What happens if there is a car
+> behind etc? Also, let's stop with questions for now. We will continue with that later
+
+Decided: the overhang stays and no reverse gear is built. M111's section leaves `TODO.md` and
+the decision goes to `DECISIONS.md` under M111. The other half of the review item — whether the
+pause at a junction mouth reads as slowing rather than stalling — closes under the sentence
+above about act I. The questions stop here; what remains in `REVIEW.md` waits for a later
+sitting.

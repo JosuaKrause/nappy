@@ -58,29 +58,6 @@ player's to say, and until then he keeps one frame.
       M102, the finale, owns the carrying mother and interior sequence. The protester's eight
       pointing poses are bound (`DECISIONS.md`, M65).
 
-### M111 — Cars follow their turns
-
-The motion is built — a car plans one arc tangent to both lanes and follows it, its heading the
-tangent throughout, nothing committed before the swept strike box has been checked against the
-ground — and the record, with its measurements and the turn geometry's own reasoning, is in
-`DECISIONS.md` under M111. The diagonal *pictures* on the curve are M108's vehicle item, which
-reads `CrowdAgent.heading()`, the unit vector along actual travel. What stands here is what the
-build could not decide alone.
-
-- [ ] **Open question, the player's: the street about-face crosses a kerb, or the traffic gets a
-      reverse gear.** A half turn between two lanes 32px apart is a 16px arc, and a car's corners
-      then reach 40px from its centre against 32px to the kerb, so a car turning round *in a
-      street* — only where a barrier leaves it no junction to reach — overhangs open pavement by
-      8px, every hard blocker still refused. Refusing that too was measured: 33 of 34 cars at a
-      standstill inside ninety seconds, because one nose-to-wall car holds its junction and the
-      street behind it queues. The manoeuvre it really wants is a three-point turn, and the
-      traffic has no reverse gear. The overhang cannot kill her — a strike counts only on a road
-      tile, the same kerb read from her side — so the question is whether the picture is
-      acceptable, or whether reversing is worth building. **And one instant reversal survives**
-      as the last resort for a car already stopped with less than a half turn's room in front of
-      it, reachable only by a placement or a barrier that arrived after the car did; the
-      alternative was a car that never moves again
-
 ### M109 — Convert the SVG catalogue to PNG
 
 Follows M108, eight-direction entity graphics. Use the approved SVG-first workflow in
