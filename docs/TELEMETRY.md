@@ -229,6 +229,7 @@ name the question it answers, or it is a metric and does not belong.
 | `idle` | observer | **Standing still, and what it bought** — how long, on what ground, and what the two meters did across it. Written when the stand ends, like `cue`, because the duration is the point. Standing still emits nothing, so without this entry it shows up in a trace as a *gap between two lines* |
 | `blocked` | observer | **Is she stuck, or standing on purpose?** Movement input held for about a second while she goes nowhere — the direction, how long, and where. `idle` already covers the legitimate stand-still, no direction held; without this one an immobile rig's log reads exactly like a run, and a person pressing into a blocker the engine never stopped them at has no trace of having done it |
 | `cue` | observer | **What was she warned about, and for how long** — the mark over her head and the screen-edge badges, each written when the span ends so the duration is on the line. A cue is a claim about a moment, and a complaint about a cue's *timing* is invisible to a trace that writes only what was marked |
+| `frame` | observer | **What the frames cost on the device this was played on** — once a second, the frame rate, the worst single frame in that second, the draw calls, renderable objects and primitives the renderer was handed, and the milliseconds spent in `_process` and `_physics_process`. The one entry that is about the machine rather than about the day, and the only way a session played on a phone or on the web page can be read back at all. See "What a frame cost" below |
 | `freeze` / `thaw` | observer | Was the day lost to noise or to the clock? Freezing is the invisible failure |
 | `asleep` / `woke` | observer | How long the walk actually took, and what woke her |
 | `quiet` | observer | The sabotage landed and the masts went off |
@@ -253,6 +254,52 @@ The three numbers are printed together so they always add up.
 
 The crowd cannot be named one agent at a time. Which of the two is holding the meter up is the whole
 question, and it is one subtraction.
+
+### What a frame cost
+
+The `frame` entry, once a second:
+
+```
+  12.0  frame    fps 118, worst frame 22.4ms, draws 342, objects 351, primitives 4120, process 4.21ms, physics 0.83ms
+```
+
+**It is the one entry about the device rather than about the day**, and it is there because the
+device a run is played on is usually not the device it can be read on. *(2026-09-13: "I played a
+few sessions on mobile. It is a bit laggy now.")* A phone and the web page have no readout anybody
+can photograph and no profiler to attach; what they do have is a `run.log`, so the numbers go on
+the line.
+
+**A frame rate on its own cannot say where the frame went**, which is why the other six fields are
+beside it. `draws` is the call count the renderer issued — the number an atlas moves, since only
+consecutive draws sharing a texture are batched and a sprite drawn from its own texture is a call
+of its own. `objects` is the renderable items submitted and `primitives` the triangles and lines
+in them, and the pair separates *many small sprites* from *a few large fills*: a frame heavy in
+primitives and light in pixels is a geometry problem, and the reverse is a fill-rate one — the
+second being exactly the cost a desktop measurement cannot see on a phone's own screen. `process`
+and `physics` are the two loop times, held apart rather than summed because they are fixed by
+different things, and together they say how much of the frame never reached the renderer at all.
+
+**`worst frame` is the longest single frame in that second, not an average of them.** "A bit
+laggy" is a hitch, and a mean is the statistic a hitch hides in.
+
+`FrameCost` (`src/telemetry/frame_cost.gd`) reads all of it off Godot's own `Performance` monitors
+in one place, shared with the debug readout below so a number read off a phone's log and the same
+number read off a desktop's screen cannot be assembled differently. **The render counters read
+zero under `--headless`** — a null display server draws no frame to count — so measuring a frame
+is a windowed `tools/shot.sh` run and never a suite; `tests/test_performance.gd` holds the shape
+of the line and the agreement between the two places it is written from, which is all a headless
+process can hold.
+
+**It is timed off the frame clock rather than the day clock**, unlike every other per-second
+thing here, because `--invincible` stands the day clock still on purpose and an interval measured
+against it would write one line and then never advance — on exactly the runs a capture is most
+likely to come from. The cost is that every line of such a run carries the same timestamp, which
+is already true of every other entry there.
+
+**And it is the one timed sample the log has**, which the last section of this file otherwise
+rules out. The distinction is what a reader can recompute: where she was is reconstructable from
+the entries around it, and what a frame cost on somebody else's phone is not recoverable from
+anything at all.
 
 ---
 
@@ -408,9 +455,13 @@ build has nothing in `project.godot` to reach:
   barrier. A moving car's strike box is drawn here too, in the lethal
   colour, because it is not a body but is exactly what ends the day on contact. Walkers and cars
   have no body of their own, and none is invented for them.
-- **`4` the readout** — the seed, frame rate and meter breakdown `main.gd` has always drawn top
-  right, now toggleable like the other three: off, the string is not assembled, not merely hidden
-  behind an invisible label, the same rule `_debug` itself already applied to the whole thing.
+- **`4` the readout** — the seed, the meter breakdown and what the frame cost, drawn top right by
+  `main.gd` and toggleable like the other three: off, the string is not assembled, not merely
+  hidden behind an invisible label, the same rule `_debug` itself already applied to the whole
+  thing. The frame block is `FrameCost.readout_lines()` — `fps`, `draws`, `objects`, `primitives`,
+  `process` and `physics`, the same six quantities and the same words the run log's own `frame`
+  entry carries, assembled from the same readings so the screen and the log cannot disagree. See
+  "What a frame cost" above for what each one says.
 
 The mapping above is printed once on boot in a debug build. With no `--layers` flag, a run opens
 with the readout on and the three geometry layers off, so an unflagged debug run looks exactly as
@@ -622,3 +673,8 @@ construction, in `tests/test_telemetry.gd`'s `_check_a_glyph_says_what_it_is`.
   wearing a log's clothes. The dusk map's trail (see "The trail" above) is not an exception to
   this: it is sampled by distance rather than by timer, it is never written to the log, and it
   lives only in memory for the length of one day.
+
+  **The `frame` entry is the one timed sample, and the test it passes is the same one.** What it
+  records is not reconstructable from anything — not from the seed, not from the entries around
+  it, not from a second run on another machine — because it is a fact about the device somebody
+  was holding. A position is; a frame's cost on a stranger's phone is not.

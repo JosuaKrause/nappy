@@ -82,6 +82,13 @@ const BUMP_QUIET_TIME := 1.5
 ## being answered is "did the player ever go near a contact", not "did they use it".
 const CONTACT_SIGHT := 130.0
 
+## How often the log says what a frame is costing. One second, because the question it answers —
+## *is the game laggy on this device, and where is the frame going* — is about a stretch of play
+## rather than a moment, and a line per frame would be a metrics dump wearing a log's clothes.
+## A three-minute day is about a hundred and eighty lines, which a reader can scan down the same
+## way they scan `near`.
+const FRAME_REPORT_INTERVAL := 1.0
+
 ## How long movement input must be held while she goes nowhere before it counts as *blocked*
 ## rather than a footstep settling at a kerb. About a second — the same order as
 ## `TURN_COMMIT_TIME`'s read on "held long enough to be a decision" rather than a stumble.
@@ -194,6 +201,11 @@ var _last_closure_at := -1000.0
 # The resistance contact.
 var _contact_seen := false
 
+# What the frames are costing. Time since the last `frame` entry and the longest single frame
+# seen since it, both in frame seconds rather than day seconds — see `_watch_the_frame`.
+var _frame_since := 0.0
+var _frame_worst := 0.0
+
 # The cues. What was up over her head, since when, and how much of that she spent on the road;
 # and which edge badges are up, each with the clock reading it went up at.
 var _mark := Stroller.Alert.NONE
@@ -245,6 +257,8 @@ func start_day() -> void:
 	_mark_on_road = 0.0
 	_mark_why = ""
 	_badges.clear()
+	_frame_since = 0.0
+	_frame_worst = 0.0
 	_tree = RouteTree.for_day(_map, GameState.day)
 	_corridor = Corridor.of(_tree)
 	_path_time = {"on": 0.0, "off": 0.0, "away": 0.0}
@@ -297,6 +311,32 @@ func _process(delta: float) -> void:
 	_watch_the_contact(here)
 	_watch_the_trail(here)
 	_watch_met_events(here)
+	_watch_the_frame(delta)
+
+## What the frames are costing, once a second — the one entry that is about the **device** rather
+## than about the day, and the only way a session played on a phone or on the web page can be read
+## back afterwards at all. *(2026-09-13: "I played a few sessions on mobile. It is a bit laggy
+## now.")* A frame rate on its own cannot say where the frame went; `FrameCost` carries the draw
+## calls, the renderable objects, the primitives and the two loop times beside it, and those are
+## what separate *too many texture switches* from *too much work before the renderer is reached*.
+##
+## **Timed off `delta` rather than off `Telemetry.clock()`**, unlike `_watch_the_corridor`, and the
+## reason is a flag: `--invincible` stands the day clock still on purpose, so an interval measured
+## against it would emit one line and then never advance — on exactly the runs a capture is most
+## likely to be taken from. The cost is that every line of such a run carries the same timestamp,
+## which is already true of every other entry there.
+##
+## **The worst frame in the interval is on the line, not an average of them.** "A bit laggy" is a
+## hitch, and a mean is the statistic a hitch hides in; one `maxf` a frame is what makes the
+## complaint measurable rather than a matter of opinion.
+func _watch_the_frame(delta: float) -> void:
+	_frame_worst = maxf(_frame_worst, delta)
+	_frame_since += delta
+	if _frame_since < FRAME_REPORT_INTERVAL:
+		return
+	Telemetry.note("frame", FrameCost.line(_frame_worst))
+	_frame_since = 0.0
+	_frame_worst = 0.0
 
 ## Whether she is walking the day's corridor.
 ##
