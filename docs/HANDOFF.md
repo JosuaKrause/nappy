@@ -294,11 +294,14 @@ this is the map.
 - **Three agents were running when the session closed**, each briefed from its `TODO.md`
   entry: M125 (pruning `tests/**`, on its own feature branch), M124's measurement half (readout,
   run-log line and a per-suspect profile, on its own feature branch), and M126's read-only
-  audit, which writes its report to `/tmp/nappy-audit-2026-09-13.md` outside the repository.
-  If a branch has a PR, review it, file its record and merge under the usual rules; if a branch
-  exists without one, or a worktree under `.claude/worktrees/` holds uncommitted work, the agent
-  was cut off — read what is there before re-briefing. If the audit file is missing, the audit
-  re-runs from its entry.
+  audit. **The audit finished**: its report is `evidence/audit-2026-09-13/AUDIT.md`, 28
+  findings with file and line, a failure scenario and a fix size each, plus what was found
+  clean; nothing has been filed from it yet, and M126's own item says how — each finding becomes
+  a queue item under the milestone that owns the code, or a defect under M100, and the record
+  goes to `DECISIONS.md`. For the other two: if a branch has a PR, review it, file its record and
+  merge under the usual rules; if a branch exists without one, or a worktree under
+  `.claude/worktrees/` holds uncommitted work, the agent was cut off — read what is there before
+  re-briefing.
 - **The M124 atlas item is gated on the measurement**: nothing is atlased until the numbers say
   texture switches are the cost.
 
