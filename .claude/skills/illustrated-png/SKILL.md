@@ -142,6 +142,10 @@ features over their bases in the engine, retaining the separate component graphi
 rotation/offset blend that makes one continuous asphalt base is an offline preparation step.
 Separate existing grass features from a soft green base and place them sparsely with stable
 city-seed variation, keeping grass detail quieter than the actors and route markings.
+Validate component IDs and rotations against the authored TileSet and ground selector rather
+than inferring their order from filenames. Verify the composed grass atlas itself as well as
+its selection logic; a missing component can leave a valid-looking fallback in place. Crop
+grass features to their visible bounds before placing them so their clumps remain whole.
 
 Resolve textures only. Keep original scale, offsets, animation, mirroring, sorting, shadows,
 camera and gameplay behavior. Missing or differently sized replacements fall back to the SVG;

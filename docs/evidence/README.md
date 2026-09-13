@@ -34,8 +34,11 @@ can produce different pixels on another call; extraction and assembly use the re
 | Trees, bollard and rooftop equipment | [City prop generation and registration](comic-city-props-2026-09-12/GENERATION.md) |
 | Garbage and litter | [Comic prop generation and registration](comic-props-2026-09-12/GENERATION.md) |
 | Outdoor ground tiles | [Tile generation and registration](style-transfer-tiles-2026-09-12/GENERATION.md) |
-| Sidewalk continuation of road-edge paving | [Source pairs, transfer, registration and neighbor panels](sidewalk-continuity-2026-09-12/GENERATION.md) |
-| Sidewalk joins in actual game layouts | [Generated-map tile selection, frozen inputs and street assemblies](sidewalk-layout-review-2026-09-12/GENERATION.md) |
+| Sidewalk material comparison | [Source pairs, transfer, registration and neighbor panels](sidewalk-continuity-2026-09-12/GENERATION.md) |
+| Sidewalk join comparison in generated layouts | [Tile selection, frozen inputs and street assemblies](sidewalk-layout-review-2026-09-12/GENERATION.md) |
+| Shared ground bases and transparent details | [Frozen artwork, stencils and component assembly](layered-ground-2026-09-12/GENERATION.md) |
+| Composed streets and varied grass in generated layouts | [In-engine composition and repeatable layout review](layered-ground-layout-2026-09-12/GENERATION.md) |
+| Player generation-reference SVG family | [Authoring sources, runtime pairings and frame roles](../graphics-creation/player/README.md) |
 | Logo, social card and exported icons | [Identity generation and registration](comic-identity-2026-09-12/GENERATION.md) |
 
 ## What is here

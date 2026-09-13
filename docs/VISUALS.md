@@ -9,7 +9,8 @@ forces original SVG graphics. The same drawing code handles both formats.
 The transferred artwork covers the mother's pushing and carrying animation frames and the pram's
 five authored views, supplying eight directions through explicit east/west mirroring. The garbage
 sack, sack pile and five litter decals also use registered PNGs. The outdoor ground catalogue
-under `assets/tiles/` has matching PNGs, including its damage and directional marking variants.
+under `assets/tiles/` has matching PNGs. Shared ground bases and transparent damage, markings
+and grass features are composed in the engine through `GroundLayers`.
 Trees, the overhead bollard cap, the ground tree bed and the rooftop water tank, HVAC units,
 skylights, vent stack and ducts also have comic replacements. Other families use SVGs.
 The logo, social card and exported stroller icon sizes use the comic identity mark, documented
@@ -44,6 +45,14 @@ creation-reference family for high-fidelity generation and its linked recipes fo
 back to the SVG. Drawing transforms, animation timing, mirroring, ground anchors, sorting,
 collision and camera framing remain the existing game's responsibility.
 
+`GroundLayers` builds a presentation TileSet from the authored source resource. Its component
+manifest in `assets/illustrated/svg-transfer/tiles/layers/` assigns a shared base and transparent
+overlays to each supported source ID. Curbstones, street paint, crosswalks and damage blend in
+the engine; pixels outside their alpha remain the base's own pixels. Grass has sparse clump
+arrangements selected by city seed and tile coordinates. Daily repaints start from the authored
+resource, keeping composition stable. Missing components retain the normal PNG/SVG fallback,
+and `--svg` uses the authored vector textures. Source IDs and gameplay geometry stay fixed.
+
 Each runtime replacement matches the SVG's native dimensions and functional anchors.
 Identity/export variants retain their documented source-derived canvas sizes. Registration preserves
 the redrawn artwork's real transparency rather than stamping the SVG's primitive silhouette
@@ -68,8 +77,11 @@ F — Hip motion, its whole-figure source pairings and reproducible walking roll
 The [tile generation record](evidence/style-transfer-tiles-2026-09-12/GENERATION.md) preserves
 the terrain sheets, source-pair manifest and native/repeated-neighbor comparisons. Ground tiles
 use fixed cell extraction because every pixel belongs to a filled tile, including its edges.
-The [sidewalk continuity record](evidence/sidewalk-continuity-2026-09-12/GENERATION.md) covers
-the plain and damaged sidewalk surfaces and their joins with the accepted road-edge paving.
+The [ground component recipe](evidence/layered-ground-2026-09-12/GENERATION.md) retains the
+background-free damage stencils, curbstones, street paint and grass clumps. It also prepares
+the asphalt base offline by blending four quarter-turn orientations with equal contributions.
+The [engine layout recipe](evidence/layered-ground-layout-2026-09-12/GENERATION.md) assembles
+the actual runtime textures in generated streets, junctions and grass patches.
 
 ## Review
 

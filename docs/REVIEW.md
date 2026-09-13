@@ -14,10 +14,15 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-- **Walk across neighboring road variants.** Check road
-  markings for seams or distracting repetition during movement.
-  The current native pairs and neighbors are in
-  `evidence/style-transfer-tiles-2026-09-12/comic/registered/`.
+- **Walk along sidewalks and across normal and main-road junctions.** Check that the paving
+  continues into curbstone tiles, asphalt has no brightness jumps, and paint and damage sit
+  naturally on the shared floor. Include both street axes and junction corners. The
+  [engine layout review](evidence/layered-ground-layout-2026-09-12/GENERATION.md) shows the
+  composed ground textures in generated layouts.
+
+- **Look at a park while walking past it.** Do the sparse grass clumps give variety while the
+  soft base stays quiet enough to keep people and routes clear? Check neighboring cells and
+  revisit the same seed to compare their stable arrangement.
 
 - **Look at café seating and roadworks along both street axes.** Each café sitter should
   face its own table, including the right-hand chair and the vertical arrangement. Vertical

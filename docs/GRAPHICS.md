@@ -214,8 +214,8 @@ the logo flattened onto opaque white; the rounded slate icon plate remains part 
 ## PNG replacements
 
 `assets/illustrated/svg-transfer/tiles/` contains native 32×32 replacements for the outdoor
-ground SVG family. `City._ground_tile_set_with_transfers()` substitutes textures without
-changing TileSet source IDs or atlas regions, and `CityEdge` resolves the mountain texture
+ground SVG family. `GroundLayers` builds the city's presentation TileSet from its authored
+sources, retaining source IDs and native cell geometry. `CityEdge` resolves the mountain texture
 for its separate repeated drawing. The prepared `alley_draft` has a PNG but remains unbound.
 The [generation record](evidence/style-transfer-tiles-2026-09-12/GENERATION.md) links source
 pairings, exact prompts, raw outputs and repeated-tile comparisons.
@@ -244,14 +244,18 @@ The [player authoring directory](graphics-creation/player/README.md) holds the h
 generation targets and their runtime/PNG pairings. The runtime SVG catalogue supplies vector
 artwork for contact and together poses. The PNG presentation uses the accepted F and P2 textures.
 
-The seven `sidewalk{,_cracked_*}.png` surfaces have a shared plain and damaged paving base.
-Their joins with the accepted curb artwork require correction under M109, convert the SVG
-catalogue to PNG, in `TODO.md`. The
-[sidewalk continuity record](evidence/sidewalk-continuity-2026-09-12/GENERATION.md)
-preserves SVG/PNG pairings and native neighbor comparisons against all eight curb directions.
-The [actual-map layout review](evidence/sidewalk-layout-review-2026-09-12/GENERATION.md) assembles
-the game's selected tiles into repeated streets and junction corners, exposing the remaining
-joint misalignment and material contrast.
+Ground components live under `assets/illustrated/svg-transfer/tiles/layers/`, paired with SVGs
+under `assets/tiles/layers/`. The component manifest maps each ground source to a shared sidewalk,
+asphalt or alley base and transparent curbstones, red edge paint, yellow lines, crosswalks or
+damage. The engine composites those layers when building the TileSet. Clear overlay pixels
+leave the base intact, so neighboring variants share the same floor material.
+The asphalt base is prepared offline by equally blending four quarter-turn orientations.
+Grass uses a soft green base and three extracted clumps; the engine makes sparse arrangements
+and selects them deterministically from the city seed and cell coordinates.
+The [component recipe](evidence/layered-ground-2026-09-12/GENERATION.md) preserves the source
+artwork, stencils and base preparation. The
+[engine layout recipe](evidence/layered-ground-layout-2026-09-12/GENERATION.md) reviews composed
+tiles in generated streets, junctions and parks. `--svg` selects the authored vector TileSet.
 
 `assets/illustrated/svg-transfer/props/` supplies `garbage_sack.png` (28×34) and
 `garbage_sacks_pile.png` (42×34), bottom-center anchored, plus `litter_{can,apple,bag,newspaper,cup}.png`

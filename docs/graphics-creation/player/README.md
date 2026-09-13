@@ -5,8 +5,8 @@ high-fidelity F (carrying) and P2 (pushing) source artwork used to create the ac
 sprites. The runtime catalogue supplies the game's vector artwork. Both families contain
 contact and together poses for every authored direction.
 
-The runtime SVGs are still the fallback and the explicit `--svg` review path. The accepted PNG
-counterparts remain unchanged and are selected by default when their dimensions match. Keeping
+The runtime SVGs supply the fallback and the explicit `--svg` review path. The accepted PNG
+counterparts are selected by default when their dimensions match. Keeping
 the authoring copies under `docs/graphics-creation/player/` prevents high-fidelity generation
 references from becoming an implicit runtime fallback.
 

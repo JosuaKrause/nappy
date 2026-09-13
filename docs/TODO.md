@@ -116,29 +116,6 @@ findings supported by the conversion and review.
       Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
-- [ ] Assemble ground variants from shared bases and transparent overlays. PLAYTEST-65 asks for
-      one sidewalk floor texture, a curbstone-only texture and a red main-street edge-line texture,
-      blended during assembly. Remove backgrounds from cracks and other damage and composite them
-      over the actual sidewalk, road or alley base. Stencil the illustrated damage sources
-      accepted in PLAYTEST-65: all sidewalk, road and alley hairline/cracked/broken A/B
-      variants, preserving their crack, hole and debris shapes. Road variants
-      likewise share one asphalt base,
-      with yellow lines and crosswalk stripes applied as transparent marking layers. Keep the
-      asphalt free of the main-road gradient that produces brightness jumps between repeats.
-      Build it from the current road texture at 0°, 90°, 180°, and 270°, blended with equal 25%
-      contributions as specified in PLAYTEST-65, preserving the original input and exact recipe.
-      Compare wrapped half-tile offsets as the player's alternative and retain the smoother repeat.
-      Check both repeat axes and keep the floor identical outside each overlay;
-      preserve native tile geometry, curb detail, markings, selection and current mother graphics.
-      Compose detail layers inside the engine, keeping the final graphics as separate components;
-      the rotation/offset asphalt blend remains an offline preparation step producing one base.
-      Split existing grass features from a soft green base and distribute them sparsely at varied
-      positions with deterministic city-seed variation, making parks quieter and less repetitive.
-      Store component SVGs before their PNG derivatives, frozen input artwork and reproducible
-      assembly scripts. Review repeated runs and corners using the
-      [actual-map layout recipe](evidence/sidewalk-layout-review-2026-09-12/GENERATION.md), keeping
-      the previous comparison reproducible. The diagnosis is in `DECISIONS.md` under M109,
-      sidewalk joins in actual street layouts.
 - [ ] Regenerate the quiet-square PNG as muted, darker cool stone paving. PLAYTEST-65 reports
       that its brightness stands out negatively. Preserve native dimensions, opaque coverage,
       slab joins and source identity; review repeated tiles beside the shared sidewalk and road

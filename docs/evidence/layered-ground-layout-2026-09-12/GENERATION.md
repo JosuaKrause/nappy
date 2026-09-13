@@ -4,13 +4,19 @@ This record captures pixels copied from the TileSet produced by `GroundLayers.bu
 places them with `GroundTiles.source_for` and the runtime grass atlas coordinate selector. It does
 not reconstruct components outside Godot.
 
-Generate a new directory from the repository root:
+The retained layouts use source revision
+81a935b381611a5e336fdf8e0ae5250fe697257f. Use a checkout of that revision for an exact rebuild;
+the manifest records input hashes and the Godot version. Run `./tools/check.sh` in that checkout
+to import its resources, then generate a new directory from its repository root:
 
 ```sh
-godot --headless --path . \
+ground_godot_bin="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
+"$ground_godot_bin" --headless --path . \
   res://docs/evidence/layered-ground-layout-2026-09-12/layout_capture.tscn -- \
   --output-dir /tmp/layered-ground-layout
 ```
+
+Set `GODOT` to the engine binary on other installations.
 
 The command rejects unexpected arguments and an existing output directory. Its `manifest.json`
 records the exact command, city seed, source hashes, crop coordinates, grass-atlas dimensions and
