@@ -197,3 +197,59 @@ face the wrong way?
 > All read right
 
 Closed as fine.
+
+## The event people and animals, and their strides
+
+Asked, against `DECISIONS.md`, M108, the event people and the event strides: does a figure seen
+from behind still read as what it is, does the robber turning toward her read as a tell or a
+glitch, do the café sitters facing one way read as a row, does the cyclist's pedal swap read as
+pedalling, and is the busker's tempo right?
+
+> I haven't noticed anything off. Looks good. I will report specific findings if I notice
+> anything
+
+Closed as fine, both items.
+
+## Everything else act I shows, closed on one sentence
+
+Sent while the questions were being asked, and it decides how the rest of the file is handled:
+
+> Btw all answers and feels I give you might get overturned later after more playing but we
+> shouldn't keep those items open until more play testing surfaces issues
+
+> I will complain if I notice issues from restaurants etc but for now they look good and
+> nothing stands out.
+
+> Technically I played multiple days on the phone but I didn't skip ahead or did the ending
+
+So every `REVIEW.md` item about something the first days of a phone run put in front of the
+player — the pram against walls and corners, the roof's northern edge, the crowd turning back
+from a seal and leaving a sealed junction empty, the map's edges, the sidestep past a café or a
+van, the burning building on day 3, a precinct, the halo's rim through a turn and under a flock,
+a car about-facing into a queue, the parked van's facing, the alley mouse, the districts, the
+tree-lined streets and the fallen tree, the park trees' spacing, the shaped fields and shadows,
+the sealed city and its half-open walls, the corridor grown on cells, the closures kept off calm
+areas, the off-screen starts and the day-3 dog, the biker, the difficulty and the five nerves,
+the spoiled park, the robber and the pacing man, the pavement obstacles and the solid street,
+the silhouettes, the flock, the calm ground's speed, the cheaper city and its four retuned
+rows, and the bollards at the border — closes as *nothing stands out*, and a later complaint
+reopens any of them as a new finding. What stays in `REVIEW.md` is what the phone sessions did
+not reach: day 7's doors, walls and roadblocks, act III's heat and hunts, the endings, the
+escape, and the desktop's debug layers.
+
+## The dog from day 4
+
+Asked, against M96's open item: from day 4 the dog is map-placed off her heading but still
+charges the moment it streams in, 900px away past the edge of the view, rather than waiting
+inside its own field the way the robber does. Offered: make it wait (the recommendation), or
+leave it charging from off screen.
+
+> The waiting is good. But we can sprinkle the day 3 charging dog in every now and then, too.
+> Since they always come from offsceeen the only difference now is that day 3 dog is guaranteed
+> to happen and has a tutorial tip
+
+Two decisions. From day 4 the dog waits in its field — a dog she can see is a dog she can route
+around. And the day-3 shape — a charge from off screen along her heading — does not retire
+after the lesson: it is sprinkled in now and then on later days, unguaranteed and without the
+tip, so that the lesson's dog and the later dogs are the same animal with the guarantee and the
+tip being the whole of the difference. Both go to M96 in `TODO.md`; the review item closes.

@@ -32,11 +32,6 @@ item below for as long as looking takes.
 - **Walk the approach to a door with the field layer on** (`1`). A hut's field is a 98px disc,
   grown from the invariant that a captured player is fully charged rather than from a balance
   decision. Does the approach to a wall crossing now cost more than it should? Same record.
-- **Walk her into a wall, a corner and a barrier at an angle** (any day; `3` shows the bodies).
-  The pram's body is an 8px circle centred on the edge of her own 14px one, so the pram's far
-  half overlaps what it meets and she stands against a wall again. Does the pram still catch on
-  corners, and does the far half clipping into a wall read as wrong? 8px is a guess. Record is
-  `DECISIONS.md`, M100, the pram's body sits on her circumference.
 - **Turn on the bounding-box layer and look at everything** (`3`). It now draws every body physics
   reads, from the collision nodes themselves: hers, the pram's, buildings, events, closure
   barriers and the map's boundary. Is there any body you can walk into that has no outline? Same
@@ -49,9 +44,6 @@ item below for as long as looking takes.
   tile 95,88). The band is 64px wide, flush with the alley's paving, no longer over the roof
   edges either side. Does it still read as standing on a roof? Record is `DECISIONS.md`, M100, a
   region wall fits the alley mouth.
-- **Walk north into the top of any building.** Her body goes 6px into the roof's northern edge
-  before stopping. Does that read as leaning into the top of a wall, or is it too little to
-  notice? Same record.
 - **Run `--invincible` for a couple of minutes beside a loud event** (any day). The clock and the
   light stay where the day started and the excitement bar never rises, while the crowd, the
   events, the closures and the checkpoints all still run. Does anything still flash or darken, and
@@ -61,42 +53,6 @@ item below for as long as looking takes.
   has one). No chalk mark and no robber ever stands on its paving; the mark is offered somewhere
   she can reach. Does the mark ever appear behind a band anywhere else — a closure, a soft seal?
   Record is `DECISIONS.md`, M100, a blocked-off alley has no chalk mark.
-- **Stand by a single sealed street and watch the crowd turn back** (any day; seals are the
-  bodies on the streets the day's route does not use). Walkers and cars turn back from a hard
-  seal, a wall and a closure; a soft seal takes both pavements from walkers and leaves the road
-  to cars; a door lets cars through one at a time. Does a street the crowd refuses read as
-  *shut*? The other half of this, whether the crowd looks stuck, was answered by
-  [PLAYTEST-66](playtests/PLAYTEST-66.md) for a junction sealed on every side and built as
-  `DECISIONS.md`, M119; this asks about one seal on an open street. Record is `DECISIONS.md`, M110.
-- **Stand at a junction sealed on every side, then walk the open streets around it.** Nobody is
-  placed inside such a pocket any more, and whoever a seal goes up around leaves once they are
-  off screen, so the sealed crossing is empty. What that costs is density elsewhere: the day's
-  crowd is the same size and now lands on about a quarter less pavement (48 of 144 junctions were
-  pocketed for walkers on seed 4242 day 1, none for cars), so the open streets are that much
-  busier. Two questions. Does an empty sealed-off crossing read as *shut*, the way an empty
-  sealed street does, or as a hole in the city? And do the open streets now read as crowded in a
-  way that changes the route decision, which is a density question for `Tuning` rather than for
-  this rule? Also: a walker or car that turns back from a seal now keeps its new heading for one
-  stride before it may turn again — does the turn-back at a seal read as a decision rather than a
-  twitch? Record is `DECISIONS.md`, M119; the bursts are `evidence/m119-crowd-pockets-2026-09-13/`.
-- **Walk the map's east and west edges facing outward, then stand at a plain edge and watch the
-  traffic arrive.** The camera now stops short by the length of its glance, so no black column
-  should show at any corner whichever way she faces. And nobody enters across a plain edge any
-  more — a walker or car appears inside the map out of sight, and only a spine car comes through
-  the tunnel or off the bridge. Two questions. Is the border whole in every corner, walking as
-  well as standing? And beside an edge, do cars ever appear bunched — several recycles can land
-  within a car's length of each other there and are pulled apart by the following rule, which a
-  rig measured and nobody has seen. Record is `DECISIONS.md`, M120; the stills and the burst are
-  `evidence/m120-map-edge-2026-09-13/`.
-- **Walk past a café, a stall or a kerbed van on a day with several** (a precinct's pavements are
-  the busiest early in a day). A walker steps into the other lane of its own footway to get past
-  one and steps back after; a car in the body's own lane turns at the last junction while the
-  oncoming lane keeps flowing past it. Do both reads happen visibly rather than the walker or the
-  car simply not being there next time you look, does any street end up parked rather than turned,
-  and does diverting at every body — the recommendation the player overturned on 2026-09-12 —
-  blunt the tell a closure's own turn-away relies on? Record is `DECISIONS.md`, M110, every solid
-  body; the tunables are `Tuning.WALKER_BODY_SIDESTEP_TILES` (4 tiles) and
-  `CrowdAgent.BODY_TURN_CLEARANCE_TILES` (3 tiles), both open to overturn.
 - **Stand by a region door on a busy street and watch the walkers** (day 7 or later,
   `--invincible`). Most stop beside the hut, vanish inside for a second, come out on the far side
   and walk on; one in eight walks straight through; one in four turns off at the last junction;
@@ -110,18 +66,6 @@ item below for as long as looking takes.
   3 of 4 performs, its guards leave the post and come for her on foot, standing then lunging —
   nobody has reached that state. Does a guard on foot read as *the roadblock coming for her*, and
   does the street it left read as open? Record is `DECISIONS.md`, M56, the roadblock hunts.
-- **Find the burning building on day 3** (`--day 3`; it is on a pavement against a building). The
-  engine arrives along the fire's street only once the fire is on screen. Does the engine read as
-  *summoned by the sight*, and does a day where she never finds the fire feel different? Record
-  is `DECISIONS.md`, M101.
-- **Walk a precinct end to end** (a pedestrian street with bollards at each mouth). Nothing is
-  built over its paving any more. Does it read as one paved place? Record is `DECISIONS.md`,
-  M100, a precinct's pavement.
-- **Meet the dog on day 4 or later** (`--day 4`). It is placed on the map now, never on her
-  line, and it charges from off screen the moment she passes within a block of it. Does it read
-  as *a dog that was somewhere* or as the lesson again? That is the open question in `TODO.md`,
-  M96, whether it should wait to be routed into; a played answer decides it. Record is
-  `DECISIONS.md`, M96.
 - **Watch a car pause at a junction mouth, and one turn round in a street** (any day; a closure
   or a seal on a road sends cars back). A car drives to the mouth of the junction, eases to a
   turn speed, follows one arc onto the centre of the lane it is joining and picks up speed
@@ -132,66 +76,11 @@ item below for as long as looking takes.
   off its shadow on the arc was answered by [PLAYTEST-66](playtests/PLAYTEST-66.md) — it did,
   and the halo with it — and built as `DECISIONS.md`, M121. Records are `DECISIONS.md`, M111 and
   M108, the crowd car.
-- **Stand close to a car as it turns, and under a flock, and watch the rim.** The halo now
-  re-traces its owner's body every frame it is drawn, so a turning car's rim should sweep through
-  the diagonal with the picture and a flock's rim should fly with the birds. And every car and
-  walker heading west now has a rim at all: the three mirrored views drew none before, which is a
-  defect that stood since the halo landed. Three questions. Do rim and picture read as one body
-  through a turn? Does a west-facing body's rim read the same as an east-facing one's? And does an
-  east- or west-bound car sit right on its shadow now that its picture is registered to the
-  strike box like the other views, which moved it 14px south? Record is `DECISIONS.md`, M121; the
-  bursts are `evidence/m121-halo-follows-owner-2026-09-13/`.
-- **Watch a car about-face into a street with a queue in it.** The lane holds a gap for the
-  car that is coming and the arrival gives way if the gap has closed, so nobody already in the
-  lane should jump. Does the merge read as traffic making room, or as the turning car waiting for
-  nothing? Same record.
-- **Look at a parked delivery van and, from day 7, a police car on patrol.** The delivery van and
-  the abduction van now face east when parked facing east; before, their west-authored pictures
-  were drawn unmirrored, so a van sited nose-east showed its nose west. Does the parked van read
-  as facing the right way along its kerb? The police car is the one event vehicle that turns
-  corners, so it shows the diagonal views: do its markings and light bar hold up from every
-  side, and does it sit on its shadow at the diagonal? Record is `DECISIONS.md`, M108, the event
-  vehicles.
-- **Look at the people and animals in events from more than one side** (any day). The dog
-  walker and his dog, the pacing yeller and the chatting mother, the cat, the loose dog, the
-  charging dog, the cyclist and each pigeon now face the way they actually move, through the
-  same eight views the mother has; a stationary busker, poster crew, leaf blower or protest rank
-  faces the way its site was placed; the waiting robber turns to face *you*; café sitters share
-  their frontage's facing. Does a figure seen from behind still read as what it is, does the
-  robber turning toward you read as a tell or as a glitch, and do the café sitters all facing one
-  way read as a party or as a row? Record is `DECISIONS.md`, M108, the event people.
-- **Watch a dog walker, a cyclist, a running cat and a lunging robber, then sit by a café and a
-  busker** (any day; `--spawn event:dog_walker` puts one beside you). Every event person and
-  animal that moves now strides too, two frames at the same rate as the mother, and the walker
-  and his dog flip together; the café sitters lean every few seconds and the busker's strumming
-  hand goes up and down twice a second, each on its own timer. Do the strides read at street
-  scale, does the cyclist's pedal swap read as pedalling or as a twitch, and is the busker's
-  tempo right? Record is `DECISIONS.md`, M108, the event strides.
-- **Walk through an alley in act I.** A mouse waits in some of them and darts across once she is
-  within 150px, after a short telegraph. Does it read as a startle rather than a threat, and does
-  the dash read as *across her path*? Record is `DECISIONS.md`, M100, the mouse in the alley.
 - **Reach any ending and read the last line.** The run clock is there, to the millisecond, and
   nowhere else — not the HUD, not the pause screen, not a day summary. It counts only while a day
   is being walked: a retried day's first attempt counts, a minute on the summary does not. Does
   the number feel like the run's length, and is *hidden until an ending* still the right call?
   Record is `DECISIONS.md`, M107.
-- **Walk one block of each district and look up.** Roofs carry furniture by district (vents,
-  ducts and boxes on industrial, skylights on civic, water tanks elsewhere), commercial ground
-  floors are storefronts with awnings, civic fronts have a portico, residential facades a fire
-  escape. In the rig pictures commercial and residential read at a glance; industrial and civic
-  are told apart by their roofs alone, which are small at play scale, and the portico was out of
-  frame. Does each district read as a place? Record is `DECISIONS.md`, M106.
-- **Find a tree-lined street and walk it end to end** (`--overview` shows where the few are;
-  seed 4229 has six). Trees stand only on a handful of straight runs of three to five blocks, a
-  pit about every two lot-lengths, so a run carries four or five trees and about one ordinary
-  street in sixteen has any. Does a run read as *a planted street* or as two stray trees, and is
-  a tree still ever in the way of spotting a yeller or a dog walker? The run count and the
-  spacing are both pinned guesses. Record is `DECISIONS.md`, M115.
-- **Find a fallen tree** (seed 4229, day 1 plans exactly one; `--spawn closure:0`). It lies only
-  on a tree-lined street, and the pit it fell from is empty for the day: the whole prop is
-  hidden, so what she sees is a gap in the row. Look down the street for the gap. Does it read
-  as *the tree that was here is in the road*, or as nothing at all? If nothing, the bare pit
-  drawn without its tree is one branch in the prop's drawing. Same record.
 - **Play or jump to day 5, day 9 and day 13 and look at the ground** (`--day 9`). The city
   degrades on one curve from day 5: cracks on pavement before road, in three levels; litter on
   pavements, alleys and squares; garbage sacks in alleys first and against building fronts from
@@ -201,10 +90,6 @@ item below for as long as looking takes.
   decay — litter under a car, a sack in the way? **One decision is yours**: a sack pile in an
   alley has no body yet; whether an alley narrowed by rubbish should cost the route is decided
   when a pile is seen in an alley she has to use. Record is `DECISIONS.md`, M105.
-- **Look at a park or a forest block.** Trees keep at least a canopy's width apart now. Do the
-  lots still read as *wooded*, or has the spacing made them look planted in rows? Record is
-  `DECISIONS.md`, M100, the park trees.
-
 - **Walk a baby home in act III or IV** (`--day 9` or `--day 13`; settle the baby in a park, then
   walk back). Two patrol cars on day 9, three on day 13, now come down her own street toward her
   during the walk home, nine to sixteen seconds apart, on top of whatever the day already owed;
@@ -248,7 +133,6 @@ item below for as long as looking takes.
 
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
-
 - **Walk the apartment and judge the reference-based interior graphics.** `tools/run.sh --start-escape` (debug only;
   `--start-escape stairwell:left|stairwell:right|lobby|basement|floor:2|floor:1` boots into a
   part) puts her, carrying the baby, in front of her door on the third floor of a building with
@@ -264,61 +148,6 @@ item below for as long as looking takes.
   interior graphics; what the finale lays on top of the building — its events, and the way out
   through the service door — is the escape walk in the list above.
 
-- **Every field has a shape now, and nobody has felt one.** A stationary body's field is a capsule
-  about its own spine rather than a disc about its centre, and a moving thing's is an ellipse with
-  the emitter at the rear focus: it reaches exactly as far ahead as its catalogued outer radius
-  always did and less far behind and beside — a car at cruising speed (`e` 0.5) reaches a third of
-  that behind it and half of it abeam. The café and the market stall bill from the tables to the
-  middle of the carriageway (`inner_radius` 38, `outer_radius` 64, both measured from the spine) and
-  no further; the roadblock, the protest, the burnt shell and the firefight lost their segment's
-  half-length from both radii. The two eccentricity constants (`Tuning.FIELD_ECCENTRICITY_MAX` 0.7,
-  `FIELD_ECCENTRICITY_SPEED` 260px/s) were set by design and checked against one rig picture,
-  `docs/evidence/m61-field-after.png`. Whether a car going *past* still costs enough to notice,
-  and whether a café at 64px still forces the crossing it was built to force, are played questions;
-  `tests/test_balance.gd`'s relationships hold and the per-street probes moved within noise, but
-  *is the day still losable on the meter* is asked by a rig only. The record is in `DECISIONS.md`
-  under M61, the field.
-- **Every shadow is drawn from a shape and every spread stands on a capsule, and nobody has looked
-  at one in play.** A band-shaped shadow under a roadblock, a car's shadow along its own length, a
-  swing frame's along its width; and a barricade, a roadblock or a construction band is solid as a
-  48px-thick capsule rather than the disc it used to be, so she can stand closer to it along the
-  street than before. The sealing and pavement guarantees are asserted over the capsule in
-  `tests/test_shapes.gd`; whether a thinner body reads as *right* or as *a wall she can lean
-  through* is a played question, and the debug view's bounding-box layer (`3` in a debug build)
-  is the instrument to answer it with.
-- **The city is walled off the path and nobody has walked it.** About 369 seal bodies a day stand on
-  the 187 streets the day's tree does not use, and a day now plans four to five hundred events where
-  it used to plan a hundred and thirty. Everything about it is measured and none of it is felt.
-  **The specific worry, from a rig:** walking blindly away from the route on seed 2102613802, day 6
-  meets a wall at the second street, cannot move for thirteen seconds, and loses the day at 17.6s
-  with excitement at 100 — and the log says `crowd 28.0/s, events 0.0/s`, so it is the crowd shoving
-  a stopped player, not the seals. A player who routes would not stand there. It is still the first
-  time the wrong direction loses a day inside twenty seconds with nothing telegraphing it.
-- **A wall with a gap in it is an invitation, and nobody has taken one.** A fraction of the day's
-  soft seals lose one of their two bodies, so the street still looks obstructed and is walkable down
-  the far side. The whole point is that a wrong turn stays open long enough to be taken and returned
-  from — *"guide the player without having the player know they are being guided"* — and whether a
-  half-open pair reads as an opening or as a barrier somebody forgot to finish is exactly the
-  question the arithmetic cannot answer. The fraction is one constant and it is meant to move against
-  a played day.
-- **No day plans a route along the main road any more, and nobody has walked the city that makes.**
-  Crossing the spine is untouched and free; running along it is refused when the tree is grown. The
-  measured consequence is elsewhere and it is worth watching: the covering sets a one-shot is offered
-  got **17 points narrower** — 45.7% of runs offered a single site before, 63% after — so an authored
-  set piece is more often placed in one spot rather than on every route she might take. That is a
-  fairness contract getting thinner, and it is a number rather than a complaint so far.
-- **Every route the game plans is now grown on cells, and nobody has walked one.** The day's corridor
-  is a chain of two-tile cells rather than a list of whole streets, so it can cut a corner through a
-  park or take an alley — which is the point, and which also means the shape of a day's route is not
-  the shape any played run has ever had. It is verified by the test rigs and by one dusk map read off
-  a screenshot. **Whether a corridor that cuts through a park still reads as a route** is the
-  question, and it is a played one.
-- **No barrier is placed beside a calm area any more, and that is a third of the lattice.**
-  `ClosurePlanner` refuses every access street of every calm area outright — a measured mean of 33.4
-  of 264 streets a day. The intent is that a closure stops reading as broken; the risk nobody has
-  looked at is the opposite one, that closures now cluster away from the places she actually walks and
-  stop being met at all. The same trap the region doors carry, in a new place: *a nudge that
-  removes the decision is worse than a closure that does nothing.*
 - **The whole of the heat is unfelt.** Every number in it was set by design and checked by a rig:
   nobody has walked a city at full resistance progress, and the item that would tell you whether it
   is fair — measuring it against the five nerves — is the one still queued. It makes the back half
@@ -340,95 +169,12 @@ item below for as long as looking takes.
   whole of *being taken* is carried by it walking in and disappearing over 2.5 seconds, which a
   still cannot show and nobody has watched. The hunting half came out better — end-on, closing,
   and not comic.
-- **Everything that comes at her now starts off screen, and nobody has watched one arrive.** A
-  pursuer and a `TOWARD_PLAYER` row are sited past the edge of the view along the heading she is
-  actually walking, plus 200ms of closing speed — 51px past the boundary for `cyclist` (165px/s,
-  closing at 257 against her 92), 44px for `charging_dog` (130px/s, closing at 222) — and a
-  `hard_fail` row goes further still so its telegraph ends before it arrives, which for the
-  cyclist's 3.3s telegraph is 900px. **Two things a rig cannot answer.** Whether the screen-edge
-  badge actually reads as *something is coming* for the whole of a longer approach, rather than as a
-  mark that sits there — and **whether the day-3 dog still teaches running**, since it was
-  deliberately sited too close to walk around and now is not. *"Unavoidability, if it is still
-  wanted, has to come from somewhere other than siting it too close to see coming"* is written down
-  and not built.
-- **A biker can now end the day, and no biker has hit anybody.** The row declared `hard_fail` all
-  along and could never fire it: `EventInstance.is_lethal_at()` refuses while the event
-  `is_telegraphing()`, and the old siting delivered it in 0.78s against a 3.3s telegraph. It is real
-  now, and *lethal on contact with a 33px band* has never been felt at the speed a bike travels.
 - **A hunting van drives along the footway.** A pursuer steers straight at her over any walkable
   tile, which every pursuer in this game already does; this is the first time the thing doing it is
   a van. Whether that reads as menace or as a bug is a question for somebody watching it.
-- **The difficulty has been felt by a human once**, and that was a verdict on one density pass and
-  one act I. The sleepiness numbers, the nerve economy, and whether the arterial is crossable are
-  all still arithmetic checked by `tests/test_balance.gd` and unfelt. **Nobody has ever got past day
-  4**, so the whole of acts II–IV is seen by nobody.
-- **Five nerves is a number nobody has played against.** It was raised from three after a run ended
-  on day 3 — but two of those nerves went on a **defect**, so the number was raised against a
-  difficulty that no longer exists.
-- **A spoiled park is nine things and nobody has stood in one.** The coverage is measured — 91% of a
-  courtyard, 99% of a four-block zone — and what is not measured is whether it reads as *the park is
-  busy today* or as somebody having tipped an event budget into a field. It is also the one place
-  where `EVENT_SPACING_SAME` does not apply.
-- **The robber and the pacing man have never been met by a person.** The robber is the most
-  mechanically complicated row in the catalogue — a field, a trigger, a notice, a stand-off and a
-  break-off — and every number on him is a rig's. The pacing man is a man with no body on a 64px
-  footway, avoided by the meter alone.
-- **Every pavement obstacle moved this session and nobody has walked past one.** A stationary,
-  unpinned body is now centred on the two-lane pavement band rather than standing at its lane's
-  centre, and a spread on a north–south street is now laid along that street instead of across it. So
-  `construction` genuinely blocks a 64px pavement — she needs 46px of clearance and the band gives 32
-  — where before it left a free lane. That is the intent and it is also the first time an act I
-  obstacle has been physically impassable in play. **Whether it reads as *cross the street* or as a
-  wall dropped on the pavement is a played question**, and it is the one the sealing places about a
-  hundred and fifty of a day, in eight kinds that nobody has walked past either.
-- **A street that is solid has been walked by a rig and by nobody.** About two thirds of the
-  catalogue has a body. The open question is not density but whether being stopped reads as *cross
-  the street* or as an obstacle course. The gap between a kerbed van and the frontage is smaller
-  than the pram, which is intended and is also the exact shape of *"no line to walk"*.
-- **Most of the silhouettes have never been seen in play.** Only five are reachable before day 4.
-  The two to distrust are the ones that are more than a picture: the **robber's two postures**,
-  where the whole claim is that *waiting* and *coming* are told apart at an alley's length, and the
-  **protest**, a 110px wall of bodies on a crossing.
-- **A flock has been walked through by a rig and by nobody.** The gradient is measured — +35 through
-  the middle, +8 eighty pixels off it, nothing at the rim — and it is the only row where the cost
-  table and the thing the player meets are computed differently.
-- **Calm ground is more than twice as fast as anybody has played it.**
-  `SLEEPINESS_CALM_ZONE_MULTIPLIER` is 21 and a four-block zone fills the meter in **11.3s from
-  empty**, against a 10.8s lap of one. That margin is what decides whether a day is winnable once
-  the park is reached, and the last human verdict on the difficulty was given when the same
-  constant was 12.
-- **There is no audio at all.** Less urgent than it sounds: audio is redundancy, so the game must
-  already be fully playable without it.
-- **Nobody has measured the web build, only confirmed it runs.** It boots and plays at the live
-  address; what has not been checked is frame rate at the game's scale on a machine that is not the
-  one it was built on, and whether a stranger arriving at the page understands what it is.
 - **The social card has been unfurled once, in a messaging app, and it failed.** The cause was the
   image's alpha channel — its transparent pixels carry RGB `(0, 0, 0)`, so a client that ignores
   alpha paints the card black — and the published copy is now flattened onto an opaque background,
   with its dimensions and type declared and a `twitter:image` beside the `og:` pair. **The fix has
   not itself been unfurled.** Paste the address into a chat client and see what comes back; the
   record of what was wrong and what was ruled out is in `DECISIONS.md` under M80.
-- **A release build carries no modifiers, and nothing has confirmed that on a real release build.**
-  `?telemetry=1` answers only when `OS.is_debug_build()` is true. The truth table is asserted in the
-  suites, so the *predicate* is proven; the build type itself has no seam to fake and is therefore
-  untested. **The deployed page is the first real check**, and what to watch is that it still starts
-  and still logs nothing.
-- **The city just got much cheaper to walk through and nobody has walked it.** Five barrier rows
-  emit nothing at all now and the two that kept a field had their reach roughly halved, against a
-  day that plans several hundred of exactly those bodies. **Whether the day is still losable on the
-  meter** is asked by `tests/test_balance.gd` and answered by nobody. The opposite risk is the one
-  to watch for: the complaint was that a quiet pavement never gave the meter back, and the failure
-  this creates is a city that no longer costs anything to cross.
-- **Four rows changed what they do to a player and all four were set by a rig.** `cat_dash` at 17
-  and `loose_dog` at 32 are meant to land as a startle without becoming a day lost to something
-  behind her; `chatting_mother` at a 48px `detain_radius` (with her 56px inner radius widened to
-  hold it) and `cyclist` at a 33px lethal band are both meant to stop being walkable-past. The
-  chatting mother's is the one to distrust: her capture reaches three quarters of the pavement
-  band, **so no lane of her own pavement avoids her**, asked for twice by the player — at 26 and
-  again at 33 — and felt at 48 by nobody yet.
-- **The bollards are a placeholder drawing, and the border now refuses the crowd.** Five posts seen
-  from above close each precinct mouth's carriageway, and the player has seen them and the
-  T-junctions on a played branch. What nobody has watched is the crowd at the border since it
-  became a wall: a walker or a car that reaches the boundary pavement turns or is clamped onto the
-  map's last row, and the one body allowed out is a car on the spine by the tunnel or the bridge.
-  Whether that reads as a city edge or as bodies bunching against glass is a played question.

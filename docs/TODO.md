@@ -511,23 +511,27 @@ longer fires while she is detained or while the tree is paused, and the run less
 flag is reset on every attempt at the teaching day — and the record is in `DECISIONS.md` under "The
 queue reprioritised". What is left is one decision nobody implemented and one measurement.
 
-- [ ] **The later dog charges the moment it streams in; whether it should wait to be routed into
-      is the player's call.** *"The tutorial dog may appear later but not as tutorial"* (confirmed
-      2026-09-09) is built as far as placement goes (`DECISIONS.md`, M96): from day 4
-      `charging_dog` is a map placement like `alley_robbery`, never sited on her heading, and day 3
-      keeps its unavoidable siting. What the placement does not give it is the robber's *waiting*:
-      the dog carries no `pursues_within`, because day 3's lesson depends on it charging at once and
-      `tests/test_danger.gd` pins that, so on day 4 and after it begins its telegraph and charge
-      the moment it streams in — `Tuning.EVENT_STREAM_RADIUS` (900px) from her, past the edge of
-      the view — rather than when she comes inside its own field. That is met by *proximity*, not
-      by routing into it, which the decision's own words asked for. **The recommendation** is a
-      trigger the dog gains on the same day-keyed switch its spawn mode already uses — waiting
-      inside its own outer radius from day 4, so a dog she can see is a dog she can route around,
-      exactly the robber's shape — built as a derived answer on the def rather than a mutation, the
-      way `spawn_mode_on(day)` is; the alternative is to leave it, if a dog that comes from off
-      screen whenever she passes within a block is the encounter wanted after the lesson. The
-      lead-time gap playtest 20 measured (1.5s to evade against 0.8–0.9s on the days it killed her)
-      is closed by M77 already; the figures are in `DECISIONS.md` under M96
+- [ ] **From day 4 the dog waits to be routed into, and the day-3 charge is sprinkled in now
+      and then.** *(2026-09-13, [PLAYTEST-68](playtests/PLAYTEST-68.md): "The waiting is good.
+      But we can sprinkle the day 3 charging dog in every now and then, too. Since they always
+      come from offscreen the only difference now is that day 3 dog is guaranteed to happen and
+      has a tutorial tip.")* What is built (`DECISIONS.md`, M96): from day 4 `charging_dog` is a
+      map placement like `alley_robbery`, never sited on her heading, and day 3 keeps its
+      unavoidable siting; but the dog carries no `pursues_within`, because day 3's lesson depends
+      on it charging at once and `tests/test_danger.gd` pins that, so on day 4 and after it begins
+      its telegraph and charge the moment it streams in — `Tuning.EVENT_STREAM_RADIUS` (900px)
+      from her, past the edge of the view — rather than when she comes inside its own field. Two
+      things to build. **The map-placed dog waits** inside its own outer radius from day 4, so a
+      dog she can see is a dog she can route around, exactly the robber's shape — a trigger the
+      def gains on the same day-keyed switch its spawn mode already uses, derived the way
+      `spawn_mode_on(day)` is rather than a mutation, with day 3's at-once charge and its test
+      untouched. **And the day-3 shape does not retire**: on later days the director now and then
+      also sends the off-screen charge along her heading — the same row in its day-3 siting,
+      unguaranteed and without the tip — so the lesson's dog and the later dogs are one animal
+      and the guarantee plus the tip are the whole difference. How often is a balance number set
+      against the M99 caps probe (`tests/probes/m99_caps.gd`), recorded in `DECISIONS.md`; the
+      lead time playtest 20 measured (1.5s to evade) is held by M77 already and stays the floor
+      for both shapes
 **The run is taught on day 3, and stays there.** *Asked for as `RUN_TAUGHT_DAY` 3 → 2 · overturned
 on 2026-09-09: "run taught goes to 3 not 2."* The constant gates everything that pursues, and day 3
 is where act I stops being a nice neighbourhood; the options weighed when the move was first
