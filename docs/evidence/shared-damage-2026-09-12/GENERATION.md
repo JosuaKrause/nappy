@@ -5,6 +5,8 @@ native sheet is one 192×32 atlas: six accepted stencils of one severity, compos
 the named road, sidewalk, or alley base. The 4× neighbor uses nearest-neighbor scaling for pixel
 inspection. The sheets establish source registration and composition; they do not replace a
 gameplay review of damage placement.
+The retained review uses source revision 7e262bc234438ab4c6540ec2e9cdd77361eb511e, including the
+registered sidewalk and alley bases and the common variation pools.
 
 Run from the repository root with a fresh output path:
 

@@ -5,7 +5,7 @@ places them with `GroundTiles.source_for` and the runtime grass atlas coordinate
 not reconstruct components outside Godot.
 
 The retained layouts use source revision
-81a935b381611a5e336fdf8e0ae5250fe697257f. Use a checkout of that revision for an exact rebuild;
+7e262bc234438ab4c6540ec2e9cdd77361eb511e. Use a checkout of that revision for an exact rebuild;
 the manifest records input hashes and the Godot version. Run `./tools/check.sh` in that checkout
 to import its resources, then generate a new directory from its repository root:
 
