@@ -151,6 +151,16 @@ the player walks straight through. A sliver renders as a low wall instead, which
 px-wide building should look like. The test asserts that the building rects cover every `BUILDING`
 tile exactly once.
 
+**Every building casts a one-tile shadow to its south and west**, from a light standing to the
+north-east: a full tile where its own footprint sits at that tile's north-east corner, and a
+triangle cut on the 45° diagonal from a corner's north-east to its south-west, the building's own
+side filled, where only its north neighbour does. `BuildingShadows.compute()` reads the tile union
+of every building's own footprint at once rather than one building at a time, so two buildings that
+share an edge shade as one and nothing is drawn on the seam between them — an alley beside a
+building therefore carries that building's own shadow band down its length, which is part of what
+makes an alley read as one. Drawn flat, under everything that walks, on the layer between `Ground`
+and `Buildings` in `city.tscn`.
+
 ### Guarantees
 
 Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 200 seeds:
