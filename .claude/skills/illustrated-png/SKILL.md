@@ -139,7 +139,7 @@ recipe, including SVG sources for the components. Pixels outside the overlay rem
 to the base. Inspect repeated bases in both axes for lighting gradients and brightness jumps;
 a shared texture still needs to tile cleanly. Blend curbstones, markings, damage and grass
 features over their bases in the engine, retaining the separate component graphics. The
-rotation/offset blend that makes one continuous asphalt base is an offline preparation step.
+rotation/offset blend that smooths the asphalt and grass bases is an offline preparation step.
 Separate existing grass features from a soft green base and place them sparsely with stable
 city-seed variation, keeping grass detail quieter than the actors and route markings.
 Validate component IDs and rotations against the authored TileSet and ground selector rather

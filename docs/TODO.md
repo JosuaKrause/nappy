@@ -119,9 +119,6 @@ findings supported by the conversion and review.
 - [ ] Use the sidewalk image selected in PLAYTEST-65 as the shared paving base, preserving its
       pixels from the source revision and recording provenance. Keep engine-composed curbstones,
       markings and damage over this one base; check repeated street and junction layouts.
-- [ ] Blend the soft grass base equally at 0°, 90°, 180° and 270°, applying the asphalt recipe
-      requested in PLAYTEST-65 to remove brightness jumps between grass cells. Preserve sparse
-      in-engine clump placement, store the preparation recipe and review repeated bases and parks.
 - [ ] Regenerate plaza paving with the muted quiet-square constraints in PLAYTEST-65: darker
       low-contrast stone, flat lighting, no bright patch or directional gradient, clean repetition
       and opaque native coverage. Preserve the plaza SVG's larger slab layout, compare neighboring

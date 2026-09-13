@@ -249,8 +249,8 @@ under `assets/tiles/layers/`. The component manifest maps each ground source to 
 asphalt or alley base and transparent curbstones, red edge paint, yellow lines, crosswalks or
 damage. The engine composites those layers when building the TileSet. Clear overlay pixels
 leave the base intact, so neighboring variants share the same floor material.
-The asphalt base is prepared offline by equally blending four quarter-turn orientations.
-Grass uses a soft green base and three extracted clumps; the engine makes sparse arrangements
+The asphalt and soft grass bases are prepared offline by equally blending four quarter-turn
+orientations. Grass uses that soft green base and three extracted clumps; the engine makes sparse arrangements
 and selects them deterministically from the city seed and cell coordinates.
 The [component recipe](evidence/layered-ground-2026-09-12/GENERATION.md) preserves the source
 artwork, stencils and base preparation. The
