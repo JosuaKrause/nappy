@@ -117,8 +117,16 @@ findings supported by the conversion and review.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
 - [ ] Use the sidewalk image selected in PLAYTEST-65 as the shared paving base, preserving its
-      pixels from the source revision and recording provenance. Keep engine-composed curbstones,
-      markings and damage over this one base; check repeated street and junction layouts.
+      material from the source revision and recording provenance. Complete its slab joints at
+      tile boundaries using the existing joint artwork, so rectangles stay defined when tiled.
+      Keep engine-composed curbstones, markings and damage over this one base; check repeated
+      street and junction layouts in both axes.
+- [ ] Complete boundary joints across the rectangular paving family, including quiet square
+      and plaza, as requested in PLAYTEST-65. Preserve each material and slab layout, reusing
+      existing joint artwork; retain reproducible native and enlarged repeated-tile checks.
+- [ ] Trace the noisy-grass re-report in PLAYTEST-65 through the loaded texture and fallback.
+      Use the soft grass base as input to the equal four-quarter-turn blend; keep clumps separate
+      for engine composition. Verify the material in the player's actual viewing path.
 - [ ] Regenerate plaza paving with the muted quiet-square constraints in PLAYTEST-65: darker
       low-contrast stone, flat lighting, no bright patch or directional gradient, clean repetition
       and opaque native coverage. Preserve the plaza SVG's larger slab layout, compare neighboring

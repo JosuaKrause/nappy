@@ -268,3 +268,26 @@ shared ground materials and muted quiet-square tile. Keep generation and registr
 Use the sidewalk PNG from PR #138 as the shared paving base. Keep the curbstones, markings and
 damage as transparent overlays composed in the engine. Retain the selected source revision and
 hash in the recipe, and inspect actual street layouts with this base.
+
+> what happened to the grass texture? it's the fully noisy version again
+
+> the instruction was to use the soft base and apply the asphalt trick to make it even softer
+
+This re-reports the soft-grass requirement above: apply the equal four-quarter-turn blend to
+the soft base, keeping grass clumps separate for engine composition. Trace the loaded texture
+and its fallback before changing the approved material; dense source artwork is not the runtime
+base.
+
+> also when tiling floors with rectangles (like the sidewalk tiles) you need to have an edge on the sides as well. the sidewalk tile we're using only has edges in the middle making all rectangles merge together when tiling the texture
+
+Complete the selected sidewalk material's slab joints at the tile boundaries as well as the
+center. Reuse its joint artwork and preserve the paving material; inspect repetition in both
+axes and actual composed street layouts so adjacent slabs remain individually defined.
+
+> the seams comment applies to all those tiles
+
+Apply the complete-boundary-joint requirement across rectangular paving, including sidewalk,
+quiet square and plaza, while preserving each material and its authored slab layout.
+
+The player reports the noisy grass in the running game launched from this repository with
+`./tools/run.sh`, without additional flags.
