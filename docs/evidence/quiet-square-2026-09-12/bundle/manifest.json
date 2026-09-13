@@ -22,7 +22,7 @@
     "quiet_square.svg": "5de4784b50a78193d7e4c4b33b6f72397db526f5cd61d12e3827e4028c83300e",
     "quiet_square_brightness_reference.png": "5185b1628229f8053b9c768cca79cd4728e4009cf0a7abc9b1761940c22ce222",
     "render-quiet-square-source.gd": "01a1d54589dbf54805abe188d7e000ff1ffb75411cbe5606592c355ffa641556",
-    "sidewalk_base.png": "8dcc80cc6fce4e7487185430fa256dc0c9da5379d65dc215c0a78ab8f0d0afe8"
+    "sidewalk_base.png": "a86c9cdff2ca96f1d5016a7b997d506e0a1452174a06cadd9a51b50eafff0c28"
   },
   "registered": {
     "path": "registered/quiet_square.png",
@@ -36,7 +36,7 @@
   "mean_luma": {
     "quiet_square": 99.7236,
     "quiet_square_brightness_reference": 127.2796,
-    "sidewalk_base": 127.0785,
+    "sidewalk_base": 139.2884,
     "asphalt_base": 73.4635,
     "grass_base": 109.2292
   }

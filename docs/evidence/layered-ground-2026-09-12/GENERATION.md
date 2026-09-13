@@ -17,8 +17,10 @@ docs/evidence/layered-ground-2026-09-12/assemble.py verify \
 ```
 
 The frozen inputs record accepted-damage source revision
-83a60d1522574714ce038dff3a607a536d800614, tile inputs, SVG renders, source-SVG hashes, the
-assembly script hash, and Pillow version.
+83a60d1522574714ce038dff3a607a536d800614, the selected sidewalk-floor authority revision
+62d1c344dccbf77e7cb8052ea09b337a76ce994e, tile inputs, SVG renders, source-SVG hashes, the
+assembly script hash, and Pillow version. The selected floor PNG and the paired
+`assets/tiles/sidewalk.svg` source are recorded with their source blobs and retained SHA-256 values.
 
 To reproduce a retained bundle without reading mutable tile assets, use its frozen inputs with the
 same assembly script, then compare the two bundle trees:
@@ -65,6 +67,15 @@ published base, transparent component, and the engine contract:
 
 ```sh
 uv run python docs/evidence/layered-ground-2026-09-12/assemble.py install-grass-base \
+--bundle-dir /tmp/layered-ground-build \
+--component-dir assets/illustrated/svg-transfer/tiles/layers --replace
+```
+
+To replace the shared sidewalk floor in both the engine layer directory and the normal texture
+resolver, preserving every other base, transparent component, and the engine contract:
+
+```sh
+uv run python docs/evidence/layered-ground-2026-09-12/assemble.py install-sidewalk-floor \
 --bundle-dir /tmp/layered-ground-build \
 --component-dir assets/illustrated/svg-transfer/tiles/layers --replace
 ```

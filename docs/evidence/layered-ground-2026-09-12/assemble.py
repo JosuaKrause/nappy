@@ -27,6 +27,9 @@ RUNTIME_DIR = ROOT / "assets/illustrated/svg-transfer/tiles"
 SVG_RENDER_DIR = ROOT / "docs/evidence/style-transfer-tiles-2026-09-12/source"
 ASPHALT_OFFSETS = ((0, 0), (16, 16), (8, 24), (24, 8))
 ACCEPTED_DAMAGE_SOURCE_REVISION = "83a60d1522574714ce038dff3a607a536d800614"
+SELECTED_SIDEWALK_SOURCE_REVISION = "62d1c344dccbf77e7cb8052ea09b337a76ce994e"
+SELECTED_SIDEWALK_PNG_BLOB = "af36579547f3f1795a7549c4f3227a2a9e9f58db"
+SELECTED_SIDEWALK_SVG_BLOB = "0d947890561585aacb1ac69196a3ebc9e10874d1"
 
 
 @dataclass(frozen=True)
@@ -410,17 +413,31 @@ def build(output_dir: Path, input_bundle: Path | None = None) -> None:
 	else:
 		inputs: dict[str, dict[str, str]] = {}
 		for name in FROZEN_NAMES:
-			runtime_record = _copy_frozen(RUNTIME_DIR / f"{name}.png", frozen_runtime / f"{name}.png")
+			if name == "sidewalk":
+				runtime_record = _frozen_git_file(
+					SELECTED_SIDEWALK_SOURCE_REVISION,
+					"assets/illustrated/svg-transfer/tiles/sidewalk.png",
+					frozen_runtime / "sidewalk.png",
+				)
+			else:
+				runtime_record = _copy_frozen(RUNTIME_DIR / f"{name}.png", frozen_runtime / f"{name}.png")
 			runtime_record["frozen_path"] = str((frozen_runtime / f"{name}.png").relative_to(output_dir))
 			inputs[f"runtime-target:{name}"] = runtime_record
 			if name in DAMAGE:
 				record = _frozen_git_file(ACCEPTED_DAMAGE_SOURCE_REVISION, f"assets/illustrated/svg-transfer/tiles/{name}.png", frozen_tiles / f"{name}.png")
+			elif name == "sidewalk":
+				record = _frozen_git_file(
+					SELECTED_SIDEWALK_SOURCE_REVISION,
+					"assets/illustrated/svg-transfer/tiles/sidewalk.png",
+					frozen_tiles / "sidewalk.png",
+				)
 			else:
 				record = _copy_frozen(RUNTIME_DIR / f"{name}.png", frozen_tiles / f"{name}.png")
 			record["frozen_path"] = str((frozen_tiles / f"{name}.png").relative_to(output_dir))
 			inputs[(f"accepted-damage:{name}" if name in DAMAGE else f"tile:{name}")] = record
 		for surface in ("sidewalk", "road", "alley"):
-			record = _frozen_git_file(ACCEPTED_DAMAGE_SOURCE_REVISION, f"assets/illustrated/svg-transfer/tiles/{surface}.png", accepted_surface_bases / f"{surface}.png")
+			revision = SELECTED_SIDEWALK_SOURCE_REVISION if surface == "sidewalk" else ACCEPTED_DAMAGE_SOURCE_REVISION
+			record = _frozen_git_file(revision, f"assets/illustrated/svg-transfer/tiles/{surface}.png", accepted_surface_bases / f"{surface}.png")
 			record["frozen_path"] = str((accepted_surface_bases / f"{surface}.png").relative_to(output_dir))
 			inputs[f"accepted-surface-base:{surface}"] = record
 		for name in FROZEN_NAMES:
@@ -431,6 +448,13 @@ def build(output_dir: Path, input_bundle: Path | None = None) -> None:
 			inputs[f"svg-source:{name}"] = {"path": f"assets/tiles/{name}.svg", "sha256": _sha256(ROOT / f"assets/tiles/{name}.svg")}
 		for spec in LAYER_SPECS:
 			inputs[f"svg-source:{spec.name}"] = {"path": spec.source_svg, "sha256": _sha256(ROOT / spec.source_svg)}
+		inputs["selected-sidewalk-authority"] = {
+			"revision": SELECTED_SIDEWALK_SOURCE_REVISION,
+			"png_blob": SELECTED_SIDEWALK_PNG_BLOB,
+			"svg_blob": SELECTED_SIDEWALK_SVG_BLOB,
+			"png_sha256": _sha256(frozen_tiles / "sidewalk.png"),
+			"svg_sha256": _sha256(ROOT / "assets/tiles/sidewalk.svg"),
+		}
 
 	plain_sidewalk = _load(frozen_tiles / "sidewalk.png")
 	plain_alley = _load(frozen_tiles / "alley.png")
@@ -539,7 +563,12 @@ def build(output_dir: Path, input_bundle: Path | None = None) -> None:
 		"tile_size": [32, 32],
 		"inputs": inputs,
 		"bases": {
-			"sidewalk": {"frozen_input": "frozen-inputs/tiles/sidewalk.png", "sha256": _sha256(frozen_tiles / "sidewalk.png")},
+			"sidewalk": {
+				"frozen_input": "frozen-inputs/tiles/sidewalk.png",
+				"source_revision": SELECTED_SIDEWALK_SOURCE_REVISION,
+				"source_blob": SELECTED_SIDEWALK_PNG_BLOB,
+				"sha256": _sha256(frozen_tiles / "sidewalk.png"),
+			},
 			"alley": {"frozen_input": "frozen-inputs/tiles/alley.png", "sha256": _sha256(frozen_tiles / "alley.png")},
 			"asphalt": {
 				"frozen_input": "frozen-inputs/tiles/road.png", "method": "equal channel-wise mean of rotations 0,90,180,270",
@@ -680,6 +709,29 @@ def install_grass_base(bundle: Path, component_dir: Path, replace: bool) -> None
 	verify(bundle, component_dir)
 
 
+def install_sidewalk_floor(bundle: Path, component_dir: Path, replace: bool) -> None:
+	"""Replace the verified shared sidewalk floor in both runtime resolver locations."""
+	if not replace:
+		raise ValueError("sidewalk-floor replacement requires --replace")
+	verify(bundle, None)
+	manifest = _read_manifest(bundle)
+	if json.loads((component_dir / "manifest.json").read_text()) != _engine_contract(bundle):
+		raise ValueError("published engine manifest differs from the retained contract")
+	for name, expected in manifest["bases"].items():
+		filename = "asphalt_base.png" if name == "asphalt" else f"{name}_base.png"
+		if name != "sidewalk" and _sha256(component_dir / filename) != expected["sha256"]:
+			raise ValueError(f"published base differs: {filename}")
+	for name, expected in manifest["components"].items():
+		if _sha256(component_dir / f"{name}.png") != expected["sha256"]:
+			raise ValueError(f"published component differs: {name}")
+	selected = bundle / manifest["bases"]["sidewalk"]["frozen_input"]
+	if _sha256(selected) != manifest["bases"]["sidewalk"]["sha256"]:
+		raise ValueError("selected sidewalk floor differs from retained authority")
+	shutil.copyfile(selected, RUNTIME_DIR / "sidewalk.png")
+	shutil.copyfile(selected, component_dir / "sidewalk_base.png")
+	verify(bundle, component_dir)
+
+
 def main() -> None:
 	parser = argparse.ArgumentParser(description=__doc__)
 	subparsers = parser.add_subparsers(dest="command", required=True)
@@ -696,6 +748,10 @@ def main() -> None:
 	install_parser.add_argument("--bundle-dir", type=Path, required=True)
 	install_parser.add_argument("--component-dir", type=Path, required=True)
 	install_parser.add_argument("--replace", action="store_true")
+	sidewalk_parser = subparsers.add_parser("install-sidewalk-floor", help="replace the verified sidewalk floor in both runtime locations")
+	sidewalk_parser.add_argument("--bundle-dir", type=Path, required=True)
+	sidewalk_parser.add_argument("--component-dir", type=Path, required=True)
+	sidewalk_parser.add_argument("--replace", action="store_true")
 	arguments = parser.parse_args()
 	if arguments.command == "build":
 		build(arguments.output_dir.resolve(), arguments.input_bundle.resolve() if arguments.input_bundle else None)
@@ -703,8 +759,10 @@ def main() -> None:
 		verify(arguments.bundle_dir.resolve(), arguments.component_dir.resolve() if arguments.component_dir else None)
 	elif arguments.command == "publish":
 		publish(arguments.bundle_dir.resolve(), arguments.component_dir.resolve())
-	else:
+	elif arguments.command == "install-grass-base":
 		install_grass_base(arguments.bundle_dir.resolve(), arguments.component_dir.resolve(), arguments.replace)
+	else:
+		install_sidewalk_floor(arguments.bundle_dir.resolve(), arguments.component_dir.resolve(), arguments.replace)
 
 
 if __name__ == "__main__":

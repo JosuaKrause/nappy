@@ -2,7 +2,7 @@
   "format": 1,
   "python_version": "3.14.7",
   "pillow_version": "12.3.0",
-  "script_sha256": "75410a1971566c8635f77817fb9348cd202856f2acdf11e02e15f6c1a0f3481c",
+  "script_sha256": "bbbbe27834ffd051779114a7b164e5081cb7fb5a565481721fe799e48a2f3276",
   "tile_size": [
     32,
     32
@@ -321,13 +321,15 @@
       "frozen_path": "frozen-inputs/tiles/road_main_line_w.png"
     },
     "runtime-target:sidewalk": {
+      "revision": "62d1c344dccbf77e7cb8052ea09b337a76ce994e",
       "path": "assets/illustrated/svg-transfer/tiles/sidewalk.png",
-      "sha256": "8dcc80cc6fce4e7487185430fa256dc0c9da5379d65dc215c0a78ab8f0d0afe8",
+      "sha256": "a86c9cdff2ca96f1d5016a7b997d506e0a1452174a06cadd9a51b50eafff0c28",
       "frozen_path": "frozen-inputs/runtime-targets/sidewalk.png"
     },
     "tile:sidewalk": {
+      "revision": "62d1c344dccbf77e7cb8052ea09b337a76ce994e",
       "path": "assets/illustrated/svg-transfer/tiles/sidewalk.png",
-      "sha256": "8dcc80cc6fce4e7487185430fa256dc0c9da5379d65dc215c0a78ab8f0d0afe8",
+      "sha256": "a86c9cdff2ca96f1d5016a7b997d506e0a1452174a06cadd9a51b50eafff0c28",
       "frozen_path": "frozen-inputs/tiles/sidewalk.png"
     },
     "runtime-target:sidewalk_cracked_broken_a": {
@@ -477,7 +479,7 @@
       "frozen_path": "frozen-inputs/tiles/sidewalk_kerb_w.png"
     },
     "accepted-surface-base:sidewalk": {
-      "revision": "83a60d1522574714ce038dff3a607a536d800614",
+      "revision": "62d1c344dccbf77e7cb8052ea09b337a76ce994e",
       "path": "assets/illustrated/svg-transfer/tiles/sidewalk.png",
       "sha256": "a86c9cdff2ca96f1d5016a7b997d506e0a1452174a06cadd9a51b50eafff0c28",
       "frozen_path": "frozen-inputs/accepted-surface-bases/sidewalk.png"
@@ -830,12 +832,21 @@
     "svg-source:alley_cracked_broken_b": {
       "path": "assets/tiles/alley_cracked_broken_b.svg",
       "sha256": "880b2d4279d8ad1fb80cf755e5bf0e159352fefc15e1346b062c95846f654bb2"
+    },
+    "selected-sidewalk-authority": {
+      "revision": "62d1c344dccbf77e7cb8052ea09b337a76ce994e",
+      "png_blob": "af36579547f3f1795a7549c4f3227a2a9e9f58db",
+      "svg_blob": "0d947890561585aacb1ac69196a3ebc9e10874d1",
+      "png_sha256": "a86c9cdff2ca96f1d5016a7b997d506e0a1452174a06cadd9a51b50eafff0c28",
+      "svg_sha256": "98caaf561c4228f321bf4ddef01cbaa8cb93288f2dde0cc8a414c1bac31c7628"
     }
   },
   "bases": {
     "sidewalk": {
       "frozen_input": "frozen-inputs/tiles/sidewalk.png",
-      "sha256": "8dcc80cc6fce4e7487185430fa256dc0c9da5379d65dc215c0a78ab8f0d0afe8"
+      "source_revision": "62d1c344dccbf77e7cb8052ea09b337a76ce994e",
+      "source_blob": "af36579547f3f1795a7549c4f3227a2a9e9f58db",
+      "sha256": "a86c9cdff2ca96f1d5016a7b997d506e0a1452174a06cadd9a51b50eafff0c28"
     },
     "alley": {
       "frozen_input": "frozen-inputs/tiles/alley.png",
@@ -1103,17 +1114,17 @@
     }
   },
   "compiled": {
-    "sidewalk": "8dcc80cc6fce4e7487185430fa256dc0c9da5379d65dc215c0a78ab8f0d0afe8",
+    "sidewalk": "a86c9cdff2ca96f1d5016a7b997d506e0a1452174a06cadd9a51b50eafff0c28",
     "road": "8165adc4a457aabb43101f8e701aa202438e3bbef2d9b1c02e317af031aae468",
     "road_main": "8165adc4a457aabb43101f8e701aa202438e3bbef2d9b1c02e317af031aae468",
-    "sidewalk_kerb_n": "46d8179ba498beddca9bde496d637e3432e6fd21915f76198db3661bb3be43ff",
-    "sidewalk_kerb_s": "8b346f0f8647af558700534f2ff33ae79bf554211f3a82a92b8154e8843b90d8",
-    "sidewalk_kerb_e": "49c4ffddaf5e8b3bf6906e2975e42a51d005f8a2faeaf8b3ad1336405d8af1f6",
-    "sidewalk_kerb_w": "e54f5053a5c34c3c3c292213d49d1f38ee1d221856805dc04cf121f67192cdd2",
-    "sidewalk_kerb_main_n": "e4b9fd896a69821d9e7ff917fbeda44736cc70f49b7120743acfcdbb36393976",
-    "sidewalk_kerb_main_s": "d9bc7d47b37cfdc5feaccaa646ff005e3eb65de15b2299e78e3453e7b98adeb0",
-    "sidewalk_kerb_main_e": "dafc9055ce67e66372c3debc574c0e268bfe8de3568fcded3d5870d72a5c8634",
-    "sidewalk_kerb_main_w": "7c25583b8c4d448dd4bcd61cbae7b023b00bd892f0143db8176f78c07a176792",
+    "sidewalk_kerb_n": "5c7ffd56244a7779d7351dd41e6d4cfff8dd6422d67b5b73f42059019259c624",
+    "sidewalk_kerb_s": "822b0d8fc1623f3dbdb1b25b76fafe1ae57fa4f99b3967893d2d684c0d2f75aa",
+    "sidewalk_kerb_e": "95118d64f87dc33bd02a192f574b8d120d74f1309abb97f662869299d75aa039",
+    "sidewalk_kerb_w": "2b6af232dac1e8e882f658c10d1a32e1fa7321f2e1851d41e3dc4da915909c18",
+    "sidewalk_kerb_main_n": "7b0cca9164e97c28d977868ae42fa89326be2e36af93060fe44b9797c225fdc9",
+    "sidewalk_kerb_main_s": "52a56c7c2b0f57a330714c0798f91e4cec0254a832987bbb9f1fe1f173937ca7",
+    "sidewalk_kerb_main_e": "a88cd313151c4a578e340be77691e7e3e37cdbdc695eee996e4d9919aa6dcf56",
+    "sidewalk_kerb_main_w": "e19688d1b8802e8f69ef0351ffb3d9074d8dd82187a1030c9aa8b1173577bf81",
     "road_line_e": "c11254fcd6118135904aceef5b4afc82b24190cb1e3f91131e1209540a7698c9",
     "road_line_w": "d133e94281fc75234526c2fdd8d23cb000160d3cc867857b1d035b27defb1303",
     "road_line_n": "020abc6069e9a407d1df4b75600efe60dca99adbe49dd36ff139d495337e6b27",
@@ -1128,12 +1139,12 @@
     "crossing_main_s": "7b66f5087d09c5ff2c8e67baa149b1096617c3a5de933f2bebdd8f962c8945e6",
     "crossing_main_e": "7d5b27fe794c893a7a17c1847adae4506c0640a801d2b619b3e15f021cceed8e",
     "crossing_main_w": "e29e52495414afbc315f2c399316ffbed02ac253e202fe9762e4128ffd94fa73",
-    "sidewalk_cracked_hairline_a": "07ae503d97b4bbdd8a2e133b1bcb777a04b51bd3a3ca89e606e2407d94e12457",
-    "sidewalk_cracked_hairline_b": "eee0babfaf3e621a16692bfdd0ef4ff10200d338c8a6b57b8a7d769299926f8c",
-    "sidewalk_cracked_cracked_a": "7e53d397abda4704b57245f9989874609163bbe5a28245e7656fc0d24e674e75",
-    "sidewalk_cracked_cracked_b": "59c52fcc1022854e22a68f08141f33e77b16950c1e95ebc68d016545b10384c1",
-    "sidewalk_cracked_broken_a": "ea15478546f1e79a4e8c7db774e64d96e469d464f2c125842eb2e9760230c475",
-    "sidewalk_cracked_broken_b": "e3d8397c88f230a8df60a17ce9c3ea65317cd9bdc9dc0ddf9114cc2a93ccf98f",
+    "sidewalk_cracked_hairline_a": "7a25a8503a80cb5b6e3c961be3ef5c85d0e45933c0b773f026f0400cbdb0b2fe",
+    "sidewalk_cracked_hairline_b": "baeba5fa3559e66dd82181c9bf4ccc103e8438107ffae092e18f70a186493f2c",
+    "sidewalk_cracked_cracked_a": "871591a117eb8c4fce09dca777f3f94f25722a3236a1c1ab364288fc6cc2259f",
+    "sidewalk_cracked_cracked_b": "47c7505fc4333597f16cab9bfe664d6f8c255b6853641d25a676abe6164564e4",
+    "sidewalk_cracked_broken_a": "3c448d5d96983694931dc126fe0e2aea2e45e081fae37d04bc2209371a4f9e8c",
+    "sidewalk_cracked_broken_b": "b4d15739f9243182ee30114c27f7aaa72894c9df7745e61db186dbc4ac6492ab",
     "road_cracked_hairline_a": "b02048337298c7e17048b2206d3232b4a6470f7251b42c93701698d94e3b996c",
     "road_cracked_hairline_b": "84c412ef4f90d6ae14afee49fc79299928824e32f4633fcf1a98191bb650f329",
     "road_cracked_cracked_a": "026f7b8a7751da904abd7c5065fe8e5c82e600fc95f44e3cb7de57f461e4ca90",
