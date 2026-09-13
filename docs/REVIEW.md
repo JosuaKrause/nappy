@@ -14,17 +14,6 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-- **Stand in a playground, and beside a busker, and wait out each one's beat.** Both stand on calm
-  ground, both pulse between a quarter and all of their intensity — nine seconds for the
-  playground, seven for the busker — and calm ground now gives back 12.0/s against their 15.0 and
-  13.0 at the peak. So the middle of either is expensive at the top of the beat and free at the
-  bottom, and a whole line through a busker on grass is net recovery even though crossing one
-  costs on the table. Two questions: does a park with one of these in it still feel *contested*,
-  and is a busker still worth walking round? The busker was raised for exactly this and takes
-  nearly twice the park out of a lot that it used to (a denial radius of 138px against 100px);
-  the playground was deliberately left alone, because raising it would deny more park still. Same
-  record.
-
 - **Compare damaged road, sidewalk and alley tiles.** Do the shared crack and hole variations
   sit naturally over each material, without carrying pieces of another floor's slab grid?
   The [damage atlas review](evidence/shared-damage-2026-09-12/GENERATION.md) shows every variation

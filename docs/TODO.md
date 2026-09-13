@@ -355,6 +355,44 @@ is also read as a walk direction, so she is already walking when play resumes.
 
 ---
 
+## M128 — The playground is free, and the busker is quieter from the street · asked for 2026-09-13
+
+> "Playground should be free since otherwise small parks really have no way of ever getting to
+> sleep. The busker is a bit intense. We should nerf it a bit but keep it so the baby cannot fall
+> asleep in the park with it. But on a street with a busker closeby should cause less excitement"
+
+[PLAYTEST-68](playtests/PLAYTEST-68.md), answering the M117 review question. The **balance** rule
+governs every number here; `tests/probes/` holds the instruments M117 used, and the record of
+what M117 set and why is in `DECISIONS.md` under M117, the two rows the change made nearly free.
+
+**What is true today.** `playground` is an `AMBIENT` row with no picture of its own (the park's
+swing frame draws it) at intensity 15.0 on a nine-second pulse, `inner_radius` 40 and
+`outer_radius` 150 in a park block 256px across, placed by the park itself; its whole purpose
+was to make the middle of a park contested. `busker` is placed on `PARK` or `SQUARE` at
+intensity 13.0 on a seven-second pulse, `inner_radius` 45 and `outer_radius` 190, so its rim
+reaches the pavement of the street beside its lot; its denial radius — where its cost beats the
+park's 12.0/s decay — is about 138px, and along a whole line through one on grass it is still
+net recovery. The baby settles only under `EXCITEMENT_CALM_THRESHOLD` (35), so "cannot fall
+asleep" is a claim about where the meter can be held under 35, not about the cost table.
+
+- [ ] **The playground costs nothing.** A one-block park with a playground in it has no ground
+      left to settle the baby on, which is the player's reason. The smallest change that makes
+      it true is the row's intensity at zero or the row gone, whichever leaves the park's swing
+      frame drawn and `_ensure_one_usable_park` and the spoiling logic unchanged; say which in
+      the commit and why. Whatever `tests/test_balance.gd` pins about the playground is repinned
+      to *free*, and the sleepiness table in `docs/MECHANICS.md` follows.
+- [ ] **The busker comes down a bit, and mostly from the street.** Two constraints, measured
+      with the M117 probes before a number is chosen: inside its lot, standing anywhere within
+      its denial radius still cannot hold the meter under 35 — the park with a busker in it is
+      still not a place to sleep — and on the pavement of the street beside the lot the busker's
+      contribution falls to a fraction of today's. The lever for the second is `outer_radius`
+      (190 reaches across the lot's edge) and the falloff between the radii, not intensity
+      alone; the lever for "a bit" is intensity, which stays above the park's 12.0/s or the
+      busker becomes a park bonus with a nuisance's picture on it (`DECISIONS.md`, M117). Record
+      the before-and-after denial radius and the street-side contribution in `DECISIONS.md`.
+
+---
+
 ## M124 — The game on a phone, measured and then made cheaper · asked for 2026-09-13
 
 > "I played a few sessions on mobile. It is a bit laggy now. Are we using proper texture atlases

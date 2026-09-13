@@ -41,3 +41,25 @@ slow the park and leave the street.
 > All three read right
 
 Closed as fine: the street recovers, the main road does not, the park is a place. Nothing moves.
+
+## The playground and the busker on calm ground
+
+Asked: both pulse between a quarter and all of their intensity, nine seconds a beat for the
+playground and seven for the busker, and calm ground gives back 12 points a second against
+their 15 and 13 at the peak, so the middle of either is expensive at the top of the beat and
+free at the bottom; the busker's denial radius was raised from 100px to 138px under M117 and the
+playground left alone so it would not deny more park. Does a park with one of these in it still
+feel contested, and is a busker still worth walking round? The recommendation offered if
+neither felt contested was to raise both peaks rather than the radii.
+
+> Playground should be free since otherwise small parks really have no way of ever getting to
+> sleep. The busker is a bit intense. We should nerf it a bit but keep it so the baby cannot fall
+> asleep in the park with it. But on a street with a busker closeby should cause less excitement
+
+Neither option offered; the player's own design instead, and it overturns M117's *"raising
+`playground` to restore its old margin"* reasoning from the other side — the playground is not
+raised and not kept, it stops costing. Three instructions in it: the playground row costs
+nothing, because a one-block park with one in it has no ground left to settle the baby on; the
+busker comes down *a bit*, and the floor on how far is that the baby still cannot fall asleep in
+a park that has one; and a busker's reach onto the street beside its lot is what comes down
+most, so walking past a park is cheaper than walking into it. M128 in `TODO.md`.
