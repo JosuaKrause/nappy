@@ -2717,9 +2717,12 @@ func _draw_body(canvas: CanvasItem) -> void:
 	var frame := _frame()
 	var flip := _flipped()
 	if kind == Kind.CAR:
-		_draw_shape_shadow(canvas, shape, Vector2.ZERO, _travel_axis())
+		var forward := _travel_axis()
+		_draw_shape_shadow(canvas, shape, Vector2.ZERO, forward)
 		var view: String = CAR_VIEW_BY_SECTOR[frame]
-		var anchor := _car_body_anchor(view)
+		# The same heading the shadow above and the debug view's bounding box are drawn on, so the
+		# picture cannot register against a car that is not there — see `_car_body_anchor()`.
+		var anchor := _car_body_anchor(view, forward)
 		Sprites.draw_standing(canvas, CAR_BODY_BY_VIEW[view], anchor, Vector2.ZERO, flip, colour)
 		Sprites.draw_standing(canvas, CAR_TRIM_BY_VIEW[view], anchor, Vector2.ZERO, flip)
 		return
@@ -2733,40 +2736,44 @@ func _draw_body(canvas: CanvasItem) -> void:
 	Sprites.draw_standing(canvas, body_by_view[view], Vector2.ZERO, Vector2.ZERO, flip, colour)
 	Sprites.draw_standing(canvas, trim_by_view[view], Vector2.ZERO, Vector2.ZERO, flip)
 
-## The strike box's own southernmost point when the heading is a diagonal, in px south of the
-## node — `Tuning.CAR_STRIKE_HALF_LENGTH` (26) and `Tuning.CAR_STRIKE_HALF_WIDTH` (14) each rotated
-## 45 degrees onto the screen's south axis, `(26 + 14) / sqrt(2)` ≈ 28.28, plus the 2px the
-## diagonal canvas leaves between its own alpha content and its own edge (`facings.csv`: content to
-## y40 of a 42-tall canvas) — so the anchor below lands the *drawn* corner, not the empty canvas
-## edge, on the strike box's own corner. A literal rather than a computed constant because GDScript
-## consts cannot call `sqrt()`; the value is `(CAR_STRIKE_HALF_LENGTH + CAR_STRIKE_HALF_WIDTH) /
-## sqrt(2.0) + 2.0` and this is asked back of `Tuning`'s own two constants by
-## `tests/test_car_views.gd` rather than pinned as a bare number there.
-const CAR_DIAGONAL_ANCHOR_Y := 30.284271247461902
+## How much empty canvas each authored view leaves below its own drawn content, in px — read off
+## `facings.csv`'s alpha bounds (`docs/evidence/svg-vehicles-2026-09-10/facings.csv`, the `car`
+## rows): the two diagonals draw to y40 of a 42-tall canvas and front/back to y44 of a 46-tall one,
+## while the side view's own content touches the bottom row. The anchor below adds it back, so what
+## lands on the ground line is the drawn corner rather than the empty edge above it.
+const CAR_CANVAS_BOTTOM_MARGIN := {
+	"front": 2.0,
+	"back": 2.0,
+	"side": 0.0,
+	"front_diagonal": 2.0,
+	"back_diagonal": 2.0,
+}
 
-## Where a car's own body texture is anchored for `Sprites.draw_standing`, keyed by the view name
-## `CAR_VIEW_BY_SECTOR` names rather than by sector, since the two mirrored sectors of a standing
-## view need the same offset. `draw_standing` always bottom-centres a texture at the point it is
-## given, and each authored view puts a different part of the car at that edge:
+## Where a car's own body texture is anchored for `Sprites.draw_standing`. `draw_standing` always
+## bottom-centres a texture at the point it is given, and every one of the five authored views is a
+## standing elevation whose bottom row is the car's **nearest ground contact** — the part of its
+## footprint closest to the camera. So there is one registration rule for the whole family, and it
+## is stated over the heading rather than per view:
 ##
-## - **Side** needs no correction, as it never did: the car's along-track length is the texture's
-##   own *width*, which `draw_standing` centres by default, and its own alpha content already
-##   touches the canvas's bottom row (`facings.csv`'s own alpha bounds).
-## - **Front/back** are standing elevation pictures rather than the old flattened top-down end
-##   view: the canvas's own bottom edge is the car's south end — the near bumper for one heading
-##   and the far one for the other, which does not matter since the strike box is symmetric between
-##   them — so it belongs `CAR_STRIKE_HALF_LENGTH` south of the node, exactly where the box's own
-##   south edge already sits for a car pointed along that axis.
-## - **The diagonals** draw the car turned 45 degrees to the screen, so the strike box's own
-##   southernmost point is a *corner* rather than an edge — see `CAR_DIAGONAL_ANCHOR_Y`.
-func _car_body_anchor(view: String) -> Vector2:
-	match view:
-		"front", "back":
-			return Vector2(0.0, Tuning.CAR_STRIKE_HALF_LENGTH)
-		"front_diagonal", "back_diagonal":
-			return Vector2(0.0, CAR_DIAGONAL_ANCHOR_Y)
-		_:
-			return Vector2.ZERO
+## > the drawn content's bottom edge lands on the southernmost point of the strike box.
+##
+## That box is `Tuning.CAR_STRIKE_HALF_LENGTH` (26) by `CAR_STRIKE_HALF_WIDTH` (14), centred on the
+## node and rotated onto the heading, so its southern reach is `26·|heading.y| + 14·|heading.x|` —
+## 26 pointed along a vertical lane, 14 along a horizontal one, `(26 + 14)/sqrt(2)` ≈ 28.28 at
+## exactly 45 degrees, and every value between while a car is on an arc.
+##
+## **Read off the live heading rather than off the quantised view, because a turn is continuous and
+## the eight views are not.** `EightDirection` swaps the texture at a sector boundary; if the anchor
+## swapped with it the body would jump the whole difference between two views' ground lines in one
+## frame, which is what a turning car was doing — and the same arithmetic keeps the shadow capsule,
+## the debug view's bounding box and the picture travelling together for the whole manoeuvre
+## instead of the first two rotating while the third sat still and then leapt. A standing car's
+## heading is exactly cardinal, so this is an exact value there and nothing about a car in a lane
+## depends on a texture's own axis.
+func _car_body_anchor(view: String, forward: Vector2) -> Vector2:
+	var south_reach := Tuning.CAR_STRIKE_HALF_LENGTH * absf(forward.y) \
+			+ Tuning.CAR_STRIKE_HALF_WIDTH * absf(forward.x)
+	return Vector2(0.0, south_reach + float(CAR_CANVAS_BOTTOM_MARGIN[view]))
 
 ## The car's own along-track length and across-track width for the shadow capsule below — fixed
 ## constants rather than read off a texture. This used to take the side view's own width for the
