@@ -18,6 +18,7 @@ extends RefCounted
 const SUMMARY := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE := preload("res://scenes/ui/pause_screen.tscn")
 const TITLE := preload("res://scenes/ui/title_screen.tscn")
+const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
 
 func run(t) -> void:
 	var was_paused: bool = t.get_tree().paused
@@ -48,6 +49,8 @@ func run(t) -> void:
 	_test_a_real_touch_on_the_continue_button_reaches_the_pause_screen(t)
 	_test_a_real_touch_hold_on_the_restart_button_fires_on_the_pause_screen(t)
 	_test_a_touch_away_from_restart_still_carries_on(t)
+	_test_pause_keeps_the_last_heading_through_the_dismiss_press(t)
+	_test_pause_stays_standing_through_the_dismiss_press(t)
 	_test_the_summary_hint_matches_the_platform(t)
 	_test_an_ending_has_no_continue_button(t)
 	_test_the_summary_restart_button_is_a_hold(t)
@@ -859,6 +862,136 @@ func _test_a_touch_away_from_restart_still_carries_on(t) -> void:
 
 	t.get_tree().paused = false
 	pause.queue_free()
+
+## **"Pause can keep the last direction just don't overwrite it from the button press."**
+## *(PLAYTEST-67, "The first press walks her".)* The leak: `TouchControls._on_pointer()` used to
+## arm `_drag_pointer_index` for the very press that dismisses the pause screen, even though
+## `_on_tap()`'s own `get_tree().paused` guard already turned that same press into a no-op for the
+## world — so a finger or a mouse button still down a frame or two later, once
+## `PauseScreen._acknowledge_and_resume()`'s own two-frame acknowledge delay has actually unpaused
+## the tree, delivers an ordinary `InputEventScreenDrag`/`InputEventMouseMotion` for the same
+## pointer, and `_on_drag()` read it as a fresh heading. A real touchscreen reports a point or two
+## of drift from a finger that is not deliberately moving, which is why the report reads as
+## *always* rather than *sometimes*. Reproduced here with a real `PauseScreen` and `TouchControls`
+## sharing one viewport, the pair `main._ready()` actually wires together, rather than asserting
+## against `TouchControls` alone: the bug is in how the two interact, not in either on its own.
+func _test_pause_keeps_the_last_heading_through_the_dismiss_press(t) -> void:
+	var rig := Node2D.new()
+	rig.add_to_group("player")
+	rig.global_position = Vector2(640.0, 360.0)
+	t.add_child(rig)
+	var controls: TouchControls = TOUCH_CONTROLS.instantiate()
+	t.add_child(controls)
+	controls.set_process(false)
+	controls.set_mode(ControlsMode.Mode.TAP)
+	controls.set_direction(Vector2(1000.0, 360.0), false) # due east of her
+	t.check(Input.is_action_pressed("move_right"), "walking east before the pause")
+
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	pause._touch = true
+	pause._refresh_buttons()
+	pause.set_touch_controls(controls)
+	pause.open()
+	controls._process(0.0) # the transition into pause force-releases the held direction
+	t.check(not Input.is_action_pressed("move_right"),
+			"opening the pause lets go of the held direction, same as ever")
+
+	pause._continue_button.position = Vector2(300.0, 400.0)
+	pause._continue_button.size = Vector2(92.0, 92.0)
+	var at: Vector2 = pause._continue_button.get_global_rect().get_center()
+	var touch := InputEventScreenTouch.new()
+	touch.position = at
+	touch.pressed = true
+	touch.index = 0
+	pause.get_viewport().push_input(touch, true)
+	t.check(controls._drag_pointer_index == -1,
+			"the dismissing press itself is never tracked for a later drag")
+
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
+	t.check(not pause.is_open(), "the press has closed the pause")
+
+	# The same finger, still down, drifts a couple of pixels once the day is running again --
+	# a real touch controller's own sensor noise, not a second, deliberate gesture.
+	var drag := InputEventScreenDrag.new()
+	drag.index = 0
+	drag.position = at + Vector2(2.0, 1.0)
+	controls._input(drag)
+	t.check(Input.is_action_pressed("move_right") and not Input.is_action_pressed("move_left")
+			and not Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_down"),
+			"she resumes east -- the heading she carried into the pause -- not a new one from the "
+			+ "finger that dismissed it")
+
+	var release := touch.duplicate()
+	release.pressed = false
+	release.position = drag.position
+	controls._input(release)
+	_release_moves()
+	t.get_tree().paused = false
+	pause.queue_free()
+	controls.queue_free()
+	rig.free()
+
+## The other half of the same fix: a run that was never walking must not start walking from the
+## press that dismisses the pause either.
+func _test_pause_stays_standing_through_the_dismiss_press(t) -> void:
+	var rig := Node2D.new()
+	rig.add_to_group("player")
+	rig.global_position = Vector2(640.0, 360.0)
+	t.add_child(rig)
+	var controls: TouchControls = TOUCH_CONTROLS.instantiate()
+	t.add_child(controls)
+	controls.set_process(false)
+	controls.set_mode(ControlsMode.Mode.TAP)
+	t.check(Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down") == Vector2.ZERO,
+			"standing before the pause")
+
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	pause._touch = true
+	pause._refresh_buttons()
+	pause.set_touch_controls(controls)
+	pause.open()
+	controls._process(0.0)
+
+	pause._continue_button.position = Vector2(300.0, 400.0)
+	pause._continue_button.size = Vector2(92.0, 92.0)
+	var at: Vector2 = pause._continue_button.get_global_rect().get_center()
+	var touch := InputEventScreenTouch.new()
+	touch.position = at
+	touch.pressed = true
+	touch.index = 0
+	pause.get_viewport().push_input(touch, true)
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
+	t.check(not pause.is_open(), "the press has closed the pause")
+
+	var drag := InputEventScreenDrag.new()
+	drag.index = 0
+	drag.position = at + Vector2(2.0, 1.0)
+	controls._input(drag)
+	t.check(Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down") == Vector2.ZERO,
+			"and she still stands -- the finger that dismissed the pause is not her first heading")
+
+	var release := touch.duplicate()
+	release.pressed = false
+	release.position = drag.position
+	controls._input(release)
+	_release_moves()
+	t.get_tree().paused = false
+	pause.queue_free()
+	controls.queue_free()
+	rig.free()
+
+## Movement actions and `run` are global `Input` state, not scoped to this suite's own nodes --
+## the new pause/`TouchControls` pair above is the first thing in this file to press one.
+func _release_moves() -> void:
+	Input.action_release(&"move_left")
+	Input.action_release(&"move_right")
+	Input.action_release(&"move_up")
+	Input.action_release(&"move_down")
+	Input.action_release(&"run")
 
 func _touch_at(position: Vector2, pressed: bool) -> InputEventScreenTouch:
 	var event := InputEventScreenTouch.new()
