@@ -383,6 +383,116 @@ debug build does too unless `--svg`.
       margin read off the texture rather than a constant. `tests/test_car_views.gd` holds that
       the traced rim's bounds and the drawn picture's bounds agree for every view, with the PNG
       and the SVG both.
+## M131 — Pigeons exist before they are seen · asked for 2026-09-13
+
+> "pigeons pop in on screen -- they should exist before they are visible."
+
+[PLAYTEST-69](playtests/PLAYTEST-69.md). The **events** rule governs.
+
+**What is true today.** `pigeon_flock` is `AHEAD_OF_PLAYER`: the director creates it when it is
+due and `_crossing_ahead_of()` sites a non-pursuing row `Tuning.AHEAD_LEAD_DISTANCE` (184px)
+ahead of her along her heading — inside the view on every heading, on purpose, because for the
+cat that is the two-second reaction window between the crouch and the bolt. The flock then
+telegraphs for 1.7s and rises. Pursuers and `TOWARD_PLAYER` rows are sited past the edge of the
+view by `Tuning.offscreen_lead()` instead (`DECISIONS.md`, M77). The M100 defect about a rig
+that cannot spawn at an ahead-of-player row names the flock for the same reason.
+
+- [ ] **The flock is on the ground before she can see it, and rises when she is near.** The
+      recommendation: make it a map placement like the day-4 dog, with a wait trigger inside
+      its own outer radius (168px) the way `pursues_within_on(day)` derives one — the birds sit
+      on the pavement, square or park from the moment they stream in at `EVENT_STREAM_RADIUS`
+      and are drawn pecking, the burst begins when she comes inside the trigger, and the
+      telegraph contract is then paid in geometry as the robber's is. The alternative is to keep
+      it ahead-of-player and site it past the view's edge with `offscreen_lead()` like a
+      pursuer, which keeps the row cheap but means she never sees them on the ground first; the
+      cat keeps its on-screen lead either way, since the crouch is its telegraph. Whichever is
+      built, `tests/test_event_views.gd` or `tests/test_events.gd` holds that a flock's first
+      drawn frame is never inside the view rect around her, and the M100 rig defect closes for
+      this row with it.
+
+---
+
+## M132 — The resistance speaks loud enough to be heard · asked for 2026-09-13
+
+> "the day text needs to be bigger to be able to be noticed and it should show also when dying
+> so if missed on the first try it can be seen on the second try. the in game note should
+> contain the same amount of info on what to do. note for a stranger contains less information
+> than won't stop shouting which can be easily missed when progressing to the next day. also,
+> we cannot expect the player to do an exhaustive check that will not work there is not enough
+> time and the baby needs to fall asleep still as well. so if the solution is the yeller it's
+> always the first yeller you come close enough to hand the note."
+
+[PLAYTEST-69](playtests/PLAYTEST-69.md), from a run that touched the day-4 mark, lost the day,
+and reached day 5 with no idea who the note was for. The **cues** rule governs the drawing;
+the standing decision that the *first* encounter carries no hint (`CLAUDE.md`, no quest log or
+marker for the resistance) is untouched — every item here is about what the resistance says
+*after* the mark has been touched. This closes M100's open design question about a chalk
+touch that shows nothing on a lost day, which is now decided.
+
+**What is true today.** A touched mark's words (`Step.brief`) are queued in
+`GameState.pending_resistance_brief` and appended by `DaySummary._resistance_line()` on the
+**won** branch of the summary only, in the summary's ordinary line size; the touch survives the
+nerve and the mark is not offered again, so a lost day loses the sentence for good. During the
+day the header reads `somewhere out there: <step title>` — *a note for a stranger* — which
+names the step and not the instruction. The perform contact rides on one of several look-alike
+`homeless_yeller` rows and *a wrong candidate costs full price and returns nothing*
+(`docs/NARRATIVE.md`).
+
+- [ ] **The brief is drawn to be noticed, and on a lost day too.** `DaySummary` shows the
+      queued brief on both branches of the summary, in a size and weight that reads as *the
+      thing this screen is telling you* rather than one more line, and keeps it queued until
+      a summary has shown it — so a first try that dies still hands over the words on the
+      second. `tests/test_day_loop.gd` (or the summary's own suite) holds that a brief queued
+      on a lost day is shown on that day's summary and cleared only then.
+- [ ] **The header carries the instruction, not the title.** While a perform step is on offer
+      the header's `somewhere out there:` line says the mark's own words, or the instruction
+      cut to fit — *the one who won't stop shouting* — rather than the step's name; the title
+      stays for the progress dots. Whatever wording rule is chosen holds for all five marks and
+      is written next to `Step.brief`.
+- [ ] **The contact is the first yeller she reaches.** *Asked for a hidden contact among
+      look-alikes · overturned on 2026-09-13.* When the step is on offer, the contact rides on
+      whichever `homeless_yeller` she first comes within reach of, rather than one chosen at
+      placement; `ResistanceDirector`'s rider is re-pointed on approach, or the contact is
+      placed on the yeller nearest her route, whichever keeps the guard and the deadline rules
+      intact — say which. `docs/NARRATIVE.md`'s *a wrong candidate costs full price* sentence
+      goes with it. The same question is asked of the van, the roadblock, the poster crew and
+      the protest: if any of those can be several look-alikes on one day, the first she reaches
+      is the contact.
+
+---
+
+## M133 — The readout on the live page · asked for 2026-09-13
+
+> "let's add a ?debug=1 flag" — readout only — "with a note on the screen that this is debug
+> mode -- the note should not be removable"
+
+[PLAYTEST-69](playtests/PLAYTEST-69.md). The **cli-tools**, **godot** and **cues** rules
+govern. The 2026-09-06 decision that a release build carries no modifiers (`DECISIONS.md`, M76;
+`DevFlags.enabled()` and its own comment) stands for everything but this: seeds, days, spawns,
+meters and scripted input stay unreachable from a visitor's address bar. `?svg=1` and
+`?telemetry=1` are the two bounded exceptions that exist; this is the third.
+
+**What is true today.** The frame readout (`4`) draws fps, worst frame, draw calls, objects,
+primitives and the process and physics times, on by default in a debug build and nowhere in a
+release one; `DevFlags.svg_requested()` is the shape of a release-safe query flag, parsed from
+`_web_query()` without `enabled()`. The live page cannot show the readout, so M124's phone
+half cannot be measured on it.
+
+- [ ] **`?debug=1` turns on the readout on a release build, and nothing else.**
+      `DevFlags.readout_requested()`, parsed like `svg_requested()` and not gated behind
+      `enabled()`; the readout layer is on at boot when either `enabled()` or that flag holds;
+      the other layers, the snapshot key and every dev flag stay gated. If the readout's
+      construction sits behind an `enabled()` check in `main.gd`, it is split so the readout can
+      exist without the rest of the debug furniture. Tests beside `svg_requested()`'s: true for
+      `?debug=1` and `?x=1&debug=1`, false for `?debug=0`, empty and `?debugx=1`, and
+      `enabled()` unaffected. The flag table in `dev_flags.gd`, `README.md`'s flag section and
+      `docs/TELEMETRY.md`'s readout paragraph follow. Verified on a real release export served
+      locally, since a debug export cannot prove the release path.
+- [ ] **A fixed note says the page is in debug mode.** Whenever `?debug=1` holds, a terse label
+      is drawn for the whole session and nothing removes it — not the `4` key, not a press, not
+      hiding the readout; a debug build without the flag does not show it. The **cues** rule
+      governs its place and weight; a test holds it present whenever `readout_requested()` and
+      absent otherwise.
 
 ---
 
