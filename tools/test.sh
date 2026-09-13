@@ -171,6 +171,13 @@ _plan_the_shards() {
 	done < <(printf '%s\n' "${weighted[@]}" | sort -rn)
 }
 
+if ! [[ "$SHARDS" =~ ^[0-9]+$ ]] || [[ "$SHARDS" -lt 1 ]]; then
+	echo "TEST_SHARDS must be a positive integer (got '$SHARDS')" >&2
+	echo >&2
+	usage >&2
+	exit 2
+fi
+
 _plan_the_shards
 
 # `tools/test.sh --plan` prints the split and runs nothing. Worth having as a flag rather than as

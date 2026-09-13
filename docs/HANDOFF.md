@@ -294,22 +294,16 @@ this is the map.
 - **Three agents were running when the session closed**, each briefed from its `TODO.md`
   entry: M125 (pruning `tests/**`, on its own feature branch), M124's measurement half (readout,
   run-log line and a per-suspect profile, on its own feature branch), and M126's read-only
-  audit. **The audit finished**: its report is `evidence/audit-2026-09-13/AUDIT.md`, 28
+  audit. **The audit is filed**: its report is `evidence/audit-2026-09-13/AUDIT.md`, 28
   findings with file and line, a failure scenario and a fix size each, plus what was found
-  clean; nothing has been filed from it yet, and M126's own item says how — each finding becomes
-  a queue item under the milestone that owns the code, or a defect under M100, and the record
-  goes to `DECISIONS.md`. **M124's measurement half also finished and is on an open PR**, not
-  merged: the readout and a once-a-second `frame` log entry are built, and the profile says the
-  frame is spent rebuilding draw lists, not switching textures — every live event calls
-  `queue_redraw()` every tick where the crowd already gates it, and the building shadows submit
-  about two thousand rects a frame, mostly off screen; the two together are worth about thirty
-  per cent on the desktop rig, and no atlas is indicated by the numbers. Before it merges it owes
-  its `DECISIONS.md` record with the table (the PR body and
-  `evidence/m124-frame-cost-2026-09-13/README.md` carry it) and a rewrite of M124's entry to hold
-  those two fixes and the phone measurement. M125's five suites are pruned and recorded
-  (`DECISIONS.md`, M125); its entry holds the four suites still over the runner's budget.
-- **The M124 atlas item is gated on the measurement**: nothing is atlased until the numbers say
-  texture switches are the cost.
+  clean; each finding is now fixed, filed as a queue item under the milestone that owns the
+  code or a defect under M100, or asked as a question, and the record is in `DECISIONS.md`
+  under M126. **M124's desktop measurement is built and recorded** (`DECISIONS.md`,
+  M124, where a frame goes): the frame is spent rebuilding draw lists, not switching textures,
+  and M124's entry in `TODO.md` holds the two fixes the numbers name, the phone half of the
+  measurement, and the atlas item gated on that phone half. M125's five suites are pruned and
+  recorded (`DECISIONS.md`, M125); its entry holds the four suites still over the runner's
+  budget.
 
 ## The queue, as prioritised on 2026-09-09
 

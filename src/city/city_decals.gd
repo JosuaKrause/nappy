@@ -5,8 +5,8 @@ extends Node2D
 ## and never sorts against either the way a `Prop` does. The beds remain on this layer even though
 ## their standing trees belong to the y-sorted `Entities` layer.
 ##
-## `City._place_litter()` rebuilds `_placed` once a day, the same as `_dress_blocks()` rebuilds
-## `_props`, and calls `queue_redraw()`; nothing here rolls its own placement.
+## `City` calls `set_placed(Litter.placed(map, day))` once a day, the same as `_dress_blocks()`
+## rebuilds `_props`; nothing here rolls its own placement.
 
 var _placed: Array[Litter.Placed] = []
 var _street_tree_pits: Array[StreetTrees.Planted] = []

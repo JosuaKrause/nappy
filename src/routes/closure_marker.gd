@@ -35,12 +35,6 @@ const CAUSES := {
 ## Width of one fence panel, so a line of them covers the street exactly.
 @export var span := 22.0
 
-## The texture a piece shows, or null when it has nothing to draw.
-static func texture_for(a_piece: Piece, a_kind: RoadClosure.Kind, is_across: bool) -> Texture2D:
-	if a_piece == Piece.CAUSE:
-		return CAUSES.get(a_kind)
-	return FENCE_ACROSS if is_across else FENCE_ALONG
-
 func _draw() -> void:
 	match piece:
 		Piece.CAUSE:

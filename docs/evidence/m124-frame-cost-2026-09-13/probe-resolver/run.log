@@ -1,0 +1,46 @@
+nappy rig log  2026-09-13T11:21:18  version v0.9.1-3-g8daa27ac-dirty
+
+day 1  act 1  run seed 3265820891  city seed 3265820891  length 180.0s
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 0]
+   0.0  plan     closed: roadworks h(1,9)
+   0.0  plan     calm: 1 forest, 2 courtyard, 2 quiet_square, 3 park
+   0.0  plan     events: alley_mouse x4, burst_water_main x17, cafe_tables x56, car_accident x26, cat_dash x8, chatting_mother x2, delivery_van x69, dog_walker x22, homeless_yeller x8, leaf_blower x15, loose_dog x11, market_stall x52, moving_van x42, pigeon_flock x5, playground x3, scaffolding x23, skip x20
+   0.0  start    doorstep (80,84), facing 180°
+   0.6  cross    stepped into the road at (80,86), mid-block
+   1.0  frame    fps 13, worst frame 150.0ms, draws 921, objects 3717, primitives 8060, process 22.29ms, physics 1.63ms, resolves 24874, distinct 171, resolve 29.83ms
+   2.0  frame    fps 112, worst frame 12.0ms, draws 711, objects 3470, primitives 7398, process 15.99ms, physics 1.78ms, resolves 15832, distinct 88, resolve 10.88ms
+   2.7  blocked  pressed 180° for 1.0s at (80,89) without moving
+   3.0  frame    fps 115, worst frame 10.4ms, draws 940, objects 3863, primitives 8214, process 8.98ms, physics 1.79ms, resolves 16222, distinct 84, resolve 11.05ms
+   4.0  frame    fps 115, worst frame 9.2ms, draws 644, objects 3396, primitives 7304, process 15.76ms, physics 2.23ms, resolves 11397, distinct 69, resolve 10.04ms
+   4.5  path     onto the corridor at (84,89), after 4.5s off it
+   5.0  frame    fps 119, worst frame 9.6ms, draws 758, objects 3589, primitives 7663, process 15.34ms, physics 1.84ms, resolves 19089, distinct 88, resolve 12.84ms
+   5.2  cross    stepped into the road at (86,89), at a signalled crossing
+   5.2  crowd    a car sounded its horn at her in the road at (86,89) | exc 2, in 3.2/s (crowd 3.2, events 0.0), sleep 2
+   5.7  crowd    a car sounded its horn at her in the road at (87,89) | exc 7, in 25.3/s (crowd 25.3, events 0.0), sleep 2
+   5.9  cue      the mark over her head: soon for 0.6s (0.6s of it on the road) | a car, and she is in the road
+   6.0  frame    fps 112, worst frame 15.5ms, draws 860, objects 3696, primitives 7928, process 8.76ms, physics 2.03ms, resolves 25147, distinct 87, resolve 16.71ms
+   7.0  frame    fps 102, worst frame 9.7ms, draws 711, objects 3397, primitives 7459, process 16.76ms, physics 1.91ms, resolves 22353, distinct 64, resolve 15.11ms
+   8.0  frame    fps 107, worst frame 10.2ms, draws 653, objects 3337, primitives 7264, process 16.32ms, physics 1.90ms, resolves 19634, distinct 90, resolve 13.42ms
+   9.0  frame    fps 115, worst frame 9.1ms, draws 639, objects 3323, primitives 7128, process 8.72ms, physics 1.79ms, resolves 17927, distinct 88, resolve 12.20ms
+   9.5  near     leaf_blower at (104,89), 200px, exc 16, in 4.3/s (crowd 4.3, events 0.0), sleep 4
+  10.0  frame    fps 118, worst frame 12.2ms, draws 631, objects 3328, primitives 6871, process 15.69ms, physics 1.65ms, resolves 20669, distinct 81, resolve 13.76ms
+  10.1  cross    stepped into the road at (100,89), at a zebra
+  10.5  near     leaf_blower at (104,89), 109px, exc 23, in 14.9/s (crowd 0.0, events 14.8), sleep 4
+  10.8  path     off the corridor at (102,89), after 6.3s on it
+  10.8  near     cafe_tables at (103,91), 63px, exc 26, in 14.3/s (crowd 0.0, events 14.2), sleep 5
+  11.0  near     leaf_blower at (104,89), 59px, exc 28, in 14.2/s (crowd 0.0, events 14.1), sleep 5
+  11.0  frame    fps 116, worst frame 10.1ms, draws 709, objects 3526, primitives 7243, process 15.83ms, physics 1.73ms, resolves 16112, distinct 62, resolve 11.01ms
+  11.4  near     leaf_blower at (104,89), 31px, exc 30, in 8.7/s (crowd 0.0, events 8.6), sleep 5
+  11.4  near     delivery_van at (108,88), 149px, exc 30, in 7.8/s (crowd 0.0, events 7.8), sleep 5
+  12.0  frame    fps 114, worst frame 9.7ms, draws 685, objects 3478, primitives 7147, process 15.98ms, physics 1.65ms, resolves 21065, distinct 80, resolve 14.05ms
+  12.6  blocked  pressed 90° for 1.0s at (104,89) without moving
+  13.0  frame    fps 120, worst frame 10.3ms, draws 685, objects 3478, primitives 7144, process 8.33ms, physics 1.75ms, resolves 19028, distinct 86, resolve 12.74ms
+  13.4  freeze   sleep stopped filling | exc 35, in 17.0/s (crowd 0.0, events 17.1), sleep 6 | near: leaf_blower 25px
+  14.1  frame    fps 120, worst frame 8.3ms, draws 686, objects 3531, primitives 7250, process 15.15ms, physics 1.73ms, resolves 13847, distinct 56, resolve 9.76ms
+  15.1  frame    fps 122, worst frame 8.8ms, draws 689, objects 3532, primitives 7276, process 15.58ms, physics 1.72ms, resolves 19157, distinct 87, resolve 12.95ms
+  15.6  blocked  pressed 90° for 4.0s at (104,89) without moving
+  16.1  frame    fps 120, worst frame 9.8ms, draws 686, objects 3525, primitives 7238, process 7.95ms, physics 1.63ms, resolves 18947, distinct 85, resolve 12.57ms
+  17.1  frame    fps 118, worst frame 10.0ms, draws 686, objects 3529, primitives 7246, process 15.71ms, physics 1.81ms, resolves 18682, distinct 82, resolve 12.61ms
+  18.1  frame    fps 115, worst frame 9.1ms, draws 686, objects 3531, primitives 7250, process 16.03ms, physics 1.80ms, resolves 13396, distinct 61, resolve 9.35ms
+  18.6  blocked  pressed 90° for 7.0s at (104,89) without moving
+  19.1  frame    fps 120, worst frame 9.1ms, draws 683, objects 3526, primitives 7216, process 15.70ms, physics 1.61ms, resolves 18945, distinct 86, resolve 12.74ms
