@@ -1,5 +1,29 @@
 # Decisions
 
+## The feedback skill is renamed playtest-feedback · 2026-09-13
+
+*(2026-09-13, on typing `/feedback` and getting the repository's skill: "oh, then we need to rename
+the feedback skill maybe?", then "make sure all references are updated properly, too".)* Claude
+Code has a built-in `/feedback` command that sends product feedback, and a repository skill of the
+same name shadows it, so the skill that governs playtest reports and design instructions is now
+`.claude/skills/playtest-feedback/`. Nothing in it changed but its name. Every reference that
+meant the skill was moved with it — `CLAUDE.md`'s two tables and its loading sentence, the
+path-to-skill hook, the **orchestrating**, **reference-photos** and **svg-art** skills, the
+evidence folder's README and the handoff — and the ordinary noun *feedback* stays wherever it is a
+noun. Older records below that name the skill by its old name are left as they were written.
+
+## M123 — An eastbound car's halo sits off its body · closed as M121's finding, 2026-09-13
+
+*(2026-09-13, [PLAYTEST-67](playtests/PLAYTEST-67.md): "sometimes the halo of West to East
+driving cars are offset vertically. But it's not consistent.")* Phone sessions of unstated
+version, reported after v0.9.1 went live. On v0.9.0 a car that turned onto an east-west street
+while lit kept its diagonal view's rim, registered about 30px lower than the side view, until the
+glow next changed — an offset only on cars that had just turned, which is the inconsistency
+described — and M121 removed that by re-tracing the rim every frame and registering every view
+off the live heading. Asked which version: *"I'm unsure if it was 9.0 or 9.1 I will report it
+again if I see it otherwise let's consider it fixed."* Closed on that; a report on v0.9.1 or
+later reopens it as a new entry with a burst of an eastbound car under a halo.
+
 ## M121 — The halo follows its owner, and a turning car's picture and lane · built 2026-09-13
 
 *(2026-09-12, [PLAYTEST-66](playtests/PLAYTEST-66.md): "the halo doesn't update when the drawn
