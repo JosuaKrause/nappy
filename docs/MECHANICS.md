@@ -880,7 +880,7 @@ from day 8 — telegraphs in silence.
 
 Every event has a `telegraph_time` (default `2.5 s`, longer for big events) during which:
 
-- The event is **visible** (sprite, warning ring, audio cue).
+- The event is **visible** (sprite, audio cue).
 - It emits at most `TELEGRAPH_INTENSITY_FRACTION` (default `0.15`) of its full intensity.
 
 A telegraph the player cannot perceive is not a telegraph. **Every cue must be legible with
