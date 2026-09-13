@@ -152,3 +152,26 @@ kill? The recommendation was to keep it a price.
 > Bodies sit, gap is a fair price
 
 Closed as fine; the switch stays off.
+
+## What the phone sessions reached
+
+Asked which of the review file's places recent play had reached — day 7's doors and roadblocks,
+day 9 or 13's patrols and decay, the escape behind `--start-escape`, or only the first days on
+the phone:
+
+> Only the first days on the phone
+
+So the day-7-and-later items, the escape items and the desktop-only debug items stay in
+`REVIEW.md` unasked, and what follows is the act I of the live page under a thumb.
+
+## The joystick scheme under a thumb
+
+Asked, against `DECISIONS.md`, M85 and M88: the two focal rings at the 48px stop radius with a
+knob for the locked-in heading, the undrawn stop band down the middle of the screen, a held
+finger re-aiming, and tap-her-to-stop absent in this mode — does the ring read as *what is
+locked in* or as furniture, does the band read as a deliberate stop or a dropped input, do the
+band and the discs refuse ordinary aiming, and is tap-to-stop missed?
+
+> Controls feel right. I will report if I find any new issues
+
+Closed as fine, all four.

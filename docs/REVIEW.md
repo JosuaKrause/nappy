@@ -410,16 +410,6 @@ item below for as long as looking takes.
 - **Nobody has measured the web build, only confirmed it runs.** It boots and plays at the live
   address; what has not been checked is frame rate at the game's scale on a machine that is not the
   one it was built on, and whether a stranger arriving at the page understands what it is.
-- **The scheme a thumb actually drives has been walked once, and every part of it has moved since.**
-  Playtest 33 is the one session on it, and it is what M85 answers — so the focal points are 120px
-  out and 120px down from where that thumb met them, both circles are drawn where nothing was, a
-  held finger re-aims where it did not, and the middle of the screen stops her where it used to
-  steer her. **Four questions only a thumb settles.** Whether a drawn ring at `STOP_RADIUS` (48px)
-  with a knob in it is read as *this is what is locked in* or as furniture. Whether a stop band
-  nobody can see reads as a deliberate stop or as the game dropping an input. Whether the band and
-  the two focus discs together take enough of the screen that ordinary aiming gets refused. And
-  whether losing *tap her to stop* in joystick mode is felt as a loss at all, since the band is the
-  same ground and the lesson no longer teaches either.
 - **Nobody has chosen a mode, and the choice is now the first thing the game asks.** M88 offers
   joystick and tap on every device, so **tap on a phone and joystick on a desktop are both playable
   for the first time and neither has been played** — a thumb aiming from her own position across a
