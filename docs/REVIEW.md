@@ -14,6 +14,18 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
+- **Walk an alley and look at the ground beside every building.** Each building now casts a
+  one-tile shade to its south and west, flat black at `Tuning.BUILDING_SHADOW_ALPHA`, with the
+  corner under its south-eastern edge cut on the diagonal; joined buildings shade as one. Two
+  questions. Does an alley read as *more obvious* for the band running down its eastern side,
+  which was the point of asking for it? And is the shade at the right strength — visible without
+  reading as a second ground material — or should the number move, or the shade take the ground's
+  own colour down a step instead of laying black over it? Record is `DECISIONS.md`, M122; the
+  stills are `evidence/m122-building-shadows-before-seed4242-day1.png` and `-after-`.
+- **Look at a burst water main.** It draws no body shadow now, on the player's word; the two
+  barriers and the crater stand as they did. Does the scene still sit on the road without one?
+  Same record.
+
 - **Walk three kinds of ground with the excitement bar up and watch it, not the route.** Start
   anywhere with the meter loaded (`--meters 0 90` puts it near the top) and spend twenty seconds
   on each: an ordinary back street, the main road's pavement, and a park. Three questions, and
