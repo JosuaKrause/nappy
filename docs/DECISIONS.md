@@ -51,6 +51,17 @@ holds: calm > precinct > street > alley > main road. `EXCITEMENT_DECAY_IDLE` sta
 because the run button is a trap by design and raising its decay would soften the one thing it is
 for.
 
+**Merging with M118 moved the crash's number, because the two priced one walk in opposite
+directions.** M118 set `CAR_ACCIDENT_INTENSITY` to 45.0 against the walking decay of 3.5/s it was
+measured under, where the cheapest squeeze past a crash cost 56.3; at 6.0/s the same walk costs
+**46.7**, under the `METER_MAX / 2` line the row exists to sit on the far side of, and
+`tests/test_seals.gd`'s walk refused the merge on both street axes. The relationship is the
+player's (*"prevents the player from walking past it"*), so the number moved and not the test:
+`tests/probes/m118_crash_gap.gd` at **50.0** puts the cheapest pass at **54.4** and the dearest at
+55.3, and the cost table's row goes to +65.7 walking and +58.3 running — running still the right
+move on this one row, now saving about seven points rather than four. The required telegraph is
+stated over radii and speed, not intensity, so the fairness contract did not move.
+
 **And the calm-zone admission distance is decoupled, which is the half that is not a rebalance.**
 `EventScheduler._denial_radius` read the calm ground's live decay, so raising the walking rate
 would have admitted louder rows beside every park as a side effect. `Tuning.CALM_ZONE_DENIAL_RATE`
@@ -161,6 +172,126 @@ are the decay and nothing else. The bar reads 90 at the doorstep, 72 at the firs
 scroll during the burst: she walked eight tiles south in the three seconds before it and then met
 a solid `market_stall` at (1,10), so the window caught her held against it. The travel is in
 `run.log`; the frames are evidence about the meter. What no rig can answer is in `REVIEW.md`.
+
+## M118 — A car crash is solid only where the cars are · built 2026-09-12
+
+*(2026-09-12, [PLAYTEST-63](playtests/PLAYTEST-63.md): "a car crash right now has a full bounding
+box even though there are gaps in the sprite. the bounding box should only be the crashed cars but
+it should emanate an excitement field that prevents the player from walking past it", with "this
+round's feedbacks should all be prioritized since I'm actively testing the changes as they come
+in".)*
+
+**Overturned: *a closure is silent* · overturned for the `car_accident` seal on 2026-09-12, because
+a body that matches the picture leaves gaps, and the player asked for those gaps to be closed by a
+field rather than by a wall nobody can see.** Narrowly: a `RoadClosure` still contributes nothing to
+the meter, `CRASH` included, and the seven other seal pictures keep `intensity = 0.0` — the
+exception is one catalogue row, and a seal was always an `EventDef`, so nothing was added to
+`City.total_excitement_at`'s two summands. The fallen tree (one trunk kerb to kerb) and the burst
+main (a crater between two barriers) were not named by the player and leave no gaps to close;
+whether they follow is the player's question.
+
+**The parts machinery.** `EventDef.solid_parts` is a list of `SolidPart` — an offset along the
+scene's own spread axis and a `GroundShape` — and `EventInstance` builds one `CollisionShape2D`, one
+shadow patch and one entry of a per-tile record per piece, from `EventDef.parts()`, which answers
+one piece at the origin carrying `shape` for every row that declares none. So exactly one row in the
+catalogue is several bodies and `tests/test_events.gd` asserts that count.
+
+**Two offsets per part, because a wide scene has two authored pictures.** `_wide_scene_texture`
+picks a composition per street axis rather than rotating one, so where the cars sit across the
+street is a fact about the picture in use. On `car_accident.svg` (200×50, a north-south street) the
+cars are drawn end-on at x 63–91 and 92–120 and `car_accident_shadow.svg` puts their ground contacts
+at 77 and 106 — the two agree, because an end-on car stands directly above its own patch of road. On
+`car_accident_vertical.svg` (50×200, an east-west street) the cars are side views drawn *above* the
+road they stand on, so only `car_accident_vertical_shadow.svg` says where that is: contacts at y 88
+and 110. At the 192/200 scale `_draw_wide_scene` fits each picture to the street, those are **−22.1
+and +5.8** (north-south) and **−11.5 and +9.6** (east-west) from the scene's centre. **14px of radius
+apiece**: a car is drawn 28px wide, 26.9px of ground at that scale, and the round number is what
+makes the two bodies meet rather than leaving a one-pixel slot that reads as a way through and is
+not one. Everything else in the scene — the debris, the two onlookers — carries no body, because
+being the gaps is what they are for.
+
+**Two readings of a body came apart, for one row.** `obstructs_radius` stays 96 — the whole street,
+the disc every planner clears, spaces and refuses ground with, and what the picture is fitted to —
+while `EventDef.solid_reach()` (36.1) is how far the row is actually solid. Only one caller takes the
+second: `validate()`'s check that a lethal radius is reachable past its own body, which is about
+where her centre comes to rest and would otherwise refuse an arrangement that in fact lets the kill
+fire. `detain_distance()` stays on `obstructs_radius`; no row that detains is solid in parts, and the
+two numbers are equal for every row but this one. `validate()` refuses a part reaching past the row's
+own `shape`, which is what keeps the planners' disc an upper bound — and is the direction argument
+for item C: removing obstruction inside a disc the day already cleared can only add reachable ground,
+so `ClosurePlanner`'s route guarantee and `CityMap.held_segments` needed no change at all.
+
+**What the gap costs, measured.** `tests/probes/m118_crash_gap.gd` walks every line through the
+picture's open ground at `WALK_SPEED`, over six seeds and both street axes, and reports the
+**cheapest** — a guarantee about a price is a guarantee about the price she can get. Her centre has
+open lanes at −82..−52 and +34..+82 on a north-south street and −82..−40 and +38..+82 on an east-west
+one (px from the scene centre, the street spanning ±96); the cars are drawn locked together, so there
+is no passable slot between them and the two gaps are the pavements. At `CAR_ACCIDENT_INTENSITY`
+40.0 the cheapest pass cost **48.5** and the dearest 49.2 — under the `METER_MAX / 2` line
+`tests/test_crowd.gd` draws between expensive and fatal, so the number went to **45.0**, where the
+cheapest is **56.3** and the dearest 57.0. The field is `inner_radius` `GroundShape.BAND_RADIUS`
+(24, the band's own surface, since a segment's field is priced from its spine) with a 72px shoulder
+to `outer_radius` 96; that keeps the required telegraph at 0.78s, under the row's existing 0.9, so
+the fairness contract did not have to move to pay for this. `tests/test_seals.gd` now walks that
+same measurement as an assertion rather than asserting the constant back to itself.
+
+**The fork the entry left open, built the recommended way.** *Prevents* means **costs more than she
+can carry**, not lethal: the pram's nearly-crying cue is the turn-back signal and a fresh meter can
+still force the pass at the price of the day. The other reading is one line away and off —
+`Tuning.CAR_ACCIDENT_GAPS_ARE_LETHAL`, which takes the row to `hard_fail` with
+`CAR_ACCIDENT_LETHAL_INNER_RADIUS` 56 (clear of the cars' 36.1 plus her 14, so the kill can actually
+fire) and the doubled hard-fail telegraph. The expensive reading was built because a wall that kills
+has no price to weigh, and the verb of this game is *where do I walk*.
+
+**The running rule flips for this row, and it is arithmetic rather than taste.** Running is a fixed
+`EXCITEMENT_FROM_RUNNING` (14/s) plus a collapsed decay against a saving that is only the shorter
+exposure, so it beats walking on any field whose mean emission along the line clears about 24/s — and
+no field short enough to be *felt walking up to it* rather than from down the street can charge fifty
+points without clearing that. Sprinting past a crash costs **54.0** where walking costs **63.1**.
+Rather than retune the geometry the entry specified, `tests/test_events.gd` names the row in
+`_RUNNING_IS_CHEAPER`, asserts the exemption is still true, and asserts there is exactly one of them.
+**Open to overturn**: the alternative is a wider, quieter field, and its cost is a sealed street
+announcing itself half a block away.
+
+**The defect the bounding-box layer found, which the suite was green through.** The first still of a
+placed crash drew one stadium kerb to kerb. `SealPlanner.sealed_variant` builds every seal from
+`EventDef.duplicate()`, and `Resource.duplicate()` copies only properties with storage usage —
+which `solid_parts` does not have, being a plain `var` holding `RefCounted`s, exactly like `shape`
+beside it, which that function already carried across by hand. So the row reached its only placement
+path with no parts and fell back to one body spanning the street: no error, no failing check, the
+milestone silently undone. `EventDef.at_heat()` duplicates the same way and got the same line, and
+`tests/test_seals.gd` now asserts a placed crash keeps its car bodies across six seeds and every day.
+**A green suite says nothing about the copy the day actually places.**
+
+**Silent choices, every one open to overturn**: the 72px shoulder and the inner radius at the band's
+edge (the entry said "short"; 96 is what keeps the telegraph contract still); 45.0 rather than the
+~41.5 that would just clear half the meter, for margin over a measurement taken on one falloff shape;
+a disc per car rather than a capsule, which gives each body 28px of ground depth along the street
+where the old band had 48; the cars' bodies touching, so the "debris gap" is not a way through and
+the two gaps are the pavements; `detain_distance()` left on `obstructs_radius`; and the accident
+keeping its authored contact-shadow art, with the per-part shadow path built for whatever row is
+solid in parts next.
+
+**Evidence**: `docs/evidence/m118-crash-bodies-2026-09-12/` — `bodies-north-south.png`, a
+`--layers 3` still of a placed crash (seed 4222) with two circles meeting under the two cars and both
+pavements open; `gap-walk-burst/`, five frames and the timing record of her walking out of the field
+and back into the south gap of an east-west crash (seed 4333), where the same two circles sit under
+the stacked side views and the readout reads `incoming 45.00/s` against `decay 3.50/s` with the meter
+passing 42; and `gap-walk-east-west.png`, the end of that run, which is a cry — two passes through
+one crash is the whole meter.
+
+**Merged with M110's per-tile solid record, and the join is one loop.**
+`EventManager.obstructed_footprint()` rasterises `EventDef.parts()` rather than the one `shape`,
+each piece at its own offset along the spread axis — so a one-piece row records exactly the tiles it
+recorded before (`tests/test_crowd_bodies.gd` pins that against `shape.tiles_under()` directly) and
+a crash records its two cars and leaves the debris and both pavements open. **It changes nothing on
+a played day today, and that is worth writing down rather than discovering**: a crash is a hard
+seal, `SealPlanner.plan_day` marks every hard seal's segment in `CityMap.held_segments`, and the
+record deliberately skips a body on held ground because the whole street is already shut to walkers
+and cars. So the crowd stays off the crash's street the way it always did; what M118 opened is the
+*player's* way through, and she is stopped by the pieces' own collision shapes, not by that record.
+The loop is what makes the two milestones agree the first time a partly-solid body stands anywhere
+the crowd can reach.
 
 ## M109 — Southern wheel arrangement from frozen views — 2026-09-12
 
@@ -1058,6 +1189,156 @@ folder under the same evidence path, a dog walker beside her from frame one; fra
 show the walker and his dog flip together at 1.76s and hold, and the README says the flip back
 was not caught inside the run. Whether the strides read at street scale is in `REVIEW.md`.
 
+## M102 — The finale · built behind the flag, 2026-09-12
+
+*(2026-09-12: "also build the entire escape sequence to the end but make it playable only via flag
+today (what is now the apartment escape should continue)", overturning the 2026-09-09 "this is just
+a plan for now — we probably won't actually implement it for a while".)* Four agent commits on
+`feature/the-finale`, reviewed here. The whole fifteenth walk exists — the building with its
+events, the service exit onto the city, two chains through three calm areas each to the tunnel and
+the bridge, the explosions and their craters, the two hint lines, the millisecond clock, the
+section restart and the epilogue — and it is reached only through `--start-escape`. The one thing
+deliberately not wired is the entry from day 14's own summary, held back by the same instruction
+and still open in `TODO.md`.
+
+**The chains, and why a stop is not a block.** `FinalePlanner.plan()` grows two ordered chains —
+service exit, three calm areas one after another, an edge — where a day grows a `RouteTree` with
+two distinct routes to each calm area counted as a max flow. The escape asks the opposite
+question, *(2026-09-09: "the finale route is not a tree any more … no overlapping routes")*, so the
+second chain is grown with every cell of the first treated as wall: they part at the door and share
+no cell after it. A stop is a connected component of `Tile.is_calm` ground rather than an entry in
+`map.calm_blocks`, and blocks were tried first and do not work — `MIN_CALM_BLOCKS` is 5 and the two
+chains need six distinct stops between them, so a third of cities would have had to share one.
+Flooding the ground instead makes a four-block zone one place to rest rather than four, brings
+courtyards in (calm she can settle in, which the block list does not carry), and makes "three
+distinct" a property nothing has to state. Measured over eight seeds: **8 to 11 components per
+city**, so six is never tight.
+
+**The sealing, and the street the first version spared.** `SealPlanner.plan_finale()` takes the
+chains' open cells where `plan_day` takes a tree and reuses the placement code unchanged. Three
+differences, each because the escape is not a day: every seal is hard, since a soft one leaves the
+carriageway open and the brief is a single path; the main road is sealed like anything else,
+because the chains *end* on the spine and leaving the rest of it open would join them at the one
+street touching both exits; and every alley mouth off the chains is walled rather than a fraction
+of the qualifying ones. **The first version spared any street a chain merely touched**, which
+measured at **37 open streets against chains worth about 11 streets' cells** — every street at
+every junction a walk turns at, three times as much open ground as the walk itself.
+`FinalePlanner.runs_through()` asks the question at the street's own midpoint instead, which is
+where a hard seal stands, so a street the chain only clips is sealed there without closing
+anything.
+
+**What stands on the streets that survive.** `EventScheduler.build_finale()` places army trucks,
+masked men in vans and on foot, and the bursts. Three of the four rows are existing ones unchanged
+— the convoy with the barricade it ordinarily leaves stripped, since a convoy here is traffic
+rather than an aftermath, and `roadblock` at full heat, whose guards leave the post. Only
+`finale_explosion` is new, and it draws nothing: there is no burst on the street, only the noise
+and the hole. Off screen is bought with the streaming radius rather than with a rule — a `MAP`
+placement enters the world at 900px against a 640×360 view and is over before she can reach it —
+which is also what lets its crater land on the carriageway she then has to route around.
+`EventManager.start_finale()` takes the finished plan rather than working one out, because with no
+tree, no region plan, no closures and no catalogue budget a mode inside `start_day` would have been
+six of its seven passes skipped.
+
+**Section one, and the two sitings that are not decoration.** `InteriorEvents` hosts the mouse, the
+masked man on one stairwell, the fire on the other, the steam in the basement and the explosions
+outside — *"we can keep the events inside the house relatively minimal"*, so at most one of each.
+It is deliberately not an `EventManager`: that class is a day stated over a `CityMap` this building
+does not have, and what an `EventInstance` actually needs from its owner is four things — be put in
+the world, be told where she is, be summed, and fire the hard fail. **The fire goes on a turn
+landing, not a floor landing**: a floor landing has that floor's own door one tile beside it and the
+fire's body is wider than that, so a fire there would close the way *out* of the stairwell as well
+as the way down it and the answer to it would be walking back up. On the half-landing it closes
+exactly one flight, both doors stay reachable, and the way past is into the hallway and along to
+the other shaft — which is why the two stairwells are at opposite ends, and the masked man is on
+that other shaft, so the way past a fire has somebody coming up it. He is mobile and not `pursues`,
+which is the counterplay the brief asks for — *"avoided by going into a corridor and letting them
+pass"* — since a pursuer steers at her and the only answer to one is speed, while a man running a
+line is answered by not being on it. **The steam paces for a measured reason**: `steam.svg` is 32px
+across, so a standing vent is a 16px body in a basement corridor two tiles wide, which leaves her
+28px of pram and body a four-pixel lane in the one place in the building with no second route.
+That is "no line to walk" exactly; pacing takes the body away by the rule `EventDef.paces` already
+states and pays it back in intensity. The basement pair is sited a third and two thirds along the
+corridor's own walk rather than at written tile offsets, and finding that walk needed an
+eight-connected search, since a flight is a run of diagonal steps and a four-connected one finds no
+route out of the basement door at all. The window flash is the explosion's whole cue indoors —
+every hallway window at once, counted down in `_process` rather than handed to a `SceneTreeTimer`,
+so it freezes behind a pause screen instead of burning down while nothing is played.
+
+**`FinaleController` owns a `DayController` rather than being a second one.** Everything the escape
+wants from a clock is already there — the countdown, the three losing paths, the
+`EventBus.day_time_changed` the HUD draws from, `--invincible` standing it still — and what it
+wants *differently* is only what happens at the end of one. A finale mode inside `DayController`
+would have had to disable the home win, the calendar and the Nerve, which is more of that file than
+this whole class is. `setup(null, null)` is what makes the home win unreachable: with no map
+`_is_home()` is always false, so the one way a day ends *well* can never fire in a walk with no
+home to go to.
+
+**One clock, and a loss is the only thing that restarts it.** Crossing the service door calls
+`enter_city()`, which changes the section and leaves the clock alone, because a sequence with one
+clock cannot restart it half way through — which is the whole of *("the timer for the sequence is
+the same length and running out loses")*. A lost section starts again where it began with nothing
+spent: `GameState` is not touched at all, which is *("sounds good at that point you earned it")* in
+code rather than in prose, and the baby is reset to asleep with sleepiness full on every attempt,
+which is also what makes a retry playable, since the meter that just reached a hundred is what lost
+it. Where she is put is `main`'s answer rather than the controller's, because only `main` holds
+both worlds; `section_started` fires for a fresh section and a retry alike, so the placement is
+written once and the hint line is the only thing that asks which it was. The millisecond format is
+a flag on the one function that draws the clock rather than a second clock or a second label, and
+it calls `GameState.format_clock()`, the same formatter the ending screen's run length uses.
+
+**The epilogue is an entry point on `DaySummary`, not a fourth `GameEnums.Ending`.** An ending is a
+*run's* outcome picked from the nerves and the sabotage; this is the last screen of a sequence the
+run hands over to. Two lines and the clock, and nothing triumphant, which is the tone rule
+`NARRATIVE.md` already holds. The exit's reach is measured from the last walkable tile of the spine
+rather than from where `CityEdge` anchors the portal's picture, since that picture is anchored on
+the map edge past the ground she can stand on and a reach wide enough to cover the difference would
+also have covered the street before it.
+
+**Chosen where the design was silent, and all of it open to overturn.** That a stop is a calm
+*component* rather than a block. That the areas are sorted north to south, the tunnel chain taking
+the three northern ones met southmost-first and the bridge chain the three southern ones in the
+order she meets them, so neither chain doubles back past the door. That the second chain, not the
+first, is the one grown against a wall. That there is one crater row at one size rather than the
+three prepared ones, since `spawns_on_finish` names a single row and three sizes of one hole would
+be three looks nobody could tell apart on the screen-edge badge. That the masked man waits at the
+foot of his shaft until she is in it, since one who ran his line at the start would be gone before
+she had come down a floor. That `--start-escape city` is the word that boots section two alone.
+And every number in `Tuning`'s finale block: `FINALE_LENGTH_SECONDS` (read through from
+`DAY_LENGTH_SECONDS`, 180s, so the two can never drift), `FINALE_PARKS_PER_CHAIN` (3),
+`FINALE_EXIT_REACH` (1.5 tiles, past her 14px body and under two tiles),
+`FINALE_EXPLOSION_INTERVAL` (22s, so the windows flash four times over a clock),
+`FINALE_WINDOW_FLASH_SECONDS` (0.12s, taken as a span so it does not depend on the frame rate) and
+the per-street densities `FINALE_TRUCKS_PER_STREET` (1), `FINALE_VANS_PER_STREET` (1),
+`FINALE_GUARDS_PER_STREET` (2) and `FINALE_EXPLOSIONS_PER_STREET` (1), which put roughly one lethal
+thing every two tiles of walking while `EventScheduler._room_around()` still refuses anything it
+cannot give room to.
+
+**The suite.** `tests/test_finale.gd` asserts the shape of the walk rather than any number in it,
+over four generated cities rather than one, since a chain is a search over a lattice and what is
+most likely to go wrong — a park the walk cannot reach, an exit behind a wall — is a property of
+one city's geometry: that the chains part at the door and share no cell after it, that each passes
+three distinct calm areas and reaches its own edge, that both exits are reachable through the open
+cells alone, that every street off the chains carries a seal, that the finale city has nobody in
+it, that a burst leaves a crater as wide as its own picture (asserted as a relationship and again
+end to end through `EventManager`), that the clock reads milliseconds only in the finale, that a
+lost section starts again and costs no Nerve, and that the `city` word boots the second section.
+Two of those exist to stop the others passing vacuously: both chains have to be real walks before
+"they share no cell" means anything, and the sealed count has to be large before "every street off
+the chains is sealed" does. `tests/test_interior.gd` adds the fire closing one stairwell and
+leaving the other, the basement pair standing on the corridor she has to walk, and an explosion
+flashing every hallway window; `tests/test_events.gd` carries `finale_explosion` and
+`impact_crater` through the catalogue-wide contracts.
+
+**Evidence** is `docs/evidence/archive/session-captures/2026-09-12/m102-finale/`, both runs on seed
+4242 under `--invincible`: `section-one-hallway-window-flash.png` is the third-floor hallway at the
+first explosion beat, the six windows carrying `hallway_wall_window_flash.svg` and the clock
+reading `3:00.000`; and the burst under
+`rig-145442-seed4242-v0.8.2-746-ga87f5bf-dirty/asked/burst-8950729-001/`, 36 frames over three
+seconds with its `burst.json` timings and an MP4 beside it, walking the tunnel chain's first leg
+with a van moving on the carriageway and the street beside her shut by burnt-out cars. What only a
+person can answer — whether the choice at the door reads as a choice, whether the millisecond clock
+is tension or noise — is in `REVIEW.md`.
+
 ## M98 — Pressure in the empty acts · the return owes her patrols, built 2026-09-12
 
 *(2026-09-12, on the list of open items: "M98, too" — the go-ahead, with the shape left to the
@@ -1386,6 +1667,7 @@ rarity, and a fallen tree at that seed's day-one closure with standing trees bes
 emptied pit is out of that frame, since the spawn target stands at the closure's mouth and the pit
 is nearest the street's middle, so it is held by assertion. `docs/GRAPHICS.md`'s street tree row
 says where the pits are now.
+
 ## M102 — The finale · the south-edge doors are indents, and the stairs are steps, 2026-09-12
 
 *(2026-09-12, playtest 60, on the M112 graphics pass: "the downwards leading doors in the

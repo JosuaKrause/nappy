@@ -338,11 +338,23 @@ func _spawn_the_edge_of_the_city() -> void:
 ## lethal for the same reason every other carriageway is. See `CityEdge` — *the city goes on and
 ## this is how you would leave it*.
 func _spawn_spine_exits() -> void:
-	var down := (map.main_road * CityMap.period()
+	_spawn_exit(CityEdge.Kind.TUNNEL, tunnel_world_position())
+	_spawn_exit(CityEdge.Kind.TUNNEL_DARK, tunnel_world_position())
+	_spawn_exit(CityEdge.Kind.BRIDGE, bridge_world_position())
+
+## The spine's own centre line, in world space — where both exits are anchored, and the one place
+## that arithmetic lives now that the finale asks where the ways out are as well as drawing them.
+func _spine_centre_x() -> float:
+	return (map.main_road * CityMap.period()
 			+ Tuning.STREET_WIDTH * 0.5) * float(Tuning.TILE_SIZE)
-	_spawn_exit(CityEdge.Kind.TUNNEL, Vector2(down, 0.0))
-	_spawn_exit(CityEdge.Kind.TUNNEL_DARK, Vector2(down, 0.0))
-	_spawn_exit(CityEdge.Kind.BRIDGE, Vector2(down, map.world_size().y))
+
+## The tunnel mouth, at the north end of the spine.
+func tunnel_world_position() -> Vector2:
+	return Vector2(_spine_centre_x(), 0.0)
+
+## The bridge deck, at the south end of the spine.
+func bridge_world_position() -> Vector2:
+	return Vector2(_spine_centre_x(), map.world_size().y)
 
 ## The dark inside the tunnel goes in a layer of its own above the entities, so it lands on a car
 ## as the car drives in; the portal's face is y-sorted with them; the bridge and the road are
@@ -459,6 +471,27 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 	# And after the closures, since a `FALLEN_TREE` closure is what empties a pit. `Main` runs it
 	# once more after the day's seals are planned — see `refresh_street_trees()`.
 	refresh_street_trees()
+
+## The same city, dressed for the escape: everything `start_day()` does except grow a day's
+## corridor and close streets off it.
+##
+## **The finale's route is not a tree**, so there is nothing here for `RouteTree` to grow and
+## nothing for `ClosurePlanner` or `RegionPlanner` to be stated against — one ordered chain to each
+## edge, with everything off it sealed, is `FinalePlanner`'s and `SealPlanner`'s work and arrives
+## through `EventManager.start_finale()` instead. `route_tree()` and `region_plan()` therefore
+## answer `null` for the whole sequence and `closures()` is empty, which is what their own
+## contract already says about a `City` whose `start_day` has not run: *only meaningful after
+## `start_day`*.
+##
+## The repaint, the ground, the litter and the block dressing all still happen, because the parks
+## she walks through have to be the parks the run's seed built.
+func start_finale(state: CityState, day: int) -> void:
+	map.repaint(state)
+	_sleepiness_tile = Vector2i(-1, -1)
+	_day = day
+	_paint_ground()
+	_decals.set_placed(Litter.placed(map, day))
+	_dress_blocks(state)
 
 ## Today's closed streets. The whole street comes out of the network; the barriers stand at
 ## its two mouths, where they can be seen from the junction rather than found half way down.

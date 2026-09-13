@@ -250,9 +250,31 @@ balance value — and `EventInstance._draw_spread` draws a blocking object at ex
 shape reaches, for the same reason in the other direction: a body that disagrees with the picture
 is a lie about where she can walk, whichever way it lies.
 
+**A row may be solid in parts, and one is.** `EventDef.solid_parts` is a list of pieces — each an
+offset along the scene's own spread axis and a `GroundShape` of its own — and `EventInstance` puts
+down one collision shape, one shadow patch and one entry in the per-tile solid record per piece.
+Every other row declares none, which means one piece at the origin carrying `shape`: exactly the
+single body they always had. **The pieces live inside `shape` and never past it**, which
+`EventDef.validate()` refuses, and that is what keeps every planner reading one disc:
+`obstructs_radius` stays the ground a row *closes*, `EventDef.solid_reach()` is how far it is
+actually *solid*, and the two are the same number for all but the crash.
+
+**The crash is the row it exists for.** *(2026-09-12: "a car crash right now has a full bounding box
+even though there are gaps in the sprite. the bounding box should only be the crashed cars but it
+should emanate an excitement field that prevents the player from walking past it".)* `car_accident`
+draws two cars locked across the carriageway with debris between them and an onlooker on each
+pavement, and it closes the whole 192px street; its bodies are the two cars alone, read off the two
+authored pictures at the scale each is fitted to the street, so the debris and both pavements are
+ground she can walk. What stands in the gaps instead is a field —
+`Tuning.CAR_ACCIDENT_INTENSITY`, stated over the scene's own band so the whole footprint is charged
+at the full rate and the shoulder outside it is short. **It is the one seal that emits at all**, and
+it is the one place `docs/CITY.md`'s *a closure is silent* does not hold; squeezing past costs more
+than half the meter, which `tests/test_seals.gd` walks rather than asserts.
+
 **A body is solid to the crowd as well as to her.** `EventManager` rasterises every stationary
-solid body's own `GroundShape`, at the placement and along the axis the instance itself would draw
-it, into `CityMap.obstructed_tiles`, and the walkers and the cars read that record: a walker steps
+solid body's own pieces — `EventDef.parts()`, which is one piece carrying `shape` for every row but
+the crash — at the placement and along the axis the instance itself would draw them, into
+`CityMap.obstructed_tiles`, and the walkers and the cars read that record: a walker steps
 into the other lane of its footway to get past a café and a car turns at the last junction rather
 than driving through a stall. It is taken from the day's **plan** rather than from the live
 instances, since the crowd is steered across the whole map while an instance only exists within
@@ -278,7 +300,7 @@ player's own *"lethal != noise"*.
 - **Anything with no silhouette**: a city-wide announcement, a playground the park itself draws.
 
 **And one constraint that is not an exemption: a lethal radius and a solid body are the same
-mechanism.** She is stopped with her centre `obstructs_radius + PLAYER_BODY_RADIUS` from the
+mechanism.** She is stopped with her centre `solid_reach() + PLAYER_BODY_RADIUS` from the
 centre of the thing, so on a `hard_fail` event a body that reaches the inner radius means the
 kill can *never fire*, however carelessly she walks into it — a difficulty setting nobody chose,
 arriving silently, in the one place the game cannot afford one. `EventDef.validate()` refuses that
@@ -726,20 +748,43 @@ The day-14 sabotage is not a catalogue row: it is `GameState` logic (`sabotage_d
 Eight pictures so no single barrier is the city's signature (`docs/DECISIONS.md`, M64). Every row below
 is `SCRIPTED` with `scripted_day` 0, so — like `barricade` above — the ordinary catalogue roll never
 schedules one; `SealPlanner` places each fresh every morning on a street off the day's route tree,
-reading `act_tag` for the first day it may. All eight are silent (`intensity` 0): *"static blockages
-in general shouldn't increase excitement."*
+reading `act_tag` for the first day it may. Seven of the eight are silent (`intensity` 0): *"static
+blockages in general shouldn't increase excitement."* `car_accident` is the one that is not, because
+it is the one whose body cannot match its picture without leaving a way through — see "Solid things
+are solid", and `docs/CITY.md`, "A closure is silent".
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `fallen_tree` | SCRIPTED | day 1 | Placed fresh every morning as a **hard seal**: a tapered trunk down kerb to kerb, branching roots at one end and an irregular crown at the other. `obstructs_radius` 96, exactly half the 192px street, so `SealPlanner._hard_positions` places one body spanning it edge to edge. Each street axis has its own continuous scene, selected by `EventInstance._wide_scene_texture`. The picture spans equally to either side of the ground point across the street. On an east–west street its vertical extent is centred on that point too; on a north–south street its bottom edge meets the ground point. |
-| `car_accident` | SCRIPTED | day 1 | A **hard seal**: two cars locked together across the carriageway, glass between them and an onlooker on each pavement. The cars follow the street: end views next to one another on a north–south street, side views arranged across an east–west street. Both pictures keep the people upright. Separate shadows ground each car and onlooker without darkening the space between them. The whole scene uses the same single-body geometry as `fallen_tree`. |
+| `car_accident` | SCRIPTED | day 1 | A **hard seal**: two cars locked together across the carriageway, glass between them and an onlooker on each pavement. The cars follow the street: end views next to one another on a north–south street, side views arranged across an east–west street. Both pictures keep the people upright. Separate shadows ground each car and onlooker without darkening the space between them. The scene closes the whole 192px street the way `fallen_tree` does, and is **solid only at the two cars** — 14px of body apiece, placed from each picture's own ground contacts — so the debris and both pavements are walkable. What closes them is the field: `Tuning.CAR_ACCIDENT_INTENSITY`, the only seal that emits, at `inner_radius` `GroundShape.BAND_RADIUS` over the scene's own band with a 72px shoulder. Squeezing past costs more than half the meter (`tests/test_seals.gd`). |
 | `skip` / `scaffolding` | SCRIPTED | day 1 | A **soft seal**: a skip at the kerb facing scaffolding boards over the far footway — the two-obstacles-facing-each-other reading of a soft seal, drawn as two different pictures rather than one row twice. `skip` is kerb-pinned like `delivery_van`; `scaffolding` fills the whole pavement band like `construction`. |
 | `burst_water_main` | SCRIPTED | day 1 | A **hard seal**: broken asphalt, an exposed pipe and water across the carriageway, with an upright municipal barrier at each kerb. The directional pictures place the damage across the street while retaining the barriers' standing projection. Same single-body geometry as `fallen_tree`. |
 | `moving_van` | SCRIPTED | day 1 | A **soft seal**: a lorry at the kerb with its ramp down, the same body on each pavement. Its own side and end views show the cab, cargo box, open loading doors and ramp, with the view chosen from the street axis even while the vehicle is stationary. The picture stays distinct from the reversing lorry. |
 | `burnt_out_car` | SCRIPTED | day 4 | A **hard seal**, from act II onward: a damaged car shell in the charred palette of `burnt_shell`. The cars lie perpendicular to the road: the side view serves north–south streets and the authored vertical view serves east–west streets. Vehicle-scale `obstructs_radius` lets `SealPlanner._hard_positions` place the individual wrecks across the street as a pile-up. |
 | `collapsed_frontage` | SCRIPTED | day 4 | A **hard seal**, from act II onward: rubble spilled frontage to frontage, drawn the way `_burnt_shell` draws `rubble.svg` — a small debris segment repeated by `_draw_spread` — but its own picture, styled beside `rubble.svg` rather than sharing it. |
 
+### The escape — the walk that is not a day
 
+Four rows nothing but the escape ever places. All four are `SCRIPTED` with `scripted_day` 0, the
+same gate the seal pictures use, so the ordinary catalogue roll can never reach one:
+`FinalePlanner` places the first two on the city's open chains and `InteriorEvents` places the last
+two inside the building. Three rows the escape uses are not new and are not changed —
+`military_convoy` is the army truck (with the barricade it ordinarily leaves stripped, since a
+convoy in the escape is traffic rather than the aftermath of something), `abduction` is the masked
+men in a van, and `roadblock` at full heat is the masked men on foot who leave the post.
+
+**The escape rolls its ground per street rather than per city** — `EventScheduler._finale_ground`
+over one segment's own rect, since the chains already say which streets exist for it, there is no
+corridor to weight against and no closure to avoid. Of the five refusals above it keeps the two
+that are still true of a walk with no day behind it: a tile must be open, and **a standing street
+tree's ground is refused here exactly as it is on a day** (`docs/CITY.md`, "Street trees").
+
+| id | kind | where | Behaviour |
+| --- | --- | --- | --- |
+| `finale_explosion` | SCRIPTED | the chains' carriageways, and once a beat indoors | The bang she hears and does not see. **Draws nothing** — the fourth row in the catalogue with no picture — because there is no burst on the street, only the noise and the hole afterwards. Off screen is bought with the streaming radius rather than with a rule: a `MAP` placement enters the world at `Tuning.EVENT_STREAM_RADIUS` (900px) against a 640×360 view, and its telegraph plus duration (3.7s, about 340px of walking) are over before she can reach it. `intensity` 24 over a 300–520px band, so a burst just past the screen edge still lands close to full strength. Not lethal: *the danger is always noise*. `spawns_on_finish` names the crater. |
+| `impact_crater` | SCRIPTED | wherever a burst went off | What is left in the road, for the rest of the sequence (`duration` 0). Silent and solid, with `barricade`'s own radii; `obstructs_radius` 32 against a 64px picture, so the ground she cannot walk on is exactly the hole she can see. Also one of the escape's four seal pictures, where `SealPlanner._hard_positions` spaces three of them across a street. No `scar_id`: the escape is the last thing in a run, so there is nothing for a scar to persist into. |
+| `masked_pursuer` | SCRIPTED | the stairwell the fire did not close | A masked man running up the shaft. **Mobile, not `pursues`**, and that is the counterplay: he runs a line — bottom landing to top — and the answer is not being on it, which in a building whose stairwell doors are a fade and a teleport means stepping through the nearest one and letting him go past. Faster than a walk (`Tuning.HEAT_HUNTS_SPEED`, 130px/s) so he cannot be out-walked, `hard_fail` on contact, and no body, like everything mobile. He waits at the foot of the shaft until she is in it (`pursues_within` 900, the shaft's own height with room over it) and spends his 3.6s telegraph standing. Drawn `guard_standing.svg` then `guard_lunging.svg`, the same two postures a heated roadblock's guards take. |
+| `basement_steam` | SCRIPTED | a stretch of the basement corridor | A vent letting go. **It paces**, and that is what buys it out of *solid things are solid* rather than a number: `steam.svg` is 32px across, so a standing vent would be a 16px body in a corridor two tiles wide, leaving her 28px of pram and body a four-pixel lane to aim at — "no line to walk", in the one place in the building with no second route. Pacing takes the body away by the rule `EventDef.paces` states and pays it back in intensity: 14 over a 24–90px band, pulsing every 4s, so the counterplay is timing a pass rather than a fixed toll. |
 
 ## Permanent marks
 
@@ -897,8 +942,12 @@ never counted, and a solid row is one most of these walks cannot actually be mad
 see "Solid things are solid". It is still the right way to price a **row**: it is what being close
 costs.
 
-**Two kinds of row are priced differently, and both are flagged in the table.** `*` is a `hard_fail`, where
-the figure is notional because nobody finishes the walk. `†` is a **flock**, which is `flock_size`
+**Three kinds of row are priced differently, and each is flagged in the table.** `*` is a
+`hard_fail`, where
+the figure is notional because nobody finishes the walk. `‡` is the one row whose body does not span
+its own field — `car_accident` is solid at its two cars and open between them, so the line priced
+here is one she can actually walk, which is what "the integral prices a field, not a route" costs
+everywhere else. `†` is a **flock**, which is `flock_size`
 birds sharing `intensity` between them and wheeling inside `flock_spread`, so *all of the intensity
 is at the centre* — the assumption the rest of the table rests on — is false for it:
 
@@ -935,16 +984,16 @@ alone is answering a narrower question than it thinks.
 | `loudspeaker` | — | — |
 | `construction` | -26.1 | +32.1 |
 | `delivery_van` | -19.6 | +24.1 |
-| `collapsed_frontage` | -15.7 | +19.3 |
-| `burnt_out_car` | -15.7 | +19.3 |
-| `moving_van` | -15.7 | +19.3 |
-| `burst_water_main` | -15.7 | +19.3 |
-| `scaffolding` | -15.7 | +19.3 |
-| `skip` | -15.7 | +19.3 |
-| `car_accident` | -15.7 | +19.3 |
-| `fallen_tree` | -15.7 | +19.3 |
-| `barricade` | -15.7 | +19.3 |
 | `checkpoint_gate` | -15.7 | +19.3 |
+| `barricade` | -15.7 | +19.3 |
+| `fallen_tree` | -15.7 | +19.3 |
+| `skip` | -15.7 | +19.3 |
+| `scaffolding` | -15.7 | +19.3 |
+| `burst_water_main` | -15.7 | +19.3 |
+| `moving_van` | -15.7 | +19.3 |
+| `burnt_out_car` | -15.7 | +19.3 |
+| `collapsed_frontage` | -15.7 | +19.3 |
+| `impact_crater` | -15.7 | +19.3 |
 | `burnt_shell` | -6.9 | +14.3 |
 | `poster_crew` | -5.3 | +22.6 |
 | `chatting_mother` | -2.7 | +14.8 |
@@ -954,6 +1003,7 @@ alone is answering a narrower question than it thinks.
 | `cafe_tables` | +6.1 | +18.2 |
 | `market_stall` | +8.5 | +19.5 |
 | `charging_dog` * | +8.8 | — |
+| `basement_steam` | +9.0 | +25.8 |
 | `alley_mouse` | +12.7 | +20.9 |
 | `busker` | +15.3 | +52.5 |
 | `cyclist` * | +16.0 | +29.7 |
@@ -961,6 +1011,7 @@ alone is answering a narrower question than it thinks.
 | `cat_dash` | +17.6 | +37.5 |
 | `ice_cream_van` | +18.4 | +65.8 |
 | `roadblock` | +18.5 | +51.7 |
+| `masked_pursuer` * | +19.3 | +38.4 |
 | `homeless_yeller` | +19.8 | +59.6 |
 | `reversing_lorry` * | +23.1 | +53.3 |
 | `alley_robbery` * | +23.8 | — |
@@ -971,28 +1022,12 @@ alone is answering a narrower question than it thinks.
 | `pigeon_flock` † | +44.9 | +63.6 |
 | `abduction` * | +47.7 | +84.1 |
 | `loose_dog` | +53.6 | +61.9 |
+| `car_accident` ‡ | +65.7 | +58.3 |
 | `military_convoy` | +68.6 | +107.2 |
 | `night_raid` | +83.9 | +122.6 |
 | `fire_truck` | +97.0 | +132.0 |
 | `firefight` * | +132.1 | +159.2 |
-
-**Every figure above nets against the *same* walking decay, and three rows are never met on the
-ground that assumes.** *(2026-09-12: "consider that the mouse is in the alley but the cat is usually
-not".)* The table's method is uniform on purpose — it prices a **row**, and the same integral feeds
-the danger caret — so rather than give it a per-row ground, read these three against theirs:
-
-- **`alley_mouse`** is `ALLEY`-only. An alley gives back **3.5/s** instead of 6.0 and is charging
-  `EXCITEMENT_FROM_ALLEY` (+3.0/s) already, so its real walk is **+19.9**, not the +12.7 above —
-  a bit over `cat_dash`, which is met on an ordinary street and whose +17.6 is therefore honest as
-  printed.
-- **`alley_robbery`** is in the same alley and reads the same way.
-- **`busker`** stands on `PARK` or `SQUARE`, which gives back **12.0/s**, so a whole line through
-  one is net **recovery** there (−9.5) even though the table prints +15.3. What costs is its
-  **core**: inside `inner_radius` it out-emits the park at the top of its beat. A busker is a place
-  to walk round rather than a wall, and what it denies is decided by
-  `EventScheduler._denial_radius` against the fixed `Tuning.CALM_ZONE_DENIAL_RATE` instead.
-
-`tests/probes/m117_decay.gd` prints the table; the ground multipliers are in `docs/CITY.md`.
+| `finale_explosion` | +165.2 | +211.2 |
 
 **No column says which rows carry a caret, because no row does.** The caret is decided in play
 from a source's own projected course at wherever she is standing — `expected_impact_at()`
@@ -1023,10 +1058,16 @@ to walk through than to walk around, or the correct play is to plough into it. A
 is a decision about what a thing is (a pure obstruction) rather than a number nobody checked; a new
 *positive* exemption is the one that still needs naming by hand.
 
-**Running is never correct** on any row here. It costs `EXCITEMENT_FROM_RUNNING` *and* collapses
-the decay from 6.0/s to 0.5/s, and together those beat the shorter exposure every time. Making
-running necessary is therefore a mechanic to build rather than a number to tune: it needs something
-running escapes.
+**Running is correct on exactly one row here, and the rest of the column is why that is a
+threshold rather than a taste.** Running costs `EXCITEMENT_FROM_RUNNING` (14.0/s) *and* collapses
+the decay from 6.0/s to 0.5/s, so it is a fixed price per second against a saving that is only ever
+the shorter exposure — which means walking wins on every field whose mean emission along the line
+sits under about 30/s, and that is every row but `car_accident`. The crash is the one asked to cost
+more than half the meter to squeeze past, and no field short enough to be *felt walking up to it*
+rather than from down the street can charge that without clearing the threshold. So sprinting past
+a crash saves about seven points of a hundred, and the answer to it is still the route rather than
+the run. Making running *necessary* remains a mechanic to build rather than a number to tune: it
+needs something running escapes, which is a pursuer.
 
 **And what a *street* costs, which is the question this table does not answer.** An errand — home
 to the furthest calm block and back, 7,500px through a real day with the crowd and the events both

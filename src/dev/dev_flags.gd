@@ -222,12 +222,14 @@ static func start_escape() -> bool:
 			return true
 	return false
 
-## `--start-escape`'s own optional value — `stairwell:left`, `stairwell:right`, `lobby`, `basement`
-## or `floor:N` — so a rig or a person can teleport straight to any of the building's seven parts
-## instead of always walking there from her door; the building is one map (see `InteriorMapPlan`'s
-## own doc), so this chooses where on it she starts rather than which map loads. `""` when the flag
-## was given bare (the default: the third floor at her door) or not given at all; mapping the word
-## onto an `InteriorMap.PARTS` name stays with `main.gd`, the only caller, the same split
+## `--start-escape`'s own optional value — `stairwell:left`, `stairwell:right`, `lobby`, `basement`,
+## `floor:N` or `city` — so a rig or a person can start anywhere in the escape sequence instead of
+## always walking there from her door. The building is one map (see `InteriorMapPlan`'s own doc),
+## so the six part words choose where on it she starts rather than which map loads; `city` is the
+## one word that is not a part of the building at all and boots the escape's **second** section,
+## the streets with one way out of them, with no building built. `""` when the flag was given bare
+## (the default: the third floor at her door) or not given at all; mapping the word onto an
+## `InteriorMap.PARTS` name stays with `main.gd`, the only caller, the same split
 ## `ending_override()` leaves to its own caller.
 ##
 ## Read only when `--start-escape` is itself present, so a bare next word that happens to start

@@ -701,6 +701,46 @@ const SEAL_THINNING_FRACTION := 0.08
 ## word.
 const ALLEY_MOUTH_SEAL_CHANCE := 0.15
 
+## What a car crash emits, per second at the middle of its own band — the one seal that makes any
+## noise at all, and the one place *a closure is silent* (`docs/CITY.md`) does not hold.
+## *(2026-09-12: "a car crash right now has a full bounding box even though there are gaps in the
+## sprite. the bounding box should only be the crashed cars but it should emanate an excitement
+## field that prevents the player from walking past it".)* Its body is now the two cars only
+## (`EventCatalogue._car_accident_parts`), so the picture's own gaps are walkable ground and this
+## is what stands in the way instead.
+##
+## **Set by the walk, not derived.** `tests/probes/m118_crash_gap.gd` walks the pavement gap and
+## the gap beside the cars at `WALK_SPEED` across several seeds, and reports the **cheapest** line
+## through them, since a guarantee about a price is a guarantee about the price she can get. At
+## this number that line costs a little over 54 of the hundred-point meter, against the
+## `METER_MAX / 2` line
+## `tests/test_crowd.gd` draws between *expensive* and *fatal* — deliberately on the fatal side, so
+## a meter that is not fresh cannot carry it. `tests/test_seals.gd` asserts that walk rather than
+## this number, so a change to the falloff or the geometry fails where it is felt.
+##
+## **What it buys is the meter, not the day**, which is the recommended reading of the player's
+## *prevents*: the pram's nearly-crying cue is the turn-back signal, and a fresh meter can still
+## force the pass at the price of the rest of the day. `CAR_ACCIDENT_GAPS_ARE_LETHAL` below is the
+## other reading, left switchable rather than argued about.
+const CAR_ACCIDENT_INTENSITY := 50.0
+
+## The other answer to *prevents the player from walking past it*: **off**, and one line from being
+## on. True makes the crash a `hard_fail` row — the mechanism a fire already uses — so the gaps end
+## the day rather than costing more of it than she can carry. It is a design question the player
+## has not answered yet, and the recommendation built is the expensive one, because a wall that
+## kills has no price to weigh and the whole verb of this game is *where do I walk*.
+##
+## Flipping it takes the row's `inner_radius` to `CAR_ACCIDENT_LETHAL_INNER_RADIUS` and its
+## telegraph to the doubled hard-fail margin — see `EventCatalogue._car_accident()`, which is the
+## only reader of either.
+const CAR_ACCIDENT_GAPS_ARE_LETHAL := false
+
+## The radius that would end the day under `CAR_ACCIDENT_GAPS_ARE_LETHAL`, measured from the scene's
+## own centre. Above the cars' own 36.1px reach plus her 14px body, so she can actually reach the
+## thing that kills (`EventDef.validate()` refuses a lethal row whose body holds her outside its own
+## inner radius), and inside the 96px band so the gaps either side of the cars are what it covers.
+const CAR_ACCIDENT_LETHAL_INNER_RADIUS := 56.0
+
 # ------------------------------------------------------------------- regions ---
 # `RegionPlanner` partitions the lattice's junctions once at generation and turns that partition
 # plus a day's `RouteTree` into a wall with doors in it. See docs/CITY.md, "Regions and the wall".
@@ -2042,3 +2082,48 @@ func falloff(d: float, intensity: float, inner_radius: float, outer_radius: floa
 		return 0.0
 	var t := (d - inner_radius) / (outer_radius - inner_radius)
 	return intensity * (1.0 - t * t)
+
+# ----------------------------------------------------------------- the finale ---
+# The fifteenth walk, which is not a day: out of the building and out of the city, on one clock,
+# with one way through. Every number here is stated against something that already exists rather
+# than chosen — the finale reuses the day's own clock, the catalogue's own rows and the sealing's
+# own placement, so what it needs of its own is a length, a density and two reaches.
+
+## How long the whole sequence is, both sections together — a day's own length, because the
+## player's answer to the collision was *"the timer for the sequence is the same length"*. Not a
+## second number: read through here so the finale and a day can never drift apart.
+const FINALE_LENGTH_SECONDS := DAY_LENGTH_SECONDS
+
+## How many calm blocks each chain runs through between the service exit and its edge — *"a single
+## path through the city that crosses three parks"*. The chains are built one street-walk at a
+## time between consecutive stops, so this is also how many intermediate stops each chain has.
+const FINALE_PARKS_PER_CHAIN := 3
+
+## How close her own centre has to come to the last walkable tile of the spine, at either end of
+## the map, for the sequence to be over. One tile and a half — comfortably past her own body
+## (`PLAYER_BODY_RADIUS`, 14px) so standing anywhere on that tile is out, and under two tiles so
+## the tile before it is not. The same reasoning, and the same figure, as the radius the building's
+## own doors hold her with.
+const FINALE_EXIT_REACH := TILE_SIZE * 1.5
+
+## Seconds between two off-screen explosions inside the building. Section one is *"relatively
+## minimal"* and an explosion is its only city-wide beat, so it is spaced like the director's own
+## `AHEAD_INTERVAL` band rather than more often: four of them over a 180s clock is enough for the
+## hallway windows to flash more than once without the basement becoming a drum.
+const FINALE_EXPLOSION_INTERVAL := 22.0
+
+## How long a hallway window holds its lit picture when an explosion goes off — *"one or two
+## frames"* at 60fps, taken as a span in seconds so it does not depend on the frame rate.
+const FINALE_WINDOW_FLASH_SECONDS := 0.12
+
+## How many of each kind of danger the finale's own plan puts on one open chain street. *"Lots of
+## lethal and dangerous events"*: a street is `BLOCK_SIZE` (8) tiles long, so one truck, one van
+## and one pair of masked men on a street is roughly one lethal thing every two tiles of walking
+## — several times an ordinary day's own one-event-per-block, which is what the climax asks for,
+## while `EventScheduler._room_around()` still refuses anything it cannot give room to.
+const FINALE_TRUCKS_PER_STREET := 1
+const FINALE_VANS_PER_STREET := 1
+const FINALE_GUARDS_PER_STREET := 2
+## And how many explosions are sited off the chain per open street. Off screen by definition, so
+## these are placed *beside* the corridor rather than on it — see `FinalePlanner`.
+const FINALE_EXPLOSIONS_PER_STREET := 1

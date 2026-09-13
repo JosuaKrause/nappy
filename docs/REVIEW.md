@@ -73,6 +73,15 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   remain clear against its navy plate, and does the redrawn symbol fit the preserved wordmark?
   `evidence/comic-identity-2026-09-12/comparisons/` shows the logo and both export sizes.
 
+- **Find a crash and walk at it.** The boot log names the street it sealed — `closed: accident`
+  with the segment beside it — or press `3` and look for the two circles. Three questions, and the
+  meter has to be live for the last two, so leave `--invincible` off for them. Do the bodies sit
+  where the cars are drawn, on both a north-south and an east-west street? Walking through the gap
+  on either pavement costs a little over half the meter: does that read as a **price** — something
+  you choose once and pay for — or as a wall you were not told about? And would you rather it
+  killed? The switch is one line (`Tuning.CAR_ACCIDENT_GAPS_ARE_LETHAL`), and the expensive
+  reading is what was built.
+
 Each line is a thing to try or look at and the question it settles. `tools/run.sh` plays the
 desktop build; `--seed <n> --day <n>` puts a run where an item says; `1` to `4` in a debug build
 toggle the field, shadow, bounding-box and readout layers (`docs/TELEMETRY.md`, "The debug
@@ -246,6 +255,39 @@ item below for as long as looking takes.
   Record is `DECISIONS.md`, M98, the return owes her patrols; the counts and the interval are
   `Tuning.RETURN_PATROLS_PER_ACT` and `RETURN_PATROL_INTERVAL`, both open to overturn.
 
+- **Walk the whole escape end to end** (`tools/run.sh --start-escape --seed 4242`; debug only).
+  She starts at her own door with the baby asleep, goes down past the barricaded lobby to the
+  service exit, and the same run continues into the city and ends at the tunnel or the bridge.
+  Inside: a mouse and a paced steam vent in the basement, a masked man on one stairwell and a
+  fire on the other, and the hallway windows flashing every 22 seconds
+  (`Tuning.FINALE_EXPLOSION_INTERVAL`) for `FINALE_WINDOW_FLASH_SECONDS` (0.12s). Two questions
+  only a walk answers: does the fire actually force the other shaft, or is walking back up the
+  obvious answer anyway; and does the paced steam leave a line to walk in a corridor two tiles
+  wide? Record is `DECISIONS.md`, M102, the finale built behind the flag.
+
+- **Stand at the service exit and choose** (`tools/run.sh --start-escape city --seed 4242` boots
+  section two on its own). Two chains leave the door, one north to the tunnel and one south to
+  the bridge, each through its own three calm areas, and everything off them is sealed hard. **Does
+  the choice at the door read as a choice** — is there enough in view at the moment of choosing
+  for it to be a decision rather than a coin flip — and **do the three calm areas read as the only
+  calm on the way**, the places to settle a woken baby, rather than as scenery she walks past?
+  `Tuning.FINALE_PARKS_PER_CHAIN` (3) and the per-street densities `FINALE_TRUCKS_PER_STREET`,
+  `FINALE_VANS_PER_STREET`, `FINALE_GUARDS_PER_STREET` and `FINALE_EXPLOSIONS_PER_STREET` (1, 1,
+  2, 1) are the dials, all open to overturn. Same record.
+
+- **Lose a section on purpose and read the clock while you do** (either boot, without
+  `--invincible`). The clock is a day's own length counting down through both sections and draws
+  to the millisecond, `%d:%02d.%03d` where a day draws `%d:%02d`; capture, the meter, or zero puts
+  her back at the start of the section she was in with the baby asleep again and no Nerve spent.
+  **Is the millisecond clock tension or noise** at the speed those digits move, and **is a restart
+  at no cost the right feel** — *("sounds good at that point you earned it")* — or does a
+  fourteen-day run deserve to be able to lose here? Same record.
+
+- **Reach the tunnel or the bridge and read the epilogue.** It is its own screen on `DaySummary`
+  rather than a fourth ending: two lines and the clock. **Is anything in it triumphant?** The tone
+  rule is `NARRATIVE.md`'s *no triumphalism in the good ending*, and this is the one screen written
+  after the escape, so it is the place that rule is easiest to break. Same record.
+
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
 
@@ -261,7 +303,8 @@ item below for as long as looking takes.
   the sideways controls and fade-and-teleport still needs a person's verdict: does a diagonal
   flight read as *descending* when a sideways press walks it, and does the fade-and-teleport
   read as a door or as a cut? Records are in `DECISIONS.md` under M112, the escape scene and
-  interior graphics; what M102, the finale, still adds is in `TODO.md`.
+  interior graphics; what the finale lays on top of the building — its events, and the way out
+  through the service door — is the escape walk in the list above.
 
 - **Every field has a shape now, and nobody has felt one.** A stationary body's field is a capsule
   about its own spine rather than a disc about its centre, and a moving thing's is an ellipse with

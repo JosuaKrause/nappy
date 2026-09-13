@@ -101,11 +101,16 @@ Two consequences of the falloff shape that are easy to get wrong:
   and wrong for one of two hundred and forty bodies. The crowd pays it back in *radius* rather than
   in intensity, so a close pass costs what it always did.
 
-**Running is the wrong move against every event you route around, and the right move against the one
-kind of thing that follows you.** `EXCITEMENT_FROM_RUNNING` plus the collapsed decay (6.0/s → 0.5/s)
-beats the shorter exposure for every row that merely emits, and `tests/test_events.gd` asserts it
-row by row — it had only ever been *measured*, and a change to the falloff shape broke it silently
-in four rows before anyone noticed. The exception is `EventDef.pursues`: walking and running give
+**Running is the wrong move against every event you route around bar one, and the right move against
+the one kind of thing that follows you.** `EXCITEMENT_FROM_RUNNING` plus the collapsed decay
+(6.0/s → 0.5/s) is a fixed price per second, so it beats the shorter exposure for every row whose
+mean emission along the line stays under about 30/s — which is every row but `car_accident`, the one
+asked to cost more than half the meter to squeeze past. `tests/test_events.gd` asserts it row by row
+and names that exemption by id (`_RUNNING_IS_CHEAPER`) rather than skipping it: the rule had only
+ever been *measured*, and a change to the falloff shape broke it silently in four rows before anyone
+noticed. **A second name on that list is a design decision, not a number** — the threshold is
+arithmetic, so any row that has to charge fifty points inside a short field will cross it, and the
+answer is either a wider quieter field or accepting that sprinting past saves a little. The exception is `EventDef.pursues`: walking and running give
 **opposite outcomes** rather than the same outcome at two prices. Nothing pursues before
 `Tuning.RUN_TAUGHT_DAY` — day 1 teaches the arrow keys and day 3 teaches the run, with the thing
 that requires it.

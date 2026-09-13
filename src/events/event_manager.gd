@@ -31,6 +31,10 @@ var _hard_failed := false
 ## come from the day's own seed to stay deterministic.
 var _day := 0
 
+## True between `start_finale()` and the next `start_day()`: this walk is the escape, not a day.
+## Read by `_owe_the_return()` only — see there for why the difference matters.
+var _walking_the_finale := false
+
 ## Which planned events have already summoned the row their own `spawns_on_sight` names, so a
 ## `burning_building` streamed out and back in — a fresh `EventInstance` every time, unlike the
 ## `Planned` it comes from, see `_stream_in()` — does not hand out a second fire engine. Keyed by
@@ -61,13 +65,30 @@ func setup(city: City, map: CityMap) -> void:
 	_city = city
 	_map = map
 	_director = EventDirector.new(map)
-	EventBus.return_phase_started.connect(_owe_the_return)
+	# **Connected once however often this is called.** `City.build()` calls `setup()` and a rig
+	# that wants its own map calls it again on the same manager, which Godot answers with an
+	# `ERROR: Signal ... is already connected` — an error line in a headless run is a failed
+	# `check.sh`, and a second connection would fire the same forward twice besides.
+	if not EventBus.return_phase_started.is_connected(_owe_the_return):
+		EventBus.return_phase_started.connect(_owe_the_return)
 
 ## Forwards to `EventDirector.owe_the_return()` the moment the baby is asleep and the day turns
 ## to `RETURNING` — see that function's own doc for the shape it owes. `_day` is `start_day()`'s
 ## own argument, kept for exactly this: the signal carries nothing, so this is the one place still
 ## reading the day and the resistance level directly rather than having them threaded through.
+##
+## **The escape owes no return, because it has no walk home.** `Baby.force_sleep()` emits this
+## signal, and the escape force-sleeps her at the top of every section and every retry — *"the
+## player holding the sleeping baby (sleep bar is full)"* — so without this guard a walk that is
+## outbound from its first frame to its last would be handed the return leg's own pressure at the
+## moment it begins, and the director's pacing would tighten to `Tuning.RETURN_PATROL_INTERVAL`
+## for the rest of it. The guard is on the day rather than on the act because it has to hold
+## whatever day the escape is eventually entered from: today the flag boots it on day 1, where
+## `RETURN_PATROLS_PER_ACT[0]` is 0 and nothing would be owed anyway, and from day 14 — the one
+## `TODO.md` item still open — act IV would owe three.
 func _owe_the_return() -> void:
+	if _walking_the_finale:
+		return
 	_director.owe_the_return(_day, GameState.resistance_progress)
 
 ## Clears yesterday and plans today. `consumed_one_shots` is appended to in place.
@@ -79,6 +100,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	clear()
 	_hard_failed = false
 	_day = day
+	_walking_the_finale = false
 	# The corridor the city grew this morning, before it placed its closures off it. Passed rather
 	# than grown again so that the walls, the friction and the picture are all stated against one
 	# tree; `RouteTree.for_day` would give the same answer, and two places agreeing by arithmetic
@@ -175,6 +197,35 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 		if plan.is_placed():
 			_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
 	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"))
+	stream_around(focus)
+
+## Clears whatever was here and takes the escape's whole plan as given.
+##
+## **Everything `start_day` works out, the finale has already decided**, which is the whole of why
+## this is a second entry point rather than a flag on that one. There is no route tree to grow and
+## no region plan to place against — the finale's route is an ordered chain and not a tree — no
+## closures, and no catalogue budget: `FinalePlanner` has already asked `SealPlanner` what closes
+## the city off the chains and `EventScheduler.build_finale` what stands on them, and what arrives
+## here is the result. Trying to express that as a mode inside `start_day` would mean skipping six
+## of its seven passes.
+##
+## The streaming, the successors, the scars, the detentions and the hard fails are all the day's
+## own and are untouched: an explosion leaves its crater through exactly the `spawns_on_finish`
+## mechanism a convoy leaves a barricade through.
+func start_finale(plans: Array[EventScheduler.Planned], focus := Vector2.ZERO) -> void:
+	clear()
+	_hard_failed = false
+	_day = GameState.day
+	_walking_the_finale = true
+	# Nothing is held: a hold keeps the catalogue's own roll off ground something else has taken,
+	# and nothing rolls here. Cleared rather than left, so a rig that ran a day before the escape
+	# does not leave yesterday's holds on the map.
+	_map.clear_day_holds()
+	_plans = plans
+	# The director owes nothing — every finale placement is `MAP`-sited — but it is started anyway
+	# so that `owed_ahead()` and its own per-day state answer for this walk rather than for
+	# whatever ran before it.
+	_director.start_day(_day, _plans, GameState.day_rng(_day, "finale-ahead"))
 	stream_around(focus)
 
 func clear() -> void:
@@ -305,6 +356,14 @@ func _record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) -
 ## second copy of that arithmetic would agree with it right up to the first time one of the two
 ## took an argument — which would leave the crowd avoiding ground no body is on and walking
 ## through the ground one is.
+##
+## **It is the row's pieces that are rasterised, never the one disc of `obstructs_radius`.** A row
+## is solid where `EventDef.parts()` says it is, which is one piece at the origin carrying `shape`
+## for every row that declares none — so a one-piece row records exactly the tiles it always did,
+## and a row solid in parts records its pieces and leaves the ground between them open. That is the
+## whole of what makes a crash two cars to the crowd rather than a wall: the pieces are a subset of
+## `shape` (`EventDef.validate()` refuses one reaching past it), so the change only ever *removes*
+## tiles from the record, and removing obstruction can only add reachable ground.
 static func obstructed_footprint(map: CityMap, def: EventDef, at: Vector2,
 		facing: Vector2) -> Array[Vector2i]:
 	var nothing: Array[Vector2i] = []
@@ -322,9 +381,29 @@ static func obstructed_footprint(map: CityMap, def: EventDef, at: Vector2,
 	# held, which shuts the whole street to walkers and cars alike — recording their tiles as well
 	# would be a second answer to a question that has one. Asked of the body's own placement tile,
 	# which is the tile that decided the segment it belongs to.
+	#
+	# **A row solid in parts is no exception, and that is deliberate.** A crash's street is still
+	# held for the crowd — the seal still seals (`docs/CITY.md`, "A closure is silent") — so its
+	# cars are ground no walker and no car can reach in the first place. What M118 opened is the
+	# *player's* way through, and she is stopped by the pieces' own collision shapes rather than by
+	# this record.
 	if map.is_held_at(map.world_to_tile(placed)):
 		return nothing
-	return def.shape.tiles_under(placed, _body_axis(map, def, placed, facing))
+	var axis := _body_axis(map, def, placed, facing)
+	# Which way round a piece's own offset is laid is `EventInstance._spread_at()`'s question, and
+	# it is asked of the placed position for the same reason the axis is: a piece offset the wrong
+	# way is a body recorded across the street from the car it belongs to.
+	var spread_vertical := EventInstance._spread_is_vertical(map, placed)
+	var covered: Array[Vector2i] = []
+	for piece in def.parts():
+		var offset := piece.offset_for(spread_vertical)
+		var centre := placed + (Vector2(0.0, offset) if spread_vertical else Vector2(offset, 0.0))
+		for tile in piece.shape.tiles_under(centre, axis):
+			# Two pieces may overhang one tile, and the record counts **bodies** rather than
+			# pieces: a body that recorded one tile twice would need two releases to give it back.
+			if not covered.has(tile):
+				covered.append(tile)
+	return covered
 
 ## The ground-plane direction a sited body's spine lies along — `EventInstance._solid_axis()` for a
 ## body that does not exist yet, off the same two statics that instance would read.

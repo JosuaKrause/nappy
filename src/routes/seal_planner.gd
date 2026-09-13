@@ -218,9 +218,158 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree,
 	planned.append_array(_seal_alley_mouths(map, tree, day, rng, skip))
 	return planned
 
-## Whether `segment` is the main road. See the class doc: never a seal candidate, because
+# -------------------------------------------------------------- the finale ---
+
+## The escape's own seals: every street the two chains do not run through, plus both mouths of
+## every alley they do not run through, all of them **hard**.
+##
+## **It takes a set of open cells rather than a `RouteTree`, and that is the whole difference.**
+## A day grows a tree to several calm areas and counts two distinct routes to each; the finale has
+## one ordered chain to each edge and *"no overlapping routes"*, so there is no tree to ask and the
+## caller (`FinalePlanner`) hands over the cells its chains actually cover — `ReachabilityGrid`
+## cells, `Vector2i`, the same two-tile cells the chains were grown on. Everything below is
+## `plan_day`'s own placement code, unchanged, asked a different question about which streets are
+## spared.
+##
+## Three things `plan_day` does that this does not, each for a reason the finale changes:
+##
+## - **No soft seals and no thinning.** A soft seal leaves the carriageway open, which is exactly
+##   the wrong answer when the brief is *"a single path through the city"* — and the thinning pass
+##   exists to let a wrong turn be taken and discovered, which is a day's lesson rather than the
+##   climax's.
+## - **The main road is sealed like anything else.** The day's exemption is that `RouteTree`
+##   refuses to route along the spine and sealing it as well would wall the one street she is meant
+##   to be free to cross. The finale's chains *end* on the spine — the tunnel is at its north end
+##   and the bridge at its south — so the spine is chain ground where they run on it and ordinary
+##   closed ground everywhere else, and leaving the rest of it open would join the two chains at
+##   the one street that touches both exits.
+## - **Every alley mouth off the chains is sealed, rather than a fraction of the qualifying ones.**
+##   `Tuning.ALLEY_MOUTH_SEAL_CHANCE` exists so an alley reads as an occasional exception on an
+##   ordinary day; one open alley in the finale is a second way through.
+##
+## The doorstep stays exempt for the reason it always is: the home is a notch with one exit.
+static func plan_finale(map: CityMap, open_cells: Dictionary,
+		rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
+	map.clear_day_soft_seals()
+	# And no pit is emptied, for the same reason the soft seals are cleared: whatever a day left on
+	# this map is not the escape's, and nothing here fells a tree. `plan_day` makes the same call
+	# on its own no-tree path.
+	map.set_seal_tree_pits([] as Array[Vector2i])
+	var planned: Array[EventScheduler.Planned] = []
+	var home := ClosurePlanner.home_street(map)
+	# A seal never stands in a street tree here either — the same rule `plan_day` keeps, and a
+	# `City` plants its trees in `build()`, so the escape's city has the row it has always had. No
+	# `emptied` pit ever comes back: `fallen_tree_seal` is a day's candidate and none of
+	# `finale_candidates()` is it, so `_seal_along_tile` only ever takes its tree-avoiding branch.
+	var trees := StreetTrees.footprint_tiles(map)
+	var no_pits_are_emptied: Array[Vector2i] = []
+	for segment in StreetNetwork.segments():
+		var key := segment.key()
+		if not map.has_street(key) or runs_through(segment, open_cells):
+			continue
+		if home and key == home.key():
+			continue
+		var candidate := _finale_candidate(rng)
+		# **Stepping off a tree may never step onto the chain.** The street was spared the walk at
+		# its own midpoint, which is the only position `runs_through` above asked about; a tile or
+		# two along from there can be ground a chain walks, and a seal placed on it would wall the
+		# one route out of the city. So the moved position is asked the same question, and a move
+		# that would close the chain is refused — the seal stands in the tree instead, which is a
+		# picture overlapping a picture rather than a city with no way through it.
+		var along := _seal_along_tile(map, segment, candidate, trees, no_pits_are_emptied)
+		if runs_through(segment, open_cells, along):
+			along = -1
+		planned.append_array(_place_hard(map, segment, candidate.def_ids[0], along))
+	for rect in map.alley_rects:
+		# A through-alley can be built over by a later generation pass, which does not retract it
+		# from `alley_rects` — so the ground is checked rather than trusted, the same as
+		# `_seal_alley_mouths` does.
+		if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
+			continue
+		if _covers_any_cell(rect, open_cells):
+			continue
+		var vertical := rect.size.x < rect.size.y
+		planned.append(alley_mouth_wall(map, rect, vertical, true, _FINALE_ALLEY_DEF))
+		planned.append(alley_mouth_wall(map, rect, vertical, false, _FINALE_ALLEY_DEF))
+	return planned
+
+## Whether a chain actually **walks** this street, as opposed to clipping a corner of it.
+##
+## **Stated over the midpoint, because that is where a hard seal stands.** `_hard_positions` puts
+## its bodies across the segment's own along-axis midpoint, so a street the chain only touches at
+## one junction can be sealed there without closing anything the chain uses — and asking the looser
+## question instead (does the chain touch this street at all) spares every street at every junction
+## the walk turns at, which on a real city is three times as much open ground as the chain itself.
+## *"No overlapping routes"* and *"nothing else open"* are the same requirement read twice, and
+## this is where both of them are decided.
+##
+## Public because `FinalePlanner` asks the same question to decide where the finale's own events
+## stand: the streets she can walk are the streets worth putting an army truck on, and two answers
+## to that would put trucks on streets she cannot reach.
+##
+## `along` names a tile on the street's own along axis to ask about instead of the midpoint, which
+## is what `plan_finale` uses to check a position a seal has been stepped to in order to clear a
+## street tree. `-1` is the midpoint, the same convention `_cross_section_tiles` already keeps.
+static func runs_through(segment: StreetNetwork.Segment, open_cells: Dictionary,
+		along: int = -1) -> bool:
+	for tile in _cross_section_tiles(segment, along):
+		if open_cells.has(tile / ReachabilityGrid.CELL):
+			return true
+	return false
+
+## Whether any `ReachabilityGrid` cell inside `rect` is one of the chains' own. A cell is two tiles
+## square and every cell is wholly street or wholly block (see `ReachabilityGrid`), so a street's
+## own tile rect divides into whole cells and this is an exact question rather than an overlap
+## test. Used for an alley, which is two tiles wide and has no midpoint worth distinguishing: a
+## chain that is in it at all is through it.
+static func _covers_any_cell(rect: Rect2i, open_cells: Dictionary) -> bool:
+	for y in range(rect.position.y, rect.end.y):
+		for x in range(rect.position.x, rect.end.x):
+			if open_cells.has(Vector2i(x, y) / ReachabilityGrid.CELL):
+				return true
+	return false
+
+## The finale's own seal pictures, in the brief's own words: *"burnt cars, blockades, craters,
+## etc. block paths through the city."* All four are `intensity = 0.0` rows, which is the same
+## rule the day's candidates keep — *"static blockages in general shouldn't increase excitement"* —
+## and it matters more here than on a day, because a loud wall either side of a 192px chain street
+## would price the one route through the city as if she were walking through the walls.
+##
+## `roadblock`, whose own badge picture is `checkpoint_block.svg`, is deliberately not one of them
+## for exactly that reason: it emits 13 over a 179px field and is manned, so a street lined with
+## them would be the loudest thing on the map and none of it is ground she is meant to reach.
+## Its guards appear in the finale anyway, on foot and hunting, which is what that row is here for.
+static func _build_finale_candidates() -> Array[Candidate]:
+	return [
+		_candidate("finale_burnt_cars", Strength.HARD, ["burnt_out_car"]),
+		_candidate("finale_barricade", Strength.HARD, ["barricade"]),
+		_candidate("finale_rubble", Strength.HARD, ["collapsed_frontage"]),
+		_candidate("finale_craters", Strength.HARD, ["impact_crater"]),
+	]
+
+static var _finale_candidates: Array[Candidate] = []
+
+static func finale_candidates() -> Array[Candidate]:
+	if _finale_candidates.is_empty():
+		_finale_candidates = _build_finale_candidates()
+	return _finale_candidates
+
+## **No day gate.** `_eligible`/`_effective_first_day` answer *which act does this picture belong
+## to*, which is a question about a fourteen-day calendar; the escape is the night after the last
+## of those days, so every picture in the list above is available to it.
+static func _finale_candidate(rng: RandomNumberGenerator) -> Candidate:
+	var eligible := finale_candidates()
+	return eligible[rng.randi_range(0, eligible.size() - 1)]
+
+## What stands in an alley mouth off the chains. The widest silhouette in the finale's own list, so
+## it leaves the least of the mouth's 64px open beside it — the same reason `_best_alley_mouth_def`
+## picks by width on an ordinary day, decided once here rather than rolled, since the finale's list
+## does not change with the day.
+const _FINALE_ALLEY_DEF := "collapsed_frontage"
+
+## Whether `segment` is the main road. See the class doc: never a seal candidate on a day, because
 ## `RouteTree` already refuses to route a strand along it, and sealing it too would wall the one
-## street the design deliberately leaves open to cross.
+## street the design deliberately leaves open to cross. `plan_finale` above does not ask.
 static func _is_the_main_road(map: CityMap, segment: StreetNetwork.Segment) -> bool:
 	return not segment.horizontal and segment.a.x == map.main_road
 
@@ -439,11 +588,17 @@ static func _mark_soft_sealed(map: CityMap, tiles: Array[Vector2i]) -> void:
 ## `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies` for the new callers.
 static func sealed_variant(def: EventDef, suppress_recenter: bool) -> EventDef:
 	var variant: EventDef = def.duplicate()
-	# `shape` is a plain `var` typed as a `RefCounted`, not a `Resource`, so it carries no storage
-	# usage and `Resource.duplicate()` does not copy it — carried across by hand instead. Safe to
-	# share the reference: `shape` is never mutated in place. See `EventDef.at_heat()` for the same
-	# note against the other caller of `duplicate()`.
+	# `shape` and `solid_parts` are plain `var`s holding `RefCounted`s rather than `Resource`s, so
+	# they carry no storage usage and `Resource.duplicate()` does not copy either — carried across
+	# by hand instead. Safe to share the references: neither is ever mutated in place. See
+	# `EventDef.at_heat()` for the same note against the other caller of `duplicate()`.
+	#
+	# **The parts matter here more than anywhere**, because this is the only path a crash is ever
+	# placed by: dropped, the row falls back to one body spanning the whole street, and nothing
+	# fails — it simply seals the gaps its picture shows, which is the bug this milestone exists to
+	# fix, wearing a passing test suite.
 	variant.shape = def.shape
+	variant.solid_parts = def.solid_parts
 	variant.scar_id = ""
 	variant.spawns_on_finish = ""
 	if suppress_recenter and variant.pavement_side == EventDef.Pavement.ANY:

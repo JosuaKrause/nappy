@@ -282,7 +282,9 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56 has only
 its measurement against the nerves left, and that waits for act III. The debug view (`1` to `4` in a debug build, `--layers 1,3` for
 a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow or a body is checked by
-eye, and every one of the three is now derived from the object's one `GroundShape`. Behind those, unordered: M96 (the teaching day and
+eye, and every one of the three is derived from the object's own `GroundShape` — one apiece for
+everything but the car crash, which is solid in two pieces because its picture is two cars with
+gaps between them (`DECISIONS.md`, M118). Behind those, unordered: M96 (the teaching day and
 the dog after it), M97 (calm areas that hold), M99 (the corridor's density after the sealing) and
 M100 (the small work, the polish and the open design questions, consolidated).
 Reaching act III — which M56's measurement against the nerves needs — waits until

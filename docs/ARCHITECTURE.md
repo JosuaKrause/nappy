@@ -50,7 +50,8 @@ src/
     closure_marker.gd     one barrier panel, sign or piece of wreckage
 	route_tree.gd         the day's corridor: one branch per calm area, grown on the grid
 	corridor.gd           the tree translated to a tile question: inside, rim, away, how deep
-	seal_planner.gd       seals every street off the day's route tree
+	seal_planner.gd       seals every street off the day's route tree, and every street off the
+	                      escape's two chains
 	region_planner.gd     partitions the lattice into regions; turns the day's tree into a wall with doors, and stands the checkpoint structure and gate state at every door
   crowd/
 	crowd.gd              owns the day's agents; sums their excitement
@@ -88,8 +89,16 @@ src/
 	interior_map.gd       lays all seven parts (three hallways, two stairwells, the lobby, the
 	                      basement) into one plan, 64 tiles apart, and the switchback layout
 	interior_tileset.gd   the interior's own TileSet, built in code from the SVGs it binds
-	interior_scene.gd     the WorldContext node: paints the building once, and every door's
-	                      fade-teleport-fade transition and the exit-to-title transition
+	interior_scene.gd     the WorldContext node: paints the building once, every door's
+	                      fade-teleport-fade transition, the service exit, and the hallway
+	                      windows that flash when an explosion goes off
+  finale/                 the escape sequence itself, behind --start-escape
+	finale_controller.gd  the two sections and the one clock they share; a lost section starts
+	                      again where it began, at no Nerve cost
+	finale_planner.gd     the two chains — service exit, three calm areas, tunnel or bridge —
+	                      and the whole plan built off them
+	interior_events.gd    section one's events: the mouse, the masked man, the fire, the steam,
+	                      and the explosions outside
   ui/
 	hud.gd                the clock, the two bars, the teach line and the status line
 	meter_bar.gd
@@ -171,7 +180,9 @@ windowed, saves the viewport after N frames and quits.
 reachable as `?escape=1`). `--start-escape` takes an optional value — `stairwell:left`,
 `stairwell:right`, `lobby`, `basement` or `floor:2`/`floor:1` — that teleports straight to that
 part of the escape scene's one building-wide map instead of starting at her own door on the third
-floor; `main._escape_start_part()` maps the word onto `InteriorScene.part_world_position()`.
+floor, or `city`, which is the one value that is not a part of the building: it boots the escape's
+second section on its own, with no building built at all. `main.escape_part_for()` maps the word,
+with the command line taken out of it so the mapping is testable.
 `src/dev/auto_screenshot.gd`
 parses `--screenshot` and the flags nested under it (`--after`, `--walk`, `--flee`, `--press`,
 `--tap`) itself, and gates its own entry point the same way rather than moving that parsing out.
