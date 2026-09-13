@@ -479,6 +479,13 @@ is still true.
       huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard
       stepping to the arm, or the boom stops being a detaining body and the huts alone are the
       toll, with the boom's picture still barring the lanes for the cars. The player's call
+- [ ] **A rig cannot be spawned at a row the day's plan never holds.** `--spawn event:<id>`
+      reads `DevRig.first_event_position()`, which searches the day's planned placements, so a
+      row placed ahead of the player at run time (`pigeon_flock`, anything `AHEAD_OF_PLAYER`)
+      is never found and the flag silently falls back. Found capturing M121 (`DECISIONS.md`,
+      M121, what the captures could not catch): a flock under a halo could not be photographed.
+      Either the flag refuses such a row by name, or it stands her where the row would first
+      trigger; the **cli-tools** rule wants the refusal at least
 
 **Drawings, as SVG:**
 
