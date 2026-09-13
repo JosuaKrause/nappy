@@ -63,3 +63,13 @@ nothing, because a one-block park with one in it has no ground left to settle th
 busker comes down *a bit*, and the floor on how far is that the baby still cannot fall asleep in
 a park that has one; and a busker's reach onto the street beside its lot is what comes down
 most, so walking past a park is cheaper than walking into it. M128 in `TODO.md`.
+
+## The shared damage over three grounds
+
+Asked: from day 5 the crack and hole variations are one shared set laid over road, sidewalk and
+alley alike — do they sit naturally over each, or does a crack carry pieces of another floor's
+slab grid with it?
+
+> Sits on all three
+
+Closed as fine.

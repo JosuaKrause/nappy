@@ -14,11 +14,6 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-- **Compare damaged road, sidewalk and alley tiles.** Do the shared crack and hole variations
-  sit naturally over each material, without carrying pieces of another floor's slab grid?
-  The [damage atlas review](evidence/shared-damage-2026-09-12/GENERATION.md) shows every variation
-  over each supported base.
-
 - **Look at a park and a wooded calm area while walking past them.** Do the sparse grass clumps give variety while the
   soft base stays quiet enough to keep people and routes clear? Check neighboring cells and
   revisit the same seed to compare their stable arrangement.
