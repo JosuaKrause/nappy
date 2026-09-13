@@ -13,9 +13,21 @@ extends RefCounted
 ## "Distinct" means sharing no street. Everything below is a way of checking that a day the
 ## planner produced still satisfies it, on seeds the planner has never seen.
 
-## Enough seeds to catch a layout that only goes wrong in one arrangement, few enough that
-## the suite stays under a second: the work is per-day planning, not generation.
+## Enough seeds to catch a layout that only goes wrong in one arrangement.
+##
+## **Twelve is the count `_test_every_planned_day_keeps_the_invariant` needs and it does not
+## shrink.** That check is the reason this file exists — a day that leaves nowhere to walk to is
+## unwinnable and invisible until somebody has crossed the city — and it is a property of a
+## *layout* against a *plan*, so a seed is a genuinely new question rather than the same question
+## asked again. It is the minutes this suite is worth spending.
+##
+## Nothing else here is stated over layouts that way, and the loops that are not say so in their
+## own docstrings and use fewer. A sweep that wants all twelve takes `_maps`; one that wants a
+## handful slices it.
 const SEEDS := 12
+## How many maps the sweeps that are about a *rule* rather than a *layout* walk. Six is a floor
+## with room in it for the proportions those checks assert, and half the wall clock of twelve.
+const RULE_SEEDS := 6
 const BASE_SEED := 5150
 
 var _maps: Array[CityMap] = []
@@ -295,8 +307,16 @@ func _test_the_home_street_is_never_closed(t) -> void:
 						% [map.seed_used, day])
 
 ## A run is learnable or it is nothing: the same seed and day must shut the same streets.
+##
+## **Four maps, three days, and the two calls have to be uncached** — determinism is a property of
+## `ClosurePlanner.plan_day` repeating itself, so this is the one caller that must pay for two real
+## plans of everything it asks about. That doubling is what sizes it: a planner that consumed its
+## RNG differently on a second call would differ on the first map and the first day, and what more
+## maps buy is the chance that some *layout* makes it non-deterministic where another does not —
+## which is not a thing a seeded RNG can do. Four rather than one so a single unlucky city cannot
+## be the whole evidence.
 func _test_closures_are_deterministic(t) -> void:
-	for map in _maps:
+	for map: CityMap in _maps.slice(0, 4):
 		for day in [1, 7, 14]:
 			var first := _plan_uncached(map, day)
 			var second := _plan_uncached(map, day)
@@ -463,12 +483,19 @@ func _test_calm_ground_is_still_walkable_to(t) -> void:
 ## keeping that in view: the assertion was not wrong then and is not right now for any reason a
 ## test could have found. The design changed, and a test that encodes a design has to be read as
 ## one of the places the design is written down.
+##
+## **`RULE_SEEDS` maps, every day of each.** Both halves are proportions over closures, so what
+## sizes this is the number of *closures* rather than the number of cities: six maps through
+## fourteen days is upwards of two hundred of them, which is a wide enough sample for bounds set at
+## 0.5 and at 0.15/0.7 that noise cannot reach either. The days stay whole because the act decides
+## how many streets a day shuts, so sampling days would sample the proportion unevenly. The
+## absolute half — never on the corridor — is asked once per closure either way.
 func _test_closures_land_where_a_wall_belongs(t) -> void:
 	var on_the_rim := 0
 	var in_a_gap := 0
 	var gaps := 0
 	var total := 0
-	for map in _maps:
+	for map: CityMap in _maps.slice(0, RULE_SEEDS):
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			# Today's city before today's corridor: which blocks are calm is what the tree grows
 			# from, and a repaint moves them. Growing one against yesterday's paint is a tree the
@@ -616,9 +643,16 @@ var _plan_cache := {}
 ## Planned uncached, because the pit record lives on the map and is written by the call — a cache
 ## hit would leave the map holding some other day's answer and the assertions below would be about
 ## nothing.
+##
+## **Four maps, and that uncached re-plan is exactly why.** Every other sweep of every day of every
+## seed in this file is answered out of `_plan`'s cache; this one cannot be, so it is the only
+## place where a seed costs a full fourteen days of real planning a second time. Four is enough for
+## the guard at the bottom — some day across the sweep has to have felled a tree — many times over,
+## and what the loop is actually checking is a **gate** inside `_pick_kind`, asked once per
+## closure: a weight rather than a gate would have shown up on the first map that felled one.
 func _test_a_fallen_tree_only_falls_where_a_tree_stood(t) -> void:
 	var felled := 0
-	for map in _maps:
+	for map: CityMap in _maps.slice(0, 4):
 		var lined := StreetTrees.segment_keys_with_trees(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			for closure in _plan_uncached(map, day):
