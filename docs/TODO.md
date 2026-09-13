@@ -119,9 +119,6 @@ findings supported by the conversion and review.
 - [ ] Refine SE/SW stroller wheel orientation per PLAYTEST-65 with a small wheel-only correction
       while keeping its grounded height and body untouched. Try existing-pixel mirroring or reuse
       the NE/NW wheels as the player suggests; preserve exact donor and transformation inputs.
-- [ ] Add the stoop's bottom vertical step face per PLAYTEST-65: copy an existing brown band,
-      append it beneath the tile and compress the height back to 32 pixels. Preserve the current
-      material, other paving and a reproducible strip-copy/resize recipe.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The

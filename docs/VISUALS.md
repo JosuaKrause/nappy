@@ -102,6 +102,9 @@ The [paving joint recipe](evidence/paving-boundary-joints-2026-09-12/GENERATION.
 boundary joints across the paving family and reproduces the accepted runtime tiles from frozen
 materials. The [shared damage review](evidence/shared-damage-2026-09-12/GENERATION.md) compares
 the common hairline, cracked and broken stencil variations over every supported floor base.
+The [stoop step-face recipe](evidence/stoop-bottom-face-2026-09-12/GENERATION.md) appends an
+existing brown riser band and compresses the tile back to its native height; its verifier checks
+the complete runtime paving family against the registered materials and this final stoop derivative.
 
 ## Review
 

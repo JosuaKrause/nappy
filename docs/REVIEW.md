@@ -19,11 +19,14 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   The [damage atlas review](evidence/shared-damage-2026-09-12/GENERATION.md) shows every variation
   over each supported base.
 
-- **Push the stroller through all eight directions.** N/NE/NW show the baby and canopy opening;
-  S/SE/SW show the outside of the hood; E/W keep the original side picture. Does this view
-  assignment read consistently through turns? The
-  [stroller direction review](evidence/stroller-view-assignment-2026-09-12/GENERATION.md) shows
-  the final static matrix and its reproducible assignment.
+- **Push northeast and northwest through all three poses and a turn.** Does the small downward
+  adjustment keep the handle connected without a visible jump as the facing changes? The
+  [north-diagonal comparison](evidence/stroller-diagonal-contact-2026-09-12/GENERATION.md) shows
+  the static pose check. SE/SW retain their grounded height and accepted hand gap.
+
+- **Look at the doorstep.** Does the copied brown bottom band read as a vertical step face with
+  a consistent material? The [stoop comparison](evidence/stoop-bottom-face-2026-09-12/GENERATION.md)
+  records the strip copy and compression back to the native tile height.
 
 - **Look at a park and a wooded calm area while walking past them.** Do the sparse grass clumps give variety while the
   soft base stays quiet enough to keep people and routes clear? Check neighboring cells and
@@ -42,12 +45,6 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   water tank, HVAC units, skylights, vent and ducts fit the comic ground while staying readable?
   Check both tree shapes and the roof variants in
   `evidence/comic-city-props-2026-09-12/comparisons/`; `--svg` shows their source concepts.
-
-- **Watch the stroller handle through a turn.** Do her hands stay
-  connected through all three pushing poses? The P2 `p2-grounded-contact-*` sheets in
-  `evidence/comic-pushing-strides-2026-09-12/registered/` show each pose with the grounded stroller;
-  live motion and texture changes
-  between directions still need a person's look. Collision positions and touch radii stay fixed.
 
 - **Compare pushing and carrying identity during a state change.** Do they remain the same woman?
   Use `--start-escape` for carrying. Exact native

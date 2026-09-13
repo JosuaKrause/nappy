@@ -1,0 +1,20 @@
+{
+  "source": "docs/evidence/paving-boundary-joints-2026-09-12/bundle/registered/stoop.png",
+  "source_sha256": "33c08dad4558f9c5e8de8d196db2eade353d76115124e80fce3511f3f49ccf34",
+  "strip_bounds": [
+    0,
+    19,
+    32,
+    25
+  ],
+  "append_bounds": [
+    0,
+    32,
+    32,
+    38
+  ],
+  "resampling": "Pillow Image.Resampling.NEAREST, 32x38 to 32x32",
+  "script_sha256": "1f2302a9e493687d24817854251ebcfaae9ebeaee0cb6625b3c6aeee3c9ae894",
+  "pillow": "12.3.0",
+  "output_sha256": "ba93e864bdf51f078d9b0b7c4b877b8783523a556b7aef7d2bf5df598ec30ea0"
+}

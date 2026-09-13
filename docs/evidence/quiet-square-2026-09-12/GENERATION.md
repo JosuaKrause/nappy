@@ -48,7 +48,7 @@ comparison input, pass that saved image through `--brightness-reference` on the 
 Verify the final runtime artwork against the joint-registration bundle:
 
 ```sh
-uv run python docs/evidence/paving-boundary-joints-2026-09-12/register.py verify \
+uv run python docs/evidence/stoop-bottom-face-2026-09-12/rebuild.py verify \
   --bundle-dir docs/evidence/paving-boundary-joints-2026-09-12/bundle \
   --target-dir assets/illustrated/svg-transfer/tiles
 ```

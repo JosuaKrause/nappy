@@ -26,8 +26,7 @@ uv run python docs/evidence/paving-boundary-joints-2026-09-12/register.py build 
   --output-dir /tmp/paving-joints-rebuild
 diff -r docs/evidence/paving-boundary-joints-2026-09-12/bundle /tmp/paving-joints-rebuild
 uv run python docs/evidence/paving-boundary-joints-2026-09-12/register.py verify \
-  --bundle-dir docs/evidence/paving-boundary-joints-2026-09-12/bundle \
-  --target-dir assets/illustrated/svg-transfer/tiles
+  --bundle-dir docs/evidence/paving-boundary-joints-2026-09-12/bundle
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . \
   --script docs/evidence/paving-boundary-joints-2026-09-12/render_sources.gd -- \
   --output-dir /tmp/paving-svg-review
@@ -39,3 +38,12 @@ The registered sidewalk and alley also supply their matching `tiles/layers/` bas
 markings and shared damage remain separate engine components. The layered-ground recipe freezes
 these registered bases before composing its review tiles. Quiet-square and plaza generation
 recipes retain their upstream material registration; this recipe owns the final joint placement.
+The [stoop step-face recipe](../stoop-bottom-face-2026-09-12/GENERATION.md) derives the runtime
+stoop from this bundle's registered tile by adding its bottom riser. Its verifier checks that
+derivative, the other six unchanged runtime tiles and both sidewalk/alley layer bases together:
+
+```sh
+uv run python docs/evidence/stoop-bottom-face-2026-09-12/rebuild.py verify \
+  --bundle-dir docs/evidence/paving-boundary-joints-2026-09-12/bundle \
+  --target-dir assets/illustrated/svg-transfer/tiles
+```

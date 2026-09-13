@@ -272,6 +272,9 @@ selected deterministically by city seed and cell. The
 The [paving joint recipe](evidence/paving-boundary-joints-2026-09-12/GENERATION.md) preserves the
 accepted sidewalk material and complete boundary joints across all rectangular paving. It owns
 the final runtime registration after the quiet-square and plaza material generation steps below.
+The [stoop step-face recipe](evidence/stoop-bottom-face-2026-09-12/GENERATION.md) adds its bottom
+brown riser from an existing band and compresses the taller image back to 32×32. Its verifier
+checks that derivative and the rest of the unchanged registered paving together.
 
 `assets/illustrated/svg-transfer/tiles/quiet_square.png` supplies muted cool-stone paving with
 large slab joints. Its [generation and registration recipe](evidence/quiet-square-2026-09-12/GENERATION.md)

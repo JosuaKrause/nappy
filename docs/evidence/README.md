@@ -38,6 +38,7 @@ can produce different pixels on another call; extraction and assembly use the re
 | Sidewalk join comparison in generated layouts | [Tile selection, frozen inputs and street assemblies](sidewalk-layout-review-2026-09-12/GENERATION.md) |
 | Shared ground bases and transparent details | [Frozen artwork, stencils and component assembly](layered-ground-2026-09-12/GENERATION.md) |
 | Accepted paving and complete boundary joints | [Frozen inputs, exact pixel-copy registration and repeat review](paving-boundary-joints-2026-09-12/GENERATION.md) |
+| Stoop bottom step face | [Copied brown band, vertical compression and final paving verification](stoop-bottom-face-2026-09-12/GENERATION.md) |
 | Shared damage variations across floor materials | [Stencil extraction and runtime atlas review](shared-damage-2026-09-12/GENERATION.md) |
 | Stroller travel-direction assignment | [Final visual contract, frozen inputs and eight-facing review](stroller-view-assignment-2026-09-12/GENERATION.md) |
 | Northeast/northwest stroller hand contact | [Continuous placement adjustment and frozen three-pose comparison](stroller-diagonal-contact-2026-09-12/GENERATION.md) |
