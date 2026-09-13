@@ -684,7 +684,7 @@ All implemented.
 | --- | --- | --- | --- |
 | `playground` | AMBIENT | 1 | Static aura in every park. The reason parks are not free wins. Sized (150px outer against a 256px park block) to dominate the middle and leave the far side genuinely calm. |
 | `cat_dash` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | Crouches (telegraph), then bolts across the traffic. Intensity 17, tiny radius, 1.8s duration — long enough to carry it the whole way across the street it starts at the edge of, and raised from 15 for a sharper startle spike once the barrier fields it used to be judged against went quiet. Its dash, driven straight at a standing player, still projects under `Tuning.EXPECTED_IMPACT_POINTS`, so the crouch's own silhouette carries the warning rather than a caret. Sited at `EventDef.ahead_of_player_lead()` rather than the flat `AHEAD_LEAD_DISTANCE`, which prices in the ground she covers while it holds its crouch, so it crosses where she actually is by the time it moves rather than behind her. The tutorial obstacle. |
-| `alley_mouse` | RECURRING | 1 | The cat's shape, `MAP`-placed on `ALLEY` tiles instead of director-sited — an alley she is routed through is already ground she is about to walk, unlike a `ROAD` tile that could be anywhere in the city. Half the cat's intensity (9, on a 60/15px field, the same 4:1 ratio) and half its cap (4), on top of the alley's own `Tuning.EXCITEMENT_FROM_ALLEY` (+3.0/s) ambient dread. No body, nothing lethal. Waits unclocked (`pursues_within` 150px, without `pursues`) until she is close, so a `MAP` placement streamed in from `EVENT_STREAM_RADIUS` does not telegraph and finish off screen before she arrives — see `EventDef.pursues_within` and `EventInstance._check_for_notice()`. Its two-point dash is read off `CityMap.alley_rects` and laid across whichever side of the alley is narrower — always the width, since she can only be walking the length — so it crosses her path rather than running down it (`EventInstance._alley_crossing_path()`). `EventScheduler._refuses_required_alleys`, stated over `def.placement == [ALLEY]` and shared with `alley_robbery`, keeps it off alleys she has no way around. |
+| `alley_mouse` | RECURRING | 1 | The cat's shape, `MAP`-placed on `ALLEY` tiles instead of director-sited — an alley she is routed through is already ground she is about to walk, unlike a `ROAD` tile that could be anywhere in the city. Intensity 21 on a 60/15px field (the cat's 4:1 ratio) and half its cap (4), on top of the alley's own `Tuning.EXCITEMENT_FROM_ALLEY` (+3.0/s) ambient dread. **Priced above the cat on each row's own ground**, which is not the same ground — *(2026-09-12: "alley mouse is a bit above charging cat"; "consider that the mouse is in the alley but the cat is usually not")*. A cat is met on a street that gives back 6.0/s; a mouse only ever in an alley, which gives back 3.5/s and is charging the dread as well, so the alley hands this row most of the gap before its intensity is touched. It walks to **+19.9 in an alley** against the cat's **+17.6 on a street**. The field is only 60px across, so the crossing is a second and a third and the spike has to be bought in intensity — there is no `impulse` field. No body, nothing lethal. Waits unclocked (`pursues_within` 150px, without `pursues`) until she is close, so a `MAP` placement streamed in from `EVENT_STREAM_RADIUS` does not telegraph and finish off screen before she arrives — see `EventDef.pursues_within` and `EventInstance._check_for_notice()`. Its two-point dash is read off `CityMap.alley_rects` and laid across whichever side of the alley is narrower — always the width, since she can only be walking the length — so it crosses her path rather than running down it (`EventInstance._alley_crossing_path()`). `EventScheduler._refuses_required_alleys`, stated over `def.placement == [ALLEY]` and shared with `alley_robbery`, keeps it off alleys she has no way around. |
 | `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Intensity 26 on a tight radius, barking on a 3.5s pulse: it owns the pavement it is on, so walking straight through it is never the cheap option. Deliberately given no `obstructs_radius` — a moving wall on a two-tile pavement pins the player against a building. |
 | `cafe_tables` | RECURRING | 1 | A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and the thing that forces a crossing. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. The people at the tables are drawn as well as the tables, because the tables are what obstructs and the conversation is what it emits — a real source, derived from the body itself: `inner_radius` 38px (touching the tables), `outer_radius` 64px (the pavement band's own centre to the carriageway's), so it bills somebody at the tables and not somebody across the street. |
 | `homeless_yeller` | RECURRING | 1 | Intensity 14 over a 210px field, yelling on a 5s **pulse**, and **pacing** eight tiles of pavement (`EventDef.paces`). A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. Mobile, so he has no body. His silhouette is his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. |
@@ -951,23 +951,24 @@ everywhere else. `†` is a **flock**, which is `flock_size`
 birds sharing `intensity` between them and wheeling inside `flock_spread`, so *all of the intensity
 is at the centre* — the assumption the rest of the table rests on — is false for it:
 
-- **Its row is computed from the birds**, not from one disc. Priced as a disc it reads +97 and
-  breaks the running rule on a row that in fact keeps it, which is exactly the kind of silent
-  breakage that rule exists to catch. `tests/test_events.gd` models the flock the same way, so the
-  two cannot drift.
+- **Its row is computed from the birds**, not from one disc. Priced as a disc it reads roughly
+  twice its true figure and breaks the running rule on a row that in fact keeps it, which is
+  exactly the kind of silent breakage that rule exists to catch. `tests/test_events.gd` models the
+  flock the same way, so the two cannot drift.
 - **The straight line through the middle is not the whole story for it.** Walked against the real
-  instance it costs about **+35** through the centre, **+8** eighty pixels off it and **nothing at
-  all** at the rim. Every other row falls away gently from the middle; a flock is a hot spot with a
-  wide quiet margin, and that gradient is the reason to build it out of eleven sources rather than
-  one.
+  instance it costs several times as much through the centre as eighty pixels off it, and nothing
+  at all at the rim. Every other row falls away gently from the middle; a flock is a hot spot with
+  a wide quiet margin, and that gradient is the reason to build it out of eleven sources rather
+  than one.
 
 **The ground every one of these rows stands on is the half the table does not show**, and it is
 large:
 
-- **An ordinary footway is net recovery to walk.** 55–87 points of crowd over forty seconds against
-  a walking decay that pays back 140, at every line from the frontage to the kerb. So an authored
-  row on an ordinary street is very nearly the *whole* of what that stretch costs, which is what the
-  figures below assume.
+- **An ordinary footway is net recovery to walk, and visibly so.** The quietest pavement in the
+  city charges 70–120 points of crowd over a forty-second walk against a decay that pays back 240
+  — measured over three seeds by `tests/probes/m117_decay.gd`, which is what to run again when a
+  rate moves. So an authored row on an ordinary street is very nearly the *whole* of what that
+  stretch costs, which is what the figures below assume.
 - **The middle of a pavement is the cheapest line along it**, by `CrowdLanes.SIDEWALK_LANE_SPREAD`,
   which spreads the walkers off it: an ordinary midline is 56 points per forty seconds.
 - **Crossing the main road costs about 30**, and the wait at its lights about 33 more — between them
@@ -979,39 +980,54 @@ alone is answering a narrower question than it thinks.
 
 | Event | walk through | run through |
 | --- | ---: | ---: |
-| `loudspeaker` | — | — |
 | `curfew_announce` | — | — |
-| `construction` | −15.2 | +32.1 |
-| `delivery_van` | −11.4 | +24.1 |
-| `barricade` | −9.1 | +19.3 |
-| `burnt_shell` | −2.7 | +14.3 |
-| `poster_crew` | +0.7 | +22.6 |
-| `alley_mouse` | +4.2 | +14.5 |
-| `cafe_tables` | +9.6 | +18.2 |
-| `market_stall` | +12.0 | +19.5 |
-| `busker` | +13.3 | +45.7 |
-| `police_patrol` | +15.9 | +46.2 |
-| `charging_dog` * | +16.9 | — |
-| `cyclist` * | +20.9 | +29.7 |
-| `cat_dash` | +24.1 | +37.5 |
-| `playground` | +25.5 | +44.3 |
-| `checkpoint` | +29.0 | +59.4 |
-| `homeless_yeller` | +31.2 | +59.6 |
-| `ice_cream_van` | +31.5 | +65.8 |
-| `reversing_lorry` * | +32.6 | +53.3 |
-| `alley_robbery` * | +34.6 | — |
-| `dog_walker` | +36.5 | +41.2 |
-| `protest` | +42.3 | +77.6 |
-| `leaf_blower` | +48.6 | +67.1 |
-| `pigeon_flock` † | +54.1 | +63.6 |
-| `burning_building` | +55.9 | +83.2 |
-| `loose_dog` | +61.2 | +61.9 |
-| `abduction` * | +61.3 | +84.1 |
-| `car_accident` ‡ | +63.1 | +54.0 |
-| `military_convoy` | +84.9 | +107.2 |
-| `night_raid` | +101.8 | +122.6 |
-| `fire_truck` | +115.4 | +132.0 |
-| `firefight` * | +152.4 | +159.2 |
+| `loudspeaker` | — | — |
+| `construction` | -26.1 | +32.1 |
+| `delivery_van` | -19.6 | +24.1 |
+| `checkpoint_gate` | -15.7 | +19.3 |
+| `barricade` | -15.7 | +19.3 |
+| `fallen_tree` | -15.7 | +19.3 |
+| `skip` | -15.7 | +19.3 |
+| `scaffolding` | -15.7 | +19.3 |
+| `burst_water_main` | -15.7 | +19.3 |
+| `moving_van` | -15.7 | +19.3 |
+| `burnt_out_car` | -15.7 | +19.3 |
+| `collapsed_frontage` | -15.7 | +19.3 |
+| `impact_crater` | -15.7 | +19.3 |
+| `burnt_shell` | -6.9 | +14.3 |
+| `poster_crew` | -5.3 | +22.6 |
+| `chatting_mother` | -2.7 | +14.8 |
+| `checkpoint_post` | -0.6 | +22.4 |
+| `checkpoint_hut` | -0.6 | +22.4 |
+| `police_patrol` | +5.9 | +46.2 |
+| `cafe_tables` | +6.1 | +18.2 |
+| `market_stall` | +8.5 | +19.5 |
+| `charging_dog` * | +8.8 | — |
+| `basement_steam` | +9.0 | +25.8 |
+| `alley_mouse` | +12.7 | +20.9 |
+| `busker` | +15.3 | +52.5 |
+| `cyclist` * | +16.0 | +29.7 |
+| `playground` | +17.4 | +44.3 |
+| `cat_dash` | +17.6 | +37.5 |
+| `ice_cream_van` | +18.4 | +65.8 |
+| `roadblock` | +18.5 | +51.7 |
+| `masked_pursuer` * | +19.3 | +38.4 |
+| `homeless_yeller` | +19.8 | +59.6 |
+| `reversing_lorry` * | +23.1 | +53.3 |
+| `alley_robbery` * | +23.8 | — |
+| `protest` | +27.6 | +77.6 |
+| `dog_walker` | +30.8 | +41.2 |
+| `leaf_blower` | +37.7 | +67.1 |
+| `burning_building` | +41.7 | +83.2 |
+| `pigeon_flock` † | +44.9 | +63.6 |
+| `abduction` * | +47.7 | +84.1 |
+| `loose_dog` | +53.6 | +61.9 |
+| `car_accident` ‡ | +65.7 | +58.3 |
+| `military_convoy` | +68.6 | +107.2 |
+| `night_raid` | +83.9 | +122.6 |
+| `fire_truck` | +97.0 | +132.0 |
+| `firefight` * | +132.1 | +159.2 |
+| `finale_explosion` | +165.2 | +211.2 |
 
 **No column says which rows carry a caret, because no row does.** The caret is decided in play
 from a source's own projected course at wherever she is standing — `expected_impact_at()`
@@ -1025,9 +1041,14 @@ costs 35 points from the lunge and less the sooner it is given. See `docs/MECHAN
 that matters", for the measured tables. The city-wide rows have no line through them at all, which
 is why `EventDef.walk_through_cost()` answers zero for them and this table says nothing.
 
-**One row is cheap to walk through by taste, and every zero-intensity row is cheap by
-construction.** `burnt_shell` and `poster_crew` are scenery asked to be nearly free on purpose —
-`tests/test_events.gd` names them as the sole exemptions among the rows that emit anything at all.
+**Two rows are cheap to walk through by taste, three are priced somewhere else, and every
+zero-intensity row is cheap by construction.** `burnt_shell` and `poster_crew` are scenery asked to
+be nearly free on purpose. `chatting_mother`, `checkpoint_hut` and `checkpoint_post` are the
+**detainers**, whose price is not their field at all: coming close locks her movement and charges
+`Tuning.CHAT_EXCITEMENT` flat over the hold, so a disc sized to clear the walking decay as well
+would be charging the same body twice. `tests/test_events.gd` names both lists, and holds the
+detainers to charging their capture instead — an exemption that owes no check of its own is a way
+of not being tested.
 `construction`, `delivery_van` and `barricade` sit well below zero for a different reason: **a
 thing whose whole job is to stand in the way costs route and nothing else**, so `intensity <= 0.0`
 is its own blanket exemption — walking "through" a solid body was never a real choice to price, and
@@ -1039,26 +1060,26 @@ is a decision about what a thing is (a pure obstruction) rather than a number no
 
 **Running is correct on exactly one row here, and the rest of the column is why that is a
 threshold rather than a taste.** Running costs `EXCITEMENT_FROM_RUNNING` (14.0/s) *and* collapses
-the decay from 3.5/s to 0.5/s, so it is a fixed price per second against a saving that is only ever
+the decay from 6.0/s to 0.5/s, so it is a fixed price per second against a saving that is only ever
 the shorter exposure — which means walking wins on every field whose mean emission along the line
-sits under about 24/s, and that is every row but `car_accident`. The crash is the one asked to cost
+sits under about 30/s, and that is every row but `car_accident`. The crash is the one asked to cost
 more than half the meter to squeeze past, and no field short enough to be *felt walking up to it*
 rather than from down the street can charge that without clearing the threshold. So sprinting past
-a crash saves nine points of a hundred, and the answer to it is still the route rather than the run.
-Making running *necessary* remains a mechanic to build rather than a number to tune: it needs
-something running escapes, which is a pursuer.
+a crash saves about seven points of a hundred, and the answer to it is still the route rather than
+the run. Making running *necessary* remains a mechanic to build rather than a number to tune: it
+needs something running escapes, which is a pursuer.
 
-**And what a *street* costs, which is the question this table does not answer.** A rig walked home
-to the furthest calm block and back — 7,500px, a real errand — through a real day with the crowd
-and the events both running: peak excitement **25 to 57** of a hundred across three seeds, the meter
-frozen for 0–14% of it, nobody cried. The same day, holding one arrow key east from the doorstep for
-fifteen seconds, loses; the trace names four pedestrian contacts and a car's horn, and the breakdown
-at the moment of each is `crowd 30–44/s` against `events 10–14/s`.
+**And what a *street* costs, which is the question this table does not answer.** An errand — home
+to the furthest calm block and back, 7,500px through a real day with the crowd and the events both
+running — is walked well inside the meter on an ordinary route, and the same day walked carelessly
+straight down a busy pavement loses in seconds. What separates them is the crowd rather than the
+catalogue: the breakdown at the moment of a contact reads `crowd 30–44/s` against `events 10–14/s`.
 
 **So the crowd is most of what a street costs, and the events are what make it a decision.** That
 ratio is the design working: careless is fatal in seconds, careful is nearly free, and the gap
 between them is where the game lives. None of it is in the table above — a contact with a pedestrian
-is ~15.6 points and a car's horn ~8, and neither is in the catalogue at all. See MECHANICS.md.
+lands about 10.8 points of jolt and a car's horn about 8, and neither is in the catalogue at all.
+See MECHANICS.md.
 
 **And every row prices walking through one event against walking around it**, which at one event
 per block is a move the player rarely has in front of her: going around one is often going through
@@ -1435,11 +1456,13 @@ the destination was not a decision, this one that *which* destination was not on
 
 #### It has to cover the ground, not stand in it
 
-**What denies calm ground is not reaching it, it is out-emitting the decay** the calm multiplier has
-already raised to 7.7/s — so a busker at intensity 9 is useless past 100px however far his 190px
-field reaches, in a lot that is 704px across. One spoiler denies about three percent of a four-block
-calm zone: the day rolls its spoiler for the block she used, and she settles in that same block
-anyway.
+**What denies calm ground is not reaching it, it is out-emitting `Tuning.CALM_ZONE_DENIAL_RATE`**,
+7.7/s — so a busker at intensity 13 is useless past 138px however far his 190px
+field reaches, in a lot that is 704px across. One spoiler is a small share of a four-block calm
+zone: the day rolls its spoiler for the block she used, and she settles in that same block anyway.
+**The rate is fixed and a row's intensity is not**, so intensity is the one thing that widens a
+denial radius — which is why a row that stands on calm ground is raised no further than it has to
+be.
 
 `EventScheduler._denial_radius()` is that arithmetic, and a spoiler is a **crowd** laid out on a grid
 over the calm ground, sized from what each of them actually denies and capped at

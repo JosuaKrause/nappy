@@ -153,22 +153,27 @@ static func _build() -> Array[EventDef]:
 ## The reason parks are not a free win. Permanent, wide, and sitting in the middle of the
 ## calmest ground in the city.
 ##
-## **This is the one ambient row that lives on calm ground, and that decides its intensity.**
+## **This is the one ambient row that lives on calm ground, and two different rates price it.**
 ## `PLAYGROUND` is on `Tile._CALM`, so the decay under it is
-## `EXCITEMENT_DECAY_WALKING × EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` — **7.7/s**. A row that emits
-## less than that at the peak of its pulse never out-emits the ground it stands on, at any distance
-## or any phase of its beat: its denial radius collapses to its own **inner radius**, and standing in
-## a playground is a net *benefit*.
+## `EXCITEMENT_DECAY_WALKING × EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` — **12.0/s** — and that is
+## what it has to beat at the peak of its pulse to cost anything at all to stand in. A row under it
+## at the peak never out-emits the ground it stands on at any distance or any phase of its beat, and
+## standing in a playground would be a net *benefit*. At 15 it clears that by three.
 ##
-## **So it moves whenever the calm multiplier moves**, and that is the trap — the multiplier is
-## tuned for the park and this row is the only thing in the catalogue that stands in one, so nothing
-## else in the balance goes wrong to point at it. `EventScheduler._denial_radius` is the same
-## arithmetic for spoilers.
+## **The radius it denies is the other rate, and it is deliberately not this one.**
+## `EventScheduler._denial_radius` asks `Tuning.CALM_ZONE_DENIAL_RATE` (7.7/s), which is fixed:
+## which rows may deny park ground is a decision about parks rather than about how fast the pram
+## settles, so the walking decay moving does not move it. At 15 the denial radius is 117px at the
+## top of the beat and 86px at the middle, against a park block 256px across. It dominates the
+## middle of a park and leaves the far side genuinely calm, and `tests/test_balance.gd` still finds
+## a day winnable, because the ground is contested rather than removed.
 ##
-## Set from what it should deny rather than by taste: at 15 the denial radius is 117px at the top of
-## the beat and 86px at the middle, against a park block 256px across. It dominates the middle of a
-## park and leaves the far side genuinely calm, and `tests/test_balance.gd` still finds a day
-## winnable, because the ground is contested rather than removed.
+## **The trap is that the two rates can drift apart under this row and nothing else would say so**:
+## it is the only thing in the catalogue that stands on calm ground, so no other part of the balance
+## goes wrong to point at it. Its pulse runs 0.25 to 1.0 of `intensity`, so what it charges swings
+## across the ground's own decay over its nine seconds — the middle of a playground is expensive at
+## the top of the beat and free at the bottom, which is a rhythm to walk through rather than a
+## constant tax.
 static func _playground() -> EventDef:
 	var def := EventDef.new()
 	def.id = "playground"
@@ -176,7 +181,7 @@ static func _playground() -> EventDef:
 	def.kind = GameEnums.EventKind.AMBIENT
 	def.ambient_source = EventDef.AmbientSource.PLAYGROUND
 	def.look = EventDef.Look.NONE  # The park's swing frame already draws it.
-	# Above the decay on the ground it stands on (7.7/s), which is the whole of what an event on
+	# Above the decay on the ground it stands on (12.0/s), which is the whole of what an event on
 	# calm ground has to clear to exist at all. See the note above.
 	def.intensity = 15.0
 	# Sized so it dominates the middle of a park but leaves the far side genuinely calm —
@@ -321,7 +326,21 @@ static func _alley_mouse() -> EventDef:
 	def.look = EventDef.Look.MOUSE
 	def.shape = GroundShape.point(4.0)
 	def.placement = [GameEnums.TileType.ALLEY]
-	def.intensity = 9.0
+	# **Priced against the cat on each row's own ground, which is not the same ground.** *(2026-09-12:
+	# "alley mouse is a bit above charging cat"; "consider that the mouse is in the alley but the cat
+	# is usually not".)* A cat is met on an ordinary street, where 6.0/s is given back; a mouse is
+	# only ever met in an alley, where 3.5/s is given back and the alley's own
+	# `Tuning.EXCITEMENT_FROM_ALLEY` (+3.0/s) is being charged on top. So the alley hands this row
+	# most of the gap for nothing, and 21.0 is what is left to buy: it walks to +19.9 in an alley
+	# against the cat's +17.6 on a street.
+	#
+	# **A tiny radius is why the number is large rather than a mistake.** The field is 60px, so the
+	# crossing is one and a third seconds — a spike is bought here in intensity, since there is no
+	# `impulse` field and a short, loud disc is how this project writes one.
+	#
+	# The cost table in `docs/EVENTS.md` nets every row against the *same* walking decay, so this
+	# row reads cheaper there than the cat does; the note under that table says why.
+	def.intensity = 21.0
 	def.inner_radius = 15.0
 	def.outer_radius = 60.0
 	# `Tuning.required_telegraph_time(15, 60, false, 200)` is ~1.09s (outer_radius · field_scale(e)
@@ -385,10 +404,11 @@ static func _homeless_yeller() -> EventDef:
 
 ## Slow, and it owns the pavement it is on.
 ##
-## **The intensity is the wall, and it has to beat the walking decay.** At 7 it does not: walking
-## *through* a dog walker beats walking around it by 0.1 of a point, because 3.5/s of decay outruns
-## what it emits. An obstacle that is cheaper to walk into than to avoid is not an obstacle, and
-## what this row is for is being worth turning round and crossing at the zebra for.
+## **The intensity is the wall, and it has to beat the walking decay.** At 7 it does not: what it
+## means along a line through the middle falls under the 6.0/s an ordinary street gives back, so
+## walking *through* a dog walker beats walking around it. An obstacle that is cheaper to walk into
+## than to avoid is not an obstacle, and what this row is for is being worth turning round and
+## crossing at the zebra for.
 ##
 ## Deliberately **not** given an `obstructs_radius`: a mobile static body wide enough to matter
 ## on a two-tile pavement can pin the player against a building, and being pinned by something
@@ -500,6 +520,25 @@ static func _delivery_van() -> EventDef:
 
 ## A park spoiler, and a pleasant one. Nothing about it is threatening; it is simply
 ## interesting, which is the whole problem.
+##
+## **It stands on calm ground, so the calm ground's decay is what its intensity has to beat**, the
+## same way `playground`'s does — 12.0/s, `EXCITEMENT_DECAY_WALKING` times the calm multiplier. At
+## 13.0 the core of it costs while she is inside `inner_radius`, and that is the whole claim: a
+## busker whose peak sat under the ground it stands on would be a park *bonus* with a picture of a
+## nuisance on it.
+##
+## **The number is the lowest one that clears both floors, and that is deliberate, because a louder
+## busker denies more park.** `EventScheduler._denial_radius` is stated against the fixed
+## `Tuning.CALM_ZONE_DENIAL_RATE` (7.7/s), so intensity is the only thing that moves how much calm
+## ground one of these takes out of a lot 704px across — 137.6px of it at 13.0. The other floor is
+## that crossing one has to stay worth routing around, which `tests/test_events.gd` reads off the
+## cost table.
+##
+## **What the pulse does to that, because it is easy to read the number as steadier than it is:**
+## `pulse_period` swings what it actually emits between a quarter and all of `intensity` every
+## seven seconds, so the middle of a busker's field is dearer than the park at the top of the beat
+## and cheaper at the bottom. Along a whole line through one it is the rim that decides, and the rim
+## is under the park's own decay — a busker is a place to walk round, not a wall.
 static func _busker() -> EventDef:
 	var def := EventDef.new()
 	def.id = "busker"
@@ -507,7 +546,9 @@ static func _busker() -> EventDef:
 	def.look = EventDef.Look.BUSKER
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.PARK, GameEnums.TileType.SQUARE]
-	def.intensity = 9.0
+	# Above the 12.0/s a park gives back, which is what a row standing on calm ground has to clear
+	# to cost anything at all. See the note above for why it is not higher.
+	def.intensity = 13.0
 	def.inner_radius = 45.0
 	def.outer_radius = 190.0
 	def.telegraph_time = 1.7
@@ -1831,12 +1872,14 @@ static func _collapsed_frontage() -> EventDef:
 ## detainer's does, and the ambient field is the milestone's own "a bit of excitement": a small
 ## `intensity` over a tight band, small enough that the real price stays the flat
 ## `Tuning.CHAT_EXCITEMENT` the detention charges through the ordinary chat mechanism, and standing
-## still on its own pays nothing back (`EXCITEMENT_DECAY_IDLE`) — but not so small that walking
-## through the field for free undercuts `tests/test_events.gd`'s own catalogue-wide rule that
-## nothing is cheaper to walk through than around: with most of the 84-98px band held at peak
-## against `EXCITEMENT_DECAY_WALKING` (3.5/s), 6.0 is the smallest round number that clears it with
-## a margin rather than by luck. The band stays 14px wide, which is what the telegraph is priced
-## on; the disc moved out with the capture so the two keep the order `validate()` requires.
+## still on its own pays nothing back (`EXCITEMENT_DECAY_IDLE`). **The field is not what makes this
+## row expensive and must not be asked to be**: at 6.0 over an 84–98px band it means less along the
+## line than the 6.0/s an ordinary street gives back, so `walk_through_cost()` reads it as free —
+## and it is, because the price is the detention. `tests/test_events.gd` exempts the detainers from
+## its catalogue-wide "nothing is cheaper to walk through than around" rule by name and for that
+## reason, and holds them to charging their capture instead. The band stays 14px wide, which is what
+## the telegraph is priced on; the disc moved out with the capture so the two keep the order
+## `validate()` requires.
 ## `redetains` is what tells `EventManager` this instance is armed again once she is outside
 ## `detain_distance()`, in either direction, rather than spent after one conversation like
 ## `chatting_mother`.

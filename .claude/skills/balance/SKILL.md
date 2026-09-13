@@ -76,10 +76,22 @@ catalogue.
 between the inner and outer radius, not `(1−t)²`. The squared-complement form puts a quarter of the
 intensity at the midpoint and six percent three quarters of the way out, which makes three quarters
 of every radius in the game free and an event a thing to bump into rather than a thing to route
-around. `dog_walker` is +36.5, `cafe_tables` +9.6, and one row stays negative on purpose —
-`burnt_shell` is a reminder rather than an obstacle. `tests/test_events.gd` names exactly that one
-as the exemption, so a **second** negative event has to be a decision somebody takes rather than a
-number nobody checked.
+around. `dog_walker` is +30.8 and `cafe_tables` +6.1.
+
+**Two short lists hold every row that is allowed to be free, and both are in
+`tests/test_events.gd`.** The **scenery** — `burnt_shell`, `poster_crew` — is there so a street
+looks different rather than costs something. The **detainers** — `chatting_mother`,
+`checkpoint_hut`, `checkpoint_post` — are priced somewhere else entirely: their cost is
+`CHAT_EXCITEMENT` charged over the hold, so a field sized to clear the walking decay as well would
+charge the same body twice, and the test holds them to charging their capture instead. A **third**
+free row has to be a decision somebody takes rather than a number nobody checked.
+
+**Raising the walking decay does not lower every row's cost by the same amount.** The decay is
+netted off over the *time* the crossing takes, so a wide, moderate row loses far more of its price
+than a narrow, intense one — `protest` (269px of 15/s) and `dog_walker` (105px of 26/s) swapped
+order when the decay went from 3.5 to 6.0, which moved `protest` from a wall to friction.
+`Tuning.WALL_WORTH_OF_COST` is stated in points of the meter, so it is re-derived from the cost
+table whenever a rate moves rather than left alone.
 
 Two consequences of the falloff shape that are easy to get wrong:
 
@@ -91,8 +103,8 @@ Two consequences of the falloff shape that are easy to get wrong:
 
 **Running is the wrong move against every event you route around bar one, and the right move against
 the one kind of thing that follows you.** `EXCITEMENT_FROM_RUNNING` plus the collapsed decay
-(3.5/s → 0.5/s) is a fixed price per second, so it beats the shorter exposure for every row whose
-mean emission along the line stays under about 24/s — which is every row but `car_accident`, the one
+(6.0/s → 0.5/s) is a fixed price per second, so it beats the shorter exposure for every row whose
+mean emission along the line stays under about 30/s — which is every row but `car_accident`, the one
 asked to cost more than half the meter to squeeze past. `tests/test_events.gd` asserts it row by row
 and names that exemption by id (`_RUNNING_IS_CHEAPER`) rather than skipping it: the rule had only
 ever been *measured*, and a change to the falloff shape broke it silently in four rows before anyone
@@ -130,9 +142,15 @@ a player who finds either has found the other's punishment. That is not a balanc
 design that cannot be played.
 
 **Walking an ordinary pavement is free; standing on one is not.** Every line across an ordinary
-footway is net recovery while walking — the crowd charges 55–87 points over forty seconds against a
-decay that pays back 140. The cost of standing is `EXCITEMENT_DECAY_IDLE`, which is zero recovery,
-and not the crowd.
+footway is net recovery while walking — the quietest pavement charges 70–120 points of crowd over a
+forty-second walk against a decay that pays back 240. The cost of standing is
+`EXCITEMENT_DECAY_IDLE`, which is zero recovery, and not the crowd.
+
+**The ground multiplies the decay, so a crowd load compared to the raw constant is the wrong
+comparison** — the spine gives back 2.1/s and a back street 6.0/s. State a floor against
+`City.decay_multiplier()` at the point it was measured, or the same number flatters one street and
+libels the other. `tests/probes/m117_decay.gd` walks each ground and prints the net rate, which is
+how these are set rather than derived.
 
 ## The noise floor is emergent, never a constant
 
