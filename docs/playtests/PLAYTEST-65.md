@@ -255,3 +255,10 @@ opaque coverage and repeatable slab joins. Compare repeated tiles and their stre
 Smooth the soft grass base with the same equal-weight blend of four quarter-turn orientations
 used for asphalt. Keep this base preparation offline and the separate grass clumps composed
 in the engine. Review repeated grass bases and the runtime park arrangement for brightness jumps.
+
+> regenerate the plaza texture with the same constraints as the quiet square from earlier
+
+Regenerate plaza paving with the quiet-square constraints: darker muted stone, low contrast,
+flat diffuse lighting, no bright focal patches or directional gradient, opaque native coverage
+and clean repetition. Preserve the plaza SVG's larger slab layout and compare it with the
+shared ground materials and muted quiet-square tile. Keep generation and registration reproducible.

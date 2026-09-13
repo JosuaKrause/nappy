@@ -119,6 +119,10 @@ findings supported by the conversion and review.
 - [ ] Blend the soft grass base equally at 0°, 90°, 180° and 270°, applying the asphalt recipe
       requested in PLAYTEST-65 to remove brightness jumps between grass cells. Preserve sparse
       in-engine clump placement, store the preparation recipe and review repeated bases and parks.
+- [ ] Regenerate plaza paving with the muted quiet-square constraints in PLAYTEST-65: darker
+      low-contrast stone, flat lighting, no bright patch or directional gradient, clean repetition
+      and opaque native coverage. Preserve the plaza SVG's larger slab layout, compare neighboring
+      ground materials, and retain the raw image, exact prompt and reproducible registration.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The
