@@ -1315,6 +1315,15 @@ is loud, and the reason a park is quiet.
   which is `Crowd._hold_walkers_at_doors()` and `WalkerDoorHold` rather than anything the tile map
   says: the hut's own ground point, one body inside at a time, and the line waiting behind it.
 
+- **And an about-face commits to its new heading for a stride.** The decision to turn round is
+  re-taken from scratch on the very next frame, so a body with a seal at each end of the ground it
+  is on would otherwise reverse on *every* frame — at sixty frames a second that is not pacing, it
+  is a body facing two ways at once. A stride is each kind's own: the walker's gait is half a turn
+  of its own phase, about 35px, and a car's is its own length, so the commitment is about half a
+  second on foot and a third of one on the road. While it is being walked off the agent keeps going
+  the way it turned, and the step that would carry it into the seal is refused the way any illegal
+  step is.
+
 - **And nobody is put somewhere they could never leave.** A junction whose every arm is shut —
   held for the day, or soft-sealed a few tiles in — is a **pocket**: legal ground with no street out
   of it. `CrowdPockets` floods the lanes each kind actually travels once per day, from the same

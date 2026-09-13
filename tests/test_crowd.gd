@@ -55,6 +55,7 @@ func run(t) -> void:
 	_test_a_hard_seal_shuts_its_street_to_the_crowd(t)
 	_test_nobody_is_placed_in_a_sealed_junction(t)
 	_test_a_pocket_empties_once_it_is_out_of_view(t)
+	_test_a_turn_around_commits_to_its_new_heading(t)
 	_test_a_region_wall_is_shut_and_a_door_is_carved_out(t)
 	# One door day, shared: building a city and planning days until one carries a door is most of a
 	# minute, and every test below places its own bodies at the same hut anyway.
@@ -1569,6 +1570,83 @@ func _test_a_pocket_empties_once_it_is_out_of_view(t) -> void:
 	t.check(_inside(rect) == 0,
 			"and every one of them is gone once the view has moved off it (%d left)"
 			% _inside(rect))
+
+	_city.map.clear_day_holds()
+
+## M119, item 3: an about-face commits to its new heading for a stride, so a body with a seal at
+## each end of it paces rather than facing two ways at sixty frames a second.
+##
+## Asked at a sealed junction with the view held on it, which is where the reversals actually
+## happen: the agents in it are the ones with a seal every way they look, and keeping the camera
+## there is what stops them being recycled out of the measurement.
+##
+## The floor is each agent's own `_stride_seconds()` rather than a number, so it survives any
+## rebalancing of walking speed or of the gait — what it pins is that a reversal is worth a stride,
+## not that a stride is 35px.
+func _test_a_turn_around_commits_to_its_new_heading(t) -> void:
+	var sealed := _a_junction_to_seal(t)
+	if sealed.is_empty():
+		return
+	var at: Vector2 = sealed["at"]
+	var rect: Rect2i = sealed["rect"]
+	_city.map.clear_day_holds()
+	_city.crowd.start_day(1, _rng(3), at)
+	_advance_watching(3.0, at)
+	for arm: StreetNetwork.Segment in sealed["arms"]:
+		_city.map.hold_segment(arm.key())
+
+	var facing := {}
+	var since := {}
+	var turning := {}
+	var reversals := 0
+	var too_soon := 0
+	var soonest := INF
+	for frame in int(round(8.0 / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		for agent: CrowdAgent in _city.crowd.agents():
+			var id := agent.get_instance_id()
+			var heading := Vector2(agent._direction, 1.0 if agent._vertical else 0.0)
+			# `INF` until this agent has actually been seen to turn round once: the first about-face
+			# of the run says nothing, since whatever came before it happened before the measurement
+			# started.
+			since[id] = float(since.get(id, INF)) + STEP
+			# A car coming off an arc reverses its heading over the whole length of that arc, which
+			# is M111's own manoeuvre and the opposite of the thing being measured. It is the only
+			# other way a heading flips on one axis.
+			var landed: bool = bool(turning.get(id, false)) and not agent.is_turning()
+			turning[id] = agent.is_turning()
+			# Only the bodies actually inside the sealed junction are counted. Everybody else is
+			# subject to a recycle, which is a teleport into a fresh lane and a fresh direction at
+			# the far edge of the field — a reading about a different person rather than an
+			# about-face. Their clock keeps running rather than being restarted, because an agent
+			# that walks into the junction and turns round a moment later has still only turned
+			# round once; a recycled one cannot walk the eight hundred pixels back inside this
+			# measurement, so it never returns to be miscounted.
+			if landed or not rect.has_point(_city.map.world_to_tile(agent.position)):
+				facing[id] = heading
+				continue
+			var before: Vector2 = facing.get(id, heading)
+			facing[id] = heading
+			# An about-face only: a turn at a junction swaps the axis, which is a different decision
+			# with nothing here to say about it. The clock is **not** restarted for one, because what
+			# is being measured is the gap between two about-faces and a turn in between is not a
+			# reason to allow the second one sooner.
+			if before.y != heading.y or before.x == heading.x:
+				continue
+			reversals += 1
+			var waited: float = since[id]
+			since[id] = 0.0
+			# A whole frame of slack: the stride is run down by `delta` and the reversal is taken on
+			# the frame after it reaches zero.
+			if waited < agent._stride_seconds() - STEP:
+				too_soon += 1
+				soonest = minf(soonest, waited)
+	t.check(reversals > 0, "the sealed junction turns somebody round to ask about (%d reversals)"
+			% reversals)
+	t.check(too_soon == 0,
+			("no agent reverses twice inside one of its own strides (%d of %d did, the quickest "
+			+ "after %.3fs)") % [too_soon, reversals, 0.0 if soonest == INF else soonest])
 
 	_city.map.clear_day_holds()
 

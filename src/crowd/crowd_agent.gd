@@ -339,6 +339,9 @@ var _body_detour_held := false
 var _yield_hurry := false
 var _yield_left := 0.0
 
+## Seconds this agent has left of the stride it owes its last about-face. See `_turn_round()`.
+var _turn_back_hold := 0.0
+
 func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: int,
 		axis_roll: float) -> void:
 	kind = agent_kind
@@ -706,6 +709,9 @@ func _process(delta: float) -> void:
 		if _detour_left <= 0.0 and not _body_detour_held:
 			_detour = 0.0
 	_yield_left = maxf(0.0, _yield_left - delta)
+	# The stride an about-face owes its new heading, run down here rather than where it is spent, so
+	# that a body held at a gate or stopped behind a queue works it off too. See `_turn_round()`.
+	_turn_back_hold = maxf(0.0, _turn_back_hold - delta)
 	if kind == Kind.CAR:
 		_give_way(delta)
 		# A car in a turn is following a path that was checked before it started, so none of the
@@ -775,10 +781,17 @@ func _keep_out_of_a_body(stood_on: Vector2i) -> void:
 ## Whether this agent's own centre may be on a tile. A car's answer is `_cannot_go_on`, the same
 ## predicate its lookahead and its turns use; a walker's is the per-lane one, because a walker's
 ## `_cannot_go_on` is about a whole footway being taken and this is about a body under its feet.
+##
+## **A shut segment is added to the walker's half rather than left to the turn.** A walker normally
+## never reaches one — it turns at the last junction, or at the tile before a wall — but a walker
+## committed to the heading it has just turned into (`_turn_round()`) cannot turn again for a
+## stride, and the one thing that must not buy is a person standing in a hard seal. Nothing else
+## changes: the carve-outs `_segment_is_shut()` makes for a door and for the home block's own
+## streets are the same ones every other reader gets.
 func _may_stand_on(tile: Vector2i) -> bool:
 	if kind == Kind.CAR:
 		return not _cannot_go_on(_vertical, tile)
-	return _walker_lane_is_open(tile)
+	return _walker_lane_is_open(tile) and not _segment_is_shut(tile)
 
 ## Pulls one axis back inside the tile band this agent started the frame in. A pixel short of the
 ## far edge, the same fencepost `_recycle` gives up so a clamp cannot land exactly on the line and
@@ -1254,9 +1267,11 @@ func _choose_lane(roll: float) -> void:
 	_cruise = _speed
 	_lane_centre = _lane_centre_here()
 	_junction = -1
-	# A planned turn is about a junction on a corridor this agent is no longer on.
+	# A planned turn is about a junction on a corridor this agent is no longer on, and so is the
+	# stride an about-face there was still owed.
 	_turn = null
 	_turn_run_up = 0.0
+	_turn_back_hold = 0.0
 	_forget_the_detour()
 
 ## Where this agent travels in its lane. A car sits on the tile centre; a walker is pushed toward
@@ -1841,13 +1856,44 @@ func _divert() -> void:
 ## flipped its heading drove the wrong way down its own queue — and `space_out_the_traffic` then had
 ## to resolve a head-on overlap the only way it can, by moving a body. It is the same line
 ## `_divert` runs after a turn and for the same reason.
+##
+## **And it costs a stride, which is the whole of the second sentence here.** The decision that
+## calls this is taken again on the very next frame from the very next scan, so an agent with a seal
+## at each end of the ground it is on reverses on *every* frame: `_look_ahead()` re-scans the moment
+## the direction changes, finds the other seal, and `_divert()` turns it round again. At sixty
+## frames a second that is not pacing, it is a body facing two ways at once — the flicker playtest
+## 66 reported, and it is a defect whether or not the agent has anywhere to go. So a reversal is
+## refused while the last one is still being walked off (`_stride_seconds()`), and what the agent
+## does instead is keep walking the way it has just turned; the step that would carry it into the
+## seal is held by `_keep_out_of_a_body()` the way any illegal step is.
 func _turn_round() -> void:
+	if _turn_back_hold > 0.0:
+		return
+	_turn_back_hold = _stride_seconds()
 	_direction = -_direction
 	if kind == Kind.CAR:
 		_lane = CrowdLanes.road_lane(_vertical, _direction)
 		_lane_centre = _lane_centre_here()
 	_forget_the_detour()
 	_claim_the_road_here()
+
+## How long one stride of this body takes at the speed it cruises at, in seconds — the unit an
+## about-face commits its new heading for.
+##
+## **A stride is a distance, and each kind already has one.** A walker's is the gait's own: it draws
+## two frames and `_walker_gait_frame()` carries it through both of them over half a turn of
+## `_walker_gait_phase`, which `WALKER_GAIT_RATE` prices at 0.09 radians per pixel walked — so a
+## stride is `PI / 0.09`, about 35px, and at `Tuning.PEDESTRIAN_SPEED` (46–74px/s) that is half a
+## second or so. A car has no gait and its stride is its own length, the same 52px the strike box is
+## measured over, which at `Tuning.CAR_SPEED` (130–185px/s) is about a third of a second.
+##
+## Stated in seconds rather than as a distance travelled, because the agent this exists for is
+## usually **stopped** — nose to a seal, or braked behind one — and a hold measured in pixels covered
+## would never expire at all for a body that is not covering any.
+func _stride_seconds() -> float:
+	var stride := 2.0 * Tuning.CAR_STRIKE_HALF_LENGTH if kind == Kind.CAR \
+			else PI / WALKER_GAIT_RATE
+	return stride / maxf(_cruise, 1.0)
 
 ## Which way to turn out of `crossing`, trying `first` before the other one, or `0.0` for neither.
 ##
@@ -2530,6 +2576,11 @@ var _car_view := 2
 ## at any speed the way the mother's own does. Cars have no gait; only a walker reads this.
 var _walker_gait_phase := 0.0
 
+## Radians of gait per pixel walked. `Stroller._physics_process()` advances `_walk_phase` at the
+## identical rate, so the crowd and the player share one stride length per pixel covered — and
+## `_stride_seconds()` reads it back to price a stride as a distance.
+const WALKER_GAIT_RATE := 0.09
+
 ## Below this speed a walker's own applied heading (`_walker_heading()`) is too close to zero to
 ## mean a facing, so it holds whatever it was last drawn as rather than chattering on the residual
 ## few px/s `_yield_factor()` and float noise can still leave in it. Well under
@@ -2597,7 +2648,8 @@ func _update_walker_view() -> void:
 ## `Stroller._physics_process()`'s own `_walk_phase` uses the identical 0.09 rate, so the crowd and
 ## the player share one stride length per pixel walked.
 func _advance_walker_gait(delta: float) -> void:
-	_walker_gait_phase = wrapf(_walker_gait_phase + velocity().length() * delta * 0.09, 0.0, TAU)
+	_walker_gait_phase = wrapf(_walker_gait_phase + velocity().length() * delta * WALKER_GAIT_RATE,
+			0.0, TAU)
 
 ## Which of the walker's two gait frames to draw right now: frame 1 (feet passing) for half of
 ## every stride while actually moving, frame 0 (the rest pose) otherwise — `Stroller._draw_mother()`'s
