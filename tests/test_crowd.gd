@@ -74,6 +74,8 @@ func run(t) -> void:
 	_test_walkers_follow_the_selected_presentation(t)
 	_test_out_of_bounds_is_blocked_except_a_car_on_the_spine(t)
 	_test_cars_come_out_of_the_tunnel_and_off_the_bridge(t)
+	_test_nobody_enters_across_a_plain_edge(t)
+	_test_the_entry_roll_is_kept_inside_its_own_room(t)
 
 	_city.free()
 
@@ -2405,3 +2407,82 @@ func _test_cars_come_out_of_the_tunnel_and_off_the_bridge(t) -> void:
 		t.check(inbound >= outbound / 4,
 				"%s: cars come in by it too (%d frames heading in against %d heading out)"
 				% [name, inbound, outbound])
+
+## M120: **entry is where exit is.** A recycled walker or off-spine car may not land past the true
+## edge at all — `CrowdAgent._entry_room()` grants it none, where `_room_beyond_the_map()` still
+## grants a departing one a tile so it does not blip out exactly on the kerb. Stood at all four
+## plain edges (north, south, east and west, each away from the spine so the tunnel and the bridge
+## are not what is being asked about here — `_test_cars_come_out_of_the_tunnel_and_off_the_bridge`
+## already covers that pair) and read the same way `_test_out_of_bounds_is_blocked_except_a_car_
+## on_the_spine` does: against `CityMap.in_bounds`, not a pixel tolerance, so a walker standing on
+## the mountain, the forest or the water band is exactly what fails this.
+func _test_nobody_enters_across_a_plain_edge(t) -> void:
+	var spine_lo := _city.map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
+	var away_from_spine := spine_lo * 0.5
+	var size := _city.map.world_size()
+	var edges := {
+		"north": Vector2(away_from_spine, Tuning.TILE_SIZE),
+		"south": Vector2(away_from_spine, size.y - Tuning.TILE_SIZE),
+		"west": Vector2(Tuning.TILE_SIZE, size.y * 0.5),
+		"east": Vector2(size.x - Tuning.TILE_SIZE, size.y * 0.5),
+	}
+	var i := 0
+	for name in edges:
+		var at: Vector2 = edges[name]
+		_city.crowd.start_day(1, _rng(30 + i), at)
+		i += 1
+		var out_of_bounds := 0
+		for frame in int(round(20.0 / STEP)):
+			_city.crowd.set_focus(at)
+			_city.crowd.step(STEP)
+			for agent in _city.crowd.agents():
+				if _city.map.in_bounds(_city.map.world_to_tile(agent.position)):
+					continue
+				out_of_bounds += 1
+		t.check(out_of_bounds == 0,
+				"%s: nobody enters from the mountain, forest or water band (%d frames somebody did)"
+				% [name, out_of_bounds])
+
+## M120: **the entry roll itself, not only its final position.** A full `Crowd` never shows the
+## difference above by itself — `_stands_on_a_street()` already pulled a stray recycle back onto
+## the map's own last row before M120, so *"nobody is ever out of bounds"* was already true and the
+## test above cannot tell this fix from its absence. What changed is *how* a fresh entry lands there
+## when the field's own edge (`CrowdField.along_bounds`) is already flush with the true one —
+## `bounds.x - ENTRY_SPREAD` is then nowhere near a real street, so the un-clipped roll used to fail
+## `_entry_band_fits()` on every attempt bar the rare one that also finds a legal spot the other way
+## round, and the state `_recycle()` was left holding when none did was whichever `_choose_lane()`
+## last rolled — almost never this axis and direction at all, because the other one kept winning the
+## early exit. Driven by hand, seed by seed, straight at `_recycle()`, with the field's own edge
+## pinned 50px from the true one so an entry aimed this way has exactly that much real room and no
+## more.
+func _test_the_entry_roll_is_kept_inside_its_own_room(t) -> void:
+	var field := CrowdField.new(_city.map, Vector2(300.0, _city.map.world_size().y * 0.5))
+	field.radius = 250.0
+	var bounds := field.along_bounds(false)
+	t.check(is_equal_approx(bounds.x, 50.0),
+			"the field's own edge sits 50px from the true one, or the rig below is not testing it")
+
+	var agent := CrowdAgent.new()
+	agent.kind = CrowdAgent.Kind.WALKER
+	agent._map = _city.map
+	agent.field = field
+
+	var lo := INF
+	var hi := -INF
+	var samples := 0
+	for seed in 400:
+		agent._rng.seed = seed
+		agent._recycle()
+		if agent._vertical or agent._direction <= 0.0:
+			continue
+		samples += 1
+		lo = minf(lo, agent._along())
+		hi = maxf(hi, agent._along())
+	t.check(samples > 20,
+			"enough of 400 seeds land a fresh walker heading into this axis to say anything (%d)"
+			% samples)
+	t.check(lo >= 0.0, "never past the true edge (worst %.1fpx)" % lo)
+	t.check(hi - lo > 20.0,
+			"and spread across the 50px of real room rather than pinned to one point (spread %.1fpx)"
+			% (hi - lo))
+	agent.free()

@@ -23,6 +23,7 @@ func run(t) -> void:
 	_test_the_summary_and_pause_restart_signals_are_both_connected(t)
 	_test_no_interior_exists_outside_a_debug_build(t)
 	_test_play_seconds_only_advances_while_the_world_moves(t)
+	_test_the_border_reaches_the_window_from_every_corner(t)
 
 ## `main._debug` is read once from `DevFlags.enabled()` rather than asked of the OS inside
 ## `_process()`, precisely so this can set it directly and check the release shape — the same
@@ -284,4 +285,56 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 	GameState.nerves = saved_nerves
 	GameState.resistance_progress = saved_progress
 	GameState.sabotage_done = saved_sabotage
+	GameState.play_seconds = 0.0
+
+## M120: the border band the camera may see (`City.camera_bounds()`) has to reach exactly as far
+## as `_paint_outside_the_map()` painted it, in every direction a look-ahead glance can push the
+## drawn view — not only wherever `Camera2D.limit_*` alone would stop it.
+##
+## Computed rather than driven through a real windowed `Camera2D`: engine-internal clamping and
+## smoothing run once a frame through the rendering server, which nothing in this synchronous
+## headless suite steps. The check instead does the same arithmetic Godot's own clamp does —
+## `position` held inside `limit_left..limit_right` less half the visible view, `Stroller.
+## CAMERA_LOOK_AHEAD` added on top the way `_camera.offset` is, unclamped — for the worst-case
+## glance at each of the four corners, and reads the real painted `TileMapLayer` cell by cell
+## rather than re-deriving what should be there.
+func _test_the_border_reaches_the_window_from_every_corner(t) -> void:
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+
+	var bounds := city.camera_bounds()
+	var half := Tuning.VIEW_HALF_EXTENT
+	var lead := Stroller.CAMERA_LOOK_AHEAD
+	var size := city.map.world_size()
+	var corners := {
+		"nw": Vector2(0.0, 0.0), "ne": Vector2(size.x, 0.0),
+		"sw": Vector2(0.0, size.y), "se": Vector2(size.x, size.y),
+	}
+	for name in corners:
+		var toward: Vector2 = corners[name]
+		# Where `Camera2D.limit_*` alone would hold `position`: as close to the corner as the
+		# clamp allows, which `City.camera_bounds()` already keeps flush with the painted band on
+		# the two sides a square viewport does not out-reach.
+		var clamped := Vector2(
+				clampf(toward.x, bounds.position.x + half.x, bounds.end.x - half.x),
+				clampf(toward.y, bounds.position.y + half.y, bounds.end.y - half.y))
+		# The look-ahead lead a glance straight at this corner adds on top, unclamped — the whole
+		# reach on whichever axis a facing may point purely along.
+		var glance := Vector2(
+				lead if toward.x > size.x * 0.5 else -lead,
+				lead if toward.y > size.y * 0.5 else -lead)
+		var window := Rect2(clamped + glance - half, half * 2.0)
+		var lo := city.map.world_to_tile(window.position)
+		var hi := city.map.world_to_tile(window.end - Vector2.ONE)
+		var unpainted := 0
+		for y in range(lo.y, hi.y + 1):
+			for x in range(lo.x, hi.x + 1):
+				if city._ground.get_cell_source_id(Vector2i(x, y)) < 0:
+					unpainted += 1
+		t.check(unpainted == 0,
+				"corner %s: every cell the window can show is painted (%d unpainted of %d)"
+				% [name, unpainted, (hi.x - lo.x + 1) * (hi.y - lo.y + 1)])
+
+	city.free()
 	GameState.play_seconds = 0.0

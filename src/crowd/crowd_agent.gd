@@ -2370,6 +2370,23 @@ func _room_beyond_the_map() -> float:
 		return Tuning.TILE_SIZE
 	return Tuning.OUT_OF_SIGHT
 
+## How far past the true edge a **fresh** recycle may land — stricter than `_room_beyond_the_map`,
+## which also governs how far a *departing* agent may overrun before it disappears.
+##
+## **A departure's tile of slack is never seen**: it happens at the edge of the field's own box,
+## hundreds of pixels from the camera, so the one frame it is a tile into the scree changes
+## nothing anybody is looking at. An entry is the one placement that can be the very first frame
+## on screen, and the plain boundary is exactly where a player standing at the edge of the map is
+## looking — so an ordinary walker or car may not land past it at all, and only a car on the spine,
+## arriving through the tunnel or off the bridge, keeps the room `_room_beyond_the_map` already
+## grants it. `_room_beyond_the_map` itself is unchanged and still the departure rule; this is
+## the same question asked of the other end of the journey, with a different answer for everybody
+## the tunnel and the bridge are not for.
+func _entry_room() -> float:
+	if kind != Kind.CAR or not _vertical or _corridor != _map.main_road:
+		return 0.0
+	return Tuning.OUT_OF_SIGHT
+
 ## How far outside the box an agent may enter, in px.
 ##
 ## **It has to be a band and not a point.** Recycling everybody onto the exact edge coordinate puts
@@ -2386,10 +2403,13 @@ const ENTRY_SPREAD := 420.0
 ## off-camera when it appears and has walked a few hundred pixels of pavement by the time it
 ## is visible.
 ##
-## The lane is re-rolled until the band it would enter through is off the map rather than over
-## it. Near the city wall the box hangs into nothing, and an agent placed in that overhang walks
-## visibly through the boundary before it reaches the street; a lane running the other way, or
-## on the other axis, almost always has room, so a handful of rolls settles it.
+## The band itself is kept inside this kind's own room (`_entry_room()`) rather than rolled the
+## full `ENTRY_SPREAD` and hoped over: near the city wall the box hangs into nothing, and an agent
+## rolled into that overhang would walk visibly through the boundary before it reaches the street —
+## a walker or an off-spine car has no room out there at all, so its roll never leaves the map, and
+## a spine car keeps the same reach it is allowed on the way out. A lane running the other way, or
+## on the other axis, is not narrowed at all, so a handful of rolls still settles which one lands
+## on a real street.
 ##
 ## The entry *point* is rolled inside the same loop and checked too, because a corridor may be park
 ## for two blocks of its length: a car re-entering there would be standing on grass and would divert
@@ -2424,7 +2444,21 @@ func _recycle() -> void:
 	for _attempt in 6:
 		_choose_lane(_rng.randf())
 		var bounds := field.along_bounds(_vertical)
-		var back := _rng.randf() * ENTRY_SPREAD
+		# The roll itself is kept inside this kind's own room rather than rolled the full
+		# `ENTRY_SPREAD` and rejected afterwards — see `_entry_room()`. Beside a plain edge
+		# `bounds.x`/`bounds.y` is already the field's own clamped edge, so a `reach` capped at
+		# `bounds.x + _entry_room()` (or the mirror on the other side) can never carry `back` past
+		# what this kind may stand on, and the near-`ENTRY_SPREAD` band mid-map is untouched because
+		# there the cap is never the smaller number.
+		var reach := ENTRY_SPREAD
+		var beyond := _entry_room()
+		if _direction > 0.0:
+			reach = minf(reach, bounds.x + beyond)
+		else:
+			var extent := _map.world_size()
+			var limit: float = extent.y if _vertical else extent.x
+			reach = minf(reach, limit + beyond - bounds.y)
+		var back := _rng.randf() * maxf(reach, 0.0)
 		_set_along(bounds.x - back if _direction > 0.0 else bounds.y + back)
 		_set_cross(_lane_centre)
 		if not _entry_band_fits() or not _stands_on_a_street():
@@ -2444,14 +2478,13 @@ func _recycle() -> void:
 	gate_hold = INF
 	_keep_within_the_room_beyond_the_map()
 	# The loop above only ever *tries* for `_stands_on_a_street`; six misses in a row near a true
-	# edge leave whatever the best roll was, which `_keep_within_the_room_beyond_the_map` still
-	# lets sit up to one tile past it — the same tile every kind but the spine's own car was
-	# already allowed to overrun by before this. That used to correct itself the moment the agent
-	# next moved, because nothing stopped it walking back onto the street. Now `_cannot_go_on`
-	# refuses the very step that would have done it, so a fallback that lands out of bounds is
-	# stuck there instead of drifting in — pulled onto the map's own last row or column here,
-	# the one lane still guaranteed to exist. Never for the spine's own exception, which is
-	# already standing somewhere real.
+	# edge leave whatever the best roll was. `_keep_within_the_room_beyond_the_map` holds that to
+	# `_entry_room()` now — nothing at all for anybody but the spine's own car, which is already
+	# standing somewhere real — so this branch is for a miss `_stands_on_a_street` refuses for a
+	# reason the room does not reach: a closed segment, a soft seal, a body already standing there.
+	# Pulled onto the map's own last row or column here, the one lane still guaranteed to exist,
+	# because `_cannot_go_on` refuses the very step that would once have drifted it back onto the
+	# street on its own.
 	if not _stands_on_a_street():
 		var extent := _map.world_size()
 		var limit: float = extent.y if _vertical else extent.x
@@ -2487,20 +2520,19 @@ func _take_the_placement(taken: Array) -> void:
 	position = at
 
 ## However the rolls above landed, an entry point may not sit further past the map's true edge
-## than this agent is allowed to travel before it is recycled again — the same room
-## `_room_beyond_the_map` grants the far end of a journey, asked of the near end too.
+## than `_entry_room()` allows this kind to arrive at — zero for everybody but a car on the spine.
 ##
 ## **`ENTRY_SPREAD` is a car's-length band and every kind shares it**, because the *normal* job of
 ## a spread is an off-screen buffer inside the box, which every kind wants the same amount of. The
-## fallback below it is the trap: when six rolls near a boundary all miss — likely exactly where
-## the arterial's own weight keeps re-offering the spine — the entry point can land `ENTRY_SPREAD`
-## past the edge regardless of kind, because nothing here knew a walker's own overrun is a single
-## tile where a car's on the spine is the length of the bridge. Without this a walker can appear
-## already standing on the crossing, which is the one thing only a car may do.
+## fallback below it is the trap: the roll above is already kept inside this kind's own room, but a
+## `_join_the_back_of_the_queue()` retreat or a stale `_placement_taken()` from an earlier attempt
+## this frame is not, so this stays the one place that holds the final answer to it regardless of
+## how it got there. Without this a walker can appear already standing on the crossing, which is
+## the one thing only a car may do.
 func _keep_within_the_room_beyond_the_map() -> void:
 	var extent := _map.world_size()
 	var limit: float = extent.y if _vertical else extent.x
-	var beyond := _room_beyond_the_map()
+	var beyond := _entry_room()
 	_set_along(clampf(_along(), -beyond, limit + beyond))
 
 ## Drops the car in behind whatever is already in its lane, when the rolls above could not find a
@@ -2545,21 +2577,23 @@ func _has_room_here() -> bool:
 		return true
 	return traffic.room_at(lane_key(), queue_position(), Tuning.CAR_GAP_MIN)
 
-## Whether the whole entry band lies on ground this agent may stand on. The box's bounds are
-## clamped to the map, so beside a boundary the band an inward-bound lane enters through is the
-## stretch *past* the edge — and that is refused for everybody but a car on the spine, who gets
-## the same `_room_beyond_the_map` on the way in that it gets on the way out. Without the
-## exception nothing ever comes out of the tunnel or off the bridge: every roll of a southbound
-## spine lane beside the north edge lands in the tunnel, every roll is refused, and the traffic
-## through the two holes in the border runs one way.
+## Whether the entry point the roll above landed on is ground this kind's own room reaches.
+##
+## **A check on the landed point, not a prediction of the band**, now that the roll itself is
+## already kept inside `_entry_room()` — see the `reach` computed in `_recycle()`'s loop, capped at
+## `bounds.x + _entry_room()` (or the mirror) rather than rolled the full `ENTRY_SPREAD` and
+## rejected afterwards. That makes this trivially true for anything the clip already reached, which
+## is the point: it stays a stated invariant rather than a silent assumption, and it is still what
+## lets a car on the spine in through the tunnel or off the bridge — `_entry_room()` grants that
+## kind `Tuning.OUT_OF_SIGHT` here exactly as `_room_beyond_the_map` grants it on the way out, so the
+## same roll that would refuse anybody else still lands a southbound spine lane beside the north
+## edge inside the tunnel.
 func _entry_band_fits() -> bool:
-	var bounds := field.along_bounds(_vertical)
 	var extent := _map.world_size()
 	var limit: float = extent.y if _vertical else extent.x
-	var beyond := _room_beyond_the_map()
-	if _direction > 0.0:
-		return bounds.x - ENTRY_SPREAD >= -beyond
-	return bounds.y + ENTRY_SPREAD <= limit + beyond
+	var beyond := _entry_room()
+	var at := _along()
+	return at >= -beyond and at <= limit + beyond
 
 # ---------------------------------------------------------------- drawing ---
 

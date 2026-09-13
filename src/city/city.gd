@@ -731,15 +731,28 @@ func _add_prop(prop: Node2D) -> void:
 	_props.append(prop)
 	_entities.add_child(prop)
 
-## How far the camera may see. The map, plus the band of land painted outside it.
+## How far the camera may see. The map, plus the band of land painted outside it, less the reach
+## a glance toward the corner costs.
 ##
 ## **Not the map exactly**, or the boundary looks like a wall however much is built out there: the
 ## camera would stop at the last walkable tile, so the far side of a boundary street — and the
 ## tunnel the spine leaves by — would be drawn every frame and never once on screen. She still
 ## cannot *walk* past the boundary; she can see that there is something past it.
+##
+## **And not the painted depth exactly either.** `Camera2D.limit_*` only clamps `position`;
+## `Stroller._update_camera()`'s look-ahead is `_camera.offset`, added on top and unclamped, so
+## facing along an edge pushes the drawn view `Stroller.CAMERA_LOOK_AHEAD` past wherever `position`
+## was held to. On the north and south sides that overrun still lands inside the painted band —
+## `Tuning.VIEW_HALF_EXTENT.y` (180px) leaves 76px of the eight-tile depth spare. East and west have
+## none to give: `VIEW_HALF_EXTENT.x` (320px) already exceeds it, so `position` is already clamped
+## flush with the painted edge before any lead is added, and the full look-ahead shows past it —
+## measured, the missing column the border paints but the window still shows black beyond.
+## Reserving the look-ahead from the clamp itself, uniformly, costs the same slack on every side
+## instead of only the two that happened to have room for it, which is what leaves every side
+## reaching exactly as deep as the paint does.
 func camera_bounds() -> Rect2:
-	return Rect2(Vector2.ZERO, map.world_size()).grow(
-			OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE))
+	var depth := OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE)
+	return Rect2(Vector2.ZERO, map.world_size()).grow(depth - Stroller.CAMERA_LOOK_AHEAD)
 
 ## Walls just outside the map, so the player cannot walk off the edge of the world.
 func _spawn_boundary() -> void:
