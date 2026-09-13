@@ -58,6 +58,7 @@ src/
 	crowd_agent.gd        one walker or one car
 	crowd_lanes.gd        the lane geometry of the street grid
 	crowd_field.gd        the box around the player the crowd is simulated in
+	crowd_pockets.gd      the ground today's seals shut in, per kind, so nobody is placed with nowhere to go
 	car_turn.gd           the arc a car follows out of one lane and into another
 	traffic_index.gd      where the cars are, lane by lane, so a turn can check for room
   events/

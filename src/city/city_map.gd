@@ -138,14 +138,27 @@ var closed_tiles := {}
 ## reaching into this dictionary directly.
 var held_segments := {}
 
+## Bumped by every write to the three per-day records above and below — the holds, the soft seals
+## and the closures. It is a *version*, never a count of anything: the only thing a reader may do
+## with it is notice that it differs from the one its own derived answer was built from.
+##
+## **One reader, and it exists because the record can move under something that has already read
+## it.** `CrowdPockets` floods the day's open lanes once and hands the same answer to every agent
+## for the rest of the day, and a seal planned — or a test standing one — after that flood would
+## otherwise be invisible to the crowd until tomorrow. A dirty mark costs an integer compare a
+## frame; the alternatives are a rebuild nobody triggers or a flood fill per placement.
+var day_record_version := 0
+
 ## Clears today's held segments. Called once per day, before anything is added — see
 ## `held_segments`.
 func clear_day_holds() -> void:
 	held_segments.clear()
+	day_record_version += 1
 
 ## Marks one segment as held for today. See `held_segments`.
 func hold_segment(key: Vector3i) -> void:
 	held_segments[key] = true
+	day_record_version += 1
 
 ## Whether `segment` is held today. Null answers false, so a caller need not check for a real
 ## street first.
@@ -200,10 +213,12 @@ var soft_sealed_tiles := {}
 ## Clears today's soft seals. See `soft_sealed_tiles`.
 func clear_day_soft_seals() -> void:
 	soft_sealed_tiles.clear()
+	day_record_version += 1
 
 ## Marks one tile as soft-sealed to walkers for today. See `soft_sealed_tiles`.
 func seal_soft_tile(tile: Vector2i) -> void:
 	soft_sealed_tiles[tile] = true
+	day_record_version += 1
 
 ## Whether a tile is shut to walkers by today's soft seals. False for anything a soft seal never
 ## stood on, cars included — a soft seal never asks this on their behalf.
@@ -548,6 +563,7 @@ func anchor_of(block: Vector2i) -> Vector2i:
 ## have to be down before any of them is judged.
 func close_streets(closures: Array[RoadClosure]) -> void:
 	closed_tiles.clear()
+	day_record_version += 1
 	if closures.is_empty():
 		return
 	var barrier_tiles := {}

@@ -146,8 +146,19 @@ item below for as long as looking takes.
   seal, a wall and a closure; a soft seal takes both pavements from walkers and leaves the road
   to cars; a door lets cars through one at a time. Does a street the crowd refuses read as
   *shut*? The other half of this, whether the crowd looks stuck, was answered by
-  [PLAYTEST-66](playtests/PLAYTEST-66.md) for a junction sealed on every side and is M119 in
-  `TODO.md`; this asks about one seal on an open street. Record is `DECISIONS.md`, M110.
+  [PLAYTEST-66](playtests/PLAYTEST-66.md) for a junction sealed on every side and built as
+  `DECISIONS.md`, M119; this asks about one seal on an open street. Record is `DECISIONS.md`, M110.
+- **Stand at a junction sealed on every side, then walk the open streets around it.** Nobody is
+  placed inside such a pocket any more, and whoever a seal goes up around leaves once they are
+  off screen, so the sealed crossing is empty. What that costs is density elsewhere: the day's
+  crowd is the same size and now lands on about a quarter less pavement (48 of 144 junctions were
+  pocketed for walkers on seed 4242 day 1, none for cars), so the open streets are that much
+  busier. Two questions. Does an empty sealed-off crossing read as *shut*, the way an empty
+  sealed street does, or as a hole in the city? And do the open streets now read as crowded in a
+  way that changes the route decision, which is a density question for `Tuning` rather than for
+  this rule? Also: a walker or car that turns back from a seal now keeps its new heading for one
+  stride before it may turn again — does the turn-back at a seal read as a decision rather than a
+  twitch? Record is `DECISIONS.md`, M119; the bursts are `evidence/m119-crowd-pockets-2026-09-13/`.
 - **Walk past a café, a stall or a kerbed van on a day with several** (a precinct's pavements are
   the busiest early in a day). A walker steps into the other lane of its own footway to get past
   one and steps back after; a car in the body's own lane turns at the last junction while the

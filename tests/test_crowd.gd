@@ -53,6 +53,9 @@ func run(t) -> void:
 	_test_cars_do_not_enter_a_junction_they_cannot_leave(t)
 	_test_nothing_walks_into_a_hard_blocker(t)
 	_test_a_hard_seal_shuts_its_street_to_the_crowd(t)
+	_test_nobody_is_placed_in_a_sealed_junction(t)
+	_test_a_pocket_empties_once_it_is_out_of_view(t)
+	_test_a_turn_around_commits_to_its_new_heading(t)
 	_test_a_region_wall_is_shut_and_a_door_is_carved_out(t)
 	# One door day, shared: building a city and planning days until one carries a door is most of a
 	# minute, and every test below places its own bodies at the same hut anyway.
@@ -1474,6 +1477,230 @@ func _test_a_hard_seal_shuts_its_street_to_the_crowd(t) -> void:
 			+ "traffic (%d frames it did)" % frames_inside)
 
 	_city.map.clear_day_holds()
+
+# ------------------------------------------------------------- M119: pockets ---
+# "pedestrians with nowhere to go (all four sides of the intersection are blocked off) should just
+# despawn (or never spawn in the first place) right now they're accumulating in one place and move
+# back and forth or worth flicker … the same with cars" (playtest 66, 2026-09-12). A junction whose
+# every arm is held is a **pocket**: legal ground with no street out of it. The three tests below
+# are the three parts of the answer — nobody is put in one, whoever is in one leaves, and an
+# about-face costs a stride whether or not the ground it is on is a pocket. All three stand a
+# junction sealed on every side, which is the only place the last of them can be asked about at all.
+
+## M119, item 1: nobody is placed inside a junction sealed on every side, on the morning or on any
+## recycle after it.
+func _test_nobody_is_placed_in_a_sealed_junction(t) -> void:
+	var sealed := _a_junction_to_seal(t)
+	if sealed.is_empty():
+		return
+	var rect: Rect2i = sealed["rect"]
+	var at: Vector2 = sealed["at"]
+	_city.map.clear_day_holds()
+	for arm: StreetNetwork.Segment in sealed["arms"]:
+		_city.map.hold_segment(arm.key())
+	_city.crowd.start_day(1, _rng(1), at)
+	_city.crowd.set_focus(at)
+
+	var pockets := _city.crowd.pockets()
+	# The guard against a vacuous sweep: "nobody stands in a pocket" passes on its own where the
+	# seals made no pocket at all.
+	t.check(pockets.tile_count(false) > 0 and pockets.tile_count(true) > 0,
+			"sealing every arm of a junction pockets ground for both kinds (%d walker tiles, %d car)"
+			% [pockets.tile_count(false), pockets.tile_count(true)])
+	t.check(pockets.holds(rect.get_center(), false) and pockets.holds(rect.get_center(), true),
+			"and the junction box itself is inside the pocket")
+
+	var placed_inside := 0
+	for agent in _city.crowd.agents():
+		if rect.has_point(_city.map.world_to_tile(agent.position)):
+			placed_inside += 1
+	t.check(placed_inside == 0,
+			"nobody is placed inside it on the morning (%d were)" % placed_inside)
+
+	var frames_inside := 0
+	for frame in int(round(20.0 / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		for agent in _city.crowd.agents():
+			if rect.has_point(_city.map.world_to_tile(agent.position)):
+				frames_inside += 1
+	t.check(frames_inside == 0,
+			("and nobody is recycled into it over twenty seconds of the field sitting on it "
+			+ "(%d agent-frames inside)") % frames_inside)
+
+	_city.map.clear_day_holds()
+
+## M119, item 2: whoever is sealed in leaves — but not while she is looking at them.
+##
+## The crowd is placed first and the seals go up under it, which is the one case a placement cannot
+## prevent and is also the only way to get anybody into a pocket now that `setup()` refuses to.
+func _test_a_pocket_empties_once_it_is_out_of_view(t) -> void:
+	var sealed := _a_junction_to_seal(t)
+	if sealed.is_empty():
+		return
+	var rect: Rect2i = sealed["rect"]
+	var at: Vector2 = sealed["at"]
+	_city.map.clear_day_holds()
+	_city.crowd.start_day(1, _rng(2), at)
+	_advance_watching(4.0, at)
+	for arm: StreetNetwork.Segment in sealed["arms"]:
+		_city.map.hold_segment(arm.key())
+	_city.crowd.step(STEP)
+
+	var watched := _inside(rect)
+	t.check(watched > 0,
+			"there were agents standing in the junction when it was sealed (%d)" % watched)
+	var lowest := watched
+	for frame in int(round(3.0 / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		lowest = mini(lowest, _inside(rect))
+	t.check(lowest == watched,
+			("nobody sealed into it disappears while the view is on it — %d were there and the "
+			+ "count never fell below %d") % [watched, lowest])
+
+	# Far enough that the junction is off camera (`Tuning.OUT_OF_SIGHT`, 420px) and well inside the
+	# crowd's own box (`CROWD_FIELD_RADIUS`, 800px), so what empties it is the pocket rule and not
+	# the field's ordinary edge. Pointed at the middle of the map so the box does not hang over the
+	# boundary.
+	var inward := signf(_city.map.world_size().x * 0.5 - at.x)
+	var away := at + Vector2(620.0 * (inward if inward != 0.0 else 1.0), 0.0)
+	for frame in int(round(3.0 / STEP)):
+		_city.crowd.set_focus(away)
+		_city.crowd.step(STEP)
+	t.check(_inside(rect) == 0,
+			"and every one of them is gone once the view has moved off it (%d left)"
+			% _inside(rect))
+
+	_city.map.clear_day_holds()
+
+## M119, item 3: an about-face commits to its new heading for a stride, so a body with a seal at
+## each end of it paces rather than facing two ways at sixty frames a second.
+##
+## Asked at a sealed junction with the view held on it, which is where the reversals actually
+## happen: the agents in it are the ones with a seal every way they look, and keeping the camera
+## there is what stops them being recycled out of the measurement.
+##
+## The floor is each agent's own `_stride_seconds()` rather than a number, so it survives any
+## rebalancing of walking speed or of the gait — what it pins is that a reversal is worth a stride,
+## not that a stride is 35px.
+func _test_a_turn_around_commits_to_its_new_heading(t) -> void:
+	var sealed := _a_junction_to_seal(t)
+	if sealed.is_empty():
+		return
+	var at: Vector2 = sealed["at"]
+	var rect: Rect2i = sealed["rect"]
+	_city.map.clear_day_holds()
+	_city.crowd.start_day(1, _rng(3), at)
+	_advance_watching(3.0, at)
+	for arm: StreetNetwork.Segment in sealed["arms"]:
+		_city.map.hold_segment(arm.key())
+
+	var facing := {}
+	var since := {}
+	var turning := {}
+	var reversals := 0
+	var too_soon := 0
+	var soonest := INF
+	for frame in int(round(8.0 / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		for agent: CrowdAgent in _city.crowd.agents():
+			var id := agent.get_instance_id()
+			var heading := Vector2(agent._direction, 1.0 if agent._vertical else 0.0)
+			# `INF` until this agent has actually been seen to turn round once: the first about-face
+			# of the run says nothing, since whatever came before it happened before the measurement
+			# started.
+			since[id] = float(since.get(id, INF)) + STEP
+			# A car coming off an arc reverses its heading over the whole length of that arc, which
+			# is M111's own manoeuvre and the opposite of the thing being measured. It is the only
+			# other way a heading flips on one axis.
+			var landed: bool = bool(turning.get(id, false)) and not agent.is_turning()
+			turning[id] = agent.is_turning()
+			# Only the bodies actually inside the sealed junction are counted. Everybody else is
+			# subject to a recycle, which is a teleport into a fresh lane and a fresh direction at
+			# the far edge of the field — a reading about a different person rather than an
+			# about-face. Their clock keeps running rather than being restarted, because an agent
+			# that walks into the junction and turns round a moment later has still only turned
+			# round once; a recycled one cannot walk the eight hundred pixels back inside this
+			# measurement, so it never returns to be miscounted.
+			if landed or not rect.has_point(_city.map.world_to_tile(agent.position)):
+				facing[id] = heading
+				continue
+			var before: Vector2 = facing.get(id, heading)
+			facing[id] = heading
+			# An about-face only: a turn at a junction swaps the axis, which is a different decision
+			# with nothing here to say about it. The clock is **not** restarted for one, because what
+			# is being measured is the gap between two about-faces and a turn in between is not a
+			# reason to allow the second one sooner.
+			if before.y != heading.y or before.x == heading.x:
+				continue
+			reversals += 1
+			var waited: float = since[id]
+			since[id] = 0.0
+			# A whole frame of slack: the stride is run down by `delta` and the reversal is taken on
+			# the frame after it reaches zero.
+			if waited < agent._stride_seconds() - STEP:
+				too_soon += 1
+				soonest = minf(soonest, waited)
+	t.check(reversals > 0, "the sealed junction turns somebody round to ask about (%d reversals)"
+			% reversals)
+	t.check(too_soon == 0,
+			("no agent reverses twice inside one of its own strides (%d of %d did, the quickest "
+			+ "after %.3fs)") % [too_soon, reversals, 0.0 if soonest == INF else soonest])
+
+	_city.map.clear_day_holds()
+
+## How many agents are standing inside a tile rect right now.
+func _inside(rect: Rect2i) -> int:
+	var count := 0
+	for agent in _city.crowd.agents():
+		if rect.has_point(_city.map.world_to_tile(agent.position)):
+			count += 1
+	return count
+
+## Runs the crowd with the view held on one spot, which is what a rig has instead of a player: the
+## field's centre is where the camera is. See `CrowdAgent._out_of_view()`.
+func _advance_watching(seconds: float, at: Vector2) -> void:
+	for i in int(round(seconds / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+
+## One ordinary junction to seal: its four arms, its own box as a tile rect, and the centre of that
+## box in world coordinates.
+##
+## Picked rather than taken: a junction on the spine has the tunnel and the bridge past the end of
+## it, one bordering the home block has a carve-out on one arm, and one on a precinct's own corridor
+## is not ground a car may be on in the first place — none of the three is the plain four-armed
+## crossroads the finding is about. Empty, with a failed check, where this city has none.
+func _a_junction_to_seal(t) -> Dictionary:
+	var home := {}
+	for segment in StreetNetwork.around_blocks(Rect2i(_city.map.home_block, Vector2i.ONE)):
+		home[segment.key()] = true
+	var count := StreetNetwork.junction_count()
+	for y in range(1, count.y - 1):
+		for x in range(1, count.x - 1):
+			var junction := Vector2i(x, y)
+			if junction.x == _city.map.main_road:
+				continue
+			var arms := StreetNetwork.at_junction(junction)
+			if arms.size() != 4:
+				continue
+			var ordinary := true
+			for arm in arms:
+				if not _city.map.has_street(arm.key()) or home.has(arm.key()):
+					ordinary = false
+					break
+			if not ordinary:
+				continue
+			var rect := Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
+			var centre := rect.get_center()
+			if not _city.map.is_street(centre) or not _city.map.is_driveable_at(true, centre):
+				continue
+			return {"arms": arms, "rect": rect,
+					"at": _city.map.tile_rect_to_world(rect).get_center()}
+	t.check(false, "this city has a plain four-armed junction to seal")
+	return {}
 
 ## M110, item 1: a region wall is shut to the crowd the way a hard seal is, and a region door is
 ## carved out of the same check — a car still brakes and queues for the gate

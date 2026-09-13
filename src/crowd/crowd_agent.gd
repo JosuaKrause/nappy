@@ -173,6 +173,12 @@ var door_segments := {}
 ## is the crowd's own answer, the same shape `door_segments` already is.
 var home_segments := {}
 
+## Where today's seals have left ground this agent could get into and not out of, or `null` for an
+## agent built by hand in a test, which then treats every street as somewhere it can leave. Held by
+## reference and shared with the rest of the crowd, since it is a fact about the day's map rather
+## than about anybody standing on it — see `CrowdPockets`.
+var pockets: CrowdPockets = null
+
 ## Somebody standing in front of this car, or `Vector2.INF` for nobody. Written once per
 ## physics frame by `Crowd` for the cars near the player and read here: an agent has no
 ## business knowing who the player is, but it does have to decide whether to stop.
@@ -333,6 +339,9 @@ var _body_detour_held := false
 var _yield_hurry := false
 var _yield_left := 0.0
 
+## Seconds this agent has left of the stride it owes its last about-face. See `_turn_round()`.
+var _turn_back_hold := 0.0
+
 func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: int,
 		axis_roll: float) -> void:
 	kind = agent_kind
@@ -349,7 +358,8 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 	# Start somewhere along the field rather than at its edge, or the whole crowd arrives from
 	# one side in a wave on the first morning. Re-rolled if it lands somewhere it could not have
 	# walked to: behind a barrier, which reads as the barrier being fake, or in the middle of a
-	# four-block calm zone, where the corridor it belongs to has been park since generation.
+	# four-block calm zone, where the corridor it belongs to has been park since generation — or
+	# somewhere it could have walked to and could never leave again, which is a pocket.
 	#
 	# **And if the whole street is wrong, it picks another street.** Re-rolling only the position
 	# along a corridor cannot help a car that was given a corridor with nowhere drivable in view — a
@@ -358,10 +368,16 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 	# land among the bollards every time and the last one places it there anyway: a car standing in a
 	# precinct, which `tests/test_crowd.gd` asks about by name. **A retry is not a guarantee** — when
 	# re-rolling the small decision keeps failing, re-take the big one.
+	# The best spot the rolls below have refused so far: open street the agent could never leave
+	# again. Preferred over nothing at all, and given back only if no roll finds a street with a way
+	# out of it, so that refusing a pocket can never end with somebody standing in a café instead —
+	# the fallback that takes whatever the last roll was is the one place a placement can still land
+	# inside a body. See `_placement_taken()`.
+	var pocketed: Array = []
+	var placed := false
 	for _street in 4:
 		_choose_lane(axis_roll)
 		var bounds := field.along_bounds(_vertical)
-		var placed := false
 		# **A held segment can swallow most of a corridor's visible stretch** — a region wall or a
 		# hard seal is kept off `held_segments` by the tile, not by a fraction of it, so a field
 		# centred close to one narrows the open ground a random draw can land on far more than a
@@ -371,15 +387,21 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 		for _attempt in 24:
 			_set_along(_rng.randf_range(bounds.x, bounds.y))
 			_set_cross(_lane_centre)
-			if _stands_on_a_street():
+			if not _stands_on_a_street():
+				continue
+			if not _is_in_a_pocket():
 				placed = true
 				break
+			if pocketed.is_empty():
+				pocketed = _placement_taken()
 		if placed:
 			break
 		# A fresh axis roll, or the second attempt at a car is the first attempt again: the roll
 		# the caller passed is a *fixed* alternation for walkers, so re-using it re-picks the same
 		# axis and, in a field with one drivable corridor, very often the same corridor.
 		axis_roll = _rng.randf()
+	if not placed and not pocketed.is_empty():
+		_take_the_placement(pocketed)
 	_settle_junction()
 	colour = _colour()
 
@@ -451,6 +473,38 @@ func _stands_on_a_street() -> bool:
 	if kind == Kind.WALKER and _map.tile_at(tile) == GameEnums.TileType.ROAD:
 		return false
 	return _map.is_street(tile)
+
+## Whether this agent is standing on ground today's seals have shut in — a junction with all four
+## arms held, and whatever stub of lane is sealed in with it. See `CrowdPockets`.
+##
+## **Asked beside `_stands_on_a_street()` at a placement rather than folded into it**, because the
+## two questions have different answers for an agent that is already standing somewhere. Ground it
+## may not stand on is a state to get out of *now*, which is what `_divert()` and `_plan_a_turn()`
+## both do about it; a pocket is legal ground it simply cannot leave, and the answer to that is to
+## go when nobody is looking rather than to turn on the spot. Folding it in would turn the whole
+## pocket into a wall and give every agent in one a reason to about-face every frame, which is the
+## flicker this milestone is taking out.
+func _is_in_a_pocket() -> bool:
+	if pockets == null:
+		return false
+	return pockets.holds(_map.world_to_tile(position), kind == Kind.CAR)
+
+## Whether this agent is far enough from the camera that taking it away cannot be seen.
+##
+## **`CrowdField.centre` is the camera.** `Crowd._physics_process()` puts it on the player every
+## frame and a rig puts it wherever it is looking, so the distance from it is the distance from the
+## middle of the screen — and `Tuning.OUT_OF_SIGHT` (420px) is the round number outside the
+## viewport's own far corner at this zoom, which is what *nothing vanishes while you are looking at
+## it* has always been measured against.
+##
+## The field's own edge is nowhere near this: it is 800px out, so an agent recycled for leaving the
+## box is out of sight several hundred pixels over. This is for the one recycle that happens
+## somewhere the player may well be standing — a pocket — and it is the whole of what makes that
+## legal.
+func _out_of_view() -> bool:
+	if not field:
+		return true
+	return position.distance_to(field.centre) > Tuning.OUT_OF_SIGHT
 
 ## Whether a tile's own street segment is shut to this agent the way a hard blocker is: held for
 ## today (`CityMap.is_held_at` — a hard seal's segment, a region wall, a closure, or the streets
@@ -655,6 +709,9 @@ func _process(delta: float) -> void:
 		if _detour_left <= 0.0 and not _body_detour_held:
 			_detour = 0.0
 	_yield_left = maxf(0.0, _yield_left - delta)
+	# The stride an about-face owes its new heading, run down here rather than where it is spent, so
+	# that a body held at a gate or stopped behind a queue works it off too. See `_turn_round()`.
+	_turn_back_hold = maxf(0.0, _turn_back_hold - delta)
 	if kind == Kind.CAR:
 		_give_way(delta)
 		# A car in a turn is following a path that was checked before it started, so none of the
@@ -689,6 +746,11 @@ func _process(delta: float) -> void:
 	if _has_left_the_field():
 		_recycle()
 		recycled = true
+	elif _is_in_a_pocket() and _out_of_view():
+		# Sealed in after it arrived — the one case a placement cannot prevent. It leaves the way
+		# anybody else leaves the field, and it waits until nobody can see it go.
+		_recycle()
+		recycled = true
 	_redraw_if_the_picture_changed()
 
 ## Keeps an agent's own centre out of a tile it may not stand on, when the step it has just taken
@@ -719,10 +781,17 @@ func _keep_out_of_a_body(stood_on: Vector2i) -> void:
 ## Whether this agent's own centre may be on a tile. A car's answer is `_cannot_go_on`, the same
 ## predicate its lookahead and its turns use; a walker's is the per-lane one, because a walker's
 ## `_cannot_go_on` is about a whole footway being taken and this is about a body under its feet.
+##
+## **A shut segment is added to the walker's half rather than left to the turn.** A walker normally
+## never reaches one — it turns at the last junction, or at the tile before a wall — but a walker
+## committed to the heading it has just turned into (`_turn_round()`) cannot turn again for a
+## stride, and the one thing that must not buy is a person standing in a hard seal. Nothing else
+## changes: the carve-outs `_segment_is_shut()` makes for a door and for the home block's own
+## streets are the same ones every other reader gets.
 func _may_stand_on(tile: Vector2i) -> bool:
 	if kind == Kind.CAR:
 		return not _cannot_go_on(_vertical, tile)
-	return _walker_lane_is_open(tile)
+	return _walker_lane_is_open(tile) and not _segment_is_shut(tile)
 
 ## Pulls one axis back inside the tile band this agent started the frame in. A pixel short of the
 ## far edge, the same fencepost `_recycle` gives up so a clamp cannot land exactly on the line and
@@ -1198,9 +1267,11 @@ func _choose_lane(roll: float) -> void:
 	_cruise = _speed
 	_lane_centre = _lane_centre_here()
 	_junction = -1
-	# A planned turn is about a junction on a corridor this agent is no longer on.
+	# A planned turn is about a junction on a corridor this agent is no longer on, and so is the
+	# stride an about-face there was still owed.
 	_turn = null
 	_turn_run_up = 0.0
+	_turn_back_hold = 0.0
 	_forget_the_detour()
 
 ## Where this agent travels in its lane. A car sits on the tile centre; a walker is pushed toward
@@ -1785,13 +1856,44 @@ func _divert() -> void:
 ## flipped its heading drove the wrong way down its own queue — and `space_out_the_traffic` then had
 ## to resolve a head-on overlap the only way it can, by moving a body. It is the same line
 ## `_divert` runs after a turn and for the same reason.
+##
+## **And it costs a stride, which is the whole of the second sentence here.** The decision that
+## calls this is taken again on the very next frame from the very next scan, so an agent with a seal
+## at each end of the ground it is on reverses on *every* frame: `_look_ahead()` re-scans the moment
+## the direction changes, finds the other seal, and `_divert()` turns it round again. At sixty
+## frames a second that is not pacing, it is a body facing two ways at once — the flicker playtest
+## 66 reported, and it is a defect whether or not the agent has anywhere to go. So a reversal is
+## refused while the last one is still being walked off (`_stride_seconds()`), and what the agent
+## does instead is keep walking the way it has just turned; the step that would carry it into the
+## seal is held by `_keep_out_of_a_body()` the way any illegal step is.
 func _turn_round() -> void:
+	if _turn_back_hold > 0.0:
+		return
+	_turn_back_hold = _stride_seconds()
 	_direction = -_direction
 	if kind == Kind.CAR:
 		_lane = CrowdLanes.road_lane(_vertical, _direction)
 		_lane_centre = _lane_centre_here()
 	_forget_the_detour()
 	_claim_the_road_here()
+
+## How long one stride of this body takes at the speed it cruises at, in seconds — the unit an
+## about-face commits its new heading for.
+##
+## **A stride is a distance, and each kind already has one.** A walker's is the gait's own: it draws
+## two frames and `_walker_gait_frame()` carries it through both of them over half a turn of
+## `_walker_gait_phase`, which `WALKER_GAIT_RATE` prices at 0.09 radians per pixel walked — so a
+## stride is `PI / 0.09`, about 35px, and at `Tuning.PEDESTRIAN_SPEED` (46–74px/s) that is half a
+## second or so. A car has no gait and its stride is its own length, the same 52px the strike box is
+## measured over, which at `Tuning.CAR_SPEED` (130–185px/s) is about a third of a second.
+##
+## Stated in seconds rather than as a distance travelled, because the agent this exists for is
+## usually **stopped** — nose to a seal, or braked behind one — and a hold measured in pixels covered
+## would never expire at all for a body that is not covering any.
+func _stride_seconds() -> float:
+	var stride := 2.0 * Tuning.CAR_STRIKE_HALF_LENGTH if kind == Kind.CAR \
+			else PI / WALKER_GAIT_RATE
+	return stride / maxf(_cruise, 1.0)
 
 ## Which way to turn out of `crossing`, trying `first` before the other one, or `0.0` for neither.
 ##
@@ -2297,6 +2399,12 @@ const ENTRY_SPREAD := 420.0
 ## lands in leaves the positional resolve to sort it out, which is the resolve doing a placement's
 ## job. It is only a preference: after six rolls it takes what it has, because an entry band with
 ## nothing free in it must still put the car somewhere.
+##
+## **And it has to be somewhere with a way out of it.** A spot inside a pocket — a junction whose
+## four arms are all held — is refused exactly the way a spot with no room is, because an agent put
+## there walks to one seal, turns, walks to the next and does that until the day ends. That is the
+## whole of *"or never spawn in the first place"*; `_is_in_a_pocket()` is the question and
+## `CrowdPockets` is what answers it without a search per roll.
 func _recycle() -> void:
 	# See `setup()`'s own comment: resetting this cannot be wrong the way holding `_walker_view`
 	# stale would be, and doing it anyway keeps a recycled walker's stride deterministic per seed.
@@ -2312,14 +2420,22 @@ func _recycle() -> void:
 	# answer — and draws it here, before the rolls below, for the reason `_draw_the_door_answer()`
 	# gives: the entry point is checked against ground this walker may actually walk.
 	_draw_the_door_answer()
+	var legal: Array = []
 	for _attempt in 6:
 		_choose_lane(_rng.randf())
 		var bounds := field.along_bounds(_vertical)
 		var back := _rng.randf() * ENTRY_SPREAD
 		_set_along(bounds.x - back if _direction > 0.0 else bounds.y + back)
 		_set_cross(_lane_centre)
-		if _entry_band_fits() and _stands_on_a_street() and _has_room_here():
+		if not _entry_band_fits() or not _stands_on_a_street():
+			continue
+		if not _is_in_a_pocket() and _has_room_here():
+			legal = []
 			break
+		if legal.is_empty():
+			legal = _placement_taken()
+	if not legal.is_empty():
+		_take_the_placement(legal)
 	_join_the_back_of_the_queue()
 	_settle_junction()
 	_claim_the_road_here()
@@ -2328,7 +2444,7 @@ func _recycle() -> void:
 	gate_hold = INF
 	_keep_within_the_room_beyond_the_map()
 	# The loop above only ever *tries* for `_stands_on_a_street`; six misses in a row near a true
-	# edge leave whatever the last roll was, which `_keep_within_the_room_beyond_the_map` still
+	# edge leave whatever the best roll was, which `_keep_within_the_room_beyond_the_map` still
 	# lets sit up to one tile past it — the same tile every kind but the spine's own car was
 	# already allowed to overrun by before this. That used to correct itself the moment the agent
 	# next moved, because nothing stopped it walking back onto the street. Now `_cannot_go_on`
@@ -2343,6 +2459,32 @@ func _recycle() -> void:
 		# `world_to_tile` always floors away — so the clamp's own top has to give up a whole
 		# pixel or it can land exactly on the line and read as out of bounds again.
 		_set_along(clampf(_along(), 0.0, limit - 1.0))
+
+## The lane and the spot one placement roll settled on, kept so that a later roll which turns out
+## worse can be given the earlier one back.
+##
+## **A roll cannot be replayed, which is why this exists.** `_choose_lane()` draws from `_rng`
+## itself — the corridor, the lane within it, the direction and the speed — so calling it again with
+## the same argument picks a different lane and moves the stream on. The state it wrote is the only
+## copy of that decision there is.
+##
+## It carries everything `_choose_lane()` writes that a placement depends on. The rest of what that
+## function clears — the junction it is standing in, a planned turn, a detour — is the same after
+## every roll of one loop, so there is nothing there to put back.
+func _placement_taken() -> Array:
+	return [_vertical, _corridor, _lane, _direction, _speed, _lane_centre, position]
+
+## Puts back a placement `_placement_taken()` kept. See that function.
+func _take_the_placement(taken: Array) -> void:
+	_vertical = bool(taken[0])
+	_corridor = int(taken[1])
+	_lane = int(taken[2])
+	_direction = float(taken[3])
+	_speed = float(taken[4])
+	_cruise = _speed
+	_lane_centre = float(taken[5])
+	var at: Vector2 = taken[6]
+	position = at
 
 ## However the rolls above landed, an entry point may not sit further past the map's true edge
 ## than this agent is allowed to travel before it is recycled again — the same room
@@ -2434,6 +2576,11 @@ var _car_view := 2
 ## at any speed the way the mother's own does. Cars have no gait; only a walker reads this.
 var _walker_gait_phase := 0.0
 
+## Radians of gait per pixel walked. `Stroller._physics_process()` advances `_walk_phase` at the
+## identical rate, so the crowd and the player share one stride length per pixel covered — and
+## `_stride_seconds()` reads it back to price a stride as a distance.
+const WALKER_GAIT_RATE := 0.09
+
 ## Below this speed a walker's own applied heading (`_walker_heading()`) is too close to zero to
 ## mean a facing, so it holds whatever it was last drawn as rather than chattering on the residual
 ## few px/s `_yield_factor()` and float noise can still leave in it. Well under
@@ -2501,7 +2648,8 @@ func _update_walker_view() -> void:
 ## `Stroller._physics_process()`'s own `_walk_phase` uses the identical 0.09 rate, so the crowd and
 ## the player share one stride length per pixel walked.
 func _advance_walker_gait(delta: float) -> void:
-	_walker_gait_phase = wrapf(_walker_gait_phase + velocity().length() * delta * 0.09, 0.0, TAU)
+	_walker_gait_phase = wrapf(_walker_gait_phase + velocity().length() * delta * WALKER_GAIT_RATE,
+			0.0, TAU)
 
 ## Which of the walker's two gait frames to draw right now: frame 1 (feet passing) for half of
 ## every stride while actually moving, frame 0 (the rest pose) otherwise — `Stroller._draw_mother()`'s

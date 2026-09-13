@@ -612,6 +612,13 @@ The radius has one floor and it is the screen: half the viewport diagonal is the
 anything visible can be from the camera, so an agent recycled outside that is always off-camera
 when it appears, whichever way she is facing.
 
+**And a recycle never lands somewhere with no way out.** A junction with every arm shut is a
+*pocket* — see docs/CITY.md, "Life on the streets" — and both the morning's placement and every
+recycle refuse a spot inside one, so a sealed-off crossing fills with nobody rather than with people
+pacing between its seals. Anybody a seal goes up around is recycled out of it too, at the first
+frame they are further from the camera than `OUT_OF_SIGHT`: the field's own edge is off camera by
+hundreds of pixels, and this is the one recycle that has to check.
+
 **Events stream.** `EventScheduler` still plans the whole day across the whole city — every
 guarantee the game makes is a property of the *plan*, so nothing about one usable park, two
 routes to two calm areas, one-shots firing once, or determinism from a seed is touched. What

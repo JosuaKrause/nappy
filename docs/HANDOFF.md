@@ -280,10 +280,10 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
 ## The queue, as prioritised on 2026-09-09
 
-**Playtest 66's three crowd milestones go first**, on the player's word that the round is being
-tested as it lands: M119, the crowd with nowhere to go leaves; M120, the map edge; M121, the halo
-follows its owner and a turning car's picture and lane. They share `src/crowd/` and run one after
-another. The run they came from is under `docs/evidence/archive/session-captures/`.
+**Playtest 66's two remaining milestones go first**, on the player's word that the round is being
+tested as it lands: M120, the map edge, then M121, the halo follows its owner and a turning car's
+picture and lane. Both touch `src/crowd/` and run one after the other. The run they came from is
+under `docs/evidence/archive/session-captures/`.
 
 **Below them, `TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56 has only
 its measurement against the nerves left, and that waits for act III. The debug view (`1` to `4` in a debug build, `--layers 1,3` for

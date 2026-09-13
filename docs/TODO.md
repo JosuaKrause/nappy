@@ -147,9 +147,9 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 
 0. **[PLAYTEST-66](playtests/PLAYTEST-66.md)'s four**, ahead of everything on the player's own
    word for the round *(2026-09-12: "this round's feedbacks should all be prioritized since I'm
-   actively testing the changes as they come in")*: **M119**, the crowd with nowhere to go
-   leaves, **M120**, the map edge, and **M121**, the halo follows its owner and a turning car's
-   picture and lane. All three touch the crowd, share `src/crowd/` and run one after another.
+   actively testing the changes as they come in")*: **M120**, the map edge, then **M121**, the
+   halo follows its owner and a turning car's picture and lane. Both touch the crowd, share
+   `src/crowd/` and run one after the other.
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
    related to the other items to work on right now.")* It waits, because reaching act III waits:
    *"I wanna wait reaching act III until those things are done."*
@@ -311,43 +311,6 @@ junction-paint and robber-placement records are filed there under M49 and the sm
 
 Everything below is in the order the gameplay queue above gives it, and was reassessed on
 2026-09-09.
-
----
-
-## M119 — The crowd with nowhere to go leaves · asked for 2026-09-12
-
-> "pedestrians with nowhere to go (all four sides of the intersection are blocked off) should
-> just despawn (or never spawn in the first place) right now they're accumulating in one place
-> and move back and forth or worth flicker (burst 3, 4, 9, and quite a few others). the same
-> with cars (burst 10 and 11)."
-
-[PLAYTEST-66](playtests/PLAYTEST-66.md). Prioritised with everything from that round.
-
-**What is true today.** The crowd is kept off a sealed street by `CityMap.held_segments`, the
-per-day set of street segments a walker or car refuses to enter; an agent that reaches one turns
-back (M110, the crowd goes round every solid body). A junction whose four segments are all held
-is a pocket: whoever is already inside it, and whoever `CrowdAgent._recycle()` places there — it
-rolls for a spot in the entry band, checks it stands on a street and has room, and does not ask
-whether that street leads anywhere — turns at one seal, walks to the next, turns again. Where
-several do this on one corner they stack, and at the tightest spots the turn-around flickers
-between two facings. The evidence is the run folder under
-`docs/evidence/archive/session-captures/2026-09-12/`, bursts 3, 4, 9, 10 and 11.
-
-- [ ] **Nobody is placed in a pocket.** A pocket is a connected set of street tiles with no
-      held segment leading out of it — computed once per day from `held_segments` and the seal
-      bodies, the same inputs the crowd already reads, so it is a map property and not a per-agent
-      search. `_recycle()` refuses a spot inside one the way it refuses a spot with no room.
-      Cars and walkers alike; a car's pocket is over lanes, a walker's over pavements, since a
-      soft seal takes the pavements and leaves the road.
-- [ ] **Whoever is in one leaves.** An agent whose street becomes a pocket — a seal placed after
-      it arrived, the one case placement cannot prevent — is recycled at the next moment it is
-      out of sight, rather than pacing; *nothing vanishes while you are looking at it* still
-      holds, so inside her view it walks to the far seal once and is recycled from there when
-      the view has moved on. `tests/test_crowd.gd` stands a fully sealed junction and asserts
-      nobody is placed in it, and that the count inside it falls to zero once it is out of view.
-- [ ] **The flicker on its own.** A turn-around at a seal that reverses facing every frame is a
-      bug whether or not the agent is in a pocket; find the reversal in the burst frames' timing
-      and make a turned-back agent commit to its new heading for at least one stride.
 
 ---
 
