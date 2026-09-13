@@ -785,6 +785,12 @@ var _spread_vertical := false
 ## burnt car lies across it; a junction, off-street ground or data-level rig follows its facing.
 var _stationary_vehicle_side := true
 
+## Everything `_draw()` reads that can change over time, as one comparable value — see
+## `_picture_key()` and `_redraw_if_the_picture_changed()`. `x` is a bit field and so is never
+## negative, which makes this starting value one no key can ever equal: the first tick of an
+## instance's life always asks for its own draw rather than relying on a coincidence.
+var _picture := Vector4i(-1, 0, 0, 0)
+
 ## `face` is where a *stationary* event was sited looking. A mobile one overwrites it from the
 ## direction it is travelling on its first step, which is why the default is harmless.
 func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = PackedVector2Array(),
@@ -1014,7 +1020,7 @@ func _process(delta: float) -> void:
 		_leave(delta)
 		_fly_the_flock(delta)
 		_advance_gait(_path_travelled - _travelled_before)
-		queue_redraw()
+		_redraw_if_the_picture_changed()
 		return
 
 	if is_chatting():
@@ -1037,7 +1043,7 @@ func _process(delta: float) -> void:
 		# Frozen, so no distance is covered — `_advance_gait(0.0)` marks the frame stopped rather
 		# than leaving `_gait_moving` at whatever it read the tick before the conversation started.
 		_advance_gait(0.0)
-		queue_redraw()
+		_redraw_if_the_picture_changed()
 		return
 
 	_fly_the_flock(delta)
@@ -1076,7 +1082,7 @@ func _process(delta: float) -> void:
 	_advance_gait(_path_travelled - _travelled_before)
 	if _has_expired():
 		_be_done()
-	queue_redraw()
+	_redraw_if_the_picture_changed()
 
 # ------------------------------------------------------------------- the chat ---
 # `chatting_mother`'s whole mechanic: a trigger rather than a field. `EventManager` decides *when*
@@ -2012,6 +2018,128 @@ func will_be_lethal(player_position: Vector2) -> bool:
 	return false
 
 # ------------------------------------------------------------------ drawing ---
+
+## Asks for a redraw when what this instance is showing has actually changed.
+##
+## Moving a `Node2D` does not invalidate its draw list — the transform is applied when the list is
+## replayed — so an event only redraws when its **picture** changes, exactly the gate
+## `CrowdAgent._redraw_if_the_picture_changed()` already gives every walker and car. Most of a
+## day's live instances are scenery that never moves — the seals, a checkpoint's hut, a café
+## frontage, a market stall, a barricade — and rebuilding their draw lists at the tick rate is the
+## largest single drawing cost in a frame, for a picture that is identical every time. See
+## `docs/evidence/m124-frame-cost-2026-09-13/README.md`.
+##
+## **A term missing from the key is a frozen picture rather than a crash**, which is why the key
+## below names every time-varying thing `_draw()` and `_draw_body()` read rather than a plausible
+## subset, and why `_picture_never_settles()` stands beside it for the four cases whose picture is
+## a continuous function of the clock and could not be named by a key at all.
+##
+## The key is stored on every tick whether or not it asked for a draw, so the *transition out of*
+## a never-settling state — a van that has finished taking its victim — is still a change the
+## comparison can see.
+func _redraw_if_the_picture_changed() -> void:
+	var key := _picture_key()
+	var changed := key != _picture
+	_picture = key
+	if changed or _picture_never_settles():
+		queue_redraw()
+
+## How finely the key reads the two continuous quantities it carries: an eighth of a pixel of the
+## body's own lift, and a hundred-and-twenty-eighth of the caret's swell, which moves that mark by
+## about a tenth of a pixel. Both are well under anything a screen shows at any zoom the game uses,
+## so no visible movement is ever held back waiting for a step — and a coarser quantum would
+## visibly stair-step a walking event's bob.
+const BOB_STEPS_PER_PX := 8.0
+const SWELL_STEPS := 128.0
+
+## Whether this row's picture keeps moving between one tick and the next whatever the key says, so
+## that gating it on the key at all would freeze an animation.
+##
+## Four, and each is a continuous function of the clock rather than a frame chosen from a set: a
+## **flock**, whose eleven birds each hold their own position, lift and wingbeat phase; a
+## **burning building** and a **firefight**, whose flames and muzzle flashes are sized off `sin(age
+## × k)` and are drawn rather than authored; and an **abduction mid-take**, whose victim slides
+## from her standing offset to the van over `VICTIM_TAKEN_OVER` seconds. Every one of them is a
+## handful of instances on a day at most, and none of them was ever going to be gated.
+func _picture_never_settles() -> bool:
+	if not _flock.is_empty():
+		return true
+	if is_taking_a_victim():
+		return true
+	return def.look == EventDef.Look.BURNING_BUILDING or def.look == EventDef.Look.FIREFIGHT
+
+## Which heading the next draw would pick this instance's eight-view sector from.
+##
+## Ordinarily `_heading`. The one exception is a robber who has not noticed her yet: `_draw_robber`
+## picks his view from `_robber_waiting_heading()` — her position, from the moment anything has
+## told this instance where she is — rather than from the alley he was sited facing, so the key has
+## to read the same thing or the one turn in the game that happens without the body moving would
+## never reach the screen.
+func _drawn_heading() -> Vector2:
+	if def.look == EventDef.Look.ROBBER and is_waiting():
+		return _robber_waiting_heading()
+	return _heading
+
+## Which pose `_draw_protest()` is standing its rank in: 0 for anything that is not a protest, 1
+## for the plain pose, and 2..9 for the eight `protester_point_*` bearings in `_POINTING_POSES`'
+## own order. The objective belongs to the resistance director and moves when a step is completed,
+## which is the only thing about a protest's picture that changes while nothing about the protest
+## does.
+func _protest_pose() -> int:
+	if def.look != EventDef.Look.PROTEST:
+		return 0
+	return _POINTING_POSES.find(_protester_texture(global_position, _protest_objective())) + 2
+
+## Everything `_draw()` reads that can change from one tick to the next, as one comparable value.
+##
+## `x` is a bit field — one bit per question the drawing asks, in an order that is arbitrary and
+## only has to be stable. `y` carries the three small integers: the eight-view sector the next draw
+## would land on (`_select_view()` is what actually advances `_view_sector`, and it only runs inside
+## a draw, so the key has to compute the sector it *would* move to rather than read the one left
+## over from the last one), the caret's own 0/1/2 strength, and the protest pose. `z` and `w` are
+## the two continuous quantities, quantised — see `BOB_STEPS_PER_PX` and `SWELL_STEPS`.
+func _picture_key() -> Vector4i:
+	# `_caret_strength()` is cached against `age` and was already asked once per draw through
+	# `wants_a_mark()`, so asking it here costs a frame exactly what it always cost.
+	var caret := _caret_strength()
+	var swell := 0.0
+	var flashed_off := false
+	if caret > 0:
+		swell = mark_swell()
+		# The flash is the mark's telegraph phase and takes it off the screen for part of every
+		# beat, so it is part of the picture rather than of the mark's size.
+		flashed_off = is_telegraphing() and fmod(age * MARK_FLASHES_PER_SECOND, 1.0) > 0.55
+	# **Only the two looks that actually read an idle timer carry one.** `_idle_stepping()` is a
+	# function of the clock alone and knows nothing about the row asking, so handing it to every
+	# instance would flip every seal's key twice a second for an animation it does not have — the
+	# gate would then be paying its whole cost and buying nothing.
+	var idle := false
+	if def.look == EventDef.Look.CAFE:
+		idle = _idle_stepping(SITTER_IDLE_PERIOD)
+	elif def.look == EventDef.Look.BUSKER:
+		idle = _idle_stepping(BUSKER_STRUM_PERIOD)
+	var flags := 0
+	flags = flags * 2 + (1 if is_finished else 0)
+	flags = flags * 2 + (1 if is_suppressed_by_its_own_hold() else 0)
+	flags = flags * 2 + (1 if is_leaving else 0)
+	flags = flags * 2 + (1 if _gait_stepping() else 0)
+	flags = flags * 2 + (1 if _heading_is_west() else 0)
+	flags = flags * 2 + (1 if is_telegraphing() else 0)
+	flags = flags * 2 + (1 if is_waiting() else 0)
+	flags = flags * 2 + (1 if is_chatting() else 0)
+	flags = flags * 2 + (1 if is_its_guard_inside() else 0)
+	flags = flags * 2 + (1 if is_taking_a_victim() else 0)
+	flags = flags * 2 + (1 if _victim_gait_stepping() else 0)
+	flags = flags * 2 + (1 if idle else 0)
+	flags = flags * 2 + (1 if gate_state != null and gate_state.raised else 0)
+	flags = flags * 2 + (1 if gate_runs_north_south(_heading) else 0)
+	flags = flags * 2 + (1 if flashed_off else 0)
+	var sector := EightDirection.update(_view_sector, _drawn_heading())
+	return Vector4i(
+			flags,
+			sector + 8 * caret + 32 * _protest_pose(),
+			roundi(_current_bob() * BOB_STEPS_PER_PX),
+			roundi(swell * SWELL_STEPS))
 
 func _draw() -> void:
 	if is_finished:
