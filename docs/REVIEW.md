@@ -14,11 +14,6 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-- **Look at the garbage sacks and small litter from day 10.** Do the standalone sacks and
-  piles look like the same material, and does the small ground litter remain quiet and readable?
-  `evidence/comic-props-2026-09-12/comparisons/` compares the SVG and PNG sources; use the
-  `unmasked` sheets for the current generated silhouettes.
-
 - **Compare the comic stroller identity mark at icon and logo sizes.** Does the cream stroller
   remain clear against its navy plate, and does the redrawn symbol fit the preserved wordmark?
   `evidence/comic-identity-2026-09-12/comparisons/` shows the logo and both export sizes.

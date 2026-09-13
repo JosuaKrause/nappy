@@ -122,3 +122,12 @@ finale read as the same woman who pushes the stroller, across every direction an
 > Same woman
 
 Closed as fine.
+
+## Garbage sacks and litter on the late days
+
+Asked: do the standalone sacks and the piles read as one material, and does the small ground
+litter stay quiet and readable?
+
+> Both read right
+
+Closed as fine.
