@@ -76,6 +76,8 @@ func run(t) -> void:
 	_test_cars_come_out_of_the_tunnel_and_off_the_bridge(t)
 	_test_nobody_enters_across_a_plain_edge(t)
 	_test_the_entry_roll_is_kept_inside_its_own_room(t)
+	_test_an_entry_beside_a_plain_edge_keeps_room_for_its_own_picture(t)
+	_test_day_start_keeps_room_for_its_own_picture(t)
 
 	_city.free()
 
@@ -2530,3 +2532,90 @@ func _test_the_entry_roll_is_kept_inside_its_own_room(t) -> void:
 			"and spread across the 50px of real room rather than pinned to one point (spread %.1fpx)"
 			% (hi - lo))
 	agent.free()
+
+## M100: **the picture, not only the centre.** PLAYTEST-69 re-reported "people still come out from
+## outside the map" on top of M120's own fix, and this is the shape of it:
+## `_entry_room()` (M120) grants an ordinary walker or off-spine car nothing past the true edge, but
+## nothing past the line still let the roll land exactly *on* it — a legal centre by
+## `_entry_band_fits()`'s old words — with the picture straddling the boundary regardless, since a
+## walker's canvas rises `Sprites.draw_standing` bottom-anchored from its own position with nothing
+## drawn south of it. Pinned flush with the true edge itself (`CrowdField.along_bounds`'s own clamp,
+## not a field radius chosen to make it so), the same way `_test_nobody_enters_across_a_plain_edge`
+## stands there — so there is no real room to spread rolls across at all, which is exactly the case
+## `_entry_picture_clearance()` exists for. **Fails without the fix**: before it, every entry here
+## lands with its centre on the line and its whole picture past it.
+##
+## Pinned like M120's own `_test_the_entry_roll_is_kept_inside_its_own_room` — a real but partial
+## 45px of room, past `_entry_picture_clearance()`'s reach for a walker (38px) and for an off-spine
+## car (26-28px), rather than flush with zero room. A flush field proves too much *and* too little
+## at once here: with the fix, that axis and direction can never succeed at all — every attempt is
+## refused and the loop always settles somewhere else — so a flush rig collects zero samples for the
+## very case this test is about and cannot tell the fix from its own absence. With real room to
+## spread across, some rolls still land inside the clearance and are refused, and the ones that are
+## not prove the guarantee rather than assume it: **fails without the fix**, since before it every
+## roll in `[0, 45)` was accepted rather than only `[38, 45)` (or `[26-ish, 45)` for a car).
+##
+## A freshly generated map rather than the shared `_city.map`: by this point in the suite several
+## other tests have run days against it and left closures and soft seals behind, which can shut the
+## one corridor this test stands beside and starve it of samples for a reason that has nothing to
+## do with this guarantee.
+func _test_an_entry_beside_a_plain_edge_keeps_room_for_its_own_picture(t) -> void:
+	var map := CityGenerator.generate(SEED)
+	var spine_lo := map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
+	var away_from_spine := spine_lo * 0.5
+	var field := CrowdField.new(map, Vector2(away_from_spine, 295.0))
+	field.radius = 250.0
+	var bounds := field.along_bounds(true)
+	t.check(is_equal_approx(bounds.x, 45.0),
+			"the field's own edge sits 45px from the true one, or the rig below is not testing it")
+	for kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
+		var agent := CrowdAgent.new()
+		agent.kind = kind
+		agent._map = map
+		agent.field = field
+		var worst := INF
+		var samples := 0
+		for seed in 400:
+			agent._rng.seed = seed
+			agent._recycle()
+			if not agent._vertical or agent._direction <= 0.0:
+				continue
+			# The spine's own tunnel exception (M94), not the guarantee this test holds.
+			if kind == CrowdAgent.Kind.CAR and agent._corridor == map.main_road:
+				continue
+			samples += 1
+			worst = minf(worst, agent._along() - agent._entry_picture_clearance())
+		agent.free()
+		var label := "car" if kind == CrowdAgent.Kind.CAR else "walker"
+		t.check(samples > 5,
+				"%s: enough seeds land a fresh entry into this axis to say anything (%d)"
+				% [label, samples])
+		t.check(worst >= 0.0,
+				"%s: the picture never reaches past the true edge (worst %.1fpx short of its own "
+				% [label, worst] + "clearance)")
+
+## M100: **the same question at the morning's own placement.** `Crowd.start_day()` places every
+## agent through `CrowdAgent.setup()`, which rolls freely across `CrowdField.along_bounds()` with no
+## room question asked at all — and that box is already clamped flush to the true edge near one, so
+## a roll can land as close to it as the continuous draw happens to put it. Read directly off a real
+## day rather than off a pinned rig, because `setup()`'s own retries depend on the corridors actually
+## in view rather than on a hand-placed field. A freshly built `City` for the same reason the test
+## above uses a fresh map: the shared `_city` carries closures and seals other tests left behind.
+func _test_day_start_keeps_room_for_its_own_picture(t) -> void:
+	var map := CityGenerator.generate(SEED)
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(map)
+	var size := map.world_size()
+	var at := Vector2(Tuning.TILE_SIZE, size.y * 0.5)
+	city.crowd.start_day(1, _rng(40), at)
+	var worst := INF
+	for agent in city.crowd.agents():
+		var limit: float = size.y if agent._vertical else size.x
+		var clearance := agent._entry_picture_clearance()
+		var along := agent._along()
+		worst = minf(worst, minf(along - clearance, limit - clearance - along))
+	t.check(worst >= 0.0,
+			"every agent placed this morning keeps its own picture inside the map (worst %.1fpx "
+			% worst + "short of its own clearance)")
+	city.free()

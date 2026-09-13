@@ -389,6 +389,12 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 			_set_cross(_lane_centre)
 			if not _stands_on_a_street():
 				continue
+			# `bounds` is already clamped flush to the true edge near one, and this roll asks no
+			# room question the way `_recycle()`'s own entry band does — so beside a wall a walker
+			# or a car can roll close enough that its picture, not just its centre, sits past the
+			# true edge on the very first morning. See `_entry_picture_clearance()`.
+			if not _within_the_map_with_room_for_its_picture():
+				continue
 			if not _is_in_a_pocket():
 				placed = true
 				break
@@ -2405,6 +2411,47 @@ func _entry_room() -> float:
 		return 0.0
 	return Tuning.OUT_OF_SIGHT
 
+## How far this kind's own drawn picture reaches past `_along()`, along this axis, in the
+## direction a plain edge lies — read off the real texture sizes and the same anchor arithmetic
+## `_draw_body()`/`_car_body_anchor()` use, not a guessed number, because "the whole picture inside
+## the map" means exactly what `_draw_body()` puts on screen.
+##
+## **`_entry_room()` grants room past the true edge; this grants none, and states what "none" has
+## to mean instead.** A walker or an off-spine car's `_entry_room()` is 0.0 — no room *past* the
+## line — but a centre sitting exactly on the line still has a picture straddling it, since
+## `Sprites.draw_standing` anchors a walker's whole canvas bottom-centred on its own position: the
+## height rises entirely to the north of it and nothing at all to the south, so a walker's picture
+## overhangs a north edge by its full canvas height and a south edge by nothing. A car's canvas is
+## anchored south of its own position by `_car_body_anchor()`'s own reach, so both overhangs are
+## real and unequal there too. **The larger of the two is kept for both edges of the axis**, so one
+## number clears whichever edge this placement is beside without the caller having to say which —
+## conservative on the edge that needed less, never short on the one that needed more. Only the
+## cardinal (`front`, `side`) views are asked, since a fresh entry never lands mid-turn.
+func _entry_picture_clearance() -> float:
+	if kind == Kind.CAR:
+		if _vertical:
+			var body: Texture2D = CAR_BODY_BY_VIEW["front"]
+			var south_reach := Tuning.CAR_STRIKE_HALF_LENGTH \
+					+ float(CAR_CANVAS_BOTTOM_MARGIN["front"])
+			return maxf(south_reach, body.get_size().y - south_reach)
+		var side: Texture2D = CAR_BODY_BY_VIEW["side"]
+		return side.get_size().x * 0.5
+	var walker: Texture2D = WALKER_BODY_BY_VIEW["front"]
+	var size := walker.get_size()
+	return size.y if _vertical else size.x * 0.5
+
+## Whether this agent's own coordinate leaves its picture entirely inside the map — the question
+## `_entry_band_fits()` and `_keep_within_the_room_beyond_the_map()` both ask once `_entry_room()`
+## grants no room past the edge at all, and the one `setup()`'s own placement loop asks too: a
+## morning roll lands anywhere in the field's box with no room question asked otherwise, and that
+## box is already clamped flush to the true edge near one.
+func _within_the_map_with_room_for_its_picture() -> bool:
+	var extent := _map.world_size()
+	var limit: float = extent.y if _vertical else extent.x
+	var clearance := _entry_picture_clearance()
+	var at := _along()
+	return at >= clearance and at <= limit - clearance
+
 ## How far outside the box an agent may enter, in px.
 ##
 ## **It has to be a band and not a point.** Recycling everybody onto the exact edge coordinate puts
@@ -2538,7 +2585,8 @@ func _take_the_placement(taken: Array) -> void:
 	position = at
 
 ## However the rolls above landed, an entry point may not sit further past the map's true edge
-## than `_entry_room()` allows this kind to arrive at — zero for everybody but a car on the spine.
+## than `_entry_room()` allows this kind to arrive at — zero for everybody but a car on the spine —
+## and where that is zero, it may not sit closer to the true edge than its own picture needs either.
 ##
 ## **`ENTRY_SPREAD` is a car's-length band and every kind shares it**, because the *normal* job of
 ## a spread is an off-screen buffer inside the box, which every kind wants the same amount of. The
@@ -2547,10 +2595,19 @@ func _take_the_placement(taken: Array) -> void:
 ## this frame is not, so this stays the one place that holds the final answer to it regardless of
 ## how it got there. Without this a walker can appear already standing on the crossing, which is
 ## the one thing only a car may do.
+##
+## **A centre sitting exactly on the true edge is not far enough in**, whatever `_entry_room()`
+## says: the picture is what a player actually sees, and `_entry_picture_clearance()` is how far
+## past the coordinate this kind's own picture reaches. So wherever `_entry_room()` grants nothing
+## past the edge, this clamps inward to that clearance instead of out to the true edge itself.
 func _keep_within_the_room_beyond_the_map() -> void:
 	var extent := _map.world_size()
 	var limit: float = extent.y if _vertical else extent.x
 	var beyond := _entry_room()
+	if beyond <= 0.0:
+		var clearance := _entry_picture_clearance()
+		_set_along(clampf(_along(), clearance, limit - clearance))
+		return
 	_set_along(clampf(_along(), -beyond, limit + beyond))
 
 ## Drops the car in behind whatever is already in its lane, when the place it arrived at is not
@@ -2608,10 +2665,17 @@ func _has_room_here() -> bool:
 ## kind `Tuning.OUT_OF_SIGHT` here exactly as `_room_beyond_the_map` grants it on the way out, so the
 ## same roll that would refuse anybody else still lands a southbound spine lane beside the north
 ## edge inside the tunnel.
+##
+## **Zero room past the edge is not the same question as "does the picture fit."** A centre exactly
+## on the true edge satisfies "no room past it" trivially, so where `_entry_room()` grants nothing
+## past the edge, the roll also has to leave room for the picture on the near side of it —
+## `_within_the_map_with_room_for_its_picture()` is that second question.
 func _entry_band_fits() -> bool:
+	var beyond := _entry_room()
+	if beyond <= 0.0:
+		return _within_the_map_with_room_for_its_picture()
 	var extent := _map.world_size()
 	var limit: float = extent.y if _vertical else extent.x
-	var beyond := _entry_room()
 	var at := _along()
 	return at >= -beyond and at <= limit + beyond
 
