@@ -62,6 +62,8 @@ The [pushing stride record](evidence/comic-pushing-strides-2026-09-12/GENERATION
 P2 — Three-pose push, including SVG sources, whole-figure registration and all-direction
 contact sheets. The [comic rig record](evidence/comic-rig-2026-09-12/GENERATION.md) preserves
 P1 — Two-pose push and every stroller view.
+The [side-canopy recipe](evidence/stroller-side-canopy-2026-09-12/GENERATION.md) preserves the
+pixel flip that places the closed side beside the handle, with both mirrored side views.
 The [hand-contact comparison](evidence/pram-contact-2026-09-12/MEASUREMENTS.md) assembles both
 formats at the current continuous stroller offset. Shadows and cues share that drawing position;
 the uniformly enlarged stroller retains its bottom ground anchor, and the collision body retains
@@ -89,6 +91,10 @@ The [quiet-square recipe](evidence/quiet-square-2026-09-12/GENERATION.md) docume
 cool-stone paving and repeated-neighbor review.
 The [plaza recipe](evidence/plaza-paving-2026-09-12/GENERATION.md) retains its larger slab layout
 and the same muted-stone constraints, with frozen neighboring materials for repeat review.
+The [paving joint recipe](evidence/paving-boundary-joints-2026-09-12/GENERATION.md) owns the final
+boundary joints across the paving family and reproduces the accepted runtime tiles from frozen
+materials. The [shared damage review](evidence/shared-damage-2026-09-12/GENERATION.md) compares
+the common hairline, cracked and broken stencil variations over every supported floor base.
 
 ## Review
 

@@ -5,7 +5,7 @@
 		"--seed",
 		"3339657913",
 		"--output-dir",
-		"/Users/krause/workspace/nappy-codex/.claude/worktrees/grass-runtime-check/docs/evidence/grass-runtime-2026-09-12/runtime-result-3339657913-v2"
+		"/tmp/nappy-final-forest-2150"
 	],
 	"dev_flags_svg_requested": false,
 	"engine_version": "4.7.2-stable (official)",
@@ -201,13 +201,13 @@
 		"res://assets/illustrated/svg-transfer/tiles/layers/grass_feature_a.png": "da01b54d5e2f07bcf70d5a054de3032eb3084d860ed3ad222994c3270830f208",
 		"res://assets/illustrated/svg-transfer/tiles/layers/grass_feature_b.png": "89627dfbcfb231d473040f18ba8805a82ce28f7f3f3dffd3f91831ab5a86e995",
 		"res://assets/illustrated/svg-transfer/tiles/layers/grass_feature_c.png": "9e46491fd67f4780a9889e7c4c50583edc8c39080b4776ff99b7b694faa2d825",
-		"res://assets/illustrated/svg-transfer/tiles/layers/manifest.json": "96a935a484eea9f2dbc4895c71e7167a65036178dd82896a5bc5312ce3d706e2",
+		"res://assets/illustrated/svg-transfer/tiles/layers/manifest.json": "7de53117f71d212574b3e40abf870997cc06a55312fcb07224f178663881464a",
 		"res://docs/evidence/grass-runtime-2026-09-12/grass_runtime_probe.tscn": "972e6134950bd161e86f36de5f3039ab0468784a5f7d0caf9f48006b506e2064",
 		"res://docs/evidence/grass-runtime-2026-09-12/runtime_probe.gd": "518fdcd6031b6b78b2597de1955002b6fb41f8c7168517a79dc43d3df1ba54d1",
 		"res://scenes/main.tscn": "6e717dab0cfa227f30c7b57124a88550ae4298fc0cc3bd5a68f7c3209b377ff8",
 		"res://scenes/world/city.tscn": "8e92c624b4debf9e0fa3eb63ee95b925cf24db508c126ebf3b0f2dc2e2f2e67f",
 		"res://src/city/city.gd": "7e9787a782b199fbb1d176679dfbb02a6da8154ea795c1cfbd1af9d9a7c19aa3",
-		"res://src/visuals/ground_layers.gd": "107406c971d4991f7b795eb85cb951a26ea9dab36b328f6101b0530a0ba8039a",
+		"res://src/visuals/ground_layers.gd": "44622a7fc537ca38726695c086811266cf4736d13c1a71a6a5db1fbb07917a2b",
 		"res://src/visuals/texture_resolver.gd": "63869497f3655bf9a5bc6fbbac4130e8825fca90c781c62aeace83aeb9440c66"
 	},
 	"main_scene": "res://scenes/main.tscn"

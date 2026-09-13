@@ -74,7 +74,7 @@ func _parse_args() -> bool:
 
 func _write_manifest(records: Array) -> void:
 	var hashes: Dictionary = {}
-	for path in INPUTS:
+	for path in _input_paths():
 		hashes[path] = FileAccess.get_sha256(path)
 	var result := {
 		"command": "godot --headless --path . res://docs/evidence/shared-damage-2026-09-12/damage_atlas_review.tscn -- --output-dir DIRECTORY",
@@ -90,6 +90,25 @@ func _write_manifest(records: Array) -> void:
 		_fail("cannot write review manifest: %s" % _output_dir)
 		return
 	output.store_string(JSON.stringify(result, "\t") + "\n")
+
+func _input_paths() -> Array[String]:
+	var paths: Array[String] = []
+	for path in INPUTS:
+		paths.append(path)
+	var parser := JSON.new()
+	if parser.parse(FileAccess.get_file_as_string(
+				"res://assets/illustrated/svg-transfer/tiles/layers/manifest.json")) != OK:
+		return paths
+	if parser.data is not Dictionary:
+		return paths
+	var manifest: Dictionary = parser.data
+	var components: Dictionary = manifest.get("components", {})
+	var root := "res://assets/illustrated/svg-transfer/tiles/layers"
+	for filename_value in components.values():
+		var path: String = root.path_join(str(filename_value))
+		if not path in paths:
+			paths.append(path)
+	return paths
 
 func _fail(message: String) -> void:
 	printerr(message)

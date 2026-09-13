@@ -5,6 +5,8 @@ output is `source/plaza-generated.png`; registration is a direct LANCZOS downsam
 fully opaque PNG with no recoloring or paint-over. The authored `assets/tiles/plaza.svg` remains
 the subject authority: one tile-wide top and left edge joint around a larger slab, rather than
 the quiet square's four-quarter center seam.
+The [paving joint recipe](../paving-boundary-joints-2026-09-12/GENERATION.md) owns final runtime
+registration for the paving family. The plaza has complete joints and retains these material pixels.
 
 The exact generation prompt was:
 

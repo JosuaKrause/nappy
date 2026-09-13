@@ -21,6 +21,12 @@ The frozen inputs record accepted-damage source revision
 62d1c344dccbf77e7cb8052ea09b337a76ce994e, tile inputs, SVG renders, source-SVG hashes, the
 assembly script hash, and Pillow version. The selected floor PNG and the paired
 `assets/tiles/sidewalk.svg` source are recorded with their source blobs and retained SHA-256 values.
+The final sidewalk and alley bases come from the
+[paving joint registration](../paving-boundary-joints-2026-09-12/GENERATION.md), frozen separately
+under `frozen-inputs/paving-bases/` with their joint-manifest hash. Material provenance and damage
+segmentation inputs stay separate from these registered floors. Rebuilding the components therefore
+preserves the complete joints of the accepted paving. Baked damage composites are excluded from
+runtime inputs; the accepted source drawings remain frozen for stencil extraction.
 
 To reproduce a retained bundle without reading mutable tile assets, use its frozen inputs with the
 same assembly script, then compare the two bundle trees:
@@ -48,8 +54,11 @@ removing shared-floor seams. It never stamps an SVG alpha shape over the illustr
 `compiled-tiles/` and the native and 4× checkerboard, street, and foreground review sheets are
 verification previews only. Runtime loading uses `assets/illustrated/svg-transfer/tiles/layers/`:
 the four bases, transparent components, generated import sidecars, and `manifest.json`. The
-manifest declares source bases, clockwise component rotations, every decorated source-ID layer,
-and the three grass component IDs. Build a new published directory only when it is empty, then
+manifest declares source bases, clockwise component rotations, decorated source-ID layers,
+shared hairline/cracked/broken variation pools and the three grass component IDs. Each damage pool
+is usable over every supported surface; source IDs preserve their base and severity. The
+[shared damage review](../shared-damage-2026-09-12/GENERATION.md) displays all variants over each base.
+Build a new published directory only when it is empty, then
 verify it against the fresh bundle:
 
 ```sh

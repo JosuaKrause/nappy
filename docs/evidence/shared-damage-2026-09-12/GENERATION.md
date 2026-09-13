@@ -17,3 +17,17 @@ Run from the repository root with a fresh output path:
 The probe rejects an existing output path and every unsupported argument. Its `manifest.json`
 records the Godot version, source IDs, atlas dimensions, variation count, command and SHA-256
 hashes of every runtime input. `--help` and `-h` print its usage without creating output.
+
+The six sidewalk-origin stencils are extracted from the layered-ground bundle's frozen accepted
+inputs. The extractor calls the assembly script's audited damage mask directly, records both the
+retained input and resulting component hashes, and refuses an existing output directory:
+
+```sh
+uv run python docs/evidence/shared-damage-2026-09-12/extract_sidewalk_damage.py \
+  --bundle-dir docs/evidence/layered-ground-2026-09-12/bundle \
+  --output-dir /tmp/shared-damage-sidewalk-components
+```
+
+The assembly script's sidewalk branch removes only the audited source-slab rows and columns. Dark
+fissures and green growth crossing those locations remain, while pale floor-joint pixels do not;
+the source SVG remains placement provenance and is not changed.

@@ -14,20 +14,18 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-- **Walk along sidewalks and across normal and main-road junctions.** Check that the paving
-  continues into curbstone tiles, asphalt has no brightness jumps, and paint and damage sit
-  naturally on the shared floor. Include both street axes and junction corners. The
-  [engine layout review](evidence/layered-ground-layout-2026-09-12/GENERATION.md) shows the
-  composed ground textures in generated layouts.
+- **Compare damaged road, sidewalk and alley tiles.** Do the shared crack and hole variations
+  sit naturally over each material, without carrying pieces of another floor's slab grid?
+  The [damage atlas review](evidence/shared-damage-2026-09-12/GENERATION.md) shows every variation
+  over each supported base.
+
+- **Push the stroller left and right.** Does the closed canopy side sit beside the handle in
+  both views? The [side-canopy review](evidence/stroller-side-canopy-2026-09-12/GENERATION.md)
+  compares both mirrored side textures with the handle and lower frame held in place.
 
 - **Look at a park and a wooded calm area while walking past them.** Do the sparse grass clumps give variety while the
   soft base stays quiet enough to keep people and routes clear? Check neighboring cells and
   revisit the same seed to compare their stable arrangement.
-
-- **Look at a quiet square beside its surrounding sidewalk.** Does its muted cool-stone paving
-  fit the city's brightness while remaining recognizable as open ground? The
-  [quiet-square material review](evidence/quiet-square-2026-09-12/GENERATION.md) compares repeated
-  tiles with the shared sidewalk, asphalt and grass bases.
 
 - **Look at café seating and roadworks along both street axes.** Each café sitter should
   face its own table, including the right-hand chair and the vertical arrangement. Vertical

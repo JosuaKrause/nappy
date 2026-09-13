@@ -243,6 +243,8 @@ versions and their preserved rollouts.
 The [player authoring directory](graphics-creation/player/README.md) holds the high-fidelity SVG
 generation targets and their runtime/PNG pairings. The runtime SVG catalogue supplies vector
 artwork for contact and together poses. The PNG presentation uses the accepted F and P2 textures.
+The [side-canopy recipe](evidence/stroller-side-canopy-2026-09-12/GENERATION.md) fixes the side
+stroller's canopy direction with a reproducible upper-texture flip that excludes the handle.
 
 Ground components live under `assets/illustrated/svg-transfer/tiles/layers/`, paired with SVGs
 under `assets/tiles/layers/`. The component manifest maps each ground source to a shared sidewalk,
@@ -258,6 +260,12 @@ artwork, stencils and base preparation. The
 tiles in generated streets, junctions and parks. `--svg` selects the authored vector TileSet.
 Baked damage-and-floor PNGs are excluded from runtime assets; the accepted source artwork lives
 in the component recipe's frozen inputs. Runtime damage uses transparent stencils over the base.
+Hairline, cracked and broken damage each share a variation pool across all three surfaces,
+selected deterministically by city seed and cell. The
+[damage atlas review](evidence/shared-damage-2026-09-12/GENERATION.md) shows every combination.
+The [paving joint recipe](evidence/paving-boundary-joints-2026-09-12/GENERATION.md) preserves the
+accepted sidewalk material and complete boundary joints across all rectangular paving. It owns
+the final runtime registration after the quiet-square and plaza material generation steps below.
 
 `assets/illustrated/svg-transfer/tiles/quiet_square.png` supplies muted cool-stone paving with
 large slab joints. Its [generation and registration recipe](evidence/quiet-square-2026-09-12/GENERATION.md)

@@ -180,6 +180,18 @@ def _damage_mask(name: str, detail: Image.Image, surface: str, source_base: Imag
 			for x in range(32):
 				if (x, y) not in seam_crossings:
 					output[x, y] = 0
+	# The sidewalk sources use a separate slab grid from their shared base. Its selected joints must
+	# never become a second floor drawing on asphalt or alley; only the audited foreground crossings
+	# below remain when a fissure, hole rim, or weed actually meets a source joint.
+	if surface == "sidewalk":
+		for y in range(32):
+			for x in range(32):
+				red, green, blue = pixels[x, y]
+				luma = (red + green + blue) / 3
+				is_sidewalk_joint = x in (6, 7, 8, 9, 22, 23, 24) or y in (13, 14, 15)
+				is_foreground_crossing = luma < 75 or (green > red * 1.04 and green > blue * 1.15)
+				if is_sidewalk_joint and not is_foreground_crossing:
+					output[x, y] = 0
 	# Remove only a long straight selected seam that has no perpendicular foreground connection.
 	for y in range(32):
 		for x in range(32):
@@ -402,6 +414,7 @@ def build(output_dir: Path, input_bundle: Path | None = None) -> None:
 	output_dir.mkdir(parents=True)
 	frozen_tiles = output_dir / "frozen-inputs/tiles"
 	accepted_surface_bases = output_dir / "frozen-inputs/accepted-surface-bases"
+	paving_bases = output_dir / "frozen-inputs/paving-bases"
 	frozen_runtime = output_dir / "frozen-inputs/runtime-targets"
 	frozen_svg = output_dir / "frozen-inputs/svg-renders"
 	if input_bundle is not None:
@@ -413,16 +426,10 @@ def build(output_dir: Path, input_bundle: Path | None = None) -> None:
 	else:
 		inputs: dict[str, dict[str, str]] = {}
 		for name in FROZEN_NAMES:
-			if name == "sidewalk":
-				runtime_record = _frozen_git_file(
-					SELECTED_SIDEWALK_SOURCE_REVISION,
-					"assets/illustrated/svg-transfer/tiles/sidewalk.png",
-					frozen_runtime / "sidewalk.png",
-				)
-			else:
+			if name not in DAMAGE:
 				runtime_record = _copy_frozen(RUNTIME_DIR / f"{name}.png", frozen_runtime / f"{name}.png")
-			runtime_record["frozen_path"] = str((frozen_runtime / f"{name}.png").relative_to(output_dir))
-			inputs[f"runtime-target:{name}"] = runtime_record
+				runtime_record["frozen_path"] = str((frozen_runtime / f"{name}.png").relative_to(output_dir))
+				inputs[f"runtime-target:{name}"] = runtime_record
 			if name in DAMAGE:
 				record = _frozen_git_file(ACCEPTED_DAMAGE_SOURCE_REVISION, f"assets/illustrated/svg-transfer/tiles/{name}.png", frozen_tiles / f"{name}.png")
 			elif name == "sidewalk":
@@ -440,6 +447,18 @@ def build(output_dir: Path, input_bundle: Path | None = None) -> None:
 			record = _frozen_git_file(revision, f"assets/illustrated/svg-transfer/tiles/{surface}.png", accepted_surface_bases / f"{surface}.png")
 			record["frozen_path"] = str((accepted_surface_bases / f"{surface}.png").relative_to(output_dir))
 			inputs[f"accepted-surface-base:{surface}"] = record
+		paving_bundle = ROOT / "docs/evidence/paving-boundary-joints-2026-09-12/bundle"
+		paving_manifest = json.loads((paving_bundle / "manifest.json").read_text())
+		for surface in ("sidewalk", "alley"):
+			path = paving_bundle / "registered" / f"{surface}.png"
+			if _sha256(path) != paving_manifest["tiles"][surface]["registered_sha256"]:
+				raise ValueError(f"registered paving hash mismatch: {surface}")
+			record = _copy_frozen(path, paving_bases / f"{surface}.png")
+			record["frozen_path"] = str((paving_bases / f"{surface}.png").relative_to(output_dir))
+			record["joint_manifest_sha256"] = _sha256(paving_bundle / "manifest.json")
+			inputs[f"registered-paving:{surface}"] = record
+		selected_svg = _frozen_git_file(SELECTED_SIDEWALK_SOURCE_REVISION,
+			"assets/tiles/sidewalk.svg", output_dir / "frozen-inputs/selected-sidewalk.svg")
 		for name in FROZEN_NAMES:
 			record = _copy_frozen(SVG_RENDER_DIR / f"{name}-svg.png", frozen_svg / f"{name}-svg.png")
 			record["frozen_path"] = str((frozen_svg / f"{name}-svg.png").relative_to(output_dir))
@@ -453,11 +472,11 @@ def build(output_dir: Path, input_bundle: Path | None = None) -> None:
 			"png_blob": SELECTED_SIDEWALK_PNG_BLOB,
 			"svg_blob": SELECTED_SIDEWALK_SVG_BLOB,
 			"png_sha256": _sha256(frozen_tiles / "sidewalk.png"),
-			"svg_sha256": _sha256(ROOT / "assets/tiles/sidewalk.svg"),
+			"svg_sha256": selected_svg["sha256"],
 		}
 
-	plain_sidewalk = _load(frozen_tiles / "sidewalk.png")
-	plain_alley = _load(frozen_tiles / "alley.png")
+	plain_sidewalk = _load(paving_bases / "sidewalk.png")
+	plain_alley = _load(paving_bases / "alley.png")
 	grass_seed = _load(frozen_tiles / "grass.png")
 	road_seed = _load(frozen_tiles / "road.png")
 	plain_asphalt = _mean_rotations(road_seed, ((0, 0),) * 4)
@@ -564,12 +583,12 @@ def build(output_dir: Path, input_bundle: Path | None = None) -> None:
 		"inputs": inputs,
 		"bases": {
 			"sidewalk": {
-				"frozen_input": "frozen-inputs/tiles/sidewalk.png",
-				"source_revision": SELECTED_SIDEWALK_SOURCE_REVISION,
-				"source_blob": SELECTED_SIDEWALK_PNG_BLOB,
-				"sha256": _sha256(frozen_tiles / "sidewalk.png"),
+				"frozen_input": "frozen-inputs/paving-bases/sidewalk.png",
+				"material_revision": SELECTED_SIDEWALK_SOURCE_REVISION,
+				"material_blob": SELECTED_SIDEWALK_PNG_BLOB,
+				"sha256": _sha256(bases_dir / "sidewalk_base.png"),
 			},
-			"alley": {"frozen_input": "frozen-inputs/tiles/alley.png", "sha256": _sha256(frozen_tiles / "alley.png")},
+			"alley": {"frozen_input": "frozen-inputs/paving-bases/alley.png", "sha256": _sha256(bases_dir / "alley_base.png")},
 			"asphalt": {
 				"frozen_input": "frozen-inputs/tiles/road.png", "method": "equal channel-wise mean of rotations 0,90,180,270",
 				"offset_candidate": list(ASPHALT_OFFSETS), "plain_seam_error": _seam_error(plain_asphalt),

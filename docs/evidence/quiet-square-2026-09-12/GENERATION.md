@@ -4,8 +4,9 @@ The runtime quiet-square tile is generated with the built-in image generation to
 is retained at `source/quiet-square-generated.png` and copied unchanged into the bundle. The
 authored `assets/tiles/quiet_square.svg` supplies the four-slab subject and its cool-stone role;
 `render-quiet-square-source.gd` creates the 8× SVG raster supplied to the generator.
-The registration script is the only raster transformation: direct LANCZOS downsampling to a 32×32
-fully opaque PNG, with no recoloring or paint-over.
+This material registration uses direct LANCZOS downsampling to a 32×32 fully opaque PNG, with no
+recoloring or paint-over. The [paving joint recipe](../paving-boundary-joints-2026-09-12/GENERATION.md)
+then completes the boundary joints using this material's own pixels and owns the runtime tile.
 
 The built-in generation prompt is:
 
@@ -44,11 +45,10 @@ it never needs the installed runtime quiet-square PNG.
 When refreshing a neighboring shared base while retaining the recorded quiet-square brightness
 comparison input, pass that saved image through `--brightness-reference` on the fresh build.
 
-Install only from a verified bundle. The explicit flag records that this command replaces the
-existing runtime artwork:
+Verify the final runtime artwork against the joint-registration bundle:
 
 ```sh
-uv run python docs/evidence/quiet-square-2026-09-12/register.py install \
-  --bundle-dir /tmp/quiet-square-build \
-  --target assets/illustrated/svg-transfer/tiles/quiet_square.png --replace
+uv run python docs/evidence/paving-boundary-joints-2026-09-12/register.py verify \
+  --bundle-dir docs/evidence/paving-boundary-joints-2026-09-12/bundle \
+  --target-dir assets/illustrated/svg-transfer/tiles
 ```

@@ -2,7 +2,7 @@
   "format": 1,
   "python_version": "3.14.7",
   "pillow_version": "12.3.0",
-  "script_sha256": "bbbbe27834ffd051779114a7b164e5081cb7fb5a565481721fe799e48a2f3276",
+  "script_sha256": "b6b23c89293801a8ac402cbefcec26e877bf677a39055562feb27cf1ff7accc8",
   "tile_size": [
     32,
     32
@@ -10,18 +10,13 @@
   "inputs": {
     "runtime-target:alley": {
       "path": "assets/illustrated/svg-transfer/tiles/alley.png",
-      "sha256": "292d99485db258e60d497e42e2e36411b0ec6a07d1f187c487eba99e4a09dfa5",
+      "sha256": "8e31133cb8cfada9beb57c2c45ad311fa2df900946db31e2d2bba8f815f17b14",
       "frozen_path": "frozen-inputs/runtime-targets/alley.png"
     },
     "tile:alley": {
       "path": "assets/illustrated/svg-transfer/tiles/alley.png",
-      "sha256": "292d99485db258e60d497e42e2e36411b0ec6a07d1f187c487eba99e4a09dfa5",
+      "sha256": "8e31133cb8cfada9beb57c2c45ad311fa2df900946db31e2d2bba8f815f17b14",
       "frozen_path": "frozen-inputs/tiles/alley.png"
-    },
-    "runtime-target:alley_cracked_broken_a": {
-      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_broken_a.png",
-      "sha256": "a7532618a6c5dbe8b2584f121cad83e3a153767fa1c3d07f6b410d7b81eb4ea3",
-      "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_broken_a.png"
     },
     "accepted-damage:alley_cracked_broken_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
@@ -29,21 +24,11 @@
       "sha256": "a7532618a6c5dbe8b2584f121cad83e3a153767fa1c3d07f6b410d7b81eb4ea3",
       "frozen_path": "frozen-inputs/tiles/alley_cracked_broken_a.png"
     },
-    "runtime-target:alley_cracked_broken_b": {
-      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_broken_b.png",
-      "sha256": "cfe8e84989cd296ecb95d9b03ce40b9e502bf5cb313c702ccf978fd049991a25",
-      "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_broken_b.png"
-    },
     "accepted-damage:alley_cracked_broken_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_broken_b.png",
       "sha256": "cfe8e84989cd296ecb95d9b03ce40b9e502bf5cb313c702ccf978fd049991a25",
       "frozen_path": "frozen-inputs/tiles/alley_cracked_broken_b.png"
-    },
-    "runtime-target:alley_cracked_cracked_a": {
-      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_cracked_a.png",
-      "sha256": "5f03d7d628e61c0677d19af72feb182b3126fe974392885e8c8c4e2900ec0423",
-      "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_cracked_a.png"
     },
     "accepted-damage:alley_cracked_cracked_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
@@ -51,32 +36,17 @@
       "sha256": "5f03d7d628e61c0677d19af72feb182b3126fe974392885e8c8c4e2900ec0423",
       "frozen_path": "frozen-inputs/tiles/alley_cracked_cracked_a.png"
     },
-    "runtime-target:alley_cracked_cracked_b": {
-      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_cracked_b.png",
-      "sha256": "04ae3d0019be09d91568e89c1042cfe81ac8413694b8d6a1eb2666e99acf80f0",
-      "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_cracked_b.png"
-    },
     "accepted-damage:alley_cracked_cracked_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_cracked_b.png",
       "sha256": "04ae3d0019be09d91568e89c1042cfe81ac8413694b8d6a1eb2666e99acf80f0",
       "frozen_path": "frozen-inputs/tiles/alley_cracked_cracked_b.png"
     },
-    "runtime-target:alley_cracked_hairline_a": {
-      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_hairline_a.png",
-      "sha256": "4c781b5c8e635b65a2d52f13bb2dc725bd6dc7378bc0167428128e3885164599",
-      "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_hairline_a.png"
-    },
     "accepted-damage:alley_cracked_hairline_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_hairline_a.png",
       "sha256": "4c781b5c8e635b65a2d52f13bb2dc725bd6dc7378bc0167428128e3885164599",
       "frozen_path": "frozen-inputs/tiles/alley_cracked_hairline_a.png"
-    },
-    "runtime-target:alley_cracked_hairline_b": {
-      "path": "assets/illustrated/svg-transfer/tiles/alley_cracked_hairline_b.png",
-      "sha256": "9fbcc5b9a2046bf9a1df430b78e7a23f7663356ae3f36a33fa90a70107b3efc3",
-      "frozen_path": "frozen-inputs/runtime-targets/alley_cracked_hairline_b.png"
     },
     "accepted-damage:alley_cracked_hairline_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
@@ -164,21 +134,11 @@
       "sha256": "f4b2cda6783db283b0d73ec05fd0b9a36ee777b3c284aa34802505c166c52db1",
       "frozen_path": "frozen-inputs/tiles/road.png"
     },
-    "runtime-target:road_cracked_broken_a": {
-      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_broken_a.png",
-      "sha256": "1f4a5047cc31d8cdcb40accd3f4afbb59ba1dfcd5de84f4d72d3243cc626f160",
-      "frozen_path": "frozen-inputs/runtime-targets/road_cracked_broken_a.png"
-    },
     "accepted-damage:road_cracked_broken_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/road_cracked_broken_a.png",
       "sha256": "1f4a5047cc31d8cdcb40accd3f4afbb59ba1dfcd5de84f4d72d3243cc626f160",
       "frozen_path": "frozen-inputs/tiles/road_cracked_broken_a.png"
-    },
-    "runtime-target:road_cracked_broken_b": {
-      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_broken_b.png",
-      "sha256": "0f971bd164e889c16673f36c8abb8d02ad4603c54b2f3a11f714663a607a9e22",
-      "frozen_path": "frozen-inputs/runtime-targets/road_cracked_broken_b.png"
     },
     "accepted-damage:road_cracked_broken_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
@@ -186,21 +146,11 @@
       "sha256": "0f971bd164e889c16673f36c8abb8d02ad4603c54b2f3a11f714663a607a9e22",
       "frozen_path": "frozen-inputs/tiles/road_cracked_broken_b.png"
     },
-    "runtime-target:road_cracked_cracked_a": {
-      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_cracked_a.png",
-      "sha256": "ba9b8d9d296fb750f60d0fc49b2ba71e5bcc537126b078e88a113eca6eb96d92",
-      "frozen_path": "frozen-inputs/runtime-targets/road_cracked_cracked_a.png"
-    },
     "accepted-damage:road_cracked_cracked_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/road_cracked_cracked_a.png",
       "sha256": "ba9b8d9d296fb750f60d0fc49b2ba71e5bcc537126b078e88a113eca6eb96d92",
       "frozen_path": "frozen-inputs/tiles/road_cracked_cracked_a.png"
-    },
-    "runtime-target:road_cracked_cracked_b": {
-      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_cracked_b.png",
-      "sha256": "8b85a7eb0cf78b9aead92a8b90d1b57755232a65416a7824f4ef2188aff72e1c",
-      "frozen_path": "frozen-inputs/runtime-targets/road_cracked_cracked_b.png"
     },
     "accepted-damage:road_cracked_cracked_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
@@ -208,21 +158,11 @@
       "sha256": "8b85a7eb0cf78b9aead92a8b90d1b57755232a65416a7824f4ef2188aff72e1c",
       "frozen_path": "frozen-inputs/tiles/road_cracked_cracked_b.png"
     },
-    "runtime-target:road_cracked_hairline_a": {
-      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_hairline_a.png",
-      "sha256": "13e8b3ac1cc7eb41e0f5568e0d2867633c91bdae6bdab1b744f4ad48a2b01132",
-      "frozen_path": "frozen-inputs/runtime-targets/road_cracked_hairline_a.png"
-    },
     "accepted-damage:road_cracked_hairline_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/road_cracked_hairline_a.png",
       "sha256": "13e8b3ac1cc7eb41e0f5568e0d2867633c91bdae6bdab1b744f4ad48a2b01132",
       "frozen_path": "frozen-inputs/tiles/road_cracked_hairline_a.png"
-    },
-    "runtime-target:road_cracked_hairline_b": {
-      "path": "assets/illustrated/svg-transfer/tiles/road_cracked_hairline_b.png",
-      "sha256": "f77ed28b95137db20149bed871b6e0c7abd092ea7357e4e88b07d546ff70d5c0",
-      "frozen_path": "frozen-inputs/runtime-targets/road_cracked_hairline_b.png"
     },
     "accepted-damage:road_cracked_hairline_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
@@ -321,9 +261,8 @@
       "frozen_path": "frozen-inputs/tiles/road_main_line_w.png"
     },
     "runtime-target:sidewalk": {
-      "revision": "62d1c344dccbf77e7cb8052ea09b337a76ce994e",
       "path": "assets/illustrated/svg-transfer/tiles/sidewalk.png",
-      "sha256": "a86c9cdff2ca96f1d5016a7b997d506e0a1452174a06cadd9a51b50eafff0c28",
+      "sha256": "24f92f984df664c2687785e22c465f98ee4d5433bc17f82aec19a114b3917ade",
       "frozen_path": "frozen-inputs/runtime-targets/sidewalk.png"
     },
     "tile:sidewalk": {
@@ -332,21 +271,11 @@
       "sha256": "a86c9cdff2ca96f1d5016a7b997d506e0a1452174a06cadd9a51b50eafff0c28",
       "frozen_path": "frozen-inputs/tiles/sidewalk.png"
     },
-    "runtime-target:sidewalk_cracked_broken_a": {
-      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_broken_a.png",
-      "sha256": "f972c4420deefa7e32664870f71fab2ae152417d3d0ef50554067702f1cb097c",
-      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_broken_a.png"
-    },
     "accepted-damage:sidewalk_cracked_broken_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_broken_a.png",
       "sha256": "c8edf668f6ec2ed38ba5f9f3c793bca554c9dd157c602f30d03a965224981403",
       "frozen_path": "frozen-inputs/tiles/sidewalk_cracked_broken_a.png"
-    },
-    "runtime-target:sidewalk_cracked_broken_b": {
-      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_broken_b.png",
-      "sha256": "a4b160812f11173e63d531657ab0a3e617002db638ad1138fb9c0dc2d2bf6002",
-      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_broken_b.png"
     },
     "accepted-damage:sidewalk_cracked_broken_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
@@ -354,21 +283,11 @@
       "sha256": "53afedd4f212a4d8517c00f42bea288ccf6548b33ecfb3e45c96efc4cbdd520c",
       "frozen_path": "frozen-inputs/tiles/sidewalk_cracked_broken_b.png"
     },
-    "runtime-target:sidewalk_cracked_cracked_a": {
-      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_cracked_a.png",
-      "sha256": "f95a24b6e66fa0d8a05f6e83672431f167a0a3c4090e7954d7eab28ca6c0d034",
-      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_cracked_a.png"
-    },
     "accepted-damage:sidewalk_cracked_cracked_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_cracked_a.png",
       "sha256": "f874583c8ffcfb442217ddf9027037073dff59217b8a994cdf3b7d539a5603ef",
       "frozen_path": "frozen-inputs/tiles/sidewalk_cracked_cracked_a.png"
-    },
-    "runtime-target:sidewalk_cracked_cracked_b": {
-      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_cracked_b.png",
-      "sha256": "dbe3b33e5bb1d6a5c2e37ce42723801e6c2b0a66aef1f66f48916130ab643952",
-      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_cracked_b.png"
     },
     "accepted-damage:sidewalk_cracked_cracked_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
@@ -376,21 +295,11 @@
       "sha256": "c078eedc01627567f53b18e8117a4fdfc6a545910e6545b815a450accd97db30",
       "frozen_path": "frozen-inputs/tiles/sidewalk_cracked_cracked_b.png"
     },
-    "runtime-target:sidewalk_cracked_hairline_a": {
-      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_hairline_a.png",
-      "sha256": "9f587b00dccf034bc81224108b028f7177881bd4d27e97ec6d0f592097759d51",
-      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_hairline_a.png"
-    },
     "accepted-damage:sidewalk_cracked_hairline_a": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
       "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_hairline_a.png",
       "sha256": "515e519854dfe91e668c1f14ba1c734766b16f766c816ec9318357aebe9257c5",
       "frozen_path": "frozen-inputs/tiles/sidewalk_cracked_hairline_a.png"
-    },
-    "runtime-target:sidewalk_cracked_hairline_b": {
-      "path": "assets/illustrated/svg-transfer/tiles/sidewalk_cracked_hairline_b.png",
-      "sha256": "9f13f670effeb4892a9b13d42dd142851d542e18f5aa69511290388c6cfd395a",
-      "frozen_path": "frozen-inputs/runtime-targets/sidewalk_cracked_hairline_b.png"
     },
     "accepted-damage:sidewalk_cracked_hairline_b": {
       "revision": "83a60d1522574714ce038dff3a607a536d800614",
@@ -495,6 +404,18 @@
       "path": "assets/illustrated/svg-transfer/tiles/alley.png",
       "sha256": "292d99485db258e60d497e42e2e36411b0ec6a07d1f187c487eba99e4a09dfa5",
       "frozen_path": "frozen-inputs/accepted-surface-bases/alley.png"
+    },
+    "registered-paving:sidewalk": {
+      "path": "docs/evidence/paving-boundary-joints-2026-09-12/bundle/registered/sidewalk.png",
+      "sha256": "24f92f984df664c2687785e22c465f98ee4d5433bc17f82aec19a114b3917ade",
+      "frozen_path": "frozen-inputs/paving-bases/sidewalk.png",
+      "joint_manifest_sha256": "8fae988870c6662ce79ae28df19bb8545733c126bf9747e149821b6eb3b3b0b2"
+    },
+    "registered-paving:alley": {
+      "path": "docs/evidence/paving-boundary-joints-2026-09-12/bundle/registered/alley.png",
+      "sha256": "8e31133cb8cfada9beb57c2c45ad311fa2df900946db31e2d2bba8f815f17b14",
+      "frozen_path": "frozen-inputs/paving-bases/alley.png",
+      "joint_manifest_sha256": "8fae988870c6662ce79ae28df19bb8545733c126bf9747e149821b6eb3b3b0b2"
     },
     "svg-render:alley": {
       "path": "docs/evidence/style-transfer-tiles-2026-09-12/source/alley-svg.png",
@@ -723,7 +644,7 @@
     },
     "svg-source:alley": {
       "path": "assets/tiles/alley.svg",
-      "sha256": "c2b9035ea2f29b7c419e3ce9d693d7807b46734d7f04a51486bed2f7a7bb953f"
+      "sha256": "308707e9a02ab38ef1b13ff0d1d494089b10db678a59f81932b4041db2e4b592"
     },
     "svg-source:road": {
       "path": "assets/tiles/road.svg",
@@ -735,7 +656,7 @@
     },
     "svg-source:sidewalk": {
       "path": "assets/tiles/sidewalk.svg",
-      "sha256": "98caaf561c4228f321bf4ddef01cbaa8cb93288f2dde0cc8a414c1bac31c7628"
+      "sha256": "67c4590729fbf0928ba5fc66d2ec75b04730383d4ed8c708beeda633ca6df7b7"
     },
     "svg-source:curbstone": {
       "path": "assets/tiles/sidewalk_kerb_n.svg",
@@ -843,14 +764,14 @@
   },
   "bases": {
     "sidewalk": {
-      "frozen_input": "frozen-inputs/tiles/sidewalk.png",
-      "source_revision": "62d1c344dccbf77e7cb8052ea09b337a76ce994e",
-      "source_blob": "af36579547f3f1795a7549c4f3227a2a9e9f58db",
-      "sha256": "a86c9cdff2ca96f1d5016a7b997d506e0a1452174a06cadd9a51b50eafff0c28"
+      "frozen_input": "frozen-inputs/paving-bases/sidewalk.png",
+      "material_revision": "62d1c344dccbf77e7cb8052ea09b337a76ce994e",
+      "material_blob": "af36579547f3f1795a7549c4f3227a2a9e9f58db",
+      "sha256": "24f92f984df664c2687785e22c465f98ee4d5433bc17f82aec19a114b3917ade"
     },
     "alley": {
-      "frozen_input": "frozen-inputs/tiles/alley.png",
-      "sha256": "292d99485db258e60d497e42e2e36411b0ec6a07d1f187c487eba99e4a09dfa5"
+      "frozen_input": "frozen-inputs/paving-bases/alley.png",
+      "sha256": "8e31133cb8cfada9beb57c2c45ad311fa2df900946db31e2d2bba8f815f17b14"
     },
     "asphalt": {
       "frozen_input": "frozen-inputs/tiles/road.png",
@@ -953,7 +874,7 @@
       "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_hairline_a.png",
       "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_hairline_a-svg.png",
       "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
-      "sha256": "4d39a624e120bd84032b5afee61c03dc45da8cb820c059be9fde016ecef942af"
+      "sha256": "d4a8f7fcf1d5f54adbc0294deb80ab7cc8b61af0a3db8214493a860c391f366c"
     },
     "sidewalk_cracked_hairline_b": {
       "base": "sidewalk",
@@ -961,7 +882,7 @@
       "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_hairline_b.png",
       "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_hairline_b-svg.png",
       "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
-      "sha256": "a8e97fea969e92f9ab763a2308c44a023ebb774134c63e78b15f53bac0b86c1c"
+      "sha256": "03fa2a46d7ec13070d1420a3a68117b3944b968df0d9a3a4dc28fa35462a2c7d"
     },
     "sidewalk_cracked_cracked_a": {
       "base": "sidewalk",
@@ -969,7 +890,7 @@
       "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_cracked_a.png",
       "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_cracked_a-svg.png",
       "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
-      "sha256": "41a75679e60d1ea27b10acc8bb77afb1116a234d5872fed6fba7f385337536f2"
+      "sha256": "588f56d9a5c584587d90b75bcdf94fc2f074bdecae56a89adcef6cd9f1b58377"
     },
     "sidewalk_cracked_cracked_b": {
       "base": "sidewalk",
@@ -977,7 +898,7 @@
       "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_cracked_b.png",
       "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_cracked_b-svg.png",
       "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
-      "sha256": "f30d9245913d7b99c985d92f7cf96e638b91bda4abb240151aa514a3ae670548"
+      "sha256": "707132a1b27eef63510d599c28274b7631141a0852906341e4db58230108f71a"
     },
     "sidewalk_cracked_broken_a": {
       "base": "sidewalk",
@@ -985,7 +906,7 @@
       "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_broken_a.png",
       "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_broken_a-svg.png",
       "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
-      "sha256": "9008a4b549fa72d17cec8384c74f5a553f8d3bb08ccf81c11b40fe23804f6082"
+      "sha256": "2c8a46907249f9c41aeda8baed8ec6058c2b38dea9483fe5b901b335d5fad115"
     },
     "sidewalk_cracked_broken_b": {
       "base": "sidewalk",
@@ -993,7 +914,7 @@
       "frozen_illustrated_input": "frozen-inputs/tiles/sidewalk_cracked_broken_b.png",
       "svg_mask_input": "frozen-inputs/svg-renders/sidewalk_cracked_broken_b-svg.png",
       "mask_rule": "accepted-source foreground color segmentation; shared-base seam pixels are removed only when they match the accepted base",
-      "sha256": "dca7789be613078ca9a883a0368f32aabc74b06e9e6b893e34a7b59179e0a530"
+      "sha256": "32caaac1e4abe6bb8e70aeade81cc14637fc42778f434e7c3d0fd5cbcb9f1b2e"
     },
     "road_cracked_hairline_a": {
       "base": "road",
@@ -1114,17 +1035,17 @@
     }
   },
   "compiled": {
-    "sidewalk": "a86c9cdff2ca96f1d5016a7b997d506e0a1452174a06cadd9a51b50eafff0c28",
+    "sidewalk": "24f92f984df664c2687785e22c465f98ee4d5433bc17f82aec19a114b3917ade",
     "road": "8165adc4a457aabb43101f8e701aa202438e3bbef2d9b1c02e317af031aae468",
     "road_main": "8165adc4a457aabb43101f8e701aa202438e3bbef2d9b1c02e317af031aae468",
-    "sidewalk_kerb_n": "5c7ffd56244a7779d7351dd41e6d4cfff8dd6422d67b5b73f42059019259c624",
-    "sidewalk_kerb_s": "822b0d8fc1623f3dbdb1b25b76fafe1ae57fa4f99b3967893d2d684c0d2f75aa",
-    "sidewalk_kerb_e": "95118d64f87dc33bd02a192f574b8d120d74f1309abb97f662869299d75aa039",
-    "sidewalk_kerb_w": "2b6af232dac1e8e882f658c10d1a32e1fa7321f2e1851d41e3dc4da915909c18",
-    "sidewalk_kerb_main_n": "7b0cca9164e97c28d977868ae42fa89326be2e36af93060fe44b9797c225fdc9",
-    "sidewalk_kerb_main_s": "52a56c7c2b0f57a330714c0798f91e4cec0254a832987bbb9f1fe1f173937ca7",
-    "sidewalk_kerb_main_e": "a88cd313151c4a578e340be77691e7e3e37cdbdc695eee996e4d9919aa6dcf56",
-    "sidewalk_kerb_main_w": "e19688d1b8802e8f69ef0351ffb3d9074d8dd82187a1030c9aa8b1173577bf81",
+    "sidewalk_kerb_n": "074f29a0fd2575defb86502289c60ea65f951f86d16d69935746562436a1aba5",
+    "sidewalk_kerb_s": "6980bab834ff5097f8e9a1531d336fe7510bbe173769c6b37d9a42f9086ce3b3",
+    "sidewalk_kerb_e": "fc8aa849a45ce98566ea2c019a1dd2a6b6dba2c077e3ddd04dff7da6f4434c9b",
+    "sidewalk_kerb_w": "109aa30dc690287e40cdd035339800d574f3c8628c22fc0df60f3e954e761b6f",
+    "sidewalk_kerb_main_n": "37283bec891b0289ac487d5a17785ed499df6bfa80a52577d339a5b7a7b8129b",
+    "sidewalk_kerb_main_s": "833611c279d7dbfca71e25281f1c18f33c51b6d11e869a1c5b264b4d5d4a7df9",
+    "sidewalk_kerb_main_e": "c8fee0290ebad0f6e55f6dcafef75640aec5f0967ea6f52c84eb4c846fd861ad",
+    "sidewalk_kerb_main_w": "16e0d6331736dfc9204222ce85c8800b0ab6478de0675af9902082df6693a037",
     "road_line_e": "c11254fcd6118135904aceef5b4afc82b24190cb1e3f91131e1209540a7698c9",
     "road_line_w": "d133e94281fc75234526c2fdd8d23cb000160d3cc867857b1d035b27defb1303",
     "road_line_n": "020abc6069e9a407d1df4b75600efe60dca99adbe49dd36ff139d495337e6b27",
@@ -1139,23 +1060,23 @@
     "crossing_main_s": "7b66f5087d09c5ff2c8e67baa149b1096617c3a5de933f2bebdd8f962c8945e6",
     "crossing_main_e": "7d5b27fe794c893a7a17c1847adae4506c0640a801d2b619b3e15f021cceed8e",
     "crossing_main_w": "e29e52495414afbc315f2c399316ffbed02ac253e202fe9762e4128ffd94fa73",
-    "sidewalk_cracked_hairline_a": "7a25a8503a80cb5b6e3c961be3ef5c85d0e45933c0b773f026f0400cbdb0b2fe",
-    "sidewalk_cracked_hairline_b": "baeba5fa3559e66dd82181c9bf4ccc103e8438107ffae092e18f70a186493f2c",
-    "sidewalk_cracked_cracked_a": "871591a117eb8c4fce09dca777f3f94f25722a3236a1c1ab364288fc6cc2259f",
-    "sidewalk_cracked_cracked_b": "47c7505fc4333597f16cab9bfe664d6f8c255b6853641d25a676abe6164564e4",
-    "sidewalk_cracked_broken_a": "3c448d5d96983694931dc126fe0e2aea2e45e081fae37d04bc2209371a4f9e8c",
-    "sidewalk_cracked_broken_b": "b4d15739f9243182ee30114c27f7aaa72894c9df7745e61db186dbc4ac6492ab",
+    "sidewalk_cracked_hairline_a": "b014e6070b008274be5f8a30749faf02c6907d93039ee0f11f6323794e98bf17",
+    "sidewalk_cracked_hairline_b": "1d8d0a4f99d197bb437198be3a7f5e96df08cca8d6edacd660b03ff7877d191b",
+    "sidewalk_cracked_cracked_a": "f62c557c7f6e93f23f992a2fbd70847c0953953462866f339461c3578f2d68c0",
+    "sidewalk_cracked_cracked_b": "e81e391ee88d7d175048b957e48022010bb2b493b980a9f4b28900db18406631",
+    "sidewalk_cracked_broken_a": "9667d3e8e41189ad351b4f511c7b0ca17b729fcbef868aafc47212cd6c947170",
+    "sidewalk_cracked_broken_b": "bd9ca2bd2e5330a54663d0200a18efd35635249fdae6b9d6cc39fc1ff9fbaac1",
     "road_cracked_hairline_a": "b02048337298c7e17048b2206d3232b4a6470f7251b42c93701698d94e3b996c",
     "road_cracked_hairline_b": "84c412ef4f90d6ae14afee49fc79299928824e32f4633fcf1a98191bb650f329",
     "road_cracked_cracked_a": "026f7b8a7751da904abd7c5065fe8e5c82e600fc95f44e3cb7de57f461e4ca90",
     "road_cracked_cracked_b": "8c6966c448e18007237f212bc9778233ec291e25ce38fb7d26b557203896f963",
     "road_cracked_broken_a": "935c4a0212180887fdcf3a3663057a0765ebe503ee7479ece3259ad71ecf513f",
     "road_cracked_broken_b": "afd7a6b62e3b6c8714652a43d748cb9aaef0548f90c52591e7614f8db9ca6934",
-    "alley_cracked_hairline_a": "e38fc71f17f3da6aedc59a8704bb0cb603433e4ad1dab7b0b56aabd202152f88",
-    "alley_cracked_hairline_b": "de69a69d6d29dad5da1ca4adfe1205f33010b69cf87d5029ed4847c41fe571e5",
-    "alley_cracked_cracked_a": "df450727146a1eee82d32a7bee1244f8ca01a1ff9bd5bdce7490b77e3fa270b5",
-    "alley_cracked_cracked_b": "9f15ea5577293a0064c2c801739ad5766fddecf025167f03726eb4aa0f62e3f4",
-    "alley_cracked_broken_a": "c7172996f72eeab47ad4fc5fc2b188411c3f20e523d3993de3c1773293f6f99b",
-    "alley_cracked_broken_b": "be6f87ff4ac6105c3d52fc8750f5b7e41d2740996caac4e4a364569238d8ca73"
+    "alley_cracked_hairline_a": "50190c84ccd9c773f32a21d6bd811138c082daee734ff81fa0ebc3c5a35ddfa5",
+    "alley_cracked_hairline_b": "4d89d3137242acbb693307e694c7441b2913e99088794f1b9418c35d58b9ef94",
+    "alley_cracked_cracked_a": "0200ab1e16c18236e90b85411f36f0accde9f7934bbab7502a30f4799f807fa1",
+    "alley_cracked_cracked_b": "99d59c86083bfd03e9a3fd8c628a671caf992004e6be7fb7a5ed82a43d77495a",
+    "alley_cracked_broken_a": "c37afbe38b1cb7be59010f194fd0f3028895c31e3dad2c409f9aa344d7b85282",
+    "alley_cracked_broken_b": "18b5cff018dc648f2354da5581991f14d6471de16e9d54da9da801f8a3eb18ab"
   }
 }

@@ -321,3 +321,16 @@ Share damage artwork across road, sidewalk and alley materials. Keep the existin
 variations in common hairline, cracked and broken pools, rather than binding a drawing to the
 surface from which it was extracted. Compose the chosen variation over the actual base in the
 engine. Preserve damage placement and severity, with stable variation by city seed and cell.
+
+> the canopy of the left and right facing stroller is flipped (it should be closed on the side of the handle not the opposite side like it is now). all other directions are correct. this can be solved by flipping the upper half of the stroller texture excluding the handle bit.
+
+Flip only the side-facing stroller's upper canopy horizontally, leaving the handle, frame,
+wheels, anchors and all other facings unchanged. The canopy's closed side belongs beside the
+handle. Preserve this pixel transformation in the graphics recipe and review both mirrored sides.
+
+> did you save the process/script you used to fix the pavement tiles?
+
+> the tiles look good we can use them
+
+The player accepts the registered paving family in the main checkout. Preserve its frozen inputs,
+pixel-copy registration, source hashes and repeat-review scripts with the graphics evidence.

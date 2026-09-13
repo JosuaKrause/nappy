@@ -37,6 +37,9 @@ can produce different pixels on another call; extraction and assembly use the re
 | Sidewalk material comparison | [Source pairs, transfer, registration and neighbor panels](sidewalk-continuity-2026-09-12/GENERATION.md) |
 | Sidewalk join comparison in generated layouts | [Tile selection, frozen inputs and street assemblies](sidewalk-layout-review-2026-09-12/GENERATION.md) |
 | Shared ground bases and transparent details | [Frozen artwork, stencils and component assembly](layered-ground-2026-09-12/GENERATION.md) |
+| Accepted paving and complete boundary joints | [Frozen inputs, exact pixel-copy registration and repeat review](paving-boundary-joints-2026-09-12/GENERATION.md) |
+| Shared damage variations across floor materials | [Stencil extraction and runtime atlas review](shared-damage-2026-09-12/GENERATION.md) |
+| Side-facing stroller canopy | [Upper-texture flip, frozen source and mirrored review](stroller-side-canopy-2026-09-12/GENERATION.md) |
 | Muted quiet-square paving | [Generation prompt, raw image and repeat-neighbor registration](quiet-square-2026-09-12/GENERATION.md) |
 | Muted plaza paving | [Generation prompt, raw image and repeat-neighbor registration](plaza-paving-2026-09-12/GENERATION.md) |
 | Composed streets and varied grass in generated layouts | [In-engine composition and repeatable layout review](layered-ground-layout-2026-09-12/GENERATION.md) |

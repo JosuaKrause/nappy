@@ -1,0 +1,18 @@
+<!-- A pedestrianised street: brick paving, frontage to frontage, no kerb and no
+     asphalt anywhere in it. Warmer and finer-grained than an ordinary pavement, so that a
+     precinct reads as a different street rather than as a wide one. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect x="0" y="0" width="32" height="32" fill="#9c8a78"/>
+  <rect x="0" y="7" width="32" height="1" fill="#8a7968"/>
+  <rect x="0" y="15" width="32" height="1" fill="#8a7968"/>
+  <rect x="0" y="23" width="32" height="1" fill="#8a7968"/>
+  <rect x="0" y="31" width="32" height="1" fill="#8a7968"/>
+  <rect x="7" y="0" width="1" height="7" fill="#8a7968"/>
+  <rect x="23" y="0" width="1" height="7" fill="#8a7968"/>
+  <rect x="15" y="8" width="1" height="7" fill="#8a7968"/>
+  <rect x="31" y="8" width="1" height="7" fill="#8a7968"/>
+  <rect x="7" y="16" width="1" height="7" fill="#8a7968"/>
+  <rect x="23" y="16" width="1" height="7" fill="#8a7968"/>
+  <rect x="15" y="24" width="1" height="7" fill="#8a7968"/>
+  <rect x="31" y="24" width="1" height="7" fill="#8a7968"/>
+</svg>

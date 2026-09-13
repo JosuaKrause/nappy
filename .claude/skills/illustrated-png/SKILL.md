@@ -139,7 +139,11 @@ road variants from one asphalt texture; use transparent layers for curbstones, r
 edges, yellow lines, crosswalks and damage. Remove the ground background from detail artwork
 before alpha compositing it over the actual base. Preserve the layer inputs and composition
 recipe, including SVG sources for the components. Pixels outside the overlay remain identical
-to the base. Inspect repeated bases in both axes for lighting gradients and brightness jumps;
+to the base. Damage variations share pools by severity across floor materials; inspect each
+stencil over every supported base so extracted slab joints do not become a second floor grid.
+Keep final registered paving inputs separate from the original material inputs used to extract
+damage. Rebuilding components must retain the reviewed base's boundary joints.
+Inspect repeated bases in both axes for lighting gradients and brightness jumps;
 a shared texture still needs to tile cleanly. Blend curbstones, markings, damage and grass
 features over their bases in the engine, retaining the separate component graphics. The
 rotation/offset blend that smooths the asphalt and grass bases is an offline preparation step.

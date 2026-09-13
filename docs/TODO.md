@@ -116,18 +116,6 @@ findings supported by the conversion and review.
       Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
-- [ ] Use the sidewalk image selected in PLAYTEST-65 as the shared paving base, preserving its
-      material from the source revision and recording provenance. Complete its slab joints at
-      tile boundaries using the existing joint artwork, so rectangles stay defined when tiled.
-      Keep engine-composed curbstones, markings and damage over this one base; check repeated
-      street and junction layouts in both axes.
-- [ ] Complete boundary joints across the rectangular paving family, including quiet square
-      and plaza, as requested in PLAYTEST-65. Preserve each material and slab layout, reusing
-      existing joint artwork; retain reproducible native and enlarged repeated-tile checks.
-- [ ] Share damage stencil variation pools across road, sidewalk and alley materials, per
-      PLAYTEST-65. Preserve the existing drawings as common hairline, cracked and broken
-      variations, composed over each base in the engine with stable city-seed/cell selection.
-      Keep damage placement and severity unchanged.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The
