@@ -249,6 +249,22 @@ func _say(line: String, seconds: float) -> void:
 	_teach.text = line
 	_teach_left = seconds
 
+## The escape's two hint lines — *"escape the apartment"* and *"exit the city"* — said by `main` at
+## the start of each section. Public because neither hangs off a day or a telegraph, so there is no
+## signal the HUD could have listened for; it is the same one-line lesson `_teach_the_day()` gives
+## on day 1, for the same length of time, and it is said once per section rather than on a retry.
+func say_once(line: String) -> void:
+	_say(line, TEACH_SECONDS)
+
+## Whether the clock is the escape's rather than a day's. The only thing it changes is the format —
+## *"in addition to minutes and seconds the timer also shows milliseconds. this makes the timer
+## appear faster than just the seconds alone which adds additional tension"* — so it is a flag on
+## the one function that draws the clock rather than a second clock or a second label.
+var _finale := false
+
+func set_finale(on: bool) -> void:
+	_finale = on
+
 func _process(delta: float) -> void:
 	_teach_the_pause(delta)
 	if _teach_left > 0.0:
@@ -294,7 +310,11 @@ func _refresh_state() -> void:
 	_state_label.text = text
 
 func _on_day_time_changed(remaining: float, total: float) -> void:
-	_clock.text = "%d:%02d" % [int(remaining) / 60, int(remaining) % 60]
+	# A day reads to the second and the escape reads to the millisecond. `GameState.format_clock()`
+	# is the one place the longer form is written, shared with the run length on an ending screen so
+	# the two can never carry two copies of the same format string.
+	_clock.text = GameState.format_clock(remaining) if _finale \
+			else "%d:%02d" % [int(remaining) / 60, int(remaining) % 60]
 	# The last minute is the one worth panicking about.
 	var urgent := remaining < 60.0 and total > 0.0
 	_clock.modulate = Color("e5765f") if urgent else Color(1, 1, 1)

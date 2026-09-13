@@ -185,12 +185,10 @@ anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified 
 | Owner | Integration work and acceptance |
 |---|---|
 | M100 — Small, real, and nobody's | Review `chalk_mark.svg` beside `chalk_mark_touched.svg`, then bind the touched state to the acknowledgement she adds when contact counts. Keep the original mark visible and readable on the pavement. Compare `alley_draft.svg` in context before deciding whether it replaces the live alley. Bind the mouse family with the alley event and the sound arcs with their event timing; source availability does not decide either behavior. |
-| M102 — The finale: out of the apartment, out of the city | Extend the playable interior and its carrying-mother rig into the finale. Bind normal/flash windows to explosion timing and steam to its pulse. Reuse mouse, guards, vehicles and crater sources. Decide whether the optional `explosion_preview.svg` is needed; the off-screen explosion brief does not require a visible burst. Check event state changes and their layering in the interior at runtime. |
 
-The impact-crater decals `assets/props/impact_crater_1x1.svg`,
-`impact_crater_2x2.svg` and `impact_crater_3x3.svg` (32×32, 64×64 and 96×96 footprints) are the
-finale's: the marks its off-screen explosions leave on the street. M102 also owns the `assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b,c}.svg`
-set, documented in GRAPHICS.md and bound by the playable apartment's carrying rig.
+M102, the finale, owns the impact-crater decals and the carrying-mother set and has bound what it
+needs of them behind `--start-escape`; `GRAPHICS.md` names which sources are live and which stay
+prepared, and whether the interior's event layering reads is a `REVIEW.md` question.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
 no artist.
@@ -199,12 +197,11 @@ no artist.
 the lattice left cardinal — and it is written down so that whoever chooses the projection does it
 with the code's constraints in hand. It is not queued and it is not rejected.
 
-**M102, the finale, is planned and not queued.** *(2026-09-09: "this is just a plan for now — we
-probably won't actually implement it for a while (there are a lot of milestones before that)".)* It
-is the good ending's last scene — out of the apartment, out of the city — written down in full so
-that the milestones before it can be built knowing what they are building towards. Its four
-collisions with the good ending as written today were asked and answered the same day, and the
-entry records the answers in the player's words.
+**M102, the finale, is built and reached only through `--start-escape`.** It is the good ending's
+last scene — out of the apartment, out of the city — and its section holds the brief, the four
+answered collisions, and the one item still open: the entry from day 14's own summary, which is
+what would make it a run's ending rather than a flag's. The record of what was built is in
+`DECISIONS.md`.
 
 **[PLAYTEST-50.md](playtests/PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
@@ -628,19 +625,14 @@ re-pitched:
 
 ## M102 — The finale: out of the apartment, out of the city · asked for 2026-09-09
 
-**Queued on 2026-09-12, behind the flag.** *Planned and not queued on 2026-09-09 ("this is just a
-plan for now — we probably won't actually implement it for a while") · overturned by the player on
-2026-09-12: "also build the entire escape sequence to the end but make it playable only via flag
-today (what is now the apartment escape should continue)".* So the whole sequence is built —
-the building with its events, the service exit onto the city, the two chains through three parks
-each to the tunnel and the bridge, the explosions and their craters, the hint lines, the
-millisecond clock, the section restart and the epilogue — and **today it is reached only through
-`--start-escape`**, which already boots the empty building: from the service door that run now
-continues into the finale's city rather than returning to the title. The entry from day 14's own
-summary is the one item that stays open until the player says the finale is a run's ending, and it
-is marked below. Written down on 2026-09-09 so that M62 (checkpoints that divide the map), M56
-(the resistance is noticed) and M100's sound lines were built knowing they are also the finale's
-parts, as M101 (the fire found before the engine) was.
+**The sequence exists and is reached only through `--start-escape`** *(2026-09-12: "also build the
+entire escape sequence to the end but make it playable only via flag today (what is now the
+apartment escape should continue)")*: the building with its events, the service exit onto the city,
+the two chains through three calm areas each to the tunnel and the bridge, the explosions and their
+craters, the two hint lines, the millisecond clock, the section restart and the epilogue. What it
+does, what was measured and what was chosen where the design was silent is in `DECISIONS.md` under
+M102, the finale built behind the flag; what only a play can settle is in `REVIEW.md`. **One item
+is open**, and it is the switch that makes the sequence a run's ending rather than a flag's.
 
 **The brief, in the player's words:**
 
@@ -665,101 +657,13 @@ parts, as M101 (the fire found before the engine) was.
 > like normal tutorial hints). the timer shows milli second precision for dramatic effect (instead
 > of the regular second precision of the main game)"
 
-**What it is, in the game's own terms.** A fifteenth walk that is not a day: no route to a calm
-area and home, but one way out, played in two sections that each open with one hint line and share
-one clock. The verb is unchanged — *where do I walk* — and the pressure is the same two meters: the
-baby starts asleep with sleepiness full, and everything on the way is a reason for her to wake.
+**What is still open:**
 
-**Section one — the apartment.** *"escape the apartment"*, said once at the start, the way the
-HUD's `_say()` teaches tapping and running on day 1 and then never again. The building is the
-home lot's own block, seen from inside for the first and only time in the run: the hallway outside
-the door at night, a dead lift, and two stairwells: one at the building's left side and one at its
-right side. Within each stairwell, flights zigzag sideways across the view with landings between
-them, as in the two stair references in `docs/reference/` (`stairwell-switchback-interior-01.jpg`,
-`fire-escape-switchback-exterior-01.jpg`). They do not recede front-to-back.
-The two egresses (*"all buildings have two egresses"*) lead down a few
-floors — three or four, *"not excessively many"*. The main entrance is barricaded, so the way out
-is down past the ground floor into the basement, along its corridors to the service entrance on
-the side of the building. Events here are *"relatively minimal"*: mice; masked pursuers who run up
-a staircase and can be let past by stepping into a corridor, a moving wall she avoids by not being
-on its line; a fire on one staircase that closes it and forces the other; steam in the basement.
-Each is the existing vocabulary indoors — a pursuer is a mobile row on a path, a fire is
-`burning_building`'s flame at a stairwell, steam is a stationary field on a corridor — and the
-section wants at most one of each.
-
-**Section two — the city.** *"exit the city"*, said once at the service exit. The city she knows,
-with nobody in it: `CROWD_PEDESTRIANS_PER_ACT` and `CROWD_CARS_PER_ACT` give act IV 70 walkers and
-16 cars, and this scene has zero of both — *"no regular cars or regular people on the street"*. In
-their place, army trucks on the carriageways, masked men on foot and in vans trying to take her,
-and explosions off screen, loud enough to reach the meter, each leaving a crater on a street. Off
-the one open route everything is sealed with the finale's own pictures — burnt cars, blockades,
-craters — which is `SealPlanner`'s existing job with a different candidate list: it already seals
-every street off the day's tree. **But the finale's route is not a tree.** *(2026-09-09: "the
-finale route is *not* a tree any more. it's a single path going to the first park, then the second,
-then the third, then the exit. no overlapping routes".)* A day grows several strands to several
-calm areas and counts two distinct routes to each as a max flow; the finale has one ordered chain
-— service exit, first park, second park, third park, edge — with no branch, no second way to any
-of them, and everything off the chain sealed. The parks are the only calm on the way and are for
-*"calm down or get the baby back to sleep if it wakes up"*; the edge is the tunnel at the north
-end of the main road or the bridge at its south end, the two exits `CityEdge` already draws and
-already lets her walk into.
-*"Lots of lethal and dangerous events"*: this is the climax, and the density rules that keep a day
-fair (`_room_around`, the telegraph contract, off-corridor exemption) still hold — lethal things
-are dense, not unfair.
-
-**The clock shows milliseconds** — `HUD._on_day_time_changed()` formats `%d:%02d` today and the
-finale formats `%d:%02d.%03d` — *"for dramatic effect"*, and nothing else about it changes.
-
-**The parts that already exist, so nobody draws or builds them twice.** The impact craters at
-three sizes, `assets/props/impact_crater_1x1.svg`, `_2x2` and `_3x3` (32, 64 and 96px, ground-centred,
-catalogued in `GRAPHICS.md` as prepared with no owner), are the explosions' marks and this
-milestone is their owner. `burnt_out_car.svg` with its vertical sibling, `barricade_pile.svg` and
-`checkpoint_block.svg` are the finale's seals and are already seal candidates or barrier rows.
-`army_truck.svg` and `army_truck_end.svg` are the trucks; `unmarked_van.svg`, `unmarked_van_end.svg`
-and the `abduction` row are the masked men in vans; `guard_standing.svg` and `guard_lunging.svg`
-are masked men on foot; `flame.svg` is the staircase fire; `sound_pulse.svg` is the arc an
-off-screen explosion draws, once M100's sound lines bind it. The player herself is drawn:
-`assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b,c}.svg` are the mother's fifteen sources with
-the baby in her arms and no pram, on the same canvases and feet anchors as the walking set, so
-`Stroller` can swap them in facing for facing. Prepared drawings, each listed with its contract in
-`GRAPHICS.md`: the hallway with its flashing windows and its floor edge that implies the apartment doors,
-the stairwell with its mechanical floor and its door seen only from inside, the entrance and the
-furniture heaped against it, a chandelier, the basement's gloomy floor, brick walls and puddles, the
-emergency exit, a dead lift door, mice, steam, and an explosion row's own picture if one is wanted
-beyond the arc and the crater. The original room list is preserved in `DECISIONS.md` under
-M103, the drawings the queue owes.
-
-**What is genuinely new, and the order to build it in:**
-
-- [ ] **The building is built and empty** — M112, the escape scene, walkable, in `DECISIONS.md`:
-      one map with three hallways, two switchback stairwells, the lobby and the basement, doors
-      that fade and teleport, her carrying the baby, all behind `--start-escape`. What this
-      milestone adds inside it: the exit through the service door onto the city map at the home
-      lot's side, the hallway windows that **flash** when an off-screen explosion goes off (the
-      explosion row's cue indoors, one or two frames of `hallway_wall_window_flash.svg`), the
-      lighting response to the explosions, and the events — mice, the pursuers on the stairs, the
-      fire on one stairwell, the steam
 - [ ] **The entry from day 14's summary rather than from the flag** — the one item held back on
       2026-09-12 *("make it playable only via flag today")*: the good ending's last won day hands
-      over to the hallway instead of the ending screen. Everything else below is built behind
-      `--start-escape`, and this is the switch that makes it the run's ending
-- [ ] **A finale plan for the city map.** An ordered chain, not a `RouteTree`: service exit to
-      first park to second to third to the edge, one street-walk between each pair and nothing
-      else open. `RouteTree.for_day` and its redundancy guarantee (two distinct routes to each calm
-      area, counted as a max flow) are exactly what the finale must *not* do, so the chain is its
-      own small planner that reuses the reachability grid and hands `SealPlanner` the set of open
-      cells — a route *out* must never count as a route to a calm area, which is the rule
-      `CityEdge` and `tests/test_blocks.gd` already keep. Crowd at zero, and a scheduler budget of
-      army trucks, abductions and explosions rather than the act's ordinary catalogue
-- [ ] **An explosion row.** Off screen, a short burst of intensity high enough to reach her from
-      out of view, a sound arc when M100's sound lines exist, and a crater left behind as a scar
-      the way `barricade` leaves one — `spawns_on_finish` naming a crater row whose picture is one
-      of the three prepared sizes, obstructing at the size it is drawn
-- [ ] **The two hint lines, the millisecond clock and the section restart**, each a small change
-      to `HUD` and `DayController`: the clock formats milliseconds, and the day-lost path restarts
-      the section rather than ending a day
-- [ ] **The summary after it**, which is the good ending's epilogue: the tunnel or the bridge
-      behind her, and nothing triumphant
+      over to the hallway instead of the ending screen. Everything the sequence itself needs is
+      built behind `--start-escape`, so this is the one switch left: it waits on the player saying
+      the finale is a run's ending rather than a flag's
 
 **Four things the brief collided with in the finale as `docs/NARRATIVE.md` writes it today, each
 asked and each answered by the player on 2026-09-09:**

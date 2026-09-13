@@ -925,6 +925,38 @@ under their own body text reading the run's length as `%d:%02d.%03d`, to the mil
 `GameState.format_clock()` is the one place that format is written, so a second clock reading to
 the millisecond calls it rather than carrying a second copy of the string.
 
+## The escape, which is not a day
+
+The walk out of the building and out of the city — behind `--start-escape` — is a fifteenth walk
+that is not a day: no route to a calm area and home, but one way out, played in two sections that
+each open with one hint line and **share one clock**.
+
+**One clock, `Tuning.FINALE_LENGTH_SECONDS`, which is a day's own length.** It counts down through
+both sections and walking out of the service exit does not restart it, because the sequence is one
+walk with a door in the middle of it. `FinaleController` owns a `DayController` rather than being a
+second one: the countdown, the three losing paths, the `EventBus.day_time_changed` the HUD draws
+from, and `--invincible` standing the clock still are all a day's already and none of them change.
+What the escape does differently is only what happens at the end of one.
+
+**The clock reads to the millisecond** — `%d:%02d.%03d` through `GameState.format_clock()`, in
+place of a day's `%d:%02d` — and nothing else about it changes. Milliseconds ticking make the same
+countdown read as faster, which is the whole of the reason.
+
+**A lost section starts again where it began, and costs no Nerve.** Being taken, the meter reaching
+100 and the clock running out are the same three losses a day has, and every one of them puts her
+back at the start of the section she was in — the hallway outside her own door, or the service exit
+— with the clock at full length, the baby asleep with sleepiness full again, and `GameState`
+untouched. A fourteen-day run is never thrown by one wrong turn in the last minutes; at zero the
+way out is gone, and what she does about it is walk it again.
+
+**Two hint lines, said once each**, the way day 1 teaches tapping and then never again:
+*"Escape the apartment"* at the start of the first section and *"Exit the city"* at the service
+exit. A retry is not told either of them a second time.
+
+**It ends on the tunnel or the bridge**, within `Tuning.FINALE_EXIT_REACH` of the exit `CityEdge`
+draws, on a summary screen with the way out behind her and nothing triumphant on it — and the clock
+she took, to the millisecond, which is the only number that screen carries.
+
 ## Nerves
 
 The run-level health bar. Starts at 5. Every lost day costs one. At 0 the run ends with the

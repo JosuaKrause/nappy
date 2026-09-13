@@ -2637,9 +2637,10 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 ## any more — a row that forgets to choose one is invisible, which is the quietest way for an
 ## event to stop working.
 func _test_no_two_rows_draw_the_same_picture(t) -> void:
-	# Three rows are legitimately invisible: something else already draws the ground they stand
-	# on, or there is nothing to draw because the whole city is inside them.
-	var invisible := ["playground", "loudspeaker", "curfew_announce"]
+	# Four rows are legitimately invisible: something else already draws the ground they stand
+	# on, the whole city is inside them, or — the finale's explosion — the whole of the row is that
+	# it happens somewhere she cannot see, and what it leaves behind is a different row.
+	var invisible := ["playground", "loudspeaker", "curfew_announce", "finale_explosion"]
 	var owner_of := {}
 	for def in EventCatalogue.all():
 		if def.look == EventDef.Look.NONE:

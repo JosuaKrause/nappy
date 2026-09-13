@@ -2035,3 +2035,48 @@ func falloff(d: float, intensity: float, inner_radius: float, outer_radius: floa
 		return 0.0
 	var t := (d - inner_radius) / (outer_radius - inner_radius)
 	return intensity * (1.0 - t * t)
+
+# ----------------------------------------------------------------- the finale ---
+# The fifteenth walk, which is not a day: out of the building and out of the city, on one clock,
+# with one way through. Every number here is stated against something that already exists rather
+# than chosen — the finale reuses the day's own clock, the catalogue's own rows and the sealing's
+# own placement, so what it needs of its own is a length, a density and two reaches.
+
+## How long the whole sequence is, both sections together — a day's own length, because the
+## player's answer to the collision was *"the timer for the sequence is the same length"*. Not a
+## second number: read through here so the finale and a day can never drift apart.
+const FINALE_LENGTH_SECONDS := DAY_LENGTH_SECONDS
+
+## How many calm blocks each chain runs through between the service exit and its edge — *"a single
+## path through the city that crosses three parks"*. The chains are built one street-walk at a
+## time between consecutive stops, so this is also how many intermediate stops each chain has.
+const FINALE_PARKS_PER_CHAIN := 3
+
+## How close her own centre has to come to the last walkable tile of the spine, at either end of
+## the map, for the sequence to be over. One tile and a half — comfortably past her own body
+## (`PLAYER_BODY_RADIUS`, 14px) so standing anywhere on that tile is out, and under two tiles so
+## the tile before it is not. The same reasoning, and the same figure, as the radius the building's
+## own doors hold her with.
+const FINALE_EXIT_REACH := TILE_SIZE * 1.5
+
+## Seconds between two off-screen explosions inside the building. Section one is *"relatively
+## minimal"* and an explosion is its only city-wide beat, so it is spaced like the director's own
+## `AHEAD_INTERVAL` band rather than more often: four of them over a 180s clock is enough for the
+## hallway windows to flash more than once without the basement becoming a drum.
+const FINALE_EXPLOSION_INTERVAL := 22.0
+
+## How long a hallway window holds its lit picture when an explosion goes off — *"one or two
+## frames"* at 60fps, taken as a span in seconds so it does not depend on the frame rate.
+const FINALE_WINDOW_FLASH_SECONDS := 0.12
+
+## How many of each kind of danger the finale's own plan puts on one open chain street. *"Lots of
+## lethal and dangerous events"*: a street is `BLOCK_SIZE` (8) tiles long, so one truck, one van
+## and one pair of masked men on a street is roughly one lethal thing every two tiles of walking
+## — several times an ordinary day's own one-event-per-block, which is what the climax asks for,
+## while `EventScheduler._room_around()` still refuses anything it cannot give room to.
+const FINALE_TRUCKS_PER_STREET := 1
+const FINALE_VANS_PER_STREET := 1
+const FINALE_GUARDS_PER_STREET := 2
+## And how many explosions are sited off the chain per open street. Off screen by definition, so
+## these are placed *beside* the corridor rather than on it — see `FinalePlanner`.
+const FINALE_EXPLOSIONS_PER_STREET := 1

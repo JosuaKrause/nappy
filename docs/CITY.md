@@ -1012,6 +1012,49 @@ walkable` stays what it always was, a repair pass for the catalogue's own placem
 no equivalent; `tests/test_seals.gd` measures the guarantee over many seeds and days instead of
 asserting it at runtime.
 
+### The escape is a chain, not a tree
+
+The walk out of the city on the last night is planned by `FinalePlanner`
+(`src/finale/finale_planner.gd`) and is the one route in the game that is **not** a `RouteTree`.
+
+**A day grows a tree because a day has to stay winnable whichever way she goes**: several strands
+to several calm areas, with two distinct routes to each counted as a max flow. The escape asks the
+opposite question — *which single walk does she take, and what does it cost* — so it grows **two
+ordered chains** instead: the service exit, three calm areas one after another, and an edge. One
+street-walk between consecutive stops and nothing else open, with no branch and no second way to
+any of them.
+
+**Two chains, and they share no cell after the door.** One ends at the tunnel at the north end of
+the spine and one at the bridge at its south end — the two exits `CityEdge` already draws and
+already lets her walk into. The second is grown with every cell of the first treated as wall, so
+they part at the service exit, or as near it as the lattice allows, and the choice is made once, at
+the door. The home lot sits between the two ends of the spine, so neither exit is trivially nearer.
+
+**A stop is a connected component of calm ground**, which is a park lot, a four-block zone, a
+forest, a quiet square or a courtyard without the planner having to know which. Distinctness then
+needs no rule: two stops are different components or they are the same stop. Slivers under
+`FinalePlanner._SMALLEST_CALM_AREA` are dropped, because a calm area has to be big enough to have a
+route through it.
+
+**The rule that makes any of this legal is the one that was already there: a route *out* of the
+city is never a route to a calm area.** The tunnel and the bridge are the last stretch of the
+spine, walkable and lethal like every other carriageway, and `tests/test_blocks.gd` holds that they
+never count as calm — which is why an edge can be the end of a chain without a day's own guarantees
+having anything to say about it.
+
+**Everything off the chains is sealed**, by `SealPlanner.plan_finale()`, which takes the chains'
+open cells where `plan_day` takes a tree. Three differences, each for a reason the escape changes:
+seals are all **hard**, since a soft one leaves the carriageway open and the brief is a single path;
+the **main road is sealed like anything else**, because the chains *end* on the spine and leaving
+the rest of it open would join them at the one street that touches both exits; and **every alley
+mouth off the chains** is walled rather than a fraction of the qualifying ones. The doorstep stays
+exempt for the reason it always is.
+
+**A street is spared only where a chain walks it**, measured at the street's own midpoint, which is
+where a hard seal stands. Asking the looser question — does a chain touch this street at all —
+spares every street at every junction the walk turns at, which is several times as much open ground
+as the chains themselves.
+
 ### Regions and the wall
 
 **Every junction in the lattice belongs to exactly one of `Tuning.REGION_COUNT` regions**, decided
@@ -1465,7 +1508,13 @@ Top-down camera with a fake vertical extrusion:
   seal's bodies along the street to the nearest clear cross-section. Both refuse where the
   candidate is offered rather than moving something afterwards. So a van, a café, a market stall,
   a yeller, a dog walker or a seal is never in or behind a tree, and the only thing that ever
-  stands in a pit is the tree that fell out of it.
+  stands in a pit is the tree that fell out of it. The escape's own plan keeps the same rule
+  through the same two functions — `EventScheduler._finale_ground` refuses a tree's ground and
+  `SealPlanner.plan_finale` steps its seals off one — **with one exception the escape has and a
+  day does not**: a seal stepped off a tree may land on ground one of the chains walks, and there
+  it stands in the tree instead, since a picture overlapping a picture is better than the one way
+  out of the city being walled. `tests/test_finale.gd` holds that exception to a small share of
+  the escape's bodies rather than letting it become the ordinary case.
 - **A pit the day emptied has no tree in it.** A `FALLEN_TREE` closure and a `fallen_tree_seal`
   each take one of their street's own pits — see "What closes a street" above —
   and `CityMap.is_tree_pit_emptied` is what `City.refresh_street_trees()` reads to leave that one

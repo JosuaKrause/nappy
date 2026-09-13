@@ -763,7 +763,28 @@ are solid", and `docs/CITY.md`, "A closure is silent".
 | `burnt_out_car` | SCRIPTED | day 4 | A **hard seal**, from act II onward: a damaged car shell in the charred palette of `burnt_shell`. The cars lie perpendicular to the road: the side view serves north–south streets and the authored vertical view serves east–west streets. Vehicle-scale `obstructs_radius` lets `SealPlanner._hard_positions` place the individual wrecks across the street as a pile-up. |
 | `collapsed_frontage` | SCRIPTED | day 4 | A **hard seal**, from act II onward: rubble spilled frontage to frontage, drawn the way `_burnt_shell` draws `rubble.svg` — a small debris segment repeated by `_draw_spread` — but its own picture, styled beside `rubble.svg` rather than sharing it. |
 
+### The escape — the walk that is not a day
 
+Four rows nothing but the escape ever places. All four are `SCRIPTED` with `scripted_day` 0, the
+same gate the seal pictures use, so the ordinary catalogue roll can never reach one:
+`FinalePlanner` places the first two on the city's open chains and `InteriorEvents` places the last
+two inside the building. Three rows the escape uses are not new and are not changed —
+`military_convoy` is the army truck (with the barricade it ordinarily leaves stripped, since a
+convoy in the escape is traffic rather than the aftermath of something), `abduction` is the masked
+men in a van, and `roadblock` at full heat is the masked men on foot who leave the post.
+
+**The escape rolls its ground per street rather than per city** — `EventScheduler._finale_ground`
+over one segment's own rect, since the chains already say which streets exist for it, there is no
+corridor to weight against and no closure to avoid. Of the five refusals above it keeps the two
+that are still true of a walk with no day behind it: a tile must be open, and **a standing street
+tree's ground is refused here exactly as it is on a day** (`docs/CITY.md`, "Street trees").
+
+| id | kind | where | Behaviour |
+| --- | --- | --- | --- |
+| `finale_explosion` | SCRIPTED | the chains' carriageways, and once a beat indoors | The bang she hears and does not see. **Draws nothing** — the fourth row in the catalogue with no picture — because there is no burst on the street, only the noise and the hole afterwards. Off screen is bought with the streaming radius rather than with a rule: a `MAP` placement enters the world at `Tuning.EVENT_STREAM_RADIUS` (900px) against a 640×360 view, and its telegraph plus duration (3.7s, about 340px of walking) are over before she can reach it. `intensity` 24 over a 300–520px band, so a burst just past the screen edge still lands close to full strength. Not lethal: *the danger is always noise*. `spawns_on_finish` names the crater. |
+| `impact_crater` | SCRIPTED | wherever a burst went off | What is left in the road, for the rest of the sequence (`duration` 0). Silent and solid, with `barricade`'s own radii; `obstructs_radius` 32 against a 64px picture, so the ground she cannot walk on is exactly the hole she can see. Also one of the escape's four seal pictures, where `SealPlanner._hard_positions` spaces three of them across a street. No `scar_id`: the escape is the last thing in a run, so there is nothing for a scar to persist into. |
+| `masked_pursuer` | SCRIPTED | the stairwell the fire did not close | A masked man running up the shaft. **Mobile, not `pursues`**, and that is the counterplay: he runs a line — bottom landing to top — and the answer is not being on it, which in a building whose stairwell doors are a fade and a teleport means stepping through the nearest one and letting him go past. Faster than a walk (`Tuning.HEAT_HUNTS_SPEED`, 130px/s) so he cannot be out-walked, `hard_fail` on contact, and no body, like everything mobile. He waits at the foot of the shaft until she is in it (`pursues_within` 900, the shaft's own height with room over it) and spends his 3.6s telegraph standing. Drawn `guard_standing.svg` then `guard_lunging.svg`, the same two postures a heated roadblock's guards take. |
+| `basement_steam` | SCRIPTED | a stretch of the basement corridor | A vent letting go. **It paces**, and that is what buys it out of *solid things are solid* rather than a number: `steam.svg` is 32px across, so a standing vent would be a 16px body in a corridor two tiles wide, leaving her 28px of pram and body a four-pixel lane to aim at — "no line to walk", in the one place in the building with no second route. Pacing takes the body away by the rule `EventDef.paces` states and pays it back in intensity: 14 over a 24–90px band, pulsing every 4s, so the counterplay is timing a pass rather than a fixed toll. |
 
 ## Permanent marks
 

@@ -496,6 +496,20 @@ const BOOM_GATE_NS_LOWERED := preload("res://assets/checkpoints/boom_gate_ns_low
 const BOOM_GATE_NS_RAISED := preload("res://assets/checkpoints/boom_gate_ns_raised.svg")
 const BOOM_GATE_EW_LOWERED := preload("res://assets/checkpoints/boom_gate_ew_lowered.svg")
 const BOOM_GATE_EW_RAISED := preload("res://assets/checkpoints/boom_gate_ew_raised.svg")
+
+## The basement's own vent, and the one picture in the catalogue that is a *volume* of air rather
+## than a body: `steam.svg` is 32×48 and stands on the ground it rises from.
+const STEAM := preload("res://assets/events/steam.svg")
+
+## The finale's crater, the mark an off-screen explosion leaves on the street. One of the three
+## prepared sizes; the row obstructs at exactly half this picture's width, so the hole and the
+## ground she cannot walk on are the same circle — see `EventCatalogue._impact_crater()`.
+const IMPACT_CRATER := preload("res://assets/props/impact_crater_2x2.svg")
+## Its centre, which is also its ground point: the picture is a hole in the road rather than a
+## thing standing on it, so it is registered on its middle and not on its base. The source's own
+## comment names the same point — *"Ground anchor is the canvas centre (32,32)"* — on a 64×64
+## canvas, and `EventCatalogue._impact_crater()`'s own 32px body is half of the same width.
+const _CRATER_ANCHOR := Vector2(32.0, 32.0)
 ## Each asset's own documented ground anchor, read out of the SVG's own comment rather than
 ## assumed — neither is `Sprites.draw_standing`'s bottom-centre: the hut's doorway sits a few
 ## pixels short of the canvas's own bottom edge. See `_draw_at_anchor`.
@@ -576,6 +590,9 @@ static func icon_for(look: EventDef.Look) -> Texture2D:
 		EventDef.Look.CHECKPOINT_HUT: return HUT_SOUTH
 		EventDef.Look.CHECKPOINT_GATE: return BOOM_GATE_NS_LOWERED
 		EventDef.Look.CHECKPOINT_POST: return GUARD_STANDING
+		EventDef.Look.IMPACT_CRATER: return IMPACT_CRATER
+		EventDef.Look.MASKED_PURSUER: return GUARD_LUNGING
+		EventDef.Look.STEAM: return STEAM
 		_: return null
 
 ## Whether a def's instance draws itself as a **spread** — segments or a whole scene fitted
@@ -2396,6 +2413,12 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			# `EventCatalogue._checkpoint_post`.
 			_draw_body_shadow(canvas)
 			_draw_at_anchor(canvas, GUARD_STANDING, _GUARD_ANCHOR)
+		EventDef.Look.IMPACT_CRATER:
+			_draw_crater(canvas)
+		EventDef.Look.MASKED_PURSUER:
+			_draw_masked_pursuer(canvas)
+		EventDef.Look.STEAM:
+			_draw_simple(STEAM, canvas)
 		EventDef.Look.NONE:
 			pass
 
@@ -2671,6 +2694,25 @@ static func _cap_offset(half: float, cap_along: float, side: float) -> float:
 
 ## The tables, and the people at them.
 ##
+## The hole an off-screen burst left in the road. **Flat, centred and unshadowed**, which is all
+## three of the ways it is unlike every other body in this file: the picture is ground rather than
+## an object standing on ground, so it registers on its own middle (`_CRATER_ANCHOR`) instead of on
+## its feet, and a drop shadow under a hole would read as a mound. What makes it solid anyway is
+## `def.shape` — `EventInstance._build_obstruction()` reads that and nothing here — so the circle
+## she cannot walk into is exactly half of the picture she can see.
+func _draw_crater(canvas: CanvasItem = self) -> void:
+	_draw_at_anchor(canvas, IMPACT_CRATER, _CRATER_ANCHOR)
+
+## A masked man coming up a stairwell: `guard_standing.svg` while the telegraph is running and
+## `guard_lunging.svg` once it is over and he is actually on her line — the same two postures
+## `_draw_roadblock()` swaps between when a heated roadblock's guards leave the post, on a row that
+## was never a barrier and so has no band to swap *out of*. Mirrored the ordinary way, since the
+## sources face east and he is drawn walking whichever way his path runs.
+func _draw_masked_pursuer(canvas: CanvasItem = self) -> void:
+	_draw_shape_shadow(canvas, def.shape)
+	var texture := GUARD_STANDING if is_telegraphing() else GUARD_LUNGING
+	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+
 ## **Both halves have to be drawn**: the tables are what obstructs and the conversation is what it
 ## emits, so a café drawn as furniture alone is the loudest pleasant thing in act I looking like
 ## something somebody left out. The spread is `_draw_spread`'s, so the width is exactly the width in
