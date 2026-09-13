@@ -1,0 +1,13 @@
+<!-- In profile, facing east, arm out to the handle. Mirrored for west. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="26" height="46" viewBox="0 0 26 46" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M5 31 L10 31 L10 43 L4 43 Z M12 31 L17 31 L18 43 L13 43 Z" fill="#3c4560"/>
+  <path d="M3 43 L11 43 L10 46 L2 46 Z M12 43 L20 43 L21 46 L12 46 Z" fill="#2f2a2c"/>
+  <path d="M6 13 Q12 10 18 13 L20 28 Q18 33 11 34 Q6 33 4 28 Z" fill="#b0574f"/>
+  <path d="M5 27 Q12 30 19 27 L19 33 Q12 36 5 32 Z" fill="#8e433d"/>
+  <path d="M16 17 Q22 17 25 20 L24 23 L16 22 Z" fill="#b0574f"/>
+  <path d="M23 19 L26 19 L26 22 L23 22 Z" fill="#d9a878"/>
+  <path d="M12 1 Q19 1 19 8 Q19 14 12 15 Q5 14 5 8 Q5 1 12 1 Z" fill="#d9a878"/>
+  <path d="M5 8 Q6 2 12 1 Q17 1 19 6 L16 4 L14 8 Z" fill="#3a2b26"/>
+  <path d="M15 7 Q17 7 18 8" fill="none" stroke="#634035" stroke-width="1"/>
+  <circle cx="16" cy="8" r="1" fill="#221f28"/>
+</svg>

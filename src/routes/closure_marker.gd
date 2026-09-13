@@ -66,6 +66,6 @@ func _draw_panel() -> void:
 	if across:
 		Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2(span, size.y))
 		return
-	# Along the street the panels are stacked down the screen, so the span is their spacing
-	# and the drawn width is the barrier's own thickness.
-	Sprites.draw_standing(self, texture, Vector2.ZERO, size)
+	# Along the street the panels are stacked down the screen, so their height is the span they
+	# cover while their narrow width keeps the barrier's upright projection.
+	Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2(size.x, span))

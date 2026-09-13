@@ -1,0 +1,14 @@
+<!-- Coming toward the viewer: shorter and wider, hood centred, the baby's face showing. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M4 7 Q15 -3 26 7 L26 11 L4 11 Z" fill="#d8ccb4"/>
+  <path d="M6 7 Q15 0 24 7 L24 10 L6 10 Z" fill="#c4b79c"/>
+  <path d="M3 10 Q15 7 27 10 L26 20 Q15 23 4 20 Z" fill="#3f4a5c"/>
+  <path d="M4 17 Q15 20 26 17 L26 21 Q15 24 4 21 Z" fill="#2b3341"/>
+  <circle cx="15" cy="8" r="3.5" fill="#d9a878"/>
+  <circle cx="13.8" cy="8" r="0.7" fill="#221f28"/>
+  <circle cx="16.2" cy="8" r="0.7" fill="#221f28"/>
+  <circle cx="7" cy="25" r="5" fill="#26232a"/>
+  <circle cx="23" cy="25" r="5" fill="#26232a"/>
+  <circle cx="7" cy="25" r="2" fill="#4a464f"/>
+  <circle cx="23" cy="25" r="2" fill="#4a464f"/>
+</svg>

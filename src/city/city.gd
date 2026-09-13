@@ -91,6 +91,9 @@ var _act := 1
 ## `Tuning.degradation_for(_day)`. 1 (no degradation) until `start_day()` sets it, which happens
 ## before a player ever sees the city `build()` painted it with.
 var _day := 1
+## The scene's TileSet is the immutable source for every daily repaint. Reusing the Ground layer's
+## current TileSet would feed a prior day's composed grass atlas back into the compositor.
+var _authored_ground_tile_set: TileSet
 ## Rebuilt every day from the block purposes; freed and replaced wholesale.
 var _props: Array[Node2D] = []
 ## Today's corridor: the ways from the doorstep to the calm areas still worth reaching, grown
@@ -280,7 +283,9 @@ func _spawn_home() -> void:
 ## rebuilt in `_dress_blocks()`, unlike a park's trees, because a street tree belongs to the
 ## street's own frontage rather than to what the block behind it currently is.
 func _spawn_street_trees() -> void:
-	for planted_tree in StreetTrees.planted(map):
+	var planted_trees := StreetTrees.planted(map)
+	_decals.set_street_tree_pits(planted_trees, map)
+	for planted_tree in planted_trees:
 		var tree := Prop.new()
 		tree.kind = Prop.Kind.STREET_TREE
 		tree.position = planted_tree.position
@@ -302,6 +307,7 @@ func refresh_street_trees() -> void:
 	for tile: Vector2i in _street_tree_pits:
 		var tree: Prop = _street_tree_pits[tile]
 		tree.visible = not map.is_tree_pit_emptied(tile)
+	_decals.refresh_street_tree_pits()
 
 ## What is on the far side of the streets that run along the boundary.
 ##
@@ -738,25 +744,16 @@ func _paint_ground() -> void:
 			var tile := Vector2i(x, y)
 			var source := GroundTiles.source_for(map, tile, _day)
 			if source >= 0:
-				_ground.set_cell(tile, source, Vector2i.ZERO)
+				_ground.set_cell(tile, source,
+						GroundLayers.atlas_coords_for(source, map.seed_used, tile, _ground.tile_set))
 	_paint_outside_the_map()
 
-## Duplicates the authored tileset so a same-sized PNG can replace each SVG source while preserving
-## every atlas region and tile size. The resolver keeps SVG when the user forces that presentation.
+## Starts each repaint from the scene's authored TileSet, so transfer fallback and ground composition
+## remain stable when a new day chooses different damage or grass cells.
 func _ground_tile_set_with_transfers() -> TileSet:
-	var source_set: TileSet = _ground.tile_set
-	if source_set == null:
-		return source_set
-	var result := source_set.duplicate(true) as TileSet
-	for source_index in result.get_source_count():
-		var source_id := result.get_source_id(source_index)
-		var source := result.get_source(source_id) as TileSetAtlasSource
-		if source == null:
-			continue
-		var replacement := TextureResolver.resolve(source.texture)
-		if replacement != source.texture:
-			source.texture = replacement
-	return result
+	if _authored_ground_tile_set == null:
+		_authored_ground_tile_set = _ground.tile_set
+	return GroundLayers.build_tile_set(_authored_ground_tile_set)
 
 ## What the city stops at, on each of its four sides.
 ##
@@ -797,7 +794,9 @@ func _paint_outside_the_map() -> void:
 				continue
 			var source := _border_source(x, y, depth)
 			if source >= 0:
-				_ground.set_cell(Vector2i(x, y), source, Vector2i.ZERO)
+				var tile := Vector2i(x, y)
+				_ground.set_cell(tile, source,
+						GroundLayers.atlas_coords_for(source, map.seed_used, tile, _ground.tile_set))
 
 ## Which border tile belongs at an outside cell. Each side is written as *what you meet, in order,
 ## walking away from the last kerb*, and how far out of the city a tile is is what indexes it.

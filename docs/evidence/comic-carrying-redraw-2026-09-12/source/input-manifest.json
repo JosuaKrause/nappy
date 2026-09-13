@@ -1,0 +1,16 @@
+{
+  "pushing_source": "docs/evidence/comic-rig-2026-09-12/mother-atlas-generated.png",
+  "pushing_source_sha256": "481412c38879ebc4d774b9ef2f6d52689349c36e950d4aabb423f3dcdfb8fa6d",
+  "pushing_crop": [
+    0,
+    0,
+    1194,
+    658
+  ],
+  "pushing_crop_sha256": "f88b7c1f50cd7ca064ea37648528dd03fa47761bd83e95c16263895967198e8e",
+  "carrying_pose": "source/carrying-sheet-svg.png",
+  "style_references": [
+    "docs/evidence/graphics-reference-urban-01.jpeg",
+    "docs/evidence/graphics-reference-cardinal.jpeg"
+  ]
+}

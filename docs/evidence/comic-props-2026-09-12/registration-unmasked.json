@@ -1,0 +1,177 @@
+[
+  {
+    "name": "garbage_sack",
+    "size": [
+      28,
+      34
+    ],
+    "generated_cell_bounds": [
+      45,
+      32,
+      349,
+      348
+    ],
+    "svg_8x_bounds": [
+      24,
+      37,
+      200,
+      264
+    ],
+    "generated_alpha_preserved": true,
+    "placement_scale": 0.5789473684210527,
+    "placement_position_8x": [
+      24,
+      81
+    ]
+  },
+  {
+    "name": "garbage_sacks_pile",
+    "size": [
+      42,
+      34
+    ],
+    "generated_cell_bounds": [
+      18,
+      28,
+      384,
+      353
+    ],
+    "svg_8x_bounds": [
+      16,
+      87,
+      320,
+      264
+    ],
+    "generated_alpha_preserved": true,
+    "placement_scale": 0.5446153846153846,
+    "placement_position_8x": [
+      69,
+      87
+    ]
+  },
+  {
+    "name": "litter_can",
+    "size": [
+      32,
+      32
+    ],
+    "generated_cell_bounds": [
+      0,
+      56,
+      344,
+      348
+    ],
+    "svg_8x_bounds": [
+      103,
+      107,
+      156,
+      153
+    ],
+    "generated_alpha_preserved": true,
+    "placement_scale": 0.15406976744186046,
+    "placement_position_8x": [
+      103,
+      108
+    ]
+  },
+  {
+    "name": "litter_apple",
+    "size": [
+      32,
+      32
+    ],
+    "generated_cell_bounds": [
+      88,
+      68,
+      319,
+      348
+    ],
+    "svg_8x_bounds": [
+      107,
+      92,
+      156,
+      156
+    ],
+    "generated_alpha_preserved": true,
+    "placement_scale": 0.21212121212121213,
+    "placement_position_8x": [
+      107,
+      95
+    ]
+  },
+  {
+    "name": "litter_bag",
+    "size": [
+      32,
+      32
+    ],
+    "generated_cell_bounds": [
+      66,
+      18,
+      342,
+      331
+    ],
+    "svg_8x_bounds": [
+      97,
+      100,
+      162,
+      152
+    ],
+    "generated_alpha_preserved": true,
+    "placement_scale": 0.16613418530351437,
+    "placement_position_8x": [
+      106,
+      100
+    ]
+  },
+  {
+    "name": "litter_newspaper",
+    "size": [
+      32,
+      32
+    ],
+    "generated_cell_bounds": [
+      11,
+      70,
+      384,
+      315
+    ],
+    "svg_8x_bounds": [
+      94,
+      100,
+      165,
+      156
+    ],
+    "generated_alpha_preserved": true,
+    "placement_scale": 0.1903485254691689,
+    "placement_position_8x": [
+      94,
+      105
+    ]
+  },
+  {
+    "name": "litter_cup",
+    "size": [
+      32,
+      32
+    ],
+    "generated_cell_bounds": [
+      0,
+      92,
+      361,
+      303
+    ],
+    "svg_8x_bounds": [
+      88,
+      101,
+      159,
+      151
+    ],
+    "generated_alpha_preserved": true,
+    "placement_scale": 0.19667590027700832,
+    "placement_position_8x": [
+      88,
+      106
+    ]
+  }
+]

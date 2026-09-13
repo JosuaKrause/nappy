@@ -108,6 +108,7 @@ src/
 	quit_option.gd        whether the game can quit itself, answered once
   visuals/                PNG selection with SVG override; see the illustrated-png skill
 	texture_resolver.gd   cached same-size PNG selection, with SVG fallback
+	ground_layers.gd      shared ground bases, transparent overlays and sparse grass atlases
 	eight_direction.gd    the eight-sector heading selector the stroller and the crowd both draw by
   dev/
 	auto_screenshot.gd    render N frames, save a PNG, quit
@@ -373,6 +374,9 @@ kept strictly out of anything that touches the meters.
 - Ground: a `TileMapLayer` fed by `GroundTiles`, which is the only place that decides which
   tile a cell gets. Source ids in `assets/ground_tileset.tres` are positional and
   `ground_tiles.gd` mirrors them by hand — adding a tile means appending to both, in order.
+  `GroundLayers` composites presentation textures from shared bases and transparent components
+  while retaining those IDs. Grass atlas coordinates vary deterministically by seed and cell;
+  the selected source and gameplay geometry remain the map's own.
 - Buildings: `StaticBody2D` whose collision is the whole lot, plus a `_draw()` that
   assembles that same lot out of 32px tiles — a front wall (the southern `height` px) and a
   roof (the remainder). Fitting the mass inside the lot keeps extrusions off the *ground* she

@@ -1,0 +1,15 @@
+<!-- Pushing south in the passing pose, both feet grounded together. Feet anchor at (12,46). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="46" viewBox="0 0 24 46" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path id="leg-a" d="M7 31 L12 31 L12 43 L7 43 Z" fill="#46506b"/>
+  <path id="leg-b" d="M12 31 L17 31 L17 43 L12 43 Z" fill="#3c4560"/>
+  <path d="M6 43 L12 43 L13 46 L5 46 Z M12 43 L18 43 L19 46 L11 46 Z" fill="#2f2a2c"/>
+  <path d="M5 13 Q12 10 19 13 L21 28 Q19 33 12 34 Q5 33 3 28 Z" fill="#b0574f"/>
+  <path d="M4 27 Q12 30 20 27 L20 33 Q12 36 4 32 Z" fill="#8e433d"/>
+  <path d="M4 16 Q1 18 1 27 L5 30 L7 19 Z M20 16 Q23 18 23 27 L19 30 L17 19 Z" fill="#b0574f"/>
+  <path d="M1 27 L5 29 L5 32 L1 30 Z M19 29 L23 27 L23 30 L19 32 Z" fill="#d9a878"/>
+  <path d="M12 1 Q19 1 19 8 Q19 15 12 15 Q5 15 5 8 Q5 1 12 1 Z" fill="#d9a878"/>
+  <path d="M5 7 Q6 1 12 1 Q18 1 19 7 Q16 5 12 5 Q8 5 5 7 Z" fill="#3a2b26"/>
+  <path d="M8 3 Q12 0 16 3" fill="none" stroke="#634035" stroke-width="1.2"/>
+  <circle cx="9" cy="8" r="1" fill="#221f28"/><circle cx="15" cy="8" r="1" fill="#221f28"/>
+  <path d="M10 11 Q12 12 14 11" fill="none" stroke="#9b5e54" stroke-width="0.8"/>
+</svg>

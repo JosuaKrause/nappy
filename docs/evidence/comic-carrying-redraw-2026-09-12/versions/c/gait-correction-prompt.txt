@@ -1,0 +1,12 @@
+Use case: precise-object-edit
+Asset type: ten-cell directional game-character sprite source atlas
+Input images:
+- Image 1 is the edit target and supplies the selected carrying character, cradle, rendering, exact 5×2 layout, all top-row gait-A figures, and all upper bodies.
+- Image 2 is the current pushing-family proportion and gait reference.
+- Image 3 is the authoritative carrying direction and pose reference.
+Primary request: change only the legs and shoes of the five B-frame figures in the bottom row of Image 1 so each B frame is a clear opposite walking step from the A frame directly above it. In every bottom cell, move the forward leg back and the back leg forward with believable walking foreshortening for that direction.
+Strict invariants: preserve the entire top row exactly. In the bottom row preserve every pixel-equivalent feature above the coat hem: same small head and short hair, same face direction, same narrow adult torso and red coat, same shoulders, arms, hands, secure horizontal baby cradle, baby head, blue-gray blanket, stripe, local silhouette width, colors, ink, highlights, shadows, cell positions, full-body height, and bottom ground line. Do not redraw, move, resize, recolor, or restyle any upper body or baby. Keep her same slim adult proportions, small head, long legs, and coat-to-leg ratio.
+Layout: exactly five equal columns by two equal rows in the existing order FRONT, BACK, EAST PROFILE, SOUTHEAST THREE-QUARTER, NORTHEAST THREE-QUARTER. No labels, borders, captions, or text.
+Scene/backdrop: genuinely transparent background.
+Constraints: only bottom-row legs and shoes change; opposite gait must be obvious at native scale; no body morph, no pose drift, no extra limbs, no extra people, no pram, no watermark.
+Avoid: changing the cradle; changing head size; coat growth; shorter legs; same foot placement as top row; checkerboard, white/gray background.

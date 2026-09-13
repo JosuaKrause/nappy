@@ -182,12 +182,10 @@ func _draw_shadows() -> void:
 func _draw_shadow_outline(shape: GroundShape, at: Vector2, axis: Vector2) -> void:
 	_draw_closed_polyline(shape.shadow_outline(at, axis), SHADOW_COLOUR)
 
-## `Stroller._draw()`'s own `pram_offset` formula, read here rather than duplicated as a private
-## field: `facing`, `PRAM_DISTANCE` and `OBLIQUE_Y` are already public on `Stroller`, so this is the
-## same one line `_draw()` computes rather than a second copy of it kept as state.
+## The visible pram's own offset, shared with its shadow, cue and field instead of reconstructed
+## from facing here. Its collision body's separate position comes from the physics tree below.
 func _pram_position() -> Vector2:
-	return _player.global_position + Vector2(
-			_player.facing.x, _player.facing.y * Stroller.OBLIQUE_Y) * Stroller.PRAM_DISTANCE
+	return _player.global_position + _player.pram_draw_offset()
 
 # ------------------------------------------------------------- bounding boxes ---
 

@@ -1,0 +1,24 @@
+<!-- The same secure carry, opposite open stride. Feet anchor at (12, 46). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="46" viewBox="0 0 24 46" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M5.5 28 Q8 28.5 11.5 31 Q11 35 8.5 39.5 L4.5 40.5 L3.5 43.5 L10.5 43.5 Q13.5 37 13 30.5 Q9.5 28 5.5 28Z" fill="#3c4560"/>
+  <path d="M12.5 29.5 Q16 28 19.5 28 Q18 35 18.5 42.5 L14.5 43 L13 46 L21.5 46 L20.5 42.5 Q20 34.5 18 29.5 Q15.5 28.5 12.5 29.5Z" fill="#46506b"/>
+  <path d="M3.5 40.5 L10.5 40 L10.5 43.5 L2.5 43.5Z M14.5 43 L20.5 42.5 L22.5 46 L13 46Z" fill="#2f2a2c"/>
+  <path d="M5 12 Q12 9 19 12 L21 27 Q19 32 12 33 Q5 32 3 27 Z" fill="#b0574f"/>
+  <path d="M4 26 Q11 29 20 26 L20 31.5 Q16 33.5 12.5 33.5 Q8 33.5 4 31Z" fill="#8e433d"/>
+  <path d="M5 15 Q1 17 2 22 Q3 25 7 22 L9 19 L7 16 Z" fill="#b0574f"/>
+  <circle cx="7" cy="19.5" r="1.7" fill="#d9a878"/>
+  <path d="M8 18 Q13 17 19 21 L18 26 Q12 27 7 21 Z" fill="#617087"/>
+  <path d="M10 19 Q14 20 17 24" fill="none" stroke="#c4b79c" stroke-width="1"/>
+  <circle cx="7.5" cy="17.2" r="2.7" fill="#d9a878"/>
+  <path d="M5.2 16.5 Q7.4 13.7 9.7 16.2" fill="#3a2b26"/>
+  <circle cx="6.8" cy="17.3" r="0.45" fill="#221f28" stroke="none"/>
+  <path d="M6.9 18.5 L8.1 18.5" fill="none" stroke="#9b5e54" stroke-width="0.55"/>
+  <path d="M19 15 Q23 17 22 21 Q21 25 16 27 L14 24 Q18 23 18 19 L17 16 Z" fill="#b0574f"/>
+  <ellipse cx="15.5" cy="24.8" rx="1.8" ry="1.4" fill="#d9a878"/>
+  <path d="M12 0 Q19 0 19 7 Q19 14 12 14 Q5 14 5 7 Q5 0 12 0 Z" fill="#d9a878"/>
+  <path d="M5 6 Q6 0 12 0 Q18 0 19 6 Q16 4 12 4 Q8 4 5 6 Z" fill="#3a2b26"/>
+  <path d="M8 2 Q12 -1 16 2" fill="none" stroke="#634035" stroke-width="1.2"/>
+  <circle cx="9" cy="7" r="1" fill="#221f28"/>
+  <circle cx="15" cy="7" r="1" fill="#221f28"/>
+  <path d="M10 10 Q12 11 14 10" fill="none" stroke="#9b5e54" stroke-width="0.8"/>
+</svg>

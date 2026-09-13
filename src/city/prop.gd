@@ -11,7 +11,6 @@ const TREES: Array[Texture2D] = [
 ]
 const SWING_FRAME := preload("res://assets/props/swing_frame.svg")
 const BOLLARD := preload("res://assets/props/bollard.svg")
-const TREE_PIT := preload("res://assets/props/tree_pit.svg")
 const SACK := preload("res://assets/props/garbage_sack.svg")
 const SACK_PILE := preload("res://assets/props/garbage_sacks_pile.svg")
 
@@ -85,11 +84,7 @@ func _draw_tree() -> void:
 	shape.draw_shadow(self, Vector2.ZERO)
 	Sprites.draw_standing(self, texture, Vector2.ZERO, size, absi(variant) % 4 < 2)
 
-## The pit first — a ground decal at the node's own point, `tree_pit.svg`'s own contract ("ground
-## anchor is the canvas centre") — then the same standing tree every park tree draws, unscaled by
-## `scale_factor`: the pit is a tile of paving, not a canopy, so it stays tile-sized regardless of
-## which tree stands in it.
+## The same standing tree every park tree draws, unscaled by `scale_factor`. The street tree's pit
+## is a ground decal owned by `CityDecals`, so it stays under the player and other entities.
 func _draw_street_tree() -> void:
-	var pit := TextureResolver.resolve(TREE_PIT)
-	draw_texture_rect(pit, Rect2(-pit.get_size() * 0.5, pit.get_size()), false)
 	_draw_tree()

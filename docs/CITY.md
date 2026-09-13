@@ -1377,6 +1377,9 @@ Top-down camera with a fake vertical extrusion:
 - Ground is a `TileMapLayer` over `assets/ground_tileset.tres`. Kerbs, centre lines and
   zebra crossings are authored tiles chosen per cell by `GroundTiles`, not geometry
   recomputed on every redraw.
+  `GroundLayers` builds their illustrated textures from shared bases and transparent details
+  when the TileSet is prepared. Grass clump arrangements vary by city seed and cell coordinates;
+  the source IDs, tile types and walkable geometry stay fixed. `--svg` selects the vector art.
 - Buildings fill exactly their lot: the front wall takes the southern `height` px and the
   roof takes the rest. Fitting the mass inside the lot is what keeps extrusions off the
   street. (It does *not* by itself keep an extrusion off the player: the mass is inside the lot and
@@ -1491,3 +1494,5 @@ tiles under `assets/buildings/`, the player under `assets/rig/`, scenery under
 `assets/props/`, event bodies under `assets/events/` — with a per-act palette multiplied
 over the whole canvas. `Palette` holds only the colours the code still chooses at runtime;
 a tree's green lives in the file that draws the tree.
+Illustrated PNG counterparts and ground component pairings are documented in
+[VISUALS.md](VISUALS.md); the runtime selects them by default with SVG fallback.

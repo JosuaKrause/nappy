@@ -1,0 +1,842 @@
+[
+  {
+    "name": "mother_front_a",
+    "canvas": [
+      24,
+      46
+    ],
+    "generated_source": "docs/evidence/comic-pushing-strides-2026-09-12/raw/p2-acb-pass2.png",
+    "generated_source_sha256": "3b238c2cd90549e91b0db602ec371d07c9edc10ae4ec604b3b14ba5af3a53c82",
+    "generated_cell": [
+      0,
+      0
+    ],
+    "generated_cell_rows": 3,
+    "generated_cell_bounds": [
+      120,
+      13,
+      229,
+      310
+    ],
+    "whole_figure_dimensions": [
+      109,
+      297
+    ],
+    "whole_figure_fit_scale": 1.8181818181818181,
+    "upper_body_fraction": 0.68,
+    "generated_upper_body_anchor_x": 53.58706742885242,
+    "accepted_upper_body_anchor_x": 11.571806121401824,
+    "accepted_anchor_sources": [
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_front_a.png",
+        "sha256": "b52966d468e5354832f5d44fe580ba659c683dd9f02dda8c41a359d40c6761d7",
+        "anchor_x": 11.5349378503534
+      },
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_front_b.png",
+        "sha256": "381e8490e972dadc3d35910632173609b1a2756d0077419070d8e79e55d35bed",
+        "anchor_x": 11.608674392450247
+      }
+    ],
+    "requested_high_resolution_x": 41,
+    "high_resolution_placement": [
+      41,
+      12
+    ],
+    "canvas_edge_adjustment_x": 0,
+    "registered_alpha_bounds": [
+      1,
+      0,
+      23,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "anatomical_splice_used": false
+  },
+  {
+    "name": "mother_back_a",
+    "canvas": [
+      24,
+      46
+    ],
+    "generated_source": "docs/evidence/comic-pushing-strides-2026-09-12/raw/p2-acb-pass2.png",
+    "generated_source_sha256": "3b238c2cd90549e91b0db602ec371d07c9edc10ae4ec604b3b14ba5af3a53c82",
+    "generated_cell": [
+      1,
+      0
+    ],
+    "generated_cell_rows": 3,
+    "generated_cell_bounds": [
+      112,
+      12,
+      222,
+      310
+    ],
+    "whole_figure_dimensions": [
+      110,
+      298
+    ],
+    "whole_figure_fit_scale": 1.8120805369127517,
+    "upper_body_fraction": 0.68,
+    "generated_upper_body_anchor_x": 53.833913475882646,
+    "accepted_upper_body_anchor_x": 11.557827738656012,
+    "accepted_anchor_sources": [
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_back_a.png",
+        "sha256": "a7416ba6c4ad8da288401b63728e55f0393726de9ae44df82b8dc5bc4a9f9744",
+        "anchor_x": 11.539130325688763
+      },
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_back_b.png",
+        "sha256": "0dcda7d0bbaa0a83d4c1f31081e7b24084c02afe806b99bfaad90491f0baff69",
+        "anchor_x": 11.576525151623262
+      }
+    ],
+    "requested_high_resolution_x": 41,
+    "high_resolution_placement": [
+      41,
+      12
+    ],
+    "canvas_edge_adjustment_x": 0,
+    "registered_alpha_bounds": [
+      1,
+      0,
+      23,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "anatomical_splice_used": false
+  },
+  {
+    "name": "mother_side_a",
+    "canvas": [
+      26,
+      46
+    ],
+    "generated_source": "docs/evidence/comic-pushing-strides-2026-09-12/raw/p2-acb-pass2.png",
+    "generated_source_sha256": "3b238c2cd90549e91b0db602ec371d07c9edc10ae4ec604b3b14ba5af3a53c82",
+    "generated_cell": [
+      2,
+      0
+    ],
+    "generated_cell_rows": 3,
+    "generated_cell_bounds": [
+      77,
+      14,
+      230,
+      310
+    ],
+    "whole_figure_dimensions": [
+      153,
+      296
+    ],
+    "whole_figure_fit_scale": 1.8243243243243243,
+    "upper_body_fraction": 0.68,
+    "generated_upper_body_anchor_x": 76.03979957050824,
+    "accepted_upper_body_anchor_x": 11.478877669137663,
+    "accepted_anchor_sources": [
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_side_a.png",
+        "sha256": "c9193ead29bedfb85e8752a36da7d548925446ac27a06fc65447b9262ee68691",
+        "anchor_x": 11.718281843346176
+      },
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_side_b.png",
+        "sha256": "e4cd651a095e2ef681b2a78b98a1122b3a91fccc7e874a44b24f9a238e25cef8",
+        "anchor_x": 11.239473494929152
+      }
+    ],
+    "requested_high_resolution_x": -1,
+    "high_resolution_placement": [
+      0,
+      12
+    ],
+    "canvas_edge_adjustment_x": 1,
+    "registered_alpha_bounds": [
+      0,
+      0,
+      26,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "anatomical_splice_used": false
+  },
+  {
+    "name": "mother_front_diagonal_a",
+    "canvas": [
+      26,
+      46
+    ],
+    "generated_source": "docs/evidence/comic-pushing-strides-2026-09-12/raw/p2-acb-pass2.png",
+    "generated_source_sha256": "3b238c2cd90549e91b0db602ec371d07c9edc10ae4ec604b3b14ba5af3a53c82",
+    "generated_cell": [
+      3,
+      0
+    ],
+    "generated_cell_rows": 3,
+    "generated_cell_bounds": [
+      74,
+      14,
+      192,
+      310
+    ],
+    "whole_figure_dimensions": [
+      118,
+      296
+    ],
+    "whole_figure_fit_scale": 1.8243243243243243,
+    "upper_body_fraction": 0.68,
+    "generated_upper_body_anchor_x": 51.174217974180735,
+    "accepted_upper_body_anchor_x": 11.749507581309604,
+    "accepted_anchor_sources": [
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_front_diagonal_a.png",
+        "sha256": "a76bac309daab24b7f985cdf7b02b8bb4fd7546bef5d61f705a1d112efab4937",
+        "anchor_x": 11.781523520485583
+      },
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_front_diagonal_b.png",
+        "sha256": "30ad1169738290c59459290180f3cad4add3ea672c712b94a527f3ff3f851f5e",
+        "anchor_x": 11.717491642133625
+      }
+    ],
+    "requested_high_resolution_x": 48,
+    "high_resolution_placement": [
+      48,
+      12
+    ],
+    "canvas_edge_adjustment_x": 0,
+    "registered_alpha_bounds": [
+      1,
+      0,
+      25,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "anatomical_splice_used": false
+  },
+  {
+    "name": "mother_back_diagonal_a",
+    "canvas": [
+      26,
+      46
+    ],
+    "generated_source": "docs/evidence/comic-pushing-strides-2026-09-12/raw/p2-acb-pass2.png",
+    "generated_source_sha256": "3b238c2cd90549e91b0db602ec371d07c9edc10ae4ec604b3b14ba5af3a53c82",
+    "generated_cell": [
+      4,
+      0
+    ],
+    "generated_cell_rows": 3,
+    "generated_cell_bounds": [
+      69,
+      13,
+      194,
+      310
+    ],
+    "whole_figure_dimensions": [
+      125,
+      297
+    ],
+    "whole_figure_fit_scale": 1.8181818181818181,
+    "upper_body_fraction": 0.68,
+    "generated_upper_body_anchor_x": 48.73913043478261,
+    "accepted_upper_body_anchor_x": 11.023550101242652,
+    "accepted_anchor_sources": [
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_back_diagonal_a.png",
+        "sha256": "f57f529bcd1389a471efa158504b449d88a4c667bb362f5580ba50e2069c6c3a",
+        "anchor_x": 11.081093119530472
+      },
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_back_diagonal_b.png",
+        "sha256": "de57d49744388f83c266c827bbcffb5d64739c96fdc536a57bc5f9d2013e025c",
+        "anchor_x": 10.96600708295483
+      }
+    ],
+    "requested_high_resolution_x": 44,
+    "high_resolution_placement": [
+      44,
+      12
+    ],
+    "canvas_edge_adjustment_x": 0,
+    "registered_alpha_bounds": [
+      1,
+      0,
+      25,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "anatomical_splice_used": false
+  },
+  {
+    "name": "mother_front_c",
+    "canvas": [
+      24,
+      46
+    ],
+    "generated_source": "docs/evidence/comic-pushing-strides-2026-09-12/raw/p2-c-row.png",
+    "generated_source_sha256": "a1c9b7e4fe9efba464909eaf257ecbfd739614ce101ee2857f826b90f65e92d4",
+    "generated_cell": [
+      0,
+      0
+    ],
+    "generated_cell_rows": 1,
+    "generated_cell_bounds": [
+      161,
+      38,
+      375,
+      667
+    ],
+    "whole_figure_dimensions": [
+      214,
+      629
+    ],
+    "whole_figure_fit_scale": 0.8585055643879174,
+    "upper_body_fraction": 0.68,
+    "generated_upper_body_anchor_x": 105.86965364598912,
+    "accepted_upper_body_anchor_x": 11.571806121401824,
+    "accepted_anchor_sources": [
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_front_a.png",
+        "sha256": "b52966d468e5354832f5d44fe580ba659c683dd9f02dda8c41a359d40c6761d7",
+        "anchor_x": 11.5349378503534
+      },
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_front_b.png",
+        "sha256": "381e8490e972dadc3d35910632173609b1a2756d0077419070d8e79e55d35bed",
+        "anchor_x": 11.608674392450247
+      }
+    ],
+    "requested_high_resolution_x": 48,
+    "high_resolution_placement": [
+      48,
+      12
+    ],
+    "canvas_edge_adjustment_x": 0,
+    "registered_alpha_bounds": [
+      1,
+      0,
+      22,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "anatomical_splice_used": false
+  },
+  {
+    "name": "mother_back_c",
+    "canvas": [
+      24,
+      46
+    ],
+    "generated_source": "docs/evidence/comic-pushing-strides-2026-09-12/raw/p2-c-row.png",
+    "generated_source_sha256": "a1c9b7e4fe9efba464909eaf257ecbfd739614ce101ee2857f826b90f65e92d4",
+    "generated_cell": [
+      1,
+      0
+    ],
+    "generated_cell_rows": 1,
+    "generated_cell_bounds": [
+      128,
+      37,
+      344,
+      667
+    ],
+    "whole_figure_dimensions": [
+      216,
+      630
+    ],
+    "whole_figure_fit_scale": 0.8571428571428571,
+    "upper_body_fraction": 0.68,
+    "generated_upper_body_anchor_x": 107.45049005585582,
+    "accepted_upper_body_anchor_x": 11.557827738656012,
+    "accepted_anchor_sources": [
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_back_a.png",
+        "sha256": "a7416ba6c4ad8da288401b63728e55f0393726de9ae44df82b8dc5bc4a9f9744",
+        "anchor_x": 11.539130325688763
+      },
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_back_b.png",
+        "sha256": "0dcda7d0bbaa0a83d4c1f31081e7b24084c02afe806b99bfaad90491f0baff69",
+        "anchor_x": 11.576525151623262
+      }
+    ],
+    "requested_high_resolution_x": 47,
+    "high_resolution_placement": [
+      47,
+      12
+    ],
+    "canvas_edge_adjustment_x": 0,
+    "registered_alpha_bounds": [
+      1,
+      0,
+      22,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "anatomical_splice_used": false
+  },
+  {
+    "name": "mother_side_c",
+    "canvas": [
+      26,
+      46
+    ],
+    "generated_source": "docs/evidence/comic-pushing-strides-2026-09-12/raw/p2-c-row.png",
+    "generated_source_sha256": "a1c9b7e4fe9efba464909eaf257ecbfd739614ce101ee2857f826b90f65e92d4",
+    "generated_cell": [
+      2,
+      0
+    ],
+    "generated_cell_rows": 1,
+    "generated_cell_bounds": [
+      123,
+      40,
+      359,
+      667
+    ],
+    "whole_figure_dimensions": [
+      236,
+      627
+    ],
+    "whole_figure_fit_scale": 0.861244019138756,
+    "upper_body_fraction": 0.68,
+    "generated_upper_body_anchor_x": 93.22269178425614,
+    "accepted_upper_body_anchor_x": 11.478877669137663,
+    "accepted_anchor_sources": [
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_side_a.png",
+        "sha256": "c9193ead29bedfb85e8752a36da7d548925446ac27a06fc65447b9262ee68691",
+        "anchor_x": 11.718281843346176
+      },
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_side_b.png",
+        "sha256": "e4cd651a095e2ef681b2a78b98a1122b3a91fccc7e874a44b24f9a238e25cef8",
+        "anchor_x": 11.239473494929152
+      }
+    ],
+    "requested_high_resolution_x": 57,
+    "high_resolution_placement": [
+      57,
+      12
+    ],
+    "canvas_edge_adjustment_x": 0,
+    "registered_alpha_bounds": [
+      2,
+      0,
+      24,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "anatomical_splice_used": false
+  },
+  {
+    "name": "mother_front_diagonal_c",
+    "canvas": [
+      26,
+      46
+    ],
+    "generated_source": "docs/evidence/comic-pushing-strides-2026-09-12/raw/p2-c-row.png",
+    "generated_source_sha256": "a1c9b7e4fe9efba464909eaf257ecbfd739614ce101ee2857f826b90f65e92d4",
+    "generated_cell": [
+      3,
+      0
+    ],
+    "generated_cell_rows": 1,
+    "generated_cell_bounds": [
+      95,
+      39,
+      324,
+      668
+    ],
+    "whole_figure_dimensions": [
+      229,
+      629
+    ],
+    "whole_figure_fit_scale": 0.8585055643879174,
+    "upper_body_fraction": 0.68,
+    "generated_upper_body_anchor_x": 101.40580012518255,
+    "accepted_upper_body_anchor_x": 11.749507581309604,
+    "accepted_anchor_sources": [
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_front_diagonal_a.png",
+        "sha256": "a76bac309daab24b7f985cdf7b02b8bb4fd7546bef5d61f705a1d112efab4937",
+        "anchor_x": 11.781523520485583
+      },
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_front_diagonal_b.png",
+        "sha256": "30ad1169738290c59459290180f3cad4add3ea672c712b94a527f3ff3f851f5e",
+        "anchor_x": 11.717491642133625
+      }
+    ],
+    "requested_high_resolution_x": 54,
+    "high_resolution_placement": [
+      54,
+      12
+    ],
+    "canvas_edge_adjustment_x": 0,
+    "registered_alpha_bounds": [
+      2,
+      0,
+      24,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "anatomical_splice_used": false
+  },
+  {
+    "name": "mother_back_diagonal_c",
+    "canvas": [
+      26,
+      46
+    ],
+    "generated_source": "docs/evidence/comic-pushing-strides-2026-09-12/raw/p2-c-row.png",
+    "generated_source_sha256": "a1c9b7e4fe9efba464909eaf257ecbfd739614ce101ee2857f826b90f65e92d4",
+    "generated_cell": [
+      4,
+      0
+    ],
+    "generated_cell_rows": 1,
+    "generated_cell_bounds": [
+      71,
+      37,
+      319,
+      667
+    ],
+    "whole_figure_dimensions": [
+      248,
+      630
+    ],
+    "whole_figure_fit_scale": 0.8571428571428571,
+    "upper_body_fraction": 0.68,
+    "generated_upper_body_anchor_x": 97.10648302066018,
+    "accepted_upper_body_anchor_x": 11.023550101242652,
+    "accepted_anchor_sources": [
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_back_diagonal_a.png",
+        "sha256": "f57f529bcd1389a471efa158504b449d88a4c667bb362f5580ba50e2069c6c3a",
+        "anchor_x": 11.081093119530472
+      },
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_back_diagonal_b.png",
+        "sha256": "de57d49744388f83c266c827bbcffb5d64739c96fdc536a57bc5f9d2013e025c",
+        "anchor_x": 10.96600708295483
+      }
+    ],
+    "requested_high_resolution_x": 49,
+    "high_resolution_placement": [
+      49,
+      12
+    ],
+    "canvas_edge_adjustment_x": 0,
+    "registered_alpha_bounds": [
+      2,
+      0,
+      24,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "anatomical_splice_used": false
+  },
+  {
+    "name": "mother_front_b",
+    "canvas": [
+      24,
+      46
+    ],
+    "generated_source": "docs/evidence/comic-pushing-strides-2026-09-12/raw/p2-acb-pass2.png",
+    "generated_source_sha256": "3b238c2cd90549e91b0db602ec371d07c9edc10ae4ec604b3b14ba5af3a53c82",
+    "generated_cell": [
+      0,
+      2
+    ],
+    "generated_cell_rows": 3,
+    "generated_cell_bounds": [
+      119,
+      4,
+      228,
+      295
+    ],
+    "whole_figure_dimensions": [
+      109,
+      291
+    ],
+    "whole_figure_fit_scale": 1.8556701030927836,
+    "upper_body_fraction": 0.68,
+    "generated_upper_body_anchor_x": 53.983217850104886,
+    "accepted_upper_body_anchor_x": 11.571806121401824,
+    "accepted_anchor_sources": [
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_front_a.png",
+        "sha256": "b52966d468e5354832f5d44fe580ba659c683dd9f02dda8c41a359d40c6761d7",
+        "anchor_x": 11.5349378503534
+      },
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_front_b.png",
+        "sha256": "381e8490e972dadc3d35910632173609b1a2756d0077419070d8e79e55d35bed",
+        "anchor_x": 11.608674392450247
+      }
+    ],
+    "requested_high_resolution_x": 39,
+    "high_resolution_placement": [
+      39,
+      12
+    ],
+    "canvas_edge_adjustment_x": 0,
+    "registered_alpha_bounds": [
+      1,
+      0,
+      23,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "anatomical_splice_used": false
+  },
+  {
+    "name": "mother_back_b",
+    "canvas": [
+      24,
+      46
+    ],
+    "generated_source": "docs/evidence/comic-pushing-strides-2026-09-12/raw/p2-acb-pass2.png",
+    "generated_source_sha256": "3b238c2cd90549e91b0db602ec371d07c9edc10ae4ec604b3b14ba5af3a53c82",
+    "generated_cell": [
+      1,
+      2
+    ],
+    "generated_cell_rows": 3,
+    "generated_cell_bounds": [
+      112,
+      2,
+      219,
+      295
+    ],
+    "whole_figure_dimensions": [
+      107,
+      293
+    ],
+    "whole_figure_fit_scale": 1.8430034129692834,
+    "upper_body_fraction": 0.68,
+    "generated_upper_body_anchor_x": 52.76032310177706,
+    "accepted_upper_body_anchor_x": 11.557827738656012,
+    "accepted_anchor_sources": [
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_back_a.png",
+        "sha256": "a7416ba6c4ad8da288401b63728e55f0393726de9ae44df82b8dc5bc4a9f9744",
+        "anchor_x": 11.539130325688763
+      },
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_back_b.png",
+        "sha256": "0dcda7d0bbaa0a83d4c1f31081e7b24084c02afe806b99bfaad90491f0baff69",
+        "anchor_x": 11.576525151623262
+      }
+    ],
+    "requested_high_resolution_x": 41,
+    "high_resolution_placement": [
+      41,
+      12
+    ],
+    "canvas_edge_adjustment_x": 0,
+    "registered_alpha_bounds": [
+      1,
+      0,
+      22,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "anatomical_splice_used": false
+  },
+  {
+    "name": "mother_side_b",
+    "canvas": [
+      26,
+      46
+    ],
+    "generated_source": "docs/evidence/comic-pushing-strides-2026-09-12/raw/p2-acb-pass2.png",
+    "generated_source_sha256": "3b238c2cd90549e91b0db602ec371d07c9edc10ae4ec604b3b14ba5af3a53c82",
+    "generated_cell": [
+      2,
+      2
+    ],
+    "generated_cell_rows": 3,
+    "generated_cell_bounds": [
+      74,
+      4,
+      229,
+      292
+    ],
+    "whole_figure_dimensions": [
+      155,
+      288
+    ],
+    "whole_figure_fit_scale": 1.875,
+    "upper_body_fraction": 0.68,
+    "generated_upper_body_anchor_x": 78.4721954831544,
+    "accepted_upper_body_anchor_x": 11.478877669137663,
+    "accepted_anchor_sources": [
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_side_a.png",
+        "sha256": "c9193ead29bedfb85e8752a36da7d548925446ac27a06fc65447b9262ee68691",
+        "anchor_x": 11.718281843346176
+      },
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_side_b.png",
+        "sha256": "e4cd651a095e2ef681b2a78b98a1122b3a91fccc7e874a44b24f9a238e25cef8",
+        "anchor_x": 11.239473494929152
+      }
+    ],
+    "requested_high_resolution_x": -9,
+    "high_resolution_placement": [
+      0,
+      12
+    ],
+    "canvas_edge_adjustment_x": 9,
+    "registered_alpha_bounds": [
+      0,
+      0,
+      26,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "anatomical_splice_used": false
+  },
+  {
+    "name": "mother_front_diagonal_b",
+    "canvas": [
+      26,
+      46
+    ],
+    "generated_source": "docs/evidence/comic-pushing-strides-2026-09-12/raw/p2-acb-pass2.png",
+    "generated_source_sha256": "3b238c2cd90549e91b0db602ec371d07c9edc10ae4ec604b3b14ba5af3a53c82",
+    "generated_cell": [
+      3,
+      2
+    ],
+    "generated_cell_rows": 3,
+    "generated_cell_bounds": [
+      75,
+      4,
+      190,
+      295
+    ],
+    "whole_figure_dimensions": [
+      115,
+      291
+    ],
+    "whole_figure_fit_scale": 1.8556701030927836,
+    "upper_body_fraction": 0.68,
+    "generated_upper_body_anchor_x": 49.992366906009444,
+    "accepted_upper_body_anchor_x": 11.749507581309604,
+    "accepted_anchor_sources": [
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_front_diagonal_a.png",
+        "sha256": "a76bac309daab24b7f985cdf7b02b8bb4fd7546bef5d61f705a1d112efab4937",
+        "anchor_x": 11.781523520485583
+      },
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_front_diagonal_b.png",
+        "sha256": "30ad1169738290c59459290180f3cad4add3ea672c712b94a527f3ff3f851f5e",
+        "anchor_x": 11.717491642133625
+      }
+    ],
+    "requested_high_resolution_x": 48,
+    "high_resolution_placement": [
+      48,
+      12
+    ],
+    "canvas_edge_adjustment_x": 0,
+    "registered_alpha_bounds": [
+      1,
+      0,
+      24,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "anatomical_splice_used": false
+  },
+  {
+    "name": "mother_back_diagonal_b",
+    "canvas": [
+      26,
+      46
+    ],
+    "generated_source": "docs/evidence/comic-pushing-strides-2026-09-12/raw/p2-acb-pass2.png",
+    "generated_source_sha256": "3b238c2cd90549e91b0db602ec371d07c9edc10ae4ec604b3b14ba5af3a53c82",
+    "generated_cell": [
+      4,
+      2
+    ],
+    "generated_cell_rows": 3,
+    "generated_cell_bounds": [
+      69,
+      3,
+      194,
+      295
+    ],
+    "whole_figure_dimensions": [
+      125,
+      292
+    ],
+    "whole_figure_fit_scale": 1.8493150684931507,
+    "upper_body_fraction": 0.68,
+    "generated_upper_body_anchor_x": 48.24896265560166,
+    "accepted_upper_body_anchor_x": 11.023550101242652,
+    "accepted_anchor_sources": [
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_back_diagonal_a.png",
+        "sha256": "f57f529bcd1389a471efa158504b449d88a4c667bb362f5580ba50e2069c6c3a",
+        "anchor_x": 11.081093119530472
+      },
+      {
+        "path": "docs/evidence/comic-pushing-strides-2026-09-12/source/p1/mother_back_diagonal_b.png",
+        "sha256": "de57d49744388f83c266c827bbcffb5d64739c96fdc536a57bc5f9d2013e025c",
+        "anchor_x": 10.96600708295483
+      }
+    ],
+    "requested_high_resolution_x": 43,
+    "high_resolution_placement": [
+      43,
+      12
+    ],
+    "canvas_edge_adjustment_x": 0,
+    "registered_alpha_bounds": [
+      1,
+      0,
+      25,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "anatomical_splice_used": false
+  }
+]

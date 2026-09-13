@@ -1,0 +1,142 @@
+[
+  {
+    "name": "garbage_sack",
+    "size": [
+      28,
+      34
+    ],
+    "generated_cell_bounds": [
+      24,
+      26,
+      356,
+      361
+    ],
+    "svg_8x_bounds": [
+      24,
+      37,
+      200,
+      264
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "garbage_sacks_pile",
+    "size": [
+      42,
+      34
+    ],
+    "generated_cell_bounds": [
+      16,
+      18,
+      381,
+      359
+    ],
+    "svg_8x_bounds": [
+      16,
+      87,
+      320,
+      264
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "litter_can",
+    "size": [
+      32,
+      32
+    ],
+    "generated_cell_bounds": [
+      48,
+      101,
+      348,
+      341
+    ],
+    "svg_8x_bounds": [
+      103,
+      107,
+      156,
+      153
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "litter_apple",
+    "size": [
+      32,
+      32
+    ],
+    "generated_cell_bounds": [
+      90,
+      61,
+      308,
+      343
+    ],
+    "svg_8x_bounds": [
+      107,
+      92,
+      156,
+      156
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "litter_bag",
+    "size": [
+      32,
+      32
+    ],
+    "generated_cell_bounds": [
+      37,
+      32,
+      350,
+      346
+    ],
+    "svg_8x_bounds": [
+      97,
+      100,
+      162,
+      152
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "litter_newspaper",
+    "size": [
+      32,
+      32
+    ],
+    "generated_cell_bounds": [
+      8,
+      107,
+      380,
+      328
+    ],
+    "svg_8x_bounds": [
+      94,
+      100,
+      165,
+      156
+    ],
+    "alpha_identical_to_native_svg": true
+  },
+  {
+    "name": "litter_cup",
+    "size": [
+      32,
+      32
+    ],
+    "generated_cell_bounds": [
+      64,
+      107,
+      346,
+      319
+    ],
+    "svg_8x_bounds": [
+      88,
+      101,
+      159,
+      151
+    ],
+    "alpha_identical_to_native_svg": true
+  }
+]

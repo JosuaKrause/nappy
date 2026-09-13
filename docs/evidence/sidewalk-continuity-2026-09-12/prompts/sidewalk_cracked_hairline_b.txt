@@ -1,0 +1,8 @@
+Use case: precise-object-edit
+Asset type: one opaque square game-ground tile, later reduced to 32×32 pixels
+Primary request: Add only the B hairline fracture from Image 2 to the seamless sidewalk in Image 1. Preserve Image 1's paving exactly so it remains a direct continuation of the accepted road-edge paving in Image 3.
+Input images: Image 1 is the edit target and exact family base; Image 2 is the SVG-derived functional source for damage severity and upper-right placement; Image 3 is the material authority and shows all eight accepted normal/main-road curb tiles; Image 4 is the approved comic urban style reference; Image 5 is the approved cardinal gameplay style reference.
+Subject: preserve Image 1's warm gray-beige concrete, staggered seam topology, compact slab scale, hue, softly uneven dark joints, sparse aggregate flecks, and restrained shading. Add one sparse, fine branching hairline fracture in the upper-right area as Image 2 indicates.
+Composition: exactly one orthographic top-down tile filling the entire square canvas edge to edge. No perspective.
+Constraints: change only the hairline fracture; keep Image 1's material, paving, seams, lighting, and color unchanged; fully opaque; seamless repeat on both axes; edge pixels must continue into neighboring copies; hairline damage stays quieter than the cracked and broken levels; readable at 32×32.
+Avoid: curb, road, paint, hole, weeds, rubble, people, objects, text, labels, interface, multiple swatches, presentation grid, full-tile outline, border, gutter, divider, margin, rounded outer corners, heavy noise, photorealism.

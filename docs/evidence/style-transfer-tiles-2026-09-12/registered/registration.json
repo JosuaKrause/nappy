@@ -1,0 +1,1772 @@
+[
+  {
+    "name": "road_line_e",
+    "source_sheet": "tiles-sheet-01",
+    "normalized_cell": [
+      0.0,
+      0.0,
+      0.25,
+      0.25
+    ],
+    "generated_cell_pixels": [
+      0,
+      0,
+      314,
+      314
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "road_line_n",
+    "source_sheet": "tiles-sheet-01",
+    "normalized_cell": [
+      0.25,
+      0.0,
+      0.5,
+      0.25
+    ],
+    "generated_cell_pixels": [
+      314,
+      0,
+      627,
+      314
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "road_line_s",
+    "source_sheet": "tiles-sheet-01",
+    "normalized_cell": [
+      0.5,
+      0.0,
+      0.75,
+      0.25
+    ],
+    "generated_cell_pixels": [
+      627,
+      0,
+      940,
+      314
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "road_line_w",
+    "source_sheet": "tiles-sheet-01",
+    "normalized_cell": [
+      0.75,
+      0.0,
+      1.0,
+      0.25
+    ],
+    "generated_cell_pixels": [
+      940,
+      0,
+      1254,
+      314
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "road_main_line_e",
+    "source_sheet": "tiles-sheet-01",
+    "normalized_cell": [
+      0.0,
+      0.25,
+      0.25,
+      0.5
+    ],
+    "generated_cell_pixels": [
+      0,
+      314,
+      314,
+      627
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "road_main_line_n",
+    "source_sheet": "tiles-sheet-01",
+    "normalized_cell": [
+      0.25,
+      0.25,
+      0.5,
+      0.5
+    ],
+    "generated_cell_pixels": [
+      314,
+      314,
+      627,
+      627
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "road_main_line_s",
+    "source_sheet": "tiles-sheet-01",
+    "normalized_cell": [
+      0.5,
+      0.25,
+      0.75,
+      0.5
+    ],
+    "generated_cell_pixels": [
+      627,
+      314,
+      940,
+      627
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "road_main_line_w",
+    "source_sheet": "tiles-sheet-01",
+    "normalized_cell": [
+      0.75,
+      0.25,
+      1.0,
+      0.5
+    ],
+    "generated_cell_pixels": [
+      940,
+      314,
+      1254,
+      627
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "crossing_h",
+    "source_sheet": "tiles-sheet-01",
+    "normalized_cell": [
+      0.0,
+      0.5,
+      0.25,
+      0.75
+    ],
+    "generated_cell_pixels": [
+      0,
+      627,
+      314,
+      940
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "crossing_v",
+    "source_sheet": "tiles-sheet-01",
+    "normalized_cell": [
+      0.25,
+      0.5,
+      0.5,
+      0.75
+    ],
+    "generated_cell_pixels": [
+      314,
+      627,
+      627,
+      940
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "crossing_main_e",
+    "source_sheet": "tiles-sheet-01",
+    "normalized_cell": [
+      0.5,
+      0.5,
+      0.75,
+      0.75
+    ],
+    "generated_cell_pixels": [
+      627,
+      627,
+      940,
+      940
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "crossing_main_n",
+    "source_sheet": "tiles-sheet-01",
+    "normalized_cell": [
+      0.75,
+      0.5,
+      1.0,
+      0.75
+    ],
+    "generated_cell_pixels": [
+      940,
+      627,
+      1254,
+      940
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "crossing_main_s",
+    "source_sheet": "tiles-sheet-01",
+    "normalized_cell": [
+      0.0,
+      0.75,
+      0.25,
+      1.0
+    ],
+    "generated_cell_pixels": [
+      0,
+      940,
+      314,
+      1254
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "crossing_main_w",
+    "source_sheet": "tiles-sheet-01",
+    "normalized_cell": [
+      0.25,
+      0.75,
+      0.5,
+      1.0
+    ],
+    "generated_cell_pixels": [
+      314,
+      940,
+      627,
+      1254
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "sidewalk",
+    "source_sheet": "tiles-sheet-01",
+    "normalized_cell": [
+      0.5,
+      0.75,
+      0.75,
+      1.0
+    ],
+    "generated_cell_pixels": [
+      627,
+      940,
+      940,
+      1254
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "sidewalk_kerb_e",
+    "source_sheet": "tiles-sheet-01",
+    "normalized_cell": [
+      0.75,
+      0.75,
+      1.0,
+      1.0
+    ],
+    "generated_cell_pixels": [
+      940,
+      940,
+      1254,
+      1254
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "sidewalk_kerb_n",
+    "source_sheet": "tiles-sheet-02",
+    "normalized_cell": [
+      0.0,
+      0.0,
+      0.25,
+      0.25
+    ],
+    "generated_cell_pixels": [
+      0,
+      0,
+      314,
+      314
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "sidewalk_kerb_s",
+    "source_sheet": "tiles-sheet-02",
+    "normalized_cell": [
+      0.25,
+      0.0,
+      0.5,
+      0.25
+    ],
+    "generated_cell_pixels": [
+      314,
+      0,
+      627,
+      314
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "sidewalk_kerb_w",
+    "source_sheet": "tiles-sheet-02",
+    "normalized_cell": [
+      0.5,
+      0.0,
+      0.75,
+      0.25
+    ],
+    "generated_cell_pixels": [
+      627,
+      0,
+      940,
+      314
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "sidewalk_kerb_main_e",
+    "source_sheet": "tiles-sheet-02",
+    "normalized_cell": [
+      0.75,
+      0.0,
+      1.0,
+      0.25
+    ],
+    "generated_cell_pixels": [
+      940,
+      0,
+      1254,
+      314
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "sidewalk_kerb_main_n",
+    "source_sheet": "tiles-sheet-02",
+    "normalized_cell": [
+      0.0,
+      0.25,
+      0.25,
+      0.5
+    ],
+    "generated_cell_pixels": [
+      0,
+      314,
+      314,
+      627
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "sidewalk_kerb_main_s",
+    "source_sheet": "tiles-sheet-02",
+    "normalized_cell": [
+      0.25,
+      0.25,
+      0.5,
+      0.5
+    ],
+    "generated_cell_pixels": [
+      314,
+      314,
+      627,
+      627
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "sidewalk_kerb_main_w",
+    "source_sheet": "tiles-sheet-02",
+    "normalized_cell": [
+      0.5,
+      0.25,
+      0.75,
+      0.5
+    ],
+    "generated_cell_pixels": [
+      627,
+      314,
+      940,
+      627
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "alley_cracked_hairline_a",
+    "source_sheet": "tiles-sheet-02",
+    "normalized_cell": [
+      0.75,
+      0.25,
+      1.0,
+      0.5
+    ],
+    "generated_cell_pixels": [
+      940,
+      314,
+      1254,
+      627
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "alley_cracked_hairline_b",
+    "source_sheet": "tiles-sheet-02",
+    "normalized_cell": [
+      0.0,
+      0.5,
+      0.25,
+      0.75
+    ],
+    "generated_cell_pixels": [
+      0,
+      627,
+      314,
+      940
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "alley_cracked_cracked_a",
+    "source_sheet": "tiles-sheet-02",
+    "normalized_cell": [
+      0.25,
+      0.5,
+      0.5,
+      0.75
+    ],
+    "generated_cell_pixels": [
+      314,
+      627,
+      627,
+      940
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "alley_cracked_cracked_b",
+    "source_sheet": "tiles-sheet-02",
+    "normalized_cell": [
+      0.5,
+      0.5,
+      0.75,
+      0.75
+    ],
+    "generated_cell_pixels": [
+      627,
+      627,
+      940,
+      940
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "alley_cracked_broken_a",
+    "source_sheet": "tiles-sheet-02",
+    "normalized_cell": [
+      0.75,
+      0.5,
+      1.0,
+      0.75
+    ],
+    "generated_cell_pixels": [
+      940,
+      627,
+      1254,
+      940
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "alley_cracked_broken_b",
+    "source_sheet": "tiles-sheet-02",
+    "normalized_cell": [
+      0.0,
+      0.75,
+      0.25,
+      1.0
+    ],
+    "generated_cell_pixels": [
+      0,
+      940,
+      314,
+      1254
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "road_cracked_hairline_a",
+    "source_sheet": "tiles-sheet-02",
+    "normalized_cell": [
+      0.25,
+      0.75,
+      0.5,
+      1.0
+    ],
+    "generated_cell_pixels": [
+      314,
+      940,
+      627,
+      1254
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "road_cracked_hairline_b",
+    "source_sheet": "tiles-sheet-02",
+    "normalized_cell": [
+      0.5,
+      0.75,
+      0.75,
+      1.0
+    ],
+    "generated_cell_pixels": [
+      627,
+      940,
+      940,
+      1254
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "road_cracked_cracked_a",
+    "source_sheet": "tiles-sheet-02",
+    "normalized_cell": [
+      0.75,
+      0.75,
+      1.0,
+      1.0
+    ],
+    "generated_cell_pixels": [
+      940,
+      940,
+      1254,
+      1254
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "road_cracked_cracked_b",
+    "source_sheet": "tiles-sheet-03",
+    "normalized_cell": [
+      0.0,
+      0.0,
+      0.25,
+      0.25
+    ],
+    "generated_cell_pixels": [
+      0,
+      0,
+      314,
+      314
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "road_cracked_broken_a",
+    "source_sheet": "tiles-sheet-03",
+    "normalized_cell": [
+      0.25,
+      0.0,
+      0.5,
+      0.25
+    ],
+    "generated_cell_pixels": [
+      314,
+      0,
+      627,
+      314
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "road_cracked_broken_b",
+    "source_sheet": "tiles-sheet-03",
+    "normalized_cell": [
+      0.5,
+      0.0,
+      0.75,
+      0.25
+    ],
+    "generated_cell_pixels": [
+      627,
+      0,
+      940,
+      314
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "sidewalk_cracked_hairline_a",
+    "source_sheet": "tiles-sheet-03",
+    "normalized_cell": [
+      0.75,
+      0.0,
+      1.0,
+      0.25
+    ],
+    "generated_cell_pixels": [
+      940,
+      0,
+      1254,
+      314
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "sidewalk_cracked_hairline_b",
+    "source_sheet": "tiles-sheet-03",
+    "normalized_cell": [
+      0.0,
+      0.25,
+      0.25,
+      0.5
+    ],
+    "generated_cell_pixels": [
+      0,
+      314,
+      314,
+      627
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "sidewalk_cracked_cracked_a",
+    "source_sheet": "tiles-sheet-03",
+    "normalized_cell": [
+      0.25,
+      0.25,
+      0.5,
+      0.5
+    ],
+    "generated_cell_pixels": [
+      314,
+      314,
+      627,
+      627
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "sidewalk_cracked_cracked_b",
+    "source_sheet": "tiles-sheet-03",
+    "normalized_cell": [
+      0.5,
+      0.25,
+      0.75,
+      0.5
+    ],
+    "generated_cell_pixels": [
+      627,
+      314,
+      940,
+      627
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "sidewalk_cracked_broken_a",
+    "source_sheet": "tiles-sheet-03",
+    "normalized_cell": [
+      0.75,
+      0.25,
+      1.0,
+      0.5
+    ],
+    "generated_cell_pixels": [
+      940,
+      314,
+      1254,
+      627
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "sidewalk_cracked_broken_b",
+    "source_sheet": "tiles-sheet-03",
+    "normalized_cell": [
+      0.0,
+      0.5,
+      0.25,
+      0.75
+    ],
+    "generated_cell_pixels": [
+      0,
+      627,
+      314,
+      940
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "road",
+    "source_sheet": "tiles-sheet-03",
+    "normalized_cell": [
+      0.25,
+      0.5,
+      0.5,
+      0.75
+    ],
+    "generated_cell_pixels": [
+      314,
+      627,
+      627,
+      940
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "road_main",
+    "source_sheet": "tiles-sheet-03",
+    "normalized_cell": [
+      0.5,
+      0.5,
+      0.75,
+      0.75
+    ],
+    "generated_cell_pixels": [
+      627,
+      627,
+      940,
+      940
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "alley",
+    "source_sheet": "tiles-sheet-03",
+    "normalized_cell": [
+      0.75,
+      0.5,
+      1.0,
+      0.75
+    ],
+    "generated_cell_pixels": [
+      940,
+      627,
+      1254,
+      940
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "alley_draft",
+    "source_sheet": "tiles-sheet-03",
+    "normalized_cell": [
+      0.0,
+      0.75,
+      0.25,
+      1.0
+    ],
+    "generated_cell_pixels": [
+      0,
+      940,
+      314,
+      1254
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "bulkhead",
+    "source_sheet": "tiles-sheet-03",
+    "normalized_cell": [
+      0.25,
+      0.75,
+      0.5,
+      1.0
+    ],
+    "generated_cell_pixels": [
+      314,
+      940,
+      627,
+      1254
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "courtyard",
+    "source_sheet": "tiles-sheet-03",
+    "normalized_cell": [
+      0.5,
+      0.75,
+      0.75,
+      1.0
+    ],
+    "generated_cell_pixels": [
+      627,
+      940,
+      940,
+      1254
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "fence",
+    "source_sheet": "tiles-sheet-03",
+    "normalized_cell": [
+      0.75,
+      0.75,
+      1.0,
+      1.0
+    ],
+    "generated_cell_pixels": [
+      940,
+      940,
+      1254,
+      1254
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "forest",
+    "source_sheet": "tiles-sheet-04",
+    "normalized_cell": [
+      0.0,
+      0.0,
+      0.25,
+      0.25
+    ],
+    "generated_cell_pixels": [
+      0,
+      0,
+      314,
+      314
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "grass",
+    "source_sheet": "tiles-sheet-04",
+    "normalized_cell": [
+      0.25,
+      0.0,
+      0.5,
+      0.25
+    ],
+    "generated_cell_pixels": [
+      314,
+      0,
+      627,
+      314
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "mountain",
+    "source_sheet": "tiles-sheet-04",
+    "normalized_cell": [
+      0.5,
+      0.0,
+      0.75,
+      0.25
+    ],
+    "generated_cell_pixels": [
+      627,
+      0,
+      940,
+      314
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "plaza",
+    "source_sheet": "tiles-sheet-04",
+    "normalized_cell": [
+      0.75,
+      0.0,
+      1.0,
+      0.25
+    ],
+    "generated_cell_pixels": [
+      940,
+      0,
+      1254,
+      314
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "precinct",
+    "source_sheet": "tiles-sheet-04",
+    "normalized_cell": [
+      0.0,
+      0.25,
+      0.25,
+      0.5
+    ],
+    "generated_cell_pixels": [
+      0,
+      314,
+      314,
+      627
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "quiet_square",
+    "source_sheet": "tiles-sheet-04",
+    "normalized_cell": [
+      0.25,
+      0.25,
+      0.5,
+      0.5
+    ],
+    "generated_cell_pixels": [
+      314,
+      314,
+      627,
+      627
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "sand",
+    "source_sheet": "tiles-sheet-04",
+    "normalized_cell": [
+      0.5,
+      0.25,
+      0.75,
+      0.5
+    ],
+    "generated_cell_pixels": [
+      627,
+      314,
+      940,
+      627
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "scree",
+    "source_sheet": "tiles-sheet-04",
+    "normalized_cell": [
+      0.75,
+      0.25,
+      1.0,
+      0.5
+    ],
+    "generated_cell_pixels": [
+      940,
+      314,
+      1254,
+      627
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "spoiled",
+    "source_sheet": "tiles-sheet-04",
+    "normalized_cell": [
+      0.0,
+      0.5,
+      0.25,
+      0.75
+    ],
+    "generated_cell_pixels": [
+      0,
+      627,
+      314,
+      940
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "stoop",
+    "source_sheet": "tiles-sheet-04",
+    "normalized_cell": [
+      0.25,
+      0.5,
+      0.5,
+      0.75
+    ],
+    "generated_cell_pixels": [
+      314,
+      627,
+      627,
+      940
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  },
+  {
+    "name": "water",
+    "source_sheet": "tiles-sheet-04",
+    "normalized_cell": [
+      0.5,
+      0.5,
+      0.75,
+      0.75
+    ],
+    "generated_cell_pixels": [
+      627,
+      627,
+      940,
+      940
+    ],
+    "native_size": [
+      32,
+      32
+    ],
+    "svg_8x_size": [
+      256,
+      256
+    ],
+    "registered_size": [
+      32,
+      32
+    ],
+    "alpha_identical_to_native_svg": true,
+    "opaque_source_tile": true
+  }
+]
