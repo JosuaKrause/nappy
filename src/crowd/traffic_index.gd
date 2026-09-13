@@ -63,6 +63,29 @@ func claim(key: String, at: float) -> void:
 	queue.append(at)
 	_lanes[key] = queue
 
+## Gives one entry back — the mirror of `claim()`, for the one caller that has to ask about a lane
+## it has already booked a place in.
+##
+## **A turning car's own reservation is indistinguishable from somebody else's car**, and the frame
+## it lands is exactly the frame it has to ask whether the spot is still free. Without this it finds
+## its own booking sitting on the landing point, decides the lane is occupied, and merges in behind
+## itself. `CrowdAgent._land_the_turn()` is the only caller; the entry nearest `at` is the one
+## dropped, since a claim is made at a point rather than by identity and two bookings a hair apart
+## are the same piece of road either way.
+func give_back(key: String, at: float) -> void:
+	var queue: PackedFloat32Array = _lanes.get(key, PackedFloat32Array())
+	var nearest := -1
+	var closest := INF
+	for i in queue.size():
+		var distance := absf(queue[i] - at)
+		if distance < closest:
+			closest = distance
+			nearest = i
+	if nearest < 0:
+		return
+	queue.remove_at(nearest)
+	_lanes[key] = queue
+
 ## The queue position of the last car in a lane, or `INF` if the lane is empty.
 ##
 ## "Last" is smallest, because `CrowdAgent.queue_position()` is signed so that ahead is larger. It is

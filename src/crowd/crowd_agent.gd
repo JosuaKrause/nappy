@@ -2128,7 +2128,24 @@ func _follow_the_turn(delta: float) -> void:
 ## It is standing on the exit lane's own centre line, pointing along it, because that is where the
 ## arc ends — so there is nothing to steer back to and nothing that has to be spaced out. The
 ## lookahead is thrown away, since it is a cached answer about an axis this car no longer has.
+##
+## **Joining is the joiner's business, and the lane it joins is never rearranged for it.** The room
+## `_has_room_to_land()` checked is a fact about the frame the turn was *committed* in, a second or
+## more before the car actually arrives, and the traffic in the exit lane keeps moving in the
+## meantime. `Crowd.space_out_the_traffic()` is what holds that gap open — it gives the booking to
+## the lane as a leader, so whoever is behind it keeps a headway for a car that is on its way rather
+## than driving into the spot — and this is the backstop for the frames where it could not: the
+## arrival drops in behind the lane's rearmost car, exactly as a recycled car does, rather than
+## standing in the middle of a queue and letting the separation pass shunt everybody behind it
+## backwards. That shunt compounds front to back, so an about-face into a queued lane used to move
+## the whole queue at once; nothing here can move anybody but this car.
+##
+## The booking is handed back first, because `_join_the_back_of_the_queue()` reads the same index
+## `_claim_the_turn()` has been writing to every frame of the manoeuvre and would otherwise find
+## this car's own reservation sitting on the landing point — see `TrafficIndex.give_back()`.
 func _land_the_turn() -> void:
+	if traffic:
+		traffic.give_back(turn_lane_key(), _turn.landing())
 	position = _turn.point_at(_turn.length())
 	_vertical = _turn.exit_vertical
 	_corridor = _turn.exit_corridor
@@ -2140,6 +2157,7 @@ func _land_the_turn() -> void:
 	_lane_centre = _lane_centre_here()
 	_forget_the_detour()
 	_scan_at = Vector2i(-9999, -9999)
+	_join_the_back_of_the_queue()
 	_claim_the_road_here()
 
 ## Whether every tile the car's own body passes over during the arc is road it may drive on.
@@ -2535,14 +2553,16 @@ func _keep_within_the_room_beyond_the_map() -> void:
 	var beyond := _entry_room()
 	_set_along(clampf(_along(), -beyond, limit + beyond))
 
-## Drops the car in behind whatever is already in its lane, when the rolls above could not find a
-## gap. Nothing at all if it landed somewhere free, which is almost always.
+## Drops the car in behind whatever is already in its lane, when the place it arrived at is not
+## free. Nothing at all if it landed somewhere free, which is almost always.
 ##
-## **A retry is not a guarantee, and this is the difference.** Six rolls into a busy entry band all
-## miss often enough to happen about once a minute, and what follows is the whole of the bug this
-## chased: the car materialises inside a queue, and the separation pass then shunts everybody behind
-## it back by the overlap *plus* everything moved in front of them — 180px, measured, with the rolls
-## in place. Behind the last car is the one place in a lane that is free by construction.
+## **Two ways into a lane, one merge rule.** A `_recycle()` rolls an entry point six times and can
+## miss; a turn books a landing a second or more before it reaches it, and the queue moves in the
+## meantime. Both end with a car standing where another one already is, and the failure is the same
+## either way: the separation pass shunts everybody *behind* it back by the overlap **plus**
+## everything moved in front of them — 180px, measured, on the recycle — so one arrival rearranges
+## a whole queue. Behind the last car is the one place in a lane that is free by construction, and
+## moving the arrival there is the only correction that touches nobody else.
 ##
 ## It may put the car further back than the entry band is deep, which is exactly right: further back
 ## is further off-screen, and the alternative is a car appearing inside another one.
@@ -2550,8 +2570,8 @@ func _keep_within_the_room_beyond_the_map() -> void:
 ## **Never past ground it could not have driven onto itself**, for the same reason `nudge_back`
 ## checks it: the rearmost car's own position says nothing about what stands behind it, and a queue
 ## that has backed up almost to a wall would otherwise place the newcomer inside it. Refusing the
-## move leaves the car wherever `_recycle`'s own loop already found it standing on a street, which
-## is the position this whole fallback exists to improve on rather than one it has to guarantee.
+## move leaves the car where it already is, which is the position this fallback exists to improve on
+## rather than one it has to guarantee.
 func _join_the_back_of_the_queue() -> void:
 	if kind != Kind.CAR or not traffic or _has_room_here():
 		return

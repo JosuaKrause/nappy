@@ -278,6 +278,8 @@ func space_out_the_traffic(delta: float) -> void:
 			queue[i].gap_ahead = gap
 			queue[i].leader_speed = queue[i + 1].speed()
 
+	_keep_room_for_the_turning(lanes)
+
 	# And the same buckets, as bare positions, for the cars that have not turned yet. Built after
 	# the resolve rather than before it, so what a turning car sees is where everybody actually
 	# ended up this frame. See `TrafficIndex`.
@@ -302,6 +304,48 @@ func space_out_the_traffic(delta: float) -> void:
 			_traffic.claim(agent.turn_lane_key(), agent.turn_landing())
 	give_way_at_junctions()
 	_stop_for_gates(delta)
+
+## Gives a turning car's booked landing to the lane it is joining, as a leader for whoever is behind
+## it there.
+##
+## **A lane makes room for a car that is coming; it is never rearranged once one has arrived.** A
+## turn books its landing when it commits, which is up to `Tuning.CAR_JUNCTION_SIGHT` of run-up plus
+## the whole arc before the car is actually standing there — and until now nothing in the exit lane
+## knew. The traffic behind the booking drove into it, and the frame the car landed the front-to-back
+## resolve above did the only thing it can: shunt the followers backwards, compounding down the
+## queue, so an about-face into a queued lane moved the whole queue at once. That is the player's
+## "a car doing a u-turn into a lane with traffic reset the other lane".
+##
+## The fix is the lane's **own following rule** rather than a second correction. The booking is
+## treated as a stopped leader — `gap_ahead` to it, `leader_speed` zero, since a spot on the road is
+## not driving away — so the nearest follower eases off exactly the way it would for any car in
+## front of it, and by the time the turn lands the gap is there. Only the car immediately behind the
+## landing is told, because that is what a queue is: the ones behind *it* get their headway from it
+## on the same pass, one frame later, which is the same one-frame staleness every other queue answer
+## here already has.
+##
+## **Nobody ahead of the landing is touched.** They are driving away from it, and giving a car a
+## leader that is behind it is how a queue deadlocks.
+func _keep_room_for_the_turning(lanes: Dictionary) -> void:
+	for agent in _agents:
+		if not agent.is_turning():
+			continue
+		var queue: Array[CrowdAgent] = lanes.get(agent.turn_lane_key(), [] as Array[CrowdAgent])
+		var landing := agent.turn_landing()
+		var follower: CrowdAgent = null
+		var closest := INF
+		for other in queue:
+			# A turning car is still bucketed in the lane it came from, so it cannot be in this one —
+			# but an arm turn's exit lane is somebody else's entry lane, and `other` may itself be
+			# turning out of it. Its body is still here either way, which is what a gap is about.
+			var behind := landing - other.queue_position()
+			if behind <= 0.0 or behind >= closest:
+				continue
+			closest = behind
+			follower = other
+		if follower and closest < follower.gap_ahead:
+			follower.gap_ahead = closest
+			follower.leader_speed = 0.0
 
 ## Decides, once per frame and per junction, whose turn it is to be in the box.
 ##
