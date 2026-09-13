@@ -262,3 +262,9 @@ Regenerate plaza paving with the quiet-square constraints: darker muted stone, l
 flat diffuse lighting, no bright focal patches or directional gradient, opaque native coverage
 and clean repetition. Preserve the plaza SVG's larger slab layout and compare it with the
 shared ground materials and muted quiet-square tile. Keep generation and registration reproducible.
+
+> <image name=[Image #1] path="assets/illustrated/svg-transfer/tiles/sidewalk.png"> can we use the #138 version of [Image #1] as base floor tile
+
+Use the sidewalk PNG from PR #138 as the shared paving base. Keep the curbstones, markings and
+damage as transparent overlays composed in the engine. Retain the selected source revision and
+hash in the recipe, and inspect actual street layouts with this base.

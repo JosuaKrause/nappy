@@ -116,6 +116,9 @@ findings supported by the conversion and review.
       Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
+- [ ] Use the sidewalk image selected in PLAYTEST-65 as the shared paving base, preserving its
+      pixels from the source revision and recording provenance. Keep engine-composed curbstones,
+      markings and damage over this one base; check repeated street and junction layouts.
 - [ ] Blend the soft grass base equally at 0°, 90°, 180° and 270°, applying the asphalt recipe
       requested in PLAYTEST-65 to remove brightness jumps between grass cells. Preserve sparse
       in-engine clump placement, store the preparation recipe and review repeated bases and parks.
