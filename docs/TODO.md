@@ -608,23 +608,6 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **People still come out from outside the map.** *(2026-09-13,
-      [PLAYTEST-69](playtests/PLAYTEST-69.md), on v0.10.0: "people still come out from outside
-      the map".)* A re-report of playtest 66's finding, which M120 answered by giving a walker or
-      an off-spine car no room past the true edge (`CrowdAgent._entry_room()` returns 0 for
-      them; `DECISIONS.md`, M120). What that leaves, read off `_recycle()`: beside a plain edge
-      the field's own bound is the map's edge, so the entry `reach` is capped at zero and
-      `back` is zero, and the agent is set *on the boundary line itself* — a legal centre by
-      the test's own words (*nobody is ever out of bounds*) with half its picture beyond the map,
-      walking inward from the line. Two things to establish with a burst at a plain edge
-      (`--invincible`, `3` for the bodies, the agent's first frames): whether the entries seen
-      are that boundary-line landing, or a day-start placement from `Crowd.start_day()` that
-      never went through `_recycle()` at all, or an agent that genuinely stands past the edge.
-      The fix for the first is that an entry beside a plain edge lands with its whole body and
-      picture inside the map — at least a body's radius plus the sprite's half-extent in from the
-      line — and `tests/test_crowd_bodies.gd` (or M120's own entry test) asserts the picture's
-      rect, not the centre, is inside; the same clamp for the other two if they are the cause.
-      The pull-apart rule for entries that bunch beside an edge stands.
 - [ ] **The gate detains but draws no guard.** Found while capturing the inspection: the boom's
       own body takes her in, and nobody on screen is the one doing it — the guards stand at the
       huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard
