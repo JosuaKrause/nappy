@@ -22,28 +22,26 @@ Constraints: fully opaque 32×32 tile after registration; only plaza paving and 
 ```
 
 The built-in generator's raw output is retained unchanged. The registration script records its hash,
-the source SVG render, approved style references, the old plaza brightness reference, and frozen
-neighbor materials. The sidewalk input is the approved PR138 material at `/tmp/nappy-sidewalk-138.png`
-and is copied into `bundle/frozen-inputs/`; the final grass base is the rotated shared base. A later
-`build --input-bundle bundle` rebuild copies only these frozen inputs and does not read installed
-runtime textures. The fresh-output guard refuses an existing output directory, and `install` requires
-the explicit `--replace` flag. `-h`, `--help`, and unknown arguments are handled by argparse.
+the source SVG render, approved style references, the old plaza brightness reference, the approved
+quiet-square identity reference (SHA-256 `ab2778c32eba5d5719211a501baeb6fd85153a34cf736370c62174f568961029`),
+and frozen neighbor materials. A later rebuild copies only these frozen inputs and does not read
+installed runtime textures. The fresh-output guard refuses an existing output directory, and
+`install` requires the explicit `--replace` flag. `-h`, `--help`, and unknown arguments are handled
+by argparse.
 
 Source render and registration commands:
 
 ```sh
-/Applications/Godot.app/Contents/MacOS/Godot --headless --path /private/tmp/plaza-render \
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . \
   --script docs/evidence/plaza-paving-2026-09-12/render-plaza-source.gd -- \
   --output /private/tmp/plaza-svg-8x.png \
   --source assets/tiles/plaza.svg
-UV_PROJECT_ENVIRONMENT=/Users/krause/workspace/nappy-codex/.venv UV_NO_SYNC=1 \
-  UV_CACHE_DIR=/tmp/nappy-plaza-uv-cache uv run python \
-  docs/evidence/plaza-paving-2026-09-12/register.py build \
+uv run python docs/evidence/plaza-paving-2026-09-12/register.py build \
+  --input-bundle docs/evidence/plaza-paving-2026-09-12/bundle \
   --raw docs/evidence/plaza-paving-2026-09-12/source/plaza-generated.png \
-  --svg-render /private/tmp/plaza-svg-8x.png \
-  --brightness-reference assets/illustrated/svg-transfer/tiles/plaza.png \
-  --sidewalk-reference /tmp/nappy-sidewalk-138.png \
-  --output-dir docs/evidence/plaza-paving-2026-09-12/bundle
+  --output-dir /tmp/nappy-plaza-rebuild
+diff -ru docs/evidence/plaza-paving-2026-09-12/bundle/registered /tmp/nappy-plaza-rebuild/registered
+diff -ru docs/evidence/plaza-paving-2026-09-12/bundle/review /tmp/nappy-plaza-rebuild/review
 uv run python docs/evidence/plaza-paving-2026-09-12/register.py verify \
   --bundle-dir docs/evidence/plaza-paving-2026-09-12/bundle \
   --target assets/illustrated/svg-transfer/tiles/plaza.png

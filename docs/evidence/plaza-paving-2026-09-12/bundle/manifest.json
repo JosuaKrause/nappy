@@ -2,7 +2,7 @@
   "format": 1,
   "python_version": "3.14.7",
   "pillow_version": "12.3.0",
-  "script_sha256": "7b1d0d73ae403561b4882a74ed42ca0d2dd852a850946a502285c41872d0a5b0",
+  "script_sha256": "e5d8cd310bff03647a0c9591f417108e59a991f7e1cd74658af4af335b52443c",
   "method": "built-in imagegen raw output, direct LANCZOS downsample to 32x32; no recoloring or paint-over",
   "raw": {
     "path": "raw/plaza-generated.png",
@@ -20,6 +20,7 @@
     "plaza-svg-8x.png": "b44aec267fe2fc55ca6350a792d051008a7bcec14b58e8d31e2e78894946ec3a",
     "plaza.svg": "4cb42fbb66c9911bd95b94cb452159049a6a615ea18067a21c193a1ed6805d23",
     "plaza_brightness_reference.png": "43febbdc50ceefe28f13efdb31f87352f2e956382a2b073ed74b58b5df506d9a",
+    "quiet_square_identity_reference.png": "ab2778c32eba5d5719211a501baeb6fd85153a34cf736370c62174f568961029",
     "render-plaza-source.gd": "910be8f244d6f133379d0c4fd19a67d1d276b89c5371e1b40b39eb1daa9cd515",
     "sidewalk_base.png": "a86c9cdff2ca96f1d5016a7b997d506e0a1452174a06cadd9a51b50eafff0c28"
   },

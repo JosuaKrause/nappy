@@ -26,6 +26,7 @@ REFERENCE_FILES = (
 	"docs/evidence/graphics-reference-urban-01.jpeg",
 	"docs/evidence/graphics-reference-cardinal.jpeg",
 )
+QUIET_REFERENCE = "assets/illustrated/svg-transfer/tiles/quiet_square.png"
 
 
 def _sha256(path: Path) -> str:
@@ -93,6 +94,7 @@ def build(
 		)
 		for name, path in NEIGHBOR_FILES.items():
 			shutil.copyfile(sidewalk_reference if name == "sidewalk_base" and sidewalk_reference else path, inputs / f"{name}.png")
+		shutil.copyfile(ROOT / QUIET_REFERENCE, inputs / "quiet_square_identity_reference.png")
 		shutil.copyfile(ROOT / "assets/tiles/plaza.svg", inputs / "plaza.svg")
 		shutil.copyfile(svg_render, inputs / "plaza-svg-8x.png")
 		shutil.copyfile(HERE / "render-plaza-source.gd", inputs / "render-plaza-source.gd")
