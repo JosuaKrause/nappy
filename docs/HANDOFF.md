@@ -289,8 +289,6 @@ this is the map.
   item, ask it with all the context its entry carries and a recommendation, file the answer as a
   finding in `playtests/PLAYTEST-67.md` (or the next file) and remove the item in the same
   commit, then the next. The **feedback** rule governs.
-- **M123, the eastbound halo, waits on one answer**: were the phone sessions on v0.9.0 or
-  v0.9.1? Ask it first; the entry says what each answer means.
 - **M127, the first press walks her, is the smallest and goes first** among the round's
   implementation work. Its entry names the two mechanisms to look at.
 - **Three agents were running when the session closed**, each briefed from its `TODO.md`

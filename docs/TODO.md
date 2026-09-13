@@ -145,8 +145,8 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
-0. **[PLAYTEST-67](playtests/PLAYTEST-67.md)'s four**, on the same footing as the round before
-   it: **M123**, an eastbound car's halo sits off its body; **M124**, the game on a phone,
+0. **[PLAYTEST-67](playtests/PLAYTEST-67.md)'s three**, on the same footing as the round before
+   it: **M124**, the game on a phone,
    measured and then made cheaper; **M125**, the test suite is slow again; **M126**, the
    codebase audit. M124 and M126 begin as read-only audits whose findings become items; M125
    is the standing rule in the **verify** skill applied to the suite as it is. **M127**, the
@@ -352,29 +352,6 @@ is also read as a walk direction, so she is already walking when play resumes.
       `_release_all()` clearing and then the same release re-aiming. Test: pause while walking
       east, press the button, assert she resumes east; pause while standing, press, assert she
       stands.
-
----
-
-## M123 — An eastbound car's halo sits off its body · asked for 2026-09-13
-
-> "Yeah I noticed sometimes the halo of West to East driving cars are offset vertically. But
-> it's not consistent."
-
-[PLAYTEST-67](playtests/PLAYTEST-67.md), from phone sessions whose version is not stated.
-
-**What is true today.** On v0.9.1 the rim is re-traced every frame from the body being drawn,
-every car view is registered to the strike box off the live heading, and mirrored views have a
-rim (`DECISIONS.md`, M121). On v0.9.0 a car that turned onto an east-west street while lit kept
-its diagonal view's rim, registered about 30px lower than the side view, until the glow next
-changed — a vertical offset only on cars that had just turned, which matches *"not consistent"*.
-
-- [ ] **Say which version it was, then look.** If the sessions were on v0.9.0 this is M121's
-      finding re-reported and closes from there. If on v0.9.1, capture it: a burst
-      (`--press snapshot_burst`, `--invincible`) of an eastbound car under a halo on a horizontal
-      street, and the cause against the frames — the halo child's own position, the frame the
-      agent's heading changes against the frame the halo traces, or the trim layer's offset.
-      Whatever it is, `tests/test_halo.gd` pins the rim's registration against the body's for a
-      side-view car
 
 ---
 

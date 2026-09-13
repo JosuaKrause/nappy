@@ -15,8 +15,13 @@ when its glow settled, so a car that turned onto an east-west street while lit k
 its diagonal view — registered about 30px lower than the side view was — until the glow changed:
 a vertical offset, only on cars that had just turned under a halo, which is *"not consistent"*.
 M121 re-traces the rim every frame and registers every view to the strike box, and the
-mirrored-view fix made the westbound half draw a rim at all. Whether this is that defect seen on
-v0.9.0, or something still present on v0.9.1, is M123 in `TODO.md`.
+mirrored-view fix made the westbound half draw a rim at all. Asked which version, later the same
+day:
+
+> I'm unsure if it was 9.0 or 9.1 I will report it again if I see it otherwise let's consider it
+> fixed
+
+So it closes as M121's finding, and a fresh report on v0.9.1 or later reopens it.
 
 ## The phone is laggy
 
