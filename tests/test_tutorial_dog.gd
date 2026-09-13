@@ -8,10 +8,13 @@ extends RefCounted
 ## tile and met by routing into it, the way `alley_robbery` is, rather than sited by the director on
 ## her heading or off it. See `EventScheduler._place_one()` and `EventDirector.start_day()`.
 ##
-## **The map-placed dog waits** inside its own field for her rather than announcing itself the
-## moment it streams in — `EventDef.pursues_within_on(day)`, the same day-keyed switch answered a
-## different way, and `EventScheduler._for_day()` is where a placement past it gets a copy carrying
-## that answer.
+## Two things past the switch, both below. **The map-placed dog waits** inside its own field for
+## her rather than announcing itself the moment it streams in — `EventDef.pursues_within_on(day)`,
+## the same day-keyed switch answered a different way, and `EventScheduler._for_day()` is where a
+## placement past it gets a copy carrying that answer. **And the day-3 shape does not retire** —
+## *(2026-09-13, PLAYTEST-68: "we can sprinkle the day 3 charging dog in every now and then,
+## too")* — `EventDirector._owe_the_sprinkled_dog()` now and then sends the same unmodified def
+## off her heading again, unguaranteed and without the tip.
 
 const STEP := 1.0 / 60.0
 
@@ -23,6 +26,8 @@ func run(t) -> void:
 	_test_pursues_within_switches_after_the_teaching_day(t)
 	_test_day_4_dog_waits_until_she_is_in_its_field(t)
 	_test_day_3_dog_still_charges_the_moment_it_streams_in(t)
+	_test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t)
+	_test_the_sprinkle_never_runs_on_the_teaching_day(t)
 
 func _map() -> CityMap:
 	return CityGenerator.generate(4242)
@@ -111,11 +116,11 @@ func _test_day_4_is_a_map_placement(t) -> void:
 ## And the other half, confirmed at the director: a `MAP`-mode plan is never turned into an owed
 ## encounter by `start_day()`'s own per-plan loop, so it can never be sited on her heading, or
 ## anywhere else the director reaches for, *by that mechanism*. Compared against an identical rng
-## stream with no plan at all rather than against a flat `owed() == 0`, so that anything else
-## `start_day()` might one day owe off its own roll, independent of what the day planned, does not
-## make this test start failing for an unrelated reason — the two calls share a seed, so whatever
-## either one owes beyond the plan comes out identically either way, and the only thing left to
-## differ is what the plan itself contributed.
+## stream with no plan at all rather than against a flat `owed() == 0`, because past M96's own
+## sprinkle (`_test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day`, below)
+## `EventDirector` can legitimately owe the row anyway — the two calls share a seed so the
+## sprinkle's own roll, which reads nothing from `plans`, comes out identically either way, and
+## the only thing left to differ is what the plan itself contributed.
 func _test_day_4_is_never_owed_to_the_director(t) -> void:
 	var map := _map()
 	var def := EventCatalogue.by_id("charging_dog")
@@ -196,3 +201,46 @@ func _test_day_3_dog_still_charges_the_moment_it_streams_in(t) -> void:
 	t.check(not dog.is_waiting() and dog.is_telegraphing(),
 			"a day-3 dog is already telegraphing its charge however far away she is standing")
 	dog.free()
+
+## The sprinkle: past the teaching day, `EventDirector` now and then adds the row back to its own
+## queue in day 3's own shape — the same `EventDef`, unmodified, so it still charges the moment it
+## streams in rather than waiting the way a `MAP` placement on the same day would. Swept over many
+## seeds because "now and then" is a probability, not a certainty on any one day: both outcomes
+## have to actually occur somewhere in the sweep, or the roll is dead code.
+func _test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t) -> void:
+	var map := _map()
+	var day := Tuning.RUN_TAUGHT_DAY + 1
+	var offered := 0
+	var not_offered := 0
+	for seed in range(200):
+		var director := EventDirector.new(map)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed
+		director.start_day(day, [], rng)
+		if director.owed() > 0:
+			offered += 1
+			for queued: EventDef in director._owed:
+				t.check(queued.id == "charging_dog" and queued.pursues_within <= 0.0,
+						("seed %d: the sprinkle is charging_dog itself, pursues_within untouched " +
+								"at 0.0 — day 3's own shape, not the waiting one a MAP placement " +
+								"past the switch would carry") % seed)
+		else:
+			not_offered += 1
+	t.check(offered > 0, "the sprinkle happens on some days past the teaching day")
+	t.check(not_offered > 0, "and not on every one of them — 'now and then', not guaranteed")
+
+## And it never doubles the teaching day itself: `_teach_the_run()` already guarantees day 3 its
+## one dog with the tip and the delay, and a second roll stacked on top would be two lessons where
+## the entry asks for one guarantee and, separately, an unguaranteed sprinkle confined to later days.
+func _test_the_sprinkle_never_runs_on_the_teaching_day(t) -> void:
+	var map := _map()
+	var def := EventCatalogue.by_id("charging_dog")
+	for seed in range(50):
+		var director := EventDirector.new(map)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed
+		var plans: Array[EventScheduler.Planned] = [EventScheduler.Planned.new(def, Vector2.INF)]
+		director.start_day(Tuning.RUN_TAUGHT_DAY, plans, rng)
+		t.check(director.owed() == 1,
+				("seed %d: the teaching day owes exactly its one guaranteed dog, never a second " +
+						"from the sprinkle") % seed)

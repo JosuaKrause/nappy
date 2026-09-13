@@ -1143,13 +1143,17 @@ static func _chatting_mother() -> EventDef:
 ## arriving.
 ## `EventDirector` puts the first one in front of her early on that day; see `Tuning.RUN_TAUGHT_DAY`.
 ##
-## **The lesson does not retire.** *(2026-09-13, `docs/playtests/PLAYTEST-68.md`: "The waiting is
-## good. But we can sprinkle the day 3 charging dog in every now and then, too. Since they always
-## come from offscreen the only difference now is that day 3 dog is guaranteed to happen and has a
-## tutorial tip.")* Past `RUN_TAUGHT_DAY` the row recurs — `EventScheduler` places it on a tile like
-## `alley_robbery`, waiting inside its own field for her (`pursues_within_after_first_day`, below)
-## — rather than being spent by the lesson, the way `spawn_mode_after_first_day` already answers
-## for its siting.
+## **The lesson does not retire, and it does not stay a lesson either.** *(2026-09-13,
+## `docs/playtests/PLAYTEST-68.md`: "The waiting is good. But we can sprinkle the day 3 charging dog
+## in every now and then, too. Since they always come from offscreen the only difference now is
+## that day 3 dog is guaranteed to happen and has a tutorial tip.")* Past
+## `RUN_TAUGHT_DAY` this row is two things at once, both already-authored shapes rather than new
+## ones: `EventScheduler` places it on a tile like `alley_robbery`, waiting inside its own field for
+## her (`pursues_within_after_first_day`, below); and `EventDirector` now and then still sends the
+## day-3 shape itself — off screen, already noticing her, no tip —
+## `Tuning.CHARGING_DOG_SPRINKLE_CHANCE` of the time on a day it is eligible. One `EventDef` answers
+## both, since neither changes what the row *is*, only whether she is routed into it or walks into
+## it while going about her day.
 static func _charging_dog() -> EventDef:
 	var def := EventDef.new()
 	def.id = "charging_dog"
