@@ -14,10 +14,6 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-- **Look at a burst water main.** It draws no body shadow now, on the player's word; the two
-  barriers and the crater stand as they did. Does the scene still sit on the road without one?
-  Same record.
-
 - **Walk three kinds of ground with the excitement bar up and watch it, not the route.** Start
   anywhere with the meter loaded (`--meters 0 90` puts it near the top) and spend twenty seconds
   on each: an ordinary back street, the main road's pavement, and a park. Three questions, and

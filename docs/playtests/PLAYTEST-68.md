@@ -18,3 +18,13 @@ alternative to black laid over it.
 > Alleys read, strength right
 
 Closed as fine. The record is `DECISIONS.md`, M122.
+
+## The burst water main without a shadow
+
+Asked: it draws no body shadow at all now, on the player's word, while its two barriers and the
+crater stand as they did and every other event body casts a shape-derived shadow — does the
+scene still sit on the road, or does it look pasted on beside things that are grounded?
+
+> Sits fine on the road
+
+Closed as fine; no shadow stays the rule for it. Same record.
