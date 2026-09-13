@@ -443,16 +443,21 @@ skill's incident list names.
 **What is true today.** The five suites the report named are pruned and their loops sized to
 what they prove — the per-suite times before and after are in `DECISIONS.md` under M125 — and
 the head of `tests/run_tests.gd` says the budget: a suite over two minutes serial is a suite to
-split or cut, because the longest suite sets the floor every other shard waits on. Four suites
-are still over that budget and were outside the report's own list.
+split or cut, because the longest suite sets the floor every shard waits on. CI runs the suite
+as eight shards on eight runners, planned from `tests/suite_costs.txt`, the measured per-suite
+times `tools/test.sh --record-costs` refreshes (`DECISIONS.md`, M125, CI runs the shards on
+eight runners); the wall time is the longest suite plus a minute of setup, so the longest suite
+is now the whole of what CI's time is made of. Five suites are over the budget.
 
-- [ ] **The four suites over budget get the same pass.** `test_resistance.gd`,
-      `test_balance.gd`, `test_seals.gd` and `test_checkpoints.gd` each run over two minutes
-      serial on CI. Read each against the verify skill's test, delete what restates a table,
+- [ ] **The suites over budget get the same pass, and the longest is split.** `test_crowd.gd`
+      is the floor at nearly four minutes serial and is simulation-bound, so it is split into
+      two files by subject rather than trimmed; `test_resistance.gd`, `test_balance.gd`,
+      `test_seals.gd` and `test_checkpoints.gd` each run over two minutes serial on CI and get
+      the M125 pass: read each against the verify skill's test, delete what restates a table,
       and size each seed or day loop to the question it asks — a rule asked per placement needs
       fewer maps than a property of a layout — with the count and its reason in the docstring,
-      and a sweep never made vacuous. The CI per-suite line before and after goes to
-      `DECISIONS.md` under M125.
+      and a sweep never made vacuous. `tools/test.sh --record-costs` afterwards, so the plan
+      follows; the CI per-suite line before and after goes to `DECISIONS.md` under M125.
 
 ---
 
@@ -622,23 +627,6 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **People still come out from outside the map.** *(2026-09-13,
-      [PLAYTEST-69](playtests/PLAYTEST-69.md), on v0.10.0: "people still come out from outside
-      the map".)* A re-report of playtest 66's finding, which M120 answered by giving a walker or
-      an off-spine car no room past the true edge (`CrowdAgent._entry_room()` returns 0 for
-      them; `DECISIONS.md`, M120). What that leaves, read off `_recycle()`: beside a plain edge
-      the field's own bound is the map's edge, so the entry `reach` is capped at zero and
-      `back` is zero, and the agent is set *on the boundary line itself* — a legal centre by
-      the test's own words (*nobody is ever out of bounds*) with half its picture beyond the map,
-      walking inward from the line. Two things to establish with a burst at a plain edge
-      (`--invincible`, `3` for the bodies, the agent's first frames): whether the entries seen
-      are that boundary-line landing, or a day-start placement from `Crowd.start_day()` that
-      never went through `_recycle()` at all, or an agent that genuinely stands past the edge.
-      The fix for the first is that an entry beside a plain edge lands with its whole body and
-      picture inside the map — at least a body's radius plus the sprite's half-extent in from the
-      line — and `tests/test_crowd_bodies.gd` (or M120's own entry test) asserts the picture's
-      rect, not the centre, is inside; the same clamp for the other two if they are the cause.
-      The pull-apart rule for entries that bunch beside an edge stands.
 - [ ] **The gate detains but draws no guard.** Found while capturing the inspection: the boom's
       own body takes her in, and nobody on screen is the one doing it — the guards stand at the
       huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard

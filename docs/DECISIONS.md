@@ -1,5 +1,73 @@
 # Decisions
 
+## M100 — An entry beside a plain edge keeps room for its own picture · built 2026-09-13
+
+*(2026-09-13, [PLAYTEST-69](playtests/PLAYTEST-69.md): "people still come out from outside the
+map" — a re-report of playtest 66's finding after M120.)* Two agent commits on
+`feature/m100-map-edge-entries`, reviewed here; the counts are in
+`docs/evidence/m100-map-edge-entries-2026-09-13/`.
+
+**The diagnosis, before the fix.** `tests/probes/m100_map_edge_entries.gd` drives
+`CrowdAgent._recycle()` at each plain edge and samples `Crowd.start_day()` separately, counting
+entries whose *drawn picture* reaches past the true edge with a centre every existing check calls
+legal. Every recycle sample beside a plain edge was unsafe — walker north 199 of 199, walker west
+179 of 179, car west 235 of 235, off-spine car north 224 of 224 — because M120's rule that a
+walker or an off-spine car gets no room past the edge collapses the entry roll to the boundary
+coordinate itself, legal by the centre-only `_entry_band_fits()`, while the picture straddles the
+line: a walker's canvas rises its whole height above its position and nothing below, since
+standing sprites are anchored bottom-centre. The day-start placement, which never runs the
+recycle's room check, did the same rarely (1 of 234 beside an east edge). Nobody genuinely stood
+past the edge once M120 held the centre. So the first of the entry's three candidates was the
+cause, the second a minor contributor, and the third did not occur.
+
+**The fix.** `CrowdAgent._entry_picture_clearance()` reads the real texture sizes and the same
+anchor arithmetic the body drawing uses, and answers how far this kind's picture reaches past its
+own coordinate — the larger of the two directions, applied symmetrically, which is the one silent
+choice and is conservative only on the side that already had room. `_entry_band_fits()`, the
+final clamp on the room beyond the map, and `setup()`'s own placement loop all ask
+`_within_the_map_with_room_for_its_picture()` wherever `_entry_room()` grants nothing past the
+edge. After it the probe reports zero unsafe entries at every edge and zero at day start; sample
+counts drop because the unsafe axis-and-direction fails its own roll and the loop settles
+elsewhere, which is the point. Two tests in `tests/test_crowd.gd` beside M120's own entry test
+pin a partial 45px of room rather than a flush edge, since a flush edge gives the unsafe
+combination no chance of acceptance and so collects nothing; both fail without the fix. M120's
+pull-apart rule for entries that bunch beside an edge is untouched. The burst is
+`after-north-edge-burst/`, thirty-six frames at the true north edge with nobody's picture in the
+mountain band.
+
+## M125 — CI runs the shards on eight runners, planned from measured times · built 2026-09-13
+
+*(2026-09-13: "CI is still 12min — any ideas for improving those times?", then "let's do all
+three".)* The last green run before this spent 9m16s in its test step for 25.7 minutes of suites
+serial — an ideal of 6.4 minutes across four shards, and the gap was two things: the planner
+bin-packed by a hand-written cost table that was wrong by up to three times (events at 279s
+against a measured 185, crowd at 82 against 227, the balance suite missing), so the heaviest
+suite sat in the lightest bin; and four Godot processes contended for one runner's four cores.
+Two agent commits on `feature/ci-measured-shards`, reviewed here.
+
+**The planner packs by measured time.** `tests/suite_costs.txt` is one row per suite, in
+milliseconds, read by `tools/test.sh`'s cost function; a suite without a row is planned at a
+stated default with a warning rather than dropped. `tools/test.sh --record-costs` runs the full
+suite and rewrites the file from that run's own per-suite lines, refusing to overwrite on a row
+count that does not match the suites on disk, so a crashed shard cannot write a short table.
+Seeded from the last green run on main. A separate recording script was rejected: the mode
+shares the planner and the shard logs with the rest of `test.sh`.
+
+**Eight shards on eight runners.** `tools/test.sh --shard I/N` plans the same N-way split every
+runner plans from the same file, validates `I` and `N` before the import pass, runs one shard in
+one process and lets the runner's partial-run note through. `ci.yml` is three jobs: the cheap
+gates (lint, cli help, the Python tools, the boot check), a fail-fast-off matrix of eight
+shards, and a job named `test` that needs both and fails if either failed, so main's ruleset,
+which requires a check of that name, is untouched. Eight because `test_crowd.gd` at about 227s
+is a floor no split can lower, and eight puts every other shard at 187 to 189s beside it. The
+PR's own run: gates 1m7s, shards 2m53s to 4m22s, **4m29s wall** against 9m16s. The trade is
+stated: each runner is a fresh checkout, so the import pass runs eight times for less latency.
+A composite action to share the Godot cache steps between the jobs was rejected as more moving
+parts than two bounded changes justify.
+
+**What it leaves.** The longest suite is now the whole of CI's time, and the queue's M125 entry
+holds the split of `test_crowd.gd` and the pass over the four suites still over budget.
+
 ## M124 — The two fixes built · 2026-09-13
 
 The build half of the desktop measurement below (M124, where a frame goes). Four agent commits
