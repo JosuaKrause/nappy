@@ -14,10 +14,6 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-- **Walk past a street tree with the stroller overlapping its bed.** The paving bed should
-  stay underneath her and the pram while the trunk and canopy retain their upright sorting.
-  Check the location pictured in [PLAYTEST-64](playtests/PLAYTEST-64.md), or any street-tree run.
-
 - **Look at trees, bollards and rooftop equipment at gameplay size.** Do the inked foliage,
   water tank, HVAC units, skylights, vent and ducts fit the comic ground while staying readable?
   Check both tree shapes and the roof variants in

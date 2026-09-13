@@ -94,3 +94,12 @@ across its short mouth?
 > All three read right
 
 Closed as fine.
+
+## The street tree's bed under the pram
+
+Asked: walking past a street tree with the stroller over its paving bed, does the bed stay
+underneath her and the pram while the trunk and canopy keep their upright sorting?
+
+> Sorts right
+
+Closed as fine.
