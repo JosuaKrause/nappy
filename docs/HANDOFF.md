@@ -277,6 +277,33 @@ zebra running into the mountain, four dotted crossings under one light — and n
 drives off the map, or onto it, except a car by the tunnel or the bridge. All of it was checked on rig captures
 and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
+## Where the last session stopped, 2026-09-13
+
+**This section is the pick-up for the next session and is removed by it.** The session that
+wrote it ended with work in flight, so `gh pr list` and `git worktree list` are the truth and
+this is the map.
+
+- **The player asked to be walked through `REVIEW.md` one question at a time** *(2026-09-13:
+  "ask me a couple of questions (one at a time) for things that need a human eye. I might be
+  able to answer them. Go one by one through the questions file")*. Start there: take the first
+  item, ask it with all the context its entry carries and a recommendation, file the answer as a
+  finding in `playtests/PLAYTEST-67.md` (or the next file) and remove the item in the same
+  commit, then the next. The **feedback** rule governs.
+- **M123, the eastbound halo, waits on one answer**: were the phone sessions on v0.9.0 or
+  v0.9.1? Ask it first; the entry says what each answer means.
+- **M127, the first press walks her, is the smallest and goes first** among the round's
+  implementation work. Its entry names the two mechanisms to look at.
+- **Three agents were running when the session closed**, each briefed from its `TODO.md`
+  entry: M125 (pruning `tests/**`, on its own feature branch), M124's measurement half (readout,
+  run-log line and a per-suspect profile, on its own feature branch), and M126's read-only
+  audit, which writes its report to `/tmp/nappy-audit-2026-09-13.md` outside the repository.
+  If a branch has a PR, review it, file its record and merge under the usual rules; if a branch
+  exists without one, or a worktree under `.claude/worktrees/` holds uncommitted work, the agent
+  was cut off — read what is there before re-briefing. If the audit file is missing, the audit
+  re-runs from its entry.
+- **The M124 atlas item is gated on the measurement**: nothing is atlased until the numbers say
+  texture switches are the cost.
+
 ## The queue, as prioritised on 2026-09-09
 
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** Playtest

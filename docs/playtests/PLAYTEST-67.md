@@ -44,3 +44,29 @@ five suites take between three and twelve minutes each. M125 in `TODO.md`.
 > Other than that do a thorough audit of the codebase.
 
 M126 in `TODO.md`: a read-only audit whose findings become items, not a rewrite.
+
+## The first press walks her
+
+Reported later the same day, after the four above were filed:
+
+> Also the player direction should be reset to zero when the game starts. Right now it always
+> starts already walking (probably from clicking the button) same with exiting pause or any other
+> screen
+
+> Pause can keep the last direction just don't overwrite it from the button press
+
+Nothing earlier in the playtests reports this. A run begins from a press on a title-screen disc,
+a day continues from the summary's button, and the pause screen closes from its own; the report
+is that the press that dismissed the screen is read as a walk direction, so she is already
+walking when play resumes. The player's design: at the start of a run her direction is zero;
+when any screen closes, whatever direction was locked in before it opened stands — pause keeps
+the last heading — and the button press itself never becomes one. M127 in `TODO.md`.
+
+## Questions for a human eye
+
+> Also ask me a couple of questions (one at a time) for things that need a human eye. I might be
+> able to answer them. Go one by one through the questions file
+
+The questions file is `REVIEW.md`. The next session asks them one at a time, each with the
+context its entry gives, and files each answer as a finding here or in the next playtest file,
+removing the item from `REVIEW.md` in the same commit.
