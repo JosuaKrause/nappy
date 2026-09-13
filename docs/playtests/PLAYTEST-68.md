@@ -175,3 +175,14 @@ band and the discs refuse ordinary aiming, and is tap-to-stop missed?
 > Controls feel right. I will report if I find any new issues
 
 Closed as fine, all four.
+
+## The title screen, the restart and the upright phone
+
+Asked, against `DECISIONS.md`, M88, M76 and M60: are two discs and two captions enough to pick
+a scheme you have not played; has a stray tap after an ending ever started a run, or a
+deliberate press after a restart been swallowed by the 0.35s window; and does a phone held
+upright rotate once and correctly?
+
+> All three fine
+
+Closed as fine, all three.
