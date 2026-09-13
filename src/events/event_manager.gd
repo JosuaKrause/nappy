@@ -305,6 +305,14 @@ func _record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) -
 ## second copy of that arithmetic would agree with it right up to the first time one of the two
 ## took an argument — which would leave the crowd avoiding ground no body is on and walking
 ## through the ground one is.
+##
+## **It is the row's pieces that are rasterised, never the one disc of `obstructs_radius`.** A row
+## is solid where `EventDef.parts()` says it is, which is one piece at the origin carrying `shape`
+## for every row that declares none — so a one-piece row records exactly the tiles it always did,
+## and a row solid in parts records its pieces and leaves the ground between them open. That is the
+## whole of what makes a crash two cars to the crowd rather than a wall: the pieces are a subset of
+## `shape` (`EventDef.validate()` refuses one reaching past it), so the change only ever *removes*
+## tiles from the record, and removing obstruction can only add reachable ground.
 static func obstructed_footprint(map: CityMap, def: EventDef, at: Vector2,
 		facing: Vector2) -> Array[Vector2i]:
 	var nothing: Array[Vector2i] = []
@@ -322,9 +330,29 @@ static func obstructed_footprint(map: CityMap, def: EventDef, at: Vector2,
 	# held, which shuts the whole street to walkers and cars alike — recording their tiles as well
 	# would be a second answer to a question that has one. Asked of the body's own placement tile,
 	# which is the tile that decided the segment it belongs to.
+	#
+	# **A row solid in parts is no exception, and that is deliberate.** A crash's street is still
+	# held for the crowd — the seal still seals (`docs/CITY.md`, "A closure is silent") — so its
+	# cars are ground no walker and no car can reach in the first place. What M118 opened is the
+	# *player's* way through, and she is stopped by the pieces' own collision shapes rather than by
+	# this record.
 	if map.is_held_at(map.world_to_tile(placed)):
 		return nothing
-	return def.shape.tiles_under(placed, _body_axis(map, def, placed, facing))
+	var axis := _body_axis(map, def, placed, facing)
+	# Which way round a piece's own offset is laid is `EventInstance._spread_at()`'s question, and
+	# it is asked of the placed position for the same reason the axis is: a piece offset the wrong
+	# way is a body recorded across the street from the car it belongs to.
+	var spread_vertical := EventInstance._spread_is_vertical(map, placed)
+	var covered: Array[Vector2i] = []
+	for piece in def.parts():
+		var offset := piece.offset_for(spread_vertical)
+		var centre := placed + (Vector2(0.0, offset) if spread_vertical else Vector2(offset, 0.0))
+		for tile in piece.shape.tiles_under(centre, axis):
+			# Two pieces may overhang one tile, and the record counts **bodies** rather than
+			# pieces: a body that recorded one tile twice would need two releases to give it back.
+			if not covered.has(tile):
+				covered.append(tile)
+	return covered
 
 ## The ground-plane direction a sited body's spine lies along — `EventInstance._solid_axis()` for a
 ## body that does not exist yet, off the same two statics that instance would read.

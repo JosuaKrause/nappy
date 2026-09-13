@@ -662,6 +662,46 @@ const SEAL_THINNING_FRACTION := 0.08
 ## word.
 const ALLEY_MOUTH_SEAL_CHANCE := 0.15
 
+## What a car crash emits, per second at the middle of its own band — the one seal that makes any
+## noise at all, and the one place *a closure is silent* (`docs/CITY.md`) does not hold.
+## *(2026-09-12: "a car crash right now has a full bounding box even though there are gaps in the
+## sprite. the bounding box should only be the crashed cars but it should emanate an excitement
+## field that prevents the player from walking past it".)* Its body is now the two cars only
+## (`EventCatalogue._car_accident_parts`), so the picture's own gaps are walkable ground and this
+## is what stands in the way instead.
+##
+## **Set by the walk, not derived.** `tests/probes/m118_crash_gap.gd` walks the pavement gap and
+## the gap beside the cars at `WALK_SPEED` across several seeds, and reports the **cheapest** line
+## through them, since a guarantee about a price is a guarantee about the price she can get. At
+## this number that line costs a little over 56 of the hundred-point meter, against the
+## `METER_MAX / 2` line
+## `tests/test_crowd.gd` draws between *expensive* and *fatal* — deliberately on the fatal side, so
+## a meter that is not fresh cannot carry it. `tests/test_seals.gd` asserts that walk rather than
+## this number, so a change to the falloff or the geometry fails where it is felt.
+##
+## **What it buys is the meter, not the day**, which is the recommended reading of the player's
+## *prevents*: the pram's nearly-crying cue is the turn-back signal, and a fresh meter can still
+## force the pass at the price of the rest of the day. `CAR_ACCIDENT_GAPS_ARE_LETHAL` below is the
+## other reading, left switchable rather than argued about.
+const CAR_ACCIDENT_INTENSITY := 45.0
+
+## The other answer to *prevents the player from walking past it*: **off**, and one line from being
+## on. True makes the crash a `hard_fail` row — the mechanism a fire already uses — so the gaps end
+## the day rather than costing more of it than she can carry. It is a design question the player
+## has not answered yet, and the recommendation built is the expensive one, because a wall that
+## kills has no price to weigh and the whole verb of this game is *where do I walk*.
+##
+## Flipping it takes the row's `inner_radius` to `CAR_ACCIDENT_LETHAL_INNER_RADIUS` and its
+## telegraph to the doubled hard-fail margin — see `EventCatalogue._car_accident()`, which is the
+## only reader of either.
+const CAR_ACCIDENT_GAPS_ARE_LETHAL := false
+
+## The radius that would end the day under `CAR_ACCIDENT_GAPS_ARE_LETHAL`, measured from the scene's
+## own centre. Above the cars' own 36.1px reach plus her 14px body, so she can actually reach the
+## thing that kills (`EventDef.validate()` refuses a lethal row whose body holds her outside its own
+## inner radius), and inside the 96px band so the gaps either side of the cars are what it covers.
+const CAR_ACCIDENT_LETHAL_INNER_RADIUS := 56.0
+
 # ------------------------------------------------------------------- regions ---
 # `RegionPlanner` partitions the lattice's junctions once at generation and turns that partition
 # plus a day's `RouteTree` into a wall with doors in it. See docs/CITY.md, "Regions and the wall".

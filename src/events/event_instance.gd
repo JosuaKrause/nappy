@@ -920,19 +920,51 @@ func _ready() -> void:
 ## Some events are physically in the way. The body is a child so it travels with a mobile
 ## event and disappears with the instance.
 ##
-## Built from `def.shape` — a `CircleShape2D` for a point, a `CapsuleShape2D` for a segment — so
-## the collision resource agrees with whatever `_draw_body()` actually drew: the same datum, read
-## twice. A capsule stands along local Y by default; `_solid_axis()` says which of this instance's
-## own axes the spine actually lies along, and the `CollisionShape2D` is rotated to match.
+## Built from `def.parts()` — one `CollisionShape2D` per piece, a `CircleShape2D` for a point and a
+## `CapsuleShape2D` for a segment — so the collision resources agree with whatever `_draw_body()`
+## actually drew: the same datum, read twice. A capsule stands along local Y by default;
+## `_solid_axis()` says which of this instance's own axes the spine actually lies along, and each
+## `CollisionShape2D` is rotated to match.
+##
+## **One body, several shapes.** A row that declares no parts gets exactly one piece at the origin
+## (see `EventDef.parts()`), which is the single shape this always built; the crash gets one per
+## car, offset along the spread axis by the piece's own reading of whichever picture is in use. One
+## `StaticBody2D` holds them all, so nothing downstream — the debug view's bounding-box layer, which
+## walks the physics tree, or `is_solid()` — has to learn that a row may have more than one.
 func _build_obstruction() -> void:
 	var body := StaticBody2D.new()
-	var collision := CollisionShape2D.new()
-	collision.shape = def.shape.collision_shape()
-	if def.shape.half_length > 0.0:
-		collision.rotation = _solid_axis().angle() - PI * 0.5
-	body.add_child(collision)
+	for piece in def.parts():
+		var collision := CollisionShape2D.new()
+		collision.shape = piece.shape.collision_shape()
+		collision.position = _spread_at(piece.offset_for(_spread_vertical))
+		if piece.shape.half_length > 0.0:
+			collision.rotation = _solid_axis().angle() - PI * 0.5
+		body.add_child(collision)
 	add_child(body)
 	_obstruction = body
+
+## Where each of this instance's solid pieces stands, in world space — paired index for index with
+## `solid_part_shapes()` below, the same two-parallel-arrays shape `flock_offsets()` and
+## `flock_velocities()` already hand `DebugLayers`.
+##
+## **A per-tile solid record reads the same pieces, index for index.**
+## `EventManager.obstructed_footprint()` steps `def.parts()` on its own rather than calling this
+## pair, but it is the same data: one disc of `obstructs_radius` for every row but the crash, which
+## records tiles under each car and leaves the ground between them open — the whole reason the crowd
+## steps round the cars and walks the debris.
+func solid_part_centres() -> PackedVector2Array:
+	var centres := PackedVector2Array()
+	for piece in def.parts():
+		centres.append(global_position + _spread_at(piece.offset_for(_spread_vertical)))
+	return centres
+
+## The `GroundShape` of each solid piece, index for index with `solid_part_centres()`. Each lies
+## along `solid_axis()`, the same axis its collision shape and its shadow are rotated by.
+func solid_part_shapes() -> Array[GroundShape]:
+	var shapes: Array[GroundShape] = []
+	for piece in def.parts():
+		shapes.append(piece.shape)
+	return shapes
 
 ## Built once for every instance, whether or not `ExcitementHalo` ever picks it — a `city_wide`
 ## source is excluded by kind (see `ExcitementHalo.select_sources()`) and simply never draws, which
@@ -2101,6 +2133,14 @@ func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Ve
 		return
 	shape.draw_shadow(canvas, at, _solid_axis())
 
+## This row's own body shadow: one `GroundShape` shadow per solid piece, at the piece's own offset
+## along the spread axis. The single ellipse or capsule every row drew before, for anything that
+## declares no parts; two patches under two cars for the one row that does, so the ground under a
+## crash is dark where the cars are and lit where the picture leaves a way through.
+func _draw_body_shadow(canvas: CanvasItem) -> void:
+	for piece in def.parts():
+		_draw_shape_shadow(canvas, piece.shape, _spread_at(piece.offset_for(_spread_vertical)))
+
 ## The ground-plane direction a spread-shaped shadow sweeps along — local Y when the street this
 ## instance stands on is east-west (`_spread_vertical`), local X otherwise. The same axis
 ## `_spread_at()` already lays the drawn body along.
@@ -2354,7 +2394,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			# The guard's own picture is person-scale, but his shape is the checkpoint's own —
 			# one body covers the whole 64px alley mouth, same as `checkpoint_hut`'s hut. See
 			# `EventCatalogue._checkpoint_post`.
-			_draw_shape_shadow(canvas, def.shape)
+			_draw_body_shadow(canvas)
 			_draw_at_anchor(canvas, GUARD_STANDING, _GUARD_ANCHOR)
 		EventDef.Look.NONE:
 			pass
@@ -2367,7 +2407,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 ## other caller exactly as it was.
 func _draw_simple(texture: Texture2D, canvas: CanvasItem = self,
 		texture_b: Texture2D = null) -> void:
-	_draw_shape_shadow(canvas, def.shape)
+	_draw_body_shadow(canvas)
 	var drawn := texture_b if texture_b and _gait_stepping() else texture
 	Sprites.draw_standing(canvas, drawn, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
@@ -2397,7 +2437,7 @@ func _draw_simple(texture: Texture2D, canvas: CanvasItem = self,
 ## through to `by_view` exactly as before.
 func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem = self,
 		side_faces_west := false, by_view_b: Dictionary = {}) -> void:
-	_draw_shape_shadow(canvas, def.shape)
+	_draw_body_shadow(canvas)
 	var view := _select_view(heading)
 	var mirror := EightDirection.is_mirrored(_view_sector)
 	if view == "side" and side_faces_west:
@@ -2416,7 +2456,7 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 		canvas: CanvasItem = self) -> void:
 	var texture := _stationary_vehicle_texture(look, _stationary_vehicle_side)
 	var extent := _stationary_vehicle_extent(texture, _stationary_vehicle_side, side_width)
-	_draw_shape_shadow(canvas, def.shape)
+	_draw_body_shadow(canvas)
 	Sprites.draw_standing(canvas, texture, Vector2.ZERO, extent,
 			_stationary_vehicle_side and _heading_is_west())
 
@@ -2427,7 +2467,7 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 ## behind one body, and the difference between the two pictures is the whole event.
 func _draw_loose_dog(canvas: CanvasItem = self) -> void:
 	var behind := Vector2(26.0 if _heading_is_west() else -26.0, 0.0)
-	_draw_shape_shadow(canvas, def.shape)
+	_draw_body_shadow(canvas)
 	# On the ground and slack, not held up at hip height. Nobody is holding it. The lead's own
 	# offset stays a plain east/west span — a composite the picture underneath it does not own,
 	# same as `_draw_dog_walker`'s taut one.
@@ -2482,7 +2522,7 @@ func _draw_cat(canvas: CanvasItem = self) -> void:
 	# second frame — a crouching cat has nothing to stride into yet.
 	if not telegraphing and _gait_stepping():
 		by_view = CAT_RUNNING_BY_VIEW_B
-	_draw_shape_shadow(canvas, def.shape)
+	_draw_body_shadow(canvas)
 	var view := _select_view(_heading)
 	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
@@ -2496,7 +2536,7 @@ func _draw_cat(canvas: CanvasItem = self) -> void:
 ## is a man there" but *which of the two men that is* — so the change of posture happens on the
 ## frame he notices her, before the telegraph has finished and well before he moves.
 func _draw_robber(canvas: CanvasItem = self) -> void:
-	_draw_shape_shadow(canvas, def.shape)
+	_draw_body_shadow(canvas)
 	var waiting := is_waiting()
 	var by_view := ROBBER_WAITING_BY_VIEW if waiting else ROBBER_LUNGING_BY_VIEW
 	# The waiting posture holds still by construction — he has nothing to stride toward yet — so
@@ -2548,7 +2588,7 @@ func _draw_fire(canvas: CanvasItem = self) -> void:
 	var strength := 1.0
 	if def.intensity > 0.0:
 		strength = clampf(current_intensity() / def.intensity, 0.2, 1.0)
-	_draw_shape_shadow(canvas, def.shape)
+	_draw_body_shadow(canvas)
 	for i in 5:
 		var offset := (i - 2.0) * 11.0
 		var flicker := 1.0 + 0.25 * sin(age * 9.0 + i * 1.7)
@@ -2577,7 +2617,7 @@ func _spread_extent(along: float, thickness: float) -> Vector2:
 ## equal the obstructed one, matching the segments above rather than overhanging them.
 func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null, canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	_draw_shape_shadow(canvas, def.shape)
+	_draw_body_shadow(canvas)
 	var segment := segment_texture.get_size()
 	var along_natural := segment.y if _spread_vertical else segment.x
 	var thickness := segment.x if _spread_vertical else segment.y
@@ -2615,7 +2655,7 @@ func _draw_wide_scene(texture: Texture2D, canvas: CanvasItem = self) -> void:
 		# No authored ground-contact art for this axis (only `car_accident` has one either way) —
 		# the shape's own capsule shadow follows the same span as the body, `-half` to `half`
 		# along the spread axis.
-		_draw_shape_shadow(canvas, def.shape)
+		_draw_body_shadow(canvas)
 	Sprites.draw_standing(canvas, texture, anchor, extent)
 
 static func _wide_scene_anchor(vertical: bool, half: float) -> Vector2:
@@ -2644,7 +2684,7 @@ static func _cap_offset(half: float, cap_along: float, side: float) -> float:
 ## rather than turning with the spread.
 func _draw_cafe(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	_draw_shape_shadow(canvas, def.shape)
+	_draw_body_shadow(canvas)
 	# The lean is the whole row's, the facing is each seat's. `_idle_stepping()` is a property of
 	# this instance rather than of a chair, so the frame table is chosen once here and every sitter
 	# leans together; the view and the mirror are picked per seat inside the loop below, because a
@@ -2687,7 +2727,7 @@ static func _cafe_seat_heading(spread_vertical: bool, alternate: bool) -> Vector
 ## (`BUSKER_STRUM_PERIOD`). Kept as its own function rather than routed through `_draw_eight_view()`
 ## because that helper's own `by_view_b` parameter is keyed to the gait, not the idle timer.
 func _draw_busker(canvas: CanvasItem = self) -> void:
-	_draw_shape_shadow(canvas, def.shape)
+	_draw_body_shadow(canvas)
 	var view := _select_view(_heading)
 	var mirror := EightDirection.is_mirrored(_view_sector)
 	var by_view := BUSKER_BY_VIEW_B if _idle_stepping(BUSKER_STRUM_PERIOD) else BUSKER_BY_VIEW
@@ -2756,7 +2796,7 @@ func _protest_objective() -> Vector2:
 ## would draw, for a fortieth of the cost.
 func _draw_protest(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	_draw_shape_shadow(canvas, def.shape)
+	_draw_body_shadow(canvas)
 	var texture := _protester_texture(global_position, _protest_objective())
 	var mirror := false
 	# `PROTESTER` is `_protester_texture()`'s own sentinel for "nothing to point at" — a mark step
@@ -2795,7 +2835,7 @@ func _draw_protest(canvas: CanvasItem = self) -> void:
 ## thing to time a run past, and `can_be_timed()` already says so.
 func _draw_firefight(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	_draw_shape_shadow(canvas, def.shape)
+	_draw_body_shadow(canvas)
 	var strength := 1.0
 	if def.intensity > 0.0:
 		strength = clampf(current_intensity() / def.intensity, 0.0, 1.0)
@@ -2825,7 +2865,7 @@ func _draw_dog_walker(canvas: CanvasItem = self) -> void:
 	# The lead's own span stays a plain east/west offset — a composite the walker's own picture
 	# does not own, unaffected by which of the eight views that picture now is.
 	var to_the_dog := Vector2(-reach if _heading_is_west() else reach, 0.0)
-	_draw_shape_shadow(canvas, def.shape)
+	_draw_body_shadow(canvas)
 	# The dog's own shadow, not the row's shape — a two-body composite has no single shape to be
 	# either of its bodies, so this one is a per-part point like the abduction's victim.
 	_draw_shadow(canvas, to_the_dog, 9.0)
@@ -2887,7 +2927,7 @@ func _draw_abduction(canvas: CanvasItem = self) -> void:
 ## because she is a cost rather than a threat and that mark is spoken for. See
 ## `docs/EVENTS.md`, "The visual vocabulary".
 func _draw_chatting_mother(canvas: CanvasItem = self) -> void:
-	_draw_shape_shadow(canvas, def.shape)
+	_draw_body_shadow(canvas)
 	var chatting := is_chatting()
 	var by_view := CHATTING_MOTHER_TALKING_BY_VIEW if chatting else CHATTING_MOTHER_WALKING_BY_VIEW
 	# Talking holds still by construction — `_process()` freezes her pacing the instant a
@@ -2962,7 +3002,7 @@ func _hut_texture(doorway: Vector2i) -> Texture2D:
 ## in rather than as the checkpoint having vanished.
 func _draw_checkpoint_hut(canvas: CanvasItem = self) -> void:
 	var doorway := _hut_doorway()
-	_draw_shape_shadow(canvas, def.shape)
+	_draw_body_shadow(canvas)
 	_draw_at_anchor(canvas, _hut_texture(doorway), _HUT_ANCHOR)
 	if is_its_guard_inside():
 		return
@@ -2987,7 +3027,7 @@ func _draw_checkpoint_gate(canvas: CanvasItem = self) -> void:
 	else:
 		texture = BOOM_GATE_EW_RAISED if raised else BOOM_GATE_EW_LOWERED
 		anchor = _BOOM_EW_ANCHOR
-	_draw_shape_shadow(canvas, def.shape)
+	_draw_body_shadow(canvas)
 	_draw_at_anchor(canvas, texture, anchor)
 
 ## Whether a gate sited with `along_axis` bars a road running north-south, and so draws the boom

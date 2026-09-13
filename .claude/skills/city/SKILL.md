@@ -95,6 +95,16 @@ is the crowd, the danger is the events, the shape is the closures. A noisy roadw
 as the `construction` event. **Do not let a closure emit**; it would be a third thing for
 `City.total_excitement_at` to sum, and that list is exactly two long on purpose.
 
+**One seal is loud, and it is the shape of the exception that matters.** *(2026-09-12: "a car crash
+right now has a full bounding box even though there are gaps in the sprite. the bounding box should
+only be the crashed cars but it should emanate an excitement field that prevents the player from
+walking past it".)* `car_accident` is solid only where its two cars are, so its picture's own gaps
+are walkable and `Tuning.CAR_ACCIDENT_INTENSITY` is what stands in them. **That is a catalogue row
+emitting, not a closure emitting** — a seal is an `EventDef` and always was, so nothing was added to
+the sum. A `RoadClosure` still contributes nothing, and a seal whose picture leaves no gap
+(`fallen_tree`, `burst_water_main`) still carries `intensity = 0.0`. The test for a new one is
+whether the body can match the picture: where it can, the silence stands.
+
 This is **consistent** with the diversion design in `docs/CITY.md`, "Guiding her to the calm". A
 road closure there is *"not lethal but prevents full access"* — an absolute stop that does not kill
 and does not shout. The things that guide by being **expensive** are ordinary catalogue events, and

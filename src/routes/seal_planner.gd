@@ -439,11 +439,17 @@ static func _mark_soft_sealed(map: CityMap, tiles: Array[Vector2i]) -> void:
 ## `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies` for the new callers.
 static func sealed_variant(def: EventDef, suppress_recenter: bool) -> EventDef:
 	var variant: EventDef = def.duplicate()
-	# `shape` is a plain `var` typed as a `RefCounted`, not a `Resource`, so it carries no storage
-	# usage and `Resource.duplicate()` does not copy it — carried across by hand instead. Safe to
-	# share the reference: `shape` is never mutated in place. See `EventDef.at_heat()` for the same
-	# note against the other caller of `duplicate()`.
+	# `shape` and `solid_parts` are plain `var`s holding `RefCounted`s rather than `Resource`s, so
+	# they carry no storage usage and `Resource.duplicate()` does not copy either — carried across
+	# by hand instead. Safe to share the references: neither is ever mutated in place. See
+	# `EventDef.at_heat()` for the same note against the other caller of `duplicate()`.
+	#
+	# **The parts matter here more than anywhere**, because this is the only path a crash is ever
+	# placed by: dropped, the row falls back to one body spanning the whole street, and nothing
+	# fails — it simply seals the gaps its picture shows, which is the bug this milestone exists to
+	# fix, wearing a passing test suite.
 	variant.shape = def.shape
+	variant.solid_parts = def.solid_parts
 	variant.scar_id = ""
 	variant.spawns_on_finish = ""
 	if suppress_recenter and variant.pavement_side == EventDef.Pavement.ANY:

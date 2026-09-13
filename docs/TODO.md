@@ -145,10 +145,9 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
-0. **M117**, excitement decays visibly on quiet ground, and **M118**, a car crash is solid only
-   where the cars are — *(2026-09-12: "prioritize this fix"; "this round's feedbacks should all
-   be prioritized since I'm actively testing the changes as they come in")* — ahead of
-   everything, by the player's own word.
+0. **M117**, excitement decays visibly on quiet ground — *(2026-09-12: "prioritize this fix";
+   "this round's feedbacks should all be prioritized since I'm actively testing the changes as
+   they come in")* — ahead of everything, by the player's own word.
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
    related to the other items to work on right now.")* It waits, because reaching act III waits:
    *"I wanna wait reaching act III until those things are done."*
@@ -374,63 +373,6 @@ and `tests/test_meters.gd` assert those relationships, and the calm-zone admissi
          the main road's crossing cost with them.
 
 ---
-
-## M118 — A car crash is solid only where the cars are · asked for 2026-09-12
-
-> "a car crash right now has a full bounding box even though there are gaps in the sprite. the
-> bounding box should only be the crashed cars but it should emanate an excitement field that
-> prevents the player from walking past it"
-
-[PLAYTEST-63](playtests/PLAYTEST-63.md). Prioritised with everything from that round.
-
-**What is true today.** `car_accident` is a hard seal: `SealPlanner._hard_positions` stands one
-copy of it across the carriageway, and its body is `GroundShape.band(96.0)` — one capsule 192px
-kerb to kerb, the width of the street, like the fallen tree's and the burst water main's. The
-picture (`assets/events/car_accident.svg`, 200×50, and its `_vertical` sibling) is two cars locked
-side by side with debris between them and an onlooker on each pavement, so the body covers
-pavement and debris the picture leaves open. Its `intensity` is 0.0, by the rule in `CITY.md`
-that **a closure is silent** — the shape of the route and nothing else — and the crowd is kept
-off the street through `CityMap.held_segments`, not through the body.
-
-**What this overturns, on the player's word.** *A closure is silent* · overturned for the
-accident on 2026-09-12, because a body that matches the picture leaves gaps, and the player wants
-the gaps closed by a field rather than by a wall nobody can see. The fallen tree (one trunk kerb
-to kerb) and the burst main (a crater between two barriers) are not named and stay as they are;
-whether they follow is the player's question, not this item's.
-
-- [ ] **Two car bodies, not one band.** The def carries a list of solid parts — each an offset in
-      the scene's own frame and a `GroundShape` — in place of one shape, and `EventInstance`
-      registers a collision body per part and records each part's tiles in M110's per-tile
-      solid record (`CityMap`, the record the crowd reads) so the crowd steps round the cars and
-      not the debris. Every other row keeps exactly one part, so nothing else changes; `reach()`
-      over the parts is what the planners' disc-shaped guarantees are stated over, and it stays
-      96 for the accident so no placement rule moves. The parts' positions are read off the
-      picture, per axis, at the scale `_draw_wide_scene` fits it to the street: the two cars,
-      nothing else. The debug view's bounding-box layer draws each part, which is how the fit is
-      checked by eye.
-- [ ] **The scene emits.** `Tuning.CAR_ACCIDENT_INTENSITY`, with the field stated over the
-      scene's own band — inner radius at the band's edge, a short shoulder outside it — so it is
-      felt in the gaps and beside the cars and not from down the street; a sealed street must
-      still be discoverable by walking up to it, which is why closures were silent. The number
-      is chosen by the walk, the way the main-road crossing is: measure what squeezing through
-      the pavement gap and the debris gap costs at a walk, over several seeds, and set it so the
-      pass costs **more than half the meter** — the line `tests/test_crowd.gd` draws between
-      expensive and fatal, on the fatal side of it — and state that as the test. **One open
-      question, built the recommended way and switchable by one number:** whether *prevents*
-      means *costs more than she can carry* (recommended: the nearly-crying cue at the pram is
-      the turn-back signal, and a fresh meter can still force it at the price of the day) or
-      *lethal* (a `hard_fail` inner radius over the gaps, the mechanism a fire already uses —
-      stricter, and it makes a crash a thing that kills). `CITY.md`'s closure section and
-      `EVENTS.md`'s "Solid things are solid" carry the exception in the same commit.
-- [ ] **The seal still seals.** `ClosurePlanner` goes on counting the street as closed for the
-      route guarantee and the crowd is still held off it; both are conservative once the street
-      is passable at a price, and the direction argument — a pass that only ever removes
-      obstruction can only add reachable ground — is written beside the change. A test walks the
-      gap on a rig and asserts the cost, and `tests/test_events.gd`'s solidity checks accept a
-      row whose silhouette is wider than any one of its parts.
-
----
-
 
 ## M56 — The resistance is noticed
 

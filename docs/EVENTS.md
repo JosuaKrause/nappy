@@ -250,9 +250,31 @@ balance value — and `EventInstance._draw_spread` draws a blocking object at ex
 shape reaches, for the same reason in the other direction: a body that disagrees with the picture
 is a lie about where she can walk, whichever way it lies.
 
+**A row may be solid in parts, and one is.** `EventDef.solid_parts` is a list of pieces — each an
+offset along the scene's own spread axis and a `GroundShape` of its own — and `EventInstance` puts
+down one collision shape, one shadow patch and one entry in the per-tile solid record per piece.
+Every other row declares none, which means one piece at the origin carrying `shape`: exactly the
+single body they always had. **The pieces live inside `shape` and never past it**, which
+`EventDef.validate()` refuses, and that is what keeps every planner reading one disc:
+`obstructs_radius` stays the ground a row *closes*, `EventDef.solid_reach()` is how far it is
+actually *solid*, and the two are the same number for all but the crash.
+
+**The crash is the row it exists for.** *(2026-09-12: "a car crash right now has a full bounding box
+even though there are gaps in the sprite. the bounding box should only be the crashed cars but it
+should emanate an excitement field that prevents the player from walking past it".)* `car_accident`
+draws two cars locked across the carriageway with debris between them and an onlooker on each
+pavement, and it closes the whole 192px street; its bodies are the two cars alone, read off the two
+authored pictures at the scale each is fitted to the street, so the debris and both pavements are
+ground she can walk. What stands in the gaps instead is a field —
+`Tuning.CAR_ACCIDENT_INTENSITY`, stated over the scene's own band so the whole footprint is charged
+at the full rate and the shoulder outside it is short. **It is the one seal that emits at all**, and
+it is the one place `docs/CITY.md`'s *a closure is silent* does not hold; squeezing past costs more
+than half the meter, which `tests/test_seals.gd` walks rather than asserts.
+
 **A body is solid to the crowd as well as to her.** `EventManager` rasterises every stationary
-solid body's own `GroundShape`, at the placement and along the axis the instance itself would draw
-it, into `CityMap.obstructed_tiles`, and the walkers and the cars read that record: a walker steps
+solid body's own pieces — `EventDef.parts()`, which is one piece carrying `shape` for every row but
+the crash — at the placement and along the axis the instance itself would draw them, into
+`CityMap.obstructed_tiles`, and the walkers and the cars read that record: a walker steps
 into the other lane of its footway to get past a café and a car turns at the last junction rather
 than driving through a stall. It is taken from the day's **plan** rather than from the live
 instances, since the crowd is steered across the whole map while an instance only exists within
@@ -278,7 +300,7 @@ player's own *"lethal != noise"*.
 - **Anything with no silhouette**: a city-wide announcement, a playground the park itself draws.
 
 **And one constraint that is not an exemption: a lethal radius and a solid body are the same
-mechanism.** She is stopped with her centre `obstructs_radius + PLAYER_BODY_RADIUS` from the
+mechanism.** She is stopped with her centre `solid_reach() + PLAYER_BODY_RADIUS` from the
 centre of the thing, so on a `hard_fail` event a body that reaches the inner radius means the
 kill can *never fire*, however carelessly she walks into it — a difficulty setting nobody chose,
 arriving silently, in the one place the game cannot afford one. `EventDef.validate()` refuses that
@@ -726,13 +748,15 @@ The day-14 sabotage is not a catalogue row: it is `GameState` logic (`sabotage_d
 Eight pictures so no single barrier is the city's signature (`docs/DECISIONS.md`, M64). Every row below
 is `SCRIPTED` with `scripted_day` 0, so — like `barricade` above — the ordinary catalogue roll never
 schedules one; `SealPlanner` places each fresh every morning on a street off the day's route tree,
-reading `act_tag` for the first day it may. All eight are silent (`intensity` 0): *"static blockages
-in general shouldn't increase excitement."*
+reading `act_tag` for the first day it may. Seven of the eight are silent (`intensity` 0): *"static
+blockages in general shouldn't increase excitement."* `car_accident` is the one that is not, because
+it is the one whose body cannot match its picture without leaving a way through — see "Solid things
+are solid", and `docs/CITY.md`, "A closure is silent".
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `fallen_tree` | SCRIPTED | day 1 | Placed fresh every morning as a **hard seal**: a tapered trunk down kerb to kerb, branching roots at one end and an irregular crown at the other. `obstructs_radius` 96, exactly half the 192px street, so `SealPlanner._hard_positions` places one body spanning it edge to edge. Each street axis has its own continuous scene, selected by `EventInstance._wide_scene_texture`. The picture spans equally to either side of the ground point across the street. On an east–west street its vertical extent is centred on that point too; on a north–south street its bottom edge meets the ground point. |
-| `car_accident` | SCRIPTED | day 1 | A **hard seal**: two cars locked together across the carriageway, glass between them and an onlooker on each pavement. The cars follow the street: end views next to one another on a north–south street, side views arranged across an east–west street. Both pictures keep the people upright. Separate shadows ground each car and onlooker without darkening the space between them. The whole scene uses the same single-body geometry as `fallen_tree`. |
+| `car_accident` | SCRIPTED | day 1 | A **hard seal**: two cars locked together across the carriageway, glass between them and an onlooker on each pavement. The cars follow the street: end views next to one another on a north–south street, side views arranged across an east–west street. Both pictures keep the people upright. Separate shadows ground each car and onlooker without darkening the space between them. The scene closes the whole 192px street the way `fallen_tree` does, and is **solid only at the two cars** — 14px of body apiece, placed from each picture's own ground contacts — so the debris and both pavements are walkable. What closes them is the field: `Tuning.CAR_ACCIDENT_INTENSITY`, the only seal that emits, at `inner_radius` `GroundShape.BAND_RADIUS` over the scene's own band with a 72px shoulder. Squeezing past costs more than half the meter (`tests/test_seals.gd`). |
 | `skip` / `scaffolding` | SCRIPTED | day 1 | A **soft seal**: a skip at the kerb facing scaffolding boards over the far footway — the two-obstacles-facing-each-other reading of a soft seal, drawn as two different pictures rather than one row twice. `skip` is kerb-pinned like `delivery_van`; `scaffolding` fills the whole pavement band like `construction`. |
 | `burst_water_main` | SCRIPTED | day 1 | A **hard seal**: broken asphalt, an exposed pipe and water across the carriageway, with an upright municipal barrier at each kerb. The directional pictures place the damage across the street while retaining the barriers' standing projection. Same single-body geometry as `fallen_tree`. |
 | `moving_van` | SCRIPTED | day 1 | A **soft seal**: a lorry at the kerb with its ramp down, the same body on each pavement. Its own side and end views show the cab, cargo box, open loading doors and ramp, with the view chosen from the street axis even while the vehicle is stationary. The picture stays distinct from the reversing lorry. |
@@ -897,8 +921,12 @@ never counted, and a solid row is one most of these walks cannot actually be mad
 see "Solid things are solid". It is still the right way to price a **row**: it is what being close
 costs.
 
-**Two kinds of row are priced differently, and both are flagged in the table.** `*` is a `hard_fail`, where
-the figure is notional because nobody finishes the walk. `†` is a **flock**, which is `flock_size`
+**Three kinds of row are priced differently, and each is flagged in the table.** `*` is a
+`hard_fail`, where
+the figure is notional because nobody finishes the walk. `‡` is the one row whose body does not span
+its own field — `car_accident` is solid at its two cars and open between them, so the line priced
+here is one she can actually walk, which is what "the integral prices a field, not a route" costs
+everywhere else. `†` is a **flock**, which is `flock_size`
 birds sharing `intensity` between them and wheeling inside `flock_spread`, so *all of the intensity
 is at the centre* — the assumption the rest of the table rests on — is false for it:
 
@@ -958,6 +986,7 @@ alone is answering a narrower question than it thinks.
 | `burning_building` | +55.9 | +83.2 |
 | `loose_dog` | +61.2 | +61.9 |
 | `abduction` * | +61.3 | +84.1 |
+| `car_accident` ‡ | +63.1 | +54.0 |
 | `military_convoy` | +84.9 | +107.2 |
 | `night_raid` | +101.8 | +122.6 |
 | `fire_truck` | +115.4 | +132.0 |
@@ -987,10 +1016,16 @@ to walk through than to walk around, or the correct play is to plough into it. A
 is a decision about what a thing is (a pure obstruction) rather than a number nobody checked; a new
 *positive* exemption is the one that still needs naming by hand.
 
-**Running is never correct** on any row here. It costs `EXCITEMENT_FROM_RUNNING` *and* collapses
-the decay from 3.5/s to 0.5/s, and together those beat the shorter exposure every time. Making
-running necessary is therefore a mechanic to build rather than a number to tune: it needs something
-running escapes.
+**Running is correct on exactly one row here, and the rest of the column is why that is a
+threshold rather than a taste.** Running costs `EXCITEMENT_FROM_RUNNING` (14.0/s) *and* collapses
+the decay from 3.5/s to 0.5/s, so it is a fixed price per second against a saving that is only ever
+the shorter exposure — which means walking wins on every field whose mean emission along the line
+sits under about 24/s, and that is every row but `car_accident`. The crash is the one asked to cost
+more than half the meter to squeeze past, and no field short enough to be *felt walking up to it*
+rather than from down the street can charge that without clearing the threshold. So sprinting past
+a crash saves nine points of a hundred, and the answer to it is still the route rather than the run.
+Making running *necessary* remains a mechanic to build rather than a number to tune: it needs
+something running escapes, which is a pursuer.
 
 **And what a *street* costs, which is the question this table does not answer.** A rig walked home
 to the furthest calm block and back — 7,500px, a real errand — through a real day with the crowd

@@ -51,6 +51,15 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   remain clear against its navy plate, and does the redrawn symbol fit the preserved wordmark?
   `evidence/comic-identity-2026-09-12/comparisons/` shows the logo and both export sizes.
 
+- **Find a crash and walk at it.** The boot log names the street it sealed — `closed: accident`
+  with the segment beside it — or press `3` and look for the two circles. Three questions, and the
+  meter has to be live for the last two, so leave `--invincible` off for them. Do the bodies sit
+  where the cars are drawn, on both a north-south and an east-west street? Walking through the gap
+  on either pavement costs a little over half the meter: does that read as a **price** — something
+  you choose once and pay for — or as a wall you were not told about? And would you rather it
+  killed? The switch is one line (`Tuning.CAR_ACCIDENT_GAPS_ARE_LETHAL`), and the expensive
+  reading is what was built.
+
 Each line is a thing to try or look at and the question it settles. `tools/run.sh` plays the
 desktop build; `--seed <n> --day <n>` puts a run where an item says; `1` to `4` in a debug build
 toggle the field, shadow, bounding-box and readout layers (`docs/TELEMETRY.md`, "The debug
