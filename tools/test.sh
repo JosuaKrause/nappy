@@ -1,47 +1,66 @@
 #!/usr/bin/env bash
 # Run the headless test suite.
 #
-#   tools/test.sh                 everything — the only run a commit may rest on
+#   tools/test.sh                 everything, sharded across TEST_SHARDS local processes
 #   tools/test.sh crowd balance   only the suites whose file name contains one of these
 #   tools/test.sh --serial        everything, in one process (what a shard failure is debugged in)
+#   tools/test.sh --plan          print the shard split and run nothing
+#   tools/test.sh --shard 3/8     run only shard 3 of 8 -- what one CI matrix leg runs
+#   tools/test.sh --record-costs  run everything, then refresh tests/suite_costs.txt from it
 #
-# A full run is sharded across several Godot processes and a filtered run is not. The reason is
-# the shape of the suite rather than a preference: the work is one core's worth of arithmetic per
-# process, the suites are independent, and one of them — `test_events.gd` — is a quarter of the
-# whole on its own. Serially that is minutes of one core while the rest of the machine idles, and
-# minutes is long enough that the gate becomes something people skip.
+# A full run is sharded -- locally across several Godot processes, in CI across matrix jobs, one
+# runner per shard. The reason is the shape of the suite rather than a preference: the work is
+# one core's worth of arithmetic per process, the suites are independent, and the two heaviest,
+# `test_crowd.gd` and `test_events.gd`, are together most of the whole on their own. Serially
+# that is minutes of one core while the rest of the machine (or fleet) idles, and minutes is long
+# enough that the gate becomes something people skip.
 #
 # **Sharding changes nothing about what is checked.** Every suite still runs, every check still
-# runs, and the count printed at the end is the sum. What it must never do is quietly run *fewer*
-# suites than a serial run would, which is why the shards are built from the files on disk rather
-# than from a list somebody maintains — see `_plan_the_shards`.
+# runs, and the count printed at the end is the sum (locally; in CI the final `test` job stands
+# for the whole matrix). What it must never do is quietly run *fewer* suites than a serial run
+# would, which is why the shards are built from the files on disk rather than from a list
+# somebody maintains — see `_plan_the_shards`. A local run and a CI shard plan identically,
+# because both read the same `tests/suite_costs.txt` through `_cost_of`.
 set -uo pipefail
 shopt -s nullglob
 
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# The longest suite sets a floor on wall time. With the cost estimates below, four shards fit
-# the remaining work beside that suite: a fifth still waits for it, while three leave more work
-# per shard than that floor. Optimizing shared code can lower the floor and change the best split.
-# Override for machines with a different CPU or memory budget.
+# The longest suite sets a floor on wall time: see tests/suite_costs.txt for what it currently
+# is. Locally, four shards is a reasonable default for one machine's cores; CI's matrix instead
+# picks its own shard count by that floor (see .github/workflows/ci.yml) and always tells this
+# script which shard to run via --shard, which sets SHARDS itself. Override this default for a
+# machine with a different CPU or memory budget.
 SHARDS="${TEST_SHARDS:-4}"
+
+# Where the measured per-suite costs live and what an unmeasured suite is assumed to cost. See
+# tests/suite_costs.txt's own header for what the file is and how it is refreshed.
+COST_FILE="$PROJECT_DIR/tests/suite_costs.txt"
+DEFAULT_COST_MS=5000
 
 usage() {
     cat <<'EOF'
-usage: tools/test.sh [--help|-h] [--serial|--plan] [suite-name-substring...]
+usage: tools/test.sh [--help|-h] [--serial|--plan|--record-costs|--shard I/N] [suite-name-substring...]
 
 Runs the headless test suite (tests/tests.tscn). With no arguments, runs everything, sharded
-across TEST_SHARDS (default 4) Godot processes. A suite-name-substring argument filters to the
-suites whose file name contains it and runs unfiltered/unsharded, in one process; that filtered
-run also accepts any flag the test scene itself reads off OS.get_cmdline_user_args() (e.g.
---svg), which is why this script does not reject an argument it does not itself recognise --
-only --serial, --plan, --help and -h are its own.
-  --serial   everything, in one process (what a shard failure is debugged in)
-  --plan     print the shard split and run nothing
+across TEST_SHARDS (default 4) Godot processes, planned from tests/suite_costs.txt. A
+suite-name-substring argument filters to the suites whose file name contains it and runs
+unfiltered/unsharded, in one process; that filtered run also accepts any flag the test scene
+itself reads off OS.get_cmdline_user_args() (e.g. --svg), which is why this script does not
+reject an argument it does not itself recognise -- only --serial, --plan, --record-costs,
+--shard, --help and -h are its own.
+  --serial          everything, in one process (what a shard failure is debugged in)
+  --plan            print the shard split (TEST_SHARDS processes) and run nothing
+  --record-costs    run everything sharded, then rewrite tests/suite_costs.txt from this run's
+                     own per-suite lines
+  --shard I/N       run only shard I of N (1-indexed), planned the same way every other shard
+                     is, and let the runner's own PARTIAL RUN note say so -- one shard is never
+                     a green build by itself
 
   tools/test.sh
   tools/test.sh crowd balance
   tools/test.sh --serial
+  tools/test.sh --shard 3/8
 EOF
 }
 
@@ -56,10 +75,51 @@ fi
 
 serial=0
 plan_only=0
+record_costs=0
+shard_arg=""
 case "${1:-}" in
-    --serial) serial=1; shift ;;
-    --plan)   plan_only=1; shift ;;
+    --serial)       serial=1; shift ;;
+    --plan)         plan_only=1; shift ;;
+    --record-costs) record_costs=1; shift ;;
+    --shard)
+        shard_arg="${2:-}"
+        if [[ -z "$shard_arg" ]]; then
+            echo "tools/test.sh: --shard needs an I/N argument, e.g. --shard 3/8" >&2
+            echo >&2
+            usage >&2
+            exit 2
+        fi
+        shift 2
+        ;;
 esac
+
+# --shard and --record-costs run the whole planned suite, not a hand-picked subset, so neither
+# takes suite-name filters -- anything left over is a mistake to reject rather than to guess at.
+if [[ ( -n "$shard_arg" || $record_costs -eq 1 ) && $# -gt 0 ]]; then
+    echo "tools/test.sh: --shard and --record-costs take no suite-name filters" >&2
+    echo >&2
+    usage >&2
+    exit 2
+fi
+
+shard_index=""
+if [[ -n "$shard_arg" ]]; then
+    if [[ ! "$shard_arg" =~ ^[0-9]+/[0-9]+$ ]]; then
+        echo "tools/test.sh: --shard wants I/N, e.g. --shard 3/8 (got '$shard_arg')" >&2
+        echo >&2
+        usage >&2
+        exit 2
+    fi
+    shard_index="${shard_arg%%/*}"
+    SHARDS="${shard_arg#*/}"
+    if [[ "$SHARDS" -lt 1 || "$shard_index" -lt 1 || "$shard_index" -gt "$SHARDS" ]]; then
+        echo "tools/test.sh: --shard I/N wants 1 <= I <= N (got '$shard_arg')" >&2
+        echo >&2
+        usage >&2
+        exit 2
+    fi
+    shard_index=$(( shard_index - 1 ))
+fi
 
 # The import pass, once and before anything runs in parallel. Several Godot processes importing
 # the same project at the same time race on `.godot/`, and the failure looks like a missing
@@ -80,58 +140,46 @@ fi
 
 # ------------------------------------------------------------------- sharding ---
 
-## Rough cost of a suite in milliseconds, measured rather than guessed, and only ever used to
-## decide *which shard* it lands in. A stale number costs some balance and no correctness — the
-## worst a wrong cost can do is make one shard finish later than another.
+## Cost of a suite in milliseconds, read from tests/suite_costs.txt and only ever used to decide
+## *which shard* it lands in. A stale number costs some balance and no correctness — the worst a
+## wrong cost can do is make one shard finish later than another.
 ##
 ## **A missing row costs far more than a stale one, and that is the case to watch.** A suite
-## nobody lists is planned at the default below, so a genuinely heavy one lands in a shard that
-## was already full and adds its whole weight to the wall clock. That is why the numbers here are
-## re-read off a real `tools/test.sh` run whenever one is to hand: the rows are cheap to refresh
-## and the failure mode is invisible — the run is still correct, still green, and just slow.
+## nobody has measured yet is planned at DEFAULT_COST_MS below, with a warning, so a genuinely
+## heavy new suite lands in a shard that was already full and adds its whole weight to the wall
+## clock rather than vanishing silently. `tools/test.sh --record-costs` is how a fresh measurement
+## replaces the default.
 ##
-## **Refresh them from the `-- suite ms` lines of a full run**, which is exactly what this table
-## is a copy of, rounded to the nearest second.
-##
-## **A `case` rather than an associative array, because macOS ships bash 3.2** — the last GPLv2
-## release, which has no `declare -A`. It does not fail on one either: it quietly makes an
-## *indexed* array, and every `${COST[test_events.gd]}` then gets its subscript evaluated as
-## arithmetic. The first version of this file did exactly that, every cost came back empty, and
+## **A linear scan of a file rather than an associative array, because macOS ships bash 3.2** —
+## the last GPLv2 release, which has no `declare -A`. It does not fail on one either: it quietly
+## makes an *indexed* array, and every `${COST[test_events.gd]}` then gets its subscript evaluated
+## as arithmetic. The first version of this file did exactly that, every cost came back empty, and
 ## the bin-packer below put all twenty-three suites in one shard — a "parallel" run that was
-## serial and looked fine apart from being no faster.
+## serial and looked fine apart from being no faster. A few dozen lines read per suite is free
+## next to a suite that takes minutes.
 _cost_of() {
-	case "$1" in
-		test_events.gd)      echo 279000 ;;
-		test_generator.gd)   echo 180000 ;;
-		test_routes.gd)      echo 178000 ;;
-		test_seals.gd)       echo 109000 ;;
-		test_crowd.gd)       echo  82000 ;;
-		test_telemetry.gd)   echo  39000 ;;
-		test_full_run.gd)    echo  36000 ;;
-		test_balance.gd)     echo  31000 ;;
-		test_route_tree.gd)  echo  28000 ;;
-		test_event_manager.gd) echo 16000 ;;
-		test_acts.gd)        echo  13000 ;;
-		test_blocks.gd)      echo   9000 ;;
-		test_reachability_grid.gd) echo 7000 ;;
-		test_heat.gd)        echo   3000 ;;
-		test_resistance.gd)  echo   3000 ;;
-		test_day_loop.gd)    echo   1000 ;;
-		# What an unlisted suite is assumed to cost. **Deliberately larger than any suite it
-		# currently applies to** — every unit suite left off this table came in under a second
-		# on the last full run, and the rows above are everything that did not. The headroom is
-		# for the case the default exists for: a new suite nobody has measured is planned for as
-		# though it were middling rather than swept into whichever shard is already fullest.
-		*)                   echo   5000 ;;
-	esac
+	local file="$1" name ms
+	if [[ -f "$COST_FILE" ]]; then
+		while read -r name ms; do
+			case "$name" in
+				''|'#'*) continue ;;
+			esac
+			if [[ "$name" == "$file" ]]; then
+				printf '%s\n' "$ms"
+				return
+			fi
+		done < "$COST_FILE"
+	fi
+	echo "tools/test.sh: no measured cost for $file in $(basename "$COST_FILE") — planning it at the default ${DEFAULT_COST_MS}ms; run tools/test.sh --record-costs once it has run to fix this" >&2
+	printf '%s\n' "$DEFAULT_COST_MS"
 }
 
 shard_filters=()
 shard_cost=()
 
 ## Assigns every `tests/test_*.gd` on disk to the shard with the least work in it so far, heaviest
-## suite first — which is the standard greedy bin-packing and is well inside "good enough" for two
-## dozen items.
+## suite first — which is the standard greedy bin-packing and is well inside "good enough" for a
+## few dozen items.
 ##
 ## **The suites are discovered from disk, never listed here.** A hand-maintained list is one
 ## forgotten line away from a new suite that never runs while the gate still prints "0 failures",
@@ -190,6 +238,25 @@ if [[ $plan_only -eq 1 ]]; then
 	exit 0
 fi
 
+# `--shard I/N` runs exactly the one shard a CI matrix leg was assigned, in this one process, and
+# nothing else. It reuses the plan above rather than a separate code path, so a CI shard and a
+# local sharded run always agree about which suite lands where. The filter list reaching
+# run_one_process is never empty here in practice (N is chosen no larger than the suite count),
+# but a shard with nothing assigned exits clean instead of silently falling through to "no
+# filters", which run_tests.gd reads as "run everything" — the one way this flag could turn a
+# single shard into a false green full build.
+if [[ -n "$shard_index" ]]; then
+	filters="${shard_filters[shard_index]}"
+	if [[ -z "$filters" ]]; then
+		echo "shard $(( shard_index + 1 ))/$SHARDS has no suites assigned (more shards than suites) — nothing to run"
+		exit 0
+	fi
+	# The filters are file names and are meant to word-split.
+	# shellcheck disable=SC2086
+	run_one_process $filters
+	exit $?
+fi
+
 work_dir="$(mktemp -d)"
 trap 'rm -rf "$work_dir"' EXIT
 
@@ -238,6 +305,41 @@ for ((i = 0; i < SHARDS; i++)); do
 	failures_here="${counted#*, }"
 	total_failures=$(( total_failures + ${failures_here%% *} ))
 done
+
+# `--record-costs` rewrites tests/suite_costs.txt from exactly the "-- suite  N ms" lines just
+# printed above, across every shard log -- the same lines a developer reads off the screen, so
+# the file can never record a number nobody's run actually produced. It asserts the row count
+# against the suites on disk before overwriting anything, and leaves the old file alone if they
+# don't match (a crashed shard is missing its rows, and a partial cost table is worse than a
+# stale one).
+if [[ $record_costs -eq 1 ]]; then
+	tmp_costs="$work_dir/suite_costs.new"
+	{
+		printf '%s\n' "# Per-suite wall time in milliseconds, one row per tests/test_*.gd. _cost_of() in tools/test.sh"
+		printf '%s\n' "# reads it to bin-pack the shards, locally and in CI's matrix; it is a planning hint, never a"
+		printf '%s\n' "# gate -- every suite still runs wherever it lands, so a stale row costs some balance between"
+		printf '%s\n' "# shards and no correctness. A suite missing a row here is planned at _cost_of()'s stated"
+		printf '%s\n' "# default, with a warning, rather than silently dropped."
+		printf '%s\n' "#"
+		printf '%s\n' "# Refresh it with \`tools/test.sh --record-costs\`, which runs the full suite and rewrites this"
+		printf '%s\n' "# file from that run's own \"-- suite  N ms\" lines -- never hand-edited, so the numbers come from"
+		printf '%s\n' "# the runner rather than from anybody's memory."
+		grep -hoE -- '-- test_[a-zA-Z_]+\.gd +[0-9]+ ms' "$work_dir"/shard-*.log \
+			| sed -E 's/^-- +//; s/ +ms$//' \
+			| awk '{ printf "%s %s\n", $1, $2 }' \
+			| sort -u
+	} > "$tmp_costs"
+
+	got="$(grep -cE '^test_.*\.gd [0-9]+$' "$tmp_costs")"
+	want="$(find "$PROJECT_DIR/tests" -maxdepth 1 -name 'test_*.gd' | wc -l | tr -d ' ')"
+	if [[ "$got" -ne "$want" ]]; then
+		echo "tools/test.sh --record-costs: got $got suite lines, expected $want — not overwriting $COST_FILE" >&2
+		status=1
+	else
+		mv "$tmp_costs" "$COST_FILE"
+		echo "wrote $got suite costs to $COST_FILE"
+	fi
+fi
 
 echo ""
 echo "$total_checks checks, $total_failures failures (across $SHARDS shards)"
