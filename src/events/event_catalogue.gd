@@ -1145,6 +1145,18 @@ static func _chatting_mother() -> EventDef:
 ## what makes being made to press it read as the rules changing rather than as the rules finally
 ## arriving.
 ## `EventDirector` puts the first one in front of her early on that day; see `Tuning.RUN_TAUGHT_DAY`.
+##
+## **The lesson does not retire, and it does not stay a lesson either.** *(2026-09-13,
+## `docs/playtests/PLAYTEST-68.md`: "The waiting is good. But we can sprinkle the day 3 charging dog
+## in every now and then, too. Since they always come from offscreen the only difference now is
+## that day 3 dog is guaranteed to happen and has a tutorial tip.")* Past
+## `RUN_TAUGHT_DAY` this row is two things at once, both already-authored shapes rather than new
+## ones: `EventScheduler` places it on a tile like `alley_robbery`, waiting inside its own field for
+## her (`pursues_within_after_first_day`, below); and `EventDirector` now and then still sends the
+## day-3 shape itself — off screen, already noticing her, no tip —
+## `Tuning.CHARGING_DOG_SPRINKLE_CHANCE` of the time on a day it is eligible. One `EventDef` answers
+## both, since neither changes what the row *is*, only whether she is routed into it or walks into
+## it while going about her day.
 static func _charging_dog() -> EventDef:
 	var def := EventDef.new()
 	def.id = "charging_dog"
@@ -1173,6 +1185,17 @@ static func _charging_dog() -> EventDef:
 	# would never go up, and the trace would attribute the mark it eventually raises to "nothing in
 	# reach". `validate_pursuit` refuses the arrangement.
 	def.outer_radius = 150.0
+	# From day 4 it waits inside this field rather than announcing itself the moment it streams in
+	# from `Tuning.EVENT_STREAM_RADIUS` away — a dog she can see is a dog she can route around,
+	# `alley_robbery`'s shape: an "on sight" band before the trigger, the same two sentences in the
+	# same order, not the same distances. 130, inside this row's 150 outer radius (20px she can
+	# feel it before it decides, the row's own first sentence, on the teaching day's own field
+	# rather than a wider one built for this) and outside its 104px stand-off
+	# (`Tuning.pursuit_standoff(130.0, 26.0)`) with 26px to spare — both bounds
+	# `Tuning.validate_pursuit` checks, held with room rather than pinned to either.
+	# `EventScheduler._for_day()` is where a `MAP` placement past the switch gets a copy carrying
+	# this instead of the authored 0.0 — see `EventDef.pursues_within_on()`.
+	def.pursues_within_after_first_day = 130.0
 	# The chase proper, once it can end the day. `Tuning.PURSUIT_TIME` is the cap and the reason
 	# for it is the price of running, not the fiction — `tests/test_events.gd` holds every pursuer
 	# to this exact ceiling rather than `validate_pursuit`'s looser one, so this is not a lever a

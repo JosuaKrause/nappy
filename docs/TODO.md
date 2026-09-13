@@ -126,10 +126,10 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    left open**, on the same footing as the round before it: **M124**, the game on a phone —
    its desktop half is measured and fixed (`DECISIONS.md`, M124), and what stands is the phone
    half of the measurement, the atlas item gated on it, and the audit's per-frame findings;
-   **M125**, the test suite is slow again — five suites pruned (`DECISIONS.md`, M125), four
-   still over the runner's budget; and **M128**, the playground is free and the busker is
-   quieter from the street, the one design instruction playtest 68's answers produced. M126's
-   audit is filed and M127's first press is fixed; both records are in `DECISIONS.md`.
+   and **M125**, the test suite is slow again — five suites pruned (`DECISIONS.md`, M125),
+   the crowd suite and four others still over the runner's budget. M126's audit is filed,
+   M127's first press is fixed, and M128's playground and busker are built; the records are in
+   `DECISIONS.md`.
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
    related to the other items to work on right now.")* It waits, because reaching act III waits:
    *"I wanna wait reaching act III until those things are done."*
@@ -296,41 +296,60 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
-## M128 — The playground is free, and the busker is quieter from the street · asked for 2026-09-13
+## M129 — A path through the city never has to cost · asked for 2026-09-13
 
-> "Playground should be free since otherwise small parks really have no way of ever getting to
-> sleep. The busker is a bit intense. We should nerf it a bit but keep it so the baby cannot fall
-> asleep in the park with it. But on a street with a busker closeby should cause less excitement"
+> "also framing from a different point of view a path through the city must never hit
+> excitement -- so all obstacles should be routable around by eg crossing to the other side of
+> the street which in turn means the other side of the street must be open enough so we can
+> walk on it unimpeded. a yeller must loop in a way that the desired path has an opening where
+> the yeller is not present for example. also, the routing should only cross the street at
+> intersections. in block crossings are possible in game but shouldn't be counted on by the
+> routing algorithm"
 
-[PLAYTEST-68](playtests/PLAYTEST-68.md), answering the M117 review question. The **balance** rule
-governs every number here; `tests/probes/` holds the instruments M117 used, and the record of
-what M117 set and why is in `DECISIONS.md` under M117, the two rows the change made nearly free.
+[PLAYTEST-69](playtests/PLAYTEST-69.md). The **city** and **events** rules govern; the
+**balance** rule governs any number it moves.
 
-**What is true today.** `playground` is an `AMBIENT` row with no picture of its own (the park's
-swing frame draws it) at intensity 15.0 on a nine-second pulse, `inner_radius` 40 and
-`outer_radius` 150 in a park block 256px across, placed by the park itself; its whole purpose
-was to make the middle of a park contested. `busker` is placed on `PARK` or `SQUARE` at
-intensity 13.0 on a seven-second pulse, `inner_radius` 45 and `outer_radius` 190, so its rim
-reaches the pavement of the street beside its lot; its denial radius — where its cost beats the
-park's 12.0/s decay — is about 138px, and along a whole line through one on grass it is still
-net recovery. The baby settles only under `EXCITEMENT_CALM_THRESHOLD` (35), so "cannot fall
-asleep" is a claim about where the meter can be held under 35, not about the cost table.
+**What is true today.** The day's routes are a corridor of two-tile cells grown on the
+reachability grid (`DECISIONS.md`, M69); `ClosurePlanner` accepts a closure only if the home
+still reaches two calm areas, `EventScheduler._ensure_the_city_is_still_walkable` drops
+obstructing bodies, widest first, until a park is reachable, and a `hard_fail` row keeps its
+whole field clear of other events (`_room_around`). Every one of those is about *reaching*, and
+a route that reaches through three friction fields in a row is as legal as an empty one. Costly
+rows land inside the corridor on purpose (the `friction` role); a kerbed van takes 44px of a
+64px footway so *the answer is the other side of the street* (`docs/EVENTS.md`), but nothing
+checks that the other side is open where it is needed. `homeless_yeller` `paces` between the
+ends of its route for ever at intensity 14 and a 210px reach. Crossings exist at every junction
+(a zebra, or the spine's signalled lines) and she can cross anywhere in play; the corridor's
+cells can already cut a corner through a park or an alley.
 
-- [ ] **The playground costs nothing.** A one-block park with a playground in it has no ground
-      left to settle the baby on, which is the player's reason. The smallest change that makes
-      it true is the row's intensity at zero or the row gone, whichever leaves the park's swing
-      frame drawn and `_ensure_one_usable_park` and the spoiling logic unchanged; say which in
-      the commit and why. Whatever `tests/test_balance.gd` pins about the playground is repinned
-      to *free*, and the sleepiness table in `docs/MECHANICS.md` follows.
-- [ ] **The busker comes down a bit, and mostly from the street.** Two constraints, measured
-      with the M117 probes before a number is chosen: inside its lot, standing anywhere within
-      its denial radius still cannot hold the meter under 35 — the park with a busker in it is
-      still not a place to sleep — and on the pavement of the street beside the lot the busker's
-      contribution falls to a fraction of today's. The lever for the second is `outer_radius`
-      (190 reaches across the lot's edge) and the falloff between the radii, not intensity
-      alone; the lever for "a bit" is intensity, which stays above the park's 12.0/s or the
-      busker becomes a park bonus with a nuisance's picture on it (`DECISIONS.md`, M117). Record
-      the before-and-after denial radius and the street-side contribution in `DECISIONS.md`.
+- [ ] **The guarantee, stated and measured before anything moves.** A probe under
+      `tests/probes/` that, for each planned day over a set of seeds, walks every route from
+      the home to its calm area and asks whether a *zero-cost line* exists along it: a line
+      that stays out of every placed row's outer radius at the top of its beat, moves between
+      pavements only at intersections, never mid-block, and treats the corridor's own
+      park-and-alley cuts as ground like any other. It reports the fraction of routes that
+      have one, and for those that do not, which row and which stretch broke it — a van with
+      the far pavement also taken, two friction fields on facing pavements, a yeller whose beat
+      never leaves an opening. The numbers and the failing shapes go to `DECISIONS.md` first;
+      the rules below are chosen against them, and a rule whose case the probe never finds is
+      not written.
+- [ ] **A friction row on a route's pavement is accepted only if the far pavement is open for
+      the stretch.** Checked before the row is placed, never repaired after (the city rule): the
+      opposite pavement between the two nearest intersections holds no costly or impassable
+      body and is reachable from the route by an intersection crossing at each end. Where the
+      corridor runs along a precinct, a park edge or an alley, say what "the other side" is
+      there or refuse the row that ground. Pursuers, `AHEAD_OF_PLAYER` rows and city-wide rows
+      are outside this — they pay the telegraph contract instead — and so is anything off the
+      corridor, where the wall role is the design.
+- [ ] **A pacing row leaves the line open for part of its beat.** The yeller's route is sited
+      and sized so that the pavement it paces is clear at one end for a readable share of each
+      loop, or its loop runs on the pavement the route does not use; the choice is measured
+      with the probe and the reach the line needs at the far end of its beat is the number. The
+      same for any other row that `paces`.
+- [ ] **Mid-block crossings are not counted on.** The route tree's cells and the probe's line
+      cross a carriageway only at a junction; in play she may still cross anywhere. If the
+      corridor grower already cuts across a street mid-block, that is a finding for the probe
+      to name and this item to fix.
 
 ---
 
@@ -443,16 +462,21 @@ skill's incident list names.
 **What is true today.** The five suites the report named are pruned and their loops sized to
 what they prove — the per-suite times before and after are in `DECISIONS.md` under M125 — and
 the head of `tests/run_tests.gd` says the budget: a suite over two minutes serial is a suite to
-split or cut, because the longest suite sets the floor every other shard waits on. Four suites
-are still over that budget and were outside the report's own list.
+split or cut, because the longest suite sets the floor every shard waits on. CI runs the suite
+as eight shards on eight runners, planned from `tests/suite_costs.txt`, the measured per-suite
+times `tools/test.sh --record-costs` refreshes (`DECISIONS.md`, M125, CI runs the shards on
+eight runners); the wall time is the longest suite plus a minute of setup, so the longest suite
+is now the whole of what CI's time is made of. Five suites are over the budget.
 
-- [ ] **The four suites over budget get the same pass.** `test_resistance.gd`,
-      `test_balance.gd`, `test_seals.gd` and `test_checkpoints.gd` each run over two minutes
-      serial on CI. Read each against the verify skill's test, delete what restates a table,
+- [ ] **The suites over budget get the same pass, and the longest is split.** `test_crowd.gd`
+      is the floor at nearly four minutes serial and is simulation-bound, so it is split into
+      two files by subject rather than trimmed; `test_resistance.gd`, `test_balance.gd`,
+      `test_seals.gd` and `test_checkpoints.gd` each run over two minutes serial on CI and get
+      the M125 pass: read each against the verify skill's test, delete what restates a table,
       and size each seed or day loop to the question it asks — a rule asked per placement needs
       fewer maps than a property of a layout — with the count and its reason in the docstring,
-      and a sweep never made vacuous. The CI per-suite line before and after goes to
-      `DECISIONS.md` under M125.
+      and a sweep never made vacuous. `tools/test.sh --record-costs` afterwards, so the plan
+      follows; the CI per-suite line before and after goes to `DECISIONS.md` under M125.
 
 ---
 
@@ -486,29 +510,10 @@ her. The reasoning, and what was rejected on the way, is in `DECISIONS.md` under
 Rewritten from M43. Two of M43's items turned out to be built when checked — the pause lesson no
 longer fires while she is detained or while the tree is paused, and the run lesson's once-per-run
 flag is reset on every attempt at the teaching day — and the record is in `DECISIONS.md` under "The
-queue reprioritised". What is left is one decision nobody implemented and one measurement.
+queue reprioritised". The dog after the lesson is built — from day 4 it waits inside its own
+field and the day-3 charge sprinkles in on later days (`DECISIONS.md`, M96, the dog waits) — and
+what is left is one measurement.
 
-- [ ] **From day 4 the dog waits to be routed into, and the day-3 charge is sprinkled in now
-      and then.** *(2026-09-13, [PLAYTEST-68](playtests/PLAYTEST-68.md): "The waiting is good.
-      But we can sprinkle the day 3 charging dog in every now and then, too. Since they always
-      come from offscreen the only difference now is that day 3 dog is guaranteed to happen and
-      has a tutorial tip.")* What is built (`DECISIONS.md`, M96): from day 4 `charging_dog` is a
-      map placement like `alley_robbery`, never sited on her heading, and day 3 keeps its
-      unavoidable siting; but the dog carries no `pursues_within`, because day 3's lesson depends
-      on it charging at once and `tests/test_danger.gd` pins that, so on day 4 and after it begins
-      its telegraph and charge the moment it streams in — `Tuning.EVENT_STREAM_RADIUS` (900px)
-      from her, past the edge of the view — rather than when she comes inside its own field. Two
-      things to build. **The map-placed dog waits** inside its own outer radius from day 4, so a
-      dog she can see is a dog she can route around, exactly the robber's shape — a trigger the
-      def gains on the same day-keyed switch its spawn mode already uses, derived the way
-      `spawn_mode_on(day)` is rather than a mutation, with day 3's at-once charge and its test
-      untouched. **And the day-3 shape does not retire**: on later days the director now and then
-      also sends the off-screen charge along her heading — the same row in its day-3 siting,
-      unguaranteed and without the tip — so the lesson's dog and the later dogs are one animal
-      and the guarantee plus the tip are the whole difference. How often is a balance number set
-      against the M99 caps probe (`tests/probes/m99_caps.gd`), recorded in `DECISIONS.md`; the
-      lead time playtest 20 measured (1.5s to evade) is held by M77 already and stays the floor
-      for both shapes
 **The run is taught on day 3, and stays there.** *Asked for as `RUN_TAUGHT_DAY` 3 → 2 · overturned
 on 2026-09-09: "run taught goes to 3 not 2."* The constant gates everything that pursues, and day 3
 is where act I stops being a nice neighbourhood; the options weighed when the move was first
@@ -622,23 +627,6 @@ is still true.
 
 **Defects, each a few lines once found:**
 
-- [ ] **People still come out from outside the map.** *(2026-09-13,
-      [PLAYTEST-69](playtests/PLAYTEST-69.md), on v0.10.0: "people still come out from outside
-      the map".)* A re-report of playtest 66's finding, which M120 answered by giving a walker or
-      an off-spine car no room past the true edge (`CrowdAgent._entry_room()` returns 0 for
-      them; `DECISIONS.md`, M120). What that leaves, read off `_recycle()`: beside a plain edge
-      the field's own bound is the map's edge, so the entry `reach` is capped at zero and
-      `back` is zero, and the agent is set *on the boundary line itself* — a legal centre by
-      the test's own words (*nobody is ever out of bounds*) with half its picture beyond the map,
-      walking inward from the line. Two things to establish with a burst at a plain edge
-      (`--invincible`, `3` for the bodies, the agent's first frames): whether the entries seen
-      are that boundary-line landing, or a day-start placement from `Crowd.start_day()` that
-      never went through `_recycle()` at all, or an agent that genuinely stands past the edge.
-      The fix for the first is that an entry beside a plain edge lands with its whole body and
-      picture inside the map — at least a body's radius plus the sprite's half-extent in from the
-      line — and `tests/test_crowd_bodies.gd` (or M120's own entry test) asserts the picture's
-      rect, not the centre, is inside; the same clamp for the other two if they are the cause.
-      The pull-apart rule for entries that bunch beside an edge stands.
 - [ ] **The gate detains but draws no guard.** Found while capturing the inspection: the boom's
       own body takes her in, and nobody on screen is the one doing it — the guards stand at the
       huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard

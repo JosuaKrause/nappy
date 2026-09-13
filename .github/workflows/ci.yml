@@ -1,7 +1,15 @@
-# The same gates a local commit rests on, in order of cost:
-# lint.sh needs nothing, pycheck.sh needs uv, check.sh boots the project, test.sh is the full
-# suite. The Godot tools all honour GODOT=..., which is how CI points them at the downloaded
-# Linux binary instead of the macOS default path.
+# The same gates a local commit rests on, plus the full suite split across parallel runners:
+#   gates    lint.sh, test_cli_help.sh, pycheck.sh, then check.sh's boot check -- everything
+#            that needs no more than one process and does not touch the test suite itself.
+#   shards   the headless suite, one matrix job per shard, each running tools/test.sh --shard
+#            I/8 -- planned from tests/suite_costs.txt exactly as a local sharded run is.
+#   test     what main's ruleset actually requires (a check named exactly `test`): it needs both
+#            of the above and fails if either did, so the ruleset's own required-check name
+#            still means "everything passed" without the ruleset itself changing.
+# The Godot tools all honour GODOT=..., which is how CI points them at the downloaded Linux
+# binary instead of the macOS default path. uv and ffmpeg are installed only in `gates`, which is
+# the only job that runs the Python tooling; Godot is downloaded (or restored from cache) in
+# both `gates` and `shards`, since both boot the engine.
 name: ci
 
 on:
@@ -11,11 +19,18 @@ on:
 
 env:
   GODOT_VERSION: 4.7.2
+  # tests/suite_costs.txt's longest row is test_crowd.gd at about 227s -- that suite alone sets
+  # the floor no split can beat, so this is the smallest shard count that brings every other
+  # shard down near that same floor rather than leaving it carrying idle neighbours (see the
+  # shard-0/shard-6 remainder in `tools/test.sh --plan`'s own output at this count). Fewer shards
+  # each carry more of the remaining ~1300s of suites above that floor; more shards would only
+  # wait on the same 227s while paying for idle runners.
+  SHARD_COUNT: 8
 
 jobs:
-  test:
+  gates:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -62,5 +77,53 @@ jobs:
       - name: Boot check
         run: GODOT="$HOME/godot/godot-bin" ./tools/check.sh
 
-      - name: Full test suite
-        run: GODOT="$HOME/godot/godot-bin" ./tools/test.sh
+  shards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      # One slow shard should not cancel the rest -- each shard's log is its own evidence, and
+      # cancelling the others would throw away timing data from a run that is otherwise fine.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux-x86_64
+
+      - name: Download Godot
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot
+          curl -sSL -o ~/godot/godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q ~/godot/godot.zip -d ~/godot
+          mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot-bin
+          chmod +x ~/godot/godot-bin
+
+      # tools/test.sh --shard I/N plans the full N-way split itself, from the same
+      # tests/suite_costs.txt a local run reads, and runs only shard I of it -- one Godot
+      # process, filtered to that shard's suites, which is why the runner's own PARTIAL RUN note
+      # prints for every shard here and must never be read as a green build on its own.
+      - name: Shard ${{ matrix.shard }}/${{ env.SHARD_COUNT }}
+        run: GODOT="$HOME/godot/godot-bin" ./tools/test.sh --shard ${{ matrix.shard }}/${{ env.SHARD_COUNT }}
+
+  # main's ruleset requires a check named exactly `test`; this job is that check; renaming the
+  # job id would silently detach the ruleset from CI without editing the ruleset itself.
+  test:
+    needs: [gates, shards]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every gate and every shard passed
+        run: |
+          if [[ "${{ needs.gates.result }}" != "success" || "${{ needs.shards.result }}" != "success" ]]; then
+            echo "gates: ${{ needs.gates.result }}, shards: ${{ needs.shards.result }}" >&2
+            exit 1
+          fi

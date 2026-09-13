@@ -283,6 +283,10 @@ func solid_reach() -> float:
 ## `charging_dog` is the row that needs it: `Tuning.RUN_TAUGHT_DAY` sites it dead ahead of her,
 ## unavoidably, because the run lesson depends on it, and every day after — *"the tutorial dog may
 ## appear later but not as tutorial"* — the same row recurs but is no longer the lesson.
+##
+## **Shared with `pursues_within_on()` below.** A row whose siting and whose trigger both change
+## after its own first appearance changes them on the same day, or the two could disagree about
+## which day is which — see that function.
 @export var spawn_mode_switches_after_day := 0
 ## What `spawn_mode_on()` answers once `day` is past `spawn_mode_switches_after_day`. Unread while
 ## that is 0.
@@ -426,7 +430,39 @@ func departure_speed() -> float:
 ## is `_chase()`'s own trigger check, folded out so a `MAP`-placed row that is not a pursuer can use
 ## it to wait for her before it runs its ordinary path, rather than a `MAP` row's arrival at dawn —
 ## however far outside `Tuning.VIEW_HALF_EXTENT` that turns out to be — starting its clock instead.
+##
+## **This is the value an instance's own `is_waiting()`, `_chase()` and `_check_for_notice()` read
+## — whichever `EventDef` it was actually handed.** For a row whose trigger changes by day, that is
+## `pursues_within_on()` below, not this field directly; see that function for how the two stay in
+## step with what an instance sees.
 @export var pursues_within := 0.0
+## What `pursues_within_on()` answers once `day` is past `spawn_mode_switches_after_day`. Unread
+## while that is 0.
+@export var pursues_within_after_first_day := 0.0
+
+## `pursues_within` on a given day — `pursues_within` itself through `spawn_mode_switches_after_day`,
+## `pursues_within_after_first_day` past it. The same day-keyed switch `spawn_mode_on()` reads, so a
+## row that changes both its siting and its trigger on one day cannot have the two disagree about
+## which day that is.
+##
+## **Derived the way `spawn_mode_on()` is, and read the same way `at_heat()`'s derived copy is:
+## never a mutation of the shared resource.** Nothing calls this and then edits `self.pursues_within`
+## — an instance's own `is_waiting()` reads `pursues_within` off whichever `EventDef` it was handed,
+## so a day answer that has to change what an instance sees is a placement handing it a *different*
+## def, the way a heated copy is a different def from the cold one. `EventScheduler._for_day()` is
+## where a `MAP` placement past the switch gets that copy; a director-sited encounter — day 3's own
+## `AHEAD_OF_PLAYER` dog, or the same shape sprinkled in on a later day by `EventDirector` — is handed
+## the row exactly as authored, `pursues_within` still 0.0, because both are met already noticing
+## her rather than waiting to be routed into.
+##
+## `charging_dog` is the row that needs it: from day 4 the row is `MAP`-placed and met by routing
+## into it like `alley_robbery`, so *"the tutorial dog may appear later but not as tutorial"* means
+## it has to wait inside its own field for her rather than announce itself the moment it streams in
+## from `Tuning.EVENT_STREAM_RADIUS` away.
+func pursues_within_on(day: int) -> float:
+	if spawn_mode_switches_after_day > 0 and day > spawn_mode_switches_after_day:
+		return pursues_within_after_first_day
+	return pursues_within
 
 ## How this row answers to the resistance.
 ##
@@ -785,6 +821,14 @@ func validate() -> bool:
 			return false
 	if pursues and not Tuning.validate_pursuit(id, pursue_speed, duration, inner_radius,
 			telegraph_time, pursues_within, outer_radius):
+		return false
+	# The day-switched trigger is a second shape of the same contract and nothing else exercises
+	# it: `EventCatalogue.all()` validates every *heat* shape of every row, but the day axis is
+	# orthogonal to heat, so `pursues_within_after_first_day` would otherwise go unchecked until a
+	# run actually reached the day that reads it.
+	if pursues and pursues_within_after_first_day > 0.0 \
+			and not Tuning.validate_pursuit(id, pursue_speed, duration, inner_radius, telegraph_time,
+					pursues_within_after_first_day, outer_radius):
 		return false
 	if pursues:
 		# A pursuer has no line to be walked out of — it follows — so the ordinary escape-distance

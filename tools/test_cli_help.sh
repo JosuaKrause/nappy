@@ -10,11 +10,14 @@
 # only records whether it was ever invoked, so a script whose own validation regresses and
 # launches "Godot" anyway on a bad flag is caught even on a runner with no engine installed.
 #
-# tools/test.sh is deliberately not asserted against an unknown flag here: it forwards anything
-# that is not --serial/--plan/--help/-h straight to the test scene as either a suite-name
-# substring or a flag the scene itself reads off OS.get_cmdline_user_args() (`--svg` is a real,
-# documented example) -- there is no fixed list to validate that free-text surface against, so
-# only its --help path is checked.
+# tools/test.sh is deliberately not asserted against an unknown flag here in general: it forwards
+# anything that is not --serial/--plan/--record-costs/--shard/--help/-h straight to the test scene
+# as either a suite-name substring or a flag the scene itself reads off
+# OS.get_cmdline_user_args() (`--svg` is a real, documented example) -- there is no fixed list to
+# validate that free-text surface against, so only its --help path is checked there. --shard and
+# --record-costs are its own recognised flags with their own shape to get wrong, though, and both
+# validate before the import pass that would otherwise touch the Godot stub -- so their malformed
+# cases are asserted below alongside the rest.
 #
 # Bash 3.2-safe (no associative arrays, no mapfile) -- the same reason the rest of tools/ stays
 # this side of bash 4; see tools/lint.sh's own header.
@@ -111,6 +114,15 @@ assert_exit "reference.sh --bogus"    nonzero ./tools/reference.sh --bogus
 # its validate_dev_flags() cases; this only proves the two callers actually wired it in.
 assert_exit "run.sh --seed (missing value)"  nonzero ./tools/run.sh --seed
 assert_exit "shot.sh --meters (missing values)" nonzero ./tools/shot.sh "$work_dir/shot-out2.png" 1 --meters 3
+
+# test.sh's own --shard and --record-costs get the same treatment as the rest of tools/: every
+# malformed shape is rejected -- usage, non-zero, no launch -- before the import pass that would
+# otherwise touch the Godot stub.
+assert_exit "test.sh --shard (missing value)" nonzero ./tools/test.sh --shard
+assert_exit "test.sh --shard (not I/N)"       nonzero ./tools/test.sh --shard bogus
+assert_exit "test.sh --shard 9/8 (I > N)"     nonzero ./tools/test.sh --shard 9/8
+assert_exit "test.sh --shard 0/8 (I < 1)"     nonzero ./tools/test.sh --shard 0/8
+assert_exit "test.sh --record-costs (with a filter)" nonzero ./tools/test.sh --record-costs bogus
 
 if [[ -e "$work_dir/shot-out.png" || -e "$work_dir/shot-out2.png" ]]; then
     echo "FAIL: a rejected shot.sh run wrote its output file anyway" >&2

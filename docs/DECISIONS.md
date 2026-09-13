@@ -1,5 +1,161 @@
 # Decisions
 
+## M128 — The playground is free, and the busker denies sleep outright · built 2026-09-13
+
+*(2026-09-13, [PLAYTEST-68](playtests/PLAYTEST-68.md): "Playground should be free since
+otherwise small parks really have no way of ever getting to sleep. The busker is a bit intense.
+We should nerf it a bit but keep it so the baby cannot fall asleep in the park with it. But on
+a street with a busker closeby should cause less excitement"; then, in
+[PLAYTEST-69](playtests/PLAYTEST-69.md), three refinements ending in "can we do a net sleep gain
+that is slow enough to never reach 100% in the alotted time?" and, on the table below, "the
+busker numbers look good".)* Two agent commits on `feature/m128-park-beats`, the second rewritten
+three times, reviewed here; the instrument is `tests/probes/m128_park_beats.gd`.
+
+**The playground costs nothing.** `playground`'s intensity is 0.0; the row stays because
+`tests/test_events.gd` and `EventInstance._field_distance()` name it by id and both `EVENTS.md`
+tables carry its line, and the park's swing frame is drawn from the map rather than from the
+row. Ambient rows were already exempt from the usable-park guarantee and the spoiling pass, so
+neither moved. Standing on the ambient source's own centre the meter now settles in six to
+eleven seconds, pinned as `tests/test_balance.gd`'s `_test_the_playground_itself_settles_her`.
+
+**The busker: radii unchanged, peak 19.3, and why the dial turned out to be a cliff.** Three
+shapes were built in turn. First, intensity 12.5 with the reach pulled from 190px to 55px:
+street-side spill fell to 45% on average and to nothing for most placements, but the ground he
+denies shrank from a 138px radius to 39px in a 256px park, so a one-block park with a busker
+became sleepable — overturned by the player on sight (*keep the radius the same but tweak the
+excitement number*). Second, the radii back and the peak at the lowest value whose beat-mean
+does not fall: the pulse is a cosine between a quarter and all of the peak, so its mean is
+62.5%, and the floor is 12.0 ÷ 0.625 = 19.2, which came out as 19.5 and 150% of the street
+spill. Third, at the player's *net sleep gain slow enough to never reach 100% in the allotted
+time*, the probe simulated the baby's own excitement and sleep update standing at his core in a
+one-block park for a whole day, sweeping the peak in tenths:
+
+| peak | sleep meter at his core |
+|---|---|
+| 13.0, before this milestone | full in 5.7s |
+| every value under 19.2 | full within 35s |
+| 19.2 and above | never fills |
+
+A park fills sleep so fast that the quiet half of any beat under the beat-mean floor is enough
+to finish the job; there is no slow drift to tune with intensity alone, and the two floors are
+the same number. **Chosen: 19.3**, one tenth above the crossing so the number does not sit on
+the line. At 19.3 the beat nets +0.06 a second at the core (+7.3 at the top, −7.2 at the
+bottom), the denial radius is 157px (138 before), the cost-table entry +34.7 (between the dog
+walker and the leaf blower), and **the street beside the lot is 148% as loud as before**, the
+opposite of the third sentence. Accepted on the numbers, and read with the player's later
+framing: with M129's line on the far pavement, a busker's spill onto one side of the street is
+a price rather than a wall, so the reach did not need to come down. **Rejected on the way**: a
+sleep-rate cut inside his reach, which would have given the slow drift at a peak near 13 — a
+new mechanism, offered and not taken.
+
+**Docs.** `EVENTS.md`'s rows and cost table and `CITY.md`'s park rows follow; the scheduler's
+own denial-radius sentence names 19.3 and 157px. The old reasoning — *"13.0, the lowest round
+number above both of its floors"* — is above under M117.
+
+## M96 — The dog waits from day 4, and the day-3 charge sprinkles in · built 2026-09-13
+
+*(2026-09-13, [PLAYTEST-68](playtests/PLAYTEST-68.md): "The waiting is good. But we can sprinkle
+the day 3 charging dog in every now and then, too. Since they always come from offscreen the only
+difference now is that day 3 dog is guaranteed to happen and has a tutorial tip.")* Two agent
+commits on `feature/m96-dog-waits`, reviewed here; the burst is
+`docs/evidence/m96-dog-waits-2026-09-13/`.
+
+**The map-placed dog waits.** `EventDef` gains `pursues_within_after_first_day` and
+`pursues_within_on(day)`, mirroring the spawn-mode switch — a derived answer, never a mutation,
+for the reason the heated shape is a derived copy. Because an instance reads `pursues_within` off
+the def it was handed, the day's answer arrives as a copy the scheduler builds once in
+`_for_day()`, wired where map placement already branches on the day. `charging_dog`'s trigger from
+day 4 is 130px, inside its own 150px field and above the stand-off the pursuit rules require
+(104px); a first attempt set it equal to the field, which is day 3's un-narrowed field rather than
+the robber's on-sight band, and was revised. Boot validation now checks the switched trigger too,
+since the catalogue's validation only exercised the heat axis. Day 3's own at-once charge and its
+tests are untouched; `tests/test_tutorial_dog.gd` holds that a day-4 copy waits outside the
+trigger and telegraphs inside it.
+
+**The day-3 shape sprinkles in.** `EventDirector._owe_the_sprinkled_dog()` rolls
+`Tuning.CHARGING_DOG_SPRINKLE_CHANCE` (0.25) once a day past the switch and, on a hit, pushes the
+unmodified row — trigger 0, sited off screen along her heading, no tip — to the **front** of the
+director's queue. The probe that set the number (`tests/probes/m96_dog_sprinkle.gd`) found the
+bug first: appended, the roll was met zero times in 88 sampled days, because a busy day's own
+ahead-of-player pool queues dozens and drains a handful, so an appended item sat at index thirty
+and beyond. Measured over eight seeds, days 4 to 14: 0.15 gives a mean of 1.0 sprinkled dogs a
+run, 0.25 a mean of 1.75 (0 to 3), kept as *a few per run* reading nearer two than one. The
+lead-time floor playtest 20 measured is held for the sprinkle by the same siting branch day 3
+uses, with the row's own notice and speed untouched.
+
+**Open to overturn.** The 130px band rather than one proportional to the robber's; push-to-front
+rather than a randomised later slot; and a capture gap — `--spawn event:<id>` stands her at 0.6
+of the outer radius, inside this row's own stand-off, so no rig can photograph the silent wait
+and the test is the proof.
+
+## M100 — An entry beside a plain edge keeps room for its own picture · built 2026-09-13
+
+*(2026-09-13, [PLAYTEST-69](playtests/PLAYTEST-69.md): "people still come out from outside the
+map" — a re-report of playtest 66's finding after M120.)* Two agent commits on
+`feature/m100-map-edge-entries`, reviewed here; the counts are in
+`docs/evidence/m100-map-edge-entries-2026-09-13/`.
+
+**The diagnosis, before the fix.** `tests/probes/m100_map_edge_entries.gd` drives
+`CrowdAgent._recycle()` at each plain edge and samples `Crowd.start_day()` separately, counting
+entries whose *drawn picture* reaches past the true edge with a centre every existing check calls
+legal. Every recycle sample beside a plain edge was unsafe — walker north 199 of 199, walker west
+179 of 179, car west 235 of 235, off-spine car north 224 of 224 — because M120's rule that a
+walker or an off-spine car gets no room past the edge collapses the entry roll to the boundary
+coordinate itself, legal by the centre-only `_entry_band_fits()`, while the picture straddles the
+line: a walker's canvas rises its whole height above its position and nothing below, since
+standing sprites are anchored bottom-centre. The day-start placement, which never runs the
+recycle's room check, did the same rarely (1 of 234 beside an east edge). Nobody genuinely stood
+past the edge once M120 held the centre. So the first of the entry's three candidates was the
+cause, the second a minor contributor, and the third did not occur.
+
+**The fix.** `CrowdAgent._entry_picture_clearance()` reads the real texture sizes and the same
+anchor arithmetic the body drawing uses, and answers how far this kind's picture reaches past its
+own coordinate — the larger of the two directions, applied symmetrically, which is the one silent
+choice and is conservative only on the side that already had room. `_entry_band_fits()`, the
+final clamp on the room beyond the map, and `setup()`'s own placement loop all ask
+`_within_the_map_with_room_for_its_picture()` wherever `_entry_room()` grants nothing past the
+edge. After it the probe reports zero unsafe entries at every edge and zero at day start; sample
+counts drop because the unsafe axis-and-direction fails its own roll and the loop settles
+elsewhere, which is the point. Two tests in `tests/test_crowd.gd` beside M120's own entry test
+pin a partial 45px of room rather than a flush edge, since a flush edge gives the unsafe
+combination no chance of acceptance and so collects nothing; both fail without the fix. M120's
+pull-apart rule for entries that bunch beside an edge is untouched. The burst is
+`after-north-edge-burst/`, thirty-six frames at the true north edge with nobody's picture in the
+mountain band.
+
+## M125 — CI runs the shards on eight runners, planned from measured times · built 2026-09-13
+
+*(2026-09-13: "CI is still 12min — any ideas for improving those times?", then "let's do all
+three".)* The last green run before this spent 9m16s in its test step for 25.7 minutes of suites
+serial — an ideal of 6.4 minutes across four shards, and the gap was two things: the planner
+bin-packed by a hand-written cost table that was wrong by up to three times (events at 279s
+against a measured 185, crowd at 82 against 227, the balance suite missing), so the heaviest
+suite sat in the lightest bin; and four Godot processes contended for one runner's four cores.
+Two agent commits on `feature/ci-measured-shards`, reviewed here.
+
+**The planner packs by measured time.** `tests/suite_costs.txt` is one row per suite, in
+milliseconds, read by `tools/test.sh`'s cost function; a suite without a row is planned at a
+stated default with a warning rather than dropped. `tools/test.sh --record-costs` runs the full
+suite and rewrites the file from that run's own per-suite lines, refusing to overwrite on a row
+count that does not match the suites on disk, so a crashed shard cannot write a short table.
+Seeded from the last green run on main. A separate recording script was rejected: the mode
+shares the planner and the shard logs with the rest of `test.sh`.
+
+**Eight shards on eight runners.** `tools/test.sh --shard I/N` plans the same N-way split every
+runner plans from the same file, validates `I` and `N` before the import pass, runs one shard in
+one process and lets the runner's partial-run note through. `ci.yml` is three jobs: the cheap
+gates (lint, cli help, the Python tools, the boot check), a fail-fast-off matrix of eight
+shards, and a job named `test` that needs both and fails if either failed, so main's ruleset,
+which requires a check of that name, is untouched. Eight because `test_crowd.gd` at about 227s
+is a floor no split can lower, and eight puts every other shard at 187 to 189s beside it. The
+PR's own run: gates 1m7s, shards 2m53s to 4m22s, **4m29s wall** against 9m16s. The trade is
+stated: each runner is a fresh checkout, so the import pass runs eight times for less latency.
+A composite action to share the Godot cache steps between the jobs was rejected as more moving
+parts than two bounded changes justify.
+
+**What it leaves.** The longest suite is now the whole of CI's time, and the queue's M125 entry
+holds the split of `test_crowd.gd` and the pass over the four suites still over budget.
+
 ## M124 — The two fixes built · 2026-09-13
 
 The build half of the desktop measurement below (M124, where a frame goes). Four agent commits

@@ -1296,6 +1296,14 @@ is loud, and the reason a park is quiet.
   only a car on the spine keeps `OUT_OF_SIGHT` — and the roll that picks where a recycle lands is
   kept inside that room from the start rather than rolled the full entry band and rejected
   afterwards, so nobody appears standing on the mountain, the forest or the water and walks in.
+  **No room past the edge is not the same guarantee as room for the picture on the near side of
+  it.** A centre sitting exactly on the line is legal by that check alone while the drawn body still
+  reaches past it — a walker's own canvas rises the whole of its height to the north of its centre
+  and nothing at all to the south, since `Sprites.draw_standing` anchors it bottom-centred with
+  nothing below. `CrowdAgent._entry_picture_clearance` reads the real texture sizes and the anchor
+  arithmetic `_draw_body` uses to say how far this kind's own picture reaches past its coordinate,
+  and `_entry_band_fits`, the final placement clamp, and the morning's own `setup()` all ask for that
+  much room before accepting a spot, wherever `_entry_room` grants nothing past the edge.
   **And the same room is what lets a car arrive by the tunnel or the bridge.** The crowd's box is
   clamped to the map, so beside the tunnel the band a southbound spine car enters through is the
   stretch past the north edge, and `CrowdAgent._entry_band_fits` accepts a band that reaches that
