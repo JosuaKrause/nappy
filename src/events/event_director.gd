@@ -66,6 +66,7 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 		var mode := plan.def.spawn_mode_on(day)
 		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
 			_owed.append(plan.def)
+	_owe_the_sprinkled_dog(day)
 	_take_the_forced_row()
 	# The first one is not free: a cat on the doorstep before she has taken a step reads as the
 	# game starting badly rather than as something happening.
@@ -136,6 +137,47 @@ func _teach_the_run(day: int) -> void:
 ## How far into day 3 the lesson lands. A few seconds of ordinary walking first, so that what
 ## happens reads as the day changing rather than as the day starting.
 const LESSON_DELAY := 6.0
+
+## The lesson does not retire. *(2026-09-13, PLAYTEST-68: "The waiting is good. But we can sprinkle
+## the day 3 charging dog in every now and then, too. Since they always come from offscreen the
+## only difference now is that day 3 dog is guaranteed to happen and has a tutorial tip.")* Past
+## the day it switches to a `MAP` placement, `charging_dog` recurs two ways at once: waited into on
+## a tile, and — now and then, rolled once a day here — sent by this director in its day-3 shape,
+## off her heading, already noticing her.
+##
+## **The row itself, untouched.** `EventCatalogue.by_id()` returns the shared, cold `EventDef` —
+## `pursues_within` still its authored 0.0 — so nothing here has to build a copy the way
+## `EventScheduler._for_day()` does for the waiting one: a director-sited dog is met exactly as
+## day 3's is, charging the moment it streams in, because both are already-noticing encounters
+## rather than places she is routed into. No tip and no guarantee are the whole of what changes —
+## `_teach_the_run()` owns the guarantee and the delay that make day 3 a lesson, and neither runs
+## here.
+##
+## **Rolled once a day, outside the scheduler's own budget** — the same shape `owe_the_return()`
+## already is: a rare encounter added to the queue rather than competing with cafés and roadworks
+## for it, because a lesson-sized moment that only happens when the density dice agree is not one a
+## player can point to. `Tuning.CHARGING_DOG_SPRINKLE_CHANCE` is the rate, set against
+## `tests/probes/m96_dog_sprinkle.gd` — see that constant for what was measured and chosen.
+##
+## **Put at the front, not the back.** `tests/probes/m99_caps.gd` already measured that a busy
+## day's own `AHEAD_OF_PLAYER` pool is oversubscribed by design — `cat_dash`, `cyclist` and
+## `loose_dog` between them queue dozens a day and the pacing (`Tuning.AHEAD_INTERVAL`) only ever
+## drains a handful before the day ends — so an item *appended* here would sit behind all of that
+## and the roll below would almost never actually meet her. This is not a second chance at that same
+## budget: the roll already made it rare, and stacking a second rare event on top of "reached before
+## the day runs out" would make it rarer still, unmeasurably so, exactly like `_teach_the_run()`
+## moving the day-3 lesson to the front rather than leaving it wherever the pool happened to place
+## it. Pushing to the front only decides which of today's `AHEAD_OF_PLAYER` encounters is met
+## *first* when one has been rolled at all; it never adds a second roll on top of the first.
+##
+## Asked over the def's own `spawn_mode_switches_after_day` rather than `Tuning.RUN_TAUGHT_DAY`
+## directly, so this stays in step with whichever day the row's siting actually changes on.
+func _owe_the_sprinkled_dog(day: int) -> void:
+	var dog := EventCatalogue.by_id("charging_dog")
+	if not dog or day <= dog.spawn_mode_switches_after_day:
+		return
+	if _rng.randf() < Tuning.CHARGING_DOG_SPRINKLE_CHANCE:
+		_owed.push_front(dog)
 
 func owed() -> int:
 	return _owed.size()

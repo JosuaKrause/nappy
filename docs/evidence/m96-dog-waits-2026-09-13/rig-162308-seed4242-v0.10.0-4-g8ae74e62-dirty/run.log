@@ -1,0 +1,29 @@
+nappy rig log  2026-09-13T16:23:08  version v0.10.0-4-g8ae74e62-dirty
+
+day 4  act 2  run seed 4242  city seed 4242  length 180.0s  invincible
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  step 1 on offer at (150,11)
+   0.0  roll     chalk mark guarded: robber 83px away (band 66-176)
+   0.0  plan     closed: cordoned off v(7,4), accident h(3,8)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burnt_out_car x56, burst_water_main x12, busker x4, cafe_tables x51, car_accident x11, cat_dash x8, charging_dog x3, chatting_mother x2, collapsed_frontage x16, construction x45, cyclist x4, delivery_van x48, dog_walker x19, fallen_tree, homeless_yeller x8, ice_cream_van x4, leaf_blower x13, loose_dog x14, market_stall x33, moving_van x27, pigeon_flock x5, playground x2, police_patrol x10, poster_crew x10, reversing_lorry x6, scaffolding x13, skip x13
+   0.0  start    doorstep (63,19), facing 180°
+   0.0  contact  step 1 moved to (55,24): never seen at (150,11)
+   0.0  roll     chalk mark guarded: robber 119px away (band 66-176)
+   0.0  near     charging_dog (telegraph) at (65,18), 65px, exc 0, in 0.0/s (crowd 4.4, events 10.8), sleep 0
+   0.0  chase    charging_dog came for her at (65,18) | exc 0, in 0.0/s (crowd 4.4, events 10.8), sleep 0
+   0.0  contact  step 1 seen at (55,24)
+   0.0  cue      the mark over her head: soon for 0.0s (0.0s of it on the road) | charging_dog 65px
+   0.0  near     charging_dog at (64,18), 29px, exc 0, in 0.0/s (crowd 4.2, events 12.0), sleep 0
+   0.0  near     charging_dog at (64,19), 15px, exc 0, in 0.0/s (crowd 4.1, events 12.0), sleep 0
+   0.0  near     cafe_tables (telegraph) at (66,19), 63px, exc 0, in 0.0/s (crowd 4.0, events 12.0), sleep 0
+   0.0  frame    fps 1, worst frame 147.2ms, draws 823, objects 2004, primitives 4410, process 26.91ms, physics 2.08ms
+   0.0  frame    fps 77, worst frame 9.1ms, draws 835, objects 2030, primitives 4462, process 24.19ms, physics 2.20ms
+   0.0  shot     burst started: asked for an animation burst at (65,19) | exc 0, sleep 1 | playing | asked/burst-5902022-001
+   0.0  frame    fps 119, worst frame 12.5ms, draws 839, objects 2036, primitives 4501, process 13.48ms, physics 1.02ms
+   0.0  frame    fps 111, worst frame 55.1ms, draws 836, objects 2033, primitives 4468, process 56.02ms, physics 1.08ms
+   0.0  frame    fps 46, worst frame 36.2ms, draws 833, objects 2028, primitives 4431, process 58.84ms, physics 1.18ms
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  frame    fps 48, worst frame 42.3ms, draws 833, objects 2028, primitives 4431, process 51.88ms, physics 1.09ms
+   0.0  frame    fps 54, worst frame 9.5ms, draws 833, objects 2028, primitives 4431, process 51.05ms, physics 1.10ms
+   0.0  chase    charging_dog stopped chasing after 0.0s — closest 0px, she ran 0.0s of it | exc 0, in 0.0/s (crowd 0.0, events 8.0), sleep 3

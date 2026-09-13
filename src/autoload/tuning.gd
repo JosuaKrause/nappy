@@ -1595,6 +1595,22 @@ const SPOILERS_TO_DENY_A_PARK := 9
 ## the rules finally being explained.
 const RUN_TAUGHT_DAY := 3
 
+## Chance, rolled once a day past `RUN_TAUGHT_DAY`, that `EventDirector` sends `charging_dog` in
+## its day-3 shape again — off her heading, already noticing her, no tip and no guarantee. See
+## `EventDirector._owe_the_sprinkled_dog()`.
+##
+## **Measured with `tests/probes/m96_dog_sprinkle.gd`, not derived**, the same way `Tuning.
+## CROWD_PEDESTRIANS_PER_ACT` and every other density number in this file is: eight seeds, every
+## day past the teaching day, a whole day of continuous walking. Pushed to the front of the
+## director's own queue rather than appended — `tests/probes/m99_caps.gd` already found that a busy
+## day's own `AHEAD_OF_PLAYER` pool is oversubscribed by design (dozens queued, a handful drained
+## before the day ends), so an appended roll was met **zero times in 88 sampled days** before this
+## was pushed to the front instead; pushed, every roll that lands is met. **0.15 measured a mean of
+## 1.00 met encounters per run** (one seed of eight rolled none, one rolled two); **0.25** — the
+## value kept — **measured 1.75** (one seed rolled none, one rolled three). "A few per run, not per
+## day" reads as a mean nearer two than one, so 0.25 is the choice.
+const CHARGING_DOG_SPRINKLE_CHANCE := 0.25
+
 ## How long a pursuer keeps coming once it turns lethal, before it gives up.
 ##
 ## Bounded by the cost of the answer, not by the fiction: at `EXCITEMENT_FROM_RUNNING` a sprint is
