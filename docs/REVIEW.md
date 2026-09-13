@@ -410,43 +410,12 @@ item below for as long as looking takes.
 - **Nobody has measured the web build, only confirmed it runs.** It boots and plays at the live
   address; what has not been checked is frame rate at the game's scale on a machine that is not the
   one it was built on, and whether a stranger arriving at the page understands what it is.
-- **Nobody has chosen a mode, and the choice is now the first thing the game asks.** M88 offers
-  joystick and tap on every device, so **tap on a phone and joystick on a desktop are both playable
-  for the first time and neither has been played** — a thumb aiming from her own position across a
-  whole phone screen is exactly the reach problem the two focal points were invented to solve, and a
-  mouse driving a focal point is a hand that never had the reach problem being asked to use the
-  answer to it. **The captions are the other half of it.** Two sentences on a title screen are all a
-  first-time player gets to tell the modes apart, and whether *"aims from the nearer of two fixed
-  points"* means anything before you have played either one is a question no rig can answer.
-- **The restart path is guarded twice now and nobody has fumbled a tap at it.** A stray press after
-  an ending can no longer begin a run just by landing anywhere, since only the two mode discs do
-  that — but it can still land *on a disc*, so the 0.35s window (`TouchControls
-  .DOUBLE_TAP_SECONDS`) that swallows a press right after a restart-triggered reload is kept rather
-  than deleted along with the headline defect. **"Often" was the player's own word**, so what is left
-  is a race with a much smaller target, and the window is still the thing to distrust in both
-  directions: too short and an ending tap still reaches a disc, too long and a deliberate press
-  feels ignored.
-- **A phone held upright gets one rotation now, and nobody has held a phone since.** The three
-  disagreeing rotations playtest 23 met are gone: one transform is applied to every `CanvasLayer`,
-  the camera is no longer a second implementation, and the choice is re-asked every frame rather
-  than on a `size_changed` that could arrive stale. The record is in `DECISIONS.md` under M60.
-  **The one thing a rig cannot settle is the one that shipped three of those four symptoms** —
-  `tests/test_orientation.gd` proves the input remap by construction and says outright that it
-  cannot catch a sign error the transform and the drawing share. `tools/shot.sh` takes a resolution
-  now, so the rotated branch can at least be photographed; it wants a person holding a phone.
 - **The social card has been unfurled once, in a messaging app, and it failed.** The cause was the
   image's alpha channel — its transparent pixels carry RGB `(0, 0, 0)`, so a client that ignores
   alpha paints the card black — and the published copy is now flattened onto an opaque background,
   with its dimensions and type declared and a `twitter:image` beside the `og:` pair. **The fix has
   not itself been unfurled.** Paste the address into a chat client and see what comes back; the
   record of what was wrong and what was ruled out is in `DECISIONS.md` under M80.
-- **There is no main menu.** There is a title screen — the doorstep with the traffic and the events
-  running behind it — and it asks exactly one question: which of the two control schemes. Two
-  circular discs with a caption each, and the hint under them reads `press a button to begin`. That
-  is the whole of it: no options, no seed box, no load game. `WASD`, the arrows and `space` begin a
-  run too and choose tap, and nothing on screen says so — deliberately, the same way nothing in the
-  game names a key. **Nobody has met this screen on a phone**, so whether two discs and two
-  sentences are enough to pick between schemes you have not played is unanswered.
 - **A release build carries no modifiers, and nothing has confirmed that on a real release build.**
   `?telemetry=1` answers only when `OS.is_debug_build()` is true. The truth table is asserted in the
   suites, so the *predicate* is proven; the build type itself has no seam to fake and is therefore
