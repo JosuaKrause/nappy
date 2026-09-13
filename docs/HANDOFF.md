@@ -277,6 +277,41 @@ zebra running into the mountain, four dotted crossings under one light — and n
 drives off the map, or onto it, except a car by the tunnel or the bridge. All of it was checked on rig captures
 and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
+## Where the last session stopped, 2026-09-13
+
+**This section is the pick-up for the next session and is removed by it.** The session that
+wrote it ended with work in flight, so `gh pr list` and `git worktree list` are the truth and
+this is the map.
+
+- **The player asked to be walked through `REVIEW.md` one question at a time** *(2026-09-13:
+  "ask me a couple of questions (one at a time) for things that need a human eye. I might be
+  able to answer them. Go one by one through the questions file")*. Start there: take the first
+  item, ask it with all the context its entry carries and a recommendation, file the answer as a
+  finding in `playtests/PLAYTEST-67.md` (or the next file) and remove the item in the same
+  commit, then the next. The **playtest-feedback** rule governs.
+- **M127, the first press walks her, is the smallest and goes first** among the round's
+  implementation work. Its entry names the two mechanisms to look at.
+- **Three agents were running when the session closed**, each briefed from its `TODO.md`
+  entry: M125 (pruning `tests/**`, on its own feature branch), M124's measurement half (readout,
+  run-log line and a per-suspect profile, on its own feature branch), and M126's read-only
+  audit. **The audit finished**: its report is `evidence/audit-2026-09-13/AUDIT.md`, 28
+  findings with file and line, a failure scenario and a fix size each, plus what was found
+  clean; nothing has been filed from it yet, and M126's own item says how — each finding becomes
+  a queue item under the milestone that owns the code, or a defect under M100, and the record
+  goes to `DECISIONS.md`. **M124's measurement half also finished and is on an open PR**, not
+  merged: the readout and a once-a-second `frame` log entry are built, and the profile says the
+  frame is spent rebuilding draw lists, not switching textures — every live event calls
+  `queue_redraw()` every tick where the crowd already gates it, and the building shadows submit
+  about two thousand rects a frame, mostly off screen; the two together are worth about thirty
+  per cent on the desktop rig, and no atlas is indicated by the numbers. Before it merges it owes
+  its `DECISIONS.md` record with the table (the PR body and
+  `evidence/m124-frame-cost-2026-09-13/README.md` carry it) and a rewrite of M124's entry to hold
+  those two fixes and the phone measurement. For M125: if its branch has a PR, review it, file its
+  record and merge under the usual rules; if a worktree under `.claude/worktrees/` holds
+  uncommitted work, the agent was cut off — read what is there before re-briefing.
+- **The M124 atlas item is gated on the measurement**: nothing is atlased until the numbers say
+  texture switches are the cost.
+
 ## The queue, as prioritised on 2026-09-09
 
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** Playtest

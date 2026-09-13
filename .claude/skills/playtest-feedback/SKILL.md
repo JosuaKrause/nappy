@@ -1,5 +1,5 @@
 ---
-name: feedback
+name: playtest-feedback
 description: How to handle playtest feedback and design decisions — write it down in full before building, search the repo before designing, never silently overturn what the player asked for, and how a parked option comes back. Load this BEFORE responding to any playtest, design instruction, or request that changes what the game does.
 ---
 

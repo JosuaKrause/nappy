@@ -25,7 +25,7 @@ Three folders in this repo hold pictures and they are not interchangeable:
 - **`docs/reference/`** — the real world. Never shipped, never shown, never cited as proof of
   anything. It exists so a sprite can be drawn from something rather than from memory.
 - **`docs/evidence/`** — the game, captured. It is proof: a doc sentence points at it, and the
-  **feedback** rule requires the picture to land in the same commit as the sentence.
+  **playtest-feedback** rule requires the picture to land in the same commit as the sentence.
 - **`assets/`** — what ships. Everything under it is loaded by the game.
 
 **The folder carries a `.gdignore`, and that is load-bearing.** Godot walks every directory under
