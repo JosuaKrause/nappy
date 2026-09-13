@@ -103,10 +103,12 @@ If this session established a working rule, it belongs in a skill or in `CLAUDE.
 an assistant's memory**, which is invisible to everybody else who opens the repo. If a skill has
 grown past what it is about, split it rather than letting `CLAUDE.md` grow.
 
-### 6. Commit, merge, delete
+### 6. Commit and propose
 
 Commit each piece as it is settled; a decision that is only in the working tree is only in the
-session. If a branch is fully merged, delete it — see the **committing** skill.
+session. Push the branch and create or update its PR. Leave it open unless the user explicitly
+allows merging in this session; this also governs auto-merge and delegated merges. If a branch
+is fully merged, delete it — see the **committing** skill.
 
 ### 6a. Leave the review list true
 

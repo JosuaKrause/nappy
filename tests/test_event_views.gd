@@ -108,6 +108,9 @@ func run(t) -> void:
 	_test_eight_view_by_sector_matches_convention(t)
 	_test_select_view_holds_and_mirrors(t)
 	_test_select_view_zero_heading_holds(t)
+	_test_cafe_sitters_face_their_own_tables(t)
+	_test_roadwork_barrier_has_an_upright_vertical_source(t)
+	_test_roadwork_barrier_follows_alley_axis(t)
 	_test_family_dictionaries_are_complete(t)
 	_test_animal_side_view_reuses_the_canonical_source(t)
 	_test_vehicle_side_view_reuses_the_canonical_source(t)
@@ -170,6 +173,58 @@ func _test_select_view_zero_heading_holds(t) -> void:
 	t.check(view == "side" and instance._view_sector == 0,
 			"an exactly zero heading holds whatever sector was last drawn")
 	instance.free()
+
+## Café sitters use their alternating chair offset to face their own table. The fixed -7px
+## screen-depth lift used by `_draw_cafe()` is not part of this bearing: horizontal frontages use
+## the two side facings, and vertical frontages use the two upright front/back facings.
+func _test_cafe_sitters_face_their_own_tables(t) -> void:
+	var expected := {
+		false: [[Vector2.RIGHT, "side", false], [Vector2.LEFT, "side", true]],
+		true: [[Vector2.DOWN, "front", false], [Vector2.UP, "back", false]],
+	}
+	for spread_vertical in [false, true]:
+		for alternate in [false, true]:
+			var heading: Vector2 = EventInstance._cafe_seat_heading(spread_vertical, alternate)
+			var sector := EightDirection.nearest(heading)
+			var expectation: Array = expected[spread_vertical][int(alternate)]
+			t.check(heading == expectation[0],
+					"%s café chair %s points toward its table" % ["vertical" if spread_vertical else "horizontal",
+						"right" if alternate else "left"])
+			t.check(EventInstance.EIGHT_VIEW_BY_SECTOR[sector] == expectation[1],
+					"%s café chair %s uses the %s view"
+					% ["vertical" if spread_vertical else "horizontal",
+						"right" if alternate else "left", expectation[1]])
+			t.check(EightDirection.is_mirrored(sector) == expectation[2],
+					"%s café chair %s mirrors only its west-facing side view"
+					% ["vertical" if spread_vertical else "horizontal",
+						"right" if alternate else "left"])
+
+## A roadworks panel stays upright when an east-west street lays the spread down local Y. The
+## directional source carries the red event-barrier palette in that projection; the closure's
+## amber panel is a different object and is not substituted here.
+func _test_roadwork_barrier_has_an_upright_vertical_source(t) -> void:
+	var horizontal := EventInstance.BARRIER_SEGMENT
+	var vertical := EventInstance.BARRIER_SEGMENT_VERTICAL
+	t.check(EventInstance._roadwork_segment_texture(false) == horizontal,
+			"north-south roadworks uses the broad panel source")
+	t.check(EventInstance._roadwork_segment_texture(true) == vertical,
+			"east-west roadworks uses the upright panel source")
+	t.check(horizontal.get_size().x >= horizontal.get_size().y - 1.0,
+			"the across panel is the broad projection")
+	t.check(vertical.get_size().y > vertical.get_size().x,
+			"the vertical panel is the upright projection")
+
+## Alley mouths have no corridor band for `_spread_is_vertical()` to read. Their own rectangle
+## supplies the axis instead: a horizontal alley is sealed by a vertical spread across its short
+## side, while a vertical alley keeps the default horizontal spread.
+func _test_roadwork_barrier_follows_alley_axis(t) -> void:
+	var map := CityMap.new()
+	map.alley_rects.append(Rect2i(Vector2i(10, 10), Vector2i(6, 2)))
+	map.alley_rects.append(Rect2i(Vector2i(20, 20), Vector2i(2, 6)))
+	t.check(EventInstance._spread_is_vertical(map, map.tile_to_world(Vector2i(12, 11))),
+			"a horizontal alley gets a vertical barrier spread across its mouth")
+	t.check(not EventInstance._spread_is_vertical(map, map.tile_to_world(Vector2i(20, 22))),
+			"a vertical alley keeps a horizontal barrier spread across its mouth")
 
 # ------------------------------------------------------------------- the tables ---
 

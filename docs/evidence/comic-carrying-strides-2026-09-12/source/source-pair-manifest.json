@@ -1,0 +1,355 @@
+{
+  "version": "E \u2014 Clear strides",
+  "loop": [
+    "a",
+    "c",
+    "b",
+    "c"
+  ],
+  "raw": "docs/evidence/comic-carrying-strides-2026-09-12/raw/carrying-acb-selected.png",
+  "raw_sha256": "ada9b2764a99fdf4389f69a85470475fbeb085391b3d310d8371cb1a929e6ea2",
+  "raw_dimensions": [
+    1380,
+    1140
+  ],
+  "identity_target": "docs/evidence/comic-carrying-redraw-2026-09-12/carrying-atlas-selected.png",
+  "identity_target_sha256": "1b79199cfe6be78013804771f61a5279008f5487927fc52d83523208d4146b61",
+  "pose_authority": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-acb-6x.png",
+  "pose_authority_sha256": "0a0d40d1fbdb9d83c44a85ca7d0867cc296af9f0c816499c819c65bcadfa8ccf",
+  "review_font": "/System/Library/Fonts/SFNS.ttf",
+  "review_font_sha256": "2bfd40dc72e6759e248f82a52a40d551338979fffc9b5c070e685b4b7ad19e66",
+  "generation_history": [
+    {
+      "output": "docs/evidence/comic-carrying-strides-2026-09-12/raw/carrying-acb-pass1.png",
+      "output_sha256": "f715f4c3a43fb7b683fce7de0959e0d8e498de9bac5d3a957686b5ca6071cc0a",
+      "prompt": "docs/evidence/comic-carrying-strides-2026-09-12/prompt.txt",
+      "prompt_sha256": "80b2a3cd4c0c98446e6673dcac413ebff95d99b5c96ebcad693b9aa115ddeb7b",
+      "inputs": [
+        "docs/evidence/comic-carrying-redraw-2026-09-12/carrying-atlas-selected.png",
+        "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-acb-6x.png"
+      ]
+    },
+    {
+      "output": "docs/evidence/comic-carrying-strides-2026-09-12/raw/carrying-acb-pass2.png",
+      "output_sha256": "6507fe36d3939dcb5675e656142350d0ca52787991dec37a88f1e65b84e936e0",
+      "prompt": "docs/evidence/comic-carrying-strides-2026-09-12/prompt-b-row.txt",
+      "prompt_sha256": "33b0ebd1756a3d76b260cce91fb31689ed8f67c6d7b1e3792b0f20c74c580cbd",
+      "inputs": [
+        "docs/evidence/comic-carrying-strides-2026-09-12/raw/carrying-acb-pass1.png",
+        "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-acb-6x.png"
+      ]
+    },
+    {
+      "output": "docs/evidence/comic-carrying-strides-2026-09-12/raw/carrying-acb-selected.png",
+      "output_sha256": "ada9b2764a99fdf4389f69a85470475fbeb085391b3d310d8371cb1a929e6ea2",
+      "prompt": "docs/evidence/comic-carrying-strides-2026-09-12/prompt-side-back-diagonal.txt",
+      "prompt_sha256": "23983bd44d4cad43609f409c0639ca013349df6481ddb470ca6e0deda179d1bc",
+      "inputs": [
+        "docs/evidence/comic-carrying-strides-2026-09-12/raw/carrying-acb-pass2.png",
+        "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-acb-6x.png"
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "name": "mother_carrying_front_a",
+      "frame_role": "Contact 1 (A)",
+      "svg": "assets/rig/mother_carrying_front_a.svg",
+      "svg_sha256": "4acaa86e6a704f3487b007dd77a48347b95aa4cc6e4288e172e9b2a7924ab19d",
+      "native_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/front_a-native.png",
+      "native_render_sha256": "23fb34d158c011ccacc94cf8611dd96b9df8a3217ed538390063f08f9289ef8e",
+      "enlarged_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/front_a-6x.png",
+      "enlarged_render_sha256": "749bcb868c8532b80ad913d5ecc3f18922b7d0e05aaaefb49d99d744714ef05c",
+      "identity_source": "docs/evidence/comic-carrying-redraw-2026-09-12/registered/rig/mother_carrying_front_a.png",
+      "identity_source_sha256": "403057ab3f01c29c82ce2330d4870396ac93fe4b9e69e225acd2ae7c905beccb",
+      "dimensions": [
+        24,
+        46
+      ],
+      "ground_anchor": [
+        12,
+        46
+      ]
+    },
+    {
+      "name": "mother_carrying_front_c",
+      "frame_role": "Passing (C)",
+      "svg": "assets/rig/mother_carrying_front_c.svg",
+      "svg_sha256": "acb0092edbaf29b0e99efbc69daa78455a66205422da384e2df590ab362d3bf6",
+      "native_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/front_c-native.png",
+      "native_render_sha256": "a4ae06042d3de10912558e36f35496bd112c8ea34d2dd3a802912f87bc408a74",
+      "enlarged_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/front_c-6x.png",
+      "enlarged_render_sha256": "2dc205d1d8658e6f06492919029f813b49d1eb5169a2471c9d532b9369acf455",
+      "identity_source": "docs/evidence/comic-carrying-redraw-2026-09-12/registered/rig/mother_carrying_front_b.png",
+      "identity_source_sha256": "326ba36ee47aea3833bbb45374a010e18abd3e2a29bca92a470c529f7233adba",
+      "dimensions": [
+        24,
+        46
+      ],
+      "ground_anchor": [
+        12,
+        46
+      ]
+    },
+    {
+      "name": "mother_carrying_front_b",
+      "frame_role": "Contact 2 (B)",
+      "svg": "assets/rig/mother_carrying_front_b.svg",
+      "svg_sha256": "89f76d2acca9088437756f5a9f84ed1c3cb5ba18d912a04a56a9ccc663930135",
+      "native_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/front_b-native.png",
+      "native_render_sha256": "221b69965c57a7d3f2ead068ca6f0656c6d59567d0c4ce74fc6f67fdcd95539c",
+      "enlarged_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/front_b-6x.png",
+      "enlarged_render_sha256": "a4d138bbeca924033bd94e8db72a1ff3ba110bbefca1acb9cefa44b171869b9c",
+      "identity_source": "docs/evidence/comic-carrying-redraw-2026-09-12/registered/rig/mother_carrying_front_b.png",
+      "identity_source_sha256": "326ba36ee47aea3833bbb45374a010e18abd3e2a29bca92a470c529f7233adba",
+      "dimensions": [
+        24,
+        46
+      ],
+      "ground_anchor": [
+        12,
+        46
+      ]
+    },
+    {
+      "name": "mother_carrying_back_a",
+      "frame_role": "Contact 1 (A)",
+      "svg": "assets/rig/mother_carrying_back_a.svg",
+      "svg_sha256": "f8a4401ba90a2d51e280b452087da759d1ddaa577f91f3300308540d5d177658",
+      "native_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/back_a-native.png",
+      "native_render_sha256": "66ad10bddbfd1ddfd869c066866cb6c2b67cd82b4b358abaccc98387aaf3bd6e",
+      "enlarged_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/back_a-6x.png",
+      "enlarged_render_sha256": "4228bd988df2ddfbc562a0a4f2c5dba9871c64b405afe89cb96f8c41f92a631e",
+      "identity_source": "docs/evidence/comic-carrying-redraw-2026-09-12/registered/rig/mother_carrying_back_a.png",
+      "identity_source_sha256": "aa9d45b2634e047d050390d2e3026620c390c05cd1ddea55f9a8eed1752e6a5a",
+      "dimensions": [
+        24,
+        46
+      ],
+      "ground_anchor": [
+        12,
+        46
+      ]
+    },
+    {
+      "name": "mother_carrying_back_c",
+      "frame_role": "Passing (C)",
+      "svg": "assets/rig/mother_carrying_back_c.svg",
+      "svg_sha256": "4d42aacbcd634f4b1e897fdf40627bd20036a3a2879754d854073206f8c0d3c8",
+      "native_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/back_c-native.png",
+      "native_render_sha256": "9c06d4ee2429f305ed9e35f76c7af4b49d13ec230f1571154bb4bd7fef84fce1",
+      "enlarged_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/back_c-6x.png",
+      "enlarged_render_sha256": "7ce216d6d41fa35fdf078c78156ff7f64109b68219de2128874c5e032f3eb733",
+      "identity_source": "docs/evidence/comic-carrying-redraw-2026-09-12/registered/rig/mother_carrying_back_b.png",
+      "identity_source_sha256": "c556b90b0bf8d64de1cf754f5d4203761be02206e2c3fbf8fd02986c8a96c93f",
+      "dimensions": [
+        24,
+        46
+      ],
+      "ground_anchor": [
+        12,
+        46
+      ]
+    },
+    {
+      "name": "mother_carrying_back_b",
+      "frame_role": "Contact 2 (B)",
+      "svg": "assets/rig/mother_carrying_back_b.svg",
+      "svg_sha256": "b1ab7caebec6264e1c2080e903cdf93a473a334e05ac519fadc0a988553f3840",
+      "native_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/back_b-native.png",
+      "native_render_sha256": "756c0b837dfa40238334662b1ce3a363121a38d27bec551924cb9ed671379d15",
+      "enlarged_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/back_b-6x.png",
+      "enlarged_render_sha256": "5034d0a2615f4218dfc2b2bc91cb6839b5754274191ddc80f955de261b3e5493",
+      "identity_source": "docs/evidence/comic-carrying-redraw-2026-09-12/registered/rig/mother_carrying_back_b.png",
+      "identity_source_sha256": "c556b90b0bf8d64de1cf754f5d4203761be02206e2c3fbf8fd02986c8a96c93f",
+      "dimensions": [
+        24,
+        46
+      ],
+      "ground_anchor": [
+        12,
+        46
+      ]
+    },
+    {
+      "name": "mother_carrying_side_a",
+      "frame_role": "Contact 1 (A)",
+      "svg": "assets/rig/mother_carrying_side_a.svg",
+      "svg_sha256": "5f38a2c3af60921644adee4faeb66debd029c435300c7164a914d9417ae31ee5",
+      "native_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/side_a-native.png",
+      "native_render_sha256": "c32c5dd5dbd3c6fddcee75a834ae6959e636242cd9d7b07772909cc27dc06bf7",
+      "enlarged_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/side_a-6x.png",
+      "enlarged_render_sha256": "4df0b06a22bae5060571c4d429eba50e22f54b4034d3c4a08f9e5a615f1e0716",
+      "identity_source": "docs/evidence/comic-carrying-redraw-2026-09-12/registered/rig/mother_carrying_side_a.png",
+      "identity_source_sha256": "57178326193fabeb3edb270d1b12a268052b2f65447b62042a8e393590c20c04",
+      "dimensions": [
+        26,
+        46
+      ],
+      "ground_anchor": [
+        13,
+        46
+      ]
+    },
+    {
+      "name": "mother_carrying_side_c",
+      "frame_role": "Passing (C)",
+      "svg": "assets/rig/mother_carrying_side_c.svg",
+      "svg_sha256": "262ffe7c6cc75d4fc662c8d983895aedf1542d28a38aa060d013dc20bc09cb69",
+      "native_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/side_c-native.png",
+      "native_render_sha256": "63c11f7f81b525319a3133480e30b69f4f726fd9120f37116f92aa4ef2169a87",
+      "enlarged_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/side_c-6x.png",
+      "enlarged_render_sha256": "db073a392c902c6c900e186ce7848f4b6d33feeeb7de7812d2332158779483a0",
+      "identity_source": "docs/evidence/comic-carrying-redraw-2026-09-12/registered/rig/mother_carrying_side_b.png",
+      "identity_source_sha256": "9a9a6fe1d80f198c6e9777e57dd3931f3665b1d424e452ff428ebe83f32d0822",
+      "dimensions": [
+        26,
+        46
+      ],
+      "ground_anchor": [
+        13,
+        46
+      ]
+    },
+    {
+      "name": "mother_carrying_side_b",
+      "frame_role": "Contact 2 (B)",
+      "svg": "assets/rig/mother_carrying_side_b.svg",
+      "svg_sha256": "57d444768168f2afde0302903dd4c03475adb5c27d25eb73faaae6e2d387009f",
+      "native_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/side_b-native.png",
+      "native_render_sha256": "fa5ba677eb99b4ee18c88f70ee711af2e140ddbe32281cd5c590434f28a77c27",
+      "enlarged_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/side_b-6x.png",
+      "enlarged_render_sha256": "ae5c243c5e5b158d1c0c7e9254cb8efdb513559ecc5d476480b2e089d3cdeae9",
+      "identity_source": "docs/evidence/comic-carrying-redraw-2026-09-12/registered/rig/mother_carrying_side_b.png",
+      "identity_source_sha256": "9a9a6fe1d80f198c6e9777e57dd3931f3665b1d424e452ff428ebe83f32d0822",
+      "dimensions": [
+        26,
+        46
+      ],
+      "ground_anchor": [
+        13,
+        46
+      ]
+    },
+    {
+      "name": "mother_carrying_front_diagonal_a",
+      "frame_role": "Contact 1 (A)",
+      "svg": "assets/rig/mother_carrying_front_diagonal_a.svg",
+      "svg_sha256": "393bb575a18a2ce7d98c02bd481858789ad27dd11c6990044f34061b4aaf3bc1",
+      "native_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/front_diagonal_a-native.png",
+      "native_render_sha256": "55dde12d3d8d7c58819b07bd366ab9bc29c6321cb09bcd41a423b81984f00009",
+      "enlarged_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/front_diagonal_a-6x.png",
+      "enlarged_render_sha256": "622d370e8047104f068640d975c978a2d15f6868a981d96451999c69ec9d2516",
+      "identity_source": "docs/evidence/comic-carrying-redraw-2026-09-12/registered/rig/mother_carrying_front_diagonal_a.png",
+      "identity_source_sha256": "6392f88beea3124406757c038372b0f00fddd7b31ebc686e18c9722cfa2a0ccf",
+      "dimensions": [
+        26,
+        46
+      ],
+      "ground_anchor": [
+        13,
+        46
+      ]
+    },
+    {
+      "name": "mother_carrying_front_diagonal_c",
+      "frame_role": "Passing (C)",
+      "svg": "assets/rig/mother_carrying_front_diagonal_c.svg",
+      "svg_sha256": "05a5ea6962356b9bb41f560cb68db04762ed8ccb49368fdf90af5f1ce4643929",
+      "native_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/front_diagonal_c-native.png",
+      "native_render_sha256": "ae042737344ea9c0083b86c5da77858f6caf515570929dc68d0c2cf541628d81",
+      "enlarged_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/front_diagonal_c-6x.png",
+      "enlarged_render_sha256": "699cd74950bbb28301f6a3c4d8529df6a88ba01e375cba5df26af368c09cfb4c",
+      "identity_source": "docs/evidence/comic-carrying-redraw-2026-09-12/registered/rig/mother_carrying_front_diagonal_b.png",
+      "identity_source_sha256": "e39e116503862b4209d4cc542e39d6a3d3d85fe3c39a7b64bc51da849105dd73",
+      "dimensions": [
+        26,
+        46
+      ],
+      "ground_anchor": [
+        13,
+        46
+      ]
+    },
+    {
+      "name": "mother_carrying_front_diagonal_b",
+      "frame_role": "Contact 2 (B)",
+      "svg": "assets/rig/mother_carrying_front_diagonal_b.svg",
+      "svg_sha256": "41969ca15ad5dc5ff01d116cab910f3a80d8706df1ea7a86d425532e2066db59",
+      "native_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/front_diagonal_b-native.png",
+      "native_render_sha256": "3c41a9ef2eb2385523cffcc8b6b6e0e8347a4b6f81c7a055da7413edcf1fbf75",
+      "enlarged_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/front_diagonal_b-6x.png",
+      "enlarged_render_sha256": "17953e654a138cdc40675a9d2b52d12a0a372f12df77e7a87b059a62ba9d0c5c",
+      "identity_source": "docs/evidence/comic-carrying-redraw-2026-09-12/registered/rig/mother_carrying_front_diagonal_b.png",
+      "identity_source_sha256": "e39e116503862b4209d4cc542e39d6a3d3d85fe3c39a7b64bc51da849105dd73",
+      "dimensions": [
+        26,
+        46
+      ],
+      "ground_anchor": [
+        13,
+        46
+      ]
+    },
+    {
+      "name": "mother_carrying_back_diagonal_a",
+      "frame_role": "Contact 1 (A)",
+      "svg": "assets/rig/mother_carrying_back_diagonal_a.svg",
+      "svg_sha256": "b2fd45f9d01580bc185b481470d35286140319e1f9ea487919dfe94e87bf7143",
+      "native_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/back_diagonal_a-native.png",
+      "native_render_sha256": "f29deb32598983aca492ea84b925ca82aebe24165a41231dd6938d6ca5183a09",
+      "enlarged_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/back_diagonal_a-6x.png",
+      "enlarged_render_sha256": "5fee9480c8518a98a5163763ed8fe9db14f5a21f47229aca11a526e2ca4bb024",
+      "identity_source": "docs/evidence/comic-carrying-redraw-2026-09-12/registered/rig/mother_carrying_back_diagonal_a.png",
+      "identity_source_sha256": "577948ca2a055b8347c2bd6cf6cd35c22908ce83ca9e99e173b0cd4eab8b13ca",
+      "dimensions": [
+        26,
+        46
+      ],
+      "ground_anchor": [
+        13,
+        46
+      ]
+    },
+    {
+      "name": "mother_carrying_back_diagonal_c",
+      "frame_role": "Passing (C)",
+      "svg": "assets/rig/mother_carrying_back_diagonal_c.svg",
+      "svg_sha256": "d98102fc1f8479d743cad6aa1d5bfe624ca6444f78bcd764d19806cd210b1db8",
+      "native_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/back_diagonal_c-native.png",
+      "native_render_sha256": "c9f209a530b2101458a334b11996ddfe8425447433f10ed2bddf755b355d5b19",
+      "enlarged_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/back_diagonal_c-6x.png",
+      "enlarged_render_sha256": "218e6973ced5f5846d88d7c321f412fb627f3ab7d9d1b3b6611a9894a85e81fb",
+      "identity_source": "docs/evidence/comic-carrying-redraw-2026-09-12/registered/rig/mother_carrying_back_diagonal_b.png",
+      "identity_source_sha256": "f5ea61cc750ab7a478278d12cdf7e9437308794f5ea409f482a005252d387a63",
+      "dimensions": [
+        26,
+        46
+      ],
+      "ground_anchor": [
+        13,
+        46
+      ]
+    },
+    {
+      "name": "mother_carrying_back_diagonal_b",
+      "frame_role": "Contact 2 (B)",
+      "svg": "assets/rig/mother_carrying_back_diagonal_b.svg",
+      "svg_sha256": "614b929b83a116e13e8e8057ac942eba1271bc0c5ca5db2a6f217142da2f688b",
+      "native_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/back_diagonal_b-native.png",
+      "native_render_sha256": "21a4ba4e3e07e12f79258cc42358c10b30de2386765709252d97fc7f2dde59dd",
+      "enlarged_render": "docs/evidence/comic-carrying-strides-2026-09-12/source/svg-rendered/back_diagonal_b-6x.png",
+      "enlarged_render_sha256": "40c14171da27beb2a7ca8a039df8c1b9136742dc2e2517e8fe49fae0bd4fc271",
+      "identity_source": "docs/evidence/comic-carrying-redraw-2026-09-12/registered/rig/mother_carrying_back_diagonal_b.png",
+      "identity_source_sha256": "f5ea61cc750ab7a478278d12cdf7e9437308794f5ea409f482a005252d387a63",
+      "dimensions": [
+        26,
+        46
+      ],
+      "ground_anchor": [
+        13,
+        46
+      ]
+    }
+  ]
+}

@@ -238,7 +238,7 @@ func _test_set_direction_on_her_own_position_stops_rather_than_pressing(t) -> vo
 ## **The generous radius, not the exact pixel — and `Mode.TAP` only now.** *(2026-09-06: "also,
 ## to stop her just click on her".)* `TAP_STOP_RADIUS` catches a pointer that does not land on the
 ## same world pixel as her twice, but — unlike the wider, doubled number it replaced — not a click
-## on the pram, which rides up to `PRAM_DISTANCE` off to one side of her. *(Playtest 34 finding 6:
+## on the side-view pram, whose centre stays outside the lifted stop circle. *(Playtest 34 finding 6:
 ## "if I click on the stroller it shouldn't stop only when I click on the body of the player.")*
 ## Replaces the old, device-agnostic version of this test rather than sitting beside it — the
 ## `Mode.JOYSTICK` half of what it asserted is now
@@ -289,9 +289,11 @@ func _test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t) -> void:
 	t.check(Input.is_action_pressed("move_right"),
 			"walking again, so the pram click below has something to undo")
 
-	# 34px off -- Stroller.PRAM_DISTANCE -- and past TAP_STOP_RADIUS (24px) of either her feet or
-	# the lifted centre: the pram is not her.
-	controls._on_tap(transform * Vector2(166.0, 200.0), 7.0)
+	# The west-facing pram's live centre remains outside TAP_STOP_RADIUS of the lifted stop centre:
+	# the pram is not her, even with the hand touching the handle.
+	var pram_centre := Vector2(200.0, 200.0) + Vector2(
+			-Stroller.PRAM_HORIZONTAL_DISTANCE, Stroller.PRAM_VERTICAL_LIFT)
+	controls._on_tap(transform * pram_centre, 7.0)
 	t.check(Input.is_action_pressed("move_left") and controls._walking,
 			"a click on the pram is not a click on her any more -- it sets a direction instead")
 

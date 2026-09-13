@@ -1,0 +1,351 @@
+{
+  "python_version": "3.14.7",
+  "pillow_version": "12.3.0",
+  "godot_version": "4.7.2.stable.official.ed1daf0bf",
+  "font": "Pillow ImageFont.load_default()",
+  "scale": 4,
+  "core_inputs": {
+    "project.godot": "dcf36cfce66d97d6b07bad86bb2aa30368e367472cb11838044b4fefed0c4363",
+    "assets/ground_tileset.tres": "5bd48cca14ea51ea4ae5c624fd0cfcc924d693b3b815be716532a35d122412ed",
+    "src/autoload/tuning.gd": "fdd307d40ec1a28e0cb304e4861e806d4805a61cdebafbb92ee65825c7901bfe",
+    "src/game_enums.gd": "2ce81dc8a7bfec40e670e9408a2c2d9b55a82a25711e552a5d7b27fc692ab2c3",
+    "src/city/city.gd": "48f9cea96455003e224ef1880b3a99dac0139d405ea6895928b2b6ffa5a1d2cd",
+    "src/city/city_generator.gd": "4450b629cd3fb34f3ce3e8a5f358f6295ee119f428a09fbb37dfcc08922028d2",
+    "src/city/city_map.gd": "7541914a16336c6453c13907949e3d8250d9cb0a40b66a54b8b1c42684c06207",
+    "src/city/city_state.gd": "03954c03185fb814e908dbd958757bc6d6a8ac167f2c38d6fe6a3393f4d9d028",
+    "src/city/ground_tiles.gd": "86eeee9c5c7871b7b9d1f8509c06b378016f50334625c9f7bec57cfd4b121e2c",
+    "src/visuals/texture_resolver.gd": "8a430bfdf288883e51de6313a8b4ef85f3801452f2c35f9e5cfcf3b582e9edf2",
+    "docs/evidence/sidewalk-layout-review-2026-09-12/layout_capture.gd": "301136c2555d6d98c629a22553c74e802866487de4f0afc2035bc18b58877110",
+    "docs/evidence/sidewalk-layout-review-2026-09-12/layout_capture.tscn": "1272f3b2aa9a8d8ede9d86ecb27ee82a6f9951ab5390ce17af821e3ce0951b9c",
+    "docs/evidence/sidewalk-layout-review-2026-09-12/assemble.py": "7388545019f14d09cca99e7ac8234961939b715c0b8b3f415fcca9ee903bef03"
+  },
+  "tile_inputs": {
+    "0": {
+      "authored_path": "res://assets/tiles/road.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/road.png",
+      "sha256": "f4b2cda6783db283b0d73ec05fd0b9a36ee777b3c284aa34802505c166c52db1",
+      "frozen_path": "inputs/tiles/00-road.png"
+    },
+    "1": {
+      "authored_path": "res://assets/tiles/road_line_e.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/road_line_e.png",
+      "sha256": "fdf74bbdcacc0a96e6e8bfac8699bf0cd6534a9d418ef913dedb742fc6b74fe7",
+      "frozen_path": "inputs/tiles/01-road_line_e.png"
+    },
+    "2": {
+      "authored_path": "res://assets/tiles/road_line_w.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/road_line_w.png",
+      "sha256": "e05d3bf68a59a483568b59ad32e6c766a102a17c4b57284bf6ec3f6dca7cc61d",
+      "frozen_path": "inputs/tiles/02-road_line_w.png"
+    },
+    "3": {
+      "authored_path": "res://assets/tiles/road_line_n.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/road_line_n.png",
+      "sha256": "a929deaf3d3fcae3750cd1f298cc7414700c2089d527979028b89d612e02b163",
+      "frozen_path": "inputs/tiles/03-road_line_n.png"
+    },
+    "4": {
+      "authored_path": "res://assets/tiles/road_line_s.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/road_line_s.png",
+      "sha256": "8594f9ed35b48fc57b7b14da2381dfdc92e5c8b559a4fccf4800f97dcd1d1167",
+      "frozen_path": "inputs/tiles/04-road_line_s.png"
+    },
+    "5": {
+      "authored_path": "res://assets/tiles/crossing_v.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/crossing_v.png",
+      "sha256": "11a692b0bfb8e7ea472b5c3932093d78aa5d085ef3f777794782d73a4cdeea98",
+      "frozen_path": "inputs/tiles/05-crossing_v.png"
+    },
+    "6": {
+      "authored_path": "res://assets/tiles/crossing_h.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/crossing_h.png",
+      "sha256": "ef0832040f37c30ccfe5ea12f5e0292185324161394b9575fe960d82de916a18",
+      "frozen_path": "inputs/tiles/06-crossing_h.png"
+    },
+    "7": {
+      "authored_path": "res://assets/tiles/sidewalk.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/sidewalk.png",
+      "sha256": "8dcc80cc6fce4e7487185430fa256dc0c9da5379d65dc215c0a78ab8f0d0afe8",
+      "frozen_path": "inputs/tiles/07-sidewalk.png"
+    },
+    "8": {
+      "authored_path": "res://assets/tiles/sidewalk_kerb_n.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_n.png",
+      "sha256": "9a5e4acda0b3b867f815f17f041843abfbd8ac1151e9af2bc7954b8905e152d6",
+      "frozen_path": "inputs/tiles/08-sidewalk_kerb_n.png"
+    },
+    "9": {
+      "authored_path": "res://assets/tiles/sidewalk_kerb_s.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_s.png",
+      "sha256": "b039ee2bee69e7468261a081055c240ec89e3bd98db49008f78d65bddad76977",
+      "frozen_path": "inputs/tiles/09-sidewalk_kerb_s.png"
+    },
+    "10": {
+      "authored_path": "res://assets/tiles/sidewalk_kerb_e.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_e.png",
+      "sha256": "dea7f6cf21cc42ec805a881a879c151187dc12a66bd4945791d977ce692ef3c4",
+      "frozen_path": "inputs/tiles/10-sidewalk_kerb_e.png"
+    },
+    "11": {
+      "authored_path": "res://assets/tiles/sidewalk_kerb_w.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_w.png",
+      "sha256": "5945dbc4e9f86ab6680cae3bf97c4d6b7c05673b32f3cf616606e6963d8b073b",
+      "frozen_path": "inputs/tiles/11-sidewalk_kerb_w.png"
+    },
+    "18": {
+      "authored_path": "res://assets/tiles/quiet_square.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/quiet_square.png",
+      "sha256": "5185b1628229f8053b9c768cca79cd4728e4009cf0a7abc9b1761940c22ce222",
+      "frozen_path": "inputs/tiles/18-quiet_square.png"
+    },
+    "21": {
+      "authored_path": "res://assets/tiles/road_main.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/road_main.png",
+      "sha256": "2ee12bec9b02328e04f6b97984d90bc60dbc342a87070122fe224113b16d9acd",
+      "frozen_path": "inputs/tiles/21-road_main.png"
+    },
+    "22": {
+      "authored_path": "res://assets/tiles/road_main_line_e.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/road_main_line_e.png",
+      "sha256": "4316c995efe7ee1fa9bac161f8da9be95bf6a9e4bdf7aa7a6a8c53a62175953c",
+      "frozen_path": "inputs/tiles/22-road_main_line_e.png"
+    },
+    "23": {
+      "authored_path": "res://assets/tiles/road_main_line_w.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/road_main_line_w.png",
+      "sha256": "e0624d1392f82649c5cee43ae872092d24e2d274fd7038c3f2c09f7c22738b74",
+      "frozen_path": "inputs/tiles/23-road_main_line_w.png"
+    },
+    "28": {
+      "authored_path": "res://assets/tiles/sidewalk_kerb_main_e.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_e.png",
+      "sha256": "f830d8e33482c51bde5908f0501d8694a5bf6058b5ce4252ea8fd0428501dced",
+      "frozen_path": "inputs/tiles/28-sidewalk_kerb_main_e.png"
+    },
+    "29": {
+      "authored_path": "res://assets/tiles/sidewalk_kerb_main_w.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_w.png",
+      "sha256": "4a14f9c25b2022666eeef64665ba221b107b0c00e69549446b6d233a5ed66a28",
+      "frozen_path": "inputs/tiles/29-sidewalk_kerb_main_w.png"
+    },
+    "36": {
+      "authored_path": "res://assets/tiles/crossing_main_n.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/crossing_main_n.png",
+      "sha256": "865b79212869f148e47699ecc747b4c3bf1c5ef4f7a67ac7dac7c28b1ca2cb19",
+      "frozen_path": "inputs/tiles/36-crossing_main_n.png"
+    },
+    "37": {
+      "authored_path": "res://assets/tiles/crossing_main_s.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/crossing_main_s.png",
+      "sha256": "b3244654e42876b62ce3185b8a42d30928eb7f79797a57e917d8071747ba9e19",
+      "frozen_path": "inputs/tiles/37-crossing_main_s.png"
+    },
+    "38": {
+      "authored_path": "res://assets/tiles/crossing_main_w.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/crossing_main_w.png",
+      "sha256": "e6e8f6634e6523338cf89ff804289a120d0828310d05192bb56f84a3d2f50a04",
+      "frozen_path": "inputs/tiles/38-crossing_main_w.png"
+    },
+    "39": {
+      "authored_path": "res://assets/tiles/crossing_main_e.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/crossing_main_e.png",
+      "sha256": "1973575a0f1fbab27fa1e306279f53cbdfc1fbb9622f4c7a6f40bcebf48ff064",
+      "frozen_path": "inputs/tiles/39-crossing_main_e.png"
+    },
+    "42": {
+      "authored_path": "res://assets/tiles/road_cracked_cracked_a.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/road_cracked_cracked_a.png",
+      "sha256": "ba9b8d9d296fb750f60d0fc49b2ba71e5bcc537126b078e88a113eca6eb96d92",
+      "frozen_path": "inputs/tiles/42-road_cracked_cracked_a.png"
+    },
+    "43": {
+      "authored_path": "res://assets/tiles/road_cracked_cracked_b.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/road_cracked_cracked_b.png",
+      "sha256": "8b85a7eb0cf78b9aead92a8b90d1b57755232a65416a7824f4ef2188aff72e1c",
+      "frozen_path": "inputs/tiles/43-road_cracked_cracked_b.png"
+    },
+    "45": {
+      "authored_path": "res://assets/tiles/road_cracked_broken_b.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/road_cracked_broken_b.png",
+      "sha256": "0f971bd164e889c16673f36c8abb8d02ad4603c54b2f3a11f714663a607a9e22",
+      "frozen_path": "inputs/tiles/45-road_cracked_broken_b.png"
+    },
+    "46": {
+      "authored_path": "res://assets/tiles/sidewalk_cracked_hairline_a.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/sidewalk_cracked_hairline_a.png",
+      "sha256": "9f587b00dccf034bc81224108b028f7177881bd4d27e97ec6d0f592097759d51",
+      "frozen_path": "inputs/tiles/46-sidewalk_cracked_hairline_a.png"
+    },
+    "47": {
+      "authored_path": "res://assets/tiles/sidewalk_cracked_hairline_b.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/sidewalk_cracked_hairline_b.png",
+      "sha256": "9f13f670effeb4892a9b13d42dd142851d542e18f5aa69511290388c6cfd395a",
+      "frozen_path": "inputs/tiles/47-sidewalk_cracked_hairline_b.png"
+    },
+    "48": {
+      "authored_path": "res://assets/tiles/sidewalk_cracked_cracked_a.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/sidewalk_cracked_cracked_a.png",
+      "sha256": "f95a24b6e66fa0d8a05f6e83672431f167a0a3c4090e7954d7eab28ca6c0d034",
+      "frozen_path": "inputs/tiles/48-sidewalk_cracked_cracked_a.png"
+    },
+    "49": {
+      "authored_path": "res://assets/tiles/sidewalk_cracked_cracked_b.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/sidewalk_cracked_cracked_b.png",
+      "sha256": "dbe3b33e5bb1d6a5c2e37ce42723801e6c2b0a66aef1f66f48916130ab643952",
+      "frozen_path": "inputs/tiles/49-sidewalk_cracked_cracked_b.png"
+    },
+    "50": {
+      "authored_path": "res://assets/tiles/sidewalk_cracked_broken_a.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/sidewalk_cracked_broken_a.png",
+      "sha256": "f972c4420deefa7e32664870f71fab2ae152417d3d0ef50554067702f1cb097c",
+      "frozen_path": "inputs/tiles/50-sidewalk_cracked_broken_a.png"
+    },
+    "51": {
+      "authored_path": "res://assets/tiles/sidewalk_cracked_broken_b.svg",
+      "dimensions": [
+        32,
+        32
+      ],
+      "resolved_path": "res://assets/illustrated/svg-transfer/tiles/sidewalk_cracked_broken_b.png",
+      "sha256": "a4b160812f11173e63d531657ab0a3e617002db638ad1138fb9c0dc2d2bf6002",
+      "frozen_path": "inputs/tiles/51-sidewalk_cracked_broken_b.png"
+    }
+  },
+  "outputs": {
+    "layout.json": "b5d8bd3d0f27194c05de5e743418a65edd129c82d40569774691ac6d88cc9e89",
+    "crops/day-01/normal_junction.png": "e04018051d08b4c3ec10306329e5270d46c1802a5d086d13c1b9dc78d5c61d27",
+    "crops/day-01/main_junction.png": "ae1910ac3d4d453a73b10885bdadf57f9df71b68487c96da2413eaeeb1f2b797",
+    "crops/day-01/normal_vertical_run.png": "61947db607224c6cecfa73627ade2cb23d301c37c47dff13abf715918eaa1b07",
+    "crops/day-01/normal_horizontal_run.png": "45294767d0051108de0025db2d66ec87939ffaed33a4f51406b989c6d7599072",
+    "crops/day-01/main_vertical_run.png": "0e4264dec616cc9a322675352befa6cad71c1a2c63f8cfb9e65a6f1f8ac28762",
+    "day-01-actual-layout-native.png": "9bda5004c145f3982f235bca70a4d5ea32f9fbb14059ce6236d86ab7f52b39d7",
+    "day-01-actual-layout-4x.png": "e4e1fde621a108651c2c16bdeb0f38cbb644d5d2e8bb4b455d1d2ba751c6fa40",
+    "crops/day-14/normal_junction.png": "830ab7b445777331c3fcbf8bd759bbb147fab3a368ac66245699b4a89dd25e16",
+    "crops/day-14/main_junction.png": "173d060368d296fd4e5901c9f0a12ac6b0b220e4269799eb36d64983a3993267",
+    "crops/day-14/normal_vertical_run.png": "84d042c79a86c8d909f4aae2f9ff3870c17e105dd225a0b448171263489084fb",
+    "crops/day-14/normal_horizontal_run.png": "0b10b00ca3317b4515898f44efea197ac04a4c4687b23bd6726be4e5d947805d",
+    "crops/day-14/main_vertical_run.png": "af31f35f1e5ee1ca6609fbe996ddb74c9fc8f76b115a1e6f749b7a17cf1a988b",
+    "day-14-actual-layout-native.png": "a1f205dfbe617ed0fc559675c9f9d3f75e1608c4f65a3d945c0fa23c8ca5f9e7",
+    "day-14-actual-layout-4x.png": "f1d86cff48261f92d974329174d1c7f3cc7507d85893e0956b2d4693d7d40665"
+  }
+}

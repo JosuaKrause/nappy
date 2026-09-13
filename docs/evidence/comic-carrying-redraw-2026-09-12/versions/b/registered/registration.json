@@ -1,0 +1,232 @@
+[
+  {
+    "name": "mother_carrying_front_a",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      179,
+      397
+    ],
+    "registered_alpha_bounds": [
+      0,
+      0,
+      24,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 0.906801007556675
+  },
+  {
+    "name": "mother_carrying_back_a",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      178,
+      394
+    ],
+    "registered_alpha_bounds": [
+      0,
+      0,
+      24,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 0.9137055837563451
+  },
+  {
+    "name": "mother_carrying_side_a",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      162,
+      396
+    ],
+    "registered_alpha_bounds": [
+      1,
+      0,
+      25,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 0.9090909090909091
+  },
+  {
+    "name": "mother_carrying_front_diagonal_a",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      165,
+      398
+    ],
+    "registered_alpha_bounds": [
+      1,
+      0,
+      25,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 0.9045226130653267
+  },
+  {
+    "name": "mother_carrying_back_diagonal_a",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      162,
+      394
+    ],
+    "registered_alpha_bounds": [
+      1,
+      0,
+      25,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 0.9137055837563451
+  },
+  {
+    "name": "mother_carrying_front_b",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      178,
+      384
+    ],
+    "registered_alpha_bounds": [
+      0,
+      0,
+      24,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 0.9375
+  },
+  {
+    "name": "mother_carrying_back_b",
+    "size": [
+      24,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      178,
+      385
+    ],
+    "registered_alpha_bounds": [
+      0,
+      0,
+      24,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 0.935064935064935
+  },
+  {
+    "name": "mother_carrying_side_b",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      166,
+      383
+    ],
+    "registered_alpha_bounds": [
+      1,
+      0,
+      25,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 0.9399477806788512
+  },
+  {
+    "name": "mother_carrying_front_diagonal_b",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      163,
+      386
+    ],
+    "registered_alpha_bounds": [
+      1,
+      0,
+      25,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 0.9326424870466321
+  },
+  {
+    "name": "mother_carrying_back_diagonal_b",
+    "size": [
+      26,
+      46
+    ],
+    "generated_cell_bounds": [
+      0,
+      0,
+      162,
+      384
+    ],
+    "registered_alpha_bounds": [
+      1,
+      0,
+      25,
+      46
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 0.9375
+  }
+]

@@ -1,0 +1,48 @@
+{
+  "inputs": {
+    "source_revision": "f3d4689096255a58b1c7b20afd5043809faade8e",
+    "files": {
+      "pram_side.svg": "a100556fe579948cdb593bcd22d9a0ba639352c497ac7c6e46b92d6852041ad0",
+      "pram_side.png": "c869c90248de26b9d9563b9365d026fcd2961e9b490395e762e7ce76b53be9af",
+      "pram_front.svg": "7ef1588d0d95a5900130c5493bf7d799d61dabba81248009ebccb032991c50c8",
+      "pram_front.png": "c2e711adf9942321ac903168f696795219e6f6f02a93cdc9be307b841fdfb440",
+      "pram_back.svg": "523742698017d3b7380699e32fa2c40f7391c89f02cf0026a874480a584bd133",
+      "pram_back.png": "d2020ba1d2bf0407d50106bc81b441a79efec9b567c27ecd662acb0427419bb2",
+      "pram_front_diagonal.svg": "97794870723c51735dd7660d71d02e6d9dd799b8304aa7facebbd04fd565a32a",
+      "pram_front_diagonal.png": "7fffdb3bc6f2303a6c05a43a17ca96d2f3cfe4d02879560c5baafb18bc84d82e",
+      "pram_back_diagonal.svg": "b60a4f9ba3d5dd3dd18f0136932613049876cf42f59448c24c0808839d938663",
+      "pram_back_diagonal.png": "621f7a68078e7d0d0d3b1a10110a37242cd3705caf4d74070a395549c05669da"
+    }
+  },
+  "script_sha256": "dfa12fec3ca6d5acf288f2f618c647ad0842656a3c30922c5e906871d0279281",
+  "pillow": "12.3.0",
+  "assignments": {
+    "pram_side": {
+      "source": "pram_side",
+      "horizontal_mirror": false,
+      "sha256": "c869c90248de26b9d9563b9365d026fcd2961e9b490395e762e7ce76b53be9af"
+    },
+    "pram_front": {
+      "source": "pram_back",
+      "horizontal_mirror": false,
+      "sha256": "d2020ba1d2bf0407d50106bc81b441a79efec9b567c27ecd662acb0427419bb2"
+    },
+    "pram_back": {
+      "source": "pram_front",
+      "horizontal_mirror": false,
+      "sha256": "c2e711adf9942321ac903168f696795219e6f6f02a93cdc9be307b841fdfb440"
+    },
+    "pram_front_diagonal": {
+      "source": "pram_back_diagonal",
+      "horizontal_mirror": true,
+      "sha256": "8e09e8447d9f4398d735b91542351b8e754f53903f8b4eb12a8f95800e160611"
+    },
+    "pram_back_diagonal": {
+      "source": "pram_front_diagonal",
+      "horizontal_mirror": true,
+      "sha256": "11f278b6c7e584d7d4250365ad808c9142e9a65f576ef68ebad7115a50ad5699"
+    }
+  },
+  "review": "N NE E SE / S SW W NW; native and nearest-neighbor 6x; Pillow default font",
+  "preserved": "native dimensions, RGBA pixels, bottom-center anchors, side-view bytes"
+}

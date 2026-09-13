@@ -1,0 +1,31 @@
+{
+  "anchor": "bottom-center: (width / 2, 46)",
+  "canvases": {
+    "back": [24, 46],
+    "back_diagonal": [26, 46],
+    "front": [24, 46],
+    "front_diagonal": [26, 46],
+    "side": [26, 46]
+  },
+  "font_path": "/System/Library/Fonts/SFNS.ttf",
+  "font_sha256": "2bfd40dc72e6759e248f82a52a40d551338979fffc9b5c070e685b4b7ad19e66",
+  "frame_order": ["a", "c", "b", "c"],
+  "gif_duration_ms": [190, 190, 190, 190],
+  "svg_sha256": {
+    "mother_carrying_back_a.svg": "f8a4401ba90a2d51e280b452087da759d1ddaa577f91f3300308540d5d177658",
+    "mother_carrying_back_b.svg": "b1ab7caebec6264e1c2080e903cdf93a473a334e05ac519fadc0a988553f3840",
+    "mother_carrying_back_c.svg": "4d42aacbcd634f4b1e897fdf40627bd20036a3a2879754d854073206f8c0d3c8",
+    "mother_carrying_back_diagonal_a.svg": "fa7427d3de8e63044fda15e33614d99a0825da1427fbd9fb780d20deac4287d2",
+    "mother_carrying_back_diagonal_b.svg": "47028cd374ee3e571ee8d2845e40176143e458d22bf0f00d085f924634d3d4a3",
+    "mother_carrying_back_diagonal_c.svg": "d98102fc1f8479d743cad6aa1d5bfe624ca6444f78bcd764d19806cd210b1db8",
+    "mother_carrying_front_a.svg": "ff5b3348f3c61361d34df9e0860cc8c00dc24cc4a6be91dbdcf6602eb177523a",
+    "mother_carrying_front_b.svg": "319d5e512e8be56257301b3a239cfc408c6d310666e7c8341aa62fda35f64b26",
+    "mother_carrying_front_c.svg": "342dc8ab64eb393661fa589bc9ddb68d7b980693bdd77ad8be9485e5dbd78db3",
+    "mother_carrying_front_diagonal_a.svg": "393bb575a18a2ce7d98c02bd481858789ad27dd11c6990044f34061b4aaf3bc1",
+    "mother_carrying_front_diagonal_b.svg": "41969ca15ad5dc5ff01d116cab910f3a80d8706df1ea7a86d425532e2066db59",
+    "mother_carrying_front_diagonal_c.svg": "05a5ea6962356b9bb41f560cb68db04762ed8ccb49368fdf90af5f1ce4643929",
+    "mother_carrying_side_a.svg": "5f38a2c3af60921644adee4faeb66debd029c435300c7164a914d9417ae31ee5",
+    "mother_carrying_side_b.svg": "57d444768168f2afde0302903dd4c03475adb5c27d25eb73faaae6e2d387009f",
+    "mother_carrying_side_c.svg": "262ffe7c6cc75d4fc662c8d983895aedf1542d28a38aa060d013dc20bc09cb69"
+  }
+}

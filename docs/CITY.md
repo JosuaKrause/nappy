@@ -314,7 +314,10 @@ open**, and the player walks over it. A zone is a shortcut as well as a destinat
 The crowd asks a different question. An agent travels the lattice, so it checks `is_street()`
 and diverts at the T-junction rather than strolling across the grass — the same move a
 barricade already produces, with the same good side effect: the street with nobody on it is the
-street that does not go through.
+street that does not go through. The same predicate carries every other thing standing in a street:
+a held segment, a soft seal's pavements, and the tiles under any stationary solid body
+(`CityMap.obstructed_tiles`), so the crowd goes round a café the way it goes round a seal — see
+docs/MECHANICS.md, "The crowd goes round a seal".
 
 The zebras on a zone's edge are the case that looks obvious and is not. A crossing sits where a
 *pavement* lane meets a *carriageway*, so most of them still make sense — the pavement is there
@@ -1408,6 +1411,9 @@ Top-down camera with a fake vertical extrusion:
 - Ground is a `TileMapLayer` over `assets/ground_tileset.tres`. Kerbs, centre lines and
   zebra crossings are authored tiles chosen per cell by `GroundTiles`, not geometry
   recomputed on every redraw.
+  `GroundLayers` builds their illustrated textures from shared bases and transparent details
+  when the TileSet is prepared. Grass clump arrangements vary by city seed and cell coordinates;
+  the source IDs, tile types and walkable geometry stay fixed. `--svg` selects the vector art.
 - Buildings fill exactly their lot: the front wall takes the southern `height` px and the
   roof takes the rest. Fitting the mass inside the lot is what keeps extrusions off the
   street. (It does *not* by itself keep an extrusion off the player: the mass is inside the lot and
@@ -1528,3 +1534,5 @@ tiles under `assets/buildings/`, the player under `assets/rig/`, scenery under
 `assets/props/`, event bodies under `assets/events/` — with a per-act palette multiplied
 over the whole canvas. `Palette` holds only the colours the code still chooses at runtime;
 a tree's green lives in the file that draws the tree.
+Illustrated PNG counterparts and ground component pairings are documented in
+[VISUALS.md](VISUALS.md); the runtime selects them by default with SVG fallback.

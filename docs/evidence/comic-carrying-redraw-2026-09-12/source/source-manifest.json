@@ -1,0 +1,212 @@
+[
+  {
+    "name": "mother_carrying_front_a",
+    "svg": "assets/rig/mother_carrying_front_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_front_a.png",
+    "svg_sha256": "1a6367ad9ad327a790c4d2e5d7bbbaff017ed6ee44456deed936e64325b3a18b",
+    "native_raster_sha256": "1c15a110396bd535f96615abe7c8fc54c1109b5ef928b1d1bb317df52b5c594e",
+    "enlarged_raster_sha256": "fbc331a8dc36aa223ddece0fb567e0676e6cbdc231a0ab250a6bf3adcfffeb34",
+    "dimensions": [
+      24,
+      46
+    ],
+    "anchor": [
+      12,
+      46
+    ],
+    "generated_atlas": "carrying-atlas-selected.png",
+    "generated_cell": [
+      0,
+      0
+    ]
+  },
+  {
+    "name": "mother_carrying_back_a",
+    "svg": "assets/rig/mother_carrying_back_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_back_a.png",
+    "svg_sha256": "588d530450b598db263d508e08df90b79076b1364ae7b0e1a29b908900f02cc9",
+    "native_raster_sha256": "144b31e558c50855ea0b686467a9016450bc4e13adb83d80c77509d20cebf3a4",
+    "enlarged_raster_sha256": "c4596f3c373a4806f234e537ce91a38c365aa7277f8ab14d71b7bed3ba9e5ae0",
+    "dimensions": [
+      24,
+      46
+    ],
+    "anchor": [
+      12,
+      46
+    ],
+    "generated_atlas": "carrying-atlas-selected.png",
+    "generated_cell": [
+      1,
+      0
+    ]
+  },
+  {
+    "name": "mother_carrying_side_a",
+    "svg": "assets/rig/mother_carrying_side_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_side_a.png",
+    "svg_sha256": "5d58d7ef0b4a4e99f9cf6c78b1728ce62606f244773abd7651e04963ebe6b6e9",
+    "native_raster_sha256": "9e468cdab2252a84aedcb0a32fc9609f9794ae95f38127c263c1988e8a705475",
+    "enlarged_raster_sha256": "7c2ecb233ce389c7f566edc172bd0a49ce5283abbf77490df204d45983325042",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "carrying-atlas-selected.png",
+    "generated_cell": [
+      2,
+      0
+    ]
+  },
+  {
+    "name": "mother_carrying_front_diagonal_a",
+    "svg": "assets/rig/mother_carrying_front_diagonal_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_front_diagonal_a.png",
+    "svg_sha256": "a4f3164f4756b1406d8279c117e5ff365275fe16913bc65a896910a4c00c63df",
+    "native_raster_sha256": "5c0823af6d16c017a986a3a1212e9759b122b9f5c6925735ded612e5c928fede",
+    "enlarged_raster_sha256": "6bc32a452563dd8af8b22007a5777fdb2cd2b58bf63059611816bdb5372a6ec2",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "carrying-atlas-selected.png",
+    "generated_cell": [
+      3,
+      0
+    ]
+  },
+  {
+    "name": "mother_carrying_back_diagonal_a",
+    "svg": "assets/rig/mother_carrying_back_diagonal_a.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_back_diagonal_a.png",
+    "svg_sha256": "f5b38c188da2cd1ba8c539e05e664f5dc3ba1781f4abcb0ac648e9e18233a62b",
+    "native_raster_sha256": "f419b4dfe4252e35177281f61a7d9a33ef40b44eb454fabe4421ec20bc614fed",
+    "enlarged_raster_sha256": "d140244930c2cab775a153f7a90bbaf104c50efaa28b241d2bd15fab6b15a549",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "carrying-atlas-selected.png",
+    "generated_cell": [
+      4,
+      0
+    ]
+  },
+  {
+    "name": "mother_carrying_front_b",
+    "svg": "assets/rig/mother_carrying_front_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_front_b.png",
+    "svg_sha256": "3faf44faa3867d9b2e4854ee9bd07b9a3623aa2de017a51d5ef5456ecd444175",
+    "native_raster_sha256": "a4ae06042d3de10912558e36f35496bd112c8ea34d2dd3a802912f87bc408a74",
+    "enlarged_raster_sha256": "a99029bf866e9cd4f6d8adfb9e7cc2327182e818cbf18d28db7fa7b2203a3379",
+    "dimensions": [
+      24,
+      46
+    ],
+    "anchor": [
+      12,
+      46
+    ],
+    "generated_atlas": "carrying-atlas-selected.png",
+    "generated_cell": [
+      0,
+      1
+    ]
+  },
+  {
+    "name": "mother_carrying_back_b",
+    "svg": "assets/rig/mother_carrying_back_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_back_b.png",
+    "svg_sha256": "84dd4134ebb988b8247f5956093f3e598eccbe06922861614ef284edb3b1fe27",
+    "native_raster_sha256": "9c06d4ee2429f305ed9e35f76c7af4b49d13ec230f1571154bb4bd7fef84fce1",
+    "enlarged_raster_sha256": "cde15a93ae40f71d1fd838bd7e98c7e31936a33958d218df731523fe5ae399c9",
+    "dimensions": [
+      24,
+      46
+    ],
+    "anchor": [
+      12,
+      46
+    ],
+    "generated_atlas": "carrying-atlas-selected.png",
+    "generated_cell": [
+      1,
+      1
+    ]
+  },
+  {
+    "name": "mother_carrying_side_b",
+    "svg": "assets/rig/mother_carrying_side_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_side_b.png",
+    "svg_sha256": "00e13f321e034141123939152f14fc073c05f5713e521d037efdf879844ae9d6",
+    "native_raster_sha256": "63c11f7f81b525319a3133480e30b69f4f726fd9120f37116f92aa4ef2169a87",
+    "enlarged_raster_sha256": "98ac50f36b12c76b269264016afecf01948587af24aace64d6039678c890dfcb",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "carrying-atlas-selected.png",
+    "generated_cell": [
+      2,
+      1
+    ]
+  },
+  {
+    "name": "mother_carrying_front_diagonal_b",
+    "svg": "assets/rig/mother_carrying_front_diagonal_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_front_diagonal_b.png",
+    "svg_sha256": "ffa59812846e800fb69a1cb63c2f662c9d1ddcd8c3417ba5575ea3a662a953e9",
+    "native_raster_sha256": "ae042737344ea9c0083b86c5da77858f6caf515570929dc68d0c2cf541628d81",
+    "enlarged_raster_sha256": "979d785640a72a56a65c169ecf93fbddd6c693ad2b6238d8bce5fde67a914a04",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "carrying-atlas-selected.png",
+    "generated_cell": [
+      3,
+      1
+    ]
+  },
+  {
+    "name": "mother_carrying_back_diagonal_b",
+    "svg": "assets/rig/mother_carrying_back_diagonal_b.svg",
+    "png": "assets/illustrated/svg-transfer/rig/mother_carrying_back_diagonal_b.png",
+    "svg_sha256": "8b0cf428ae89d7885785b56737286555143fba64639ee829c10d4170abc6b5ad",
+    "native_raster_sha256": "c9f209a530b2101458a334b11996ddfe8425447433f10ed2bddf755b355d5b19",
+    "enlarged_raster_sha256": "4583ec379673788220d57e8f074fe63bf720658d35a174340753f5b3f82ea5bc",
+    "dimensions": [
+      26,
+      46
+    ],
+    "anchor": [
+      13,
+      46
+    ],
+    "generated_atlas": "carrying-atlas-selected.png",
+    "generated_cell": [
+      4,
+      1
+    ]
+  }
+]

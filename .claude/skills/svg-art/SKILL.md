@@ -46,7 +46,11 @@ decals use their centre; standing sprites usually use bottom centre through `Spr
 
 Compare a character's state variants as one family: carrying the baby and pushing the stroller
 must preserve the mother's identity, clothing and proportions across every facing. Keep shared
-head and torso geometry identical between gait frames when only the legs move. Review the whole
+head geometry consistent between gait frames. Articulate the pelvis, thighs and coat hem with a
+full stride; a fixed torso crop across the hip joint cannot support that movement. Trace each
+leg continuously from hip to shoe instead of using a color swap as an opposite step. In diagonal
+views, keep the projected travel axis fixed across contacts while the legs exchange leading and
+trailing positions. Review the whole
 facing/frame/state matrix together before PNG transfer; the illustrated-png skill covers shared
 generation grids and matching existing derivatives.
 

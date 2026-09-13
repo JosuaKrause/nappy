@@ -13,10 +13,10 @@ Claude Code and Codex share `CLAUDE.md` and `.claude/skills/`; Codex reads `CLAU
 through `project_doc_fallback_filenames` in `.codex/config.toml`, and finds the skills through the
 `.agents/skills` link. Its repository hooks need review through `/hooks` before they execute.
 
-**Start with `git fetch --prune` and `gh pr list`.** A pull request still open either waits on its
-check or has gone `CONFLICTING` under a sibling that merged first, and the second kind needs a merge
-of `main` resolved by hand under the **merging-main** rules before auto-merge can take it; a session
-normally ends with its PRs merged, so an open one is worth a look. Use `TODO.md` for the next
+**Start with `git fetch --prune` and `gh pr list`.** Open pull requests may await review, checks or
+merge permission. Resolve conflicts with `main` under the **merging-main** rules. A PR stays open
+unless the user explicitly authorizes merging in the current session; enabling auto-merge and
+delegating a merge require the same permission. Use `TODO.md` for the next
 implementation and `REVIEW.md` for the questions a playtest should cover; the player's original
 reports and reference instructions live in `docs/playtests/`.
 
@@ -275,8 +275,7 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 ## The queue, as prioritised on 2026-09-09
 
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56 has only
-its measurement against the nerves left, and that waits for act III; M110, the crowd goes
-round a seal, keeps one open question behind it. The debug view (`1` to `4` in a debug build, `--layers 1,3` for
+its measurement against the nerves left, and that waits for act III. The debug view (`1` to `4` in a debug build, `--layers 1,3` for
 a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow or a body is checked by
 eye, and every one of the three is now derived from the object's one `GroundShape`. Behind those, unordered: M96 (the teaching day and
 the dog after it), M97 (calm areas that hold), M99 (the corridor's density after the sealing) and
@@ -285,8 +284,8 @@ Reaching act III — which M56's measurement against the nerves needs — waits 
 that batch is done. SVG-to-PNG
 style transfer is Codex's parallel track. Prepared artwork and its source-review sheets are listed
 in `GRAPHICS.md`; the integration table in `TODO.md` assigns each family to its gameplay owner.
-The crowd goes round seals, walls
-and doors (`DECISIONS.md`, M110), and a car follows an arc through a turn with its heading
+The crowd goes round every solid body it meets, not only a seal (`DECISIONS.md`, M110), and a
+car follows an arc through a turn with its heading
 continuous throughout (`DECISIONS.md`, M111), drawn through side, diagonal and end views on the
 way (`DECISIONS.md`, M108, the crowd car); M111's one open question — a street about-face
 that crosses a kerb, or a reverse gear — is the player's, in `TODO.md`.

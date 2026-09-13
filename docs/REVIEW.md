@@ -14,16 +14,42 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-- **Compare the mother carrying the baby with the mother pushing the stroller.** Use ordinary
-  gameplay for pushing and `--start-escape floor:2` for carrying; walk and turn in both. Does she
-  remain recognizably the same woman, with stable hair, clothes and proportions across directions
-  and gait frames? The native and enlarged comparisons in
-  `evidence/style-transfer-player-family-2026-09-12/registered/` show both states side by side;
-  check the result at gameplay size too. `--svg` provides the original source comparison.
+- **Compare damaged road, sidewalk and alley tiles.** Do the shared crack and hole variations
+  sit naturally over each material, without carrying pieces of another floor's slab grid?
+  The [damage atlas review](evidence/shared-damage-2026-09-12/GENERATION.md) shows every variation
+  over each supported base.
+
+- **Look at a park and a wooded calm area while walking past them.** Do the sparse grass clumps give variety while the
+  soft base stays quiet enough to keep people and routes clear? Check neighboring cells and
+  revisit the same seed to compare their stable arrangement.
+
+- **Look at café seating and roadworks along both street axes.** Each café sitter should
+  face its own table, including the right-hand chair and the vertical arrangement. Vertical
+  red barriers should read as a narrow continuous barrier, and a horizontal alley should be
+  closed across its short mouth. The original findings are in [PLAYTEST-64](playtests/PLAYTEST-64.md).
+
+- **Walk past a street tree with the stroller overlapping its bed.** The paving bed should
+  stay underneath her and the pram while the trunk and canopy retain their upright sorting.
+  Check the location pictured in [PLAYTEST-64](playtests/PLAYTEST-64.md), or any street-tree run.
+
+- **Look at trees, bollards and rooftop equipment at gameplay size.** Do the inked foliage,
+  water tank, HVAC units, skylights, vent and ducts fit the comic ground while staying readable?
+  Check both tree shapes and the roof variants in
+  `evidence/comic-city-props-2026-09-12/comparisons/`; `--svg` shows their source concepts.
+
+- **Compare pushing and carrying identity during a state change.** Do they remain the same woman?
+  Use `--start-escape` for carrying. Exact native
+  and enlarged walking GIFs are linked from the
+  [recipe index](evidence/README.md#graphics-recipes); they are sprite assemblies, not live captures.
 
 - **Look at the garbage sacks and small litter from day 10.** Do the standalone sacks and
   piles look like the same material, and does the small ground litter remain quiet and readable?
-  `evidence/style-transfer-litter-2026-09-12/registered/` compares the SVG and PNG sources.
+  `evidence/comic-props-2026-09-12/comparisons/` compares the SVG and PNG sources; use the
+  `unmasked` sheets for the current generated silhouettes.
+
+- **Compare the comic stroller identity mark at icon and logo sizes.** Does the cream stroller
+  remain clear against its navy plate, and does the redrawn symbol fit the preserved wordmark?
+  `evidence/comic-identity-2026-09-12/comparisons/` shows the logo and both export sizes.
 
 Each line is a thing to try or look at and the question it settles. `tools/run.sh` plays the
 desktop build; `--seed <n> --day <n>` puts a run where an item says; `1` to `4` in a debug build
@@ -76,9 +102,16 @@ item below for as long as looking takes.
   the day's route does not use). Walkers and cars turn back from a hard seal, a wall and a
   closure; a soft seal takes both pavements from walkers and leaves the road to cars; a door lets
   cars through one at a time. Does a street the crowd refuses read as *shut*, and does the crowd
-  ever look stuck against it? Record is `DECISIONS.md`, M110. **And the open question is
-  yours**: should a café, a construction band or a kerbed van divert the crowd the same way?
-  `TODO.md`, M110.
+  ever look stuck against it? Record is `DECISIONS.md`, M110.
+- **Walk past a café, a stall or a kerbed van on a day with several** (a precinct's pavements are
+  the busiest early in a day). A walker steps into the other lane of its own footway to get past
+  one and steps back after; a car in the body's own lane turns at the last junction while the
+  oncoming lane keeps flowing past it. Do both reads happen visibly rather than the walker or the
+  car simply not being there next time you look, does any street end up parked rather than turned,
+  and does diverting at every body — the recommendation the player overturned on 2026-09-12 —
+  blunt the tell a closure's own turn-away relies on? Record is `DECISIONS.md`, M110, every solid
+  body; the tunables are `Tuning.WALKER_BODY_SIDESTEP_TILES` (4 tiles) and
+  `CrowdAgent.BODY_TURN_CLEARANCE_TILES` (3 tiles), both open to overturn.
 - **Stand by a region door on a busy street and watch the walkers** (day 7 or later,
   `--invincible`). Most stop beside the hut, vanish inside for a second, come out on the far side
   and walk on; one in eight walks straight through; one in four turns off at the last junction;

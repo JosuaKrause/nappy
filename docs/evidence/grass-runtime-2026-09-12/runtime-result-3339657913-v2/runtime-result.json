@@ -1,0 +1,214 @@
+{
+	"city_found": true,
+	"city_scene": "res://scenes/world/city.tscn",
+	"command_line_args": [
+		"--seed",
+		"3339657913",
+		"--output-dir",
+		"/tmp/nappy-final-forest-2150"
+	],
+	"dev_flags_svg_requested": false,
+	"engine_version": "4.7.2-stable (official)",
+	"expected_composed_atlas_size": [
+		256,
+		32
+	],
+	"forest_cell": [
+		42,
+		26
+	],
+	"forest_cell_atlas_coords": [
+		0,
+		0
+	],
+	"forest_cell_source_id": 30,
+	"forest_cells_nearby_x42_y26": [
+		[
+			38,
+			22,
+			3,
+			0
+		],
+		[
+			39,
+			22,
+			4,
+			0
+		],
+		[
+			40,
+			22,
+			4,
+			0
+		],
+		[
+			41,
+			22,
+			5,
+			0
+		],
+		[
+			38,
+			23,
+			4,
+			0
+		],
+		[
+			39,
+			23,
+			5,
+			0
+		],
+		[
+			40,
+			23,
+			5,
+			0
+		],
+		[
+			41,
+			23,
+			6,
+			0
+		],
+		[
+			38,
+			24,
+			5,
+			0
+		],
+		[
+			39,
+			24,
+			6,
+			0
+		],
+		[
+			40,
+			24,
+			6,
+			0
+		],
+		[
+			41,
+			24,
+			7,
+			0
+		],
+		[
+			38,
+			25,
+			6,
+			0
+		],
+		[
+			39,
+			25,
+			7,
+			0
+		],
+		[
+			40,
+			25,
+			7,
+			0
+		],
+		[
+			41,
+			25,
+			0,
+			0
+		],
+		[
+			38,
+			26,
+			7,
+			0
+		],
+		[
+			39,
+			26,
+			0,
+			0
+		],
+		[
+			40,
+			26,
+			0,
+			0
+		],
+		[
+			41,
+			26,
+			1,
+			0
+		],
+		[
+			38,
+			27,
+			0,
+			0
+		],
+		[
+			39,
+			27,
+			1,
+			0
+		],
+		[
+			40,
+			27,
+			1,
+			0
+		],
+		[
+			41,
+			27,
+			2,
+			0
+		]
+	],
+	"forest_source_id": 17,
+	"forest_texture_resource_path": "",
+	"forest_texture_size": [
+		256,
+		32
+	],
+	"grass_atlas_cells_0_to_7": [
+		true,
+		true,
+		true,
+		true,
+		true,
+		true,
+		true,
+		true
+	],
+	"grass_source_found": true,
+	"grass_source_id": 12,
+	"grass_texture_is_atlas": true,
+	"grass_texture_resource_path": "",
+	"grass_texture_size": [
+		256,
+		32
+	],
+	"ground_found": true,
+	"input_sha256": {
+		"res://assets/ground_tileset.tres": "5bd48cca14ea51ea4ae5c624fd0cfcc924d693b3b815be716532a35d122412ed",
+		"res://assets/illustrated/svg-transfer/tiles/forest.png": "a07aa11d423288e793bfa5e1c88b0b6d313867dab697d70ed9c1a870961f1fe3",
+		"res://assets/illustrated/svg-transfer/tiles/grass.png": "12f3701784fcc146b0b3d97d4b6252d5d35921cc345f27a1bb6b2ccb06bb8f2d",
+		"res://assets/illustrated/svg-transfer/tiles/layers/grass_base.png": "566c0e7169f4fd34e81af5396d9a15a379e6e47ee853e68dbaace1c56fbb8a19",
+		"res://assets/illustrated/svg-transfer/tiles/layers/grass_feature_a.png": "da01b54d5e2f07bcf70d5a054de3032eb3084d860ed3ad222994c3270830f208",
+		"res://assets/illustrated/svg-transfer/tiles/layers/grass_feature_b.png": "89627dfbcfb231d473040f18ba8805a82ce28f7f3f3dffd3f91831ab5a86e995",
+		"res://assets/illustrated/svg-transfer/tiles/layers/grass_feature_c.png": "9e46491fd67f4780a9889e7c4c50583edc8c39080b4776ff99b7b694faa2d825",
+		"res://assets/illustrated/svg-transfer/tiles/layers/manifest.json": "7de53117f71d212574b3e40abf870997cc06a55312fcb07224f178663881464a",
+		"res://docs/evidence/grass-runtime-2026-09-12/grass_runtime_probe.tscn": "972e6134950bd161e86f36de5f3039ab0468784a5f7d0caf9f48006b506e2064",
+		"res://docs/evidence/grass-runtime-2026-09-12/runtime_probe.gd": "518fdcd6031b6b78b2597de1955002b6fb41f8c7168517a79dc43d3df1ba54d1",
+		"res://scenes/main.tscn": "6e717dab0cfa227f30c7b57124a88550ae4298fc0cc3bd5a68f7c3209b377ff8",
+		"res://scenes/world/city.tscn": "8e92c624b4debf9e0fa3eb63ee95b925cf24db508c126ebf3b0f2dc2e2f2e67f",
+		"res://src/city/city.gd": "7e9787a782b199fbb1d176679dfbb02a6da8154ea795c1cfbd1af9d9a7c19aa3",
+		"res://src/visuals/ground_layers.gd": "44622a7fc537ca38726695c086811266cf4736d13c1a71a6a5db1fbb07917a2b",
+		"res://src/visuals/texture_resolver.gd": "63869497f3655bf9a5bc6fbbac4130e8825fca90c781c62aeace83aeb9440c66"
+	},
+	"main_scene": "res://scenes/main.tscn"
+}

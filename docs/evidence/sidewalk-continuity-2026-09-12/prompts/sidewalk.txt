@@ -1,0 +1,8 @@
+Use case: precise-object-edit
+Asset type: one opaque square game-ground tile, later reduced to 32×32 pixels
+Primary request: Remove only the narrow pale curb strip along the top edge of Image 1 by continuing Image 1's existing sidewalk pavers through that strip. The result is the same accepted road-edge paving with no curb or road.
+Input images: Image 1 is the edit target and exact material authority, the accepted north curb tile; Image 2 is the SVG-derived functional source for the required full-tile seam topology and coverage; Image 3 shows all eight accepted normal/main-road curb tiles and confirms the shared material; Image 4 is the approved comic urban style reference; Image 5 is the approved cardinal gameplay style reference.
+Subject: preserve Image 1's warm gray-beige concrete, compact slab scale, dark softly uneven joints, sparse aggregate flecks, low-contrast shading, hue, and line weight. Extend the pavers into the removed top strip while following Image 2's staggered topology: one horizontal joint around the middle, one centered vertical joint in the upper band, and quarter/three-quarter vertical joints in the lower band.
+Composition: exactly one orthographic top-down tile filling the entire square canvas edge to edge. No perspective.
+Constraints: change only the narrow curb strip; keep the paving material otherwise unchanged; fully opaque; seamless repeat on both axes; edge pixels must continue into neighboring copies; readable at 32×32; no damage.
+Avoid: curb, road, paint, people, objects, text, labels, interface, multiple swatches, presentation grid, full-tile outline, border, gutter, divider, margin, rounded outer corners, heavy noise, photorealism.

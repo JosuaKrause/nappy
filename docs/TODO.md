@@ -33,8 +33,9 @@ its linked people, vehicle/animal and environment inventories. The source-art re
 pictures to their actual runtime consumers. The crowd walkers and the event people, animals and
 riders are bound, through the shared `EightDirection` selector every family below extends
 (`DECISIONS.md`, M108, the crowd walkers; M108, the event people); the gunman and the mouse stay on
-their single side picture by the choices recorded there. Every living thing that moves strides,
-two frames per view (`DECISIONS.md`, M108, the walkers' stride; M108, the event strides), the
+their single side picture by the choices recorded there. Moving families use two frames per view
+(`DECISIONS.md`, M108, the walkers' stride; M108, the event strides), with three mother
+poses in each of the pushing and carrying open/together/opposite-open/together cycles. The
 café sitters lean and the busker strums on a timer; whether a standing guard shifts is the
 player's to say, and until then he keeps one frame.
 - [ ] **Cars bob on their wheels.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "cars
@@ -84,7 +85,9 @@ build could not decide alone.
 
 Follows M108, eight-direction entity graphics. Use the approved SVG-first workflow in
 [VISUALS.md](VISUALS.md) and the illustrated-png skill. The supplied diagonal urban and cardinal
-gameplay references define style only; each SVG defines content, geometry and placement.
+gameplay references define the comic drawing style; each SVG defines the subject and functional
+placement. PLAYTEST-64 requires transferring the idea, with redrawn forms and expressive ink
+and shadow shapes, rather than copying the primitive drawing and adding surface texture.
 **Every PNG asset must have a corresponding SVG asset, authored and reviewed first.** This is
 a permanent authoring requirement, not only a conversion step. Audit existing PNG-only assets
 and author their source SVG before generating a replacement; never backfill an SVG from a PNG
@@ -107,15 +110,19 @@ findings supported by the conversion and review.
       Record SVG review and generation provenance so ordering is reviewable; reject PNG-only
       additions instead of accepting a later placeholder SVG.
 - [ ] Transfer the remaining entity SVGs and every directional/animation/state layer. The player
-      rig's generation records are in `DECISIONS.md` under Eight-direction style transfer and
-      M109, the carrying mother as one family. Preserve native
-      canvases and exact SVG alpha, and keep tintable body/trim separation and authored identities.
+      rig's generation records are in `DECISIONS.md` under Eight-direction style transfer,
+      M109, the carrying mother as one family, and M109, named carrying redraws. Preserve native
+      canvases and functional anchors, and keep tintable body/trim separation and authored identities.
+      Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
-- [ ] Transfer terrain, building tiles, props, closures, checkpoint structures and whole-street
+- [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The
       garbage/litter generation record is in `DECISIONS.md` under M109, litter and garbage materials.
+      The outdoor ground family record is under M109, outdoor tile materials.
+      The tree, bollard, ground-bed and roof-equipment record is under M109, trees and rooftop
+      equipment as comic drawings. Their source mappings identify the transferred props.
 - [ ] Convert UI, cue and identity SVGs while preserving their symbols, text, legibility and
       exact geometry. Keep code-drawn graphics and shader behavior under their current owners.
 - [ ] Audit all loading paths: shared drawing helpers, direct textures, TileSets, scenes/resources,
@@ -145,11 +152,10 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
    related to the other items to work on right now.")* It waits, because reaching act III waits:
    *"I wanna wait reaching act III until those things are done."*
-2. **M110** — the crowd goes round a seal, built for seals, walls and doors; what stands here is
-   its one open question, the player's, whether every other solid body diverts the crowd too.
-   *(2026-09-10, playtest 52: "objects like fallen trees don't stop/redirect traffic or
-   pedestrians.")* Placed here by the orchestrator because a sealed street the crowd walks
-   through is the sealing's own legibility failing — open to the player moving it.
+2. **M110**, the crowd goes round a seal, is built in full: seals, walls, doors and every other
+   stationary solid body now divert the crowd (`DECISIONS.md`, M110, every solid body). Whether
+   diverting at every body blunts the tell a closure's own turn-away relies on — the
+   recommendation the player overturned on 2026-09-12 — is a played question, in `REVIEW.md`.
 3. **M96, M97, M99 and M100**, in no order between them: the teaching day, the calm areas, the
    corridor's density after the sealing, and the consolidated small work. Each was rewritten on
    2026-09-09 from an older milestone after checking which of its items the code had already
@@ -445,47 +451,6 @@ her. The reasoning, and what was rejected on the way, is in `DECISIONS.md` under
 
 - [ ] **Measure it against the nerves.** This makes the back half harder precisely for the player
       doing well at the optional path, and nobody has reached act III
-
----
-
-## M110 — The crowd goes round a seal · asked for 2026-09-10
-
-> "also I noticed that objects like fallen trees don't stop/redirect traffic or pedestrians"
-
-**Built on 2026-09-11 for seals, walls and doors, and the record is in `DECISIONS.md` under
-M110.** A hard seal, a region wall and a closure shut their segment to walkers and cars alike
-through the one held-ground record the catalogue is already refused from; a door lets cars
-through one at a time under the boom the M62 gate already runs, and walkers pass the hut as she
-does; a soft seal takes both pavements from the walkers and leaves the carriageway to the cars;
-the streets around the home block, held for placement only, stay open to everyone; and the bar
-itself holds her the way a hut does, whatever it is doing for a car; and the walkers are held at
-the same huts in the player's four states, a few passing and some turning back, with the line
-kept short (`DECISIONS.md`, M110, walkers are held at a door). What is left is one question.
-
-- [ ] **Every solid body diverts the crowd, as far as avoiding it.** *(2026-09-12, asked whether
-      every other solid body diverts the crowd too: "yes every solid body should do that -- not
-      necessarily force a turn around but at least avoid the solid".)* A café, a construction band,
-      a kerbed van, a stall, a skip, a burnt-out car: today each is walked and driven through, and
-      the recommendation to leave them so — that diverting at every body spends the tell closures
-      rely on — was put to the player and overturned. **The shape**: a stationary solid body
-      (`EventInstance.is_solid()`, the rows with an `obstructs_radius`; mobile rows stay exempt as
-      the catalogue's *solid things are solid* already says) is recorded per tile for the day the
-      way `CityMap.soft_sealed_tiles` is, from the day's plans as they are built and from any body
-      placed later, and released when the body leaves. A **walker** whose own lane is obstructed
-      ahead sidesteps to a clear lane of the same footway inside `_pavement_band()`, the detour
-      `step_aside()` already keeps for her, and steps back after; a body that covers **every** lane
-      of its footway shuts that footway's segment to the walker the way a soft seal does, so it
-      turns at the last junction rather than walking into it — the other footway and the
-      carriageway stay open, which is the difference from a seal. A **car** whose own lane is
-      obstructed has no lane to step into — one lane per direction, the oncoming one is not an
-      option — so the body shuts that direction of the segment to cars and the car turns at the
-      last junction through `_plan_a_turn()` as it does for a closure; a car already in the street
-      with no junction left before the body stops behind it, the way it stops behind a queue, and
-      the M111 about-face is the last resort it already is. Nothing forces a turn-round that the
-      existing closure logic does not; *avoid* is the instruction. Tests: a walker sidesteps a
-      one-lane body and passes; a walker turns at the junction before a two-lane body; a car turns
-      before a body in its lane and the oncoming lane keeps flowing; zero crowd bodies inside any
-      solid body's footprint over a played day on several seeds
 
 ---
 

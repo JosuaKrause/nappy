@@ -1,0 +1,7 @@
+<!-- Sidewalk degradation level 1, pattern A. Seams preserve the base tile contract. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" fill="#8b8478"/>
+  <path d="M0 15H32 M15 0V15 M7 16V32 M23 16V32" stroke="#7a7469" stroke-width="1"/>
+  <path d="M4 3L8 8L7 13" fill="none" stroke="#625d59" stroke-width="1"/>
+  <path d="M8 8L12 7" stroke="#a19a8d" stroke-width="1"/>
+</svg>
