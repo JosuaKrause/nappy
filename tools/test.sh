@@ -1,33 +1,36 @@
 #!/usr/bin/env bash
 # Run the headless test suite.
 #
-#   tools/test.sh                 everything — the only run a commit may rest on
+#   tools/test.sh                 everything, sharded across TEST_SHARDS local processes
 #   tools/test.sh crowd balance   only the suites whose file name contains one of these
 #   tools/test.sh --serial        everything, in one process (what a shard failure is debugged in)
 #   tools/test.sh --plan          print the shard split and run nothing
+#   tools/test.sh --shard 3/8     run only shard 3 of 8 -- what one CI matrix leg runs
 #   tools/test.sh --record-costs  run everything, then refresh tests/suite_costs.txt from it
 #
-# A full run is sharded across several Godot processes and a filtered run is not. The reason is
-# the shape of the suite rather than a preference: the work is one core's worth of arithmetic per
-# process, the suites are independent, and the two heaviest — `test_crowd.gd` and
-# `test_events.gd` — are together most of the whole on their own. Serially that is minutes of one
-# core while the rest of the machine idles, and minutes is long enough that the gate becomes
-# something people skip.
+# A full run is sharded -- locally across several Godot processes, in CI across matrix jobs, one
+# runner per shard. The reason is the shape of the suite rather than a preference: the work is
+# one core's worth of arithmetic per process, the suites are independent, and the two heaviest,
+# `test_crowd.gd` and `test_events.gd`, are together most of the whole on their own. Serially
+# that is minutes of one core while the rest of the machine (or fleet) idles, and minutes is long
+# enough that the gate becomes something people skip.
 #
 # **Sharding changes nothing about what is checked.** Every suite still runs, every check still
-# runs, and the count printed at the end is the sum. What it must never do is quietly run *fewer*
-# suites than a serial run would, which is why the shards are built from the files on disk rather
-# than from a list somebody maintains — see `_plan_the_shards`.
+# runs, and the count printed at the end is the sum (locally; in CI the final `test` job stands
+# for the whole matrix). What it must never do is quietly run *fewer* suites than a serial run
+# would, which is why the shards are built from the files on disk rather than from a list
+# somebody maintains — see `_plan_the_shards`. A local run and a CI shard plan identically,
+# because both read the same `tests/suite_costs.txt` through `_cost_of`.
 set -uo pipefail
 shopt -s nullglob
 
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# The longest suite sets a floor on wall time — see tests/suite_costs.txt for what it currently
-# is. Four shards fit the remaining work beside that suite on one machine: a fifth still waits
-# for it, while three leave more work per shard than that floor. Optimizing shared code can lower
-# the floor and change the best split. Override for machines with a different CPU or memory
-# budget.
+# The longest suite sets a floor on wall time: see tests/suite_costs.txt for what it currently
+# is. Locally, four shards is a reasonable default for one machine's cores; CI's matrix instead
+# picks its own shard count by that floor (see .github/workflows/ci.yml) and always tells this
+# script which shard to run via --shard, which sets SHARDS itself. Override this default for a
+# machine with a different CPU or memory budget.
 SHARDS="${TEST_SHARDS:-4}"
 
 # Where the measured per-suite costs live and what an unmeasured suite is assumed to cost. See
@@ -37,23 +40,27 @@ DEFAULT_COST_MS=5000
 
 usage() {
     cat <<'EOF'
-usage: tools/test.sh [--help|-h] [--serial|--plan|--record-costs] [suite-name-substring...]
+usage: tools/test.sh [--help|-h] [--serial|--plan|--record-costs|--shard I/N] [suite-name-substring...]
 
 Runs the headless test suite (tests/tests.tscn). With no arguments, runs everything, sharded
 across TEST_SHARDS (default 4) Godot processes, planned from tests/suite_costs.txt. A
 suite-name-substring argument filters to the suites whose file name contains it and runs
 unfiltered/unsharded, in one process; that filtered run also accepts any flag the test scene
 itself reads off OS.get_cmdline_user_args() (e.g. --svg), which is why this script does not
-reject an argument it does not itself recognise -- only --serial, --plan, --record-costs, --help
-and -h are its own.
+reject an argument it does not itself recognise -- only --serial, --plan, --record-costs,
+--shard, --help and -h are its own.
   --serial          everything, in one process (what a shard failure is debugged in)
   --plan            print the shard split (TEST_SHARDS processes) and run nothing
   --record-costs    run everything sharded, then rewrite tests/suite_costs.txt from this run's
                      own per-suite lines
+  --shard I/N       run only shard I of N (1-indexed), planned the same way every other shard
+                     is, and let the runner's own PARTIAL RUN note say so -- one shard is never
+                     a green build by itself
 
   tools/test.sh
   tools/test.sh crowd balance
   tools/test.sh --serial
+  tools/test.sh --shard 3/8
 EOF
 }
 
@@ -69,19 +76,49 @@ fi
 serial=0
 plan_only=0
 record_costs=0
+shard_arg=""
 case "${1:-}" in
     --serial)       serial=1; shift ;;
     --plan)         plan_only=1; shift ;;
     --record-costs) record_costs=1; shift ;;
+    --shard)
+        shard_arg="${2:-}"
+        if [[ -z "$shard_arg" ]]; then
+            echo "tools/test.sh: --shard needs an I/N argument, e.g. --shard 3/8" >&2
+            echo >&2
+            usage >&2
+            exit 2
+        fi
+        shift 2
+        ;;
 esac
 
-# --record-costs runs the whole planned suite, not a hand-picked subset, so it takes no
-# suite-name filters -- anything left over is a mistake to reject rather than to guess at.
-if [[ $record_costs -eq 1 && $# -gt 0 ]]; then
-    echo "tools/test.sh: --record-costs takes no suite-name filters" >&2
+# --shard and --record-costs run the whole planned suite, not a hand-picked subset, so neither
+# takes suite-name filters -- anything left over is a mistake to reject rather than to guess at.
+if [[ ( -n "$shard_arg" || $record_costs -eq 1 ) && $# -gt 0 ]]; then
+    echo "tools/test.sh: --shard and --record-costs take no suite-name filters" >&2
     echo >&2
     usage >&2
     exit 2
+fi
+
+shard_index=""
+if [[ -n "$shard_arg" ]]; then
+    if [[ ! "$shard_arg" =~ ^[0-9]+/[0-9]+$ ]]; then
+        echo "tools/test.sh: --shard wants I/N, e.g. --shard 3/8 (got '$shard_arg')" >&2
+        echo >&2
+        usage >&2
+        exit 2
+    fi
+    shard_index="${shard_arg%%/*}"
+    SHARDS="${shard_arg#*/}"
+    if [[ "$SHARDS" -lt 1 || "$shard_index" -lt 1 || "$shard_index" -gt "$SHARDS" ]]; then
+        echo "tools/test.sh: --shard I/N wants 1 <= I <= N (got '$shard_arg')" >&2
+        echo >&2
+        usage >&2
+        exit 2
+    fi
+    shard_index=$(( shard_index - 1 ))
 fi
 
 # The import pass, once and before anything runs in parallel. Several Godot processes importing
@@ -199,6 +236,25 @@ if [[ $plan_only -eq 1 ]]; then
 		printf 'shard %d  ~%3ds %s\n' "$i" "$(( shard_cost[i] / 1000 ))" "${shard_filters[i]}"
 	done
 	exit 0
+fi
+
+# `--shard I/N` runs exactly the one shard a CI matrix leg was assigned, in this one process, and
+# nothing else. It reuses the plan above rather than a separate code path, so a CI shard and a
+# local sharded run always agree about which suite lands where. The filter list reaching
+# run_one_process is never empty here in practice (N is chosen no larger than the suite count),
+# but a shard with nothing assigned exits clean instead of silently falling through to "no
+# filters", which run_tests.gd reads as "run everything" — the one way this flag could turn a
+# single shard into a false green full build.
+if [[ -n "$shard_index" ]]; then
+	filters="${shard_filters[shard_index]}"
+	if [[ -z "$filters" ]]; then
+		echo "shard $(( shard_index + 1 ))/$SHARDS has no suites assigned (more shards than suites) — nothing to run"
+		exit 0
+	fi
+	# The filters are file names and are meant to word-split.
+	# shellcheck disable=SC2086
+	run_one_process $filters
+	exit $?
 fi
 
 work_dir="$(mktemp -d)"
