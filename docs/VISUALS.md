@@ -62,8 +62,11 @@ The [pushing stride record](evidence/comic-pushing-strides-2026-09-12/GENERATION
 P2 — Three-pose push, including SVG sources, whole-figure registration and all-direction
 contact sheets. The [comic rig record](evidence/comic-rig-2026-09-12/GENERATION.md) preserves
 P1 — Two-pose push and every stroller view.
-The [side-canopy recipe](evidence/stroller-side-canopy-2026-09-12/GENERATION.md) preserves the
-pixel flip that places the closed side beside the handle, with both mirrored side views.
+The [stroller view recipe](evidence/stroller-view-assignment-2026-09-12/GENERATION.md) owns the
+final illustrated direction assignment. Direction means travel: N/NE/NW show the baby and canopy
+opening, S/SE/SW show the outside of the hood, and E/W use the original side image. Rebuild from
+its frozen inputs; do not swap the installed textures again or infer direction from upstream
+front/back source filenames.
 The [hand-contact comparison](evidence/pram-contact-2026-09-12/MEASUREMENTS.md) assembles both
 formats at the current continuous stroller offset. Shadows and cues share that drawing position;
 the uniformly enlarged stroller retains its bottom ground anchor, and the collision body retains

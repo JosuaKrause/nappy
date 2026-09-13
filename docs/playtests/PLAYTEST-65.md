@@ -334,3 +334,22 @@ handle. Preserve this pixel transformation in the graphics recipe and review bot
 
 The player accepts the registered paving family in the main checkout. Preserve its frozen inputs,
 pixel-copy registration, source hashes and repeat-review scripts with the graphics evidence.
+
+> okay I know what it is -- the canopy was correct. everything else was wrong -- the NE texture should have been the SW, the N should have been the S. the *only* one that is right is the left right one. so let's revert that canopy change and just relabel the other textures (you can keep the script if it might be useful in the future otherwise delete it -- it's in the commit history anyway)
+
+> like, commit it first
+
+> then delete it in the next commit after
+
+The player overturns the side-canopy correction: restore the original east/west texture and
+reassign the other views to their opposites, N ↔ S, NE ↔ SW and NW ↔ SE. The runtime stores east
+diagonals and mirrors them for west, so an opposite diagonal assignment includes that horizontal
+mirror. Preserve the committed canopy operation in history, then remove it from the working tree
+in the next correction commit. Keep a reproducible view-assignment recipe for the installed family.
+
+> also write your notes in a way that you don't relabel N<->S etc in the next session again reverting the change
+
+Document the final visual direction contract, not an instruction to swap mutable runtime assets:
+N/NE/NW show the baby and canopy opening; S/SE/SW show the outside of the hood. E/W retain the
+original side picture. Runtime labels mean travel direction. Regeneration reads frozen source
+images and applies the saved assignment once; never repeat the swap on installed textures.

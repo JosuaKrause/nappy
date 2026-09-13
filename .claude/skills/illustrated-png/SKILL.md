@@ -57,6 +57,12 @@ does not change who the character appears to be. Canvas registration does not pr
 faces, clothing or interior placement. Update this workflow with observed results;
 record experiments and rejected options in `docs/DECISIONS.md`.
 
+For the illustrated stroller, direction means travel direction: N/NE/NW show the baby and canopy
+opening; S/SE/SW show the outside of the hood; E/W use the original side picture. Preserve this
+visual contract when generating or assigning views. Upstream front/back filenames do not override
+it. The final assignment recipe is `docs/evidence/stroller-view-assignment-2026-09-12/GENERATION.md`;
+it reads frozen originals. Never apply another N/S or opposite-diagonal swap to installed textures.
+
 For walking figures, preserve identity through coherent full-figure edits. Do not composite fixed
 upper pixel rows over moving lower legs: the pelvis, coat hem, thighs and knees need continuous
 articulation. Check anatomical leg ownership from hip to shoe through both contacts; recoloring

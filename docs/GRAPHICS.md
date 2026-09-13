@@ -243,8 +243,10 @@ versions and their preserved rollouts.
 The [player authoring directory](graphics-creation/player/README.md) holds the high-fidelity SVG
 generation targets and their runtime/PNG pairings. The runtime SVG catalogue supplies vector
 artwork for contact and together poses. The PNG presentation uses the accepted F and P2 textures.
-The [side-canopy recipe](evidence/stroller-side-canopy-2026-09-12/GENERATION.md) fixes the side
-stroller's canopy direction with a reproducible upper-texture flip that excludes the handle.
+The [stroller view recipe](evidence/stroller-view-assignment-2026-09-12/GENERATION.md) defines the
+final illustrated facing contract: N/NE/NW show the baby and canopy opening; S/SE/SW show the
+outside of the hood; E/W retain the original side image. These names mean travel direction.
+Rebuild from frozen originals; do not swap the runtime textures again based on source filenames.
 
 Ground components live under `assets/illustrated/svg-transfer/tiles/layers/`, paired with SVGs
 under `assets/tiles/layers/`. The component manifest maps each ground source to a shared sidewalk,

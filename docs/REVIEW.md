@@ -19,9 +19,11 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   The [damage atlas review](evidence/shared-damage-2026-09-12/GENERATION.md) shows every variation
   over each supported base.
 
-- **Push the stroller left and right.** Does the closed canopy side sit beside the handle in
-  both views? The [side-canopy review](evidence/stroller-side-canopy-2026-09-12/GENERATION.md)
-  compares both mirrored side textures with the handle and lower frame held in place.
+- **Push the stroller through all eight directions.** N/NE/NW show the baby and canopy opening;
+  S/SE/SW show the outside of the hood; E/W keep the original side picture. Does this view
+  assignment read consistently through turns? The
+  [stroller direction review](evidence/stroller-view-assignment-2026-09-12/GENERATION.md) shows
+  the final static matrix and its reproducible assignment.
 
 - **Look at a park and a wooded calm area while walking past them.** Do the sparse grass clumps give variety while the
   soft base stays quiet enough to keep people and routes clear? Check neighboring cells and

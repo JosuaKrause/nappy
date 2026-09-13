@@ -66,6 +66,10 @@ style reference or runtime source.
 `pram-atlas-generated-v2.png`, is 2172×724 RGB with one row ordered front, back, east profile,
 southeast three-quarter and northeast three-quarter. The five views share one low navy bassinet,
 cream hood, short handle and small wheel family. The baby appears only through the front openings.
+The labels here identify upstream generation cells. The
+[stroller view recipe](../stroller-view-assignment-2026-09-12/GENERATION.md) owns their final
+runtime travel directions: the baby/opening is visible in N/NE/NW, the outside hood in S/SE/SW,
+and E/W retain the side image. Do not infer a runtime reassignment from these source labels.
 
 The pram generator painted a neutral checkerboard despite the prompt requesting transparency.
 `pram-background-prompt.txt` uses the built-in image generator to replace that background with
