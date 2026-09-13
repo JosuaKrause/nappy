@@ -379,12 +379,6 @@ item below for as long as looking takes.
 - **Nobody has measured the web build, only confirmed it runs.** It boots and plays at the live
   address; what has not been checked is frame rate at the game's scale on a machine that is not the
   one it was built on, and whether a stranger arriving at the page understands what it is.
-- **The social card has been unfurled once, in a messaging app, and it failed.** The cause was the
-  image's alpha channel — its transparent pixels carry RGB `(0, 0, 0)`, so a client that ignores
-  alpha paints the card black — and the published copy is now flattened onto an opaque background,
-  with its dimensions and type declared and a `twitter:image` beside the `og:` pair. **The fix has
-  not itself been unfurled.** Paste the address into a chat client and see what comes back; the
-  record of what was wrong and what was ruled out is in `DECISIONS.md` under M80.
 - **A release build carries no modifiers, and nothing has confirmed that on a real release build.**
   `?telemetry=1` answers only when `OS.is_debug_build()` is true. The truth table is asserted in the
   suites, so the *predicate* is proven; the build type itself has no seam to fake and is therefore
