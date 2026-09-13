@@ -1,5 +1,52 @@
 # Decisions
 
+## M120 — The map edge · built 2026-09-13
+
+*(2026-09-12, [PLAYTEST-66](playtests/PLAYTEST-66.md): "at the eastern and western edge one
+column of tiles is missing leaving a black band (picture 1 and 2). while people or cars cannot
+leave the map anymore from non-tunnel/bridge edge locations they can still spawn there and
+walk/drive out of nowhere (burst 8 and 9)".)* Prioritised with the round.
+
+**The black column was the camera's glance, not the paint.** The entry named three suspects — an
+off-by-one in the outside loop, the fence column painted over the last inside column, a clamp one
+column too generous — and it was none of them: `_paint_outside_the_map` and `camera_bounds()` are
+symmetric on all four sides. What differs is what each side has to spare. `Stroller` leads the
+camera toward her facing by `CAMERA_LOOK_AHEAD` (46px) through `Camera2D.offset`, which Godot adds
+*after* `limit_*` has clamped `position`, so the lead is never clamped. North and south have 76px
+of the eight-tile painted band to spare beyond `Tuning.VIEW_HALF_EXTENT.y` (180px) and absorb it;
+east and west have none, since the 320px half-extent already exceeds the depth, so facing toward
+an east or west corner shows exactly one unpainted column. Confirmed by standing still at a corner
+(no gap) and walking there (gap). **The fix is in the clamp, not the paint**: `City.camera_bounds()`
+reserves the look-ahead from its grow on every side uniformly, and `OUTSIDE_DEPTH_TILES` is
+untouched, since the paint depth is tied to a boundary street's frontage being as deep as any
+other's and has nothing to do with the camera. `tests/test_main.gd` computes the worst case the
+clamp plus the unclamped lead can reach at each corner and asserts every cell in it is painted;
+with the fix reverted it fails at all four corners.
+
+**An entry and a departure get different room, on purpose.** M94 gave a fresh recycle the same
+room as a departure — a tile of slack for everybody, `OUT_OF_SIGHT` for a spine car — and that is
+safe only for departures, which happen at the field's edge hundreds of pixels off screen. An entry
+can be the very first frame on screen, at the plain boundary itself, if she stands there.
+`CrowdAgent._entry_room()` grants an ordinary walker or car no room past the true edge at all and
+a spine car the unchanged `OUT_OF_SIGHT`, and `_recycle()` caps its roll to that room *before*
+rolling rather than checking a worst case afterwards — `_entry_band_fits()` was false for nearly
+every attempt beside a plain edge regardless of the actual roll, so M119's pocket and room checks
+were effectively unreachable there. It is now a check on the landed point, kept as a stated
+invariant. Two tests: the milestone's literal words (stand at each plain edge, nobody is ever out
+of bounds), which also passes without the fix because the six-miss fallback already corrected the
+final position, and one that drives `_recycle()` at 400 seeds with the field's edge pinned 50px
+from the true one and asserts the entries spread across the real room rather than collapsing to a
+point — that one fails outright without the fix.
+
+**Open, and worth a look: entries bunch beside a plain edge.** The room there can be thin enough
+that several recycles land within a few pixels of each other — measured, 39 car pairs inside
+`CAR_GAP_MIN` over sixty seconds beside a west edge against none before, and the field's 800px
+radius reaches most positions within 25 tiles of an edge, so this is common rather than rare.
+`_join_the_back_of_the_queue()` and ordinary separation resolve it as they resolve any same-frame
+`TrafficIndex` staleness and no test fails over it, but whether it is ever seen is in `REVIEW.md`.
+Evidence: `evidence/m120-map-edge-2026-09-13/`, stills at the south-east corner before and after,
+and a burst at the south-west edge, all on the playtest's own seed.
+
 ## M119 — The crowd with nowhere to go leaves · built 2026-09-13
 
 *(2026-09-12, [PLAYTEST-66](playtests/PLAYTEST-66.md): "pedestrians with nowhere to go (all four

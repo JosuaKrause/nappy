@@ -274,16 +274,14 @@ bearing in whole degrees for the same reason.
 A junction is made of the streets that actually meet at it: a precinct's end, the city's border
 and the spine's side arms all read as what they are — a T with a line of bollards, a T with no
 zebra running into the mountain, four dotted crossings under one light — and nothing walks or
-drives off the map except a car by the tunnel or the bridge — arriving is the other half, and
-playtest 66 found it not held, which is M120. All of it was checked on rig captures
+drives off the map, or onto it, except a car by the tunnel or the bridge. All of it was checked on rig captures
 and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
 ## The queue, as prioritised on 2026-09-09
 
-**Playtest 66's two remaining milestones go first**, on the player's word that the round is being
-tested as it lands: M120, the map edge, then M121, the halo follows its owner and a turning car's
-picture and lane. Both touch `src/crowd/` and run one after the other. The run they came from is
-under `docs/evidence/archive/session-captures/`.
+**Playtest 66's last open milestone goes first**, on the player's word that the round is being
+tested as it lands: M121, the halo follows its owner and a turning car's picture and lane. The run
+it came from is under `docs/evidence/archive/session-captures/`.
 
 **Below them, `TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56 has only
 its measurement against the nerves left, and that waits for act III. The debug view (`1` to `4` in a debug build, `--layers 1,3` for

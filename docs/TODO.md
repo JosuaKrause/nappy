@@ -147,9 +147,8 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 
 0. **[PLAYTEST-66](playtests/PLAYTEST-66.md)'s four**, ahead of everything on the player's own
    word for the round *(2026-09-12: "this round's feedbacks should all be prioritized since I'm
-   actively testing the changes as they come in")*: **M120**, the map edge, then **M121**, the
-   halo follows its owner and a turning car's picture and lane. Both touch the crowd, share
-   `src/crowd/` and run one after the other.
+   actively testing the changes as they come in")*: **M121**, the halo follows its owner and a
+   turning car's picture and lane, the last of the round still open.
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
    related to the other items to work on right now.")* It waits, because reaching act III waits:
    *"I wanna wait reaching act III until those things are done."*
@@ -311,39 +310,6 @@ junction-paint and robber-placement records are filed there under M49 and the sm
 
 Everything below is in the order the gameplay queue above gives it, and was reassessed on
 2026-09-09.
-
----
-
-## M120 — The map edge · asked for 2026-09-12
-
-> "at the eastern and western edge one column of tiles is missing leaving a black band (picture
-> 1 and 2). while people or cars cannot leave the map anymore from non-tunnel/bridge edge
-> locations they can still spawn there and walk/drive out of nowhere (burst 8 and 9)."
-
-[PLAYTEST-66](playtests/PLAYTEST-66.md). Prioritised with everything from that round.
-
-**What is true today.** `City._paint_outside_the_map` lays border tiles `OUTSIDE_DEPTH_TILES`
-(one block) deep on every side of the map — scree and mountain north, bulkhead and water south,
-fence, grass and forest east and west — on the ground tilemap only; `CityMap` and the walkable
-set never include them. In picture 2 (the south-east corner) and burst 10 (the north-east
-corner) the painted band stops a column short of the window's edge and black shows beyond it;
-the north and south bands reach the edge in the same frames. Picture 1 is the western edge. And
-`CITY.md`'s rule *a car leaves the city by the bridge and the tunnel, and nowhere else* is held
-on the way out — every agent but a spine car keeps a tile inside the map — but a fresh recycle is
-rolled from an entry band along the whole edge, so walkers and cars still appear at the plain
-boundary and come in from the forest, the water or the rock (burst 8, a walker on the mountain
-band at the north edge with vans arriving from above it; burst 9, the eastern side).
-
-- [ ] **The band reaches the window.** Find why the east and west bands are one column short —
-      an off-by-one in the outside loop's range against the camera's clamp, or the fence
-      column at `out == 1` painted over the last inside column — and make every side the same
-      depth. A boot check with the camera in each corner asserts no unpainted cell in the window.
-- [ ] **Entry is where exit is.** A recycled agent enters only where a departing one may leave:
-      a walker or a car on an ordinary street enters from inside the map, out of sight, and only
-      a spine car enters through the tunnel or off the bridge. `CrowdAgent._entry_band_fits`
-      and `_keep_within_the_room_beyond_the_map` already state the room on the way out; the entry
-      roll uses the same room. `tests/test_crowd.gd` stands at each plain edge and asserts nobody
-      arrives across it.
 
 ---
 
