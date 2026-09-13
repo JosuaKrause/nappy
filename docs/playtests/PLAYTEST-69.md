@@ -78,3 +78,16 @@ The player's framing is a *cost* guarantee on the corridor: for every costly thi
 a route's pavement there is a line past it on the other pavement, that pavement is itself clear
 for the stretch, the crossings the line relies on are at intersections and never mid-block, and
 a pacing row leaves the line open for part of its beat. M129 in `TODO.md`.
+
+## An eastbound car sits south of its halo, confirmed
+
+> just confirmed on current mobile a car going west to east that is offset by a few pixel south
+> and the halo is at the regular position
+
+The sighting M123 asked for (`DECISIONS.md`, M123: *"a report on v0.9.1 or later reopens it as
+a new entry"*), on v0.10.0 on the phone. What is different from the first report: it is the
+*car's picture* that sits a few pixels south, and the halo that sits where the car is expected.
+M121 registered every car view to the strike box's southernmost point, which moved east- and
+west-bound pictures 14px south on purpose (`DECISIONS.md`, M121) and left it *"open to the
+player's eye"*; the halo re-traces the body every frame, so the two should have moved together
+and did not. M130 in `TODO.md`.
