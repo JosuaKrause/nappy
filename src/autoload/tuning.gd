@@ -343,6 +343,13 @@ const SIDEWALK_WIDTH := 2
 ## table. **Re-measure rather than convert.**
 const CITY_BLOCKS := Vector2i(11, 11)
 
+## Alpha of the one-tile shadow every building casts (`BuildingShadows`) — the same black every
+## other shadow in the game draws (`Palette.SHADOW`), at its own alpha rather than that constant's,
+## since a shadow covering a whole tile reads differently than a small contact ellipse. A flat dark
+## rather than a darkened ground colour, so this number is the whole of the look and can be tuned
+## by eye alone.
+const BUILDING_SHADOW_ALPHA := 0.22
+
 # ------------------------------------------------------------- street trees ---
 # How rare a street tree is, in four numbers. **Trees read like obstacles** — *(2026-09-12, the
 # player: "trees read like obstacles (they add noise) so it makes detecting actual obstacles

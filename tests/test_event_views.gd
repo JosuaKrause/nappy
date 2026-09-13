@@ -129,6 +129,7 @@ func run(t) -> void:
 	_test_kerb_parked_vans_keep_their_axis_chosen_view(t)
 	_test_reversing_lorry_only_ever_faces_the_side_view(t)
 	_test_vehicle_views_are_grounded_at_the_canvas_bottom(t)
+	_test_burst_water_main_draws_no_body_shadow(t)
 
 func _heading_for_sector(sector: int) -> Vector2:
 	return Vector2.from_angle(deg_to_rad(sector * 45.0))
@@ -540,3 +541,15 @@ func _test_vehicle_views_are_grounded_at_the_canvas_bottom(t) -> void:
 			t.check(gap <= FOOTPRINT_TOLERANCE_PX,
 					"%s's %s view grounds within %dpx of its own canvas bottom (got %dpx)"
 					% [name, view, FOOTPRINT_TOLERANCE_PX, gap])
+
+## `burst_water_main`'s crater is sunk into the road rather than standing on it, so the player
+## asked for no shadow under it — `EventDef.draws_body_shadow` is the query `_draw_body_shadow()`
+## reads, and this pins the query the same way the rest of this file pins one rather than calling
+## a `_draw_*` function directly. `fallen_tree` shares the row's single-body geometry
+## (`docs/EVENTS.md`, "Seal pictures") and keeps the ordinary shadow, so the flag is the only
+## difference between the two.
+func _test_burst_water_main_draws_no_body_shadow(t) -> void:
+	t.check(not EventCatalogue.by_id("burst_water_main").draws_body_shadow,
+			"burst_water_main opts out of the body shadow every other seal draws")
+	t.check(EventCatalogue.by_id("fallen_tree").draws_body_shadow,
+			"fallen_tree, burst_water_main's same-geometry sibling, keeps the ordinary body shadow")

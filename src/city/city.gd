@@ -78,6 +78,7 @@ const MIN_TREE_SPACING := 40.0 * 1.25
 @onready var _buildings_layer: Node2D = $Buildings
 @onready var _ground: TileMapLayer = $Ground
 @onready var _decals: CityDecals = $Decals
+@onready var _building_shadows: BuildingShadows = $BuildingShadows
 
 var map: CityMap
 var events: EventManager
@@ -129,6 +130,9 @@ func build(city_map: CityMap) -> void:
 	# the same y. A y-sort tie is broken by tree order, so the door has to be added second
 	# or the wall draws over it.
 	_spawn_buildings()
+	# Footprints are fixed for the run (`docs/DECISIONS.md`, M61), so the shadow set is built once
+	# here rather than recomputed per day.
+	_building_shadows.set_buildings(map.building_rects)
 	_spawn_home()
 	_spawn_street_trees()
 	_spawn_boundary()

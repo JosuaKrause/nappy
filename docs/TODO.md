@@ -148,10 +148,8 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 0. **[PLAYTEST-66](playtests/PLAYTEST-66.md)'s four**, ahead of everything on the player's own
    word for the round *(2026-09-12: "this round's feedbacks should all be prioritized since I'm
    actively testing the changes as they come in")*: **M119**, the crowd with nowhere to go
-   leaves, **M120**, the map edge, **M121**, the halo follows its owner and a turning car's
-   picture and lane, and **M122**, the shadows buildings cast and the one a burst main does not.
-   The three that touch the crowd (M119, M120, M121) share `src/crowd/` and run one after
-   another; M122 is drawing and runs beside them.
+   leaves, **M120**, the map edge, and **M121**, the halo follows its owner and a turning car's
+   picture and lane. All three touch the crowd, share `src/crowd/` and run one after another.
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
    related to the other items to work on right now.")* It waits, because reaching act III waits:
    *"I wanna wait reaching act III until those things are done."*
@@ -429,44 +427,6 @@ queue, reset that lane — the cars in it jumped rather than made room.
       — rather than displacing what is there. `tests/test_crowd.gd` queues a lane, about-faces a
       car into it, and asserts every car already in the lane keeps its order and moves no more
       than one frame's travel.
-
----
-
-## M122 — The shadows buildings cast, and the one a burst main does not · asked for 2026-09-12
-
-> "don't draw a shadow for water main breaks."
-
-> "can we do a one tile diagonal shadow from all buildings? like the bottom right of a build has
-> a shadow triangle 45 ne to sw with the top half filled. that shadow then goes all the way to 1
-> tile left of the building and up to 1 tile before the building ends. buildings that are joined
-> don't have an extra shadow where they connect. this should make alleys more obvious since they
-> will have part of those shadows, too"
-
-[PLAYTEST-66](playtests/PLAYTEST-66.md). Prioritised with everything from that round.
-
-**What is true today.** Every seal draws a body shadow under its scene — `EventInstance` draws
-one shadow patch per solid part before the picture — and the burst water main (`burst_water_main`,
-look `BURST_MAIN`, one of the three whole-scene seal pictures with the fallen tree and the car
-accident) gets one like the rest, though its picture is a crater in the road and two barriers.
-Buildings draw no shadow at all (`Building`'s own comment says so; its shape is read for its body
-alone).
-
-- [ ] **No shadow under a burst main.** The row opts out of the body shadow; the barriers'
-      bodies and the seal are untouched. `tests/test_event_views.gd` asserts the row draws none.
-- [ ] **Every building casts a one-tile shadow.** The reading of the player's shape, built
-      as read and put back for a look: the light stands to the north-east, so a building shades
-      the ground to its south and west by one tile — a band along its bottom edge that runs one
-      tile past its western corner, and a band up its western edge that stops one tile short of
-      its top — and the tile under the south-eastern corner is cut on the diagonal from its
-      north-east to its south-west corner, the half toward the building filled. The shadow is
-      computed over the union of buildings that touch, so two joined buildings shade as one and
-      nothing is drawn where they meet. It is drawn on the ground under everything that walks,
-      the way the seal shadows are, so an alley between two buildings carries the eastern
-      building's band down its length — *"this should make alleys more obvious"* is the test by
-      eye. **One question, for the look rather than the build:** whether the shade is a flat
-      dark at one alpha or takes the ground's own colour down a step; recommended flat, one alpha,
-      a number in `Tuning` so it can be turned by eye. A screenshot of a block with an alley,
-      before and after, under `docs/evidence/`.
 
 ---
 
