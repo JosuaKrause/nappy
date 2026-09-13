@@ -486,6 +486,23 @@ func _is_in_a_pocket() -> bool:
 		return false
 	return pockets.holds(_map.world_to_tile(position), kind == Kind.CAR)
 
+## Whether this agent is far enough from the camera that taking it away cannot be seen.
+##
+## **`CrowdField.centre` is the camera.** `Crowd._physics_process()` puts it on the player every
+## frame and a rig puts it wherever it is looking, so the distance from it is the distance from the
+## middle of the screen — and `Tuning.OUT_OF_SIGHT` (420px) is the round number outside the
+## viewport's own far corner at this zoom, which is what *nothing vanishes while you are looking at
+## it* has always been measured against.
+##
+## The field's own edge is nowhere near this: it is 800px out, so an agent recycled for leaving the
+## box is out of sight several hundred pixels over. This is for the one recycle that happens
+## somewhere the player may well be standing — a pocket — and it is the whole of what makes that
+## legal.
+func _out_of_view() -> bool:
+	if not field:
+		return true
+	return position.distance_to(field.centre) > Tuning.OUT_OF_SIGHT
+
 ## Whether a tile's own street segment is shut to this agent the way a hard blocker is: held for
 ## today (`CityMap.is_held_at` — a hard seal's segment, a region wall, a closure, or the streets
 ## around the home block) and neither of the two carve-outs `held_segments` cannot make on its
@@ -721,6 +738,11 @@ func _process(delta: float) -> void:
 		_divert()
 	var recycled := false
 	if _has_left_the_field():
+		_recycle()
+		recycled = true
+	elif _is_in_a_pocket() and _out_of_view():
+		# Sealed in after it arrived — the one case a placement cannot prevent. It leaves the way
+		# anybody else leaves the field, and it waits until nobody can see it go.
 		_recycle()
 		recycled = true
 	_redraw_if_the_picture_changed()

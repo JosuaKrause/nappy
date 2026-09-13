@@ -1328,6 +1328,14 @@ is loud, and the reason a park is quiet.
   it, which is the same thing an empty street already says about a closure: *the street with nobody
   on it is the street that is shut*.
 
+- **And whoever is sealed in leaves, at the first moment nobody is watching.** A seal that goes up
+  under somebody already standing there is the one case a placement cannot prevent, so an agent in a
+  pocket is recycled like anybody who has left the field — but only once it is more than
+  `OUT_OF_SIGHT` from the camera, which is *nothing vanishes while you are looking at it* again. In
+  view it does what it has always done: walks to the far seal, turns, and walks back. The distance
+  is measured from `CrowdField.centre`, which is the player, and the field's own edge is twice as
+  far out — so this is the only recycle that ever happens somewhere she could have been standing.
+
 - **Bodies are solid, and cars are lethal.** Walking into somebody displaces you both and startles
   them; stepping into the carriageway in front of a moving car ends the day; traffic gives way at a
   zebra somebody is waiting at. **A contact deflects rather than blocking** — the separation is

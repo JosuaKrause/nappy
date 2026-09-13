@@ -54,6 +54,7 @@ func run(t) -> void:
 	_test_nothing_walks_into_a_hard_blocker(t)
 	_test_a_hard_seal_shuts_its_street_to_the_crowd(t)
 	_test_nobody_is_placed_in_a_sealed_junction(t)
+	_test_a_pocket_empties_once_it_is_out_of_view(t)
 	_test_a_region_wall_is_shut_and_a_door_is_carved_out(t)
 	# One door day, shared: building a city and planning days until one carries a door is most of a
 	# minute, and every test below places its own bodies at the same hut anyway.
@@ -1487,11 +1488,14 @@ func _test_a_hard_seal_shuts_its_street_to_the_crowd(t) -> void:
 ## M119, item 1: nobody is placed inside a junction sealed on every side, on the morning or on any
 ## recycle after it.
 func _test_nobody_is_placed_in_a_sealed_junction(t) -> void:
-	var sealed := _seal_a_junction(t)
+	var sealed := _a_junction_to_seal(t)
 	if sealed.is_empty():
 		return
 	var rect: Rect2i = sealed["rect"]
 	var at: Vector2 = sealed["at"]
+	_city.map.clear_day_holds()
+	for arm: StreetNetwork.Segment in sealed["arms"]:
+		_city.map.hold_segment(arm.key())
 	_city.crowd.start_day(1, _rng(1), at)
 	_city.crowd.set_focus(at)
 
@@ -1524,14 +1528,73 @@ func _test_nobody_is_placed_in_a_sealed_junction(t) -> void:
 
 	_city.map.clear_day_holds()
 
-## Holds every arm of one ordinary junction for the day and says where it is: the junction's own
-## box as a tile rect, and its centre in world coordinates.
+## M119, item 2: whoever is sealed in leaves — but not while she is looking at them.
+##
+## The crowd is placed first and the seals go up under it, which is the one case a placement cannot
+## prevent and is also the only way to get anybody into a pocket now that `setup()` refuses to.
+func _test_a_pocket_empties_once_it_is_out_of_view(t) -> void:
+	var sealed := _a_junction_to_seal(t)
+	if sealed.is_empty():
+		return
+	var rect: Rect2i = sealed["rect"]
+	var at: Vector2 = sealed["at"]
+	_city.map.clear_day_holds()
+	_city.crowd.start_day(1, _rng(2), at)
+	_advance_watching(4.0, at)
+	for arm: StreetNetwork.Segment in sealed["arms"]:
+		_city.map.hold_segment(arm.key())
+	_city.crowd.step(STEP)
+
+	var watched := _inside(rect)
+	t.check(watched > 0,
+			"there were agents standing in the junction when it was sealed (%d)" % watched)
+	var lowest := watched
+	for frame in int(round(3.0 / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		lowest = mini(lowest, _inside(rect))
+	t.check(lowest == watched,
+			("nobody sealed into it disappears while the view is on it — %d were there and the "
+			+ "count never fell below %d") % [watched, lowest])
+
+	# Far enough that the junction is off camera (`Tuning.OUT_OF_SIGHT`, 420px) and well inside the
+	# crowd's own box (`CROWD_FIELD_RADIUS`, 800px), so what empties it is the pocket rule and not
+	# the field's ordinary edge. Pointed at the middle of the map so the box does not hang over the
+	# boundary.
+	var inward := signf(_city.map.world_size().x * 0.5 - at.x)
+	var away := at + Vector2(620.0 * (inward if inward != 0.0 else 1.0), 0.0)
+	for frame in int(round(3.0 / STEP)):
+		_city.crowd.set_focus(away)
+		_city.crowd.step(STEP)
+	t.check(_inside(rect) == 0,
+			"and every one of them is gone once the view has moved off it (%d left)"
+			% _inside(rect))
+
+	_city.map.clear_day_holds()
+
+## How many agents are standing inside a tile rect right now.
+func _inside(rect: Rect2i) -> int:
+	var count := 0
+	for agent in _city.crowd.agents():
+		if rect.has_point(_city.map.world_to_tile(agent.position)):
+			count += 1
+	return count
+
+## Runs the crowd with the view held on one spot, which is what a rig has instead of a player: the
+## field's centre is where the camera is. See `CrowdAgent._out_of_view()`.
+func _advance_watching(seconds: float, at: Vector2) -> void:
+	for i in int(round(seconds / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+
+## One ordinary junction to seal: its four arms, its own box as a tile rect, and the centre of that
+## box in world coordinates.
 ##
 ## Picked rather than taken: a junction on the spine has the tunnel and the bridge past the end of
 ## it, one bordering the home block has a carve-out on one arm, and one on a precinct's own corridor
 ## is not ground a car may be on in the first place — none of the three is the plain four-armed
 ## crossroads the finding is about. Empty, with a failed check, where this city has none.
-func _seal_a_junction(t) -> Dictionary:
+func _a_junction_to_seal(t) -> Dictionary:
 	var home := {}
 	for segment in StreetNetwork.around_blocks(Rect2i(_city.map.home_block, Vector2i.ONE)):
 		home[segment.key()] = true
@@ -1555,10 +1618,8 @@ func _seal_a_junction(t) -> Dictionary:
 			var centre := rect.get_center()
 			if not _city.map.is_street(centre) or not _city.map.is_driveable_at(true, centre):
 				continue
-			_city.map.clear_day_holds()
-			for arm in arms:
-				_city.map.hold_segment(arm.key())
-			return {"rect": rect, "at": _city.map.tile_rect_to_world(rect).get_center()}
+			return {"arms": arms, "rect": rect,
+					"at": _city.map.tile_rect_to_world(rect).get_center()}
 	t.check(false, "this city has a plain four-armed junction to seal")
 	return {}
 
