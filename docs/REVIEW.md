@@ -24,6 +24,11 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
   soft base stays quiet enough to keep people and routes clear? Check neighboring cells and
   revisit the same seed to compare their stable arrangement.
 
+- **Look at a quiet square beside its surrounding sidewalk.** Does its muted cool-stone paving
+  fit the city's brightness while remaining recognizable as open ground? The
+  [quiet-square material review](evidence/quiet-square-2026-09-12/GENERATION.md) compares repeated
+  tiles with the shared sidewalk, asphalt and grass bases.
+
 - **Look at café seating and roadworks along both street axes.** Each café sitter should
   face its own table, including the right-hand chair and the vertical arrangement. Vertical
   red barriers should read as a narrow continuous barrier, and a horizontal alley should be

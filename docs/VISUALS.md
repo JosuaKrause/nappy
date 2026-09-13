@@ -82,6 +82,8 @@ background-free damage stencils, curbstones, street paint and grass clumps. It a
 the asphalt base offline by blending four quarter-turn orientations with equal contributions.
 The [engine layout recipe](evidence/layered-ground-layout-2026-09-12/GENERATION.md) assembles
 the actual runtime textures in generated streets, junctions and grass patches.
+The [quiet-square recipe](evidence/quiet-square-2026-09-12/GENERATION.md) documents its muted
+cool-stone paving and repeated-neighbor review.
 
 ## Review
 

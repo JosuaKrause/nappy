@@ -257,6 +257,11 @@ artwork, stencils and base preparation. The
 [engine layout recipe](evidence/layered-ground-layout-2026-09-12/GENERATION.md) reviews composed
 tiles in generated streets, junctions and parks. `--svg` selects the authored vector TileSet.
 
+`assets/illustrated/svg-transfer/tiles/quiet_square.png` supplies muted cool-stone paving with
+large slab joints. Its [generation and registration recipe](evidence/quiet-square-2026-09-12/GENERATION.md)
+preserves the SVG subject, style references, raw image and repeated-tile comparisons beside the
+shared ground bases.
+
 `assets/illustrated/svg-transfer/props/` supplies `garbage_sack.png` (28×34) and
 `garbage_sacks_pile.png` (42×34), bottom-center anchored, plus `litter_{can,apple,bag,newspaper,cup}.png`
 (32×32), center anchored. These use the existing `Prop` and `CityDecals` drawing paths with

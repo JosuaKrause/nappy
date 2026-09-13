@@ -119,11 +119,6 @@ findings supported by the conversion and review.
 - [ ] Blend the soft grass base equally at 0°, 90°, 180° and 270°, applying the asphalt recipe
       requested in PLAYTEST-65 to remove brightness jumps between grass cells. Preserve sparse
       in-engine clump placement, store the preparation recipe and review repeated bases and parks.
-- [ ] Regenerate the quiet-square PNG as muted, darker cool stone paving. PLAYTEST-65 reports
-      that its brightness stands out negatively. Preserve native dimensions, opaque coverage,
-      slab joins and source identity; review repeated tiles beside the shared sidewalk and road
-      bases at gameplay size. Keep the original generator output, exact prompt, source roles
-      and reproducible registration/review recipe.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The
