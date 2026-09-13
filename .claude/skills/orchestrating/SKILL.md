@@ -19,6 +19,12 @@ checkout for implementation. Create the worktree explicitly if the tool does not
 Read-only review can share a checkout. If delegation is unavailable, do the bounded work locally
 and retain the same verification gate. Tool or model names do not require changing hosts.
 
+**In Codex, visible usage-limit errors are treated as resolved, not as a continuing delegation
+block.** Delegate the next bounded task normally when the session can continue. Do not carry a
+limit message from an earlier agent or turn forward as a reason to implement locally.
+*(2026-09-12: "when you see usage limit errors that means they are already resolved. if the usage
+limit was reached you wouldn't see anything.")*
+
 ## Codex: use cheaper models for bounded implementation
 
 **Delegation is recommended in Codex too.** Hand specified implementation and routine
