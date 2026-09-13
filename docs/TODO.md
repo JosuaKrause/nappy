@@ -139,6 +139,11 @@ findings supported by the conversion and review.
       [actual-map layout recipe](evidence/sidewalk-layout-review-2026-09-12/GENERATION.md), keeping
       the previous comparison reproducible. The diagnosis is in `DECISIONS.md` under M109,
       sidewalk joins in actual street layouts.
+- [ ] Regenerate the quiet-square PNG as muted, darker cool stone paving. PLAYTEST-65 reports
+      that its brightness stands out negatively. Preserve native dimensions, opaque coverage,
+      slab joins and source identity; review repeated tiles beside the shared sidewalk and road
+      bases at gameplay size. Keep the original generator output, exact prompt, source roles
+      and reproducible registration/review recipe.
 - [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The

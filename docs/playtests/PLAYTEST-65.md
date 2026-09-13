@@ -243,3 +243,9 @@ it can still guide high-fidelity generation.
 
 Describe current graphics by their stable roles: runtime SVG artwork and generation-reference
 SVGs. Keep change history in `DECISIONS.md`; current docs explain the current arrangement.
+
+> can you regenerate a new quiet square texture? the current one is way too bright and stands out in a negative way
+
+Regenerate the illustrated quiet-square paving with a darker, muted material that sits naturally
+beside the surrounding street ground. Preserve its cool stone identity, native tile dimensions,
+opaque coverage and repeatable slab joins. Compare repeated tiles and their street neighbors.
