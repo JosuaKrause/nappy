@@ -148,7 +148,13 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 0. **M117**, excitement decays visibly on quiet ground, and **M118**, a car crash is solid only
    where the cars are — *(2026-09-12: "prioritize this fix"; "this round's feedbacks should all
    be prioritized since I'm actively testing the changes as they come in")* — ahead of
-   everything, by the player's own word.
+   everything, by the player's own word. **[PLAYTEST-66](playtests/PLAYTEST-66.md)'s four stand
+   on the same footing**, played the same day on the same word: **M119**, the crowd with nowhere
+   to go leaves, **M120**, the map edge, **M121**, the halo follows its owner and a turning car's
+   picture and lane, and
+   **M122**, the shadows buildings cast and the one a burst main does not. The three that
+   touch the crowd (M119, M120, M121) share `src/crowd/` and run one after another; M122 is
+   drawing and runs beside them.
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
    related to the other items to work on right now.")* It waits, because reaching act III waits:
    *"I wanna wait reaching act III until those things are done."*
@@ -431,6 +437,159 @@ whether they follow is the player's question, not this item's.
 
 ---
 
+## M119 — The crowd with nowhere to go leaves · asked for 2026-09-12
+
+> "pedestrians with nowhere to go (all four sides of the intersection are blocked off) should
+> just despawn (or never spawn in the first place) right now they're accumulating in one place
+> and move back and forth or worth flicker (burst 3, 4, 9, and quite a few others). the same
+> with cars (burst 10 and 11)."
+
+[PLAYTEST-66](playtests/PLAYTEST-66.md). Prioritised with everything from that round.
+
+**What is true today.** The crowd is kept off a sealed street by `CityMap.held_segments`, the
+per-day set of street segments a walker or car refuses to enter; an agent that reaches one turns
+back (M110, the crowd goes round every solid body). A junction whose four segments are all held
+is a pocket: whoever is already inside it, and whoever `CrowdAgent._recycle()` places there — it
+rolls for a spot in the entry band, checks it stands on a street and has room, and does not ask
+whether that street leads anywhere — turns at one seal, walks to the next, turns again. Where
+several do this on one corner they stack, and at the tightest spots the turn-around flickers
+between two facings. The evidence is the run folder under
+`docs/evidence/archive/session-captures/2026-09-12/`, bursts 3, 4, 9, 10 and 11.
+
+- [ ] **Nobody is placed in a pocket.** A pocket is a connected set of street tiles with no
+      held segment leading out of it — computed once per day from `held_segments` and the seal
+      bodies, the same inputs the crowd already reads, so it is a map property and not a per-agent
+      search. `_recycle()` refuses a spot inside one the way it refuses a spot with no room.
+      Cars and walkers alike; a car's pocket is over lanes, a walker's over pavements, since a
+      soft seal takes the pavements and leaves the road.
+- [ ] **Whoever is in one leaves.** An agent whose street becomes a pocket — a seal placed after
+      it arrived, the one case placement cannot prevent — is recycled at the next moment it is
+      out of sight, rather than pacing; *nothing vanishes while you are looking at it* still
+      holds, so inside her view it walks to the far seal once and is recycled from there when
+      the view has moved on. `tests/test_crowd.gd` stands a fully sealed junction and asserts
+      nobody is placed in it, and that the count inside it falls to zero once it is out of view.
+- [ ] **The flicker on its own.** A turn-around at a seal that reverses facing every frame is a
+      bug whether or not the agent is in a pocket; find the reversal in the burst frames' timing
+      and make a turned-back agent commit to its new heading for at least one stride.
+
+---
+
+## M120 — The map edge · asked for 2026-09-12
+
+> "at the eastern and western edge one column of tiles is missing leaving a black band (picture
+> 1 and 2). while people or cars cannot leave the map anymore from non-tunnel/bridge edge
+> locations they can still spawn there and walk/drive out of nowhere (burst 8 and 9)."
+
+[PLAYTEST-66](playtests/PLAYTEST-66.md). Prioritised with everything from that round.
+
+**What is true today.** `City._paint_outside_the_map` lays border tiles `OUTSIDE_DEPTH_TILES`
+(one block) deep on every side of the map — scree and mountain north, bulkhead and water south,
+fence, grass and forest east and west — on the ground tilemap only; `CityMap` and the walkable
+set never include them. In picture 2 (the south-east corner) and burst 10 (the north-east
+corner) the painted band stops a column short of the window's edge and black shows beyond it;
+the north and south bands reach the edge in the same frames. Picture 1 is the western edge. And
+`CITY.md`'s rule *a car leaves the city by the bridge and the tunnel, and nowhere else* is held
+on the way out — every agent but a spine car keeps a tile inside the map — but a fresh recycle is
+rolled from an entry band along the whole edge, so walkers and cars still appear at the plain
+boundary and come in from the forest, the water or the rock (burst 8, a walker on the mountain
+band at the north edge with vans arriving from above it; burst 9, the eastern side).
+
+- [ ] **The band reaches the window.** Find why the east and west bands are one column short —
+      an off-by-one in the outside loop's range against the camera's clamp, or the fence
+      column at `out == 1` painted over the last inside column — and make every side the same
+      depth. A boot check with the camera in each corner asserts no unpainted cell in the window.
+- [ ] **Entry is where exit is.** A recycled agent enters only where a departing one may leave:
+      a walker or a car on an ordinary street enters from inside the map, out of sight, and only
+      a spine car enters through the tunnel or off the bridge. `CrowdAgent._entry_band_fits`
+      and `_keep_within_the_room_beyond_the_map` already state the room on the way out; the entry
+      roll uses the same room. `tests/test_crowd.gd` stands at each plain edge and asserts nobody
+      arrives across it.
+
+---
+
+## M121 — The halo follows its owner, and a turning car's picture and lane · asked for 2026-09-12
+
+> "the halo doesn't update when the drawn sprite updates. so a turning car will have the original
+> halo while turning (burst 5 and 6 and a couple more). also while turning the car might get
+> weirdly offset (burst 5 and 6). a car doing a u-turn into a lane with traffic reset the other
+> lane (burst 1)."
+
+> "the halo issue is not specific to cars you can see the same for when you walk close to birds
+> you will get a freeze frame of their position as halo while they keep flying"
+
+[PLAYTEST-66](playtests/PLAYTEST-66.md). Prioritised with everything from that round. M111, cars
+follow their turns, built the arc; M108, eight-direction entity graphics, gave the car a picture
+per heading along it. This is what the two do together.
+
+**What is true today.** `EntityHalo` is a child node that re-runs its owner's own body drawing
+at twelve offsets and flattens the copies to a rim, and it redraws itself only while its alpha or
+colour is still easing toward the target it was last given (`_process` returns before
+`queue_redraw()` once both have settled). A car whose halo has settled and then changes view on
+the arc keeps the rim of the view it had: burst 10's blue car at the north-east corner is drawn
+in its diagonal view with a side-view rim sitting up and to the left of it. The same holds for
+every owner whose body moves under a steady glow: a flock (an event whose birds are drawn at
+positions that advance every frame) keeps the rim of where the birds were when the glow settled.
+The body's own offset during the turn is separate: the standing pictures are registered so box and shadow sit
+on the body, and on the arc the picture drifts off that registration for part of the turn. And
+in burst 1 a car about-facing into the northbound lane of the eastern side street, which held a
+queue, reset that lane — the cars in it jumped rather than made room.
+
+- [ ] **The halo follows the picture, for every owner.** The rim redraws whenever the owner's
+      drawn body changes — the halo redraws every frame while its drawn alpha is above zero,
+      which is the one rule that covers a turning car, a flying flock and anything else that
+      moves under a steady glow, or every owner calls the halo's `queue_redraw()` from the same
+      place it calls its own — so a halo is always the halo of the body being drawn. The cost is
+      bounded by `ExcitementHalo.MAX_SOURCES` (8) rims at once. `tests/test_crowd_bodies.gd`
+      (or the halo's own test) draws a car in one view, turns it, and asserts the rim's
+      silhouette matches the new view; the same for a flock one frame on.
+- [ ] **The picture stays on its registration through the turn.** Find the offset in bursts 5
+      and 6 against the frame timing, and make the diagonal and cardinal pictures on the arc
+      share the standing registration the debug bounding box (`3`) is judged by.
+- [ ] **A u-turn joins a lane without resetting it.** A car about-facing into a lane that holds
+      traffic merges by the lane's own following rule — it waits for a gap or joins at the tail
+      — rather than displacing what is there. `tests/test_crowd.gd` queues a lane, about-faces a
+      car into it, and asserts every car already in the lane keeps its order and moves no more
+      than one frame's travel.
+
+---
+
+## M122 — The shadows buildings cast, and the one a burst main does not · asked for 2026-09-12
+
+> "don't draw a shadow for water main breaks."
+
+> "can we do a one tile diagonal shadow from all buildings? like the bottom right of a build has
+> a shadow triangle 45 ne to sw with the top half filled. that shadow then goes all the way to 1
+> tile left of the building and up to 1 tile before the building ends. buildings that are joined
+> don't have an extra shadow where they connect. this should make alleys more obvious since they
+> will have part of those shadows, too"
+
+[PLAYTEST-66](playtests/PLAYTEST-66.md). Prioritised with everything from that round.
+
+**What is true today.** Every seal draws a body shadow under its scene — `EventInstance` draws
+one shadow patch per solid part before the picture — and the burst water main (`burst_water_main`,
+look `BURST_MAIN`, one of the three whole-scene seal pictures with the fallen tree and the car
+accident) gets one like the rest, though its picture is a crater in the road and two barriers.
+Buildings draw no shadow at all (`Building`'s own comment says so; its shape is read for its body
+alone).
+
+- [ ] **No shadow under a burst main.** The row opts out of the body shadow; the barriers'
+      bodies and the seal are untouched. `tests/test_event_views.gd` asserts the row draws none.
+- [ ] **Every building casts a one-tile shadow.** The reading of the player's shape, built
+      as read and put back for a look: the light stands to the north-east, so a building shades
+      the ground to its south and west by one tile — a band along its bottom edge that runs one
+      tile past its western corner, and a band up its western edge that stops one tile short of
+      its top — and the tile under the south-eastern corner is cut on the diagonal from its
+      north-east to its south-west corner, the half toward the building filled. The shadow is
+      computed over the union of buildings that touch, so two joined buildings shade as one and
+      nothing is drawn where they meet. It is drawn on the ground under everything that walks,
+      the way the seal shadows are, so an alley between two buildings carries the eastern
+      building's band down its length — *"this should make alleys more obvious"* is the test by
+      eye. **One question, for the look rather than the build:** whether the shade is a flat
+      dark at one alpha or takes the ground's own colour down a step; recommended flat, one alpha,
+      a number in `Tuning` so it can be turned by eye. A screenshot of a block with an alley,
+      before and after, under `docs/evidence/`.
+
+---
 
 ## M56 — The resistance is noticed
 

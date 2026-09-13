@@ -98,11 +98,13 @@ item below for as long as looking takes.
   has one). No chalk mark and no robber ever stands on its paving; the mark is offered somewhere
   she can reach. Does the mark ever appear behind a band anywhere else — a closure, a soft seal?
   Record is `DECISIONS.md`, M100, a blocked-off alley has no chalk mark.
-- **Stand by a sealed street and watch the crowd** (any day; seals are the bodies on the streets
-  the day's route does not use). Walkers and cars turn back from a hard seal, a wall and a
-  closure; a soft seal takes both pavements from walkers and leaves the road to cars; a door lets
-  cars through one at a time. Does a street the crowd refuses read as *shut*, and does the crowd
-  ever look stuck against it? Record is `DECISIONS.md`, M110.
+- **Stand by a single sealed street and watch the crowd turn back** (any day; seals are the
+  bodies on the streets the day's route does not use). Walkers and cars turn back from a hard
+  seal, a wall and a closure; a soft seal takes both pavements from walkers and leaves the road
+  to cars; a door lets cars through one at a time. Does a street the crowd refuses read as
+  *shut*? The other half of this, whether the crowd looks stuck, was answered by
+  [PLAYTEST-66](playtests/PLAYTEST-66.md) for a junction sealed on every side and is M119 in
+  `TODO.md`; this asks about one seal on an open street. Record is `DECISIONS.md`, M110.
 - **Walk past a café, a stall or a kerbed van on a day with several** (a precinct's pavements are
   the busiest early in a day). A walker steps into the other lane of its own footway to get past
   one and steps back after; a car in the body's own lane turns at the last junction while the
@@ -137,17 +139,16 @@ item below for as long as looking takes.
   as *a dog that was somewhere* or as the lesson again? That is the open question in `TODO.md`,
   M96, whether it should wait to be routed into; a played answer decides it. Record is
   `DECISIONS.md`, M96.
-- **Watch a car turn at a junction, and one turn round at a closure** (any day; a closure or a
-  seal on a road sends cars back). A car now drives to the mouth of the junction, eases to a turn
-  speed, follows one arc onto the centre of the lane it is joining and picks up speed again; an
-  about-face is a half circle inside the junction box, or, with no junction to reach, in the
-  street with its body over the kerb by a few pixels. The crowd car's picture follows the arc
-  now — side, diagonal, front or back by its actual heading, standing pictures registered so the
-  box and shadow (`2` and `3` in the debug view) sit on the body — so judge both: does a turn
-  read as a car turning, does the pause at the mouth read as slowing rather than stalling, does
-  the picture ever jump a view or float off its shadow, and does a street about-face over the
-  kerb read as wrong? That last one is the open question in `TODO.md`, M111. Records are
-  `DECISIONS.md`, M111 and M108, the crowd car.
+- **Watch a car pause at a junction mouth, and one turn round in a street** (any day; a closure
+  or a seal on a road sends cars back). A car drives to the mouth of the junction, eases to a
+  turn speed, follows one arc onto the centre of the lane it is joining and picks up speed
+  again; an about-face is a half circle inside the junction box, or, with no junction to reach,
+  in the street with its body over the kerb by a few pixels. Does the pause at the mouth read as
+  slowing rather than stalling, and does a street about-face over the kerb read as wrong? That
+  last one is the open question in `TODO.md`, M111. Whether the picture jumps a view or floats
+  off its shadow on the arc was answered by [PLAYTEST-66](playtests/PLAYTEST-66.md) — it does,
+  and the halo with it — and is M121 in `TODO.md`. Records are `DECISIONS.md`, M111 and M108,
+  the crowd car.
 - **Look at a parked delivery van and, from day 7, a police car on patrol.** The delivery van and
   the abduction van now face east when parked facing east; before, their west-authored pictures
   were drawn unmirrored, so a van sited nose-east showed its nose west. Does the parked van read
