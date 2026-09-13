@@ -312,3 +312,12 @@ removing the baked PNGs and their import sidecars.
 
 Delete the redundant composite revisions without creating an archive for them. Retain only the
 accepted source tiles used by the stencil recipe; those already exist in frozen generation inputs.
+
+> also, why do we have separate damage overlays for alleys/sidewalks/street? one should be enough for each damage type, no?
+
+> you can keep the ones you have as variations, though
+
+Share damage artwork across road, sidewalk and alley materials. Keep the existing stencils as
+variations in common hairline, cracked and broken pools, rather than binding a drawing to the
+surface from which it was extracted. Compose the chosen variation over the actual base in the
+engine. Preserve damage placement and severity, with stable variation by city seed and cell.
