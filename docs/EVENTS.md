@@ -684,7 +684,7 @@ All implemented.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `playground` | AMBIENT | 1 | Static aura in every park. The reason parks are not free wins. Sized (150px outer against a 256px park block) to dominate the middle and leave the far side genuinely calm. |
+| `playground` | AMBIENT | 1 | Free — intensity 0. The swing frame in every park is `map.playgrounds`' own prop, drawn whether or not this row costs anything; a one-block park has no ground left to settle her on once anything standing in the middle of it costs, so nothing here does. |
 | `cat_dash` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | Crouches (telegraph), then bolts across the traffic. Intensity 17, tiny radius, 1.8s duration — long enough to carry it the whole way across the street it starts at the edge of, and raised from 15 for a sharper startle spike once the barrier fields it used to be judged against went quiet. Its dash, driven straight at a standing player, still projects under `Tuning.EXPECTED_IMPACT_POINTS`, so the crouch's own silhouette carries the warning rather than a caret. Sited at `EventDef.ahead_of_player_lead()` rather than the flat `AHEAD_LEAD_DISTANCE`, which prices in the ground she covers while it holds its crouch, so it crosses where she actually is by the time it moves rather than behind her. The tutorial obstacle. |
 | `alley_mouse` | RECURRING | 1 | The cat's shape, `MAP`-placed on `ALLEY` tiles instead of director-sited — an alley she is routed through is already ground she is about to walk, unlike a `ROAD` tile that could be anywhere in the city. Intensity 21 on a 60/15px field (the cat's 4:1 ratio) and half its cap (4), on top of the alley's own `Tuning.EXCITEMENT_FROM_ALLEY` (+3.0/s) ambient dread. **Priced above the cat on each row's own ground**, which is not the same ground — *(2026-09-12: "alley mouse is a bit above charging cat"; "consider that the mouse is in the alley but the cat is usually not")*. A cat is met on a street that gives back 6.0/s; a mouse only ever in an alley, which gives back 3.5/s and is charging the dread as well, so the alley hands this row most of the gap before its intensity is touched. It walks to **+19.9 in an alley** against the cat's **+17.6 on a street**. The field is only 60px across, so the crossing is a second and a third and the spike has to be bought in intensity — there is no `impulse` field. No body, nothing lethal. Waits unclocked (`pursues_within` 150px, without `pursues`) until she is close, so a `MAP` placement streamed in from `EVENT_STREAM_RADIUS` does not telegraph and finish off screen before she arrives — see `EventDef.pursues_within` and `EventInstance._check_for_notice()`. Its two-point dash is read off `CityMap.alley_rects` and laid across whichever side of the alley is narrower — always the width, since she can only be walking the length — so it crosses her path rather than running down it (`EventInstance._alley_crossing_path()`). `EventScheduler._refuses_required_alleys`, stated over `def.placement == [ALLEY]` and shared with `alley_robbery`, keeps it off alleys she has no way around. |
 | `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Intensity 26 on a tight radius, barking on a 3.5s pulse: it owns the pavement it is on, so walking straight through it is never the cheap option. Deliberately given no `obstructs_radius` — a moving wall on a two-tile pavement pins the player against a building. |
@@ -986,6 +986,7 @@ alone is answering a narrower question than it thinks.
 | `loudspeaker` | — | — |
 | `construction` | -26.1 | +32.1 |
 | `delivery_van` | -19.6 | +24.1 |
+| `playground` | -19.6 | +24.1 |
 | `checkpoint_gate` | -15.7 | +19.3 |
 | `barricade` | -15.7 | +19.3 |
 | `fallen_tree` | -15.7 | +19.3 |
@@ -1009,7 +1010,6 @@ alone is answering a narrower question than it thinks.
 | `alley_mouse` | +12.7 | +20.9 |
 | `busker` | +15.3 | +52.5 |
 | `cyclist` * | +16.0 | +29.7 |
-| `playground` | +17.4 | +44.3 |
 | `cat_dash` | +17.6 | +37.5 |
 | `ice_cream_van` | +18.4 | +65.8 |
 | `roadblock` | +18.5 | +51.7 |
@@ -1424,8 +1424,8 @@ One rule runs while a day is planned and two run after it:
 
 - **Nothing is placed near calm she has not used this act.** The calm ground of every area she has
   not settled in is refused to `_place_one`, so the events that would have landed there go somewhere
-  else. Ambient events and scars are exempt — a playground makes a park *contested*, which is the
-  design, and a scar is something that already burnt.
+  else. Ambient events and scars are exempt — a playground is a permanent, free feature of the map
+  rather than something today placed there, and a scar is something that already burnt.
 
   **It is a refusal rather than a repair**, which is the rule about checking before accepting: a day
   planned in full and then stripped of whatever landed on the calm spends its budget twice, and

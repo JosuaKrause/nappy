@@ -150,30 +150,23 @@ static func _build() -> Array[EventDef]:
 		_basement_steam(),
 	]
 
-## The reason parks are not a free win. Permanent, wide, and sitting in the middle of the
-## calmest ground in the city.
+## A permanent feature of the calmest ground in the city, and free — the swing frame it draws is
+## `map.playgrounds`' own prop (`City._dress_blocks`), not this row, so an intensity of zero
+## changes nothing about what a park looks like.
 ##
-## **This is the one ambient row that lives on calm ground, and two different rates price it.**
-## `PLAYGROUND` is on `Tile._CALM`, so the decay under it is
-## `EXCITEMENT_DECAY_WALKING × EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` — **12.0/s** — and that is
-## what it has to beat at the peak of its pulse to cost anything at all to stand in. A row under it
-## at the peak never out-emits the ground it stands on at any distance or any phase of its beat, and
-## standing in a playground would be a net *benefit*. At 15 it clears that by three.
+## **Free because a one-block park otherwise has nowhere left to settle her.** `outer_radius`
+## (150) reaches past half of a 256px park block, so a playground with any real cost denied
+## nearly the whole lot rather than merely contesting its middle — *"otherwise small parks
+## really have no way of ever getting to sleep."* `EventKind.AMBIENT` was already exempt from
+## `EventScheduler._ensure_one_usable_park` and `_spoil_the_parks_she_used`, which both skip
+## every `AMBIENT` plan before asking what it costs, so zeroing the intensity here moves neither:
+## a park is still contested on the days the scheduler spoils it, just never by its own swings.
 ##
-## **The radius it denies is the other rate, and it is deliberately not this one.**
-## `EventScheduler._denial_radius` asks `Tuning.CALM_ZONE_DENIAL_RATE` (7.7/s), which is fixed:
-## which rows may deny park ground is a decision about parks rather than about how fast the pram
-## settles, so the walking decay moving does not move it. At 15 the denial radius is 117px at the
-## top of the beat and 86px at the middle, against a park block 256px across. It dominates the
-## middle of a park and leaves the far side genuinely calm, and `tests/test_balance.gd` still finds
-## a day winnable, because the ground is contested rather than removed.
-##
-## **The trap is that the two rates can drift apart under this row and nothing else would say so**:
-## it is the only thing in the catalogue that stands on calm ground, so no other part of the balance
-## goes wrong to point at it. Its pulse runs 0.25 to 1.0 of `intensity`, so what it charges swings
-## across the ground's own decay over its nine seconds — the middle of a playground is expensive at
-## the top of the beat and free at the bottom, which is a rhythm to walk through rather than a
-## constant tax.
+## **The row stays rather than being deleted.** `tests/test_events.gd` looks it up by id and
+## reads its `kind`; `EventInstance._field_distance()` names it as the row with no shape to fall
+## back to; the event table and the cost table in `docs/EVENTS.md` both carry a line for it. An
+## intensity of zero says "free" in the same place `delivery_van` and `construction` already say
+## it, rather than removing a row three other files still expect to find.
 static func _playground() -> EventDef:
 	var def := EventDef.new()
 	def.id = "playground"
@@ -181,12 +174,10 @@ static func _playground() -> EventDef:
 	def.kind = GameEnums.EventKind.AMBIENT
 	def.ambient_source = EventDef.AmbientSource.PLAYGROUND
 	def.look = EventDef.Look.NONE  # The park's swing frame already draws it.
-	# Above the decay on the ground it stands on (12.0/s), which is the whole of what an event on
-	# calm ground has to clear to exist at all. See the note above.
-	def.intensity = 15.0
-	# Sized so it dominates the middle of a park but leaves the far side genuinely calm —
-	# a park block is 256px across, so a 200px reach would have swallowed the whole thing
-	# and made every park useless rather than merely contested.
+	def.intensity = 0.0  # Free. See the note above.
+	# Kept at their old size for continuity — the debug field overlay still draws a disc here —
+	# even though `Tuning.falloff` answers zero at every distance now and nothing else reads them:
+	# shrinking a field nobody prices is a second change nobody asked for.
 	def.inner_radius = 40.0
 	def.outer_radius = 150.0
 	def.telegraph_time = 0.0
