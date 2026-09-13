@@ -359,44 +359,6 @@ queue, reset that lane — the cars in it jumped rather than made room.
 
 ---
 
-## M122 — The shadows buildings cast, and the one a burst main does not · asked for 2026-09-12
-
-> "don't draw a shadow for water main breaks."
-
-> "can we do a one tile diagonal shadow from all buildings? like the bottom right of a build has
-> a shadow triangle 45 ne to sw with the top half filled. that shadow then goes all the way to 1
-> tile left of the building and up to 1 tile before the building ends. buildings that are joined
-> don't have an extra shadow where they connect. this should make alleys more obvious since they
-> will have part of those shadows, too"
-
-[PLAYTEST-66](playtests/PLAYTEST-66.md). Prioritised with everything from that round.
-
-**What is true today.** Every seal draws a body shadow under its scene — `EventInstance` draws
-one shadow patch per solid part before the picture — and the burst water main (`burst_water_main`,
-look `BURST_MAIN`, one of the three whole-scene seal pictures with the fallen tree and the car
-accident) gets one like the rest, though its picture is a crater in the road and two barriers.
-Buildings draw no shadow at all (`Building`'s own comment says so; its shape is read for its body
-alone).
-
-- [ ] **No shadow under a burst main.** The row opts out of the body shadow; the barriers'
-      bodies and the seal are untouched. `tests/test_event_views.gd` asserts the row draws none.
-- [ ] **Every building casts a one-tile shadow.** The reading of the player's shape, built
-      as read and put back for a look: the light stands to the north-east, so a building shades
-      the ground to its south and west by one tile — a band along its bottom edge that runs one
-      tile past its western corner, and a band up its western edge that stops one tile short of
-      its top — and the tile under the south-eastern corner is cut on the diagonal from its
-      north-east to its south-west corner, the half toward the building filled. The shadow is
-      computed over the union of buildings that touch, so two joined buildings shade as one and
-      nothing is drawn where they meet. It is drawn on the ground under everything that walks,
-      the way the seal shadows are, so an alley between two buildings carries the eastern
-      building's band down its length — *"this should make alleys more obvious"* is the test by
-      eye. **One question, for the look rather than the build:** whether the shade is a flat
-      dark at one alpha or takes the ground's own colour down a step; recommended flat, one alpha,
-      a number in `Tuning` so it can be turned by eye. A screenshot of a block with an alley,
-      before and after, under `docs/evidence/`.
-
----
-
 ## M56 — The resistance is noticed
 
 The city gets more dangerous the further into the subquest you are. **A task may not cost a nerve**

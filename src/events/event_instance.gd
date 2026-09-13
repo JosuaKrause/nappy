@@ -2154,7 +2154,13 @@ func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Ve
 ## along the spread axis. The single ellipse or capsule every row drew before, for anything that
 ## declares no parts; two patches under two cars for the one row that does, so the ground under a
 ## crash is dark where the cars are and lit where the picture leaves a way through.
+##
+## `def.draws_body_shadow` opts a row out entirely — `burst_water_main` alone today — leaving its
+## body and its picture untouched: this is the one function that puts a shadow patch down, so
+## refusing here is the whole of "no shadow" rather than a special case at each call site.
 func _draw_body_shadow(canvas: CanvasItem) -> void:
+	if not def.draws_body_shadow:
+		return
 	for piece in def.parts():
 		_draw_shape_shadow(canvas, piece.shape, _spread_at(piece.offset_for(_spread_vertical)))
 

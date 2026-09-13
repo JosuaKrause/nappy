@@ -223,7 +223,9 @@ var lot := Rect2i()
 ## of those two. Half `footprint` on the south-north axis less `NORTH_EDGE_INSET`, not half
 ## `footprint` outright — see `_rebuild()` — so the body's own north edge sits `NORTH_EDGE_INSET`
 ## south of the lot's. Kept in step with `footprint` in `_rebuild()`, since the `@export` setter
-## can still reassign it. Buildings draw no shadow, so this is read for its body alone today.
+## can still reassign it. Read for its body alone: the one-tile shadow every building casts is
+## computed from the whole city's lot rectangles at once (`BuildingShadows`, so two buildings that
+## share an edge shade as one), not from this shape.
 var shape: GroundShape
 
 var _collision: CollisionShape2D
