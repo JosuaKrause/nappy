@@ -1,5 +1,316 @@
 # Decisions
 
+## M124 — The two fixes built · 2026-09-13
+
+The build half of the desktop measurement below (M124, where a frame goes). Four agent commits
+on `feature/m124-frame-fixes`, reviewed here; the evidence, with twelve walks, the pixel
+comparison and two bursts, is `docs/evidence/m124-frame-fixes-2026-09-13/`.
+
+**Events redraw only when their picture changes.** `EventInstance._process()`'s three
+unconditional `queue_redraw()` calls are now `_redraw_if_the_picture_changed()`, the gate
+`CrowdAgent` has always had. `_picture_key()` is a `Vector4i`: a bit field of every yes/no thing
+the drawing asks — finished, suppressed by a checkpoint hold, leaving, mid-stride, facing west,
+telegraphing, waiting, chatting, guard inside, taking a victim, the victim's stride, the idle
+timer, the boom raised, the gate's axis, the caret's flash — plus the eight-view sector the
+next draw would land on, the caret's strength, the protest pose, and the bob and the caret's
+swell quantised to an eighth of a pixel and a tenth. Four looks are never gated — the flock, the
+burning building, the firefight and an abduction mid-take — because each is a continuous
+function of the clock that no key could name. **One defect the gate exposed**: the caret's
+strength was cached against the event's age alone, and the gate became the first thing to ask
+each tick, before the manager and the halo had written where she is, so the lethal cyclist's
+caret doubled; the cache is now keyed on her position too, with the regression in
+`tests/test_event_redraw.gd`.
+
+**The building shadows are drawn per chunk.** One `Node2D` per 16-tile-square patch that holds
+any shadow, so the renderer's own rect culling drops the off-screen ones; `compute()` is
+untouched and `split()` is pulled out so `tests/test_building_shadows.gd` can hold that it is a
+partition. **Rejected: one mesh.** A mesh is one draw call but still one item, so all of its
+triangles are submitted every frame and the primitive count does not move, and this frame is
+submission-bound; chunking also keeps the drawing literally unchanged where a mesh would have
+re-expressed M122's diagonal corner cut.
+
+**Measured on the measurement's own walk** — `tools/shot.sh out.png 20 --seed 3265820891 --day 1
+--walk 3s17e` — with `--disable-vsync` added, because this session's display is 60Hz and with
+vsync on every state pins at 60 and the table reads nothing; the four states were run
+interleaved, three rounds, on a machine three other agents were using. The baseline is a floor:
+in two of three rounds it sits on the display's own pace, so every gap is a lower bound.
+
+| state | fps | draws | objects | primitives | process ms |
+|---|---|---|---|---|---|
+| baseline | 64 | 708 | 3506 | 7345 | 17.90 |
+| events gated | 72 | 715 | 3515 | 7364 | 17.44 |
+| shadows chunked | 74 | 583 | 1648 | 3767 | 16.88 |
+| both | **90** | 581 | 1642 | 3758 | 15.68 |
+
+About +40% together against the 30% the measurement's (f) row projected. The gate's counters
+are unchanged, which is the (e2) shape: the same commands, no rebuild. Chunking leaves about
+sixty shadow objects on screen where the whole-city list submitted 1,918.
+
+**Pixel identity: zero of 921,600.** A plain before-and-after cannot answer this, since two runs
+of the same build differ by about sixteen thousand pixels of crowd and traffic; `--fixed-fps 60`
+makes the capture frame-exact, and base against tip then differs by 1,661 pixels, every one
+inside the debug readout's own digits. The method was validated against a control with the
+shadows drawing nothing, which differs by 77,040.
+
+**Motion evidence is two bursts**: the dog walker's stride and the café sitters' lean, the
+animation a distance-driven key would have silenced. No busker burst, because `--spawn
+event:busker` on seed 4242 day 1 lands beside a scaffolding; the café's lean is the same idle
+mechanism. There is no leaving fade to key on — *nothing vanishes while you are looking at it*
+is a departure, not a fade.
+
+## M127 — The first press walks her · built 2026-09-13
+
+*(2026-09-13, [PLAYTEST-67](playtests/PLAYTEST-67.md): "the player direction should be reset to
+zero when the game starts. Right now it always starts already walking (probably from clicking
+the button) same with exiting pause or any other screen"; "Pause can keep the last direction
+just don't overwrite it from the button press".)* Two agent commits on
+`feature/m127-first-press`, reviewed here.
+
+**The fall-through was a fourth mechanism, not either of the two the entry named.**
+`TouchControls._on_pointer()` armed its drag pointer for the press that dismisses a screen even
+though `_on_tap()`'s own paused-tree guard had already made that press a no-op; every dismissing
+screen acknowledges a press two frames late, so a finger or mouse button still down for a couple
+of frames produced an ordinary drag or motion event for the same pointer once the tree was
+running again, and `_on_drag()` read it as a fresh heading. Reproduced on a scratch rig with a
+follow-up jitter of two pixels, which is why a touchscreen reported *always* rather than
+*sometimes*. The fix is an early return in `_on_pointer()`: a press that never reached the world
+is never armed for a later drag either. **The title disc was never reachable this way** — the rig
+`_on_drag()` needs is null on every boot and restart — and the summary's continue button, which
+keeps one `TouchControls` running across days, was the vulnerable one;
+`tests/test_touch.gd`'s new case sets a direction first, as an earlier day's walk would have, to
+make the leak reachable at all. No explicit zeroing was added: once the dismissing press cannot
+plant a heading, the existing force-release when a screen pauses the tree already leaves her
+standing, and a second zeroing would be repairing a guarantee rather than checking it.
+
+**Pause keeps the last direction, and it was not only the leak.** Opening the pause
+force-releases the held direction and nothing restored it, so a mid-walk `Esc` and continue left
+her standing. `TouchControls.remember_before_pause()` and `resume_after_pause()` stash the
+heading and the run flag the instant `PauseScreen.open()` runs and press them back once
+`close()` runs, whichever of the screen's three exits gets there; only the pause screen gets
+this — the title and the summary want the release with nothing restored, which is what they
+already did. Two cases in `tests/test_pause.gd` hold the entry's own wording: pause walking east
+and continue resumes east; pause standing and continue stays standing.
+
+**One silent choice, open to overturn.** A direction key still held through the title screen's
+synchronous unpause reads as a nonzero input on the next physics frame, because the engine's
+input map drives the move actions independently of `TouchControls`; left as is, since
+suppressing a genuinely held key would be a worse defect than the one closed. `space` starts the
+run standing. No timer or grace window anywhere.
+
+## M124 — Where a frame goes, measured · the desktop half, 2026-09-13
+
+*(2026-09-13, [PLAYTEST-67](playtests/PLAYTEST-67.md): "I played a few sessions on mobile. It is a
+bit laggy now. Are we using proper texture atlases or is everything an individual loaded texture?
+Maybe we can optimize the game a bit more.")* The queue entry's own condition was *measure before
+touching anything, and nothing is atlased on a guess*. This is the measurement; the two fixes it
+names and the phone half are what the entry in `TODO.md` now holds.
+
+**The instrument.** `FrameCost` (`src/telemetry/frame_cost.gd`) reads six costs off Godot's
+`Performance` monitors — frame rate, draw calls, renderable objects, primitives, and the
+milliseconds in `_process` and `_physics_process`. The debug readout (`4`, on by default in a
+debug build) shows them, and `TelemetryObserver` writes them to `run.log` once a second as a
+`frame` entry, so a session played on a device with no readout can be read back afterwards.
+One class rather than two format strings, because the comparison the milestone exists to make is
+a phone's log against a desktop's screen, and it only means anything while both are assembled
+from the same readings; `tests/test_performance.gd` holds that agreement, and only that, since
+the render counters are zero under `--headless`. Two silent choices, both open to overturn: the
+interval is timed off `delta` rather than the day clock, because `--invincible` stands the day
+clock still and an interval measured against it would write one line and never advance; and the
+line carries the **worst** frame of its second rather than a mean, because *"a bit laggy"* is a
+hitch and a mean is the statistic a hitch hides in.
+
+**The walk.** Every row is the same seed, day and scripted route, so the runs differ only in the
+one thing each isolates: `tools/shot.sh out.png 20 --seed 3265820891 --day 1 --walk 3s17e` —
+three seconds south off the doorstep, seventeen east across a signalled crossing into traffic,
+past a `leaf_blower` and `cafe_tables` with their halos up, ending against the leaf blower.
+`--invincible` was deliberately left off: under it the meter never lands a point, so the halo
+selects nobody and would have been measured by removing it from both sides. Each row is the mean
+of the run's `frame` entries from t=2s; `worst` is the single longest frame. Apple M2, Godot
+4.7.2, `gl_compatibility`, 1280x720 windowed. The run folders are in
+`docs/evidence/m124-frame-cost-2026-09-13/`, whose README says what each row's temporary change
+was; none of those changes is in the tree.
+
+| run | fps | draws | objects | primitives | process ms | physics ms | worst ms |
+|---|---|---|---|---|---|---|---|
+| baseline | 115 | 709 | 3504 | 7348 | 12.85 | 1.91 | 16.3 |
+| baseline, again | 117 | 708 | 3504 | 7351 | 12.19 | 1.84 | 15.8 |
+| baseline, a third time | 116 | 706 | 3501 | 7338 | 12.30 | 1.85 | 15.1 |
+| (a) resolver short-circuited (`--svg`) | 118 | 709 | 3505 | 7348 | 10.44 | 1.74 | 15.1 |
+| (b) halo re-traced only while easing | 117 | 709 | 3504 | 7346 | 12.36 | 1.86 | 11.4 |
+| (c) building shadows not drawn | 123 | 570 | **1584** | **3641** | 11.73 | 1.86 | 13.8 |
+| (d) crowd `_draw` skipped | 123 | 672 | 3467 | 6978 | 11.66 | 1.78 | 9.9 |
+| (e) event `_draw` skipped | **138** | 696 | 3488 | 7214 | 11.14 | 1.77 | 12.4 |
+| (e2) events drawn, draw list built **once** | **139** | 708 | 3503 | 7345 | 10.82 | 1.89 | 12.0 |
+| (f) (c) and (e2) together | **151** | **572** | **1585** | **3644** | 10.39 | 1.76 | 10.6 |
+| resolver probe (instrumented; timings invalid) | 116 | 708 | 3503 | 7347 | 13.81 | 1.80 | 15.5 |
+
+Three baselines because a suspect is only readable against the noise: run to run the counts move
+under 0.5% and the frame rate under 2%. Two instrumented counts beside the table: the resolver is
+157 calls, 79 distinct textures and 0.108ms per frame including the probe's own clock reads, and
+the building shadows are 1,918 draw commands — 1,783 full tiles and 135 corner triangles from 151
+building rects — where the queue entry had guessed "a few hundred".
+
+**What it says.**
+
+1. **The largest cost is events rebuilding their draw lists, not drawing them.**
+   `EventInstance._physics_process` ends with an unconditional `queue_redraw()`, so about thirty
+   live events re-run a `_draw()` of sprite lookups, shadow polygons and caret projections 120
+   times a second, nearly always to the identical picture. (e2) is the proof: every pixel kept,
+   the redraw fired once instead of every tick, identical draws, objects and primitives, and the
+   same +19% as deleting the drawing outright. `CrowdAgent._redraw_if_the_picture_changed()`
+   already solves exactly this for the crowd — *"the difference between five hundred redraws a
+   frame and a handful"* — and events never got it.
+2. **The second is the building shadows, and it is a submission cost rather than a rebuild one.**
+   Half of every renderable object and half of every primitive in the frame, for 139 draw calls
+   and 6% of the frame rate: one retained list covering the whole city, re-submitted every frame,
+   culled as one item by its own rect, when the visible world at zoom 2 is about 220 tiles — so
+   roughly 99% of those commands are off screen.
+3. **Texture switching is not what this frame is short of**, which is the player's question
+   answered. Everything is an individually loaded texture — 582 SVGs and 126 PNG transfers under
+   `assets/`, preloaded per class, each drawn with its own `draw_texture_rect` through a
+   `TextureResolver.resolve()` keyed on the path string — and nothing is atlased. But a frame
+   draws 79 distinct textures across 709 draw calls, so the renderer already batches about five
+   items per call, and the decisive pair is (c) against (e2): removing 139 draw calls bought 6%,
+   removing none at all bought 19%. An atlas moves the number that bought the smaller share.
+4. **The resolver and the halo are inside the run-to-run noise, and neither is changed.** The
+   brief allowed a resolver fix if it were clearly the cost, and about 1% of a frame is not worth
+   a change to a shipped presentation path. Both are struck from the suspects.
+5. **Read `fps`, not `process ms`.** `TIME_PROCESS` is bimodal across consecutive seconds of one
+   steady walk (15.7, 15.8, 8.3, 15.2) and misses the largest effect in the table: the change
+   that moved the frame rate 19% moved it 1.4ms.
+
+**What a phone cannot be told from here.** Every number above is CPU-side or submission-side, and
+the two costs a desktop cannot see are the two most likely to be a phone's: fill rate — 7,348
+primitives of mostly large, alpha-blended, overlapping quads over a full-screen ground — and
+resolution, since the phone renders the same scene at its own device pixel count. If the phone's
+`draws` and `primitives` match these and only its frame rate does not, the cost is fill rate and
+no amount of batching touches it. That half is the queue's.
+
+## M126 — The codebase audit · filed 2026-09-13
+
+*(2026-09-13, [PLAYTEST-67](playtests/PLAYTEST-67.md): "Other than that do a thorough audit of the
+codebase.")* A read-only pass over `src/` (38,474 lines, 85 scripts), `tests/`, `tools/` and
+`.claude/hooks/`, recorded whole in `docs/evidence/audit-2026-09-13/AUDIT.md`. 28 findings, by the
+report's own summary table:
+
+| Area | defect now | defect waiting | cost | hygiene | total |
+|---|---|---|---|---|---|
+| Escape scene (`--start-escape`) | 1 | 0 | 0 | 0 | 1 |
+| Per-frame drawing and allocation | 0 | 0 | 6 | 0 | 6 |
+| Crowd and traffic | 0 | 2 | 0 | 0 | 2 |
+| City and routes | 0 | 1 | 1 | 0 | 2 |
+| Tests and rigs | 1 | 0 | 0 | 1 | 2 |
+| Tools and hooks | 1 | 2 | 0 | 0 | 3 |
+| Docs vs code | 1 | 1 | 0 | 3 | 5 |
+| Dead code and stale references | 0 | 0 | 0 | 7 | 7 |
+| **Total** | **4** | **6** | **7** | **11** | **28** |
+
+**Where each finding went.**
+
+- **Fixed on this branch**: 1.1 (`--start-escape` now teleports to the named part), 5.1 (the test
+  that would have caught it), 5.2 (the two orphaned `.uid` sidecars), 6.1 (`lint.sh` errors on a
+  named file that does not exist), 6.2's validation half (`test.sh` rejects a non-positive
+  `TEST_SHARDS` before planning), 6.3 (the hook's cli-tools case and `CLAUDE.md`'s table), 7.1,
+  7.2, 7.3, 7.4 (the four doc-vs-code mismatches, and the two `*(done)*` markers plus the widened
+  lint check that would have caught them), 8.1, 8.2, 8.3 (the three dead functions), 8.5, 8.6, 8.7
+  and the two unnumbered stale comments beside them, and the `tuning.gd` docstring, `hud.gd`'s
+  `_debug` line and `city_generator.gd`'s silent fallback named alongside them. 8.4 needed no
+  separate action: `part_world_position()` gained the caller 1.1's fix gives it.
+- **Not fixed, filed under M100** instead: `event_manager.gd:321`'s reach into
+  `EventInstance._noticed_at` needs a getter on `EventInstance`, which was out of scope on this
+  branch (owned by the concurrent M124 fixes agent); 6.2's hang-timeout half (a hung shard blocks
+  `wait` forever with no message); 3.2 (`Crowd.step()` and `Crowd._physics_process()`'s duplicated
+  prologue) and 4.1 (the seven hand-written spellings of "is this the main road").
+- **Filed under M124**: 2.2, 2.3, 2.4, 2.5, 2.6 and 4.2, the per-frame and per-call costs the
+  frame-cost measurement's own table did not itemise (the halo's per-frame allocations, the
+  doubled `contribution_at` sweep, `DangerEdge`'s per-frame dictionaries, `DebugLayers`' repeated
+  tree walk, the day clock's 60Hz reformat, and `ReachabilityGrid`'s recomputed dirty set). 2.1 is
+  not filed again: it is M124's own first item, already being built on its own branch.
+- **Asked as a question**, under M100's open design questions: 3.1, whether `CrowdAgent` should
+  move from `_process` to `_physics_process` so the crowd's own right-of-way rules run at the same
+  cadence as the motion they govern, against leaving the mismatch as it is.
+
+**What was looked at and found clean**, so the next audit starts from here rather than from
+scratch — verbatim from the report:
+
+**Leaks and retention — clean.** No `disconnect()` exists anywhere in `src/`, and none is needed:
+every connection is to an autoload signal (`EventBus`, `Telemetry`) from a node the engine frees,
+and Godot drops the connection with the object. `EventManager.clear()`
+(`src/events/event_manager.gd:231-245`) frees every instance, nulls every `plan.live`, clears
+`_door_entry_side`, `_door_release_latches` and `_sighted`, and calls
+`_map.clear_day_obstructions()` — so nothing is keyed on a `Planned` across days.
+`_retire_finished()` (`:764-784`) assigns in place rather than reassigning, with the reason stated,
+so `instances()`' handed-out reference stays valid. `WalkerDoorHold.release()` is reached from all
+four exits the crowd-traffic skill names, and `empty()` is called from `Crowd.clear()`
+(`crowd.gd:183`). `Crowd.start_day()` resets `_struck` and rebuilds `_door_holds`. The static
+caches — `StreetNetwork._segments`/`_by_key`/`_adjacency`, `SealPlanner._candidates` and
+`_finale_candidates`, `ReachabilityGrid._mask_components`, `EventCatalogue._all`/`_hot`,
+`ResistanceSteps._all`, `CityMap._WALKABLE`/`_CALM`, `EntityHalo._shared_material` — are all
+bounded by geometry or by the catalogue and none grows per day or per run.
+`TextureResolver._cache` is keyed on asset path and so bounded by the asset count.
+`City._sleepiness_tile`'s cache is invalidated at `city.gd:467` and `:494`.
+
+**Godot trap list — clean.** No `set(key, value)` object construction anywhere. No untyped
+`Array` passed into an `Array[T]` parameter. No `var x := load(...)` inferred from a Variant —
+`check.sh` boots green, which is what that would fail. The one cross-script enum widening
+(`StreetNetwork.beside_block`, `street_network.gd:104`) carries its comment.
+`Node.name` is shadowed by a local in three places (`main.gd:807`, `telemetry_observer.gd:268`,
+`crowd_agent.gd:2886`/`event_instance.gd:2302` shadow `Node2D.scale`) — warnings, not errors, and
+not worth a diff. `move_and_slide()` owns `velocity` and the shove goes through
+`move_and_collide()` (`stroller.gd:304-311`) with the reason written down. Pause inheritance is
+handled by `main._pauses_with_the_game()` at every construction site, with the title screen's
+inverted split at `main.gd:546-555`. The three `int/int` divisions
+(`region_planner.gd:693`, `interior_events.gd:127`, `finale_planner.gd:86`) are all deliberate
+index arithmetic. Exactly one `assert()` in `src/` and no `TODO`/`FIXME`/`HACK` markers.
+
+**Determinism and telemetry — clean.** `GameState.day_rng(day, stream)` is used with a named
+stream at every call site; nothing in `src/telemetry/` or `Telemetry.note()` draws from an RNG,
+and `TelemetryObserver` holds all the per-frame checks rather than the gameplay classes — the
+telemetry skill's rule, held. `TelemetryObserver._meters()` (`telemetry_observer.gd:928`) does two
+full excitement sweeps, but it is called only on bumps, near-misses and day ends, not per frame.
+
+**Day and run state — clean.** `GameState.start_run()` resets all thirteen run-scoped members.
+`finish_day()` erases `settled_in[day]` on a loss with the reasoning stated.
+`resistance_carrying_package` is reset per attempt in `ResistanceDirector.start_day()`
+(`resistance_director.gd:88`). `DayController._ignores_loss()` is the single place all three
+losing paths ask about `--invincible`, so the flag cannot drift between them.
+
+**Boot validation — clean.** `Tuning._ready()` runs `validate_traffic()`, `validate_signals()` and
+`validate_return_patrols()`, each of which `push_error`s with the numbers. `EventDef.validate()`
+runs `validate_event()` and `validate_pursuit()` per row on catalogue load.
+
+**Gates and checks — clean.** `./tools/check.sh` (imports + headless boot), `./tools/lint.sh`,
+`./tools/pycheck.sh` (ruff, ruff format, strict mypy, 8 unit tests) and `tools/test_cli_help.sh`
+all pass on the audited tree. `check.sh` correctly reverted `docs/ARCHITECTURE.md` after the
+import pass rewrote it.
+
+See `docs/evidence/audit-2026-09-13/AUDIT.md` for the full report: every finding's file, line,
+failure scenario and fix size.
+
+## The feedback skill is renamed playtest-feedback · 2026-09-13
+
+*(2026-09-13, on typing `/feedback` and getting the repository's skill: "oh, then we need to rename
+the feedback skill maybe?", then "make sure all references are updated properly, too".)* Claude
+Code has a built-in `/feedback` command that sends product feedback, and a repository skill of the
+same name shadows it, so the skill that governs playtest reports and design instructions is now
+`.claude/skills/playtest-feedback/`. Nothing in it changed but its name. Every reference that
+meant the skill was moved with it — `CLAUDE.md`'s two tables and its loading sentence, the
+path-to-skill hook, the **orchestrating**, **reference-photos** and **svg-art** skills, the
+evidence folder's README and the handoff — and the ordinary noun *feedback* stays wherever it is a
+noun. Older records below that name the skill by its old name are left as they were written.
+
+## M123 — An eastbound car's halo sits off its body · closed as M121's finding, 2026-09-13
+
+*(2026-09-13, [PLAYTEST-67](playtests/PLAYTEST-67.md): "sometimes the halo of West to East
+driving cars are offset vertically. But it's not consistent.")* Phone sessions of unstated
+version, reported after v0.9.1 went live. On v0.9.0 a car that turned onto an east-west street
+while lit kept its diagonal view's rim, registered about 30px lower than the side view, until the
+glow next changed — an offset only on cars that had just turned, which is the inconsistency
+described — and M121 removed that by re-tracing the rim every frame and registering every view
+off the live heading. Asked which version: *"I'm unsure if it was 9.0 or 9.1 I will report it
+again if I see it otherwise let's consider it fixed."* Closed on that; a report on v0.9.1 or
+later reopens it as a new entry with a burst of an eastbound car under a halo.
+
 ## M121 — The halo follows its owner, and a turning car's picture and lane · built 2026-09-13
 
 *(2026-09-12, [PLAYTEST-66](playtests/PLAYTEST-66.md): "the halo doesn't update when the drawn
@@ -542,7 +853,6 @@ and red axles on the right of the other two wheels; SE has its rightmost wheel i
 red axles on the left of the other two. The final paired comparison matches these cues.
 The player then confirms the main checkout looks correct, accepting this wheel arrangement.
 
-
 ## M109 — Southern diagonal stroller wheel reuse — 2026-09-12
 
 PLAYTEST-65 requests correcting the SE/SW wheel plane without changing its grounded height,
@@ -557,7 +867,6 @@ transparent donor pixels. Exact RGBA replacement, including donor transparency, 
 remnants and includes the complete wheel edges. Frozen inputs, masks, hashes, native comparisons
 and the paired SE/SW enlarged review are retained in the wheel reuse recipe. Its rebuild matches
 the installed PNG byte-for-byte; the other four stroller PNGs retain their assignment hashes.
-
 
 ## M109 — Stoop bottom step face — 2026-09-12
 

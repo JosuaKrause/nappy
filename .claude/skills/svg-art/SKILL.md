@@ -12,7 +12,7 @@ to new directional/state variants, UI and identity assets as well as standing ga
 
 SVG is the editable source for game graphics. Author vectors directly with patches; use the existing
 family as the style reference. Read `docs/GRAPHICS.md` for the asset's actual binding and the
-owning milestone in `docs/TODO.md` before designing. Follow `feedback` for player requests and
+owning milestone in `docs/TODO.md` before designing. Follow `playtest-feedback` for player requests and
 `verify` for runtime checks; this skill adds the visual work those checks cannot judge.
 
 ## Establish the picture's contract

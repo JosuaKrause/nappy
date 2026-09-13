@@ -145,6 +145,13 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
+0. **[PLAYTEST-67](playtests/PLAYTEST-67.md)'s three**, on the same footing as the round before
+   it: **M124**, the game on a phone,
+   measured and then made cheaper; **M125**, the test suite is slow again; **M126**, the
+   codebase audit. M124 began as a read-only audit; its findings are the items in its own
+   entry above. M126's audit is filed — its findings are fixed, filed under the milestone that
+   owns the code, or asked as a question, and its record is in `DECISIONS.md`. M125
+   is the standing rule in the **verify** skill applied to the suite as it is.
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
    related to the other items to work on right now.")* It waits, because reaching act III waits:
    *"I wanna wait reaching act III until those things are done."*
@@ -309,6 +316,131 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
+
+---
+
+## M124 — The game on a phone, measured and then made cheaper · asked for 2026-09-13
+
+> "I played a few sessions on mobile. It is a bit laggy now. Are we using proper texture atlases
+> or is everything an individual loaded texture? Maybe we can optimize the game a bit more."
+
+[PLAYTEST-67](playtests/PLAYTEST-67.md). Closes M100's *frame rate on somebody else's machine*.
+
+**What is true today.** The desktop half is measured and its two fixes are built; the records,
+with their tables, are in `DECISIONS.md` under M124, where a frame goes, and M124, the two fixes
+built. The readout (`4` in a debug build, on by default) shows the frame's draw calls,
+renderable objects, primitives and the process and physics times, and the run log carries them
+once a second as a `frame` entry. An event redraws only when its picture changes, the way the
+crowd always has, and the building shadows are drawn per 16-tile chunk so the renderer culls
+the off-screen ones; together they are worth about 40% of the desktop frame rate on the
+measurement walk. The resolver's per-draw lookup and the halo's re-trace are inside the
+run-to-run noise and are struck. Everything under `assets/` is still an individually loaded
+texture and nothing is atlased, which is the answer to the player's question; whether that
+matters is a phone's question, not a desktop's.
+
+- [ ] **The phone half of the measurement.** The same six numbers off a phone: `tools/serve-web.sh`
+      serves a debug web build on the local network, the readout is on by default there, and a
+      screenshot of it standing on any day-1 street beside the desktop's is the comparison
+      (`?telemetry=1` writes the `frame` line into the browser's own storage and nothing collects
+      it back, so the screen is the instrument). If the phone's draw calls and primitives match
+      the desktop's and only its frame rate does not, the cost is fill rate or resolution and no
+      batching touches it; the table goes to `DECISIONS.md` under M124 either way.
+- [ ] **Atlases, only if the phone says texture switches are the cost.** The desktop says they
+      are not. If a phone does: a family per atlas — the crowd, the event people, the vehicles,
+      the ground props — packed by a tool under `tools/` from the same sources the M109 transfer
+      pipeline reads, with an `AtlasTexture` per sprite so every caller's `draw_texture_rect` is
+      unchanged and the SVG-first rule and the `--svg` override still hold. The **cli-tools**
+      and **python-tooling** rules govern the tool; the illustrated-png skill says what a
+      transfer owes.
+- [ ] **`ExcitementHalo._process()` rebuilds a ~275-element array and does a linear `in` per
+      candidate.** `src/ui/excitement_halo.gd:215-232`: every frame it allocates a fresh untyped
+      `Array`, `append_array`s `_events.instances()` (41) and `_crowd.agents()` (234) into it,
+      calls `select_sources()` — which allocates one two-element `Array` per candidate above the
+      floor and runs `sort_custom` with a freshly-constructed lambda — then loops all 275
+      candidates doing `if source in picked:` (`:227`), a linear scan of an array of up to
+      `MAX_SOURCES` (8): ~2,200 `Variant` comparisons and ~280 heap allocations per frame, every
+      frame, for the whole of every day. Fix: keep one reusable member array for `candidates`;
+      have `select_sources()` return a `Dictionary` of picked instance ids (or set a flag on each
+      picked source before the loop) and test that instead of `in`.
+- [ ] **The same `contribution_at(player)` sweep runs twice per frame from two owners.**
+      `src/player/baby.gd:108` (`_world.excitement_sources_at(here)` at physics rate) and
+      `src/ui/excitement_halo.gd:221-222` (`source.contribution_at(at)` inside `select_sources`,
+      at frame rate) both ask every live event and every crowd agent for its contribution at the
+      same point. `CrowdAgent.contribution_at` (`src/crowd/crowd_agent.gd:838`) does a
+      `GroundShape.eccentric_distance()` plus one or two `Tuning.falloff()` calls, so this is
+      roughly 550 falloff evaluations per frame where 275 would do. Fix: cache
+      `contribution_at(player_at)` on each source, keyed on the frame — the same once-a-frame
+      shape `EventInstance._caret_strength()` (`event_instance.gd:2223`) already uses and
+      documents; the halo already tells every candidate `set_player_at(here)`, so the key is to
+      hand.
+- [ ] **`DangerEdge._measure()` allocates one `Dictionary` per live instance per frame.**
+      `src/ui/danger_edge.gd:107-150`: `next[id] = {"was": at, "approach": approach, "hold": hold}`
+      inside a loop over every live instance, `_watch = next`, and a `sort_custom` with a
+      freshly-constructed lambda — ~41 `Dictionary` allocations plus one outer `Dictionary` plus
+      up to 41 four-element `Array`s in `_coming`, every frame, to carry three floats per
+      instance. Fix: mutate the existing per-instance dictionaries in place and delete only the
+      ids that went away, or keep the three fields on the `EventInstance` itself the way
+      `plan.age`/`plan.travelled` already carry stream state.
+- [ ] **`DebugLayers` walks the whole city tree, three times, every frame.**
+      `src/dev/debug_layers.gd:90-91` calls `queue_redraw()` unconditionally even with all three
+      layers off; `collision_nodes_under()` (`:230-244`) is a recursive walk that allocates a new
+      `Array[Node]` at every recursion level, and `_draw_bodies()` (`:200-203`) calls it on
+      `_city` — every building, prop, event instance and crowd agent and all their children — and
+      again on `_player`; `body_outline_count()` (`:211-213`) calls it twice more. Pressing `3`
+      in a debug run — the documented way to check a body by eye — costs thousands of node visits
+      and hundreds of array allocations per frame, dropping the frame rate so the thing being
+      inspected is no longer running at the speed a player sees. Fix: gate `_process`'s
+      `queue_redraw()` on `fields_on or shadows_on or bodies_on`; build the node list into one
+      passed-in array (`collision_nodes_under(root, into)`) cached per day or rebuilt on
+      `child_entered_tree`, rather than reallocating per level per frame.
+- [ ] **The day clock is re-formatted 60 times a second for a string that changes once a second.**
+      `src/day/day_controller.gd:61` emits `EventBus.day_time_changed` unconditionally every
+      `_process` frame; `src/ui/hud.gd:312-320` handles it with a `%` format (or
+      `GameState.format_clock()` in the finale, which allocates and does three more `%`
+      substitutions) and a `Color(...)` construction and `modulate` assignment on every one, even
+      though `Label.text`'s own equality check only saves the relayout. Fix: emit only when
+      `int(time_remaining)` changes, or compare in the handler before formatting.
+- [ ] **`ReachabilityGrid.reaches()` recomputes the dirty-cell set on every call.**
+      `src/routes/reachability_grid.gd:252-255`: `reaches()` calls `_dirty_cells(blocked)`
+      (`:188-192`), which allocates a `Dictionary` keyed by `Vector2i` and fills it with one entry
+      per blocked tile on **every** call, even though callers (`ClosurePlanner._area_is_reached`,
+      `CityMap`'s closed-street check, `EventScheduler`) loop it with the same `blocked` set they
+      passed to `flood()`. A single unreached calm area during closure planning costs ~11,600
+      `Vector2i`-keyed inserts rebuilding the same answer. Fix: have `flood()` return the dirty
+      set alongside `reached` (or accept a precomputed one), and have `reaches()` take it rather
+      than recompute it; `_cell_of_tile` (`:186`) can also drop its `floori(float(x) / CELL)` for
+      integer arithmetic, and `_neighbours_of_key` (`:213`) can write the four neighbour steps out
+      rather than allocating an offset array literal on every call.
+
+---
+
+## M125 — The test suite is slow again · asked for 2026-09-13
+
+> "Also the tests are slow again, too. Tests that only restate numbers in tables etc can be
+> completely removed."
+
+[PLAYTEST-67](playtests/PLAYTEST-67.md). The rule is the **verify** skill's, from 2026-09-03:
+*a test that only doubles the work of a change is deleted, not maintained* — one that reads a
+design decision back to itself, where "you changed a number" is all it could ever say. What it
+keeps: a guard that a sweep was not vacuous, an ordering between two constants, and anything the
+skill's incident list names.
+
+**What is true today.** `tests/run_tests.gd` prints each suite's time, and main's CI run on the
+M121 merge shows the suite over a million checks, with `test_events` near twelve minutes,
+`test_crowd` eight, `test_routes` and `test_generator` six each and `test_regions` three;
+`tests/test_events.gd` alone is over three thousand lines.
+
+- [ ] **Every check that restates a table goes.** Read every suite against the verify skill's
+      test and delete what only pins a constant, a row's field, or an enum's order; the commit
+      message names each deleted test and which of the two sentences it could have said.
+- [ ] **The seed loops are sized to what they prove.** A guarantee over 200 seeds that a
+      generator property holds is worth its minutes once; a loop that walks every row of the
+      catalogue through every day of every seed is not. Each loop that survives says in its
+      docstring what count it needs and why; the rest shrink. `test_full_run` keeps its three
+      seeds through fourteen days, by the skill's own rule.
+- [ ] **The suite's time is recorded and the runner keeps saying it.** The per-suite times
+      before and after go to `DECISIONS.md`, and the top of `tests/run_tests.gd` says what a
+      suite may cost before it is a suite to split or cut.
 
 ---
 
@@ -486,6 +618,38 @@ is still true.
       M121, what the captures could not catch): a flock under a halo could not be photographed.
       Either the flag refuses such a row by name, or it stands her where the row would first
       trigger; the **cli-tools** rule wants the refusal at least
+- [ ] **`Crowd.step()` and `Crowd._physics_process()` duplicate four lines in two orders.**
+      `src/crowd/crowd.gd:230-237` (`step`) and `:625-638` (`_physics_process`) both open with
+      `_signals.advance` → `_pockets.refresh` → `space_out_the_traffic` →
+      `_hold_walkers_at_doors`, but `step()` interleaves `agent._process` (all) in between with no
+      shared helper. The crowd-traffic skill already names the incident this caused once — a rig
+      that walked the agents without this prologue ran a crowd in which nobody is ever held at a
+      checkpoint, and nothing about that looked like a missing call — and the structure that
+      allowed it is unchanged, so the next line added to `_physics_process`'s pre-player section
+      is silently absent from every rig-driven suite. Fix: extract the four shared lines into
+      `_advance_the_world(delta)` and have both call it, so the only difference between them is
+      the agent stepping and the player half.
+- [ ] **Seven hand-written spellings of "is this the main road."**
+      `src/city/traffic_signals.gd:52`, `src/crowd/crowd_lanes.gd:164`,
+      `src/crowd/crowd_agent.gd:461`, `:1560`, `:2387`, `:2404` and
+      `src/routes/seal_planner.gd:373-374` all independently re-encode "the spine is the vertical
+      corridor," and `src/city/city.gd:244` asks the same question through
+      `map.street_kind_at(...) == GameEnums.StreetKind.MAIN` — a different mechanism entirely. The
+      city skill's own rule is *"Which corridor is the main road is a fact about a city, so read
+      it off the map"* — every site does, so today they agree, but if `main_road` ever becomes a
+      per-axis pair, or the spine becomes horizontal on some seeds, six of the seven sites keep
+      answering for the vertical axis with no error anywhere. Fix: `CityMap.is_main_road(vertical:
+      bool, corridor: int) -> bool`, and route every site through it.
+- [ ] **A hung test shard waits out the whole CI job with no message.** `tools/test.sh:212-230`'s
+      "A shard that printed no count did not finish... it crashed **or hung**" branch sits after
+      `wait`, so it can only ever be reached for a crash — a hung shard blocks `wait` forever and
+      the comment claims a case the code cannot reach. Fix: a `timeout` around `run_one_process`
+      would make the comment true.
+- [ ] **`EventManager` reaches into another class's private member.**
+      `src/events/event_manager.gd:321`: `plan.noticed_at = plan.live._noticed_at`.
+      `EventInstance.resume(age, travelled, noticed_at)` is the public channel in the other
+      direction; there is no getter for this one. Fix: a small public getter on `EventInstance`
+      for `_noticed_at`
 
 **Drawings, as SVG:**
 
@@ -513,11 +677,11 @@ re-pitched:
       rather than design); there is a title screen and no menu, on purpose
 - [ ] Accessibility: colourblind-safe meters, a telegraph-time multiplier, reduced motion
 - [ ] Controller support
-- [ ] **The web build measured on a machine that did not build it.** Playtests 27 onward have
-      played the live address on a laptop browser and a phone, so *it boots and takes input* is
-      answered. What is not is frame rate at the game's scale on somebody else's machine, and
-      whether a stranger arriving at the page understands what it is. itch.io stays the fallback
-      host, since it sets the isolation headers a threaded build would need
+- [ ] **Whether a stranger arriving at the page understands what it is.** Playtests 27 onward
+      have played the live address on a laptop browser and a phone, so *it boots and takes
+      input* is answered, and playtest 67 answered the frame rate on a phone — *"a bit laggy"*,
+      which is M124. itch.io stays the fallback host, since it sets the isolation headers a
+      threaded build would need
 
 **Open design questions**, each answered by a played run rather than by more arithmetic:
 
@@ -568,6 +732,21 @@ re-pitched:
       face**, the meter read off the baby rather than off a strip at the bottom of the screen — the
       same shape as the audio item's *breathing as the diegetic version of the meters*. Not
       designed, and it needs the playing that the status-line cut is about to produce
+- [ ] **`CrowdAgent` moves at frame rate; every rule about that movement is applied at physics
+      rate.** `src/crowd/crowd_agent.gd:701` is `_process(delta)` — frame rate — while everything
+      that governs it (`space_out_the_traffic()`, `_hold_walkers_at_doors()`,
+      `give_way_at_junctions()`, `_strike()`, `_horn()`, `_bump()`, `_make_way()`) is in
+      `src/crowd/crowd.gd:625`, `_physics_process(delta)` — fixed 60 Hz. Speeds are frame-rate
+      independent, so this is not a speed bug; what varies with the machine is the **decision
+      cadence relative to the motion** — how far a car travels between two applications of
+      "nothing enters a box it cannot leave." The verify skill records the windowed build drawing
+      ~110fps, so a desktop car covers roughly 1.8 movement steps per right-of-way pass, against
+      0.5 at 30fps: a headway or junction-capacity number set against `Crowd.step()` does not
+      reproduce on the player's own machine at the ratio it was measured at. **The audit's own
+      recommendation**: move `CrowdAgent._process` to `_physics_process`, which fixes the ratio at
+      1:1 everywhere, at the cost of re-measuring every crowd number and giving up
+      frame-rate-smooth motion for the agents — against leaving it as it is. Docs/evidence/
+      audit-2026-09-13/AUDIT.md, finding 3.1, has the full reasoning.
 
 ---
 

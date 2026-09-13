@@ -277,6 +277,34 @@ zebra running into the mountain, four dotted crossings under one light — and n
 drives off the map, or onto it, except a car by the tunnel or the bridge. All of it was checked on rig captures
 and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
+## Where the last session stopped, 2026-09-13
+
+**This section is the pick-up for the next session and is removed by it.** The session that
+wrote it ended with work in flight, so `gh pr list` and `git worktree list` are the truth and
+this is the map.
+
+- **The player asked to be walked through `REVIEW.md` one question at a time** *(2026-09-13:
+  "ask me a couple of questions (one at a time) for things that need a human eye. I might be
+  able to answer them. Go one by one through the questions file")*. Start there: take the first
+  item, ask it with all the context its entry carries and a recommendation, file the answer as a
+  finding in `playtests/PLAYTEST-67.md` (or the next file) and remove the item in the same
+  commit, then the next. The **playtest-feedback** rule governs.
+- **Three agents were running when the session closed**, each briefed from its `TODO.md`
+  entry: M125 (pruning `tests/**`, on its own feature branch), M124's measurement half (readout,
+  run-log line and a per-suspect profile, on its own feature branch), and M126's read-only
+  audit. **The audit is filed**: its report is `evidence/audit-2026-09-13/AUDIT.md`, 28
+  findings with file and line, a failure scenario and a fix size each, plus what was found
+  clean; each finding is now fixed, filed as a queue item under the milestone that owns the
+  code or a defect under M100, or asked as a question, and the record is in `DECISIONS.md`
+  under M126. **M124's desktop measurement and its two fixes are built and recorded**
+  (`DECISIONS.md`, M124, where a frame goes, and M124, the two fixes built): events redraw only
+  when their picture changes and the building shadows are culled per chunk, and M124's entry in
+  `TODO.md` holds the phone half of the measurement, the atlas item gated on that phone half,
+  and the audit's per-frame findings. For M125: if its branch has a PR,
+  review it, file its record and merge under the usual rules; if a worktree under
+  `.claude/worktrees/` holds uncommitted work, the agent was cut off — read what is there before
+  re-briefing.
+
 ## The queue, as prioritised on 2026-09-09
 
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** Playtest

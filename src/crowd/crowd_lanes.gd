@@ -187,17 +187,10 @@ static func busyness_for(map: CityMap, vertical: bool, index: int, cars: bool) -
 			return Tuning.PRECINCT_BUSYNESS
 	return busyness(map, vertical, index)
 
-## A corridor chosen in proportion to how busy it is. This is what makes a route decision
-## out of a grid: a uniform crowd would make every street equally loud, and then there would
-## be nothing to choose between them.
-static func pick_corridor(rng: RandomNumberGenerator, map: CityMap, vertical: bool,
-		cars: bool) -> int:
-	var blocks: int = Tuning.CITY_BLOCKS.x if vertical else Tuning.CITY_BLOCKS.y
-	return pick_corridor_in_range(rng, map, vertical, Vector2i(0, corridor_count(blocks) - 1),
-			cars)
-
-## The same, restricted to an inclusive range of corridor indices — the streets that are
-## actually inside the crowd's field.
+## A corridor chosen in proportion to how busy it is, restricted to an inclusive range of
+## corridor indices — the streets that are actually inside the crowd's field. This is what makes
+## a route decision out of a grid: a uniform crowd would make every street equally loud, and then
+## there would be nothing to choose between them.
 ##
 ## The weighting survives the restriction, and that is the point of doing it this way rather
 ## than picking uniformly among the few streets in view: the arterial is still the busy one

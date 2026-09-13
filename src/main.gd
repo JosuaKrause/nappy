@@ -147,6 +147,10 @@ func _ready() -> void:
 	# unpause it. It inherits ALWAYS from this node, which is what it wants.
 	_pause = PAUSE_SCREEN.instantiate()
 	add_child(_pause)
+	# So `_pause.open()`/`close()` can stash and restore the heading she carried into an ordinary
+	# Esc-pause — see `PauseScreen._touch_controls`'s own doc. `_add_touch_controls()` already ran
+	# above, so `_touch_controls` exists by now.
+	_pause.set_touch_controls(_touch_controls)
 
 	_connect_summary_and_pause_signals()
 
@@ -425,7 +429,10 @@ func _on_finale_section_started(section: int, restarted: bool) -> void:
 	_summary.dismiss()
 	_hud.visible = true
 	if section == FinaleController.Section.BUILDING:
-		_player.reset_at(_interior.start_world_position(), Vector2.UP)
+		var start_at := _interior.start_world_position()
+		if not restarted:
+			start_at = _interior.part_world_position(_escape_start_part())
+		_player.reset_at(start_at, Vector2.UP)
 		if _interior_events:
 			_interior_events.restart()
 		if not restarted:
@@ -1152,8 +1159,10 @@ func _toggle_debug_layer(layer: int) -> void:
 ## where she is in tiles, what the meters read, and which screen is up — and it takes nothing that
 ## is not already on screen.
 ## Every field is guarded, because the one screen this is most likely to be pressed on is the one
-## where the world is least finished — a title screen, or a boot that went wrong.
-func _snapshot_now() -> void:
+## where the world is least finished — a title screen, or a boot that went wrong. Shared by
+## `_snapshot_now()` and `_start_burst()` (`B`), which differ only in which `Telemetry` call and
+## which noun the trace line names.
+func _capture_context() -> String:
 	var where := Vector2i.ZERO
 	if _city and _player:
 		where = _city.map.world_to_tile(_player.global_position)
@@ -1165,23 +1174,13 @@ func _snapshot_now() -> void:
 		screen = "title"
 	elif _pause and _pause.is_open():
 		screen = "paused"
-	Telemetry.snapshot_now("asked for a picture at (%d,%d) | %s | %s"
-			% [where.x, where.y, meters, screen])
+	return "(%d,%d) | %s | %s" % [where.x, where.y, meters, screen]
+
+func _snapshot_now() -> void:
+	Telemetry.snapshot_now("asked for a picture at %s" % _capture_context())
 
 func _start_burst() -> void:
-	var where := Vector2i.ZERO
-	if _city and _player:
-		where = _city.map.world_to_tile(_player.global_position)
-	var meters := "no baby yet"
-	if _baby:
-		meters = "exc %d, sleep %d" % [roundi(_baby.excitement), roundi(_baby.sleepiness)]
-	var screen := "playing"
-	if _title and _title.is_open():
-		screen = "title"
-	elif _pause and _pause.is_open():
-		screen = "paused"
-	Telemetry.start_burst("asked for an animation burst at (%d,%d) | %s | %s"
-			% [where.x, where.y, meters, screen])
+	Telemetry.start_burst("asked for an animation burst at %s" % _capture_context())
 
 func _quit() -> void:
 	Telemetry.end_run()

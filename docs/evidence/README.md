@@ -5,7 +5,7 @@
 reference doesn't get lost when cleaning up. make sure all current references are in the repo so I
 can clean up the log folder.")*
 
-The rule is in the [feedback skill](../../.claude/skills/feedback/SKILL.md), "Evidence lives in the repo". The
+The rule is in the [playtest-feedback skill](../../.claude/skills/playtest-feedback/SKILL.md), "Evidence lives in the repo". The
 short version: `user://telemetry/` is a scratch directory the player has to be able to empty, and a
 finding whose evidence was in it stops being checkable the moment they do. Approved design
 references stay at this level; historical runtime captures are organized by date under

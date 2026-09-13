@@ -28,7 +28,7 @@ executable path-to-skill mapping, and read each matching `.claude/skills/<skill>
 All matches apply: an event GDScript file requires both `events` and `godot`. These rules apply to
 edits through any tool, including patches and scripts.
 
-Also load `feedback` before responding to playtest feedback or design instructions, `committing`
+Also load `playtest-feedback` before responding to playtest feedback or design instructions, `committing`
 before git mutations or commit messages, `merging-main` before merging main into a PR/branch,
 and `session-cleanup` before the final report. Read any
 other skill whose description matches the task, and follow its referenced resources as needed. An
@@ -89,9 +89,13 @@ is the moment somebody is about to touch the file.
 | `src/telemetry/**` | **telemetry** |
 | `src/autoload/tuning.gd` | **balance** |
 | `tools/*.py`, `pyproject.toml`, `uv.lock`, `.python-version` | **python-tooling** |
-| `tools/**`, `src/dev/dev_flags.gd` | **cli-tools** |
+| `tools/**`, `src/dev/dev_flags.gd`, `src/dev/auto_screenshot.gd` | **cli-tools** |
 | `tests/**` | **verify** |
-| `docs/playtests/PLAYTEST-*.md`, `docs/TODO.md` | **feedback** |
+| `docs/playtests/PLAYTEST-*.md`, `docs/TODO.md` | **playtest-feedback** |
+| `assets/illustrated/**`, `src/visuals/**` | **illustrated-png** |
+| `docs/evidence/archive/rejected-graphics/**` | **rejected-graphics** |
+| `docs/evidence/archive/session-captures/**` | **session-captures** |
+| `docs/reference/**` | **reference-photos** |
 | any `*.gd` | **godot** |
 | any `*.svg` | **svg-art** |
 | spawning a sub-agent (the `Agent`/`Task` tool — a tool, not a path) | **orchestrating** |
@@ -111,7 +115,7 @@ rather than a place:
 
 | Before you… | Load |
 |---|---|
-| respond to a playtest or a design instruction, *before* any file is touched | **feedback** |
+| respond to a playtest or a design instruction, *before* any file is touched | **playtest-feedback** |
 | commit, branch, merge, or write a commit message | **committing** |
 | review a pull request — the findings go on the PR as comments | **committing** |
 | merge main into a PR or branch | **merging-main** |

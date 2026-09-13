@@ -366,6 +366,26 @@ const _MOUSE_POINTER_INDEX := -2
 ## currently holding the button.
 func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 	if pressed:
+		if get_tree().paused:
+			# A press that lands while a screen has the day paused never reaches the world —
+			# `_on_tap()`'s own guard already no-ops it, and this returns *before* the pause
+			# button's own corner catch or `_drag_pointer_index` below, rather than after.
+			# **This is the fix for M127's "already walking" report.** Without this early
+			# return, a press dismissing a screen (the title's own disc, the summary's
+			# continue, the pause's own continue) still fell through to `_drag_pointer_index
+			# = index` below and armed drag-tracking for this pointer even though `_on_tap()`
+			# did nothing with the press itself — so a finger or a mouse button still down a
+			# frame or two later, once the screen's own two-frame acknowledge delay has
+			# unpaused the tree, generates an ordinary `InputEventScreenDrag`/
+			# `InputEventMouseMotion` for the *same* index, `_on_drag()` reads it as a live
+			# re-aim (nothing about it said "this pointer's opening press was swallowed"), and
+			# she starts the resumed day walking toward wherever that follow-up nudge landed.
+			# A single pixel of sensor noise was enough — confirmed against a scratch rig that
+			# reproduced it every time a motion event followed the dismiss press by as little
+			# as (2, 1)px, which is why the report reads as *always* rather than *sometimes* on
+			# a real touchscreen, where a finger held for even a couple of frames essentially
+			# never reports the exact same point twice.
+			return
 		if visible:
 			# The one correction a rotated presentation needs on the input side — see
 			# `ScreenOrientation`'s own doc for why this is the only file in `src/ui/` that needs it.
@@ -384,6 +404,10 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 		# when I'm back.")* A stop used to leave nothing tracked, so a finger landing in a circle
 		# was never followed and every motion event after it was discarded — see `_on_drag()`'s own
 		# doc for the boundary crossing this now makes live in both directions.
+		#
+		# **Never armed for a press `get_tree().paused` already refused above** — the same press
+		# this line's own `_on_tap()` call just turned into a no-op. Arming a drag off a press the
+		# world never saw is exactly the M127 leak: see the guard above this call.
 		_drag_pointer_index = index
 		return
 	if index == _drag_pointer_index:
@@ -756,6 +780,44 @@ static func _release_movement() -> void:
 	Input.action_release(&"move_up")
 	Input.action_release(&"move_down")
 	Input.action_release(&"run")
+
+## What was locked in the moment `PauseScreen` last called `remember_before_pause()` — read back by
+## `resume_after_pause()` once that same screen closes. `Vector2.ZERO`/`false` reads as "she was
+## standing," which needs no further distinction from "nothing has been remembered yet": either way
+## there is nothing to press back.
+var _direction_before_pause := Vector2.ZERO
+var _run_before_pause := false
+
+## *"Pause can keep the last direction."* Called by `PauseScreen.open()`, before `_process()`'s own
+## pause-transition check reaches `_release_all()` and zeroes `_direction` for the duration of the
+## pause exactly as it always has — this stashes what `_release_all()` is about to erase, rather
+## than changing what `_release_all()` does, since the day-ending summary and the title screen both
+## still want that same zeroing with nothing to restore afterwards. See `resume_after_pause()` for
+## the other half.
+func remember_before_pause() -> void:
+	_direction_before_pause = _direction
+	_run_before_pause = _run_active
+
+## The other half of *"Pause can keep the last direction just don't overwrite it from the button
+## press."* Called by `PauseScreen.close()`, once the tree is actually running again, so the
+## heading that was locked in before the pause is what she walks off with — **not** the press that
+## dismissed the screen, which `_on_pointer()`'s own `get_tree().paused` guard already keeps from
+## ever being armed for a heading of its own (see that function's own doc). A no-op while standing:
+## `_direction_before_pause == Vector2.ZERO` covers both "she was standing" and "nothing was ever
+## remembered," and both mean there is nothing to press back.
+func resume_after_pause() -> void:
+	if _direction_before_pause == Vector2.ZERO:
+		return
+	_direction = _direction_before_pause
+	_walking = true
+	_set_axis(&"move_left", &"move_right", _direction.x)
+	_set_axis(&"move_up", &"move_down", _direction.y)
+	_run_active = _run_before_pause
+	if _run_active:
+		Input.action_press(&"run")
+	else:
+		Input.action_release(&"run")
+	queue_redraw()
 
 ## Whether a release at `at` lands the pause, or a slide-off cancels it. Pulled out to a pure,
 ## static function so a test can ask the geometry question on its own — `Input.parse_input_event()`
