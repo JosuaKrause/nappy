@@ -1,8 +1,8 @@
 # M121 — the halo follows its owner, and a turning car's picture and lane
 
-Three windowed `tools/shot.sh` runs were taken, all on the playtest's own seed `3265820891`, day 1,
+Four windowed `tools/shot.sh` runs were taken, all on the playtest's own seed `3265820891`, day 1,
 all `--invincible` and all recording `--press snapshot_burst` sequences rather than stills, since
-every subject here is motion. One of the three produced usable evidence and is kept whole below;
+every subject here is motion. Two of the four produced usable evidence and are kept whole below;
 what the other two failed to catch is recorded at the bottom, because a missing capture is a
 missing check rather than a passing one.
 
@@ -51,6 +51,32 @@ of all eight boundaries. The picture to compare against, for anybody who wants t
 eye, is `docs/evidence/m108-crowd-cars-2026-09-11/signal-junction.png`: the side-view car at its
 right-hand edge has the box's *top* edge running through its wheels, which is exactly the
 disagreement this milestone removed.
+
+## `mirrored-views/` — a west-facing body has a rim at all
+
+```
+tools/shot.sh /tmp/m121-mirror.png 18 --seed 3265820891 --spawn signal --invincible \
+    --press snapshot_burst 3 --press snapshot_burst 9 --press snapshot_burst 14
+```
+
+The third of the run's three bursts is kept whole, with `run.log`, `maps/day01-attempt1.png` and
+the run's own final still. `--spawn signal` stands her on a **horizontal** side street's pavement,
+which is the whole reason for this framing: walkers there travel east and west, and west is the
+half of every eight-view family that is drawn by mirroring its east-authored partner. No debug
+layers, because the subject is the rim itself and a box over it only obscures it.
+
+**What it shows.** In `asked/burst-16960918-003/`, frames 12, 15 and 18, the walker immediately to
+her right is in a west-facing view — his body and face point left — and he carries a complete pale
+rim, out on every side of his silhouette including the mirrored one. Frame 9 is the same walker a
+moment earlier with no rim yet, which is the fade-in rather than the defect.
+
+That is the thing that was missing. `Sprites.draw_standing()` is the only mirrored draw path in the
+game, it sets an absolute canvas transform, and `draw_set_transform` replaces rather than composes
+— so each of `EntityHalo`'s twelve ring offsets was discarded on a mirrored view and the twelve
+copies landed on each other at the body. Every west-facing car, crowd walker, event walker and the
+mother herself drew no rim at all. `tests/test_halo.gd`'s
+`_test_the_rims_mirrored_copies_land_on_the_ring` holds it in arithmetic: with the composition
+removed it reports all twelve copies landing on one point.
 
 ## The two runs that caught nothing, and why
 

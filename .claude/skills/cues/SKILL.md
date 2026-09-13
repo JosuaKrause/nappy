@@ -306,8 +306,22 @@ and a change that rewrites that file anyway should take the opportunity.
 
 **A negative-width `Rect2` does not flip `draw_texture_rect`.** It is normalised on the way through,
 so the sprite lands a full width to one side — which looks like art sliding off its own shadow, not
-like a failed flip. Mirror with `draw_set_transform(at, 0, Vector2(-1, 1))` around the anchor
-instead. `Sprites.draw_standing()` is the one place that does it.
+like a failed flip. Mirror by setting a transform that scales x by −1 about the anchor instead.
+`Sprites.draw_standing()` is the one place that does it, and it is the only mirrored draw path in
+the game: the mother, the crowd's walkers and cars and every eight-view event family all reach it.
+
+**And `draw_set_transform` *replaces* the canvas transform — it does not compose with one somebody
+else already set, and nothing can read back what it replaced.** Godot exposes no getter for a
+`CanvasItem`'s current custom transform, so a helper that mirrors about a point can only set an
+absolute matrix, and an absolute matrix silently throws away whatever the caller outside it had put
+there. That is not hypothetical: `EntityHalo` traces an entity's own body twelve times at a ring of
+offsets, one `draw_set_transform` apiece, and on a **mirrored** view every offset was discarded —
+twelve copies on top of each other at the body, no rim at all, for the three west-facing sectors of
+every family. So `Sprites._base_transform` is what a caller publishes before a pass of
+`draw_standing()` calls, `Sprites.mirrored_transform()` composes the mirror under it, and the
+flipped branch restores **the caller's** transform rather than identity. **If you set a canvas
+transform around anything that may draw a mirrored sprite, publish it** — `EntityHalo._on_draw()`
+and `EventInstance._draw()` are the two callers that do.
 
 **Y-sorting compares origins**, so a thing whose mass extends away from its own origin sorts wrong.
 **Before reaching for a better comparison, ask whether the two things can ever legitimately be on

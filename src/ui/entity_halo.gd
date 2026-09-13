@@ -158,16 +158,34 @@ func _process(delta: float) -> void:
 	if not settled or is_showing():
 		queue_redraw()
 
+## The ring this rim is traced at: `HALO_OFFSETS` translations `HALO_MARGIN` out, all riding
+## whatever lift the owner's body currently has. A pure function of the bob, so a test can hold the
+## ring without a draw pass — headless never calls `_draw()`.
+static func trace_offsets(bob: float) -> Array[Vector2]:
+	var ring: Array[Vector2] = []
+	for i in HALO_OFFSETS:
+		var angle := TAU * float(i) / float(HALO_OFFSETS)
+		ring.append(Vector2(0.0, bob) + Vector2(cos(angle), sin(angle)) * HALO_MARGIN)
+	return ring
+
 ## Re-runs the owner's own body drawing at a ring of offsets around it, flattened to a silhouette
 ## by the shared shader. Skipped entirely at zero drawn alpha, which is what lets `CrowdAgent` leave
 ## this node built and simply never pay for a redraw between one startle and the next.
+##
+## **Each offset is told to `Sprites` as well as to the canvas, and the pair is what makes a
+## mirrored view have a rim at all.** `draw_set_transform` replaces rather than composes and nothing
+## can read back what it replaced, so `Sprites.draw_standing()`'s own mirror — the only flipped draw
+## path in the game, and the one every west-facing sector of every eight-view family goes through —
+## has to be handed the offset rather than left to discover it. See `Sprites._base_transform` for
+## what it looked like when it was not: twelve copies stacked on the body and no ring.
 func _on_draw() -> void:
 	if not is_showing():
 		return
 	var bob: float = _bob.call()
-	for i in HALO_OFFSETS:
-		var angle := TAU * float(i) / float(HALO_OFFSETS)
-		var offset := Vector2(cos(angle), sin(angle)) * HALO_MARGIN
-		draw_set_transform(Vector2(0.0, bob) + offset, 0.0, Vector2.ONE)
+	for offset in trace_offsets(bob):
+		var base := Transform2D(0.0, offset)
+		Sprites.set_base_transform(base)
+		draw_set_transform_matrix(base)
 		_draw_body.call(self)
+	Sprites.set_base_transform(Transform2D.IDENTITY)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

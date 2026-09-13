@@ -36,6 +36,7 @@ func run(t) -> void:
 	_test_a_cat_dash_is_selected_and_lands(t)
 	_test_a_flock_is_selected_and_lands(t)
 	_test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t)
+	_test_the_rims_mirrored_copies_land_on_the_ring(t)
 
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
 	var def := EventDef.new()
@@ -413,3 +414,54 @@ func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t) -> void:
 			"the flock's own rim is settled and drawn while its birds keep moving, which is the "
 			+ "freeze frame the player reported")
 	flock.free()
+
+# ------------------------------------------------------- the mirrored half of the ring ---
+
+## **A rim has to survive being drawn through a mirror**, and for half of every eight-view family it
+## did not. `Sprites.draw_standing()`'s flipped branch is the only mirrored draw path in the game —
+## the mother, the crowd's walkers and cars and every eight-view event family all reach it — and it
+## sets an *absolute* canvas transform, because `draw_set_transform` replaces rather than composes
+## and Godot exposes no way to read back what it replaced. So each of `EntityHalo`'s twelve ring
+## offsets was thrown away on a mirrored view: twelve copies landed on one another at the body, and
+## the three west-facing sectors of every family drew no rim at all.
+##
+## Headless never calls `_draw()`, so the composition is asserted where it is computed rather than
+## on pixels: `EntityHalo.trace_offsets()` is the ring and `Sprites.mirrored_transform()` is what the
+## flipped branch actually sets. Both are pure, and between them they are the whole of where a
+## mirrored copy lands.
+##
+## The assertions are the two things that were false: every copy lands somewhere of its own, and the
+## mirrored ring covers the same ground as the unmirrored one. **A distinctness check alone would
+## not hold it** — a ring that composed the offset the wrong way round is still twelve distinct
+## points, just not around the body.
+func _test_the_rims_mirrored_copies_land_on_the_ring(t) -> void:
+	var bob := -2.5
+	var anchor := Vector2(0.0, 26.0)
+	var ring := EntityHalo.trace_offsets(bob)
+	t.check(ring.size() == EntityHalo.HALO_OFFSETS,
+			"the ring is the whole of `HALO_OFFSETS` (%d) rather than a subset" % ring.size())
+
+	var landed := {}
+	for offset in ring:
+		Sprites.set_base_transform(Transform2D(0.0, offset))
+		var mirrored := Sprites.mirrored_transform(anchor)
+		# The flipped branch draws its rect in the mirrored frame, so where the sprite's own anchor
+		# ends up is that frame's origin: the ring offset plus the anchor, and nothing else.
+		t.check(mirrored.origin.is_equal_approx(offset + anchor),
+				"a mirrored copy at ring offset %s lands at %s, the offset the unmirrored copy "
+				% [offset, mirrored.origin] + "lands at too")
+		t.check(is_equal_approx(mirrored.x.x, -1.0) and is_equal_approx(mirrored.y.y, 1.0),
+				"and it is still mirrored on x only — composing the offset in may not undo the flip")
+		landed[mirrored.origin.snapped(Vector2.ONE * 0.001)] = true
+	Sprites.set_base_transform(Transform2D.IDENTITY)
+	t.check(landed.size() == ring.size(),
+			("all %d mirrored copies land on points of their own (%d distinct), which is what makes "
+			+ "a rim rather than one silhouette re-drawn on itself") % [ring.size(), landed.size()])
+
+	# And the ring itself is a ring: every offset exactly `HALO_MARGIN` from the body's own lift,
+	# which is what "a few pixels out and no further" means in arithmetic.
+	for offset in ring:
+		var out := (offset - Vector2(0.0, bob)).length()
+		t.check(is_equal_approx(out, EntityHalo.HALO_MARGIN),
+				"every copy sits exactly HALO_MARGIN (%.1fpx) out from the bobbing body (%.3f)"
+				% [EntityHalo.HALO_MARGIN, out])
