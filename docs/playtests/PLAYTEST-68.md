@@ -140,3 +140,15 @@ and does the redrawn symbol fit the wordmark it was kept beside?
 > Reads at every size
 
 Closed as fine.
+
+## The car crash's gap
+
+Asked, against `DECISIONS.md`, M118: a crash's body is two circles where the cars are drawn,
+and walking the gap on either pavement costs a little over half the meter rather than the day;
+`Tuning.CAR_ACCIDENT_GAPS_ARE_LETHAL` would make it kill. Do the bodies sit where the cars are
+drawn on both axes, does the gap read as a price chosen once or as a wall untold, and should it
+kill? The recommendation was to keep it a price.
+
+> Bodies sit, gap is a fair price
+
+Closed as fine; the switch stays off.
