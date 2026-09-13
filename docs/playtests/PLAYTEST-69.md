@@ -107,3 +107,32 @@ which is the standing decision (`CLAUDE.md`, no quest log or marker for the resi
 first encounter comes with no hint at all, after that the resistance speaks*). Whether the
 mark's sentence was seen at all is the M100 open design question about a chalk touch that
 shows nothing on a lost day; this report is its second sighting.
+
+Asked which of the two it was:
+
+> I touched the mark on day 4 died then went to the same alley again and the mark was gone.
+> but then I still progressed to hand the note on day 5. the day text needs to be bigger to be
+> able to be noticed and it should show also when dying so if missed on the first try it can
+> be seen on the second try. the in game note should contain the same amount of info on what
+> to do. note for a stranger contains less information than won't stop shouting which can be
+> easily missed when progressing to the next day. also, we cannot expect the player to do an
+> exhaustive check that will not work there is not enough time and the baby needs to fall
+> asleep still as well. so if the solution is the yeller it's always the first yeller you come
+> close enough to hand the note. let's record this for now and then stop until the next session
+
+So it was the lost day: the touch survived the nerve, the mark was gone on the retry as built,
+and the sentence that says what to do was never shown. Four instructions, all M132 in
+`TODO.md`: the day brief is drawn big enough to be noticed; it shows on a lost day's summary
+too, so a first try that dies still hands over the words on the second; the header line during
+the day carries the same information the brief did, not a shorter title; and the contact is
+the first yeller she reaches, never a search — *asked for a hidden contact among look-alikes ·
+overturned on 2026-09-13*, because a day has no time for an exhaustive check with a baby still
+to settle. Recorded and stopped there, at the player's word.
+
+## The busker's numbers
+
+> the busker numbers look good.
+
+On the table showing a peak of 19.3 never fills the sleep meter at his core while anything
+under 19.2 fills it within 35 seconds, and that the street beside the lot is half again louder
+for it. Accepted as built (`DECISIONS.md`, M128).

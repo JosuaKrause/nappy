@@ -420,6 +420,55 @@ that cannot spawn at an ahead-of-player row names the flock for the same reason.
 
 ---
 
+## M132 — The resistance speaks loud enough to be heard · asked for 2026-09-13
+
+> "the day text needs to be bigger to be able to be noticed and it should show also when dying
+> so if missed on the first try it can be seen on the second try. the in game note should
+> contain the same amount of info on what to do. note for a stranger contains less information
+> than won't stop shouting which can be easily missed when progressing to the next day. also,
+> we cannot expect the player to do an exhaustive check that will not work there is not enough
+> time and the baby needs to fall asleep still as well. so if the solution is the yeller it's
+> always the first yeller you come close enough to hand the note."
+
+[PLAYTEST-69](playtests/PLAYTEST-69.md), from a run that touched the day-4 mark, lost the day,
+and reached day 5 with no idea who the note was for. The **cues** rule governs the drawing;
+the standing decision that the *first* encounter carries no hint (`CLAUDE.md`, no quest log or
+marker for the resistance) is untouched — every item here is about what the resistance says
+*after* the mark has been touched. This closes M100's open design question about a chalk
+touch that shows nothing on a lost day, which is now decided.
+
+**What is true today.** A touched mark's words (`Step.brief`) are queued in
+`GameState.pending_resistance_brief` and appended by `DaySummary._resistance_line()` on the
+**won** branch of the summary only, in the summary's ordinary line size; the touch survives the
+nerve and the mark is not offered again, so a lost day loses the sentence for good. During the
+day the header reads `somewhere out there: <step title>` — *a note for a stranger* — which
+names the step and not the instruction. The perform contact rides on one of several look-alike
+`homeless_yeller` rows and *a wrong candidate costs full price and returns nothing*
+(`docs/NARRATIVE.md`).
+
+- [ ] **The brief is drawn to be noticed, and on a lost day too.** `DaySummary` shows the
+      queued brief on both branches of the summary, in a size and weight that reads as *the
+      thing this screen is telling you* rather than one more line, and keeps it queued until
+      a summary has shown it — so a first try that dies still hands over the words on the
+      second. `tests/test_day_loop.gd` (or the summary's own suite) holds that a brief queued
+      on a lost day is shown on that day's summary and cleared only then.
+- [ ] **The header carries the instruction, not the title.** While a perform step is on offer
+      the header's `somewhere out there:` line says the mark's own words, or the instruction
+      cut to fit — *the one who won't stop shouting* — rather than the step's name; the title
+      stays for the progress dots. Whatever wording rule is chosen holds for all five marks and
+      is written next to `Step.brief`.
+- [ ] **The contact is the first yeller she reaches.** *Asked for a hidden contact among
+      look-alikes · overturned on 2026-09-13.* When the step is on offer, the contact rides on
+      whichever `homeless_yeller` she first comes within reach of, rather than one chosen at
+      placement; `ResistanceDirector`'s rider is re-pointed on approach, or the contact is
+      placed on the yeller nearest her route, whichever keeps the guard and the deadline rules
+      intact — say which. `docs/NARRATIVE.md`'s *a wrong candidate costs full price* sentence
+      goes with it. The same question is asked of the van, the roadblock, the poster crew and
+      the protest: if any of those can be several look-alikes on one day, the first she reaches
+      is the contact.
+
+---
+
 ## M124 — The game on a phone, measured and then made cheaper · asked for 2026-09-13
 
 > "I played a few sessions on mobile. It is a bit laggy now. Are we using proper texture atlases
