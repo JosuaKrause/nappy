@@ -160,9 +160,6 @@ item below for as long as looking takes.
   their frontage's facing. Does a figure seen from behind still read as what it is, does the
   robber turning toward you read as a tell or as a glitch, and do the café sitters all facing one
   way read as a party or as a row? Record is `DECISIONS.md`, M108, the event people.
-- **Watch any walker on any pavement.** They stride now, two frames alternating at the mother's
-  own rate, frame a whenever one stops. Do the feet read as walking at street scale, and does a
-  queue of stopped walkers read as standing? Record is `DECISIONS.md`, M108, the walkers' stride.
 - **Watch a dog walker, a cyclist, a running cat and a lunging robber, then sit by a café and a
   busker** (any day; `--spawn event:dog_walker` puts one beside you). Every event person and
   animal that moves now strides too, two frames at the same rate as the mother, and the walker
@@ -170,11 +167,6 @@ item below for as long as looking takes.
   hand goes up and down twice a second, each on its own timer. Do the strides read at street
   scale, does the cyclist's pedal swap read as pedalling or as a twitch, and is the busker's
   tempo right? Record is `DECISIONS.md`, M108, the event strides.
-- **Watch walkers round a corner or step aside for you** (any day, any busy pavement). A walker
-  now picks one of eight views from the way it is actually moving, so it shows a diagonal picture
-  for the few tenths of a second it is steering across its lane, and a stopped one keeps its last
-  facing. Does the diagonal moment read as *turning* or as a flicker, and does a walker ever face
-  the wrong way while standing? Record is `DECISIONS.md`, M108, the crowd walkers.
 - **Walk through an alley in act I.** A mouse waits in some of them and darts across once she is
   within 150px, after a short telegraph. Does it read as a startle rather than a threat, and does
   the dash read as *across her path*? Record is `DECISIONS.md`, M100, the mouse in the alley.

@@ -186,3 +186,14 @@ upright rotate once and correctly?
 > All three fine
 
 Closed as fine, all three.
+
+## The crowd's walkers as drawn
+
+Asked, against `DECISIONS.md`, M108, the crowd walkers and the walkers' stride: do the feet read
+as walking at street scale and a stopped queue as standing, does the diagonal moment while a
+walker steers across its lane read as turning or as a flicker, and does a stopped walker ever
+face the wrong way?
+
+> All read right
+
+Closed as fine.
