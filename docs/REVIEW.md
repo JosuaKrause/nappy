@@ -197,9 +197,22 @@ item below for as long as looking takes.
   in the street with its body over the kerb by a few pixels. Does the pause at the mouth read as
   slowing rather than stalling, and does a street about-face over the kerb read as wrong? That
   last one is the open question in `TODO.md`, M111. Whether the picture jumps a view or floats
-  off its shadow on the arc was answered by [PLAYTEST-66](playtests/PLAYTEST-66.md) — it does,
-  and the halo with it — and is M121 in `TODO.md`. Records are `DECISIONS.md`, M111 and M108,
-  the crowd car.
+  off its shadow on the arc was answered by [PLAYTEST-66](playtests/PLAYTEST-66.md) — it did,
+  and the halo with it — and built as `DECISIONS.md`, M121. Records are `DECISIONS.md`, M111 and
+  M108, the crowd car.
+- **Stand close to a car as it turns, and under a flock, and watch the rim.** The halo now
+  re-traces its owner's body every frame it is drawn, so a turning car's rim should sweep through
+  the diagonal with the picture and a flock's rim should fly with the birds. And every car and
+  walker heading west now has a rim at all: the three mirrored views drew none before, which is a
+  defect that stood since the halo landed. Three questions. Do rim and picture read as one body
+  through a turn? Does a west-facing body's rim read the same as an east-facing one's? And does an
+  east- or west-bound car sit right on its shadow now that its picture is registered to the
+  strike box like the other views, which moved it 14px south? Record is `DECISIONS.md`, M121; the
+  bursts are `evidence/m121-halo-follows-owner-2026-09-13/`.
+- **Watch a car about-face into a street with a queue in it.** The lane holds a gap for the
+  car that is coming and the arrival gives way if the gap has closed, so nobody already in the
+  lane should jump. Does the merge read as traffic making room, or as the turning car waiting for
+  nothing? Same record.
 - **Look at a parked delivery van and, from day 7, a police car on patrol.** The delivery van and
   the abduction van now face east when parked facing east; before, their west-authored pictures
   were drawn unmirrored, so a van sited nose-east showed its nose west. Does the parked van read

@@ -145,10 +145,6 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
-0. **[PLAYTEST-66](playtests/PLAYTEST-66.md)'s four**, ahead of everything on the player's own
-   word for the round *(2026-09-12: "this round's feedbacks should all be prioritized since I'm
-   actively testing the changes as they come in")*: **M121**, the halo follows its owner and a
-   turning car's picture and lane, the last of the round still open.
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
    related to the other items to work on right now.")* It waits, because reaching act III waits:
    *"I wanna wait reaching act III until those things are done."*
@@ -310,52 +306,6 @@ junction-paint and robber-placement records are filed there under M49 and the sm
 
 Everything below is in the order the gameplay queue above gives it, and was reassessed on
 2026-09-09.
-
----
-
-## M121 — The halo follows its owner, and a turning car's picture and lane · asked for 2026-09-12
-
-> "the halo doesn't update when the drawn sprite updates. so a turning car will have the original
-> halo while turning (burst 5 and 6 and a couple more). also while turning the car might get
-> weirdly offset (burst 5 and 6). a car doing a u-turn into a lane with traffic reset the other
-> lane (burst 1)."
-
-> "the halo issue is not specific to cars you can see the same for when you walk close to birds
-> you will get a freeze frame of their position as halo while they keep flying"
-
-[PLAYTEST-66](playtests/PLAYTEST-66.md). Prioritised with everything from that round. M111, cars
-follow their turns, built the arc; M108, eight-direction entity graphics, gave the car a picture
-per heading along it. This is what the two do together.
-
-**What is true today.** `EntityHalo` is a child node that re-runs its owner's own body drawing
-at twelve offsets and flattens the copies to a rim, and it redraws itself only while its alpha or
-colour is still easing toward the target it was last given (`_process` returns before
-`queue_redraw()` once both have settled). A car whose halo has settled and then changes view on
-the arc keeps the rim of the view it had: burst 10's blue car at the north-east corner is drawn
-in its diagonal view with a side-view rim sitting up and to the left of it. The same holds for
-every owner whose body moves under a steady glow: a flock (an event whose birds are drawn at
-positions that advance every frame) keeps the rim of where the birds were when the glow settled.
-The body's own offset during the turn is separate: the standing pictures are registered so box and shadow sit
-on the body, and on the arc the picture drifts off that registration for part of the turn. And
-in burst 1 a car about-facing into the northbound lane of the eastern side street, which held a
-queue, reset that lane — the cars in it jumped rather than made room.
-
-- [ ] **The halo follows the picture, for every owner.** The rim redraws whenever the owner's
-      drawn body changes — the halo redraws every frame while its drawn alpha is above zero,
-      which is the one rule that covers a turning car, a flying flock and anything else that
-      moves under a steady glow, or every owner calls the halo's `queue_redraw()` from the same
-      place it calls its own — so a halo is always the halo of the body being drawn. The cost is
-      bounded by `ExcitementHalo.MAX_SOURCES` (8) rims at once. `tests/test_crowd_bodies.gd`
-      (or the halo's own test) draws a car in one view, turns it, and asserts the rim's
-      silhouette matches the new view; the same for a flock one frame on.
-- [ ] **The picture stays on its registration through the turn.** Find the offset in bursts 5
-      and 6 against the frame timing, and make the diagonal and cardinal pictures on the arc
-      share the standing registration the debug bounding box (`3`) is judged by.
-- [ ] **A u-turn joins a lane without resetting it.** A car about-facing into a lane that holds
-      traffic merges by the lane's own following rule — it waits for a gap or joins at the tail
-      — rather than displacing what is there. `tests/test_crowd.gd` queues a lane, about-faces a
-      car into it, and asserts every car already in the lane keeps its order and moves no more
-      than one frame's travel.
 
 ---
 

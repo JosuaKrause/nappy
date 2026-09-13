@@ -279,10 +279,6 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
 ## The queue, as prioritised on 2026-09-09
 
-**Playtest 66's last open milestone goes first**, on the player's word that the round is being
-tested as it lands: M121, the halo follows its owner and a turning car's picture and lane. The run
-it came from is under `docs/evidence/archive/session-captures/`.
-
 **Below them, `TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** M56 has only
 its measurement against the nerves left, and that waits for act III. The debug view (`1` to `4` in a debug build, `--layers 1,3` for
 a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow or a body is checked by
