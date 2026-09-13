@@ -2340,18 +2340,29 @@ const MARK_HEIGHT := 44.0
 const MARK_WIDTH := 15.0
 const MARK_FLASHES_PER_SECOND := 3.0
 
-## The caret's own answer, 0 (none), 1 (amber) or 2 (doubled red), computed once and cached
-## against `age` — `wants_a_mark()`, `mark_colour()` and `_draw_mark()` all ask in the same frame,
-## and each is a fresh sampling loop over `expected_impact_at()` or `will_be_lethal()` if they do
-## not share one. **Cache per frame, the way the halo already does its own once-a-frame work**,
-## rather than pricing the projection three times over for every visible source every draw.
+## The caret's own answer, 0 (none), 1 (amber) or 2 (doubled red), computed once and cached —
+## `wants_a_mark()`, `mark_colour()`, `_draw_mark()` and `_picture_key()` all ask in the same
+## frame, and each is a fresh sampling loop over `expected_impact_at()` or `will_be_lethal()` if
+## they do not share one. **Cache per frame, the way the halo already does its own once-a-frame
+## work**, rather than pricing the projection four times over for every visible source every draw.
+##
+## **Keyed on where she is as well as on the clock, and the pair is load-bearing.** The answer is
+## a projection of this event's course against her position, so it goes stale when either moves —
+## and the two do not move together: `player_at` is written by `EventManager` and `ExcitementHalo`
+## once a frame, from outside, at whatever point in the frame those nodes run, while
+## `_redraw_if_the_picture_changed()` asks for the caret at the end of this instance's own
+## `_process()`. Keyed on `age` alone, the first of those to ask fixes the answer for the whole
+## tick, and a caret computed against last frame's position — or against `Vector2.INF`, before
+## anything has said where she is at all — is the one that stands.
 var _caret_strength_age := -1.0
+var _caret_strength_at := Vector2.INF
 var _caret_strength_cache := 0
 
 func _caret_strength() -> int:
-	if _caret_strength_age == age:
+	if _caret_strength_age == age and _caret_strength_at == player_at:
 		return _caret_strength_cache
 	_caret_strength_age = age
+	_caret_strength_at = player_at
 	_caret_strength_cache = 0
 	# A floor under the whole city has nothing to stand over — that is the HUD's job — and a
 	# permanent feature of a fixed map never appears, so there is no moment to mark: the same

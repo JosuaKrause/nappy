@@ -27,6 +27,7 @@ func run(t) -> void:
 	_test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t)
 	_test_the_marks_flash_is_in_the_key(t)
 	_test_the_caret_strength_is_in_the_key(t)
+	_test_asking_for_the_key_does_not_freeze_the_caret(t)
 	_test_the_buskers_strum_moves_the_key_without_him_moving(t)
 	_test_the_cafe_sitters_lean_moves_the_key(t)
 	_test_a_waiting_robber_turning_to_face_her_moves_the_key(t)
@@ -202,6 +203,32 @@ func _test_the_caret_strength_is_in_the_key(t) -> void:
 		instance._caret_strength_cache = strength
 		keys[instance._picture_key()] = true
 	t.check(keys.size() == 3, "no caret, a caret and a doubled caret are three different keys")
+	instance.free()
+
+## **The gate asks for the caret once a tick, and that must not be the answer the rest of the frame
+## gets.** `_caret_strength()` caches its projection so that the four things wanting it in one
+## frame share one sampling loop — and the gate is now the *first* of the four to ask, at the end
+## of this instance's own `_process()`, while `player_at` is written from outside by
+## `EventManager` and `ExcitementHalo` at whatever point in the frame those nodes run. Keyed on
+## `age` alone the gate's answer stood for the whole tick, computed against wherever she was last
+## frame, or against `Vector2.INF` before anything had said where she was at all: a lethal cyclist
+## ridden straight at her read as carrying no caret.
+func _test_asking_for_the_key_does_not_freeze_the_caret(t) -> void:
+	var def := EventCatalogue.by_id("cyclist")
+	t.check(def != null and def.hard_fail, "cyclist is a hard-fail row")
+	if not def:
+		return
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]))
+	# Ticks with nobody's position known, so the gate caches an answer for this `age` against
+	# `Vector2.INF` — the state the running game is in on any frame whose event `_process()` runs
+	# before whoever writes `player_at`.
+	for i in int(ceil(def.telegraph_time / STEP)) + 1:
+		instance._process(STEP)
+	t.check(instance._caret_strength() == 0, "with nobody to aim at there is no caret")
+	instance.set_player_at(instance.global_position + Vector2(def.outer_radius, 0.0))
+	t.check(instance._caret_strength() == 2,
+			"and telling it where she is, inside the same tick, reads the doubled lethal caret")
 	instance.free()
 
 # ---------------------------------------------------------- the idle animations ---
