@@ -1,0 +1,22 @@
+<!-- The same east-facing carry, opposite open stride. Mirrored for west. Feet anchor at (13, 46). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="26" height="46" viewBox="0 0 26 46" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M10 31 L15 31 Q16 37 21 42 L24 43 L24 46 L17 46 Q12 39 10 32 Z" fill="#3c4560"/>
+  <path d="M8 31 L13 31 Q12 37 6 42 L2 43 L2 46 L9 45 Q14 39 14 32 Z" fill="#46506b"/>
+  <path d="M2 43 L9 42 L10 45 L2 46 Z M17 43 L24 43 L25 46 L17 46 Z" fill="#2f2a2c"/>
+  <path d="M6 12 Q12 9 18 12 L20 27 Q18 32 11 33 Q6 32 4 27 Z" fill="#b0574f"/>
+  <path d="M5 26 Q12 29 19 26 L19 32 Q12 35 5 31 Z" fill="#8e433d"/>
+  <path d="M7 15 Q5 19 10 21 L18 20 L19 22 L11 24 Q5 23 5 18 Z" fill="#b0574f"/>
+  <ellipse cx="19" cy="20.5" rx="1.7" ry="1.4" fill="#d9a878"/>
+  <path d="M9 18 Q15 16 22 19 Q25 21 22 24 Q15 27 9 22 Z" fill="#617087"/>
+  <path d="M11 20 Q16 21 20 24" fill="none" stroke="#c4b79c" stroke-width="1"/>
+  <circle cx="20.5" cy="16.9" r="2.7" fill="#d9a878"/>
+  <path d="M18.2 16.1 Q20.5 13.4 22.8 16.2" fill="#3a2b26"/>
+  <circle cx="21.6" cy="17" r="0.5" fill="#221f28" stroke="none"/>
+  <path d="M21.2 18.2 L22.3 18.2" fill="none" stroke="#9b5e54" stroke-width="0.55"/>
+  <path d="M17 15 Q21 18 20 22 Q18 26 14 27 L12 24 Q16 23 17 20 L15 17 Z" fill="#b0574f"/>
+  <ellipse cx="14" cy="24.8" rx="1.8" ry="1.4" fill="#d9a878"/>
+  <path d="M12 0 Q19 0 19 7 Q19 13 12 14 Q5 13 5 7 Q5 0 12 0 Z" fill="#d9a878"/>
+  <path d="M5 7 Q6 1 12 0 Q17 0 19 5 L16 3 L14 7 Z" fill="#3a2b26"/>
+  <path d="M15 6 Q17 6 18 7" fill="none" stroke="#634035" stroke-width="1"/>
+  <circle cx="16" cy="7" r="1" fill="#221f28"/>
+</svg>

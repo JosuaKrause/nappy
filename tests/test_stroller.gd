@@ -6,9 +6,12 @@ const STEP := 1.0 / 60.0
 func run(t) -> void:
 	_test_all_eight_facings(t)
 	_test_live_draw_selection(t)
+	_test_pram_scale_preserves_integer_canvas_sizes(t)
 	_test_boundary_hysteresis(t)
 	_test_reset_settles_direction(t)
 	_test_wrap_boundary_holds(t)
+	_test_pram_offset_stays_continuous_through_side_facings(t)
+	_test_north_diagonal_contact_adjustment(t)
 	_test_the_pram_has_its_own_trailing_body(t)
 
 func _rig(t) -> Stroller:
@@ -65,6 +68,18 @@ func _test_live_draw_selection(t) -> void:
 				"pram mirror matches direction %d" % direction)
 	rig.free()
 
+func _test_pram_scale_preserves_integer_canvas_sizes(t) -> void:
+	var rig := _rig(t)
+	for direction in range(8):
+		rig._view_direction = direction
+		var native_size := rig._pram_texture().get_size()
+		var draw_size := rig._pram_draw_size()
+		t.check(is_equal_approx(draw_size.x * native_size.y, draw_size.y * native_size.x),
+				"direction %d preserves the authored pram aspect ratio" % direction)
+		t.check(draw_size.x == roundf(draw_size.x) and draw_size.y == roundf(draw_size.y),
+				"direction %d keeps the scaled pram on an integer-pixel canvas" % direction)
+	rig.free()
+
 func _test_boundary_hysteresis(t) -> void:
 	var rig := _rig(t)
 	_face(rig, 0.0)
@@ -100,19 +115,89 @@ func _test_wrap_boundary_holds(t) -> void:
 	t.check(rig._view_direction == 0, "east wins after crossing the wrapped boundary")
 	rig.free()
 
-## M100, small, real and nobody's — the pram's own body, rejected once at 12px trailing the pram's
-## drawn `PRAM_DISTANCE` (34px) because *(PLAYTEST-57: "I cannot get close to walls anymore, and I
-## get constantly stuck")*, then rebuilt at the shape the player asked for: *"place the center of
-## the stroller hitbox at the circumference of the player hitbox", "and don't make it too big"*.
-## `PramCollisionShape2D`'s centre sits `Tuning.PLAYER_BODY_RADIUS` (14px) out along `facing` —
-## on her own circle's edge, unsquashed, since physics stays in the plain 2D plane — and its radius
-## is `Stroller.PRAM_BODY_RADIUS` (8px, pinned and open to overturn), smaller than the 12px
-## `pram_shape` still uses for the pram's shadow, cue and field. Checked at the wiring level rather
-## than by driving her into a real wall: `move_and_slide()` does not move a body in this suite's own
-## synchronous headless run — no physics frame ever actually elapses while `run()` is executing,
-## which is also why `tests/test_events.gd`'s own conversation test reads `velocity` rather than
-## `global_position` after holding a key, and `_test_the_pram_is_the_size_the_rules_think_it_is`
-## (same file) checks the existing body's shape and radius directly rather than a collision outcome.
+func _test_pram_offset_stays_continuous_through_side_facings(t) -> void:
+	var rig := _rig(t)
+	var epsilon := 0.001
+	var largest_axis_distance: float = maxf(
+			Stroller.PRAM_HORIZONTAL_DISTANCE,
+			maxf(Stroller.PRAM_NORTH_DISTANCE, Stroller.PRAM_SOUTH_DISTANCE))
+	for side: float in [0.0, PI]:
+		rig.facing = Vector2.from_angle(side - epsilon)
+		var before := rig.pram_draw_offset()
+		rig.facing = Vector2.from_angle(side)
+		var at_side := rig.pram_draw_offset()
+		rig.facing = Vector2.from_angle(side + epsilon)
+		var after := rig.pram_draw_offset()
+		# A one-sided distance choice is safe only because its directional term has reached zero
+		# here. Bound the movement by the turn itself, so this checks for a jump without pinning the
+		# presentation distances selected by visual review.
+		t.check(before.distance_to(at_side) <= largest_axis_distance * epsilon,
+				"the pram reaches side facing continuously from one turn direction")
+		t.check(after.distance_to(at_side) <= largest_axis_distance * epsilon,
+				"the pram leaves side facing continuously in the other turn direction")
+	rig.free()
+
+func _test_north_diagonal_contact_adjustment(t) -> void:
+	var rig := _rig(t)
+	rig.facing = Vector2.UP
+	var north := rig.pram_draw_offset()
+	var east := Vector2.RIGHT
+	rig.facing = east
+	var east_offset := rig.pram_draw_offset()
+	var west := Vector2.LEFT
+	rig.facing = west
+	var west_offset := rig.pram_draw_offset()
+	var south := Vector2.DOWN
+	rig.facing = south
+	var south_offset := rig.pram_draw_offset()
+	rig.facing = Vector2(1.0, 1.0).normalized()
+	var south_east_offset := rig.pram_draw_offset()
+	rig.facing = Vector2(-1.0, 1.0).normalized()
+	var south_west_offset := rig.pram_draw_offset()
+	var north_east := Vector2(1.0, -1.0).normalized()
+	rig.facing = north_east
+	var north_east_offset := rig.pram_draw_offset()
+	var north_west := Vector2(-1.0, -1.0).normalized()
+	rig.facing = north_west
+	var north_west_offset := rig.pram_draw_offset()
+
+	t.check(is_equal_approx(north.y, -Stroller.PRAM_NORTH_DISTANCE * Stroller.OBLIQUE_Y),
+			"north keeps its grounded screen-Y placement")
+	t.check(is_equal_approx(east_offset.y, Stroller.PRAM_VERTICAL_LIFT)
+			and is_equal_approx(west_offset.y, Stroller.PRAM_VERTICAL_LIFT),
+			"east and west keep their grounded screen-Y placement")
+	t.check(is_equal_approx(south_offset.y, Stroller.PRAM_SOUTH_DISTANCE * Stroller.OBLIQUE_Y),
+			"south keeps its grounded screen-Y placement")
+	t.check(is_equal_approx(south_east_offset.y, south_west_offset.y)
+			and is_equal_approx(south_east_offset.y,
+					Stroller.PRAM_SOUTH_DISTANCE * Stroller.OBLIQUE_Y / sqrt(2.0)),
+			"south-east and south-west preserve the grounded placement symmetrically")
+	t.close_to(north_east_offset.y,
+			north.y / sqrt(2.0) + Stroller.PRAM_NORTH_DIAGONAL_CONTACT_ADJUSTMENT,
+			"north-east receives the full two-pixel contact correction", 0.001)
+	t.close_to(north_west_offset.y,
+			north.y / sqrt(2.0) + Stroller.PRAM_NORTH_DIAGONAL_CONTACT_ADJUSTMENT,
+			"north-west receives the full two-pixel contact correction", 0.001)
+	var north_adjustment_max := 0.0
+	for degrees in range(0, 181):
+		var angle := deg_to_rad(-float(degrees))
+		rig.facing = Vector2.from_angle(angle)
+		var base_y: float = rig.facing.y * Stroller.PRAM_NORTH_DISTANCE * Stroller.OBLIQUE_Y
+		north_adjustment_max = maxf(north_adjustment_max, rig.pram_draw_offset().y - base_y)
+	t.close_to(north_adjustment_max, Stroller.PRAM_NORTH_DIAGONAL_CONTACT_ADJUSTMENT,
+			"north diagonal correction peaks at its measured bound", 0.001)
+	var near_east := Vector2.from_angle(-0.001)
+	rig.facing = near_east
+	var near_east_offset := rig.pram_draw_offset()
+	t.check(absf(near_east_offset.y - Stroller.PRAM_VERTICAL_LIFT) < 0.02,
+			"the north correction fades continuously into east")
+	rig.free()
+
+## The pram's physical body and visible position are separate contracts. The body stays on the
+## circumference of her own circle, unsquashed in the ground plane, while its art, shadow, cue and
+## field follow the authored presentation offset. Checked at the wiring level because no physics
+## frame elapses during this suite's synchronous `run()`, so `move_and_slide()` cannot demonstrate a
+## wall collision here.
 func _test_the_pram_has_its_own_trailing_body(t) -> void:
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var rig: Stroller = scene.instantiate()
@@ -136,12 +221,17 @@ func _test_the_pram_has_its_own_trailing_body(t) -> void:
 			Vector2(1.0, 1.0).normalized()]:
 		rig.facing = facing
 		rig._physics_process(STEP)
+		var visible_offset: Vector2 = rig.pram_draw_offset()
+		t.check(rig._pram_offset.is_equal_approx(visible_offset),
+				"the drawn pram, shadow and cue share one live offset on facing %s" % facing)
 		var expected: Vector2 = facing * Tuning.PLAYER_BODY_RADIUS
 		t.check(pram_collision.position.is_equal_approx(expected),
 				"the pram's own body sits PLAYER_BODY_RADIUS out along facing %s (%s, want %s)"
 				% [facing, pram_collision.position, expected])
 		t.close_to(pram_collision.position.length(), Tuning.PLAYER_BODY_RADIUS,
 				"which is 14px from her own centre on every facing, not only the axes", 0.01)
+		t.check(not pram_collision.position.is_equal_approx(visible_offset),
+				"and changing the visible hand-to-handle placement does not move that body")
 	rig.free()
 
 	# Carrying her in arms rather than pushing the pram: there is no pram to collide with either.

@@ -1,0 +1,1177 @@
+{
+  "native_size": [
+    32,
+    32
+  ],
+  "opaque": true,
+  "cells": [
+    {
+      "name": "road_line_e",
+      "sheet": "generated-01-layout.png",
+      "crop": [
+        3,
+        3,
+        311,
+        311
+      ]
+    },
+    {
+      "name": "road_line_n",
+      "sheet": "generated-01-layout.png",
+      "crop": [
+        317,
+        3,
+        624,
+        311
+      ]
+    },
+    {
+      "name": "road_line_s",
+      "sheet": "generated-01-layout.png",
+      "crop": [
+        630,
+        3,
+        937,
+        311
+      ]
+    },
+    {
+      "name": "road_line_w",
+      "sheet": "generated-01-layout.png",
+      "crop": [
+        943,
+        3,
+        1251,
+        311
+      ]
+    },
+    {
+      "name": "road_main_line_e",
+      "sheet": "generated-01-layout.png",
+      "crop": [
+        3,
+        317,
+        311,
+        624
+      ]
+    },
+    {
+      "name": "road_main_line_n",
+      "sheet": "generated-01-layout.png",
+      "crop": [
+        317,
+        317,
+        624,
+        624
+      ]
+    },
+    {
+      "name": "road_main_line_s",
+      "sheet": "generated-01-layout.png",
+      "crop": [
+        630,
+        317,
+        937,
+        624
+      ]
+    },
+    {
+      "name": "road_main_line_w",
+      "sheet": "generated-01-layout.png",
+      "crop": [
+        943,
+        317,
+        1251,
+        624
+      ]
+    },
+    {
+      "name": "crossing_h",
+      "sheet": "generated-01-layout.png",
+      "crop": [
+        3,
+        630,
+        311,
+        937
+      ]
+    },
+    {
+      "name": "crossing_v",
+      "sheet": "generated-01-layout.png",
+      "crop": [
+        317,
+        630,
+        624,
+        937
+      ]
+    },
+    {
+      "name": "crossing_main_e",
+      "sheet": "generated-01-layout.png",
+      "crop": [
+        630,
+        630,
+        937,
+        937
+      ]
+    },
+    {
+      "name": "crossing_main_n",
+      "sheet": "generated-01-layout.png",
+      "crop": [
+        943,
+        630,
+        1251,
+        937
+      ]
+    },
+    {
+      "name": "crossing_main_s",
+      "sheet": "generated-01-layout.png",
+      "crop": [
+        3,
+        943,
+        311,
+        1251
+      ]
+    },
+    {
+      "name": "crossing_main_w",
+      "sheet": "generated-01-layout.png",
+      "crop": [
+        317,
+        943,
+        624,
+        1251
+      ]
+    },
+    {
+      "name": "sidewalk",
+      "sheet": "generated-01-layout.png",
+      "crop": [
+        630,
+        943,
+        937,
+        1251
+      ]
+    },
+    {
+      "name": "sidewalk_kerb_e",
+      "sheet": "generated-01-layout.png",
+      "crop": [
+        943,
+        943,
+        1251,
+        1251
+      ]
+    },
+    {
+      "name": "sidewalk_kerb_n",
+      "sheet": "generated-02.png",
+      "crop": [
+        3,
+        3,
+        311,
+        311
+      ]
+    },
+    {
+      "name": "sidewalk_kerb_s",
+      "sheet": "generated-02.png",
+      "crop": [
+        317,
+        3,
+        624,
+        311
+      ]
+    },
+    {
+      "name": "sidewalk_kerb_w",
+      "sheet": "generated-02.png",
+      "crop": [
+        630,
+        3,
+        937,
+        311
+      ]
+    },
+    {
+      "name": "sidewalk_kerb_main_e",
+      "sheet": "generated-02.png",
+      "crop": [
+        943,
+        3,
+        1251,
+        311
+      ]
+    },
+    {
+      "name": "sidewalk_kerb_main_n",
+      "sheet": "generated-02.png",
+      "crop": [
+        3,
+        317,
+        311,
+        624
+      ]
+    },
+    {
+      "name": "sidewalk_kerb_main_s",
+      "sheet": "generated-02.png",
+      "crop": [
+        317,
+        317,
+        624,
+        624
+      ]
+    },
+    {
+      "name": "sidewalk_kerb_main_w",
+      "sheet": "generated-02.png",
+      "crop": [
+        630,
+        317,
+        937,
+        624
+      ]
+    },
+    {
+      "name": "alley_cracked_hairline_a",
+      "sheet": "generated-02.png",
+      "crop": [
+        943,
+        317,
+        1251,
+        624
+      ]
+    },
+    {
+      "name": "alley_cracked_hairline_b",
+      "sheet": "generated-02.png",
+      "crop": [
+        3,
+        630,
+        311,
+        937
+      ]
+    },
+    {
+      "name": "alley_cracked_cracked_a",
+      "sheet": "generated-02.png",
+      "crop": [
+        317,
+        630,
+        624,
+        937
+      ]
+    },
+    {
+      "name": "alley_cracked_cracked_b",
+      "sheet": "generated-02.png",
+      "crop": [
+        630,
+        630,
+        937,
+        937
+      ]
+    },
+    {
+      "name": "alley_cracked_broken_a",
+      "sheet": "generated-02.png",
+      "crop": [
+        943,
+        630,
+        1251,
+        937
+      ]
+    },
+    {
+      "name": "alley_cracked_broken_b",
+      "sheet": "generated-02.png",
+      "crop": [
+        3,
+        943,
+        311,
+        1251
+      ]
+    },
+    {
+      "name": "road_cracked_hairline_a",
+      "sheet": "generated-02.png",
+      "crop": [
+        317,
+        943,
+        624,
+        1251
+      ]
+    },
+    {
+      "name": "road_cracked_hairline_b",
+      "sheet": "generated-02.png",
+      "crop": [
+        630,
+        943,
+        937,
+        1251
+      ]
+    },
+    {
+      "name": "road_cracked_cracked_a",
+      "sheet": "generated-02.png",
+      "crop": [
+        943,
+        943,
+        1251,
+        1251
+      ]
+    },
+    {
+      "name": "road_cracked_cracked_b",
+      "sheet": "generated-03.png",
+      "crop": [
+        3,
+        3,
+        311,
+        311
+      ]
+    },
+    {
+      "name": "road_cracked_broken_a",
+      "sheet": "generated-03.png",
+      "crop": [
+        317,
+        3,
+        624,
+        311
+      ]
+    },
+    {
+      "name": "road_cracked_broken_b",
+      "sheet": "generated-03.png",
+      "crop": [
+        630,
+        3,
+        937,
+        311
+      ]
+    },
+    {
+      "name": "sidewalk_cracked_hairline_a",
+      "sheet": "generated-03.png",
+      "crop": [
+        943,
+        3,
+        1251,
+        311
+      ]
+    },
+    {
+      "name": "sidewalk_cracked_hairline_b",
+      "sheet": "generated-03.png",
+      "crop": [
+        3,
+        317,
+        311,
+        624
+      ]
+    },
+    {
+      "name": "sidewalk_cracked_cracked_a",
+      "sheet": "generated-03.png",
+      "crop": [
+        317,
+        317,
+        624,
+        624
+      ]
+    },
+    {
+      "name": "sidewalk_cracked_cracked_b",
+      "sheet": "generated-03.png",
+      "crop": [
+        630,
+        317,
+        937,
+        624
+      ]
+    },
+    {
+      "name": "sidewalk_cracked_broken_a",
+      "sheet": "generated-03.png",
+      "crop": [
+        943,
+        317,
+        1251,
+        624
+      ]
+    },
+    {
+      "name": "sidewalk_cracked_broken_b",
+      "sheet": "generated-03.png",
+      "crop": [
+        3,
+        630,
+        311,
+        937
+      ]
+    },
+    {
+      "name": "road",
+      "sheet": "generated-03.png",
+      "crop": [
+        317,
+        630,
+        624,
+        937
+      ]
+    },
+    {
+      "name": "road_main",
+      "sheet": "generated-03.png",
+      "crop": [
+        630,
+        630,
+        937,
+        937
+      ]
+    },
+    {
+      "name": "alley",
+      "sheet": "generated-03.png",
+      "crop": [
+        943,
+        630,
+        1251,
+        937
+      ]
+    },
+    {
+      "name": "alley_draft",
+      "sheet": "generated-03.png",
+      "crop": [
+        3,
+        943,
+        311,
+        1251
+      ]
+    },
+    {
+      "name": "bulkhead",
+      "sheet": "generated-03.png",
+      "crop": [
+        317,
+        943,
+        624,
+        1251
+      ]
+    },
+    {
+      "name": "courtyard",
+      "sheet": "generated-03.png",
+      "crop": [
+        630,
+        943,
+        937,
+        1251
+      ]
+    },
+    {
+      "name": "fence",
+      "sheet": "generated-03.png",
+      "crop": [
+        943,
+        943,
+        1251,
+        1251
+      ]
+    },
+    {
+      "name": "forest",
+      "sheet": "generated-04.png",
+      "crop": [
+        3,
+        3,
+        311,
+        311
+      ]
+    },
+    {
+      "name": "grass",
+      "sheet": "generated-04.png",
+      "crop": [
+        317,
+        3,
+        624,
+        311
+      ]
+    },
+    {
+      "name": "mountain",
+      "sheet": "generated-04.png",
+      "crop": [
+        630,
+        3,
+        937,
+        311
+      ]
+    },
+    {
+      "name": "plaza",
+      "sheet": "generated-04.png",
+      "crop": [
+        943,
+        3,
+        1251,
+        311
+      ]
+    },
+    {
+      "name": "precinct",
+      "sheet": "generated-04.png",
+      "crop": [
+        3,
+        317,
+        311,
+        624
+      ]
+    },
+    {
+      "name": "quiet_square",
+      "sheet": "generated-04.png",
+      "crop": [
+        317,
+        317,
+        624,
+        624
+      ]
+    },
+    {
+      "name": "sand",
+      "sheet": "generated-04.png",
+      "crop": [
+        630,
+        317,
+        937,
+        624
+      ]
+    },
+    {
+      "name": "scree",
+      "sheet": "generated-04.png",
+      "crop": [
+        943,
+        317,
+        1251,
+        624
+      ]
+    },
+    {
+      "name": "spoiled",
+      "sheet": "generated-04.png",
+      "crop": [
+        3,
+        630,
+        311,
+        937
+      ]
+    },
+    {
+      "name": "stoop",
+      "sheet": "generated-04.png",
+      "crop": [
+        317,
+        630,
+        624,
+        937
+      ]
+    },
+    {
+      "name": "water",
+      "sheet": "generated-04.png",
+      "crop": [
+        630,
+        630,
+        937,
+        937
+      ]
+    }
+  ],
+  "road_paint": [
+    {
+      "name": "road_line_e",
+      "atlas_cell": [
+        0,
+        0,
+        314,
+        314
+      ],
+      "background": "road",
+      "strokes": [
+        {
+          "generated_crop": [
+            292,
+            85,
+            314,
+            231
+          ],
+          "native_destination": [
+            30,
+            8,
+            32,
+            24
+          ]
+        }
+      ]
+    },
+    {
+      "name": "road_line_n",
+      "atlas_cell": [
+        314,
+        0,
+        627,
+        314
+      ],
+      "background": "road",
+      "strokes": [
+        {
+          "generated_crop": [
+            139,
+            2,
+            302,
+            25
+          ],
+          "native_destination": [
+            8,
+            0,
+            24,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "name": "road_line_s",
+      "atlas_cell": [
+        627,
+        0,
+        940,
+        314
+      ],
+      "background": "road",
+      "strokes": [
+        {
+          "generated_crop": [
+            84,
+            285,
+            231,
+            309
+          ],
+          "native_destination": [
+            8,
+            30,
+            24,
+            32
+          ]
+        }
+      ]
+    },
+    {
+      "name": "road_line_w",
+      "atlas_cell": [
+        940,
+        0,
+        1254,
+        314
+      ],
+      "background": "road",
+      "strokes": [
+        {
+          "generated_crop": [
+            0,
+            85,
+            22,
+            231
+          ],
+          "native_destination": [
+            0,
+            8,
+            2,
+            24
+          ]
+        }
+      ]
+    },
+    {
+      "name": "road_main_line_e",
+      "atlas_cell": [
+        0,
+        314,
+        314,
+        627
+      ],
+      "background": "road_main",
+      "strokes": [
+        {
+          "generated_crop": [
+            260,
+            0,
+            281,
+            308
+          ],
+          "native_destination": [
+            26,
+            0,
+            28,
+            32
+          ]
+        },
+        {
+          "generated_crop": [
+            296,
+            0,
+            314,
+            308
+          ],
+          "native_destination": [
+            30,
+            0,
+            32,
+            32
+          ]
+        }
+      ]
+    },
+    {
+      "name": "road_main_line_n",
+      "atlas_cell": [
+        314,
+        314,
+        627,
+        627
+      ],
+      "background": "road_main",
+      "strokes": [
+        {
+          "generated_crop": [
+            4,
+            0,
+            311,
+            19
+          ],
+          "native_destination": [
+            0,
+            0,
+            32,
+            2
+          ]
+        },
+        {
+          "generated_crop": [
+            4,
+            35,
+            311,
+            55
+          ],
+          "native_destination": [
+            0,
+            4,
+            32,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "name": "road_main_line_s",
+      "atlas_cell": [
+        627,
+        314,
+        940,
+        627
+      ],
+      "background": "road_main",
+      "strokes": [
+        {
+          "generated_crop": [
+            1,
+            250,
+            309,
+            270
+          ],
+          "native_destination": [
+            0,
+            26,
+            32,
+            28
+          ]
+        },
+        {
+          "generated_crop": [
+            1,
+            285,
+            310,
+            306
+          ],
+          "native_destination": [
+            0,
+            30,
+            32,
+            32
+          ]
+        }
+      ]
+    },
+    {
+      "name": "road_main_line_w",
+      "atlas_cell": [
+        940,
+        314,
+        1254,
+        627
+      ],
+      "background": "road_main",
+      "strokes": [
+        {
+          "generated_crop": [
+            0,
+            0,
+            19,
+            308
+          ],
+          "native_destination": [
+            0,
+            0,
+            2,
+            32
+          ]
+        },
+        {
+          "generated_crop": [
+            34,
+            0,
+            54,
+            308
+          ],
+          "native_destination": [
+            4,
+            0,
+            6,
+            32
+          ]
+        }
+      ]
+    },
+    {
+      "name": "crossing_h",
+      "atlas_cell": [
+        0,
+        627,
+        314,
+        940
+      ],
+      "background": "road",
+      "strokes": [
+        {
+          "generated_crop": [
+            2,
+            29,
+            314,
+            97
+          ],
+          "native_destination": [
+            0,
+            3,
+            32,
+            10
+          ]
+        },
+        {
+          "generated_crop": [
+            2,
+            184,
+            314,
+            252
+          ],
+          "native_destination": [
+            0,
+            19,
+            32,
+            26
+          ]
+        }
+      ]
+    },
+    {
+      "name": "crossing_v",
+      "atlas_cell": [
+        314,
+        627,
+        627,
+        940
+      ],
+      "background": "road",
+      "strokes": [
+        {
+          "generated_crop": [
+            35,
+            0,
+            103,
+            306
+          ],
+          "native_destination": [
+            3,
+            0,
+            10,
+            32
+          ]
+        },
+        {
+          "generated_crop": [
+            189,
+            0,
+            257,
+            306
+          ],
+          "native_destination": [
+            19,
+            0,
+            26,
+            32
+          ]
+        }
+      ]
+    },
+    {
+      "name": "crossing_main_e",
+      "atlas_cell": [
+        627,
+        627,
+        940,
+        940
+      ],
+      "background": "road_main",
+      "strokes": [
+        {
+          "generated_crop": [
+            264,
+            7,
+            292,
+            73
+          ],
+          "native_destination": [
+            27,
+            1,
+            30,
+            7
+          ]
+        },
+        {
+          "generated_crop": [
+            264,
+            116,
+            292,
+            181
+          ],
+          "native_destination": [
+            27,
+            13,
+            30,
+            19
+          ]
+        },
+        {
+          "generated_crop": [
+            264,
+            229,
+            292,
+            298
+          ],
+          "native_destination": [
+            27,
+            25,
+            30,
+            31
+          ]
+        }
+      ]
+    },
+    {
+      "name": "crossing_main_n",
+      "atlas_cell": [
+        940,
+        627,
+        1254,
+        940
+      ],
+      "background": "road_main",
+      "strokes": [
+        {
+          "generated_crop": [
+            8,
+            16,
+            72,
+            44
+          ],
+          "native_destination": [
+            1,
+            2,
+            7,
+            5
+          ]
+        },
+        {
+          "generated_crop": [
+            124,
+            16,
+            188,
+            44
+          ],
+          "native_destination": [
+            13,
+            2,
+            19,
+            5
+          ]
+        },
+        {
+          "generated_crop": [
+            240,
+            16,
+            304,
+            44
+          ],
+          "native_destination": [
+            25,
+            2,
+            31,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "name": "crossing_main_s",
+      "atlas_cell": [
+        0,
+        940,
+        314,
+        1254
+      ],
+      "background": "road_main",
+      "strokes": [
+        {
+          "generated_crop": [
+            11,
+            262,
+            75,
+            290
+          ],
+          "native_destination": [
+            1,
+            27,
+            7,
+            30
+          ]
+        },
+        {
+          "generated_crop": [
+            127,
+            262,
+            191,
+            290
+          ],
+          "native_destination": [
+            13,
+            27,
+            19,
+            30
+          ]
+        },
+        {
+          "generated_crop": [
+            243,
+            262,
+            307,
+            290
+          ],
+          "native_destination": [
+            25,
+            27,
+            31,
+            30
+          ]
+        }
+      ]
+    },
+    {
+      "name": "crossing_main_w",
+      "atlas_cell": [
+        314,
+        940,
+        627,
+        1254
+      ],
+      "background": "road_main",
+      "strokes": [
+        {
+          "generated_crop": [
+            21,
+            6,
+            50,
+            70
+          ],
+          "native_destination": [
+            2,
+            1,
+            5,
+            7
+          ]
+        },
+        {
+          "generated_crop": [
+            21,
+            118,
+            50,
+            182
+          ],
+          "native_destination": [
+            2,
+            13,
+            5,
+            19
+          ]
+        },
+        {
+          "generated_crop": [
+            22,
+            229,
+            50,
+            298
+          ],
+          "native_destination": [
+            2,
+            25,
+            5,
+            31
+          ]
+        }
+      ]
+    }
+  ],
+  "east_curb": {
+    "base": "sidewalk",
+    "donor": "sidewalk_kerb_w",
+    "native_crop": [
+      0,
+      0,
+      6,
+      32
+    ],
+    "destination": [
+      30,
+      0,
+      32,
+      32
+    ]
+  }
+}

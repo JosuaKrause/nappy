@@ -15,6 +15,42 @@ guarded [`archive/rejected-graphics/`](archive/rejected-graphics/) archive.
 Keep the original filename. It carries the run's timestamp, seed and commit, which is most of what
 makes the file worth having.
 
+## Graphics recipes
+
+The scripts, retained inputs and regeneration commands for illustrated graphics and reviews are
+indexed here. Run Python recipes through the repository's locked `uv` environment. Image generation
+can produce different pixels on another call; extraction and assembly use the retained output.
+
+| Graphics or review | Recipe and inputs |
+| --- | --- |
+| P1's preserved pushing family and stroller artwork | [Comic rig generation and registration](comic-rig-2026-09-12/GENERATION.md) |
+| P2's three-pose pushing walk and grounded contact | [Generation, registration and GIF recipe](comic-pushing-strides-2026-09-12/GENERATION.md) |
+| Carrying redraws and identity comparison | [Carrying generation and registration](comic-carrying-redraw-2026-09-12/GENERATION.md) |
+| Four named carrying versions | [Comparison script](comic-carrying-redraw-2026-09-12/versions/make-comparison.py) and [version inputs](comic-carrying-redraw-2026-09-12/versions/README.md) |
+| D's preserved two-frame walking GIF and rollout | [Recipe, timing and source manifest](comic-carrying-redraw-2026-09-12/rollout/README.md) |
+| E's three-pose carrying walk and GIF | [Generation, registration and safe rebuild commands](comic-carrying-strides-2026-09-12/GENERATION.md) |
+| F's whole-figure carrying correction and GIF | [Source review, generation, registration and rebuild commands](comic-carrying-hip-motion-2026-09-12/GENERATION.md) |
+| Stroller contact and grounded scale in PNG and SVG | [Assembly script, placements and regeneration commands](pram-contact-2026-09-12/MEASUREMENTS.md) |
+| Trees, bollard and rooftop equipment | [City prop generation and registration](comic-city-props-2026-09-12/GENERATION.md) |
+| Garbage and litter | [Comic prop generation and registration](comic-props-2026-09-12/GENERATION.md) |
+| Outdoor ground tiles | [Tile generation and registration](style-transfer-tiles-2026-09-12/GENERATION.md) |
+| Sidewalk material comparison | [Source pairs, transfer, registration and neighbor panels](sidewalk-continuity-2026-09-12/GENERATION.md) |
+| Sidewalk join comparison in generated layouts | [Tile selection, frozen inputs and street assemblies](sidewalk-layout-review-2026-09-12/GENERATION.md) |
+| Shared ground bases and transparent details | [Frozen artwork, stencils and component assembly](layered-ground-2026-09-12/GENERATION.md) |
+| Accepted paving and complete boundary joints | [Frozen inputs, exact pixel-copy registration and repeat review](paving-boundary-joints-2026-09-12/GENERATION.md) |
+| Stoop bottom step face | [Copied brown band, vertical compression and final paving verification](stoop-bottom-face-2026-09-12/GENERATION.md) |
+| Shared damage variations across floor materials | [Stencil extraction and runtime atlas review](shared-damage-2026-09-12/GENERATION.md) |
+| Stroller travel-direction assignment | [Final visual contract, frozen inputs and eight-facing review](stroller-view-assignment-2026-09-12/GENERATION.md) |
+| Northeast/northwest stroller hand contact | [Continuous placement adjustment and frozen three-pose comparison](stroller-diagonal-contact-2026-09-12/GENERATION.md) |
+| Stroller wheel donor extraction | [NE donor pixels and exact replacement bounds](stroller-wheel-mirror-2026-09-12/GENERATION.md) |
+| Southeast/southwest stroller wheel arrangement | [Final wheel assignment from frozen inputs and paired view comparison](stroller-southern-wheel-swap-2026-09-12/GENERATION.md) |
+| Muted quiet-square paving | [Generation prompt, raw image and repeat-neighbor registration](quiet-square-2026-09-12/GENERATION.md) |
+| Muted plaza paving | [Generation prompt, raw image and repeat-neighbor registration](plaza-paving-2026-09-12/GENERATION.md) |
+| Composed streets and varied grass in generated layouts | [In-engine composition and repeatable layout review](layered-ground-layout-2026-09-12/GENERATION.md) |
+| Forest and park ground in the actual Main scene | [Runtime texture and cell probe](grass-runtime-2026-09-12/GENERATION.md) |
+| Player generation-reference SVG family | [Authoring sources, runtime pairings and frame roles](../graphics-creation/player/README.md) |
+| Logo, social card and exported icons | [Identity generation and registration](comic-identity-2026-09-12/GENERATION.md) |
+
 ## What is here
 
 | file | what it is | referenced by |

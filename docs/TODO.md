@@ -33,8 +33,9 @@ its linked people, vehicle/animal and environment inventories. The source-art re
 pictures to their actual runtime consumers. The crowd walkers and the event people, animals and
 riders are bound, through the shared `EightDirection` selector every family below extends
 (`DECISIONS.md`, M108, the crowd walkers; M108, the event people); the gunman and the mouse stay on
-their single side picture by the choices recorded there. Every living thing that moves strides,
-two frames per view (`DECISIONS.md`, M108, the walkers' stride; M108, the event strides), the
+their single side picture by the choices recorded there. Moving families use two frames per view
+(`DECISIONS.md`, M108, the walkers' stride; M108, the event strides), with three mother
+poses in each of the pushing and carrying open/together/opposite-open/together cycles. The
 café sitters lean and the busker strums on a timer; whether a standing guard shifts is the
 player's to say, and until then he keeps one frame.
 - [ ] **Cars bob on their wheels.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "cars
@@ -84,7 +85,9 @@ build could not decide alone.
 
 Follows M108, eight-direction entity graphics. Use the approved SVG-first workflow in
 [VISUALS.md](VISUALS.md) and the illustrated-png skill. The supplied diagonal urban and cardinal
-gameplay references define style only; each SVG defines content, geometry and placement.
+gameplay references define the comic drawing style; each SVG defines the subject and functional
+placement. PLAYTEST-64 requires transferring the idea, with redrawn forms and expressive ink
+and shadow shapes, rather than copying the primitive drawing and adding surface texture.
 **Every PNG asset must have a corresponding SVG asset, authored and reviewed first.** This is
 a permanent authoring requirement, not only a conversion step. Audit existing PNG-only assets
 and author their source SVG before generating a replacement; never backfill an SVG from a PNG
@@ -107,15 +110,19 @@ findings supported by the conversion and review.
       Record SVG review and generation provenance so ordering is reviewable; reject PNG-only
       additions instead of accepting a later placeholder SVG.
 - [ ] Transfer the remaining entity SVGs and every directional/animation/state layer. The player
-      rig's generation records are in `DECISIONS.md` under Eight-direction style transfer and
-      M109, the carrying mother as one family. Preserve native
-      canvases and exact SVG alpha, and keep tintable body/trim separation and authored identities.
+      rig's generation records are in `DECISIONS.md` under Eight-direction style transfer,
+      M109, the carrying mother as one family, and M109, named carrying redraws. Preserve native
+      canvases and functional anchors, and keep tintable body/trim separation and authored identities.
+      Preserve the redrawn silhouette and true transparency instead of restoring primitive SVG alpha.
       Save original generation outputs, exact prompts, reference roles and reproducible extraction
       and registration inputs. Inspect detail and animation consistency at gameplay scale.
-- [ ] Transfer terrain, building tiles, props, closures, checkpoint structures and whole-street
+- [ ] Transfer interior terrain, building tiles, remaining props, closures, checkpoint structures and whole-street
       scenes, retaining tile seams, anchors, transparent gaps, tint behavior and repeated-part
       alignment. Convert prepared assets too without prematurely binding their gameplay. The
       garbage/litter generation record is in `DECISIONS.md` under M109, litter and garbage materials.
+      The outdoor ground family record is under M109, outdoor tile materials.
+      The tree, bollard, ground-bed and roof-equipment record is under M109, trees and rooftop
+      equipment as comic drawings. Their source mappings identify the transferred props.
 - [ ] Convert UI, cue and identity SVGs while preserving their symbols, text, legibility and
       exact geometry. Keep code-drawn graphics and shader behavior under their current owners.
 - [ ] Audit all loading paths: shared drawing helpers, direct textures, TileSets, scenes/resources,
@@ -182,7 +189,7 @@ anchors and review sheets belong to `GRAPHICS.md`; runtime use must be verified 
 
 The impact-crater decals `assets/props/impact_crater_1x1.svg`,
 `impact_crater_2x2.svg` and `impact_crater_3x3.svg` (32×32, 64×64 and 96×96 footprints) are the
-finale's: the marks its off-screen explosions leave on the street. M102 also owns the prepared `assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b}.svg`
+finale's: the marks its off-screen explosions leave on the street. M102 also owns the `assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b,c}.svg`
 set, documented in GRAPHICS.md and bound by the playable apartment's carrying rig.
 
 **A milestone still holds either drawings or not**, so that ordering one never parks work that needs
@@ -712,7 +719,7 @@ milestone is their owner. `burnt_out_car.svg` with its vertical sibling, `barric
 and the `abduction` row are the masked men in vans; `guard_standing.svg` and `guard_lunging.svg`
 are masked men on foot; `flame.svg` is the staircase fire; `sound_pulse.svg` is the arc an
 off-screen explosion draws, once M100's sound lines bind it. The player herself is drawn:
-`assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b}.svg` are the mother's ten sources with
+`assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b,c}.svg` are the mother's fifteen sources with
 the baby in her arms and no pram, on the same canvases and feet anchors as the walking set, so
 `Stroller` can swap them in facing for facing. Prepared drawings, each listed with its contract in
 `GRAPHICS.md`: the hallway with its flashing windows and its floor edge that implies the apartment doors,

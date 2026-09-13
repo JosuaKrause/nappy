@@ -1,0 +1,48 @@
+{
+  "logo.svg": {
+    "png": "assets/logo.png",
+    "canvas": [
+      1280,
+      640
+    ],
+    "stroller_region": [
+      492,
+      30,
+      788,
+      325
+    ]
+  },
+  "icon_stroller.svg": [
+    {
+      "png": "assets/icon_stroller_640.png",
+      "canvas": [
+        640,
+        640
+      ],
+      "anchor": [
+        320,
+        320
+      ]
+    },
+    {
+      "png": "assets/icon_stroller_1280x640.png",
+      "canvas": [
+        1280,
+        640
+      ],
+      "anchor": [
+        640,
+        320
+      ]
+    }
+  ],
+  "social-card.png": {
+    "derived_from": "assets/logo.png",
+    "canvas": [
+      1280,
+      640
+    ],
+    "mode": "RGB",
+    "background": "white"
+  }
+}

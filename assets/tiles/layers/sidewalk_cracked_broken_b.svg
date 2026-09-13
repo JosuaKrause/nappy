@@ -1,0 +1,12 @@
+<!-- Sidewalk degradation level 3, pattern B. A chipped slab exposes dark underlay and weeds. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" fill="#8b8478"/>
+  <path d="M0 15H32 M15 0V15 M7 16V32 M23 16V32" stroke="#7a7469" stroke-width="1"/>
+  <path d="M27 3L22 8L25 14L18 18L21 26L16 31" fill="none" stroke="#514d4d" stroke-width="1.2"/>
+  <g transform="translate(1 4)">
+    <path d="M4 10 L7 10 L8 7 L11 8 L13 6 L14 10 L17 11 L15 14 L17 16 L14 17 L13 21 L10 20 L8 22 L7 19 L4 18 L5 15 L3 14 Z" fill="#494749"/>
+    <path d="M4 10 L7 10 M13 6 L14 10 M8 22 L10 20" fill="none" stroke="#b0a28a" stroke-width="0.7"/>
+    <path d="M2 17 L3 18 L2 19 Z M16 19 L18 18 L18 20 Z" fill="#a89b86"/>
+  </g>
+  <path d="M8 17L7 12 M11 17L14 12" stroke="#65854c" stroke-width="1"/>
+</svg>

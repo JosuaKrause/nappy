@@ -14,16 +14,42 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-- **Compare the mother carrying the baby with the mother pushing the stroller.** Use ordinary
-  gameplay for pushing and `--start-escape floor:2` for carrying; walk and turn in both. Does she
-  remain recognizably the same woman, with stable hair, clothes and proportions across directions
-  and gait frames? The native and enlarged comparisons in
-  `evidence/style-transfer-player-family-2026-09-12/registered/` show both states side by side;
-  check the result at gameplay size too. `--svg` provides the original source comparison.
+- **Compare damaged road, sidewalk and alley tiles.** Do the shared crack and hole variations
+  sit naturally over each material, without carrying pieces of another floor's slab grid?
+  The [damage atlas review](evidence/shared-damage-2026-09-12/GENERATION.md) shows every variation
+  over each supported base.
+
+- **Look at a park and a wooded calm area while walking past them.** Do the sparse grass clumps give variety while the
+  soft base stays quiet enough to keep people and routes clear? Check neighboring cells and
+  revisit the same seed to compare their stable arrangement.
+
+- **Look at café seating and roadworks along both street axes.** Each café sitter should
+  face its own table, including the right-hand chair and the vertical arrangement. Vertical
+  red barriers should read as a narrow continuous barrier, and a horizontal alley should be
+  closed across its short mouth. The original findings are in [PLAYTEST-64](playtests/PLAYTEST-64.md).
+
+- **Walk past a street tree with the stroller overlapping its bed.** The paving bed should
+  stay underneath her and the pram while the trunk and canopy retain their upright sorting.
+  Check the location pictured in [PLAYTEST-64](playtests/PLAYTEST-64.md), or any street-tree run.
+
+- **Look at trees, bollards and rooftop equipment at gameplay size.** Do the inked foliage,
+  water tank, HVAC units, skylights, vent and ducts fit the comic ground while staying readable?
+  Check both tree shapes and the roof variants in
+  `evidence/comic-city-props-2026-09-12/comparisons/`; `--svg` shows their source concepts.
+
+- **Compare pushing and carrying identity during a state change.** Do they remain the same woman?
+  Use `--start-escape` for carrying. Exact native
+  and enlarged walking GIFs are linked from the
+  [recipe index](evidence/README.md#graphics-recipes); they are sprite assemblies, not live captures.
 
 - **Look at the garbage sacks and small litter from day 10.** Do the standalone sacks and
   piles look like the same material, and does the small ground litter remain quiet and readable?
-  `evidence/style-transfer-litter-2026-09-12/registered/` compares the SVG and PNG sources.
+  `evidence/comic-props-2026-09-12/comparisons/` compares the SVG and PNG sources; use the
+  `unmasked` sheets for the current generated silhouettes.
+
+- **Compare the comic stroller identity mark at icon and logo sizes.** Does the cream stroller
+  remain clear against its navy plate, and does the redrawn symbol fit the preserved wordmark?
+  `evidence/comic-identity-2026-09-12/comparisons/` shows the logo and both export sizes.
 
 - **Find a crash and walk at it.** The boot log names the street it sealed — `closed: accident`
   with the segment beside it — or press `3` and look for the two circles. Three questions, and the

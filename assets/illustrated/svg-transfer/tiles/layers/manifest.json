@@ -1,0 +1,273 @@
+{
+  "version": 1,
+  "tile_size": 32,
+  "bases": {
+    "sidewalk": "sidewalk_base.png",
+    "asphalt": "asphalt_base.png",
+    "alley": "alley_base.png",
+    "grass": "grass_base.png"
+  },
+  "source_bases": {
+    "0": "asphalt",
+    "1": "asphalt",
+    "2": "asphalt",
+    "3": "asphalt",
+    "4": "asphalt",
+    "5": "asphalt",
+    "6": "asphalt",
+    "7": "sidewalk",
+    "8": "sidewalk",
+    "9": "sidewalk",
+    "10": "sidewalk",
+    "11": "sidewalk",
+    "12": "grass",
+    "14": "alley",
+    "17": "grass",
+    "21": "asphalt",
+    "22": "asphalt",
+    "23": "asphalt",
+    "24": "asphalt",
+    "25": "asphalt",
+    "26": "sidewalk",
+    "27": "sidewalk",
+    "28": "sidewalk",
+    "29": "sidewalk",
+    "36": "asphalt",
+    "37": "asphalt",
+    "38": "asphalt",
+    "39": "asphalt",
+    "40": "asphalt",
+    "41": "asphalt",
+    "42": "asphalt",
+    "43": "asphalt",
+    "44": "asphalt",
+    "45": "asphalt",
+    "46": "sidewalk",
+    "47": "sidewalk",
+    "48": "sidewalk",
+    "49": "sidewalk",
+    "50": "sidewalk",
+    "51": "sidewalk",
+    "52": "alley",
+    "53": "alley",
+    "54": "alley",
+    "55": "alley",
+    "56": "alley",
+    "57": "alley"
+  },
+  "components": {
+    "curbstone": "curbstone.png",
+    "main_edge_red": "main_edge_red.png",
+    "yellow_half_line": "yellow_half_line.png",
+    "yellow_main_line": "yellow_main_line.png",
+    "crosswalk": "crosswalk.png",
+    "main_crosswalk": "main_crosswalk.png",
+    "sidewalk_cracked_hairline_a": "sidewalk_cracked_hairline_a.png",
+    "sidewalk_cracked_hairline_b": "sidewalk_cracked_hairline_b.png",
+    "sidewalk_cracked_cracked_a": "sidewalk_cracked_cracked_a.png",
+    "sidewalk_cracked_cracked_b": "sidewalk_cracked_cracked_b.png",
+    "sidewalk_cracked_broken_a": "sidewalk_cracked_broken_a.png",
+    "sidewalk_cracked_broken_b": "sidewalk_cracked_broken_b.png",
+    "road_cracked_hairline_a": "road_cracked_hairline_a.png",
+    "road_cracked_hairline_b": "road_cracked_hairline_b.png",
+    "road_cracked_cracked_a": "road_cracked_cracked_a.png",
+    "road_cracked_cracked_b": "road_cracked_cracked_b.png",
+    "road_cracked_broken_a": "road_cracked_broken_a.png",
+    "road_cracked_broken_b": "road_cracked_broken_b.png",
+    "alley_cracked_hairline_a": "alley_cracked_hairline_a.png",
+    "alley_cracked_hairline_b": "alley_cracked_hairline_b.png",
+    "alley_cracked_cracked_a": "alley_cracked_cracked_a.png",
+    "alley_cracked_cracked_b": "alley_cracked_cracked_b.png",
+    "alley_cracked_broken_a": "alley_cracked_broken_a.png",
+    "alley_cracked_broken_b": "alley_cracked_broken_b.png",
+    "grass_feature_a": "grass_feature_a.png",
+    "grass_feature_b": "grass_feature_b.png",
+    "grass_feature_c": "grass_feature_c.png"
+  },
+  "damage_pools": {
+    "hairline": [
+      "sidewalk_cracked_hairline_a",
+      "sidewalk_cracked_hairline_b",
+      "road_cracked_hairline_a",
+      "road_cracked_hairline_b",
+      "alley_cracked_hairline_a",
+      "alley_cracked_hairline_b"
+    ],
+    "cracked": [
+      "sidewalk_cracked_cracked_a",
+      "sidewalk_cracked_cracked_b",
+      "road_cracked_cracked_a",
+      "road_cracked_cracked_b",
+      "alley_cracked_cracked_a",
+      "alley_cracked_cracked_b"
+    ],
+    "broken": [
+      "sidewalk_cracked_broken_a",
+      "sidewalk_cracked_broken_b",
+      "road_cracked_broken_a",
+      "road_cracked_broken_b",
+      "alley_cracked_broken_a",
+      "alley_cracked_broken_b"
+    ]
+  },
+  "source_damage_types": {
+    "40": "hairline", "41": "hairline", "42": "cracked", "43": "cracked", "44": "broken", "45": "broken",
+    "46": "hairline", "47": "hairline", "48": "cracked", "49": "cracked", "50": "broken", "51": "broken",
+    "52": "hairline", "53": "hairline", "54": "cracked", "55": "cracked", "56": "broken", "57": "broken"
+  },
+  "source_layers": {
+    "8": [
+      {
+        "component": "curbstone",
+        "rotation_degrees": 0
+      }
+    ],
+    "9": [
+      {
+        "component": "curbstone",
+        "rotation_degrees": 180
+      }
+    ],
+    "10": [
+      {
+        "component": "curbstone",
+        "rotation_degrees": 90
+      }
+    ],
+    "11": [
+      {
+        "component": "curbstone",
+        "rotation_degrees": 270
+      }
+    ],
+    "26": [
+      {
+        "component": "curbstone",
+        "rotation_degrees": 0
+      },
+      {
+        "component": "main_edge_red",
+        "rotation_degrees": 0
+      }
+    ],
+    "27": [
+      {
+        "component": "curbstone",
+        "rotation_degrees": 180
+      },
+      {
+        "component": "main_edge_red",
+        "rotation_degrees": 180
+      }
+    ],
+    "28": [
+      {
+        "component": "curbstone",
+        "rotation_degrees": 90
+      },
+      {
+        "component": "main_edge_red",
+        "rotation_degrees": 90
+      }
+    ],
+    "29": [
+      {
+        "component": "curbstone",
+        "rotation_degrees": 270
+      },
+      {
+        "component": "main_edge_red",
+        "rotation_degrees": 270
+      }
+    ],
+    "1": [
+      {
+        "component": "yellow_half_line",
+        "rotation_degrees": 90
+      }
+    ],
+    "2": [
+      {
+        "component": "yellow_half_line",
+        "rotation_degrees": 270
+      }
+    ],
+    "3": [
+      {
+        "component": "yellow_half_line",
+        "rotation_degrees": 0
+      }
+    ],
+    "4": [
+      {
+        "component": "yellow_half_line",
+        "rotation_degrees": 180
+      }
+    ],
+    "22": [
+      {
+        "component": "yellow_main_line",
+        "rotation_degrees": 90
+      }
+    ],
+    "23": [
+      {
+        "component": "yellow_main_line",
+        "rotation_degrees": 270
+      }
+    ],
+    "24": [
+      {
+        "component": "yellow_main_line",
+        "rotation_degrees": 0
+      }
+    ],
+    "25": [
+      {
+        "component": "yellow_main_line",
+        "rotation_degrees": 180
+      }
+    ],
+    "6": [
+      {
+        "component": "crosswalk",
+        "rotation_degrees": 0
+      }
+    ],
+    "5": [
+      {
+        "component": "crosswalk",
+        "rotation_degrees": 90
+      }
+    ],
+    "36": [
+      {
+        "component": "main_crosswalk",
+        "rotation_degrees": 0
+      }
+    ],
+    "37": [
+      {
+        "component": "main_crosswalk",
+        "rotation_degrees": 180
+      }
+    ],
+    "38": [
+      {
+        "component": "main_crosswalk",
+        "rotation_degrees": 270
+      }
+    ],
+    "39": [
+      {
+        "component": "main_crosswalk",
+        "rotation_degrees": 90
+      }
+    ]
+  },
+  "grass_features": [
+    "grass_feature_a",
+    "grass_feature_b",
+    "grass_feature_c"
+  ]
+}

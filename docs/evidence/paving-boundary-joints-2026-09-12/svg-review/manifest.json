@@ -1,0 +1,12 @@
+{
+	"engine": "4.7.2-stable (official)",
+	"svg_hashes": {
+		"res://assets/tiles/alley.svg": "308707e9a02ab38ef1b13ff0d1d494089b10db678a59f81932b4041db2e4b592",
+		"res://assets/tiles/courtyard.svg": "5666b28f0873f592f5fd966c609a3986d8c6799109f28b549c38c53f0758ee0a",
+		"res://assets/tiles/plaza.svg": "4cb42fbb66c9911bd95b94cb452159049a6a615ea18067a21c193a1ed6805d23",
+		"res://assets/tiles/precinct.svg": "b0279d1e49762be1aad0374b98814ae976c2ff561a31471389a4a2ca42a1c8a0",
+		"res://assets/tiles/quiet_square.svg": "c5a64ad785b197d6f8af5da13341221d22064cfcab097a184505d47f43bd2ebd",
+		"res://assets/tiles/sidewalk.svg": "67c4590729fbf0928ba5fc66d2ec75b04730383d4ed8c708beeda633ca6df7b7",
+		"res://assets/tiles/stoop.svg": "d7a1d98ef46c79f0614d427cca9a4d80c62e25dfe6c7df1ed7ff79bfb8946dc0"
+	}
+}

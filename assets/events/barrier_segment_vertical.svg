@@ -1,0 +1,10 @@
+<!-- One upright projection of a red-and-white roadworks panel. Repeated down an east-west
+     street, it keeps the event barrier's hazard palette while showing its narrow end-on view. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="14" height="26" viewBox="0 0 14 26" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <rect x="2" y="0" width="10" height="20" fill="#e0d8c4"/>
+  <polygon points="0,0 4,0 14,15 14,20 10,20" fill="#c4503c"/>
+  <polygon points="0,10 0,15 4,20 8,20" fill="#c4503c"/>
+  <rect x="2" y="20" width="10" height="2" fill="#221f28"/>
+  <rect x="4" y="22" width="3" height="4" fill="#6b6357"/>
+  <rect x="7" y="22" width="3" height="4" fill="#6b6357"/>
+</svg>

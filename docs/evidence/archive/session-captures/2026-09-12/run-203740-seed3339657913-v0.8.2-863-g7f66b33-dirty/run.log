@@ -1,0 +1,55 @@
+nappy run log  2026-09-12T20:37:40  version v0.8.2-863-g7f66b33-dirty
+
+day 1  act 1  run seed 3339657913  city seed 3339657913  length 180.0s  invincible
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  plan     closed: roadworks v(4,5)
+   0.0  plan     calm: 2 forest, 3 courtyard, 3 quiet_square
+   0.0  plan     events: alley_mouse x4, burst_water_main x24, cafe_tables x46, car_accident x23, cat_dash x8, chatting_mother x2, delivery_van x62, dog_walker x21, fallen_tree x2, homeless_yeller x15, leaf_blower x12, loose_dog x20, market_stall x50, moving_van x42, pigeon_flock x3, scaffolding x22, skip x23
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  crowd    walked into somebody at (78,84) | exc 0, in 0.0/s (crowd 30.0, events 0.0), sleep 0
+   0.0  path     onto the corridor at (74,83), after 0.0s off it
+   0.0  cross    stepped into the road at (73,83), mid-block
+   0.0  near     homeless_yeller at (68,71), 209px, exc 0, in 0.0/s (crowd 4.0, events 0.9), sleep 2
+   0.0  path     off the corridor at (72,73), after 0.0s on it
+   0.0  near     homeless_yeller at (69,71), 115px, exc 0, in 0.0/s (crowd 3.7, events 11.9), sleep 3
+   0.0  turn     doubled back 180°
+   0.0  crowd    a car sounded its horn at her in the road at (72,68) | exc 0, in 0.0/s (crowd 0.0, events 1.7), sleep 4
+   0.0  cue      the mark over her head: soon for 0.0s (1.6s of it on the road) | a car, and she is in the road
+   0.0  path     onto the corridor at (69,70), after 0.0s off it
+   0.0  near     homeless_yeller at (65,71), 62px, exc 0, in 0.0/s (crowd 0.0, events 6.8), sleep 3
+   0.0  near     delivery_van at (63,74), 150px, exc 0, in 0.0/s (crowd 0.0, events 6.3), sleep 3
+   0.0  near     homeless_yeller at (64,71), 34px, exc 0, in 0.0/s (crowd 0.6, events 3.6), sleep 3
+   0.0  path     off the corridor at (61,70), after 0.0s on it
+   0.0  near     burst_water_main at (59,66), 120px, exc 0, in 0.0/s (crowd 3.2, events 10.8), sleep 4
+   0.0  cross    stepped into the road at (59,69), mid-block
+   0.0  near     burst_water_main at (59,66), 65px, exc 0, in 0.0/s (crowd 0.0, events 4.7), sleep 5
+   0.0  path     onto the corridor at (47,67), after 0.0s off it
+   0.0  crowd    a car sounded its horn at her in the road at (45,64) | exc 0, in 0.0/s (crowd 4.8, events 0.0), sleep 7
+   0.0  cross    stepped into the road at (45,64), mid-block
+   0.0  crowd    a car sounded its horn at her in the road at (44,59) | exc 0, in 0.0/s (crowd 5.4, events 0.0), sleep 8
+   0.0  cue      the mark over her head: soon for 0.0s (2.9s of it on the road) | a car, and she is in the road
+   0.0  near     homeless_yeller at (45,52), 209px, exc 0, in 0.0/s (crowd 3.7, events 2.0), sleep 8
+   0.0  ahead    loose_dog comes at her from 0px in front of her at (42,57)
+   0.0  near     loose_dog (telegraph) at (42,51), 139px, exc 0, in 0.0/s (crowd 0.0, events 10.4), sleep 8
+   0.0  near     loose_dog (telegraph) at (42,53), 75px, exc 0, in 0.0/s (crowd 0.0, events 13.6), sleep 8
+   0.0  near     homeless_yeller at (45,52), 114px, exc 0, in 0.0/s (crowd 0.0, events 13.9), sleep 8
+   0.0  near     loose_dog (telegraph) at (42,53), 41px, exc 0, in 0.0/s (crowd 1.5, events 14.4), sleep 8
+   0.0  near     loose_dog (telegraph) at (42,54), 22px, exc 0, in 0.0/s (crowd 2.9, events 14.4), sleep 8
+   0.0  near     homeless_yeller at (45,53), 62px, exc 0, in 0.0/s (crowd 0.0, events 11.6), sleep 9
+   0.0  path     off the corridor at (44,47), after 0.0s on it
+   0.0  near     leaf_blower at (43,41), 199px, exc 0, in 0.0/s (crowd 0.0, events 0.1), sleep 10
+   0.0  near     leaf_blower at (43,41), 109px, exc 0, in 0.0/s (crowd 0.0, events 9.6), sleep 10
+   0.0  path     onto the corridor at (48,43), after 0.0s off it
+   0.0  path     off the corridor at (51,41), after 0.0s on it
+   0.0  near     alley_mouse (telegraph) at (51,36), 59px, exc 0, in 0.0/s (crowd 0.0, events 0.3), sleep 12
+   0.0  near     alley_mouse (telegraph) at (51,36), 32px, exc 0, in 0.0/s (crowd 0.0, events 7.7), sleep 12
+   0.0  near     alley_mouse at (50,36), 17px, exc 0, in 0.0/s (crowd 0.0, events 9.0), sleep 12
+   0.0  near     scaffolding at (52,33), 119px, exc 0, in 0.0/s (crowd 0.0, events 8.7), sleep 12
+   0.0  near     leaf_blower at (51,29), 199px, exc 0, in 0.0/s (crowd 0.0, events 0.2), sleep 12
+   0.0  near     scaffolding at (52,33), 65px, exc 0, in 0.0/s (crowd 0.0, events 7.8), sleep 13
+   0.0  near     skip at (52,29), 119px, exc 0, in 0.0/s (crowd 0.0, events 8.5), sleep 13
+   0.0  near     leaf_blower at (51,29), 108px, exc 0, in 0.0/s (crowd 0.0, events 8.1), sleep 13
+   0.0  cross    stepped into the road at (50,31), mid-block
+   0.0  ahead    cat_dash crosses 332px in front of her at (46,29)
+   0.0  path     onto the corridor at (44,27), after 0.0s off it
+   0.0  shot     asked for a picture at (42,26) | exc 0, sleep 13 | playing

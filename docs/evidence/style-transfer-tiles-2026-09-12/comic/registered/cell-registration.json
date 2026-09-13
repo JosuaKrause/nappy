@@ -1,0 +1,592 @@
+[
+  {
+    "name": "road_line_e",
+    "sheet": "generated-01-layout.png",
+    "crop": [
+      3,
+      3,
+      311,
+      311
+    ]
+  },
+  {
+    "name": "road_line_n",
+    "sheet": "generated-01-layout.png",
+    "crop": [
+      317,
+      3,
+      624,
+      311
+    ]
+  },
+  {
+    "name": "road_line_s",
+    "sheet": "generated-01-layout.png",
+    "crop": [
+      630,
+      3,
+      937,
+      311
+    ]
+  },
+  {
+    "name": "road_line_w",
+    "sheet": "generated-01-layout.png",
+    "crop": [
+      943,
+      3,
+      1251,
+      311
+    ]
+  },
+  {
+    "name": "road_main_line_e",
+    "sheet": "generated-01-layout.png",
+    "crop": [
+      3,
+      317,
+      311,
+      624
+    ]
+  },
+  {
+    "name": "road_main_line_n",
+    "sheet": "generated-01-layout.png",
+    "crop": [
+      317,
+      317,
+      624,
+      624
+    ]
+  },
+  {
+    "name": "road_main_line_s",
+    "sheet": "generated-01-layout.png",
+    "crop": [
+      630,
+      317,
+      937,
+      624
+    ]
+  },
+  {
+    "name": "road_main_line_w",
+    "sheet": "generated-01-layout.png",
+    "crop": [
+      943,
+      317,
+      1251,
+      624
+    ]
+  },
+  {
+    "name": "crossing_h",
+    "sheet": "generated-01-layout.png",
+    "crop": [
+      3,
+      630,
+      311,
+      937
+    ]
+  },
+  {
+    "name": "crossing_v",
+    "sheet": "generated-01-layout.png",
+    "crop": [
+      317,
+      630,
+      624,
+      937
+    ]
+  },
+  {
+    "name": "crossing_main_e",
+    "sheet": "generated-01-layout.png",
+    "crop": [
+      630,
+      630,
+      937,
+      937
+    ]
+  },
+  {
+    "name": "crossing_main_n",
+    "sheet": "generated-01-layout.png",
+    "crop": [
+      943,
+      630,
+      1251,
+      937
+    ]
+  },
+  {
+    "name": "crossing_main_s",
+    "sheet": "generated-01-layout.png",
+    "crop": [
+      3,
+      943,
+      311,
+      1251
+    ]
+  },
+  {
+    "name": "crossing_main_w",
+    "sheet": "generated-01-layout.png",
+    "crop": [
+      317,
+      943,
+      624,
+      1251
+    ]
+  },
+  {
+    "name": "sidewalk",
+    "sheet": "generated-01-layout.png",
+    "crop": [
+      630,
+      943,
+      937,
+      1251
+    ]
+  },
+  {
+    "name": "sidewalk_kerb_e",
+    "sheet": "generated-01-layout.png",
+    "crop": [
+      943,
+      943,
+      1251,
+      1251
+    ]
+  },
+  {
+    "name": "sidewalk_kerb_n",
+    "sheet": "generated-02.png",
+    "crop": [
+      3,
+      3,
+      311,
+      311
+    ]
+  },
+  {
+    "name": "sidewalk_kerb_s",
+    "sheet": "generated-02.png",
+    "crop": [
+      317,
+      3,
+      624,
+      311
+    ]
+  },
+  {
+    "name": "sidewalk_kerb_w",
+    "sheet": "generated-02.png",
+    "crop": [
+      630,
+      3,
+      937,
+      311
+    ]
+  },
+  {
+    "name": "sidewalk_kerb_main_e",
+    "sheet": "generated-02.png",
+    "crop": [
+      943,
+      3,
+      1251,
+      311
+    ]
+  },
+  {
+    "name": "sidewalk_kerb_main_n",
+    "sheet": "generated-02.png",
+    "crop": [
+      3,
+      317,
+      311,
+      624
+    ]
+  },
+  {
+    "name": "sidewalk_kerb_main_s",
+    "sheet": "generated-02.png",
+    "crop": [
+      317,
+      317,
+      624,
+      624
+    ]
+  },
+  {
+    "name": "sidewalk_kerb_main_w",
+    "sheet": "generated-02.png",
+    "crop": [
+      630,
+      317,
+      937,
+      624
+    ]
+  },
+  {
+    "name": "alley_cracked_hairline_a",
+    "sheet": "generated-02.png",
+    "crop": [
+      943,
+      317,
+      1251,
+      624
+    ]
+  },
+  {
+    "name": "alley_cracked_hairline_b",
+    "sheet": "generated-02.png",
+    "crop": [
+      3,
+      630,
+      311,
+      937
+    ]
+  },
+  {
+    "name": "alley_cracked_cracked_a",
+    "sheet": "generated-02.png",
+    "crop": [
+      317,
+      630,
+      624,
+      937
+    ]
+  },
+  {
+    "name": "alley_cracked_cracked_b",
+    "sheet": "generated-02.png",
+    "crop": [
+      630,
+      630,
+      937,
+      937
+    ]
+  },
+  {
+    "name": "alley_cracked_broken_a",
+    "sheet": "generated-02.png",
+    "crop": [
+      943,
+      630,
+      1251,
+      937
+    ]
+  },
+  {
+    "name": "alley_cracked_broken_b",
+    "sheet": "generated-02.png",
+    "crop": [
+      3,
+      943,
+      311,
+      1251
+    ]
+  },
+  {
+    "name": "road_cracked_hairline_a",
+    "sheet": "generated-02.png",
+    "crop": [
+      317,
+      943,
+      624,
+      1251
+    ]
+  },
+  {
+    "name": "road_cracked_hairline_b",
+    "sheet": "generated-02.png",
+    "crop": [
+      630,
+      943,
+      937,
+      1251
+    ]
+  },
+  {
+    "name": "road_cracked_cracked_a",
+    "sheet": "generated-02.png",
+    "crop": [
+      943,
+      943,
+      1251,
+      1251
+    ]
+  },
+  {
+    "name": "road_cracked_cracked_b",
+    "sheet": "generated-03.png",
+    "crop": [
+      3,
+      3,
+      311,
+      311
+    ]
+  },
+  {
+    "name": "road_cracked_broken_a",
+    "sheet": "generated-03.png",
+    "crop": [
+      317,
+      3,
+      624,
+      311
+    ]
+  },
+  {
+    "name": "road_cracked_broken_b",
+    "sheet": "generated-03.png",
+    "crop": [
+      630,
+      3,
+      937,
+      311
+    ]
+  },
+  {
+    "name": "sidewalk_cracked_hairline_a",
+    "sheet": "generated-03.png",
+    "crop": [
+      943,
+      3,
+      1251,
+      311
+    ]
+  },
+  {
+    "name": "sidewalk_cracked_hairline_b",
+    "sheet": "generated-03.png",
+    "crop": [
+      3,
+      317,
+      311,
+      624
+    ]
+  },
+  {
+    "name": "sidewalk_cracked_cracked_a",
+    "sheet": "generated-03.png",
+    "crop": [
+      317,
+      317,
+      624,
+      624
+    ]
+  },
+  {
+    "name": "sidewalk_cracked_cracked_b",
+    "sheet": "generated-03.png",
+    "crop": [
+      630,
+      317,
+      937,
+      624
+    ]
+  },
+  {
+    "name": "sidewalk_cracked_broken_a",
+    "sheet": "generated-03.png",
+    "crop": [
+      943,
+      317,
+      1251,
+      624
+    ]
+  },
+  {
+    "name": "sidewalk_cracked_broken_b",
+    "sheet": "generated-03.png",
+    "crop": [
+      3,
+      630,
+      311,
+      937
+    ]
+  },
+  {
+    "name": "road",
+    "sheet": "generated-03.png",
+    "crop": [
+      317,
+      630,
+      624,
+      937
+    ]
+  },
+  {
+    "name": "road_main",
+    "sheet": "generated-03.png",
+    "crop": [
+      630,
+      630,
+      937,
+      937
+    ]
+  },
+  {
+    "name": "alley",
+    "sheet": "generated-03.png",
+    "crop": [
+      943,
+      630,
+      1251,
+      937
+    ]
+  },
+  {
+    "name": "alley_draft",
+    "sheet": "generated-03.png",
+    "crop": [
+      3,
+      943,
+      311,
+      1251
+    ]
+  },
+  {
+    "name": "bulkhead",
+    "sheet": "generated-03.png",
+    "crop": [
+      317,
+      943,
+      624,
+      1251
+    ]
+  },
+  {
+    "name": "courtyard",
+    "sheet": "generated-03.png",
+    "crop": [
+      630,
+      943,
+      937,
+      1251
+    ]
+  },
+  {
+    "name": "fence",
+    "sheet": "generated-03.png",
+    "crop": [
+      943,
+      943,
+      1251,
+      1251
+    ]
+  },
+  {
+    "name": "forest",
+    "sheet": "generated-04.png",
+    "crop": [
+      3,
+      3,
+      311,
+      311
+    ]
+  },
+  {
+    "name": "grass",
+    "sheet": "generated-04.png",
+    "crop": [
+      317,
+      3,
+      624,
+      311
+    ]
+  },
+  {
+    "name": "mountain",
+    "sheet": "generated-04.png",
+    "crop": [
+      630,
+      3,
+      937,
+      311
+    ]
+  },
+  {
+    "name": "plaza",
+    "sheet": "generated-04.png",
+    "crop": [
+      943,
+      3,
+      1251,
+      311
+    ]
+  },
+  {
+    "name": "precinct",
+    "sheet": "generated-04.png",
+    "crop": [
+      3,
+      317,
+      311,
+      624
+    ]
+  },
+  {
+    "name": "quiet_square",
+    "sheet": "generated-04.png",
+    "crop": [
+      317,
+      317,
+      624,
+      624
+    ]
+  },
+  {
+    "name": "sand",
+    "sheet": "generated-04.png",
+    "crop": [
+      630,
+      317,
+      937,
+      624
+    ]
+  },
+  {
+    "name": "scree",
+    "sheet": "generated-04.png",
+    "crop": [
+      943,
+      317,
+      1251,
+      624
+    ]
+  },
+  {
+    "name": "spoiled",
+    "sheet": "generated-04.png",
+    "crop": [
+      3,
+      630,
+      311,
+      937
+    ]
+  },
+  {
+    "name": "stoop",
+    "sheet": "generated-04.png",
+    "crop": [
+      317,
+      630,
+      624,
+      937
+    ]
+  },
+  {
+    "name": "water",
+    "sheet": "generated-04.png",
+    "crop": [
+      630,
+      630,
+      937,
+      937
+    ]
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "canvas": [36, 30],
+  "operation": "copy NE donor wheel and lower axle regions into aligned SE masks",
+  "source": {
+    "path": "docs/evidence/stroller-wheel-mirror-2026-09-12/frozen-inputs/pram_front_diagonal-before.png",
+    "sha256": "8e09e8447d9f4398d735b91542351b8e754f53903f8b4eb12a8f95800e160611"
+  },
+  "donor": {
+    "path": "assets/illustrated/svg-transfer/rig/pram_back_diagonal.png",
+    "sha256": "11f278b6c7e584d7d4250365ad808c9142e9a65f576ef68ebad7115a50ad5699"
+  },
+  "masks_half_open": [[5, 22, 13, 29], [13, 23, 23, 30], [24, 21, 32, 29]],
+  "fixed_contract": ["SE body above lower wheel attachments", "hood", "handle", "canvas", "bottom occupied row", "direction assignment"],
+  "runtime_output_sha256": "adb38bc65fd1b3850ec7e45847e0224a9bf26700b4afa899531b362378db322d",
+  "script_sha256": "e8914cc2668df618df17120cfffdb79cd1816b732983560cb8a0fcb499703fff",
+  "tool": "CPython 3.14.7 with Pillow 12.3.0"
+}
