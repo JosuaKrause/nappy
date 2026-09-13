@@ -187,7 +187,7 @@ what would make it a run's ending rather than a flag's. The record of what was b
 
 **[PLAYTEST-50.md](playtests/PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
-touch that shows only a colour change and no confirmation on a lost day's summary. The artwork
+touch that shows only a colour change at the moment it happens. The artwork
 review and the player's directional corrections are recorded in `DECISIONS.md`.
 
 **[PLAYTEST-49.md](playtests/PLAYTEST-49.md) is the session before it and it is the prioritisation above**, plus
@@ -409,55 +409,6 @@ that cannot spawn at an ahead-of-player row names the flock for the same reason.
       built, `tests/test_event_views.gd` or `tests/test_events.gd` holds that a flock's first
       drawn frame is never inside the view rect around her, and the M100 rig defect closes for
       this row with it.
-
----
-
-## M132 — The resistance speaks loud enough to be heard · asked for 2026-09-13
-
-> "the day text needs to be bigger to be able to be noticed and it should show also when dying
-> so if missed on the first try it can be seen on the second try. the in game note should
-> contain the same amount of info on what to do. note for a stranger contains less information
-> than won't stop shouting which can be easily missed when progressing to the next day. also,
-> we cannot expect the player to do an exhaustive check that will not work there is not enough
-> time and the baby needs to fall asleep still as well. so if the solution is the yeller it's
-> always the first yeller you come close enough to hand the note."
-
-[PLAYTEST-69](playtests/PLAYTEST-69.md), from a run that touched the day-4 mark, lost the day,
-and reached day 5 with no idea who the note was for. The **cues** rule governs the drawing;
-the standing decision that the *first* encounter carries no hint (`CLAUDE.md`, no quest log or
-marker for the resistance) is untouched — every item here is about what the resistance says
-*after* the mark has been touched. This closes M100's open design question about a chalk
-touch that shows nothing on a lost day, which is now decided.
-
-**What is true today.** A touched mark's words (`Step.brief`) are queued in
-`GameState.pending_resistance_brief` and appended by `DaySummary._resistance_line()` on the
-**won** branch of the summary only, in the summary's ordinary line size; the touch survives the
-nerve and the mark is not offered again, so a lost day loses the sentence for good. During the
-day the header reads `somewhere out there: <step title>` — *a note for a stranger* — which
-names the step and not the instruction. The perform contact rides on one of several look-alike
-`homeless_yeller` rows and *a wrong candidate costs full price and returns nothing*
-(`docs/NARRATIVE.md`).
-
-- [ ] **The brief is drawn to be noticed, and on a lost day too.** `DaySummary` shows the
-      queued brief on both branches of the summary, in a size and weight that reads as *the
-      thing this screen is telling you* rather than one more line, and keeps it queued until
-      a summary has shown it — so a first try that dies still hands over the words on the
-      second. `tests/test_day_loop.gd` (or the summary's own suite) holds that a brief queued
-      on a lost day is shown on that day's summary and cleared only then.
-- [ ] **The header carries the instruction, not the title.** While a perform step is on offer
-      the header's `somewhere out there:` line says the mark's own words, or the instruction
-      cut to fit — *the one who won't stop shouting* — rather than the step's name; the title
-      stays for the progress dots. Whatever wording rule is chosen holds for all five marks and
-      is written next to `Step.brief`.
-- [ ] **The contact is the first yeller she reaches.** *Asked for a hidden contact among
-      look-alikes · overturned on 2026-09-13.* When the step is on offer, the contact rides on
-      whichever `homeless_yeller` she first comes within reach of, rather than one chosen at
-      placement; `ResistanceDirector`'s rider is re-pointed on approach, or the contact is
-      placed on the yeller nearest her route, whichever keeps the guard and the deadline rules
-      intact — say which. `docs/NARRATIVE.md`'s *a wrong candidate costs full price* sentence
-      goes with it. The same question is asked of the van, the roadblock, the poster crew and
-      the protest: if any of those can be several look-alikes on one day, the first she reaches
-      is the contact.
 
 ---
 
@@ -849,20 +800,19 @@ re-pitched:
 
 **Open design questions**, each answered by a played run rather than by more arithmetic:
 
-- [ ] **A touch on a chalk mark shows nothing at the moment but a colour change, and nothing at
-      all if the day is then lost.** *(2026-09-09, playtest 50: "how do I know I stepped on the
-      chalk", then "I walked over the chalk why didn't it count?" — it had.)* A touch turns the
-      mark from chalk white to pale green (`Palette.CHALK` to `CHALK_DONE`) under her feet; the
-      `resistance ....` dots are performs only, so a pick-up moves none; and the mark's own words
-      (`GameState.pending_resistance_brief`) are appended by `DaySummary._resistance_line()` on
-      the **won** branch of the summary only, so a mark touched on a day she then loses says
-      nothing until the end of the next won day, while the touch itself survives the nerve. The
-      design's own rule is no quest log — *the first encounter comes with no hint at all* — so how
-      much a touch may say is the player's call: nothing more; the mark's colour made
-      unmistakable; the brief shown on a lost day's summary too; or a one-line status change on
-      the pick-up itself. PLAYTEST-53 requests a distinct touched-mark SVG for review: she adds
-      something to the existing mark to indicate she has seen it. `chalk_mark_touched.svg`
-      prepares that acknowledgement; selecting and binding the feedback remains here
+- [ ] **A touch on a chalk mark shows nothing at the moment but a colour change.** *(2026-09-09,
+      playtest 50: "how do I know I stepped on the chalk", then "I walked over the chalk why
+      didn't it count?" — it had.)* A touch turns the mark from chalk white to pale green
+      (`Palette.CHALK` to `CHALK_DONE`) under her feet, and the `resistance ....` dots are
+      performs only, so a pick-up moves none. The mark's own words now reach her on that day's
+      summary whether it was won or lost, in their own larger line (`DECISIONS.md`, M132), so
+      what is left open is the moment of the touch itself. The design's own rule is no quest log
+      — *the first encounter comes with no hint at all* — so how much a touch may say is the
+      player's call: nothing more; the mark's colour made unmistakable; or a one-line status
+      change on the pick-up itself. PLAYTEST-53 requests a distinct touched-mark SVG for review:
+      she adds something to the existing mark to indicate she has seen it.
+      `chalk_mark_touched.svg` prepares that acknowledgement; selecting and binding the feedback
+      remains here
 - [ ] **Three cues on one screen needed asking about, and an alley read as a roof.** *(2026-09-09,
       playtest 50: "what is shown here?", and "the robber is stuck inside the roof" of a robber
       standing beside an alley.)* The baby's unsettled cue over the pram, the alert over her and a
