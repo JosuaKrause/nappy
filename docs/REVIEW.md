@@ -14,10 +14,6 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-- **Look at a park and a wooded calm area while walking past them.** Do the sparse grass clumps give variety while the
-  soft base stays quiet enough to keep people and routes clear? Check neighboring cells and
-  revisit the same seed to compare their stable arrangement.
-
 - **Look at café seating and roadworks along both street axes.** Each café sitter should
   face its own table, including the right-hand chair and the vertical arrangement. Vertical
   red barriers should read as a narrow continuous barrier, and a horizontal alley should be

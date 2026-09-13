@@ -73,3 +73,13 @@ slab grid with it?
 > Sits on all three
 
 Closed as fine.
+
+## The park and forest ground
+
+Asked: a park or wooded calm area is a quiet soft base with sparse grass clumps arranged per
+cell, stable under a seed — do the clumps give variety while the base stays quiet enough to keep
+people and routes clear?
+
+> Varied and quiet
+
+Closed as fine.
