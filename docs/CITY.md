@@ -1273,24 +1273,26 @@ is loud, and the reason a park is quiet.
   structural half of "a park is quiet because nobody is in it". `tests/test_crowd.gd`
   asserts the middle of every park is out of earshot.
 
-- **A car leaves the city by the bridge and the tunnel, and nowhere else.** This is *"nothing
-  vanishes while you are looking at it"* — the rule written for events — arriving at the crowd,
-  which does not otherwise need it: a recycle happens at the edge of a box nowhere near anything
-  she can see, and the three holes in the boundary are exactly where that is not true. A car on the
-  spine going north or south may overrun the map by `OUT_OF_SIGHT`; **everybody else keeps a
-  tile**, because outside the map is water, forest and mountainside, and `_paint_outside_the_map`
-  lays carriageway out there at the spine's own width and nowhere else. A general allowance would
-  drive cars into the sea. The rule holds at both ends of a journey: `CrowdAgent.
-  _keep_within_the_room_beyond_the_map` clamps a freshly recycled agent to the same tile (or the
-  same `OUT_OF_SIGHT`, for a car on the spine) that a departing one is held to, so the entry-side
-  fallback that only fires when every recycle roll misses cannot hand a walker the reach that
-  belongs to a car on the bridge. **And the same room is what lets a car arrive by them.** The
-  crowd's box is clamped to the map, so beside the tunnel the band a southbound spine car enters
-  through is the stretch past the north edge, and `CrowdAgent._entry_band_fits` accepts a band
-  that reaches that far only for the agent the departure rule already lets go that far. Refusing
-  it for everybody would make the traffic through both holes one-way — cars that only ever leave
-  — and `tests/test_crowd.gd` stands at each end and counts spine cars out of bounds by which way
-  they point.
+- **A car leaves the city by the bridge and the tunnel, and nowhere else — and the same is true of
+  arriving.** This is *"nothing vanishes while you are looking at it"* — the rule written for
+  events — arriving at the crowd, which does not otherwise need it: a recycle happens at the edge
+  of a box nowhere near anything she can see, and the three holes in the boundary are exactly where
+  that is not true. **The two ends of a journey answer differently, on purpose.** A car on the
+  spine going north or south may overrun the map by `OUT_OF_SIGHT` on the way out, and everybody
+  else keeps a tile — `CrowdAgent._room_beyond_the_map` — because a departure happens off-screen
+  almost always, and a tile of slack there is never seen. A fresh arrival is not: it can be the
+  very first frame on screen, at the plain boundary itself, if she is standing there. So
+  `CrowdAgent._entry_room` grants an ordinary walker or car **no** room past the true edge at all —
+  only a car on the spine keeps `OUT_OF_SIGHT` — and the roll that picks where a recycle lands is
+  kept inside that room from the start rather than rolled the full entry band and rejected
+  afterwards, so nobody appears standing on the mountain, the forest or the water and walks in.
+  **And the same room is what lets a car arrive by the tunnel or the bridge.** The crowd's box is
+  clamped to the map, so beside the tunnel the band a southbound spine car enters through is the
+  stretch past the north edge, and `CrowdAgent._entry_band_fits` accepts a band that reaches that
+  far only for the agent `_entry_room` already grants it. Refusing it for everybody would make the
+  traffic through both holes one-way — cars that only ever leave — and `tests/test_crowd.gd` stands
+  at each end and counts spine cars out of bounds by which way they point, and at each plain edge
+  and asserts nobody else is ever out of bounds there at all.
 
 - **And nobody walks into a cul-de-sac's wall.** The crowd is the one thing that travels the
   lattice without asking `blocked_segments()`, and it does not need to — a dead end is a street

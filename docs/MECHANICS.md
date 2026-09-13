@@ -606,7 +606,10 @@ density where somebody is looking is not.
 Agents that pass the edge they are heading for — or fall further behind the edge they came in
 at than the entry band is deep, or end up on a street the box no longer reaches — are recycled
 into a band outside the edge they will re-enter through. `Tuning.CROWD_PEDESTRIANS_PER_ACT` and
-`CROWD_CARS_PER_ACT` are populations *of the field*.
+`CROWD_CARS_PER_ACT` are populations *of the field*. **That band never crosses the map's own true
+edge**: a walker or a car on an ordinary street re-enters from inside the map, out of sight, and
+only a car on the spine re-enters through the tunnel or off the bridge — see docs/CITY.md, "Life
+on the streets".
 
 The radius has one floor and it is the screen: half the viewport diagonal is the furthest
 anything visible can be from the camera, so an agent recycled outside that is always off-camera
