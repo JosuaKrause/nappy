@@ -307,3 +307,8 @@ Remove the baked crack-and-floor PNG family from runtime assets. Keep accepted f
 images in frozen generation evidence and retain transparent crack components for engine
 composition over the shared floor. Verify all road, sidewalk and alley damage variants after
 removing the baked PNGs and their import sidecars.
+
+> well the ones from this PR are not worth preserving since we have been using the version from before as base
+
+Delete the redundant composite revisions without creating an archive for them. Retain only the
+accepted source tiles used by the stencil recipe; those already exist in frozen generation inputs.
