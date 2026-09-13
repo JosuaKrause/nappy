@@ -148,3 +148,21 @@ to settle. Recorded and stopped there, at the player's word.
 On the table showing a peak of 19.3 never fills the sleep meter at his core while anything
 under 19.2 fills it within 35 seconds, and that the street beside the lot is half again louder
 for it. Accepted as built (`DECISIONS.md`, M128).
+
+## The readout on the live page
+
+> how do I get a readout on the live version?
+
+There is no way: the page is a release export and every developer flag, the readout included,
+answers only in a debug build (`DECISIONS.md`, M76, a release carries no modifiers). Offered a
+debug build served over HTTPS on the local network, or a query flag:
+
+> let's add a ?debug=1 flag
+
+Asked which shape, since one flag that unlocks everything would overturn the 2026-09-06
+decision: **readout only**, a third bounded exception beside `?svg=1` and `?telemetry=1`. Then:
+
+> with a note on the screen that this is debug mode -- the note should not be removable
+
+Not built this session at the player's word (*"don't start implementing yet"*); M133 in
+`TODO.md`.

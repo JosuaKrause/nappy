@@ -499,6 +499,41 @@ names the step and not the instruction. The perform contact rides on one of seve
 
 ---
 
+## M133 — The readout on the live page · asked for 2026-09-13
+
+> "let's add a ?debug=1 flag" — readout only — "with a note on the screen that this is debug
+> mode -- the note should not be removable"
+
+[PLAYTEST-69](playtests/PLAYTEST-69.md). The **cli-tools**, **godot** and **cues** rules
+govern. The 2026-09-06 decision that a release build carries no modifiers (`DECISIONS.md`, M76;
+`DevFlags.enabled()` and its own comment) stands for everything but this: seeds, days, spawns,
+meters and scripted input stay unreachable from a visitor's address bar. `?svg=1` and
+`?telemetry=1` are the two bounded exceptions that exist; this is the third.
+
+**What is true today.** The frame readout (`4`) draws fps, worst frame, draw calls, objects,
+primitives and the process and physics times, on by default in a debug build and nowhere in a
+release one; `DevFlags.svg_requested()` is the shape of a release-safe query flag, parsed from
+`_web_query()` without `enabled()`. The live page cannot show the readout, so M124's phone
+half cannot be measured on it.
+
+- [ ] **`?debug=1` turns on the readout on a release build, and nothing else.**
+      `DevFlags.readout_requested()`, parsed like `svg_requested()` and not gated behind
+      `enabled()`; the readout layer is on at boot when either `enabled()` or that flag holds;
+      the other layers, the snapshot key and every dev flag stay gated. If the readout's
+      construction sits behind an `enabled()` check in `main.gd`, it is split so the readout can
+      exist without the rest of the debug furniture. Tests beside `svg_requested()`'s: true for
+      `?debug=1` and `?x=1&debug=1`, false for `?debug=0`, empty and `?debugx=1`, and
+      `enabled()` unaffected. The flag table in `dev_flags.gd`, `README.md`'s flag section and
+      `docs/TELEMETRY.md`'s readout paragraph follow. Verified on a real release export served
+      locally, since a debug export cannot prove the release path.
+- [ ] **A fixed note says the page is in debug mode.** Whenever `?debug=1` holds, a terse label
+      is drawn for the whole session and nothing removes it — not the `4` key, not a press, not
+      hiding the readout; a debug build without the flag does not show it. The **cues** rule
+      governs its place and weight; a test holds it present whenever `readout_requested()` and
+      absent otherwise.
+
+---
+
 ## M124 — The game on a phone, measured and then made cheaper · asked for 2026-09-13
 
 > "I played a few sessions on mobile. It is a bit laggy now. Are we using proper texture atlases
