@@ -78,3 +78,16 @@ The player's framing is a *cost* guarantee on the corridor: for every costly thi
 a route's pavement there is a line past it on the other pavement, that pavement is itself clear
 for the stretch, the crossings the line relies on are at intersections and never mid-block, and
 a pacing row leaves the line open for part of its beat. M129 in `TODO.md`.
+
+## Pigeons pop in on screen
+
+> pigeons pop in on screen -- they should exist before they are visible.
+
+The flock is an `AHEAD_OF_PLAYER` row, so it is created only when it is due and sited
+`Tuning.AHEAD_LEAD_DISTANCE` (184px) ahead of her along her heading — inside the 640x360 view
+on every heading, by design: that distance is the cat's two-second reaction window between
+seeing it crouch and reaching where it bolts. Playtest 19 said the same of cyclists and dogs
+(*"pop in in front of the player instead of starting off screen"*), and those were moved off
+screen because they come *at* her; the cat and the flock cross her line and kept the on-screen
+lead. For a flock that is the wrong answer: birds appear from nothing on a pavement she was
+already looking at. M131 in `TODO.md`.

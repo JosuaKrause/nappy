@@ -391,6 +391,35 @@ cells can already cut a corner through a park or an alley.
 
 ---
 
+## M131 — Pigeons exist before they are seen · asked for 2026-09-13
+
+> "pigeons pop in on screen -- they should exist before they are visible."
+
+[PLAYTEST-69](playtests/PLAYTEST-69.md). The **events** rule governs.
+
+**What is true today.** `pigeon_flock` is `AHEAD_OF_PLAYER`: the director creates it when it is
+due and `_crossing_ahead_of()` sites a non-pursuing row `Tuning.AHEAD_LEAD_DISTANCE` (184px)
+ahead of her along her heading — inside the view on every heading, on purpose, because for the
+cat that is the two-second reaction window between the crouch and the bolt. The flock then
+telegraphs for 1.7s and rises. Pursuers and `TOWARD_PLAYER` rows are sited past the edge of the
+view by `Tuning.offscreen_lead()` instead (`DECISIONS.md`, M77). The M100 defect about a rig
+that cannot spawn at an ahead-of-player row names the flock for the same reason.
+
+- [ ] **The flock is on the ground before she can see it, and rises when she is near.** The
+      recommendation: make it a map placement like the day-4 dog, with a wait trigger inside
+      its own outer radius (168px) the way `pursues_within_on(day)` derives one — the birds sit
+      on the pavement, square or park from the moment they stream in at `EVENT_STREAM_RADIUS`
+      and are drawn pecking, the burst begins when she comes inside the trigger, and the
+      telegraph contract is then paid in geometry as the robber's is. The alternative is to keep
+      it ahead-of-player and site it past the view's edge with `offscreen_lead()` like a
+      pursuer, which keeps the row cheap but means she never sees them on the ground first; the
+      cat keeps its on-screen lead either way, since the crouch is its telegraph. Whichever is
+      built, `tests/test_event_views.gd` or `tests/test_events.gd` holds that a flock's first
+      drawn frame is never inside the view rect around her, and the M100 rig defect closes for
+      this row with it.
+
+---
+
 ## M124 — The game on a phone, measured and then made cheaper · asked for 2026-09-13
 
 > "I played a few sessions on mobile. It is a bit laggy now. Are we using proper texture atlases
