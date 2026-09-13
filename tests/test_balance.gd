@@ -27,6 +27,7 @@ func run(t) -> void:
 	_test_a_calm_park_still_settles_her(t)
 	_test_the_arterial_never_settles_her(t)
 	_test_every_day_keeps_a_park_quiet_enough_to_settle_in(t)
+	_test_the_playground_itself_settles_her(t)
 
 	_teardown_rig()
 	_city.free()
@@ -133,6 +134,21 @@ func _test_every_day_keeps_a_park_quiet_enough_to_settle_in(t) -> void:
 		_build_rig(t, park)
 		var settled := _walk_until_asleep(park, Tuning.day_length(day))
 		t.check(settled > 0.0, "day %d has a park she can actually settle in" % day)
+
+## M128: the playground itself costs nothing, or a one-block park with one in it has no ground
+## left to settle her on — `outer_radius` (150) reaches past half of a 256px block. Standing
+## exactly on the ambient source's own centre, where `EventScheduler._place_ambient` puts it, is
+## the worst point in any park it is in, so if she settles there she settles everywhere else in
+## the same park too.
+func _test_the_playground_itself_settles_her(t) -> void:
+	if _city.map.playgrounds.is_empty():
+		return  # This city rolled no PARK-purpose block; nothing here to check.
+	_start_day(1)
+	var at: Vector2 = _city.map.tile_rect_to_world(_city.map.playgrounds[0]).get_center()
+	_stand_at(1, at)
+	_build_rig(t, at)
+	var settled := _walk_until_asleep(at, Tuning.day_length(1))
+	t.check(settled > 0.0, "she settles standing on the playground's own ambient source")
 
 ## The calmest park centre this day, by the excitement a player standing there would be under.
 ## This is the park the scheduler's "one usable calm zone" rule is protecting, found by

@@ -126,10 +126,10 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
    left open**, on the same footing as the round before it: **M124**, the game on a phone —
    its desktop half is measured and fixed (`DECISIONS.md`, M124), and what stands is the phone
    half of the measurement, the atlas item gated on it, and the audit's per-frame findings;
-   **M125**, the test suite is slow again — five suites pruned (`DECISIONS.md`, M125), four
-   still over the runner's budget; and **M128**, the playground is free and the busker is
-   quieter from the street, the one design instruction playtest 68's answers produced. M126's
-   audit is filed and M127's first press is fixed; both records are in `DECISIONS.md`.
+   and **M125**, the test suite is slow again — five suites pruned (`DECISIONS.md`, M125),
+   the crowd suite and four others still over the runner's budget. M126's audit is filed,
+   M127's first press is fixed, and M128's playground and busker are built; the records are in
+   `DECISIONS.md`.
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
    related to the other items to work on right now.")* It waits, because reaching act III waits:
    *"I wanna wait reaching act III until those things are done."*
@@ -293,44 +293,6 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 2026-09-09.
 
 ---
-
----
-
-## M128 — The playground is free, and the busker is quieter from the street · asked for 2026-09-13
-
-> "Playground should be free since otherwise small parks really have no way of ever getting to
-> sleep. The busker is a bit intense. We should nerf it a bit but keep it so the baby cannot fall
-> asleep in the park with it. But on a street with a busker closeby should cause less excitement"
-
-[PLAYTEST-68](playtests/PLAYTEST-68.md), answering the M117 review question. The **balance** rule
-governs every number here; `tests/probes/` holds the instruments M117 used, and the record of
-what M117 set and why is in `DECISIONS.md` under M117, the two rows the change made nearly free.
-
-**What is true today.** `playground` is an `AMBIENT` row with no picture of its own (the park's
-swing frame draws it) at intensity 15.0 on a nine-second pulse, `inner_radius` 40 and
-`outer_radius` 150 in a park block 256px across, placed by the park itself; its whole purpose
-was to make the middle of a park contested. `busker` is placed on `PARK` or `SQUARE` at
-intensity 13.0 on a seven-second pulse, `inner_radius` 45 and `outer_radius` 190, so its rim
-reaches the pavement of the street beside its lot; its denial radius — where its cost beats the
-park's 12.0/s decay — is about 138px, and along a whole line through one on grass it is still
-net recovery. The baby settles only under `EXCITEMENT_CALM_THRESHOLD` (35), so "cannot fall
-asleep" is a claim about where the meter can be held under 35, not about the cost table.
-
-- [ ] **The playground costs nothing.** A one-block park with a playground in it has no ground
-      left to settle the baby on, which is the player's reason. The smallest change that makes
-      it true is the row's intensity at zero or the row gone, whichever leaves the park's swing
-      frame drawn and `_ensure_one_usable_park` and the spoiling logic unchanged; say which in
-      the commit and why. Whatever `tests/test_balance.gd` pins about the playground is repinned
-      to *free*, and the sleepiness table in `docs/MECHANICS.md` follows.
-- [ ] **The busker comes down a bit, and mostly from the street.** Two constraints, measured
-      with the M117 probes before a number is chosen: inside its lot, standing anywhere within
-      its denial radius still cannot hold the meter under 35 — the park with a busker in it is
-      still not a place to sleep — and on the pavement of the street beside the lot the busker's
-      contribution falls to a fraction of today's. The lever for the second is `outer_radius`
-      (190 reaches across the lot's edge) and the falloff between the radii, not intensity
-      alone; the lever for "a bit" is intensity, which stays above the park's 12.0/s or the
-      busker becomes a park bonus with a nuisance's picture on it (`DECISIONS.md`, M117). Record
-      the before-and-after denial radius and the street-side contribution in `DECISIONS.md`.
 
 ---
 

@@ -112,7 +112,7 @@ Tile types:
 | `PARK` | yes | **Calm zone.** The sleepiness and decay multipliers above; the sleepiness one is a curve over the lot's size. |
 | `SQUARE` | yes | Open plaza. Neutral, high visibility, gathering events spawn here. |
 | `ALLEY` | yes | +3.0/s excitement. Shortcut between blocks. Resistance contact point. |
-| `PLAYGROUND` | yes | Permanent excitement source (see EVENTS). Sits inside parks. |
+| `PLAYGROUND` | yes | Calm ground, same as `PARK`. Sits inside parks; the `playground` ambient row that draws the swing frame there (see EVENTS) is free. |
 | `HOME` | yes | Start and goal tile. |
 
 ## Generation algorithm
@@ -1156,7 +1156,7 @@ in one place instead of leaving the scheduler to rescue each day.
 
 | Purpose | Calm? | What it is |
 | --- | --- | --- |
-| `PARK` | yes | Grass, trees, a playground. Contested calm: the swings are ambient noise. |
+| `PARK` | yes | Grass, trees, a playground. Contested calm: a day may spoil it with events once she has settled there, though never with its own free swings. |
 | `FOREST` | yes | Denser trees, darker floor, no playground. The quietest ground there is. |
 | `QUIET_SQUARE` | yes | Paved and empty. Calm without being green. |
 | `COURTYARD` | yes | A court cut inside a residential block, reached by an archway. Hidden calm. |
