@@ -131,3 +131,12 @@ litter stay quiet and readable?
 > Both read right
 
 Closed as fine.
+
+## The stroller identity mark
+
+Asked: does the cream stroller stay clear against its navy plate at the smallest export size,
+and does the redrawn symbol fit the wordmark it was kept beside?
+
+> Reads at every size
+
+Closed as fine.

@@ -14,10 +14,6 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-- **Compare the comic stroller identity mark at icon and logo sizes.** Does the cream stroller
-  remain clear against its navy plate, and does the redrawn symbol fit the preserved wordmark?
-  `evidence/comic-identity-2026-09-12/comparisons/` shows the logo and both export sizes.
-
 - **Find a crash and walk at it.** The boot log names the street it sealed — `closed: accident`
   with the segment beside it — or press `3` and look for the two circles. Three questions, and the
   meter has to be live for the last two, so leave `--invincible` off for them. Do the bodies sit
