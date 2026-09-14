@@ -86,8 +86,9 @@ trap, so it also happens when the check fails.
 
 **A file you had already edited yourself is left alone and named**, because reverting it would delete
 real work to fix a whitespace bug — that case still prints a note and is still yours to read with
-`git diff`. **And `tools/export-web.sh` rewrites `project.godot` the same way with no such guard**,
-so `git status` after an export is still the rule there.
+`git diff`. `tools/export-web.sh` puts `project.godot` back from a copy taken before the export
+on every exit, since it stamps the file with the build's version and commit for the export's
+duration, so the editor's rewrite never survives an export either.
 
 **The game is published, and a push is a check while a tag is a release.**
 `https://nappy.josuakrause.com/` serves it. `.github/workflows/ci.yml` runs lint, check and the full
