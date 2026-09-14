@@ -188,3 +188,14 @@ the other way:
 
 So a lost summary repeats the instruction the day began with, the words she already had, and a
 lost day 4 shows none; M134's second item holds it.
+
+## The routes as a debug layer
+
+Said on reading M129's probe numbers, the fraction of routes with a zero-cost line:
+
+> can you add a debug overlay to show paths (just as purple lines from tile center to tile
+> center)
+
+Filed as M135 in `TODO.md`: a fifth debug layer, `5` and `--layers 5`, drawing each of the
+day's planned routes as a purple polyline through its tile centres, read off the route tree the
+city already holds. *Paths* is read as the day's routes, the thing the probe measures.

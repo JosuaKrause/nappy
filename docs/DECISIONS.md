@@ -1,5 +1,210 @@
 # Decisions
 
+## M124 — The game on a phone · the six per-frame audit items, built 2026-09-13
+
+*(The audit's own findings, filed under M124 on 2026-09-13 from a per-frame read of the source;
+the player's word to start them: "sure go ahead".)* Six agent commits on
+`feature/m124-per-frame-audit`, reviewed on the PR.
+
+**What changed, one item each.** The halo's `_process()` keeps one reused candidate array and
+tests membership of the picked set through a dictionary keyed by the objects rather than a
+linear `in` over up to eight picks for each of ~275 candidates. `EventInstance.contribution_at()`
+caches its plain answer once per age and position, the shape `_caret_strength()` already
+documents, so the baby's physics-rate sweep and the halo's frame-rate sweep share one evaluation
+per event — and is invalidated the instant `_finish()` or the leaving branch sets its flag,
+because `EventManager.retire()` and `silence_city_wide()` set those from outside the instance's
+own tick, so age and position alone left the sabotage's mast answering its live value on the
+frame it was silenced; two resistance checks caught it on CI and the case is pinned beside the
+cache test. `DangerEdge._measure()` mutates its per-instance entries in place with a generation
+stamp and erases the departed in one sweep instead of allocating a dictionary per instance per
+frame. `DebugLayers` asks for a redraw only when a layer is on and collects collision nodes into
+one caller-owned array rather than merging a fresh array up from every recursion level; the
+public `collision_nodes_under()` keeps its signature. `DayController` emits the clock only when
+the whole second changes, so the HUD's format runs once a second rather than sixty times; the
+HUD itself is untouched. `ReachabilityGrid.flood()` stashes the dirty-cell set it built inside
+the `reached` dictionary under a negative sentinel key and `reaches()` reads it back instead of
+recomputing it; no caller iterates `reached`, so the sentinel is safe today and this sentence is
+what a future caller that counts keys should find. `_cell_of_tile()` uses an arithmetic shift,
+an exact floor for a negative coordinate where integer division truncates. Each item has a test
+that the behaviour is unchanged; the clock's is a new small suite.
+
+**The crowd half of the shared sweep is not built, on purpose.** A crowd agent's position and
+startle are written from the crowd's own step — `Crowd._bump()` and `_horn()` call `startle()`
+from outside the agent's `_process()` — so a per-frame cache on `CrowdAgent.contribution_at()`
+answered with the pre-bump value on the tick a fresh startle is meant to show, and one crowd
+test caught it. The cache was reverted and the reason is on the method. So only the ~41 events
+are deduplicated and the ~234 agents, most of the candidates, still answer twice a frame; a
+dirty flag set beside `startle()` is the shape a later pass would take, and the record's own
+measurement says it is not worth taking yet.
+
+**Measured, and inside the noise.** The record's own walk (`--seed 3265820891 --day 1 --walk
+3s17e`, vsync off, three interleaved rounds each side), read off the `frame` entries from two
+seconds in:
+
+| | before | after |
+|---|---|---|
+| fps | 119.0 | 118.8 |
+| worst frame | 18.8ms | 16.8ms |
+| draw calls | 587 | 585 |
+| objects | 1670 | 1668 |
+| primitives | 3827 | 3816 |
+| process | 13.16ms | 12.94ms |
+| physics | 1.86ms | 1.85ms |
+
+None of the six touches what is drawn, so the draw counts sitting still is the expected result;
+process time and the worst frame moved a little in the right direction, and the worst frame
+ranged wider between rounds on the same side than between sides, so nothing here is attributed
+to one item. Two items cannot show in a walk at all: the grid's dirty set runs during planning,
+and the debug layers' gate pays only when a layer is on.
+
+**Open to overturn.** The sentinel-key stash rather than a changed signature (a dozen call
+sites saved); no per-day cache of the collision-node list, since events add and remove
+collision-bearing children mid-day and `child_entered_tree` does not reach a grandparent; the
+halo's `select_sources()` still returns an array so its existing tests stand. What stays open
+under M124 is the phone half of the measurement and the atlases it gates.
+
+## M135 — The day's routes drawn as a debug layer · built 2026-09-13
+
+*(2026-09-13, [PLAYTEST-69](playtests/PLAYTEST-69.md): "can you add a debug overlay to show
+paths (just as purple lines from tile center to tile center)".)* One agent commit and one
+evidence commit on `feature/m135-route-lines`, reviewed on the PR; the still is
+`evidence/m135-route-lines-2026-09-13/day1-layers5/`.
+
+**A fifth layer, a sibling node.** `RouteLines` (`src/dev/route_lines.gd`) is a `Node2D` beside
+`DebugLayers`, built by `main.gd` only in a debug build the same gated way, toggled by `5` and
+started by `--layers 5` or `?layers=5`; `parse_layers()` accepts `5` and still drops `4`, the
+readout's own key. It takes a `CityMap` and a `RouteTree` rather than the whole city, redraws
+only when `main._start_day()` hands it the day's tree, and draws one polyline per route in the
+dusk map's own corridor purple at the debug layers' line width, so the live overlay and the
+dusk picture agree on what the corridor looks like.
+
+**"Tile centre" is honoured at the ends and not in between.** The tree stores a route as
+reachability-grid *cells*, two tiles across, and keeps no record of which tile of a cell a route
+crossed (`DECISIONS.md`, M69), so the interior points are cell centres, 64px apart, rather than
+tile centres. The two ends are real tiles: the doorstep tile the day starts on, and a calm tile
+found by walking outward from the route's last cell the way `RouteTree._access_nodes()` walks
+inward, since a route is stored only as far as the access cell outside the calm area. The test
+caught the calm endpoint landing on a corner of the access cell itself when the area's open
+rect clipped it, and the search now rejects any neighbour still inside that cell.
+
+**The doorstep connector is a hop, not a step.** A branch rejoins the home frontage wherever
+its probe happened to find it, never nearer than two cells from the doorstep's own cell over
+301 routes measured, and the line is drawn from the fixed doorstep tile regardless, so its first
+segment is a straight hop to wherever the tree joins home — visible in the still as lines
+fanning out from the door across the street. The test asserts that segment's endpoint only.
+Drawing from where the tree actually joins home instead is one line to change if the fan reads
+as wrong. `tests/test_route_lines.gd` holds the rest: absent outside a debug build, one polyline
+per route over six seeds and four days, first point on the doorstep tile's centre, last on a calm
+tile, every interior step one cell apart, the calm connector at its exact distance.
+
+**Open to overturn.** The purple and the width are reused constants rather than new ones; the
+z-index is the debug layers' own; the cell-centre interior is the grain the tree has, and a
+tile-level line would need the tree to record which tile of a cell it crossed.
+
+## M134 — A lost day gives the resistance back · built 2026-09-13
+
+*(2026-09-13, [PLAYTEST-69](playtests/PLAYTEST-69.md): "a lost day shouldn't retain the touch
+mark -- a task is only complete if it is done on the day that won. but also it should reset if
+lost so the player can try again"; and on the summary: "the words shown on the lost day are the
+words that show at the beginning of that day not the nexts. since day doesn't have words it
+doesn't make sense to show words on day 4".)* *Asked for as "what the run has spent stays spent"
+· overturned for the resistance on 2026-09-13.* Two agent commits on
+`feature/m134-lost-day-resets-the-resistance`, reviewed on the PR.
+
+**The attempt owns the resistance's day.** `GameState.begin_day()`, called first thing in
+`main._start_day()` before anything is placed, photographs the six run-scoped resistance
+fields — completed and failed steps, progress, the package, the sabotage and the queued brief —
+and a loss in `finish_day()` restores all six before the last-nerve branch, emitting the
+progress signal when the number moves; a win takes the photograph again, which is the commit.
+The step list is restored rather than repaired, so the retry's `ResistanceSteps.for_day()`
+offers the same mark or contact, and a test drives a real city and director across a loss and
+holds the retry meets the same step within a hundredth of a pixel of the same spot. The nerve's
+telemetry line gains a clause when a day's resistance work went with it. `finish_day()`'s
+docstring lists the resistance as the second thing the attempt owns beside where she settled.
+
+**A lost summary repeats the day's own instruction.** `ResistanceSteps.unlocking_brief(step)`
+answers the brief of the pickup that unlocked a perform step, with the pairing checked rather
+than assumed; on a loss `GameState` runs the day's table over the dawn photograph to find the
+step the day offered and queues those words over the restored brief, so the summary reads what
+the retry is for, and a lost day 4 — or any day with no perform step on offer — reads nothing.
+The summary's own code did not change; only its comment, which had claimed a lost day 4 still
+hands over the mark's words. Pinned by `tests/test_day_loop.gd` end to end: a lost day 5 shows
+the day-4 mark's words, a lost day 4 with the mark touched shows none, a won day 4 still reads
+the mark it touched.
+
+**Open to overturn.** The package is put down before the photograph, so a day won carrying it
+does not hand a heavy pram back on the next loss; the instruction is queued over the restored
+brief rather than instead of it, so words owed and never shown are never dropped; no signal
+announces a step un-completing, since the HUD rebuilds its line on the retry's day start; a
+lost run's last day still gets its instruction. No capture: no dev flag fast-forwards
+resistance progress, so a rig cannot stand on a perform step.
+
+## M129 — A path through the city never has to cost · the guarantee measured 2026-09-13
+
+*(2026-09-13, [PLAYTEST-69](playtests/PLAYTEST-69.md): "a path through the city must never hit
+excitement -- so all obstacles should be routable around by eg crossing to the other side of the
+street … the routing should only cross the street at intersections".)* The entry's first item,
+a probe before any rule: `tests/probes/m129_zero_cost_line.gd`, run by name with
+`tools/test.sh probes/m129_zero_cost_line.gd`, one agent commit on
+`feature/m129-zero-cost-probe`. Six seeds, one day per act, 298 routes, about half a minute.
+
+**What a zero-cost line is, as measured.** A walk from the home notch (or the street it opens
+onto) to any tile of the route's calm area, staying outside every placed row's `outer_radius`
+where it emits and its `obstructs_radius` where it has a body, on the route's own streets and
+the junctions at their ends, changing pavements only inside a junction box, never on a
+mid-block carriageway; a route cell on no street contributes its own tiles; precincts and
+absorbed streets are ground by tile type. City-wide rows and the queue-fed `AHEAD_OF_PLAYER`
+and `TOWARD_PLAYER` rows are outside it, since they have no position at plan time. A pulse moves
+no radius, so the top of a beat is the catalogued disc; a moving row's field is the plain disc.
+Four bugs were found and fixed on the way, each of which had moved a headline number: an
+absorbed street's grass read as carriageway, the line starting strictly inside the home notch,
+a minimal-removal framing that found the facing pair zero times, and subtracting discs from a
+flat mask instead of counting rows per tile.
+
+**The result.** Routes with a zero-cost line, primary reading (a pacing row denies its whole
+beat, mobile rows at their dawn position, region doors counted):
+
+| act I | act II | act III | act IV | all |
+|---|---|---|---|---|
+| 16 of 88, 18.2% | 6 of 88, 6.8% | 0 of 73 | 0 of 49 | 22 of 298, 7.4% |
+
+The other readings move it little: a pacing row denying only where its beat never opens gives
+10.7%; every mobile row denying its whole swept route gives 2.7%; region doors left out, 7.7%;
+catalogue rows only, without seals, walls and doors, 9.4%. A broken route is broken in 5.3
+stretches on average and 12 at worst — 1469 cuts over 276 broken routes.
+
+**The failing shapes**, by the routes each breaks first and by every cut:
+
+| routes | cuts | shape |
+|---|---|---|
+| 171 | 773 | the junction itself is covered — the only legal crossing sits inside a row's reach |
+| 47 | 169 | a pacing row whose beat never leaves an opening (`homeless_yeller`, end to end) |
+| 24 | 144 | one row covering the street's whole width alone (`police_patrol`, `busker`, `ice_cream_van`) |
+| 27 | 231 | a cut that is not a straight band across one street |
+| 5 | 74 | a region door on the route (`checkpoint_hut`, by design from day 7) |
+| 2 | 23 | a body with the far pavement also taken (`construction` + `cafe_tables`, `dog_walker` + `cafe_tables`) |
+| 0 | 0 | two friction fields on facing pavements |
+
+The rows most often in a cut: `dog_walker` (223 of 276 broken routes), `homeless_yeller` (221),
+`cafe_tables` (207), `leaf_blower` (186), `poster_crew` (136), `police_patrol` (135). The shape
+the entry predicted — a van with the far pavement taken — is the rarest, and the facing pair
+never occurs, because one row is usually wide enough on its own: the street is 192px kerb to
+kerb and the catalogue's reaches run 179 to 240px.
+
+**The corridor crosses mid-block.** 258 of 298 routes put at least one cell on a carriageway
+between junctions; 871 complete pavement-to-pavement crossings inside one street, about 2.9 per
+route, all on ordinary streets and none on the spine, which routes reach along cross streets
+that meet it at junctions.
+
+**What follows, decided by the entry's own rule** that a rule whose case the probe never finds
+is not written: the far-pavement rule as drafted is dropped, since the pair it guards against
+does not occur, and the rules are rewritten in `TODO.md` against the shapes that do — a covered
+junction, a single row wide enough to take a street alone, the yeller's beat, and the corridor's
+own mid-block crossings. Which readings the rules answer (pacing as union or intersection,
+mobile rows at dawn or swept, doors in or out) is the player's call and is put in the entry.
+M131's map-placed flock was merged after these numbers were taken; a re-run is the first step
+of any rule.
+
 ## M131 — Pigeons exist before they are seen · built 2026-09-13
 
 *(2026-09-13, [PLAYTEST-69](playtests/PLAYTEST-69.md): "pigeons pop in on screen -- they should

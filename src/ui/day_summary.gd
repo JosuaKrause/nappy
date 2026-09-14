@@ -141,13 +141,16 @@ func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int
 		lines.append("")
 		lines.append(_resistance_tally_line())
 	_body.text = "\n".join(lines)
-	# The brief is shown here whichever `DayResult` this is, and shown before it is cleared —
-	# won or lost, this is the only screen that ever reads a touched mark's words back to her, so
-	# a first try that dies on the very day the mark was found must still hand them over rather
-	# than losing them with the attempt. *(Playtest 69, the reported run: touched the day-4 mark,
-	# lost the day, and reached day 5 with no idea who the note was for — `has_joined_resistance()`
-	# gated this whole block, and a pickup grants no progress, so `resistance_progress` was still 0
-	# and the brief that would have told her never showed at all.)*
+	# The brief is shown here whichever `DayResult` this is, and shown before it is cleared: this is
+	# the only screen that ever reads the resistance's words back to her, so a screen that skipped
+	# them would lose them for good. What is queued differs by outcome, and `GameState` decides it
+	# rather than this screen — on a won day, the words of a mark she touched today; on a lost one,
+	# the instruction the day itself began with, since the touch is given back with the attempt and
+	# the retry needs telling what the day is for. *(Playtest 69, the reported run: touched the
+	# day-4 mark, lost the day, and reached day 5 with no idea who the note was for —
+	# `has_joined_resistance()` gated this whole block, and a pickup grants no progress, so
+	# `resistance_progress` was still 0 and the brief that would have told her never showed at
+	# all.)*
 	_brief.text = GameState.pending_resistance_brief
 	_brief.visible = _brief.text != ""
 	GameState.pending_resistance_brief = ""

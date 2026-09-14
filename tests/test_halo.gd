@@ -33,6 +33,9 @@ func run(t) -> void:
 	_test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t)
 	_test_an_ordinary_walker_is_a_candidate(t)
 	_test_select_sources_takes_a_mixed_candidate_set(t)
+	_test_process_picks_the_same_sources_the_linear_scan_did(t)
+	_test_event_instance_contribution_is_cached_per_frame_per_position(t)
+	_test_finishing_outside_process_invalidates_the_contribution_cache(t)
 	_test_a_cat_dash_is_selected_and_lands(t)
 	_test_a_flock_is_selected_and_lands(t)
 	_test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t)
@@ -314,6 +317,119 @@ func _test_select_sources_takes_a_mixed_candidate_set(t) -> void:
 			"duck type, not a shared base class, is what makes both candidates")
 	instance.free()
 	car.free()
+
+# --------------------------------------------------------- the per-frame lookup ---
+# `docs/TODO.md`, M124: `_process()` used to test `source in picked` -- a linear scan of an Array
+# up to `MAX_SOURCES` long, run for every one of ~275 candidates. It now builds a `Dictionary`
+# keyed by the picked objects themselves once, and tests membership in that instead. The set of
+# who gets a nonzero target and who gets zero must come out exactly the same either way.
+
+func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
+	var manager := EventManager.new()
+	t.add_child(manager)
+	var crowd := Crowd.new()
+	t.add_child(crowd)
+	var player := Node2D.new()
+	t.add_child(player)
+	var halo := ExcitementHalo.new()
+	t.add_child(halo)
+	halo.setup(manager, crowd, player)
+
+	var strong := EventInstance.new()
+	strong.setup(_def("strong_halo", 30.0), Vector2.ZERO)
+	manager.add_child(strong)
+	strong.set_process(false)
+	manager._instances.append(strong)
+	# Out of reach at her position (400px against a 150px outer radius), so it clears neither the
+	# floor nor `select_sources()`'s cap -- the case the old `in` scan and the new lookup both have
+	# to answer "no" to.
+	var weak := EventInstance.new()
+	weak.setup(_def("weak_halo", 20.0), Vector2(400.0, 0.0))
+	manager.add_child(weak)
+	weak.set_process(false)
+	manager._instances.append(weak)
+
+	halo._process(STEP)
+
+	t.check(strong._halo._target_alpha > 0.0,
+			"a source above the floor at her position is picked and told a nonzero target")
+	t.check(is_zero_approx(weak._halo._target_alpha),
+			"a source out of reach is told zero -- the same answer the linear `in` scan gave before " +
+			"the picked set became a Dictionary lookup")
+
+	# `manager.free()` frees `strong` and `weak` as its own children, rather than freeing them
+	# directly and leaving `manager` to tick a dangling reference in `_instances` next frame.
+	manager.free()
+	crowd.free()
+	player.free()
+	halo.free()
+
+# ------------------------------------------------------ contribution_at is cached ---
+# `docs/TODO.md`, M124: `Baby._update_excitement()` (physics rate) and
+# `ExcitementHalo.select_sources()` (frame rate) both ask every live event for its
+# `contribution_at()` at essentially the same point, most frames -- so `EventInstance` caches the
+# plain query once per frame, the same `age`-keyed shape `_caret_strength()` already uses. The
+# cache must never answer for the *wrong* point or the *wrong* frame: two different positions in
+# the same tick still have to answer independently, and a new frame must never hand back last
+# frame's number for a source that has since moved.
+#
+# `CrowdAgent.contribution_at()` deliberately has no such cache -- see that method's own doc for
+# why (its position and jolt are written from outside its own `_process()`, by `Crowd`, so a
+# `_clock`-keyed cache would miss a fresh bump or startle for the rest of the tick it landed on);
+# `tests/test_crowd.gd`'s `_test_walking_into_somebody_displaces_and_startles_them` is the check
+# that would have caught it, and did, while this fix was still on `CrowdAgent`.
+
+func _test_event_instance_contribution_is_cached_per_frame_per_position(t) -> void:
+	var instance := _instance_at(_def("cached_event", 20.0, 40.0, 150.0), Vector2.ZERO)
+
+	var near := instance.contribution_at(Vector2(10.0, 0.0))
+	var far := instance.contribution_at(Vector2(140.0, 0.0))
+	t.check(near > far,
+			"two different points asked in the same tick both answer for their own position -- the " +
+			"cache is keyed on where it was asked, not just on when")
+
+	# A new frame (`age` advances the way `_process()` advances it) with the source moved away: the
+	# old position must be recomputed, not answered from a stale cache built for last frame's spot.
+	instance.age += 1.0
+	instance.global_position = Vector2(5000.0, 5000.0)
+	t.check(is_zero_approx(instance.contribution_at(Vector2(10.0, 0.0))),
+			"a new frame recomputes rather than serving last frame's cached contribution")
+	instance.free()
+
+## The CI failure this guards against, reproduced directly: `EventManager.retire()` and
+## `.silence_city_wide()` (the resistance's own masts going quiet on the last walk home) both call
+## `_finish()` straight from outside, with no `_process()` tick of the instance's own in between --
+## so `age` never moves, and a cache keyed only on `(age, world_position)` went on answering the
+## pre-finish contribution for the rest of that tick. `_be_done()`'s `is_leaving = true` branch is
+## the other half of the same guard `contribution_at()`'s early return reads, and gets the same
+## check.
+func _test_finishing_outside_process_invalidates_the_contribution_cache(t) -> void:
+	var def := _def("mast", 40.0)
+	def.city_wide = true
+	var instance := _instance_at(def, Vector2(400.0, 400.0))
+	var somewhere := Vector2(9000.0, 9000.0)
+	t.check(instance.contribution_at(somewhere) > 0.0,
+			"a live city-wide source reaches anywhere in the city, which the cache now holds")
+
+	instance._finish() # the exact call EventManager.retire()/silence_city_wide() makes
+	t.close_to(instance.contribution_at(somewhere), 0.0,
+			"finishing outside _process() invalidates the cache rather than leaving the pre-" +
+			"finish answer standing for the rest of the tick (this is the resistance's masts " +
+			"going quiet, tests/test_resistance.gd's own scenario)")
+	instance.free()
+
+	# The other flag `contribution_at()`'s early return reads, forced the same way `_be_done()`
+	# forces it when a mobile row has somewhere to go.
+	var leaving_def := _def("leaving", 40.0, 40.0, 400.0)
+	leaving_def.departs_at = 10.0 # departure_speed() > 0, so _be_done() takes the leaving branch
+	var leaving := _instance_at(leaving_def, Vector2.ZERO)
+	t.check(leaving.contribution_at(Vector2(10.0, 0.0)) > 0.0,
+			"a live row reaches a point inside its own field, which the cache now holds")
+	leaving._be_done()
+	t.check(leaving.is_leaving, "departure_speed > 0 takes the leaving branch, not straight to finished")
+	t.close_to(leaving.contribution_at(Vector2(10.0, 0.0)), 0.0,
+			"is_leaving flipping outside _process() invalidates the cache the same way finishing does")
+	leaving.free()
 
 # ------------------------------------------------------------ two rows that read as nothing ---
 # *(Playtest 38, finding 1: "cats and birds have zero effect right now according to halos".)*

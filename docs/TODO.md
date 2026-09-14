@@ -315,81 +315,49 @@ still reaches two calm areas, `EventScheduler._ensure_the_city_is_still_walkable
 obstructing bodies, widest first, until a park is reachable, and a `hard_fail` row keeps its
 whole field clear of other events (`_room_around`). Every one of those is about *reaching*, and
 a route that reaches through three friction fields in a row is as legal as an empty one. Costly
-rows land inside the corridor on purpose (the `friction` role); a kerbed van takes 44px of a
-64px footway so *the answer is the other side of the street* (`docs/EVENTS.md`), but nothing
-checks that the other side is open where it is needed. `homeless_yeller` `paces` between the
-ends of its route for ever at intensity 14 and a 210px reach. Crossings exist at every junction
-(a zebra, or the spine's signalled lines) and she can cross anywhere in play; the corridor's
-cells can already cut a corner through a park or an alley.
+rows land inside the corridor on purpose (the `friction` role). **The guarantee is measured and
+is far from true**: `tests/probes/m129_zero_cost_line.gd`, run by name, finds a zero-cost line
+along about one route in fourteen over a run and along none from act III; the numbers, the
+readings and the failing shapes are in `DECISIONS.md` under M129. The dominant break is a
+*covered junction* — the only legal crossing sits inside some row's reach — then the yeller's
+beat, then a single row wide enough to take a street alone (the street is 192px kerb to kerb and
+most reaches are 179 to 240px). A van with the far pavement also taken is the rarest shape and
+two friction fields on facing pavements never occur, so the far-pavement rule the entry first
+drafted is not written. The corridor grower itself crosses a carriageway mid-block about three
+times per route, on ordinary streets and never on the spine. M131's map-placed flock landed
+after the measurement, so a re-run comes first.
 
-- [ ] **The guarantee, stated and measured before anything moves.** A probe under
-      `tests/probes/` that, for each planned day over a set of seeds, walks every route from
-      the home to its calm area and asks whether a *zero-cost line* exists along it: a line
-      that stays out of every placed row's outer radius at the top of its beat, moves between
-      pavements only at intersections, never mid-block, and treats the corridor's own
-      park-and-alley cuts as ground like any other. It reports the fraction of routes that
-      have one, and for those that do not, which row and which stretch broke it — a van with
-      the far pavement also taken, two friction fields on facing pavements, a yeller whose beat
-      never leaves an opening. The numbers and the failing shapes go to `DECISIONS.md` first;
-      the rules below are chosen against them, and a rule whose case the probe never finds is
-      not written.
-- [ ] **A friction row on a route's pavement is accepted only if the far pavement is open for
-      the stretch.** Checked before the row is placed, never repaired after (the city rule): the
-      opposite pavement between the two nearest intersections holds no costly or impassable
-      body and is reachable from the route by an intersection crossing at each end. Where the
+**Three readings are the player's to choose before the rules are cut**, since each moves the
+number: whether a pacing row denies its whole beat or only where its beat never opens (7.4% to
+10.7%); whether a moving row denies its dawn position or its whole swept route (7.4% to 2.7%);
+and whether a region door on the route counts as a cut (7.4% to 7.7%). The recommendation is
+the primary reading — whole beat, dawn position, doors counted — since it is the one a player
+walking at any moment of the day meets.
+
+- [ ] **A route's junctions stay clear.** The junctions a route passes through, and the ones at
+      each end of each of its streets, are outside every placed row's reach: checked before a
+      row is placed, never repaired after (the city rule), so a row whose field would cover a
+      route junction is refused that ground. This is the shape that breaks most routes and no
+      earlier item named it. Pursuers, `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` rows and city-wide
+      rows are outside this — they pay the telegraph contract instead — and so is anything off
+      the corridor, where the wall role is the design. Re-run the probe after; the fraction and
+      the shapes go beside the first table in `DECISIONS.md`.
+- [ ] **No single row takes a route street's whole width.** A friction row on a route's
+      pavement is accepted only if its reach leaves the far pavement of that street outside it
+      for the stretch between the two nearest junctions; a row that cannot — `police_patrol`,
+      `busker`, `ice_cream_van` at today's reaches on a 192px street — is refused corridor
+      ground or its reach on the corridor is the number the **balance** rule moves. Where the
       corridor runs along a precinct, a park edge or an alley, say what "the other side" is
-      there or refuse the row that ground. Pursuers, `AHEAD_OF_PLAYER` rows and city-wide rows
-      are outside this — they pay the telegraph contract instead — and so is anything off the
-      corridor, where the wall role is the design.
+      there or refuse the row that ground. Re-run the probe after.
 - [ ] **A pacing row leaves the line open for part of its beat.** The yeller's route is sited
       and sized so that the pavement it paces is clear at one end for a readable share of each
       loop, or its loop runs on the pavement the route does not use; the choice is measured
       with the probe and the reach the line needs at the far end of its beat is the number. The
-      same for any other row that `paces`.
-- [ ] **Mid-block crossings are not counted on.** The route tree's cells and the probe's line
-      cross a carriageway only at a junction; in play she may still cross anywhere. If the
-      corridor grower already cuts across a street mid-block, that is a finding for the probe
-      to name and this item to fix.
-
----
-
-## M134 — A lost day gives the resistance back · asked for 2026-09-13
-
-> "a lost day shouldn't retain the touch mark -- a task is only complete if it is done on the
-> day that won. but also it should reset if lost so the player can try again"
-
-[PLAYTEST-69](playtests/PLAYTEST-69.md), on reading M132's record. *Asked for as "what the run
-has spent stays spent" · overturned for the resistance on 2026-09-13.* The **godot** and
-**verify** rules govern; the resistance director and `GameState` are the files.
-
-**What is true today.** `GameState.finish_day()` on a loss spends a nerve, erases where she
-settled, and keeps everything else: `completed_resistance_steps`, `resistance_progress`,
-`failed_resistance_steps`, `resistance_carrying_package`, `sabotage_done` and the queued
-brief all survive the nerve, and a mark once in `completed_resistance_steps` is never offered
-again, so a mark touched on a lost day is both kept and unrepeatable. The lost day's summary
-reads the queued brief and clears it (`DECISIONS.md`, M132).
-
-- [ ] **Nothing the resistance did on a lost day counts, and the retry offers it again.** At
-      the start of each day `GameState` takes a snapshot of the resistance's run state — the
-      six fields above — and a loss restores it before the retry begins, so a mark touched, a
-      step performed, a contact lost to its deadline, a package picked up or the last night's
-      sabotage on a lost day are all undone, and the same mark or contact is offered on the
-      retry exactly as the day first offered it. A won day commits the snapshot. The rule in
-      `finish_day()`'s docstring gains the resistance as its second exception beside
-      `settled_in`, with the player's sentence as the reason. `tests/test_day_loop.gd` holds
-      it: touch a mark, lose the day, the mark is untouched and on offer again; perform a step,
-      lose, progress is back where it was; win, and both stand.
-- [ ] **A lost day's summary repeats the day's own instruction, never tomorrow's.** *(2026-09-13:
-      "the words shown on the lost day are the words that show at the beginning of that day not
-      the nexts. since day doesn't have words it doesn't make sense to show words on day 4".)*
-      M132's *"it should show also when dying"* means the words she already had: a lost
-      summary shows the brief of the perform step that was on offer when the day began — the
-      same words the previous won summary read — so the retry is reminded what the day is for,
-      and it shows nothing when no step was on offer, which is every lost day 4. A mark touched
-      on the lost day itself has its touch taken back by the first item, so its words are not
-      shown until the touch that counts; a won summary reads the newly queued brief as today.
-      `tests/test_day_loop.gd` holds both: a lost day 5 with the note's step on offer shows the
-      day-4 mark's words, a lost day 4 with a mark touched shows none.
+      same for any other row that `paces`. Re-run the probe after.
+- [ ] **Mid-block crossings are not counted on.** The route tree's cells cross a carriageway
+      only at a junction; in play she may still cross anywhere. The probe finds the grower
+      crossing mid-block on most routes today, so this is a change to how the corridor is grown
+      on the reachability grid, and the probe's own mid-block count is its test.
 
 ---
 
@@ -428,65 +396,6 @@ matters is a phone's question, not a desktop's.
       unchanged and the SVG-first rule and the `--svg` override still hold. The **cli-tools**
       and **python-tooling** rules govern the tool; the illustrated-png skill says what a
       transfer owes.
-- [ ] **`ExcitementHalo._process()` rebuilds a ~275-element array and does a linear `in` per
-      candidate.** `src/ui/excitement_halo.gd:215-232`: every frame it allocates a fresh untyped
-      `Array`, `append_array`s `_events.instances()` (41) and `_crowd.agents()` (234) into it,
-      calls `select_sources()` — which allocates one two-element `Array` per candidate above the
-      floor and runs `sort_custom` with a freshly-constructed lambda — then loops all 275
-      candidates doing `if source in picked:` (`:227`), a linear scan of an array of up to
-      `MAX_SOURCES` (8): ~2,200 `Variant` comparisons and ~280 heap allocations per frame, every
-      frame, for the whole of every day. Fix: keep one reusable member array for `candidates`;
-      have `select_sources()` return a `Dictionary` of picked instance ids (or set a flag on each
-      picked source before the loop) and test that instead of `in`.
-- [ ] **The same `contribution_at(player)` sweep runs twice per frame from two owners.**
-      `src/player/baby.gd:108` (`_world.excitement_sources_at(here)` at physics rate) and
-      `src/ui/excitement_halo.gd:221-222` (`source.contribution_at(at)` inside `select_sources`,
-      at frame rate) both ask every live event and every crowd agent for its contribution at the
-      same point. `CrowdAgent.contribution_at` (`src/crowd/crowd_agent.gd:838`) does a
-      `GroundShape.eccentric_distance()` plus one or two `Tuning.falloff()` calls, so this is
-      roughly 550 falloff evaluations per frame where 275 would do. Fix: cache
-      `contribution_at(player_at)` on each source, keyed on the frame — the same once-a-frame
-      shape `EventInstance._caret_strength()` (`event_instance.gd:2223`) already uses and
-      documents; the halo already tells every candidate `set_player_at(here)`, so the key is to
-      hand.
-- [ ] **`DangerEdge._measure()` allocates one `Dictionary` per live instance per frame.**
-      `src/ui/danger_edge.gd:107-150`: `next[id] = {"was": at, "approach": approach, "hold": hold}`
-      inside a loop over every live instance, `_watch = next`, and a `sort_custom` with a
-      freshly-constructed lambda — ~41 `Dictionary` allocations plus one outer `Dictionary` plus
-      up to 41 four-element `Array`s in `_coming`, every frame, to carry three floats per
-      instance. Fix: mutate the existing per-instance dictionaries in place and delete only the
-      ids that went away, or keep the three fields on the `EventInstance` itself the way
-      `plan.age`/`plan.travelled` already carry stream state.
-- [ ] **`DebugLayers` walks the whole city tree, three times, every frame.**
-      `src/dev/debug_layers.gd:90-91` calls `queue_redraw()` unconditionally even with all three
-      layers off; `collision_nodes_under()` (`:230-244`) is a recursive walk that allocates a new
-      `Array[Node]` at every recursion level, and `_draw_bodies()` (`:200-203`) calls it on
-      `_city` — every building, prop, event instance and crowd agent and all their children — and
-      again on `_player`; `body_outline_count()` (`:211-213`) calls it twice more. Pressing `3`
-      in a debug run — the documented way to check a body by eye — costs thousands of node visits
-      and hundreds of array allocations per frame, dropping the frame rate so the thing being
-      inspected is no longer running at the speed a player sees. Fix: gate `_process`'s
-      `queue_redraw()` on `fields_on or shadows_on or bodies_on`; build the node list into one
-      passed-in array (`collision_nodes_under(root, into)`) cached per day or rebuilt on
-      `child_entered_tree`, rather than reallocating per level per frame.
-- [ ] **The day clock is re-formatted 60 times a second for a string that changes once a second.**
-      `src/day/day_controller.gd:61` emits `EventBus.day_time_changed` unconditionally every
-      `_process` frame; `src/ui/hud.gd:312-320` handles it with a `%` format (or
-      `GameState.format_clock()` in the finale, which allocates and does three more `%`
-      substitutions) and a `Color(...)` construction and `modulate` assignment on every one, even
-      though `Label.text`'s own equality check only saves the relayout. Fix: emit only when
-      `int(time_remaining)` changes, or compare in the handler before formatting.
-- [ ] **`ReachabilityGrid.reaches()` recomputes the dirty-cell set on every call.**
-      `src/routes/reachability_grid.gd:252-255`: `reaches()` calls `_dirty_cells(blocked)`
-      (`:188-192`), which allocates a `Dictionary` keyed by `Vector2i` and fills it with one entry
-      per blocked tile on **every** call, even though callers (`ClosurePlanner._area_is_reached`,
-      `CityMap`'s closed-street check, `EventScheduler`) loop it with the same `blocked` set they
-      passed to `flood()`. A single unreached calm area during closure planning costs ~11,600
-      `Vector2i`-keyed inserts rebuilding the same answer. Fix: have `flood()` return the dirty
-      set alongside `reached` (or accept a precomputed one), and have `reaches()` take it rather
-      than recompute it; `_cell_of_tile` (`:186`) can also drop its `floori(float(x) / CELL)` for
-      integer arithmetic, and `_neighbours_of_key` (`:213`) can write the four neighbour steps out
-      rather than allocating an offset array literal on every call.
 
 ---
 

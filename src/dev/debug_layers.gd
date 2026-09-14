@@ -87,8 +87,18 @@ func layer_on(index: int) -> bool:
 		3: return bodies_on
 		_: return false
 
+## Gated on a layer actually being on: with all three off there is nothing to redraw, and asking
+## for one anyway costs a queued `_draw()` call sixty times a second for a view that never turns
+## anything on. `_draw()` itself already returns early with everything off, but `queue_redraw()` is
+## what schedules that empty call in the first place.
 func _process(_delta: float) -> void:
-	queue_redraw()
+	if _wants_a_redraw():
+		queue_redraw()
+
+## Pulled out of `_process()` so a test can hold the gate without a viewport to actually ask
+## `queue_redraw()`/`_draw()` about.
+func _wants_a_redraw() -> bool:
+	return fields_on or shadows_on or bodies_on
 
 func _draw() -> void:
 	if not _events or not _crowd or not _player:
@@ -226,19 +236,28 @@ func _strike_box_agents() -> Array[CrowdAgent]:
 ## so a new body needs nothing added here to be found. This is the one place that decides what
 ## counts as a body for the debug view; `_draw_bodies()` and `body_outline_count()` both read it,
 ## and `tests/test_debug_layers.gd` walks the same tree by hand as an independent check.
+##
+## A thin wrapper over `_collect_collision_nodes_into()`, which walks into one array the caller
+## already owns rather than `append_array`-ing a fresh `Array[Node]` back up through every level of
+## recursion — the whole tree under `_city` is buildings, props, event instances and crowd agents
+## and all of their own children, so a level-deep tree paid for one allocation per level on top of
+## the one this function itself returns; now it pays for exactly one.
 static func collision_nodes_under(root: Node) -> Array[Node]:
 	var found: Array[Node] = []
+	_collect_collision_nodes_into(root, found)
+	return found
+
+static func _collect_collision_nodes_into(root: Node, into: Array[Node]) -> void:
 	if root == null:
-		return found
+		return
 	if root is StaticBody2D or root is CharacterBody2D:
 		for child in root.get_children():
 			if child is CollisionShape2D and not child.disabled and child.shape != null:
-				found.append(child)
+				into.append(child)
 			elif child is CollisionPolygon2D and not child.disabled:
-				found.append(child)
+				into.append(child)
 	for child in root.get_children():
-		found.append_array(collision_nodes_under(child))
-	return found
+		_collect_collision_nodes_into(child, into)
 
 ## Draws one collision node's own shape at its own `global_position` — never a second copy of its
 ## geometry, so this cannot disagree with what the node actually collides as.

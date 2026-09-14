@@ -1694,6 +1694,7 @@ func _be_done() -> void:
 		_finish()
 		return
 	is_leaving = true
+	_invalidate_contribution_cache()
 	_leaving_for = 0.0
 	# Something on a route carries on the way it was going; anything else goes away from her,
 	# which is the only direction a flushed flock or a dog that has lost interest can mean.
@@ -1766,6 +1767,7 @@ func _finish() -> void:
 	if is_finished:
 		return
 	is_finished = true
+	_invalidate_contribution_cache()
 
 # ------------------------------------------------------------------ emission ---
 
@@ -1901,8 +1903,48 @@ func _prune_landed_history() -> void:
 ## that same velocity or the two disagree about which way this thing is going. A pursuer holding its
 ## telegraph stand-off is the case that matters — `travel_velocity()` is zero there (it is holding
 ## still) while `_caret_velocity()` is the lunge it is about to make.
+## The cache `contribution_at()` below keeps for its plain query (no override given) — see that
+## function's own doc.
+var _contribution_age := -1.0
+var _contribution_at := Vector2.INF
+var _contribution_cache := 0.0
+
+## Forces the next `contribution_at()` call to recompute rather than trust the cache. `age` never
+## moves outside this instance's own `_process()`, but `is_finished`/`is_leaving` can:
+## `EventManager.silence_city_wide()` and `.retire()` call `_finish()` directly, with no
+## `_process()` tick of this instance's own in between, so a cache keyed only on `(age,
+## world_position)` would otherwise go on answering the pre-finish contribution for the rest of the
+## tick that finished it — the same class of defect `CrowdAgent.contribution_at()`'s own doc names
+## as the reason that method has no cache at all, since its position and jolt are written from
+## outside its `_process()` the same way. `_finish()` and `_be_done()` both call this the instant
+## either flag flips to `true`; neither flag is ever cleared afterwards, so one invalidation at the
+## transition is the whole of what correctness needs — the very next call recomputes and caches the
+## now-permanent zero, and every call after that hits the cache honestly.
+func _invalidate_contribution_cache() -> void:
+	_contribution_age = -1.0
+
+## **The plain query — no override given — is cached once per frame per position**, the same
+## `age`-keyed shape `_caret_strength()` documents below: `Baby._update_excitement()` (physics
+## rate) and `ExcitementHalo.select_sources()` (frame rate) both ask every live instance for its
+## contribution at the same point most frames, so a repeat this tick answers from the cache
+## instead of re-running `Tuning.falloff()`. `expected_impact_at()`'s own projection passes an
+## override or a translated `world_position` for every sample but its first, so those calls never
+## match the cache key and always recompute, which is correct — the cache is only ever for the
+## single point every ordinary caller actually asks about.
 func contribution_at(world_position: Vector2, intensity_override := -1.0,
 		velocity_override := Vector2.INF) -> float:
+	var cacheable := intensity_override < 0.0 and velocity_override == Vector2.INF
+	if cacheable and _contribution_age == age and _contribution_at == world_position:
+		return _contribution_cache
+	var result := _contribution_at_uncached(world_position, intensity_override, velocity_override)
+	if cacheable:
+		_contribution_age = age
+		_contribution_at = world_position
+		_contribution_cache = result
+	return result
+
+func _contribution_at_uncached(world_position: Vector2, intensity_override: float,
+		velocity_override: Vector2) -> float:
 	if is_finished or is_leaving:
 		return 0.0
 	var intensity := intensity_override if intensity_override >= 0.0 else current_intensity()
