@@ -284,16 +284,32 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **This section is the pick-up for the next session and is removed by it.** `gh pr list` and
 `git worktree list` are the truth; this is the map.
 
-- **The playtest 69 milestones are in flight as one pull request each**, every one in its own
-  worktree under `.claude/worktrees/`, and the player's word on 2026-09-13 is to merge each as
-  it goes green and then **cut a patch release** (`tools/release.sh patch push`). Which are
-  still open is `gh pr list`'s answer, not this file's; a merged one has its record in
-  `DECISIONS.md` and its played questions in `REVIEW.md`. M129, a path through the city never
-  has to cost, has its guarantee measured (`DECISIONS.md`, M129) and its four rules rewritten
-  against the shapes the probe found; three readings in its entry are the player's to choose
-  before the first rule is cut, and the busker's street-side spill (`DECISIONS.md`, M128) is
-  read against them — with a line on the far pavement, a spill onto one side is a price, not a
-  wall.
+- **Everything playtest 69 asked for is built, merged and released**, and so are M124's six
+  per-frame audit fixes, M125's crowd-suite split and M135's route lines; each has its record
+  in `DECISIONS.md` and its played questions in `REVIEW.md`. Nothing is in flight: no worktree,
+  no open PR. `git tag --list 'v*'` says what the site serves.
+- **M129, a path through the city never has to cost, is the next design work and it starts
+  with three questions for the player**, in its entry: whether a pacing row denies its whole
+  beat or only where the beat never opens, whether a moving row denies its dawn position or its
+  swept route, and whether a region door on a route counts as a cut. The probe measured the
+  guarantee (`DECISIONS.md`, M129) and found it true of about one route in fourteen and of none
+  from act III; the four rules were rewritten against the shapes it found, the dominant one a
+  covered junction that no earlier item had named. Re-run the probe first, since M131's
+  map-placed flock landed after the measurement. The busker's street-side spill
+  (`DECISIONS.md`, M128) is read against these rules: with a line on the far pavement, a spill
+  onto one side is a price, not a wall.
+- **Three consequences of this session's work are the player's to accept or overturn**, each
+  in `REVIEW.md` with its record: a placed flock is a wall under the cost rule and so stands off
+  the day's routes (`DECISIONS.md`, M131); the route lines' first segment hops from the door to
+  wherever a route joins the home street, and their interior is cell centres rather than tile
+  centres (`DECISIONS.md`, M135); and the resistance's trap guards only the yeller it was seeded
+  beside now that the contact is the first one reached (`DECISIONS.md`, M132).
+- **The phone half of M124 can now be measured on the live page**: `?debug=1` shows the readout
+  on a release build with a fixed "DEBUG MODE ON" note (`DECISIONS.md`, M133), so the six
+  numbers off a phone are a screenshot away, and the atlas item waits on them.
+- **M125 has two suites left over the budget**, the events and routes suites, both ready for an
+  agent as a split by subject; `tools/test.sh --record-costs` on a quiet machine comes first,
+  since the recorded costs were taken under local contention and two new suites have no row.
 - **The review questions continue where playtest 68 stopped.** The rule for them is in
   [PLAYTEST-68.md](playtests/PLAYTEST-68.md): one item at a time with its context and a
   recommendation; an answered item closes on the answer even though later play may overturn it;
@@ -309,8 +325,8 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **`TODO.md`'s gameplay queue is the order, and it was set by the player item by item.** Playtest
 66's four milestones are all built and released (`DECISIONS.md`, M119 to M122); what only a walk
 can judge about them is in `REVIEW.md`. M56 has only
-its measurement against the nerves left, and that waits for act III. The debug view (`1` to `4` in a debug build, `--layers 1,3` for
-a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow or a body is checked by
+its measurement against the nerves left, and that waits for act III. The debug view (`1` to `5` in a debug build, `--layers 1,3` for
+a rig; `docs/TELEMETRY.md`, "The debug view") is how a field, a shadow, a body or the day's routes is checked by
 eye, and every one of the three is derived from the object's own `GroundShape` — one apiece for
 everything but the car crash, which is solid in two pieces because its picture is two cars with
 gaps between them (`DECISIONS.md`, M118). Behind those, unordered: M96 (the teaching day and
