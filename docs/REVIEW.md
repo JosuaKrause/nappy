@@ -15,9 +15,9 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 ## Next run, in one sitting
 
 Each line is a thing to try or look at and the question it settles. `tools/run.sh` plays the
-desktop build; `--seed <n> --day <n>` puts a run where an item says; `1` to `4` in a debug build
-toggle the field, shadow, bounding-box and readout layers (`docs/TELEMETRY.md`, "The debug
-view"). `--invincible` is the way to walk this whole list in one sitting: nothing ends the day,
+desktop build; `--seed <n> --day <n>` puts a run where an item says; `1` to `5` in a debug build
+toggle the field, shadow, bounding-box, readout and route-line layers (`docs/TELEMETRY.md`, "The
+debug view"). `--invincible` is the way to walk this whole list in one sitting: nothing ends the day,
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
