@@ -291,9 +291,11 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
   the site serves.
 - **Several PRs are open and none is merged; `gh pr list` is the truth.** They stack: the
   build stamp (M136) carries playtest 70 and the phone half of M124; the M124 skip-flag branch
-  is based on it; the playtest 71 decisions branch is based on `main`, and the two agent PRs —
-  M129's reading and flock, and M137's trap — are based on *that* and open against it. Merge
-  in that order, or merge `main` into the later ones under
+  is based on it; the playtest 71 decisions branch is based on `main`, and an agent PR for
+  M129's reading and flock, if the agent got as far as opening one, is based on *that* and open
+  against it. M137's agent was stopped by a usage limit before its first edit; what it read is
+  in the M137 entry, and the milestone is unstarted. Merge in that order, or merge `main` into
+  the later ones under
   the **merging-main** rules. `git worktree list` shows the agents' worktrees; an agent stopped
   by a usage limit keeps its worktree, so resume it rather than respawn if its PR is a draft.
 - **The next thing to build is the `skip` flag** (`TODO.md`, M124, "a `skip` flag turns the
