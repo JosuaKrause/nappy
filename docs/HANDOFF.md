@@ -288,13 +288,15 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
   per-frame audit fixes, M125's crowd-suite split and M135's route lines; each has its record
   in `DECISIONS.md` and its played questions in `REVIEW.md`. Nothing is in flight: no worktree,
   no open PR. `git tag --list 'v*'` says what the site serves.
-- **M129, a path through the city never has to cost, is the next design work and its reading
-  is decided** ([PLAYTEST-71](playtests/PLAYTEST-71.md)): a pacing row counts only where its
-  beat never opens, a moving row, a region door and a flock never count. Every number in
-  `DECISIONS.md` under M129 was taken under a stricter reading, so the entry's first item is
-  the probe re-cut and re-run, and its rules are cut against the shapes that run finds. The
-  busker's street-side spill (`DECISIONS.md`, M128) is read against these rules: with a line on
-  the far pavement, a spill onto one side is a price, not a wall.
+- **M129, a path through the city never has to cost, is the next design work and its four
+  rules are ready for an agent, one at a time.** The reading is the player's
+  ([PLAYTEST-71](playtests/PLAYTEST-71.md)) and the probe measures it (`DECISIONS.md`, M129,
+  the reading decided): a flock is scenery and lands on routes again, and a zero-cost line
+  exists along about one route in six, one in three on day 1, one in twenty-five from act
+  III. The covered junction is the first rule's shape and a single wide row the second; the
+  yeller's beat, once the second shape, is now the fifth. The busker's street-side spill
+  (`DECISIONS.md`, M128) is read against these rules: with a line on the far pavement, a spill
+  onto one side is a price, not a wall.
 - **M137, the contact is whoever she hands the note to and the trap comes to her**, is
   specified and unbuilt: the robber spawns off screen, already pursuing, at the handoff instead
   of standing beside one seeded yeller from dawn.

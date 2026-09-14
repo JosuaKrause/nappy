@@ -337,8 +337,18 @@ static func _for_day(def: EventDef, day: int) -> EventDef:
 ## It is stated over `walk_through_cost()` — the same integral `tests/test_danger.gd` orders the
 ## caret by — rather than over a new field, because *how expensive a row is* is a question the
 ## catalogue already answers, and a second answer to it is how two tables of one fact drift apart.
+##
+## **`EventDef.scenery` is checked before the cost is, and it answers `NONE` rather than a fifth
+## role.** *"Flocks are basically free already — don't count it as block, just count is
+## scenery."* `pigeon_flock`'s 42-over-168px field crosses `WALL_WORTH_OF_COST` on the plain
+## reading, so without the exemption it would be a wall pulled off every route the way any other
+## expensive row is — which is exactly the placement the player overturned. `NONE` already means
+## "placed for a reason that is not about the corridor at all," which is the flock's own case: it
+## is still sited on a tile like everything else, just never weighted toward or away from one.
 static func _role_for(def: EventDef, day: int = 0) -> GameEnums.BlockerRole:
 	if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP or def.kind == GameEnums.EventKind.AMBIENT:
+		return GameEnums.BlockerRole.NONE
+	if def.scenery:
 		return GameEnums.BlockerRole.NONE
 	if def.kind == GameEnums.EventKind.ONE_SHOT:
 		return GameEnums.BlockerRole.SET_PIECE

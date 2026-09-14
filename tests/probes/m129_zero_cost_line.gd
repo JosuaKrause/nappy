@@ -66,21 +66,23 @@ extends RefCounted
 ## - **A row's field is read as the plain disc of its `outer_radius`**, not the forward-stretched
 ##   ellipse `EventDef.field_reach()` gives a moving one. The milestone's own wording is
 ##   `outer_radius`; the two differ only for the handful of mobile rows and only ahead of them.
-## - **A pacing row is read two ways and both are printed.** The primary reading is the **union**
-##   over its beat — the ground the yeller ever denies, so the line is free whenever she arrives.
-##   The second is the **intersection** over the beat — the ground he denies at every phase — which
-##   is *"a line that has an opening at some phase"*. The failing shapes are classified under the
-##   primary reading.
-## - **A mobile row that is not pacing blocks where it stands at dawn.** It is a journey rather than
-##   a beat: it is gone at the end of its route, and what it costs is the stretch it happens to own
-##   while she is there. This is the same reading `EventScheduler._park_is_reachable` already takes
-##   of a blocker (it rasterises `plan.position` and ignores `plan.path`). The alternative — the
-##   whole swept route — is printed beside it as its own figure.
-## - **A region door is counted, and counted separately.** From `Tuning.REGION_WALL_FIRST_DAY` (7) a
-##   crossing the tree uses carries two `checkpoint_hut`s and a `checkpoint_gate`, and *"a door is
-##   passable only by detention"* — by design there is no free line through one. The overall figure
-##   is printed both with the doors in and with them out, so the rules written against these numbers
-##   can decide which question they are answering.
+## - **A pacing row is passed by timing, not routed around.** The primary reading is the
+##   **intersection** over its beat — only the ground it never leaves free counts as blocked, so a
+##   line free at *some* phase of the loop can simply wait for it (`Reading.BEAT_OPENING`, *"time
+##   pass -- don't route around them"*, PLAYTEST-71). The **union** over the beat — the ground the
+##   yeller ever denies — is printed beside it for comparison (`Reading.BEAT_UNION`). The failing
+##   shapes are classified under the primary reading.
+## - **A mobile row that does not pace is never a block.** She can cross the street, wait for it to
+##   pass and cross back without ever standing in its field, so it is left out of every reading
+##   rather than read at its dawn position or over its whole route (PLAYTEST-71, *"the player can
+##   cross the street, wait, then come back without ever getting excited by it"*).
+## - **A region door is never a block.** It costs by design (PLAYTEST-71, *"it costs by design"*),
+##   so `checkpoint_hut` and `checkpoint_gate` are left out of every reading; the region wall's own
+##   body is not a door and still counts.
+## - **`pigeon_flock` is scenery, not a block.** A row with `EventDef.scenery` set is left out of
+##   every reading the same way a door is (PLAYTEST-71, *"flocks are basically free already --
+##   don't count it as block"*), matching `EventScheduler._role_for`, where `scenery` answers
+##   `NONE` before the wall/friction cost test ever runs.
 ##
 ## # What a broken route is reported as
 ##
@@ -116,15 +118,14 @@ const BEAT_SAMPLE_PX := 16.0
 
 ## How a row that moves is read, and which rows are read at all. See the class doc.
 enum Reading {
-	## Pacing rows over the union of their beat; every other mobile row where it stands at dawn.
-	BEAT_UNION,
-	## Pacing rows over the intersection of their beat — the ground denied at every phase.
+	## Pacing rows over the intersection of their beat — only the ground the beat never leaves
+	## free counts as blocked, since a pacing row is passed by timing rather than routed around.
+	## The primary reading.
 	BEAT_OPENING,
-	## Every mobile row over the whole of its route.
-	EVERY_PATH,
-	## `BEAT_UNION` with the region doors' own bodies left out.
-	NO_DOORS,
-	## `BEAT_UNION` with only the day's own catalogue rows: no seals, no region wall, no doors.
+	## Pacing rows over the union of their beat — the ground the yeller ever denies, so the line
+	## is free whenever she happens to arrive. Printed beside the primary reading for comparison.
+	BEAT_UNION,
+	## `BEAT_OPENING` restricted to the day's own catalogue rows: no seals, no region wall body.
 	## What is left is the friction the corridor was given on purpose, and the spill from the rows
 	## placed off it.
 	CATALOGUE_ONLY,
@@ -141,7 +142,6 @@ enum Shape {
 	PACING,
 	SINGLE_ROW_SPANS,
 	MANY_ROWS,
-	REGION_DOOR,
 	JUNCTION_TAKEN,
 	DOORSTEP,
 	NOT_A_BAND,
@@ -156,7 +156,6 @@ const SHAPE_NAMES := {
 	Shape.PACING: "a pacing row whose beat never leaves an opening",
 	Shape.SINGLE_ROW_SPANS: "one row covering the street's whole width by itself",
 	Shape.MANY_ROWS: "three or more rows covering the width between them",
-	Shape.REGION_DOOR: "a region door on the route",
 	Shape.JUNCTION_TAKEN: "the junction itself is taken",
 	Shape.DOORSTEP: "the doorstep itself is inside a field",
 	Shape.NOT_A_BAND: "the cut is not a straight band across one street",
@@ -173,10 +172,8 @@ class Row extends RefCounted:
 	## Points along its own route, or the one place it stands.
 	var beat := PackedVector2Array()
 	var paces := false
-	var mobile := false
 	var emits := false
 	var obstructs := false
-	var is_door := false
 	var source := Source.CATALOGUE
 	## The tiles it denies under the primary reading, as flat indices. See `_blocked_counts`.
 	var tiles := PackedInt32Array()
@@ -202,8 +199,7 @@ func _measure() -> void:
 	var started := Time.get_ticks_msec()
 	print("\n== M129: the zero-cost line, %d seeds x one day per act %s ==" % [SEEDS, DAYS])
 
-	var readings := [Reading.BEAT_UNION, Reading.BEAT_OPENING, Reading.EVERY_PATH, Reading.NO_DOORS,
-			Reading.CATALOGUE_ONLY]
+	var readings := [Reading.BEAT_OPENING, Reading.BEAT_UNION, Reading.CATALOGUE_ONLY]
 	# reading -> act -> [clear, total]
 	var tally := {}
 	for reading in readings:
@@ -246,11 +242,11 @@ func _measure() -> void:
 
 			# The primary reading first, because it is the one whose per-row tile lists the
 			# diagnosis takes apart again.
-			var counts := _blocked_counts(map, rows, Reading.BEAT_UNION)
+			var counts := _blocked_counts(map, rows, Reading.BEAT_OPENING)
 			var owners := _owners_of(map, rows)
-			var denied := {Reading.BEAT_UNION: counts}
+			var denied := {Reading.BEAT_OPENING: counts}
 			for reading in readings:
-				if reading != Reading.BEAT_UNION:
+				if reading != Reading.BEAT_OPENING:
 					denied[reading] = _blocked_counts(map, rows, reading)
 
 			for branch: RouteTree.Branch in tree.branches:
@@ -365,12 +361,19 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 
 # ------------------------------------------------------------------------- the rows ---
 
+## A row is skipped rather than read where PLAYTEST-71 says it is never a block: `city_wide` rows
+## have no place to keep clear of; `scenery` rows (`pigeon_flock`) are exempt the way
+## `EventScheduler._role_for` exempts them from the wall/friction cost test; a region door
+## (`checkpoint_hut`, `checkpoint_gate`) costs by design; and a mobile row that does not pace is
+## passed by crossing, waiting and crossing back, never by routing around it.
 func _rows_of(plans: Array[EventScheduler.Planned]) -> Array:
 	var rows: Array = []
 	for plan: EventScheduler.Planned in plans:
 		if not plan.is_placed() or plan.def.city_wide:
 			continue
 		var def := plan.def
+		if def.scenery or def.id.begins_with("checkpoint") or (def.mobile and not def.paces):
+			continue
 		var emits := def.intensity > 0.0
 		var radius := maxf(def.outer_radius if emits else 0.0, def.obstructs_radius)
 		if radius <= 0.0:
@@ -380,10 +383,8 @@ func _rows_of(plans: Array[EventScheduler.Planned]) -> Array:
 		row.radius = radius
 		row.position = plan.position
 		row.paces = def.paces
-		row.mobile = def.mobile
 		row.emits = emits
 		row.obstructs = def.obstructs_radius > 0.0
-		row.is_door = def.id.begins_with("checkpoint")
 		row.source = int(_sources.get(plan.get_instance_id(), Source.CATALOGUE))
 		row.beat = _samples_along(plan)
 		rows.append(row)
@@ -422,12 +423,10 @@ func _blocked_counts(map: CityMap, rows: Array, reading: int) -> PackedInt32Arra
 		if map.in_bounds(tile):
 			counts[tile.y * map.size.x + tile.x] += 1
 	for row: Row in rows:
-		if reading == Reading.NO_DOORS and row.is_door:
-			continue
 		if reading == Reading.CATALOGUE_ONLY and row.source != Source.CATALOGUE:
 			continue
 		var tiles := _row_tiles(map, row, reading)
-		if reading == Reading.BEAT_UNION:
+		if reading == Reading.BEAT_OPENING:
 			row.tiles = tiles
 		for index in tiles:
 			counts[index] += 1
@@ -448,15 +447,17 @@ func _owners_of(map: CityMap, rows: Array) -> Array:
 				(here as Array).append(row)
 	return owners
 
-## The tiles one row denies under one reading, each named once.
+## The tiles one row denies under one reading, each named once. Every row still here paces or
+## stands still — a mobile row that does not pace never reaches `_rows_of`'s result at all.
 func _row_tiles(map: CityMap, row: Row, reading: int) -> PackedInt32Array:
 	if _scratch.size() != map.size.x * map.size.y:
 		_scratch.resize(map.size.x * map.size.y)
 		_scratch.fill(0)
 	var found := PackedInt32Array()
-	if row.paces and reading == Reading.BEAT_OPENING:
+	var opening := reading == Reading.BEAT_OPENING or reading == Reading.CATALOGUE_ONLY
+	if row.paces and opening:
 		_collect_always(map, row, found)
-	elif row.paces or reading == Reading.EVERY_PATH:
+	elif row.paces:
 		for point in row.beat:
 			_collect_disc(map, point, row.radius, found)
 	else:
@@ -758,19 +759,15 @@ func _shape_of_a_cut(map: CityMap, frontier: Array[Vector2i], culprits: Array,
 
 	var wall := {}
 	var paces := false
-	var doors := false
 	var bodies := false
 	for row: Row in barrier:
 		wall[row.id] = true
 		paces = paces or row.paces
-		doors = doors or row.is_door
 		bodies = bodies or row.obstructs
 	cut.detail = "%s closed end to end by [%s]" \
 			% [where, ", ".join(PackedStringArray(wall.keys()))]
 
-	if doors:
-		cut.shape = Shape.REGION_DOOR
-	elif paces:
+	if paces:
 		cut.shape = Shape.PACING
 	elif barrier.size() == 1:
 		cut.shape = Shape.SINGLE_ROW_SPANS
@@ -1058,14 +1055,11 @@ func _report(tally: Dictionary, shapes: Dictionary, cut_shapes: Dictionary, exam
 			% [days, float(rows_per_day) / maxf(1.0, float(days))])
 
 	var labels := {
-		Reading.BEAT_UNION: "pacing rows over their whole beat (the primary reading)",
-		Reading.BEAT_OPENING: "pacing rows only where their beat never opens",
-		Reading.EVERY_PATH: "every mobile row over its whole route",
-		Reading.NO_DOORS: "primary, with the region doors' bodies left out",
-		Reading.CATALOGUE_ONLY: "primary, the day's catalogue rows only (no seals, wall or doors)",
+		Reading.BEAT_OPENING: "pacing rows only where their beat never opens (the primary reading)",
+		Reading.BEAT_UNION: "pacing rows over their whole beat",
+		Reading.CATALOGUE_ONLY: "primary, the day's own catalogue rows only (no seals or region wall)",
 	}
-	for reading in [Reading.BEAT_UNION, Reading.BEAT_OPENING, Reading.EVERY_PATH,
-			Reading.NO_DOORS, Reading.CATALOGUE_ONLY]:
+	for reading in [Reading.BEAT_OPENING, Reading.BEAT_UNION, Reading.CATALOGUE_ONLY]:
 		print("\n-- routes with a zero-cost line: %s --" % labels[reading])
 		var clear := 0
 		var total := 0

@@ -317,42 +317,30 @@ still reaches two calm areas, `EventScheduler._ensure_the_city_is_still_walkable
 obstructing bodies, widest first, until a park is reachable, and a `hard_fail` row keeps its
 whole field clear of other events (`_room_around`). Every one of those is about *reaching*, and
 a route that reaches through three friction fields in a row is as legal as an empty one. Costly
-rows land inside the corridor on purpose (the `friction` role). **The guarantee is measured and
-is far from true**: `tests/probes/m129_zero_cost_line.gd`, run by name, finds a zero-cost line
-along about one route in fourteen over a run and along none from act III; the numbers, the
-readings and the failing shapes are in `DECISIONS.md` under M129. The dominant break is a
-*covered junction* — the only legal crossing sits inside some row's reach — then the yeller's
-beat, then a single row wide enough to take a street alone (the street is 192px kerb to kerb and
-most reaches are 179 to 240px). A van with the far pavement also taken is the rarest shape and
+rows land inside the corridor on purpose (the `friction` role). **The reading is the player's**
+([PLAYTEST-71](playtests/PLAYTEST-71.md), the three readings): a pacing row is passed by timing,
+so only the ground its beat never leaves free counts as blocked — *"time pass -- don't route
+around them"*; a moving row never counts — *"the player can cross the street, wait, then come
+back without ever getting excited by it"*; a region door never counts — *"it costs by design"*;
+and a flock is scenery — *"flocks are basically free already -- don't count it as block"* — so
+`pigeon_flock` carries `EventDef.scenery` and is outside the cost rule's wall and friction
+placement altogether. **The guarantee is measured under that reading and is far from true**:
+`tests/probes/m129_zero_cost_line.gd`, run by name, finds a zero-cost line along about one
+route in six over a run, one in three on day 1 and one in twenty-five from act III; the
+numbers, the readings and the failing shapes are in `DECISIONS.md` under M129, the reading
+decided. The dominant break is a *covered junction* — the only legal crossing sits inside some
+row's reach — then a single row wide enough to take a street alone (the street is 192px kerb to
+kerb and most reaches are 179 to 240px; `leaf_blower` most often), then a cut no one row
+makes, then the yeller's beat. A body with the far pavement also taken is the rarest shape and
 two friction fields on facing pavements never occur, so the far-pavement rule the entry first
 drafted is not written. The corridor grower itself crosses a carriageway mid-block about three
-times per route, on ordinary streets and never on the spine. M131's map-placed flock landed
-after the measurement, so a re-run comes first.
+times per route, on ordinary streets and never on the spine.
 
-**The reading is decided** ([PLAYTEST-71](playtests/PLAYTEST-71.md), the three readings): a
-pacing row is passed by timing, so only the ground its beat never leaves free counts as blocked
-— *"time pass -- don't route around them"*; a moving row never counts — *"the player can cross
-the street, wait, then come back without ever getting excited by it"*; a region door never
-counts — *"it costs by design"*; and a flock is scenery — *"flocks are basically free already --
-don't count it as block"*. Each overturns the reading the session recommended, so every number
-above was taken under a stricter reading than the one the rules are cut against.
-
-- [ ] **The probe reads what the player decided, and is re-run.** `Reading.BEAT_OPENING` becomes
-      the primary reading; mobile rows that do not pace, the region wall's doors and
-      `pigeon_flock` are left out of every reading; the swept-route and doors-in figures are
-      dropped rather than printed beside it. Re-run over the same seeds and days; the fraction,
-      the failing shapes and the mid-block count go beside the first table in `DECISIONS.md`,
-      and the three rules below are cut against those shapes, not the ones measured before.
-- [ ] **A flock is scenery.** *A placed flock stands off the day's routes · overturned on
-      2026-09-13* (`DECISIONS.md`, M131). `pigeon_flock` is outside the cost rule's wall and
-      friction placement, so it may land on a route the way it lands anywhere else; its field
-      and its rise are unchanged. The events rule governs; the test that the row is map-placed
-      stays and one that it is not steered off the corridor joins it.
 - [ ] **A route's junctions stay clear.** The junctions a route passes through, and the ones at
       each end of each of its streets, are outside every counted row's reach: checked before a
       row is placed, never repaired after (the city rule), so a row whose field would cover a
-      route junction is refused that ground. This is the shape that broke most routes under the
-      old reading and no earlier item named it. Pursuers, `AHEAD_OF_PLAYER` and
+      route junction is refused that ground. This is the shape that breaks most routes — more
+      than every other shape together — and no earlier item named it. Pursuers, `AHEAD_OF_PLAYER` and
       `TOWARD_PLAYER` rows, city-wide rows, moving rows and doors are outside this — the first
       three pay the telegraph contract, the last two are not blocks — and so is anything off
       the corridor, where the wall role is the design. Re-run the probe after.
@@ -364,12 +352,13 @@ above was taken under a stricter reading than the one the rules are cut against.
       its reach on the corridor is the number the **balance** rule moves. Where the corridor
       runs along a precinct, a park edge or an alley, say what "the other side" is there or
       refuse the row that ground. Re-run the probe after.
-- [ ] **A pacing row leaves the line open for part of its beat.** This is now the reading as
-      well as the rule: the yeller's route is sited and sized so that the pavement it paces is
-      clear at one end for a readable share of each loop, or its loop runs on the pavement the
-      route does not use; the choice is measured with the probe and the reach the line needs at
-      the far end of its beat is the number. The same for any other row that `paces`. Re-run
-      the probe after.
+- [ ] **A pacing row leaves the line open for part of its beat.** This is the reading as well
+      as the rule, and the probe finds it broken only where a second row closes the beat's open
+      end: the yeller's route is sited and sized so that the pavement it paces is clear at one
+      end for a readable share of each loop, or its loop runs on the pavement the route does
+      not use, and no other row's reach covers that open end; the choice is measured with the
+      probe and the reach the line needs at the far end of its beat is the number. The same
+      for any other row that `paces`. Re-run the probe after.
 - [ ] **Mid-block crossings are not counted on.** The route tree's cells cross a carriageway
       only at a junction; in play she may still cross anywhere. The probe finds the grower
       crossing mid-block on most routes today, so this is a change to how the corridor is grown

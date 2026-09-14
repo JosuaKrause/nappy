@@ -70,6 +70,7 @@ func run(t) -> void:
 	_test_no_two_rows_draw_the_same_picture(t)
 	_test_every_look_carries_its_own_silhouette(t)
 	_test_the_day_is_placed_by_role(t)
+	_test_a_flock_is_scenery(t)
 	_test_a_conversation_locks_her_and_releases(t)
 	_test_a_conversation_prices_by_the_babys_state(t)
 	_test_a_conversation_only_starts_inside_detain_radius(t)
@@ -2902,6 +2903,45 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	t.check(walled_share > 0.2, "%d of %d gaps carry a wall" % [gaps_walled.size(), gaps.size()])
 	t.check(walled_share < 0.85,
 			"and the rest are left open (%.0f%% walled)" % (walled_share * 100.0))
+
+## **A flock is scenery — overturned on 2026-09-13**, PLAYTEST-71: *"flocks are basically free
+## already — don't count it as block, just count is scenery."* Under the plain cost rule a
+## 42-over-168px field crosses `Tuning.WALL_WORTH_OF_COST`, so without `EventDef.scenery`
+## `_role_for` would call `pigeon_flock` a `WALL` and `_copies_of` would pull it off every route
+## corridor the way any other expensive row is. `scenery` is checked first and answers `NONE`.
+##
+## Two claims. The role is a fact about the def, checked directly on every placement the day
+## makes. Whether one actually **lands** on the corridor is a fact about the roll rather than
+## about the rule, so it is checked the way `_test_alley_robbery_never_lands_on_a_required_alley`
+## checks the opposite claim — over several days on a real generated map, until at least one
+## placement turns up at `corridor.depth(tile) == 0`. A check that never saw an on-corridor flock
+## would hold whether the exemption worked or not.
+func _test_a_flock_is_scenery(t) -> void:
+	var def := EventCatalogue.by_id("pigeon_flock")
+	t.check(def.scenery, "the flock def is marked scenery")
+
+	var on_corridor := 0
+	var off_corridor := 0
+	var map := CityGenerator.generate(4242)
+	var consumed: Array[String] = []
+	for day in [1, 4, 8, 11, 14]:
+		var tree := RouteTree.for_day(map, day)
+		var corridor := Corridor.of(tree)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("%d:%d" % [4242, day])
+		for plan in EventScheduler.build_day(day, rng, map, consumed, [], [], tree):
+			if plan.def.id != "pigeon_flock" or not plan.is_placed():
+				continue
+			t.check(plan.role == GameEnums.BlockerRole.NONE,
+					"day %d: a placed flock carries no role, not a wall's" % day)
+			var tile := map.world_to_tile(plan.position)
+			if corridor.depth(tile) == 0:
+				on_corridor += 1
+			else:
+				off_corridor += 1
+	t.check(on_corridor > 0,
+			"a flock lands on the day's own corridor at least once (%d on, %d off)"
+			% [on_corridor, off_corridor])
 
 # -------------------------------------------------------------- chatting_mother (M59) ---
 # The one row whose whole mechanic is time under compulsion rather than a field: entering

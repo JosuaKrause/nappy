@@ -625,6 +625,15 @@ func detain_distance() -> float:
 ## Entering the inner radius ends the day immediately.
 @export var hard_fail := false
 
+## Exempt from the cost rule's wall and friction placement — `EventScheduler._role_for` answers
+## `NONE` for it before the cost check ever runs, so `_copies_of` neither pulls it off the
+## corridor nor weights it onto one: it lands on whatever tile the roll picks, the way an
+## ambient event or a scar does. `pigeon_flock` is the row it exists for — *"flocks are basically
+## free already — don't count it as block, just count is scenery"* — because a 42-over-168px
+## field crosses `Tuning.WALL_WORTH_OF_COST` and would otherwise be pulled off every route like
+## any other expensive row.
+@export var scenery := false
+
 ## Applies everywhere at once, ignoring distance — a floor under the whole city rather
 ## than a place to avoid. Loudspeaker masts, not a man shouting.
 @export var city_wide := false
