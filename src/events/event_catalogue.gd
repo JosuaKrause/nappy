@@ -910,6 +910,12 @@ static func _pigeon_flock() -> EventDef:
 	def.departs_at = 190.0
 	def.weight = 1.5
 	def.max_per_day = 5
+	# **A flock is scenery, not a block** — overturned on 2026-09-13, PLAYTEST-71: "flocks are
+	# basically free already — don't count it as block, just count is scenery." Left unset, a
+	# 42-over-168px field crosses `Tuning.WALL_WORTH_OF_COST` and `_role_for` would call this a
+	# `WALL`, pulling it off every route the way any other expensive row is; `scenery` answers
+	# `NONE` first, so it lands on a route corridor exactly as it lands anywhere else.
+	def.scenery = true
 	return def
 
 ## **The first thing in the game that can end your day, and it arrives on day 2.**
