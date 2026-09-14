@@ -59,8 +59,20 @@ were not the cost and the phone says the same, from the other side.
   HUD, the touch controls and the readout's own text. Which of those it is has not been
   measured, and it is the first thing to skip if the phone's frame is ever worked on again.
 
+**And then the player's felt report:** *"I can see lag only if the crowd is being drawn
+though."* The `fps` column, the engine's one-second average, agrees with the feel where the
+one-frame `process` column cannot: `skip=crowd` is the only setting that lifts it, to 29 to 39
+against 20 to 32 with nothing skipped. A walker redraws only when its picture changes — a gait
+frame every stride, a heading — so what the word turns off is the recording of a few hundred
+walker canvases a second and the two hundred and fifty GL calls they become, each walker's own
+texture breaking the batch. That is exactly what an atlas for the crowd family alone would
+change, and nothing else in the table would; the atlas item was struck a moment earlier by the
+entry's own rule, so whether it comes back narrowed to the crowd was the player's call, put to
+them on 2026-09-14 and answered the same day — *"yes, let's start with a crowd atlas"* — as
+M139 in `TODO.md`.
+
 **What closes.** M124's two remaining items — the split is this measurement, and the atlas item
-is struck on it. M124 is done.
+is struck on it and comes back narrowed to the crowd as M139. M124 leaves the queue.
 
 ## M136 — Debug mode names its build · built 2026-09-13
 
