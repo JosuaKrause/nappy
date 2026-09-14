@@ -611,12 +611,15 @@ func _test_hover_lights_up_the_button_under_the_mouse(t) -> void:
 
 ## The version line is the one thing on this screen not addressed to the player — see
 ## `TitleScreen.version_text()`, which prefers `Telemetry.source_version()` (the `git describe`
-## form) and falls back to `application/config/version`, the setting
-## `.github/workflows/deploy.yml` writes into an export before it is built. This repo always has a
-## `.git` to ask, so the git branch is what is asserted directly; the fallback is checked by
-## asserting the baked setting itself is present and shaped right, since forcing "no repository"
-## from inside a test would mean stubbing `OS.execute`, which `source_version()` deliberately does
-## not go through an overridable seam for.
+## form) and falls back to `application/config/version`, the setting `tools/export-web.sh` bakes
+## into an export before it is built. This repo always has a `.git` to ask, so the git branch is
+## what is asserted directly; the fallback is checked by asserting the baked setting itself is
+## present and shaped right, since forcing "no repository" from inside a test would mean stubbing
+## `OS.execute`, which `source_version()` deliberately does not go through an overridable seam for.
+##
+## The commit beside it is the same two steps — `commit_text()` over `Telemetry.source_commit()`
+## and `application/config/source_commit` — and `build_text()` is the two joined, which is what
+## the "DEBUG MODE ON" note carries after its words, so the note is read back here as well.
 func _test_the_title_names_a_version(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
@@ -629,6 +632,24 @@ func _test_the_title_names_a_version(t) -> void:
 	var baked: String = ProjectSettings.get_setting("application/config/version", "")
 	t.check(baked != "", "and the baked setting TitleScreen falls back to actually exists")
 	t.check(baked.begins_with("v"), "in the same vMAJOR.MINOR.PATCH shape tools/release.sh writes")
+
+	var commit := TitleScreen.commit_text()
+	t.check(commit == Telemetry.source_commit(),
+			"the commit is git's own answer where git can give one (got '%s')" % commit)
+	t.check(commit.length() >= 7 and commit.is_valid_hex_number(),
+			"and it is an abbreviated hash (got '%s')" % commit)
+	var baked_commit: String = ProjectSettings.get_setting("application/config/source_commit", "")
+	t.check(baked_commit != "", "and the baked setting commit_text falls back to actually exists")
+
+	var build := TitleScreen.build_text()
+	t.check(build.contains(TitleScreen.version_text()) and build.contains(commit),
+			"the build stamp is the describe form and the commit together (got '%s')" % build)
+	var note := DebugModeNote.new()
+	t.add_child(note)
+	var note_label: Label = note.get_node("Note")
+	t.check(note_label.text.begins_with("DEBUG MODE ON") and note_label.text.contains(build),
+			"the debug note says so and carries the stamp (got '%s')" % note_label.text)
+	note.queue_free()
 
 	title.close()
 	title.queue_free()

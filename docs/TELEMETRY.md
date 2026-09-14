@@ -470,7 +470,12 @@ build has nothing in `project.godot` to reach:
   `src/dev/debug_mode_note.gd`) is drawn for the whole session and answers to nothing that would
   take it off again — not the `4` key, not a press, not the title screen hiding `_status` around
   it — so a page reached with the flag on is never mistaken for the ordinary release page everyone
-  else gets. The frame block is `FrameCost.readout_lines()` — `fps`, `draws`, `objects`,
+  else gets. The note carries the build stamp after its words and the readout's first line
+  repeats it — `TitleScreen.build_text()`, `git describe`'s form and the commit, `v0.10.3
+  (875609a5)` on a release — read from `git` on a working tree and from the two settings
+  `tools/export-web.sh` bakes into an export, `application/config/version` and
+  `application/config/source_commit`, so a screenshot of either says which code it is of. The
+  frame block is `FrameCost.readout_lines()` — `fps`, `draws`, `objects`,
   `primitives`, `process` and `physics`, the same six quantities and the same words the run log's
   own `frame` entry carries, assembled from the same readings so the screen and the log cannot
   disagree. See "What a frame cost" above for what each one says.

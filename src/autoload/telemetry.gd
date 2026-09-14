@@ -571,8 +571,9 @@ func _capture(path: String) -> void:
 ##
 ## Asked of `git` at runtime rather than baked in, because the project has no build step to
 ## bake it during — `tools/run.sh` starts the engine on the working tree. An exported build
-## has no repository to ask, which is what "unknown" means; `application/config/version` is what
-## a deployed build shows instead — see `TitleScreen`.
+## has no repository to ask, which is what "unknown" means; `application/config/version`, which
+## `tools/export-web.sh` bakes into an export, is what a deployed build shows instead — see
+## `TitleScreen`.
 static func source_version() -> String:
 	var repository := ProjectSettings.globalize_path("res://")
 	var describe_out: Array = []
@@ -585,6 +586,20 @@ static func source_version() -> String:
 	if OS.execute("git", ["-C", repository, "status", "--porcelain"], status) != 0:
 		return version
 	return version + ("-dirty" if ("\n".join(status)).strip_edges() != "" else "")
+
+## The commit on its own — `git rev-parse --short HEAD`, or "unknown" where there is no
+## repository to ask. `source_version()` ends in a hash in `git describe`'s tagged form, but on a
+## commit that *is* a tag — every release — describe says only the tag, and a tag is a name a
+## later `git tag -f` can move; the hash names this code and nothing else. An export carries it as
+## `application/config/source_commit`, baked by `tools/export-web.sh` beside `config/version` —
+## see `TitleScreen.commit_text()`.
+static func source_commit() -> String:
+	var repository := ProjectSettings.globalize_path("res://")
+	var out: Array = []
+	if OS.execute("git", ["-C", repository, "rev-parse", "--short", "HEAD"], out) != 0:
+		return "unknown"
+	var commit := ("\n".join(out)).strip_edges()
+	return commit if commit != "" else "unknown"
 
 ## The same thing, kept as its own name because the run folder and `tools/telemetry.sh -p` both
 ## call this rather than `source_version()` directly.
