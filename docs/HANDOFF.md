@@ -305,11 +305,13 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
   in `REVIEW.md` with its record: the route lines' first segment hops from the door to wherever
   a route joins the home street, and their interior is cell centres rather than tile centres
   (`DECISIONS.md`, M135). The flock and the trap were answered by playtest 71.
-- **M124's atlas item waits on one experiment on a phone.** The phone half is measured
-  (`DECISIONS.md`, M124, the phone half): the whole frame is `process`, which on the threads-off
-  web build includes the draw submission, so the readout cannot say whether the phone's 850
-  draw calls or its scripts are the cost. The item in `TODO.md` names the probe that splits
-  them — a served debug export with the event and crowd `_draw` skipped in turn, read for fps.
+- **M124's atlas item waits on one experiment on a phone, and the flag for it is on the
+  page.** The phone half is measured (`DECISIONS.md`, M124, the phone half): the whole frame is
+  `process`, which on the threads-off web build includes the draw submission, so the readout
+  cannot say whether the phone's 850 draw calls or its scripts are the cost. `?debug=1&skip=`
+  with `events`, `crowd` or `shadows` turns that drawing off and says so in the readout
+  (`DECISIONS.md`, M124, the skip flag); the item in `TODO.md` names the four screenshots the
+  player takes with it, and `git tag --list 'v*'` says whether the site carries the flag yet.
 - **M125 has two suites left over the budget**, the events and routes suites, both ready for an
   agent as a split by subject; `tools/test.sh --record-costs` on a quiet machine comes first,
   since the recorded costs were taken under local contention and two new suites have no row.

@@ -448,31 +448,21 @@ matters is a phone's question, not a desktop's. **The phone half is measured too
 its whole frame in `process` — 32 to 45 ms — and draws about half again the desktop's calls,
 objects and primitives. The web export runs with threads off, so the frame's draw submission
 sits inside the process time the readout shows, and the readout alone cannot say whether the
-850 draw calls or the scripts are the cost. Fill rate is not implicated.
+850 draw calls or the scripts are the cost. Fill rate is not implicated. **The probe that
+splits them is on the page** (`DECISIONS.md`, M124, the skip flag): `?skip=<words>` — `events`,
+`crowd`, `shadows`, comma-separated — turns the corresponding drawing off while everything
+underneath it still runs, honoured only while `?debug=1` holds, and the readout prints a `skip`
+line under the seed so a screenshot says what it measured. `--skip <words>` is the same thing
+on the command line; `README.md`'s flag table and `docs/TELEMETRY.md`'s readout section carry it.
 
-- [ ] **A `skip` flag turns the desktop's probes into something a phone can run.** *(2026-09-13:
-      "prepare the flags for the additional mobile test runs and I'll provide screenshots".)*
-      `?skip=<words>` on the page and `--skip <words>` on the command line, one arity-1 row in
-      `DevFlags`' table, parsed the same shape as `?svg=1` and honoured **only while
-      `readout_requested()` holds** (`?debug=1`, or `--debug`, or any debug build): a release
-      page without the note never skips anything, and a page that skips carries the note. The
-      words, comma-separated in any order: `events` (every `EventInstance._draw` returns before
-      drawing), `crowd` (every `CrowdAgent._draw` the same) and `shadows` (`BuildingShadows`
-      draws no chunk) — the (e), (d) and (c) rows of the desktop table. Everything else runs:
-      the fields, the costs, the crowd's motion and the halo are untouched, so the frame
-      readings differ from a normal run by drawing alone. A word the flag does not know is
-      refused the way the game refuses any other malformed flag. The readout prints a `skip`
-      line naming what is off, beneath the seed line, so a screenshot says what it measured.
-      `README.md`'s table gets the row; `docs/TELEMETRY.md`'s readout section says what the
-      line means.
-- [ ] **Split the phone's process time before choosing a fix.** On the live page, four
-      screenshots of the same day-1 walk: `?debug=1`, `?debug=1&skip=events`,
+- [ ] **Split the phone's process time before choosing a fix.** *(2026-09-13: "prepare the
+      flags for the additional mobile test runs and I'll provide screenshots".)* On the live
+      page, four screenshots of the same day-1 walk: `?debug=1`, `?debug=1&skip=events`,
       `?debug=1&skip=crowd`, `?debug=1&skip=shadows` — and a fifth with all three if the
       first four leave it unclear. Read for fps, draws and process. If process falls with the
       draw count, the calls are the cost and the atlas item below is the fix; if it does not,
       the scripts are, and this entry closes on that measurement with the atlas item struck.
-      The readings go beside the phone table in `DECISIONS.md`. `tools/serve-web.sh` on the
-      local network is the way to do this before a release carries the flag.
+      The readings go beside the phone table in `DECISIONS.md`.
 - [ ] **Atlases, only if the phone says draw calls are the cost.** The desktop says they are
       not there. If the phone does: a family per atlas — the crowd, the event people, the
       vehicles, the ground props — packed by a tool under `tools/` from the same sources the
