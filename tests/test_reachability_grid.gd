@@ -19,6 +19,8 @@ func run(t) -> void:
 	_test_a_sliver_building_is_not_walked_through(t)
 	_test_a_query_sees_a_blocked_tile_the_grid_was_not_built_with(t, maps)
 	_test_a_diagonal_split_is_two_components(t)
+	_test_cell_of_tile_floors_rather_than_truncates(t)
+	_test_reaches_uses_the_dirty_set_flood_already_built(t)
 
 # ------------------------------------------------------------------- the mask ---
 
@@ -140,3 +142,48 @@ func _test_a_diagonal_split_is_two_components(t) -> void:
 	t.check(grid.reaches(Vector2i(1, 0), blocked, reached), "NE of the split cell is itself reached")
 	t.check(not grid.reaches(Vector2i(0, 1), blocked, reached),
 			"and SW is not, because the two surviving corners of the cell do not touch")
+
+## `docs/TODO.md`, M124: `_cell_of_tile()` used to floor with a float round trip
+## (`floori(float(x) / CELL)`). The replacement, `>> 1`, has to keep floor's own answer for a
+## negative coordinate, not a truncating `/`'s — the two disagree exactly at `-1` (floor: cell
+## `-1`; truncate: cell `0`), and `_dirty_cells()` calls this on a caller's raw `blocked` tiles,
+## which are not guaranteed to be in-bounds the way a tile `node_at()` has already passed is.
+func _test_cell_of_tile_floors_rather_than_truncates(t) -> void:
+	var map := CityMap.new(Vector2i(2, 2))
+	map.tiles.fill(GameEnums.TileType.SIDEWALK)
+	var grid := ReachabilityGrid.build(map)
+	t.check(grid._cell_of_tile(Vector2i(-1, -1)) == Vector2i(-1, -1),
+			"a coordinate of -1 floors to the cell before zero, the way floori() did -- a " +
+			"truncating division would have landed it on cell zero instead")
+	t.check(grid._cell_of_tile(Vector2i(0, 0)) == Vector2i(0, 0),
+			"an ordinary in-bounds tile still lands on cell zero")
+	t.check(grid._cell_of_tile(Vector2i(3, 3)) == Vector2i(1, 1),
+			"and the far corner of a two-tile cell still lands on that same cell")
+
+## `docs/TODO.md`, M124: `reaches()` used to call `_dirty_cells(blocked)` again on every single
+## call, even though `flood()` had already built exactly that set for the same `blocked`. It now
+## reads back the set `flood()` stashed in `reached` under `ReachabilityGrid._DIRTY_KEY` — this
+## holds that the seam actually carries the data, since every other test in this file already
+## holds that `reaches()` still answers correctly once it does.
+func _test_reaches_uses_the_dirty_set_flood_already_built(t) -> void:
+	var map := CityMap.new(Vector2i(4, 4))
+	map.tiles.fill(GameEnums.TileType.SIDEWALK)
+	var grid := ReachabilityGrid.build(map)
+	var blocked := {Vector2i(2, 2): true}
+	var reached := grid.flood([Vector2i(0, 0)], blocked)
+
+	t.check(reached.has(ReachabilityGrid._DIRTY_KEY),
+			"flood() stashes its own dirty-cell set inside the reached dictionary it returns")
+	var stashed: Dictionary = reached[ReachabilityGrid._DIRTY_KEY]
+	t.check(stashed.has(grid._cell_of_tile(Vector2i(2, 2))),
+			"and the stashed set actually names the cell the blocked tile sits in")
+
+	# A `reached` with no stash at all (built by hand rather than by flood()) still answers rather
+	# than crashing -- `reaches()`'s own `.get(_DIRTY_KEY, {})` falls back to treating nothing as
+	# dirty, which only means every tile answers at the cheaper cached resolution.
+	var bare := {}
+	for key in reached:
+		if key != ReachabilityGrid._DIRTY_KEY:
+			bare[key] = true
+	t.check(grid.reaches(Vector2i(0, 0), blocked, bare),
+			"a reached dictionary with no dirty stash at all still answers, rather than crashing")
