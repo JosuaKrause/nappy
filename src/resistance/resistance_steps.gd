@@ -73,6 +73,22 @@ static func by_index(index: int) -> Step:
 			return step
 	return null
 
+## The words that put `step` on offer: the `brief` of the pickup that unlocked it, which are the
+## words the summary of the day she found that mark already read out. `""` for anything with no
+## mark behind it — a pickup carries its own `brief`, and the finale is unlocked by progress rather
+## than by a note.
+##
+## A task is two consecutive entries in `_build()` below — the mark, then the perform it unlocks —
+## so the pickup is the entry immediately before. The pairing is checked rather than assumed:
+## anything that is not a pickup there answers `""` instead of handing back the wrong words.
+static func unlocking_brief(step: Step) -> String:
+	if step == null or step.is_pickup or step.needs_goal:
+		return ""
+	var mark := by_index(step.index - 1)
+	if mark == null or not mark.is_pickup:
+		return ""
+	return mark.brief
+
 ## Explicit rather than a dictionary of field names. The first version built these with
 ## `set(key, value)` from a Dictionary, and `set()` silently DROPS a value whose type does
 ## not match — so every `Array[int]` placement list came out empty and three of the six
