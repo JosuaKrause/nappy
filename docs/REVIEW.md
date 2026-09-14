@@ -247,6 +247,18 @@ item below for as long as looking takes.
   rule is `NARRATIVE.md`'s *no triumphalism in the good ending*, and this is the one screen written
   after the escape, so it is the place that rule is easiest to break. Same record.
 
+- **On the phone, on the next release, load the live page with `?debug=1&seed=123&skip=motion`,
+  then with `&skip=crowd,motion`**, within the first five seconds of the day the way playtest
+  73's six loads were. Under `motion` the crowd stands where the day placed it, drawn as normal,
+  and nothing it ticks runs; under both words it neither moves nor draws. Read `fps` and the
+  `process` and `physics` means against playtest 73's table (`DECISIONS.md`, M139, the phone
+  reading), where the physics mean read 6 to 8 ms and the frame 28 to 29 fps with the crowd
+  walking. **Does the physics mean fall, and does the frame move with it?** If neither moves,
+  the crowd's scripts are not the phone's cost either and what is left is the events' fields;
+  if they do, the change that is obvious is a slower tick for the agents nobody can see. Record
+  is `DECISIONS.md`, M140, the crowd's scripts parked. And the felt half from playtest 73 is
+  still open beside it: **does the lag still feel the same** with the crowd atlas?
+
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
 
