@@ -27,8 +27,13 @@ still charges. The readout stays readable with the extra line. The item closes.
 Said after the reading above. The fps column agrees with the feel — `skip=crowd` is the only
 setting that lifts it, to 29 to 39 against 20 to 32 — where the process column, one frame at a
 time, could not. What that says about the atlas item, struck by the entry's own rule a moment
-earlier, is a question put back to the player; the reading is in `DECISIONS.md`, M124, the
-phone's process time split.
+earlier, was put back to the player with a recommendation — one atlas for the crowd family
+alone, the smallest test of the felt cost — and answered:
+
+> "yes, let's start with a crowd atlas"
+
+Filed as M139 in `TODO.md`; the reading is in `DECISIONS.md`, M124, the phone's process time
+split.
 
 ## The readout prints a steadier number
 

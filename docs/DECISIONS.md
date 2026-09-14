@@ -67,12 +67,12 @@ frame every stride, a heading — so what the word turns off is the recording of
 walker canvases a second and the two hundred and fifty GL calls they become, each walker's own
 texture breaking the batch. That is exactly what an atlas for the crowd family alone would
 change, and nothing else in the table would; the atlas item was struck a moment earlier by the
-entry's own rule, so whether it comes back narrowed to the crowd is the player's call, put to
-them on 2026-09-14.
+entry's own rule, so whether it comes back narrowed to the crowd was the player's call, put to
+them on 2026-09-14 and answered the same day — *"yes, let's start with a crowd atlas"* — as
+M139 in `TODO.md`.
 
 **What closes.** M124's two remaining items — the split is this measurement, and the atlas item
-is struck on it, pending that answer. M124 leaves the queue; a crowd atlas, if asked for, is a
-new entry.
+is struck on it and comes back narrowed to the crowd as M139. M124 leaves the queue.
 
 ## M136 — Debug mode names its build · built 2026-09-13
 
