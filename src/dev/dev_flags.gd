@@ -44,6 +44,7 @@ extends RefCounted
 ##   --controls      1
 ##   --layers        1
 ##   --svg           0
+##   --debug         0
 ##   --invincible    0
 ##   --no-telemetry  0
 ##   --screenshot    1
@@ -90,6 +91,26 @@ static func _svg_from_query(query: String) -> bool:
 	for parameter in query.trim_prefix("?").split("&"):
 		var pair := parameter.split("=", true, 1)
 		if pair.size() == 2 and pair[0] == "svg" and pair[1] == "1":
+			return true
+	return false
+
+## Whether the developer readout was explicitly asked for on a release build — `?debug=1` (or the
+## command line's own `--debug`), parsed the same shape as `svg_requested()` and not gated behind
+## `enabled()`. The third bounded release-safe query flag, beside `?svg=1` and `?telemetry=1`: it
+## reaches only the readout `main.gd` draws in the top-right corner, never the bundle `enabled()`
+## gates — a seed, a day, a spawn point, forced meters, `_debug_layers`, the snapshot key and every
+## other dev flag stay unreachable from a visitor's address bar. See docs/TODO.md, M133, "the
+## readout on the live page".
+static func readout_requested() -> bool:
+	return _readout_from_args(OS.get_cmdline_user_args()) or _readout_from_query(_web_query())
+
+static func _readout_from_args(args: PackedStringArray) -> bool:
+	return "--debug" in args
+
+static func _readout_from_query(query: String) -> bool:
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() == 2 and pair[0] == "debug" and pair[1] == "1":
 			return true
 	return false
 

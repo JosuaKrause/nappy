@@ -166,3 +166,25 @@ decision: **readout only**, a third bounded exception beside `?svg=1` and `?tele
 
 Not built this session at the player's word (*"don't start implementing yet"*); M133 in
 `TODO.md`.
+
+## A lost day gives the resistance back
+
+Said on reading M132's first item, the brief shown on a lost day's summary too:
+
+> a lost day shouldn't retain the touch mark -- a task is only complete if it is done on the
+> day that won. but also it should reset if lost so the player can try again
+
+Today a touched mark and a completed perform step survive the nerve — `GameState.finish_day()`'s
+own rule is *what the run has spent stays spent*, with only where she settled rolled back — and a
+mark once touched is never offered again, so a lost day can neither undo nor repeat it. The
+instruction reverses that for the resistance: nothing the resistance did on a lost day counts,
+and the same day's retry offers it again. Filed as M134 in `TODO.md`. The one overlap with
+M132 — whether the lost day's summary still reads the words of a mark whose touch is about to
+be taken back — was put as a question with a recommendation to keep showing them, and answered
+the other way:
+
+> the words shown on the lost day are the words that show at the beginning of that day not the
+> nexts. since day doesn't have words it doesn't make sense to show words on day 4
+
+So a lost summary repeats the instruction the day began with, the words she already had, and a
+lost day 4 shows none; M134's second item holds it.

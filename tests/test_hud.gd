@@ -22,6 +22,7 @@ func run(t) -> void:
 	_test_the_release_hud_drops_the_header(t)
 	_test_the_release_hud_drops_the_status_line_but_keeps_announcements(t)
 	_test_the_first_mark_is_never_named_but_later_ones_are(t)
+	_test_every_perform_steps_header_names_the_instruction_not_the_title(t)
 	_test_a_meter_bar_may_not_read_100_before_the_day_actually_ends(t)
 
 func _hud(t) -> CanvasLayer:
@@ -354,22 +355,52 @@ func _test_the_first_mark_is_never_named_but_later_ones_are(t) -> void:
 	hud._debug = false
 	hud._on_contact_available(2)
 	var step := ResistanceSteps.by_index(2)
-	t.check(hud._resistance_label.text == "somewhere out there: %s" % step.title.to_lower(),
-			"once the first mark is touched, the next one is named exactly as before")
+	t.check(hud._resistance_label.text == "somewhere out there: %s" % step.header.to_lower(),
+			"once the first mark is touched, the next one is named by its own instruction")
+	t.check(not step.title.to_lower() in hud._resistance_label.text,
+			"and not by the step's bare title, which is what playtest 69 could not use")
 	t.check(not "resistance" in hud._resistance_label.text,
 			"and the release line still carries no 'resistance ***..' progress count")
 
 	hud._debug = true
 	hud._on_contact_available(2)
 	t.check("resistance" in hud._resistance_label.text
-			and step.title.to_lower() in hud._resistance_label.text,
-			"a debug build keeps the progress dots the rigs were built against, title and all")
+			and step.header.to_lower() in hud._resistance_label.text,
+			"a debug build keeps the progress dots the rigs were built against, instruction and all")
 
 	hud.free()
 	GameState.completed_resistance_steps = saved_completed
 	GameState.failed_resistance_steps = saved_failed
 	GameState.resistance_progress = saved_progress
 	GameState.pending_resistance_brief = saved_brief
+
+## The wording rule holds for all five marks, not only the first: every perform step names
+## `Step.header` — the associated mark's own words, cut to fit — never `Step.title`, which stays
+## unused by the header and is reserved for the progress dots. `docs/TODO.md`, M132: "Whatever
+## wording rule is chosen holds for all five marks and is written next to `Step.brief`."
+func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> void:
+	var saved_completed := GameState.completed_resistance_steps.duplicate()
+	var saved_failed := GameState.failed_resistance_steps.duplicate()
+	GameState.failed_resistance_steps = []
+
+	var hud := _hud(t)
+	hud._debug = false
+	for step in ResistanceSteps.all():
+		if step.is_pickup or step.needs_goal:
+			continue
+		t.check(step.header != "", "perform step %d has its own header phrase" % step.index)
+		# Non-empty so the HUD's own "already touched a mark" gate is open.
+		GameState.completed_resistance_steps = [step.index - 1]
+		hud._on_contact_available(step.index)
+		t.check(hud._resistance_label.text == "somewhere out there: %s" % step.header.to_lower(),
+				"step %d's header names the instruction ('%s')"
+				% [step.index, hud._resistance_label.text])
+		t.check(not step.title.to_lower() in hud._resistance_label.text,
+				"step %d's header never falls back to naming the title" % step.index)
+
+	hud.free()
+	GameState.completed_resistance_steps = saved_completed
+	GameState.failed_resistance_steps = saved_failed
 
 ## *(Playtest 25 finding 1, verified against the engine rather than inferred: `"%3.0f" % value`
 ## rounds to nearest, so 99.5 and everything above it already printed `100` while the day was

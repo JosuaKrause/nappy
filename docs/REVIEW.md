@@ -129,10 +129,26 @@ item below for as long as looking takes.
   the diagonal with the picture and a flock's rim should fly with the birds. And every car and
   walker heading west now has a rim at all: the three mirrored views drew none before, which is a
   defect that stood since the halo landed. Three questions. Do rim and picture read as one body
-  through a turn? Does a west-facing body's rim read the same as an east-facing one's? And does an
-  east- or west-bound car sit right on its shadow now that its picture is registered to the
-  strike box like the other views, which moved it 14px south? Record is `DECISIONS.md`, M121; the
-  bursts are `evidence/m121-halo-follows-owner-2026-09-13/`.
+  through a turn? Does a west-facing body's rim read the same as an east-facing one's? And, on the
+  phone where it was seen, does an east- or west-bound car that has come round a turn now sit on
+  its halo and its shadow for the rest of the street, rather than a few pixels south of them? The
+  car's picture is redrawn whenever its heading moves now, not only when its view changes. Records
+  are `DECISIONS.md`, M121 and M130; the bursts are `evidence/m121-halo-follows-owner-2026-09-13/`
+  and `evidence/m130-car-halo-anchor-2026-09-13/`.
+- **Touch the day-4 chalk mark, then lose the day on purpose** (`--day 4`). The summary of the
+  lost day carries the mark's words on their own larger line in the touched mark's green, above
+  the ordinary lines, and the next summary does not repeat them. Does it read as *the thing this
+  screen is telling you*, and is one showing enough? On day 5 the header reads *somewhere out
+  there: the one who won't stop shouting* rather than the step's name — does that read as an
+  instruction? Record is `DECISIONS.md`, M132.
+- **On day 5, walk up to the first yeller you find** (`--day 4` and play through; no flag puts a
+  rig on a perform step). Whichever yeller she reaches first is the contact; the robber the day
+  seeded guards only the yeller it was seeded beside. Does handing the note to the first one
+  read as intended, and does an unguarded contact read as too cheap? Same record.
+- **Open the live page with `?debug=1` on the phone.** "DEBUG MODE ON" sits top-left from the
+  title screen on and the readout draws top-right once a run starts; nothing removes the note.
+  Is the note legible on a phone without covering anything that matters, and is the readout
+  readable enough there to take M124's six numbers off it? Record is `DECISIONS.md`, M133.
 - **Watch a car about-face into a street with a queue in it.** The lane holds a gap for the
   car that is coming and the arrival gives way if the gap has closed, so nobody already in the
   lane should jump. Does the merge read as traffic making room, or as the turning car waiting for

@@ -1,5 +1,163 @@
 # Decisions
 
+## M130 — An eastbound car sits south of its halo · built 2026-09-13
+
+*(2026-09-13, [PLAYTEST-69](playtests/PLAYTEST-69.md): "just confirmed on current mobile a car
+going west to east that is offset by a few pixel south and the halo is at the regular
+position", on v0.10.0 — the sighting M123 closed on waiting for.)* Two agent commits on
+`feature/m130-car-halo-offset`, reviewed on the PR; the evidence is
+`evidence/m130-car-halo-anchor-2026-09-13/`.
+
+**None of the three suspects; the redraw gate.** `CrowdAgent._redraw_if_the_picture_changed()`
+keyed a car's retained draw list on the quantised view alone — sector, mirror, gait frame — while
+`_draw_body()` reads the *live* heading twice: `_car_body_anchor()` registers the picture
+`26·|heading.y| + 14·|heading.x|` south of the node and `_draw_shape_shadow()` sweeps the
+capsule along the same vector. A car that came round an arc kept the anchor it had at the last
+sector boundary, up to 22.5° back, for the rest of its run in that lane, since nothing quantised
+changed again; twenty degrees off east is about 8px of southward error, always south because
+14px is that expression's minimum, and small on a north-south lane, which is why the report is
+about an east-west car. `EntityHalo` re-traces the body every frame it is drawn, so the rim sat
+at the live anchor and the picture did not: "the halo is at the regular position", verbatim. The
+gate dates from M111; the picture joined the continuous side of it at M121; v0.10.0 carries both.
+
+**The three suspects, each answered.** The halo's trace goes through `_car_body_anchor()` — it is
+built from the agent's own `_draw_body`, and the bursts show the rim 4px out on every side of a
+mirrored side view and an unmirrored back view. There is no PNG transfer for the crowd car at
+all — `assets/illustrated/svg-transfer/` has no `crowd` family, so the resolver returns the
+authored SVG with or without `--svg`, which is also why desktop `--svg` captures never showed a
+difference. And the 14px strike-box datum is right: a pixel column through a straight
+east-west car's wheel puts the tyre bottom on the strike box's south line, and the place the
+player calls "regular", where the halo stands, is that anchor. M121's rule is unchanged.
+
+**The fix.** The redraw key gains the live heading quantised to `CAR_HEADING_STEPS` (128 per
+unit component, so the anchor is held back by at most a sixth of a world pixel and the capsule
+axis by a quarter of a degree), kept as a second field beside the quantised picture so neither
+slot carries two meanings. A car in a lane costs nothing for it, since its heading there is an
+exact cardinal built from `_direction` and the key never changes; only the seconds on an arc pay.
+`tests/test_car_views.gd` holds that the rim's bounds equal the picture's grown by the halo
+margin at every sector in both presentation modes, and that an arc sweep asks for a redraw at
+every half-pixel of ground-line movement, with a non-vacuity guard; with the heading term
+neutered the suite goes red. The cues skill gains the trap beside "`_draw()` is retained": a
+redraw gate is a promise about everything the drawing reads.
+
+**Open to overturn.** The step count and the two-field key are the agent's choices. No turning
+car was caught under a halo on camera in five bursts, the same budget M121's record spent, so
+the analytic sweep is the pin and the before frames show the straight-line case; `--invincible`
+was left off because it empties the baby's source list and no halo would be drawn. Whether an
+eastbound car now sits on its halo on a phone is in `REVIEW.md`.
+
+## M133 — The readout on the live page · built 2026-09-13
+
+*(2026-09-13, [PLAYTEST-69](playtests/PLAYTEST-69.md): "let's add a ?debug=1 flag" — readout
+only — "with a note on the screen that this is debug mode -- the note should not be removable";
+held that session and started the next at the player's word.)* Two agent commits on
+`feature/m133-live-readout`, reviewed on the PR and checked in a browser against a release
+export served locally.
+
+**`?debug=1` reaches the readout and nothing else.** `DevFlags.readout_requested()` parses the
+page's `?debug=1` and the command line's `--debug` the way `svg_requested()` does, outside
+`enabled()`; `main.gd` reads it once into `_readout_requested` and every place that gated the
+readout's visibility or its text assembly on `_debug` now reads `_debug or _readout_requested`.
+The three geometry layers, the snapshot key, the layer keys and every other dev flag keep
+reading `_debug` alone, so on a release page the `4` key is inert: the readout is on and stays
+on. It is the third bounded release-safe query flag beside `?svg=1` and `?telemetry=1`; the
+2026-09-06 decision that a release carries no modifiers (M76) otherwise stands.
+
+**The note is its own node.** `DebugModeNote` (`src/dev/debug_mode_note.gd`) is a
+`CanvasLayer` above the readout's, built by `main.gd` before either boot path only when the flag
+holds, drawing "DEBUG MODE ON" top-left in plain outlined text — the cues rule's own carve-out
+for a debug overlay — and nothing sets its visibility or frees it: not the `4` key, not the
+title screen hiding the readout around it, not a press. A debug build without the flag does not
+show it. It is a separate node rather than a line in the HUD on purpose, both because the HUD
+hides and shows itself and because the HUD was another milestone's file that day.
+
+**Checked in a browser.** On the served release export, `?debug=1` shows the note on the title
+screen and the readout from the first frame of a run, and `4` changes nothing; without the flag
+the page shows neither. The readout's last lines name keys (arrows, WASD, shift, esc, r, q),
+which the screen rule otherwise forbids; it is developer furniture a visitor opts into and it
+stands, but it is now reachable from a public address for the first time.
+
+**Open to overturn.** The wording, the top-left placement mirroring the readout's corner, the
+14px outlined text at 0.85 alpha and the command-line spelling `--debug` (kept for symmetry with
+`--svg`, though a debug build shows the readout without it) were the agent's choices.
+
+## M132 — The resistance speaks loud enough to be heard · built 2026-09-13
+
+*(2026-09-13, [PLAYTEST-69](playtests/PLAYTEST-69.md): "the day text needs to be bigger to be
+able to be noticed and it should show also when dying so if missed on the first try it can be
+seen on the second try. the in game note should contain the same amount of info on what to do.
+… so if the solution is the yeller it's always the first yeller you come close enough to hand
+the note.")* Three agent commits on `feature/m132-resistance-speaks`, reviewed on the PR. The
+standing rule that the *first* encounter carries no hint is untouched; everything here is what
+the resistance says after a mark has been touched.
+
+**Why the brief never showed at all on the reported run.** The summary appended the queued brief
+inside a block gated on `GameState.has_joined_resistance()`, which is `resistance_progress > 0`
+— and a pickup grants no progress. So the day-4 mark's own words were invisible on the summary
+of the day they were found, lost *or* won, until a perform step later raised progress. The entry
+had read this as a won-branch-only defect; it was a gate on the wrong counter.
+
+**The brief is its own label.** `DaySummary` draws it as a separate 26pt line in
+`Palette.CHALK_DONE`, the colour the touched mark itself turns, shown and cleared in `show_day()`
+on every `DayResult` and independent of the tally, which keeps its own progress gate. The ending
+and the finale hide it. Pinned by `tests/test_day_loop.gd`: a brief queued at progress 0 is
+shown by a lost summary and cleared only then.
+
+**The header names the instruction.** `Step.header` on the five perform steps carries the
+pickup's own brief cut to its instruction clause — *the one who won't stop shouting*, *a van,
+waiting*, *the one you go through, not around*, *before they paste over it*, *where they're
+standing* — and the HUD's `somewhere out there:` line reads it; `Step.title` stays for the
+progress dots. Pinned by `tests/test_hud.gd` for all five.
+
+**The contact is the first look-alike she reaches.** *Asked for a hidden contact among
+look-alikes · overturned on 2026-09-13.* `ResistanceDirector` re-points its rider every frame
+onto whichever live instance sharing the step's `task_event_id` she first comes within reach of
+(the seeded rider included), placing the touch point on the side facing her. Re-pointing was
+chosen over placing the seeded contact nearest her route because the deadline reads the clock
+and the trap reads the seeded position, so neither rule's code changes. The rule is generic
+over the row id, so the van, the roadblock, the poster crew and the protest all get it; the
+finale rides on nothing and is outside it. `docs/NARRATIVE.md`'s *a wrong candidate costs full
+price* sentence is replaced.
+
+**Open to overturn.** The trap still stands near the *seeded* rider only, so a look-alike she
+reaches before it is never guarded; the agent read that as the point — there is no wrong
+candidate left to guard against — rather than as a gap. If the guard is meant to travel with
+the contact, it is one item. No capture was taken: no dev flag fast-forwards resistance
+progress, so a rig cannot stand on a perform step; the played questions are in `REVIEW.md`.
+## The deploy requires CI's own check instead of running the suite again · built 2026-09-13
+
+*(2026-09-13: "release runs the tests again as well in a single worker. can we make deploy
+contingent on previous test flags passing? then we don't need to redundantly run tests again for
+it"; and, on the shape of it: "the shell script here should not be the arbiter of ensuring the
+green flag since it can be bypassed. I'm saying whether the deploy CI can require other CIs to be
+completed on the same commit".)*
+
+**What changed.** `.github/workflows/deploy.yml` no longer runs `tools/test.sh`. Its first job,
+`verify`, asks the API for every check run named `test` on the tagged commit — the check
+`ci.yml` registers from its eight shards and its gates — waits while one is still running, and
+fails unless all of them completed well; `build` needs it. The boot check stays in `build`
+because its import pass is what leaves a fresh runner's resources imported before the export
+reads them, and it costs seconds.
+
+**Why a check-runs query and not something built in.** Actions has no `needs` across workflows.
+A `workflow_run` trigger fires when `ci` finishes, but `ci` runs on branch pushes and pull
+requests and knows nothing about the tag, so the deploy would have to find its tag afterwards;
+an environment protection rule can require reviewers or a branch pattern but not a status
+check. Querying the commit's check runs from inside the deploy is the standard shape, and it is
+the same read `tools/release.sh` already makes before tagging.
+
+**What stands behind it.** The `version tags` ruleset requires the `test` status check on the
+commit a `v*` tag points at, so a tag on a red or untested commit is refused at the push,
+server-side, whatever a local script does. The `verify` job is the workflow's own copy of that
+guarantee: it makes the dependency visible in the deploy's log and keeps the deploy correct on
+its own if the ruleset is ever loosened. `release.sh`'s wait on the same check is a courtesy to
+the operator, never the gate.
+
+**Why the suite was run twice before.** The comment it replaced said `ci.yml` had no branch or
+tag filter, so it fired on a version tag too and neither workflow waited for the other; `ci.yml`
+has since been filtered to `main` pushes and pull requests, so a tag push runs only the deploy,
+and the reasoning for re-running had lapsed without the step being removed.
+
 ## M128 — The playground is free, and the busker denies sleep outright · built 2026-09-13
 
 *(2026-09-13, [PLAYTEST-68](playtests/PLAYTEST-68.md): "Playground should be free since

@@ -103,7 +103,7 @@ entirely and still reach the good ending.
 
 | Days | Task | What |
 | --- | --- | --- |
-| 4 / 5 | A note for a stranger | A chalk mark, then touch the right `homeless_yeller` — several are live at once and look alike, so a wrong one costs his field and tells you nothing. |
+| 4 / 5 | A note for a stranger | A chalk mark, then touch whichever `homeless_yeller` she reaches first — several are live at once and look alike, so there is no wrong one to single out first. |
 | 6 / 7 | The package | A chalk mark, then touch the delivery van's drop. Picking it up makes the pram heavier for the rest of the day. |
 | 8 / 9 | The checkpoint | A chalk mark, then walk into the `roadblock`'s own band — the poured-concrete street closure, not a region door's hut — rather than round it. |
 | 10 / 11 | The wall | A chalk mark, then reach the poster crew's wall before they finish it — the window closes if the crew moves on first. |
@@ -118,9 +118,12 @@ entirely and still reach the good ending.
   notices her. Seeded from the run and the day, so the distance that was safe on day 9 of
   this run is safe on day 9 every time you replay it — the pattern is learnable, which is
   the difference between risk and a coin flip.
-- **A wrong candidate costs full price and returns nothing.** Approaching the yeller's field
-  is the cost whether or not he is the contact, and there is no way to tell in advance which
-  one is.
+- **The contact is whichever look-alike she reaches first.** A perform step's contact does not
+  wait at the one instance the day happened to seed; it rides onto whichever live look-alike —
+  a `homeless_yeller`, a `delivery_van`, a `roadblock`, a `poster_crew` or a `protest` — she
+  first comes within reach of. There is no exhaustive check to run and no wrong candidate to
+  cost her anything: approaching the field of any of them is still the cost, but whichever one
+  she reaches is simply the right one.
 - **The deadline.** The wall's window closes when the poster crew's own instance is gone —
   paste it over and the contact goes with it, for the rest of the run.
 
