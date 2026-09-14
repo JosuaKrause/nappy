@@ -331,5 +331,19 @@ their own and sort against nothing.
 **`_draw()` is retained.** It re-runs only on `queue_redraw()`, so an expensive one-off draw (the
 10k-tile city ground) is fine, but anything animated must call `queue_redraw()` itself.
 
+**And a redraw *gate* is a promise about everything the drawing reads.** `EventInstance` and
+`CrowdAgent` both skip the rebuild while their picture is unchanged — the largest single drawing
+cost in a frame otherwise — so the key each compares has to name every time-varying quantity its
+`_draw()` touches, **not the ones that look like the picture**. A term missing from the key is a
+frozen picture rather than a crash, and the tell is that it only shows on the bodies that reach the
+missing term: a car's registration and its shadow's axis are read off its **continuous** heading
+while its view, its mirror and its gait are quantised, so a key made of the quantised three left a
+car that had come round an arc wearing the anchor it had at the last sector boundary, about nine
+pixels south of its own strike box, for the rest of its run in that lane. **A traced rim is what
+makes such a freeze visible**, since `EntityHalo` re-draws the body every frame either way: the halo
+stands where the body belongs and the body does not, which is what two playtests reported before
+anybody looked at the gate. Sweep the continuous quantity in a test and assert the key moved with
+it; quantise it finely enough that nothing a screen can show is ever held back.
+
 **A green `check.sh` says nothing about whether the game looks right** — headless runs never call
 `_draw()`. If you touched anything visual, take a screenshot and actually look at it.
