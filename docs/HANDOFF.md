@@ -91,10 +91,12 @@ so `git status` after an export is still the rule there.
 
 **The game is published, and a push is a check while a tag is a release.**
 `https://nappy.josuakrause.com/` serves it. `.github/workflows/ci.yml` runs lint, check and the full
-suite on every push and every pull request; `.github/workflows/deploy.yml` fires on a `v*` tag and
-nothing else — gate, export, upload, publish, in that order, so a red build never reaches the site.
-It re-runs the gate rather than trusting CI, because both workflows fire on the same push and neither
-waits for the other, and because a tag can point at any commit.
+suite as eight shards on every push to `main` and every pull request; `.github/workflows/deploy.yml`
+fires on a `v*` tag and nothing else — verify, boot check, export, upload, publish, in that order.
+**The deploy does not run the suite again.** The `version tags` ruleset requires the `test` check
+on the commit a tag points at, so a tag on a red or untested commit cannot be pushed, and the
+deploy's first job asks the API for that check's outcome and refuses to build without it — the
+same read `tools/release.sh` waits on before it tags.
 
 **Cut a release with `tools/release.sh <major|minor|patch>`**, which reads the latest version tag and
 prints what it would do. It only acts when given a second literal `push` argument, and it refuses a
