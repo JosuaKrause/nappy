@@ -56,6 +56,7 @@ src/
   crowd/
 	crowd.gd              owns the day's agents; sums their excitement
 	crowd_agent.gd        one walker or one car
+	crowd_atlas.gd        packs the crowd's own textures into one shared atlas texture
 	crowd_lanes.gd        the lane geometry of the street grid
 	crowd_field.gd        the box around the player the crowd is simulated in
 	crowd_pockets.gd      the ground today's seals shut in, per kind, so nobody is placed with nowhere to go
