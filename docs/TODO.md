@@ -522,6 +522,40 @@ is now the whole of what CI's time is made of. Five suites are over the budget.
 
 ---
 
+## M135 — The day's routes drawn as a debug layer · asked for 2026-09-13
+
+> "can you add a debug overlay to show paths (just as purple lines from tile center to tile
+> center)"
+
+[PLAYTEST-69](playtests/PLAYTEST-69.md), on reading M129's probe numbers. The **cues**,
+**cli-tools** and **godot** rules govern; the layer is developer furniture and draws nothing a
+player sees. *Paths* is read as the day's planned routes — the route tree's branch from the
+doorstep to each calm area, the thing M129's probe walks — rather than the crowd's lanes or
+the dusk map's walk; say so in the report if the tree has no per-route tile sequence to draw
+and something coarser had to stand in.
+
+**What is true today.** `DebugLayers` (`src/dev/debug_layers.gd`) draws three geometry layers —
+fields, shadows, bodies — toggled by `1` to `3` in a debug build and started by `--layers 1,3`
+(`?layers=` on a debug web build); `4` is the readout, on `main.gd`'s own status layer. The
+day's corridor is `RouteTree` on the reachability grid's two-tile cells (`DECISIONS.md`, M69),
+held by the city for the day, and `Corridor` reads it as sites and depths; the dusk map draws
+the plan after the day rather than during it.
+
+- [ ] **A fifth layer draws each route as a purple polyline through the centres of its tiles.**
+      `5` toggles it in a debug build and `--layers 5` (and `?layers=5`) starts it on, with
+      the flag table, `README.md`'s flag row and `docs/TELEMETRY.md`'s "The debug view"
+      following; a release build never builds it. One line per route from the doorstep to its
+      calm area, tile centre to tile centre in draw order, in one purple that reads over every
+      ground tile; where branches share a trunk the lines overlap and that is fine. It is a
+      sibling node of `DebugLayers` rather than a fourth case inside it, redrawn only when the
+      day's tree changes, and it reads the tree the city already holds rather than growing one.
+      A test holds that the node is absent outside a debug build, that a planned day yields one
+      polyline per route with its first point on the doorstep tile's centre and its last on a
+      calm tile's centre, and that every consecutive pair of points is one tile apart. Evidence
+      is one still from `tools/shot.sh` with `--layers 5` on a day-1 seed.
+
+---
+
 ## M56 — The resistance is noticed
 
 The city gets more dangerous the further into the subquest you are. **A task may not cost a nerve**
