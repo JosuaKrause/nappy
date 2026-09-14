@@ -161,10 +161,11 @@ item below for as long as looking takes.
   flock is a wall under the cost rule, so it stands off the day's routes: over a run, do you
   meet one at all, and if so does meeting it by straying feel right? Record is `DECISIONS.md`,
   M131; the burst is `evidence/m131-flock-on-the-ground-2026-09-13/`.
-- **Open the live page with `?debug=1` on the phone.** "DEBUG MODE ON" sits top-left from the
-  title screen on and the readout draws top-right once a run starts; nothing removes the note.
-  Is the note legible on a phone without covering anything that matters, and is the readout
-  readable enough there to take M124's six numbers off it? Record is `DECISIONS.md`, M133.
+- **Open the live page with `?debug=1` on the phone, once a release after v0.10.3 is out.** The
+  note now reads `DEBUG MODE ON   <tag> (<hash>)` — the tag the site serves and the commit it was
+  built from — and the readout's first line, `build`, repeats it. Does the stamp name the latest
+  of `git tag --list 'v*'`, and does the longer note stay clear of the readout on a phone in
+  landscape? Record is `DECISIONS.md`, M136.
 - **Watch a car about-face into a street with a queue in it.** The lane holds a gap for the
   car that is coming and the arrival gives way if the gap has closed, so nobody already in the
   lane should jump. Does the merge read as traffic making room, or as the turning car waiting for

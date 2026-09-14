@@ -304,9 +304,11 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
   wherever a route joins the home street, and their interior is cell centres rather than tile
   centres (`DECISIONS.md`, M135); and the resistance's trap guards only the yeller it was seeded
   beside now that the contact is the first one reached (`DECISIONS.md`, M132).
-- **The phone half of M124 can now be measured on the live page**: `?debug=1` shows the readout
-  on a release build with a fixed "DEBUG MODE ON" note (`DECISIONS.md`, M133), so the six
-  numbers off a phone are a screenshot away, and the atlas item waits on them.
+- **M124's atlas item waits on one experiment on a phone.** The phone half is measured
+  (`DECISIONS.md`, M124, the phone half): the whole frame is `process`, which on the threads-off
+  web build includes the draw submission, so the readout cannot say whether the phone's 850
+  draw calls or its scripts are the cost. The item in `TODO.md` names the probe that splits
+  them — a served debug export with the event and crowd `_draw` skipped in turn, read for fps.
 - **M125 has two suites left over the budget**, the events and routes suites, both ready for an
   agent as a split by subject; `tools/test.sh --record-costs` on a quiet machine comes first,
   since the recorded costs were taken under local contention and two new suites have no row.

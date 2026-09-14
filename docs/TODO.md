@@ -125,8 +125,9 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 0. **What [PLAYTEST-67](playtests/PLAYTEST-67.md) and [PLAYTEST-68](playtests/PLAYTEST-68.md)
    left open**, on the same footing as the round before it: **M124**, the game on a phone —
    its desktop half is measured and fixed and its audit's per-frame findings are built
-   (`DECISIONS.md`, M124), and what stands is the phone half of the measurement and the atlas
-   item gated on it; and **M125**, the test suite is slow again — ten suites pruned and the
+   (`DECISIONS.md`, M124), its phone half is measured, and what stands is the probe that
+   splits the phone's process time and the atlas item gated on it; and **M125**, the test suite
+   is slow again — ten suites pruned and the
    crowd suite split (`DECISIONS.md`, M125), the events and routes suites still over the
    runner's budget. M126's audit is filed,
    M127's first press is fixed, and M128's playground and busker are built; the records are in
@@ -379,24 +380,27 @@ the off-screen ones; together they are worth about 40% of the desktop frame rate
 measurement walk. The resolver's per-draw lookup and the halo's re-trace are inside the
 run-to-run noise and are struck. Everything under `assets/` is still an individually loaded
 texture and nothing is atlased, which is the answer to the player's question; whether that
-matters is a phone's question, not a desktop's.
+matters is a phone's question, not a desktop's. **The phone half is measured too**
+(`DECISIONS.md`, M124, the phone half): on the live page the phone runs at 27 to 30 fps with
+its whole frame in `process` — 32 to 45 ms — and draws about half again the desktop's calls,
+objects and primitives. The web export runs with threads off, so the frame's draw submission
+sits inside the process time the readout shows, and the readout alone cannot say whether the
+850 draw calls or the scripts are the cost. Fill rate is not implicated.
 
-- [ ] **The phone half of the measurement.** The same six numbers off a phone: the live page
-      with `?debug=1` shows the readout on a release build (`DECISIONS.md`, M133), so a
-      screenshot of it standing on any day-1 street beside the desktop's is the comparison, on
-      the build a player actually gets (`?telemetry=1` writes the `frame` line into the
-      browser's own storage and nothing collects it back, so the screen is the instrument;
-      `tools/serve-web.sh` still serves a debug export on the local network for an unreleased
-      tree). If the phone's draw calls and primitives match
-      the desktop's and only its frame rate does not, the cost is fill rate or resolution and no
-      batching touches it; the table goes to `DECISIONS.md` under M124 either way.
-- [ ] **Atlases, only if the phone says texture switches are the cost.** The desktop says they
-      are not. If a phone does: a family per atlas — the crowd, the event people, the vehicles,
-      the ground props — packed by a tool under `tools/` from the same sources the M109 transfer
-      pipeline reads, with an `AtlasTexture` per sprite so every caller's `draw_texture_rect` is
-      unchanged and the SVG-first rule and the `--svg` override still hold. The **cli-tools**
-      and **python-tooling** rules govern the tool; the illustrated-png skill says what a
-      transfer owes.
+- [ ] **Split the phone's process time before choosing a fix.** The desktop's own probes,
+      on the phone: `tools/serve-web.sh` serves a debug export on the local network, and a run
+      of it with event `_draw` skipped, then with crowd `_draw` skipped — the (d) and (e) rows of
+      the desktop table — read for fps and process says whether process falls with the draw
+      count. If it does, the calls are the cost and the atlas item below is the fix; if it does
+      not, the scripts are, and this entry closes on that measurement with the atlas item
+      struck. The two readings go beside the phone table in `DECISIONS.md`.
+- [ ] **Atlases, only if the phone says draw calls are the cost.** The desktop says they are
+      not there. If the phone does: a family per atlas — the crowd, the event people, the
+      vehicles, the ground props — packed by a tool under `tools/` from the same sources the
+      M109 transfer pipeline reads, with an `AtlasTexture` per sprite so every caller's
+      `draw_texture_rect` is unchanged and the SVG-first rule and the `--svg` override still
+      hold. The **cli-tools** and **python-tooling** rules govern the tool; the illustrated-png
+      skill says what a transfer owes.
 
 ---
 
