@@ -33,6 +33,7 @@ func run(t) -> void:
 	_test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t)
 	_test_an_ordinary_walker_is_a_candidate(t)
 	_test_select_sources_takes_a_mixed_candidate_set(t)
+	_test_process_picks_the_same_sources_the_linear_scan_did(t)
 	_test_a_cat_dash_is_selected_and_lands(t)
 	_test_a_flock_is_selected_and_lands(t)
 	_test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t)
@@ -314,6 +315,52 @@ func _test_select_sources_takes_a_mixed_candidate_set(t) -> void:
 			"duck type, not a shared base class, is what makes both candidates")
 	instance.free()
 	car.free()
+
+# --------------------------------------------------------- the per-frame lookup ---
+# `docs/TODO.md`, M124: `_process()` used to test `source in picked` -- a linear scan of an Array
+# up to `MAX_SOURCES` long, run for every one of ~275 candidates. It now builds a `Dictionary`
+# keyed by the picked objects themselves once, and tests membership in that instead. The set of
+# who gets a nonzero target and who gets zero must come out exactly the same either way.
+
+func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
+	var manager := EventManager.new()
+	t.add_child(manager)
+	var crowd := Crowd.new()
+	t.add_child(crowd)
+	var player := Node2D.new()
+	t.add_child(player)
+	var halo := ExcitementHalo.new()
+	t.add_child(halo)
+	halo.setup(manager, crowd, player)
+
+	var strong := EventInstance.new()
+	strong.setup(_def("strong_halo", 30.0), Vector2.ZERO)
+	manager.add_child(strong)
+	strong.set_process(false)
+	manager._instances.append(strong)
+	# Out of reach at her position (400px against a 150px outer radius), so it clears neither the
+	# floor nor `select_sources()`'s cap -- the case the old `in` scan and the new lookup both have
+	# to answer "no" to.
+	var weak := EventInstance.new()
+	weak.setup(_def("weak_halo", 20.0), Vector2(400.0, 0.0))
+	manager.add_child(weak)
+	weak.set_process(false)
+	manager._instances.append(weak)
+
+	halo._process(STEP)
+
+	t.check(strong._halo._target_alpha > 0.0,
+			"a source above the floor at her position is picked and told a nonzero target")
+	t.check(is_zero_approx(weak._halo._target_alpha),
+			"a source out of reach is told zero -- the same answer the linear `in` scan gave before " +
+			"the picked set became a Dictionary lookup")
+
+	# `manager.free()` frees `strong` and `weak` as its own children, rather than freeing them
+	# directly and leaving `manager` to tick a dangling reference in `_instances` next frame.
+	manager.free()
+	crowd.free()
+	player.free()
+	halo.free()
 
 # ------------------------------------------------------------ two rows that read as nothing ---
 # *(Playtest 38, finding 1: "cats and birds have zero effect right now according to halos".)*

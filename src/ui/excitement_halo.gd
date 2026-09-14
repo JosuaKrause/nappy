@@ -195,6 +195,12 @@ var _events: EventManager
 var _crowd: Crowd
 var _player: Node2D
 
+## Reused across frames rather than a fresh `Array` every tick — `.clear()` keeps whatever backing
+## storage the previous frame's `append_array` calls grew, so a day at a steady candidate count
+## (events plus the whole crowd, ~275) stops paying for a new allocation every frame for an array
+## whose size barely moves frame to frame.
+var _candidates: Array = []
+
 func setup(events: EventManager, crowd: Crowd, player: Node2D) -> void:
 	_events = events
 	_crowd = crowd
@@ -216,15 +222,22 @@ func _process(_delta: float) -> void:
 	if not _events or not _crowd or not _player:
 		return
 	var here := _player.global_position
-	var candidates: Array = []
-	candidates.append_array(_events.instances())
-	candidates.append_array(_crowd.agents())
-	var picked := select_sources(candidates, here)
-	for source in candidates:
+	_candidates.clear()
+	_candidates.append_array(_events.instances())
+	_candidates.append_array(_crowd.agents())
+	var picked := select_sources(_candidates, here)
+	# A `Dictionary` keyed by the picked objects themselves, built once off the (at most
+	# `MAX_SOURCES`) picked set, so the loop below tests membership in O(1) rather than running a
+	# linear `in` scan of `picked` for every one of up to ~275 candidates — an object key hashes by
+	# identity, the same equality `in` was already using.
+	var picked_set := {}
+	for source in picked:
+		picked_set[source] = true
+	for source in _candidates:
 		# Every candidate, picked or not — a source below the halo's own floor can still be worth
 		# a caret, since the two cues answer different questions over different sets.
 		source.set_player_at(here)
-		if source in picked:
+		if picked_set.has(source):
 			var landed: float = source.landed()
 			source.set_halo_strength(magnitude_for(landed), colour_for(landed))
 		else:
