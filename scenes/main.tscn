@@ -8,7 +8,7 @@ script = ExtResource("1_main")
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
 [node name="Status" type="Label" parent="CanvasLayer"]
-offset_left = 1050.0
+offset_left = 960.0
 offset_top = 14.0
 offset_right = 1264.0
 offset_bottom = 240.0

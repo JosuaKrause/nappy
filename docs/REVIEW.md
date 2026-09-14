@@ -157,6 +157,12 @@ item below for as long as looking takes.
   flock belongs on a route was answered by [PLAYTEST-71](playtests/PLAYTEST-71.md) — it is
   scenery, and M129 in `TODO.md` puts it back on them — so this asks only about the encounter.
   Record is `DECISIONS.md`, M131; the burst is `evidence/m131-flock-on-the-ground-2026-09-13/`.
+- **Open the live page with `?debug=1&seed=<n>` on the phone, twice.** The readout's seed
+  line should name `<n>` both times and the city should be the same one; without `debug=1`
+  the seed line should differ between loads. The `process` and `physics` lines now read
+  `last  mean  max` and the readout block starts 90px further left: on a phone in portrait, do
+  all three columns stay inside the screen, and does the wider block clear the pause button
+  and the touch controls? Record is `DECISIONS.md`, M138.
 - **Watch a car about-face into a street with a queue in it.** The lane holds a gap for the
   car that is coming and the arrival gives way if the gap has closed, so nobody already in the
   lane should jump. Does the merge read as traffic making room, or as the turning car waiting for

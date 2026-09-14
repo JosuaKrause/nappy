@@ -11,13 +11,27 @@ extends RefCounted
 ## read off a phone's `run.log` is only comparable with one read off a desktop's readout while both
 ## are assembled from the same readings under the same names, and nothing about a format string in
 ## one file warns you when the one in the other file stops matching it.
+##
+## `FrameCost.sample()`'s own one-second window (M138, "the readout's process and physics lines
+## carry a one-second mean and max") is exercised below through the pure arithmetic
+## (`_window_mean()`/`_window_max()`, driven with literal arrays rather than a live `Performance`
+## reading) and through `sample()`'s own timestamp bookkeeping (driven with literal times, per
+## `FrameCost.sample()`'s own doc on why it takes the time from its caller). `reset_samples()` runs
+## first below, since this static window is shared with every suite this process runs in the same
+## breath — `tests/test_main.gd` drives `main._process()`, which feeds it too, and runs first only
+## because `test_main.gd` sorts before `test_performance.gd`.
 
 func run(t) -> void:
+	FrameCost.reset_samples()
 	_test_the_log_line_names_every_cost(t)
 	_test_the_log_line_carries_the_worst_frame_it_was_given(t)
 	_test_the_readout_names_what_the_log_names(t)
+	_test_the_readout_gains_labelled_columns_the_log_does_not(t)
 	_test_the_entry_keeps_the_log_readable_down_a_column(t)
 	_test_the_counters_survive_a_headless_frame(t)
+	_test_window_mean_and_max_of_known_samples(t)
+	_test_window_falls_back_to_the_instantaneous_reading_when_empty(t)
+	_test_sample_keeps_a_one_second_window_and_drops_what_falls_out(t)
 
 ## The six quantities the milestone was opened to get. A frame rate alone cannot say whether a
 ## laggy phone is switching too many textures or doing too much before the renderer is reached,
@@ -42,6 +56,11 @@ func _test_the_log_line_carries_the_worst_frame_it_was_given(t) -> void:
 ## different readers — somebody looking at a screen, and somebody reading a `run.log` off a device
 ## they were not holding — and the comparison only means anything while both name the same things.
 ## This is the check that goes red when one of the two grows a field the other has not got.
+##
+## `last`, `mean` and `max` are not in `_COSTS` and never join it: they are readout-only labels
+## inside the existing `process`/`physics` lines, not a seventh and eighth cost, and `line()` keeps
+## writing a single last-frame reading for both — see `_test_the_readout_gains_labelled_columns_
+## the_log_does_not()` below for the asymmetry this test would otherwise miss.
 func _test_the_readout_names_what_the_log_names(t) -> void:
 	var readout := "\n".join(FrameCost.readout_lines())
 	var line := FrameCost.line(0.0)
@@ -52,6 +71,18 @@ func _test_the_readout_names_what_the_log_names(t) -> void:
 	for cost in _COSTS:
 		t.check((cost in readout) == (cost in line),
 				"%s is on both the readout and the log line, or on neither" % cost)
+
+## The one place the readout and the log are allowed to differ, stated as its own check rather
+## than left as something `_test_the_readout_names_what_the_log_names()` merely does not catch:
+## `process`/`physics` gain `last`, `mean` and `max` columns on the readout, and `line()`'s own
+## single reading carries none of those words, since it already writes once a second at the
+## interval the mean covers.
+func _test_the_readout_gains_labelled_columns_the_log_does_not(t) -> void:
+	var readout := "\n".join(FrameCost.readout_lines())
+	var line := FrameCost.line(0.0)
+	for label in ["last", "mean", "max"]:
+		t.check(label in readout, "the readout's process/physics lines carry a %s column" % label)
+		t.check(not (label in line), "the log's single frame() line carries no %s label" % label)
 
 ## The log is read top to bottom with no tool, down the kind column — so a `frame` entry has to
 ## land in the same three columns every other entry does. `TelemetryLog` in memory rather than on
@@ -75,3 +106,42 @@ func _test_the_counters_survive_a_headless_frame(t) -> void:
 	t.check(FrameCost.process_ms() >= 0.0, "process time reads in milliseconds (%.3f)" % FrameCost.process_ms())
 	t.check(FrameCost.physics_ms() >= 0.0, "physics time reads in milliseconds (%.3f)" % FrameCost.physics_ms())
 	t.check(not FrameCost.line(0.0).is_empty(), "and the line is written whatever they read")
+
+## The bare arithmetic behind `process_mean_ms()`/`process_max_ms()`/`physics_mean_ms()`/
+## `physics_max_ms()`, driven with a literal array instead of a live `Performance` reading — the
+## same reason `FrameCost.line()`'s own worst-frame test above drives it with a literal seconds
+## value rather than an engine's real one. A window this suite fed with known numbers is the only
+## way to know the mean is an arithmetic mean and the max is the worst entry, not the last one.
+func _test_window_mean_and_max_of_known_samples(t) -> void:
+	var samples: Array[float] = [10.0, 30.0, 20.0]
+	t.check(is_equal_approx(FrameCost._window_mean(samples, -1.0), 20.0),
+			"the mean of three known samples is their arithmetic mean, not their last")
+	t.check(is_equal_approx(FrameCost._window_max(samples, -1.0), 30.0),
+			"the max of three known samples is the worst one, not the last one")
+
+## **The first frame is never a lie.** Before `sample()` has fed the window anything, `mean` and
+## `max` fall back to the instantaneous reading passed in rather than to zero — a zero would read
+## as a free frame, which no frame ever is.
+func _test_window_falls_back_to_the_instantaneous_reading_when_empty(t) -> void:
+	var empty: Array[float] = []
+	t.check(FrameCost._window_mean(empty, 42.0) == 42.0,
+			"an empty window's mean is the fallback reading it was given")
+	t.check(FrameCost._window_max(empty, 42.0) == 42.0,
+			"an empty window's max is the same fallback reading")
+
+## `sample()` takes its time from the caller rather than a clock of its own (see its own doc),
+## which is what lets this drive the one-second window with literal timestamps instead of waiting
+## a real second out. Reads `_process_samples`/`_physics_samples` directly rather than through a
+## public counter that would exist for no other reason than this test.
+func _test_sample_keeps_a_one_second_window_and_drops_what_falls_out(t) -> void:
+	FrameCost.reset_samples()
+	FrameCost.sample(0.0)
+	FrameCost.sample(0.5)
+	t.check(FrameCost._process_samples.size() == 2 and FrameCost._physics_samples.size() == 2,
+			"two samples less than a second apart are both kept (%d, %d)" % [
+				FrameCost._process_samples.size(), FrameCost._physics_samples.size()])
+	FrameCost.sample(1.6)
+	t.check(FrameCost._process_samples.size() == 1 and FrameCost._physics_samples.size() == 1,
+			"the two samples more than a second behind the newest one drop out (%d, %d)" % [
+				FrameCost._process_samples.size(), FrameCost._physics_samples.size()])
+	FrameCost.reset_samples()

@@ -475,6 +475,13 @@ build has nothing in `project.godot` to reach:
   (875609a5)` on a release — read from `git` on a working tree and from the two settings
   `tools/export-web.sh` bakes into an export, `application/config/version` and
   `application/config/source_commit`, so a screenshot of either says which code it is of.
+  The same gate lets the page choose what the seed line itself reads: `?seed=N`
+  (`DevFlags.seed_override()`) regenerates the city from a positive integer the way the command
+  line's own `--seed` does, refusing `0`, a negative number, an empty value or anything else that
+  is not a positive integer with a warning and falling back to a fresh seed instead — honoured
+  only while `readout_requested()` already holds, so a release page nobody asked `?debug=1` of
+  never takes a seed either. The command line's `--seed` takes precedence over the query form
+  when both are present.
   Directly beneath the seed line, a `skip` line names what `--skip`/`?skip=` turned off — `events`,
   `crowd`, `shadows`, comma-separated, any order (`DevFlags.skip_words()`) — turning the desktop's
   own per-frame draw probes (docs/DECISIONS.md, M124, "the desktop half", rows (e), (d) and (c))
@@ -485,6 +492,20 @@ build has nothing in `project.godot` to reach:
   `primitives`, `process` and `physics`, the same six quantities and the same words the run log's
   own `frame` entry carries, assembled from the same readings so the screen and the log cannot
   disagree. See "What a frame cost" above for what each one says.
+  **`process` and `physics` each carry three labelled columns, `last`, `mean` and `max`, rather
+  than the log's own single reading** — `last` is `process_ms()`/`physics_ms()`, the same
+  instantaneous last-frame number `line()` writes; `mean` and `max` are `FrameCost.sample()`'s
+  own rolling one-second window, fed once a frame while the readout is on. **`mean` is what a
+  still actually measures**: a screenshot lands on one arbitrary frame, and M124's own phone
+  probe found the last-frame-alone reading swing between 21.7ms and 65.1ms on the same setting a
+  few seconds apart (docs/DECISIONS.md, M124, "the phone's process time split"), so the mean over
+  the second around it is the number a single still can stand behind. **`max` is what a stutter
+  feels like**, the same argument the run log's own `worst frame` field makes for `line()` — a
+  mean is exactly the statistic a hitch hides in. Before the window has taken its first sample,
+  `mean` and `max` fall back to the same instantaneous reading as `last`, so the very first frame
+  reports what it has rather than a zero that would read as free. `line()` itself is unchanged: it
+  already writes once a second, at the interval the mean covers, so a mean over that same second
+  would be no different a number.
 - **`5` the day's routes** — one purple polyline per route the day's `RouteTree` offers, doorstep
   to calm area, over the centres of the two-tile reachability cells the tree actually grew on
   (`ReachabilityGrid`, docs/DECISIONS.md M69) rather than individual tiles — the tree keeps no
