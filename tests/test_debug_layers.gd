@@ -28,6 +28,8 @@ func run(t) -> void:
 	_test_number_keys_toggle_their_own_layer(t)
 	_test_layer_keys_do_nothing_outside_a_debug_build(t)
 	_test_the_bounding_box_layer_draws_every_enabled_body(t)
+	_test_no_redraw_is_wanted_with_every_layer_off(t)
+	_test_collect_collision_nodes_into_agrees_with_the_public_wrapper(t)
 
 # ------------------------------------------------------------------ shadow_outline ---
 
@@ -336,3 +338,46 @@ func _count_enabled_bodies(root: Node) -> int:
 	for child in root.get_children():
 		count += _count_enabled_bodies(child)
 	return count
+
+# ---------------------------------------------------------- the per-frame audit ---
+# `docs/TODO.md`, M124: `_process()` used to call `queue_redraw()` unconditionally, even with
+# every layer off, and `collision_nodes_under()` allocated a fresh `Array[Node]` at every level of
+# recursion rather than accumulating into one the caller already owns.
+
+func _test_no_redraw_is_wanted_with_every_layer_off(t) -> void:
+	var layers := DebugLayers.new()
+	t.check(not layers._wants_a_redraw(),
+			"fresh layers start with all three off, so _process() has nothing to ask a redraw for")
+	layers.fields_on = true
+	t.check(layers._wants_a_redraw(), "one layer on is already enough to want a redraw")
+	layers.fields_on = false
+	layers.bodies_on = true
+	t.check(layers._wants_a_redraw(), "any one of the three does, not only the first")
+	layers.bodies_on = false
+	t.check(not layers._wants_a_redraw(), "and back to nothing once every layer is off again")
+	layers.free()
+
+func _test_collect_collision_nodes_into_agrees_with_the_public_wrapper(t) -> void:
+	var root := StaticBody2D.new()
+	t.add_child(root)
+	var shape := CollisionShape2D.new()
+	shape.shape = RectangleShape2D.new()
+	root.add_child(shape)
+	var polygon := CollisionPolygon2D.new()
+	polygon.polygon = PackedVector2Array([Vector2.ZERO, Vector2(1.0, 0.0), Vector2(0.0, 1.0)])
+	root.add_child(polygon)
+
+	var via_wrapper := DebugLayers.collision_nodes_under(root)
+	t.check(via_wrapper.size() == 2,
+			"the public wrapper still finds both the enabled shape and the enabled polygon")
+
+	# The private helper accumulates into whatever the caller already put there, rather than only
+	# ever starting from empty -- the whole point of the fix being able to reuse one array instead
+	# of merging a fresh one back from every level of recursion.
+	var into: Array[Node] = [root]
+	DebugLayers._collect_collision_nodes_into(root, into)
+	t.check(into.size() == 3 and into[0] == root,
+			"_collect_collision_nodes_into() appends onto the caller's own array rather than " +
+			"returning a fresh one of its own")
+
+	root.free()
