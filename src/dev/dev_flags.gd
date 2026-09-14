@@ -125,9 +125,10 @@ static func _readout_from_query(query: String) -> bool:
 
 ## The words `--skip`/`?skip=` may name, one per desktop probe M124's own measurement turned into
 ## something a live page can ask for (docs/DECISIONS.md, M124, "the desktop half", rows (e), (d)
-## and (c)). Kept in one place so `_validate_skip_words()` and the three getters below cannot each
-## spell the set differently.
-const _SKIP_KNOWN_WORDS := ["events", "crowd", "shadows"]
+## and (c)), plus `motion` (docs/DECISIONS.md, M139, "the phone reading", the probe that asks what
+## the crowd's own ticks cost once its drawing is ruled out). Kept in one place so
+## `_validate_skip_words()` and the four getters below cannot each spell the set differently.
+const _SKIP_KNOWN_WORDS := ["events", "crowd", "shadows", "motion"]
 
 ## Whether `--skip`/`?skip=` named `events` — every `EventInstance._draw` returns before drawing
 ## anything, the desktop's own row (e). Parsed the same shape as `svg_requested()`/
@@ -135,10 +136,11 @@ const _SKIP_KNOWN_WORDS := ["events", "crowd", "shadows"]
 ## without `enabled()`'s own gate) but **honoured only while `readout_requested()` holds**: a
 ## release page without the DEBUG MODE note never skips anything, so this cannot become a second
 ## way to reach what `enabled()` gates — a page nobody asked `?debug=1` of still draws everything.
-## `skip_crowd()` (row (d), `CrowdAgent._draw`) and `skip_shadows()` (row (c),
-## `BuildingShadows._draw_chunk`) are the other two words. Nothing else moves: the fields, the
-## costs, the crowd's motion and the halo run as normal, so a frame reading differs from an
-## ordinary run by drawing alone.
+## `skip_crowd()` (row (d), `CrowdAgent._draw`), `skip_shadows()` (row (c),
+## `BuildingShadows._draw_chunk`) and `skip_motion()` (the crowd's own ticks: every agent's
+## `_process` and `Crowd._physics_process`) are the other three words. Nothing else moves: the
+## fields, the costs and the halo run as normal, so a frame reading differs from an ordinary run
+## by drawing and motion alone, and only whichever of the two this flag named.
 static func skip_events() -> bool:
 	return "events" in skip_words()
 
@@ -150,9 +152,16 @@ static func skip_crowd() -> bool:
 static func skip_shadows() -> bool:
 	return "shadows" in skip_words()
 
-## The full, validated set behind the three getters above — also what the readout's own `skip`
+## See `skip_events()`. Parks every agent where the day placed it: the street stands full of
+## standing people and parked cars, drawn as normal — the crowd's own drawing, the events and the
+## baby's excitement read of the crowd are unchanged, since that scan is the baby's and not the
+## crowd's.
+static func skip_motion() -> bool:
+	return "motion" in skip_words()
+
+## The full, validated set behind the four getters above — also what the readout's own `skip`
 ## line names, through `main.gd`'s cached copy. Empty whenever `readout_requested()` does not
-## hold, so the gate is paid once here rather than three times at each caller.
+## hold, so the gate is paid once here rather than four times at each caller.
 static func skip_words() -> Array[String]:
 	if not readout_requested():
 		return []

@@ -483,10 +483,15 @@ build has nothing in `project.godot` to reach:
   never takes a seed either. The command line's `--seed` takes precedence over the query form
   when both are present.
   Directly beneath the seed line, a `skip` line names what `--skip`/`?skip=` turned off — `events`,
-  `crowd`, `shadows`, comma-separated, any order (`DevFlags.skip_words()`) — turning the desktop's
-  own per-frame draw probes (docs/DECISIONS.md, M124, "the desktop half", rows (e), (d) and (c))
-  into something a phone's own page can ask for, so a screenshot taken under the flag says what it
-  measured; absent when nothing is skipped. Honoured only while `readout_requested()` already
+  `crowd`, `shadows`, `motion`, comma-separated, any order (`DevFlags.skip_words()`) — turning the
+  desktop's own per-frame draw probes (docs/DECISIONS.md, M124, "the desktop half", rows (e), (d)
+  and (c)) into something a phone's own page can ask for, so a screenshot taken under the flag says
+  what it measured; absent when nothing is skipped. `events`, `crowd` and `shadows` turn off a draw
+  call each; `motion` (docs/DECISIONS.md, M140, "the crowd's scripts parked") turns off the crowd's
+  own ticks instead — every agent's `_process` and `Crowd._physics_process` return before they run,
+  so the street stands full of standing people and parked cars where the day placed them. Drawing,
+  the events and the baby's own excitement read of the crowd are unchanged under `motion`, since
+  that scan is the baby's and not the crowd's. Honoured only while `readout_requested()` already
   holds, the same gate as the rest of this bullet, so a release page nobody asked `?debug=1` of
   never skips anything either. The frame block is `FrameCost.readout_lines()` — `fps`, `draws`, `objects`,
   `primitives`, `process` and `physics`, the same six quantities and the same words the run log's

@@ -61,6 +61,7 @@ func run(t) -> void:
 	_test_a_precinct_stops_the_street_that_crosses_it(t)
 	_test_cars_do_not_enter_a_junction_they_cannot_leave(t)
 	_test_nothing_walks_into_a_hard_blocker(t)
+	_test_the_motion_skip_stops_an_agent_in_its_tracks(t)
 
 	_city.free()
 
@@ -1322,6 +1323,25 @@ func _test_a_car_can_honour_the_headway_it_keeps(t) -> void:
 	t.check(Tuning.CAR_GAP_MIN > Tuning.CAR_STRIKE_HALF_LENGTH * 2.0,
 			"and a stopped queue leaves a car's length between bumpers (%.0f > %.0f)"
 			% [Tuning.CAR_GAP_MIN, Tuning.CAR_STRIKE_HALF_LENGTH * 2.0])
+
+## `--skip motion` (docs/DECISIONS.md, M140, "the crowd's scripts parked"): an agent with
+## `_skip_motion` set stands exactly where it was when `_process` is stepped by hand, and one
+## without it moves the same way it always did.
+func _test_the_motion_skip_stops_an_agent_in_its_tracks(t) -> void:
+	_city.crowd.start_day(1, _rng(1))
+	var parked: CrowdAgent = _city.crowd.agents()[0]
+	parked._skip_motion = true
+	var moving: CrowdAgent = _city.crowd.agents()[1]
+	var parked_at := parked.global_position
+	var moving_at := moving.global_position
+	_step(parked, 2.0)
+	_step(moving, 2.0)
+	t.check(parked.global_position == parked_at,
+			"an agent with _skip_motion set has not moved after two seconds of _process (%s)"
+			% parked.global_position)
+	t.check(moving.global_position != moving_at,
+			"the same agent with the flag off moves as it always did (%s -> %s)"
+			% [moving_at, moving.global_position])
 
 # ------------------------------------------------------------------- helpers ---
 
