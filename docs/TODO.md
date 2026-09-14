@@ -446,11 +446,17 @@ that note is what the player asked for.
       unreachable from the address bar, is rewritten to say what is now true. A test drives the
       query parser directly, the way the skip words' test does, with a release-shaped case
       that shows the seed ignored without `?debug=1`.
-- [ ] **The readout's process and physics lines as a one-second mean** — recommended, not
-      asked for, and waiting on the player's word. The M124 split (`DECISIONS.md`, M124, the
-      phone's process time split) found the readout's process line is the last frame alone, so
-      two stills of one setting read 21.7 and 65.1 ms. A rolling mean over the last second,
-      beside the instantaneous value, makes one phone still a measurement.
+- [ ] **The readout's process and physics lines carry a one-second mean and max beside the
+      last frame.** *(2026-09-14: "sure, we can print other values, too".)* The M124 split
+      (`DECISIONS.md`, M124, the phone's process time split) found the readout's process line
+      is the last frame alone, so two stills of one setting read 21.7 and 65.1 ms. `FrameCost`
+      keeps the last second of `process_ms()` and `physics_ms()` samples and the readout prints
+      each line as `last  mean  max`, labelled so a screenshot says which is which; the mean is
+      what a still measures, the max is what a stutter feels like. The **telemetry** rule
+      governs `FrameCost`; the run log's once-a-second `frame` entry is unchanged, since it
+      already samples at the interval the mean covers. A test drives the window with known
+      samples the way the rest of `FrameCost` is tested, and `docs/TELEMETRY.md`'s readout
+      section describes the three columns.
 
 ---
 

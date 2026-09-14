@@ -20,6 +20,23 @@ phone — the newest tag and the commit it was built from — and the readout's 
 it; with all three words the `skip` line sits under the seed, the street is bare and the meter
 still charges. The readout stays readable with the extra line. The item closes.
 
+## The lag is felt with the crowd drawn
+
+> "I can see lag only if the crowd is being drawn though."
+
+Said after the reading above. The fps column agrees with the feel — `skip=crowd` is the only
+setting that lifts it, to 29 to 39 against 20 to 32 — where the process column, one frame at a
+time, could not. What that says about the atlas item, struck by the entry's own rule a moment
+earlier, is a question put back to the player; the reading is in `DECISIONS.md`, M124, the
+phone's process time split.
+
+## The readout prints a steadier number
+
+> "sure, we can print other values, too"
+
+The answer to the recommendation that the readout's process line, which is the last frame
+alone, gain a one-second mean. Filed as M138's second item.
+
 ## A seed on the live page
 
 > "setting seed should be possible with debug=1"
