@@ -136,14 +136,34 @@ func _wants_rotation() -> bool:
 ## Prefers `Telemetry.source_version()`, `git describe`'s form (`v0.0.0-49-gab12cd3`), because a
 ## developer wants to know exactly what is running; an exported build has no repository to ask,
 ## which is when this falls back to `application/config/version` — the setting
-## `.github/workflows/deploy.yml` writes into the export before it is built — so a player sees the
-## release rather than "unknown". A function rather than inline in `_ready()` so a test can call it
-## without instancing the whole scene.
+## `tools/export-web.sh` bakes into the export before it is built: the release tag on a deploy,
+## `git describe` with a `-dirty` mark on a local export — so a player sees the release rather
+## than "unknown". A function rather than inline in `_ready()` so a test can call it without
+## instancing the whole scene.
 static func version_text() -> String:
 	var from_git := Telemetry.source_version()
 	if from_git != "unknown":
 		return from_git
 	return ProjectSettings.get_setting("application/config/version", "unknown")
+
+## The commit on its own, by the same two steps: `Telemetry.source_commit()` where there is a
+## repository, else `application/config/source_commit`, which `tools/export-web.sh` bakes beside
+## the version. On a release `version_text()` is the bare tag, and a tag can be moved; the hash
+## cannot.
+static func commit_text() -> String:
+	var from_git := Telemetry.source_commit()
+	if from_git != "unknown":
+		return from_git
+	return ProjectSettings.get_setting("application/config/source_commit", "unknown")
+
+## What the debug furniture says the build is — `v0.10.3 (875609a5)` on a release,
+## `v0.10.3-2-gab12cd3-dirty (ab12cd3)` on a working tree — the `git describe` form and the
+## commit together, since describe alone collapses to the tag on every release. *(2026-09-13,
+## playtest 70: "Debug mode should contain the commit + describe.")* The `DebugModeNote` and the
+## readout's first line carry it; this screen keeps the version alone, because the hash is a
+## developer's number and those two are where a developer looks.
+static func build_text() -> String:
+	return "%s (%s)" % [version_text(), commit_text()]
 
 func is_open() -> bool:
 	return visible
