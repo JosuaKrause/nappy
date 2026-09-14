@@ -440,6 +440,20 @@ func departure_speed() -> float:
 ## while that is 0.
 @export var pursues_within_after_first_day := 0.0
 
+## Whether the thing is **harmless until it notices her**, so its waiting and its notice both emit
+## `Tuning.TELEGRAPH_INTENSITY_FRACTION` of `intensity` the way an ordinary telegraph does.
+##
+## `false` is the default and is right for a row whose waiting state is the threatening one: a man
+## standing in an alley has started, what has not started is the lunge, and damping him would be
+## saying the wrong thing about the loudest reason to cross the road. `pigeon_flock` is the
+## opposite shape — birds pecking on a pavement are nearly nothing, and the event *is* them going
+## up — so without this a flock would charge her its full 42/s for as long as it stood there
+## unnoticed, which is a place she can never walk past rather than one she can walk around.
+##
+## Read only where `pursues_within` is set, since there is no waiting state without a trigger;
+## `validate()` refuses the pair the other way round, where the flag could never be read.
+@export var quiet_until_noticed := false
+
 ## `pursues_within` on a given day — `pursues_within` itself through `spawn_mode_switches_after_day`,
 ## `pursues_within_after_first_day` past it. The same day-keyed switch `spawn_mode_on()` reads, so a
 ## row that changes both its siting and its trigger on one day cannot have the two disagree about
@@ -517,7 +531,7 @@ enum HeatResponse {
 ## silhouette, because `_draw_spread` draws a blocking object at exactly the width it obstructs,
 ## and anything else is a lie about where she can walk.
 ##
-## Three things are exempt and each for its own reason:
+## Four things are exempt and each for its own reason:
 ##
 ## - **Anything mobile.** A moving wall on a two-tile pavement pins her against a building, which
 ##   is a different game from being priced out of a street. See `dog_walker`, where the decision
@@ -525,6 +539,11 @@ enum HeatResponse {
 ## - **`AHEAD_OF_PLAYER`**, which `validate()` refuses outright: nothing checks that a thing sited
 ##   out of where she happens to be walking leaves a route to a park.
 ## - **Anything with no silhouette** — a city-wide source, a playground the park already draws.
+## - **A flock**, which `validate()` also refuses outright. `flock_size` bodies wheeling inside
+##   `flock_spread` have no one silhouette to be half of — each bird is an 18px picture with
+##   pavement between it and the next — and walking into them is the whole event: a body would
+##   stop her at the rim and delete the thing it was drawn from. `solid_parts` is how a row with
+##   several bodies declares them, and a flock's are neither still nor in one place.
 ##
 ## And one constraint rather than an exemption, which is `validate()`'s job below: a `hard_fail`
 ## event's body has to fit *inside* its lethal radius with her own body to spare.
@@ -773,6 +792,18 @@ func validate() -> bool:
 		push_error(("event '%s' is director-sited from day %d onward and obstructs %.0fpx: "
 				% [id, spawn_mode_switches_after_day + 1, obstructs_radius])
 				+ "nothing checks that it leaves a route to a park")
+		return false
+	# A flock is several bodies wheeling inside one disc, so there is no silhouette for a body to
+	# be half of — and being walked into is the event. See `obstructs_radius` above.
+	if flock_size > 0 and obstructs_radius > 0.0:
+		push_error("event '%s' is %d bodies wheeling and obstructs %.0fpx: a flock has no one "
+				% [id, flock_size, obstructs_radius]
+				+ "silhouette to be solid at, and being walked into is what it is for")
+		return false
+	# A flag nothing can read is a decision that silently did not happen: without a trigger there is
+	# no waiting state for `quiet_until_noticed` to quieten.
+	if quiet_until_noticed and pursues_within <= 0.0:
+		push_error("event '%s' is quiet until noticed but has no trigger to be noticed at" % id)
 		return false
 	# `EventDirector` sites a `TOWARD_PLAYER` row at least `Tuning.offscreen_lead(heading,
 	# closing_speed, offscreen_notice)` in front of her, which is never less than

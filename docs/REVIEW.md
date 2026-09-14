@@ -145,6 +145,13 @@ item below for as long as looking takes.
   rig on a perform step). Whichever yeller she reaches first is the contact; the robber the day
   seeded guards only the yeller it was seeded beside. Does handing the note to the first one
   read as intended, and does an unguarded contact read as too cheap? Same record.
+- **Find a flock of pigeons on the ground** (any day; `--spawn event:pigeon_flock` puts a rig
+  in one). The birds peck on the pavement from two screens away and go up as she comes within
+  150px, then are gone. Do they read as a place she can plan around rather than a thing that
+  happens to her, and does a flock going up in the pram's face still read as loud? A placed
+  flock is a wall under the cost rule, so it stands off the day's routes: over a run, do you
+  meet one at all, and if so does meeting it by straying feel right? Record is `DECISIONS.md`,
+  M131; the burst is `evidence/m131-flock-on-the-ground-2026-09-13/`.
 - **Open the live page with `?debug=1` on the phone.** "DEBUG MODE ON" sits top-left from the
   title screen on and the readout draws top-right once a run starts; nothing removes the note.
   Is the note legible on a phone without covering anything that matters, and is the readout

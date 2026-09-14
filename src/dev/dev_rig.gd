@@ -213,6 +213,14 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 ##
 ## Reads the day's *plan* rather than what is live: nothing is live until the player is near it,
 ## so the whole point of this flag is to go and stand where one is going to be.
+##
+## **Two things it cannot do, and both are properties of the plan rather than of this search.** A
+## row the director sites while she walks has no position at dawn — `cat_dash`, `cyclist`,
+## `loose_dog`, and `charging_dog` on `Tuning.RUN_TAUGHT_DAY` — so `event:<id>` never finds one and
+## falls back to the doorstep with a warning. And a row that waits for her (`pursues_within`) is
+## stood *inside* its own trigger by the offset below, so it has noticed her by the first frame: a
+## rig can photograph what a `pigeon_flock` or an `alley_robbery` does, but not the silence before
+## it.
 static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
 	for plan in city.events.plans():
 		if not plan.is_placed():
