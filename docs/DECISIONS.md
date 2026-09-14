@@ -1,5 +1,198 @@
 # Decisions
 
+## M129 — A path through the city never has to cost · the guarantee measured 2026-09-13
+
+*(2026-09-13, [PLAYTEST-69](playtests/PLAYTEST-69.md): "a path through the city must never hit
+excitement -- so all obstacles should be routable around by eg crossing to the other side of the
+street … the routing should only cross the street at intersections".)* The entry's first item,
+a probe before any rule: `tests/probes/m129_zero_cost_line.gd`, run by name with
+`tools/test.sh probes/m129_zero_cost_line.gd`, one agent commit on
+`feature/m129-zero-cost-probe`. Six seeds, one day per act, 298 routes, about half a minute.
+
+**What a zero-cost line is, as measured.** A walk from the home notch (or the street it opens
+onto) to any tile of the route's calm area, staying outside every placed row's `outer_radius`
+where it emits and its `obstructs_radius` where it has a body, on the route's own streets and
+the junctions at their ends, changing pavements only inside a junction box, never on a
+mid-block carriageway; a route cell on no street contributes its own tiles; precincts and
+absorbed streets are ground by tile type. City-wide rows and the queue-fed `AHEAD_OF_PLAYER`
+and `TOWARD_PLAYER` rows are outside it, since they have no position at plan time. A pulse moves
+no radius, so the top of a beat is the catalogued disc; a moving row's field is the plain disc.
+Four bugs were found and fixed on the way, each of which had moved a headline number: an
+absorbed street's grass read as carriageway, the line starting strictly inside the home notch,
+a minimal-removal framing that found the facing pair zero times, and subtracting discs from a
+flat mask instead of counting rows per tile.
+
+**The result.** Routes with a zero-cost line, primary reading (a pacing row denies its whole
+beat, mobile rows at their dawn position, region doors counted):
+
+| act I | act II | act III | act IV | all |
+|---|---|---|---|---|
+| 16 of 88, 18.2% | 6 of 88, 6.8% | 0 of 73 | 0 of 49 | 22 of 298, 7.4% |
+
+The other readings move it little: a pacing row denying only where its beat never opens gives
+10.7%; every mobile row denying its whole swept route gives 2.7%; region doors left out, 7.7%;
+catalogue rows only, without seals, walls and doors, 9.4%. A broken route is broken in 5.3
+stretches on average and 12 at worst — 1469 cuts over 276 broken routes.
+
+**The failing shapes**, by the routes each breaks first and by every cut:
+
+| routes | cuts | shape |
+|---|---|---|
+| 171 | 773 | the junction itself is covered — the only legal crossing sits inside a row's reach |
+| 47 | 169 | a pacing row whose beat never leaves an opening (`homeless_yeller`, end to end) |
+| 24 | 144 | one row covering the street's whole width alone (`police_patrol`, `busker`, `ice_cream_van`) |
+| 27 | 231 | a cut that is not a straight band across one street |
+| 5 | 74 | a region door on the route (`checkpoint_hut`, by design from day 7) |
+| 2 | 23 | a body with the far pavement also taken (`construction` + `cafe_tables`, `dog_walker` + `cafe_tables`) |
+| 0 | 0 | two friction fields on facing pavements |
+
+The rows most often in a cut: `dog_walker` (223 of 276 broken routes), `homeless_yeller` (221),
+`cafe_tables` (207), `leaf_blower` (186), `poster_crew` (136), `police_patrol` (135). The shape
+the entry predicted — a van with the far pavement taken — is the rarest, and the facing pair
+never occurs, because one row is usually wide enough on its own: the street is 192px kerb to
+kerb and the catalogue's reaches run 179 to 240px.
+
+**The corridor crosses mid-block.** 258 of 298 routes put at least one cell on a carriageway
+between junctions; 871 complete pavement-to-pavement crossings inside one street, about 2.9 per
+route, all on ordinary streets and none on the spine, which routes reach along cross streets
+that meet it at junctions.
+
+**What follows, decided by the entry's own rule** that a rule whose case the probe never finds
+is not written: the far-pavement rule as drafted is dropped, since the pair it guards against
+does not occur, and the rules are rewritten in `TODO.md` against the shapes that do — a covered
+junction, a single row wide enough to take a street alone, the yeller's beat, and the corridor's
+own mid-block crossings. Which readings the rules answer (pacing as union or intersection,
+mobile rows at dawn or swept, doors in or out) is the player's call and is put in the entry.
+M131's map-placed flock was merged after these numbers were taken; a re-run is the first step
+of any rule.
+
+## M131 — Pigeons exist before they are seen · built 2026-09-13
+
+*(2026-09-13, [PLAYTEST-69](playtests/PLAYTEST-69.md): "pigeons pop in on screen -- they should
+exist before they are visible.")* One agent commit on `feature/m131-pigeons-on-the-ground`,
+reviewed on the PR; the evidence is `evidence/m131-flock-on-the-ground-2026-09-13/`.
+
+**A place, not a moment.** `pigeon_flock` is a `MAP` placement on sidewalk, square or park with a
+wait trigger of 150px — inside its 168px field so the notice starts on ground she is already
+charged for, and more than twice the 62px wheel so the birds are up before she is among them —
+and the entry's recommendation was built as written. The birds peck on the tile from the moment
+the day streams them in at `EVENT_STREAM_RADIUS`, over two screens out, and the 1.7s telegraph and
+the burst begin when she comes inside the trigger: the telegraph contract paid in geometry, the
+way the robber's and the day-4 dog's are. The alternative, keeping the row ahead-of-player and
+siting it past the view's edge with `offscreen_lead()`, was rejected because a flock that walks
+into view already bursting is never seen on the ground, which is most of what the row is, and a
+crossing sited where she is not going is one she has no reason to reach.
+
+**What the wait needed.** A waiting `pursues_within` row emits at full strength — the rule for a
+man in an alley, who has started and only the lunge has not — so a flock would have charged 42/s
+all morning to anyone within 168px. `EventDef.quiet_until_noticed` damps a row's wait and its
+notice to `TELEGRAPH_INTENSITY_FRACTION`; `validate()` refuses it without a trigger, and refuses
+a flock that obstructs, since eleven bodies wheeling have no one silhouette and being walked
+into is the event. The intensity damping now lives in one place, `_notice_damping()`, which the
+meter multiplies by and the caret's projection divides by. Two bugs found on the way: the flock
+was held in the air for the whole wait because `_fly_the_flock()` asked only about the telegraph,
+and the intensity ramp read the row's age rather than its chase age, so a long-waited burst would
+have opened at the multiplier its end is meant to have. Two existing flock tests had gone vacuous
+under the wait and now stand her in it.
+
+**The test.** `tests/test_events.gd` holds that the row is map-placed on every day, that every
+planned flock has a tile, that the stream radius less a frame of running exceeds the view's far
+corner so a first drawn frame is never inside the view rect, and that an instance at stream
+distance is waiting on the ground at the damped rate and rises only inside the trigger.
+
+**Open to overturn, and one put to the player.** Under the cost rule a 42-over-168 flock is a
+wall, so a placed one lands off the corridor rather than in front of her: a flock is now met by
+straying, not on the way. That follows from the entry, which asked for existence before
+visibility and said nothing about the route, and it is a different encounter from the one the
+row was written for; a friction-role exception is the alternative if the player wants it on the
+route. The trigger distance, the new field and the fourth solidity exemption are the agent's
+choices. M100's rig defect closes for this row and stays open for the queue-fed ones, and gains
+the gap the agent found: `first_event_position()` stands a rig inside a waiting row's trigger, so
+no rig can photograph the silence before a flock or an alley robbery. `evidence/m121-halo-follows-
+owner-2026-09-13/README.md` still says `--spawn event:pigeon_flock` cannot work; it is a dated
+capture record and was left as written.
+
+## M130 — An eastbound car sits south of its halo · built 2026-09-13
+
+*(2026-09-13, [PLAYTEST-69](playtests/PLAYTEST-69.md): "just confirmed on current mobile a car
+going west to east that is offset by a few pixel south and the halo is at the regular
+position", on v0.10.0 — the sighting M123 closed on waiting for.)* Two agent commits on
+`feature/m130-car-halo-offset`, reviewed on the PR; the evidence is
+`evidence/m130-car-halo-anchor-2026-09-13/`.
+
+**None of the three suspects; the redraw gate.** `CrowdAgent._redraw_if_the_picture_changed()`
+keyed a car's retained draw list on the quantised view alone — sector, mirror, gait frame — while
+`_draw_body()` reads the *live* heading twice: `_car_body_anchor()` registers the picture
+`26·|heading.y| + 14·|heading.x|` south of the node and `_draw_shape_shadow()` sweeps the
+capsule along the same vector. A car that came round an arc kept the anchor it had at the last
+sector boundary, up to 22.5° back, for the rest of its run in that lane, since nothing quantised
+changed again; twenty degrees off east is about 8px of southward error, always south because
+14px is that expression's minimum, and small on a north-south lane, which is why the report is
+about an east-west car. `EntityHalo` re-traces the body every frame it is drawn, so the rim sat
+at the live anchor and the picture did not: "the halo is at the regular position", verbatim. The
+gate dates from M111; the picture joined the continuous side of it at M121; v0.10.0 carries both.
+
+**The three suspects, each answered.** The halo's trace goes through `_car_body_anchor()` — it is
+built from the agent's own `_draw_body`, and the bursts show the rim 4px out on every side of a
+mirrored side view and an unmirrored back view. There is no PNG transfer for the crowd car at
+all — `assets/illustrated/svg-transfer/` has no `crowd` family, so the resolver returns the
+authored SVG with or without `--svg`, which is also why desktop `--svg` captures never showed a
+difference. And the 14px strike-box datum is right: a pixel column through a straight
+east-west car's wheel puts the tyre bottom on the strike box's south line, and the place the
+player calls "regular", where the halo stands, is that anchor. M121's rule is unchanged.
+
+**The fix.** The redraw key gains the live heading quantised to `CAR_HEADING_STEPS` (128 per
+unit component, so the anchor is held back by at most a sixth of a world pixel and the capsule
+axis by a quarter of a degree), kept as a second field beside the quantised picture so neither
+slot carries two meanings. A car in a lane costs nothing for it, since its heading there is an
+exact cardinal built from `_direction` and the key never changes; only the seconds on an arc pay.
+`tests/test_car_views.gd` holds that the rim's bounds equal the picture's grown by the halo
+margin at every sector in both presentation modes, and that an arc sweep asks for a redraw at
+every half-pixel of ground-line movement, with a non-vacuity guard; with the heading term
+neutered the suite goes red. The cues skill gains the trap beside "`_draw()` is retained": a
+redraw gate is a promise about everything the drawing reads.
+
+**Open to overturn.** The step count and the two-field key are the agent's choices. No turning
+car was caught under a halo on camera in five bursts, the same budget M121's record spent, so
+the analytic sweep is the pin and the before frames show the straight-line case; `--invincible`
+was left off because it empties the baby's source list and no halo would be drawn. Whether an
+eastbound car now sits on its halo on a phone is in `REVIEW.md`.
+
+## M133 — The readout on the live page · built 2026-09-13
+
+*(2026-09-13, [PLAYTEST-69](playtests/PLAYTEST-69.md): "let's add a ?debug=1 flag" — readout
+only — "with a note on the screen that this is debug mode -- the note should not be removable";
+held that session and started the next at the player's word.)* Two agent commits on
+`feature/m133-live-readout`, reviewed on the PR and checked in a browser against a release
+export served locally.
+
+**`?debug=1` reaches the readout and nothing else.** `DevFlags.readout_requested()` parses the
+page's `?debug=1` and the command line's `--debug` the way `svg_requested()` does, outside
+`enabled()`; `main.gd` reads it once into `_readout_requested` and every place that gated the
+readout's visibility or its text assembly on `_debug` now reads `_debug or _readout_requested`.
+The three geometry layers, the snapshot key, the layer keys and every other dev flag keep
+reading `_debug` alone, so on a release page the `4` key is inert: the readout is on and stays
+on. It is the third bounded release-safe query flag beside `?svg=1` and `?telemetry=1`; the
+2026-09-06 decision that a release carries no modifiers (M76) otherwise stands.
+
+**The note is its own node.** `DebugModeNote` (`src/dev/debug_mode_note.gd`) is a
+`CanvasLayer` above the readout's, built by `main.gd` before either boot path only when the flag
+holds, drawing "DEBUG MODE ON" top-left in plain outlined text — the cues rule's own carve-out
+for a debug overlay — and nothing sets its visibility or frees it: not the `4` key, not the
+title screen hiding the readout around it, not a press. A debug build without the flag does not
+show it. It is a separate node rather than a line in the HUD on purpose, both because the HUD
+hides and shows itself and because the HUD was another milestone's file that day.
+
+**Checked in a browser.** On the served release export, `?debug=1` shows the note on the title
+screen and the readout from the first frame of a run, and `4` changes nothing; without the flag
+the page shows neither. The readout's last lines name keys (arrows, WASD, shift, esc, r, q),
+which the screen rule otherwise forbids; it is developer furniture a visitor opts into and it
+stands, but it is now reachable from a public address for the first time.
+
+**Open to overturn.** The wording, the top-left placement mirroring the readout's corner, the
+14px outlined text at 0.85 alpha and the command-line spelling `--debug` (kept for symmetry with
+`--svg`, though a debug build shows the readout without it) were the agent's choices.
+
 ## M132 — The resistance speaks loud enough to be heard · built 2026-09-13
 
 *(2026-09-13, [PLAYTEST-69](playtests/PLAYTEST-69.md): "the day text needs to be bigger to be

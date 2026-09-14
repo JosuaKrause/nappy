@@ -315,100 +315,49 @@ still reaches two calm areas, `EventScheduler._ensure_the_city_is_still_walkable
 obstructing bodies, widest first, until a park is reachable, and a `hard_fail` row keeps its
 whole field clear of other events (`_room_around`). Every one of those is about *reaching*, and
 a route that reaches through three friction fields in a row is as legal as an empty one. Costly
-rows land inside the corridor on purpose (the `friction` role); a kerbed van takes 44px of a
-64px footway so *the answer is the other side of the street* (`docs/EVENTS.md`), but nothing
-checks that the other side is open where it is needed. `homeless_yeller` `paces` between the
-ends of its route for ever at intensity 14 and a 210px reach. Crossings exist at every junction
-(a zebra, or the spine's signalled lines) and she can cross anywhere in play; the corridor's
-cells can already cut a corner through a park or an alley.
+rows land inside the corridor on purpose (the `friction` role). **The guarantee is measured and
+is far from true**: `tests/probes/m129_zero_cost_line.gd`, run by name, finds a zero-cost line
+along about one route in fourteen over a run and along none from act III; the numbers, the
+readings and the failing shapes are in `DECISIONS.md` under M129. The dominant break is a
+*covered junction* — the only legal crossing sits inside some row's reach — then the yeller's
+beat, then a single row wide enough to take a street alone (the street is 192px kerb to kerb and
+most reaches are 179 to 240px). A van with the far pavement also taken is the rarest shape and
+two friction fields on facing pavements never occur, so the far-pavement rule the entry first
+drafted is not written. The corridor grower itself crosses a carriageway mid-block about three
+times per route, on ordinary streets and never on the spine. M131's map-placed flock landed
+after the measurement, so a re-run comes first.
 
-- [ ] **The guarantee, stated and measured before anything moves.** A probe under
-      `tests/probes/` that, for each planned day over a set of seeds, walks every route from
-      the home to its calm area and asks whether a *zero-cost line* exists along it: a line
-      that stays out of every placed row's outer radius at the top of its beat, moves between
-      pavements only at intersections, never mid-block, and treats the corridor's own
-      park-and-alley cuts as ground like any other. It reports the fraction of routes that
-      have one, and for those that do not, which row and which stretch broke it — a van with
-      the far pavement also taken, two friction fields on facing pavements, a yeller whose beat
-      never leaves an opening. The numbers and the failing shapes go to `DECISIONS.md` first;
-      the rules below are chosen against them, and a rule whose case the probe never finds is
-      not written.
-- [ ] **A friction row on a route's pavement is accepted only if the far pavement is open for
-      the stretch.** Checked before the row is placed, never repaired after (the city rule): the
-      opposite pavement between the two nearest intersections holds no costly or impassable
-      body and is reachable from the route by an intersection crossing at each end. Where the
+**Three readings are the player's to choose before the rules are cut**, since each moves the
+number: whether a pacing row denies its whole beat or only where its beat never opens (7.4% to
+10.7%); whether a moving row denies its dawn position or its whole swept route (7.4% to 2.7%);
+and whether a region door on the route counts as a cut (7.4% to 7.7%). The recommendation is
+the primary reading — whole beat, dawn position, doors counted — since it is the one a player
+walking at any moment of the day meets.
+
+- [ ] **A route's junctions stay clear.** The junctions a route passes through, and the ones at
+      each end of each of its streets, are outside every placed row's reach: checked before a
+      row is placed, never repaired after (the city rule), so a row whose field would cover a
+      route junction is refused that ground. This is the shape that breaks most routes and no
+      earlier item named it. Pursuers, `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` rows and city-wide
+      rows are outside this — they pay the telegraph contract instead — and so is anything off
+      the corridor, where the wall role is the design. Re-run the probe after; the fraction and
+      the shapes go beside the first table in `DECISIONS.md`.
+- [ ] **No single row takes a route street's whole width.** A friction row on a route's
+      pavement is accepted only if its reach leaves the far pavement of that street outside it
+      for the stretch between the two nearest junctions; a row that cannot — `police_patrol`,
+      `busker`, `ice_cream_van` at today's reaches on a 192px street — is refused corridor
+      ground or its reach on the corridor is the number the **balance** rule moves. Where the
       corridor runs along a precinct, a park edge or an alley, say what "the other side" is
-      there or refuse the row that ground. Pursuers, `AHEAD_OF_PLAYER` rows and city-wide rows
-      are outside this — they pay the telegraph contract instead — and so is anything off the
-      corridor, where the wall role is the design.
+      there or refuse the row that ground. Re-run the probe after.
 - [ ] **A pacing row leaves the line open for part of its beat.** The yeller's route is sited
       and sized so that the pavement it paces is clear at one end for a readable share of each
       loop, or its loop runs on the pavement the route does not use; the choice is measured
       with the probe and the reach the line needs at the far end of its beat is the number. The
-      same for any other row that `paces`.
-- [ ] **Mid-block crossings are not counted on.** The route tree's cells and the probe's line
-      cross a carriageway only at a junction; in play she may still cross anywhere. If the
-      corridor grower already cuts across a street mid-block, that is a finding for the probe
-      to name and this item to fix.
-
----
-
-## M130 — An eastbound car sits south of its halo · asked for 2026-09-13
-
-> "just confirmed on current mobile a car going west to east that is offset by a few pixel
-> south and the halo is at the regular position"
-
-[PLAYTEST-69](playtests/PLAYTEST-69.md), on v0.10.0; the sighting M123 closed on waiting for
-(`DECISIONS.md`, M123). The **cues**, **crowd-traffic** and **svg-art** or **illustrated-png**
-rules govern, depending on where it lands.
-
-**What is true today.** `CrowdAgent._car_body_anchor()` registers every car view by one rule
-read off the live heading: the drawn content's bottom edge lands on the strike box's
-southernmost point, `26·|heading.y| + 14·|heading.x|`, plus that canvas's bottom alpha margin
-(`CAR_CANVAS_BOTTOM_MARGIN`), which put east- and west-bound pictures 14px further south than
-before M121 and was recorded as open to the player's eye. `EntityHalo` re-traces its owner's
-body every frame by calling the owner's body drawing, so its rim is meant to follow whatever
-anchor the picture uses. The phone runs the release build with the PNG transfers; the desktop
-debug build does too unless `--svg`.
-
-- [ ] **Find which of the two is at the wrong place, and make them one.** Three suspects, each
-      answered by a burst of an eastbound car under a halo with the bodies layer on (`3`), taken
-      with and without `--svg`: the halo's trace does not go through `_car_body_anchor()` for
-      the side view, so the rim sits at the pre-M121 position while the picture moved; the
-      side-view PNG's bottom alpha margin differs from its SVG's, so `CAR_CANVAS_BOTTOM_MARGIN`
-      registers the transfer a few pixels off where the SVG lands, which is why the desktop
-      captures under `--svg` looked right; or the 14px registration to the strike box is itself
-      the wrong datum for the side view and the halo, traced from the body, is right. The fix
-      follows the finding: one anchor both the picture and the rim read, or a per-texture
-      margin read off the texture rather than a constant. `tests/test_car_views.gd` holds that
-      the traced rim's bounds and the drawn picture's bounds agree for every view, with the PNG
-      and the SVG both.
-## M131 — Pigeons exist before they are seen · asked for 2026-09-13
-
-> "pigeons pop in on screen -- they should exist before they are visible."
-
-[PLAYTEST-69](playtests/PLAYTEST-69.md). The **events** rule governs.
-
-**What is true today.** `pigeon_flock` is `AHEAD_OF_PLAYER`: the director creates it when it is
-due and `_crossing_ahead_of()` sites a non-pursuing row `Tuning.AHEAD_LEAD_DISTANCE` (184px)
-ahead of her along her heading — inside the view on every heading, on purpose, because for the
-cat that is the two-second reaction window between the crouch and the bolt. The flock then
-telegraphs for 1.7s and rises. Pursuers and `TOWARD_PLAYER` rows are sited past the edge of the
-view by `Tuning.offscreen_lead()` instead (`DECISIONS.md`, M77). The M100 defect about a rig
-that cannot spawn at an ahead-of-player row names the flock for the same reason.
-
-- [ ] **The flock is on the ground before she can see it, and rises when she is near.** The
-      recommendation: make it a map placement like the day-4 dog, with a wait trigger inside
-      its own outer radius (168px) the way `pursues_within_on(day)` derives one — the birds sit
-      on the pavement, square or park from the moment they stream in at `EVENT_STREAM_RADIUS`
-      and are drawn pecking, the burst begins when she comes inside the trigger, and the
-      telegraph contract is then paid in geometry as the robber's is. The alternative is to keep
-      it ahead-of-player and site it past the view's edge with `offscreen_lead()` like a
-      pursuer, which keeps the row cheap but means she never sees them on the ground first; the
-      cat keeps its on-screen lead either way, since the crouch is its telegraph. Whichever is
-      built, `tests/test_event_views.gd` or `tests/test_events.gd` holds that a flock's first
-      drawn frame is never inside the view rect around her, and the M100 rig defect closes for
-      this row with it.
+      same for any other row that `paces`. Re-run the probe after.
+- [ ] **Mid-block crossings are not counted on.** The route tree's cells cross a carriageway
+      only at a junction; in play she may still cross anywhere. The probe finds the grower
+      crossing mid-block on most routes today, so this is a change to how the corridor is grown
+      on the reachability grid, and the probe's own mid-block count is its test.
 
 ---
 
@@ -452,41 +401,6 @@ reads the queued brief and clears it (`DECISIONS.md`, M132).
 
 ---
 
-## M133 — The readout on the live page · asked for 2026-09-13
-
-> "let's add a ?debug=1 flag" — readout only — "with a note on the screen that this is debug
-> mode -- the note should not be removable"
-
-[PLAYTEST-69](playtests/PLAYTEST-69.md). The **cli-tools**, **godot** and **cues** rules
-govern. The 2026-09-06 decision that a release build carries no modifiers (`DECISIONS.md`, M76;
-`DevFlags.enabled()` and its own comment) stands for everything but this: seeds, days, spawns,
-meters and scripted input stay unreachable from a visitor's address bar. `?svg=1` and
-`?telemetry=1` are the two bounded exceptions that exist; this is the third.
-
-**What is true today.** The frame readout (`4`) draws fps, worst frame, draw calls, objects,
-primitives and the process and physics times, on by default in a debug build and nowhere in a
-release one; `DevFlags.svg_requested()` is the shape of a release-safe query flag, parsed from
-`_web_query()` without `enabled()`. The live page cannot show the readout, so M124's phone
-half cannot be measured on it.
-
-- [ ] **`?debug=1` turns on the readout on a release build, and nothing else.**
-      `DevFlags.readout_requested()`, parsed like `svg_requested()` and not gated behind
-      `enabled()`; the readout layer is on at boot when either `enabled()` or that flag holds;
-      the other layers, the snapshot key and every dev flag stay gated. If the readout's
-      construction sits behind an `enabled()` check in `main.gd`, it is split so the readout can
-      exist without the rest of the debug furniture. Tests beside `svg_requested()`'s: true for
-      `?debug=1` and `?x=1&debug=1`, false for `?debug=0`, empty and `?debugx=1`, and
-      `enabled()` unaffected. The flag table in `dev_flags.gd`, `README.md`'s flag section and
-      `docs/TELEMETRY.md`'s readout paragraph follow. Verified on a real release export served
-      locally, since a debug export cannot prove the release path.
-- [ ] **A fixed note says the page is in debug mode.** Whenever `?debug=1` holds, a terse label
-      is drawn for the whole session and nothing removes it — not the `4` key, not a press, not
-      hiding the readout; a debug build without the flag does not show it. The **cues** rule
-      governs its place and weight; a test holds it present whenever `readout_requested()` and
-      absent otherwise.
-
----
-
 ## M124 — The game on a phone, measured and then made cheaper · asked for 2026-09-13
 
 > "I played a few sessions on mobile. It is a bit laggy now. Are we using proper texture atlases
@@ -506,11 +420,13 @@ run-to-run noise and are struck. Everything under `assets/` is still an individu
 texture and nothing is atlased, which is the answer to the player's question; whether that
 matters is a phone's question, not a desktop's.
 
-- [ ] **The phone half of the measurement.** The same six numbers off a phone: `tools/serve-web.sh`
-      serves a debug web build on the local network, the readout is on by default there, and a
-      screenshot of it standing on any day-1 street beside the desktop's is the comparison
-      (`?telemetry=1` writes the `frame` line into the browser's own storage and nothing collects
-      it back, so the screen is the instrument). If the phone's draw calls and primitives match
+- [ ] **The phone half of the measurement.** The same six numbers off a phone: the live page
+      with `?debug=1` shows the readout on a release build (`DECISIONS.md`, M133), so a
+      screenshot of it standing on any day-1 street beside the desktop's is the comparison, on
+      the build a player actually gets (`?telemetry=1` writes the `frame` line into the
+      browser's own storage and nothing collects it back, so the screen is the instrument;
+      `tools/serve-web.sh` still serves a debug export on the local network for an unreleased
+      tree). If the phone's draw calls and primitives match
       the desktop's and only its frame rate does not, the cost is fill rate or resolution and no
       batching touches it; the table goes to `DECISIONS.md` under M124 either way.
 - [ ] **Atlases, only if the phone says texture switches are the cost.** The desktop says they
@@ -766,13 +682,17 @@ is still true.
       huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard
       stepping to the arm, or the boom stops being a detaining body and the huts alone are the
       toll, with the boom's picture still barring the lanes for the cars. The player's call
-- [ ] **A rig cannot be spawned at a row the day's plan never holds.** `--spawn event:<id>`
-      reads `DevRig.first_event_position()`, which searches the day's planned placements, so a
-      row placed ahead of the player at run time (`pigeon_flock`, anything `AHEAD_OF_PLAYER`)
-      is never found and the flag silently falls back. Found capturing M121 (`DECISIONS.md`,
-      M121, what the captures could not catch): a flock under a halo could not be photographed.
-      Either the flag refuses such a row by name, or it stands her where the row would first
-      trigger; the **cli-tools** rule wants the refusal at least
+- [ ] **A rig cannot be spawned at a row the day's plan never holds, and cannot stand outside
+      a waiting one.** `--spawn event:<id>` reads `DevRig.first_event_position()`, which
+      searches the day's planned placements, so a queue-fed row (`cat_dash`, `cyclist`,
+      `loose_dog`, the day-3 `charging_dog`, anything `AHEAD_OF_PLAYER` or `TOWARD_PLAYER`) is
+      never found and the flag silently falls back. Found capturing M121 (`DECISIONS.md`,
+      M121, what the captures could not catch); the flock is map-placed now and can be found
+      (`DECISIONS.md`, M131). Either the flag refuses such a row by name, or it stands her where
+      the row would first trigger; the **cli-tools** rule wants the refusal at least. And for a
+      row that waits — a flock, an alley robbery — `first_event_position()` stands her *inside*
+      the trigger, so no rig can photograph the silence before it; a `--spawn` that lands her
+      just outside the trigger is the other half of this item
 - [ ] **`Crowd.step()` and `Crowd._physics_process()` duplicate four lines in two orders.**
       `src/crowd/crowd.gd:230-237` (`step`) and `:625-638` (`_physics_process`) both open with
       `_signals.advance` → `_pockets.refresh` → `space_out_the_traffic` →

@@ -832,6 +832,13 @@ would arrive with no notice in it at all. And its notice does **not** damp what 
 `TELEGRAPH_INTENSITY_FRACTION` means *this has not started yet*, and a man who has been standing in
 that alley since she came round the corner has started. What has not started is the lunge.
 
+**The second of those flips for a row whose waiting state is the harmless one**, and
+`EventDef.quiet_until_noticed` is where a row says so. `pigeon_flock` waits the same way without
+being a pursuer at all — birds pecking on a pavement, priced and walked around from down the
+street — and there the damping is telling the truth: what is standing there is nearly nothing and
+the event is the flock going up. With the flag, the top two rows of the table above read *at
+`TELEGRAPH_INTENSITY_FRACTION`* instead of *at full strength*.
+
 `validate_pursuit()` gained two clauses for the trigger and a third that was found by measuring
 rather than by thinking. It has to notice her from **outside its own stand-off**, or the notice is
 spent standing still; from **inside its own field**, or it decides about her before she could have

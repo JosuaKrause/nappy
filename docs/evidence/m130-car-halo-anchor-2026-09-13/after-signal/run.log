@@ -1,0 +1,21 @@
+nappy rig log  2026-09-13T20:26:16  version v0.10.0-29-g24f35648-dirty
+
+day 1  act 1  run seed 4242  city seed 4242  length 180.0s
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  plan     closed: roadworks h(6,5)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burst_water_main x20, cafe_tables x59, car_accident x20, cat_dash x8, chatting_mother x2, delivery_van x54, dog_walker x23, fallen_tree, homeless_yeller x5, leaf_blower x15, loose_dog x12, market_stall x53, moving_van x50, pigeon_flock x5, playground x2, scaffolding x26, skip x22
+   0.0  start    doorstep (120,71), facing 180°
+   0.8  crowd    walked into somebody at (120,71) | exc 3, in 4.2/s (crowd 22.2, events 0.0), sleep 0
+   1.0  frame    fps 1, worst frame 150.0ms, draws 3064, objects 4334, primitives 94360, process 32.75ms, physics 1.71ms
+   2.0  frame    fps 40, worst frame 25.0ms, draws 3058, objects 4323, primitives 94305, process 32.57ms, physics 1.85ms
+   3.0  shot     burst started: asked for an animation burst at (120,71) | exc 14, sleep 0 | playing | asked/burst-5806727-001
+   3.0  frame    fps 45, worst frame 22.7ms, draws 3016, objects 4281, primitives 94086, process 26.01ms, physics 1.70ms
+   4.1  frame    fps 38, worst frame 83.3ms, draws 3067, objects 4330, primitives 94046, process 74.20ms, physics 1.74ms
+   4.4  crowd    walked into somebody at (120,71) | exc 23, in 13.8/s (crowd 31.8, events 0.0), sleep 0
+   4.9  freeze   sleep stopped filling | exc 35, in 28.3/s (crowd 27.4, events 0.0), sleep 0 | near: leaf_blower 257px (out of range)
+   5.1  frame    fps 13, worst frame 88.7ms, draws 3110, objects 4373, primitives 94261, process 81.97ms, physics 1.71ms
+   6.0  shot     burst complete: 36 frames | duration
+   6.1  frame    fps 12, worst frame 90.0ms, draws 3110, objects 4373, primitives 94273, process 79.10ms, physics 1.91ms
+   7.1  frame    fps 17, worst frame 31.7ms, draws 3048, objects 4261, primitives 93959, process 82.84ms, physics 1.70ms
+   8.1  frame    fps 41, worst frame 26.3ms, draws 3054, objects 4269, primitives 94026, process 29.20ms, physics 2.00ms

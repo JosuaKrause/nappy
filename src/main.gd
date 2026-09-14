@@ -1,9 +1,11 @@
 extends Node2D
 ## Boot scene: generate the city, drop the player on the doorstep, then the HUD.
 ##
-## The right-hand overlay is a developer readout, not part of the game's UI, and it is gated by
-## `_debug` (`DevFlags.enabled()`) the same as every other piece of developer furniture: outside
-## a debug build the string is never assembled, not merely hidden behind an invisible label.
+## The right-hand overlay is a developer readout, not part of the game's UI. It runs whenever
+## `_debug` (`DevFlags.enabled()`) or `_readout_requested` (`DevFlags.readout_requested()`, the
+## page's own `?debug=1`) holds — see `_readout_requested`'s own doc — and otherwise the string is
+## never assembled, not merely hidden behind an invisible label. Every other piece of developer
+## furniture (`_debug_layers`, the snapshot key, every dev flag) stays gated behind `_debug` alone.
 
 const CITY := preload("res://scenes/world/city.tscn")
 const STROLLER := preload("res://scenes/player/stroller.tscn")
@@ -26,6 +28,14 @@ var _debug := DevFlags.enabled()
 ## build's own command line. `_ready_escape()` reads this member rather than calling
 ## `DevFlags.start_escape()` again, the same shape `_add_debug_layers()` reads `_debug`.
 var _escape_scene_requested := DevFlags.start_escape()
+
+## Whether the readout was asked for by the page's own `?debug=1` (or the command line's
+## `--debug`) — `DevFlags.readout_requested()`, read once for the same reason `_debug` is: so a
+## test can set it directly and check the release shape. `_status.visible` and the text assembly
+## in `_process()` read `_debug or _readout_requested`; `_add_debug_layers()`, the snapshot key and
+## the layer-toggle keys all keep reading `_debug` alone, so this flag reaches the readout and
+## nothing else — see docs/TODO.md, M133, "the readout on the live page".
+var _readout_requested := DevFlags.readout_requested()
 
 var _city: City
 ## The escape scene's building. Under `--start-escape` it is built first and `_city` follows when
@@ -56,6 +66,9 @@ var _halo: ExcitementHalo
 ## node in the tree" is a release-build test's own question rather than one this class has to
 ## remember to ask of `_debug` separately. See `_add_debug_layers()`.
 var _debug_layers: DebugLayers
+## Set by `_add_debug_mode_note()`, or left `null` when `_readout_requested` is `false` — a test's
+## own way to check the release shape without a live tree search for the node.
+var _debug_mode_note: DebugModeNote
 ## Whether the developer readout (`_status`) is showing, independent of `_debug`: the fourth
 ## layer `_toggle_debug_layer()` owns, on `_status`'s own pre-existing `CanvasLayer` rather than
 ## under `_debug_layers`, which is not a `CanvasLayer` this label could join. Starts `true`, so an
@@ -101,6 +114,11 @@ func _ready() -> void:
 	# `get_tree().paused` while the player walks, the crowd drives and the resistance deadline
 	# runs out behind a screen saying the day is over.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Before either boot path — this is the one thing `?debug=1` adds on top of the readout, and
+	# it has to reach the escape scene's own boot too. Gates itself on `_readout_requested` rather
+	# than being gated at the call site, the same shape `_add_debug_layers()` gates itself on
+	# `_debug`. See `_add_debug_mode_note()`'s own doc for why nothing afterwards may remove it.
+	_add_debug_mode_note()
 	# `--start-escape` is a different boot entirely — no title, no city, no day — so it branches
 	# before any of the ordinary run's own scaffolding exists. See `_ready_escape()`.
 	if _escape_scene_requested:
@@ -109,9 +127,9 @@ func _ready() -> void:
 	# Starts in the shape it should have on this build rather than trusting the scene file's own
 	# default (`true`): every later flip of it is relative to whichever screen is up, and a boot
 	# path that never reaches one of them should still open with the right answer.
-	# `_layer_readout_on` defaults `true`, so this is `_debug` alone on an unflagged run — the
-	# fourth debug layer starts on, the same as it always has.
-	_status.visible = _debug and _layer_readout_on
+	# `_layer_readout_on` defaults `true`, so this is `_debug or _readout_requested` alone on an
+	# unflagged run — the fourth debug layer starts on, the same as it always has.
+	_status.visible = (_debug or _readout_requested) and _layer_readout_on
 	GameState.start_run(DevFlags.seed_override())
 	# After the run seed is settled and before anything is generated, so the log opens on the
 	# seed it is a trace of. Off with `-- --no-telemetry`; on otherwise, because a trace
@@ -232,7 +250,7 @@ func _ready_escape() -> void:
 	# release shape without also driving the rest of `_ready()`.
 	if not _escape_scene_requested:
 		return
-	_status.visible = _debug and _layer_readout_on
+	_status.visible = (_debug or _readout_requested) and _layer_readout_on
 	GameState.start_run(DevFlags.seed_override())
 	# Same opt-out and the same reasoning as the ordinary run: a trace behind a flag nobody
 	# remembers to turn on is a trace nobody gets, and `P`/`B` (`_snapshot_now()`/`_start_burst()`)
@@ -588,7 +606,7 @@ func _on_title_start(mode: ControlsMode.Mode) -> void:
 	# of build, since `_open_the_title()` always turns it off and this was the only place that
 	# turned it back on. `and _layer_readout_on` so a `4`-toggled-off readout stays off across a
 	# trip through the title rather than snapping back on underneath it.
-	_status.visible = _debug and _layer_readout_on
+	_status.visible = (_debug or _readout_requested) and _layer_readout_on
 	if is_inside_tree():
 		get_tree().paused = false
 
@@ -631,6 +649,21 @@ func _add_excitement_halo() -> void:
 	_halo.setup(_city.events, _city.crowd, _player)
 	add_child(_halo)
 	_pauses_with_the_game(_halo)
+
+## The one thing `?debug=1` (or `--debug`) adds beyond the readout itself: a fixed note, for the
+## whole session, that nothing removes — not the `4` key, not a press, not `_open_the_title()`
+## hiding `_status` around it. **Absent from the tree when `_readout_requested` is `false`**, the
+## same "gated rather than merely hidden" shape `_add_debug_layers()` uses for `_debug`: an
+## ordinary debug build shows the readout without this note, since nobody running one needs
+## telling it is one. `DebugModeNote` is its own small node (`src/dev/debug_mode_note.gd`) added
+## here rather than through `scenes/ui/hud.tscn`/`src/ui/hud.gd`, which this milestone leaves
+## untouched; nothing here ever sets its `visible` to `false` or frees it.
+func _add_debug_mode_note() -> void:
+	if not _readout_requested:
+		return
+	_debug_mode_note = DebugModeNote.new()
+	_debug_mode_note.name = "DebugModeNote"
+	add_child(_debug_mode_note)
 
 ## The fields, shadows and bounding-box overlays — see `DebugLayers`. **Absent from the tree
 ## outside a debug build**, not merely built and left invisible: `_debug_layers` stays `null`, so
@@ -972,11 +1005,12 @@ func _process(delta: float) -> void:
 	# The developer readout, gated rather than merely hidden: it is a seed, a meter breakdown and
 	# what the frame cost (`FrameCost.readout_lines()` — fps, draw calls, objects, primitives and
 	# the two loop times, the same six quantities the run log's own `frame` entry carries), which a
-	# released build has no business assembling every frame even behind a label nobody can see —
-	# and `_nearest_event_text()` below is a scan of every live event.
+	# released build with neither `_debug` nor `_readout_requested` has no business assembling
+	# every frame even behind a label nobody can see — and `_nearest_event_text()` below is a scan
+	# of every live event.
 	# `_layer_readout_on` is this layer's own `4` key: off, the string is not assembled either,
-	# the same "gated rather than merely hidden" rule `_debug` already gets.
-	if not _debug or not _layer_readout_on:
+	# the same "gated rather than merely hidden" rule holds.
+	if not (_debug or _readout_requested) or not _layer_readout_on:
 		return
 	var tile := _city.map.world_to_tile(_player.global_position)
 	_status.text = "\n".join([
@@ -1145,7 +1179,7 @@ static func _debug_layer_key(event: InputEvent) -> int:
 func _toggle_debug_layer(layer: int) -> void:
 	if layer == 4:
 		_layer_readout_on = not _layer_readout_on
-		_status.visible = _debug and _layer_readout_on
+		_status.visible = (_debug or _readout_requested) and _layer_readout_on
 		return
 	if _debug_layers:
 		_debug_layers.set_layer(layer, not _debug_layers.layer_on(layer))

@@ -26,6 +26,8 @@ func run(t) -> void:
 	_test_the_registration_is_continuous_across_a_sector_boundary(t)
 	_test_the_halo_redraws_the_same_body(t)
 	_test_the_rim_is_re_traced_under_a_steady_glow(t)
+	_test_the_rim_and_the_picture_share_one_footprint(t)
+	_test_the_redraw_gate_carries_the_live_anchor(t)
 	_test_unpaired_car_views_still_fall_back_to_svg(t)
 
 func _car(t) -> CrowdAgent:
@@ -291,6 +293,165 @@ func _test_the_halo_redraws_the_same_body(t) -> void:
 	# `_process()` frame ever run to raise `_alpha` off zero, `EntityHalo.is_faded_out()` would read
 	# true immediately and queue the halo's own `free()` — which `agent.free()` a line later would
 	# race, since it frees the still-attached child synchronously first.
+	agent.free()
+
+## The picture `_draw_body()` would actually put on the canvas for one view and heading: the body's
+## rect merged with the trim's, each built the way `Sprites.draw_standing()` builds it — the
+## **resolved** texture's own size, which is a registered PNG transfer wherever one exists and the
+## authored SVG otherwise, bottom-centred on `_car_body_anchor()`'s answer.
+func _drawn_picture(agent: CrowdAgent, view: String, heading: Vector2) -> Rect2:
+	var anchor := agent._car_body_anchor(view, heading)
+	var drawn := Rect2()
+	var merged := false
+	for texture in [CrowdAgent.CAR_BODY_BY_VIEW[view], CrowdAgent.CAR_TRIM_BY_VIEW[view]]:
+		var extent: Vector2 = TextureResolver.resolve(texture).get_size()
+		var layer := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent)
+		drawn = drawn.merge(layer) if merged else layer
+		merged = true
+	return drawn
+
+## And what the rim traced around it covers: the same picture re-drawn at every one of
+## `EntityHalo.trace_offsets()`'s own ring positions, which is what `_on_draw()` does per offset.
+## A crowd body never bobs (`CrowdAgent._zero_bob()`), so the ring is the plain circle.
+func _traced_rim(agent: CrowdAgent, view: String, heading: Vector2) -> Rect2:
+	var picture := _drawn_picture(agent, view, heading)
+	var rim := Rect2()
+	var merged := false
+	for offset in EntityHalo.trace_offsets(agent._zero_bob()):
+		var copy := Rect2(picture.position + offset, picture.size)
+		rim = rim.merge(copy) if merged else copy
+		merged = true
+	return rim
+
+## **The rim is the picture and nothing else, so the two can only ever be concentric.** The defect
+## this is the pin for was reported as a car sitting south of its own halo, and the first thing that
+## had to be ruled out was a rim with a registration of its own — so this asserts the relationship
+## rather than either position: whatever `_car_body_anchor()` answers and whichever texture the
+## resolver hands over, the traced rim is the drawn picture grown by `EntityHalo.HALO_MARGIN` on
+## every side, at every sector.
+##
+## **Both presentation modes, and they have to agree with each other too.** `TextureResolver` only
+## accepts a transfer whose size matches the authored SVG's, so a PNG can never move this footprint
+## — asserting it here is what makes that contract a test rather than a sentence, since a transfer
+## accepted at some other size would land the car's ground registration somewhere else on a phone
+## and nowhere else.
+##
+## Mirroring is deliberately not a variable here: `Sprites.mirrored_transform()` reflects about the
+## anchor, which a rect centred on that anchor's own x is symmetric under, so the *bounds* are the
+## same either way. `tests/test_halo.gd` holds the mirrored ring itself.
+func _test_the_rim_and_the_picture_share_one_footprint(t) -> void:
+	var agent := _car(t)
+	var margin := EntityHalo.HALO_MARGIN
+	for svg_forced in [true, false]:
+		TextureResolver.reset_for_tests(svg_forced)
+		var mode := "--svg" if svg_forced else "the registered transfer"
+		for sector in range(8):
+			var view: String = CrowdAgent.CAR_VIEW_BY_SECTOR[sector]
+			var heading := Vector2.from_angle(deg_to_rad(sector * 45.0))
+			var picture := _drawn_picture(agent, view, heading)
+			var rim := _traced_rim(agent, view, heading)
+			t.check(rim.get_center().is_equal_approx(picture.get_center()),
+					("sector %d's rim is centred on its own picture under %s (%s against %s)"
+					% [sector, mode, rim.get_center(), picture.get_center()]))
+			t.check(rim.size.is_equal_approx(picture.size + Vector2.ONE * margin * 2.0),
+					("sector %d's rim stands %.0fpx out from the picture on every side under %s "
+					+ "(%s against %s)") % [sector, margin, mode, rim.size, picture.size])
+			TextureResolver.reset_for_tests(not svg_forced)
+			var other := _drawn_picture(agent, view, heading)
+			TextureResolver.reset_for_tests(svg_forced)
+			t.check(other.is_equal_approx(picture),
+					("sector %d's picture is the same footprint in both presentation modes (%s "
+					+ "against %s), which is what a same-sized transfer buys")
+					% [sector, other, picture])
+	TextureResolver.reset_for_tests(DevFlags.svg_requested())
+	agent.free()
+
+## A synthetic `CarTurn` whose tangent at zero travelled is exactly `degrees` clockwise from east,
+## for sweeping a heading through a sector rather than landing on its centre. `heading_at(0)` is
+## `Vector2(-sin(start_angle), cos(start_angle))` at `spin` 1, which is `Vector2.from_angle()` of
+## `start_angle + 90°`.
+func _turn_at(degrees: float) -> CarTurn:
+	var turn := CarTurn.new()
+	turn.radius = 16.0
+	turn.spin = 1.0
+	turn.start_angle = deg_to_rad(degrees - 90.0)
+	turn.travelled = 0.0
+	return turn
+
+## **A redraw gate is a promise about everything the drawing reads.** `_draw()` is retained and
+## moving a `Node2D` does not invalidate its draw list, so `_redraw_if_the_picture_changed()` is
+## what decides when a car's picture is rebuilt — and a car's picture is not only its sector and its
+## mirror: `_car_body_anchor()` registers it off the **live** heading and `_draw_shape_shadow()`
+## sweeps the capsule along the same one. Keyed on the quantised half alone, a car that has come
+## round an arc keeps the anchor it had at the last sector boundary, up to 22.5 degrees back, and
+## keeps it for the rest of its run in that lane because nothing quantised ever changes again — its
+## picture sits south of its own strike box while `EntityHalo`, which re-traces every frame, draws
+## the rim where the car belongs. That is the player's "a car ... offset by a few pixel south and
+## the halo is at the regular position".
+##
+## So the property is stated over the drawing rather than over the key: **wherever the anchor moves
+## by as much as half a pixel, the gate must have asked for a redraw.** Headless never calls
+## `_draw()`, so what is read back is the state the gate leaves behind — the same division
+## `_test_the_rim_is_re_traced_under_a_steady_glow()` above already makes.
+func _test_the_redraw_gate_carries_the_live_anchor(t) -> void:
+	var agent := _car(t)
+	agent._speed = Tuning.CAR_TURN_SPEED
+	var previous_anchor := INF
+	var previous_key := []
+	var previous_picture := Vector3i(-1, -1, -1)
+	var moves := 0
+	var moves_inside_one_view := 0
+	for sample in range(10):
+		var degrees := float(sample) * 5.0
+		agent._turn = _turn_at(degrees)
+		agent._turn_run_up = 0.0
+		var view: String = CrowdAgent.CAR_VIEW_BY_SECTOR[agent._frame()]
+		var anchor := agent._car_body_anchor(view, agent.heading()).y
+		agent._redraw_if_the_picture_changed()
+		var key := [agent._picture, agent._drawn_heading]
+		if previous_anchor != INF and absf(anchor - previous_anchor) >= 0.5:
+			moves += 1
+			if agent._picture == previous_picture:
+				moves_inside_one_view += 1
+			t.check(key != previous_key,
+					("the ground line moved %.2fpx at %.1f degrees, so the gate has to have asked "
+					+ "for a redraw") % [absf(anchor - previous_anchor), degrees])
+		previous_anchor = anchor
+		previous_key = key
+		previous_picture = agent._picture
+	t.check(moves > 0, "there were headings whose drawn ground line actually moved (%d)" % moves)
+	# The guard that stops this passing on the strength of the sector boundaries alone, which the
+	# quantised half of the key already catches: what is being held is the arc *between* them.
+	t.check(moves_inside_one_view > 0,
+			("and %d of them moved it without changing the sector, the mirror or the gait — the "
+			+ "case a key made only of those three cannot see") % moves_inside_one_view)
+
+	# And the landing itself, which is the shape that shipped: a car finishing a turn into an
+	# east-west lane draws the same view, unmirrored, at both headings — so the sector, the mirror
+	# and the gait are identical and only the anchor has moved.
+	# Already showing the side view, which is where a car really is at twenty degrees: the sector
+	# flipped at the boundary a couple of degrees back and the rest of the arc changes nothing about
+	# it. Set rather than swept in, because the sweep above left the hold on the diagonal.
+	agent._car_view = 0
+	agent._turn = _turn_at(20.0)
+	agent._turn_run_up = 0.0
+	var turning_view: String = CrowdAgent.CAR_VIEW_BY_SECTOR[agent._frame()]
+	var turning := agent._car_body_anchor(turning_view, agent.heading()).y
+	agent._redraw_if_the_picture_changed()
+	var mid_turn := [agent._picture, agent._drawn_heading]
+	agent._turn = null
+	agent._vertical = false
+	agent._direction = 1.0
+	var landed_view: String = CrowdAgent.CAR_VIEW_BY_SECTOR[agent._frame()]
+	var landed := agent._car_body_anchor(landed_view, agent.heading()).y
+	agent._redraw_if_the_picture_changed()
+	t.check(landed_view == turning_view and agent._picture == mid_turn[0],
+			"the car draws the same %s view either side of the landing, so nothing quantised changed"
+			% landed_view)
+	t.check(absf(landed - turning) > 1.0,
+			"but its ground line moved %.2fpx between the two" % absf(landed - turning))
+	t.check([agent._picture, agent._drawn_heading] != mid_turn,
+			"so the gate asked for the redraw that puts the picture back under its own rim")
 	agent.free()
 
 func _test_unpaired_car_views_still_fall_back_to_svg(t) -> void:

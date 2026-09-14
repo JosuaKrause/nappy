@@ -33,7 +33,8 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `spawn_mode_switches_after_day` / `spawn_mode_after_first_day` | For a row whose siting changes once its first appearance is over: `spawn_mode_on(day)` answers `spawn_mode` through that day and `spawn_mode_after_first_day` past it. `0` (the default) means never — `spawn_mode` alone answers for every day. `charging_dog` is the one row that sets it: `AHEAD_OF_PLAYER` on `RUN_TAUGHT_DAY`, `MAP` after |
 | `departs_at` | How fast it removes itself when it is over (px/s). **Nothing vanishes while you are looking at it** — see "Going away". Anything `mobile` leaves at its own `speed` and needs no value here |
 | `pursues` / `pursue_speed` | Comes after **her** rather than along a path, at a speed strictly between a walk and a run. The one thing running is the answer to — see `Tuning.validate_pursuit` |
-| `pursues_within` | How close she has to come before it takes an interest. `0` is *immediately*, which is a pursuer that is a **moment**; anything else is a pursuer that is a **place** until she walks up to it, and its telegraph and chase are both measured from when it notices |
+| `pursues_within` | How close she has to come before it takes an interest. `0` is *immediately*, which is a pursuer that is a **moment**; anything else is a **place** until she walks up to it, and its telegraph and whatever follows are both measured from when it notices. Wider than its name: a row that sets it without `pursues` waits the same way and then runs its own event instead of chasing her — `alley_mouse`, `pigeon_flock` |
+| `quiet_until_noticed` | Whether the wait and the notice emit `Tuning.TELEGRAPH_INTENSITY_FRACTION` of `intensity`, as an ordinary telegraph does, rather than the full rate a waiting pursuer carries. `false` is the default and is right wherever the thing standing there *is* the threat; `pigeon_flock` is the row it exists for, since birds pecking are nearly nothing and the event is them going up. `validate()` refuses it on a row with no trigger to be noticed at |
 | `pursues_within_after_first_day` | What `pursues_within_on(day)` answers past `spawn_mode_switches_after_day` — the same day-keyed switch, read for the trigger rather than the siting. `0` (the default) is unread while that switch is `0`. `charging_dog` is the one row that sets it: `0` through `RUN_TAUGHT_DAY`, 130px past it (inside its own 150px `outer_radius`, an "on sight" band before it decides, `alley_robbery`'s shape) so a `MAP` placement waits for her instead of announcing itself the moment it streams in — see "Where an event happens" |
 | `paces` | Walks its route and turns round at the ends, for ever. The difference between a journey and a **beat** — see `homeless_yeller` |
 | `obstructs_radius` | The reach (px) of the row's own `shape` — a `GroundShape`, and the body is that shape, not a second number. **A thing that stands still is solid at the width it is drawn** — see "Solid things are solid" |
@@ -70,9 +71,9 @@ its course its plan is **spent**: walking back past it does not start it over.
 An event that is somewhere is half of what makes a route a decision. It can be routed around,
 and finding out it is there is what walking a street is for.
 
-**`AHEAD_OF_PLAYER`, which is the cat, the flock and the day-3 charging dog.** No tile. The day
+**`AHEAD_OF_PLAYER`, which is the cat and the day-3 charging dog.** No tile. The day
 budgets it at the same cost as everything else, and `EventDirector` sites it while she is walking. A
-crossing row — the cat, the flock — is sited across her line, `AHEAD_LEAD_DISTANCE` in front of her.
+crossing row — the cat — is sited across her line, `AHEAD_LEAD_DISTANCE` in front of her.
 A pursuer — `charging_dog`, on `Tuning.RUN_TAUGHT_DAY` — is sited down her line instead, outside the
 view along the heading she is actually walking (`Tuning.offscreen_boundary()`), so it has an
 offscreen approach to close before it reaches its stand-off; see "Everything arrives from off
@@ -102,6 +103,24 @@ its own 150px `outer_radius`, an "on sight" band before it decides — so a dog 
 she can route around, `alley_robbery`'s shape. Nothing mutates the shared def:
 `EventScheduler._for_day()` hands a `MAP` placement past the switch a copy carrying the day's own
 answer, the way `EventCatalogue.heated()` hands a placement a copy carrying a heat level's.
+
+**And a flock is a place for the same reason, with the same wait.** *(2026-09-13, PLAYTEST-69:
+"pigeons pop in on screen — they should exist before they are visible.")* `AHEAD_LEAD_DISTANCE`
+(184px) is inside the 320px half-view sideways, which a cat can afford — its whole content is the
+three seconds it is there — and eleven birds cannot: a flock is a *patch of pavement*, and a patch
+of pavement that was not there a second ago is not one anybody can plan around. `pigeon_flock` is
+`MAP`-placed on sidewalk, square and park, so the birds are pecking about from the moment the day
+streams them in, and `pursues_within` 150px — inside their own 168px field, more than twice the
+62px wheel — is when they go up. The telegraph is then paid in geometry exactly as the robber's is:
+1.7s of a flock on the ground about to go, starting when she is near rather than at dawn.
+
+**And a flock's wait is quiet, which is the one place the waiting rule flips.** A pursuer that
+waits emits at full strength undamped — a man standing in an alley has started, and what has not
+started is the lunge — but birds pecking on a pavement are nearly nothing and the event *is* them
+going up. `EventDef.quiet_until_noticed` is that distinction as a field: with it, the wait and the
+notice both emit `Tuning.TELEGRAPH_INTENSITY_FRACTION` of `intensity` the way an ordinary telegraph
+does. Without it a flock nobody had walked up to yet would charge its full 42/s all morning, which
+is a place that cannot be walked past rather than one that can be walked around.
 
 **And the day-3 shape does not retire.** Past the teaching day, `EventDirector` now and then still
 sends the same unmodified def off her heading — `Tuning.CHARGING_DOG_SPRINKLE_CHANCE`, rolled once a
@@ -218,13 +237,15 @@ whole worst-case gap at the rate walking away still loses by (`pursue_speed` −
 at the default notice; its own notice moved a different way, in its `outer_radius` and
 `telegraph_time` — see the next paragraph.
 
-**The margin applies to what travels toward her, not to a crossing.** `cat_dash` and
-`pigeon_flock` keep `AHEAD_LEAD_DISTANCE` / `EventDef.ahead_of_player_lead()` unchanged: a crossing
-row's whole content is a three-second interruption she reacts to as it happens, not an approach she
-watches close, so there is no "closing speed" for the margin to be stated over. **Chosen as the
-smaller reading of a silence** — the instruction named "events that go towards the player", not
-every director-sited row, and a crossing already pays its own fairness in the reaction-window rule
-above rather than in an offscreen phase.
+**The margin applies to what travels toward her, not to a crossing.** `cat_dash` keeps
+`AHEAD_LEAD_DISTANCE` / `EventDef.ahead_of_player_lead()`: a crossing row's whole content is a
+three-second interruption she reacts to as it happens, not an approach she watches close, so there
+is no "closing speed" for the margin to be stated over. **Chosen as the smaller reading of a
+silence** — the instruction named "events that go towards the player", not every director-sited
+row, and a crossing already pays its own fairness in the reaction-window rule above rather than in
+an offscreen phase. The other way out of the same trade is to stop being director-sited at all,
+which is `pigeon_flock`'s: a row on a tile is streamed in from `EVENT_STREAM_RADIUS` and is never
+sited against the view in the first place.
 
 **The screen-edge badge is what makes the offscreen phase worth anything.** `DangerEdge` already
 draws one for anything lethal or faster than a walk that is off screen and closing under its own
@@ -312,12 +333,17 @@ already a point or a band; and the crowd's walkers and cars each carry a `shape`
 separate `CAR_STRIKE_HALF_LENGTH`/`CAR_STRIKE_HALF_WIDTH` rectangle `will_be_lethal()` reads, on the
 player's own *"lethal != noise"*.
 
-**Three exemptions, each for its own reason.**
+**Four exemptions, each for its own reason.**
 
 - **Anything mobile.** A moving wall on a two-tile pavement pins her against a building, which is
   a different game from being priced out of a street.
 - **`AHEAD_OF_PLAYER`**, refused outright by `validate()` — see rule 3 above.
 - **Anything with no silhouette**: a city-wide announcement, a playground the park itself draws.
+- **A flock**, refused outright by `validate()` too. `flock_size` bodies wheeling inside
+  `flock_spread` have no one silhouette to be half of — each bird is an 18px picture with pavement
+  between it and the next — and being walked into is the whole event, which a body would stop at
+  the rim. `solid_parts` is how a row declares several bodies, and a flock's are neither still nor
+  in one place.
 
 **And one constraint that is not an exemption: a lethal radius and a solid body are the same
 mechanism.** She is stopped with her centre `solid_reach() + PLAYER_BODY_RADIUS` from the
@@ -723,7 +749,7 @@ neighbourhood's own rather than a patrol's.
 | `loose_dog` | RECURRING (`TOWARD_PLAYER`) | 1 | A dog whose owner has dropped the leash, sited on her own pavement when she gets close and running straight down it toward her. The counterpart to `dog_walker` and the reason both exist — that one is a **span** you decide whether to cross the street to avoid, this one is a **thing coming at you** that you cannot out-walk. 132px/s, so it earns a badge at the screen edge and pays the whole-radius telegraph. Not lethal, which is what separates it from `charging_dog`: this one is answered by getting out of the way, not by running. Intensity 32, raised from 24 for a bigger impact once a real meeting is priced against the fixed baseline rather than the barrier fields that used to pin it near the top of the meter regardless. |
 | `market_stall` | RECURRING | 1 | The second thing on day 1 that forces a crossing, and it exists because one obstacle repeated eighteen times is a rule rather than a decision. Wider, louder, and on the other side of pleasant than `cafe_tables`: a café you squeeze past is a nuisance, a market is a crowd. A real source too, derived from the body the same way `cafe_tables` is — 38px/64px, the same pair, since both bodies share the same 24px rounding. |
 | `leaf_blower` | RECURRING | 1 | The loudest thing in act I, and it is a man tidying a park. Allowed on `PARK` on purpose — a calm block with a leaf blower in it is calm ground she cannot use. Swept in bursts, so there is a rhythm to time a pass through. |
-| `pigeon_flock` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | The second thing that happens *to* her, and the reason to have one is that a director with a single trick makes every moment a cat. It is on the pavement for its whole telegraph, then up, then *away* — and it is **eleven birds**, each with its own heading, height and wingbeat, and each an emitter, so the middle of a flock stacks four or five fields and the rim stacks one. The only row in the game that is more than one source. |
+| `pigeon_flock` | RECURRING | 1 | **A patch of pavement that goes up when she walks into it.** `MAP`-placed, so the birds are pecking about from the moment the day streams them in at `EVENT_STREAM_RADIUS` — a flock she can see from down the street is one she can price and route around, which is the whole difference between a place and a moment. `pursues_within` 150px, inside its own 168px field and more than twice the 62px wheel, is the wait: unclocked and `quiet_until_noticed` (a fraction of 42/s while they peck), then 1.7s of a flock on the ground about to go, then up, then *away*. It is **eleven birds**, each with its own heading, height and wingbeat, and each an emitter, so the middle of a flock stacks four or five fields and the rim stacks one — the only row in the game that is more than one source, and the one row exempt from a body for it. |
 | `cyclist` **`hard_fail`** | RECURRING (`TOWARD_PLAYER`) | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement she is walking, bell going, coming toward her, down her own side of the road — sited when she gets close rather than on a street the day chose at dawn, so she answers it with a route decision (cross, or turn) instead of finding out too late it was never on her way. Everything about it is ordinary, which is the point: act I does not become sinister, it becomes a real street. The bell rings for 2.97s, what the doubled margin costs at a 90px field grown forward by its own speed — smaller than the fairness contract alone would allow, so the wait before it arrives stays a real reaction window rather than several seconds of watching it close from off screen. Its lethal `inner_radius` is 33px, widened from 26 so the far lane of her own pavement no longer clears it by construction — the same overturn `chatting_mother`'s `detain_radius` went through first. |
 | `ice_cream_van` | RECURRING | 2 | The `busker` argument one size up: nothing about it is threatening, it is simply interesting. The widest ordinary radius in act I. At the kerb, and solid at 24px: a thing children cross a road to reach rather than a thing standing in one. |
 | `reversing_lorry` **`hard_fail`** | RECURRING | 3 | Act I's second lethal thing, teaching the opposite lesson to the cyclist. That one comes *at* you and the answer is to get off the pavement; this one is **stationary and the danger is behind it**, so the answer is not to walk into the gap it is backing into — which you have to look at the world to know. The beeper is the telegraph. It stands `AGAINST_THE_BUILDING`, turned to face out of the frontage, solid at 28px inside the 46 that ends the day. |

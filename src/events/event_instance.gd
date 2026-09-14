@@ -1563,13 +1563,20 @@ func _flock_roll(index: int, salt: int) -> float:
 			+ index * 83492791 + salt * 2971215073
 	return float(absi(mixed) % 4096) / 4096.0
 
-## Steps every bird. Three phases, and they are the whole event: **on the pavement** while it
-## telegraphs, which is the part she can see from down the street and walk around; **up and
-## wheeling** for the duration, which is the part that costs; and **away** once it is over.
+## Steps every bird. Three phases, and they are the whole event: **on the pavement** while it waits
+## for her and while it telegraphs, which is the part she can see from down the street and walk
+## around; **up and wheeling** for the duration, which is the part that costs; and **away** once it
+## is over.
+##
+## **The wait is on the ground with the telegraph, not in the air with the burst**, and the two are
+## separate predicates: `is_waiting()` is false for a row with no trigger and `is_telegraphing()` is
+## false *while* a row waits, so a flock asked only the second question would hold its whole wait in
+## the air — birds flying in place over a pavement for as long as it takes her to walk up to them,
+## which is the frozen-flock bug with a longer fuse.
 func _fly_the_flock(delta: float) -> void:
 	if _flock.is_empty():
 		return
-	var grounded := is_telegraphing()
+	var grounded := is_waiting() or is_telegraphing()
 	for bird in _flock:
 		bird.phase += bird.beat * TAU * delta
 		if grounded:
@@ -1804,18 +1811,37 @@ func current_intensity() -> float:
 		return (Tuning.CHAT_EXCITEMENT / def.detain_seconds) if baby_awake else 0.0
 	var value := def.intensity
 	if not is_equal_approx(def.intensity_ramp, 1.0) and def.duration > 0.0:
-		var through := clampf((age - def.telegraph_time) / def.duration, 0.0, 1.0)
+		# `chase_age()` rather than `age`, so a ramp measures the burst rather than the wait in
+		# front of it: for everything without a trigger the two are the same number, and for a row
+		# that stood on a pavement half the morning before she came near, `age` would hand the
+		# first instant of the burst the multiplier the *end* of it is meant to have.
+		var through := clampf((chase_age() - def.telegraph_time) / def.duration, 0.0, 1.0)
 		value *= lerpf(1.0, def.intensity_ramp, through)
 	if def.pulse_period > 0.0:
-		# 0.25..1.0, so a pulsing event is never entirely silent between beats.
+		# 0.25..1.0, so a pulsing event is never entirely silent between beats. On `age` rather
+		# than `chase_age()` on purpose: a pulse is the thing's own rhythm, which is running
+		# whether or not anybody has walked up to it.
 		var phase := TAU * age / def.pulse_period
 		value *= 0.25 + 0.75 * (0.5 - 0.5 * cos(phase))
-	# The damping says *this has not started yet*. A pursuer that waits has been standing there
-	# since she came round the corner — what has not started is the lunge, not the man — so its
-	# notice is the only telegraph in the game that does not quieten what it is warning about.
-	if is_telegraphing() and def.pursues_within <= 0.0:
-		value *= Tuning.TELEGRAPH_INTENSITY_FRACTION
-	return value
+	return value * _notice_damping()
+
+## The multiplier the phase this instance is in puts on `def.intensity`, and the one place the
+## three answers live — `_caret_intensity()` divides by exactly this rather than repeating the
+## conditions, so the caret's projection and the meter can never disagree about which phase damps.
+##
+## **The damping says *this has not started yet*, and for a waiting row that is a claim about the
+## thing rather than about its clock.** A pursuer that waits has been standing there since she came
+## round the corner — what has not started is the lunge, not the man — so its notice is the one
+## telegraph in the game that does not quieten what it is warning about. `EventDef.
+## quiet_until_noticed` is the opposite case and it is a real one: birds pecking on a pavement are
+## nearly nothing until they go up, so both their wait and their notice damp like an ordinary
+## telegraph.
+func _notice_damping() -> float:
+	if is_waiting():
+		return Tuning.TELEGRAPH_INTENSITY_FRACTION if def.quiet_until_noticed else 1.0
+	if is_telegraphing() and (def.pursues_within <= 0.0 or def.quiet_until_noticed):
+		return Tuning.TELEGRAPH_INTENSITY_FRACTION
+	return 1.0
 
 ## `current_intensity()` with the telegraph's own damping undone — the rate this row will
 ## actually carry once it is live, which is what the caret's own projection has to sum rather
@@ -1831,10 +1857,7 @@ func current_intensity() -> float:
 ## player through its own 2s telegraph reads at `TELEGRAPH_INTENSITY_FRACTION` (15%) the whole
 ## time, and `expected_impact_at()` under-counts the approach by the same fraction.
 func _caret_intensity() -> float:
-	var value := current_intensity()
-	if is_telegraphing() and def.pursues_within <= 0.0:
-		value /= Tuning.TELEGRAPH_INTENSITY_FRACTION
-	return value
+	return current_intensity() / _notice_damping()
 
 ## Duck-typed with `CrowdAgent`'s own copy — see `ExcitementHalo`'s class doc. `points` is not
 ## recomputed here: `Baby._update_excitement()` traces it back from the meter's own sum as this
@@ -2680,7 +2703,8 @@ func _draw_birds(canvas: CanvasItem = self) -> void:
 		var wings: Texture2D = PIGEON_BY_VIEW[view] if sin(bird.phase) >= 0.0 else PIGEON_DOWN_BY_VIEW[view]
 		if bird.lift <= 0.0:
 			# Standing. The upstroke is a bird in flight, and a pavement full of them is a flock
-			# that has already gone — which is the thing the telegraph exists to show her instead.
+			# that has already gone — which is the thing the wait and the telegraph before it exist
+			# to show her instead.
 			wings = PIGEON_DOWN_BY_VIEW[view]
 		Sprites.draw_standing(canvas, wings, bird.at - Vector2(0.0, bird.lift), Vector2.ZERO, mirror)
 
