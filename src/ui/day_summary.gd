@@ -15,6 +15,13 @@ signal restart_requested()
 @onready var _heading: Label = $Root/Center/Lines/Heading
 @onready var _title: Label = $Root/Center/Lines/Title
 @onready var _body: Label = $Root/Center/Lines/Body
+## The chalk mark's own words, once a pickup has just been touched — its own label, not a line
+## folded into `_body`, because a screen full of ordinary lines is exactly what playtest 69
+## missed it in ("the day text needs to be bigger to be able to be noticed"). Bigger and its own
+## colour (`Palette.CHALK_DONE`, the same one the touched mark itself turns, so the line reads as
+## the mark speaking rather than as a summary bullet) is what makes it the thing the screen is
+## telling you rather than one more line.
+@onready var _brief: Label = $Root/Center/Lines/Brief
 ## Always empty — see `PauseScreen._hint`'s own doc for why the label stays but nothing writes to
 ## it any more: the continue/restart pair already says what a tap does, and nothing left to say
 ## here does not name a key.
@@ -83,6 +90,7 @@ func _ready() -> void:
 	# Coloured here rather than in the scene so `Palette` stays the one place a runtime colour is
 	# decided — which is what its own class comment asks for.
 	_heading.add_theme_color_override("font_color", Palette.GAME_OVER)
+	_brief.add_theme_color_override("font_color", Palette.CHALK_DONE)
 	_refresh_buttons()
 	_root.hide()
 
@@ -127,11 +135,22 @@ func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int
 	# to notice tomorrow that it is still today.
 	if retrying:
 		lines.append("You try day %d again." % day)
-	# The only place the subquest is ever spelled out. In the world it is chalk on a wall.
+	# The tally is the only place the subquest is ever spelled out. In the world it is chalk on
+	# a wall.
 	if GameState.has_joined_resistance():
 		lines.append("")
-		lines.append(_resistance_line())
+		lines.append(_resistance_tally_line())
 	_body.text = "\n".join(lines)
+	# The brief is shown here whichever `DayResult` this is, and shown before it is cleared —
+	# won or lost, this is the only screen that ever reads a touched mark's words back to her, so
+	# a first try that dies on the very day the mark was found must still hand them over rather
+	# than losing them with the attempt. *(Playtest 69, the reported run: touched the day-4 mark,
+	# lost the day, and reached day 5 with no idea who the note was for — `has_joined_resistance()`
+	# gated this whole block, and a pickup grants no progress, so `resistance_progress` was still 0
+	# and the brief that would have told her never showed at all.)*
+	_brief.text = GameState.pending_resistance_brief
+	_brief.visible = _brief.text != ""
+	GameState.pending_resistance_brief = ""
 	# Always empty. *(2026-09-06: "never should it be mentioned to the user".)* `space` still
 	# carries on, but the continue/restart pair below already says what a tap does, and nothing
 	# left to say here does not name a key — see `PauseScreen._hint`'s own doc for the same call
@@ -139,24 +158,19 @@ func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int
 	_hint.text = ""
 	_present()
 
-## The tally, and — the mechanism rather than a courtesy — the chalk mark's own words once a
-## pickup has just been touched. Read once and cleared: `GameState.pending_resistance_brief` is
-## how she learns what tomorrow wants, since there is no marker anywhere else that would.
-func _resistance_line() -> String:
-	var lines: Array[String] = []
+## The tally alone — how many errands are done and how many are lost. The chalk mark's own
+## words are `_brief`'s job now, shown and cleared directly in `show_day()` regardless of
+## `has_joined_resistance()`, since a pending brief has to survive a day this tally itself never
+## appears on (progress is still 0 the moment a pickup, which grants none, is what queued it).
+func _resistance_tally_line() -> String:
 	if GameState.sabotage_available():
-		lines.append("You have done enough. There is one more night.")
-	else:
-		var done := GameState.resistance_progress
-		var lost := GameState.failed_resistance_steps.size()
-		var line := "Errands run: %d of %d" % [done, Tuning.RESISTANCE_GOAL]
-		if lost > 0:
-			line += "   (%d contact%s lost)" % [lost, "" if lost == 1 else "s"]
-		lines.append(line)
-	if GameState.pending_resistance_brief != "":
-		lines.append(GameState.pending_resistance_brief)
-		GameState.pending_resistance_brief = ""
-	return "\n".join(lines)
+		return "You have done enough. There is one more night."
+	var done := GameState.resistance_progress
+	var lost := GameState.failed_resistance_steps.size()
+	var line := "Errands run: %d of %d" % [done, Tuning.RESISTANCE_GOAL]
+	if lost > 0:
+		line += "   (%d contact%s lost)" % [lost, "" if lost == 1 else "s"]
+	return line
 
 ## The last screen of a run. `space` — or a tap — goes back to the title, which is where the next
 ## one begins.
@@ -175,6 +189,9 @@ func show_ending(ending: GameEnums.Ending) -> void:
 	_body.text = "%s\n\nTime played: %s" \
 			% [_ENDING_BODY.get(ending, ""), GameState.format_clock(GameState.play_seconds)]
 	_hint.text = ""
+	# The ending is not a day summary and never reads a brief back — a run that ends still
+	# carrying a pending one just has nowhere left to spend it.
+	_brief.visible = false
 	_showing_ending = true
 	_present()
 
@@ -199,6 +216,7 @@ func show_finale(exit_kind: int, seconds: float) -> void:
 		_FINALE_BODY.get(exit_kind, _FINALE_BODY[CityEdge.Kind.BRIDGE]),
 		GameState.format_clock(seconds)]
 	_hint.text = ""
+	_brief.visible = false
 	_present()
 
 ## What is behind her, and it is the same sentence either way: she is out, nobody is following,

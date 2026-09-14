@@ -26,6 +26,7 @@ func run(t) -> void:
 	_test_nerves_and_endings(t)
 	_test_the_city_learns_where_she_settled(t)
 	_test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t)
+	_test_a_lost_days_brief_is_shown_and_then_cleared(t)
 
 # --------------------------------------------------------------------- rig ---
 
@@ -377,3 +378,39 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> voi
 	GameState.nerves = saved_nerves
 	GameState.resistance_progress = saved_progress
 	GameState.sabotage_done = saved_sabotage
+
+## The brief is drawn to be noticed, and on a lost day too. Playtest 69, the reported run: touched
+## the day-4 mark, lost the day, and reached day 5 with no idea who the note was for.
+## `has_joined_resistance()` (`resistance_progress > 0`) used to gate the whole resistance block on
+## `DaySummary.show_day()`, and a pickup grants no progress (`ResistanceSteps._mark`), so the very
+## brief that would have told her stayed queued and unread. `show_day()` now reads
+## `GameState.pending_resistance_brief` onto its own label whichever `DayResult` it is called with,
+## and clears it only once it has, so a first try that dies still hands over the words on the
+## second — and a second call with nothing pending shows nothing.
+func _test_a_lost_days_brief_is_shown_and_then_cleared(t) -> void:
+	var saved_paused: bool = t.get_tree().paused
+	var saved_progress := GameState.resistance_progress
+	var saved_brief := GameState.pending_resistance_brief
+	GameState.resistance_progress = 0
+	GameState.pending_resistance_brief = "Give it to the one who won't stop shouting."
+
+	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	t.add_child(summary)
+
+	summary.show_day(4, GameEnums.DayResult.LOST_CRYING, "She would not settle.", 2)
+	t.check(summary._brief.text == "Give it to the one who won't stop shouting.",
+			"a lost day still shows the brief queued on the mark she touched")
+	t.check(summary._brief.visible, "and the label showing it is actually on screen")
+	t.check(GameState.pending_resistance_brief == "",
+			"the brief is cleared only once a summary has actually shown it")
+
+	summary.show_day(4, GameEnums.DayResult.LOST_CRYING, "She would not settle.", 1)
+	t.check(summary._brief.text == "" and not summary._brief.visible,
+			"nothing is left to show a second time")
+
+	summary.free()
+	# See the same restoration in `_test_day_finished_shows_the_summary_with_no_observer_in_the_
+	# tree`, above: `show_day()` pauses the tree and freeing the node does not undo that.
+	t.get_tree().paused = saved_paused
+	GameState.resistance_progress = saved_progress
+	GameState.pending_resistance_brief = saved_brief

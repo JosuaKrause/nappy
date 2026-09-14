@@ -273,14 +273,81 @@ func _process(delta: float) -> void:
 		_expire("lost its contact when the thing it rode on finished")
 		return
 	# Perform steps ride on their own `EventInstance` and the finale sits in a district;
-	# neither is a chalk mark, so only a pickup is ever subject to the re-placement rule.
+	# neither is a chalk mark, so only a pickup is ever subject to the re-placement rule. A
+	# perform step is subject to the first-reached rule instead — see `_track_first_reached()`.
 	if _step.is_pickup:
 		_track_sight_and_reposition()
+	elif _rider:
+		_track_first_reached()
 	if _step.deadline_fraction <= 0.0 or _day_length <= 0.0:
 		return
 	if _elapsed / _day_length < _step.deadline_fraction:
 		return
 	_expire("expired at %.0f%% of the day" % (_step.deadline_fraction * 100.0))
+
+## *Asked for a hidden contact among look-alikes · overturned on 2026-09-13* (`docs/NARRATIVE.md`,
+## "The contact is whichever look-alike she reaches first"): *"we cannot expect the player to do
+## an exhaustive check ... so if the solution is the yeller it's always the first yeller you come
+## close enough to hand the note."* A perform step's contact is not pinned to whichever instance
+## `start_day()` happened to seed — it rides onto whichever live instance sharing the step's own
+## `task_event_id` she comes within reach of first, seeded rider included.
+##
+## **The seeded rider's own guard and deadline are untouched.** `_maybe_set_a_trap()` still stands
+## a robber near the position `start_day()` rolled, and `_process()`'s own deadline check still
+## reads `_elapsed` against `_day_length` — neither reads `_rider`'s identity, so retargeting onto
+## a different look-alike changes nothing about either rule. What it does mean: a look-alike she
+## reaches before the seeded one is never guarded by that trap, which is the point rather than a
+## gap — there is no candidate left to get wrong, so there is nothing left to guard against
+## picking one.
+##
+## Skipped once she has already reached the seeded rider itself (`best == _rider`): its own fixed,
+## replay-stable offset from `_reachable_offset()` already has `ContactPoint`'s own distance check
+## covered, so nothing here needs to move it.
+func _track_first_reached() -> void:
+	if not _player or not is_instance_valid(_player):
+		_player = get_tree().get_first_node_in_group("player") as Stroller
+	if not _player or not _city or not _city.events:
+		return
+	var here := _player.global_position
+	var best: EventInstance = null
+	var best_distance := INF
+	for instance in _city.events.instances():
+		if instance.def.id != _step.task_event_id or instance.is_finished:
+			continue
+		var distance := here.distance_to(instance.global_position)
+		if distance > _reach_distance(instance) or distance >= best_distance:
+			continue
+		best_distance = distance
+		best = instance
+	if best == null or best == _rider:
+		return
+	_rider = best
+	_contact.ride(_step, best, _near_side_offset(best, here))
+	Telemetry.note("contact", "step %d retargeted onto the nearest look-alike reached first"
+			% _step.index)
+
+## The distance from `instance`'s own centre at which `ContactPoint.REACH` is actually reachable —
+## the same sum `_reachable_offset()` places its fixed point at, asked here of an arbitrary
+## look-alike rather than only the seeded rider, so a solid body's own clearance is respected
+## whichever candidate this is asked about.
+func _reach_distance(instance: EventInstance) -> float:
+	return instance.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH
+
+## The touch point on the side of `instance` facing `from` — used only when retargeting onto a
+## look-alike she is already within reach of, where a fixed randomly-bearing offset (what the
+## seeded rider keeps, for replay stability across an untouched day) would be the wrong question:
+## nothing about this pairing needs to replay the same way twice, since it only ever happens once
+## she is already standing close enough. Placing the offset toward her own current bearing instead
+## is what makes the distance check in `_track_first_reached()` exactly correct for a body with any
+## solid clearance, by the same triangle the caller already checked when it found this candidate.
+func _near_side_offset(instance: EventInstance, from: Vector2) -> Vector2:
+	var clearance: float = instance.def.obstructs_radius
+	if clearance <= 0.0:
+		return Vector2.ZERO
+	var to_her := from - instance.global_position
+	if to_her.length() < 0.001:
+		to_her = Vector2.RIGHT
+	return to_her.normalized() * (clearance + Tuning.PLAYER_BODY_RADIUS)
 
 ## "A mark that was never on screen was never placed" — playtest 19, verbatim. Seen is
 ## sticky for the day: once `_sight` has answered true for the mark's own position it never
