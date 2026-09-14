@@ -118,12 +118,14 @@ entirely and still reach the good ending.
   notices her. Seeded from the run and the day, so the distance that was safe on day 9 of
   this run is safe on day 9 every time you replay it — the pattern is learnable, which is
   the difference between risk and a coin flip.
-- **The contact is whichever look-alike she reaches first.** A perform step's contact does not
-  wait at the one instance the day happened to seed; it rides onto whichever live look-alike —
-  a `homeless_yeller`, a `delivery_van`, a `roadblock`, a `poster_crew` or a `protest` — she
-  first comes within reach of. There is no exhaustive check to run and no wrong candidate to
-  cost her anything: approaching the field of any of them is still the cost, but whichever one
-  she reaches is simply the right one.
+- **The contact is whichever look-alike she hands the note to.** A perform step's contact does
+  not wait at the one instance the day happened to seed; it rides onto whichever live
+  look-alike — a `homeless_yeller`, a `delivery_van`, a `roadblock`, a `poster_crew` or a
+  `protest` — she is within reach of, and follows her from one to the next until she touches
+  one. There is no exhaustive check to run and no wrong candidate to cost her anything:
+  approaching the field of any of them is still the cost, but any one she has noticed and walks
+  up to is the right one. *(2026-09-13: "the task is always solved by going to any yeller she
+  notices.")*
 - **The deadline.** The wall's window closes when the poster crew's own instance is gone —
   paste it over and the contact goes with it, for the rest of the run.
 - **Only a day she wins counts.** *"a task is only complete if it is done on the day that won"* —

@@ -317,49 +317,112 @@ still reaches two calm areas, `EventScheduler._ensure_the_city_is_still_walkable
 obstructing bodies, widest first, until a park is reachable, and a `hard_fail` row keeps its
 whole field clear of other events (`_room_around`). Every one of those is about *reaching*, and
 a route that reaches through three friction fields in a row is as legal as an empty one. Costly
-rows land inside the corridor on purpose (the `friction` role). **The guarantee is measured and
-is far from true**: `tests/probes/m129_zero_cost_line.gd`, run by name, finds a zero-cost line
-along about one route in fourteen over a run and along none from act III; the numbers, the
-readings and the failing shapes are in `DECISIONS.md` under M129. The dominant break is a
-*covered junction* — the only legal crossing sits inside some row's reach — then the yeller's
-beat, then a single row wide enough to take a street alone (the street is 192px kerb to kerb and
-most reaches are 179 to 240px). A van with the far pavement also taken is the rarest shape and
+rows land inside the corridor on purpose (the `friction` role). **The reading is the player's**
+([PLAYTEST-71](playtests/PLAYTEST-71.md), the three readings): a pacing row is passed by timing,
+so only the ground its beat never leaves free counts as blocked — *"time pass -- don't route
+around them"*; a moving row never counts — *"the player can cross the street, wait, then come
+back without ever getting excited by it"*; a region door never counts — *"it costs by design"*;
+and a flock is scenery — *"flocks are basically free already -- don't count it as block"* — so
+`pigeon_flock` carries `EventDef.scenery` and is outside the cost rule's wall and friction
+placement altogether. **The guarantee is measured under that reading and is far from true**:
+`tests/probes/m129_zero_cost_line.gd`, run by name, finds a zero-cost line along about one
+route in six over a run, one in three on day 1 and one in twenty-five from act III; the
+numbers, the readings and the failing shapes are in `DECISIONS.md` under M129, the reading
+decided. The dominant break is a *covered junction* — the only legal crossing sits inside some
+row's reach — then a single row wide enough to take a street alone (the street is 192px kerb to
+kerb and most reaches are 179 to 240px; `leaf_blower` most often), then a cut no one row
+makes, then the yeller's beat. A body with the far pavement also taken is the rarest shape and
 two friction fields on facing pavements never occur, so the far-pavement rule the entry first
 drafted is not written. The corridor grower itself crosses a carriageway mid-block about three
-times per route, on ordinary streets and never on the spine. M131's map-placed flock landed
-after the measurement, so a re-run comes first.
-
-**Three readings are the player's to choose before the rules are cut**, since each moves the
-number: whether a pacing row denies its whole beat or only where its beat never opens (7.4% to
-10.7%); whether a moving row denies its dawn position or its whole swept route (7.4% to 2.7%);
-and whether a region door on the route counts as a cut (7.4% to 7.7%). The recommendation is
-the primary reading — whole beat, dawn position, doors counted — since it is the one a player
-walking at any moment of the day meets.
+times per route, on ordinary streets and never on the spine.
 
 - [ ] **A route's junctions stay clear.** The junctions a route passes through, and the ones at
-      each end of each of its streets, are outside every placed row's reach: checked before a
+      each end of each of its streets, are outside every counted row's reach: checked before a
       row is placed, never repaired after (the city rule), so a row whose field would cover a
-      route junction is refused that ground. This is the shape that breaks most routes and no
-      earlier item named it. Pursuers, `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` rows and city-wide
-      rows are outside this — they pay the telegraph contract instead — and so is anything off
-      the corridor, where the wall role is the design. Re-run the probe after; the fraction and
-      the shapes go beside the first table in `DECISIONS.md`.
-- [ ] **No single row takes a route street's whole width.** A friction row on a route's
-      pavement is accepted only if its reach leaves the far pavement of that street outside it
-      for the stretch between the two nearest junctions; a row that cannot — `police_patrol`,
-      `busker`, `ice_cream_van` at today's reaches on a 192px street — is refused corridor
-      ground or its reach on the corridor is the number the **balance** rule moves. Where the
-      corridor runs along a precinct, a park edge or an alley, say what "the other side" is
-      there or refuse the row that ground. Re-run the probe after.
-- [ ] **A pacing row leaves the line open for part of its beat.** The yeller's route is sited
-      and sized so that the pavement it paces is clear at one end for a readable share of each
-      loop, or its loop runs on the pavement the route does not use; the choice is measured
-      with the probe and the reach the line needs at the far end of its beat is the number. The
-      same for any other row that `paces`. Re-run the probe after.
+      route junction is refused that ground. This is the shape that breaks most routes — more
+      than every other shape together — and no earlier item named it. Pursuers, `AHEAD_OF_PLAYER` and
+      `TOWARD_PLAYER` rows, city-wide rows, moving rows and doors are outside this — the first
+      three pay the telegraph contract, the last two are not blocks — and so is anything off
+      the corridor, where the wall role is the design. Re-run the probe after.
+- [ ] **No single standing row takes a route street's whole width.** A friction row that stands
+      or paces on a route's pavement is accepted only if its reach leaves the far pavement of
+      that street outside it for the stretch between the two nearest junctions; a row that
+      cannot — `busker`, `ice_cream_van` at today's reaches on a 192px street, and
+      `police_patrol` if it turns out to pace rather than travel — is refused corridor ground or
+      its reach on the corridor is the number the **balance** rule moves. Where the corridor
+      runs along a precinct, a park edge or an alley, say what "the other side" is there or
+      refuse the row that ground. Re-run the probe after.
+- [ ] **A pacing row leaves the line open for part of its beat.** This is the reading as well
+      as the rule, and the probe finds it broken only where a second row closes the beat's open
+      end: the yeller's route is sited and sized so that the pavement it paces is clear at one
+      end for a readable share of each loop, or its loop runs on the pavement the route does
+      not use, and no other row's reach covers that open end; the choice is measured with the
+      probe and the reach the line needs at the far end of its beat is the number. The same
+      for any other row that `paces`. Re-run the probe after.
 - [ ] **Mid-block crossings are not counted on.** The route tree's cells cross a carriageway
       only at a junction; in play she may still cross anywhere. The probe finds the grower
       crossing mid-block on most routes today, so this is a change to how the corridor is grown
       on the reachability grid, and the probe's own mid-block count is its test.
+
+---
+
+## M137 — The contact is whoever she hands the note to, and the trap comes to her · asked for 2026-09-13
+
+> "not the first yeller she reaches but the first yeller she interacts with. so the task is
+> always solved by going to any yeller she notices. maybe spawn the robber in pursuing mode
+> offscreen when she interacts with the yeller so it runs towards her from offscreen."
+
+[PLAYTEST-71](playtests/PLAYTEST-71.md). The **events** rule governs the robber's spawn; the
+telegraph contract it names is the constraint on *off screen*.
+
+**What is true today.** `ResistanceDirector._track_first_reached` re-points the perform step's
+contact every frame onto the nearest live look-alike she is within reach of, so a yeller she
+walks past and leaves is not kept; whichever one she then touches completes the step
+(`DECISIONS.md`, M132). The trap is a separate rule: `_maybe_set_a_trap` stands an
+`alley_robbery` at dawn inside a band around the position the day seeded, waiting, and it wakes
+when she comes within its `pursues_within`; a contact she hands over anywhere else is unguarded.
+*The trap guards the seeded yeller only · overturned on 2026-09-13.*
+
+- [ ] **The rule is worded as the player said it.** `docs/NARRATIVE.md`'s *the contact is
+      whichever look-alike she reaches first* becomes *whichever look-alike she hands the note
+      to*, and the director's own doc comment with it. A test in `tests/test_resistance.gd`
+      walks a rig within reach of one look-alike, out again, and onto a second, and asserts the
+      step completes on the second — what the code already does and nothing pins.
+- [ ] **The trap comes to her.** On a perform step, no robber is seeded at dawn. At the moment
+      the note is handed over, `spawn_extra` puts a robber on walkable ground outside the view
+      rect (`set_sight`'s own callable, or the stream radius M131 measured, says what off screen
+      is) already awake and pursuing, so he runs at her from off screen. **He is his own
+      catalogue row, not an `alley_robbery` woken by hand.** *(2026-09-13: "we need a version of
+      the robber that is not frozen when spawned.")* `alley_robbery` is `is_waiting()` from the
+      frame it spawns — `pursues_within > 0` and no notice yet — and the new row is never
+      waiting: awake from its first frame, telegraph included, the same body, speed, lethal
+      reach and picture as the alley robber, `hard_fail` like him, and spawned only by the
+      director — never placed, budgeted or streamed by the scheduler, so `EventDef.validate()`
+      and the catalogue's placement pool are told so. He obeys the row's own numbers — spawn
+      distance is a new number the **balance** rule owns — and the telegraph contract: the
+      screen-edge badge and the caret answer him the way they answer any pursuer, so the player
+      has the reaction time the contract promises. A chalk mark's guard is unchanged: this entry
+      is about the perform step's contact, which is what the player named; say so in the record
+      if a chalk mark's trap should follow.
+
+      **What an agent's reading of the code found before it was stopped, unverified by any
+      rig.** The stream-in path's `EventInstance.resume(age, travelled, noticed_at)` would take
+      an alley robber out of waiting, which is the by-hand wake the player refused; the new row
+      says it in the definition instead. Once noticed, `_chase()` moves him at
+      `pursue_speed` (130 px/s) from the first frame — the row does not set
+      `still_while_telegraphing` — holding at the standoff until his 1.8 s telegraph ends, so
+      `DangerEdge` already arrows any `hard_fail` row and announces him on the first closing
+      frame: no cue code changes. A candidate spawn distance, to be scrutinised: 400 px clears
+      the view from any bearing (the viewport's half-diagonal at zoom 2 is about 367 px, the
+      argument `NOTICE_RADIUS`'s own doc makes), plus `pursue_speed × Tuning.PURSUIT_MIN_NOTICE`
+      (130 × 1.5 = 195) so at least the minimum notice passes while only the badge speaks for
+      him — about 600 px. The trigger belongs in the contact-completed path, gated on
+      `task_event_id` being set and on `TRAP_FIRST_DAY`, with a guard on `_maybe_set_a_trap`'s
+      dawn call for a perform step; `_draw_guard_position`'s rejection loop (walkable, not
+      closed, not held, not the home block) is the bearing draw to reuse.
+- [ ] **What a run should look at** goes to `REVIEW.md`: does a robber arriving from off screen
+      after the handoff read as the price of the errand rather than as bad luck, and does the
+      badge give enough warning to run.
 
 ---
 
