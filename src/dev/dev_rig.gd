@@ -32,6 +32,9 @@ func setup_follow_camera(parent: Node) -> void:
 	_follow_camera = Camera2D.new()
 	parent.add_child(_follow_camera)
 	_follow_camera.make_current()
+	# `update_follow_camera()` snaps this every `_process` frame rather than on the physics tick,
+	# so physics interpolation would draw it a tick behind whatever it is chasing.
+	_follow_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 
 ## Called once a frame; a no-op until `setup_follow_camera()` has actually built a camera.
 func update_follow_camera(city: City) -> void:

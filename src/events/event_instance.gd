@@ -939,6 +939,12 @@ static func _stationary_vehicle_uses_side(look: EventDef.Look, map: CityMap, at:
 	return absf(face.x) >= absf(face.y)
 
 func _ready() -> void:
+	# Moves itself in `_process`, not on the physics tick, so physics interpolation would draw it
+	# gliding between two stale tick positions rather than where `_process` actually put it. Set
+	# on the instance itself rather than inherited from a parent: every instance is added under
+	# `City`'s shared, y-sorted `Entities` node (`City.add_entity()`), beside the player, who does
+	# want her own physics-tick motion interpolated.
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	EventBus.event_telegraphed.emit(self)
 	_telegraph_announced = true
 	if def.obstructs_radius > 0.0:
