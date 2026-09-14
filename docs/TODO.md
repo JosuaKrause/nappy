@@ -438,14 +438,17 @@ reads the queued brief and clears it (`DECISIONS.md`, M132).
       `settled_in`, with the player's sentence as the reason. `tests/test_day_loop.gd` holds
       it: touch a mark, lose the day, the mark is untouched and on offer again; perform a step,
       lose, progress is back where it was; win, and both stand.
-- [ ] **The brief on a lost day: shown once, or not at all?** M132 shows the mark's words on
-      the lost day's summary at the player's word (*"it should show also when dying so if
-      missed on the first try it can be seen on the second try"*). With the touch taken back,
-      the retry re-finds the mark and the won summary reads the words in any case. The
-      recommendation is to keep showing them on the lost summary — both instructions hold and
-      the words are hers to keep once found — and the alternative is that a lost day says
-      nothing and the words wait for the touch that counts. The player's call; until it is
-      made, the first item leaves the summary as M132 built it.
+- [ ] **A lost day's summary repeats the day's own instruction, never tomorrow's.** *(2026-09-13:
+      "the words shown on the lost day are the words that show at the beginning of that day not
+      the nexts. since day doesn't have words it doesn't make sense to show words on day 4".)*
+      M132's *"it should show also when dying"* means the words she already had: a lost
+      summary shows the brief of the perform step that was on offer when the day began — the
+      same words the previous won summary read — so the retry is reminded what the day is for,
+      and it shows nothing when no step was on offer, which is every lost day 4. A mark touched
+      on the lost day itself has its touch taken back by the first item, so its words are not
+      shown until the touch that counts; a won summary reads the newly queued brief as today.
+      `tests/test_day_loop.gd` holds both: a lost day 5 with the note's step on offer shows the
+      day-4 mark's words, a lost day 4 with a mark touched shows none.
 
 ---
 

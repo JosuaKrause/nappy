@@ -178,6 +178,13 @@ Today a touched mark and a completed perform step survive the nerve — `GameSta
 own rule is *what the run has spent stays spent*, with only where she settled rolled back — and a
 mark once touched is never offered again, so a lost day can neither undo nor repeat it. The
 instruction reverses that for the resistance: nothing the resistance did on a lost day counts,
-and the same day's retry offers it again. Filed as M134 in `TODO.md`; the one overlap with
+and the same day's retry offers it again. Filed as M134 in `TODO.md`. The one overlap with
 M132 — whether the lost day's summary still reads the words of a mark whose touch is about to
-be taken back — is a question in that entry.
+be taken back — was put as a question with a recommendation to keep showing them, and answered
+the other way:
+
+> the words shown on the lost day are the words that show at the beginning of that day not the
+> nexts. since day doesn't have words it doesn't make sense to show words on day 4
+
+So a lost summary repeats the instruction the day began with, the words she already had, and a
+lost day 4 shows none; M134's second item holds it.
