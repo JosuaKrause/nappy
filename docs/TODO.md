@@ -295,6 +295,61 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
+## M140 — The crowd's scripts parked, as a skip word · asked for 2026-09-14
+
+> "Sure let's try stopping the simulation for the crowd. We can keep the atlas as it is still an
+> improvement."
+
+[PLAYTEST-73](playtests/PLAYTEST-73.md). With the crowd atlas released the phone reads the same
+with the crowd drawn and with `skip=crowd` (`DECISIONS.md`, M139, the phone reading), so the
+crowd's drawing is ruled out of the phone's frame and what is left of the crowd is its
+simulation: `skip=crowd` returns from `CrowdAgent._draw` and nothing else, and the 234 agents
+still steer, look ahead, turn, recycle and queue on every tick. A fourth skip word that parks
+them says what that costs. The phone reading is the player's, on the next release, against
+playtest 73's table: `?debug=1&seed=123&skip=motion`, then `&skip=crowd,motion`, read for `fps`
+and the `process` and `physics` means.
+
+**What the crowd's scripts do each frame, read on 2026-09-14 for the player's question.** Every
+`CrowdAgent` is a `Node2D` with its own `_process`, so the engine calls 234 of them a frame:
+each runs its clocks down, moves along its lane, holds itself inside its tile, considers a turn
+at a corridor, advances its gait, looks ahead, diverts if blocked, checks whether it has left
+the field or is sealed in a pocket, and asks for a redraw only when its picture changed. Two of
+those are already gated — `_look_ahead()` rescans only when the agent enters a new tile, and
+the redraw key means a walker in a lane costs no draw list — and the rest are a few dozen small
+GDScript calls apiece, which on the web's interpreter is the cost that scales with the
+population rather than with what is on screen. `Crowd._physics_process` then walks every agent
+again at the physics tick, sixty a second regardless of the frame rate: the traffic is bucketed
+by lane and each lane sorted, the index rebuilt, the junctions negotiated, the gates and doors
+held, and every walker tested against the player for making way and bumping. The physics line
+reads 6 to 11 ms on the phone against 1.8 on the desktop, and at a phone's 28 fps that tick runs
+twice a frame. **The one obvious change, if the probe says the scripts are the cost, is a
+slower tick for the agents nobody can see**: the field is 1600px square and the screen shows a
+tenth of it on the desktop, a quarter on a phone in portrait, and `CrowdField`'s own licence is
+that consistency off screen does not matter — so an agent outside the camera's rect could step
+every fourth frame with four times the delta and nobody could tell. It is not filed: the probe
+comes first, and if the scripts are not the cost there is nothing to save.
+
+- [ ] **`motion`, the fourth skip word, parks the crowd where the day placed it.** In
+      `DevFlags` (`src/dev/dev_flags.gd`, the **cli-tools** rule) `motion` joins the known
+      words and gets `skip_motion()` beside the three getters, with the same gate: honoured
+      only while `readout_requested()` holds. `CrowdAgent` reads it once at spawn into a
+      member the way `_skip_draw` is read, and `_process` returns before its first line when it
+      is set; `Crowd` reads it once at `setup` and `_physics_process` returns before the
+      signals advance when it is set, so nothing the crowd ticks — the signals, the pockets,
+      the traffic spacing, the index, the junctions, the gates, the doors, the player's
+      make-way and bump scan, the strike and the horn — runs. `start_day` still places the
+      whole population, so the street is full of standing people and parked cars; the crowd's
+      excitement is still read by the baby, since that scan is the baby's and not the crowd's.
+      `Crowd.step()`, the rig's own frame, is left alone: a rig asked to walk the crowd walks
+      it. The readout's `skip` line names the word as it names the others. The test that drives
+      `_validate_skip_words()` gains the word; a test in the crowd suite sets the member on an
+      agent, steps it, and asserts it has not moved. The evidence is one desktop still,
+      `tools/shot.sh out.png 4 --seed 3265820891 --day 1 --walk 3s --debug --skip motion`,
+      showing the crowd standing; no burst, no `--invincible`. `docs/TELEMETRY.md`'s account of
+      the skip words, wherever it lists the three, lists the fourth.
+
+---
+
 ## M129 — A path through the city never has to cost · asked for 2026-09-13
 
 > "also framing from a different point of view a path through the city must never hit
