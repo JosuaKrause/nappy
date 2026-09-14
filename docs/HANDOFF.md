@@ -285,12 +285,12 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **This section is the pick-up for the next session and is removed by it.** `gh pr list` and
 `git worktree list` are the truth; this is the map.
 
-- **Everything playtests 69 to 71 asked for is built, merged and released**, and so are
+- **Everything playtests 69 to 72 asked for is built, merged and released**, and so are
   M136's build stamp, M124's skip flag and M129's flock and probe re-run; each has its record
   in `DECISIONS.md` and its played questions in `REVIEW.md`. Nothing is in flight: no worktree,
   no open PR. `git tag --list 'v*'` says what the site serves, and the newest tag carries the
-  skip flag.
-- **The phone's frame is the open measurement, and the next release carries the two
+  crowd atlas, the seed under the note and the readout's columns.
+- **The phone's frame is the open measurement, and the release carries the two
   instruments and the one fix for it.** By the numbers the draw calls are not the phone's
   cost (`DECISIONS.md`, M124, the phone's process time split), but the lag is felt only with
   the crowd drawn and the fps column agrees, so one atlas for the crowd is built as the
