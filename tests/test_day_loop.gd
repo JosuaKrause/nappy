@@ -29,6 +29,7 @@ func run(t) -> void:
 	_test_a_lost_days_brief_is_shown_and_then_cleared(t)
 	_test_a_lost_day_gives_the_resistance_back(t)
 	_test_the_retry_meets_the_same_mark_in_the_same_alley(t)
+	_test_a_lost_summary_repeats_the_days_own_instruction(t)
 
 # --------------------------------------------------------------------- rig ---
 
@@ -529,6 +530,65 @@ func _test_the_retry_meets_the_same_mark_in_the_same_alley(t) -> void:
 	first.free()
 	retry.free()
 	city.free()
+	_restore_run(saved)
+
+## *"the words shown on the lost day are the words that show at the beginning of that day not the
+## nexts. since day doesn't have words it doesn't make sense to show words on day 4"* — so a lost
+## summary repeats the instruction the day began with, and a lost day 4 shows nothing, because the
+## mark she touched on it is given back with the attempt and its words with it.
+##
+## Driven through `DaySummary.show_day()` rather than only over `pending_resistance_brief`, since
+## the two halves are what the player sees: the queue is `GameState`'s and the label is the
+## screen's, and a rule that only ever held on one of them would be invisible from the other.
+func _test_a_lost_summary_repeats_the_days_own_instruction(t) -> void:
+	var saved := _save_run()
+	var saved_paused: bool = t.get_tree().paused
+	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	t.add_child(summary)
+
+	# Day 5, out to hand over the note: the day-4 mark's own words are what it began with.
+	var mark := ResistanceSteps.by_index(1)
+	GameState.start_run(SEED)
+	GameState.day = 4
+	GameState.begin_day()
+	GameState.complete_resistance_step(1, false)
+	GameState.finish_day(GameEnums.DayResult.WON)
+	GameState.pending_resistance_brief = ""
+	t.check(GameState.day == 5, "the rig is on the day the note is to be handed over")
+	GameState.begin_day()
+	GameState.finish_day(GameEnums.DayResult.LOST_CRYING)
+	summary.show_day(5, GameEnums.DayResult.LOST_CRYING, "She would not settle.", 3)
+	t.check(summary._brief.text == mark.brief,
+			"a lost day repeats the words of the mark that set today's task")
+	t.check(summary._brief.visible, "and the label showing them is actually on screen")
+
+	# Day 4, the mark touched and the day lost: the touch is taken back, so its words are not read
+	# out until the touch that counts.
+	GameState.start_run(SEED)
+	GameState.day = 4
+	GameState.begin_day()
+	GameState.complete_resistance_step(1, false)
+	t.check(GameState.pending_resistance_brief == mark.brief,
+			"the touch did queue the mark's words before the day was lost")
+	GameState.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
+	summary.show_day(4, GameEnums.DayResult.LOST_TIMEOUT, "Dusk. You are still out.", 2)
+	t.check(summary._brief.text == "" and not summary._brief.visible,
+			"a lost day 4 shows no words: its whole content is finding the mark")
+
+	# Won, and the screen still reads the newly touched mark's own words as today's.
+	GameState.start_run(SEED)
+	GameState.day = 4
+	GameState.begin_day()
+	GameState.complete_resistance_step(1, false)
+	GameState.finish_day(GameEnums.DayResult.WON)
+	summary.show_day(4, GameEnums.DayResult.WON, "", 3)
+	t.check(summary._brief.text == mark.brief,
+			"a won day still reads back the mark she touched today")
+
+	summary.free()
+	# `show_day()` pauses the tree and freeing the node does not undo it — see the same restoration
+	# in `_test_day_finished_shows_the_summary_with_no_observer_in_the_tree`.
+	t.get_tree().paused = saved_paused
 	_restore_run(saved)
 
 func _resistance_director(t, city: City) -> ResistanceDirector:

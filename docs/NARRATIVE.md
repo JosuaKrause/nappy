@@ -150,6 +150,14 @@ words back to her on the following day's screen — and the HUD carries one ters
 rather than during one. **That line is silent until the first mark has been touched** —
 the first encounter comes with no hint at all, and only later ones are named.
 
+**A lost day repeats its own instruction rather than moving on.** *"the words shown on the lost
+day are the words that show at the beginning of that day not the nexts."* The summary of a day
+she lost reads out the words of the mark that unlocked the task she was out to perform — the
+same words the summary of the day she found that mark already gave her — because a mark touched
+on a lost day has its touch given back with the attempt, and the retry needs telling what the day
+is for. A lost day 4 says nothing at all: its whole content is finding the mark, so there is
+nothing yet to repeat.
+
 A pickup mark that has never been on screen has never really been placed, so it follows
 her rather than sitting where the dawn plan first put it: once she is far enough from it
 to have missed it, it moves to the alley she has just come near instead, guard and all —

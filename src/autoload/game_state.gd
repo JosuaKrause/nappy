@@ -288,6 +288,10 @@ func _snapshot_the_resistance() -> void:
 ## and the summary's tally are both drawn off it. Nothing announces a step *un*-completing,
 ## because nothing needs to: the HUD rebuilds its `somewhere out there:` line from scratch on
 ## `day_started` at the retry, which is the next moment either is looked at.
+##
+## **And the summary is left the day's own instruction to read** — see
+## `_instruction_the_day_began_with()`. Queued over the restored brief rather than instead of it,
+## so words that were owed and never shown are never dropped on the way past.
 func _give_the_resistance_back() -> String:
 	var progress_before := resistance_progress
 	var undone := completed_resistance_steps != _dawn_completed_steps \
@@ -302,9 +306,31 @@ func _give_the_resistance_back() -> String:
 	sabotage_done = _dawn_sabotage_done
 	resistance_carrying_package = _dawn_carrying_package
 	pending_resistance_brief = _dawn_brief
+	var instruction := _instruction_the_day_began_with()
+	if instruction != "":
+		pending_resistance_brief = instruction
 	if resistance_progress != progress_before:
 		EventBus.resistance_progress_changed.emit(resistance_progress)
 	return " — and the day's resistance work with it" if undone else ""
+
+## The instruction today began with: the words of the mark that unlocked the perform step the day
+## offered at dawn — the same words the summary of the day she found that mark already read out.
+##
+## *(The player, on whether a lost day should read out the mark it was about to take back: "the
+## words shown on the lost day are the words that show at the beginning of that day not the nexts.
+## since day doesn't have words it doesn't make sense to show words on day 4".)* So a lost summary
+## repeats what the retry is for rather than a touch that no longer counts, and a day whose whole
+## content is finding the mark repeats nothing: this answers "" for a pickup, for the finale and
+## for a day with nothing on offer, which is every lost day 4.
+##
+## Read off the dawn photograph through the day's own table rather than asked of the director. The
+## step a day offers is a pure function of the calendar and what the resistance had already done,
+## which is exactly what was photographed, so this says what the day offered even when the summary
+## is drawn with no director alive.
+func _instruction_the_day_began_with() -> String:
+	var step := ResistanceSteps.for_day(day, _dawn_completed_steps, _dawn_failed_steps,
+			_dawn_progress >= Tuning.RESISTANCE_GOAL)
+	return ResistanceSteps.unlocking_brief(step)
 
 # ---------------------------------------------------------------------- RNG ---
 
