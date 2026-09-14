@@ -290,16 +290,18 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
   in `DECISIONS.md` and its played questions in `REVIEW.md`. Nothing is in flight: no worktree,
   no open PR. `git tag --list 'v*'` says what the site serves, and the newest tag carries the
   crowd atlas, the seed under the note and the readout's columns.
-- **The phone's frame is the open measurement, and the crowd's drawing is now ruled out
-  of it.** With the crowd atlas released, the phone reads the same with the crowd drawn and
-  with `skip=crowd` (`DECISIONS.md`, M139, the phone reading), so by the numbers neither the
-  draw calls (`DECISIONS.md`, M124, the phone's process time split) nor the crowd's drawing is
-  the cost; what is left is the crowd's simulation and the events' fields. Two questions are
-  with the player from playtest 73: whether the lag still *feels* the same, and whether a skip
-  word that parks the crowd's scripts is the next probe. `?debug=1&seed=N` answers on the live
-  page and the readout's columns fit a phone (`DECISIONS.md`, M138); the `process` mean
-  outruns the frame the `fps` line implies on every phone screenshot, which is unexplained and
-  is recorded under M139's phone reading.
+- **The phone's frame is the open measurement, and the crowd's drawing is ruled out of
+  it.** With the crowd atlas released, the phone reads the same with the crowd drawn and with
+  `skip=crowd` (`DECISIONS.md`, M139, the phone reading), so by the numbers neither the draw
+  calls (`DECISIONS.md`, M124, the phone's process time split) nor the crowd's drawing is the
+  cost; what is left is the crowd's simulation and the events' fields. The next reading parks
+  the simulation with `skip=motion` and is the player's, on the phone, on the next release —
+  the `REVIEW.md` item names the two loads and the columns to read, and it waits on a release,
+  since the word is on `main` and not on the site until one is cut. The felt half of playtest
+  73, whether the lag still *feels* the same, is open beside it. `?debug=1&seed=N` answers on
+  the live page and the readout's columns fit a phone (`DECISIONS.md`, M138); the `process`
+  mean outruns the frame the `fps` line implies on every phone screenshot, which is unexplained
+  and is recorded under M139's phone reading.
 - **M129, a path through the city never has to cost, is the next design work and its four
   rules are ready for an agent, one at a time.** The reading is the player's
   ([PLAYTEST-71](playtests/PLAYTEST-71.md)) and the probe measures it (`DECISIONS.md`, M129,

@@ -41,3 +41,15 @@ the `process` mean is longer than the frame the `fps` line implies — 34 fps is
 and the mean beside it reads 49 — so on the web one of the two lines is not measuring what its
 name says. Which one is not established; it is recorded in `DECISIONS.md`, M139, the phone
 reading, as the first thing to settle before the phone's frame is read again.
+
+## The next probe, answered
+
+> "Sure let's try stopping the simulation for the crowd. We can keep the atlas as it is still an
+> improvement. Is there any obvious optimization we can do with the crowd code?"
+
+Said to the reading above and its two questions. The felt half of the atlas item was not
+answered in words; the atlas stays because the player says so. The skip word that parks the
+crowd's simulation is filed as M140 in `TODO.md`. The optimization question was answered in the
+session from a read of the crowd's per-frame code and is recorded under M140's entry: what the
+crowd's scripts do each frame, which of it is already gated, and the one change that is obvious
+if the probe says the scripts are the cost — a slower tick for the agents nobody can see.

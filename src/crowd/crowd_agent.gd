@@ -159,6 +159,12 @@ var colour := Color.WHITE
 ## check the skip without a real `--skip` flag behind it.
 var _skip_draw := DevFlags.skip_crowd()
 
+## `DevFlags.skip_motion()`, read once at spawn the same way `_skip_draw` is — a test sets this
+## directly to check the skip without a real `--skip` flag behind it. `_process` returns before
+## its first line while it is set, so this agent's clocks, steering, lookahead, turning, gait and
+## recycling all stand still; it is still drawn wherever the day placed it.
+var _skip_motion := DevFlags.skip_motion()
+
 ## This agent's own ground shape, set once in `setup()`: a point for a walker, a capsule along the
 ## travel axis for a car (`_car_shadow_shape()`). Read by `_draw_body()` for the shadow; there is
 ## no body for either — see `_car_shadow_shape()`'s own docstring for why a car gets none, and
@@ -735,6 +741,11 @@ func _is_inside_a_hut() -> bool:
 	return _door_state == DoorState.INSPECTION
 
 func _process(delta: float) -> void:
+	# `--skip motion`'s own probe (docs/DECISIONS.md, M140, "the crowd's scripts parked"): returns
+	# before anything below runs, so this agent stands exactly where the day placed it — no clock,
+	# steering, lookahead, turn, gait or recycle. It is still drawn; see `_draw()`'s own `_skip_draw`.
+	if _skip_motion:
+		return
 	_clock += delta
 	var before_position := position
 	_jolt = maxf(0.0, _jolt - delta)

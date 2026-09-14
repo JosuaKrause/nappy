@@ -79,12 +79,15 @@ func _test_readout_requested_does_not_move_enabled(t) -> void:
 ## `--skip`'s own words — see `DevFlags._validate_skip_words()`'s own doc for why an unknown word
 ## refuses the whole value and an empty one is simply nothing to skip.
 func _test_skip_words_in_any_order(t) -> void:
-	t.check(DevFlags._validate_skip_words("events,crowd,shadows") == ["events", "crowd", "shadows"],
-		"all three words are each recognised, in the order given")
+	t.check(DevFlags._validate_skip_words("events,crowd,shadows,motion")
+			== ["events", "crowd", "shadows", "motion"],
+		"all four words are each recognised, in the order given")
 	t.check(DevFlags._validate_skip_words("shadows,events") == ["shadows", "events"],
 		"the words may be given in any order")
 	t.check(DevFlags._validate_skip_words("crowd") == ["crowd"],
 		"a single word is its own one-element set")
+	t.check(DevFlags._validate_skip_words("motion") == ["motion"],
+		"motion, the fourth word, is recognised on its own too")
 
 func _test_skip_words_refuses_an_unknown_word(t) -> void:
 	t.check(DevFlags._validate_skip_words("events,bogus").is_empty(),
@@ -115,8 +118,9 @@ func _test_skip_from_args_and_query_extract_the_raw_value(t) -> void:
 func _test_skip_is_gated_on_the_readout_being_requested(t) -> void:
 	t.check(DevFlags.skip_words().is_empty(),
 		"skip_words() answers nothing skipped while the readout was not requested")
-	t.check(not DevFlags.skip_events() and not DevFlags.skip_crowd() and not DevFlags.skip_shadows(),
-		"the three per-word getters carry the same gate")
+	t.check(not DevFlags.skip_events() and not DevFlags.skip_crowd() and not DevFlags.skip_shadows()
+			and not DevFlags.skip_motion(),
+		"the four per-word getters carry the same gate")
 
 ## `?seed=`'s own query parser (M138, "a seed on the live page under `?debug=1`") — see
 ## `DevFlags._seed_from_query()`'s own doc for why the `?debug=1` gate is checked inside the same

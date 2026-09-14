@@ -36,6 +36,13 @@ var _traffic := TrafficIndex.new()
 var _signals: TrafficSignals
 ## A day only ends once, so a second car cannot claim the same run.
 var _struck := false
+## `DevFlags.skip_motion()`, read once in `setup()` — a test sets this directly to check the skip
+## without a real `--skip` flag behind it. `_physics_process` returns before the signals advance
+## while it is set, so nothing the crowd ticks (the signals, the pockets, the traffic spacing, the
+## index, the junctions, the gates, the doors, the player's own make-way and bump scan, the strike
+## and the horn) runs. `step()`, the rig's own frame, is left alone: a rig asked to walk the crowd
+## walks it.
+var _skip_motion := false
 ## Today's checkpoint gates — `RegionPlanner.GateState`, set once a day by `main._start_day()` from
 ## `City.region_plan().gates`. Empty on any day before the wall stands, or in a rig with no city
 ## behind it. See `_stop_for_gates()`.
@@ -88,6 +95,7 @@ func setup(city: City, map: CityMap) -> void:
 	_signals = city.signals
 	_field = CrowdField.new(map, map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, map.size)).get_center())
+	_skip_motion = DevFlags.skip_motion()
 
 ## Clears yesterday's crowd and populates today's. The population is fixed for the day and
 ## comes from the act, not the day: the streets thin out as the occupation settles in, and
@@ -623,6 +631,12 @@ func _is_to_the_right_of(a: CrowdAgent, b: CrowdAgent) -> bool:
 # shape and cost as the `total_excitement_at` the baby already runs every physics frame.
 
 func _physics_process(delta: float) -> void:
+	# `--skip motion`'s own probe (docs/DECISIONS.md, M140, "the crowd's scripts parked"): returns
+	# before the signals advance, so nothing below runs this frame — every agent's own `_process`
+	# is gated the same way (`CrowdAgent._skip_motion`), and `start_day` still placed the whole
+	# population, so the street stands full of standing people and parked cars.
+	if _skip_motion:
+		return
 	if _signals:
 		_signals.advance(delta)
 	# A no-op on every frame but the one after a seal moves — see `CrowdPockets.refresh()`. Beside
