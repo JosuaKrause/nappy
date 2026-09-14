@@ -35,6 +35,7 @@ func run(t) -> void:
 	_test_select_sources_takes_a_mixed_candidate_set(t)
 	_test_process_picks_the_same_sources_the_linear_scan_did(t)
 	_test_event_instance_contribution_is_cached_per_frame_per_position(t)
+	_test_finishing_outside_process_invalidates_the_contribution_cache(t)
 	_test_a_cat_dash_is_selected_and_lands(t)
 	_test_a_flock_is_selected_and_lands(t)
 	_test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t)
@@ -394,6 +395,41 @@ func _test_event_instance_contribution_is_cached_per_frame_per_position(t) -> vo
 	t.check(is_zero_approx(instance.contribution_at(Vector2(10.0, 0.0))),
 			"a new frame recomputes rather than serving last frame's cached contribution")
 	instance.free()
+
+## The CI failure this guards against, reproduced directly: `EventManager.retire()` and
+## `.silence_city_wide()` (the resistance's own masts going quiet on the last walk home) both call
+## `_finish()` straight from outside, with no `_process()` tick of the instance's own in between --
+## so `age` never moves, and a cache keyed only on `(age, world_position)` went on answering the
+## pre-finish contribution for the rest of that tick. `_be_done()`'s `is_leaving = true` branch is
+## the other half of the same guard `contribution_at()`'s early return reads, and gets the same
+## check.
+func _test_finishing_outside_process_invalidates_the_contribution_cache(t) -> void:
+	var def := _def("mast", 40.0)
+	def.city_wide = true
+	var instance := _instance_at(def, Vector2(400.0, 400.0))
+	var somewhere := Vector2(9000.0, 9000.0)
+	t.check(instance.contribution_at(somewhere) > 0.0,
+			"a live city-wide source reaches anywhere in the city, which the cache now holds")
+
+	instance._finish() # the exact call EventManager.retire()/silence_city_wide() makes
+	t.close_to(instance.contribution_at(somewhere), 0.0,
+			"finishing outside _process() invalidates the cache rather than leaving the pre-" +
+			"finish answer standing for the rest of the tick (this is the resistance's masts " +
+			"going quiet, tests/test_resistance.gd's own scenario)")
+	instance.free()
+
+	# The other flag `contribution_at()`'s early return reads, forced the same way `_be_done()`
+	# forces it when a mobile row has somewhere to go.
+	var leaving_def := _def("leaving", 40.0, 40.0, 400.0)
+	leaving_def.departs_at = 10.0 # departure_speed() > 0, so _be_done() takes the leaving branch
+	var leaving := _instance_at(leaving_def, Vector2.ZERO)
+	t.check(leaving.contribution_at(Vector2(10.0, 0.0)) > 0.0,
+			"a live row reaches a point inside its own field, which the cache now holds")
+	leaving._be_done()
+	t.check(leaving.is_leaving, "departure_speed > 0 takes the leaving branch, not straight to finished")
+	t.close_to(leaving.contribution_at(Vector2(10.0, 0.0)), 0.0,
+			"is_leaving flipping outside _process() invalidates the cache the same way finishing does")
+	leaving.free()
 
 # ------------------------------------------------------------ two rows that read as nothing ---
 # *(Playtest 38, finding 1: "cats and birds have zero effect right now according to halos".)*
