@@ -11,7 +11,11 @@ tests membership of the picked set through a dictionary keyed by the objects rat
 linear `in` over up to eight picks for each of ~275 candidates. `EventInstance.contribution_at()`
 caches its plain answer once per age and position, the shape `_caret_strength()` already
 documents, so the baby's physics-rate sweep and the halo's frame-rate sweep share one evaluation
-per event. `DangerEdge._measure()` mutates its per-instance entries in place with a generation
+per event — and is invalidated the instant `_finish()` or the leaving branch sets its flag,
+because `EventManager.retire()` and `silence_city_wide()` set those from outside the instance's
+own tick, so age and position alone left the sabotage's mast answering its live value on the
+frame it was silenced; two resistance checks caught it on CI and the case is pinned beside the
+cache test. `DangerEdge._measure()` mutates its per-instance entries in place with a generation
 stamp and erases the departed in one sweep instead of allocating a dictionary per instance per
 frame. `DebugLayers` asks for a redraw only when a layer is on and collects collision nodes into
 one caller-owned array rather than merging a fresh array up from every recursion level; the
