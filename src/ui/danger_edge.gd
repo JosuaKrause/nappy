@@ -82,10 +82,16 @@ var rotated := false
 
 var _events: EventManager
 var _player: Node2D
-## Per live instance: where it was last frame, its smoothed approach speed, and how long its
-## badge is still owed. Keyed by instance id and rebuilt every frame, so an event that streams
-## out takes its state with it.
+## Per live instance: where it was last frame, its smoothed approach speed, how long its badge is
+## still owed, and the generation it was last touched on. Keyed by instance id and mutated in
+## place — see `_measure()` — so an event that streams out drops out of this the frame after it
+## stops appearing in `_events.instances()`, rather than every entry being torn down and rebuilt
+## fresh regardless of whether anything about it changed.
 var _watch := {}
+## Bumped once per `_measure()` call, so a stale entry (an id `_events.instances()` no longer
+## carries) can be told apart from one just touched this frame without a second Dictionary built
+## purely to remember who was seen.
+var _watch_generation := 0
 ## What `_draw` should put on the edge this frame, soonest arrival first:
 ## `[time_to_reach, distance, instance, approach]`.
 var _coming: Array = []
@@ -109,14 +115,19 @@ func _measure(delta: float) -> void:
 	if not _events or not _player or delta <= 0.0:
 		return
 	var here := _player.global_position
-	var next := {}
+	_watch_generation += 1
 
 	for instance in _events.instances():
 		if instance.is_finished or instance.def.city_wide:
 			continue
 		var id := instance.get_instance_id()
 		var at := instance.global_position
-		var state: Dictionary = _watch.get(id, {"was": at, "approach": 0.0, "hold": 0.0})
+		var state: Dictionary
+		if _watch.has(id):
+			state = _watch[id]
+		else:
+			state = {"was": at, "approach": 0.0, "hold": 0.0}
+			_watch[id] = state
 		# The event's own approach: how much closer *it* got to where she is standing now. Both
 		# distances are measured to the same point, so her own walking cancels out of it.
 		var raw := approach_speed(state["was"], at, here, delta)
@@ -135,7 +146,12 @@ func _measure(delta: float) -> void:
 			hold = HOLD
 		else:
 			hold = maxf(0.0, hold - delta)
-		next[id] = {"was": at, "approach": approach, "hold": hold}
+		# Mutated in place rather than replaced — `state` is the same `Dictionary` `_watch[id]`
+		# already holds, so this is the only write this entry needs this frame.
+		state["was"] = at
+		state["approach"] = approach
+		state["hold"] = hold
+		state["generation"] = _watch_generation
 		# Coming on screen is not a lapse in the condition to be held through — it is the badge's
 		# job being done by the thing itself — so it is filtered here, after the hold and not
 		# inside it.
@@ -144,9 +160,14 @@ func _measure(delta: float) -> void:
 			# `MOST_AT_ONCE` is choosing between: three badges is a warning and the one worth
 			# keeping is the one that gets here first, which a slow thing standing closer is not.
 			_coming.append([gap / maxf(approach, 1.0), distance, instance, approach])
-	# Only the instances alive this frame carry state forward, which is also what keeps a freshly
-	# streamed event from flashing an arrow on the frame it appears: it has no `was` but its own.
-	_watch = next
+	# Only the instances alive this frame carry state forward. An id `_events.instances()` no
+	# longer carries was never touched above, so its `generation` still reads an earlier one and
+	# is erased here — which is also what keeps a freshly streamed event from flashing an arrow on
+	# the frame it appears: it has no `was` but its own, the same as when `_watch` used to be
+	# rebuilt whole every frame.
+	for id in _watch.keys():
+		if _watch[id]["generation"] != _watch_generation:
+			_watch.erase(id)
 	_coming.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
 
 ## How fast something at `was`, now at `now`, is closing on a player standing at `player`.

@@ -47,6 +47,13 @@ const CELL := 2
 ## id. Comfortably above any node id or flat tile index this project's map sizes produce.
 const _TILE_KEY_OFFSET := 1 << 24
 const NONE := -1
+## Where `flood()` stashes the dirty-cell set it already built inside the `reached` `Dictionary` it
+## returns — see `reaches()`. Below every real key `reached` otherwise carries (a node id or a
+## `_TILE_KEY_OFFSET`-based tile key, both `>= 0`), so it can never collide with one.
+const _DIRTY_KEY := -2
+## The four axis steps `_neighbours_of_key()` walks a dirty tile's neighbours by — a `const` so the
+## array is built once rather than as a fresh literal on every call.
+const _NEIGHBOUR_STEPS: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]
 
 var _map_size := Vector2i.ZERO
 var _cells := Vector2i.ZERO
@@ -182,8 +189,15 @@ func neighbours(node: int) -> Array:
 
 # ---------------------------------------------------------------------- queries ---
 
+## `>> 1` rather than `tile / CELL`: plain integer division truncates toward zero, which disagrees
+## with `floori(float(x) / CELL)` for a negative coordinate exactly at `-1` (truncates to cell `0`;
+## floors to cell `-1`) — and `_dirty_cells()` calls this on a caller's raw `blocked` tiles, which
+## are not guaranteed in-bounds the way a tile that already survived `node_at()` is. A bitwise
+## shift is an exact floor division for any integer, tied to `CELL` being a power of two the way
+## every other constant in this file (`_SLOT_OFFSET`'s four entries, the sixteen masks) is already
+## tied to `CELL == 2`.
 func _cell_of_tile(tile: Vector2i) -> Vector2i:
-	return Vector2i(floori(float(tile.x) / CELL), floori(float(tile.y) / CELL))
+	return Vector2i(tile.x >> 1, tile.y >> 1)
 
 func _dirty_cells(blocked: Dictionary) -> Dictionary:
 	var dirty := {}
@@ -210,7 +224,7 @@ func _neighbours_of_key(key: int, blocked: Dictionary, dirty: Dictionary) -> Arr
 	if key >= _TILE_KEY_OFFSET:
 		var flat := key - _TILE_KEY_OFFSET
 		var tile := Vector2i(flat % _map_size.x, flat / _map_size.x)
-		for offset in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+		for offset in _NEIGHBOUR_STEPS:
 			var neighbour := _key_of(tile + offset, blocked, dirty)
 			if neighbour != NONE:
 				found.append(neighbour)
@@ -229,6 +243,12 @@ func _neighbours_of_key(key: int, blocked: Dictionary, dirty: Dictionary) -> Arr
 ## `blocked` is on top of the day's own walkable tiles, never instead of them — a closure's
 ## barrier, an event's obstruction circle, whatever the caller is asking "what if this were gone"
 ## about.
+##
+## **Carries its own dirty-cell set home with it**, stashed under `_DIRTY_KEY` — see `reaches()`,
+## which used to recompute `_dirty_cells(blocked)` from scratch on every single call even though
+## every caller (`ClosurePlanner._area_is_reached`, `CityMap`'s closed-street check,
+## `EventScheduler`) loops it with the exact `blocked` set already given here. `_DIRTY_KEY` is
+## negative, so it can never collide with a real node id or tile key, both of which are `>= 0`.
 func flood(sources: Array, blocked: Dictionary = {}) -> Dictionary:
 	var dirty := _dirty_cells(blocked)
 	var reached := {}
@@ -246,10 +266,15 @@ func flood(sources: Array, blocked: Dictionary = {}) -> Dictionary:
 			if not reached.has(neighbour):
 				reached[neighbour] = true
 				queue.append(neighbour)
+	reached[_DIRTY_KEY] = dirty
 	return reached
 
 ## Whether `tile` is in a `reached` set `flood()` returned for the **same** `blocked` dictionary.
+## Reads the dirty-cell set `flood()` already computed and stashed in `reached` rather than
+## recomputing `_dirty_cells(blocked)` again — the whole point of a caller being required to pass
+## back the same `blocked` it flooded with is that the two can never disagree, so there is nothing
+## a fresh computation here could catch that trusting `reached`'s own could not.
 func reaches(tile: Vector2i, blocked: Dictionary, reached: Dictionary) -> bool:
-	var dirty := _dirty_cells(blocked)
+	var dirty: Dictionary = reached.get(_DIRTY_KEY, {})
 	var key := _key_of(tile, blocked, dirty)
 	return key != NONE and reached.has(key)
