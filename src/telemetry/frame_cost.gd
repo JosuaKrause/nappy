@@ -49,9 +49,9 @@ static func readout_lines() -> Array[String]:
 		"draws       %6d" % draw_calls(),
 		"objects     %6d" % objects(),
 		"primitives  %6d" % primitives(),
-		"process     last %6.2f  mean %6.2f  max %6.2f ms" % [
+		"process     last %5.1f  mean %5.1f  max %5.1f ms" % [
 			process_last, process_mean_ms(), process_max_ms()],
-		"physics     last %6.2f  mean %6.2f  max %6.2f ms" % [
+		"physics     last %5.1f  mean %5.1f  max %5.1f ms" % [
 			physics_last, physics_mean_ms(), physics_max_ms()],
 	]
 
