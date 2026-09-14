@@ -143,6 +143,10 @@ item below for as long as looking takes.
   rig on a perform step). Whichever yeller she reaches first is the contact; the robber the day
   seeded guards only the yeller it was seeded beside. Does handing the note to the first one
   read as intended, and does an unguarded contact read as too cheap? Same record.
+- **Open the live page with `?debug=1` on the phone.** "DEBUG MODE ON" sits top-left from the
+  title screen on and the readout draws top-right once a run starts; nothing removes the note.
+  Is the note legible on a phone without covering anything that matters, and is the readout
+  readable enough there to take M124's six numbers off it? Record is `DECISIONS.md`, M133.
 - **Watch a car about-face into a street with a queue in it.** The lane holds a gap for the
   car that is coming and the arrival gives way if the gap has closed, so nobody already in the
   lane should jump. Does the merge read as traffic making room, or as the turning car waiting for
