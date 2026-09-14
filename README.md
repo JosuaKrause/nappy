@@ -101,7 +101,7 @@ going quietly stale.
 | `--tap X Y` | Send one synthetic touch at the raw screen position (X, Y), the moment the run starts |
 | `--touch` | Force the touch control scheme, for a desktop screenshot of it |
 | `--controls joystick\|tap` | Force a control scheme, the command-line half of the page's own `?controls=` |
-| `--layers 1,3` | Set which of the three debug geometry layers start on, for a reproducible rig screenshot |
+| `--layers 1,3,5` | Set which debug geometry layers start on — `1` fields, `2` shadows, `3` bounding boxes, `5` the day's routes — for a reproducible rig screenshot |
 | `--svg` | Force SVG presentation over PNG, even where a matching PNG asset exists (also reachable as a release web build's own `?svg=1`) |
 | `--debug` | Turn the developer readout on, and only the readout, in an exported release build (also reachable as a release web build's own `?debug=1`); no other dev flag or debug layer is reachable this way. A fixed "DEBUG MODE ON" note stays on screen for the whole session, and nothing removes it |
 | `--invincible` | Nothing ends the day — crying and a hard fail leave it running, the clock never moves and the excitement meter never rises; a won day still ends normally. Marked on the HUD and in the run log so no capture from it reads as a real run (also reachable on a debug web build as `?invincible=1`) |
