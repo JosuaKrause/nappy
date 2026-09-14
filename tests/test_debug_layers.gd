@@ -29,6 +29,7 @@ func run(t) -> void:
 	_test_layer_keys_do_nothing_outside_a_debug_build(t)
 	_test_the_bounding_box_layer_draws_every_enabled_body(t)
 	_test_no_redraw_is_wanted_with_every_layer_off(t)
+	_test_a_switch_off_still_owes_one_redraw(t)
 	_test_collect_collision_nodes_into_agrees_with_the_public_wrapper(t)
 
 # ------------------------------------------------------------------ shadow_outline ---
@@ -356,6 +357,22 @@ func _test_no_redraw_is_wanted_with_every_layer_off(t) -> void:
 	t.check(layers._wants_a_redraw(), "any one of the three does, not only the first")
 	layers.bodies_on = false
 	t.check(not layers._wants_a_redraw(), "and back to nothing once every layer is off again")
+	layers.free()
+
+## M142: a retained `_draw()` keeps its last picture until something calls `queue_redraw()` again,
+## so the toggle that turns the last layer off still owes exactly one redraw — the empty one that
+## erases what was on screen. `queue_redraw()` on a node outside the tree is harmless here (the
+## call is a no-op query until the node is inside one), so this test does not need `t.add_child`.
+func _test_a_switch_off_still_owes_one_redraw(t) -> void:
+	var layers := DebugLayers.new()
+	layers.set_layer(2, true)
+	layers.set_layer(2, false)
+	t.check(layers._wants_a_redraw(),
+			"switching the last layer off still owes one redraw, so the last picture does not " +
+			"stay on screen forever")
+	layers._process(0.0)
+	t.check(not layers._wants_a_redraw(),
+			"and _process() clears the owed flag once it has queued that redraw")
 	layers.free()
 
 func _test_collect_collision_nodes_into_agrees_with_the_public_wrapper(t) -> void:
