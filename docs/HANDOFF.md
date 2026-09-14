@@ -287,8 +287,18 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
 - **Everything playtest 69 asked for is built, merged and released**, and so are M124's six
   per-frame audit fixes, M125's crowd-suite split and M135's route lines; each has its record
-  in `DECISIONS.md` and its played questions in `REVIEW.md`. Nothing is in flight: no worktree,
-  no open PR. `git tag --list 'v*'` says what the site serves.
+  in `DECISIONS.md` and its played questions in `REVIEW.md`. `git tag --list 'v*'` says what
+  the site serves.
+- **Several PRs are open and none is merged; `gh pr list` is the truth.** They stack: the
+  build stamp (M136) carries playtest 70 and the phone half of M124; the M124 skip-flag branch
+  is based on it; the playtest 71 decisions branch is based on `main`, and the two agent PRs —
+  M129's reading and flock, and M137's trap — are based on *that* and open against it. Merge
+  in that order, or merge `main` into the later ones under
+  the **merging-main** rules. `git worktree list` shows the agents' worktrees; an agent stopped
+  by a usage limit keeps its worktree, so resume it rather than respawn if its PR is a draft.
+- **The next thing to build is the `skip` flag** (`TODO.md`, M124, "a `skip` flag turns the
+  desktop's probes into something a phone can run"): the player will send phone screenshots
+  against it, so it wants a release once merged, or `tools/serve-web.sh` on the local network.
 - **M129, a path through the city never has to cost, is the next design work and it starts
   with three questions for the player**, in its entry: whether a pacing row denies its whole
   beat or only where the beat never opens, whether a moving row denies its dawn position or its
