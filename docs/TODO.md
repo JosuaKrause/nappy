@@ -361,46 +361,6 @@ walking at any moment of the day meets.
 
 ---
 
-## M134 — A lost day gives the resistance back · asked for 2026-09-13
-
-> "a lost day shouldn't retain the touch mark -- a task is only complete if it is done on the
-> day that won. but also it should reset if lost so the player can try again"
-
-[PLAYTEST-69](playtests/PLAYTEST-69.md), on reading M132's record. *Asked for as "what the run
-has spent stays spent" · overturned for the resistance on 2026-09-13.* The **godot** and
-**verify** rules govern; the resistance director and `GameState` are the files.
-
-**What is true today.** `GameState.finish_day()` on a loss spends a nerve, erases where she
-settled, and keeps everything else: `completed_resistance_steps`, `resistance_progress`,
-`failed_resistance_steps`, `resistance_carrying_package`, `sabotage_done` and the queued
-brief all survive the nerve, and a mark once in `completed_resistance_steps` is never offered
-again, so a mark touched on a lost day is both kept and unrepeatable. The lost day's summary
-reads the queued brief and clears it (`DECISIONS.md`, M132).
-
-- [ ] **Nothing the resistance did on a lost day counts, and the retry offers it again.** At
-      the start of each day `GameState` takes a snapshot of the resistance's run state — the
-      six fields above — and a loss restores it before the retry begins, so a mark touched, a
-      step performed, a contact lost to its deadline, a package picked up or the last night's
-      sabotage on a lost day are all undone, and the same mark or contact is offered on the
-      retry exactly as the day first offered it. A won day commits the snapshot. The rule in
-      `finish_day()`'s docstring gains the resistance as its second exception beside
-      `settled_in`, with the player's sentence as the reason. `tests/test_day_loop.gd` holds
-      it: touch a mark, lose the day, the mark is untouched and on offer again; perform a step,
-      lose, progress is back where it was; win, and both stand.
-- [ ] **A lost day's summary repeats the day's own instruction, never tomorrow's.** *(2026-09-13:
-      "the words shown on the lost day are the words that show at the beginning of that day not
-      the nexts. since day doesn't have words it doesn't make sense to show words on day 4".)*
-      M132's *"it should show also when dying"* means the words she already had: a lost
-      summary shows the brief of the perform step that was on offer when the day began — the
-      same words the previous won summary read — so the retry is reminded what the day is for,
-      and it shows nothing when no step was on offer, which is every lost day 4. A mark touched
-      on the lost day itself has its touch taken back by the first item, so its words are not
-      shown until the touch that counts; a won summary reads the newly queued brief as today.
-      `tests/test_day_loop.gd` holds both: a lost day 5 with the note's step on offer shows the
-      day-4 mark's words, a lost day 4 with a mark touched shows none.
-
----
-
 ## M124 — The game on a phone, measured and then made cheaper · asked for 2026-09-13
 
 > "I played a few sessions on mobile. It is a bit laggy now. Are we using proper texture atlases
