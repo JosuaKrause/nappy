@@ -399,22 +399,26 @@ when she comes within its `pursues_within`; a contact she hands over anywhere el
       walks a rig within reach of one look-alike, out again, and onto a second, and asserts the
       step completes on the second — what the code already does and nothing pins.
 - [ ] **The trap comes to her.** On a perform step, no robber is seeded at dawn. At the moment
-      the note is handed over, `spawn_extra` puts an `alley_robbery` on walkable ground outside
-      the view rect (`set_sight`'s own callable, or the stream radius M131 measured, says what
-      off screen is) already awake and pursuing, so he runs at her from off screen. He obeys the
-      row's own numbers — `pursues_within` is the wake, not the spawn, so spawn distance is a
-      new number the **balance** rule owns — and the telegraph contract: the screen-edge badge
-      and the caret answer him the way they answer any pursuer, so the player has the reaction
-      time the contract promises. A chalk mark's guard is unchanged: this entry is about the
-      perform step's contact, which is what the player named; say so in the record if a chalk
-      mark's trap should follow.
+      the note is handed over, `spawn_extra` puts a robber on walkable ground outside the view
+      rect (`set_sight`'s own callable, or the stream radius M131 measured, says what off screen
+      is) already awake and pursuing, so he runs at her from off screen. **He is his own
+      catalogue row, not an `alley_robbery` woken by hand.** *(2026-09-13: "we need a version of
+      the robber that is not frozen when spawned.")* `alley_robbery` is `is_waiting()` from the
+      frame it spawns — `pursues_within > 0` and no notice yet — and the new row is never
+      waiting: awake from its first frame, telegraph included, the same body, speed, lethal
+      reach and picture as the alley robber, `hard_fail` like him, and spawned only by the
+      director — never placed, budgeted or streamed by the scheduler, so `EventDef.validate()`
+      and the catalogue's placement pool are told so. He obeys the row's own numbers — spawn
+      distance is a new number the **balance** rule owns — and the telegraph contract: the
+      screen-edge badge and the caret answer him the way they answer any pursuer, so the player
+      has the reaction time the contract promises. A chalk mark's guard is unchanged: this entry
+      is about the perform step's contact, which is what the player named; say so in the record
+      if a chalk mark's trap should follow.
 
       **What an agent's reading of the code found before it was stopped, unverified by any
-      rig.** A fresh `spawn_extra` robber is `is_waiting()` — `pursues_within > 0` and no
-      notice yet — so spawned off screen he would stand frozen; `EventInstance.resume(age,
-      travelled, noticed_at)`, already public and used by the stream-in path, with small
-      positive `age` and `noticed_at` takes him out of waiting without touching `chase_age()`
-      or the path advance he does not have. Once noticed, `_chase()` moves him at
+      rig.** The stream-in path's `EventInstance.resume(age, travelled, noticed_at)` would take
+      an alley robber out of waiting, which is the by-hand wake the player refused; the new row
+      says it in the definition instead. Once noticed, `_chase()` moves him at
       `pursue_speed` (130 px/s) from the first frame — the row does not set
       `still_while_telegraphing` — holding at the standoff until his 1.8 s telegraph ends, so
       `DangerEdge` already arrows any `hard_fail` row and announces him on the first closing

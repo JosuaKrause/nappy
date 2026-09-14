@@ -55,3 +55,10 @@ dawn — which M132 left guarding only that one — the robber spawns off screen
 at the moment she hands the note over, and runs at her. *The trap guards the seeded yeller
 only · overturned.* Built as M137, the trap comes to her; the `REVIEW.md` item that asked
 whether an unguarded contact reads as too cheap closes on this decision.
+
+> "we need a version of the robber that is not frozen when spawned"
+
+On being told that an alley robber stands waiting from the frame he spawns until he notices
+her, so one spawned off screen would stand frozen unless woken by hand: the robber of the trap
+is his own catalogue row, awake from its first frame by definition, not an alley robber with
+his wait undone after the fact. Under M137 in `TODO.md`.
