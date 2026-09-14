@@ -187,7 +187,7 @@ what would make it a run's ending rather than a flag's. The record of what was b
 
 **[PLAYTEST-50.md](playtests/PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
-touch that shows only a colour change and no confirmation on a lost day's summary. The artwork
+touch that shows only a colour change at the moment it happens. The artwork
 review and the player's directional corrections are recorded in `DECISIONS.md`.
 
 **[PLAYTEST-49.md](playtests/PLAYTEST-49.md) is the session before it and it is the prioritisation above**, plus
@@ -353,36 +353,43 @@ cells can already cut a corner through a park or an alley.
 
 ---
 
-## M130 — An eastbound car sits south of its halo · asked for 2026-09-13
+## M134 — A lost day gives the resistance back · asked for 2026-09-13
 
-> "just confirmed on current mobile a car going west to east that is offset by a few pixel
-> south and the halo is at the regular position"
+> "a lost day shouldn't retain the touch mark -- a task is only complete if it is done on the
+> day that won. but also it should reset if lost so the player can try again"
 
-[PLAYTEST-69](playtests/PLAYTEST-69.md), on v0.10.0; the sighting M123 closed on waiting for
-(`DECISIONS.md`, M123). The **cues**, **crowd-traffic** and **svg-art** or **illustrated-png**
-rules govern, depending on where it lands.
+[PLAYTEST-69](playtests/PLAYTEST-69.md), on reading M132's record. *Asked for as "what the run
+has spent stays spent" · overturned for the resistance on 2026-09-13.* The **godot** and
+**verify** rules govern; the resistance director and `GameState` are the files.
 
-**What is true today.** `CrowdAgent._car_body_anchor()` registers every car view by one rule
-read off the live heading: the drawn content's bottom edge lands on the strike box's
-southernmost point, `26·|heading.y| + 14·|heading.x|`, plus that canvas's bottom alpha margin
-(`CAR_CANVAS_BOTTOM_MARGIN`), which put east- and west-bound pictures 14px further south than
-before M121 and was recorded as open to the player's eye. `EntityHalo` re-traces its owner's
-body every frame by calling the owner's body drawing, so its rim is meant to follow whatever
-anchor the picture uses. The phone runs the release build with the PNG transfers; the desktop
-debug build does too unless `--svg`.
+**What is true today.** `GameState.finish_day()` on a loss spends a nerve, erases where she
+settled, and keeps everything else: `completed_resistance_steps`, `resistance_progress`,
+`failed_resistance_steps`, `resistance_carrying_package`, `sabotage_done` and the queued
+brief all survive the nerve, and a mark once in `completed_resistance_steps` is never offered
+again, so a mark touched on a lost day is both kept and unrepeatable. The lost day's summary
+reads the queued brief and clears it (`DECISIONS.md`, M132).
 
-- [ ] **Find which of the two is at the wrong place, and make them one.** Three suspects, each
-      answered by a burst of an eastbound car under a halo with the bodies layer on (`3`), taken
-      with and without `--svg`: the halo's trace does not go through `_car_body_anchor()` for
-      the side view, so the rim sits at the pre-M121 position while the picture moved; the
-      side-view PNG's bottom alpha margin differs from its SVG's, so `CAR_CANVAS_BOTTOM_MARGIN`
-      registers the transfer a few pixels off where the SVG lands, which is why the desktop
-      captures under `--svg` looked right; or the 14px registration to the strike box is itself
-      the wrong datum for the side view and the halo, traced from the body, is right. The fix
-      follows the finding: one anchor both the picture and the rim read, or a per-texture
-      margin read off the texture rather than a constant. `tests/test_car_views.gd` holds that
-      the traced rim's bounds and the drawn picture's bounds agree for every view, with the PNG
-      and the SVG both.
+- [ ] **Nothing the resistance did on a lost day counts, and the retry offers it again.** At
+      the start of each day `GameState` takes a snapshot of the resistance's run state — the
+      six fields above — and a loss restores it before the retry begins, so a mark touched, a
+      step performed, a contact lost to its deadline, a package picked up or the last night's
+      sabotage on a lost day are all undone, and the same mark or contact is offered on the
+      retry exactly as the day first offered it. A won day commits the snapshot. The rule in
+      `finish_day()`'s docstring gains the resistance as its second exception beside
+      `settled_in`, with the player's sentence as the reason. `tests/test_day_loop.gd` holds
+      it: touch a mark, lose the day, the mark is untouched and on offer again; perform a step,
+      lose, progress is back where it was; win, and both stand.
+- [ ] **A lost day's summary repeats the day's own instruction, never tomorrow's.** *(2026-09-13:
+      "the words shown on the lost day are the words that show at the beginning of that day not
+      the nexts. since day doesn't have words it doesn't make sense to show words on day 4".)*
+      M132's *"it should show also when dying"* means the words she already had: a lost
+      summary shows the brief of the perform step that was on offer when the day began — the
+      same words the previous won summary read — so the retry is reminded what the day is for,
+      and it shows nothing when no step was on offer, which is every lost day 4. A mark touched
+      on the lost day itself has its touch taken back by the first item, so its words are not
+      shown until the touch that counts; a won summary reads the newly queued brief as today.
+      `tests/test_day_loop.gd` holds both: a lost day 5 with the note's step on offer shows the
+      day-4 mark's words, a lost day 4 with a mark touched shows none.
 
 ---
 
@@ -405,11 +412,13 @@ run-to-run noise and are struck. Everything under `assets/` is still an individu
 texture and nothing is atlased, which is the answer to the player's question; whether that
 matters is a phone's question, not a desktop's.
 
-- [ ] **The phone half of the measurement.** The same six numbers off a phone: `tools/serve-web.sh`
-      serves a debug web build on the local network, the readout is on by default there, and a
-      screenshot of it standing on any day-1 street beside the desktop's is the comparison
-      (`?telemetry=1` writes the `frame` line into the browser's own storage and nothing collects
-      it back, so the screen is the instrument). If the phone's draw calls and primitives match
+- [ ] **The phone half of the measurement.** The same six numbers off a phone: the live page
+      with `?debug=1` shows the readout on a release build (`DECISIONS.md`, M133), so a
+      screenshot of it standing on any day-1 street beside the desktop's is the comparison, on
+      the build a player actually gets (`?telemetry=1` writes the `frame` line into the
+      browser's own storage and nothing collects it back, so the screen is the instrument;
+      `tools/serve-web.sh` still serves a debug export on the local network for an unreleased
+      tree). If the phone's draw calls and primitives match
       the desktop's and only its frame rate does not, the cost is fill rate or resolution and no
       batching touches it; the table goes to `DECISIONS.md` under M124 either way.
 - [ ] **Atlases, only if the phone says texture switches are the cost.** The desktop says they
@@ -665,13 +674,17 @@ is still true.
       huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard
       stepping to the arm, or the boom stops being a detaining body and the huts alone are the
       toll, with the boom's picture still barring the lanes for the cars. The player's call
-- [ ] **A rig cannot be spawned at a row the day's plan never holds.** `--spawn event:<id>`
-      reads `DevRig.first_event_position()`, which searches the day's planned placements, so a
-      row placed ahead of the player at run time (`pigeon_flock`, anything `AHEAD_OF_PLAYER`)
-      is never found and the flag silently falls back. Found capturing M121 (`DECISIONS.md`,
-      M121, what the captures could not catch): a flock under a halo could not be photographed.
-      Either the flag refuses such a row by name, or it stands her where the row would first
-      trigger; the **cli-tools** rule wants the refusal at least
+- [ ] **A rig cannot be spawned at a row the day's plan never holds, and cannot stand outside
+      a waiting one.** `--spawn event:<id>` reads `DevRig.first_event_position()`, which
+      searches the day's planned placements, so a queue-fed row (`cat_dash`, `cyclist`,
+      `loose_dog`, the day-3 `charging_dog`, anything `AHEAD_OF_PLAYER` or `TOWARD_PLAYER`) is
+      never found and the flag silently falls back. Found capturing M121 (`DECISIONS.md`,
+      M121, what the captures could not catch); the flock is map-placed now and can be found
+      (`DECISIONS.md`, M131). Either the flag refuses such a row by name, or it stands her where
+      the row would first trigger; the **cli-tools** rule wants the refusal at least. And for a
+      row that waits — a flock, an alley robbery — `first_event_position()` stands her *inside*
+      the trigger, so no rig can photograph the silence before it; a `--spawn` that lands her
+      just outside the trigger is the other half of this item
 - [ ] **`Crowd.step()` and `Crowd._physics_process()` duplicate four lines in two orders.**
       `src/crowd/crowd.gd:230-237` (`step`) and `:625-638` (`_physics_process`) both open with
       `_signals.advance` → `_pockets.refresh` → `space_out_the_traffic` →
@@ -739,20 +752,19 @@ re-pitched:
 
 **Open design questions**, each answered by a played run rather than by more arithmetic:
 
-- [ ] **A touch on a chalk mark shows nothing at the moment but a colour change, and nothing at
-      all if the day is then lost.** *(2026-09-09, playtest 50: "how do I know I stepped on the
-      chalk", then "I walked over the chalk why didn't it count?" — it had.)* A touch turns the
-      mark from chalk white to pale green (`Palette.CHALK` to `CHALK_DONE`) under her feet; the
-      `resistance ....` dots are performs only, so a pick-up moves none; and the mark's own words
-      (`GameState.pending_resistance_brief`) are appended by `DaySummary._resistance_line()` on
-      the **won** branch of the summary only, so a mark touched on a day she then loses says
-      nothing until the end of the next won day, while the touch itself survives the nerve. The
-      design's own rule is no quest log — *the first encounter comes with no hint at all* — so how
-      much a touch may say is the player's call: nothing more; the mark's colour made
-      unmistakable; the brief shown on a lost day's summary too; or a one-line status change on
-      the pick-up itself. PLAYTEST-53 requests a distinct touched-mark SVG for review: she adds
-      something to the existing mark to indicate she has seen it. `chalk_mark_touched.svg`
-      prepares that acknowledgement; selecting and binding the feedback remains here
+- [ ] **A touch on a chalk mark shows nothing at the moment but a colour change.** *(2026-09-09,
+      playtest 50: "how do I know I stepped on the chalk", then "I walked over the chalk why
+      didn't it count?" — it had.)* A touch turns the mark from chalk white to pale green
+      (`Palette.CHALK` to `CHALK_DONE`) under her feet, and the `resistance ....` dots are
+      performs only, so a pick-up moves none. The mark's own words now reach her on that day's
+      summary whether it was won or lost, in their own larger line (`DECISIONS.md`, M132), so
+      what is left open is the moment of the touch itself. The design's own rule is no quest log
+      — *the first encounter comes with no hint at all* — so how much a touch may say is the
+      player's call: nothing more; the mark's colour made unmistakable; or a one-line status
+      change on the pick-up itself. PLAYTEST-53 requests a distinct touched-mark SVG for review:
+      she adds something to the existing mark to indicate she has seen it.
+      `chalk_mark_touched.svg` prepares that acknowledgement; selecting and binding the feedback
+      remains here
 - [ ] **Three cues on one screen needed asking about, and an alley read as a roof.** *(2026-09-09,
       playtest 50: "what is shown here?", and "the robber is stuck inside the roof" of a robber
       standing beside an alley.)* The baby's unsettled cue over the pram, the alert over her and a

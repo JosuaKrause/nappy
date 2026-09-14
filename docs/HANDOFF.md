@@ -91,10 +91,12 @@ so `git status` after an export is still the rule there.
 
 **The game is published, and a push is a check while a tag is a release.**
 `https://nappy.josuakrause.com/` serves it. `.github/workflows/ci.yml` runs lint, check and the full
-suite on every push and every pull request; `.github/workflows/deploy.yml` fires on a `v*` tag and
-nothing else — gate, export, upload, publish, in that order, so a red build never reaches the site.
-It re-runs the gate rather than trusting CI, because both workflows fire on the same push and neither
-waits for the other, and because a tag can point at any commit.
+suite as eight shards on every push to `main` and every pull request; `.github/workflows/deploy.yml`
+fires on a `v*` tag and nothing else — verify, boot check, export, upload, publish, in that order.
+**The deploy does not run the suite again.** The `version tags` ruleset requires the `test` check
+on the commit a tag points at, so a tag on a red or untested commit cannot be pushed, and the
+deploy's first job asks the API for that check's outcome and refuses to build without it — the
+same read `tools/release.sh` waits on before it tags.
 
 **Cut a release with `tools/release.sh <major|minor|patch>`**, which reads the latest version tag and
 prints what it would do. It only acts when given a second literal `push` argument, and it refuses a
@@ -279,25 +281,30 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
 ## Where the last session stopped, 2026-09-13
 
-**This section is the pick-up for the next session and is removed by it.** Nothing is in
-flight: no open PR, no worktree, and v0.10.0 is the release on the live page.
+**This section is the pick-up for the next session and is removed by it.** `gh pr list` and
+`git worktree list` are the truth; this is the map.
 
-- **The review questions continue where playtest 68 stopped**, at the player's word *("let's
-  stop with questions for now. We will continue with that later")*. The rule for them is in
+- **The playtest 69 milestones are in flight as one pull request each**, every one in its own
+  worktree under `.claude/worktrees/`, and the player's word on 2026-09-13 is to merge each as
+  it goes green and then **cut a patch release** (`tools/release.sh patch push`). Which are
+  still open is `gh pr list`'s answer, not this file's; a merged one has its record in
+  `DECISIONS.md` and its played questions in `REVIEW.md`. M129, a path through the city never
+  has to cost, is in flight only as far as its probe: its three rules are written against the
+  probe's numbers once those are filed, and the busker's street-side spill (`DECISIONS.md`,
+  M128) is read against them — with a line on the far pavement, a spill onto one side is a
+  price, not a wall.
+- **The review questions continue where playtest 68 stopped.** The rule for them is in
   [PLAYTEST-68.md](playtests/PLAYTEST-68.md): one item at a time with its context and a
   recommendation; an answered item closes on the answer even though later play may overturn it;
-  an unasked item stays. The phone sessions have reached several days of act I, so the act I
-  items in `REVIEW.md` are askable and the day-7-and-later, act III, ending and escape items
-  are not yet.
-- **The player is going to play v0.10.0 with the frame readout**, on the desktop and on the
-  phone through `tools/serve-web.sh`; that is the phone half of M124's measurement, and its
-  entry says what to read off the screen.
+  an unasked item stays. The player has reached day 5 on the desktop and several days of act I
+  on the phone, so the act I items in `REVIEW.md` are askable; day 7 and later, act III, the
+  endings and the escape are not yet.
 - **One question waits under M100's open design questions**, from the audit: whether the crowd
   moves to the physics tick so its right-of-way rules run at the cadence of the motion they
   govern, at the cost of re-measuring the crowd's numbers.
-- **Ready for an agent**: M128, the playground is free and the busker is quieter from the
-  street; M96's dog item, the waiting dog from day 4 with the day-3 charge sprinkled in; M125's
-  four suites over budget; and M124's per-frame audit items.
+- **Next for an agent, at the player's word on 2026-09-13, once the pull requests holding their
+  files have landed**: M125's crowd-suite split and the four suites over the runner's budget,
+  and M124's per-frame audit items.
 
 ## The queue, as prioritised on 2026-09-09
 

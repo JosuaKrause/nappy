@@ -103,9 +103,11 @@ which is not an unfair event, it is an event that has quietly been switched off,
 draws a blocking object at exactly the width it obstructs for the same reason in the other
 direction.
 
-Three exemptions, each written down in `docs/EVENTS.md`, "Solid things are solid": anything
-**mobile** (a moving wall pins her), anything `AHEAD_OF_PLAYER` (`validate()` refuses it), and
-anything with no silhouette. `tests/test_events.gd` requires everything else to have one.
+Four exemptions, each written down in `docs/EVENTS.md`, "Solid things are solid": anything
+**mobile** (a moving wall pins her), anything `AHEAD_OF_PLAYER` (`validate()` refuses it), anything
+with no silhouette, and a **flock** (`validate()` refuses that too — several bodies wheeling inside
+one disc have no silhouette to be half of, and being walked into is the event).
+`tests/test_events.gd` requires everything else to have one.
 
 **A body is a route cost, not a closure.** `Tuning.OBSTRUCTION_A_PARK_CAN_HOLD` (16.0px) is the
 `obstructs_radius` a spoiler may carry and still count as something a park can hold — a body you can
@@ -144,16 +146,27 @@ placement (`EventDef.spawn_mode_on(day)` answers `MAP` past `spawn_mode_switches
 still charges the moment it streams in. `EventDef.pursues_within` is the other shape: a thing
 that is *somewhere*, that can be seen and priced and routed around, and that becomes a chase if she
 walks up to it. **The field is wider than its name**: a row with `pursues_within` and no `pursues`
-waits the same way, unclocked and still, and then runs its own path instead of turning to follow
-her — `alley_mouse` is that row, and it exists because a map placement's clock otherwise starts
-at the stream radius, 900px out, so a short dash would be over before it was on screen. Two things
-about the waiting state are easy to get backwards:
+waits the same way, unclocked and still, and then runs its own event instead of turning to follow
+her — `alley_mouse` and `pigeon_flock` are those rows, and the field exists because a map
+placement's clock otherwise starts at the stream radius, 900px out, so a short dash or a burst
+would be over before it was on screen. **It is also how a row that must be seen before it happens
+gets to be a place at all**: the flock is on its tile and pecking from the moment it streams in,
+which is what `AHEAD_OF_PLAYER` cannot give anything — a fixed lead in front of her is inside the
+view on a sideways heading, and eleven birds arriving there is a patch of pavement nobody could
+have planned around. Three things about the waiting state are easy to get backwards:
 
 - **The clock starts when it notices her**, not when the day put it there. A telegraph that ran at
   dawn four streets away arrives with no notice in it at all.
 - **Its notice does not damp what it emits.** `TELEGRAPH_INTENSITY_FRACTION` means *this has not
   started yet*; a man standing in that alley has started, and what has not started is the lunge. It
-  is the one telegraph in the game that does not quieten the thing it is warning about.
+  is the one telegraph in the game that does not quieten the thing it is warning about — unless the
+  row sets `quiet_until_noticed`, which is the honest answer where the waiting thing genuinely is
+  nearly nothing: birds pecking are not a flock going up, and without the flag one that nobody has
+  walked up to yet charges its full rate all morning.
+- **Whatever draws it has to know about the wait as well as the telegraph.** `is_waiting()` and
+  `is_telegraphing()` are both false in the other's phase, so a picture that asks only the second
+  question holds its whole wait in the wrong posture — the flock's birds flying in place over a
+  pavement for as long as it takes her to walk up to them.
 
 **A fairness contract stated in seconds is not stated at all.** When a contract is about a moving
 encounter, **state it over distance and check it by walking**, not by asserting the numbers it was

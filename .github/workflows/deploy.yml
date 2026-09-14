@@ -14,9 +14,11 @@ on:
     tags: ['v*']
 
 # The two permissions actions/deploy-pages needs; contents: read is the checkout's own default
-# made explicit rather than inherited.
+# made explicit rather than inherited; checks: read is what `verify` needs to ask the API how
+# the tagged commit's `test` check went.
 permissions:
   contents: read
+  checks: read
   pages: write
   id-token: write
 
@@ -30,7 +32,51 @@ env:
   GODOT_VERSION: 4.7.2
 
 jobs:
+  # **The suite is not run again here; the tagged commit's own `test` check is what gates the
+  # deploy.** `ci.yml` runs the full suite on every push to `main` and every pull request and
+  # registers a check named `test` on the commit. Actions has no `needs` across workflows, so
+  # this job is that dependency: it asks the API for every check run named `test` on the tagged
+  # commit, waits while one is still running, and fails the deploy unless all of them completed
+  # well -- `build` cannot start without it. A commit can carry more than one such run (a push
+  # run and a pull-request run), and "none" is a failure too: a tag on a commit CI never saw is
+  # not deployed. The `version tags` ruleset requires the same check before a `v*` tag can be
+  # pushed at all, so this job is the workflow's own copy of that guarantee rather than a
+  # substitute for it; `tools/release.sh` reads the same check before tagging as a courtesy to
+  # the operator, and nothing here trusts that script.
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: The tagged commit's test check is green
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          waited=0
+          while :; do
+            state="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/check-runs?per_page=100" --jq '
+                [.check_runs[] | select(.name == "test")] as $t
+                | if ($t | length) == 0 then "none"
+                  elif ($t | any(.status == "completed" and
+                        ((.conclusion == "success" or .conclusion == "neutral"
+                          or .conclusion == "skipped") | not))) then "failure"
+                  elif ($t | all(.status == "completed")) then "success"
+                  else "pending" end')"
+            echo "test check on ${GITHUB_SHA}: ${state} (${waited}s)"
+            case "$state" in
+              success) exit 0 ;;
+              pending) ;;
+              *) echo "refusing to deploy a commit whose test check is '${state}'" >&2; exit 1 ;;
+            esac
+            if (( waited >= 1500 )); then
+              echo "the test check was still pending after ${waited}s" >&2
+              exit 1
+            fi
+            sleep 30
+            waited=$(( waited + 30 ))
+          done
+
   build:
+    needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -71,18 +117,11 @@ jobs:
           mv /tmp/templates/templates \
             "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
 
-      # **The gate runs here rather than being inherited from `ci.yml`.** `ci.yml` has no branch or
-      # tag filter, so it fires on a version tag too, and neither workflow waits for the other — a
-      # deploy that trusted CI would publish a red build to a public address as often as not. A tag
-      # can point at any commit, so that reasoning holds exactly as it did when this ran on every
-      # push to `main`. Running it again costs a few minutes on the rare push of a version tag, and
-      # it is the same gate this project requires before a commit: the project boots, and the full
-      # suite is green.
+      # The boot check stays: it is seconds, and its import pass is what leaves the project's
+      # resources imported on a fresh runner before the export reads them. The suite does not run
+      # here -- see `verify` above.
       - name: Check
         run: GODOT="$HOME/godot/godot-bin" ./tools/check.sh
-
-      - name: Test
-        run: GODOT="$HOME/godot/godot-bin" ./tools/test.sh
 
       # Godot's own version mechanism -- `application/config/version`, read at runtime with
       # `ProjectSettings.get_setting` -- baked into the export rather than shipped beside it as a

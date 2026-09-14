@@ -821,20 +821,31 @@ static func _leaf_blower() -> EventDef:
 	def.cost = 2
 	return def
 
-## Pigeons off the pavement all at once — on the ground in front of her, then up, then away.
+## Pigeons off the pavement all at once — standing on the ground long before she is near, then up
+## as she walks into them, then away.
 ##
-## The second `AHEAD_OF_PLAYER` event, and the reason to have a second one is that the director
-## had a single trick: every moment that happened *to* her was a cat. A flock is the cheapest
-## possible version of the same idea and it is the one that makes the director read as a
-## director rather than as a cat dispenser.
+## **A place rather than a moment, because a flock has to exist before it is seen.** *(2026-09-13:
+## "pigeons pop in on screen — they should exist before they are visible.")* A row the director
+## sites is created a reaction window in front of her — `Tuning.AHEAD_LEAD_DISTANCE`, 184px, inside
+## the 320px half-view on a sideways heading — which a cat can afford, since its whole content is
+## the three seconds it is there. Eleven birds cannot: a flock is a *patch of pavement*, and a patch
+## of pavement that was not there a second ago is not one anybody can plan around. On a tile they
+## are pecking about from the moment the day streams them in at `Tuning.EVENT_STREAM_RADIUS` (900px,
+## well over two screens out), so what she sees from down the street is the thing she is deciding
+## about.
+##
+## **The telegraph contract is then paid in geometry, the way the robber's is.** `pursues_within`
+## is the wait: the birds stand there unclocked and quiet, and the burst starts when she comes
+## inside the trigger rather than at dawn, four streets away, where a 1.7s notice is no notice at
+## all. It is the same shape `alley_mouse` and a `MAP`-placed `charging_dog` use, and it is what
+## keeps "it must not be over before she arrives" true without siting the row on top of her.
 ##
 ## **Four things have to be true for a flock to be an event at all**, and each of them is a way this
 ## row has been ineffective:
 ##
-## - It must not be **over before she arrives**. Sited two seconds of walking ahead, a short
-##   telegraph plus a short burst expires exactly as she reaches it. The telegraph is the flock *on
-##   the pavement*, long enough to be seen from down the street and walked around, and the burst
-##   outlasts her arrival rather than ending at it.
+## - It must not be **over before she arrives**. The wait is what buys that: the telegraph is the
+##   flock *on the pavement about to go*, and the burst outlasts her arrival rather than ending at
+##   it.
 ## - It must not be **quiet and small**: 42 over a 168px reach, in a game where a café is 12 over
 ##   170, is nothing. A flock going up in a pram's face is one of the loudest things that can happen
 ##   on an ordinary pavement.
@@ -865,12 +876,22 @@ static func _pigeon_flock() -> EventDef:
 	# A flock has no single body — each bird casts its own shadow at its own faded radius (see
 	# `EventInstance._draw_birds`) — so this is a nominal point at one bird's own base radius
 	# (5.0, before the height fade), carried only to satisfy "a row with a look has a shape".
-	# Chosen where the design was silent: nothing reads this row's own `shape` elsewhere, since
-	# it never obstructs.
+	# Chosen where the design was silent: nothing reads this row's own `shape` elsewhere, since a
+	# flock never obstructs — `EventDef.validate()` refuses one that tries, and being walked into
+	# is what the row is for.
 	def.shape = GroundShape.point(5.0)
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE,
 			GameEnums.TileType.PARK]
-	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
+	def.spawn_mode = EventDef.SpawnMode.MAP
+	# The wait: inside the 168px field, so the notice starts on ground she is already being charged
+	# for, and more than twice the 62px wheel, so they are going up before she is among them. At
+	# `WALK_SPEED` a player walking straight in covers the 150 in a little over the 1.7s telegraph,
+	# which is the flock going up in a pram's face rather than half a street short of it.
+	def.pursues_within = 150.0
+	# Birds on a pavement are nearly nothing; the event is them going up. Without this the wait
+	# would emit the full 42 — a pursuer's rule, where the thing standing there *is* the threat —
+	# and a flock nobody has walked up to yet would be a place that cannot be walked past at all.
+	def.quiet_until_noticed = true
 	def.intensity = 42.0
 	def.inner_radius = 26.0
 	def.outer_radius = 168.0
@@ -881,7 +902,8 @@ static func _pigeon_flock() -> EventDef:
 	def.intensity_ramp = 0.4
 	def.duration = 4.0
 	# On the ground the whole time, which is what makes this a thing to walk around rather than a
-	# thing that happens. Over the 1.55s the contract asks of a 168px field.
+	# thing that happens. Over the 1.55s the contract asks of a 168px field, and measured from the
+	# moment it notices her rather than from dawn — see `EventDef.pursues_within`.
 	def.telegraph_time = 1.7
 	# Faster than she can run, and up: they are gone in a second and a half and they are gone
 	# *somewhere*.
