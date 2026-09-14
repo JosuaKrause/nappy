@@ -187,7 +187,7 @@ what would make it a run's ending rather than a flag's. The record of what was b
 
 **[PLAYTEST-50.md](playtests/PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
-touch that shows only a colour change and no confirmation on a lost day's summary. The artwork
+touch that shows only a colour change at the moment it happens. The artwork
 review and the player's directional corrections are recorded in `DECISIONS.md`.
 
 **[PLAYTEST-49.md](playtests/PLAYTEST-49.md) is the session before it and it is the prioritisation above**, plus
@@ -383,6 +383,72 @@ debug build does too unless `--svg`.
       margin read off the texture rather than a constant. `tests/test_car_views.gd` holds that
       the traced rim's bounds and the drawn picture's bounds agree for every view, with the PNG
       and the SVG both.
+## M131 — Pigeons exist before they are seen · asked for 2026-09-13
+
+> "pigeons pop in on screen -- they should exist before they are visible."
+
+[PLAYTEST-69](playtests/PLAYTEST-69.md). The **events** rule governs.
+
+**What is true today.** `pigeon_flock` is `AHEAD_OF_PLAYER`: the director creates it when it is
+due and `_crossing_ahead_of()` sites a non-pursuing row `Tuning.AHEAD_LEAD_DISTANCE` (184px)
+ahead of her along her heading — inside the view on every heading, on purpose, because for the
+cat that is the two-second reaction window between the crouch and the bolt. The flock then
+telegraphs for 1.7s and rises. Pursuers and `TOWARD_PLAYER` rows are sited past the edge of the
+view by `Tuning.offscreen_lead()` instead (`DECISIONS.md`, M77). The M100 defect about a rig
+that cannot spawn at an ahead-of-player row names the flock for the same reason.
+
+- [ ] **The flock is on the ground before she can see it, and rises when she is near.** The
+      recommendation: make it a map placement like the day-4 dog, with a wait trigger inside
+      its own outer radius (168px) the way `pursues_within_on(day)` derives one — the birds sit
+      on the pavement, square or park from the moment they stream in at `EVENT_STREAM_RADIUS`
+      and are drawn pecking, the burst begins when she comes inside the trigger, and the
+      telegraph contract is then paid in geometry as the robber's is. The alternative is to keep
+      it ahead-of-player and site it past the view's edge with `offscreen_lead()` like a
+      pursuer, which keeps the row cheap but means she never sees them on the ground first; the
+      cat keeps its on-screen lead either way, since the crouch is its telegraph. Whichever is
+      built, `tests/test_event_views.gd` or `tests/test_events.gd` holds that a flock's first
+      drawn frame is never inside the view rect around her, and the M100 rig defect closes for
+      this row with it.
+
+---
+
+## M134 — A lost day gives the resistance back · asked for 2026-09-13
+
+> "a lost day shouldn't retain the touch mark -- a task is only complete if it is done on the
+> day that won. but also it should reset if lost so the player can try again"
+
+[PLAYTEST-69](playtests/PLAYTEST-69.md), on reading M132's record. *Asked for as "what the run
+has spent stays spent" · overturned for the resistance on 2026-09-13.* The **godot** and
+**verify** rules govern; the resistance director and `GameState` are the files.
+
+**What is true today.** `GameState.finish_day()` on a loss spends a nerve, erases where she
+settled, and keeps everything else: `completed_resistance_steps`, `resistance_progress`,
+`failed_resistance_steps`, `resistance_carrying_package`, `sabotage_done` and the queued
+brief all survive the nerve, and a mark once in `completed_resistance_steps` is never offered
+again, so a mark touched on a lost day is both kept and unrepeatable. The lost day's summary
+reads the queued brief and clears it (`DECISIONS.md`, M132).
+
+- [ ] **Nothing the resistance did on a lost day counts, and the retry offers it again.** At
+      the start of each day `GameState` takes a snapshot of the resistance's run state — the
+      six fields above — and a loss restores it before the retry begins, so a mark touched, a
+      step performed, a contact lost to its deadline, a package picked up or the last night's
+      sabotage on a lost day are all undone, and the same mark or contact is offered on the
+      retry exactly as the day first offered it. A won day commits the snapshot. The rule in
+      `finish_day()`'s docstring gains the resistance as its second exception beside
+      `settled_in`, with the player's sentence as the reason. `tests/test_day_loop.gd` holds
+      it: touch a mark, lose the day, the mark is untouched and on offer again; perform a step,
+      lose, progress is back where it was; win, and both stand.
+- [ ] **A lost day's summary repeats the day's own instruction, never tomorrow's.** *(2026-09-13:
+      "the words shown on the lost day are the words that show at the beginning of that day not
+      the nexts. since day doesn't have words it doesn't make sense to show words on day 4".)*
+      M132's *"it should show also when dying"* means the words she already had: a lost
+      summary shows the brief of the perform step that was on offer when the day began — the
+      same words the previous won summary read — so the retry is reminded what the day is for,
+      and it shows nothing when no step was on offer, which is every lost day 4. A mark touched
+      on the lost day itself has its touch taken back by the first item, so its words are not
+      shown until the touch that counts; a won summary reads the newly queued brief as today.
+      `tests/test_day_loop.gd` holds both: a lost day 5 with the note's step on offer shows the
+      day-4 mark's words, a lost day 4 with a mark touched shows none.
 
 ---
 
@@ -405,11 +471,13 @@ run-to-run noise and are struck. Everything under `assets/` is still an individu
 texture and nothing is atlased, which is the answer to the player's question; whether that
 matters is a phone's question, not a desktop's.
 
-- [ ] **The phone half of the measurement.** The same six numbers off a phone: `tools/serve-web.sh`
-      serves a debug web build on the local network, the readout is on by default there, and a
-      screenshot of it standing on any day-1 street beside the desktop's is the comparison
-      (`?telemetry=1` writes the `frame` line into the browser's own storage and nothing collects
-      it back, so the screen is the instrument). If the phone's draw calls and primitives match
+- [ ] **The phone half of the measurement.** The same six numbers off a phone: the live page
+      with `?debug=1` shows the readout on a release build (`DECISIONS.md`, M133), so a
+      screenshot of it standing on any day-1 street beside the desktop's is the comparison, on
+      the build a player actually gets (`?telemetry=1` writes the `frame` line into the
+      browser's own storage and nothing collects it back, so the screen is the instrument;
+      `tools/serve-web.sh` still serves a debug export on the local network for an unreleased
+      tree). If the phone's draw calls and primitives match
       the desktop's and only its frame rate does not, the cost is fill rate or resolution and no
       batching touches it; the table goes to `DECISIONS.md` under M124 either way.
 - [ ] **Atlases, only if the phone says texture switches are the cost.** The desktop says they
@@ -739,20 +807,19 @@ re-pitched:
 
 **Open design questions**, each answered by a played run rather than by more arithmetic:
 
-- [ ] **A touch on a chalk mark shows nothing at the moment but a colour change, and nothing at
-      all if the day is then lost.** *(2026-09-09, playtest 50: "how do I know I stepped on the
-      chalk", then "I walked over the chalk why didn't it count?" — it had.)* A touch turns the
-      mark from chalk white to pale green (`Palette.CHALK` to `CHALK_DONE`) under her feet; the
-      `resistance ....` dots are performs only, so a pick-up moves none; and the mark's own words
-      (`GameState.pending_resistance_brief`) are appended by `DaySummary._resistance_line()` on
-      the **won** branch of the summary only, so a mark touched on a day she then loses says
-      nothing until the end of the next won day, while the touch itself survives the nerve. The
-      design's own rule is no quest log — *the first encounter comes with no hint at all* — so how
-      much a touch may say is the player's call: nothing more; the mark's colour made
-      unmistakable; the brief shown on a lost day's summary too; or a one-line status change on
-      the pick-up itself. PLAYTEST-53 requests a distinct touched-mark SVG for review: she adds
-      something to the existing mark to indicate she has seen it. `chalk_mark_touched.svg`
-      prepares that acknowledgement; selecting and binding the feedback remains here
+- [ ] **A touch on a chalk mark shows nothing at the moment but a colour change.** *(2026-09-09,
+      playtest 50: "how do I know I stepped on the chalk", then "I walked over the chalk why
+      didn't it count?" — it had.)* A touch turns the mark from chalk white to pale green
+      (`Palette.CHALK` to `CHALK_DONE`) under her feet, and the `resistance ....` dots are
+      performs only, so a pick-up moves none. The mark's own words now reach her on that day's
+      summary whether it was won or lost, in their own larger line (`DECISIONS.md`, M132), so
+      what is left open is the moment of the touch itself. The design's own rule is no quest log
+      — *the first encounter comes with no hint at all* — so how much a touch may say is the
+      player's call: nothing more; the mark's colour made unmistakable; or a one-line status
+      change on the pick-up itself. PLAYTEST-53 requests a distinct touched-mark SVG for review:
+      she adds something to the existing mark to indicate she has seen it.
+      `chalk_mark_touched.svg` prepares that acknowledgement; selecting and binding the feedback
+      remains here
 - [ ] **Three cues on one screen needed asking about, and an alley read as a roof.** *(2026-09-09,
       playtest 50: "what is shown here?", and "the robber is stuck inside the roof" of a robber
       standing beside an alley.)* The baby's unsettled cue over the pram, the alert over her and a

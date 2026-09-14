@@ -91,3 +91,100 @@ M121 registered every car view to the strike box's southernmost point, which mov
 west-bound pictures 14px south on purpose (`DECISIONS.md`, M121) and left it *"open to the
 player's eye"*; the halo re-traces the body every frame, so the two should have moved together
 and did not. M130 in `TODO.md`.
+## Pigeons pop in on screen
+
+> pigeons pop in on screen -- they should exist before they are visible.
+
+The flock is an `AHEAD_OF_PLAYER` row, so it is created only when it is due and sited
+`Tuning.AHEAD_LEAD_DISTANCE` (184px) ahead of her along her heading — inside the 640x360 view
+on every heading, by design: that distance is the cat's two-second reaction window between
+seeing it crouch and reaching where it bolts. Playtest 19 said the same of cyclists and dogs
+(*"pop in in front of the player instead of starting off screen"*), and those were moved off
+screen because they come *at* her; the cat and the flock cross her line and kept the on-screen
+lead. For a flock that is the wrong answer: birds appear from nothing on a pavement she was
+already looking at. M131 in `TODO.md`.
+
+## Day 5: who gets the note
+
+> I have no clue how to find the person on day 5 I need to pass the note to
+
+What the game does (`docs/NARRATIVE.md`, the subquest; `ResistanceSteps`): day 4's chalk mark,
+in an alley behind a robber, says on the summary of the day it was touched — the *won* day's
+summary only — *"Give it to the one who won't stop shouting. Any of them might be him."* From
+day 5 the header reads *somewhere out there: a note for a stranger*, and the contact rides on
+one of the several `homeless_yeller` rows live that day: the pacing man shouting on a sidewalk
+or a square. He looks exactly like the others by design — *"a wrong candidate costs full price
+and returns nothing"* — and walking into his reach is the touch. Nothing on screen marks him,
+which is the standing decision (`CLAUDE.md`, no quest log or marker for the resistance; *the
+first encounter comes with no hint at all, after that the resistance speaks*). Whether the
+mark's sentence was seen at all is the M100 open design question about a chalk touch that
+shows nothing on a lost day; this report is its second sighting.
+
+Asked which of the two it was:
+
+> I touched the mark on day 4 died then went to the same alley again and the mark was gone.
+> but then I still progressed to hand the note on day 5. the day text needs to be bigger to be
+> able to be noticed and it should show also when dying so if missed on the first try it can
+> be seen on the second try. the in game note should contain the same amount of info on what
+> to do. note for a stranger contains less information than won't stop shouting which can be
+> easily missed when progressing to the next day. also, we cannot expect the player to do an
+> exhaustive check that will not work there is not enough time and the baby needs to fall
+> asleep still as well. so if the solution is the yeller it's always the first yeller you come
+> close enough to hand the note. let's record this for now and then stop until the next session
+
+So it was the lost day: the touch survived the nerve, the mark was gone on the retry as built,
+and the sentence that says what to do was never shown. Four instructions, all M132 in
+`TODO.md`: the day brief is drawn big enough to be noticed; it shows on a lost day's summary
+too, so a first try that dies still hands over the words on the second; the header line during
+the day carries the same information the brief did, not a shorter title; and the contact is
+the first yeller she reaches, never a search — *asked for a hidden contact among look-alikes ·
+overturned on 2026-09-13*, because a day has no time for an exhaustive check with a baby still
+to settle. Recorded and stopped there, at the player's word.
+
+## The busker's numbers
+
+> the busker numbers look good.
+
+On the table showing a peak of 19.3 never fills the sleep meter at his core while anything
+under 19.2 fills it within 35 seconds, and that the street beside the lot is half again louder
+for it. Accepted as built (`DECISIONS.md`, M128).
+
+## The readout on the live page
+
+> how do I get a readout on the live version?
+
+There is no way: the page is a release export and every developer flag, the readout included,
+answers only in a debug build (`DECISIONS.md`, M76, a release carries no modifiers). Offered a
+debug build served over HTTPS on the local network, or a query flag:
+
+> let's add a ?debug=1 flag
+
+Asked which shape, since one flag that unlocks everything would overturn the 2026-09-06
+decision: **readout only**, a third bounded exception beside `?svg=1` and `?telemetry=1`. Then:
+
+> with a note on the screen that this is debug mode -- the note should not be removable
+
+Not built this session at the player's word (*"don't start implementing yet"*); M133 in
+`TODO.md`.
+
+## A lost day gives the resistance back
+
+Said on reading M132's first item, the brief shown on a lost day's summary too:
+
+> a lost day shouldn't retain the touch mark -- a task is only complete if it is done on the
+> day that won. but also it should reset if lost so the player can try again
+
+Today a touched mark and a completed perform step survive the nerve — `GameState.finish_day()`'s
+own rule is *what the run has spent stays spent*, with only where she settled rolled back — and a
+mark once touched is never offered again, so a lost day can neither undo nor repeat it. The
+instruction reverses that for the resistance: nothing the resistance did on a lost day counts,
+and the same day's retry offers it again. Filed as M134 in `TODO.md`. The one overlap with
+M132 — whether the lost day's summary still reads the words of a mark whose touch is about to
+be taken back — was put as a question with a recommendation to keep showing them, and answered
+the other way:
+
+> the words shown on the lost day are the words that show at the beginning of that day not the
+> nexts. since day doesn't have words it doesn't make sense to show words on day 4
+
+So a lost summary repeats the instruction the day began with, the words she already had, and a
+lost day 4 shows none; M134's second item holds it.

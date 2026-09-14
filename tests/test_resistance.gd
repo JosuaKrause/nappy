@@ -28,6 +28,7 @@ func run(t) -> void:
 	_test_a_walled_alley_escapes_no_other_check(t)
 	_test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t)
 	_test_a_perform_contact_is_never_relocated(t)
+	_test_the_contact_rides_onto_the_first_look_alike_she_reaches(t)
 	_test_a_perform_step_expires_when_its_rider_is_gone(t)
 	_test_a_timed_step_expires(t)
 	_test_completing_the_package_makes_the_pram_heavier(t)
@@ -793,6 +794,42 @@ func _test_a_perform_contact_is_never_relocated(t) -> void:
 		director._process(STEP)
 		t.check(director.contact_position().distance_to(at) < 0.5,
 				"a perform contact is never subject to the re-placement rule")
+
+		player.free()
+		director.free())
+
+## Overturn, 2026-09-13 (`docs/NARRATIVE.md`, "The contact is whichever look-alike she reaches
+## first"): a second live `homeless_yeller` — a look-alike the day's own scheduler could equally
+## have placed, spawned directly here rather than through it — stands well clear of the seeded
+## rider. She is put within reach of the *decoy* rather than the rider `start_day()` rolled, and
+## the contact rides onto it instead of waiting for her to find the one it was seeded on.
+func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		GameState.completed_resistance_steps = _completed_through(1)
+		var director := _director(t)
+		director.start_day(5, _rng(5, "resistance"), 300.0)
+		var perform := director.current_step()
+		t.check(perform != null and perform.index == 2, "day 5 offers the yeller perform step")
+		var seeded_at := director.contact_position()
+		var seeded_rider: EventInstance = director._rider
+
+		var decoy_at := director._place(perform, _rng(5, "decoy"))
+		t.check(decoy_at.distance_to(seeded_at) > ContactPoint.REACH * 4.0,
+				"the decoy lands well clear of the seeded rider, or this test checks nothing")
+		var decoy := _city.events.spawn_extra(EventCatalogue.by_id("homeless_yeller"), decoy_at)
+
+		var player := _rig_player(t, decoy_at)
+		director._process(STEP)
+		t.check(director.contact_position().distance_to(decoy_at) < 0.5,
+				"the contact rides onto the look-alike she actually reached, not the seeded one")
+		t.check(director._rider == decoy and director._rider != seeded_rider,
+				"and the director's own rider is now the decoy")
+
+		var completed: Array[int] = []
+		director._contact.completed.connect(func(index: int) -> void: completed.append(index))
+		director._contact._physics_process(STEP)
+		t.check(completed == [2], "touching the retargeted contact completes step 2 itself")
 
 		player.free()
 		director.free())

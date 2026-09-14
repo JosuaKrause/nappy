@@ -265,9 +265,10 @@ The `frame` entry, once a second:
 
 **It is the one entry about the device rather than about the day**, and it is there because the
 device a run is played on is usually not the device it can be read on. *(2026-09-13: "I played a
-few sessions on mobile. It is a bit laggy now.")* A phone and the web page have no readout anybody
-can photograph and no profiler to attach; what they do have is a `run.log`, so the numbers go on
-the line.
+few sessions on mobile. It is a bit laggy now.")* A phone has no readout anybody can photograph and
+no profiler to attach, and neither does an ordinary web page — `?debug=1` puts one on the page
+itself (see "The debug view" below), but nothing reaches a phone's own screenshot tooling, so a
+phone session's numbers still only ever go on the line.
 
 **A frame rate on its own cannot say where the frame went**, which is why the other six fields are
 beside it. `draws` is the call count the renderer issued — the number an atlas moves, since only
@@ -456,12 +457,20 @@ build has nothing in `project.godot` to reach:
   colour, because it is not a body but is exactly what ends the day on contact. Walkers and cars
   have no body of their own, and none is invented for them.
 - **`4` the readout** — the seed, the meter breakdown and what the frame cost, drawn top right by
-  `main.gd` and toggleable like the other three: off, the string is not assembled, not merely
-  hidden behind an invisible label, the same rule `_debug` itself already applied to the whole
-  thing. The frame block is `FrameCost.readout_lines()` — `fps`, `draws`, `objects`, `primitives`,
-  `process` and `physics`, the same six quantities and the same words the run log's own `frame`
-  entry carries, assembled from the same readings so the screen and the log cannot disagree. See
-  "What a frame cost" above for what each one says.
+  `main.gd` and toggleable like the other three in a debug build: off, the string is not
+  assembled, not merely hidden behind an invisible label. **A release build carries it too when
+  the page's own `?debug=1` (or the command line's `--debug`) holds** — `DevFlags.readout_requested()`,
+  parsed the same shape as `?svg=1` and not gated behind `enabled()`, the third bounded
+  release-safe query flag beside it and `?telemetry=1` — and nothing else: the three geometry
+  layers above, the snapshot key and every other dev flag stay behind `_debug` alone, so this flag
+  reaches only the readout. Whenever it holds, a fixed "DEBUG MODE ON" note (`DebugModeNote`,
+  `src/dev/debug_mode_note.gd`) is drawn for the whole session and answers to nothing that would
+  take it off again — not the `4` key, not a press, not the title screen hiding `_status` around
+  it — so a page reached with the flag on is never mistaken for the ordinary release page everyone
+  else gets. The frame block is `FrameCost.readout_lines()` — `fps`, `draws`, `objects`,
+  `primitives`, `process` and `physics`, the same six quantities and the same words the run log's
+  own `frame` entry carries, assembled from the same readings so the screen and the log cannot
+  disagree. See "What a frame cost" above for what each one says.
 
 The mapping above is printed once on boot in a debug build. With no `--layers` flag, a run opens
 with the readout on and the three geometry layers off, so an unflagged debug run looks exactly as
