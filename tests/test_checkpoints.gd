@@ -51,6 +51,22 @@ func _sampled_days() -> Array:
 			found.append([map, day])
 	return found
 
+## `RegionPlanner.plan_day()`'s own answer for a (map, day) pair, computed once and shared by the
+## three shape tests below rather than once each. **M125: measured at 112ms a pair** — repainting
+## the map and planning the day is real work, and asking the same 32 pairs three times over was
+## three-quarters of what this suite's shape section cost (10.8s of its ~11s, against 3.6s once
+## the plan is shared). Keyed on `map.seed_used`, which is distinct per generated map, rather than
+## on the map object itself, so the cache reads the same regardless of which test asks first.
+var _plan_cache: Dictionary = {}
+
+func _plan_for(map: CityMap, day: int) -> RegionPlanner.RegionPlan:
+	var key := "%d:%d" % [map.seed_used, day]
+	if not _plan_cache.has(key):
+		_repaint_for(map, day)
+		var tree := RouteTree.for_day(map, day)
+		_plan_cache[key] = RegionPlanner.plan_day(map, day, tree)
+	return _plan_cache[key]
+
 # ------------------------------------------------------------------- the shape ---
 
 ## Every street door stands exactly three bodies — two `checkpoint_hut` and one `checkpoint_gate`
@@ -66,9 +82,7 @@ func _test_every_door_has_its_three_bodies(t) -> void:
 	for pair in _sampled_days():
 		var map: CityMap = pair[0]
 		var day: int = pair[1]
-		_repaint_for(map, day)
-		var tree := RouteTree.for_day(map, day)
-		var plan := RegionPlanner.plan_day(map, day, tree)
+		var plan := _plan_for(map, day)
 		sampled += 1
 		total_doors += plan.doors.size()
 		total_alley_doors += plan.alley_doors.size()
@@ -110,9 +124,7 @@ func _test_door_bodies_stand_on_their_own_ground(t) -> void:
 	for pair in _sampled_days():
 		var map: CityMap = pair[0]
 		var day: int = pair[1]
-		_repaint_for(map, day)
-		var tree := RouteTree.for_day(map, day)
-		var plan := RegionPlanner.plan_day(map, day, tree)
+		var plan := _plan_for(map, day)
 
 		# Every door body's own tile belongs to the segment or the alley it was built for.
 		for segment in plan.doors:
@@ -164,9 +176,7 @@ func _test_the_boom_bars_the_carriageway(t) -> void:
 	for pair in _sampled_days():
 		var map: CityMap = pair[0]
 		var day: int = pair[1]
-		_repaint_for(map, day)
-		var tree := RouteTree.for_day(map, day)
-		var plan := RegionPlanner.plan_day(map, day, tree)
+		var plan := _plan_for(map, day)
 		for segment in plan.doors:
 			var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
 					< RegionPlanner.region_of_junction(map, segment.b)
@@ -234,25 +244,35 @@ func _test_the_boom_bars_the_carriageway(t) -> void:
 					% [map.seed_used, day, arm_near, arm_far, solid_low, solid_high])
 	t.check(checked > 0, "at least one street door's boom was measured (%d)" % checked)
 
-## The three rows exist and the ordinary catalogue roll never schedules one, over several seeds
-## and days. What makes that true — `SCRIPTED`, `scripted_day 0`, like the seal pictures — is not
+## The three rows exist and the ordinary catalogue roll never schedules one, over several days.
+## What makes that true — `SCRIPTED`, `scripted_day 0`, like the seal pictures — is not
 ## restated: reading those two fields back off the row could only ever say somebody edited the
 ## catalogue, while the sweep below says whether a checkpoint can reach the map by the wrong door.
 ## Their fairness is `EventCatalogue.all()`'s own sweep in `tests/test_events.gd`.
+##
+## **One map, every sampled day — M125.** `build_day()`'s refusal to roll a `SCRIPTED` row is a
+## property of the scheduler and the catalogue flag, not of any one city's shape, so a second seed
+## tests the same mechanism against different noise for no extra confidence: measured, this loop
+## was 25.5s of the suite's ~39s, all four seeds paying for the same question. The day still runs
+## the full `REGION_WALL_FIRST_DAY..RUN_LENGTH_DAYS` range, because *that* axis is real — a
+## scripted-availability window is a fact about the day, not the map.
 func _test_the_three_rows_validate_and_are_never_rolled(t) -> void:
 	for id in ["checkpoint_hut", "checkpoint_gate", "checkpoint_post"]:
 		t.check(EventCatalogue.by_id(id) != null, "'%s' is in the catalogue" % id)
 
+	var map := _maps[0]
 	var rolled := 0
-	for pair in _sampled_days():
-		var map: CityMap = pair[0]
-		var day: int = pair[1]
+	var scheduled := 0
+	for day in range(Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("checkpoints:%d:%d" % [map.seed_used, day])
 		var consumed: Array[String] = []
 		for plan in EventScheduler.build_day(day, rng, map, consumed):
+			scheduled += 1
 			if plan.def.id.begins_with("checkpoint_"):
 				rolled += 1
+	t.check(scheduled > 0,
+			"the scheduler actually placed something to ask the question of (%d plans)" % scheduled)
 	t.check(rolled == 0,
 			"the ordinary scheduler roll never places a checkpoint_hut/gate/post (%d)" % rolled)
 
