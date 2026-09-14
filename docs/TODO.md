@@ -408,6 +408,24 @@ when she comes within its `pursues_within`; a contact she hands over anywhere el
       time the contract promises. A chalk mark's guard is unchanged: this entry is about the
       perform step's contact, which is what the player named; say so in the record if a chalk
       mark's trap should follow.
+
+      **What an agent's reading of the code found before it was stopped, unverified by any
+      rig.** A fresh `spawn_extra` robber is `is_waiting()` — `pursues_within > 0` and no
+      notice yet — so spawned off screen he would stand frozen; `EventInstance.resume(age,
+      travelled, noticed_at)`, already public and used by the stream-in path, with small
+      positive `age` and `noticed_at` takes him out of waiting without touching `chase_age()`
+      or the path advance he does not have. Once noticed, `_chase()` moves him at
+      `pursue_speed` (130 px/s) from the first frame — the row does not set
+      `still_while_telegraphing` — holding at the standoff until his 1.8 s telegraph ends, so
+      `DangerEdge` already arrows any `hard_fail` row and announces him on the first closing
+      frame: no cue code changes. A candidate spawn distance, to be scrutinised: 400 px clears
+      the view from any bearing (the viewport's half-diagonal at zoom 2 is about 367 px, the
+      argument `NOTICE_RADIUS`'s own doc makes), plus `pursue_speed × Tuning.PURSUIT_MIN_NOTICE`
+      (130 × 1.5 = 195) so at least the minimum notice passes while only the badge speaks for
+      him — about 600 px. The trigger belongs in the contact-completed path, gated on
+      `task_event_id` being set and on `TRAP_FIRST_DAY`, with a guard on `_maybe_set_a_trap`'s
+      dawn call for a perform step; `_draw_guard_position`'s rejection loop (walkable, not
+      closed, not held, not the home block) is the bearing draw to reuse.
 - [ ] **What a run should look at** goes to `REVIEW.md`: does a robber arriving from off screen
       after the handoff read as the price of the errand rather than as bad luck, and does the
       badge give enough warning to run.
