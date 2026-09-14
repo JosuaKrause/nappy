@@ -8,6 +8,11 @@ extends RefCounted
 ## same release-safe way but carries a validated word set rather than a bare `1`, and is honoured
 ## only while `readout_requested()` itself holds — see the tests below for the parsing, the
 ## refusal of an unknown word, and that gate.
+##
+## `?seed=` (M138, "a seed on the live page under `?debug=1`") is honoured under the same gate,
+## but only for a positive integer — `DevFlags._seed_from_query()` carries its own `?debug=1`
+## check inside it, since the release-shaped case that matters is a single query string with or
+## without that parameter, not a runtime `readout_requested()` a test has no web query to drive.
 
 func run(t) -> void:
 	_test_command_line_defaults_to_png(t)
@@ -22,6 +27,9 @@ func run(t) -> void:
 	_test_skip_words_treats_an_empty_value_as_nothing_to_skip(t)
 	_test_skip_from_args_and_query_extract_the_raw_value(t)
 	_test_skip_is_gated_on_the_readout_being_requested(t)
+	_test_seed_from_query_takes_a_valid_seed_under_debug(t)
+	_test_seed_from_query_ignores_the_seed_without_debug(t)
+	_test_seed_from_query_refuses_non_positive_and_malformed_values(t)
 
 func _test_command_line_defaults_to_png(t) -> void:
 	t.check(not DevFlags._svg_from_args(PackedStringArray()),
@@ -109,3 +117,28 @@ func _test_skip_is_gated_on_the_readout_being_requested(t) -> void:
 		"skip_words() answers nothing skipped while the readout was not requested")
 	t.check(not DevFlags.skip_events() and not DevFlags.skip_crowd() and not DevFlags.skip_shadows(),
 		"the three per-word getters carry the same gate")
+
+## `?seed=`'s own query parser (M138, "a seed on the live page under `?debug=1`") — see
+## `DevFlags._seed_from_query()`'s own doc for why the `?debug=1` gate is checked inside the same
+## pure function rather than split out the way `_skip_from_query()`/`_validate_skip_words()` are.
+func _test_seed_from_query_takes_a_valid_seed_under_debug(t) -> void:
+	t.check(DevFlags._seed_from_query("?debug=1&seed=12345") == 12345,
+		"a valid ?debug=1&seed=12345 yields the seed it names")
+	t.check(DevFlags._seed_from_query("?seed=12345&debug=1") == 12345,
+		"the seed parameter is found regardless of where it sits among others")
+
+func _test_seed_from_query_ignores_the_seed_without_debug(t) -> void:
+	t.check(DevFlags._seed_from_query("?seed=12345") == 0,
+		"a release page nobody asked ?debug=1 of never takes a seed, the same as it never skips")
+	t.check(DevFlags._seed_from_query("") == 0,
+		"an absent query is not given, the ordinary sentinel")
+
+func _test_seed_from_query_refuses_non_positive_and_malformed_values(t) -> void:
+	t.check(DevFlags._seed_from_query("?debug=1&seed=0") == 0,
+		"0 is refused the same as not given")
+	t.check(DevFlags._seed_from_query("?debug=1&seed=-3") == 0,
+		"a negative seed is refused the same as not given")
+	t.check(DevFlags._seed_from_query("?debug=1&seed=abc") == 0,
+		"anything that is not an integer is refused the same as not given")
+	t.check(DevFlags._seed_from_query("?debug=1&seed=") == 0,
+		"an explicit but empty value is refused the same as not given")

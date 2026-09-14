@@ -84,7 +84,7 @@ going quietly stale.
 
 | Flag | Effect |
 | --- | --- |
-| `--seed N` | Regenerate a specific city |
+| `--seed N` | Regenerate a specific city (also reachable, for a positive integer only, as a release web build's own `?debug=1&seed=N`) |
 | `--day N` | Start on a later day, to look at a later act |
 | `--day-length N` | Compress the day, for dusk and the timeout loss |
 | `--meters S E` | Seed the two meters, to screenshot a UI state |

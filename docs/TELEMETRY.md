@@ -475,6 +475,13 @@ build has nothing in `project.godot` to reach:
   (875609a5)` on a release — read from `git` on a working tree and from the two settings
   `tools/export-web.sh` bakes into an export, `application/config/version` and
   `application/config/source_commit`, so a screenshot of either says which code it is of.
+  The same gate lets the page choose what the seed line itself reads: `?seed=N`
+  (`DevFlags.seed_override()`) regenerates the city from a positive integer the way the command
+  line's own `--seed` does, refusing `0`, a negative number, an empty value or anything else that
+  is not a positive integer with a warning and falling back to a fresh seed instead — honoured
+  only while `readout_requested()` already holds, so a release page nobody asked `?debug=1` of
+  never takes a seed either. The command line's `--seed` takes precedence over the query form
+  when both are present.
   Directly beneath the seed line, a `skip` line names what `--skip`/`?skip=` turned off — `events`,
   `crowd`, `shadows`, comma-separated, any order (`DevFlags.skip_words()`) — turning the desktop's
   own per-frame draw probes (docs/DECISIONS.md, M124, "the desktop half", rows (e), (d) and (c))

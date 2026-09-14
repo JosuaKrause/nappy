@@ -6,8 +6,12 @@ extends RefCounted
 ## Moved out of `main.gd`, which carried this parsing inline, mixed into the boot sequence and
 ## the day loop it sits beside. `OS.is_debug_build()` is `false` for an exported release
 ## template — which is what `tools/export-web.sh` produces — so every getter here answers "not
-## given" no matter what is on the command line: a public build cannot be made to reveal a seed,
-## jump to a day, or write a screenshot by passing it flags nobody documented for a player.
+## given" no matter what is on the command line: a public build cannot be made to jump to a day
+## or write a screenshot by passing it flags nobody documented for a player. A seed is the one
+## exception — `seed_override()`'s own `?seed=` reaches a positive integer on a page already
+## carrying the DEBUG MODE note, through `readout_requested()`'s gate rather than this one; the
+## command line's own `--seed` still answers only to this gate, unbounded and arbitrary, as it
+## always has.
 ##
 ## **`--no-telemetry` is not here.** It is a documented player-facing opt-out (see
 ## docs/TELEMETRY.md), not developer furniture, and stays live in every build.
@@ -68,14 +72,16 @@ extends RefCounted
 ## including `Telemetry`'s own `?telemetry=1`.** *(2026-09-06, the player: "for dev you need it to
 ## be controllable from the getgo -- for release there should be no modifiers".)* A release build
 ## carries no modifiers of any kind; a debug build carries every one of them immediately, with
-## nothing further to unlock. This class gates a batch of capabilities at once — an arbitrary seed,
-## a chosen day, a spawn point beside any event, forced meters, a compressed day, a forced ending,
-## a forced control scheme, and (through `AutoScreenshot.from_command_line()`'s own copy of this
-## same gate) scripted input and a screenshot written to disk — where `?telemetry=1` reaches exactly
-## one bounded, already-shipped choice. An override here would reach all of the above at once from any
-## visitor's address bar, which is precisely "reveal a seed, jump to a day... nobody documented for
-## a player" — the exact outcome this class exists to prevent. The entry point stays what it
-## already is: run a debug build.
+## nothing further to unlock. This class gates a batch of capabilities at once — an arbitrary,
+## unbounded seed from the command line, a chosen day, a spawn point beside any event, forced
+## meters, a compressed day, a forced ending, a forced control scheme, and (through
+## `AutoScreenshot.from_command_line()`'s own copy of this same gate) scripted input and a
+## screenshot written to disk — where `?telemetry=1` reaches exactly one bounded, already-shipped
+## choice, and `readout_requested()`'s own bundle (the readout itself, `--skip`/`?skip=`, and a
+## positive-integer seed through `?seed=`) reaches only a page already carrying the DEBUG MODE
+## note. An override here would reach the rest of the list at once from any visitor's address bar
+## with no note required at all, which is the outcome this class exists to prevent. The entry
+## point stays what it already is: run a debug build.
 static func enabled() -> bool:
 	return OS.is_debug_build()
 
@@ -98,10 +104,12 @@ static func _svg_from_query(query: String) -> bool:
 ## Whether the developer readout was explicitly asked for on a release build — `?debug=1` (or the
 ## command line's own `--debug`), parsed the same shape as `svg_requested()` and not gated behind
 ## `enabled()`. The third bounded release-safe query flag, beside `?svg=1` and `?telemetry=1`: it
-## reaches only the readout `main.gd` draws in the top-right corner, never the bundle `enabled()`
-## gates — a seed, a day, a spawn point, forced meters, `_debug_layers`, the snapshot key and every
-## other dev flag stay unreachable from a visitor's address bar. See docs/DECISIONS.md, M133,
-## "the readout on the live page".
+## reaches the readout `main.gd` draws in the top-right corner, and gates the two flags whose own
+## release-safe path runs through it in turn — `--skip`/`?skip=` (`skip_words()`) and `?seed=`'s
+## own positive integer (`seed_override()`) — never the rest of the bundle `enabled()` gates: a
+## day, a spawn point, forced meters, `_debug_layers`, the snapshot key and every other dev flag
+## stay unreachable from a visitor's address bar. See docs/DECISIONS.md, M133, "the readout on the
+## live page".
 static func readout_requested() -> bool:
 	return _readout_from_args(OS.get_cmdline_user_args()) or _readout_from_query(_web_query())
 
@@ -203,15 +211,41 @@ static func _args() -> PackedStringArray:
 static func active_args() -> PackedStringArray:
 	return _args()
 
-## `--seed N` regenerates a specific city, so a layout bug can be looked at twice. `0` is both
-## the sentinel for "not given" and the game's own behaviour of a fresh seed per run, so nothing
-## is lost by sharing it.
+## `--seed N` regenerates a specific city, so a layout bug can be looked at twice; the command
+## line keeps its own `enabled()` gate and takes precedence when present, unbounded and
+## unvalidated as it always has been. Failing that, the page's own `?seed=N` fills in wherever
+## `readout_requested()` holds — a release page without the DEBUG MODE note never takes a seed —
+## and only for a positive integer: `0`, a negative number, an empty value and anything that is
+## not a positive integer are refused with `push_warning` and treated the same as "not given",
+## the way `_validate_skip_words()` refuses an unknown `--skip` word. `0` is both that sentinel
+## and the game's own behaviour of a fresh seed per run, so nothing is lost by sharing it.
 static func seed_override() -> int:
 	var args := _args()
 	var index := args.find("--seed")
-	if index == -1 or index + 1 >= args.size():
+	if index != -1 and index + 1 < args.size():
+		return int(args[index + 1])
+	return _seed_from_query(_web_query())
+
+## The bare parsing of `?seed=` against a query string, pulled out so a test can drive the whole
+## thing without a debug build or a `JavaScriptBridge` — the gate and the validation stay together
+## here, unlike `_skip_from_query()`/`_validate_skip_words()`, because the gate itself (`?debug=1`
+## in the *same* query) is part of what a release-shaped test case has to drive: `?seed=12345`
+## with no `?debug=1` in the same string must answer the same "not given" sentinel as any other
+## flag `readout_requested()` does not hold for. An absent `seed` parameter says nothing; a
+## present one that is not a positive integer is refused with `push_warning` — an ordinary
+## `?debug=1` page that never mentions `seed` must not warn on every load.
+static func _seed_from_query(query: String) -> int:
+	if not _readout_from_query(query):
 		return 0
-	return int(args[index + 1])
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() != 2 or pair[0] != "seed":
+			continue
+		if pair[1].is_valid_int() and int(pair[1]) > 0:
+			return int(pair[1])
+		push_warning("?seed: '%s' is not a positive integer, ignoring" % pair[1])
+		return 0
+	return 0
 
 ## `--day N` starts on a later day, clamped into the run.
 static func day_override() -> int:
