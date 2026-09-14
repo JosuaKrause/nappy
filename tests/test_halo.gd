@@ -359,6 +359,11 @@ func _test_a_flock_is_selected_and_lands(t) -> void:
 	var flock := _rig_instance(t, def, Vector2.ZERO)
 	t.check(flock._flock.size() == def.flock_size,
 			"_ready() (live in the tree) built the flock, unlike a bare _instance_at()")
+	# Standing in it: a flock waits on the pavement until she is inside `pursues_within`, and both
+	# the telegraph and the burst below are measured from the moment it notices her — which is the
+	# end of a frame, so the notice gets a frame of its own before the telegraph is stepped.
+	flock.player_at = Vector2.ZERO
+	flock._process(STEP)
 
 	flock._process(def.telegraph_time * 0.5)
 	t.check(ExcitementHalo.select_sources([flock], Vector2.ZERO).size() == 1,
@@ -389,7 +394,11 @@ func _test_a_flock_is_selected_and_lands(t) -> void:
 func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var flock := _rig_instance(t, def, Vector2.ZERO)
-	# Past the telegraph, so the birds are up and flying rather than pecking about on the ground.
+	# Standing in it, so it notices her and starts — the notice lands at the end of a frame, so it
+	# gets one of its own — then past the telegraph, so the birds are up and flying rather than
+	# pecking about on the ground.
+	flock.player_at = Vector2.ZERO
+	flock._process(STEP)
 	flock._process(def.telegraph_time + 0.1)
 
 	var before: Array[Vector2] = []

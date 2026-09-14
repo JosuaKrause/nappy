@@ -1,0 +1,19 @@
+nappy rig log  2026-09-13T20:24:25  version v0.10.1-dirty
+
+day 1  act 1  run seed 4242  city seed 4242  length 180.0s  invincible
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  plan     closed: roadworks h(6,5)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burst_water_main x20, cafe_tables x59, car_accident x20, cat_dash x8, chatting_mother x2, delivery_van x54, dog_walker x23, fallen_tree, homeless_yeller x5, leaf_blower x15, loose_dog x12, market_stall x53, moving_van x50, pigeon_flock x5, playground x2, scaffolding x26, skip x22
+   0.0  start    doorstep (62,56), facing 180°
+   0.0  near     pigeon_flock (telegraph) at (60,55), 72px, exc 0, in 0.0/s (crowd 0.0, events 3.4), sleep 0
+   0.0  shot     burst started: asked for an animation burst at (62,56) | exc 0, sleep 0 | playing | asked/burst-3744147-001
+   0.0  frame    fps 1, worst frame 148.6ms, draws 828, objects 2011, primitives 4881, process 55.77ms, physics 85.12ms
+   0.0  crowd    walked into somebody at (62,56) | exc 0, in 0.0/s (crowd 25.0, events 3.3), sleep 0
+   0.0  frame    fps 55, worst frame 65.0ms, draws 878, objects 2010, primitives 4900, process 65.68ms, physics 1.41ms
+   0.0  frame    fps 27, worst frame 67.2ms, draws 831, objects 1950, primitives 4689, process 74.96ms, physics 1.55ms
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  frame    fps 32, worst frame 42.9ms, draws 855, objects 1974, primitives 4734, process 58.44ms, physics 1.29ms
+   0.0  frame    fps 49, worst frame 21.0ms, draws 882, objects 2001, primitives 4812, process 58.44ms, physics 1.26ms
+   0.0  frame    fps 84, worst frame 18.9ms, draws 749, objects 1870, primitives 4430, process 24.25ms, physics 1.15ms
+   0.0  frame    fps 88, worst frame 11.7ms, draws 708, objects 1783, primitives 4160, process 25.74ms, physics 1.30ms
