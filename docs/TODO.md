@@ -353,35 +353,6 @@ cells can already cut a corner through a park or an alley.
 
 ---
 
-## M131 — Pigeons exist before they are seen · asked for 2026-09-13
-
-> "pigeons pop in on screen -- they should exist before they are visible."
-
-[PLAYTEST-69](playtests/PLAYTEST-69.md). The **events** rule governs.
-
-**What is true today.** `pigeon_flock` is `AHEAD_OF_PLAYER`: the director creates it when it is
-due and `_crossing_ahead_of()` sites a non-pursuing row `Tuning.AHEAD_LEAD_DISTANCE` (184px)
-ahead of her along her heading — inside the view on every heading, on purpose, because for the
-cat that is the two-second reaction window between the crouch and the bolt. The flock then
-telegraphs for 1.7s and rises. Pursuers and `TOWARD_PLAYER` rows are sited past the edge of the
-view by `Tuning.offscreen_lead()` instead (`DECISIONS.md`, M77). The M100 defect about a rig
-that cannot spawn at an ahead-of-player row names the flock for the same reason.
-
-- [ ] **The flock is on the ground before she can see it, and rises when she is near.** The
-      recommendation: make it a map placement like the day-4 dog, with a wait trigger inside
-      its own outer radius (168px) the way `pursues_within_on(day)` derives one — the birds sit
-      on the pavement, square or park from the moment they stream in at `EVENT_STREAM_RADIUS`
-      and are drawn pecking, the burst begins when she comes inside the trigger, and the
-      telegraph contract is then paid in geometry as the robber's is. The alternative is to keep
-      it ahead-of-player and site it past the view's edge with `offscreen_lead()` like a
-      pursuer, which keeps the row cheap but means she never sees them on the ground first; the
-      cat keeps its on-screen lead either way, since the crouch is its telegraph. Whichever is
-      built, `tests/test_event_views.gd` or `tests/test_events.gd` holds that a flock's first
-      drawn frame is never inside the view rect around her, and the M100 rig defect closes for
-      this row with it.
-
----
-
 ## M134 — A lost day gives the resistance back · asked for 2026-09-13
 
 > "a lost day shouldn't retain the touch mark -- a task is only complete if it is done on the
@@ -703,13 +674,17 @@ is still true.
       huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard
       stepping to the arm, or the boom stops being a detaining body and the huts alone are the
       toll, with the boom's picture still barring the lanes for the cars. The player's call
-- [ ] **A rig cannot be spawned at a row the day's plan never holds.** `--spawn event:<id>`
-      reads `DevRig.first_event_position()`, which searches the day's planned placements, so a
-      row placed ahead of the player at run time (`pigeon_flock`, anything `AHEAD_OF_PLAYER`)
-      is never found and the flag silently falls back. Found capturing M121 (`DECISIONS.md`,
-      M121, what the captures could not catch): a flock under a halo could not be photographed.
-      Either the flag refuses such a row by name, or it stands her where the row would first
-      trigger; the **cli-tools** rule wants the refusal at least
+- [ ] **A rig cannot be spawned at a row the day's plan never holds, and cannot stand outside
+      a waiting one.** `--spawn event:<id>` reads `DevRig.first_event_position()`, which
+      searches the day's planned placements, so a queue-fed row (`cat_dash`, `cyclist`,
+      `loose_dog`, the day-3 `charging_dog`, anything `AHEAD_OF_PLAYER` or `TOWARD_PLAYER`) is
+      never found and the flag silently falls back. Found capturing M121 (`DECISIONS.md`,
+      M121, what the captures could not catch); the flock is map-placed now and can be found
+      (`DECISIONS.md`, M131). Either the flag refuses such a row by name, or it stands her where
+      the row would first trigger; the **cli-tools** rule wants the refusal at least. And for a
+      row that waits — a flock, an alley robbery — `first_event_position()` stands her *inside*
+      the trigger, so no rig can photograph the silence before it; a `--spawn` that lands her
+      just outside the trigger is the other half of this item
 - [ ] **`Crowd.step()` and `Crowd._physics_process()` duplicate four lines in two orders.**
       `src/crowd/crowd.gd:230-237` (`step`) and `:625-638` (`_physics_process`) both open with
       `_signals.advance` → `_pockets.refresh` → `space_out_the_traffic` →
