@@ -15,6 +15,10 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
+## How long `_test_the_arterial_never_settles_her` walks the arterial for — see that test's own
+## docstring for the measurement behind the number.
+const ARTERIAL_WINDOW := 60.0
+
 var _city: City
 var _stroller: Stroller
 var _baby: Baby
@@ -112,14 +116,23 @@ func _test_a_calm_park_still_settles_her(t) -> void:
 ## Finding 4: standing on an ordinary street cannot be a strategy. On the arterial it is not
 ## even close — between the crowd freezing the meter and the day running out, she never goes
 ## down there, which is what makes the walk to the park the decision the game is about.
+##
+## **M125: walked for `ARTERIAL_WINDOW` (60s), not the whole day.** Measured first: printing
+## `_baby.sleepiness` every ten seconds over a full 180s walk showed it climb to ~3.1 by t=10s
+## and then hold there, unmoved, through t=170s — the arterial's noise floor is stationary for
+## the whole of a day with one act and no scheduled lull, so a longer walk than the plateau
+## itself takes to reach is not a longer look at anything, only more frames of the same reading.
+## Sixty seconds is six times that settling time, which is margin against the plateau being
+## reached slower on a seed or a day this test does not use.
 func _test_the_arterial_never_settles_her(t) -> void:
 	_start_day(1)
 	var street := CrowdLanes.arterial_pavement(_city.map)
 	_stand_at(1, street)
 	_build_rig(t, street)
-	var settled := _walk_until_asleep(street, Tuning.day_length(1))
+	var settled := _walk_until_asleep(street, ARTERIAL_WINDOW)
 	t.check(settled < 0.0,
-			"a whole day on the arterial never settles her (settled at %.0fs)" % settled)
+			"%.0fs on the arterial never settles her (settled at %.0fs)"
+			% [ARTERIAL_WINDOW, settled])
 	t.check(_baby.sleepiness < Tuning.METER_MAX,
 			"and the meter is still short of full (%.0f)" % _baby.sleepiness)
 
