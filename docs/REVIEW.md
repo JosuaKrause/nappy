@@ -129,10 +129,12 @@ item below for as long as looking takes.
   the diagonal with the picture and a flock's rim should fly with the birds. And every car and
   walker heading west now has a rim at all: the three mirrored views drew none before, which is a
   defect that stood since the halo landed. Three questions. Do rim and picture read as one body
-  through a turn? Does a west-facing body's rim read the same as an east-facing one's? And does an
-  east- or west-bound car sit right on its shadow now that its picture is registered to the
-  strike box like the other views, which moved it 14px south? Record is `DECISIONS.md`, M121; the
-  bursts are `evidence/m121-halo-follows-owner-2026-09-13/`.
+  through a turn? Does a west-facing body's rim read the same as an east-facing one's? And, on the
+  phone where it was seen, does an east- or west-bound car that has come round a turn now sit on
+  its halo and its shadow for the rest of the street, rather than a few pixels south of them? The
+  car's picture is redrawn whenever its heading moves now, not only when its view changes. Records
+  are `DECISIONS.md`, M121 and M130; the bursts are `evidence/m121-halo-follows-owner-2026-09-13/`
+  and `evidence/m130-car-halo-anchor-2026-09-13/`.
 - **Touch the day-4 chalk mark, then lose the day on purpose** (`--day 4`). The summary of the
   lost day carries the mark's words on their own larger line in the touched mark's green, above
   the ordinary lines, and the next summary does not repeat them. Does it read as *the thing this
