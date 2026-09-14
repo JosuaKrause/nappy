@@ -885,6 +885,16 @@ func _drawn_heading_key() -> Vector2i:
 ## fades linearly over its own duration — so a bump is a spike with a tail rather than a step
 ## that ends abruptly, and two people bumped in the same second cost twice. **The same distance
 ## prices both** — the horn or the bump is the same source being louder, not a second one.
+## **Not cached the way `EventInstance.contribution_at()` now is.** *(docs/DECISIONS.md, M124:
+## per-frame audit.)* A per-`_clock` cache was tried and reverted: unlike an event, whose own
+## motion and telegraph state only ever change inside its own `_process()` alongside `age`, a
+## crowd agent's position and jolt are written from **outside** it — `Crowd._bump()` and
+## `Crowd._horn()` call `startle()` and move an agent mid-tick, from `Crowd`'s own step rather than
+## this agent's `_process()` — so a cache keyed on `_clock` could answer with the jolt or the
+## position from before the bump that tick, the one frame a fresh startle is supposed to show up
+## on. `tests/test_crowd.gd`'s own `_test_walking_into_somebody_displaces_and_startles_them` reads
+## `contribution_at()` again immediately after a bump with `_clock` unmoved and expects the fresh
+## jolt, which is exactly the case a clock-keyed cache would have answered stale.
 func contribution_at(world_position: Vector2) -> float:
 	var distance := GroundShape.eccentric_distance(global_position, velocity(), world_position)
 	var total := 0.0

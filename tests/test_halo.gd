@@ -34,6 +34,7 @@ func run(t) -> void:
 	_test_an_ordinary_walker_is_a_candidate(t)
 	_test_select_sources_takes_a_mixed_candidate_set(t)
 	_test_process_picks_the_same_sources_the_linear_scan_did(t)
+	_test_event_instance_contribution_is_cached_per_frame_per_position(t)
 	_test_a_cat_dash_is_selected_and_lands(t)
 	_test_a_flock_is_selected_and_lands(t)
 	_test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t)
@@ -361,6 +362,38 @@ func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
 	crowd.free()
 	player.free()
 	halo.free()
+
+# ------------------------------------------------------ contribution_at is cached ---
+# `docs/TODO.md`, M124: `Baby._update_excitement()` (physics rate) and
+# `ExcitementHalo.select_sources()` (frame rate) both ask every live event for its
+# `contribution_at()` at essentially the same point, most frames -- so `EventInstance` caches the
+# plain query once per frame, the same `age`-keyed shape `_caret_strength()` already uses. The
+# cache must never answer for the *wrong* point or the *wrong* frame: two different positions in
+# the same tick still have to answer independently, and a new frame must never hand back last
+# frame's number for a source that has since moved.
+#
+# `CrowdAgent.contribution_at()` deliberately has no such cache -- see that method's own doc for
+# why (its position and jolt are written from outside its own `_process()`, by `Crowd`, so a
+# `_clock`-keyed cache would miss a fresh bump or startle for the rest of the tick it landed on);
+# `tests/test_crowd.gd`'s `_test_walking_into_somebody_displaces_and_startles_them` is the check
+# that would have caught it, and did, while this fix was still on `CrowdAgent`.
+
+func _test_event_instance_contribution_is_cached_per_frame_per_position(t) -> void:
+	var instance := _instance_at(_def("cached_event", 20.0, 40.0, 150.0), Vector2.ZERO)
+
+	var near := instance.contribution_at(Vector2(10.0, 0.0))
+	var far := instance.contribution_at(Vector2(140.0, 0.0))
+	t.check(near > far,
+			"two different points asked in the same tick both answer for their own position -- the " +
+			"cache is keyed on where it was asked, not just on when")
+
+	# A new frame (`age` advances the way `_process()` advances it) with the source moved away: the
+	# old position must be recomputed, not answered from a stale cache built for last frame's spot.
+	instance.age += 1.0
+	instance.global_position = Vector2(5000.0, 5000.0)
+	t.check(is_zero_approx(instance.contribution_at(Vector2(10.0, 0.0))),
+			"a new frame recomputes rather than serving last frame's cached contribution")
+	instance.free()
 
 # ------------------------------------------------------------ two rows that read as nothing ---
 # *(Playtest 38, finding 1: "cats and birds have zero effect right now according to halos".)*
