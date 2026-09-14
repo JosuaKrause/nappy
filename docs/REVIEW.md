@@ -157,6 +157,14 @@ item below for as long as looking takes.
   flock belongs on a route was answered by [PLAYTEST-71](playtests/PLAYTEST-71.md) — it is
   scenery, and M129 in `TODO.md` puts it back on them — so this asks only about the encounter.
   Record is `DECISIONS.md`, M131; the burst is `evidence/m131-flock-on-the-ground-2026-09-13/`.
+- **Play day 1 on the phone with the crowd atlas and say whether the lag moved.** The
+  crowd's body and trim now share one texture (`DECISIONS.md`, M139), which on the desktop is
+  one draw call per visible walker. With `?debug=1`, read the `fps` line and the `mean` and
+  `max` of `process` against playtest 72's table (`DECISIONS.md`, M124, the phone's process
+  time split) at the same doorstep and the same first thirty seconds; then `&skip=crowd` once
+  more for the control. Does the lag the player felt with the crowd drawn feel any different,
+  and do the numbers move? If neither, the crowd's drawing was not the cost and the next probe
+  is its scripts.
 - **Open the live page with `?debug=1&seed=<n>` on the phone, twice.** The readout's seed
   line should name `<n>` both times and the city should be the same one; without `debug=1`
   the seed line should differ between loads. The `process` and `physics` lines now read

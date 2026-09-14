@@ -112,6 +112,22 @@ const CAR_TRIM_BY_VIEW := {
 	"back_diagonal": preload("res://assets/crowd/car_back_diagonal_trim.svg"),
 }
 
+## Every table above, packed into `CrowdAtlas`'s one shared texture — what `_draw_body()` and
+## `_entry_picture_clearance()` actually read, so every crowd sprite the compatibility renderer
+## draws in a row shares one texture and the batch does not break between them. The six tables
+## above stay as the source list `CrowdAtlas.pack()` builds from, and as what
+## `tests/test_walker_views.gd` and `tests/test_car_views.gd` pin the authored views against —
+## nothing about drawing them moves except which texture object gets bound.
+static func _atlas() -> Dictionary:
+	return CrowdAtlas.pack({
+		"walker_body": WALKER_BODY_BY_VIEW,
+		"walker_trim": WALKER_TRIM_BY_VIEW,
+		"walker_body_b": WALKER_BODY_BY_VIEW_B,
+		"walker_trim_b": WALKER_TRIM_BY_VIEW_B,
+		"car_body": CAR_BODY_BY_VIEW,
+		"car_trim": CAR_TRIM_BY_VIEW,
+	})
+
 ## How fast an agent closes on its lane centre. Slow enough that a corner reads as a turn.
 const STEER_SPEED := 90.0
 ## How far ahead an agent looks for a street it cannot travel, and how far down a street it
@@ -2489,15 +2505,17 @@ func _entry_room() -> float:
 ## conservative on the edge that needed less, never short on the one that needed more. Only the
 ## cardinal (`front`, `side`) views are asked, since a fresh entry never lands mid-turn.
 func _entry_picture_clearance() -> float:
+	var atlas := _atlas()
 	if kind == Kind.CAR:
+		var car_body: Dictionary = atlas["car_body"]
 		if _vertical:
-			var body: Texture2D = CAR_BODY_BY_VIEW["front"]
+			var body: Texture2D = car_body["front"]
 			var south_reach := Tuning.CAR_STRIKE_HALF_LENGTH \
 					+ float(CAR_CANVAS_BOTTOM_MARGIN["front"])
 			return maxf(south_reach, body.get_size().y - south_reach)
-		var side: Texture2D = CAR_BODY_BY_VIEW["side"]
+		var side: Texture2D = car_body["side"]
 		return side.get_size().x * 0.5
-	var walker: Texture2D = WALKER_BODY_BY_VIEW["front"]
+	var walker: Texture2D = atlas["walker_body"]["front"]
 	var size := walker.get_size()
 	return size.y if _vertical else size.x * 0.5
 
@@ -2868,6 +2886,7 @@ func _draw() -> void:
 func _draw_body(canvas: CanvasItem) -> void:
 	var frame := _frame()
 	var flip := _flipped()
+	var atlas := _atlas()
 	if kind == Kind.CAR:
 		var forward := _travel_axis()
 		_draw_shape_shadow(canvas, shape, Vector2.ZERO, forward)
@@ -2875,16 +2894,18 @@ func _draw_body(canvas: CanvasItem) -> void:
 		# The same heading the shadow above and the debug view's bounding box are drawn on, so the
 		# picture cannot register against a car that is not there — see `_car_body_anchor()`.
 		var anchor := _car_body_anchor(view, forward)
-		Sprites.draw_standing(canvas, CAR_BODY_BY_VIEW[view], anchor, Vector2.ZERO, flip, colour)
-		Sprites.draw_standing(canvas, CAR_TRIM_BY_VIEW[view], anchor, Vector2.ZERO, flip)
+		var car_body: Dictionary = atlas["car_body"]
+		var car_trim: Dictionary = atlas["car_trim"]
+		Sprites.draw_standing(canvas, car_body[view], anchor, Vector2.ZERO, flip, colour)
+		Sprites.draw_standing(canvas, car_trim[view], anchor, Vector2.ZERO, flip)
 		return
 	_draw_shape_shadow(canvas, shape, Vector2.ZERO, Vector2.RIGHT)
 	var view: String = WALKER_VIEW_BY_SECTOR[frame]
 	# One lookup decides both layers, so the coat and the legs can never show two different
 	# instants of the same stride.
 	var stepping := _walker_gait_frame() == 1
-	var body_by_view := WALKER_BODY_BY_VIEW_B if stepping else WALKER_BODY_BY_VIEW
-	var trim_by_view := WALKER_TRIM_BY_VIEW_B if stepping else WALKER_TRIM_BY_VIEW
+	var body_by_view: Dictionary = atlas["walker_body_b"] if stepping else atlas["walker_body"]
+	var trim_by_view: Dictionary = atlas["walker_trim_b"] if stepping else atlas["walker_trim"]
 	Sprites.draw_standing(canvas, body_by_view[view], Vector2.ZERO, Vector2.ZERO, flip, colour)
 	Sprites.draw_standing(canvas, trim_by_view[view], Vector2.ZERO, Vector2.ZERO, flip)
 
