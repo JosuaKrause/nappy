@@ -296,8 +296,9 @@ static func controls_override() -> String:
 
 ## `--layers 1,3` (or the page's own `?layers=1,3`) sets which of `DebugLayers`' three geometry
 ## layers start on, so a rig screenshot of a particular disagreement is reproducible without a
-## keypress. `4` (the readout) is not part of this list: it defaults on already, and this flag
-## exists for a clean *geometry* shot. Gated behind `enabled()` explicitly, the same as
+## keypress; `5` (`RouteLines`, the day's routes) is the one other layer in the list, on the same
+## terms. `4` (the readout) is not part of this list: it defaults on already, and this flag exists
+## for a clean *geometry* shot. Gated behind `enabled()` explicitly, the same as
 ## `ControlsMode._url_word()` gates its own query read, since `_web_query()` itself carries no gate
 ## — `svg_requested()` above is the one caller that wants it to stay live in a release web build.
 static func layers_override() -> Array[int]:
@@ -311,9 +312,10 @@ static func layers_override() -> Array[int]:
 
 ## The bare parsing of a `--layers`/`?layers=` value into layer indices, pulled out so a test can
 ## drive it directly — the same split `ControlsMode.from_word()` makes for `--controls`, since
-## nothing here can fake a real command line. A malformed entry (not a number, or outside `1..3`)
-## is dropped with a printed note rather than failing the whole flag: a rig's one typo should not
-## fall back to every layer off instead of the two it actually asked for.
+## nothing here can fake a real command line. A malformed entry (not a number, or one outside the
+## five valid indices, `4` included even though it can never be *set* this way) is dropped with a
+## printed note rather than failing the whole flag: a rig's one typo should not fall back to every
+## layer off instead of the two it actually asked for.
 static func parse_layers(raw: String) -> Array[int]:
 	var result: Array[int] = []
 	if raw == "":
@@ -323,7 +325,7 @@ static func parse_layers(raw: String) -> Array[int]:
 			push_warning("--layers: ignoring non-numeric entry '%s'" % word)
 			continue
 		var n := int(word)
-		if n < 1 or n > 3:
+		if n < 1 or n > 5 or n == 4:
 			push_warning("--layers: ignoring out-of-range entry '%d'" % n)
 			continue
 		if not n in result:

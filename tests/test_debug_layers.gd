@@ -215,7 +215,8 @@ func _test_the_layer_keys_resolve_to_their_own_index(t) -> void:
 	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_2)) == 2, "2 is shadows")
 	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_3)) == 3, "3 is bounding boxes")
 	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_4)) == 4, "4 is the readout")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_5)) == 0, "a fifth key answers nothing")
+	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_5)) == 5, "5 is the route lines")
+	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_6)) == 0, "a sixth key answers nothing")
 	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_1, false)) == 0, "a release, not a press, does nothing")
 	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_1, true, true)) == 0,
 			"an echo does nothing — a held key is one request, not a flood of them")
