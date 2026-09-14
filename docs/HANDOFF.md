@@ -288,22 +288,20 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
   per-frame audit fixes, M125's crowd-suite split and M135's route lines; each has its record
   in `DECISIONS.md` and its played questions in `REVIEW.md`. Nothing is in flight: no worktree,
   no open PR. `git tag --list 'v*'` says what the site serves.
-- **M129, a path through the city never has to cost, is the next design work and it starts
-  with three questions for the player**, in its entry: whether a pacing row denies its whole
-  beat or only where the beat never opens, whether a moving row denies its dawn position or its
-  swept route, and whether a region door on a route counts as a cut. The probe measured the
-  guarantee (`DECISIONS.md`, M129) and found it true of about one route in fourteen and of none
-  from act III; the four rules were rewritten against the shapes it found, the dominant one a
-  covered junction that no earlier item had named. Re-run the probe first, since M131's
-  map-placed flock landed after the measurement. The busker's street-side spill
-  (`DECISIONS.md`, M128) is read against these rules: with a line on the far pavement, a spill
-  onto one side is a price, not a wall.
-- **Three consequences of this session's work are the player's to accept or overturn**, each
-  in `REVIEW.md` with its record: a placed flock is a wall under the cost rule and so stands off
-  the day's routes (`DECISIONS.md`, M131); the route lines' first segment hops from the door to
-  wherever a route joins the home street, and their interior is cell centres rather than tile
-  centres (`DECISIONS.md`, M135); and the resistance's trap guards only the yeller it was seeded
-  beside now that the contact is the first one reached (`DECISIONS.md`, M132).
+- **M129, a path through the city never has to cost, is the next design work and its reading
+  is decided** ([PLAYTEST-71](playtests/PLAYTEST-71.md)): a pacing row counts only where its
+  beat never opens, a moving row, a region door and a flock never count. Every number in
+  `DECISIONS.md` under M129 was taken under a stricter reading, so the entry's first item is
+  the probe re-cut and re-run, and its rules are cut against the shapes that run finds. The
+  busker's street-side spill (`DECISIONS.md`, M128) is read against these rules: with a line on
+  the far pavement, a spill onto one side is a price, not a wall.
+- **M137, the contact is whoever she hands the note to and the trap comes to her**, is
+  specified and unbuilt: the robber spawns off screen, already pursuing, at the handoff instead
+  of standing beside one seeded yeller from dawn.
+- **One consequence of the last session's work is still the player's to accept or overturn**,
+  in `REVIEW.md` with its record: the route lines' first segment hops from the door to wherever
+  a route joins the home street, and their interior is cell centres rather than tile centres
+  (`DECISIONS.md`, M135). The flock and the trap were answered by playtest 71.
 - **M124's atlas item waits on one experiment on a phone.** The phone half is measured
   (`DECISIONS.md`, M124, the phone half): the whole frame is `process`, which on the threads-off
   web build includes the draw submission, so the readout cannot say whether the phone's 850
