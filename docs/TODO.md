@@ -124,10 +124,11 @@ Prioritised on 2026-09-09, in the player's words where a sentence decided a plac
 
 0. **What [PLAYTEST-67](playtests/PLAYTEST-67.md) and [PLAYTEST-68](playtests/PLAYTEST-68.md)
    left open**, on the same footing as the round before it: **M124**, the game on a phone —
-   its desktop half is measured and fixed (`DECISIONS.md`, M124), and what stands is the phone
-   half of the measurement, the atlas item gated on it, and the audit's per-frame findings;
-   and **M125**, the test suite is slow again — five suites pruned (`DECISIONS.md`, M125),
-   the crowd suite and four others still over the runner's budget. M126's audit is filed,
+   its desktop half is measured and fixed and its audit's per-frame findings are built
+   (`DECISIONS.md`, M124), and what stands is the phone half of the measurement and the atlas
+   item gated on it; and **M125**, the test suite is slow again — ten suites pruned and the
+   crowd suite split (`DECISIONS.md`, M125), the events and routes suites still over the
+   runner's budget. M126's audit is filed,
    M127's first press is fixed, and M128's playground and busker are built; the records are in
    `DECISIONS.md`.
 1. **M56**, whose one remaining item is the measurement against the nerves. *("M56 is also
@@ -410,24 +411,24 @@ design decision back to itself, where "you changed a number" is all it could eve
 keeps: a guard that a sweep was not vacuous, an ordering between two constants, and anything the
 skill's incident list names.
 
-**What is true today.** The five suites the report named are pruned and their loops sized to
-what they prove — the per-suite times before and after are in `DECISIONS.md` under M125 — and
-the head of `tests/run_tests.gd` says the budget: a suite over two minutes serial is a suite to
-split or cut, because the longest suite sets the floor every shard waits on. CI runs the suite
-as eight shards on eight runners, planned from `tests/suite_costs.txt`, the measured per-suite
-times `tools/test.sh --record-costs` refreshes (`DECISIONS.md`, M125, CI runs the shards on
-eight runners); the wall time is the longest suite plus a minute of setup, so the longest suite
-is now the whole of what CI's time is made of. Five suites are over the budget.
+**What is true today.** Ten suites have had the pass and the crowd suite is split in two by
+subject — the per-suite times before and after are in `DECISIONS.md` under M125 — and the head
+of `tests/run_tests.gd` says the budget: a suite over two minutes serial is a suite to split or
+cut, because the longest suite sets the floor every shard waits on. CI runs the suite as eight
+shards on eight runners, planned from `tests/suite_costs.txt`, the measured per-suite times
+`tools/test.sh --record-costs` refreshes (`DECISIONS.md`, M125, CI runs the shards on eight
+runners); the wall time is the longest suite plus a minute of setup, so the longest suite is
+the whole of what CI's time is made of. Two suites are still over it, and the recorded costs
+were last taken under local contention, so `--record-costs` on a quiet machine comes first.
 
-- [ ] **The suites over budget get the same pass, and the longest is split.** `test_crowd.gd`
-      is the floor at nearly four minutes serial and is simulation-bound, so it is split into
-      two files by subject rather than trimmed; `test_resistance.gd`, `test_balance.gd`,
-      `test_seals.gd` and `test_checkpoints.gd` each run over two minutes serial on CI and get
-      the M125 pass: read each against the verify skill's test, delete what restates a table,
-      and size each seed or day loop to the question it asks — a rule asked per placement needs
-      fewer maps than a property of a layout — with the count and its reason in the docstring,
-      and a sweep never made vacuous. `tools/test.sh --record-costs` afterwards, so the plan
-      follows; the CI per-suite line before and after goes to `DECISIONS.md` under M125.
+- [ ] **`test_events.gd` and `test_routes.gd` are the floor now.** Both run over two minutes
+      serial and both had the pass already, so what is left is a split by subject, the way the
+      crowd suite was split at its own seals boundary — every test function still called once,
+      the check total unchanged, the split named for what each half proves — or a measured
+      shorter loop where a docstring can say why. `tools/test.sh --record-costs` afterwards,
+      so the plan follows; the per-suite line before and after goes to `DECISIONS.md` under
+      M125. The two suites M124 and M135 added have no row in `suite_costs.txt` until then and
+      CI plans them at its default.
 
 ---
 

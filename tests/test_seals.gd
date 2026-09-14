@@ -54,6 +54,35 @@ func _seal_rng(map: CityMap, day: int) -> RandomNumberGenerator:
 	rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
 	return rng
 
+## `RouteTree.for_day()` and `SealPlanner.plan_day()`'s own answers for a (map, day) pair, shared
+## by the read-only checks below rather than recomputed once per test — **M125: measured at
+## ~124ms a pair**, and eight of this file's tests ask the same 84 (seed, day) pairs (six maps,
+## every day) independently, which was the great majority of the suite's cost. Keyed on
+## `map.seed_used` for the same reason `test_checkpoints.gd`'s own cache is.
+##
+## **Not used by `_test_the_tree_itself_is_untouched` or `_test_the_doorstep_still_reaches_the_
+## corridor_after_thinning`**, which both call `SealPlanner.plan_day` directly: the first asks
+## whether *this very call* mutates the tree, and the second is stated "asked anyway rather than
+## left as an inference" — a cache hit would make either one a no-op that had already happened
+## somewhere else in the suite, which is exactly the vacuous-by-sharing failure a cache like this
+## can introduce.
+var _tree_cache: Dictionary = {}
+var _seal_cache: Dictionary = {}
+
+func _tree_for(map: CityMap, day: int) -> RouteTree:
+	var key := "%d:%d" % [map.seed_used, day]
+	if not _tree_cache.has(key):
+		_repaint_for(map, day)
+		_tree_cache[key] = RouteTree.for_day(map, day)
+	return _tree_cache[key]
+
+func _seals_for(map: CityMap, day: int) -> Array[EventScheduler.Planned]:
+	var key := "%d:%d" % [map.seed_used, day]
+	if not _seal_cache.has(key):
+		var tree := _tree_for(map, day)
+		_seal_cache[key] = SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+	return _seal_cache[key]
+
 ## Every real, non-home, non-spine, off-tree street — what a day's seals are supposed to cover
 ## exactly.
 func _candidate_segments(map: CityMap, tree: RouteTree,
@@ -86,11 +115,10 @@ func _sealed_segments(map: CityMap, planned: Array[EventScheduler.Planned]) -> D
 func _test_every_off_tree_street_is_sealed(t) -> void:
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-			_repaint_for(map, day)
-			var tree := RouteTree.for_day(map, day)
+			var tree := _tree_for(map, day)
 			var home := ClosurePlanner.home_street(map)
 			var candidates := _candidate_segments(map, tree, home)
-			var planned := SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+			var planned := _seals_for(map, day)
 			var sealed := _sealed_segments(map, planned)
 
 			var missing := 0
@@ -112,10 +140,9 @@ func _test_every_off_tree_street_is_sealed(t) -> void:
 func _test_the_tree_and_the_doorstep_are_never_sealed(t) -> void:
 	for map in _maps:
 		for day in [1, 7, 14]:
-			_repaint_for(map, day)
-			var tree := RouteTree.for_day(map, day)
+			var tree := _tree_for(map, day)
 			var home := ClosurePlanner.home_street(map)
-			var planned := SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+			var planned := _seals_for(map, day)
 			for plan in planned:
 				var segment := StreetNetwork.segment_containing(map.world_to_tile(plan.position))
 				if not segment:
@@ -136,9 +163,7 @@ func _test_the_main_road_is_never_sealed(t) -> void:
 		if map.main_road < 0:
 			continue
 		for day in [1, 7, 14]:
-			_repaint_for(map, day)
-			var tree := RouteTree.for_day(map, day)
-			var planned := SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+			var planned := _seals_for(map, day)
 			var sealed := _sealed_segments(map, planned)
 			for segment in StreetNetwork.segments():
 				if not SealPlanner._is_the_main_road(map, segment):
@@ -185,9 +210,8 @@ func _test_the_doorstep_reaches_the_corridor(t) -> void:
 	var total := 0
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-			_repaint_for(map, day)
 			var home := ClosurePlanner.home_street(map)
-			var tree := RouteTree.for_day(map, day)
+			var tree := _tree_for(map, day)
 			if tree.branches.is_empty():
 				continue
 			total += 1
@@ -223,6 +247,11 @@ func _add_circle(map: CityMap, blocked: Dictionary, at: Vector2, radius: float) 
 ## Every tile a seal plan obstructs, on top of today's closures — the physical, tile-level ground
 ## she may not stand on with every seal and every closure in place. Shared by both winnability
 ## checks below so the two only differ in what they flood against, not in how they build `blocked`.
+## Not routed through `_seals_for`'s cache: the original pipeline plans a day's seals *after*
+## its closures are already on the map (`map.close_streets(closures)` runs first), while the
+## cache's first fill (from `_test_every_off_tree_street_is_sealed`) plans them against a map
+## with no closures applied at all. Sharing the two would silently change which ground a seal
+## sees as taken on the one test that actually composes seals with closures.
 func _blocked_for_day(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	var closure_rng := RandomNumberGenerator.new()
 	closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
@@ -271,8 +300,7 @@ func _some_calm_is_reached(map: CityMap, grid: ReachabilityGrid, blocked: Dictio
 func _test_a_day_is_reachable_without_the_main_road(t) -> void:
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-			_repaint_for(map, day)
-			var tree := RouteTree.for_day(map, day)
+			var tree := _tree_for(map, day)
 			var blocked := _blocked_for_day(map, day, tree)
 			for tile in _main_road_tiles(map):
 				blocked[tile] = true
@@ -296,9 +324,8 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t) -> void:
 	var sealed_count := 0
 	for map in _maps:
 		for day in [1, 4, 7, 10, 14]:
-			_repaint_for(map, day)
-			var tree := RouteTree.for_day(map, day)
-			var planned := SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+			var tree := _tree_for(map, day)
+			var planned := _seals_for(map, day)
 			var off_street_tiles := {}
 			for plan in planned:
 				var tile := map.world_to_tile(plan.position)
@@ -505,9 +532,7 @@ func _test_a_placed_crash_keeps_its_two_car_bodies(t) -> void:
 	var found := 0
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-			_repaint_for(map, day)
-			var tree := RouteTree.for_day(map, day)
-			for plan in SealPlanner.plan_day(map, day, tree, _seal_rng(map, day)):
+			for plan in _seals_for(map, day):
 				if plan.def.id != "car_accident":
 					continue
 				found += 1
@@ -608,9 +633,7 @@ func _test_no_seal_body_stands_in_a_street_tree(t) -> void:
 	for map in _maps:
 		var trees := StreetTrees.footprint_tiles(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-			_repaint_for(map, day)
-			var tree := RouteTree.for_day(map, day)
-			for plan in SealPlanner.plan_day(map, day, tree, _seal_rng(map, day)):
+			for plan in _seals_for(map, day):
 				if plan.def.id == "fallen_tree":
 					continue
 				checked += 1
@@ -632,6 +655,10 @@ func _test_no_seal_body_stands_in_a_street_tree(t) -> void:
 ## (`_test_whole_scene_hard_seals_place_a_single_body`), so its position is the middle of the road
 ## and the pit is at the kerb — "covers it" is measured against the body's own
 ## `obstructs_radius`, not against the tile it stands on.
+## Not routed through `_seals_for`'s cache: `map.is_tree_pit_emptied()` below reads the map's own
+## live per-day bookkeeping, which only matches the day this loop is on when the plan was *just*
+## made for it — a cached plan from earlier in the suite answers for a pit some other day's
+## planning (and repainting) has since moved on from.
 func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t) -> void:
 	var found := 0
 	var reach := EventCatalogue.by_id("fallen_tree").obstructs_radius

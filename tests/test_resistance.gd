@@ -6,6 +6,12 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
+## Maps for a sweep that asks about a *rule* rather than a *layout* — the same distinction and the
+## same name `tests/test_routes.gd` and `tests/test_regions.gd` use: "no scheduled placement ever
+## lands near the doorstep" is enforced by construction the same way on every city, so a second
+## city tests the same guarantee against different noise rather than a different shape of it.
+const RULE_SEEDS := 3
+
 func run(t) -> void:
 	_test_step_table(t)
 	_test_step_selection(t)
@@ -559,19 +565,27 @@ func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t) -> void:
 ## through 3 are supposed to make it impossible by construction, and this is what proves it.
 ## Nothing named `alley_robbery` — the catalogue's own placement, from `first_day` 8, or the
 ## resistance's guard trap, from `TRAP_FIRST_DAY` (4) — ever stands within lethal reach of the
-## doorstep, over several seeds and every day either kind can appear.
+## doorstep, over `RULE_SEEDS` seeds and every day either kind can appear.
 ##
 ## `reach` is computed from the row's own `inner_radius` (30px, the always-lethal zone around
 ## whichever one of them it is) and the trap's own `min_distance` (66px, how close a guard is
 ## ever placed to its mark) rather than a literal — the two named constants this bug was always
 ## about, added together as a generous rather than exact bound.
+##
+## **M125: six seeds cut to `RULE_SEEDS` (3).** Measured, this loop alone was 55.5s of the suite's
+## ~65s: `EventScheduler.build_day()` schedules the whole city to answer a question about one row,
+## once per (seed, day). The exclusion this checks is enforced at placement time the same way on
+## every city — "impossible by construction" is a property of the construction, not of any one
+## city's shape — so it is a rule sweep, not a layout sweep, and keeps the full day range (4..14,
+## every day either kind can appear) while halving the seeds.
 func _test_no_alley_robbery_stands_near_the_doorstep(t) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
 	var max_distance: float = robbery.pursues_within + ContactPoint.REACH
 	var reach: float = robbery.inner_radius + min_distance
 	var checked := 0
-	for seed_value in [4242, 90210, 2295276695, 291862120, 314159, 555555]:
+	var seeds: Array[int] = [4242, 90210, 2295276695, 291862120, 314159, 555555]
+	for seed_value: int in seeds.slice(0, RULE_SEEDS):
 		var map := CityGenerator.generate(seed_value)
 		var doorstep := map.doorstep_world_position()
 		var consumed: Array[String] = []
