@@ -16,6 +16,13 @@ var failure_reason := ""
 var _map: CityMap
 var _player: Node2D
 var _connected := false
+## The whole second `day_time_changed` was last emitted for. `hud.gd`'s clock reads to the second
+## (`"%d:%02d" % [int(remaining) / 60, int(remaining) % 60]`) and its urgency colour flips at the
+## same integer boundary (`remaining < 60.0`, which changes exactly when `int(remaining)` drops
+## from 60 to 59) — so re-emitting while this has not changed can only ever hand the HUD text and
+## colour it would draw identically to what it drew last time. `-1` so the day's first frame,
+## whatever `time_remaining` starts at, always counts as a change.
+var _last_emitted_second := -1
 
 func setup(map: CityMap, player: Node2D) -> void:
 	_map = map
@@ -32,6 +39,7 @@ func start(length: float) -> void:
 	time_remaining = length
 	phase = GameEnums.DayPhase.WALKING
 	failure_reason = ""
+	_last_emitted_second = int(time_remaining)
 	EventBus.day_time_changed.emit(time_remaining, time_total)
 
 ## 1.0 at dawn, 0.0 at dusk. Drives the light.
@@ -58,7 +66,15 @@ func _process(delta: float) -> void:
 	# clock which never reaches zero never gets to ask.
 	if not DevFlags.invincible():
 		time_remaining -= delta
-	EventBus.day_time_changed.emit(maxf(time_remaining, 0.0), time_total)
+	var displayed := maxf(time_remaining, 0.0)
+	# The label this feeds reads to the whole second and nothing finer, so a frame that has not
+	# crossed a second boundary since the last emit would only hand the HUD the same text and the
+	# same urgency colour it already drew — sixty avoidable emits (and, downstream, sixty format
+	# calls and a `modulate` write) for the one that actually changes anything.
+	var second := int(displayed)
+	if second != _last_emitted_second:
+		_last_emitted_second = second
+		EventBus.day_time_changed.emit(displayed, time_total)
 	if time_remaining <= 0.0:
 		if _ignores_loss(GameEnums.DayResult.LOST_TIMEOUT):
 			# Holds at zero rather than running arbitrarily negative, so the clock reads 0:00
