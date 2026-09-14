@@ -282,7 +282,14 @@ var _turn: CarTurn = null
 var _turn_run_up := 0.0
 ## The sector, flip and (walker only) gait frame currently drawn, so a redraw only happens when
 ## one of them changes. The third component is always 0 for a car, which never bobs a stride.
+##
+## **This is the quantised half of what the drawing reads, and a car has a continuous half too** —
+## `_drawn_heading` below. See `_redraw_if_the_picture_changed()`.
 var _picture := Vector3i(-1, -1, -1)
+## The live heading a car's picture was last drawn at, quantised by `CAR_HEADING_STEPS` — the other
+## half of the redraw key. Always `Vector2i.ZERO` for a walker, whose drawing reads no heading at
+## all: its own picture is the sector, the mirror and the gait frame and nothing else.
+var _drawn_heading := Vector2i.ZERO
 ## Whether this car's own caret was up last frame, so it gets one redraw to come off with.
 var _was_marked := false
 
@@ -817,11 +824,27 @@ func _hold_inside_the_tile(stood_on: Vector2i, along_axis: bool) -> void:
 ## Moving a Node2D does not invalidate its draw list — the transform is applied when it is
 ## replayed — so an agent only redraws when its picture actually changes. At this population that
 ## is the difference between five hundred redraws a frame and a handful.
+##
+## **A term missing from the key is a frozen picture rather than a crash**, the same rule
+## `EventInstance._redraw_if_the_picture_changed()` states for the catalogue's own gate — so the key
+## has to name every time-varying thing `_draw_body()` reads and not a plausible subset. A walker's
+## drawing is the sector, the mirror and the gait frame, all three quantised and all three above. **A
+## car's drawing also reads its live heading, twice**: `_car_body_anchor()` registers the picture
+## `26·|heading.y| + 14·|heading.x|` south of the node, and `_draw_shape_shadow()` sweeps the
+## capsule along the same heading. Both are continuous through an arc while the sector is not, so a
+## key made only of the quantised half leaves a car that has turned wearing the anchor and the
+## shadow axis it last had at a sector boundary — up to 22.5 degrees back, which lands an east- or
+## west-bound car's picture about nine pixels south of its own strike box and keeps it there for the
+## rest of its run in that lane, since nothing about the quantised picture ever changes again. The
+## rim does not go with it: `EntityHalo` re-traces the body every frame it is drawn, so the halo
+## stands where the car should be and the car does not. That is exactly what the player saw.
 func _redraw_if_the_picture_changed() -> void:
 	var gait := _walker_gait_frame() if kind == Kind.WALKER else 0
 	var picture := Vector3i(_frame(), 1 if _flipped() else 0, gait)
-	if picture != _picture:
+	var drawn_heading := _drawn_heading_key()
+	if picture != _picture or drawn_heading != _drawn_heading:
 		_picture = picture
+		_drawn_heading = drawn_heading
 		queue_redraw()
 	# A marked car draws a caret that can breathe with its own horn, and a projected approach
 	# can change its strength frame to frame with nothing else about the picture moving. The
@@ -829,6 +852,27 @@ func _redraw_if_the_picture_changed() -> void:
 	elif kind == Kind.CAR and (_caret_strength() > 0 or _was_marked):
 		_was_marked = _caret_strength() > 0
 		queue_redraw()
+
+## How finely the redraw key reads a car's own live heading: each component of the unit vector to
+## the nearest hundred-and-twenty-eighth. That is at most 1/256 of error per component, so the
+## anchor it decides — `26·|heading.y| + 14·|heading.x|`, whose steepest term is the 26 —
+## can be held back by at most `(26 + 14) / 256`, about a sixth of a world pixel, and the shadow
+## capsule's own axis by about a quarter of a degree. Nothing a screen can show at any zoom the game
+## uses is ever frozen waiting for a step.
+##
+## **A car in a lane costs nothing for it.** `heading()` there is exactly `(±1, 0)` or `(0, ±1)` —
+## built from `_direction` rather than integrated from a float — so the key is the same value every
+## tick and no redraw is asked for, which is the whole of what the gate is for. Only the seconds a
+## car is actually on an arc pay, and that is a handful of cars on the busiest street.
+const CAR_HEADING_STEPS := 128.0
+
+## The continuous half of the redraw key — see `_redraw_if_the_picture_changed()`. A walker answers
+## `Vector2i.ZERO` and means it: nothing in the walker branch of `_draw_body()` reads a heading, so
+## there is no continuous term for its own key to carry.
+func _drawn_heading_key() -> Vector2i:
+	if kind != Kind.CAR:
+		return Vector2i.ZERO
+	return Vector2i((heading() * CAR_HEADING_STEPS).round())
 
 ## Excitement per second this agent contributes at a point. Same falloff as an event, so
 ## the crowd and the events are the same kind of quantity to the baby — and the same kernel too:
@@ -2854,6 +2898,11 @@ const CAR_CANVAS_BOTTOM_MARGIN := {
 ## instead of the first two rotating while the third sat still and then leapt. A standing car's
 ## heading is exactly cardinal, so this is an exact value there and nothing about a car in a lane
 ## depends on a texture's own axis.
+##
+## **Because it is read off the heading, the redraw gate has to read the heading too.** This is one
+## of the two continuous terms `_redraw_if_the_picture_changed()`'s key carries; keyed on the
+## quantised view alone, a car that has turned keeps the anchor it had at the last sector boundary
+## and its picture sits south of its own strike box for the rest of its run.
 func _car_body_anchor(view: String, forward: Vector2) -> Vector2:
 	var south_reach := Tuning.CAR_STRIKE_HALF_LENGTH * absf(forward.y) \
 			+ Tuning.CAR_STRIKE_HALF_WIDTH * absf(forward.x)
