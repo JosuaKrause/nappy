@@ -423,43 +423,6 @@ when she comes within its `pursues_within`; a contact she hands over anywhere el
 
 ---
 
-## M138 — A seed on the live page under `?debug=1` · asked for 2026-09-14
-
-> "setting seed should be possible with debug=1" — "that would keep the real game clean
-> still"
-
-[PLAYTEST-72](playtests/PLAYTEST-72.md). Asked when the M124 probe's readings turned out to
-vary with what each page load's fresh seed put on screen more than with the setting. The
-2026-09-06 rule that a release carries no modifiers (`DECISIONS.md`, M76 and M133) stands for a
-page without the note; `?debug=1` marks the page with a note nothing removes, and a seed under
-that note is what the player asked for.
-
-- [ ] **`?seed=N` on the web build, honoured only while `?debug=1` holds.** The same shape as
-      `?skip=`: parsed outside `enabled()`, read once, and empty whenever `readout_requested()`
-      is false, so a release page without the note never takes a seed. `seed_override()`
-      returns it where the command line's `--seed` is absent; `0` and anything that is not a
-      positive integer are refused with a warning the way an unknown skip word is, and the
-      readout's seed line already shows what the generator settled on. The **cli-tools** rule
-      governs the flag table — the `--seed` row already exists; the query form is documented
-      beside `?skip=` in `README.md`'s flag table and `docs/TELEMETRY.md`'s readout section, and
-      `DevFlags`' own doc on `enabled()` and `readout_requested()`, which both say a seed stays
-      unreachable from the address bar, is rewritten to say what is now true. A test drives the
-      query parser directly, the way the skip words' test does, with a release-shaped case
-      that shows the seed ignored without `?debug=1`.
-- [ ] **The readout's process and physics lines carry a one-second mean and max beside the
-      last frame.** *(2026-09-14: "sure, we can print other values, too".)* The M124 split
-      (`DECISIONS.md`, M124, the phone's process time split) found the readout's process line
-      is the last frame alone, so two stills of one setting read 21.7 and 65.1 ms. `FrameCost`
-      keeps the last second of `process_ms()` and `physics_ms()` samples and the readout prints
-      each line as `last  mean  max`, labelled so a screenshot says which is which; the mean is
-      what a still measures, the max is what a stutter feels like. The **telemetry** rule
-      governs `FrameCost`; the run log's once-a-second `frame` entry is unchanged, since it
-      already samples at the interval the mean covers. A test drives the window with known
-      samples the way the rest of `FrameCost` is tested, and `docs/TELEMETRY.md`'s readout
-      section describes the three columns.
-
----
-
 ## M139 — One atlas for the crowd · asked for 2026-09-14
 
 > "I can see lag only if the crowd is being drawn though." — "yes, let's start with a crowd
