@@ -290,12 +290,14 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
   in `DECISIONS.md` and its played questions in `REVIEW.md`. Nothing is in flight: no worktree,
   no open PR. `git tag --list 'v*'` says what the site serves, and the newest tag carries the
   skip flag.
-- **M138, a seed on the live page under `?debug=1`, and M139, one atlas for the crowd, are
-  the player's newest asks** ([PLAYTEST-72](playtests/PLAYTEST-72.md)) and both entries in
-  `TODO.md` are specified for an agent. The measurement that prompted both is `DECISIONS.md`,
-  M124, the phone's process time split: by the numbers the draw calls are not the phone's
-  cost, but the lag is felt only with the crowd drawn and the fps column agrees, so the atlas
-  comes back for that one family as the smallest test of the felt cost.
+- **The phone's frame is the open measurement, and the next release carries the two
+  instruments and the one fix for it.** By the numbers the draw calls are not the phone's
+  cost (`DECISIONS.md`, M124, the phone's process time split), but the lag is felt only with
+  the crowd drawn and the fps column agrees, so one atlas for the crowd is built as the
+  smallest test of that (`DECISIONS.md`, M139) alongside `?debug=1&seed=N` and the readout's
+  `mean` and `max` columns (`DECISIONS.md`, M138). What the phone says about all three is in
+  `REVIEW.md`; a shadow pass that would take the crowd to one call per walker was measured as
+  a culling regression and is recorded, not filed.
 - **M129, a path through the city never has to cost, is the next design work and its four
   rules are ready for an agent, one at a time.** The reading is the player's
   ([PLAYTEST-71](playtests/PLAYTEST-71.md)) and the probe measures it (`DECISIONS.md`, M129,
