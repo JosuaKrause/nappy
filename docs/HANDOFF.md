@@ -280,15 +280,20 @@ zebra running into the mountain, four dotted crossings under one light — and n
 drives off the map, or onto it, except a car by the tunnel or the bridge. All of it was checked on rig captures
 and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
-## Where the last session stopped, 2026-09-13
+## Where the last session stopped, 2026-09-14
 
 **This section is the pick-up for the next session and is removed by it.** `gh pr list` and
 `git worktree list` are the truth; this is the map.
 
-- **Everything playtest 69 asked for is built, merged and released**, and so are M124's six
-  per-frame audit fixes, M125's crowd-suite split and M135's route lines; each has its record
+- **Everything playtests 69 to 71 asked for is built, merged and released**, and so are
+  M136's build stamp, M124's skip flag and M129's flock and probe re-run; each has its record
   in `DECISIONS.md` and its played questions in `REVIEW.md`. Nothing is in flight: no worktree,
-  no open PR. `git tag --list 'v*'` says what the site serves.
+  no open PR. `git tag --list 'v*'` says what the site serves, and the newest tag carries the
+  skip flag.
+- **The player's next move is the four phone screenshots** under M124's *split the phone's
+  process time* item: `?debug=1`, then `?debug=1&skip=events`, `&skip=crowd`, `&skip=shadows`,
+  the same day-1 walk each time, read for fps, draws and process. That measurement decides
+  whether the atlas item is built or struck.
 - **M129, a path through the city never has to cost, is the next design work and its four
   rules are ready for an agent, one at a time.** The reading is the player's
   ([PLAYTEST-71](playtests/PLAYTEST-71.md)) and the probe measures it (`DECISIONS.md`, M129,
