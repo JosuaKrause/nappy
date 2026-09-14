@@ -315,81 +315,49 @@ still reaches two calm areas, `EventScheduler._ensure_the_city_is_still_walkable
 obstructing bodies, widest first, until a park is reachable, and a `hard_fail` row keeps its
 whole field clear of other events (`_room_around`). Every one of those is about *reaching*, and
 a route that reaches through three friction fields in a row is as legal as an empty one. Costly
-rows land inside the corridor on purpose (the `friction` role); a kerbed van takes 44px of a
-64px footway so *the answer is the other side of the street* (`docs/EVENTS.md`), but nothing
-checks that the other side is open where it is needed. `homeless_yeller` `paces` between the
-ends of its route for ever at intensity 14 and a 210px reach. Crossings exist at every junction
-(a zebra, or the spine's signalled lines) and she can cross anywhere in play; the corridor's
-cells can already cut a corner through a park or an alley.
+rows land inside the corridor on purpose (the `friction` role). **The guarantee is measured and
+is far from true**: `tests/probes/m129_zero_cost_line.gd`, run by name, finds a zero-cost line
+along about one route in fourteen over a run and along none from act III; the numbers, the
+readings and the failing shapes are in `DECISIONS.md` under M129. The dominant break is a
+*covered junction* — the only legal crossing sits inside some row's reach — then the yeller's
+beat, then a single row wide enough to take a street alone (the street is 192px kerb to kerb and
+most reaches are 179 to 240px). A van with the far pavement also taken is the rarest shape and
+two friction fields on facing pavements never occur, so the far-pavement rule the entry first
+drafted is not written. The corridor grower itself crosses a carriageway mid-block about three
+times per route, on ordinary streets and never on the spine. M131's map-placed flock landed
+after the measurement, so a re-run comes first.
 
-- [ ] **The guarantee, stated and measured before anything moves.** A probe under
-      `tests/probes/` that, for each planned day over a set of seeds, walks every route from
-      the home to its calm area and asks whether a *zero-cost line* exists along it: a line
-      that stays out of every placed row's outer radius at the top of its beat, moves between
-      pavements only at intersections, never mid-block, and treats the corridor's own
-      park-and-alley cuts as ground like any other. It reports the fraction of routes that
-      have one, and for those that do not, which row and which stretch broke it — a van with
-      the far pavement also taken, two friction fields on facing pavements, a yeller whose beat
-      never leaves an opening. The numbers and the failing shapes go to `DECISIONS.md` first;
-      the rules below are chosen against them, and a rule whose case the probe never finds is
-      not written.
-- [ ] **A friction row on a route's pavement is accepted only if the far pavement is open for
-      the stretch.** Checked before the row is placed, never repaired after (the city rule): the
-      opposite pavement between the two nearest intersections holds no costly or impassable
-      body and is reachable from the route by an intersection crossing at each end. Where the
+**Three readings are the player's to choose before the rules are cut**, since each moves the
+number: whether a pacing row denies its whole beat or only where its beat never opens (7.4% to
+10.7%); whether a moving row denies its dawn position or its whole swept route (7.4% to 2.7%);
+and whether a region door on the route counts as a cut (7.4% to 7.7%). The recommendation is
+the primary reading — whole beat, dawn position, doors counted — since it is the one a player
+walking at any moment of the day meets.
+
+- [ ] **A route's junctions stay clear.** The junctions a route passes through, and the ones at
+      each end of each of its streets, are outside every placed row's reach: checked before a
+      row is placed, never repaired after (the city rule), so a row whose field would cover a
+      route junction is refused that ground. This is the shape that breaks most routes and no
+      earlier item named it. Pursuers, `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` rows and city-wide
+      rows are outside this — they pay the telegraph contract instead — and so is anything off
+      the corridor, where the wall role is the design. Re-run the probe after; the fraction and
+      the shapes go beside the first table in `DECISIONS.md`.
+- [ ] **No single row takes a route street's whole width.** A friction row on a route's
+      pavement is accepted only if its reach leaves the far pavement of that street outside it
+      for the stretch between the two nearest junctions; a row that cannot — `police_patrol`,
+      `busker`, `ice_cream_van` at today's reaches on a 192px street — is refused corridor
+      ground or its reach on the corridor is the number the **balance** rule moves. Where the
       corridor runs along a precinct, a park edge or an alley, say what "the other side" is
-      there or refuse the row that ground. Pursuers, `AHEAD_OF_PLAYER` rows and city-wide rows
-      are outside this — they pay the telegraph contract instead — and so is anything off the
-      corridor, where the wall role is the design.
+      there or refuse the row that ground. Re-run the probe after.
 - [ ] **A pacing row leaves the line open for part of its beat.** The yeller's route is sited
       and sized so that the pavement it paces is clear at one end for a readable share of each
       loop, or its loop runs on the pavement the route does not use; the choice is measured
       with the probe and the reach the line needs at the far end of its beat is the number. The
-      same for any other row that `paces`.
-- [ ] **Mid-block crossings are not counted on.** The route tree's cells and the probe's line
-      cross a carriageway only at a junction; in play she may still cross anywhere. If the
-      corridor grower already cuts across a street mid-block, that is a finding for the probe
-      to name and this item to fix.
-
----
-
-## M134 — A lost day gives the resistance back · asked for 2026-09-13
-
-> "a lost day shouldn't retain the touch mark -- a task is only complete if it is done on the
-> day that won. but also it should reset if lost so the player can try again"
-
-[PLAYTEST-69](playtests/PLAYTEST-69.md), on reading M132's record. *Asked for as "what the run
-has spent stays spent" · overturned for the resistance on 2026-09-13.* The **godot** and
-**verify** rules govern; the resistance director and `GameState` are the files.
-
-**What is true today.** `GameState.finish_day()` on a loss spends a nerve, erases where she
-settled, and keeps everything else: `completed_resistance_steps`, `resistance_progress`,
-`failed_resistance_steps`, `resistance_carrying_package`, `sabotage_done` and the queued
-brief all survive the nerve, and a mark once in `completed_resistance_steps` is never offered
-again, so a mark touched on a lost day is both kept and unrepeatable. The lost day's summary
-reads the queued brief and clears it (`DECISIONS.md`, M132).
-
-- [ ] **Nothing the resistance did on a lost day counts, and the retry offers it again.** At
-      the start of each day `GameState` takes a snapshot of the resistance's run state — the
-      six fields above — and a loss restores it before the retry begins, so a mark touched, a
-      step performed, a contact lost to its deadline, a package picked up or the last night's
-      sabotage on a lost day are all undone, and the same mark or contact is offered on the
-      retry exactly as the day first offered it. A won day commits the snapshot. The rule in
-      `finish_day()`'s docstring gains the resistance as its second exception beside
-      `settled_in`, with the player's sentence as the reason. `tests/test_day_loop.gd` holds
-      it: touch a mark, lose the day, the mark is untouched and on offer again; perform a step,
-      lose, progress is back where it was; win, and both stand.
-- [ ] **A lost day's summary repeats the day's own instruction, never tomorrow's.** *(2026-09-13:
-      "the words shown on the lost day are the words that show at the beginning of that day not
-      the nexts. since day doesn't have words it doesn't make sense to show words on day 4".)*
-      M132's *"it should show also when dying"* means the words she already had: a lost
-      summary shows the brief of the perform step that was on offer when the day began — the
-      same words the previous won summary read — so the retry is reminded what the day is for,
-      and it shows nothing when no step was on offer, which is every lost day 4. A mark touched
-      on the lost day itself has its touch taken back by the first item, so its words are not
-      shown until the touch that counts; a won summary reads the newly queued brief as today.
-      `tests/test_day_loop.gd` holds both: a lost day 5 with the note's step on offer shows the
-      day-4 mark's words, a lost day 4 with a mark touched shows none.
+      same for any other row that `paces`. Re-run the probe after.
+- [ ] **Mid-block crossings are not counted on.** The route tree's cells cross a carriageway
+      only at a junction; in play she may still cross anywhere. The probe finds the grower
+      crossing mid-block on most routes today, so this is a change to how the corridor is grown
+      on the reachability grid, and the probe's own mid-block count is its test.
 
 ---
 

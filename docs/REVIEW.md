@@ -135,16 +135,25 @@ item below for as long as looking takes.
   car's picture is redrawn whenever its heading moves now, not only when its view changes. Records
   are `DECISIONS.md`, M121 and M130; the bursts are `evidence/m121-halo-follows-owner-2026-09-13/`
   and `evidence/m130-car-halo-anchor-2026-09-13/`.
-- **Touch the day-4 chalk mark, then lose the day on purpose** (`--day 4`). The summary of the
-  lost day carries the mark's words on their own larger line in the touched mark's green, above
-  the ordinary lines, and the next summary does not repeat them. Does it read as *the thing this
-  screen is telling you*, and is one showing enough? On day 5 the header reads *somewhere out
-  there: the one who won't stop shouting* rather than the step's name — does that read as an
-  instruction? Record is `DECISIONS.md`, M132.
+- **Touch the day-4 chalk mark, then lose the day on purpose, then win it** (`--day 4`). The
+  lost day's summary says nothing about the mark, since the touch is given back with the loss;
+  the retry offers the same mark in the same place; the won summary carries its words on their
+  own larger line in the touched mark's green, above the ordinary lines. Then lose day 5: its
+  summary repeats *the one who won't stop shouting* rather than anything new. Does the brief
+  read as *the thing this screen is telling you*, does the retry finding the same mark read as
+  a second chance rather than a repeat, and does the lost day 5 reminder read as help? On day 5
+  the header reads *somewhere out there: the one who won't stop shouting* rather than the
+  step's name — does that read as an instruction? Records are `DECISIONS.md`, M132 and M134.
 - **On day 5, walk up to the first yeller you find** (`--day 4` and play through; no flag puts a
   rig on a perform step). Whichever yeller she reaches first is the contact; the robber the day
   seeded guards only the yeller it was seeded beside. Does handing the note to the first one
   read as intended, and does an unguarded contact read as too cheap? Same record.
+- **Turn on the route lines and walk a route** (`5` in a debug build, or `--layers 5`). Each of
+  the day's planned routes is a purple line from the doorstep to a calm area through the centres
+  of the two-tile cells it runs on, and the first segment hops from the door to wherever the
+  route joins the home street. Do the lines read as the routes you would take, and does the hop
+  from the door read as wrong enough to draw from the join instead? Record is `DECISIONS.md`,
+  M135; the still is `evidence/m135-route-lines-2026-09-13/`.
 - **Find a flock of pigeons on the ground** (any day; `--spawn event:pigeon_flock` puts a rig
   in one). The birds peck on the pavement from two screens away and go up as she comes within
   150px, then are gone. Do they read as a place she can plan around rather than a thing that

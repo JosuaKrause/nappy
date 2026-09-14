@@ -27,6 +27,9 @@ func run(t) -> void:
 	_test_the_city_learns_where_she_settled(t)
 	_test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t)
 	_test_a_lost_days_brief_is_shown_and_then_cleared(t)
+	_test_a_lost_day_gives_the_resistance_back(t)
+	_test_the_retry_meets_the_same_mark_in_the_same_alley(t)
+	_test_a_lost_summary_repeats_the_days_own_instruction(t)
 
 # --------------------------------------------------------------------- rig ---
 
@@ -414,3 +417,212 @@ func _test_a_lost_days_brief_is_shown_and_then_cleared(t) -> void:
 	t.get_tree().paused = saved_paused
 	GameState.resistance_progress = saved_progress
 	GameState.pending_resistance_brief = saved_brief
+
+# ------------------------------------------------------- the resistance's own day ---
+
+## Everything the resistance did on an attempt that failed is given back, and a win commits it.
+## *"a lost day shouldn't retain the touch mark -- a task is only complete if it is done on the day
+## that won. but also it should reset if lost so the player can try again"* — so the day-4 mark is
+## not both kept and unrepeatable, which is what it was while `completed_resistance_steps` survived
+## the nerve and `ResistanceSteps.for_day()` never offers a completed step twice.
+##
+## Drives `GameState` directly rather than through a director: the six fields are what the director
+## reads to decide what today offers, and the sub-test below holds that it actually does.
+func _test_a_lost_day_gives_the_resistance_back(t) -> void:
+	var saved := _save_run()
+
+	# The mark she found on the day she lost. Touching it granted no progress — it never does —
+	# so nothing but the step list and the queued words says it ever happened.
+	GameState.start_run(SEED)
+	GameState.day = 4
+	GameState.begin_day()
+	GameState.complete_resistance_step(1, false)
+	t.check(GameState.completed_resistance_steps.has(1) \
+			and GameState.pending_resistance_brief != "",
+			"the rig actually touched the mark and queued its words")
+	GameState.finish_day(GameEnums.DayResult.LOST_CRYING)
+	t.check(not GameState.completed_resistance_steps.has(1),
+			"a mark touched on a lost day is untouched again")
+	t.check(GameState.day == 4, "and the retry is the same day")
+	var offered := ResistanceSteps.for_day(GameState.day, GameState.completed_resistance_steps,
+			GameState.failed_resistance_steps, GameState.sabotage_available())
+	t.check(offered != null and offered.index == 1,
+			"so the day's own table offers the same mark again")
+
+	# Won, the same touch stands — and then a perform step done on a day that is lost does not.
+	GameState.start_run(SEED)
+	GameState.day = 4
+	GameState.begin_day()
+	GameState.complete_resistance_step(1, false)
+	GameState.finish_day(GameEnums.DayResult.WON)
+	t.check(GameState.day == 5 and GameState.completed_resistance_steps.has(1),
+			"a mark touched on a day that was won stands, and the calendar moves")
+
+	GameState.begin_day()
+	GameState.complete_resistance_step(2, true)
+	GameState.resistance_carrying_package = true
+	GameState.fail_resistance_step(8)
+	t.check(GameState.resistance_progress == 1, "the rig performed the step")
+	GameState.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
+	t.check(GameState.resistance_progress == 0, "progress is back where the day began")
+	t.check(not GameState.completed_resistance_steps.has(2),
+			"the step performed on the lost day is on offer again")
+	t.check(GameState.completed_resistance_steps.has(1),
+			"and the mark from the day that was won is still touched")
+	t.check(not GameState.failed_resistance_steps.has(8),
+			"a contact lost to its deadline is given back with the day")
+	t.check(not GameState.resistance_carrying_package, "and the package is put down")
+	t.check(GameState.day == 5, "on the same day, which is the one being retried")
+
+	# The last night is no exception: the sabotage is an act on a day like any other.
+	GameState.start_run(SEED)
+	GameState.day = Tuning.RUN_LENGTH_DAYS
+	GameState.begin_day()
+	GameState.sabotage_done = true
+	GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+	t.check(not GameState.sabotage_done,
+			"the last night's sabotage is undone by losing the last night")
+
+	# A win commits, so the next day's loss gives back what that win left rather than nothing.
+	GameState.start_run(SEED)
+	GameState.day = 5
+	GameState.begin_day()
+	GameState.complete_resistance_step(2, true)
+	GameState.finish_day(GameEnums.DayResult.WON)
+	GameState.finish_day(GameEnums.DayResult.LOST_CRYING)
+	t.check(GameState.completed_resistance_steps.has(2) and GameState.resistance_progress == 1,
+			"a won day's own work is committed and survives the next day's loss")
+
+	_restore_run(saved)
+
+## The half a `GameState`-only test cannot see: that the *director* re-offers what the restored
+## state says is untouched, in the place the day first put it. Its placement is drawn from
+## `GameState.day_rng(day, "resistance")`, so a retry of the same day with the same run seed and an
+## untouched step is the same alley — the mark is not merely on offer again, it is where she
+## already knows to look.
+func _test_the_retry_meets_the_same_mark_in_the_same_alley(t) -> void:
+	var saved := _save_run()
+	GameState.start_run(SEED)
+	GameState.day = 4
+
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+
+	GameState.begin_day()
+	var first := _resistance_director(t, city)
+	first.start_day(GameState.day, GameState.day_rng(GameState.day, "resistance"), 300.0)
+	var step := first.current_step()
+	t.check(step != null and step.is_pickup, "day 4 puts the first chalk mark on offer")
+	var where := first.contact_position()
+	t.check(where != Vector2.INF, "and the rig knows where it is")
+	GameState.complete_resistance_step(step.index, step.grants_progress)
+	GameState.finish_day(GameEnums.DayResult.LOST_CRYING)
+
+	GameState.begin_day()
+	var retry := _resistance_director(t, city)
+	retry.start_day(GameState.day, GameState.day_rng(GameState.day, "resistance"), 300.0)
+	t.check(retry.current_step() != null and retry.current_step().index == step.index,
+			"the retry is offered the same step the lost attempt was")
+	t.close_to(retry.contact_position().distance_to(where), 0.0,
+			"in the same alley, from the same seed", 0.01)
+
+	first.free()
+	retry.free()
+	city.free()
+	_restore_run(saved)
+
+## *"the words shown on the lost day are the words that show at the beginning of that day not the
+## nexts. since day doesn't have words it doesn't make sense to show words on day 4"* — so a lost
+## summary repeats the instruction the day began with, and a lost day 4 shows nothing, because the
+## mark she touched on it is given back with the attempt and its words with it.
+##
+## Driven through `DaySummary.show_day()` rather than only over `pending_resistance_brief`, since
+## the two halves are what the player sees: the queue is `GameState`'s and the label is the
+## screen's, and a rule that only ever held on one of them would be invisible from the other.
+func _test_a_lost_summary_repeats_the_days_own_instruction(t) -> void:
+	var saved := _save_run()
+	var saved_paused: bool = t.get_tree().paused
+	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	t.add_child(summary)
+
+	# Day 5, out to hand over the note: the day-4 mark's own words are what it began with.
+	var mark := ResistanceSteps.by_index(1)
+	GameState.start_run(SEED)
+	GameState.day = 4
+	GameState.begin_day()
+	GameState.complete_resistance_step(1, false)
+	GameState.finish_day(GameEnums.DayResult.WON)
+	GameState.pending_resistance_brief = ""
+	t.check(GameState.day == 5, "the rig is on the day the note is to be handed over")
+	GameState.begin_day()
+	GameState.finish_day(GameEnums.DayResult.LOST_CRYING)
+	summary.show_day(5, GameEnums.DayResult.LOST_CRYING, "She would not settle.", 3)
+	t.check(summary._brief.text == mark.brief,
+			"a lost day repeats the words of the mark that set today's task")
+	t.check(summary._brief.visible, "and the label showing them is actually on screen")
+
+	# Day 4, the mark touched and the day lost: the touch is taken back, so its words are not read
+	# out until the touch that counts.
+	GameState.start_run(SEED)
+	GameState.day = 4
+	GameState.begin_day()
+	GameState.complete_resistance_step(1, false)
+	t.check(GameState.pending_resistance_brief == mark.brief,
+			"the touch did queue the mark's words before the day was lost")
+	GameState.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
+	summary.show_day(4, GameEnums.DayResult.LOST_TIMEOUT, "Dusk. You are still out.", 2)
+	t.check(summary._brief.text == "" and not summary._brief.visible,
+			"a lost day 4 shows no words: its whole content is finding the mark")
+
+	# Won, and the screen still reads the newly touched mark's own words as today's.
+	GameState.start_run(SEED)
+	GameState.day = 4
+	GameState.begin_day()
+	GameState.complete_resistance_step(1, false)
+	GameState.finish_day(GameEnums.DayResult.WON)
+	summary.show_day(4, GameEnums.DayResult.WON, "", 3)
+	t.check(summary._brief.text == mark.brief,
+			"a won day still reads back the mark she touched today")
+
+	summary.free()
+	# `show_day()` pauses the tree and freeing the node does not undo it — see the same restoration
+	# in `_test_day_finished_shows_the_summary_with_no_observer_in_the_tree`.
+	t.get_tree().paused = saved_paused
+	_restore_run(saved)
+
+func _resistance_director(t, city: City) -> ResistanceDirector:
+	var director := ResistanceDirector.new()
+	t.add_child(director)
+	director.set_process(false)
+	director.setup(city, city.map)
+	return director
+
+## `GameState` is an autoload and the whole suite shares one, so anything that starts a run puts
+## back what it found. The same shape `tests/test_resistance.gd` uses, over the run-level fields
+## these tests write rather than the resistance's alone.
+func _save_run() -> Dictionary:
+	return {
+		"seed": GameState.run_seed,
+		"day": GameState.day,
+		"nerves": GameState.nerves,
+		"ending": GameState.ending,
+		"progress": GameState.resistance_progress,
+		"sabotage": GameState.sabotage_done,
+		"package": GameState.resistance_carrying_package,
+		"brief": GameState.pending_resistance_brief,
+		"completed": GameState.completed_resistance_steps.duplicate(),
+		"failed": GameState.failed_resistance_steps.duplicate(),
+	}
+
+func _restore_run(saved: Dictionary) -> void:
+	GameState.run_seed = saved["seed"]
+	GameState.day = saved["day"]
+	GameState.nerves = saved["nerves"]
+	GameState.ending = saved["ending"]
+	GameState.resistance_progress = saved["progress"]
+	GameState.sabotage_done = saved["sabotage"]
+	GameState.resistance_carrying_package = saved["package"]
+	GameState.pending_resistance_brief = saved["brief"]
+	GameState.completed_resistance_steps = saved["completed"]
+	GameState.failed_resistance_steps = saved["failed"]

@@ -289,10 +289,11 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
   it goes green and then **cut a patch release** (`tools/release.sh patch push`). Which are
   still open is `gh pr list`'s answer, not this file's; a merged one has its record in
   `DECISIONS.md` and its played questions in `REVIEW.md`. M129, a path through the city never
-  has to cost, is in flight only as far as its probe: its three rules are written against the
-  probe's numbers once those are filed, and the busker's street-side spill (`DECISIONS.md`,
-  M128) is read against them — with a line on the far pavement, a spill onto one side is a
-  price, not a wall.
+  has to cost, has its guarantee measured (`DECISIONS.md`, M129) and its four rules rewritten
+  against the shapes the probe found; three readings in its entry are the player's to choose
+  before the first rule is cut, and the busker's street-side spill (`DECISIONS.md`, M128) is
+  read against them — with a line on the far pavement, a spill onto one side is a price, not a
+  wall.
 - **The review questions continue where playtest 68 stopped.** The rule for them is in
   [PLAYTEST-68.md](playtests/PLAYTEST-68.md): one item at a time with its context and a
   recommendation; an answered item closes on the answer even though later play may overturn it;

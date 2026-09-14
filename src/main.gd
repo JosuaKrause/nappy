@@ -5,7 +5,8 @@ extends Node2D
 ## `_debug` (`DevFlags.enabled()`) or `_readout_requested` (`DevFlags.readout_requested()`, the
 ## page's own `?debug=1`) holds — see `_readout_requested`'s own doc — and otherwise the string is
 ## never assembled, not merely hidden behind an invisible label. Every other piece of developer
-## furniture (`_debug_layers`, the snapshot key, every dev flag) stays gated behind `_debug` alone.
+## furniture (`_debug_layers`, `_route_lines`, the snapshot key, every dev flag) stays gated behind
+## `_debug` alone.
 
 const CITY := preload("res://scenes/world/city.tscn")
 const STROLLER := preload("res://scenes/player/stroller.tscn")
@@ -66,6 +67,9 @@ var _halo: ExcitementHalo
 ## node in the tree" is a release-build test's own question rather than one this class has to
 ## remember to ask of `_debug` separately. See `_add_debug_layers()`.
 var _debug_layers: DebugLayers
+## The day's planned routes, drawn as purple polylines — `null` outside a debug build, the same
+## shape `_debug_layers` uses. See `_add_route_lines()`.
+var _route_lines: RouteLines
 ## Set by `_add_debug_mode_note()`, or left `null` when `_readout_requested` is `false` — a test's
 ## own way to check the release shape without a live tree search for the node.
 var _debug_mode_note: DebugModeNote
@@ -157,6 +161,7 @@ func _ready() -> void:
 	_add_danger_edge()
 	_add_excitement_halo()
 	_add_debug_layers()
+	_add_route_lines()
 	_add_touch_controls()
 	_summary = DAY_SUMMARY.instantiate()
 	add_child(_summary)
@@ -370,6 +375,7 @@ func _build_the_finale_city() -> void:
 	_add_danger_edge()
 	_add_excitement_halo()
 	_add_debug_layers()
+	_add_route_lines()
 	# Three of the layers above are `CanvasLayer`s built after the boot's own orientation pass, so
 	# the rotation is applied again rather than left for the next time the window changes shape —
 	# see `_apply_orientation()`, which is idempotent and is asked the same question every frame.
@@ -684,7 +690,27 @@ func _add_debug_layers() -> void:
 	_debug_layers.apply_initial_state(DevFlags.layers_override())
 	add_child(_debug_layers)
 	_pauses_with_the_game(_debug_layers)
-	print("[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout")
+	print("[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes")
+
+## The day's planned routes — see `RouteLines`. **Absent from the tree outside a debug build**, the
+## same "null, not merely invisible" shape `_add_debug_layers()` uses. A sibling of `_debug_layers`
+## rather than a fourth case on it: that class queries the live geometry every frame it is asked to
+## draw, and this one draws a fixed plan that only changes once a day, at `_start_day()`'s own call
+## to `refresh()` — so it earns no `_process()` and no place inside a class built around one.
+##
+## Parented under `Main` directly rather than under `_debug_layers` — the two are independent
+## layers with independent lifetimes, and nesting one inside the other would make "toggle routes
+## off" and "toggle every geometry layer off" the same tree edit for no reason.
+func _add_route_lines() -> void:
+	if not _debug:
+		return
+	_route_lines = RouteLines.new()
+	_route_lines.name = "RouteLines"
+	_route_lines.z_index = 3
+	_route_lines.setup(_city.map)
+	_route_lines.apply_initial_state(DevFlags.layers_override())
+	add_child(_route_lines)
+	_pauses_with_the_game(_route_lines)
 
 ## The one control scheme, in its own layer for the same reason the danger edge gets one: it has to
 ## sit above the world it overlays. One node goes into the tree rather than a choice between two —
@@ -770,6 +796,11 @@ func _start_day() -> void:
 	# the doorstep — as one of the candidates for the wait after a summary's continue button,
 	# and nothing about it had ever been measured.
 	var elapsed := Time.get_ticks_msec()
+	# Before the announcement and before anything is placed: this is where the run photographs
+	# what the resistance had done, and a lost day gives exactly that back — so the photograph has
+	# to be taken while it is still true of the attempt about to be played. See
+	# `GameState.begin_day()`.
+	GameState.begin_day()
 	# The day is announced first, so listeners clear yesterday's state before anything is
 	# placed in today — announcing it afterwards wiped the contact the director had just
 	# reported, and the HUD showed nothing.
@@ -787,6 +818,11 @@ func _start_day() -> void:
 	GameState.city_state.begin_day(_city.map.block_plans, GameState.day)
 	_city.start_day(GameState.city_state, GameState.day,
 			GameState.day_rng(GameState.day, "closures"))
+	# The tree `_city.start_day()` just grew is today's whole plan, so the picture only has to be
+	# rebuilt here — once a day — rather than read fresh every frame the way `_debug_layers` reads
+	# the live geometry state. See `RouteLines.refresh()`.
+	if _route_lines:
+		_route_lines.refresh(_city.route_tree())
 	# The day is planned around the doorstep first, because `--spawn event` needs a plan to
 	# find an event in. The plan is the whole day and the *world* is only what is within
 	# reach, so where she actually starts decides what exists on the first frame —
@@ -1153,9 +1189,9 @@ static func _debug_snapshot_action(event: InputEvent) -> StringName:
 		return &"snapshot"
 	return &""
 
-## `1` fields, `2` shadows, `3` bounding boxes, `4` the readout — or `0` for anything else. The
-## same echo guard `_debug_snapshot_action()` carries, for the same reason: a held key is one
-## request, not a flood of toggles for as long as it stays down.
+## `1` fields, `2` shadows, `3` bounding boxes, `4` the readout, `5` the day's routes — or `0` for
+## anything else. The same echo guard `_debug_snapshot_action()` carries, for the same reason: a
+## held key is one request, not a flood of toggles for as long as it stays down.
 static func _debug_layer_key(event: InputEvent) -> int:
 	if not (event is InputEventKey and (event as InputEventKey).pressed):
 		return 0
@@ -1166,15 +1202,22 @@ static func _debug_layer_key(event: InputEvent) -> int:
 		KEY_2: return 2
 		KEY_3: return 3
 		KEY_4: return 4
+		KEY_5: return 5
 		_: return 0
 
 ## `4` is the readout's own key, answered here rather than on `_debug_layers` because the readout
 ## lives on `_status`'s pre-existing `CanvasLayer` rather than under that node — see
-## `_layer_readout_on`'s own doc. `1`-`3` forward straight to it.
+## `_layer_readout_on`'s own doc. `5` is `_route_lines`' own key, forwarded the same way `1`-`3`
+## reach `_debug_layers` — a plain `visible` flip rather than a `set_layer` call, since that node
+## draws one thing rather than three.
 func _toggle_debug_layer(layer: int) -> void:
 	if layer == 4:
 		_layer_readout_on = not _layer_readout_on
 		_status.visible = (_debug or _readout_requested) and _layer_readout_on
+		return
+	if layer == 5:
+		if _route_lines:
+			_route_lines.visible = not _route_lines.visible
 		return
 	if _debug_layers:
 		_debug_layers.set_layer(layer, not _debug_layers.layer_on(layer))

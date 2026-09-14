@@ -430,9 +430,12 @@ think is true about this spot" — a field's own falloff boundary, the ground a 
 over, and a collision body's own outline, all drawn in world space over the running game rather
 than read back from a log afterwards. `DebugLayers` (`src/dev/debug_layers.gd`) queries the live
 `EventInstance`s, `CrowdAgent`s, `Building`s, `Prop`s and the `Stroller` each frame and draws
-outlines from what they answer; nothing about how any of them draws itself changes.
+outlines from what they answer; nothing about how any of them draws itself changes. `RouteLines`
+(`src/dev/route_lines.gd`), the fifth layer below, answers a different question — not what the
+game currently thinks is true this frame, but what it planned at the start of the day — and reads
+`City.route_tree()` once rather than querying anything live.
 
-Four layers, each a number key, read as a raw keycode rather than an input-map action so a release
+Five layers, each a number key, read as a raw keycode rather than an input-map action so a release
 build has nothing in `project.godot` to reach:
 
 - **`1` fields** — every emitter's actual falloff boundary, inner and outer level, for events,
@@ -471,11 +474,21 @@ build has nothing in `project.godot` to reach:
   `primitives`, `process` and `physics`, the same six quantities and the same words the run log's
   own `frame` entry carries, assembled from the same readings so the screen and the log cannot
   disagree. See "What a frame cost" above for what each one says.
+- **`5` the day's routes** — one purple polyline per route the day's `RouteTree` offers, doorstep
+  to calm area, over the centres of the two-tile reachability cells the tree actually grew on
+  (`ReachabilityGrid`, docs/DECISIONS.md M69) rather than individual tiles — the tree keeps no
+  record of which tile of a multi-tile cell a route crossed. Redrawn once at the start of a day
+  (`RouteLines.refresh()`, called from `main._start_day()`), never per frame, because the plan it
+  draws does not change until the next one is grown. Where branches share a trunk the lines
+  overlap, which is the picture rather than a defect in it — see `RouteTree`'s own class doc on
+  what sharing is for. The same purple `TelemetryMap` already draws the day's corridor in on the
+  dusk map (`CORRIDOR_MARK`), so the live overlay and the dusk picture agree on what "the corridor"
+  looks like.
 
 The mapping above is printed once on boot in a debug build. With no `--layers` flag, a run opens
-with the readout on and the three geometry layers off, so an unflagged debug run looks exactly as
-it did before this existed. `--layers 1,3` (or the page's own `?layers=1,3`) sets which of the
-three geometry layers start on instead, so a rig screenshot of a particular disagreement is
+with the readout on and the other four layers off, so an unflagged debug run looks exactly as it
+did before this existed. `--layers 1,3,5` (or the page's own `?layers=1,3,5`) sets which of the
+four non-readout layers start on instead, so a rig screenshot of a particular disagreement is
 reproducible without a keypress; a malformed entry is dropped with a printed note rather than
 failing the whole flag. `4` is not part of that list — it defaults on already.
 
@@ -492,7 +505,7 @@ day's corridor, every event the day placed and — at dusk — the trail she act
 over it. `TelemetryMap` does the drawing.
 
 **A day played twice writes two pictures.** A nerve retries a lost day without the calendar
-advancing — see `GameState.finish_day()` and `src/autoload/game_state.gd`'s `spend_nerve` — so
+advancing — `GameState.finish_day()` spends the nerve and gives the resistance's day back — so
 `Telemetry.begin_day()` is called again with the day it just failed at, and it counts how many
 times that has happened. Every attempt names itself, including the first —
 `day06-attempt1.png` / `day06-attempt1-dusk.png`, then `day06-attempt2.png`,
