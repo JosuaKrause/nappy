@@ -303,8 +303,6 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 - **One question waits under M100's open design questions**, from the audit: whether the crowd
   moves to the physics tick so its right-of-way rules run at the cadence of the motion they
   govern, at the cost of re-measuring the crowd's numbers.
-- **In flight for an agent, at the player's word on 2026-09-13**: M125's crowd-suite split and
-  the four suites over the runner's budget; `gh pr list` says whether it has landed.
 
 ## The queue, as prioritised on 2026-09-09
 
