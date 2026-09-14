@@ -505,7 +505,7 @@ day's corridor, every event the day placed and — at dusk — the trail she act
 over it. `TelemetryMap` does the drawing.
 
 **A day played twice writes two pictures.** A nerve retries a lost day without the calendar
-advancing — see `GameState.finish_day()` and `src/autoload/game_state.gd`'s `spend_nerve` — so
+advancing — `GameState.finish_day()` spends the nerve and gives the resistance's day back — so
 `Telemetry.begin_day()` is called again with the day it just failed at, and it counts how many
 times that has happened. Every attempt names itself, including the first —
 `day06-attempt1.png` / `day06-attempt1-dusk.png`, then `day06-attempt2.png`,

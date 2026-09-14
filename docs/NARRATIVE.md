@@ -126,6 +126,12 @@ entirely and still reach the good ending.
   she reaches is simply the right one.
 - **The deadline.** The wall's window closes when the poster crew's own instance is gone —
   paste it over and the contact goes with it, for the rest of the run.
+- **Only a day she wins counts.** *"a task is only complete if it is done on the day that won"* —
+  a mark touched, a step performed, a contact lost to its deadline, a package picked up or the
+  last night's sabotage are all given back when the day is lost, and the retry offers the same
+  mark or contact again. So the errand is never spent on an attempt that failed, and a task
+  cannot be lost to a day that did not happen; the price of a bad day is the nerve, not the
+  subquest. See `GameState.finish_day()`.
 
 ### The finale
 
@@ -143,6 +149,14 @@ words back to her on the following day's screen — and the HUD carries one ters
 *somewhere out there* and what she is looking for. How far in she is belongs between days
 rather than during one. **That line is silent until the first mark has been touched** —
 the first encounter comes with no hint at all, and only later ones are named.
+
+**A lost day repeats its own instruction rather than moving on.** *"the words shown on the lost
+day are the words that show at the beginning of that day not the nexts."* The summary of a day
+she lost reads out the words of the mark that unlocked the task she was out to perform — the
+same words the summary of the day she found that mark already gave her — because a mark touched
+on a lost day has its touch given back with the attempt, and the retry needs telling what the day
+is for. A lost day 4 says nothing at all: its whole content is finding the mark, so there is
+nothing yet to repeat.
 
 A pickup mark that has never been on screen has never really been placed, so it follows
 her rather than sitting where the dawn plan first put it: once she is far enough from it

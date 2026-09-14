@@ -796,6 +796,11 @@ func _start_day() -> void:
 	# the doorstep — as one of the candidates for the wait after a summary's continue button,
 	# and nothing about it had ever been measured.
 	var elapsed := Time.get_ticks_msec()
+	# Before the announcement and before anything is placed: this is where the run photographs
+	# what the resistance had done, and a lost day gives exactly that back — so the photograph has
+	# to be taken while it is still true of the attempt about to be played. See
+	# `GameState.begin_day()`.
+	GameState.begin_day()
 	# The day is announced first, so listeners clear yesterday's state before anything is
 	# placed in today — announcing it afterwards wiped the contact the director had just
 	# reported, and the HUD showed nothing.
