@@ -295,6 +295,34 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
+## M142 — A layer turned off is drawn off · asked for 2026-09-14
+
+> "pressing number keys to turn off a layer doesn't remove the layer anymore. for example if I
+> press 2 twice I have ghost circles all over"
+
+[PLAYTEST-75](playtests/PLAYTEST-75.md). `DebugLayers` (`src/dev/debug_layers.gd`) draws the
+three overlays — `1` fields, `2` shadows, `3` bounding boxes — from one `_draw()`, and its
+`_process` queues a redraw only while a layer is on (`_wants_a_redraw()`), so that a view with
+everything off costs no queued call a frame. `_draw()` is retained: it re-runs only on
+`queue_redraw()`. So the key that turns the last layer off changes the boolean and nothing
+asks for the frame that would draw nothing — the last picture stays until something else
+redraws the node, which nothing does. The gate is right and stays; what it is missing is the
+one redraw a toggle owes.
+
+- [ ] **A toggle asks for one more redraw, so the picture follows the boolean.** `set_layer()`
+      and `apply_initial_state()` mark a redraw as owed (a private flag), `_wants_a_redraw()`
+      answers true while any layer is on *or* that flag is set, and `_process` clears the flag
+      when it queues. So turning the last layer off queues exactly one `_draw()` that draws
+      nothing, and a view with everything off goes back to costing nothing a frame after it.
+      The test beside `_test_no_redraw_is_wanted_with_every_layer_off` in
+      `tests/test_debug_layers.gd` turns a layer on through `set_layer`, off again, and asserts
+      a redraw is wanted once after the switch-off and not after `_process` has run; the
+      docstring on the gate in `debug_layers.gd` says why the flag exists (a retained `_draw()`
+      keeps its last picture; docs/DECISIONS.md, M142). Evidence: none — a headless still cannot
+      show a retained picture being cleared; the check is the player's next debug run.
+
+---
+
 ## M129 — A path through the city never has to cost · asked for 2026-09-13
 
 > "also framing from a different point of view a path through the city must never hit
