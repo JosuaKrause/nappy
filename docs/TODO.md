@@ -187,7 +187,7 @@ what would make it a run's ending rather than a flag's. The record of what was b
 
 **[PLAYTEST-50.md](playtests/PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
-touch that shows only a colour change and no confirmation on a lost day's summary. The artwork
+touch that shows only a colour change at the moment it happens. The artwork
 review and the player's directional corrections are recorded in `DECISIONS.md`.
 
 **[PLAYTEST-49.md](playtests/PLAYTEST-49.md) is the session before it and it is the prioritisation above**, plus
@@ -412,52 +412,43 @@ that cannot spawn at an ahead-of-player row names the flock for the same reason.
 
 ---
 
-## M132 — The resistance speaks loud enough to be heard · asked for 2026-09-13
+## M134 — A lost day gives the resistance back · asked for 2026-09-13
 
-> "the day text needs to be bigger to be able to be noticed and it should show also when dying
-> so if missed on the first try it can be seen on the second try. the in game note should
-> contain the same amount of info on what to do. note for a stranger contains less information
-> than won't stop shouting which can be easily missed when progressing to the next day. also,
-> we cannot expect the player to do an exhaustive check that will not work there is not enough
-> time and the baby needs to fall asleep still as well. so if the solution is the yeller it's
-> always the first yeller you come close enough to hand the note."
+> "a lost day shouldn't retain the touch mark -- a task is only complete if it is done on the
+> day that won. but also it should reset if lost so the player can try again"
 
-[PLAYTEST-69](playtests/PLAYTEST-69.md), from a run that touched the day-4 mark, lost the day,
-and reached day 5 with no idea who the note was for. The **cues** rule governs the drawing;
-the standing decision that the *first* encounter carries no hint (`CLAUDE.md`, no quest log or
-marker for the resistance) is untouched — every item here is about what the resistance says
-*after* the mark has been touched. This closes M100's open design question about a chalk
-touch that shows nothing on a lost day, which is now decided.
+[PLAYTEST-69](playtests/PLAYTEST-69.md), on reading M132's record. *Asked for as "what the run
+has spent stays spent" · overturned for the resistance on 2026-09-13.* The **godot** and
+**verify** rules govern; the resistance director and `GameState` are the files.
 
-**What is true today.** A touched mark's words (`Step.brief`) are queued in
-`GameState.pending_resistance_brief` and appended by `DaySummary._resistance_line()` on the
-**won** branch of the summary only, in the summary's ordinary line size; the touch survives the
-nerve and the mark is not offered again, so a lost day loses the sentence for good. During the
-day the header reads `somewhere out there: <step title>` — *a note for a stranger* — which
-names the step and not the instruction. The perform contact rides on one of several look-alike
-`homeless_yeller` rows and *a wrong candidate costs full price and returns nothing*
-(`docs/NARRATIVE.md`).
+**What is true today.** `GameState.finish_day()` on a loss spends a nerve, erases where she
+settled, and keeps everything else: `completed_resistance_steps`, `resistance_progress`,
+`failed_resistance_steps`, `resistance_carrying_package`, `sabotage_done` and the queued
+brief all survive the nerve, and a mark once in `completed_resistance_steps` is never offered
+again, so a mark touched on a lost day is both kept and unrepeatable. The lost day's summary
+reads the queued brief and clears it (`DECISIONS.md`, M132).
 
-- [ ] **The brief is drawn to be noticed, and on a lost day too.** `DaySummary` shows the
-      queued brief on both branches of the summary, in a size and weight that reads as *the
-      thing this screen is telling you* rather than one more line, and keeps it queued until
-      a summary has shown it — so a first try that dies still hands over the words on the
-      second. `tests/test_day_loop.gd` (or the summary's own suite) holds that a brief queued
-      on a lost day is shown on that day's summary and cleared only then.
-- [ ] **The header carries the instruction, not the title.** While a perform step is on offer
-      the header's `somewhere out there:` line says the mark's own words, or the instruction
-      cut to fit — *the one who won't stop shouting* — rather than the step's name; the title
-      stays for the progress dots. Whatever wording rule is chosen holds for all five marks and
-      is written next to `Step.brief`.
-- [ ] **The contact is the first yeller she reaches.** *Asked for a hidden contact among
-      look-alikes · overturned on 2026-09-13.* When the step is on offer, the contact rides on
-      whichever `homeless_yeller` she first comes within reach of, rather than one chosen at
-      placement; `ResistanceDirector`'s rider is re-pointed on approach, or the contact is
-      placed on the yeller nearest her route, whichever keeps the guard and the deadline rules
-      intact — say which. `docs/NARRATIVE.md`'s *a wrong candidate costs full price* sentence
-      goes with it. The same question is asked of the van, the roadblock, the poster crew and
-      the protest: if any of those can be several look-alikes on one day, the first she reaches
-      is the contact.
+- [ ] **Nothing the resistance did on a lost day counts, and the retry offers it again.** At
+      the start of each day `GameState` takes a snapshot of the resistance's run state — the
+      six fields above — and a loss restores it before the retry begins, so a mark touched, a
+      step performed, a contact lost to its deadline, a package picked up or the last night's
+      sabotage on a lost day are all undone, and the same mark or contact is offered on the
+      retry exactly as the day first offered it. A won day commits the snapshot. The rule in
+      `finish_day()`'s docstring gains the resistance as its second exception beside
+      `settled_in`, with the player's sentence as the reason. `tests/test_day_loop.gd` holds
+      it: touch a mark, lose the day, the mark is untouched and on offer again; perform a step,
+      lose, progress is back where it was; win, and both stand.
+- [ ] **A lost day's summary repeats the day's own instruction, never tomorrow's.** *(2026-09-13:
+      "the words shown on the lost day are the words that show at the beginning of that day not
+      the nexts. since day doesn't have words it doesn't make sense to show words on day 4".)*
+      M132's *"it should show also when dying"* means the words she already had: a lost
+      summary shows the brief of the perform step that was on offer when the day began — the
+      same words the previous won summary read — so the retry is reminded what the day is for,
+      and it shows nothing when no step was on offer, which is every lost day 4. A mark touched
+      on the lost day itself has its touch taken back by the first item, so its words are not
+      shown until the touch that counts; a won summary reads the newly queued brief as today.
+      `tests/test_day_loop.gd` holds both: a lost day 5 with the note's step on offer shows the
+      day-4 mark's words, a lost day 4 with a mark touched shows none.
 
 ---
 
@@ -849,20 +840,19 @@ re-pitched:
 
 **Open design questions**, each answered by a played run rather than by more arithmetic:
 
-- [ ] **A touch on a chalk mark shows nothing at the moment but a colour change, and nothing at
-      all if the day is then lost.** *(2026-09-09, playtest 50: "how do I know I stepped on the
-      chalk", then "I walked over the chalk why didn't it count?" — it had.)* A touch turns the
-      mark from chalk white to pale green (`Palette.CHALK` to `CHALK_DONE`) under her feet; the
-      `resistance ....` dots are performs only, so a pick-up moves none; and the mark's own words
-      (`GameState.pending_resistance_brief`) are appended by `DaySummary._resistance_line()` on
-      the **won** branch of the summary only, so a mark touched on a day she then loses says
-      nothing until the end of the next won day, while the touch itself survives the nerve. The
-      design's own rule is no quest log — *the first encounter comes with no hint at all* — so how
-      much a touch may say is the player's call: nothing more; the mark's colour made
-      unmistakable; the brief shown on a lost day's summary too; or a one-line status change on
-      the pick-up itself. PLAYTEST-53 requests a distinct touched-mark SVG for review: she adds
-      something to the existing mark to indicate she has seen it. `chalk_mark_touched.svg`
-      prepares that acknowledgement; selecting and binding the feedback remains here
+- [ ] **A touch on a chalk mark shows nothing at the moment but a colour change.** *(2026-09-09,
+      playtest 50: "how do I know I stepped on the chalk", then "I walked over the chalk why
+      didn't it count?" — it had.)* A touch turns the mark from chalk white to pale green
+      (`Palette.CHALK` to `CHALK_DONE`) under her feet, and the `resistance ....` dots are
+      performs only, so a pick-up moves none. The mark's own words now reach her on that day's
+      summary whether it was won or lost, in their own larger line (`DECISIONS.md`, M132), so
+      what is left open is the moment of the touch itself. The design's own rule is no quest log
+      — *the first encounter comes with no hint at all* — so how much a touch may say is the
+      player's call: nothing more; the mark's colour made unmistakable; or a one-line status
+      change on the pick-up itself. PLAYTEST-53 requests a distinct touched-mark SVG for review:
+      she adds something to the existing mark to indicate she has seen it.
+      `chalk_mark_touched.svg` prepares that acknowledgement; selecting and binding the feedback
+      remains here
 - [ ] **Three cues on one screen needed asking about, and an alley read as a roof.** *(2026-09-09,
       playtest 50: "what is shown here?", and "the robber is stuck inside the roof" of a robber
       standing beside an alley.)* The baby's unsettled cue over the pram, the alert over her and a

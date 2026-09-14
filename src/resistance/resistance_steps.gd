@@ -36,6 +36,15 @@ class Step extends RefCounted:
 	## The chalk mark's own words, read out on the day brief once this pickup is touched.
 	## "" for anything that is not a pickup.
 	var brief := ""
+	## The HUD header's own line while this perform step is on offer — `Step.title` stays for
+	## the progress dots, never the header, because a bare noun ("A note for a stranger") is
+	## what playtest 69 could not use ("note for a stranger contains less information than
+	## won't stop shouting"). The wording rule: this is the associated pickup's own `brief`
+	## text, cut to the one clause that is the instruction rather than the framing — four of
+	## the five are a literal substring of that brief; the fifth ("a van, waiting") is the same
+	## sentence trimmed rather than quoted whole. "" for a pickup and the finale, neither of
+	## which the header names this way — see `hud.gd:_refresh_resistance()`.
+	var header := ""
 	## True for the one perform step that makes the pram heavier for the rest of the day.
 	var applies_package_weight := false
 
@@ -81,7 +90,7 @@ static func _mark(index: int, title: String, first_day: int, brief: String) -> S
 
 static func _perform(index: int, title: String, first_day: int, task_event_id: String,
 		placement: Array, deadline_fraction: float = 0.0,
-		applies_package_weight: bool = false) -> Step:
+		applies_package_weight: bool = false, header: String = "") -> Step:
 	var step := Step.new()
 	step.index = index
 	step.title = title
@@ -90,6 +99,7 @@ static func _perform(index: int, title: String, first_day: int, task_event_id: S
 	step.placement.assign(placement)
 	step.deadline_fraction = deadline_fraction
 	step.applies_package_weight = applies_package_weight
+	step.header = header
 	return step
 
 static func _finale(index: int, title: String, first_day: int, district: int) -> Step:
@@ -109,26 +119,30 @@ static func _build() -> Array[Step]:
 		_mark(1, "A chalk mark", 4, "Give it to the one who won't stop shouting. Any of "
 				+ "them might be him."),
 		_perform(2, "A note for a stranger", 5, "homeless_yeller",
-				[GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]),
+				[GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE], 0.0, false,
+				"the one who won't stop shouting"),
 		# E · carry the package home. Picking it up is instant; the cost is deferred — the
 		# pram is heavier for every street after this one, for the rest of the day.
 		_mark(3, "Another mark", 6, "A van will be waiting. Don't come home light."),
 		_perform(4, "The package", 7, "delivery_van", [GameEnums.TileType.SIDEWALK],
-				0.0, true),
+				0.0, true, "a van, waiting"),
 		# D · walk through the checkpoint. Not round it — through.
 		_mark(5, "Another mark", 8, "Don't go around it this time. Go through."),
 		_perform(6, "The checkpoint", 9, "roadblock",
-				[GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]),
+				[GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING], 0.0, false,
+				"the one you go through, not around"),
 		# B · beat the poster crew to the wall. Keeps the old step 4's deadline fraction —
 		# a window that closes rather than a clock she can watch.
 		_mark(7, "Another mark", 10, "Get to the wall before they paste over it."),
 		_perform(8, "The wall", 11, "poster_crew",
-				[GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE], 0.55),
+				[GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE], 0.55, false,
+				"before they paste over it"),
 		# C · stand in the protest. No uncertainty about which one — the cost is the 110px
 		# of bodies, paid going in and coming out.
 		_mark(9, "Another mark", 12, "Stand where they're standing. That's the whole of it."),
 		_perform(10, "The protest", 13, "protest",
-				[GameEnums.TileType.SQUARE, GameEnums.TileType.CROSSING]),
+				[GameEnums.TileType.SQUARE, GameEnums.TileType.CROSSING], 0.0, false,
+				"where they're standing"),
 		# The finale, offered only to a player who already did the work.
 		_finale(11, "The last night", Tuning.RUN_LENGTH_DAYS, GameEnums.BlockPurpose.CIVIC),
 	]

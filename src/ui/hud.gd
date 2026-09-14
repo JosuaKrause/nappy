@@ -338,13 +338,24 @@ func _on_contact_available(step: int) -> void:
 ## grants no progress, so `GameState.completed_resistance_steps` rather than
 ## `has_joined_resistance()` is the test — it is non-empty the instant step 1 is touched, which
 ## is the pick-up itself rather than the perform half a day later.
+##
+## **While a perform step is on offer this names the mark's own words, never the step's title.**
+## *(Playtest 69: "note for a stranger contains less information than won't stop shouting which
+## can be easily missed when progressing to the next day.")* `Step.title` ("A note for a
+## stranger") is what the progress dots would use if they ever named a step; the header uses
+## `Step.header` instead ("the one who won't stop shouting") — see that field's own doc for the
+## wording rule. A pickup on offer still names its bare `title` ("Another mark"): there is
+## nothing to leak yet, since a pickup's whole content is the finding of it.
 func _refresh_resistance() -> void:
 	var step: ResistanceSteps.Step = null
 	if _contact_step > 0 and not GameState.completed_resistance_steps.is_empty():
 		step = ResistanceSteps.by_index(_contact_step)
+	var named := ""
+	if step:
+		named = step.header if step.header != "" else step.title
 
 	if not _debug:
-		_resistance_label.text = "somewhere out there: %s" % step.title.to_lower() if step else ""
+		_resistance_label.text = "somewhere out there: %s" % named.to_lower() if step else ""
 		return
 
 	if not GameState.has_joined_resistance() and _contact_step == 0:
@@ -355,7 +366,7 @@ func _refresh_resistance() -> void:
 			+ ".".repeat(maxi(0, Tuning.RESISTANCE_GOAL - GameState.resistance_progress))
 	var line := "resistance %s" % marks
 	if step:
-		line += "   somewhere out there: %s" % step.title.to_lower()
+		line += "   somewhere out there: %s" % named.to_lower()
 	_resistance_label.text = line
 
 ## Forwarded from `main._apply_orientation()`. `HomeArrow` is the one child here that computes a
