@@ -19,6 +19,7 @@ const SEED := 4242
 func run(t) -> void:
 	_test_the_readout_is_not_assembled_outside_a_debug_build(t)
 	_test_the_readout_flag_shows_it_on_a_release_build(t)
+	_test_the_debug_mode_note_only_exists_when_requested(t)
 	_test_add_touch_controls_builds_the_one_control_reader(t)
 	_test_on_title_start_sets_the_controls_mode(t)
 	_test_the_summary_and_pause_restart_signals_are_both_connected(t)
@@ -136,6 +137,26 @@ func _test_the_readout_flag_shows_it_on_a_release_build(t) -> void:
 	day.free()
 	stroller.free()
 	city.free()
+
+## `_add_debug_mode_note()` gates itself on `_readout_requested` the same shape
+## `_add_debug_layers()` gates itself on `_debug` — see that function's own doc — so the note built
+## for a release build carrying `?debug=1` exists only when the flag actually holds, and an
+## ordinary debug build without it (`_readout_requested == false`) gets none.
+func _test_the_debug_mode_note_only_exists_when_requested(t) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._readout_requested = false
+	main._add_debug_mode_note()
+	t.check(main._debug_mode_note == null,
+			"no note is built at all when the flag was not asked for")
+	main.free()
+
+	main = MAIN_SCRIPT.new()
+	main._readout_requested = true
+	main._add_debug_mode_note()
+	t.check(main._debug_mode_note != null and main._debug_mode_note.get_parent() == main,
+			"the flag builds the note and parents it under main")
+	main._debug_mode_note.free()
+	main.free()
 
 ## **One node goes into the tree, not a choice between two.** `TouchControls` is the whole of the
 ## pointer scheme regardless of which aiming mode is chosen — `_add_touch_controls()` builds the

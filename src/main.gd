@@ -66,6 +66,9 @@ var _halo: ExcitementHalo
 ## node in the tree" is a release-build test's own question rather than one this class has to
 ## remember to ask of `_debug` separately. See `_add_debug_layers()`.
 var _debug_layers: DebugLayers
+## Set by `_add_debug_mode_note()`, or left `null` when `_readout_requested` is `false` — a test's
+## own way to check the release shape without a live tree search for the node.
+var _debug_mode_note: DebugModeNote
 ## Whether the developer readout (`_status`) is showing, independent of `_debug`: the fourth
 ## layer `_toggle_debug_layer()` owns, on `_status`'s own pre-existing `CanvasLayer` rather than
 ## under `_debug_layers`, which is not a `CanvasLayer` this label could join. Starts `true`, so an
@@ -111,6 +114,11 @@ func _ready() -> void:
 	# `get_tree().paused` while the player walks, the crowd drives and the resistance deadline
 	# runs out behind a screen saying the day is over.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Before either boot path — this is the one thing `?debug=1` adds on top of the readout, and
+	# it has to reach the escape scene's own boot too. Gates itself on `_readout_requested` rather
+	# than being gated at the call site, the same shape `_add_debug_layers()` gates itself on
+	# `_debug`. See `_add_debug_mode_note()`'s own doc for why nothing afterwards may remove it.
+	_add_debug_mode_note()
 	# `--start-escape` is a different boot entirely — no title, no city, no day — so it branches
 	# before any of the ordinary run's own scaffolding exists. See `_ready_escape()`.
 	if _escape_scene_requested:
@@ -641,6 +649,21 @@ func _add_excitement_halo() -> void:
 	_halo.setup(_city.events, _city.crowd, _player)
 	add_child(_halo)
 	_pauses_with_the_game(_halo)
+
+## The one thing `?debug=1` (or `--debug`) adds beyond the readout itself: a fixed note, for the
+## whole session, that nothing removes — not the `4` key, not a press, not `_open_the_title()`
+## hiding `_status` around it. **Absent from the tree when `_readout_requested` is `false`**, the
+## same "gated rather than merely hidden" shape `_add_debug_layers()` uses for `_debug`: an
+## ordinary debug build shows the readout without this note, since nobody running one needs
+## telling it is one. `DebugModeNote` is its own small node (`src/dev/debug_mode_note.gd`) added
+## here rather than through `scenes/ui/hud.tscn`/`src/ui/hud.gd`, which this milestone leaves
+## untouched; nothing here ever sets its `visible` to `false` or frees it.
+func _add_debug_mode_note() -> void:
+	if not _readout_requested:
+		return
+	_debug_mode_note = DebugModeNote.new()
+	_debug_mode_note.name = "DebugModeNote"
+	add_child(_debug_mode_note)
 
 ## The fields, shadows and bounding-box overlays — see `DebugLayers`. **Absent from the tree
 ## outside a debug build**, not merely built and left invisible: `_debug_layers` stays `null`, so

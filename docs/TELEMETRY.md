@@ -463,10 +463,14 @@ build has nothing in `project.godot` to reach:
   parsed the same shape as `?svg=1` and not gated behind `enabled()`, the third bounded
   release-safe query flag beside it and `?telemetry=1` — and nothing else: the three geometry
   layers above, the snapshot key and every other dev flag stay behind `_debug` alone, so this flag
-  reaches only the readout. The frame block is `FrameCost.readout_lines()` — `fps`, `draws`,
-  `objects`, `primitives`, `process` and `physics`, the same six quantities and the same words the
-  run log's own `frame` entry carries, assembled from the same readings so the screen and the log
-  cannot disagree. See "What a frame cost" above for what each one says.
+  reaches only the readout. Whenever it holds, a fixed "DEBUG MODE ON" note (`DebugModeNote`,
+  `src/dev/debug_mode_note.gd`) is drawn for the whole session and answers to nothing that would
+  take it off again — not the `4` key, not a press, not the title screen hiding `_status` around
+  it — so a page reached with the flag on is never mistaken for the ordinary release page everyone
+  else gets. The frame block is `FrameCost.readout_lines()` — `fps`, `draws`, `objects`,
+  `primitives`, `process` and `physics`, the same six quantities and the same words the run log's
+  own `frame` entry carries, assembled from the same readings so the screen and the log cannot
+  disagree. See "What a frame cost" above for what each one says.
 
 The mapping above is printed once on boot in a debug build. With no `--layers` flag, a run opens
 with the readout on and the three geometry layers off, so an unflagged debug run looks exactly as
