@@ -1033,7 +1033,16 @@ Three consequences, all of them chosen:
   from the seed and the day number, which is what makes a retry worth having in a game about
   learning a route.
 - **What the run spent stays spent.** Consumed one-shots and advanced block arcs are run
-  history, not day content: a fire that burnt a block down did happen. The one exception is
-  **where she settled**, which belongs to the attempt — see `GameState.finish_day()`.
+  history, not day content: a fire that burnt a block down did happen. Two things belong to the
+  attempt instead and are given back when it fails — **where she settled**, and **everything the
+  resistance did** — see `GameState.finish_day()`.
+
+**A lost day gives the resistance back.** *"a task is only complete if it is done on the day that
+won"*: a mark touched, a step performed, a contact lost to its deadline, a package picked up and
+the day-14 sabotage are all undone when the day is lost. `GameState.begin_day()` photographs the
+six fields that say what the resistance has done — the completed steps, the failed ones, the
+progress count, the package, the sabotage and the queued brief — and the loss restores them before
+the retry, so the retry is offered the same mark or the same contact, in the same place, from the
+same seed. A won day commits the photograph.
 - **The run cannot end by running out of days while nerves remain.** The bad ending is the only
   way to lose, and the run length becomes a promise rather than a budget.

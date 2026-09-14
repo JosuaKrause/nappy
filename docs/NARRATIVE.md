@@ -126,6 +126,12 @@ entirely and still reach the good ending.
   she reaches is simply the right one.
 - **The deadline.** The wall's window closes when the poster crew's own instance is gone —
   paste it over and the contact goes with it, for the rest of the run.
+- **Only a day she wins counts.** *"a task is only complete if it is done on the day that won"* —
+  a mark touched, a step performed, a contact lost to its deadline, a package picked up or the
+  last night's sabotage are all given back when the day is lost, and the retry offers the same
+  mark or contact again. So the errand is never spent on an attempt that failed, and a task
+  cannot be lost to a day that did not happen; the price of a bad day is the nerve, not the
+  subquest. See `GameState.finish_day()`.
 
 ### The finale
 
