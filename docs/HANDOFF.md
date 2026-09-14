@@ -290,10 +290,12 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
   in `DECISIONS.md` and its played questions in `REVIEW.md`. Nothing is in flight: no worktree,
   no open PR. `git tag --list 'v*'` says what the site serves, and the newest tag carries the
   skip flag.
-- **The player's next move is the four phone screenshots** under M124's *split the phone's
-  process time* item: `?debug=1`, then `?debug=1&skip=events`, `&skip=crowd`, `&skip=shadows`,
-  the same day-1 walk each time, read for fps, draws and process. That measurement decides
-  whether the atlas item is built or struck.
+- **M138, a seed on the live page under `?debug=1`, and M139, one atlas for the crowd, are
+  the player's newest asks** ([PLAYTEST-72](playtests/PLAYTEST-72.md)) and both entries in
+  `TODO.md` are specified for an agent. The measurement that prompted both is `DECISIONS.md`,
+  M124, the phone's process time split: by the numbers the draw calls are not the phone's
+  cost, but the lag is felt only with the crowd drawn and the fps column agrees, so the atlas
+  comes back for that one family as the smallest test of the felt cost.
 - **M129, a path through the city never has to cost, is the next design work and its four
   rules are ready for an agent, one at a time.** The reading is the player's
   ([PLAYTEST-71](playtests/PLAYTEST-71.md)) and the probe measures it (`DECISIONS.md`, M129,
@@ -310,13 +312,6 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
   in `REVIEW.md` with its record: the route lines' first segment hops from the door to wherever
   a route joins the home street, and their interior is cell centres rather than tile centres
   (`DECISIONS.md`, M135). The flock and the trap were answered by playtest 71.
-- **M124's atlas item waits on one experiment on a phone, and the flag for it is on the
-  page.** The phone half is measured (`DECISIONS.md`, M124, the phone half): the whole frame is
-  `process`, which on the threads-off web build includes the draw submission, so the readout
-  cannot say whether the phone's 850 draw calls or its scripts are the cost. `?debug=1&skip=`
-  with `events`, `crowd` or `shadows` turns that drawing off and says so in the readout
-  (`DECISIONS.md`, M124, the skip flag); the item in `TODO.md` names the four screenshots the
-  player takes with it, and `git tag --list 'v*'` says whether the site carries the flag yet.
 - **M125 has two suites left over the budget**, the events and routes suites, both ready for an
   agent as a split by subject; `tools/test.sh --record-costs` on a quiet machine comes first,
   since the recorded costs were taken under local contention and two new suites have no row.
