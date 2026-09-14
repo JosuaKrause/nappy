@@ -474,8 +474,14 @@ build has nothing in `project.godot` to reach:
   repeats it — `TitleScreen.build_text()`, `git describe`'s form and the commit, `v0.10.3
   (875609a5)` on a release — read from `git` on a working tree and from the two settings
   `tools/export-web.sh` bakes into an export, `application/config/version` and
-  `application/config/source_commit`, so a screenshot of either says which code it is of. The
-  frame block is `FrameCost.readout_lines()` — `fps`, `draws`, `objects`,
+  `application/config/source_commit`, so a screenshot of either says which code it is of.
+  Directly beneath the seed line, a `skip` line names what `--skip`/`?skip=` turned off — `events`,
+  `crowd`, `shadows`, comma-separated, any order (`DevFlags.skip_words()`) — turning the desktop's
+  own per-frame draw probes (docs/DECISIONS.md, M124, "the desktop half", rows (e), (d) and (c))
+  into something a phone's own page can ask for, so a screenshot taken under the flag says what it
+  measured; absent when nothing is skipped. Honoured only while `readout_requested()` already
+  holds, the same gate as the rest of this bullet, so a release page nobody asked `?debug=1` of
+  never skips anything either. The frame block is `FrameCost.readout_lines()` — `fps`, `draws`, `objects`,
   `primitives`, `process` and `physics`, the same six quantities and the same words the run log's
   own `frame` entry carries, assembled from the same readings so the screen and the log cannot
   disagree. See "What a frame cost" above for what each one says.

@@ -45,6 +45,14 @@ class Tiles extends RefCounted:
 
 var _tiles := Tiles.new()
 
+## `DevFlags.skip_shadows()`, read once when this node is built — the same "read once" shape
+## `main._debug` and `main._readout_requested` are: `BuildingShadows` is computed once by
+## `City.build()` and never changes per day or per frame, so re-parsing `--skip`'s comma list on
+## every chunk's own `_draw_chunk()` would be silly work repeated for an answer that was already
+## settled before the first frame, and a test can set this directly to check the skip without a
+## real `--skip` flag behind it.
+var _skip_draw := DevFlags.skip_shadows()
+
 ## Builds the shadow tile sets from `rects` — a city's building footprints, in tile coordinates
 ## (`CityMap.building_rects`) — and rebuilds the chunks that draw them.
 func set_buildings(rects: Array[Rect2i]) -> void:
@@ -132,6 +140,10 @@ static func compute(rects: Array[Rect2i]) -> Tiles:
 	return tiles
 
 func _draw_chunk(canvas: CanvasItem, tiles: Tiles) -> void:
+	# `--skip shadows`'s own probe (docs/DECISIONS.md, M124, "the desktop half", row (c)): no chunk
+	# draws anything, so a frame under the flag differs from an ordinary one by drawing alone.
+	if _skip_draw:
+		return
 	var colour := Color(Palette.SHADOW.r, Palette.SHADOW.g, Palette.SHADOW.b,
 			Tuning.BUILDING_SHADOW_ALPHA)
 	for tile in tiles.full:

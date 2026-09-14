@@ -136,6 +136,13 @@ const MARK_WIDTH := 15.0
 var kind := Kind.WALKER
 var colour := Color.WHITE
 
+## `DevFlags.skip_crowd()`, read once at spawn — the same "read once" shape `main._debug` and
+## `main._readout_requested` are: re-parsing `--skip`'s comma list (and, on the Web, re-asking the
+## address bar) on every `_draw()` would be silly work repeated a couple of hundred times a frame
+## for an answer that cannot change once the page is loaded, and a test can set this directly to
+## check the skip without a real `--skip` flag behind it.
+var _skip_draw := DevFlags.skip_crowd()
+
 ## This agent's own ground shape, set once in `setup()`: a point for a walker, a capsule along the
 ## travel axis for a car (`_car_shadow_shape()`). Read by `_draw_body()` for the shadow; there is
 ## no body for either — see `_car_shadow_shape()`'s own docstring for why a car gets none, and
@@ -2845,6 +2852,13 @@ func _update_car_view() -> void:
 	_car_view = EightDirection.update(_car_view, velocity(), CAR_IDLE_SPEED)
 
 func _draw() -> void:
+	# `--skip crowd`'s own probe (docs/DECISIONS.md, M124, "the desktop half", row (d)): returns
+	# before anything is drawn, so a frame under the flag differs from an ordinary one by drawing
+	# alone — the crowd's own motion, lanes and traffic negotiation keep running. `_draw_body()` is
+	# left alone rather than gated itself, since `EntityHalo` calls it too for a picked agent's own
+	# ring, which is a different drawing than the ordinary frame this flag measures.
+	if _skip_draw:
+		return
 	_draw_body(self)
 	if kind == Kind.CAR:
 		_draw_mark()
