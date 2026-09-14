@@ -677,6 +677,13 @@ var path: PackedVector2Array = PackedVector2Array()
 var age := 0.0
 var is_finished := false
 
+## `DevFlags.skip_events()`, read once at spawn — the same "read once" shape `main._debug` and
+## `main._readout_requested` are, and for the same two reasons: re-parsing `--skip`'s comma list
+## (and, on the Web, re-asking the address bar) on every `_draw()` would be silly work repeated up
+## to a couple of dozen times a frame for an answer that cannot change once the page is loaded, and
+## a test can set this directly to check the skip without a real `--skip` flag behind it.
+var _skip_draw := DevFlags.skip_events()
+
 ## Where the player is, in world space, or `INF` for nowhere.
 ##
 ## Written once per frame by `EventManager`, which is the one place that already knows. An instance
@@ -2207,6 +2214,12 @@ func _picture_key() -> Vector4i:
 			roundi(swell * SWELL_STEPS))
 
 func _draw() -> void:
+	# `--skip events`'s own probe (docs/DECISIONS.md, M124, "the desktop half", row (e)): returns
+	# before anything below is asked for, so a frame under the flag differs from an ordinary one by
+	# drawing alone — the excitement field, the telegraph and everything else `EventInstance` does
+	# keep running.
+	if _skip_draw:
+		return
 	if is_finished:
 		return
 	if is_suppressed_by_its_own_hold():

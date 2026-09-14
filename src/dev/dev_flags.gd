@@ -45,6 +45,7 @@ extends RefCounted
 ##   --layers        1
 ##   --svg           0
 ##   --debug         0
+##   --skip          1
 ##   --invincible    0
 ##   --no-telemetry  0
 ##   --screenshot    1
@@ -113,6 +114,77 @@ static func _readout_from_query(query: String) -> bool:
 		if pair.size() == 2 and pair[0] == "debug" and pair[1] == "1":
 			return true
 	return false
+
+## The words `--skip`/`?skip=` may name, one per desktop probe M124's own measurement turned into
+## something a live page can ask for (docs/DECISIONS.md, M124, "the desktop half", rows (e), (d)
+## and (c)). Kept in one place so `_validate_skip_words()` and the three getters below cannot each
+## spell the set differently.
+const _SKIP_KNOWN_WORDS := ["events", "crowd", "shadows"]
+
+## Whether `--skip`/`?skip=` named `events` — every `EventInstance._draw` returns before drawing
+## anything, the desktop's own row (e). Parsed the same shape as `svg_requested()`/
+## `readout_requested()` above (a bare command-line value or a `?skip=` query parameter, read
+## without `enabled()`'s own gate) but **honoured only while `readout_requested()` holds**: a
+## release page without the DEBUG MODE note never skips anything, so this cannot become a second
+## way to reach what `enabled()` gates — a page nobody asked `?debug=1` of still draws everything.
+## `skip_crowd()` (row (d), `CrowdAgent._draw`) and `skip_shadows()` (row (c),
+## `BuildingShadows._draw_chunk`) are the other two words. Nothing else moves: the fields, the
+## costs, the crowd's motion and the halo run as normal, so a frame reading differs from an
+## ordinary run by drawing alone.
+static func skip_events() -> bool:
+	return "events" in skip_words()
+
+## See `skip_events()`.
+static func skip_crowd() -> bool:
+	return "crowd" in skip_words()
+
+## See `skip_events()`.
+static func skip_shadows() -> bool:
+	return "shadows" in skip_words()
+
+## The full, validated set behind the three getters above — also what the readout's own `skip`
+## line names, through `main.gd`'s cached copy. Empty whenever `readout_requested()` does not
+## hold, so the gate is paid once here rather than three times at each caller.
+static func skip_words() -> Array[String]:
+	if not readout_requested():
+		return []
+	var raw := _skip_from_args(OS.get_cmdline_user_args())
+	if raw == "":
+		raw = _skip_from_query(_web_query())
+	return _validate_skip_words(raw)
+
+static func _skip_from_args(args: PackedStringArray) -> String:
+	var index := args.find("--skip")
+	if index == -1 or index + 1 >= args.size():
+		return ""
+	return args[index + 1]
+
+static func _skip_from_query(query: String) -> String:
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() == 2 and pair[0] == "skip":
+			return pair[1]
+	return ""
+
+## The bare parsing of a `--skip`/`?skip=` value into its words, pulled out so a test can drive it
+## directly the same way `parse_layers()` is for `--layers`. An empty value is simply nothing to
+## skip, the same as the flag being absent — `parse_layers()`'s own precedent for an empty value.
+## Any word this flag does not know refuses the **whole** value rather than the one bad word or
+## the words that did parse: a skip that silently dropped an unrecognised word would measure a
+## different frame than the one asked for and say nothing about it, the reasoning
+## `_show_an_ending_for_a_rig()` in `main.gd` already gives an unknown `--ending` word.
+## `push_warning` so a typo is visible rather than a silently smaller skip than the one asked for.
+static func _validate_skip_words(raw: String) -> Array[String]:
+	if raw == "":
+		return []
+	var words: Array[String] = []
+	for word in raw.split(","):
+		if not word in _SKIP_KNOWN_WORDS:
+			push_warning("--skip: unknown word '%s', ignoring the whole flag" % word)
+			return []
+		if not word in words:
+			words.append(word)
+	return words
 
 static func _web_query() -> String:
 	if OS.get_name() != "Web":

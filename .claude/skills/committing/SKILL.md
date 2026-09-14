@@ -160,6 +160,13 @@ question it is good for: **is there work that is not on `main`?**
 git branch --merged main | grep -v '^\*' | grep -vw main | xargs git branch -d
 ```
 
+**But retarget every PR stacked on that branch to `main` before the branch goes.** GitHub
+closes a pull request whose base branch is deleted, and a closed PR whose base no longer exists
+cannot be reopened or retargeted — the work has to be proposed again as a new PR. So for a
+stacked PR the order is: merge the lower PR *without* `--delete-branch`, `gh pr edit <upper>
+--base main`, and only then delete the branch. The repository's own auto-delete of merged head
+branches does not run this order for you.
+
 `-d` and **never** `-D`: `-d` refuses anything not merged, so the command cannot lose work, and a
 branch it refuses is exactly the one worth looking at. (On macOS `xargs` has no `-a` — feed it by
 pipe or `< file`.)

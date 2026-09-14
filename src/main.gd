@@ -37,6 +37,11 @@ var _escape_scene_requested := DevFlags.start_escape()
 ## the layer-toggle keys all keep reading `_debug` alone, so this flag reaches the readout and
 ## nothing else — see docs/TODO.md, M133, "the readout on the live page".
 var _readout_requested := DevFlags.readout_requested()
+## `DevFlags.skip_words()`, read once for the same reason `_readout_requested` is: so a test can
+## set it directly, and so the readout's own `skip` line below is not re-splitting `--skip`'s
+## comma list, or on the Web re-asking the address bar, every frame it is assembled. Empty
+## whenever `_readout_requested` is false, since `skip_words()` carries that gate itself.
+var _skip_words := DevFlags.skip_words()
 ## The readout's first line, `TitleScreen.build_text()` — `git describe`'s form and the commit —
 ## read on the first frame that assembles the readout and kept, since a working tree pays two
 ## `git` spawns for the answer and a release page with neither flag never pays them at all.
@@ -1050,9 +1055,16 @@ func _process(delta: float) -> void:
 	var tile := _city.map.world_to_tile(_player.global_position)
 	if _build_text == "":
 		_build_text = TitleScreen.build_text()
-	_status.text = "\n".join([
+	# The `skip` line names what `_skip_words` is off, directly beneath the seed line, so a
+	# screenshot taken under `--skip` says what it measured — absent when nothing is skipped, the
+	# ordinary case, so an unflagged readout carries no empty line where this one would go.
+	var header := [
 		"build %s" % _build_text,
 		"seed  %d   day %d" % [GameState.run_seed, GameState.day],
+	]
+	if not _skip_words.is_empty():
+		header.append("skip  %s" % ", ".join(_skip_words))
+	_status.text = "\n".join(header + [
 		"phase %s  %.0fs left" % [
 			GameEnums.DayPhase.keys()[_day.phase].to_lower(), _day.time_remaining],
 		"tile  %d, %d  (%s)" % [tile.x, tile.y, _tile_name(_city.map.tile_at(tile))],

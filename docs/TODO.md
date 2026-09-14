@@ -448,15 +448,21 @@ matters is a phone's question, not a desktop's. **The phone half is measured too
 its whole frame in `process` — 32 to 45 ms — and draws about half again the desktop's calls,
 objects and primitives. The web export runs with threads off, so the frame's draw submission
 sits inside the process time the readout shows, and the readout alone cannot say whether the
-850 draw calls or the scripts are the cost. Fill rate is not implicated.
+850 draw calls or the scripts are the cost. Fill rate is not implicated. **The probe that
+splits them is on the page** (`DECISIONS.md`, M124, the skip flag): `?skip=<words>` — `events`,
+`crowd`, `shadows`, comma-separated — turns the corresponding drawing off while everything
+underneath it still runs, honoured only while `?debug=1` holds, and the readout prints a `skip`
+line under the seed so a screenshot says what it measured. `--skip <words>` is the same thing
+on the command line; `README.md`'s flag table and `docs/TELEMETRY.md`'s readout section carry it.
 
-- [ ] **Split the phone's process time before choosing a fix.** The desktop's own probes,
-      on the phone: `tools/serve-web.sh` serves a debug export on the local network, and a run
-      of it with event `_draw` skipped, then with crowd `_draw` skipped — the (d) and (e) rows of
-      the desktop table — read for fps and process says whether process falls with the draw
-      count. If it does, the calls are the cost and the atlas item below is the fix; if it does
-      not, the scripts are, and this entry closes on that measurement with the atlas item
-      struck. The two readings go beside the phone table in `DECISIONS.md`.
+- [ ] **Split the phone's process time before choosing a fix.** *(2026-09-13: "prepare the
+      flags for the additional mobile test runs and I'll provide screenshots".)* On the live
+      page, four screenshots of the same day-1 walk: `?debug=1`, `?debug=1&skip=events`,
+      `?debug=1&skip=crowd`, `?debug=1&skip=shadows` — and a fifth with all three if the
+      first four leave it unclear. Read for fps, draws and process. If process falls with the
+      draw count, the calls are the cost and the atlas item below is the fix; if it does not,
+      the scripts are, and this entry closes on that measurement with the atlas item struck.
+      The readings go beside the phone table in `DECISIONS.md`.
 - [ ] **Atlases, only if the phone says draw calls are the cost.** The desktop says they are
       not there. If the phone does: a family per atlas — the crowd, the event people, the
       vehicles, the ground props — packed by a tool under `tools/` from the same sources the
