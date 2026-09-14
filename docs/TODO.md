@@ -123,10 +123,7 @@ open. DECISIONS.md, "SVG artwork and upcoming milestone assets", records the vis
 Prioritised on 2026-09-09, in the player's words where a sentence decided a place.
 
 0. **What [PLAYTEST-67](playtests/PLAYTEST-67.md) and [PLAYTEST-68](playtests/PLAYTEST-68.md)
-   left open**, on the same footing as the round before it: **M124**, the game on a phone —
-   its desktop half is measured and fixed and its audit's per-frame findings are built
-   (`DECISIONS.md`, M124), its phone half is measured, and what stands is the probe that
-   splits the phone's process time and the atlas item gated on it; and **M125**, the test suite
+   left open**, on the same footing as the round before it: **M125**, the test suite
    is slow again — ten suites pruned and the
    crowd suite split (`DECISIONS.md`, M125), the events and routes suites still over the
    runner's budget. M126's audit is filed,
@@ -426,50 +423,34 @@ when she comes within its `pursues_within`; a contact she hands over anywhere el
 
 ---
 
-## M124 — The game on a phone, measured and then made cheaper · asked for 2026-09-13
+## M138 — A seed on the live page under `?debug=1` · asked for 2026-09-14
 
-> "I played a few sessions on mobile. It is a bit laggy now. Are we using proper texture atlases
-> or is everything an individual loaded texture? Maybe we can optimize the game a bit more."
+> "setting seed should be possible with debug=1" — "that would keep the real game clean
+> still"
 
-[PLAYTEST-67](playtests/PLAYTEST-67.md). Closes M100's *frame rate on somebody else's machine*.
+[PLAYTEST-72](playtests/PLAYTEST-72.md). Asked when the M124 probe's readings turned out to
+vary with what each page load's fresh seed put on screen more than with the setting. The
+2026-09-06 rule that a release carries no modifiers (`DECISIONS.md`, M76 and M133) stands for a
+page without the note; `?debug=1` marks the page with a note nothing removes, and a seed under
+that note is what the player asked for.
 
-**What is true today.** The desktop half is measured and its two fixes are built; the records,
-with their tables, are in `DECISIONS.md` under M124, where a frame goes, and M124, the two fixes
-built. The readout (`4` in a debug build, on by default) shows the frame's draw calls,
-renderable objects, primitives and the process and physics times, and the run log carries them
-once a second as a `frame` entry. An event redraws only when its picture changes, the way the
-crowd always has, and the building shadows are drawn per 16-tile chunk so the renderer culls
-the off-screen ones; together they are worth about 40% of the desktop frame rate on the
-measurement walk. The resolver's per-draw lookup and the halo's re-trace are inside the
-run-to-run noise and are struck. Everything under `assets/` is still an individually loaded
-texture and nothing is atlased, which is the answer to the player's question; whether that
-matters is a phone's question, not a desktop's. **The phone half is measured too**
-(`DECISIONS.md`, M124, the phone half): on the live page the phone runs at 27 to 30 fps with
-its whole frame in `process` — 32 to 45 ms — and draws about half again the desktop's calls,
-objects and primitives. The web export runs with threads off, so the frame's draw submission
-sits inside the process time the readout shows, and the readout alone cannot say whether the
-850 draw calls or the scripts are the cost. Fill rate is not implicated. **The probe that
-splits them is on the page** (`DECISIONS.md`, M124, the skip flag): `?skip=<words>` — `events`,
-`crowd`, `shadows`, comma-separated — turns the corresponding drawing off while everything
-underneath it still runs, honoured only while `?debug=1` holds, and the readout prints a `skip`
-line under the seed so a screenshot says what it measured. `--skip <words>` is the same thing
-on the command line; `README.md`'s flag table and `docs/TELEMETRY.md`'s readout section carry it.
-
-- [ ] **Split the phone's process time before choosing a fix.** *(2026-09-13: "prepare the
-      flags for the additional mobile test runs and I'll provide screenshots".)* On the live
-      page, four screenshots of the same day-1 walk: `?debug=1`, `?debug=1&skip=events`,
-      `?debug=1&skip=crowd`, `?debug=1&skip=shadows` — and a fifth with all three if the
-      first four leave it unclear. Read for fps, draws and process. If process falls with the
-      draw count, the calls are the cost and the atlas item below is the fix; if it does not,
-      the scripts are, and this entry closes on that measurement with the atlas item struck.
-      The readings go beside the phone table in `DECISIONS.md`.
-- [ ] **Atlases, only if the phone says draw calls are the cost.** The desktop says they are
-      not there. If the phone does: a family per atlas — the crowd, the event people, the
-      vehicles, the ground props — packed by a tool under `tools/` from the same sources the
-      M109 transfer pipeline reads, with an `AtlasTexture` per sprite so every caller's
-      `draw_texture_rect` is unchanged and the SVG-first rule and the `--svg` override still
-      hold. The **cli-tools** and **python-tooling** rules govern the tool; the illustrated-png
-      skill says what a transfer owes.
+- [ ] **`?seed=N` on the web build, honoured only while `?debug=1` holds.** The same shape as
+      `?skip=`: parsed outside `enabled()`, read once, and empty whenever `readout_requested()`
+      is false, so a release page without the note never takes a seed. `seed_override()`
+      returns it where the command line's `--seed` is absent; `0` and anything that is not a
+      positive integer are refused with a warning the way an unknown skip word is, and the
+      readout's seed line already shows what the generator settled on. The **cli-tools** rule
+      governs the flag table — the `--seed` row already exists; the query form is documented
+      beside `?skip=` in `README.md`'s flag table and `docs/TELEMETRY.md`'s readout section, and
+      `DevFlags`' own doc on `enabled()` and `readout_requested()`, which both say a seed stays
+      unreachable from the address bar, is rewritten to say what is now true. A test drives the
+      query parser directly, the way the skip words' test does, with a release-shaped case
+      that shows the seed ignored without `?debug=1`.
+- [ ] **The readout's process and physics lines as a one-second mean** — recommended, not
+      asked for, and waiting on the player's word. The M124 split (`DECISIONS.md`, M124, the
+      phone's process time split) found the readout's process line is the last frame alone, so
+      two stills of one setting read 21.7 and 65.1 ms. A rolling mean over the last second,
+      beside the instantaneous value, makes one phone still a measurement.
 
 ---
 

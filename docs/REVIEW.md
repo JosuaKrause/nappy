@@ -157,14 +157,6 @@ item below for as long as looking takes.
   flock belongs on a route was answered by [PLAYTEST-71](playtests/PLAYTEST-71.md) — it is
   scenery, and M129 in `TODO.md` puts it back on them — so this asks only about the encounter.
   Record is `DECISIONS.md`, M131; the burst is `evidence/m131-flock-on-the-ground-2026-09-13/`.
-- **Open the live page with `?debug=1` on the phone.** The note reads
-  `DEBUG MODE ON   <tag> (<hash>)` — the tag the site serves and the commit it was built from —
-  and the readout's first line, `build`, repeats it. Does the stamp name the latest of
-  `git tag --list 'v*'`, and does the longer note stay clear of the readout on a phone in
-  landscape? Record is `DECISIONS.md`, M136. With `&skip=events,crowd,shadows` added, a `skip`
-  line sits under the seed and the street goes bare while the meter still charges: does the
-  readout stay readable with one more line, and does the page still say what it measured?
-  Record is `DECISIONS.md`, M124, the skip flag.
 - **Watch a car about-face into a street with a queue in it.** The lane holds a gap for the
   car that is coming and the arrival gives way if the gap has closed, so nobody already in the
   lane should jump. Does the merge read as traffic making room, or as the turning car waiting for
