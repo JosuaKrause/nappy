@@ -1,6 +1,6 @@
 class_name DebugModeNote
 extends CanvasLayer
-## The fixed note that a page is running with `?debug=1` (or `--debug`) — see docs/TODO.md,
+## The fixed note that a page is running with `?debug=1` (or `--debug`) — see docs/DECISIONS.md,
 ## M133, "the readout on the live page". `main.gd` builds exactly one of these, only when
 ## `DevFlags.readout_requested()` holds, and never frees it, hides it or answers to any input:
 ## no key, no press and no screen this game ever opens takes it back off. An ordinary debug build
@@ -19,6 +19,13 @@ extends CanvasLayer
 const _MARGIN := Vector2(14.0, 14.0)
 ## Terse on purpose — a claim to keep reading, not a phrase to parse. "Debug" names what the
 ## flag is; "on" says the state rather than repeating the readout's own word for it.
+##
+## **The build stamp follows the words** — `TitleScreen.build_text()`, `git describe`'s form and
+## the commit, `v0.10.3 (875609a5)` — *(2026-09-13, playtest 70: "Debug mode should contain the
+## commit + describe.")*, because a screenshot of a debug page is evidence of some build, and
+## nothing else on it says which: the title screen's version line is off screen the moment a run
+## starts, and on a release it names only the tag. Read once here; the readout's first line
+## repeats it.
 const _TEXT := "DEBUG MODE ON"
 
 func _init() -> void:
@@ -29,7 +36,7 @@ func _init() -> void:
 func _ready() -> void:
 	var label := Label.new()
 	label.name = "Note"
-	label.text = _TEXT
+	label.text = "%s   %s" % [_TEXT, TitleScreen.build_text()]
 	label.position = _MARGIN
 	label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.85))
 	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))

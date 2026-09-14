@@ -10,13 +10,16 @@
 # templates Godot resolves are web_nothreads_debug.zip / web_nothreads_release.zip rather than
 # the threaded pair, and GitHub Pages needs no cross-origin-isolation headers to serve the result.
 #
-# RELEASE_TAG=<tag> tools/export-web.sh   # names build/web/<tag>/, default "dev"
+# RELEASE_TAG=<tag> tools/export-web.sh   # names build/web/<tag>/, default "dev", and is the
+#                                         # version baked into the export
 #
 # index.js, index.wasm and index.pck move into build/web/$RELEASE_TAG/ after the export, and
 # index.html is rewritten to name them there — see the export-versioning step below for why.
 # .github/workflows/deploy.yml sets RELEASE_TAG to the pushed tag; a local export has none, so
 # it falls back to "dev", which is also what tools/serve-web.sh gets since it calls this script
-# with no RELEASE_TAG of its own.
+# with no RELEASE_TAG of its own. The build stamp — the version and HEAD's hash, baked into the
+# export as project settings — is the step below the Godot check; without RELEASE_TAG the version
+# is `git describe`'s, with a `-dirty` mark.
 set -uo pipefail
 
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
@@ -60,6 +63,51 @@ if [[ ! -x "$GODOT" ]]; then
     echo "godot not found at $GODOT (override with GODOT=...)" >&2
     exit 127
 fi
+
+# What the export says it is. `application/config/version` and `application/config/source_commit`
+# are project settings the game reads at runtime — `TitleScreen.version_text()` and
+# `commit_text()` — where an exported build has no repository to ask `git`, and Godot bakes the
+# project settings into the export, so the two are written into project.godot for the duration
+# of the export and the file is put back from a copy on every exit. The version is RELEASE_TAG
+# when the caller set one (deploy.yml passes the pushed tag; its checkout is shallow, so
+# `git describe` there would name no tag) and `git describe --tags --always` with a `-dirty` mark
+# otherwise, the shape `Telemetry.source_version()` gives a working tree; the commit is HEAD's
+# abbreviated hash either way, since on a release describe collapses to the tag and a tag can be
+# moved. Each anchor is asserted to occur exactly once before it is written, and the result is
+# read back, so a project.godot that has lost a line fails the export rather than shipping the
+# placeholder.
+PROJECT_FILE="$PROJECT_DIR/project.godot"
+SOURCE_COMMIT="$(git -C "$PROJECT_DIR" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+if [[ -n "${RELEASE_TAG:-}" ]]; then
+    SOURCE_VERSION="$RELEASE_TAG"
+else
+    SOURCE_VERSION="$(git -C "$PROJECT_DIR" describe --tags --always 2>/dev/null || echo unknown)"
+    if [[ "$SOURCE_VERSION" != unknown && -n "$(git -C "$PROJECT_DIR" status --porcelain 2>/dev/null)" ]]; then
+        SOURCE_VERSION="$SOURCE_VERSION-dirty"
+    fi
+fi
+for key in config/version config/source_commit; do
+    if [[ "$(grep -c "^$key=" "$PROJECT_FILE")" != 1 ]]; then
+        echo "FAILED: expected exactly one '$key=' line in project.godot" >&2
+        exit 1
+    fi
+done
+PROJECT_FILE_BACKUP="$(mktemp)"
+cp "$PROJECT_FILE" "$PROJECT_FILE_BACKUP"
+restore_project_file() {
+    cp "$PROJECT_FILE_BACKUP" "$PROJECT_FILE"
+    rm -f "$PROJECT_FILE_BACKUP"
+}
+trap restore_project_file EXIT
+sed -e "s|^config/version=.*|config/version=\"$SOURCE_VERSION\"|" \
+    -e "s|^config/source_commit=.*|config/source_commit=\"$SOURCE_COMMIT\"|" \
+    "$PROJECT_FILE_BACKUP" > "$PROJECT_FILE"
+if ! grep -q "^config/version=\"$SOURCE_VERSION\"\$" "$PROJECT_FILE" \
+        || ! grep -q "^config/source_commit=\"$SOURCE_COMMIT\"\$" "$PROJECT_FILE"; then
+    echo "FAILED: the build stamp was not written into project.godot" >&2
+    exit 1
+fi
+echo "== build stamp: $SOURCE_VERSION ($SOURCE_COMMIT) =="
 
 mkdir -p "$OUT_DIR"
 # The export's own output is not a resource. Without this, the next import pass finds the

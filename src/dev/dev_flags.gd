@@ -99,8 +99,8 @@ static func _svg_from_query(query: String) -> bool:
 ## `enabled()`. The third bounded release-safe query flag, beside `?svg=1` and `?telemetry=1`: it
 ## reaches only the readout `main.gd` draws in the top-right corner, never the bundle `enabled()`
 ## gates — a seed, a day, a spawn point, forced meters, `_debug_layers`, the snapshot key and every
-## other dev flag stay unreachable from a visitor's address bar. See docs/TODO.md, M133, "the
-## readout on the live page".
+## other dev flag stay unreachable from a visitor's address bar. See docs/DECISIONS.md, M133,
+## "the readout on the live page".
 static func readout_requested() -> bool:
 	return _readout_from_args(OS.get_cmdline_user_args()) or _readout_from_query(_web_query())
 

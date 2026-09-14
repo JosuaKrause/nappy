@@ -37,6 +37,10 @@ var _escape_scene_requested := DevFlags.start_escape()
 ## the layer-toggle keys all keep reading `_debug` alone, so this flag reaches the readout and
 ## nothing else — see docs/TODO.md, M133, "the readout on the live page".
 var _readout_requested := DevFlags.readout_requested()
+## The readout's first line, `TitleScreen.build_text()` — `git describe`'s form and the commit —
+## read on the first frame that assembles the readout and kept, since a working tree pays two
+## `git` spawns for the answer and a release page with neither flag never pays them at all.
+var _build_text := ""
 
 var _city: City
 ## The escape scene's building. Under `--start-escape` it is built first and `_city` follows when
@@ -1044,7 +1048,10 @@ func _process(delta: float) -> void:
 	if not (_debug or _readout_requested) or not _layer_readout_on:
 		return
 	var tile := _city.map.world_to_tile(_player.global_position)
+	if _build_text == "":
+		_build_text = TitleScreen.build_text()
 	_status.text = "\n".join([
+		"build %s" % _build_text,
 		"seed  %d   day %d" % [GameState.run_seed, GameState.day],
 		"phase %s  %.0fs left" % [
 			GameEnums.DayPhase.keys()[_day.phase].to_lower(), _day.time_remaining],
