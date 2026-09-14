@@ -144,10 +144,6 @@ item below for as long as looking takes.
   a second chance rather than a repeat, and does the lost day 5 reminder read as help? On day 5
   the header reads *somewhere out there: the one who won't stop shouting* rather than the
   step's name — does that read as an instruction? Records are `DECISIONS.md`, M132 and M134.
-- **On day 5, walk up to the first yeller you find** (`--day 4` and play through; no flag puts a
-  rig on a perform step). Whichever yeller she reaches first is the contact; the robber the day
-  seeded guards only the yeller it was seeded beside. Does handing the note to the first one
-  read as intended, and does an unguarded contact read as too cheap? Same record.
 - **Turn on the route lines and walk a route** (`5` in a debug build, or `--layers 5`). Each of
   the day's planned routes is a purple line from the doorstep to a calm area through the centres
   of the two-tile cells it runs on, and the first segment hops from the door to wherever the
@@ -157,10 +153,10 @@ item below for as long as looking takes.
 - **Find a flock of pigeons on the ground** (any day; `--spawn event:pigeon_flock` puts a rig
   in one). The birds peck on the pavement from two screens away and go up as she comes within
   150px, then are gone. Do they read as a place she can plan around rather than a thing that
-  happens to her, and does a flock going up in the pram's face still read as loud? A placed
-  flock is a wall under the cost rule, so it stands off the day's routes: over a run, do you
-  meet one at all, and if so does meeting it by straying feel right? Record is `DECISIONS.md`,
-  M131; the burst is `evidence/m131-flock-on-the-ground-2026-09-13/`.
+  happens to her, and does a flock going up in the pram's face still read as loud? Whether a
+  flock belongs on a route was answered by [PLAYTEST-71](playtests/PLAYTEST-71.md) — it is
+  scenery, and M129 in `TODO.md` puts it back on them — so this asks only about the encounter.
+  Record is `DECISIONS.md`, M131; the burst is `evidence/m131-flock-on-the-ground-2026-09-13/`.
 - **Open the live page with `?debug=1` on the phone.** "DEBUG MODE ON" sits top-left from the
   title screen on and the readout draws top-right once a run starts; nothing removes the note.
   Is the note legible on a phone without covering anything that matters, and is the readout
