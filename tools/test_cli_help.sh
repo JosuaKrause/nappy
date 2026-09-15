@@ -138,7 +138,16 @@ assert_launch() {
     fi
     echo "ok   $label"
 }
-assert_launch "run.sh -- --overview (separator dropped)" ./tools/run.sh -- --overview
+# run.sh's launch path first checks .godot's class cache and rebuilds it through Godot when a
+# class is missing -- with the stub standing in, that rebuild registers nothing and run.sh
+# refuses to launch, which is correct and not what this case is about. So it runs only where a
+# real import has happened (a developer's checkout); on a runner with no cache, shot.sh's
+# identical case below covers the drop and the rejection case covers the rest.
+if [[ -f "$root/.godot/global_script_class_cache.cfg" ]]; then
+    assert_launch "run.sh -- --overview (separator dropped)" ./tools/run.sh -- --overview
+else
+    echo "skip run.sh -- --overview (no import cache in this checkout; shot.sh's case covers the drop)"
+fi
 assert_launch "shot.sh ... -- --overview (separator dropped)" ./tools/shot.sh "$work_dir/shot-sep.png" 1 -- --overview
 # And only there: a `--` after a flag is not a separator, it is a stray word.
 assert_exit "run.sh --overview -- (late separator)"  nonzero ./tools/run.sh --overview -- --debug
