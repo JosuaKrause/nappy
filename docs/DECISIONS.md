@@ -1,5 +1,44 @@
 # Decisions
 
+## M144 — The 24 ms frame, found · built 2026-09-14
+
+*(2026-09-14, [PLAYTEST-75](playtests/PLAYTEST-75.md): "spike line sounds good" — "make that
+toggleable separately though since it can be quite noisy".)* One agent commit on
+`feature/m144-spike-line`, reviewed on the PR.
+
+**Why.** The laptop draws a frame of about 24 ms in most seconds at 87 to 119 fps with the
+observer off and `physics` under 2 ms (M138, what the readout's `process` and `physics` lines
+measure, below), and the engine's per-second maximum says it happens and nothing says when
+or what ran in it.
+
+**What it is.** Under `--spikes` — a dev flag in `DevFlags`' table beside `--no-telemetry`,
+off by default, honoured only while a run is traced since `main.gd` builds no observer
+otherwise — `TelemetryObserver._watch_the_frame` keeps this second's running mean of frame
+deltas beside the worst frame it already keeps, and a frame longer than twice the mean of the
+frames before it in the same second becomes the second's candidate; only the worst candidate
+survives, so the rate limit is one `spike` line a second, written just before the `frame` line:
+the frame's length, the mean it beat, and what changed since the previous frame that does not
+change every frame — her tile, the live event count — or *nothing else changed that frame*,
+which is itself the answer that the spike was not the game doing extra work. With the flag
+off the cost is one boolean check. No getter was added to any gameplay class: the tile and the
+event count are read off state the observer already holds. `docs/TELEMETRY.md` carries the
+row, the flag and a "What a spike was" subsection; `README.md`'s flag table carries the row.
+Four tests feed the observer a delta series and assert one line for a spike, none for steady
+frames, one for the worse of two, and none with the flag off.
+
+**Choices made where the entry was silent, open to overturn.** The mean is of the frames
+*before* the candidate, not including it, so one long frame cannot raise the bar it has to
+clear, and the first frame of a second is never a candidate. The crowd's agent count was
+considered as a third context field and dropped: agents recycle in place, so the count is
+fixed for the day. Whether a debug layer was on was not wired in, since the observer has no
+reference to `main.gd`'s layers.
+
+**What the smoke run said.** A headless rig walking seed 3265820891 for six seconds wrote two
+spike lines on its own — 29.1 ms against a mean of 12.3, and 57.0 against 11.1, both "nothing
+else changed that frame" — so the spike is not the laptop's alone, and not the renderer's
+either, since a headless run draws nothing to a screen. The laptop's own reading, with the
+flag on, is the `REVIEW.md` item.
+
 ## M142 — A layer turned off is drawn off · built 2026-09-14
 
 *(2026-09-14, [PLAYTEST-75](playtests/PLAYTEST-75.md): "pressing number keys to turn off a

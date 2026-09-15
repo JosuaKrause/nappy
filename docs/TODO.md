@@ -320,38 +320,6 @@ such numbers — three columns of which one is a measurement. Every phone readin
 
 ---
 
-## M144 — The 24 ms frame, found · asked for 2026-09-14
-
-[PLAYTEST-75](playtests/PLAYTEST-75.md), the hitch without the observer, and `DECISIONS.md`,
-M138, what the readout's `process` and `physics` lines measure. The laptop draws a frame of
-about 24 ms in most seconds at 87 to 119 fps, two to three times its neighbours, with the
-observer off and `physics` under 2 ms; the engine's per-second maximum says it happens and
-nothing says when or what ran in it. The player sees it as stutter. This is a probe, not a
-fix: it is not known whether the frame is the game's (a scan, a rebuild, a spawn, a
-`queue_redraw` storm) or the platform's (the compositor, a swap), and the M141 release,
-which changes what the physics tick and the camera do per frame, may move it.
-
-- [ ] **A `spike` line in the run log for every frame more than twice the running frame
-      length.** The observer already measures every frame's delta for `worst frame`; a frame
-      whose delta exceeds twice the mean of the last second's gets one line — the second it
-      fell in, its length, the mean beside it, and what the game did in that frame that it
-      does not do in every frame: her tile changing, an event placed or retired, a crowd
-      recycle count, a pockets refresh, a debug-layer redraw, a `_status` rebuild — whatever
-      the observer can read without a hook in a gameplay class (the **telemetry** rule: no
-      per-frame check inside a gameplay class; the observer reads state). **Behind its own
-      flag, off by default** — *(2026-09-14: "make that toggleable separately though since it
-      can be quite noisy")* — `--spikes`, a dev flag in `DevFlags` beside the others under the
-      **cli-tools** rule (on `--help`, rejected when misspelled, one place the list lives),
-      honoured only while telemetry is active, since the line has nowhere to go otherwise. A
-      rate limit even so, so a slow machine cannot fill the log: at most one line a second,
-      the worst of that second. `docs/TELEMETRY.md` gets the entry in its table and the flag
-      beside `--no-telemetry`; `README.md`'s flag table gets the row. The test drives the
-      observer's own spike test with a fed delta series and asserts one line for the spike
-      and none for the steady frames, and none at all with the flag off. No evidence: the
-      line is read on the player's machine, not a rig's.
-
----
-
 ## M129 — A path through the city never has to cost · asked for 2026-09-13
 
 > "also framing from a different point of view a path through the city must never hit
