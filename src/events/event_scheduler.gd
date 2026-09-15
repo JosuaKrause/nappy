@@ -1308,14 +1308,47 @@ static func _counts_against_the_line(plan: Planned) -> bool:
 ## `RegionPlanner` choosing it rather than any field on the def.
 const _DOOR_ID_PREFIX := "checkpoint"
 
-## How far a row denies ground: `outer_radius` wherever it emits at all, `obstructs_radius` wherever
-## it has a body, the larger of the two where both apply. A row that neither emits nor obstructs —
-## the `playground` ambient, at intensity 0 — is not something a line has to avoid.
+## How far a row denies ground: **the disc it charges for**, `obstructs_radius` wherever it has a
+## body, the larger of the two where both apply. A row that neither charges nor obstructs — the
+## `playground` ambient, at intensity 0 — is not something a line has to avoid.
+##
+## **Charging for is not the same as being heard on**, and the difference is the player's own
+## condition on any of this being checked at all: *"option 2 is valid only if the influence at a
+## junction is low enough that it can be taken without having to worry or plan around it."* A walk
+## through ground where a row emits less than `Tuning.EXCITEMENT_DECAY_WALKING` nets the meter
+## *down*, so it is ground a route does not have to be planned around and the rules in this section
+## have no business refusing a placement over it. The disc is therefore where the emission crosses
+## that rate, not `outer_radius`, which is where it stops reaching at all — the same distinction
+## `_denial_radius()` makes about calm ground, at a different rate and with a different zero: a row
+## quieter than the rate everywhere denies **nothing** here, where it still denies its own inner
+## disc to a pram trying to settle.
+##
+## **A lethal row keeps its whole `outer_radius`.** Its price is not a rate and nothing about being
+## quiet at the rim makes walking into it survivable, so the arithmetic below says nothing about it.
 ##
 ## The plain disc rather than `field_reach()`'s forward-stretched ellipse, because the milestone's
-## own wording is `outer_radius` and the two differ only for a mobile row and only ahead of it.
+## own wording is a radius and the two differ only for a mobile row and only ahead of it. A flock
+## would need its own answer — its intensity is shared between bodies, so the closed form below
+## reads it far too wide — and does not have one: `pigeon_flock` is `scenery` and
+## `_counts_against_the_line` is done with it before this is ever asked.
 static func _line_reach_of(def: EventDef) -> float:
-	return maxf(def.outer_radius if def.intensity > 0.0 else 0.0, def.obstructs_radius)
+	if def.hard_fail:
+		return maxf(def.outer_radius, def.obstructs_radius)
+	return maxf(_reach_above(def, Tuning.EXCITEMENT_DECAY_WALKING), def.obstructs_radius)
+
+## How far from the centre a row still emits more than `rate`, over both parts of its field: the
+## field itself, and the core where it has one (a cored row's loud part can outlive its quiet one,
+## which is the whole point of having it).
+static func _reach_above(def: EventDef, rate: float) -> float:
+	return maxf(_band_crossing(def.intensity, def.inner_radius, def.outer_radius, rate),
+			_band_crossing(def.core_intensity, def.inner_radius, def.core_radius, rate))
+
+## Where one falloff band crosses `rate`, or zero if it is never above it — `Tuning.falloff`'s
+## `1 − t²` inverted for the `t` at which it equals `rate`.
+static func _band_crossing(intensity: float, inner: float, outer: float, rate: float) -> float:
+	if intensity <= rate or outer <= inner:
+		return 0.0
+	return inner + sqrt(1.0 - rate / intensity) * (outer - inner)
 
 ## Whether a row denies a point, under the beat-opening reading.
 ##

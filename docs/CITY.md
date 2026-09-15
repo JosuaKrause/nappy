@@ -740,6 +740,26 @@ and it already had one: `RouteTree`'s trunk search puts the main road back when 
 other way out at all, because a tree that is not joined to the home is worse than a trunk on a bad
 street.
 
+### What a row denies is what it charges for
+
+**Every rule below is stated over one disc, and it is not the row's `outer_radius`.** A row denies
+the ground inside which it out-emits `Tuning.EXCITEMENT_DECAY_WALKING` — the rate an ordinary street
+gives back while she walks — plus its `obstructs_radius` wherever it has a body, whichever is
+larger. Past that crossing a walk through the field nets the meter *down*, so the ground is taken
+without being planned around, and a rule that refused a placement over it would be refusing ground
+nobody has to route around.
+
+**That is the player's own condition on any of this being checked at all**: *"option 2 is valid only
+if the influence at a junction is low enough that it can be taken without having to worry or plan
+around it."* A junction inside the quiet rim of a row's field is a junction the walk crosses for
+free, and everything louder than the rim is checked like any other row's ground.
+
+Two rows are outside the arithmetic. A **lethal** row keeps its whole radius: its price is not a
+rate, and nothing about being quiet at the rim makes walking into it survivable. A row with no field
+at all — a hoarding, a parked van — denies exactly its body. `EventScheduler._line_reach_of()` is
+the one place the answer lives, and `tests/probes/m129_zero_cost_line.gd` asks it rather than
+keeping a second copy, so what the probe measures is what the rules refuse.
+
 ### A route's junctions stay clear
 
 **A junction is the only place a line along a route may change from one pavement to the other**, so
@@ -784,7 +804,8 @@ the street, which in turn means the other side of the street must be open enough
 it unimpeded."*
 
 **The numbers make this shape rather than an unlucky roll.** An ordinary street is 192px kerb to
-kerb and the catalogue's reaches run to 240px, so a wide row standing anywhere across one closes it.
+kerb, and the loudest rows deny most of that from either pavement, so a wide row standing
+anywhere across one closes it.
 So a counted row standing on a route street is accepted only if it leaves a four-connected walk from
 one of that street's junctions to the other, over the street's own ground — both pavements, the
 carriageway between the kerbs left out, since a line may not cross there anyway. A row that cannot
