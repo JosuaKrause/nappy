@@ -14,6 +14,8 @@ func run(t) -> void:
 	_test_classification_of_an_ordinary_a_costly_and_a_lethal_frame(t)
 	_test_a_hidden_graph_records_nothing(t)
 	_test_a_bars_class_is_fixed_when_it_is_pushed(t)
+	_test_clear_empties_the_ring(t)
+	_test_parse_layers_accepts_six_and_still_rejects_four(t)
 
 ## `FRAME_GRAPH_FRAMES` (240) pushes would leave the whole window; 300 is 60 past it, so the first
 ## 60 pushed (indices 0..59) must have aged out and the last 240 (indices 60..299) must be exactly
@@ -93,3 +95,31 @@ func _test_a_bars_class_is_fixed_when_it_is_pushed(t) -> void:
 			"and the classes stay in step with the frames (%d against %d)"
 			% [graph.classes().size(), graph.frames().size()])
 	graph.free()
+
+## `clear()` is what `main._toggle_debug_layer()` calls when the `6` key turns the layer off — the
+## player's own follow-on to M153: *(2026-09-15: "spike recording should only be on while the layer
+## is on. that means toggling the layer twice will lead to a blank frame array".)* So a graph with
+## a full window empties both arrays on `clear()`, and a push right after starts a fresh window of
+## one rather than resuming the 240 that were there before.
+func _test_clear_empties_the_ring(t) -> void:
+	var graph := FrameGraph.new()
+	for i in range(10):
+		graph.push(0.010)
+	graph.clear()
+	t.check(graph.frames().is_empty(), "clear() empties the deltas")
+	t.check(graph.classes().is_empty(), "and the classes beside them")
+	t.check(is_equal_approx(graph.mean(), 0.0), "so the mean reads like a fresh graph's, 0.0")
+	graph.push(0.011)
+	t.check(graph.frames().size() == 1 and is_equal_approx(graph.frames()[0], 0.011),
+			"a push after clear() starts a new window rather than resuming the old one")
+	graph.free()
+
+## `6` (the frame graph's own key) joins `5` in the list `--layers`/`?layers=` may set, on the same
+## terms `tests/test_route_lines.gd` already holds for `5`: `4` (the readout) stays rejected even
+## though it sits inside the numeric range the others span.
+func _test_parse_layers_accepts_six_and_still_rejects_four(t) -> void:
+	t.check(DevFlags.parse_layers("6") == [6], "6 (the spike view) is accepted on its own")
+	t.check(DevFlags.parse_layers("1,4,6") == [1, 6],
+			"4 is still dropped — the readout is never set through this flag — while 1 and 6 pass")
+	t.check(DevFlags.parse_layers("1,9,0") == [1],
+			"still-invalid entries (there is no layer 9 or 0) are dropped the same way as before")
