@@ -110,9 +110,11 @@ func _test_a_hard_seal_shuts_its_street_to_the_crowd(t) -> void:
 # despawn (or never spawn in the first place) right now they're accumulating in one place and move
 # back and forth or worth flicker … the same with cars" (playtest 66, 2026-09-12). A junction whose
 # every arm is held is a **pocket**: legal ground with no street out of it. The three tests below
-# are the three parts of the answer — nobody is put in one, whoever is in one leaves, and an
-# about-face costs a stride whether or not the ground it is on is a pocket. All three stand a
-# junction sealed on every side, which is the only place the last of them can be asked about at all.
+# are the three parts of the answer — nobody is put in one, whoever is in one stands exactly where
+# the seal caught it and leaves once nobody is watching, and an about-face still costs a stride
+# wherever an agent is trapped on ground that is not itself a pocket. All three stand a junction
+# sealed on every side; the last of them watches the arms rather than the box, since a pocketed
+# body — everything inside the box, once all four arms are held — now stands rather than reversing.
 
 ## M119, item 1: nobody is placed inside a junction sealed on every side, on the morning or on any
 ## recycle after it.
@@ -157,7 +159,9 @@ func _test_nobody_is_placed_in_a_sealed_junction(t) -> void:
 
 	_city.map.clear_day_holds()
 
-## M119, item 2: whoever is sealed in leaves — but not while she is looking at them.
+## M119, item 2: whoever is sealed in leaves — but not while she is looking at them. And while she
+## is looking, it stands rather than pacing (M146, "a pocketed agent stands, then leaves unseen" —
+## the player's own *"it looks very weird otherwise"* about the pacing this replaces).
 ##
 ## The crowd is placed first and the seals go up under it, which is the one case a placement cannot
 ## prevent and is also the only way to get anybody into a pocket now that `setup()` refuses to.
@@ -177,6 +181,13 @@ func _test_a_pocket_empties_once_it_is_out_of_view(t) -> void:
 	var watched := _inside(rect)
 	t.check(watched > 0,
 			"there were agents standing in the junction when it was sealed (%d)" % watched)
+	# Positions recorded here, right after the seal and one crowd step, and compared once more
+	# below after the whole watch — a standing body's position is what M146 asks for, not merely
+	# that the count holds, which a body pacing the box from one seal to the other would pass too.
+	var standing_at := {}
+	for agent: CrowdAgent in _city.crowd.agents():
+		if rect.has_point(_city.map.world_to_tile(agent.position)):
+			standing_at[agent.get_instance_id()] = agent.position
 	var lowest := watched
 	for frame in int(round(3.0 / STEP)):
 		_city.crowd.set_focus(at)
@@ -185,6 +196,16 @@ func _test_a_pocket_empties_once_it_is_out_of_view(t) -> void:
 	t.check(lowest == watched,
 			("nobody sealed into it disappears while the view is on it — %d were there and the "
 			+ "count never fell below %d") % [watched, lowest])
+
+	var moved := 0
+	for agent: CrowdAgent in _city.crowd.agents():
+		var id := agent.get_instance_id()
+		if standing_at.has(id) and agent.position.distance_to(standing_at[id]) > 1.0:
+			moved += 1
+	t.check(moved == 0,
+			("and every one of the %d agents caught in it stands within a pixel of where the seal "
+			+ "caught it across the watched seconds (%d moved further than that)")
+			% [standing_at.size(), moved])
 
 	# Far enough that the junction is off camera (`Tuning.OUT_OF_SIGHT`, 420px) and well inside the
 	# crowd's own box (`CROWD_FIELD_RADIUS`, 800px), so what empties it is the pocket rule and not
@@ -202,11 +223,18 @@ func _test_a_pocket_empties_once_it_is_out_of_view(t) -> void:
 	_city.map.clear_day_holds()
 
 ## M119, item 3: an about-face commits to its new heading for a stride, so a body with a seal at
-## each end of it paces rather than facing two ways at sixty frames a second.
+## each end of it paces rather than facing two ways at sixty frames a second — still true wherever
+## an agent is already standing on ground that becomes shut at both ends, which the arms of this
+## same sealed junction still are.
 ##
-## Asked at a sealed junction with the view held on it, which is where the reversals actually
-## happen: the agents in it are the ones with a seal every way they look, and keeping the camera
-## there is what stops them being recycled out of the measurement.
+## **Asked on the arms rather than in the box.** The box itself is a pocket once all four arms are
+## held (`CrowdPockets`), and a pocketed agent now stands rather than reversing — that is the whole
+## of M146, "a pocketed agent stands, then leaves unseen". But each arm's own segment is held in
+## full, both ends, and is *not* pocketed ground — it is excluded from the flood entirely, the same
+## "ground it may not stand on" `_may_stand_on()` already reads for a body already there — so
+## whoever was already walking one when the seal went up still finds the way ahead **and** the way
+## behind shut and still reverses, which is the single-seal-on-open-ground case this milestone
+## leaves standing.
 ##
 ## The floor is each agent's own `_stride_seconds()` rather than a number, so it survives any
 ## rebalancing of walking speed or of the gait — what it pins is that a reversal is worth a stride,
@@ -216,7 +244,9 @@ func _test_a_turn_around_commits_to_its_new_heading(t) -> void:
 	if sealed.is_empty():
 		return
 	var at: Vector2 = sealed["at"]
-	var rect: Rect2i = sealed["rect"]
+	var arm_rects: Array[Rect2i] = []
+	for arm: StreetNetwork.Segment in sealed["arms"]:
+		arm_rects.append(arm.tile_rect())
 	_city.map.clear_day_holds()
 	_city.crowd.start_day(1, _rng(3), at)
 	_advance_watching(3.0, at)
@@ -244,14 +274,14 @@ func _test_a_turn_around_commits_to_its_new_heading(t) -> void:
 			# other way a heading flips on one axis.
 			var landed: bool = bool(turning.get(id, false)) and not agent.is_turning()
 			turning[id] = agent.is_turning()
-			# Only the bodies actually inside the sealed junction are counted. Everybody else is
-			# subject to a recycle, which is a teleport into a fresh lane and a fresh direction at
-			# the far edge of the field — a reading about a different person rather than an
-			# about-face. Their clock keeps running rather than being restarted, because an agent
-			# that walks into the junction and turns round a moment later has still only turned
-			# round once; a recycled one cannot walk the eight hundred pixels back inside this
-			# measurement, so it never returns to be miscounted.
-			if landed or not rect.has_point(_city.map.world_to_tile(agent.position)):
+			# Only the bodies actually standing on one of the four now-shut arms are counted.
+			# Everybody else is subject to a recycle, which is a teleport into a fresh lane and a
+			# fresh direction at the far edge of the field — a reading about a different person
+			# rather than an about-face. Their clock keeps running rather than being restarted,
+			# because an agent that walks onto a shut arm and turns round a moment later has still
+			# only turned round once; a recycled one cannot walk the eight hundred pixels back
+			# inside this measurement, so it never returns to be miscounted.
+			if landed or not _on_any_rect(arm_rects, _city.map.world_to_tile(agent.position)):
 				facing[id] = heading
 				continue
 			var before: Vector2 = facing.get(id, heading)
@@ -277,6 +307,15 @@ func _test_a_turn_around_commits_to_its_new_heading(t) -> void:
 			+ "after %.3fs)") % [too_soon, reversals, 0.0 if soonest == INF else soonest])
 
 	_city.map.clear_day_holds()
+
+## Whether a tile falls inside any of a handful of tile rects — the four arms of a sealed junction,
+## asked once per agent per frame rather than folded into one `Rect2i` union, since arms on
+## opposite sides of a junction do not share an axis.
+func _on_any_rect(rects: Array[Rect2i], tile: Vector2i) -> bool:
+	for rect in rects:
+		if rect.has_point(tile):
+			return true
+	return false
 
 ## How many agents are standing inside a tile rect right now.
 func _inside(rect: Rect2i) -> int:
