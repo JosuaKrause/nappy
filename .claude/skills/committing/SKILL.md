@@ -36,6 +36,20 @@ Unfinished work stays out of `main`, which is the tree a fresh clone receives.
 
 ## A pull request is self-contained
 
+**A pull request is a completed work item, and a broken one is fixed on its own branch, never
+by a second PR.** *(2026-09-14: "we're not merging broken things -- fixes go in the same PR
+*always*"; "a PR is a *completed* workitem"; "we don't merge PRs that are broken, we fix PRs, not
+by creating new PRs".)* When review, a playtest or the player finds that a PR built the wrong
+thing or built it wrong, the correction is committed on that PR's branch and the PR's description
+is updated to say what it now carries. A follow-up PR for the fix would either merge the broken
+work first or leave two PRs that only make sense together, and neither is a completed item.
+
+**And the unit is the work item, not the milestone number.** *(2026-09-14: "why do you keep
+creating new PRs for things that should go in the same PR?")* One question splits into several
+numbered entries as it is worked — a probe, the thing the probe found, the fix for it — and each
+number is still the same item until the player has what they asked for. The fix for what a PR's
+probe found goes on that PR, whatever number the queue gave it; a new PR is for a new question.
+
 **A pull request carries every document its own changes make false.** Not a follow-up, not a
 cleanup pass afterwards, not a note for the next session: the doc edit is part of the change and
 lands in the same PR. That covers `docs/TODO.md` and `docs/HANDOFF.md` — the two that go stale

@@ -72,6 +72,156 @@ alongside the main road, since the rule is "a kerb tile on an inside street" rat
 list of today's kerbs; the finale clearing the layer explicitly since nothing else would;
 the test in the routes suite, with the real-scene rig borrowed from the debug-layers suite
 because neither the routes nor the ground-layers suite built a city.
+## M147 — Every picture loaded before it is needed · built 2026-09-14
+
+*(2026-09-14, [PLAYTEST-75](playtests/PLAYTEST-75.md): "I feel whenever a new entity/image/
+sprite is shown there is a visible stutter. this would be an argument *for* a full atlas so
+sprites don't need to be loaded in late".)* Two agent commits on `feature/m147-warm-textures`,
+reviewed on the PR.
+
+**What was true.** `TextureResolver.resolve()` loaded each picture's PNG transfer from disk
+the first time that picture was drawn, inside the frame, once per distinct picture per run;
+the prop, rig and ground transfers (19, 35 and 72 of them) were loaded that way, and
+`EntityHalo` built its shader material at the first halo, which the Compatibility renderer
+compiles at first draw. **Not the events' pictures**, corrected the same evening: those are
+`preload`ed SVG imports with no PNG transfers at all, loaded when the script loads at boot,
+so they were never late — the warm test that resolves every texture `EventInstance` preloads
+passes because there is nothing there to load, not because the pass loaded it.
+
+**What it is.** First, the probe: the resolver counts every transfer it loads (`load_count()`)
+and the `spike` line's context says `N pictures loaded` when the count moved in the spike
+frame, beside her tile and the live event count. Then the fix: `TextureResolver.warm()`,
+called from both boot paths before the first day, walks the transfer root with `DirAccess`,
+derives each PNG's source SVG, and runs `resolve()` on the pair so the cache is full before
+play — 86 pictures in about 180 ms on the desktop, printed beside "city generated". Not the
+ground manifest, which lists only the ground's own bases and components; `DirAccess` was
+checked against a real exported pack, whose listing carries only the `.png.import` names, so
+either name is trimmed to one candidate. Under `--svg` it does nothing. The halo's shader is
+compiled by a real draw: Godot 4.7 has no precompile for the Compatibility renderer (the
+pipeline cache is a RenderingDevice feature), so a throwaway node at world origin draws one
+frame with the shared material and is freed two `process_frame`s later — at the origin, since
+an off-screen canvas item is culled and compiles nothing, and no camera exists yet at that
+point in either boot. Both boot paths are coroutines now; `_process`'s existing guard on the
+player and baby covers the two-frame gap. Tests: after `warm()`, resolving every texture
+`EventInstance` preloads (read off its constant map) moves the count by zero; under `--svg`
+it loads nothing; a late load names itself in the spike line.
+
+**Measured, on the headless rig** (`tools/shot.sh`, seed 3265820891, six seconds, `--spikes`):
+with the probe alone, seconds two and three each carried a spike (29.0 and 25.5 ms against
+means of 13.2 and 12.1) and frames two to four read 74 to 78 fps with worst frames of 29.0,
+25.5 and 19.8 ms; with every picture warm the two spikes are gone and the same seconds read
+85 to 90 fps with worst frames of 18.3, 11.9 and 11.1 ms. Neither run's spike line carried
+`pictures loaded`: the loads land in the first frame of a report interval, which the spike
+rule never makes a candidate, so the field's proof is its test. A 74.5 ms spike at 6.1 s in
+the warm run says "nothing else changed" — the hitch M138 and M144 describe is still there,
+just no longer joined by the late loads. The laptop's reading is the `REVIEW.md` item.
+
+**On the laptop, the hitch is still there with every picture warm.** *(2026-09-14, playtest 75,
+the stutter branch on the laptop.)* A run with "86 pictures warmed in 233 ms" at boot read 85
+to 91 fps with a worst frame of 24 to 26 ms in every second outside its bursts — the same
+frame v0.10.6 read — so the late loads were the headless rig's early spikes and not the
+laptop's once-a-second frame. What the same run also showed: a burst's per-frame readback
+makes every frame 60 to 76 ms, and in such a second no bar is twice the mean, so the graph's
+amber disappears under a burst while its red does not; the player read that as the burst
+preventing spikes. What is left for the hitch is what M138 listed minus the pictures: the
+present path between the engine and the driver (OpenGL on Metal), or something in the game
+on a cadence the `spike` line, run with `--spikes`, would catch as "nothing else changed" —
+which is exactly the line that would send the search to the driver side.
+
+**Choices made where the entry was silent, open to overturn.** The ground's own component PNGs
+are warmed too, harmlessly; a transfer with no loadable source is skipped with a warning
+rather than failing the boot; the escape boot prints its warm line alone since it has no
+"city generated" line to sit beside.
+
+## M148 — A rolling graph of frame times on the readout · built 2026-09-14
+
+*(2026-09-14, [PLAYTEST-75](playtests/PLAYTEST-75.md): "I would expect there to be an overlay
+that shows the last x frames of frame times in a rolling window" — said of the `--spikes` line,
+which is a line in the run log and not what the player meant.)* One agent commit on
+`feature/m148-frame-graph`, reviewed on the PR; the still is
+`evidence/m148-frame-graph-2026-09-14/readout-graph.png`.
+
+**What it is.** `FrameGraph` (`src/ui/frame_graph.gd`), a `Control` on the readout's own
+`CanvasLayer`, built only while `_debug or _readout_requested` holds — absent, not hidden, on
+a release page nobody asked `?debug=1` of — and shown and hidden with the readout: one
+setter, `_set_readout_visible()`, is now the only place `main.gd` assigns the readout's
+visibility, and the boot, the escape boot, the title screen and the `4` key all go through
+it, so the two cannot drift apart. It keeps a ring of the last 240 frame deltas fed from
+`_process`'s own `delta` (the frame's actual length, not the engine's per-second maximum —
+M138, what the readout's lines measure), redraws each frame it is visible, and draws a 240
+by 48 design-pixel box: one one-pixel bar per frame, newest at the right, scaled so 33.3 ms
+reaches the top; reference lines at 16.7 and 33.3 ms labelled `60` and `30`; the window's
+mean as a thin line; a frame past 16.7 ms in `Palette.MARK_COSTLY`, past 33.3 ms in
+`Palette.MARK_LETHAL`, the rest the readout's own
+text colour at half alpha; a 0.75-alpha black backing so the bars read against the street.
+It sits 600 design pixels under the readout block's top, left-aligned with it, which clears
+the block's longest shape (thirty lines under `--skip`) and the phone's right focus ring
+(centred at y 480 with a 48 px radius, so it ends at 528). `mouse_filter` is `IGNORE` so a
+touch through it reaches the joystick. Tests: the ring keeps exactly the last 240 of 300
+pushes in order, the mean is the window's, the three classes come out for a known window, a
+hidden graph records nothing; and the graph exists under the readout's layer iff the readout
+was requested. `docs/TELEMETRY.md`'s debug view and `README.md`'s `--debug` row describe it.
+
+**Corrected the same evening: a bar's class is decided when its frame is pushed.** *(2026-09-14,
+the player: "I would assume that the graph adds a row on the right and moves the rest to the
+left. but I see things on the left side changing (notably adding yellow lines after the
+fact)".)* The first build classified every bar at draw time against the window's current
+mean, so as the mean moved, old bars turned amber or back. Now `push()` classifies the frame
+against the frames before it — the spike line's own rule, a frame does not raise the bar it
+has to clear — and stores the class beside the delta; `_draw()` reads the stored class. A bar
+keeps the colour it was born with and only ever scrolls left. **And later the same evening the
+rule itself went absolute**: *("picture taking shouldn't hide the amber")* — under a burst's
+per-frame readback every frame was 60 to 76 ms, nothing was twice the window's mean, and the
+amber vanished. Amber is now a frame past the 16.7 ms line and red one past 33.3 ms, the two
+lines the box draws, whatever the neighbours did; the mean line stays as a reading, not a
+threshold.
+
+**Choices made where the entry was silent, open to overturn.** Lethal over costly when both
+hold; the backing at 0.75 rather than the 0.35 first tried, under which ordinary bars at half
+the readout's own alpha vanished against the world; the labels inside the box's left edge; the
+fixed offset rather than a per-frame measurement of the block's height; the visibility setter
+refactor across the five sites. In the still the bars are tiny — a headless rig draws in a
+few milliseconds — and no bar is coloured, since the day-start frame had aged out of the
+window by the fourth second; the red was seen on an earlier draft's still.
+
+## M144 — The 24 ms frame, found · built 2026-09-14
+
+*(2026-09-14, [PLAYTEST-75](playtests/PLAYTEST-75.md): "spike line sounds good" — "make that
+toggleable separately though since it can be quite noisy".)* One agent commit on
+`feature/m144-spike-line`, reviewed on the PR.
+
+**Why.** The laptop draws a frame of about 24 ms in most seconds at 87 to 119 fps with the
+observer off and `physics` under 2 ms (M138, what the readout's `process` and `physics` lines
+measure, below), and the engine's per-second maximum says it happens and nothing says when
+or what ran in it.
+
+**What it is.** Under `--spikes` — a dev flag in `DevFlags`' table beside `--no-telemetry`,
+off by default, honoured only while a run is traced since `main.gd` builds no observer
+otherwise — `TelemetryObserver._watch_the_frame` keeps this second's running mean of frame
+deltas beside the worst frame it already keeps, and a frame longer than twice the mean of the
+frames before it in the same second becomes the second's candidate; only the worst candidate
+survives, so the rate limit is one `spike` line a second, written just before the `frame` line:
+the frame's length, the mean it beat, and what changed since the previous frame that does not
+change every frame — her tile, the live event count — or *nothing else changed that frame*,
+which is itself the answer that the spike was not the game doing extra work. With the flag
+off the cost is one boolean check. No getter was added to any gameplay class: the tile and the
+event count are read off state the observer already holds. `docs/TELEMETRY.md` carries the
+row, the flag and a "What a spike was" subsection; `README.md`'s flag table carries the row.
+Four tests feed the observer a delta series and assert one line for a spike, none for steady
+frames, one for the worse of two, and none with the flag off.
+
+**Choices made where the entry was silent, open to overturn.** The mean is of the frames
+*before* the candidate, not including it, so one long frame cannot raise the bar it has to
+clear, and the first frame of a second is never a candidate. The crowd's agent count was
+considered as a third context field and dropped: agents recycle in place, so the count is
+fixed for the day. Whether a debug layer was on was not wired in, since the observer has no
+reference to `main.gd`'s layers.
+
+**What the smoke run said.** A headless rig walking seed 3265820891 for six seconds wrote two
+spike lines on its own — 29.1 ms against a mean of 12.3, and 57.0 against 11.1, both "nothing
+else changed that frame" — so the spike is not the laptop's alone, and not the renderer's
+either, since a headless run draws nothing to a screen. The laptop's own reading, with the
+flag on, is the `REVIEW.md` item.
 
 ## M142 — A layer turned off is drawn off · built 2026-09-14
 
