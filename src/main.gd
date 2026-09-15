@@ -1096,6 +1096,12 @@ func _tree_is_paused() -> bool:
 	return loop is SceneTree and (loop as SceneTree).paused
 
 func _process(delta: float) -> void:
+	# The one place in the running game that finishes a `TextureAtlas` request. It sits above
+	# every early return below on purpose: a group is asked for while the city is built or while
+	# an event is placed off screen, and the title screen, the interior and the finale all return
+	# from this function before reaching the day, so a pump further down would leave an atlas
+	# packed and never collected for as long as one of those is on screen.
+	TextureAtlas.collect_ready()
 	_dev_rig.update_follow_camera(_city)
 	# Re-asked every frame rather than only on `size_changed` — see `_apply_orientation()`'s own
 	# doc for why a signal alone can latch the wrong answer. The cost is one vector comparison.
