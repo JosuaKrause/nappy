@@ -338,11 +338,17 @@ which changes what the physics tick and the camera do per frame, may move it.
       does not do in every frame: her tile changing, an event placed or retired, a crowd
       recycle count, a pockets refresh, a debug-layer redraw, a `_status` rebuild — whatever
       the observer can read without a hook in a gameplay class (the **telemetry** rule: no
-      per-frame check inside a gameplay class; the observer reads state). A rate limit so a
-      slow machine cannot fill the log: at most one line a second, the worst of that second.
-      `docs/TELEMETRY.md` gets the entry in its table. The test drives the observer's own
-      spike test with a fed delta series and asserts one line for the spike and none for the
-      steady frames. No evidence: the line is read on the player's machine, not a rig's.
+      per-frame check inside a gameplay class; the observer reads state). **Behind its own
+      flag, off by default** — *(2026-09-14: "make that toggleable separately though since it
+      can be quite noisy")* — `--spikes`, a dev flag in `DevFlags` beside the others under the
+      **cli-tools** rule (on `--help`, rejected when misspelled, one place the list lives),
+      honoured only while telemetry is active, since the line has nowhere to go otherwise. A
+      rate limit even so, so a slow machine cannot fill the log: at most one line a second,
+      the worst of that second. `docs/TELEMETRY.md` gets the entry in its table and the flag
+      beside `--no-telemetry`; `README.md`'s flag table gets the row. The test drives the
+      observer's own spike test with a fed delta series and asserts one line for the spike
+      and none for the steady frames, and none at all with the flag off. No evidence: the
+      line is read on the player's machine, not a rig's.
 
 ---
 

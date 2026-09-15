@@ -45,5 +45,7 @@ whatever is, it makes a frame of about 24 ms in most seconds and none in some. R
 that would find it is M144 in `TODO.md`.
 
 > "spike line sounds good"
+> "make that toggleable separately though since it can be quite noisy"
 
-Said to the M144 probe on 2026-09-14; it goes to an agent as filed.
+Said to the M144 probe on 2026-09-14; it goes to an agent as filed, with the line behind its
+own flag.
