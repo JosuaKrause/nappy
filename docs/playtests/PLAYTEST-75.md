@@ -65,3 +65,14 @@ record says it never suggests a route and there is no cue of any kind toward cal
 (`CITY.md`, "Guiding her to the calm"), and this is not that rule overturned but a trial of
 whether a hint on the ground can stay under the threshold of being noticed as one — beside
 the guidance through obstacles, and not the way paths are meant to be shown.
+
+## A pocketed agent stands instead of pacing
+
+> "I get the remove entity when there is no route idea. maybe let's do instead stop the entity
+> if there is no way. and despawn once offscreen"
+> "it looks very weird otherwise"
+
+Said on 2026-09-14, on v0.10.7. What is built is M119, the crowd with nowhere to go leaves: an
+agent a seal goes up around is recycled at the first frame it is out of view, and in view it
+paces to the far seal and back, one stride between about-faces. The pacing is what looks
+weird. Filed as M146 in `TODO.md`: stand where the seal caught it, and leave unseen as today.
