@@ -21,6 +21,13 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Walk a minute of day 1 on the laptop on this build and watch for the stutter you saw
+  whenever something new appeared.** Every picture is loaded before the day starts now (the
+  boot prints how many and how long), and the halo's shader is compiled before play. **Is the
+  stutter on a new sprite gone, and does the frame graph still show an amber bar most
+  seconds?** With `--spikes`, any spike line saying `pictures loaded` means a picture still
+  loads late and names the moment. Record is `DECISIONS.md`, M147, every picture loaded before
+  it is needed.
 - **Walk a minute of day 1 on the laptop with `--debug` and watch the graph under the
   readout, then the same on the phone with `?debug=1`.** Each bar is one frame's length, newest
   at the right, 240 frames wide; the lines are 60 and 30 fps and the window's mean; amber is a
