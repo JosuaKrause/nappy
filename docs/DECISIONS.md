@@ -70,8 +70,11 @@ the boxes at both ends. Mid-block crossings 871 to 0; routes touching a carriage
 **And the picture.** The still on the seed the player asked about showed the drawn polyline's
 own first segment, a straight hop from the doorstep to wherever the tree joins the home
 frontage, cutting diagonally across the carriageway where no route cell was — so part of "how
-is this path possible?" was the drawing. `RouteLines` now draws that connector as two
-axis-aligned legs through the point on the frontage in front of the door.
+is this path possible?" was the drawing. Two axis-aligned legs through the point in front of
+the door were tried first and still crossed the carriageway whenever the tree joined the far
+pavement, so the connector is gone: the doorstep is not on the tree, and `RouteLines` now
+starts each polyline at the route's own first cell, so every drawn segment is a step of the
+tree or the calm connector.
 
 **The one fork, resolved by measurement.** The entry's exclusion "anything off the corridor,
 where the wall role is the design" reads two ways: exempt any row standing off the corridor
