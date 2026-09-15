@@ -784,10 +784,16 @@ Four kinds of row are outside it, and each for a reason it already had. **A purs
 the director sites in front of her**, pay the telegraph contract instead and have no tile the day
 chose. **A city-wide row** has no place, so there is no other side of the street to be on. **A
 region door and a moving row that does not pace are not blocks at all** — a door costs by design,
-and a row that travels is passed by crossing, waiting and crossing back. And **a wall is outside
-it**, which is the same exemption the lethal-clearance rule makes: a wall *bounds* the corridor and
-is off the routes by construction, so a field reaching in from there is the guidance rather than a
-failure of it.
+and a row that travels is passed by crossing, waiting and crossing back.
+
+**A wall is not outside it.** It bounds the corridor and never stands on a route, but its field
+reaches in from one street out, and a corridor whose crossings are covered by the thing bounding it
+is guidance the player is being charged for. So a wall is asked the same three questions as
+everything else — and what makes that fair rather than a second tax on the wall pool is the disc
+the questions are asked over: what a wall may still put across a route junction is the part of its
+field under the walking decay, which is a crossing the walk takes without planning around it. The
+lethal-clearance rule's own wall exemption is a different rule about a different thing (keeping
+other events out of a lethal field) and is untouched.
 
 **What it costs is the wide rows' corridor ground**, and that is the intended trade rather than a
 side effect. Every corridor street has a route junction at each of its ends, so a row whose reach

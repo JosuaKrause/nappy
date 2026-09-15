@@ -1279,22 +1279,21 @@ static func _gap_between(a: Planned, b: Planned) -> float:
 ##   player can cross the street, wait, then come back without ever getting excited by it"*. A row
 ##   that **paces** is not mobile in that sense: it comes back, so it is read over its beat.
 ##
-## And **a wall is outside it**, which is the same exemption the lethal-clearance rule makes and for
-## the same reason: a wall *bounds* the corridor, so it is off the routes by construction
-## (`_copies_of` offers it zero copies of corridor ground), and a field that reaches from there onto
-## the ground she is being guided along is the guidance rather than a failure of it.
+## **A wall is not outside it**, and that is the player's own decision on the one thing the four
+## rules left open: *"option 2 is valid only if the influence at a junction is low enough that it
+## can be taken without having to worry or plan around it."* A wall bounds the corridor — `_copies_of`
+## offers it zero copies of corridor ground, so it never stands on a route — but its field reaches
+## in from one street out, and being told to walk a corridor whose crossings are covered by what is
+## bounding it is being told to pay for the guidance. So a wall's own charging disc is asked the
+## same three questions every other row's is, and the condition the player set on that is exactly
+## `_line_reach_of()`: what a wall may still put over a junction is the part of its field under the
+## walking decay, which is a crossing the walk takes without planning around it.
 ##
-## **It is the role that is exempt and not the ground**, and that is a reading of the milestone's
-## own sentence — *"and so is anything off the corridor, where the wall role is the design"* — that
-## the probe chose between. Exempting every row that merely **stands** off the corridor leaves the
-## covered junction exactly where it was: measured over the same six seeds, refusing only
-## on-corridor rows moved the zero-cost line from 16.8% to 24.2% of routes and left the junction
-## shape at 135 routes, because the pair that closes a crossing is usually a café or a yeller one
-## turning out with its field reaching in. The wall is what the sentence names, `_copies_of`
-## already makes *wall* and *off the corridor* the same set, and reading it that way is what makes
-## the rule cut against the shape it was written for.
+## The lethal-clearance rule's wall exemption is a different rule about a different thing and is
+## untouched — `_keeps_its_field_clear` is about keeping other events out of a lethal field, not
+## about whether a line exists past one.
 static func _counts_against_the_line(plan: Planned) -> bool:
-	if not plan.is_placed() or plan.role == GameEnums.BlockerRole.WALL:
+	if not plan.is_placed():
 		return false
 	var def := plan.def
 	if def.city_wide or def.scenery or def.pursues or def.id.begins_with(_DOOR_ID_PREFIX):
