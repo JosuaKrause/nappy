@@ -179,20 +179,16 @@ func _ready() -> void:
 	_city = CITY.instantiate()
 	add_child(_city)
 	_pauses_with_the_game(_city)
-	# Hidden until `_start_day()` has put her on the doorstep and the camera is on her — see that
-	# function's own reveal, and `_open_the_title()`'s doc for why the city has to be visible again
-	# by the time either screen draws. Without this, the two awaited frames in
-	# `_warm_the_pictures()` below draw the built city from the viewport's default identity
-	# transform, since no `Camera2D` exists yet — see `_warm_the_halo_shader()`'s own doc on why
-	# that transform puts world origin on screen. World origin is the map's top-left corner, so
-	# those frames briefly show it: *"when starting the game I can briefly see the top left of the
-	# map"* (PLAYTEST-76).
-	_city.visible = false
 	var elapsed := Time.get_ticks_msec()
 	_city.build(CityGenerator.generate(GameState.run_seed))
 	print("[Main] city generated in %d ms (seed %d)" % [
 		Time.get_ticks_msec() - elapsed, _city.map.seed_used])
-	await _warm_the_pictures()
+	# On the doorstep before her own `Camera2D` exists, so the two frames `_warm_the_pictures()`
+	# awaits below draw the ground the title screen and the day itself will, rather than the
+	# world's default identity transform — see `_new_boot_camera()`'s own doc. Freed once
+	# `_start_day()` has put her camera in the same place for real.
+	var boot_camera := _new_boot_camera(_city.map.doorstep_world_position())
+	await _warm_the_pictures(boot_camera.global_position)
 
 	_player = STROLLER.instantiate()
 	_city.add_entity(_player)
@@ -257,6 +253,10 @@ func _ready() -> void:
 		_observer.setup(_city, _player, _baby, _day, _resistance, _edge)
 
 	_start_day()
+	# `_player.reset_at()` inside the call above has just put her own camera exactly where the
+	# boot camera was standing in for it, so freeing it now hands the viewport's current camera
+	# straight to hers — see `_new_boot_camera()`'s own doc for why freeing is what does that.
+	boot_camera.free()
 
 	if DevFlags.overview_requested():
 		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
@@ -308,8 +308,13 @@ func _ready_escape() -> void:
 		Telemetry.begin_run(GameState.run_seed, _somebody_is_playing())
 	# The second boot entry point `TextureResolver.warm()` has to reach — see `_warm_the_pictures()`
 	# — since the epilogue draws its own pictures (the building's props, the city's events) and is
-	# reached without ever passing through `_ready()`'s own call above.
-	await _warm_the_pictures()
+	# reached without ever passing through `_ready()`'s own call above. This path awaits the same
+	# way `_ready()` does before anything of the world exists — neither `_interior` nor `_city` is
+	# built yet, whichever section this run opens on — so it needs the same boot camera for
+	# `_warm_the_halo_shader()`'s probe to have a screen to draw on; world origin is as good as any
+	# other point, since nothing is in the tree yet to show a wrong corner of.
+	var boot_camera := _new_boot_camera(Vector2.ZERO)
+	await _warm_the_pictures(boot_camera.global_position)
 
 	_hud = HUD.instantiate()
 	add_child(_hud)
@@ -345,6 +350,11 @@ func _ready_escape() -> void:
 	_apply_orientation()
 	_finale.begin(FinaleController.Section.CITY if start_at_the_city
 			else FinaleController.Section.BUILDING)
+	# `begin()` just emitted `section_started` synchronously, which is what puts her (and her own
+	# camera) at this section's own start position — see `_on_finale_section_started()`. Freeing
+	# now hands the viewport's current camera straight to hers, the same moment `_ready()` frees
+	# its own boot camera.
+	boot_camera.free()
 
 	if DevFlags.overview_requested() and _city:
 		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
@@ -720,16 +730,47 @@ func _add_excitement_halo() -> void:
 	add_child(_halo)
 	_pauses_with_the_game(_halo)
 
+## A plain camera made current before either boot path's own player exists, so the two frames
+## `_warm_the_pictures()` awaits below draw `ground` — the doorstep, in `_ready()`'s case — rather
+## than the world's default identity transform, whose origin sits at the top-left of whatever is
+## in the tree under it.
+##
+## **Freeing it is what hands the viewport's current camera to the player's own.** A `Camera2D`
+## that exits the tree while it is the viewport's current one looks for another enabled camera on
+## the same canvas and makes that one current in its place, and the stroller's own `Camera2D`
+## (`scenes/player/stroller.tscn`) — sitting dormant since it entered the tree while this one was
+## already current — is the only other camera either boot path ever has in the tree by then.
+func _new_boot_camera(ground: Vector2) -> Camera2D:
+	var camera := Camera2D.new()
+	camera.name = "BootCamera"
+	camera.global_position = ground
+	# The stroller's own play zoom (`scenes/player/stroller.tscn`), so the warm-up frames read at
+	# the scale the title screen and the day itself will.
+	camera.zoom = Vector2(2, 2)
+	# Matches the stroller's own `Camera2D` (`process_callback = 0` in the scene) rather than the
+	# default idle callback — see the **godot** skill's "A paused `Camera2D` with smoothing on
+	# never arrives": with physics interpolation on project-wide, the default leaves the engine to
+	# override this itself and warn about it once a run.
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	add_child(camera)
+	_pauses_with_the_game(camera)
+	camera.make_current()
+	return camera
+
 ## M147, "every picture loaded before it is needed": loads every transfer PNG and gets the halo's
 ## shared shader compiled before either boot path's own `_start_day()`/`_finale.begin()`, so the
 ## first frame that actually needs a picture or a halo never pays for either. Printed beside
 ## "city generated in N ms" — the same shape `_plan_the_finale_city()` prints its own line beside
 ## — because a phone's longer first load belongs next to the other number that already tells a
 ## reader how long the boot took.
-func _warm_the_pictures() -> void:
+##
+## `ground` is where the boot camera made current just before this call is standing — see
+## `_new_boot_camera()` — and is handed straight through to `_warm_the_halo_shader()`, which needs
+## a point it can be sure is on screen.
+func _warm_the_pictures(ground: Vector2) -> void:
 	var elapsed := Time.get_ticks_msec()
 	var loaded := TextureResolver.warm()
-	await _warm_the_halo_shader()
+	await _warm_the_halo_shader(ground)
 	print("[Main] %d pictures warmed in %d ms" % [loaded, Time.get_ticks_msec() - elapsed])
 
 ## Gets the Compatibility renderer to compile the halo's shader program before a real halo ever
@@ -739,25 +780,24 @@ func _warm_the_pictures() -> void:
 ## open request — so the only lever left is a real draw call: a throwaway `Node2D` draws one
 ## transparent pixel with `EntityHalo.shared_material()` and is freed the frame after.
 ##
-## **At world origin, not off in the distance.** A canvas item outside the camera's visible rect
-## is culled before it reaches the renderer — see M139, "one atlas for the crowd", on why an
+## **At `ground`, not off in the distance.** A canvas item outside the camera's visible rect is
+## culled before it reaches the renderer — see M139, "one atlas for the crowd", on why an
 ## off-screen `CrowdAgent` costs nothing per frame — and a culled draw would compile nothing,
-## defeating the whole pass. No `Camera2D` exists yet at this point in either boot path (the one
-## in `scenes/player/stroller.tscn` is not built until after this call returns), so the viewport
-## still carries its default identity transform and world origin sits at the corner of the window
-## — on screen, in the renderer's own terms, whatever else has been drawn there this frame. Fully
-## transparent (`halo_colour`'s instance uniform default, never set here) makes it imperceptible
-## regardless: the GLSL program compiles from the material and the draw call alone, never from
-## the pixels it happens to write.
+## defeating the whole pass. `ground` is the boot camera's own `global_position` (see
+## `_new_boot_camera()`, made current by both boot paths before `_warm_the_pictures()` is ever
+## called), so a probe placed there sits exactly at that camera's own screen centre — on screen
+## regardless of zoom or viewport size. Fully transparent (`halo_colour`'s instance uniform
+## default, never set here) makes it imperceptible regardless: the GLSL program compiles from the
+## material and the draw call alone, never from the pixels it happens to write.
 ##
 ## **Two awaits, not one.** `SceneTree.process_frame` fires *before* the frame it names is drawn —
 ## `DaySummary._acknowledge_and_continue()` confirms this directly against `RenderingServer`'s own
 ## `frame_pre_draw`/`frame_post_draw` — so a single await would free the probe before its queued
 ## draw ever reached the renderer, and the shader would still compile late, on the first real halo.
-func _warm_the_halo_shader() -> void:
+func _warm_the_halo_shader(ground: Vector2) -> void:
 	var probe := Node2D.new()
 	probe.name = "HaloWarm"
-	probe.position = Vector2.ZERO
+	probe.global_position = ground
 	probe.material = EntityHalo.shared_material()
 	probe.draw.connect(func() -> void: probe.draw_rect(Rect2(Vector2.ZERO, Vector2.ONE), Color.WHITE))
 	add_child(probe)
@@ -995,10 +1035,6 @@ func _start_day() -> void:
 	_resistance.start_day(GameState.day, GameState.day_rng(GameState.day, "resistance"),
 			DevRig.day_length(GameState.day))
 	_player.reset_at(start_at)
-	# The camera is on her the instant `reset_at()` returns, so nothing further is drawn before it
-	# is — see `_ready()`'s own hide for why this was `false` since boot. Every day after the
-	# first finds it already `true`, so this is a no-op rather than a repeated flash.
-	_city.visible = true
 	_baby.reset()
 	_day.start(DevRig.day_length(GameState.day))
 

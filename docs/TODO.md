@@ -320,34 +320,49 @@ such numbers — three columns of which one is a measurement. Every phone readin
 
 ---
 
-## M150 — The tint follows the pavement the route walks, not the whole street · asked for 2026-09-15
+## M152 — Cars teleport at their turns · asked for 2026-09-15
 
-> "why is the yellow tint on both sides? clearly the bottom path cannot be on any route."
+> "cars are super buggy now. when they turn in the final stretch the teleport a car length
+> somewhere else. also in some case instead of routing a turn (or u turn) they just teleport."
 
-[PLAYTEST-76](playtests/PLAYTEST-76.md). The **city** rule governs; the tint's colour and
-alpha are M145's trial and unchanged here. What is true today: `City._tint_the_route_kerbs()`
-tints a kerb tile when `Corridor.of(_tree).depth(tile) == 0`, and `Corridor.depth()` answers
-through `StreetNetwork.segment_containing(tile)` at the grain of the whole street, so both
-pavements of every street on the tree are tinted — M145's entry chose that grain, and the
-still says it reads wrong: the far pavement is across a carriageway the route never crosses
-mid-block (M129, the fourth rule). The tree itself knows the side. It grows on the
-reachability grid's two-tile cells; a street's six tiles are a pavement cell, a road cell and
-a pavement cell; the mid-block road cells are off its graph; so `RouteTree.branches_on(tile)`
-is non-empty exactly on the pavement a route walks, and on junction cells, where no tile has
-a kerb (`GroundTiles._sidewalk_variant`).
+[PLAYTEST-76](playtests/PLAYTEST-76.md). The **crowd-traffic** rule governs. Seen on
+`v0.10.7-85-gd5d784f2` and not on the day before's builds, so it is one of the day's merges.
+The two that touch a car: **M146** (`DECISIONS.md`, a pocketed agent stands, then leaves
+unseen), which put `if _is_in_a_pocket(): if _out_of_view(): _recycle(); return` ahead of the
+step in `CrowdAgent._process` — a car in a turn returns before it, but a car that reaches a
+pocket now stands rather than pacing to the far seal, and is recycled once further than
+`Tuning.OUT_OF_SIGHT` from the field's centre, a distance measured against the viewport's far
+corner at play zoom; and **M149** (`DECISIONS.md`, atlases by group), which rebuilt
+`CrowdAtlas` on `TextureAtlas` with `"group|view"` keys — a drawing change, so it can move where
+a picture lands but not where a body is. A recycle is a teleport by construction, and the one
+place the design allows it is out of sight; a jump of a car length at a turn is either a
+recycle in sight, a turn path whose start or end is off its lane, or a picture drawn off its
+body.
 
-- [ ] **Tint a kerb tile only when the tree carries it.** In `_tint_the_route_kerbs()`,
-      `not _tree.branches_on(tile).is_empty()` in place of the corridor's depth; `Corridor`
-      untouched, since its street grain is what every placement rule is stated in. The routes
-      suite's tint check (`tests/test_routes.gd`, the one asserting the tinted cells are exactly
-      the kerb tiles at depth zero) becomes: exactly the kerb tiles the tree carries — and, the
-      new assertion, a street with both kerb lines tinted has tree cells on both its pavements.
-      `docs/CITY.md`'s tint sentences say the tint follows the tree's own pavement. Evidence:
-      M145's two stills again (`tools/shot.sh out.png 4 --seed 3265820891 --day 1 --walk 2s
-      --debug`, once with `--layers 5` so the purple line lies over the tint and once without),
-      under `evidence/m150-tint-route-side-2026-09-15/`. `REVIEW.md`'s M145 item gains the
-      question: is the tint on one pavement only now, and is it the one the purple line runs
-      along.
+- [ ] **Bisect it with a probe before touching anything.** A probe under `tests/probes/`
+      runs a rig day on a few seeds with the crowd on and records, per physics frame, every
+      car's position and whether it is within the play viewport of the rig's camera; it
+      reports every frame-to-frame jump larger than twice the car's top speed times the frame,
+      with the car's state (turning, pocketed, recycled, give-way) and whether the jump was in
+      view. Run it at `main` and at the merge commits of the day in order — the base before
+      today, the commit PR 196 merged onto, then after M146 (PR 200), after M129 (PR 203), after M149 (PR 204)
+      — and name the merge that introduces the in-view jumps. Then the drawing: on the
+      merge that introduces it, if the positions are continuous, compare the car's drawn
+      picture per view before and after (`CrowdAtlas`'s regions against the source tables,
+      size and anchor, for all five car views and the trim) — a picture that is a different
+      size from its source moves the body it is drawn on by half the difference.
+- [ ] **Fix the cause where it is, checked before it acts.** If it is M146: a pocketed car in
+      sight must never recycle, and a car whose way is shut turns round or queues the way
+      M119's own turn-around test expects (`tests/test_crowd_closures.gd`), so the fix is in
+      which agents the pocket branch may recycle and when, never a nudge after the fact. If it
+      is the turn path: the curve's end must be the lane centre it was checked against. If it
+      is the atlas: the region's size and the draw anchor equal the source's, asserted in
+      `tests/test_crowd_atlas.gd` per view. Evidence: one burst on a rig aimed at a junction
+      where the probe saw the jump (`--seed` and `--day` from the probe, `--press
+      snapshot_burst 3`, `--invincible`), before and after, under
+      `evidence/m152-car-teleport-2026-09-15/`; the probe's output for every commit it ran
+      at. `REVIEW.md`, in the same PR: do the cars turn and U-turn on this build without a
+      jump, in the final stretch and at seals.
 
 ---
 
