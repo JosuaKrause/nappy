@@ -20,6 +20,7 @@ func run(t) -> void:
 	_test_the_readout_is_not_assembled_outside_a_debug_build(t)
 	_test_the_readout_flag_shows_it_on_a_release_build(t)
 	_test_the_debug_mode_note_only_exists_when_requested(t)
+	_test_the_frame_graph_only_exists_when_requested(t)
 	_test_add_touch_controls_builds_the_one_control_reader(t)
 	_test_on_title_start_sets_the_controls_mode(t)
 	_test_the_summary_and_pause_restart_signals_are_both_connected(t)
@@ -156,6 +157,39 @@ func _test_the_debug_mode_note_only_exists_when_requested(t) -> void:
 	t.check(main._debug_mode_note != null and main._debug_mode_note.get_parent() == main,
 			"the flag builds the note and parents it under main")
 	main._debug_mode_note.free()
+	main.free()
+
+## `_add_frame_graph()` gates itself on `_debug or _readout_requested`, the same shape
+## `_add_debug_mode_note()` gates itself on `_readout_requested` alone — see that function's own
+## doc — so a release build carrying neither flag never builds the graph either, and one carrying
+## `?debug=1` gets it parented under `_status`'s own `CanvasLayer` and shown, the same terms
+## `_status.visible` itself starts on.
+func _test_the_frame_graph_only_exists_when_requested(t) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._status = Label.new()
+	main._status_layer = CanvasLayer.new()
+	main._debug = false
+	main._readout_requested = false
+	main._add_frame_graph()
+	t.check(main._frame_graph == null,
+			"no graph is built at all when neither flag was asked for")
+	main._status.free()
+	main._status_layer.free()
+	main.free()
+
+	main = MAIN_SCRIPT.new()
+	main._status = Label.new()
+	main._status_layer = CanvasLayer.new()
+	main._debug = false
+	main._readout_requested = true
+	main._add_frame_graph()
+	t.check(main._frame_graph != null and main._frame_graph.get_parent() == main._status_layer,
+			"the flag builds the graph and parents it under the readout's own CanvasLayer")
+	t.check(main._frame_graph.visible,
+			"and it is visible from the start, the same terms _status.visible starts on")
+	main._frame_graph.free()
+	main._status.free()
+	main._status_layer.free()
 	main.free()
 
 ## **One node goes into the tree, not a choice between two.** `TouchControls` is the whole of the
