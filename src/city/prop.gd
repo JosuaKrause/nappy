@@ -50,22 +50,30 @@ func _compute_shape() -> GroundShape:
 		_:
 			return GroundShape.point(0.0)
 
+## The region of the street's decoration atlas standing in for `texture`, or `texture` itself
+## while that group has not been collected, has been released, or was never asked for — a prop
+## built by a rig with no `City` behind it. The shadow shapes in `_compute_shape()` deliberately
+## stay on the source constants: a ground shape is not a picture, and it is computed in `_ready()`
+## before any atlas could be ready anyway.
+func _packed(texture: Texture2D) -> Texture2D:
+	return TextureAtlas.texture_for(CityDecals.DECORATION_ATLAS, texture, texture)
+
 func _draw() -> void:
 	match kind:
 		Kind.TREE:
 			_draw_tree()
 		Kind.PLAYGROUND_FRAME:
 			shape.draw_shadow(self, Vector2.ZERO)
-			Sprites.draw_standing(self, SWING_FRAME, Vector2.ZERO)
+			Sprites.draw_standing(self, _packed(SWING_FRAME), Vector2.ZERO)
 		Kind.BOLLARD:
 			shape.draw_shadow(self, Vector2.ZERO)
-			Sprites.draw_standing(self, BOLLARD, Vector2.ZERO)
+			Sprites.draw_standing(self, _packed(BOLLARD), Vector2.ZERO)
 		Kind.SACK:
 			shape.draw_shadow(self, Vector2.ZERO)
-			Sprites.draw_standing(self, SACK, Vector2.ZERO)
+			Sprites.draw_standing(self, _packed(SACK), Vector2.ZERO)
 		Kind.SACK_PILE:
 			shape.draw_shadow(self, Vector2.ZERO)
-			Sprites.draw_standing(self, SACK_PILE, Vector2.ZERO)
+			Sprites.draw_standing(self, _packed(SACK_PILE), Vector2.ZERO)
 		Kind.STREET_TREE:
 			_draw_street_tree()
 
@@ -80,9 +88,11 @@ static func _playground_frame_shape() -> GroundShape:
 ## Two tree shapes and a mirror, so ten trees in a park are not one silhouette repeated.
 func _draw_tree() -> void:
 	var texture: Texture2D = TREES[absi(variant) % TREES.size()]
+	# The size is read off the source rather than off the region so a variant's own scaling stays
+	# exactly what it was; the two are the same number, since a region reports its source's size.
 	var size := texture.get_size() * scale_factor
 	shape.draw_shadow(self, Vector2.ZERO)
-	Sprites.draw_standing(self, texture, Vector2.ZERO, size, absi(variant) % 4 < 2)
+	Sprites.draw_standing(self, _packed(texture), Vector2.ZERO, size, absi(variant) % 4 < 2)
 
 ## The same standing tree every park tree draws, unscaled by `scale_factor`. The street tree's pit
 ## is a ground decal owned by `CityDecals`, so it stays under the player and other entities.
