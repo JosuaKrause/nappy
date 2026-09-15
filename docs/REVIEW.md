@@ -51,6 +51,13 @@ item below for as long as looking takes.
   between that guides without being read as a hint?** And where a costly thing stands on the
   route with its amber caret up, does the yellow curbstone read as part of the warning? Record
   is `DECISIONS.md`, M145, the route's curbs.
+- **Turn on `5` on seed 2128084176, day 1, and follow every purple line with your eyes.** The
+  tree grows on a graph with no carriageway cell but the junctions' and none of the main
+  road's, and the doorstep connector is drawn along the street now rather than as a straight
+  hop. **Does any route line still cross a carriageway anywhere but at a crossing, or run on
+  the main road?** And walking one route end to end: is there a line through it that never
+  costs, and where it breaks, what stands in the way — the probe says a leaf blower most often.
+  Record is `DECISIONS.md`, M129, the four rules.
 - **Cross a region door on foot, from day 7** (`--day 7`; a door is the hut-boom-hut across a
   boundary street). The boom hangs between its posts across the lanes, level with the huts; the
   inspection starts as soon as she stands against the hut; the camera eases from where it was

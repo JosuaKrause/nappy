@@ -57,14 +57,25 @@ extends RefCounted
 ## one derived from which cells are on the tree rather than tracked directly. `cells()` is the new
 ## one, for the picture and for `Corridor`'s tile-level questions.
 ##
-## **The main road.** *(2026-09-03, playtest 22: "a path should never go alongside the main road —
-## main road by itself can be considered a blocker — paths can only cross the main road".)* Every
-## probe here refuses an edge that would walk along the spine's own length; a crossing — a straight
-## run of steps at right angles to it, in and out the far side — is never refused, because nothing
-## here asks about direction, only about whether consecutive cells share the spine's column and
-## differ along it. `docs/CITY.md` still holds: she may cross wherever she likes, and nothing here
-## gates a crossing or gives it a day number. `SealPlanner` refuses the spine as a candidate
-## outright — see its own doc — so this is the only place that has to know it exists at all.
+## **The growth walks a smaller graph than the grid.** *(2026-09-14, the player: "why not just
+## remove the street tiles and main street blocks from the graph entirely?")* Two kinds of cell are
+## out of it, and a junction box is out of neither:
+##
+## - **a carriageway between two junctions**, so a route crosses a street only where crossing is
+##   legal. *(2026-09-13, PLAYTEST-69: "the routing should only cross the street at intersections.
+##   in block crossings are possible in game but shouldn't be counted on by the routing
+##   algorithm".)*
+## - **the main road, anywhere but at a junction** — its pavements as much as its carriageway, since
+##   the rule about it is that a route never goes *alongside* it. *(2026-09-03, playtest 22: "a path
+##   should never go alongside the main road — main road by itself can be considered a blocker —
+##   paths can only cross the main road".)* Crossing it at a junction is untouched, and
+##   `SealPlanner` refuses the spine as a candidate outright for its own reasons — see its doc.
+##
+## `_is_off_the_growths_graph` is the whole of it and `_ways` is where it is applied. **It filters
+## this class's own view and nothing else**: `ReachabilityGrid` is untouched, so every guarantee
+## stated over walkable ground still sees the city the player can walk. **It gates the plan and not
+## the player** — she may cross anywhere and stand in the road if she likes, and `docs/CITY.md` says
+## so.
 ##
 ## **The trunk.** *(2026-09-03, playtest 22: "the starting area was sealed off completely and the
 ## only way out was alongside the main road, which basically ends the day".)* `_home` is a rect of
@@ -112,9 +123,11 @@ var branches: Array[Branch] = []
 ## map both need to translate a cell or a tile against the same one the tree used.
 var grid: ReachabilityGrid
 
-## The city the tree is grown against. Kept for the one fact about the lattice growth itself needs
-## beyond plain walkability: which cells are the main road, so `_grow_the_trunk()` can prefer a way
-## out that never walks along it. See `_runs_along_the_spine` and the class doc, "The trunk".
+## The city the tree is grown against. Kept for the two facts about the lattice the growth needs
+## beyond plain walkability: which cells are the main road, so the growth can leave the spine out of
+## its graph and `_grow_the_trunk()` can put it back where the doorstep has no other way out, and
+## what each tile actually is, so a carriageway between two junctions can be told from a calm zone's
+## absorbed street at the same offset. See `_is_off_the_growths_graph` and the class doc.
 var _map: CityMap
 
 ## Whether `_grow_the_trunk()` had to allow the main road to connect the doorstep to the rest of
@@ -148,10 +161,12 @@ var _home := {}
 ## street for `gaps()` is a real street at all.
 var _absent := {}
 
-## Node id -> the edges that remain after the main-road rule. The grid topology and the map's
-## main-road position are fixed for the tree's lifetime, so repeated probes can reuse the filtered
-## edge order.
+## Node id -> the edges that remain after `_is_off_the_growths_graph`. The grid topology, the map's
+## paint and its main-road position are all fixed for the tree's lifetime, so repeated probes can
+## reuse the filtered edge order.
 var _ways_cache := {}
+## The same, for `_ways_including_the_spine` — the trunk's own fallback search.
+var _kerb_only_cache := {}
 
 ## Segment key -> `true`, lazily derived from `_colours` the first time anything asks a
 ## segment-level question. A `ReachabilityGrid` node is a handful of tiles and a tree touches many
@@ -415,16 +430,22 @@ func _is_the_end_of_a_probe(node: int, colour: int) -> bool:
 func _carries(node: int, colour: int) -> bool:
 	return _colours.has(node) and (_colours[node] as Dictionary).has(colour)
 
-# ------------------------------------------------------------------ the main road ---
+# ------------------------------------- the main road, and the kerbs (M129) ---
 
-## `grid.neighbours(node)` with every edge that would walk along the main road removed. Every
-## probe that plans a route calls this rather than the grid directly — `_walk_home`,
-## `_shortest_home` and `_grow_the_trunk`'s own search. `node_depths()` does not, because it
-## answers a proximity question about the physical lattice rather than proposing a way to walk,
-## and the main road is real ground either way.
+## **The graph the growth actually walks**, which is the grid's with two kinds of cell taken out of
+## it: a carriageway between two junctions, and the main road anywhere but at a junction.
+## *(2026-09-14, the player: "why not just remove the street tiles and main street blocks from the
+## graph entirely?")* Every probe that plans a route calls this rather than the grid directly —
+## `_walk_home`, `_shortest_home` and `_grow_the_trunk`'s own search. `node_depths()` does not,
+## because it answers a proximity question about the physical lattice rather than proposing a way to
+## walk, and both kinds of ground are real either way.
+##
+## **It is a filter on this class's own view and nothing else.** `ReachabilityGrid` is untouched, so
+## every guarantee stated over walkable ground — `ClosurePlanner`'s two-calm-areas invariant,
+## `EventScheduler._ensure_the_city_is_still_walkable`, `Corridor.depth()`'s own proximity field —
+## still sees the city the player can walk, which is the city she can walk: **she may cross a street
+## anywhere and stand in the road if she likes.** What changes is only what the day plans against.
 func _ways(node: int) -> Array:
-	if not _map or _map.main_road < 0:
-		return grid.neighbours(node)
 	var cached: Variant = _ways_cache.get(node)
 	if cached != null:
 		return cached
@@ -435,25 +456,78 @@ func _ways(node: int) -> Array:
 ## The filtered edge list before memoization, exposed so a differential test can vary only the
 ## cache while sharing the production growth algorithm.
 func _ways_uncached(node: int) -> Array:
-	if not _map or _map.main_road < 0:
-		return grid.neighbours(node)
 	var found: Array = []
 	for edge: Array in grid.neighbours(node):
-		if _runs_along_the_spine(edge[1], edge[2]):
-			continue
-		found.append(edge)
+		if not _is_off_the_growths_graph(edge[2], true):
+			found.append(edge)
 	return found
 
-## Whether stepping from tile `a` to tile `b` walks along the main road rather than across it.
+## `_ways` with the main road allowed back in — what `_grow_the_trunk` falls back to on a day where
+## the doorstep has no way out that avoids the spine, and nothing else calls it.
 ##
-## A grid edge is either an x-step or a y-step (`ReachabilityGrid._build_edges` only ever connects
-## a cell to its immediate horizontal or vertical neighbour), and the main road is a north-south
-## band — `CityMap.street_kind_at(true, tile)` depends only on the tile's `x`. So a **y-step within
-## the band** (`a.x == b.x`, both on the spine) is walking along it; an **x-step through the band**
-## is crossing it, one cell at a time, and is never refused here however many of them a route takes
-## in a row.
-func _runs_along_the_spine(a: Vector2i, b: Vector2i) -> bool:
-	return a.x == b.x and _map.street_kind_at(true, a) == GameEnums.StreetKind.MAIN
+## **The two refusals are not the same kind of thing, which is why only one of them has a
+## fallback.** *"The starting area was sealed off completely and the only way out was alongside the
+## main road, which basically ends the day"* — the spine is sometimes the only way off the doorstep
+## and a day with the tree not joined to the home is worse than a trunk on a bad street. A mid-block
+## carriageway is never the only way anywhere: a street's two pavements are joined through the
+## junction boxes at both ends of it, so refusing the carriageway can take no ground out of reach
+## and needs no way round.
+func _ways_including_the_spine(node: int) -> Array:
+	var cached: Variant = _kerb_only_cache.get(node)
+	if cached != null:
+		return cached
+	var found: Array = []
+	for edge: Array in grid.neighbours(node):
+		if not _is_off_the_growths_graph(edge[2], false):
+			found.append(edge)
+	_kerb_only_cache[node] = found
+	return found
+
+## **Mid-block crossings are not counted on, and the main road is not a route.** *(2026-09-13,
+## PLAYTEST-69: "the routing should only cross the street at intersections. in block crossings are
+## possible in game but shouldn't be counted on by the routing algorithm"; 2026-09-03, playtest 22:
+## "a path should never go alongside the main road — main road by itself can be considered a
+## blocker — paths can only cross the main road".)*
+##
+## A cell knows nothing about kerbs, so without this the corridor steps pavement → carriageway → far
+## pavement in the middle of a street: `tests/probes/m129_zero_cost_line.gd` measured it doing so on
+## 258 of 298 routes, 871 crossings in all.
+##
+## **Stated as a cell the growth may not enter rather than as a step it may not take**, which is the
+## smaller rule and the stronger one: a route that walked *along* a carriageway would be worse than
+## one that crossed it, and stating the spine as a step meant only refusing to walk its length while
+## leaving its pavements and its road on the tree for a closure or a seal to find.
+##
+## **A junction box is kept whole — all nine cells of it — rather than the crosswalk tiles alone.**
+## The box is `Tuning.STREET_WIDTH` (6) tiles square at `junction * CityMap.period()`, and the period
+## (14) and the width are both even, so the box is exactly three by three `ReachabilityGrid` cells
+## and a cell is never half in it. Keeping the whole box is what the line is measured against —
+## `tests/probes/m129_zero_cost_line.gd` takes a junction box as ground in one piece, *"which is
+## exactly where a zebra or a signalled line stands"* — and keeping only the crosswalk cells would
+## refuse the two corner cells a route turning at that junction has to pass through.
+##
+## **The tile's own type decides the carriageway, not its offset across the corridor.** A four-block
+## calm zone is painted over the streets between its blocks, so those tiles sit at a road offset and
+## are grass somebody walks on — *"an absorbed street is calm ground, not a closure"* — and a
+## precinct is paved frontage to frontage with no carriageway at all.
+##
+## **The spine is the whole street and not only its road**, because the rule about it is that a
+## route never goes *alongside* it: its pavements are as much the main road as its carriageway is.
+func _is_off_the_growths_graph(tile: Vector2i, refuse_the_spine: bool) -> bool:
+	if not _map:
+		return false
+	if CityMap.junction_at(tile) != Vector2i(-1, -1):
+		return false
+	if refuse_the_spine and _map.main_road >= 0 \
+			and _map.street_kind_at(true, tile) == GameEnums.StreetKind.MAIN:
+		return true
+	var segment := StreetNetwork.segment_containing(tile)
+	if not segment:
+		return false
+	if not CityMap.is_road_offset(CityMap.corridor_offset(tile.y if segment.horizontal else tile.x)):
+		return false
+	var type := _map.tile_at(tile)
+	return type == GameEnums.TileType.ROAD or type == GameEnums.TileType.CROSSING
 
 # --------------------------------------------------------------------- adoption ---
 
@@ -559,7 +633,7 @@ func _trunk_path(avoid_spine: bool) -> Array[int]:
 			var path := _unwind(previous, node)
 			path.reverse()
 			return path
-		var edges := _ways(node) if avoid_spine else grid.neighbours(node)
+		var edges := _ways(node) if avoid_spine else _ways_including_the_spine(node)
 		for edge: Array in edges:
 			var next: int = edge[0]
 			if previous.has(next):
@@ -613,6 +687,37 @@ func streets() -> Array[Vector3i]:
 func is_on_the_tree(key: Vector3i) -> bool:
 	_ensure_street_keys()
 	return _street_keys.has(key)
+
+## Every junction a route passes through, and the junction at each end of every street the tree
+## runs along — **the crossings a walk along a route has no way around**.
+##
+## A junction is the only place a line may change from one pavement to the other, so a junction
+## whose box is covered is a route cut in a way no amount of ground on either side can answer:
+## `tests/probes/m129_zero_cost_line.gd` measured it as the shape that breaks more routes than
+## every other shape together (135 of 298 routes, 401 of the cuts). `EventScheduler` refuses a row
+## the ground that would close one — see `_leaves_the_route_junctions_open`.
+##
+## **Both halves are needed and neither implies the other.** A street on the tree is walked end to
+## end, so both of its junctions are crossings the route uses, even though no route *cell* need
+## stand inside either box. And a route that cuts across a junction from a park or an alley
+## contributes a junction no on-tree street names, because the cells either side of it resolve to
+## no segment at all.
+func junctions() -> Array[Vector2i]:
+	_ensure_street_keys()
+	var found := {}
+	for key: Vector3i in _street_keys:
+		var segment := StreetNetwork.by_key(key)
+		if segment:
+			found[segment.a] = true
+			found[segment.b] = true
+	for node: int in _colours:
+		var junction := CityMap.junction_at(grid.any_tile_of(node))
+		if junction != Vector2i(-1, -1):
+			found[junction] = true
+	var result: Array[Vector2i] = []
+	for junction: Vector2i in found:
+		result.append(junction)
+	return result
 
 ## The streets just outside the corridor: not on the tree, and meeting one that is at a junction.
 ##
