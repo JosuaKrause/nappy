@@ -490,9 +490,10 @@ static func _spoil_one_park(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## Rolls one of the pool, weighted by how much ground it can actually take.
 ##
 ## Everywhere else in the scheduler a def's `weight` is how *common* it is, which is a statement
-## about a city. Here the job is covering a lot, and a leaf blower covers four times the ground a
-## busker does — so the roll is by area as well as by weight, and the quiet rows become the garnish
-## on a spoiled park rather than half of it. It stays a roll rather than becoming "always the
+## about a city. Here the job is covering a lot, and what a row denies goes as the square of its
+## reach — a busker covers several times the ground a market stall does — so the roll is by area
+## as well as by weight, and the quiet rows become the garnish on a spoiled park rather than half
+## of it. It stays a roll rather than becoming "always the
 ## loudest" for the reason the mix exists at all: a park that is busy today is busy with several
 ## different things, and one repeated sprite reads as a duplicated sprite.
 static func _pick_by_what_it_denies(defs: Array[EventDef], rng: RandomNumberGenerator) -> EventDef:

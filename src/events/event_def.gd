@@ -259,6 +259,23 @@ func solid_reach() -> float:
 @export var inner_radius := 40.0
 @export var outer_radius := 150.0
 
+## **A louder inner part of the same field**, for a row that has to be one thing to walk past and
+## another thing to stand a street away from. Both zero means there is no core, which is every row
+## but the leaf blower.
+##
+## `core_intensity` is the rate out to `inner_radius` and `core_radius` is where it has fallen to
+## nothing, on the same curve the field itself uses — so a core is `Tuning.falloff` over the
+## shorter band and `emission_at()` answers **the larger of the two**. That is what makes it add
+## rather than replace: inside `core_radius` the row is as loud as the core says, and past it the
+## row is its plain field with nothing about it changed, which is what lets the same row price
+## walking past it as a wall and standing away from it as a hum.
+##
+## **A flock has no core**, and `validate()` refuses one: a flock's field is already a sum over
+## bodies rather than one disc, and a second shape over the top of it would price ground neither
+## the sum nor the disc describes.
+@export var core_intensity := 0.0
+@export var core_radius := 0.0
+
 ## Seconds at full strength. 0 means it lasts the whole day.
 @export var duration := 0.0
 ## Seconds of visible warning before full intensity, during which it emits only
@@ -778,6 +795,32 @@ func validate() -> bool:
 					% [id, piece.reach(), obstructs_radius])
 					+ "claims: nothing cleared the ground it would stand on")
 			return false
+	# **A core is two numbers that only mean anything together**, and each way of half-setting them
+	# is a row that reads as having a core and has not got one: a rate with nowhere to fall to, a
+	# band with nothing in it, a core no louder than the field it is drawn over, or one reaching
+	# past the field's own edge — which would put the row's loudest ground outside the radius every
+	# fairness rule is stated over. Checked before the ambient and city-wide returns below, since
+	# those rows have a field too.
+	if (core_intensity > 0.0) != (core_radius > 0.0):
+		push_error(("event '%s' sets half a core (%.1f/s over %.0fpx): a core is a rate and a band "
+				% [id, core_intensity, core_radius]) + "and neither means anything alone")
+		return false
+	if core_intensity > 0.0:
+		if core_intensity <= intensity:
+			push_error(("event '%s' has a %.1f/s core inside a %.1f/s field: a core quieter than "
+					% [id, core_intensity, intensity])
+					+ "what it sits in is never the larger of the two and changes nothing")
+			return false
+		if core_radius <= inner_radius or core_radius > outer_radius:
+			push_error(("event '%s' has a core falling to nothing at %.0fpx, outside its own "
+					% [id, core_radius])
+					+ "field's %.0f–%.0fpx band" % [inner_radius, outer_radius])
+			return false
+		if flock_size > 0:
+			push_error("event '%s' is %d bodies wheeling and has a core: a flock's field is a sum "
+					% [id, flock_size] + "over bodies, and one disc over the top of it prices "
+					+ "ground neither shape describes")
+			return false
 	if kind == GameEnums.EventKind.AMBIENT:
 		return true
 	# A city-wide event has no edge to walk out of, so the escape-distance rule is
@@ -979,7 +1022,7 @@ func mean_emission_along_the_line() -> float:
 ## is the average over where they might be, not over one frame.
 func emission_at(at: Vector2) -> float:
 	if flock_size <= 0:
-		return Tuning.falloff(at.length(), intensity, inner_radius, outer_radius)
+		return emission_at_distance(at.length())
 	var share := intensity / float(flock_size)
 	var outer := maxf(inner_radius + 1.0, outer_radius - flock_spread)
 	var total := 0.0
@@ -988,3 +1031,17 @@ func emission_at(at: Vector2) -> float:
 		var bird := Vector2(cos(angle), sin(angle)) * flock_spread * 0.65
 		total += Tuning.falloff(bird.distance_to(at), share, inner_radius, outer)
 	return total
+
+## What a row with one field emits at a distance from its centre — the field, and the core over the
+## top of it where there is one. Every cost this file quotes goes through here.
+##
+## **The runtime does not.** `EventInstance._contribution_at_uncached()` calls `Tuning.falloff`
+## itself with this row's `intensity` scaled by the pulse and the telegraph, so what the baby is
+## charged has no core in it: a cored row costs what the table below says only in the table and in
+## the placement rules that read it. Routing that query through here is the one change that would
+## close the gap.
+func emission_at_distance(d: float) -> float:
+	var field := Tuning.falloff(d, intensity, inner_radius, outer_radius)
+	if core_intensity <= 0.0:
+		return field
+	return maxf(field, Tuning.falloff(d, core_intensity, inner_radius, core_radius))

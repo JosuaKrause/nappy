@@ -687,6 +687,13 @@ contribution(d) = intensity                              , d <= inner_radius
 **The shape has a shoulder on it, and that is a design decision rather than an implementation
 detail.** The meter has to go substantially up from some way off rather than waiting for contact.
 
+**One row has a second, louder part close in.** `EventDef.core_intensity` and `core_radius` put the
+same curve over a shorter band and the row's price is the larger of the two at every distance, so
+the leaf blower is a wall inside the pavement it stands on and a busker beyond it. Both numbers are
+zero everywhere else, and the core is in what a row *costs* — the table in docs/EVENTS.md and the
+placement rules that read it — rather than in what an instance emits, which is the plain field
+above.
+
 **`d` is a distance to a field, not always to a point.** The field is the Minkowski sum of the
 object's own `GroundShape` and a kernel — a disc while it stands still, an ellipse while it
 moves — so `inner_radius`/`outer_radius` mean distance *from that shape*, not from a fixed centre.

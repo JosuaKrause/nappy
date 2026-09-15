@@ -771,7 +771,7 @@ neighbourhood's own rather than a patrol's.
 | --- | --- | --- | --- |
 | `loose_dog` | RECURRING (`TOWARD_PLAYER`) | 1 | A dog whose owner has dropped the leash, sited on her own pavement when she gets close and running straight down it toward her. The counterpart to `dog_walker` and the reason both exist — that one is a **span** you decide whether to cross the street to avoid, this one is a **thing coming at you** that you cannot out-walk. 132px/s, so it earns a badge at the screen edge and pays the whole-radius telegraph. Not lethal, which is what separates it from `charging_dog`: this one is answered by getting out of the way, not by running. Intensity 32, raised from 24 for a bigger impact once a real meeting is priced against the fixed baseline rather than the barrier fields that used to pin it near the top of the meter regardless. |
 | `market_stall` | RECURRING | 1 | The second thing on day 1 that forces a crossing, and it exists because one obstacle repeated eighteen times is a rule rather than a decision. Wider, louder, and on the other side of pleasant than `cafe_tables`: a café you squeeze past is a nuisance, a market is a crowd. A real source too, derived from the body the same way `cafe_tables` is — 38px/64px, the same pair, since both bodies share the same 24px rounding. |
-| `leaf_blower` | RECURRING | 1 | The loudest thing in act I, and it is a man tidying a park. Allowed on `PARK` on purpose — a calm block with a leaf blower in it is calm ground she cannot use. Swept in bursts, so there is a rhythm to time a pass through. |
+| `leaf_blower` | RECURRING | 1 | A man tidying a park, and a field with two parts: away from him it is the busker's exactly, so a park with a few of them spaced across it stays awake; inside `core_radius` — a pavement's own width — it is a wall. One of them closes one side of a street and never the street. |
 | `pigeon_flock` | RECURRING | 1 | **A patch of pavement that goes up when she walks into it.** `MAP`-placed, so the birds are pecking about from the moment the day streams them in at `EVENT_STREAM_RADIUS` — a flock she can see from down the street is one she can price and route around, which is the whole difference between a place and a moment. `pursues_within` 150px, inside its own 168px field and more than twice the 62px wheel, is the wait: unclocked and `quiet_until_noticed` (a fraction of 42/s while they peck), then 1.7s of a flock on the ground about to go, then up, then *away*. It is **eleven birds**, each with its own heading, height and wingbeat, and each an emitter, so the middle of a flock stacks four or five fields and the rim stacks one — the only row in the game that is more than one source, and the one row exempt from a body for it. `EventDef.scenery` is set, so `EventScheduler._role_for` answers `NONE` for it rather than the `WALL` its cost would otherwise earn — a flock is scenery, not a block, and it lands on a route corridor exactly as it lands anywhere else. |
 | `cyclist` **`hard_fail`** | RECURRING (`TOWARD_PLAYER`) | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement she is walking, bell going, coming toward her, down her own side of the road — sited when she gets close rather than on a street the day chose at dawn, so she answers it with a route decision (cross, or turn) instead of finding out too late it was never on her way. Everything about it is ordinary, which is the point: act I does not become sinister, it becomes a real street. The bell rings for 2.97s, what the doubled margin costs at a 90px field grown forward by its own speed — smaller than the fairness contract alone would allow, so the wait before it arrives stays a real reaction window rather than several seconds of watching it close from off screen. Its lethal `inner_radius` is 33px, widened from 26 so the far lane of her own pavement no longer clears it by construction — the same overturn `chatting_mother`'s `detain_radius` went through first. |
 | `ice_cream_van` | RECURRING | 2 | The `busker` argument one size up: nothing about it is threatening, it is simply interesting. The widest ordinary radius in act I. At the kerb, and solid at 24px: a thing children cross a road to reach rather than a thing standing in one. |
@@ -887,6 +887,17 @@ func contribution_at(world_position: Vector2, ...) -> float:
 
 Because it is a pure query there is no ordering to get wrong, events compose by simple
 addition, and an instance can be tested without a scene.
+
+**A row may carry a second, louder part close in, and one does.** `EventDef.core_intensity` and
+`core_radius` are a core: the same curve over a shorter band, and the row emits **the larger** of
+the core and the field at every distance, so a core only ever adds and only ever inside itself.
+`leaf_blower` is the row it exists for — past `core_radius` it is a busker, number for number, and
+inside it, it is a wall — and every other row leaves both at zero and is one field as before.
+`EventDef.emission_at_distance()` is where the two are put together, and it is what every cost in
+this document is integrated from. **The instance does not ask it.**
+`EventInstance.contribution_at()` calls `Tuning.falloff` on the plain field, as the code above
+shows, so what the baby is charged for standing beside a cored row is the field alone: the core is
+in the prices and in the placement rules that read them, and not yet in the meter.
 
 **The field is the Minkowski sum of the body and a kernel.** `Tuning.falloff()` is still the one
 arithmetic home and still prices a plain distance `d` — what changed is what `d` means.
@@ -1087,7 +1098,7 @@ alone is answering a narrower question than it thinks.
 | `protest` | +27.6 | +77.6 |
 | `dog_walker` | +30.8 | +41.2 |
 | `busker` | +34.7 | +63.1 |
-| `leaf_blower` | +37.7 | +67.1 |
+| `leaf_blower` | +37.8 | +64.8 |
 | `burning_building` | +41.7 | +83.2 |
 | `pigeon_flock` † | +44.9 | +63.6 |
 | `abduction` * | +47.7 | +84.1 |
@@ -1553,8 +1564,8 @@ over the calm ground, sized from what each of them actually denies and capped at
   sprite in a field would read as a duplicated sprite — which is what `EVENT_SPACING_SAME` exists
   to prevent everywhere else in the scheduler.
 - **The roll is weighted by area, not just by `weight`.** Everywhere else a def's weight says how
-  *common* it is; here the job is covering a lot, and a leaf blower covers four times the ground a
-  busker does.
+  *common* it is; here the job is covering a lot, and what a row denies goes as the square of its
+  reach — a busker covers several times the ground a market stall does.
 
 Measured over five seeds and twenty lots: the share of the calm ground she cannot settle on goes
 from **8–12% on an ordinary day to 91% of a one-block courtyard and 99% of a four-block zone**. The
