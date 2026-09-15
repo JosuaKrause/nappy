@@ -352,6 +352,57 @@ which changes what the physics tick and the camera do per frame, may move it.
 
 ---
 
+## M145 — The route's curbs, tinted faint yellow · asked for 2026-09-14, an experiment
+
+> "can we tint the curbstones that belong to a path slightly yellow? to give a faint hint on an
+> optimal path. I just want to try it out. this is in addition to the environmental guidance
+> through obstacles. it should be faint as to more subconciously guide as well"
+
+[PLAYTEST-75](playtests/PLAYTEST-75.md). The **city** rule governs the ground; the **cues**
+rule governs any colour that reads as a signal, and yellow is the family of the caret's amber
+(`Palette.MARK_COSTLY`, *worth going round*), which this must stay far enough below to be a
+cast rather than a mark.
+
+**What it overturns, and that it is an experiment.** `docs/CITY.md`, "Guiding her to the
+calm", says *there is no cue of any kind toward calm — no marker, no map, no HUD line, nothing
+on the ground*, and its summary is *the city permits routes to calm and protects them from
+becoming impossible; it never suggests one* (also `RouteTree`'s own class doc). This is the
+player asking to try the opposite, faintly: *asked for no cue · overturned as a trial on
+2026-09-14, "I just want to try it out"*. The guidance through obstacles (M129, a path
+through the city never has to cost) stands beside it, not under it. Those `CITY.md` sentences
+are rewritten in the same PR to say what is true with the tint on, and this entry's record
+in `DECISIONS.md` says it was a trial so it can be taken out on one sentence from the player.
+
+**What "the curbstones that belong to a path" are.** The day's routes are `RouteTree`, and
+`Corridor.of(tree).depth(tile) == 0` is the tile-level question — a street tile answers at the
+grain of its whole street, so both pavements of every street on the tree are inside, and a
+junction has no kerb at all (`GroundTiles._sidewalk_variant`). The kerb tiles are the eight
+`SIDEWALK_KERB_*` sources, main-road and ordinary. A route never runs along the main road
+(`RouteTree`, the main road), so in practice the ordinary four are what gets tinted, but the
+rule is "a kerb tile on an inside street", not a list of sources.
+
+- [ ] **A second ground layer, the route's kerb tiles again under a faint yellow.** A
+      `TileMapLayer` named `RouteKerbs` as `Ground`'s next sibling in `scenes/world/city.tscn`
+      (above it, below `Decals`), sharing `Ground`'s tile set, painted by a new
+      `City._paint_route_kerbs()` called in `_close_streets()` right after `_tree` is grown and
+      before the closures: for every tile whose ground source is a `SIDEWALK_KERB_*` and whose
+      corridor depth is zero, the same cell the ground has, so the tint is the kerb art drawn
+      once more through the layer's `modulate` — `Palette.ROUTE_KERB_TINT`, a yellow with the
+      alpha in `Tuning.ROUTE_KERB_TINT_ALPHA` (start at 0.18; the still says whether it is faint
+      and the player says whether it is subconscious), and alpha zero is the off switch. Cleared
+      by `start_finale()`, which grows no tree. The test in the routes or ground suite starts a
+      day on a rig city and asserts the layer's used cells are exactly the kerb tiles at depth
+      zero and nothing else, and that they are empty after `start_finale()`. `docs/CITY.md`'s
+      "Guiding her to the calm" sentences say the ground now carries this one faint cue as a
+      trial; `docs/MECHANICS.md` if it lists what the player is shown. Evidence: two desktop
+      stills of the same seed and day (`tools/shot.sh out.png 4 --seed 3265820891 --day 1
+      --walk 2s --debug`, once with `--layers 5` so the purple route line lies over the tinted
+      kerbs and once without), no burst, no `--invincible`. `REVIEW.md`, in the same PR: does
+      the tint read at all at play zoom, does it read as a hint or as paint, and does it
+      collide with the caret's amber where a costly thing stands on the route.
+
+---
+
 ## M129 — A path through the city never has to cost · asked for 2026-09-13
 
 > "also framing from a different point of view a path through the city must never hit

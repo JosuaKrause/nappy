@@ -49,3 +49,15 @@ that would find it is M144 in `TODO.md`.
 
 Said to the M144 probe on 2026-09-14; it goes to an agent as filed, with the line behind its
 own flag.
+
+## The route's curbs, tinted
+
+> "also one gameplay experiment I want to try -- can we tint the curbstones that belong to a
+> path slightly yellow? to give a faint hint on an optimal path. I just want to try it out. this
+> is in addition to the environmental guidance through obstacles. it should be faint as to more
+> subconciously guide as well"
+
+Said on 2026-09-14. Filed as M145 in `TODO.md`, as the experiment it is: the city's own
+record says it never suggests a route and there is no cue of any kind toward calm
+(`CITY.md`, "Guiding her to the calm"), and this is the player overturning that for a trial,
+beside the guidance through obstacles rather than instead of it.
