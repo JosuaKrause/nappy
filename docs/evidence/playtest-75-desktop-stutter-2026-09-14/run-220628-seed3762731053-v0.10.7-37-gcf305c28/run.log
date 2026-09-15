@@ -1,0 +1,50 @@
+nappy run log  2026-09-14T22:06:28  version v0.10.7-37-gcf305c28
+
+day 1  act 1  run seed 3762731053  city seed 3762731053  length 180.0s
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  plan     closed: accident h(0,0)
+   0.0  plan     calm: 1 quiet_square, 2 courtyard, 2 forest, 4 park
+   0.0  plan     events: alley_mouse x3, burst_water_main x25, cafe_tables x73, car_accident x17, cat_dash x8, chatting_mother x2, delivery_van x48, dog_walker x22, fallen_tree, homeless_yeller x13, leaf_blower x9, loose_dog x18, market_stall x46, moving_van x47, pigeon_flock x5, playground x4, scaffolding x33, skip x26
+   0.0  start    doorstep (80,84), facing 180°
+   1.0  frame    fps 96, worst frame 109.8ms, draws 773, objects 2323, primitives 5008, process 95.53ms, physics 9.38ms
+   1.5  path     onto the corridor at (75,84), after 1.5s off it
+   1.9  crowd    walked into somebody at (74,84) | exc 1, in 8.8/s (crowd 26.8, events 0.0), sleep 1
+   2.0  frame    fps 91, worst frame 26.1ms, draws 864, objects 2747, primitives 5899, process 24.48ms, physics 1.79ms
+   3.0  frame    fps 90, worst frame 16.4ms, draws 865, objects 2802, primitives 6007, process 16.34ms, physics 1.82ms
+   3.1  cross    stepped into the road at (73,81), mid-block
+   4.0  frame    fps 88, worst frame 25.6ms, draws 708, objects 2427, primitives 5457, process 23.74ms, physics 1.57ms
+   4.1  near     dog_walker at (75,75), 103px, exc 5, in 5.8/s (crowd 5.1, events 0.7), sleep 2
+   4.6  shot     burst started: asked for an animation burst at (75,77) | exc 8, sleep 2 | playing | asked/burst-8808369-001
+   4.7  near     dog_walker at (75,75), 52px, exc 10, in 19.9/s (crowd 6.6, events 12.3), sleep 2
+   5.1  frame    fps 71, worst frame 76.5ms, draws 889, objects 2704, primitives 6011, process 62.33ms, physics 1.91ms
+   5.9  cross    stepped into the road at (74,73), at a zebra
+   6.1  frame    fps 34, worst frame 60.9ms, draws 699, objects 2242, primitives 5043, process 74.70ms, physics 2.10ms
+   6.3  path     off the corridor at (73,73), after 4.9s on it
+   6.7  path     onto the corridor at (72,74), after 0.4s off it
+   7.1  frame    fps 34, worst frame 64.4ms, draws 1020, objects 2958, primitives 6490, process 59.03ms, physics 1.84ms
+   7.6  shot     burst complete: 36 frames | duration
+   8.1  frame    fps 47, worst frame 65.2ms, draws 864, objects 2762, primitives 6173, process 65.14ms, physics 1.75ms
+   9.1  frame    fps 88, worst frame 25.5ms, draws 886, objects 2792, primitives 6465, process 23.87ms, physics 1.80ms
+   9.2  crowd    walked into somebody at (70,79) (+1 in the last 7.3s) | exc 4, in 4.2/s (crowd 22.2, events 0.0), sleep 4
+   9.8  cross    stepped into the road at (72,80), mid-block
+  10.1  frame    fps 88, worst frame 24.5ms, draws 904, objects 2807, primitives 6495, process 24.45ms, physics 1.90ms
+  10.3  turn     doubled back 0°
+  11.1  frame    fps 89, worst frame 26.1ms, draws 871, objects 2750, primitives 6223, process 23.96ms, physics 1.68ms
+  12.1  frame    fps 85, worst frame 25.8ms, draws 757, objects 2377, primitives 5410, process 24.48ms, physics 1.89ms
+  12.4  path     off the corridor at (70,73), after 5.6s on it
+  12.4  cross    stepped into the road at (70,73), at a zebra
+  12.5  shot     burst started: asked for an animation burst at (70,73) | exc 0, sleep 5 | playing | asked/burst-16741694-002
+  12.9  ahead    cat_dash crosses 332px in front of her at (70,72)
+  13.2  frame    fps 72, worst frame 66.3ms, draws 760, objects 2405, primitives 5490, process 65.65ms, physics 1.86ms
+  13.4  near     delivery_van at (71,66), 146px, exc 0, in 3.5/s (crowd 3.5, events 0.0), sleep 6
+  13.8  path     onto the corridor at (70,69), after 1.4s off it
+  14.2  near     delivery_van at (71,66), 79px, exc 0, in 0.3/s (crowd 0.0, events 0.4), sleep 6
+  14.2  frame    fps 33, worst frame 65.5ms, draws 801, objects 2696, primitives 6023, process 61.51ms, physics 1.97ms
+  14.3  near     homeless_yeller at (70,62), 209px, exc 0, in 0.9/s (crowd 0.0, events 0.9), sleep 6
+  14.5  cross    stepped into the road at (72,68), mid-block
+  15.2  frame    fps 39, worst frame 70.3ms, draws 457, objects 1900, primitives 4361, process 70.26ms, physics 1.71ms
+  15.4  path     off the corridor at (73,70), after 1.6s on it
+  15.4  path     onto the corridor at (74,70), after 0.0s off it
+  15.5  shot     burst complete: 36 frames | duration
+  16.2  frame    fps 63, worst frame 55.2ms, draws 650, objects 2160, primitives 4776, process 59.23ms, physics 1.67ms
+  16.3  path     off the corridor at (76,71), after 0.8s on it

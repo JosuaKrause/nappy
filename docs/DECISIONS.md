@@ -111,6 +111,263 @@ refuses a candidate run whose block gap to an accepted run on its line is under
 margin — three empty blocks at today's tuning. The agent's choice, open to overturn: the gap is
 checked between runs rather than between planted pits, since the check has to come before either
 run's pits exist.
+## M146 — A pocketed agent stands, then leaves unseen · built 2026-09-14
+
+*(2026-09-14, [PLAYTEST-75](playtests/PLAYTEST-75.md): "I get the remove entity when there is
+no route idea. maybe let's do instead stop the entity if there is no way. and despawn once
+offscreen" — "it looks very weird otherwise".)* One agent commit on
+`feature/m146-pocket-standstill`, reviewed on the PR.
+
+**What it is.** M119 (below, the crowd with nowhere to go leaves) had an agent a seal went up
+around pace to the far seal and back until it was out of view, then recycled; the pacing is
+what looked wrong. Now `CrowdAgent._process` asks the pocket question ahead of the step: while
+`_is_in_a_pocket()` holds, nothing of the step runs — no along-step, no steering, no turn, no
+gait, no lookahead, no divert — only the redraw, and out of view it is recycled as before. The
+clocks at the top of `_process` keep ticking so nothing resumes strangely when a pocket opens,
+and the pocket flood already refreshes on every change to the day's holds, so an agent stops
+the frame the seal goes up and walks on the frame the pocket opens. A `_pocket_factor()` beside
+`_hold_factor()` and `_yield_factor()` reads `velocity()` down to zero while pocketed, which is
+what puts a walker on its standing frame (the gait rests on speed, not on whether the step
+ran) and, for free, flattens a pocketed body's field to a plain falloff and makes its projected
+approach answer "nowhere", as a stopped body's should. Make-way and bump still land from
+outside. `_test_a_pocket_empties_once_it_is_out_of_view` now also holds every caught agent's
+position within a pixel across the watched seconds, checked non-vacuous by disabling the
+branch once. `docs/MECHANICS.md` and `docs/CITY.md` say a caught agent stands.
+
+**One fork the agent resolved and reported.** M119's own test that a turn-around commits to its
+new heading sealed all four arms of a junction and counted reversals inside the box — ground
+that is now a pocket and now stands, so reversals fell to zero, a real failure. It now counts
+reversals on the four arms, which are held segments and not pocketed ground (the flood labels
+only legal-but-trapped ground), so an agent already on an arm when the seal goes up still
+finds both ways shut and still reverses: the single-seal-on-open-ground case M119's stride
+rule stays for, checked non-vacuous for the suite's seed.
+
+**No burst.** Three attempts on M119's own seeds found no four-armed sealed junction with agents
+caught in it in frame, since no flag aims the camera at a tile; the test is the proof. Whether a
+standing crowd in a sealed crossing reads as people who gave up or as frozen is the review
+item.
+## M145 — The route's curbs, tinted faint yellow · built 2026-09-14, an experiment
+
+*(2026-09-14, [PLAYTEST-75](playtests/PLAYTEST-75.md): "can we tint the curbstones that belong
+to a path slightly yellow? to give a faint hint on an optimal path. I just want to try it out
+… it should be faint as to more subconciously guide as well" — "I don't really want it to be
+how we show paths but I want to assess whether it can be done without being too obvious and on
+the nose".)* One agent commit on `feature/m145-route-kerb-tint`, reviewed on the PR; the two
+stills are `evidence/m145-route-kerb-tint-2026-09-14/`.
+
+**What it is, and that it is a trial.** `docs/CITY.md`'s rule that there is no cue of any
+kind toward calm and that the city never suggests a route stands, with one qualification
+written beside it: the route's own curbstones — the stone strip along the pavement's edge, not
+the paving beside it — carry a faint yellow cast, on trial, and the trial's question is whether
+a hint on the ground can stay below being noticed as one. Alpha zero is the off switch, and the
+answer is what gets kept, not the tint. No second layer: `GroundLayers.build_tile_set()` gives
+each of the eight kerb sources (`GroundTiles.SIDEWALK_KERB_N/S/E/W`,
+`SIDEWALK_KERB_MAIN_N/S/E/W`) a tinted twin, at the id `GroundTiles.route_twin_of` gives its
+source — 58 through 65, the first ids free of everything else `build_tile_set` assigns (57 is
+the last damage source, `ALLEY_CRACKED_BROKEN_B`). In PNG mode the twin is the same `sidewalk`
+base and the same rotated `curbstone` component `_composed_texture` would use, with the
+component's own opaque pixels blended toward `Palette.ROUTE_KERB_TINT` by
+`Tuning.ROUTE_KERB_TINT_ALPHA` before `GroundLayers.compose_image` lays it onto the base, so the
+paving, and on a main-road kerb the red clearway line (`main_edge_red`), are untouched. In SVG
+mode, where nothing is composed, the twin is the authored kerb raster
+(`assets/tiles/sidewalk_kerb*.svg`) with every pixel matching the stone's own fill, `#a49b8c`
+(`GroundLayers.SVG_KERB_STONE_COLOR`), blended the same way — detected by colour rather than by
+a rect per source, since all eight files already share that one fill and a main kerb's clearway
+line does not. After the day's tree is grown in `City._close_streets()`,
+`City._tint_the_route_kerbs()` re-sets on `_ground` itself every cell whose source is one of the
+eight and whose `Corridor` depth is zero to its twin, same atlas coordinates — both pavements of
+every street on the tree, since a street tile answers at the grain of its street, and never a
+junction, which has no kerb. `start_finale()` grows no tree, so nothing there ever carries a
+twin. `Tuning.ROUTE_KERB_TINT_ALPHA` is 0.45: the strip is two pixels wide in the SVG art and
+three in the illustrated `curbstone.png`, so the 0.18 that read as nothing spread over a whole
+tile has to run higher to register within its own width. The test builds a real city, computes
+the expected set independently from `GroundTiles.source_for` and `Corridor.of`, and asserts
+`_ground`'s own cells carrying a twin source equal it exactly with the atlas coordinates the
+plain source would have had, and none after the finale; a second test composes one twin in each
+mode and asserts a curbstone pixel moved toward the tint while a paving pixel stayed
+bit-identical to the plain source's.
+
+**What the stills say.** At 0.45 the cast is visible on inspection, though not at a glance
+across the whole debug-cluttered frame. `tint.png`'s own debug readout gives the player's tile
+(`80, 89`) at capture time, which fixes where on the map the picture is looking: the street
+right outside her door sits at `Corridor` depth 1 (a doorway is not a route — the tree starts at
+the home street rather than counting it), so its kerbs stay plain, and sampled at that street
+they read `(185-192, 163-169, 133-138)`, the isolated `curbstone.png`'s own untinted tone
+(`(178, 161, 140)` on average) under the scene's daylight. One block over, the corridor's own
+street — the one the purple route line in `tint-with-route-lines.png` runs along, on both
+pavements — samples `(200-216, 178-192, 116-127)` at the same spot in the same frame: plainly
+warmer and yellower than the doorstep's kerb, and a close crop shows a pale yellow band running
+the length of both sidewalks exactly where the route line does, against a plain grey-tan kerb
+where it does not. So the cast is real and correctly placed — on the corridor and nowhere else —
+and registers on a close look without shouting from across the street, which is the trial's own
+target; whether it also registers at the pace of an ordinary run is what the review still asks.
+
+**The first build tinted the sidewalk.** The trial's first commit drew the route's kerb *tiles*
+again on a second `TileMapLayer`, `RouteKerbs`, modulated by `Palette.ROUTE_KERB_TINT` — paving
+and curbstone together, since a kerb tile is the whole pavement-edge tile and a `modulate` colours
+everything drawn under it. The player's correction, on [PLAYTEST-75](playtests/PLAYTEST-75.md):
+*"that is not the curbstone -- it's the sidewalk"* — *"I specifically said *curbstone*"* — and the
+instruction that replaced it: *"add the tint when compositing the curbstone onto the sidewalk"*.
+`Tuning.ROUTE_KERB_TINT_ALPHA` carries its own history for the same reason: 0.18 was set against a
+whole tile and read as nothing once the tint moved onto the two-or-three-pixel stone alone, so
+this build re-dials it to 0.45 against the corrected art.
+
+**Choices made where the entry was silent, open to overturn.** The hue; the constant's place
+beside `BUILDING_SHADOW_ALPHA`; all eight kerb sources listed though a route never runs
+alongside the main road, since the rule is "a kerb tile on an inside street" rather than a
+list of today's kerbs; the finale clearing the layer explicitly since nothing else would;
+the test in the routes suite, with the real-scene rig borrowed from the debug-layers suite
+because neither the routes nor the ground-layers suite built a city.
+## M147 — Every picture loaded before it is needed · built 2026-09-14
+
+*(2026-09-14, [PLAYTEST-75](playtests/PLAYTEST-75.md): "I feel whenever a new entity/image/
+sprite is shown there is a visible stutter. this would be an argument *for* a full atlas so
+sprites don't need to be loaded in late".)* Two agent commits on `feature/m147-warm-textures`,
+reviewed on the PR.
+
+**What was true.** `TextureResolver.resolve()` loaded each picture's PNG transfer from disk
+the first time that picture was drawn, inside the frame, once per distinct picture per run;
+the prop, rig and ground transfers (19, 35 and 72 of them) were loaded that way, and
+`EntityHalo` built its shader material at the first halo, which the Compatibility renderer
+compiles at first draw. **Not the events' pictures**, corrected the same evening: those are
+`preload`ed SVG imports with no PNG transfers at all, loaded when the script loads at boot,
+so they were never late — the warm test that resolves every texture `EventInstance` preloads
+passes because there is nothing there to load, not because the pass loaded it.
+
+**What it is.** First, the probe: the resolver counts every transfer it loads (`load_count()`)
+and the `spike` line's context says `N pictures loaded` when the count moved in the spike
+frame, beside her tile and the live event count. Then the fix: `TextureResolver.warm()`,
+called from both boot paths before the first day, walks the transfer root with `DirAccess`,
+derives each PNG's source SVG, and runs `resolve()` on the pair so the cache is full before
+play — 86 pictures in about 180 ms on the desktop, printed beside "city generated". Not the
+ground manifest, which lists only the ground's own bases and components; `DirAccess` was
+checked against a real exported pack, whose listing carries only the `.png.import` names, so
+either name is trimmed to one candidate. Under `--svg` it does nothing. The halo's shader is
+compiled by a real draw: Godot 4.7 has no precompile for the Compatibility renderer (the
+pipeline cache is a RenderingDevice feature), so a throwaway node at world origin draws one
+frame with the shared material and is freed two `process_frame`s later — at the origin, since
+an off-screen canvas item is culled and compiles nothing, and no camera exists yet at that
+point in either boot. Both boot paths are coroutines now; `_process`'s existing guard on the
+player and baby covers the two-frame gap. Tests: after `warm()`, resolving every texture
+`EventInstance` preloads (read off its constant map) moves the count by zero; under `--svg`
+it loads nothing; a late load names itself in the spike line.
+
+**Measured, on the headless rig** (`tools/shot.sh`, seed 3265820891, six seconds, `--spikes`):
+with the probe alone, seconds two and three each carried a spike (29.0 and 25.5 ms against
+means of 13.2 and 12.1) and frames two to four read 74 to 78 fps with worst frames of 29.0,
+25.5 and 19.8 ms; with every picture warm the two spikes are gone and the same seconds read
+85 to 90 fps with worst frames of 18.3, 11.9 and 11.1 ms. Neither run's spike line carried
+`pictures loaded`: the loads land in the first frame of a report interval, which the spike
+rule never makes a candidate, so the field's proof is its test. A 74.5 ms spike at 6.1 s in
+the warm run says "nothing else changed" — the hitch M138 and M144 describe is still there,
+just no longer joined by the late loads. The laptop's reading is the `REVIEW.md` item.
+
+**On the laptop, the hitch is still there with every picture warm.** *(2026-09-14, playtest 75,
+the stutter branch on the laptop.)* A run with "86 pictures warmed in 233 ms" at boot read 85
+to 91 fps with a worst frame of 24 to 26 ms in every second outside its bursts — the same
+frame v0.10.6 read — so the late loads were the headless rig's early spikes and not the
+laptop's once-a-second frame. What the same run also showed: a burst's per-frame readback
+makes every frame 60 to 76 ms, and in such a second no bar is twice the mean, so the graph's
+amber disappears under a burst while its red does not; the player read that as the burst
+preventing spikes. What is left for the hitch is what M138 listed minus the pictures: the
+present path between the engine and the driver (OpenGL on Metal), or something in the game
+on a cadence the `spike` line, run with `--spikes`, would catch as "nothing else changed" —
+which is exactly the line that would send the search to the driver side.
+
+**Choices made where the entry was silent, open to overturn.** The ground's own component PNGs
+are warmed too, harmlessly; a transfer with no loadable source is skipped with a warning
+rather than failing the boot; the escape boot prints its warm line alone since it has no
+"city generated" line to sit beside.
+
+## M148 — A rolling graph of frame times on the readout · built 2026-09-14
+
+*(2026-09-14, [PLAYTEST-75](playtests/PLAYTEST-75.md): "I would expect there to be an overlay
+that shows the last x frames of frame times in a rolling window" — said of the `--spikes` line,
+which is a line in the run log and not what the player meant.)* One agent commit on
+`feature/m148-frame-graph`, reviewed on the PR; the still is
+`evidence/m148-frame-graph-2026-09-14/readout-graph.png`.
+
+**What it is.** `FrameGraph` (`src/ui/frame_graph.gd`), a `Control` on the readout's own
+`CanvasLayer`, built only while `_debug or _readout_requested` holds — absent, not hidden, on
+a release page nobody asked `?debug=1` of — and shown and hidden with the readout: one
+setter, `_set_readout_visible()`, is now the only place `main.gd` assigns the readout's
+visibility, and the boot, the escape boot, the title screen and the `4` key all go through
+it, so the two cannot drift apart. It keeps a ring of the last 240 frame deltas fed from
+`_process`'s own `delta` (the frame's actual length, not the engine's per-second maximum —
+M138, what the readout's lines measure), redraws each frame it is visible, and draws a 240
+by 48 design-pixel box: one one-pixel bar per frame, newest at the right, scaled so 33.3 ms
+reaches the top; reference lines at 16.7 and 33.3 ms labelled `60` and `30`; the window's
+mean as a thin line; a frame past 16.7 ms in `Palette.MARK_COSTLY`, past 33.3 ms in
+`Palette.MARK_LETHAL`, the rest the readout's own
+text colour at half alpha; a 0.75-alpha black backing so the bars read against the street.
+It sits 600 design pixels under the readout block's top, left-aligned with it, which clears
+the block's longest shape (thirty lines under `--skip`) and the phone's right focus ring
+(centred at y 480 with a 48 px radius, so it ends at 528). `mouse_filter` is `IGNORE` so a
+touch through it reaches the joystick. Tests: the ring keeps exactly the last 240 of 300
+pushes in order, the mean is the window's, the three classes come out for a known window, a
+hidden graph records nothing; and the graph exists under the readout's layer iff the readout
+was requested. `docs/TELEMETRY.md`'s debug view and `README.md`'s `--debug` row describe it.
+
+**Corrected the same evening: a bar's class is decided when its frame is pushed.** *(2026-09-14,
+the player: "I would assume that the graph adds a row on the right and moves the rest to the
+left. but I see things on the left side changing (notably adding yellow lines after the
+fact)".)* The first build classified every bar at draw time against the window's current
+mean, so as the mean moved, old bars turned amber or back. Now `push()` classifies the frame
+against the frames before it — the spike line's own rule, a frame does not raise the bar it
+has to clear — and stores the class beside the delta; `_draw()` reads the stored class. A bar
+keeps the colour it was born with and only ever scrolls left. **And later the same evening the
+rule itself went absolute**: *("picture taking shouldn't hide the amber")* — under a burst's
+per-frame readback every frame was 60 to 76 ms, nothing was twice the window's mean, and the
+amber vanished. Amber is now a frame past the 16.7 ms line and red one past 33.3 ms, the two
+lines the box draws, whatever the neighbours did; the mean line stays as a reading, not a
+threshold.
+
+**Choices made where the entry was silent, open to overturn.** Lethal over costly when both
+hold; the backing at 0.75 rather than the 0.35 first tried, under which ordinary bars at half
+the readout's own alpha vanished against the world; the labels inside the box's left edge; the
+fixed offset rather than a per-frame measurement of the block's height; the visibility setter
+refactor across the five sites. In the still the bars are tiny — a headless rig draws in a
+few milliseconds — and no bar is coloured, since the day-start frame had aged out of the
+window by the fourth second; the red was seen on an earlier draft's still.
+
+## M144 — The 24 ms frame, found · built 2026-09-14
+
+*(2026-09-14, [PLAYTEST-75](playtests/PLAYTEST-75.md): "spike line sounds good" — "make that
+toggleable separately though since it can be quite noisy".)* One agent commit on
+`feature/m144-spike-line`, reviewed on the PR.
+
+**Why.** The laptop draws a frame of about 24 ms in most seconds at 87 to 119 fps with the
+observer off and `physics` under 2 ms (M138, what the readout's `process` and `physics` lines
+measure, below), and the engine's per-second maximum says it happens and nothing says when
+or what ran in it.
+
+**What it is.** Under `--spikes` — a dev flag in `DevFlags`' table beside `--no-telemetry`,
+off by default, honoured only while a run is traced since `main.gd` builds no observer
+otherwise — `TelemetryObserver._watch_the_frame` keeps this second's running mean of frame
+deltas beside the worst frame it already keeps, and a frame longer than twice the mean of the
+frames before it in the same second becomes the second's candidate; only the worst candidate
+survives, so the rate limit is one `spike` line a second, written just before the `frame` line:
+the frame's length, the mean it beat, and what changed since the previous frame that does not
+change every frame — her tile, the live event count — or *nothing else changed that frame*,
+which is itself the answer that the spike was not the game doing extra work. With the flag
+off the cost is one boolean check. No getter was added to any gameplay class: the tile and the
+event count are read off state the observer already holds. `docs/TELEMETRY.md` carries the
+row, the flag and a "What a spike was" subsection; `README.md`'s flag table carries the row.
+Four tests feed the observer a delta series and assert one line for a spike, none for steady
+frames, one for the worse of two, and none with the flag off.
+
+**Choices made where the entry was silent, open to overturn.** The mean is of the frames
+*before* the candidate, not including it, so one long frame cannot raise the bar it has to
+clear, and the first frame of a second is never a candidate. The crowd's agent count was
+considered as a third context field and dropped: agents recycle in place, so the count is
+fixed for the day. Whether a debug layer was on was not wired in, since the observer has no
+reference to `main.gd`'s layers.
+
+**What the smoke run said.** A headless rig walking seed 3265820891 for six seconds wrote two
+spike lines on its own — 29.1 ms against a mean of 12.3, and 57.0 against 11.1, both "nothing
+else changed that frame" — so the spike is not the laptop's alone, and not the renderer's
+either, since a headless run draws nothing to a screen. The laptop's own reading, with the
+flag on, is the `REVIEW.md` item.
 
 ## M142 — A layer turned off is drawn off · built 2026-09-14
 

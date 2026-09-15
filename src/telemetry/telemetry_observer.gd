@@ -206,6 +206,27 @@ var _contact_seen := false
 var _frame_since := 0.0
 var _frame_worst := 0.0
 
+## Whether `--spikes` was given, read once in `setup()` rather than asked of `DevFlags` every
+## frame — `_watch_the_frame` must cost nothing but this one check while the flag is off.
+var _spikes_on := false
+
+# This second's running mean, kept the same way `_frame_worst` is: the sum and count of every
+# frame's delta since the last report, so `_frame_sum / _frame_count` is the mean of the frames
+# already seen this second, and the worst candidate found so far — its own delta, the mean it
+# beat, and what the game did in it. Only touched while `_spikes_on` holds; see `_watch_for_a_spike`.
+var _frame_sum := 0.0
+var _frame_count := 0
+var _spike_delta := 0.0
+var _spike_mean := 0.0
+var _spike_what := ""
+
+# The previous frame's tile, live event count and picture-load count, so a spike's own context
+# can say what changed *that* frame rather than merely what the world looked like. Updated every
+# frame `_spikes_on` holds, spike or not — see `_watch_for_a_spike`.
+var _spike_tile := Vector2i.ZERO
+var _spike_events := 0
+var _spike_pictures := 0
+
 # The cues. What was up over her head, since when, and how much of that she spent on the road;
 # and which edge badges are up, each with the clock reading it went up at.
 var _mark := Stroller.Alert.NONE
@@ -223,6 +244,7 @@ func setup(city: City, player: Stroller, baby: Baby, day: DayController,
 	_day = day
 	_resistance = resistance
 	_edge = edge
+	_spikes_on = DevFlags.spikes_requested()
 	EventBus.return_phase_started.connect(_on_asleep)
 	EventBus.baby_state_changed.connect(_on_baby_state_changed)
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
@@ -259,6 +281,10 @@ func start_day() -> void:
 	_badges.clear()
 	_frame_since = 0.0
 	_frame_worst = 0.0
+	_reset_the_spike_window()
+	_spike_tile = Vector2i.ZERO
+	_spike_events = 0
+	_spike_pictures = 0
 	_tree = RouteTree.for_day(_map, GameState.day)
 	_corridor = Corridor.of(_tree)
 	_path_time = {"on": 0.0, "off": 0.0, "away": 0.0}
@@ -331,12 +357,83 @@ func _process(delta: float) -> void:
 ## complaint measurable rather than a matter of opinion.
 func _watch_the_frame(delta: float) -> void:
 	_frame_worst = maxf(_frame_worst, delta)
+	# The one extra cost of `--spikes`, and the only one: with the flag off this is a boolean
+	# check and nothing else, same as the rest of this file with telemetry off.
+	if _spikes_on:
+		_watch_for_a_spike(delta)
 	_frame_since += delta
 	if _frame_since < FRAME_REPORT_INTERVAL:
 		return
+	if _spike_delta > 0.0:
+		Telemetry.note("spike", "%.1fms, mean %.1fms — %s" % [
+			_spike_delta * 1000.0, _spike_mean * 1000.0, _spike_what])
 	Telemetry.note("frame", FrameCost.line(_frame_worst))
 	_frame_since = 0.0
 	_frame_worst = 0.0
+	_reset_the_spike_window()
+
+## The probe behind `--spikes`: which frame in this second, if any, ran past twice the mean of
+## the frames already seen this second, and what the game did in it. *(2026-09-14, on a desktop
+## build reading 85 to 112 fps with `physics` under 2ms: "local laptop also stutters even though
+## fps is way above 60" — a 16 to 24ms frame most seconds, two to three times its neighbours,
+## with nothing saying when it falls or what ran in it.)*
+##
+## **Reuses `_watch_the_frame`'s own interval rather than a trailing window of its own** — the
+## mean is of every frame since the last report, not the last second on a rolling basis the way
+## `FrameCost.sample()` keeps one, because the two questions are different: that one asks "what
+## does this instant look like against the last second", this one asks "which frame in *this*
+## second was the outlier", and the report already resets every `FRAME_REPORT_INTERVAL`.
+##
+## **The mean is of the frames seen *before* this one**, not including it — comparing a frame
+## against a mean it has already dragged upward would shrink its own ratio, and a single 100ms
+## frame in a second of 16ms ones would then have to clear a mean of its own making rather than
+## the ordinary one. The first frame of a fresh interval is never a candidate: there is nothing
+## yet to call it twice the size of.
+##
+## **Only the worst candidate survives** — `delta > _spike_delta` beside the threshold check —
+## so a second with two qualifying frames writes the rate limit's one line about the worse of
+## the two, never the more recent.
+func _watch_for_a_spike(delta: float) -> void:
+	var tile := _map.world_to_tile(_player.global_position)
+	var events := _city.events.instances().size() if _city.events else 0
+	var pictures := TextureResolver.load_count()
+	if _frame_count > 0:
+		var mean: float = _frame_sum / _frame_count
+		if delta > 2.0 * mean and delta > _spike_delta:
+			_spike_delta = delta
+			_spike_mean = mean
+			_spike_what = _spike_context(tile, events, pictures)
+	_frame_sum += delta
+	_frame_count += 1
+	_spike_tile = tile
+	_spike_events = events
+	_spike_pictures = pictures
+
+## What changed since the previous frame, read off state this observer already holds for other
+## entries — `_map.world_to_tile` for `_watch_the_ground`'s own tile lookups, `_city.events` for
+## `_watch_what_is_near`'s scan, `TextureResolver.load_count()` for the resolver's own static
+## counter — rather than a new per-frame hook on a gameplay class, which the **telemetry** rule
+## rules out. `"nothing else changed that frame"` is itself an answer: it says the spike was not
+## the game doing extra work, which is the other half of the question the probe exists to ask.
+func _spike_context(tile: Vector2i, events: int, pictures: int) -> String:
+	var changes: Array[String] = []
+	if tile != _spike_tile:
+		changes.append("her tile changed to %s" % TelemetryLog.tile(tile))
+	if events != _spike_events:
+		changes.append("live events %d -> %d" % [_spike_events, events])
+	if pictures != _spike_pictures:
+		changes.append("%d pictures loaded" % (pictures - _spike_pictures))
+	return ", ".join(changes) if not changes.is_empty() else "nothing else changed that frame"
+
+## The per-second spike-candidate bookkeeping, cleared alongside `_frame_since`/`_frame_worst`
+## every time a `frame` line closes the interval — pulled into its own function since
+## `start_day()` also has to reach it, for a rewound day the same way it resets everything else.
+func _reset_the_spike_window() -> void:
+	_frame_sum = 0.0
+	_frame_count = 0
+	_spike_delta = 0.0
+	_spike_mean = 0.0
+	_spike_what = ""
 
 ## Whether she is walking the day's corridor.
 ##

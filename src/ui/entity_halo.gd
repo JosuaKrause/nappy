@@ -91,6 +91,13 @@ static func _halo_material() -> ShaderMaterial:
 		_shared_material.shader = preload("res://assets/shaders/excitement_halo.gdshader")
 	return _shared_material
 
+## The one `ShaderMaterial` every rim shares, built if this is the first call. `main.gd`'s warm
+## pass calls this to get the material built and then draws one throwaway quad with it, so the
+## Compatibility renderer's shader program compiles before the day starts rather than at the
+## first real halo — see the warm pass's own doc for why a hidden draw is what 4.7 offers here.
+static func shared_material() -> ShaderMaterial:
+	return _halo_material()
+
 ## Sets the alpha and colour this rim is easing *toward* — see the class doc. `colour`'s own alpha
 ## is ignored, the same as before: `alpha` is the one channel that reaches the shader, so a caller
 ## never has to remember to zero both to turn a rim off.

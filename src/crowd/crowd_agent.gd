@@ -531,9 +531,10 @@ func _stands_on_a_street() -> bool:
 ## two questions have different answers for an agent that is already standing somewhere. Ground it
 ## may not stand on is a state to get out of *now*, which is what `_divert()` and `_plan_a_turn()`
 ## both do about it; a pocket is legal ground it simply cannot leave, and the answer to that is to
-## go when nobody is looking rather than to turn on the spot. Folding it in would turn the whole
-## pocket into a wall and give every agent in one a reason to about-face every frame, which is the
-## flicker this milestone is taking out.
+## stand where the seal caught it and go when nobody is looking, rather than to turn on the spot at
+## all. Folding it in would turn the whole pocket into a wall and give every agent in one a reason
+## to steer at it every frame, which is exactly the state `_process()` avoids by asking this
+## question ahead of the step instead: nothing below it runs while this is true.
 func _is_in_a_pocket() -> bool:
 	if pockets == null:
 		return false
@@ -748,6 +749,19 @@ func _hold_factor() -> float:
 func _is_inside_a_hut() -> bool:
 	return _door_state == DoorState.INSPECTION
 
+## How fast this agent is going as a fraction of its own pace while a pocket has caught it: nothing
+## at all while it is standing where the seal caught it, its ordinary pace otherwise.
+##
+## A factor beside `_hold_factor()` and `_yield_factor()` for the same reason those two are: nothing
+## has to remember what the speed used to be. And it is what makes the standing frame free —
+## `_walker_gait_frame()` rests on `velocity().length()` reaching zero, not on this agent's own step
+## having stopped running, so a pocketed walker whose stride simply stopped advancing would freeze
+## on whichever of its two frames the stride happened to be on when the seal went up. Reading
+## `velocity()` down to zero here is the same trick a door hold already relies on, and it is why a
+## door-held walker already shows its standing frame today.
+func _pocket_factor() -> float:
+	return 0.0 if _is_in_a_pocket() else 1.0
+
 func _process(delta: float) -> void:
 	# `--skip motion`'s own probe (docs/DECISIONS.md, M140, "the crowd's scripts parked"): returns
 	# before anything below runs, so this agent stands exactly where the day placed it — no clock,
@@ -787,6 +801,18 @@ func _process(delta: float) -> void:
 			_recycle()
 		_redraw_if_the_picture_changed()
 		return
+	# Sealed in — the one case a placement cannot prevent (`setup()` already refuses to put anybody
+	# in one). It stands where the seal caught it: a walker on its standing frame, facing the way it
+	# was going (`_pocket_factor()` reads `velocity()` down to zero, which is what both of those come
+	# from for free), and a car simply stops. Make-way and bump still land from outside, since a
+	# standing body still has to be got round. It leaves the way anybody else leaves the field, once
+	# nobody can see it go — pacing to the far seal and back is the M119 behaviour this replaces
+	# (docs/DECISIONS.md, M119, "the crowd with nowhere to go leaves").
+	if _is_in_a_pocket():
+		if _out_of_view():
+			_recycle()
+		_redraw_if_the_picture_changed()
+		return
 	var stood_on := _map.world_to_tile(position)
 	_set_along(_along() + _speed * _yield_factor() * _hold_factor() * _direction * delta)
 	_set_cross(move_toward(_cross(), _lane_centre + _detour, STEER_SPEED * delta))
@@ -797,15 +823,8 @@ func _process(delta: float) -> void:
 	_look_ahead()
 	if _blocked_in <= LOOKAHEAD_TILES:
 		_divert()
-	var recycled := false
 	if _has_left_the_field():
 		_recycle()
-		recycled = true
-	elif _is_in_a_pocket() and _out_of_view():
-		# Sealed in after it arrived — the one case a placement cannot prevent. It leaves the way
-		# anybody else leaves the field, and it waits until nobody can see it go.
-		_recycle()
-		recycled = true
 	_redraw_if_the_picture_changed()
 
 ## Keeps an agent's own centre out of a tile it may not stand on, when the step it has just taken
@@ -1109,8 +1128,12 @@ func speed() -> float:
 ## come out right for free: `_walker_gait_frame()` and `_update_walker_view()` both read this, so a
 ## walker standing in a door's line holds its last facing and frame a the way every stopped walker
 ## in the crowd already does, and its own field stops being stretched forward by `field_scale()`.
+##
+## **A body a pocket has caught reads the same way**, through `_pocket_factor()`: it is not going
+## anywhere either, so its field is a plain falloff rather than one stretched forward, and its
+## projected impact and expected approach both answer "nowhere" the way a stopped body's should.
 func velocity() -> Vector2:
-	return heading() * _speed * _yield_factor() * _hold_factor()
+	return heading() * _speed * _yield_factor() * _hold_factor() * _pocket_factor()
 
 ## True while travelling along a vertical corridor. What decides whether two cars at the same
 ## junction are crossing each other's path or merely queueing behind one another.

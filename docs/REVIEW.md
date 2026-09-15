@@ -21,6 +21,36 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Walk a minute of day 1 on the laptop with `--debug --spikes` and read the `spike` lines
+  back.** Every picture is loaded before the day starts now and the halo's shader is compiled
+  before play, and the laptop still draws a 24 to 26 ms frame every second at 85 to 91 fps
+  (playtest 75, the stutter branch). **Does the stutter on a new sprite still happen, and what
+  do the spike lines say changed in those frames?** A line saying `pictures loaded` means a
+  picture still loads late; a run of lines saying nothing changed says the frame is not the
+  game's scripts and sends the search to the present path. Record is `DECISIONS.md`, M147,
+  every picture loaded before it is needed.
+- **Walk a minute of day 1 on the laptop with `--debug` and watch the graph under the
+  readout, then the same on the phone with `?debug=1`.** Each bar is one frame's length, newest
+  at the right, 240 frames wide; the lines are 60 and 30 fps and the window's mean; amber is a
+  frame past 16.7 ms and red one past 33 ms. **Is the 24 ms frame there as an amber bar
+  most seconds on the laptop, and on the phone does the graph fit under the block and read at
+  all?** Record is `DECISIONS.md`, M148, a rolling graph of frame times.
+- **Walk a minute of day 1 on the laptop with `--debug --spikes` and read the `spike` lines
+  out of the run log** (`tools/telemetry.sh`, or the run folder printed at boot). Each names
+  the one frame in its second that ran past twice the mean, and what changed since the frame
+  before it — her tile, the live event count, or nothing. **Is the 24 ms frame there in most
+  seconds, and does its line say "nothing else changed"?** A headless rig already wrote 29
+  and 57 ms spikes with nothing changed, so the cadence and whether anything in the game lines
+  up with it is what this run settles. Record is `DECISIONS.md`, M144, the 24 ms frame, found.
+- **Walk day 1 on the laptop without the debug layers and look at the curbstones along the
+  streets the routes take, then turn on `5` to see where the routes are.** The route's own
+  curbstones — the stone strip along the pavement's edge, not the paving beside it — carry a
+  faint yellow cast blended in at 0.45, a trial of whether a hint on the ground can stay below
+  being noticed as one. Three readings, and the number is one constant
+  (`Tuning.ROUTE_KERB_TINT_ALPHA`): **is it invisible, too obvious and on the nose, or somewhere
+  between that guides without being read as a hint?** And where a costly thing stands on the
+  route with its amber caret up, does the yellow curbstone read as part of the warning? Record
+  is `DECISIONS.md`, M145, the route's curbs.
 - **Turn on `5` on seed 2128084176, day 1, and follow every purple line with your eyes.** The
   tree grows on a graph with no carriageway cell but the junctions' and none of the main
   road's, and the doorstep connector is drawn along the street now rather than as a straight
@@ -83,9 +113,12 @@ item below for as long as looking takes.
   busier. Two questions. Does an empty sealed-off crossing read as *shut*, the way an empty
   sealed street does, or as a hole in the city? And do the open streets now read as crowded in a
   way that changes the route decision, which is a density question for `Tuning` rather than for
-  this rule? Also: a walker or car that turns back from a seal now keeps its new heading for one
-  stride before it may turn again — does the turn-back at a seal read as a decision rather than a
-  twitch? Record is `DECISIONS.md`, M119; the bursts are `evidence/m119-crowd-pockets-2026-09-13/`.
+  this rule? Also: whoever a seal goes up around now stands where it caught them until the view
+  moves off — does a sealed crossing with a few people standing in it read as people who gave
+  up, or as frozen? And a walker or car that turns back from a single seal on open ground keeps
+  its new heading for one stride before it may turn again — does that turn-back read as a
+  decision rather than a twitch? Records are `DECISIONS.md`, M119 and M146; the bursts are
+  `evidence/m119-crowd-pockets-2026-09-13/`.
 - **Walk the map's east and west edges facing outward, then stand at a plain edge and watch the
   traffic arrive.** The camera now stops short by the length of its glance, so no black column
   should show at any corner whichever way she faces. Two questions. Is the border whole in every

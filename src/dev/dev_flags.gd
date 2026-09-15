@@ -51,6 +51,7 @@ extends RefCounted
 ##   --debug         0
 ##   --skip          1
 ##   --invincible    0
+##   --spikes        0
 ##   --no-telemetry  0
 ##   --screenshot    1
 ##   --after         1
@@ -493,3 +494,12 @@ static func _invincible_from_query(query: String) -> bool:
 		if pair.size() == 2 and pair[0] == "invincible" and pair[1] == "1":
 			return true
 	return false
+
+## `--spikes` turns on the run log's own `spike` line — see `TelemetryObserver._watch_the_frame`.
+## Off by default: *(2026-09-14, the player, asked whether the line should always be on: "make
+## that toggleable separately though since it can be quite noisy")*. Gated behind `enabled()`,
+## the same as every other flag on this table but `--no-telemetry`, and reaches nothing on its
+## own even so — `main.gd` only builds a `TelemetryObserver` while `Telemetry.is_active()` holds,
+## so the flag is honoured only while a run is already being traced.
+static func spikes_requested() -> bool:
+	return "--spikes" in _args()

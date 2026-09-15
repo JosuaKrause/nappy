@@ -10,6 +10,17 @@ const GRASS_VARIANTS := 8
 const DAMAGE_VARIANTS := 6
 const DAMAGE_SOURCE_IDS := [40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
 
+## The curbstone's own fill in every `assets/tiles/sidewalk_kerb*.svg` — the road-side rect, whose
+## `x`/`y` and `width`/`height` differ by direction but whose colour does not. SVG-mode route-kerb
+## twins tint by this colour rather than by a rect per source, since the eight files already agree
+## on it and a main kerb's red clearway line does not share it.
+const SVG_KERB_STONE_COLOR := Color8(0xa4, 0x9b, 0x8c)
+## How far a pixel may drift from `SVG_KERB_STONE_COLOR` (or any other target colour matched this
+## way) and still count as it — wide enough for whatever antialiasing the SVG importer applies to a
+## `shape-rendering="crispEdges"` rect, nowhere near the neighbouring paving (`#8b8478`) or dividing
+## line (`#7a7469`) colours it must not also catch.
+const _COLOR_MATCH_TOLERANCE := 0.03
+
 ## Duplicates `authored` before replacing its SVG transfers and composing the available layer set.
 ## A malformed or incomplete layer set leaves that source on the resolver's normal PNG/SVG fallback;
 ## an unfinished transfer therefore cannot erase a marking or change the TileSet's geometry.
@@ -19,6 +30,7 @@ static func build_tile_set(authored: TileSet) -> TileSet:
 	var result := authored.duplicate(true) as TileSet
 	_replace_svg_transfers(result)
 	if TextureResolver.svg_requested():
+		_register_route_kerb_twins(result, {})
 		return result
 	var manifest := _load_manifest()
 	if manifest.is_empty() or int(manifest.get("tile_size", 0)) != TILE_SIZE.x:
@@ -44,6 +56,7 @@ static func build_tile_set(authored: TileSet) -> TileSet:
 			grass.texture = grass_atlas
 			for variant in range(1, GRASS_VARIANTS):
 				grass.create_tile(Vector2i(variant, 0))
+	_register_route_kerb_twins(result, manifest)
 	return result
 
 ## Returns the atlas coordinate selected for a ground cell. The source ID stays the map's own ID;
@@ -112,6 +125,18 @@ static func _load_manifest() -> Dictionary:
 static func _composed_texture(source_id: int, manifest: Dictionary) -> Texture2D:
 	if source_id in [GRASS_SOURCE_ID, FOREST_SOURCE_ID]:
 		return null
+	return _layered_texture(source_id, manifest, false)
+
+## Builds a kerb source's tinted route twin: the same base and the same rotated components
+## `_composed_texture` would use, except the `curbstone` component is blended toward
+## `Palette.ROUTE_KERB_TINT` before it is composited — so the paving, and on a main-road kerb the
+## `main_edge_red` clearway line, are untouched and only the stone carries the cast.
+static func _composed_route_kerb_texture(source_id: int, manifest: Dictionary) -> Texture2D:
+	return _layered_texture(source_id, manifest, true)
+
+## Shared by `_composed_texture` and `_composed_route_kerb_texture`: composes `source_id`'s base and
+## rotated components, tinting the `curbstone` component first when `tint_curbstone` asks for it.
+static func _layered_texture(source_id: int, manifest: Dictionary, tint_curbstone: bool) -> Texture2D:
 	var source_bases: Dictionary = manifest.get("source_bases", {})
 	var base_name: String = source_bases.get(str(source_id), "")
 	if base_name.is_empty():
@@ -133,9 +158,47 @@ static func _composed_texture(source_id: int, manifest: Dictionary) -> Texture2D
 		var rotated := rotate_clockwise(overlay, int(record.get("rotation_degrees", 0)))
 		if rotated == null:
 			return null
+		if tint_curbstone and component_name == "curbstone":
+			rotated = _tint_opaque(rotated)
 		overlays.append(rotated)
 	var composed := compose_image(base, overlays)
 	return ImageTexture.create_from_image(composed) if composed != null else null
+
+## Builds an SVG-mode kerb source's tinted route twin: the authored kerb raster
+## (`assets/tiles/sidewalk_kerb*.svg`, already resolved onto `source_texture` by
+## `_replace_svg_transfers`) with every pixel matching the curbstone's own fill,
+## `SVG_KERB_STONE_COLOR`, blended toward `Palette.ROUTE_KERB_TINT` — the paving and, on a
+## main-road kerb, the clearway line keep their own colour and are untouched.
+static func _svg_route_kerb_texture(source_texture: Texture2D) -> Texture2D:
+	var image := _texture_to_rgba_image(source_texture)
+	if image == null or image.get_size() != TILE_SIZE:
+		return null
+	return ImageTexture.create_from_image(_tint_matching(image, SVG_KERB_STONE_COLOR))
+
+## Registers each of `GroundTiles.ROUTE_KERB_SOURCES`' tinted twins on `tile_set`, at the id
+## `GroundTiles.route_twin_of` gives its source — one small atlas source per twin, matching the
+## plain kerb sources' own single-cell shape. A source with no registered twin id, or whose twin
+## texture cannot be built (a missing manifest entry, an unreadable SVG), is left without one:
+## `City._tint_the_route_kerbs()` already skips a tile whose twin does not exist, the same
+## graceful fallback the rest of this file gives an incomplete art drop.
+static func _register_route_kerb_twins(tile_set: TileSet, manifest: Dictionary) -> void:
+	var svg_mode := TextureResolver.svg_requested()
+	for source_id in GroundTiles.ROUTE_KERB_SOURCES:
+		var twin_id := GroundTiles.route_twin_of(source_id)
+		if twin_id < 0 or tile_set.has_source(twin_id):
+			continue
+		var source := tile_set.get_source(source_id) as TileSetAtlasSource
+		if source == null:
+			continue
+		var twin_texture: Texture2D = _svg_route_kerb_texture(source.texture) if svg_mode \
+				else _composed_route_kerb_texture(source_id, manifest)
+		if twin_texture == null:
+			continue
+		var twin := TileSetAtlasSource.new()
+		twin.texture_region_size = TILE_SIZE
+		twin.texture = twin_texture
+		twin.create_tile(Vector2i.ZERO)
+		tile_set.add_source(twin, twin_id)
 
 ## Composes every accepted stencil in the source's severity pool over its own semantic base.
 ## The source ID still tells GroundTiles which material and severity it placed; only the atlas cell
@@ -210,6 +273,13 @@ static func _load_image(filename: String) -> Image:
 	var texture := load(path) as Texture2D
 	if texture == null or texture.get_size() != Vector2(TILE_SIZE):
 		return null
+	return _texture_to_rgba_image(texture)
+
+## Shared by `_load_image` and the SVG-mode route-kerb twin, which reads an already-loaded
+## `TileSetAtlasSource.texture` rather than a manifest filename.
+static func _texture_to_rgba_image(texture: Texture2D) -> Image:
+	if texture == null:
+		return null
 	var image: Image = texture.get_image()
 	if image == null:
 		return null
@@ -218,3 +288,40 @@ static func _load_image(filename: String) -> Image:
 	if image.get_format() != Image.FORMAT_RGBA8:
 		image.convert(Image.FORMAT_RGBA8)
 	return image
+
+## Blends every opaque pixel of `image` toward `Palette.ROUTE_KERB_TINT` by
+## `Tuning.ROUTE_KERB_TINT_ALPHA`, keeping each pixel's own alpha. Used for the curbstone
+## component, whose opaque pixels are the whole of the drawing.
+static func _tint_opaque(image: Image) -> Image:
+	var result := image.duplicate()
+	for y in image.get_height():
+		for x in image.get_width():
+			var pixel := image.get_pixel(x, y)
+			if pixel.a <= 0.0:
+				continue
+			result.set_pixel(x, y, _tinted_pixel(pixel))
+	return result
+
+## Blends every pixel of `image` within `_COLOR_MATCH_TOLERANCE` of `target` toward
+## `Palette.ROUTE_KERB_TINT` by `Tuning.ROUTE_KERB_TINT_ALPHA`, keeping each pixel's own alpha. Used
+## for an SVG-mode kerb raster, where the stone is identified by its own authored fill colour
+## rather than a separate component image.
+static func _tint_matching(image: Image, target: Color) -> Image:
+	var result := image.duplicate()
+	for y in image.get_height():
+		for x in image.get_width():
+			var pixel := image.get_pixel(x, y)
+			if pixel.a <= 0.0 or not _close_enough(pixel, target):
+				continue
+			result.set_pixel(x, y, _tinted_pixel(pixel))
+	return result
+
+static func _close_enough(pixel: Color, target: Color) -> bool:
+	return absf(pixel.r - target.r) < _COLOR_MATCH_TOLERANCE \
+			and absf(pixel.g - target.g) < _COLOR_MATCH_TOLERANCE \
+			and absf(pixel.b - target.b) < _COLOR_MATCH_TOLERANCE
+
+static func _tinted_pixel(pixel: Color) -> Color:
+	var blended := pixel.lerp(Palette.ROUTE_KERB_TINT, Tuning.ROUTE_KERB_TINT_ALPHA)
+	blended.a = pixel.a
+	return blended
