@@ -371,9 +371,15 @@ keys are `1` to `5` in `_debug_layer_key()`, with `--layers` naming which start 
       rejected before anything starts). The graph is still built only where the readout is
       (`_debug or _readout_requested`, the release-page terms `_add_frame_graph()`'s doc
       states) and is drawn when `_layer_graph_on` holds, whatever `4` did to the readout; its
-      ring is fed only while it is visible, as now. `_set_readout_visible()` no longer touches
-      it. `tests/test_frame_graph.gd` or `tests/test_main.gd`: off by default under `--debug`,
-      on at boot under `--spikes`, `6` toggles it and `4` does not. `docs/TELEMETRY.md`'s "The
+      ring is fed only while the layer is on, and **emptied when the layer goes off** —
+      *(2026-09-15: "spike recording should only be on while the layer is on. that means
+      toggling the layer twice will lead to a blank frame array")* — so `6` twice gives an
+      empty graph that fills from that moment; `FrameGraph` gets a `clear()` the toggle calls.
+      The run log's `spike` line stays on `--spikes` alone (`DECISIONS.md`, M144), read as
+      not being what "recording" names here; overturn it there if it was.
+      `_set_readout_visible()` no longer touches the graph. `tests/test_frame_graph.gd` or `tests/test_main.gd`: off by default under `--debug`,
+      on at boot under `--spikes`, `6` toggles it and `4` does not, and after `6` twice the ring
+      is empty. `docs/TELEMETRY.md`'s "The
       debug view" says what `6` shows and that `--spikes` starts it on; `README.md`'s `--debug`
       and `--layers` rows follow. No evidence: the still M148 took shows the graph and nothing
       about its key.
