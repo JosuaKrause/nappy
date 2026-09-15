@@ -49,6 +49,11 @@ func run(t) -> void:
 	_test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(t)
 	_test_the_web_override_flag_parses_the_query(t)
 	_test_reads_the_url_only_when_debug_and_web(t)
+	_test_a_frame_past_twice_the_mean_writes_one_spike_line(t)
+	_test_steady_frames_write_no_spike_line(t)
+	_test_two_spikes_in_one_second_write_only_the_worse_one(t)
+	_test_no_spike_line_with_the_flag_off(t)
+	_test_a_late_picture_load_names_itself_in_the_spike_line(t)
 
 # ------------------------------------------------------------------ dormancy ---
 
@@ -1174,6 +1179,161 @@ func _test_reads_the_url_only_when_debug_and_web(t) -> void:
 			"a debug build off the web does not -- there is no address bar to ask")
 	t.check(not Telemetry._reads_the_url(false, false),
 			"and neither does a release build off the web")
+
+# --------------------------------------------------------------------- spikes ---
+# *(`docs/TODO.md`, "The 24 ms frame, found": the observer already keeps a per-second worst frame
+# for the `frame` line; under `--spikes` it also keeps the running mean of that same second's
+# frames and names the one frame that ran past twice it, plus what changed since the previous
+# frame — no new per-frame hook on a gameplay class, the **telemetry** rule's own "the observer
+# reads state".)*
+
+## A real, empty `City` and a bare `Stroller` standing still — the least `_watch_for_a_spike`
+## needs to read (`_city.events.instances()`, `_map.world_to_tile(_player.global_position)`)
+## without crashing. `_spikes_on` is set directly, the same way `_blocked_rig()` and `_trail_rig()`
+## above set a private field straight rather than fake a command line for `DevFlags` to parse.
+func _spike_rig(t) -> TelemetryObserver:
+	var map := CityGenerator.generate(9001)
+	var city: City = preload("res://scenes/world/city.tscn").instantiate()
+	t.add_child(city)
+	city.build(map)
+	var observer := TelemetryObserver.new()
+	observer._city = city
+	observer._map = city.map
+	observer._player = Stroller.new()
+	observer._player.global_position = city.map.home_world_position()
+	observer._spikes_on = true
+	return observer
+
+## Feeds a series of frame deltas straight into `_watch_the_frame` — no real clock and no
+## `_process`, the same shape `_hold_against_a_wall` above feeds `_watch_blocked`.
+func _feed_frames(observer: TelemetryObserver, deltas: Array) -> void:
+	for delta in deltas:
+		observer._watch_the_frame(delta)
+
+## `count` copies of `dt`, for building a second's worth of frames without spelling each one out.
+func _steady_frames(count: int, dt: float) -> Array:
+	var out: Array = []
+	for i in count:
+		out.append(dt)
+	return out
+
+func _spike_lines(t) -> Array:
+	var lines: Array = Telemetry.current_log().lines
+	Telemetry.end_run()
+	t.check(not Telemetry.is_active(), "and the suite is left dormant again")
+	var spikes: Array = []
+	for line in lines:
+		if line.contains("spike"):
+			spikes.append(line)
+	return spikes
+
+## One frame at five times the mean of the ten steady frames before it, padded out with more
+## steady frames so the second's own `frame`/`spike` report actually closes.
+func _test_a_frame_past_twice_the_mean_writes_one_spike_line(t) -> void:
+	Telemetry.begin_memory_log()
+	var observer := _spike_rig(t)
+	var deltas := _steady_frames(10, 0.02)
+	deltas.append(0.1)
+	deltas.append_array(_steady_frames(36, 0.02))
+	_feed_frames(observer, deltas)
+
+	var spikes := _spike_lines(t)
+	t.check(spikes.size() == 1,
+			"one frame past twice the mean writes exactly one spike line (got %d)" % spikes.size())
+	if not spikes.is_empty():
+		t.check(spikes[0].contains("100.0ms"),
+				"the spike line carries the frame's own length (got '%s')" % spikes[0])
+		t.check(spikes[0].contains("mean 20.0ms"),
+				"and the mean it was measured against (got '%s')" % spikes[0])
+
+	observer._player.free()
+	observer._city.free()
+	observer.free()
+
+## No frame in a second of ordinary frames is ever twice the mean of its own neighbours.
+func _test_steady_frames_write_no_spike_line(t) -> void:
+	Telemetry.begin_memory_log()
+	var observer := _spike_rig(t)
+	_feed_frames(observer, _steady_frames(55, 0.02))
+
+	t.check(_spike_lines(t).is_empty(), "a second of ordinary frames writes no spike line")
+
+	observer._player.free()
+	observer._city.free()
+	observer.free()
+
+## Two frames qualify in the same second — a big one, then a smaller one that still clears twice
+## the (now higher) mean. The rate limit keeps the worse of the two, not the more recent.
+func _test_two_spikes_in_one_second_write_only_the_worse_one(t) -> void:
+	Telemetry.begin_memory_log()
+	var observer := _spike_rig(t)
+	var deltas := _steady_frames(10, 0.02)
+	deltas.append(0.5)
+	deltas.append_array(_steady_frames(5, 0.02))
+	deltas.append(0.15)
+	deltas.append_array(_steady_frames(5, 0.02))
+	_feed_frames(observer, deltas)
+
+	var spikes := _spike_lines(t)
+	t.check(spikes.size() == 1,
+			"a second rate-limited to at most one spike line, however many frames qualify (got %d)"
+			% spikes.size())
+	if not spikes.is_empty():
+		t.check(spikes[0].contains("500.0ms"),
+				"and it names the worse of the two, not the more recent (got '%s')" % spikes[0])
+
+	observer._player.free()
+	observer._city.free()
+	observer.free()
+
+## The same series as the first test, with the flag off: nothing about the frame accounting
+## changes, but no spike line is ever written.
+func _test_no_spike_line_with_the_flag_off(t) -> void:
+	Telemetry.begin_memory_log()
+	var observer := _spike_rig(t)
+	observer._spikes_on = false
+	var deltas := _steady_frames(10, 0.02)
+	deltas.append(0.1)
+	deltas.append_array(_steady_frames(36, 0.02))
+	_feed_frames(observer, deltas)
+
+	t.check(_spike_lines(t).is_empty(),
+			"with --spikes off, no spike line even across a frame far past twice the mean")
+
+	observer._player.free()
+	observer._city.free()
+	observer.free()
+
+## `TextureResolver.load_count()` is what M147's spike context reads, so this bumps the real
+## counter — `resolve()` on a texture whose PNG transfer exists, the same one `test_visuals.gd`
+## checks against — rather than adding a test-only setter to production code for a single call.
+func _test_a_late_picture_load_names_itself_in_the_spike_line(t) -> void:
+	Telemetry.begin_memory_log()
+	# After `_spike_rig()`, not before: building the real `City` scene resolves the whole tile set
+	# through `GroundLayers._replace_svg_transfers()`, which would otherwise leave `load_count()`
+	# already above zero before this test's own bump, and the exact-one-load assertion below false.
+	var observer := _spike_rig(t)
+	TextureResolver.reset_for_tests(false)
+	_feed_frames(observer, _steady_frames(10, 0.02))
+	var transfer_texture := TextureResolver.resolve(preload("res://assets/rig/mother_side_a.svg"))
+	t.check(transfer_texture != null and TextureResolver.load_count() == 1,
+			"the resolve call actually loaded one transfer before the spike frame")
+	_feed_frames(observer, [0.1])
+	_feed_frames(observer, _steady_frames(36, 0.02))
+
+	var spikes := _spike_lines(t)
+	t.check(spikes.size() == 1,
+			"the picture load lands inside the one spike line this second wrote (got %d)"
+			% spikes.size())
+	if not spikes.is_empty():
+		t.check(spikes[0].contains("1 pictures loaded"),
+				"the spike line names the transfer loaded since the previous frame (got '%s')"
+				% spikes[0])
+
+	observer._player.free()
+	observer._city.free()
+	observer.free()
+	TextureResolver.reset_for_tests(DevFlags.svg_requested())
 
 # ------------------------------------------------------------------ helpers ---
 

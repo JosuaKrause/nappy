@@ -41,7 +41,42 @@ func run(t) -> void:
 	t.check(TextureResolver.resolve(MOTHER) == resolved,
 		"resolved textures are cached rather than loaded repeatedly")
 	_test_every_transfer_has_a_native_svg_pair(t)
+	_test_warm_loads_every_transfer_once(t)
+	_test_warm_under_svg_loads_nothing(t)
 	TextureResolver.reset_for_tests(DevFlags.svg_requested())
+
+## M147, "every picture loaded before it is needed": once `warm()` has run, every texture
+## `EventInstance` preloads is already in `TextureResolver`'s own cache, so resolving each of them
+## again — the same call `Sprites`/`EventInstance` make at draw time — must not move
+## `load_count()`. Reads the constants straight off the script with `get_script_constant_map()`
+## rather than hand-listing them here, so a picture added to the catalogue is covered without a
+## second edit to this file.
+func _test_warm_loads_every_transfer_once(t) -> void:
+	TextureResolver.reset_for_tests(false)
+	var loaded := TextureResolver.warm()
+	t.check(loaded > 0, "warm() loads at least one transfer on a checkout with illustrated assets")
+	t.check(loaded == TextureResolver.load_count(),
+		"warm()'s own return value agrees with the counter it moved")
+	var after_warm := TextureResolver.load_count()
+	var event_script: Script = load("res://src/events/event_instance.gd")
+	var constants: Dictionary = event_script.get_script_constant_map()
+	var textures_checked := 0
+	for constant_value: Variant in constants.values():
+		if constant_value is Texture2D:
+			TextureResolver.resolve(constant_value)
+			textures_checked += 1
+	t.check(textures_checked > 0,
+		"the audit found event pictures to check rather than an empty constant map")
+	t.check(TextureResolver.load_count() == after_warm,
+		"warm() already loaded every texture EventInstance preloads, so resolving them again " +
+		"loads nothing more")
+
+## `resolve()` is a no-op under `--svg` — nothing is ever swapped for a PNG — so `warm()` must
+## agree and load nothing either, rather than filling a cache no draw call will ever consult.
+func _test_warm_under_svg_loads_nothing(t) -> void:
+	TextureResolver.reset_for_tests(true)
+	t.check(TextureResolver.warm() == 0, "warm() under --svg loads nothing")
+	t.check(TextureResolver.load_count() == 0, "and the counter never moves")
 
 func _test_every_transfer_has_a_native_svg_pair(t) -> void:
 	var transfer_paths: PackedStringArray = _transfer_paths(TRANSFER_ROOT)
