@@ -26,6 +26,7 @@ func run(t) -> void:
 	_test_nobody_is_placed_in_a_sealed_junction(t)
 	_test_a_pocket_empties_once_it_is_out_of_view(t)
 	_test_a_turn_around_commits_to_its_new_heading(t)
+	_test_no_car_in_sight_ever_moves_further_than_it_drove(t)
 	_test_a_region_wall_is_shut_and_a_door_is_carved_out(t)
 	# One door day, shared: building a city and planning days until one carries a door is most of a
 	# minute, and every test below places its own bodies at the same hut anyway.
@@ -305,6 +306,131 @@ func _test_a_turn_around_commits_to_its_new_heading(t) -> void:
 	t.check(too_soon == 0,
 			("no agent reverses twice inside one of its own strides (%d of %d did, the quickest "
 			+ "after %.3fs)") % [too_soon, reversals, 0.0 if soonest == INF else soonest])
+
+	_city.map.clear_day_holds()
+
+# ------------------------------------------------- M152: no teleport in sight ---
+# "cars are super buggy now. when they turn in the final stretch the teleport a car length somewhere
+# else. also in some case instead of routing a turn (or u turn) they just teleport" (playtest 76,
+# 2026-09-15). A recycle is a teleport by construction and the design allows exactly one of them —
+# the one nobody can see. Everything else that moves a car further than it drove is a placement
+# repairing something after the fact, and the place that did it was the end of a turn.
+
+## How far a car may move in one frame and still have driven there: twice the fastest car's own
+## step, so the cross-steer (`CrowdAgent.STEER_SPEED`) and the separation pass's ordinary few pixels
+## are both comfortably inside it and nothing but a *placement* clears it. The same bound
+## `tests/probes/m152_car_jumps.gd` measures the whole city with.
+static func _drivable_step() -> float:
+	return 2.0 * Tuning.CAR_SPEED.y * STEP
+
+## The play viewport around the field's centre — 1280x720 design pixels at the play zoom of 2, which
+## is `Tuning.VIEW_HALF_EXTENT` of world either way. `CrowdField.centre` is the camera, which is what
+## `CrowdAgent._out_of_view()` already measures against, and `Tuning.OUT_OF_SIGHT` (420px) is the
+## radius outside this box's own far corner (367px) — so a legal recycle is always outside it.
+func _on_screen(at: Vector2, focus: Vector2) -> bool:
+	var offset := at - focus
+	return absf(offset.x) <= Tuning.VIEW_HALF_EXTENT.x \
+			and absf(offset.y) <= Tuning.VIEW_HALF_EXTENT.y
+
+## M152: **a car the player can see never moves further than it drove.**
+##
+## A day with a seal the traffic reaches, so cars actually turn: one arm of a four-armed junction is
+## held while the crowd is already on the road, which is what makes every car coming down that
+## street plan an arc, an about-face or a turnaround at the junction — and the view is held on that
+## junction throughout, so the turns happen in front of the camera.
+##
+## **What this is for is the end of a turn.** A landing whose booked spot has been closed up on from
+## behind used to be dropped a gap behind the *rearmost* car in the whole exit lane — the merge a
+## recycled car makes at the entry band, where further back is more off-screen road, applied at a
+## junction where further back is most of a street. See `CrowdAgent._land_the_turn()`.
+##
+## **Every landing in the window is contended, and waiting for one is what does not work.** The
+## follower that closes up on a booked landing is rare — it needs a brake that has undershot by a
+## few pixels at the exact moment an arc ends — so a plain twenty-second watch reports a clean bill
+## of health on a build that teleports, which is the one failure a test like this must not have.
+## What the follower *is*, to the landing, is an entry in `TrafficIndex` just behind the spot, so the
+## rig puts one there itself: every frame, for every car on an arc, half a `Tuning.CAR_GAP_MIN`
+## behind wherever that arc ends. The booking is still the entry nearest the landing, so
+## `TrafficIndex.give_back()` still takes the right one back — what changes is that the arrival then
+## finds the spot occupied, which is exactly the state the retreat fired in.
+##
+## **The morning is deliberately outside the window.** The crowd is placed without consulting itself
+## and the first separation pass unpacks it, which is the one large correction that is right — so the
+## watch starts after the crowd has settled, which is also when the seal goes up.
+##
+## Two guards against a vacuous sweep, because "nothing jumped" passes on its own where nothing was
+## on screen and nothing turned: the agent-frames actually inside the viewport are counted, and so
+## are the contended turns that actually ended in front of the camera.
+func _test_no_car_in_sight_ever_moves_further_than_it_drove(t) -> void:
+	var sealed := _a_junction_to_seal(t)
+	if sealed.is_empty():
+		return
+	var at: Vector2 = sealed["at"]
+	var arms: Array = sealed["arms"]
+	_city.map.clear_day_holds()
+	_city.crowd.start_day(1, _rng(4), at)
+	_advance_watching(3.0, at)
+	# **One arm, and the count matters in both directions.** Holding every arm is what the pocket
+	# tests above want and it is useless here: the traffic is then held off the whole junction and
+	# its four approaches, which is the entire viewport, so there is nothing on screen left to watch
+	# at all. Holding two empties enough of it that the turns that do happen land off screen, which
+	# the second guard below catches. One shut street leaves the box full of cars and puts the turns
+	# it forces in front of the camera.
+	var shut: StreetNetwork.Segment = arms[0]
+	_city.map.hold_segment(shut.key())
+
+	var watched_frames := 0
+	var landings := 0
+	var landings_in_sight := 0
+	var jumps := 0
+	var worst := 0.0
+	var worst_line := ""
+	var before := {}
+	for frame in int(round(30.0 / STEP)):
+		before.clear()
+		for agent: CrowdAgent in _city.crowd.agents():
+			if agent.kind == CrowdAgent.Kind.CAR:
+				before[agent.get_instance_id()] = [agent.position, agent.is_turning()]
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		# After the step, because `Crowd.space_out_the_traffic()` rebuilds the index at the end of one
+		# and a claim only has to outlive the frame it was made in — so this is the follower the next
+		# frame's landing sees. See `TrafficIndex.claim()`.
+		for agent: CrowdAgent in _city.crowd.agents():
+			if agent.is_turning():
+				_city.crowd.traffic().claim(agent.turn_lane_key(),
+						agent.turn_landing() - Tuning.CAR_GAP_MIN * 0.5)
+		for agent: CrowdAgent in _city.crowd.agents():
+			var was: Array = before.get(agent.get_instance_id(), [])
+			if was.is_empty():
+				continue
+			var from: Vector2 = was[0]
+			var seen := _on_screen(from, at) or _on_screen(agent.position, at)
+			if bool(was[1]) and not agent.is_turning():
+				landings += 1
+				if seen:
+					landings_in_sight += 1
+			if seen:
+				watched_frames += 1
+			var moved := from.distance_to(agent.position)
+			if not seen or moved <= _drivable_step():
+				continue
+			jumps += 1
+			if moved > worst:
+				worst = moved
+				worst_line = "%.0fpx, %s -> %s" % [moved, from, agent.position]
+
+	t.check(watched_frames > 0,
+			"there were cars on screen to watch at the sealed junction (%d car-frames)"
+			% watched_frames)
+	t.check(landings_in_sight > 0,
+			("and contended turns actually ended in front of the camera, which is the case the bound "
+			+ "is for (%d of %d landings were on screen)") % [landings_in_sight, landings])
+	t.check(jumps == 0,
+			("no car in sight ever moves further than %.1fpx in a frame, which is further than it "
+			+ "could have driven (%d did over %d car-frames on screen; worst %s)")
+			% [_drivable_step(), jumps, watched_frames,
+			"none" if worst_line == "" else worst_line])
 
 	_city.map.clear_day_holds()
 
