@@ -529,18 +529,25 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 ## (`GroundTiles.ROUTE_KERB_SOURCES`) a tinted twin (`GroundTiles.route_twin_of`), composed with the
 ## `curbstone` component (or, in SVG mode, the stone's own fill) blended toward
 ## `Palette.ROUTE_KERB_TINT` by `Tuning.ROUTE_KERB_TINT_ALPHA` — so the paving around the stone is
-## untouched. This only ever decides *which* cells qualify (a kerb source, on the corridor at depth
-## zero) and re-sets each straight onto `_ground` at its twin, same atlas coordinates: the two can
-## never disagree about a cell's coordinates, because there is only the one layer. A twin that was
-## never registered (an incomplete art drop) leaves the tile on its plain source, the same
-## graceful fallback `GroundLayers` gives everywhere else. Alpha zero is the trial's off switch,
-## with nothing else to change.
+## untouched. This only ever decides *which* cells qualify and re-sets each straight onto `_ground`
+## at its twin, same atlas coordinates: the two can never disagree about a cell's coordinates,
+## because there is only the one layer. A twin that was never registered (an incomplete art drop)
+## leaves the tile on its plain source, the same graceful fallback `GroundLayers` gives everywhere
+## else. Alpha zero is the trial's off switch, with nothing else to change.
+##
+## **A kerb tile qualifies when `_tree` carries it, not when its street does.** `Corridor.depth()`
+## answers at the grain of the whole street on purpose (see `Corridor`'s own doc — that grain is
+## what every placement rule is stated in), so asking it here tinted both pavements of every street
+## on the tree, although a route walks one of them and never crosses the carriageway between them
+## mid-block. The tree itself knows the side: it grows on `ReachabilityGrid`'s two-tile cells, a
+## street's six tiles are a pavement cell, a road cell and a pavement cell, the mid-block road cells
+## are off its graph entirely, so `RouteTree.branches_on(tile)` is non-empty exactly on the pavement
+## a route actually walks and empty on the far one and on every junction cell, which has no kerb
+## (`GroundTiles._sidewalk_variant`).
 ##
 ## Called from `_close_streets`, right after `_tree` is grown and before the region plan or the
-## closures, so a corridor a closure has not yet touched is what the tint answers for — the same
-## order `docs/TODO.md`'s M145 entry states.
+## closures, so a tree a closure has not yet touched is what the tint answers for.
 func _tint_the_route_kerbs() -> void:
-	var corridor := Corridor.of(_tree)
 	var tile_set := _ground.tile_set
 	for y in map.size.y:
 		for x in map.size.x:
@@ -548,7 +555,7 @@ func _tint_the_route_kerbs() -> void:
 			var source := GroundTiles.source_for(map, tile, _day)
 			if not (source in GroundTiles.ROUTE_KERB_SOURCES):
 				continue
-			if corridor.depth(tile) != 0:
+			if _tree.branches_on(tile).is_empty():
 				continue
 			var twin := GroundTiles.route_twin_of(source)
 			if twin < 0 or not tile_set.has_source(twin):
