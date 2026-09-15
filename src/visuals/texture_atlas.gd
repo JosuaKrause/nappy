@@ -31,6 +31,11 @@ extends RefCounted
 ## Releasing drops the atlas texture. The `preload`ed sources stay resident either way, since a
 ## `preload` holds them for the script's life; making those tables lazy so a released group's
 ## memory actually goes is a separate step and is not taken here.
+##
+## **A group becoming ready and a group being released are both `texture` lines in the run log**,
+## with the milliseconds on them, so a run can be read back for whether a picture arrived before
+## it was drawn. *(2026-09-15: "make sure telemetry records when a texture is loaded/unloaded" —
+## "atlas or not" — "ideally with timing information".)*
 
 ## The safe upper bound for one canvas texture's side on a phone.
 const MAX_ATLAS_SIDE := 2048
@@ -56,8 +61,23 @@ class Pack extends RefCounted:
 	var atlas: ImageTexture = null
 	## Key -> `AtlasTexture`, empty until `collect()`.
 	var packed: Dictionary = {}
+	## When `request()` was called, when `collect()` made the texture, and how long the worker's
+	## own blit took — the three numbers the `texture` run-log line is written from.
+	var requested_usec := 0
+	var ready_usec := 0
+	var blit_usec := 0
+	var atlas_size := Vector2i.ZERO
 
 static var _packs: Dictionary = {}
+
+## How many atlases `collect()` has made ready this run. A static counter rather than a per-frame
+## hook on a gameplay class, per the **telemetry** rule — `TelemetryObserver._spike_context()`
+## reads it the same way it reads `TextureResolver.load_count()`, it does not compute it.
+static var _collected_count := 0
+
+## How many atlases have been collected this run, for the spike context.
+static func collected_count() -> int:
+	return _collected_count
 
 # ---------------------------------------------------------------- requesting ---
 
@@ -75,6 +95,7 @@ static func request(name: String, sources: Dictionary) -> bool:
 	if _packs.has(name):
 		return false
 	var pack := Pack.new()
+	pack.requested_usec = Time.get_ticks_usec()
 	_packs[name] = pack
 	var sizes: Array[Vector2i] = []
 	for key in sources.keys():
@@ -103,6 +124,7 @@ static func request(name: String, sources: Dictionary) -> bool:
 		return true
 	pack.regions.assign(layout["regions"])
 	var atlas_size: Vector2i = layout["size"]
+	pack.atlas_size = atlas_size
 	pack.target = Image.create(atlas_size.x, atlas_size.y, false, Image.FORMAT_RGBA8)
 	pack.task_id = WorkerThreadPool.add_task(func() -> void: _blit(pack),
 			false, "TextureAtlas: " + name)
@@ -150,10 +172,14 @@ static func plan(sizes: Array[Vector2i]) -> Dictionary:
 ## can reach. `pack.target` was created by `request()` and is written by this task alone until
 ## `collect()` has waited for it.
 static func _blit(pack: Pack) -> void:
+	var started := Time.get_ticks_usec()
 	for index in pack.images.size():
 		var image: Image = pack.images[index]
 		pack.target.blit_rect(image, Rect2i(Vector2i.ZERO, image.get_size()),
 				pack.regions[index].position)
+	# Written here and read in `collect()` after `wait_for_task_completion()`, which is what makes
+	# the hand-off ordered; nothing else on either side touches this field.
+	pack.blit_usec = Time.get_ticks_usec() - started
 
 # ---------------------------------------------------------------- collecting ---
 
@@ -189,6 +215,11 @@ static func collect(name: String, wait := false) -> bool:
 	# The source images have been copied into the atlas and nothing reads them again.
 	pack.images.clear()
 	pack.target = null
+	pack.ready_usec = Time.get_ticks_usec()
+	_collected_count += 1
+	Telemetry.note("texture", "atlas %s ready: %d pictures in %dx%d, %.1f ms from request (%.1f ms packed off the main thread)"
+			% [name, pack.keys.size(), pack.atlas_size.x, pack.atlas_size.y,
+			(pack.ready_usec - pack.requested_usec) / 1000.0, pack.blit_usec / 1000.0])
 	return true
 
 ## Collects every request whose worker task has finished. `Main._process()` calls this once a
@@ -235,6 +266,13 @@ static func release(name: String) -> void:
 	if pack.task_id != -1:
 		WorkerThreadPool.wait_for_task_completion(pack.task_id)
 		pack.task_id = -1
+	var now := Time.get_ticks_usec()
+	if pack.ready_usec > 0:
+		Telemetry.note("texture", "atlas %s released after %.1f ms drawn from"
+				% [name, (now - pack.ready_usec) / 1000.0])
+	else:
+		Telemetry.note("texture", "atlas %s released %.1f ms after it was requested, never ready"
+				% [name, (now - pack.requested_usec) / 1000.0])
 	_packs.erase(name)
 
 ## Releases every group, so the next `request()` packs under whatever presentation mode is current
@@ -247,3 +285,4 @@ static func reset_for_tests() -> void:
 			WorkerThreadPool.wait_for_task_completion(pack.task_id)
 			pack.task_id = -1
 	_packs.clear()
+	_collected_count = 0
