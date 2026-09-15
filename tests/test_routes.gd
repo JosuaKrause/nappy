@@ -31,8 +31,8 @@ const RULE_SEEDS := 6
 const BASE_SEED := 5150
 
 ## Built only by the route-kerb-tint test below, which needs a real scene tree (`City.start_day`
-## paints `RouteKerbs`, a child node) rather than the bare `CityMap`/`RouteTree` pair every other
-## test here works from directly.
+## repaints `_ground`, a child node, and reads its own tile set back) rather than the bare
+## `CityMap`/`RouteTree` pair every other test here works from directly.
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
 var _maps: Array[CityMap] = []
@@ -721,15 +721,13 @@ func _test_a_day_with_no_tree_lined_street_still_closes_its_quota(t) -> void:
 
 # ------------------------------------------------------------------ route kerb tint ---
 
-## M145's own trial: `City._paint_route_kerbs()` paints `RouteKerbs` from the same tiles
-## `GroundTiles.source_for` and `Corridor.of(city.route_tree())` already answer independently, so
-## this test recomputes the expected set from those two rather than reading it back off the layer
-## itself, which could not catch the layer disagreeing with its own inputs.
+## M145's own trial: `City._tint_the_route_kerbs()` re-sets cells on `_ground` itself from the same
+## tiles `GroundTiles.source_for` and `Corridor.of(city.route_tree())` already answer independently,
+## so this test recomputes the expected set from those two rather than trusting the paint to have
+## used its own inputs correctly, and checks `_ground`'s cells directly since there is no second
+## layer to read back.
 func _test_the_route_kerb_tint_matches_the_corridor_at_depth_zero(t) -> void:
-	var kerb_sources := [GroundTiles.SIDEWALK_KERB_N, GroundTiles.SIDEWALK_KERB_S,
-		GroundTiles.SIDEWALK_KERB_E, GroundTiles.SIDEWALK_KERB_W,
-		GroundTiles.SIDEWALK_KERB_MAIN_N, GroundTiles.SIDEWALK_KERB_MAIN_S,
-		GroundTiles.SIDEWALK_KERB_MAIN_E, GroundTiles.SIDEWALK_KERB_MAIN_W]
+	var kerb_sources := GroundTiles.ROUTE_KERB_SOURCES
 
 	var city: City = CITY_SCENE.instantiate()
 	t.add_child(city)
@@ -753,20 +751,36 @@ func _test_the_route_kerb_tint_matches_the_corridor_at_depth_zero(t) -> void:
 	t.check(expected.size() > 0, "the sweep found kerb tiles on the corridor to check (%d)"
 			% expected.size())
 
-	var used := city._route_kerbs.get_used_cells()
-	t.check(used.size() == expected.size(),
-			"RouteKerbs paints exactly the kerb tiles on the corridor at depth zero (%d expected, "
-			% expected.size() + "%d drawn)" % used.size())
-	for cell in used:
-		t.check(expected.has(cell), "drawn cell %s is a kerb tile on the corridor at depth zero" % cell)
+	var twin_source_ids := {}
+	for source in kerb_sources:
+		twin_source_ids[GroundTiles.route_twin_of(source)] = true
+
+	var twinned := {}
+	for cell in city._ground.get_used_cells():
+		if twin_source_ids.has(city._ground.get_cell_source_id(cell)):
+			twinned[cell] = true
+	t.check(twinned.size() == expected.size(),
+			"Ground carries a route-kerb twin on exactly the kerb tiles on the corridor at depth "
+			+ "zero (%d expected, %d twinned)" % [expected.size(), twinned.size()])
+	for cell in twinned:
+		t.check(expected.has(cell), "twinned cell %s is a kerb tile on the corridor at depth zero" % cell)
 	for tile in expected:
-		t.check(city._route_kerbs.get_cell_source_id(tile) == city._ground.get_cell_source_id(tile)
-				and city._route_kerbs.get_cell_atlas_coords(tile) == city._ground.get_cell_atlas_coords(tile),
-				"RouteKerbs' cell at %s carries Ground's own source and atlas coords" % tile)
+		var plain_source := GroundTiles.source_for(city.map, tile, day)
+		var expected_atlas := GroundLayers.atlas_coords_for(plain_source, city.map.seed_used, tile,
+				city._ground.tile_set)
+		t.check(city._ground.get_cell_source_id(tile) == GroundTiles.route_twin_of(plain_source),
+				"Ground's cell at %s carries its kerb source's route twin" % tile)
+		t.check(city._ground.get_cell_atlas_coords(tile) == expected_atlas,
+				"Ground's twinned cell at %s keeps the atlas coordinates the plain source would have had"
+				% tile)
 
 	city.start_finale(state, day + 1)
-	t.check(city._route_kerbs.get_used_cells().is_empty(),
-			"start_finale clears the route-kerb tint, since the finale grows no tree")
+	var twinned_after_finale := 0
+	for cell in city._ground.get_used_cells():
+		if twin_source_ids.has(city._ground.get_cell_source_id(cell)):
+			twinned_after_finale += 1
+	t.check(twinned_after_finale == 0,
+			"start_finale paints no route-kerb twin, since the finale grows no tree")
 
 	city.free()
 

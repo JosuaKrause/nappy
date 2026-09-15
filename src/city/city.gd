@@ -43,18 +43,6 @@ const BOUNDARY_THICKNESS := 64.0
 ## boundary street is the same depth of building as both sides of every other street.
 const OUTSIDE_DEPTH_TILES := Tuning.BLOCK_SIZE
 
-## The eight kerb sources `_paint_route_kerbs()` tints — main-road and ordinary, all four
-## directions. A route never runs alongside the main road (`RouteTree`, "the main road"), so in
-## practice only the ordinary four ever qualify at corridor depth zero; the set is stated in full
-## anyway, because the rule is "a kerb tile on an inside street" and not a list of which kerbs a
-## route happens to use today.
-const _ROUTE_KERB_SOURCES := [
-	GroundTiles.SIDEWALK_KERB_N, GroundTiles.SIDEWALK_KERB_S,
-	GroundTiles.SIDEWALK_KERB_E, GroundTiles.SIDEWALK_KERB_W,
-	GroundTiles.SIDEWALK_KERB_MAIN_N, GroundTiles.SIDEWALK_KERB_MAIN_S,
-	GroundTiles.SIDEWALK_KERB_MAIN_E, GroundTiles.SIDEWALK_KERB_MAIN_W,
-]
-
 ## The layer for the one thing drawn *over* the entities: the dark inside the tunnel, which has to
 ## land on a car as it drives in. `Entities` is 2 in `city.tscn`; nothing else in the city is
 ## above it.
@@ -89,9 +77,6 @@ const MIN_TREE_SPACING := 40.0 * 1.25
 @onready var _entities: Node2D = $Entities
 @onready var _buildings_layer: Node2D = $Buildings
 @onready var _ground: TileMapLayer = $Ground
-## The route's own kerb tiles, tinted (M145, a trial — see `docs/CITY.md`, "Guiding her to the
-## calm"). `Ground`'s next sibling, drawn above it and below `Decals`; painted in `_paint_route_kerbs()`.
-@onready var _route_kerbs: TileMapLayer = $RouteKerbs
 @onready var _decals: CityDecals = $Decals
 @onready var _building_shadows: BuildingShadows = $BuildingShadows
 
@@ -505,8 +490,10 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 ## The repaint, the ground, the litter and the block dressing all still happen, because the parks
 ## she walks through have to be the parks the run's seed built.
 ##
-## And the route-kerb tint (M145) goes with the tree it has nothing to draw from: `_route_kerbs`
-## is cleared rather than left holding the last day's paint.
+## And the route-kerb tint (M145) goes with the tree it has nothing to draw from without anything
+## extra here: `_tint_the_route_kerbs()` only ever runs from `_close_streets()`, which the finale
+## never calls, and `_paint_ground()` above paints every kerb cell its plain source, so a twin from
+## yesterday cannot survive the repaint.
 func start_finale(state: CityState, day: int) -> void:
 	map.repaint(state)
 	_sleepiness_tile = Vector2i(-1, -1)
@@ -514,7 +501,6 @@ func start_finale(state: CityState, day: int) -> void:
 	_paint_ground()
 	_decals.set_placed(Litter.placed(map, day))
 	_dress_blocks(state)
-	_route_kerbs.clear()
 
 ## Today's closed streets. The whole street comes out of the network; the barriers stand at
 ## its two mouths, where they can be seen from the junction rather than found half way down.
@@ -524,7 +510,7 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 	_closure_nodes.clear()
 	# Before the closures, because they are placed off it. See `ClosurePlanner._shuffled_candidates`.
 	_tree = RouteTree.for_day(map, day)
-	_paint_route_kerbs()
+	_tint_the_route_kerbs()
 	# Before the closures too: a closure may not land on a region boundary (wall or door), which
 	# `ClosurePlanner.plan_day` needs handed to it rather than recomputing — see its own doc.
 	_region_plan = RegionPlanner.plan_day(map, day, _tree)
@@ -536,34 +522,38 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 	for closure in _closures:
 		_spawn_closure(closure)
 
-## The route's own kerb tiles, tinted — a trial (M145) of whether a faint hint on the ground can
+## The route's own curbstones, tinted — a trial (M145) of whether a faint hint on the ground can
 ## stay under the threshold of being noticed as one; see `docs/CITY.md`, "Guiding her to the calm".
 ##
-## Drawn from `_ground`'s own painted cells, never recomputed, so the two layers cannot disagree:
-## `GroundTiles.source_for` only decides *which* tiles qualify (a kerb source, on the corridor at
-## depth zero), and the cell placed on `_route_kerbs` is read back off `_ground` with
-## `get_cell_source_id`/`get_cell_atlas_coords`. The tint itself is the layer's own `modulate`
-## (`Palette.ROUTE_KERB_TINT`), so the art is the kerb art drawn a second time under a colour
-## rather than a second, alternative tile — alpha zero (`Tuning.ROUTE_KERB_TINT_ALPHA`) is the
-## trial's off switch, with nothing else to change.
+## No second layer: `GroundLayers.build_tile_set()` already gave every kerb source
+## (`GroundTiles.ROUTE_KERB_SOURCES`) a tinted twin (`GroundTiles.route_twin_of`), composed with the
+## `curbstone` component (or, in SVG mode, the stone's own fill) blended toward
+## `Palette.ROUTE_KERB_TINT` by `Tuning.ROUTE_KERB_TINT_ALPHA` — so the paving around the stone is
+## untouched. This only ever decides *which* cells qualify (a kerb source, on the corridor at depth
+## zero) and re-sets each straight onto `_ground` at its twin, same atlas coordinates: the two can
+## never disagree about a cell's coordinates, because there is only the one layer. A twin that was
+## never registered (an incomplete art drop) leaves the tile on its plain source, the same
+## graceful fallback `GroundLayers` gives everywhere else. Alpha zero is the trial's off switch,
+## with nothing else to change.
 ##
 ## Called from `_close_streets`, right after `_tree` is grown and before the region plan or the
 ## closures, so a corridor a closure has not yet touched is what the tint answers for — the same
 ## order `docs/TODO.md`'s M145 entry states.
-func _paint_route_kerbs() -> void:
-	_route_kerbs.tile_set = _ground.tile_set
-	_route_kerbs.clear()
-	_route_kerbs.modulate = Palette.ROUTE_KERB_TINT
+func _tint_the_route_kerbs() -> void:
 	var corridor := Corridor.of(_tree)
+	var tile_set := _ground.tile_set
 	for y in map.size.y:
 		for x in map.size.x:
 			var tile := Vector2i(x, y)
-			if not (GroundTiles.source_for(map, tile, _day) in _ROUTE_KERB_SOURCES):
+			var source := GroundTiles.source_for(map, tile, _day)
+			if not (source in GroundTiles.ROUTE_KERB_SOURCES):
 				continue
 			if corridor.depth(tile) != 0:
 				continue
-			_route_kerbs.set_cell(tile, _ground.get_cell_source_id(tile),
-					_ground.get_cell_atlas_coords(tile))
+			var twin := GroundTiles.route_twin_of(source)
+			if twin < 0 or not tile_set.has_source(twin):
+				continue
+			_ground.set_cell(tile, twin, _ground.get_cell_atlas_coords(tile))
 
 func closures() -> Array[RoadClosure]:
 	return _closures

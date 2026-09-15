@@ -21,14 +21,15 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
-- **Walk day 1 on the laptop without the debug layers and look at the kerbs along the streets
-  the routes take, then turn on `5` to see where the routes are.** The route's own kerb tiles
-  carry a faint yellow cast at 0.18 alpha, a trial of whether a hint on the ground can stay
-  below being noticed as one; the still at that number shows nothing to the eye. Three
-  readings, and the number is one constant (`Tuning.ROUTE_KERB_TINT_ALPHA`): **is it invisible,
-  too obvious and on the nose, or somewhere between that guides without being read as a hint?**
-  And where a costly thing stands on the route with its amber caret up, does the yellow kerb
-  read as part of the warning? Record is `DECISIONS.md`, M145, the route's curbs.
+- **Walk day 1 on the laptop without the debug layers and look at the curbstones along the
+  streets the routes take, then turn on `5` to see where the routes are.** The route's own
+  curbstones — the stone strip along the pavement's edge, not the paving beside it — carry a
+  faint yellow cast blended in at 0.45, a trial of whether a hint on the ground can stay below
+  being noticed as one. Three readings, and the number is one constant
+  (`Tuning.ROUTE_KERB_TINT_ALPHA`): **is it invisible, too obvious and on the nose, or somewhere
+  between that guides without being read as a hint?** And where a costly thing stands on the
+  route with its amber caret up, does the yellow curbstone read as part of the warning? Record
+  is `DECISIONS.md`, M145, the route's curbs.
 - **Cross a region door on foot, from day 7** (`--day 7`; a door is the hut-boom-hut across a
   boundary street). The boom hangs between its posts across the lanes, level with the huts; the
   inspection starts as soon as she stands against the hut; the camera eases from where it was

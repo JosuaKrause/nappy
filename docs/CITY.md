@@ -493,10 +493,11 @@ a shut street is the street with nobody on it, and that is legible from a block 
   **reads** as guidance to a person is unanswered; the picture says the walls are where they should
   be, and that is all anybody knows.
 - **There is no cue of any kind toward calm, except one faint trial.** No marker, no map, no HUD
-  line, nothing on the ground — bar M145, which tints the route's own kerb tiles a faint yellow
-  (`Palette.ROUTE_KERB_TINT`, alpha `Tuning.ROUTE_KERB_TINT_ALPHA`). The trial's question is
-  whether a hint this quiet can stay below being noticed as one; alpha zero is the off switch the
-  moment it cannot. "Planning-time legibility" is named a paragraph above as not existing.
+  line, nothing on the ground — bar M145, which tints the route's own curbstones, the stone strip
+  along the pavement's edge, a faint yellow (`Palette.ROUTE_KERB_TINT`, blended in by
+  `Tuning.ROUTE_KERB_TINT_ALPHA`). The trial's question is whether a hint this quiet can stay below
+  being noticed as one; alpha zero is the off switch the moment it cannot. "Planning-time
+  legibility" is named a paragraph above as not existing.
 - **The main road as a soft block** — the one thing in the design that would divide the city into
   a near half and a far half — is designed and not built; see `docs/TODO.md`.
 - **Blockers are not placed to guide anybody**, which is the whole of it. The design is below.

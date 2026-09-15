@@ -97,13 +97,13 @@ const SIGNAL_AMBER := Color("f0a92e")
 const SIGNAL_GREEN := Color("5fc46a")
 
 ## The route's kerb tint (M145, a trial — see `docs/CITY.md`, "Guiding her to the calm").
-## **A cast, not a mark**: this is `City._paint_route_kerbs()`'s `modulate` over the kerb art
-## drawn a second time, not a warning drawn on top of anything, so it is stated a full step away
-## from `MARK_COSTLY`'s amber rather than a paler version of it — a straw yellow the caret's own
-## family cannot be mistaken for even where the two stand on the same kerb. The alpha is the whole
-## of the trial's dial and lives in one place, `Tuning.ROUTE_KERB_TINT_ALPHA`, so the colour below
-## composes it in rather than repeating it.
-const ROUTE_KERB_TINT := Color(Color("f2e07a"), Tuning.ROUTE_KERB_TINT_ALPHA)
+## **A cast, not a mark**: `GroundLayers` blends the curbstone's own pixels toward this colour by
+## `Tuning.ROUTE_KERB_TINT_ALPHA` rather than drawing a warning on top of anything, so it is stated
+## a full step away from `MARK_COSTLY`'s amber rather than a paler version of it — a straw yellow
+## the caret's own family cannot be mistaken for even where the two stand on the same curbstone.
+## RGB only: the blend amount is `Tuning.ROUTE_KERB_TINT_ALPHA`, so this colour's own alpha (opaque,
+## unread by the blend) would be a second place the dial could be set and is not one.
+const ROUTE_KERB_TINT := Color("f2e07a")
 
 ## The two words on the screens either side of a run, and they are the only colours in this file
 ## that paint text rather than the world.

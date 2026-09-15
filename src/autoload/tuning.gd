@@ -351,12 +351,15 @@ const CITY_BLOCKS := Vector2i(11, 11)
 ## by eye alone.
 const BUILDING_SHADOW_ALPHA := 0.22
 
-## Alpha of the route's kerb tint (`City._paint_route_kerbs()`, `Palette.ROUTE_KERB_TINT`) — the
-## whole of the M145 trial's own dial. The player sets it by eye against a still, not this
-## comment: raise it while the tint reads as invisible, lower it while it reads as a drawn hint
-## rather than a cast, and zero is the trial's off switch, with nothing else in the layer to
-## change.
-const ROUTE_KERB_TINT_ALPHA := 0.18
+## How far a route curbstone's own pixels are blended toward `Palette.ROUTE_KERB_TINT`
+## (`GroundLayers._tint_opaque`/`_tint_matching`, `City._tint_the_route_kerbs()`) — the whole of the
+## M145 trial's own dial. The player sets it by eye against a still, not this comment: raise it
+## while the cast reads as invisible, lower it while it reads as a drawn hint rather than a cast,
+## and zero is the trial's off switch, with nothing else to change. The strip the blend applies to
+## is two or three pixels wide (the SVG art's 2px band, the illustrated `curbstone.png`'s 3px one),
+## so the number that read as nothing spread over a whole tile has to run higher to register within
+## its own width.
+const ROUTE_KERB_TINT_ALPHA := 0.45
 
 # ------------------------------------------------------------- street trees ---
 # How rare a street tree is, in four numbers. **Trees read like obstacles** — *(2026-09-12, the

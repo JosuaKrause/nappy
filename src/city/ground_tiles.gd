@@ -93,6 +93,32 @@ const _ALLEY_CRACKS := [[ALLEY_CRACKED_HAIRLINE_A, ALLEY_CRACKED_HAIRLINE_B],
 	[ALLEY_CRACKED_CRACKED_A, ALLEY_CRACKED_CRACKED_B],
 	[ALLEY_CRACKED_BROKEN_A, ALLEY_CRACKED_BROKEN_B]]
 
+## The eight kerb sources a route may run along — ordinary and main-road, all four directions.
+## `City._tint_the_route_kerbs()` walks this list rather than a range, and `GroundLayers.
+## build_tile_set()` registers this list's twins (`ROUTE_KERB_TWIN`), so the painter and the
+## builder cannot come to disagree about which sources the route tint applies to. A route never
+## runs alongside the main road (`RouteTree`, "the main road"), so in practice only the ordinary
+## four ever qualify at corridor depth zero; the set is stated in full anyway, because the rule is
+## "a kerb source on an inside street" and not a list of which kerbs a route happens to use today.
+const ROUTE_KERB_SOURCES := [
+	SIDEWALK_KERB_N, SIDEWALK_KERB_S, SIDEWALK_KERB_E, SIDEWALK_KERB_W,
+	SIDEWALK_KERB_MAIN_N, SIDEWALK_KERB_MAIN_S, SIDEWALK_KERB_MAIN_E, SIDEWALK_KERB_MAIN_W,
+]
+
+## Each kerb source's tinted twin (M145's route cast — see `GroundLayers.build_tile_set()`, which
+## composites the twin's texture, and `City._tint_the_route_kerbs()`, which paints it). The ids are
+## the first free of everything else `build_tile_set` assigns a source id: 58 is one past the last
+## damage source, `ALLEY_CRACKED_BROKEN_B` (57).
+const ROUTE_KERB_TWIN := {
+	SIDEWALK_KERB_N: 58, SIDEWALK_KERB_S: 59, SIDEWALK_KERB_E: 60, SIDEWALK_KERB_W: 61,
+	SIDEWALK_KERB_MAIN_N: 62, SIDEWALK_KERB_MAIN_S: 63, SIDEWALK_KERB_MAIN_E: 64,
+	SIDEWALK_KERB_MAIN_W: 65,
+}
+
+## The tinted twin for a kerb source, or -1 if `source` is not one of `ROUTE_KERB_SOURCES`.
+static func route_twin_of(source: int) -> int:
+	return ROUTE_KERB_TWIN.get(source, -1)
+
 ## How far into `Tuning.degradation_for(day)` each base type starts cracking. **Pavement before
 ## road** — she walks the pavement and looks at it, the carriageway is behind her — so the
 ## sidewalk (and the alley behind it, already the back of the block) read the curve at face value
