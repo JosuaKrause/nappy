@@ -49,3 +49,15 @@ that would find it is M144 in `TODO.md`.
 
 Said to the M144 probe on 2026-09-14; it goes to an agent as filed, with the line behind its
 own flag.
+
+## A stutter whenever a new picture is shown
+
+> "I feel whenever a new entity/image/sprite is shown there is a visible stutter. this would be
+> an argument *for* a full atlas so sprites don't need to be loaded in late"
+
+Said on 2026-09-14, on v0.10.7. Read against the code the same evening: `TextureResolver`
+loads each picture's PNG transfer from disk the first time that picture is drawn, inside the
+frame, once per distinct picture per run, and the halo's shader is built at the first halo.
+Filed as M147 in `TODO.md`: every picture loaded before the day starts, and the spike line
+naming a late load when one happens. The atlas is recorded as the player's word for when
+draw calls are the cost; the phone reading says they are not yet.

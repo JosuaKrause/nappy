@@ -320,6 +320,60 @@ such numbers — three columns of which one is a measurement. Every phone readin
 
 ---
 
+## M147 — Every picture loaded before it is needed · asked for 2026-09-14
+
+> "I feel whenever a new entity/image/sprite is shown there is a visible stutter. this would be
+> an argument *for* a full atlas so sprites don't need to be loaded in late"
+
+[PLAYTEST-75](playtests/PLAYTEST-75.md). The **illustrated-png** rule governs the transfers;
+the **telemetry** rule governs the spike line's new field; the **cli-tools** rule governs
+`main.gd`'s boot path if a flag is touched.
+
+**What is true today.** `TextureResolver.resolve()` (`src/visuals/texture_resolver.gd`) is
+called with an authored SVG texture at draw time and answers the same-sized PNG transfer under
+`assets/illustrated/svg-transfer/` — and on the first call for each source it `load()`s that
+PNG from disk, decodes it and hands it to the renderer, inside the frame that first drew the
+picture, then caches it for the run. The crowd's pictures are warm because `CrowdAtlas` packs
+them after resolving on first use; every event's, prop's and building's is loaded late, once
+per distinct picture, and with eighteen event kinds each carrying views and stride frames the
+first uses keep coming for minutes into a day. `EntityHalo` builds its `ShaderMaterial` at
+the first halo, and the Compatibility renderer compiles a shader on its first draw. Both fit
+the reading: a frame of nearly constant length (one PNG's load) in most seconds, on the laptop
+and in a headless rig alike (M144's smoke run wrote 29 and 57 ms spikes with "nothing else
+changed that frame"), and the player's own feel that it happens when something new appears.
+
+**The atlas, recorded and not filed.** An atlas for the events would pack the same pictures
+into one texture and cut draw calls as the crowd's did (M139). Loading every transfer before
+the day starts removes the late load, which is what the stutter is if this reading is right;
+what an atlas would still buy is draw calls, and the phone reading says those are not the
+cost (M139, the phone reading). The word stays here for the day they are.
+
+- [ ] **The spike line names a late load.** `TextureResolver` counts every transfer it loads
+      in a static counter read by `load_count()`; `TelemetryObserver._spike_context` reads it
+      beside the tile and the event count and says `N pictures loaded` when it changed that
+      frame — a counter on the resolver, not a per-frame hook in a gameplay class. The spike
+      tests gain the case. This lands first, so the reading can be checked on the laptop before
+      and after the next item.
+- [ ] **Every transfer loaded before the first day.** `TextureResolver.warm()`, called once
+      from `main.gd` on the boot path before the first `_start_day()` (and on the finale's
+      boot, `--start-escape`, since it is a second entry point), walks the transfer root — the
+      manifest `GroundLayers._load_manifest()` reads if it lists every transfer, else
+      `DirAccess` over `res://assets/illustrated/svg-transfer/`, which an exported pack also
+      answers — and for each PNG loads it and its source SVG texture, size-checks the pair
+      exactly as `resolve()` does, and caches the result under the source path, so no
+      `resolve()` in play ever loads. Honours `--svg` by doing nothing, as `resolve()` does.
+      `EntityHalo`'s shared material is built in the same warm pass and drawn once off screen
+      (a one-pixel draw under a hidden node, freed after the frame) so the shader compile is
+      paid before play, unless the engine offers a cleaner precompile in 4.7 — say which. The
+      boot cost is printed on the same line as "city generated in N ms" so a phone's longer
+      first load is a number. Tests: after `warm()`, `load_count()` does not move when every
+      texture `EventInstance` preloads is resolved; `warm()` under `--svg` loads nothing.
+      Evidence: the M144 smoke run repeated (`tools/shot.sh out.png 6 --seed 3265820891 --day 1
+      --walk 4s --spikes`) before and after, its `spike` lines quoted; the laptop's reading is
+      `REVIEW.md`'s.
+
+---
+
 ## M129 — A path through the city never has to cost · asked for 2026-09-13
 
 > "also framing from a different point of view a path through the city must never hit
