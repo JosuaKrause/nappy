@@ -236,7 +236,7 @@ name the question it answers, or it is a metric and does not belong.
 | `blocked` | observer | **Is she stuck, or standing on purpose?** Movement input held for about a second while she goes nowhere — the direction, how long, and where. `idle` already covers the legitimate stand-still, no direction held; without this one an immobile rig's log reads exactly like a run, and a person pressing into a blocker the engine never stopped them at has no trace of having done it |
 | `cue` | observer | **What was she warned about, and for how long** — the mark over her head and the screen-edge badges, each written when the span ends so the duration is on the line. A cue is a claim about a moment, and a complaint about a cue's *timing* is invisible to a trace that writes only what was marked |
 | `frame` | observer | **What the frames cost on the device this was played on** — once a second, the frame rate, the worst single frame in that second, the draw calls, renderable objects and primitives the renderer was handed, and the milliseconds spent in `_process` and `_physics_process`. The one entry that is about the machine rather than about the day, and the only way a session played on a phone or on the web page can be read back at all. See "What a frame cost" below |
-| `spike` | observer | **Under `--spikes` only: which frame in the second ran past twice the mean of the frames before it, and what the game did in it.** The frame's own length and that mean, in milliseconds, followed by what changed since the previous frame — her tile, or the count of live event instances — or "nothing else changed that frame" when neither did. At most one line a second, the worst of that second if more than one frame qualified. See "What a frame cost" below |
+| `spike` | observer | **Under `--spikes` only: which frame in the second ran past twice the mean of the frames before it, and what the game did in it.** The frame's own length and that mean, in milliseconds, followed by what changed since the previous frame — her tile, the count of live event instances, or how many transfer PNGs `TextureResolver` loaded — or "nothing else changed that frame" when none did. At most one line a second, the worst of that second if more than one frame qualified. See "What a frame cost" below |
 | `freeze` / `thaw` | observer | Was the day lost to noise or to the clock? Freezing is the invisible failure |
 | `asleep` / `woke` | observer | How long the walk actually took, and what woke her |
 | `quiet` | observer | The sabotage landed and the masts went off |
@@ -327,10 +327,18 @@ machine cannot fill the log with it, which is the whole reason it stays behind i
 `--spikes` run on a fast machine that never has a frame twice its neighbours writes none at all.
 
 **What changed** is read off state the observer already holds for other entries — the tile
-`_watch_the_ground` already looks up, the live event count `_watch_what_is_near` already scans —
-never a new per-frame hook added to a gameplay class. `"nothing else changed that frame"` is a
-finding of its own: the hitch was not the game doing something extra that frame, which points
-outside this project's own systems, toward the platform.
+`_watch_the_ground` already looks up, the live event count `_watch_what_is_near` already scans,
+`TextureResolver.load_count()`'s own static counter of transfer PNGs loaded from disk — never a
+new per-frame hook added to a gameplay class. A late load reads:
+
+```
+  12.0  spike    38.4ms, mean 16.2ms — 1 pictures loaded
+```
+
+`"nothing else changed that frame"` is a finding of its own: the hitch was not the game doing
+something extra that frame, which points outside this project's own systems, toward the
+platform. `TextureResolver.warm()` loads every transfer before the day starts, so a `pictures
+loaded` line in play means the warm pass missed one rather than that late loading is expected.
 
 ---
 

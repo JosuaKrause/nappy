@@ -8,6 +8,12 @@ static var _svg_requested := false
 static var _initialized := false
 static var _cache: Dictionary = {}
 
+## How many transfer PNGs `resolve()` has actually loaded from disk this run — every `load()`
+## below adds one. Read by `TelemetryObserver._spike_context` so a late load under `--spikes`
+## names itself; reset only by `reset_for_tests`, never by the day turning over, since a picture
+## loaded on day 3 does not load again on day 4.
+static var _load_count := 0
+
 ## Returns a cached PNG transfer by default when the replacement is valid.
 ## Missing or mismatched transfers preserve the original SVG so an incomplete art drop cannot
 ## change the simulation's presentation geometry.
@@ -27,6 +33,7 @@ static func resolve(texture: Texture2D) -> Texture2D:
 	var replacement: Texture2D = texture
 	if ResourceLoader.exists(transfer_path):
 		var candidate := load(transfer_path) as Texture2D
+		_load_count += 1
 		if candidate != null and candidate.get_size() == texture.get_size():
 			replacement = candidate
 		elif candidate != null:
@@ -34,6 +41,12 @@ static func resolve(texture: Texture2D) -> Texture2D:
 				transfer_path, texture.get_size(), candidate.get_size()])
 	_cache[source_path] = replacement
 	return replacement
+
+## How many transfer PNGs have been loaded from disk this run. A static counter rather than a
+## per-frame hook on a gameplay class, per the **telemetry** rule — `TelemetryObserver` reads it,
+## it does not compute it.
+static func load_count() -> int:
+	return _load_count
 
 ## Reports the resolved presentation mode so composite callers can keep an authored SVG intact.
 static func svg_requested() -> bool:
@@ -52,3 +65,4 @@ static func reset_for_tests(requested: bool) -> void:
 	_svg_requested = requested
 	_initialized = true
 	_cache.clear()
+	_load_count = 0
