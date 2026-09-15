@@ -1669,7 +1669,11 @@ Top-down camera with a fake vertical extrusion:
   to read past, and a street full of them is a street where an obstacle is hard to spot.
 - **Inside a run, pits sit at `Tuning.STREET_TREE_PIT_SPACING` — two lot-lengths — on each kerb**,
   measured along the whole run rather than street by street, so a four-block run carries about two
-  pits a side rather than two per street. `StreetTrees.planted()` is the one function that decides,
+  pits a side rather than two per street. **And two runs on the same kerb line keep the same floor
+  between them**: `StreetTrees.runs()` refuses a candidate run closer to an already accepted run on
+  its line than the empty blocks the spacing needs between the last pit one could plant and the
+  first pit of the other, checked before either is planted, so the floor holds along the whole
+  line and not only inside one run. `StreetTrees.planted()` is the one function that decides,
   fixed for the run like a building rather than rebuilt daily like a park's own trees, since a
   street's frontage does not change with what a block behind it currently is. A tree stands at the
   kerb-side tile of a pavement, never within a

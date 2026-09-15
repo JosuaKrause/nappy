@@ -96,6 +96,22 @@ share fell after rule 4 (18.4% to 12.5% on 48 routes), one act of one sample. An
 new floor of 0.45 over the narrow rows alone, since the junction rule pushes the wide rows one
 turning out by design; the old docstring's 64% was stale before this branch.
 
+**What CI found on the merge result, and what it was.** The full suite's blocks suite failed on
+one seed: two pits on one kerb line 832 px apart, under the 896 px floor. The branch touches
+neither the street trees nor that suite. `CityGenerator._place_hard_blockers` grows a reference
+`RouteTree` during generation and shuffles its candidate pools with the run's RNG, so the fourth
+rule, which changes which segments are on the tree, changes how many draws that shuffle consumes
+and every later roll of that seed's city — the expected shape of a correct graph change. What
+the new city exposed was older: `StreetTrees` held the spacing inside a run and refused only
+the exact streets another run had taken, so two runs a block apart on the same line could plant
+their nearest pits under the floor, and no seed in the sweep had happened to do it. Fixed where
+the run is accepted, never by moving a pit afterwards: `_too_close_to_a_run_on_the_same_line`
+refuses a candidate run whose block gap to an accepted run on its line is under
+`_min_run_gap_blocks()`, derived from the spacing, the block size, the period and the mouth
+margin — three empty blocks at today's tuning. The agent's choice, open to overturn: the gap is
+checked between runs rather than between planted pits, since the check has to come before either
+run's pits exist.
+
 ## M142 — A layer turned off is drawn off · built 2026-09-14
 
 *(2026-09-14, [PLAYTEST-75](playtests/PLAYTEST-75.md): "pressing number keys to turn off a
