@@ -1,5 +1,74 @@
 # Decisions
 
+## M153 — The spike view is its own debug layer · built 2026-09-15
+
+*(2026-09-15, [PLAYTEST-76](playtests/PLAYTEST-76.md): "spike view should be independent of
+debug layer 4 it should be its own debug layer and turned off by default unless --spikes is
+set" — "spike recording should only be on while the layer is on. that means toggling the layer
+twice will lead to a blank frame array".)* Two agent commits on `feature/m153-spike-layer`,
+reviewed on the PR.
+
+**What it is.** The frame-time graph (M148) has its own key, `6`, and its own switch,
+`_layer_graph_on`, false by default and true at boot under `--spikes` or when `--layers` names
+`6`; `parse_layers()` accepts one to six and still refuses `4`, which no flag reaches. `4` and
+`_set_readout_visible()` no longer touch the graph, and its ring is pushed above the readout's
+own early return, so a readout toggled off no longer silences a graph toggled on. The graph
+is still built only where the readout is. Turning the layer off empties the ring
+(`FrameGraph.clear()`), so `6` twice starts from a blank graph; the title screen hides the graph
+as it hides the readout and shows it again on the disc with the ring intact, since the
+independence asked for is from the `4` key and not from the title. The run log's `spike` line
+stays on `--spikes` alone (M144), read as not what "recording" named; overturn it there if it
+was. `docs/TELEMETRY.md` lists six layers and `README.md`'s `--layers`, `--debug` and
+`--spikes` rows follow. The agent's choices, open to overturn: `--layers 6` starts the layer on
+rather than merely being accepted, the way `5` starts the route lines; and the sixth key's
+entry in the debug-layer suite now answers `6` where it asserted nothing, with `7` taking the
+role of the key that answers nothing.
+
+## M151 — The first frame draws the doorstep · built 2026-09-15, the hidden city overturned
+
+*(2026-09-15, [PLAYTEST-76](playtests/PLAYTEST-76.md): "I don't really like blanking out the
+first frame. can we just position the camera to the home so it will just draw what the title
+screen will show anyway".)* One agent commit on `feature/m151-doorstep-frame`, reviewed on the
+PR; the sanity still is `evidence/m151-doorstep-frame-2026-09-15/`.
+
+**What it is.** The record below this one hid the city for the two frames `Main._ready()`
+awaits inside the picture warm-up, before her camera exists. Overturned: a plain `Camera2D` at
+the home's doorstep, at the stroller's play zoom and on the physics callback the scene camera
+uses, is made current before the first await and freed right after `_start_day()` has placed
+her, and freeing the current camera hands current to hers synchronously — checked against the
+engine with a throwaway script rather than assumed. The city is never hidden. The halo
+warm-up's probe, which stood at world origin because that is what the identity transform put
+on screen, now stands at the boot camera's own ground, and both warm-up functions take that
+ground as a parameter. The escape sequence's boot gets the same camera at world origin, where
+nothing exists yet to show wrongly. `tests/test_camera_start.gd` asserts at the first
+suspension that a current camera exists within a tile of the doorstep; it fails on the code
+before with no camera at all and passes after. The agent's choice, open to overturn: the boot
+camera targets the doorstep itself rather than a `--spawn` target, so under that developer flag
+on day 1 the two boot frames show the doorstep while the day starts elsewhere, since matching
+it would build the resistance before the day.
+
+## M150 — The tint follows the pavement the route walks, not the whole street · built 2026-09-15
+
+*(2026-09-15, [PLAYTEST-76](playtests/PLAYTEST-76.md): "why is the yellow tint on both sides?
+clearly the bottom path cannot be on any route.")* One agent commit on
+`feature/m150-tint-route-side`, reviewed on the PR; the two stills are
+`evidence/m150-tint-route-side-2026-09-15/`.
+
+**What it is.** `City._tint_the_route_kerbs()` tints a kerb tile when the tree carries it —
+`not _tree.branches_on(tile).is_empty()` — in place of the corridor's depth being zero.
+`Corridor.depth()` answers at the grain of a whole street on purpose, since every placement
+rule is stated in it, so it tinted both pavements of every street on the tree; the tree
+grows on the reachability grid's two-tile cells, where a street's six tiles split into a
+pavement cell, a road cell and a pavement cell and the mid-block road cells are off its graph
+since M129, so `branches_on` answers per pavement. `Corridor` is untouched. The routes
+suite's tint check recomputes the expected set through `branches_on` and adds the assertion
+that where a street has both kerb lines tinted, each side is a tree cell in its own right —
+non-vacuous, since on the suite's seed 26 of 74 tinted streets carry the tree on both
+pavements. That is the reading to keep in mind on the stills: the tinted street beside her
+spawn is one of those, both pavements walked by a branch, so both are tinted; the one-sided
+case is proven by the sweep over the whole map rather than by a still. `docs/CITY.md` says
+the tint follows the tree's own pavement and never the street's far side.
+
 ## M149 — Atlases by group, loaded before they are drawn · built 2026-09-15
 
 *(2026-09-14, [PLAYTEST-75](playtests/PLAYTEST-75.md): "pack together graphics into atlases and

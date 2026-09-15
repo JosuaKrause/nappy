@@ -26,17 +26,19 @@ item below for as long as looking takes.
   log carries a `texture` line per picture loaded and per atlas made ready or released, with
   milliseconds on each, so a spike that coincided with a pack says so on its own line. **Is the
   once-a-second 24 ms frame still there, do the spike lines still name a cause, and is the
-  graph under the readout legible while walking?** *(2026-09-15: "and we can do another warm
-  test run".)* Record is `DECISIONS.md`, M149, atlases by group.
+  graph under the readout legible while walking?** The graph is its own layer now, `6`, on
+  from boot under `--spikes` and blank again after `6` twice (`DECISIONS.md`, M153).
+  *(2026-09-15: "and we can do another warm test run".)* Record is `DECISIONS.md`, M149,
+  atlases by group.
 - **Open the web build on the phone and walk a day.** Every atlas is under a 2048 px side and
   every region is clipped, and the desktop shows no difference. **Does anything draw
   differently — a neighbour's pixel bleeding into a sprite's edge, a ground tile on the wrong
   cell, a mark over her head in the wrong place?** Same record.
-- **Start a run from the title, on the desktop and on the phone.** The city is hidden until
-  the camera is on her at the doorstep, so the two frames the picture warm-up awaits during
-  boot no longer draw the map's top-left corner. **Is the flash gone, and does the title screen
-  still show what it showed?** Record is `DECISIONS.md`, M151, the city stays hidden until the
-  camera is on her.
+- **Start a run from the title, on the desktop and on the phone.** A camera stands on the
+  doorstep before the picture warm-up awaits during boot, so the first frames draw what the
+  title screen shows rather than the map's top-left corner or black. **Is the corner gone,
+  with no blank frame in its place, and does the title screen still show what it showed?**
+  Record is `DECISIONS.md`, M151, the first frame draws the doorstep.
 - **Walk a minute of day 1 on the laptop with `--debug --spikes` and read the `spike` lines
   back.** Every picture is loaded before the day starts now and the halo's shader is compiled
   before play, and the laptop still draws a 24 to 26 ms frame every second at 85 to 91 fps
@@ -66,7 +68,9 @@ item below for as long as looking takes.
   (`Tuning.ROUTE_KERB_TINT_ALPHA`): **is it invisible, too obvious and on the nose, or somewhere
   between that guides without being read as a hint?** And where a costly thing stands on the
   route with its amber caret up, does the yellow curbstone read as part of the warning? Record
-  is `DECISIONS.md`, M145, the route's curbs.
+  is `DECISIONS.md`, M145, the route's curbs. Since M150 the tint follows the tree's own pavement rather than the whole street: **is
+  the tint on one pavement only where the route walks one, and is it the one the purple
+  route line (`5`) runs along?** Record is `DECISIONS.md`, M150.
 - **Turn on `5` on seed 2128084176, day 1, and follow every purple line with your eyes.** The
   tree grows on a graph with no carriageway cell but the junctions' and none of the main
   road's, and the doorstep connector is drawn along the street now rather than as a straight

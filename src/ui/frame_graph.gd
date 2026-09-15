@@ -1,23 +1,36 @@
 class_name FrameGraph
 extends Control
 ## The last `FRAME_GRAPH_FRAMES` frames' own lengths as a rolling bar graph, under the developer
-## readout — key `4`, the same one that toggles `_status`. See docs/TELEMETRY.md, "The debug
-## view", and docs/playtests/PLAYTEST-75.md, "A rolling graph of frame times": the readout's
-## `process`/`physics` lines are the engine's own once-a-second worst (M138, what those lines
-## measure), so a stutter reads as a number a second late and nothing on screen shows the frames
-## themselves. This draws them.
+## readout — its own debug layer, key `6`, independent of `4` (the readout's own switch). See
+## docs/TELEMETRY.md, "The debug view", and docs/playtests/PLAYTEST-75.md, "A rolling graph of
+## frame times": the readout's `process`/`physics` lines are the engine's own once-a-second worst
+## (M138, what those lines measure), so a stutter reads as a number a second late and nothing on
+## screen shows the frames themselves. This draws them.
 ##
 ## **Fed from `_process`'s own `delta`, never from `Performance`.** `FrameCost` reads the engine's
 ## per-second maximum, which cannot say *which* frame in that second was the long one; a bar graph
 ## exists to answer exactly that, so it needs the frame's own length, not a number that already
 ## discarded 239 of the last 240 readings before this class ever saw them.
 ##
-## **Gated exactly as the readout is, and no tighter — `main._add_frame_graph()` builds this only
-## while `_debug or _readout_requested` holds, and `visible` follows `_status.visible` everywhere
-## it changes (`main._set_readout_visible()`).** `push()` also checks `visible` itself, the same
+## **Built where the readout is, shown on its own switch.** `main._add_frame_graph()` builds this
+## only while `_debug or _readout_requested` holds — the same gate the readout's own text answers
+## to — but `visible` is `main._layer_graph_on and not main._in_the_title` from there on: off by
+## default, `true` at boot when `--spikes` was asked for or `--layers` names `6`, and flipped by the
+## `6` key (`main._toggle_debug_layer()`) whatever `4` does to the readout beside it. *(2026-09-15,
+## the player: "spike view should be independent of debug layer 4 it should be its own debug layer
+## and turned off by default unless --spikes is set".)* The title screen is a different question
+## from `4` — it hides every statement about a player who is not there, this graph included — so
+## `main._open_the_title()` and `main._on_title_start()` set `visible` directly too, without
+## clearing the ring the way a `6` toggle-off does. `push()` also checks `visible` itself, the same
 ## belt-and-suspenders `main.gd`'s own comments describe for the readout's text: a caller that
 ## somehow pushed while hidden must still cost nothing rather than quietly warming a ring nobody
 ## can see.
+##
+## **Turning the layer off empties the ring**, through `clear()`, called from
+## `main._toggle_debug_layer()` — *(2026-09-15, the player: "spike recording should only be on
+## while the layer is on. that means toggling the layer twice will lead to a blank frame
+## array".)* so `6` twice leaves a blank graph that fills again only from that moment, rather than
+## a window that silently skipped whatever time the layer spent off.
 ##
 ## Plain shapes on a `Control`, not a picture — see the **cues** skill, "A picture is an asset,
 ## never code", which names a debug overlay alongside a scrim as the two things that rule does not
@@ -73,7 +86,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 ## Records one frame's length (seconds, `_process`'s own `delta`) and asks for a redraw. A no-op
-## while `not visible` — no ring fed, no redraw queued — so a graph the `4` key has turned off (or
+## while `not visible` — no ring fed, no redraw queued — so a graph the `6` key has turned off (or
 ## one a release page never built) costs nothing beyond the one property read.
 func push(delta: float) -> void:
 	if not visible:
@@ -84,6 +97,18 @@ func push(delta: float) -> void:
 	if _deltas.size() > FRAME_GRAPH_FRAMES:
 		_deltas.pop_front()
 		_classes.pop_front()
+	queue_redraw()
+
+## Empties the ring and its classes. Called from `main._toggle_debug_layer()` when the `6` key
+## turns the layer off, so a graph switched off and back on again starts from blank rather than
+## from whatever the window held before it stopped being fed — nothing was pushed while it was
+## hidden, but what it held *before* going hidden would otherwise still be there to draw once it
+## is shown again. `queue_redraw()` too: the next time this becomes visible, `_draw()` must not
+## paint the picture it had before `clear()` ran, and nothing else calls `queue_redraw()` between
+## now and then unless `push()` does.
+func clear() -> void:
+	_deltas.clear()
+	_classes.clear()
 	queue_redraw()
 
 ## The window, oldest first — a copy, so a caller cannot reach in and edit the ring this class is

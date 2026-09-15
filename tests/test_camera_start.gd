@@ -1,7 +1,8 @@
 extends RefCounted
-## M151, the map's top-left corner shows for a moment when a run starts — PLAYTEST-76: "when
+## The map's top-left corner must never show for a moment when a run starts — PLAYTEST-76: "when
 ## starting the game I can briefly see the top left of the map." The world's origin is the map's
-## top-left, so any frame drawn before a camera has taken her position shows that corner.
+## top-left, so any frame drawn before a camera has taken her position would show that corner
+## unless something else is already current and looking at the doorstep by then.
 ##
 ## **Only a real boot of `scenes/main.tscn` reaches the frame that matters.** No hand-built rig
 ## gets there: the gap is between `_city.build()` and `_player` existing at all, which is inside
@@ -18,24 +19,27 @@ extends RefCounted
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 
 func run(t) -> void:
-	_test_the_city_is_hidden_until_the_camera_is_on_her(t)
+	_test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t)
 
-## Boots for real, checks the frame the bug lives on, then lets the boot finish and checks the two
+## Boots for real, checks the frame the bug lived on, then lets the boot finish and checks the two
 ## frames PLAYTEST-76's own entry named as candidates: the first with the run started, and the
-## first after the title's disc is pressed. Both already hold once the city's own visibility is
-## the only thing standing between a viewer and the world's default, camera-less transform.
-func _test_the_city_is_hidden_until_the_camera_is_on_her(t) -> void:
+## first after the title's disc is pressed.
+func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t) -> void:
 	var saved := _save_game_state()
 	var main: Node2D = MAIN_SCENE.instantiate()
 	t.add_child(main)
 
 	# The suspended point. `_player` is only built after `_warm_the_pictures()` returns, so no
-	# `Camera2D` exists yet — confirming this is really the gap the doc above describes, not a
-	# coincidence of timing.
+	# camera of *hers* exists yet — confirming this is really the gap the doc above describes, not
+	# a coincidence of timing. `_new_boot_camera()` stands in for her: the viewport's own current
+	# camera should already be on the doorstep, the same ground the title screen will show.
 	t.check(main._player == null,
-			"no camera exists yet at the point the first frame would be drawn from")
-	t.check(main._city != null and not main._city.visible,
-			"so the city stays hidden rather than drawing from the world's default transform, "
+			"no player camera exists yet at the point the first frame would be drawn from")
+	var boot_camera := main.get_viewport().get_camera_2d()
+	t.check(boot_camera != null, "a camera is already current before she exists")
+	t.check(boot_camera.get_screen_center_position().distance_to(
+				main._city.map.doorstep_world_position()) < Tuning.TILE_SIZE,
+			"and it is already looking at the doorstep rather than the world's default transform, "
 			+ "which puts its own top-left corner on screen")
 
 	# Resume both awaits by hand. Nothing later in `_ready()` awaits anything else, so the player,
@@ -43,7 +47,6 @@ func _test_the_city_is_hidden_until_the_camera_is_on_her(t) -> void:
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
 
-	t.check(main._city.visible, "and is shown again the instant she is placed on it")
 	var her_position: Vector2 = main._player.global_position
 	t.check(main._player.camera_screen_center().distance_to(her_position) < Tuning.TILE_SIZE,
 			"on the first drawn frame with the run started, the camera is already within a tile "

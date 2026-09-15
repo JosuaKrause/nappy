@@ -97,3 +97,21 @@ Said on 2026-09-15 of M151's fix, which hides the city until the day's placement
 camera on her. Overturned: the two boot frames before her camera exists should draw what the
 title will show, the doorstep, rather than nothing. M151 reopened in `TODO.md` with that
 design; its record in `DECISIONS.md` stands as what was built first.
+## The spike view is its own layer
+
+> "also, spike view should be independent of debug layer 4 it should be its own debug layer
+> and turned off by default unless --spikes is set"
+
+Said on 2026-09-15. The spike view is the rolling frame-time graph M148 put under the
+readout, drawn and toggled with the readout on the `4` key. Decided: it is a debug layer of
+its own, on its own key, off by default, and on from the start when `--spikes` is set. Filed
+as M153 in `TODO.md`.
+
+> "and spike recording should only be on while the layer is on. that means toggling the layer
+> twice will lead to a blank frame array"
+
+Said a minute later. The graph's ring of frame lengths is fed only while its layer is on and
+is emptied when the layer goes off, so turning it off and on again starts from an empty graph.
+Added to M153. The run log's own `spike` line stays on `--spikes` alone, as M144 decided it,
+since the sentence is about the view's recording and not the log's; that reading is written in
+the entry so it can be overturned.
