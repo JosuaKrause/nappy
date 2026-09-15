@@ -320,6 +320,37 @@ such numbers — three columns of which one is a measurement. Every phone readin
 
 ---
 
+## M150 — The tint follows the pavement the route walks, not the whole street · asked for 2026-09-15
+
+> "why is the yellow tint on both sides? clearly the bottom path cannot be on any route."
+
+[PLAYTEST-76](playtests/PLAYTEST-76.md). The **city** rule governs; the tint's colour and
+alpha are M145's trial and unchanged here. What is true today: `City._tint_the_route_kerbs()`
+tints a kerb tile when `Corridor.of(_tree).depth(tile) == 0`, and `Corridor.depth()` answers
+through `StreetNetwork.segment_containing(tile)` at the grain of the whole street, so both
+pavements of every street on the tree are tinted — M145's entry chose that grain, and the
+still says it reads wrong: the far pavement is across a carriageway the route never crosses
+mid-block (M129, the fourth rule). The tree itself knows the side. It grows on the
+reachability grid's two-tile cells; a street's six tiles are a pavement cell, a road cell and
+a pavement cell; the mid-block road cells are off its graph; so `RouteTree.branches_on(tile)`
+is non-empty exactly on the pavement a route walks, and on junction cells, where no tile has
+a kerb (`GroundTiles._sidewalk_variant`).
+
+- [ ] **Tint a kerb tile only when the tree carries it.** In `_tint_the_route_kerbs()`,
+      `not _tree.branches_on(tile).is_empty()` in place of the corridor's depth; `Corridor`
+      untouched, since its street grain is what every placement rule is stated in. The routes
+      suite's tint check (`tests/test_routes.gd`, the one asserting the tinted cells are exactly
+      the kerb tiles at depth zero) becomes: exactly the kerb tiles the tree carries — and, the
+      new assertion, a street with both kerb lines tinted has tree cells on both its pavements.
+      `docs/CITY.md`'s tint sentences say the tint follows the tree's own pavement. Evidence:
+      M145's two stills again (`tools/shot.sh out.png 4 --seed 3265820891 --day 1 --walk 2s
+      --debug`, once with `--layers 5` so the purple line lies over the tint and once without),
+      under `evidence/m150-tint-route-side-2026-09-15/`. `REVIEW.md`'s M145 item gains the
+      question: is the tint on one pavement only now, and is it the one the purple line runs
+      along.
+
+---
+
 ## M129 — A path through the city never has to cost · the four rules built 2026-09-14, one question open
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable

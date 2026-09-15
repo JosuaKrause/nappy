@@ -165,6 +165,15 @@ func _ready() -> void:
 	_city = CITY.instantiate()
 	add_child(_city)
 	_pauses_with_the_game(_city)
+	# Hidden until `_start_day()` has put her on the doorstep and the camera is on her — see that
+	# function's own reveal, and `_open_the_title()`'s doc for why the city has to be visible again
+	# by the time either screen draws. Without this, the two awaited frames in
+	# `_warm_the_pictures()` below draw the built city from the viewport's default identity
+	# transform, since no `Camera2D` exists yet — see `_warm_the_halo_shader()`'s own doc on why
+	# that transform puts world origin on screen. World origin is the map's top-left corner, so
+	# those frames briefly show it: *"when starting the game I can briefly see the top left of the
+	# map"* (PLAYTEST-76).
+	_city.visible = false
 	var elapsed := Time.get_ticks_msec()
 	_city.build(CityGenerator.generate(GameState.run_seed))
 	print("[Main] city generated in %d ms (seed %d)" % [
@@ -945,6 +954,10 @@ func _start_day() -> void:
 	_resistance.start_day(GameState.day, GameState.day_rng(GameState.day, "resistance"),
 			DevRig.day_length(GameState.day))
 	_player.reset_at(start_at)
+	# The camera is on her the instant `reset_at()` returns, so nothing further is drawn before it
+	# is — see `_ready()`'s own hide for why this was `false` since boot. Every day after the
+	# first finds it already `true`, so this is a no-op rather than a repeated flash.
+	_city.visible = true
 	_baby.reset()
 	_day.start(DevRig.day_length(GameState.day))
 
