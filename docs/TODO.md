@@ -463,48 +463,6 @@ one stride between about-faces. The player keeps the leaving and takes out the p
 
 ---
 
-## M148 — A rolling graph of frame times on the readout · asked for 2026-09-14
-
-> "I would expect there to be an overlay that shows the last x frames of frame times in a
-> rolling window" — "hmm, I don't see a graph showing the history of the fps / spikes"
-
-[PLAYTEST-75](playtests/PLAYTEST-75.md). The **cues** rule governs `src/ui/`; this is a debug
-overlay, not a danger cue, but its colours come from the vocabulary rather than beside it.
-What is true today: the readout is text, its `process` and `physics` lines are the engine's
-per-second worst (`DECISIONS.md`, M138, what the readout's lines measure), `FrameCost.sample`
-keeps one second of those, and the observer keeps every frame's delta but writes only the
-worst per second (`frame`) and, under `--spikes`, the one outlier per second (M144). Nothing
-on screen shows the frames themselves, so a stutter is a number a second late rather than a
-bar where it happened.
-
-- [ ] **`FrameGraph`, the last frames' lengths as bars, under the readout.** A `Control` in
-      `src/ui/frame_graph.gd` on the readout's own `CanvasLayer` beside `_status`, gated exactly
-      as the readout is — assembled only while `_debug or _readout_requested` holds and shown
-      with `_layer_readout_on`, so `4` toggles both and a release page nobody asked `?debug=1`
-      of has neither. It keeps a ring of the last `FRAME_GRAPH_FRAMES` (240) frame deltas, fed
-      from `_process`'s own `delta` (the frame's actual length, not the engine's per-second
-      numbers), and redraws every frame it is visible: one bar per frame, one design pixel
-      wide, newest at the right, in a 240 by 48 design-pixel box, height scaled so 33.3 ms
-      reaches the top and anything longer clips; two thin reference lines at 16.7 and 33.3 ms
-      with a two-character label each; the window's mean as a thin line. A bar longer than
-      twice the window's mean is `Palette.MARK_COSTLY`, longer than 33.3 ms `Palette.MARK_LETHAL`,
-      the rest the readout's own text colour at half alpha — the vocabulary's two colours in
-      their own sense, *costly* and *the frame is gone*. Placed directly under the readout
-      block's last line, left-aligned with it; on a phone it must not cross the right focus
-      ring the readout already touches (`DECISIONS.md`, M139, the phone reading, "the readout
-      crosses the right focal ring") — if the block's bottom lands on the ring, the graph goes
-      above the block instead, and the commit says which. Costs nothing while off: no ring fed,
-      no redraw. A test in a new `tests/test_frame_graph.gd` feeds the ring by hand: after more
-      than 240 pushes only the last 240 remain, the mean is the window's, a frame past twice the
-      mean is classed costly and one past 33.3 ms lethal, and a hidden graph classes nothing.
-      `docs/TELEMETRY.md`'s "The debug view" says what `4` now shows and what the bars, lines
-      and colours mean; `README.md` where it names the readout. Evidence: one desktop still,
-      `tools/shot.sh out.png 4 --seed 3265820891 --day 1 --walk 3s --debug`, showing the graph
-      under the block; no burst. `REVIEW.md`, in the same PR: on the laptop, is the 24 ms frame
-      a visible bar most seconds, and does the graph fit and read on the phone.
-
----
-
 ## M129 — A path through the city never has to cost · asked for 2026-09-13
 
 > "also framing from a different point of view a path through the city must never hit

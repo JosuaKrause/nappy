@@ -26,6 +26,7 @@ src/dev/dev_flags.gd's own DEV_FLAG_TABLE, so this list cannot go stale on its o
 
   tools/run.sh --seed 12345
   tools/run.sh --day 9 --overview
+  tools/run.sh -- --debug --spikes    # a bare -- as the first argument is accepted and dropped
 
 flags:
 $(dev_flag_usage_lines)
@@ -37,6 +38,16 @@ for arg in "$@"; do
         --help|-h) usage; exit 0 ;;
     esac
 done
+
+# A bare `--` as the first argument -- the end-of-options marker Godot's own command line uses
+# (`godot --path . -- --seed 1`) and the form the docs quote -- is accepted and dropped, so a
+# habit carried over from launching the engine by hand is not an "unknown dev flag". It means
+# what it means everywhere else: everything after it is a forwarded flag, so it is only legal
+# here at the front, and a `--` anywhere later is rejected like any other unknown word. Godot
+# gets exactly one `--`, the one this script puts in front of the flags.
+if [[ $# -gt 0 && "$1" == "--" ]]; then
+    shift
+fi
 
 if [[ $# -gt 0 ]] && ! validate_dev_flags "$@"; then
     echo >&2

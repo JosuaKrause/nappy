@@ -545,6 +545,24 @@ build has nothing in `project.godot` to reach:
   reports what it has rather than a zero that would read as free. `line()` itself is unchanged: it
   already writes once a second, at the interval the mean covers, so a mean over that same second
   would be no different a number.
+
+  **A rolling bar graph of the last 240 frames' own lengths sits directly under the readout's own
+  block, toggled by the same `4` key** (`FrameGraph`, `src/ui/frame_graph.gd`) — what `process` and
+  `physics` cannot show, since both are the engine's own once-a-second worst (M138, above) and
+  cannot say *which* frame in that second was the long one, or what the fourteen ordinary frames
+  around it looked like. Fed from `main._process`'s own `delta`, not from `FrameCost`, because a
+  number that already discarded 239 of the last 240 readings cannot be un-discarded. One bar per
+  frame, one design pixel wide, newest at the right, in a 240 by 48 design-pixel box: height
+  scaled so a 33.3ms (30fps) frame reaches the top and anything longer clips, with two thin
+  reference lines at 16.7ms (labelled `60`) and 33.3ms (labelled `30`) and a third, unlabelled
+  thin line at the window's own mean. A bar longer than twice that mean is amber
+  (`Palette.MARK_COSTLY`), longer than 33.3ms is deep red (`Palette.MARK_LETHAL`) — the same two
+  colours the caret, the badge and the `1` fields layer above already use, so this reads as the
+  vocabulary the game already has rather than a third meaning for the same two colours — and every
+  other bar is the readout's own text colour at half alpha. Gated exactly as the readout is: built
+  only while `_debug or _readout_requested` holds, so a release page nobody asked `?debug=1` of has
+  neither the text nor the graph, and nothing is pushed into its ring or redrawn while the `4` key
+  has hidden it.
 - **`5` the day's routes** — one purple polyline per route the day's `RouteTree` offers, doorstep
   to calm area, over the centres of the two-tile reachability cells the tree actually grew on
   (`ReachabilityGrid`, docs/DECISIONS.md M69) rather than individual tiles — the tree keeps no

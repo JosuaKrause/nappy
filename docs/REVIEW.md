@@ -21,6 +21,12 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Walk a minute of day 1 on the laptop with `--debug` and watch the graph under the
+  readout, then the same on the phone with `?debug=1`.** Each bar is one frame's length, newest
+  at the right, 240 frames wide; the lines are 60 and 30 fps and the window's mean; amber is a
+  frame past twice the mean and red one past 33 ms. **Is the 24 ms frame there as an amber bar
+  most seconds on the laptop, and on the phone does the graph fit under the block and read at
+  all?** Record is `DECISIONS.md`, M148, a rolling graph of frame times.
 - **Walk a minute of day 1 on the laptop with `--debug --spikes` and read the `spike` lines
   out of the run log** (`tools/telemetry.sh`, or the run folder printed at boot). Each names
   the one frame in its second that ran past twice the mean, and what changed since the frame

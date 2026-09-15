@@ -68,6 +68,14 @@ if [[ $# -gt 0 && "$1" != --* ]]; then
     fi
 fi
 
+# A bare `--` right after the two positionals -- the end-of-options marker Godot's own command
+# line uses and the form the docs quote -- is accepted and dropped: everything after it is a
+# forwarded flag, so it is only legal at the front of the flags, and a `--` anywhere later is
+# rejected like any other unknown word. Godot gets exactly one `--`, the script's own.
+if [[ $# -gt 0 && "$1" == "--" ]]; then
+    shift
+fi
+
 if [[ $# -gt 0 ]] && ! validate_dev_flags "$@"; then
     echo >&2
     usage >&2
