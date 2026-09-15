@@ -89,3 +89,15 @@ path through the city never has to cost, carries the item *mid-block crossings a
 counted on* — the route tree grows on the reachability grid's cells and crosses a carriageway
 mid-block about three times per route today, and the item is a change to how the corridor is
 grown, with the probe's own mid-block count as its test. Not yet built.
+
+## A rolling graph of frame times
+
+> "hmm, I don't see a graph showing the history of the fps / spikes"
+> "I would expect there to be an overlay that shows the last x frames of frame times in a
+> rolling window"
+> "not sure what you thought that would be"
+
+Said on 2026-09-14, on the `--spikes` branch. What "spike line" was built as is a line in the
+run log (M144); what the player meant by it was a graph on screen. Filed as M148 in
+`TODO.md`: an overlay under the readout drawing the last frames' own lengths as a rolling
+window, the spikes marked.
