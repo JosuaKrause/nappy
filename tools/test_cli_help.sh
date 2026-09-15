@@ -33,9 +33,11 @@ trap 'rm -rf "$work_dir"' EXIT
 # script that is supposed to reject its input before ever launching Godot actually did.
 GODOT_MARKER="$work_dir/godot-invoked"
 GODOT_STUB="$work_dir/godot-stub.sh"
+GODOT_ARGS="$work_dir/godot-args"
 {
     echo '#!/usr/bin/env bash'
     printf 'touch %q\n' "$GODOT_MARKER"
+    printf 'printf "%%s\\n" "$@" > %q\n' "$GODOT_ARGS"
     echo 'exit 0'
 } > "$GODOT_STUB"
 chmod +x "$GODOT_STUB"
@@ -108,6 +110,36 @@ assert_exit "stats.sh --bogus"        nonzero ./tools/stats.sh --bogus
 assert_exit "telemetry.sh --bogus"    nonzero ./tools/telemetry.sh --bogus
 assert_exit "clip.sh --bogus"         nonzero ./tools/clip.sh --bogus
 assert_exit "reference.sh --bogus"    nonzero ./tools/reference.sh --bogus
+
+# A bare `--` before the flags -- Godot's own separator, and the form the docs quote -- is
+# accepted by run.sh and shot.sh and dropped before forwarding, so the stub sees the flags and
+# exactly one `--` (the script's own). Launching the stub is the expected outcome here.
+assert_launch() {
+    local label="$1"
+    shift
+    checks=$(( checks + 1 ))
+    rm -f "$GODOT_MARKER" "$GODOT_ARGS"
+    local out status
+    out="$("$@" 2>&1)"
+    status=$?
+    if [[ "$status" -ne 0 || ! -f "$GODOT_MARKER" ]]; then
+        echo "FAIL $label: expected a launch and exit 0, got $status" >&2
+        printf '%s\n' "$out" | sed 's/^/    /' >&2
+        failures=$(( failures + 1 ))
+        return
+    fi
+    local dashes
+    dashes="$(grep -c -x -- '--' "$GODOT_ARGS")"
+    if [[ "$dashes" -ne 1 ]] || ! grep -q -x -- '--overview' "$GODOT_ARGS"; then
+        echo "FAIL $label: Godot got $dashes bare '--' (want 1) or lost --overview" >&2
+        sed 's/^/    /' "$GODOT_ARGS" >&2
+        failures=$(( failures + 1 ))
+        return
+    fi
+    echo "ok   $label"
+}
+assert_launch "run.sh -- --overview (separator dropped)" ./tools/run.sh -- --overview
+assert_launch "shot.sh ... -- --overview (separator dropped)" ./tools/shot.sh "$work_dir/shot-sep.png" 1 -- --overview
 
 # A run.sh / shot.sh dev flag missing its required value is the other rejected shape -- checked
 # once each here since lib_dev_flags.sh's own arity handling already has a focused smoke test in

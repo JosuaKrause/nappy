@@ -68,6 +68,16 @@ if [[ $# -gt 0 && "$1" != --* ]]; then
     fi
 fi
 
+# A bare `--` -- the end-of-options marker Godot's own command line uses (`godot --path . --
+# --seed 1`) and the form the docs quote -- is accepted anywhere and dropped, so a habit carried
+# over from launching the engine by hand is not an "unknown dev flag". Godot gets exactly one
+# `--`, the one this script puts in front of the flags.
+_forwarded=()
+for arg in "$@"; do
+    [[ "$arg" == "--" ]] || _forwarded+=("$arg")
+done
+set -- ${_forwarded[@]+"${_forwarded[@]}"}
+
 if [[ $# -gt 0 ]] && ! validate_dev_flags "$@"; then
     echo >&2
     usage >&2
