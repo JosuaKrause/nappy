@@ -66,13 +66,19 @@ one, and they are tested differently:
   camera's smoothing runs per frame — her jitter against a smooth view, the same shape M141
   (the physics tick at thirty) names, and the reason that milestone turns physics
   interpolation on. The M141 release is the test: if her walk reads smooth there, this was it.
-- **A hitch once a second.** A 16 to 24 ms frame in every second at 90 to 110 fps is a frame
-  two to three times its neighbours, once a second, and the one thing this project does on a
-  one-second cadence is the telemetry observer's own `frame` note, written to the run log.
-  Not established: the probe is a desktop run with `--no-telemetry` reading the readout's
-  `process` line, which is the engine's own number and needs no observer — if the worst frame
-  drops to the frame's own length, the note was the hitch; if it stays, something else keeps
-  the cadence. Asked in `REVIEW.md`.
+- **A hitch of about 24 ms in most seconds, and it is not the observer.** A 16 to 24 ms
+  frame in every second at 90 to 110 fps is a frame two to three times its neighbours, and
+  the one thing this project does on a one-second cadence is the telemetry observer's own
+  `frame` note, so that was the first suspect. Ruled out the same evening: under
+  `--no-telemetry --debug` (playtest 75, the hitch without the observer) the readout's
+  `process last` — the engine's own longest frame of the previous second, needing no observer
+  — read 24.0 and 24.4 ms at 87 and 103 fps, and 11.5 at 119 fps in one second with no hitch.
+  What is left is a frame of a remarkably constant length, about 24 ms on this machine, in
+  most seconds but not all, on a cadence nothing has measured, with `physics` at 1.6 to 2.0
+  throughout. The engine's per-second maximum cannot say when it happens or what ran in it;
+  the probe that would is M144, a spike line in the run log naming every frame more than
+  twice its neighbours and what the game did in it, and the editor's profiler is the tool
+  for a person sitting at the machine.
 
 ## M140 — The phone reading · measured 2026-09-14
 

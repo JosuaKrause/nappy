@@ -28,3 +28,18 @@ second the day ran at 85 to 112 fps. What those numbers are, and what the two ca
 causes of the stutter are, is read in `DECISIONS.md`, M138, what the readout's `process` and
 `physics` lines measure. The readout fix is M143 in `TODO.md`; the smoothness question goes to
 the physics-tick release, M141.
+
+## The hitch without the observer
+
+> "I tried with no telemetry (manual screenshot) but I'm not sure I actually captured any
+> stutters (I did see them)"
+
+Three desktop screenshots of the same build under `--no-telemetry --debug`, seed 555797753,
+day 1, running; `evidence/playtest-75-desktop-stutter-2026-09-14/no-telemetry/`, named by
+the `fps` and the `process last` they read. They did capture it: `process last` is the
+longest frame of the previous second, and two of the three read 24.0 and 24.4 ms at 87 and
+103 fps — the same 24 ms every second of the telemetry run read — while the third read 11.5
+at 119 fps, a second with no hitch in it. So the observer's log write is not the hitch, and
+whatever is, it makes a frame of about 24 ms in most seconds and none in some. Read in
+`DECISIONS.md`, M138, what the readout's `process` and `physics` lines measure; the probe
+that would find it is M144 in `TODO.md`.

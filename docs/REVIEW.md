@@ -21,17 +21,6 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
-- **Walk day 1 on the laptop with `--no-telemetry --debug` and read the readout's `process`
-  line off the screen** (any seed). `--no-telemetry` stops only the run log and its observer;
-  the readout stays, fed by the engine's own monitors, and its `process  last` is the engine's
-  longest process interval of the previous second, render submit included, refreshed once a
-  second. With the observer running, playtest 75 read 16 to 24 ms there in every second at 85
-  to 112 fps — a frame two to three times its neighbours, on a cadence that matches the
-  observer's own once-a-second `frame` note. **Without the observer, does that line fall to
-  about a frame's length, or stay at 16 to 24?** Falls: the note is the hitch. Stays:
-  something else keeps the cadence. There is no log and no `P` screenshot on such a run, so
-  the numbers off the screen, said or photographed, are the record. Record is `DECISIONS.md`,
-  M138, what the readout's `process` and `physics` lines measure.
 - **Cross a region door on foot, from day 7** (`--day 7`; a door is the hut-boom-hut across a
   boundary street). The boom hangs between its posts across the lanes, level with the huts; the
   inspection starts as soon as she stands against the hut; the camera eases from where it was
