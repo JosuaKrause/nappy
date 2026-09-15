@@ -72,3 +72,28 @@ Said on 2026-09-15 of the same session. The world's origin is the map's top-left
 drawn before the camera has taken her position shows that corner. Which frame is not known
 from the code alone — the first after boot, the title's own with the city behind it, or the
 run's first after the disc is pressed. Filed as M151 in `TODO.md`.
+
+## Cars teleport at their turns
+
+> "cars are super buggy now. when they turn in the final stretch the teleport a car length
+> somewhere else. also in some case instead of routing a turn (or u turn) they just teleport."
+
+Said on 2026-09-15 of the desktop build `v0.10.7-85-gd5d784f2`, the main of that moment, after
+the day's six merges: the desktop stutter (M144, M147, M148), the tint trial (M145), the
+standing pocketed agent (M146), the four rules (M129), the boot fix (M151) and the atlases
+(M149). Two shapes: a car turning in its last stretch jumps about a car length, and a car that
+would have routed a turn or a U-turn jumps instead. Neither was reported on the previous day's
+builds. Of the six, two touch the cars: M146 moved the pocket question ahead of the step in
+`CrowdAgent._process` and stops a caught car where it stands, recycling it only past
+`Tuning.OUT_OF_SIGHT` from the field's centre; M149 rebuilt the crowd's atlas on the general
+packer. Filed as M152 in `TODO.md`, a bisection first.
+
+## The first frame draws the doorstep, not black
+
+> "I don't really like blanking out the first frame. can we just position the camera to the
+> home so it will just draw what the title screen will show anyway"
+
+Said on 2026-09-15 of M151's fix, which hides the city until the day's placement has the
+camera on her. Overturned: the two boot frames before her camera exists should draw what the
+title will show, the doorstep, rather than nothing. M151 reopened in `TODO.md` with that
+design; its record in `DECISIONS.md` stands as what was built first.
