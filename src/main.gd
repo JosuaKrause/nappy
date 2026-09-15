@@ -82,6 +82,13 @@ var _route_lines: RouteLines
 ## Set by `_add_debug_mode_note()`, or left `null` when `_readout_requested` is `false` — a test's
 ## own way to check the release shape without a live tree search for the node.
 var _debug_mode_note: DebugModeNote
+## The rolling bar graph of the last frames' own lengths, under `_status`. Set by
+## `_add_frame_graph()`, or left `null` on the same "absent, not merely hidden" terms
+## `_debug_mode_note` is — a release page nobody asked `?debug=1` of never builds it. Every place
+## `_status.visible` changes goes through `_set_readout_visible()`, which keeps this in step with
+## it (`if _frame_graph:`, since it is null on exactly the builds that never call that setter with
+## anything true).
+var _frame_graph: FrameGraph
 ## Whether the developer readout (`_status`) is showing, independent of `_debug`: the fourth
 ## layer `_toggle_debug_layer()` owns, on `_status`'s own pre-existing `CanvasLayer` rather than
 ## under `_debug_layers`, which is not a `CanvasLayer` this label could join. Starts `true`, so an
@@ -132,6 +139,9 @@ func _ready() -> void:
 	# than being gated at the call site, the same shape `_add_debug_layers()` gates itself on
 	# `_debug`. See `_add_debug_mode_note()`'s own doc for why nothing afterwards may remove it.
 	_add_debug_mode_note()
+	# Same reason and the same gate as the note above — the graph has to exist before either boot
+	# path so `_ready_escape()` finds it already built. See `_add_frame_graph()`'s own doc.
+	_add_frame_graph()
 	# `--start-escape` is a different boot entirely — no title, no city, no day — so it branches
 	# before any of the ordinary run's own scaffolding exists. See `_ready_escape()`.
 	if _escape_scene_requested:
@@ -142,7 +152,7 @@ func _ready() -> void:
 	# path that never reaches one of them should still open with the right answer.
 	# `_layer_readout_on` defaults `true`, so this is `_debug or _readout_requested` alone on an
 	# unflagged run — the fourth debug layer starts on, the same as it always has.
-	_status.visible = (_debug or _readout_requested) and _layer_readout_on
+	_set_readout_visible((_debug or _readout_requested) and _layer_readout_on)
 	GameState.start_run(DevFlags.seed_override())
 	# After the run seed is settled and before anything is generated, so the log opens on the
 	# seed it is a trace of. Off with `-- --no-telemetry`; on otherwise, because a trace
@@ -159,6 +169,7 @@ func _ready() -> void:
 	_city.build(CityGenerator.generate(GameState.run_seed))
 	print("[Main] city generated in %d ms (seed %d)" % [
 		Time.get_ticks_msec() - elapsed, _city.map.seed_used])
+	await _warm_the_pictures()
 
 	_player = STROLLER.instantiate()
 	_city.add_entity(_player)
@@ -264,7 +275,7 @@ func _ready_escape() -> void:
 	# release shape without also driving the rest of `_ready()`.
 	if not _escape_scene_requested:
 		return
-	_status.visible = (_debug or _readout_requested) and _layer_readout_on
+	_set_readout_visible((_debug or _readout_requested) and _layer_readout_on)
 	GameState.start_run(DevFlags.seed_override())
 	# Same opt-out and the same reasoning as the ordinary run: a trace behind a flag nobody
 	# remembers to turn on is a trace nobody gets, and `P`/`B` (`_snapshot_now()`/`_start_burst()`)
@@ -272,6 +283,10 @@ func _ready_escape() -> void:
 	# "no drawable viewport" refusal, which is really "no active log", not a rendering question.
 	if not "--no-telemetry" in OS.get_cmdline_user_args():
 		Telemetry.begin_run(GameState.run_seed, _somebody_is_playing())
+	# The second boot entry point `TextureResolver.warm()` has to reach — see `_warm_the_pictures()`
+	# — since the epilogue draws its own pictures (the building's props, the city's events) and is
+	# reached without ever passing through `_ready()`'s own call above.
+	await _warm_the_pictures()
 
 	_hud = HUD.instantiate()
 	add_child(_hud)
@@ -591,7 +606,7 @@ func _open_the_title() -> void:
 	_player.stand_aside()
 	_hud.visible = false
 	_edge_layer.visible = false
-	_status.visible = false
+	_set_readout_visible(false)
 	_title.open(_ending_shown)
 
 ## The title screen has been pressed, which is also the start: hand the city back to the day it
@@ -621,7 +636,7 @@ func _on_title_start(mode: ControlsMode.Mode) -> void:
 	# of build, since `_open_the_title()` always turns it off and this was the only place that
 	# turned it back on. `and _layer_readout_on` so a `4`-toggled-off readout stays off across a
 	# trip through the title rather than snapping back on underneath it.
-	_status.visible = (_debug or _readout_requested) and _layer_readout_on
+	_set_readout_visible((_debug or _readout_requested) and _layer_readout_on)
 	if is_inside_tree():
 		get_tree().paused = false
 
@@ -665,6 +680,53 @@ func _add_excitement_halo() -> void:
 	add_child(_halo)
 	_pauses_with_the_game(_halo)
 
+## M147, "every picture loaded before it is needed": loads every transfer PNG and gets the halo's
+## shared shader compiled before either boot path's own `_start_day()`/`_finale.begin()`, so the
+## first frame that actually needs a picture or a halo never pays for either. Printed beside
+## "city generated in N ms" — the same shape `_plan_the_finale_city()` prints its own line beside
+## — because a phone's longer first load belongs next to the other number that already tells a
+## reader how long the boot took.
+func _warm_the_pictures() -> void:
+	var elapsed := Time.get_ticks_msec()
+	var loaded := TextureResolver.warm()
+	await _warm_the_halo_shader()
+	print("[Main] %d pictures warmed in %d ms" % [loaded, Time.get_ticks_msec() - elapsed])
+
+## Gets the Compatibility renderer to compile the halo's shader program before a real halo ever
+## draws with it. **Godot 4.7 has no precompile call for this renderer** — `RenderingServer`'s own
+## pipeline cache is a Forward+/Mobile (RenderingDevice) feature, and the engine's own proposal
+## tracker still carries "Add shader precompilation to the Compatibility rendering method" as an
+## open request — so the only lever left is a real draw call: a throwaway `Node2D` draws one
+## transparent pixel with `EntityHalo.shared_material()` and is freed the frame after.
+##
+## **At world origin, not off in the distance.** A canvas item outside the camera's visible rect
+## is culled before it reaches the renderer — see M139, "one atlas for the crowd", on why an
+## off-screen `CrowdAgent` costs nothing per frame — and a culled draw would compile nothing,
+## defeating the whole pass. No `Camera2D` exists yet at this point in either boot path (the one
+## in `scenes/player/stroller.tscn` is not built until after this call returns), so the viewport
+## still carries its default identity transform and world origin sits at the corner of the window
+## — on screen, in the renderer's own terms, whatever else has been drawn there this frame. Fully
+## transparent (`halo_colour`'s instance uniform default, never set here) makes it imperceptible
+## regardless: the GLSL program compiles from the material and the draw call alone, never from
+## the pixels it happens to write.
+##
+## **Two awaits, not one.** `SceneTree.process_frame` fires *before* the frame it names is drawn —
+## `DaySummary._acknowledge_and_continue()` confirms this directly against `RenderingServer`'s own
+## `frame_pre_draw`/`frame_post_draw` — so a single await would free the probe before its queued
+## draw ever reached the renderer, and the shader would still compile late, on the first real halo.
+func _warm_the_halo_shader() -> void:
+	var probe := Node2D.new()
+	probe.name = "HaloWarm"
+	probe.position = Vector2.ZERO
+	probe.material = EntityHalo.shared_material()
+	probe.draw.connect(func() -> void: probe.draw_rect(Rect2(Vector2.ZERO, Vector2.ONE), Color.WHITE))
+	add_child(probe)
+	_pauses_with_the_game(probe)
+	probe.queue_redraw()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	probe.queue_free()
+
 ## The one thing `?debug=1` (or `--debug`) adds beyond the readout itself: a fixed note, for the
 ## whole session, that nothing removes — not the `4` key, not a press, not `_open_the_title()`
 ## hiding `_status` around it. **Absent from the tree when `_readout_requested` is `false`**, the
@@ -679,6 +741,34 @@ func _add_debug_mode_note() -> void:
 	_debug_mode_note = DebugModeNote.new()
 	_debug_mode_note.name = "DebugModeNote"
 	add_child(_debug_mode_note)
+
+## The rolling bar graph of the last frames' own lengths — see `FrameGraph`. **Absent from the tree
+## when neither `_debug` nor `_readout_requested` holds**, the same "gated rather than merely
+## hidden" shape `_add_debug_mode_note()` uses: a release page nobody asked `?debug=1` of never
+## builds it, so it never pays for a ring nobody can see. Parented under `_status`'s own
+## `CanvasLayer` rather than under `_debug_layers` — it lives beside the readout, on the readout's
+## own key, not among the four `_debug_layers` keys `1`-`3` and `5` toggle.
+##
+## Left-aligned with `_status` (`offset_left`, 960px in the design box) and placed a fixed 600px
+## below its own top (`offset_top`, 14px): the readout's block gains its 30th line only under
+## `--skip`, and 30 lines at this label's own font size (17px tall, 3px between lines — measured
+## off a headless `Label`, since neither number is exposed as a theme constant) reach about 597px
+## from the block's own top, so a fixed offset clears both shapes with a few pixels to spare
+## instead of re-measuring `_status`'s rendered height every frame for a difference that never
+## exceeds one line. **Below the block, not above it**, because the joystick focus ring `docs/
+## DECISIONS.md` (M139, "the phone reading") already finds under the readout's own lines — a 48px
+## ring centred at y=480 in the same design box reaches no further down than y=528 — comfortably
+## above this box's own top at y=614, so the graph clears the ring by placement rather than by
+## being moved out of its way.
+func _add_frame_graph() -> void:
+	if not (_debug or _readout_requested):
+		return
+	_frame_graph = FrameGraph.new()
+	_frame_graph.name = "FrameGraph"
+	_frame_graph.text_colour = _status.get_theme_color("font_color")
+	_frame_graph.position = Vector2(_status.offset_left, 614.0)
+	_frame_graph.visible = (_debug or _readout_requested) and _layer_readout_on
+	_status_layer.add_child(_frame_graph)
 
 ## The fields, shadows and bounding-box overlays — see `DebugLayers`. **Absent from the tree
 ## outside a debug build**, not merely built and left invisible: `_debug_layers` stays `null`, so
@@ -1058,6 +1148,14 @@ func _process(delta: float) -> void:
 	# since the window is about wall-clock stutter and must keep moving through a pause, a
 	# compressed `--day-length` and `--invincible`'s own frozen day clock alike.
 	FrameCost.sample(Time.get_ticks_msec() / 1000.0)
+	# The bar graph's own ring, fed `delta` itself rather than anything `FrameCost` read above —
+	# `FrameCost` already discarded which frame in the last second was the long one, and the graph
+	# exists to answer exactly that. `if _frame_graph:` because it is `null` under the same
+	# release-page terms `_add_frame_graph()` documents, and because a test that drives
+	# `_process()` directly (`tests/test_main.gd`) without also calling `_ready()` has never built
+	# one either.
+	if _frame_graph:
+		_frame_graph.push(delta)
 	var tile := _city.map.world_to_tile(_player.global_position)
 	if _build_text == "":
 		_build_text = TitleScreen.build_text()
@@ -1238,7 +1336,7 @@ static func _debug_layer_key(event: InputEvent) -> int:
 func _toggle_debug_layer(layer: int) -> void:
 	if layer == 4:
 		_layer_readout_on = not _layer_readout_on
-		_status.visible = (_debug or _readout_requested) and _layer_readout_on
+		_set_readout_visible((_debug or _readout_requested) and _layer_readout_on)
 		return
 	if layer == 5:
 		if _route_lines:
@@ -1246,6 +1344,18 @@ func _toggle_debug_layer(layer: int) -> void:
 		return
 	if _debug_layers:
 		_debug_layers.set_layer(layer, not _debug_layers.layer_on(layer))
+
+## The one place `_status.visible` is actually assigned — every other spot in this file calls this
+## instead, so `_frame_graph` (`null` on a release page nobody asked `?debug=1` of, the same terms
+## `_debug_mode_note` is) can never fall out of step with the label it toggles beside: the fourth
+## debug layer, the title screen hiding both and `_on_title_start()` bringing both back. `if
+## _frame_graph:` rather than asserting it is set, because a test that drives one of these five call
+## sites directly (`tests/test_main.gd`, `tests/test_debug_layers.gd`) is exercising `_status`'s own
+## release shape and has no reason to have built the graph too.
+func _set_readout_visible(shown: bool) -> void:
+	_status.visible = shown
+	if _frame_graph:
+		_frame_graph.visible = shown
 
 ## `P` (or `F9`) writes a screenshot into the telemetry folder and a line of trace beside it. It is
 ## a debugging aid rather than a game feature.

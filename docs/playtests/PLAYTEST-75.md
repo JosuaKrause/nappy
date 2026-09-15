@@ -66,6 +66,13 @@ record says it never suggests a route and there is no cue of any kind toward cal
 whether a hint on the ground can stay under the threshold of being noticed as one — beside
 the guidance through obstacles, and not the way paths are meant to be shown.
 
+> "that is not the curbstone -- it's the sidewalk"
+> "I specifically said *curbstone*"
+
+Said on 2026-09-14 to the first build, which tinted the whole kerb *tile* — the pavement's
+edge tile, paving and all — rather than the curbstone, the strip of stone along the tile's
+road-side edge. Re-opened as M145's correction in `TODO.md`.
+
 ## A pocketed agent stands instead of pacing
 
 > "I get the remove entity when there is no route idea. maybe let's do instead stop the entity
@@ -101,3 +108,57 @@ Said on 2026-09-14, on the `--spikes` branch. What "spike line" was built as is 
 run log (M144); what the player meant by it was a graph on screen. Filed as M148 in
 `TODO.md`: an overlay under the readout drawing the last frames' own lengths as a rolling
 window, the spikes marked.
+
+## A stutter whenever a new picture is shown
+
+> "I feel whenever a new entity/image/sprite is shown there is a visible stutter. this would be
+> an argument *for* a full atlas so sprites don't need to be loaded in late"
+
+Said on 2026-09-14, on v0.10.7. Read against the code the same evening: `TextureResolver`
+loads each picture's PNG transfer from disk the first time that picture is drawn, inside the
+frame, once per distinct picture per run, and the halo's shader is built at the first halo.
+Filed as M147 in `TODO.md`: every picture loaded before the day starts, and the spike line
+naming a late load when one happens. The atlas is recorded as the player's word for when
+draw calls are the cost; the phone reading says they are not yet.
+
+## The stutter branch on the laptop, with every picture warm
+
+> "hmm, burst/screenshots prevent spikes from happening"
+
+Said on 2026-09-14 of a run on the stutter branch (v0.10.7-37, the graph, the warm pass and
+the spike line all present; "86 pictures warmed in 233 ms" at boot), seed 3762731053, day 1,
+with two bursts pressed; the whole run is
+`evidence/playtest-75-desktop-stutter-2026-09-14/run-220628-seed3762731053-v0.10.7-37-gcf305c28/`.
+The log reads the bursts differently from the graph: while a burst records, every frame is 60
+to 76 ms and the second draws 33 to 47 fps, since the capture reads the viewport back each
+frame — so nothing in such a second is twice its mean and the graph colours no bar amber,
+while a frame past 33 ms is still red. Outside the bursts the seconds read 85 to 91 fps with
+a worst frame of 24 to 26 ms in every one of them, the same frame playtest 75 read on
+v0.10.6 — so with every picture loaded before the day, the laptop's once-a-second hitch is
+still there and the late loads were not it. Read in `DECISIONS.md`, M147, every picture
+loaded before it is needed.
+
+## Atlases by group, loaded before they are drawn
+
+> "so I think the correct strategy is to pack together graphics into atlases and load/unload
+> atlases in a clever way so it happens while the things that will get drawn haven't been
+> drawn yet (so the graphics can be properly loaded asynchronously). for example all head
+> indicators should be in one atlas and loaded together (zzz and the exclamation sign and the
+> tildes etc.). at least all 8 directions of an entity should be in one atlas. since entities
+> spawn off screen their graphics can be loaded before they will be visible"
+
+Said on 2026-09-14, on the reading above. Filed as M149 in `TODO.md` with what the code says
+about its premise: an entity's pictures are imported SVG rasters preloaded with its script at
+boot, so no entity picture was ever loaded late; the late loads were the prop, rig and ground
+transfers, warm since M147; and the laptop's hitch outlived that. The question of whether to
+build it is put to the player there.
+
+## The route grower's graph
+
+> "why not just remove the street tiles and main street blocks from the graph entirely?"
+
+Said on 2026-09-14 while M129's four rules were being built, for the fourth: mid-block
+crossings are not counted on. The construction it names — the tree grows on a graph with no
+carriageway cell but the junctions' and no main-road cell at all — was handed to the agent on
+that branch as the way to build the rule, with the reachability grid the winnability and
+closure guarantees are stated over left as it is.

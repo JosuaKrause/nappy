@@ -320,131 +320,34 @@ such numbers — three columns of which one is a measurement. Every phone readin
 
 ---
 
-## M144 — The 24 ms frame, found · asked for 2026-09-14
+## M149 — Atlases by group, loaded before they are drawn · asked for 2026-09-14, waiting on an answer
 
-[PLAYTEST-75](playtests/PLAYTEST-75.md), the hitch without the observer, and `DECISIONS.md`,
-M138, what the readout's `process` and `physics` lines measure. The laptop draws a frame of
-about 24 ms in most seconds at 87 to 119 fps, two to three times its neighbours, with the
-observer off and `physics` under 2 ms; the engine's per-second maximum says it happens and
-nothing says when or what ran in it. The player sees it as stutter. This is a probe, not a
-fix: it is not known whether the frame is the game's (a scan, a rebuild, a spawn, a
-`queue_redraw` storm) or the platform's (the compositor, a swap), and the M141 release,
-which changes what the physics tick and the camera do per frame, may move it.
+> "pack together graphics into atlases and load/unload atlases in a clever way so it happens
+> while the things that will get drawn haven't been drawn yet … all head indicators should be
+> in one atlas and loaded together … at least all 8 directions of an entity should be in one
+> atlas. since entities spawn off screen their graphics can be loaded before they will be
+> visible"
 
-- [ ] **A `spike` line in the run log for every frame more than twice the running frame
-      length.** The observer already measures every frame's delta for `worst frame`; a frame
-      whose delta exceeds twice the mean of the last second's gets one line — the second it
-      fell in, its length, the mean beside it, and what the game did in that frame that it
-      does not do in every frame: her tile changing, an event placed or retired, a crowd
-      recycle count, a pockets refresh, a debug-layer redraw, a `_status` rebuild — whatever
-      the observer can read without a hook in a gameplay class (the **telemetry** rule: no
-      per-frame check inside a gameplay class; the observer reads state). **Behind its own
-      flag, off by default** — *(2026-09-14: "make that toggleable separately though since it
-      can be quite noisy")* — `--spikes`, a dev flag in `DevFlags` beside the others under the
-      **cli-tools** rule (on `--help`, rejected when misspelled, one place the list lives),
-      honoured only while telemetry is active, since the line has nowhere to go otherwise. A
-      rate limit even so, so a slow machine cannot fill the log: at most one line a second,
-      the worst of that second. `docs/TELEMETRY.md` gets the entry in its table and the flag
-      beside `--no-telemetry`; `README.md`'s flag table gets the row. The test drives the
-      observer's own spike test with a fed delta series and asserts one line for the spike
-      and none for the steady frames, and none at all with the flag off. No evidence: the
-      line is read on the player's machine, not a rig's.
+[PLAYTEST-75](playtests/PLAYTEST-75.md). The design as asked: one atlas per group — the head
+indicators (`alert.svg`, `baby_zzz.svg` and the pram's states over the player; the caret and
+the tildes), and per entity family every view and stride frame in one atlas, the shape
+`CrowdAtlas` already gives the crowd (`DECISIONS.md`, M139) — packed ahead of time rather than
+at first use, loaded off the main thread (`ResourceLoader.load_threaded_request`) when the
+first entity of a family is placed, which is off screen by construction (M77, everything
+arrives from off screen), and unloaded when no entity of the family remains.
 
----
-
-## M145 — The route's curbs, tinted faint yellow · asked for 2026-09-14, an experiment
-
-> "can we tint the curbstones that belong to a path slightly yellow? to give a faint hint on an
-> optimal path. I just want to try it out. this is in addition to the environmental guidance
-> through obstacles. it should be faint as to more subconciously guide as well"
-
-[PLAYTEST-75](playtests/PLAYTEST-75.md). The **city** rule governs the ground; the **cues**
-rule governs any colour that reads as a signal, and yellow is the family of the caret's amber
-(`Palette.MARK_COSTLY`, *worth going round*), which this must stay far enough below to be a
-cast rather than a mark.
-
-**What it overturns, and that it is an experiment.** `docs/CITY.md`, "Guiding her to the
-calm", says *there is no cue of any kind toward calm — no marker, no map, no HUD line, nothing
-on the ground*, and its summary is *the city permits routes to calm and protects them from
-becoming impossible; it never suggests one* (also `RouteTree`'s own class doc). This is not
-that rule overturned: *"I don't really want it to be how we show paths but I want to assess
-whether it can be done without being too obvious and on the nose"* (2026-09-14). The trial's
-question is the threshold — whether a hint on the ground can stay below being noticed as one
-— and the answer is what gets kept, not the tint. The guidance through obstacles (M129, a path
-through the city never has to cost) stands beside it, not under it. Those `CITY.md` sentences
-are rewritten in the same PR to say what is true with the tint on, and this entry's record
-in `DECISIONS.md` says it was a trial so it can be taken out on one sentence from the player.
-
-**What "the curbstones that belong to a path" are.** The day's routes are `RouteTree`, and
-`Corridor.of(tree).depth(tile) == 0` is the tile-level question — a street tile answers at the
-grain of its whole street, so both pavements of every street on the tree are inside, and a
-junction has no kerb at all (`GroundTiles._sidewalk_variant`). The kerb tiles are the eight
-`SIDEWALK_KERB_*` sources, main-road and ordinary. A route never runs along the main road
-(`RouteTree`, the main road), so in practice the ordinary four are what gets tinted, but the
-rule is "a kerb tile on an inside street", not a list of sources.
-
-- [ ] **A second ground layer, the route's kerb tiles again under a faint yellow.** A
-      `TileMapLayer` named `RouteKerbs` as `Ground`'s next sibling in `scenes/world/city.tscn`
-      (above it, below `Decals`), sharing `Ground`'s tile set, painted by a new
-      `City._paint_route_kerbs()` called in `_close_streets()` right after `_tree` is grown and
-      before the closures: for every tile whose ground source is a `SIDEWALK_KERB_*` and whose
-      corridor depth is zero, the same cell the ground has, so the tint is the kerb art drawn
-      once more through the layer's `modulate` — `Palette.ROUTE_KERB_TINT`, a yellow with the
-      alpha in `Tuning.ROUTE_KERB_TINT_ALPHA` (start at 0.18; the still says whether it is faint
-      and the player says whether it is subconscious), and alpha zero is the off switch. Cleared
-      by `start_finale()`, which grows no tree. The test in the routes or ground suite starts a
-      day on a rig city and asserts the layer's used cells are exactly the kerb tiles at depth
-      zero and nothing else, and that they are empty after `start_finale()`. `docs/CITY.md`'s
-      "Guiding her to the calm" sentences say the ground now carries this one faint cue as a
-      trial; `docs/MECHANICS.md` if it lists what the player is shown. Evidence: two desktop
-      stills of the same seed and day (`tools/shot.sh out.png 4 --seed 3265820891 --day 1
-      --walk 2s --debug`, once with `--layers 5` so the purple route line lies over the tinted
-      kerbs and once without), no burst, no `--invincible`. `REVIEW.md`, in the same PR, asks the
-      trial's own question: at play zoom, is the tint too obvious and on the nose, invisible,
-      or somewhere in between that guides without being read as a hint — and does it collide
-      with the caret's amber where a costly thing stands on the route.
-
----
-
-## M148 — A rolling graph of frame times on the readout · asked for 2026-09-14
-
-> "I would expect there to be an overlay that shows the last x frames of frame times in a
-> rolling window" — "hmm, I don't see a graph showing the history of the fps / spikes"
-
-[PLAYTEST-75](playtests/PLAYTEST-75.md). The **cues** rule governs `src/ui/`; this is a debug
-overlay, not a danger cue, but its colours come from the vocabulary rather than beside it.
-What is true today: the readout is text, its `process` and `physics` lines are the engine's
-per-second worst (`DECISIONS.md`, M138, what the readout's lines measure), `FrameCost.sample`
-keeps one second of those, and the observer keeps every frame's delta but writes only the
-worst per second (`frame`) and, under `--spikes`, the one outlier per second (M144). Nothing
-on screen shows the frames themselves, so a stutter is a number a second late rather than a
-bar where it happened.
-
-- [ ] **`FrameGraph`, the last frames' lengths as bars, under the readout.** A `Control` in
-      `src/ui/frame_graph.gd` on the readout's own `CanvasLayer` beside `_status`, gated exactly
-      as the readout is — assembled only while `_debug or _readout_requested` holds and shown
-      with `_layer_readout_on`, so `4` toggles both and a release page nobody asked `?debug=1`
-      of has neither. It keeps a ring of the last `FRAME_GRAPH_FRAMES` (240) frame deltas, fed
-      from `_process`'s own `delta` (the frame's actual length, not the engine's per-second
-      numbers), and redraws every frame it is visible: one bar per frame, one design pixel
-      wide, newest at the right, in a 240 by 48 design-pixel box, height scaled so 33.3 ms
-      reaches the top and anything longer clips; two thin reference lines at 16.7 and 33.3 ms
-      with a two-character label each; the window's mean as a thin line. A bar longer than
-      twice the window's mean is `Palette.MARK_COSTLY`, longer than 33.3 ms `Palette.MARK_LETHAL`,
-      the rest the readout's own text colour at half alpha — the vocabulary's two colours in
-      their own sense, *costly* and *the frame is gone*. Placed directly under the readout
-      block's last line, left-aligned with it; on a phone it must not cross the right focus
-      ring the readout already touches (`DECISIONS.md`, M139, the phone reading, "the readout
-      crosses the right focal ring") — if the block's bottom lands on the ring, the graph goes
-      above the block instead, and the commit says which. Costs nothing while off: no ring fed,
-      no redraw. A test in a new `tests/test_frame_graph.gd` feeds the ring by hand: after more
-      than 240 pushes only the last 240 remain, the mean is the window's, a frame past twice the
-      mean is classed costly and one past 33.3 ms lethal, and a hidden graph classes nothing.
-      `docs/TELEMETRY.md`'s "The debug view" says what `4` now shows and what the bars, lines
-      and colours mean; `README.md` where it names the readout. Evidence: one desktop still,
-      `tools/shot.sh out.png 4 --seed 3265820891 --day 1 --walk 3s --debug`, showing the graph
-      under the block; no burst. `REVIEW.md`, in the same PR: on the laptop, is the 24 ms frame
-      a visible bar most seconds, and does the graph fit and read on the phone.
+**What the code says about the premise, read on 2026-09-14, and why this waits.** An
+entity's pictures are `preload`ed SVG imports on `EventInstance` and `CrowdAgent`: loaded and
+handed to the renderer when the script loads at boot, never at first draw — the events have
+no PNG transfers at all (274 SVGs, zero under `svg-transfer/`). The only pictures that ever
+loaded late were the 19 prop, 35 rig and 72 ground transfers, and M147 loads those before
+the day; the laptop's once-a-second 24 ms frame is unchanged with all of them warm
+(`DECISIONS.md`, M147). So an atlas loader would move no load that still happens. What an
+atlas per family would still buy is what the crowd's bought: fewer texture switches and draw
+calls per frame, which the phone reading says are not the phone's cost today (`DECISIONS.md`,
+M139, the phone reading). The design is recorded in full above so it is built as asked when
+the reason arrives; the open question to the player is whether to build it now regardless,
+for the phone's memory and first load, or to leave it here until draw calls are the cost.
 
 ---
 

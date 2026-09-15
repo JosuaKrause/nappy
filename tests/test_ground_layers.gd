@@ -16,6 +16,7 @@ func run(t) -> void:
 	_test_damage_atlas_selection_is_stable_and_shared(t)
 	_test_composed_sources_keep_ids_and_visible_detail(t)
 	_test_svg_override_and_repaint_source_are_idempotent(t)
+	_test_route_kerb_twin_tints_the_stone_alone(t)
 
 func _test_transparent_pixels_leave_the_base_unchanged(t) -> void:
 	var base := Image.create(4, 4, false, Image.FORMAT_RGBA8)
@@ -256,3 +257,57 @@ func _test_svg_override_and_repaint_source_are_idempotent(t) -> void:
 	t.check(first_image.get_data() == second_image.get_data(),
 		"each repaint starts from authored ground, so layers cannot accumulate")
 	TextureResolver.reset_for_tests(DevFlags.svg_requested())
+
+## M145's correction: the twin tints the curbstone alone, in both presentations, never the paving
+## beside it. Checked against `GroundTiles.SIDEWALK_KERB_N` in each mode, since its plain source's
+## own image is what both `CURBSTONE` (PNG) and the authored SVG (SVG) put the stone in a known
+## place: rows 0-2 of `curbstone.png` and `y=0 height=2` of `assets/tiles/sidewalk_kerb_n.svg`.
+func _test_route_kerb_twin_tints_the_stone_alone(t) -> void:
+	var tint := Palette.ROUTE_KERB_TINT
+	var source_id := GroundTiles.SIDEWALK_KERB_N
+	var twin_id := GroundTiles.route_twin_of(source_id)
+	t.check(twin_id >= 0, "GroundTiles registers a route-kerb twin id for the north kerb source")
+
+	TextureResolver.reset_for_tests(false)
+	var png_set := GroundLayers.build_tile_set(AUTHORED_GROUND)
+	var plain_png := (png_set.get_source(source_id) as TileSetAtlasSource).texture.get_image()
+	var twin_png_source := png_set.get_source(twin_id) as TileSetAtlasSource
+	t.check(twin_png_source != null, "PNG mode registers the north kerb's route twin")
+	var twin_png := twin_png_source.texture.get_image()
+	var detail := CURBSTONE.get_image()
+	var stone_checked := false
+	var paving_checked := false
+	for y in GroundLayers.TILE_SIZE.y:
+		for x in GroundLayers.TILE_SIZE.x:
+			var plain_pixel := plain_png.get_pixel(x, y)
+			var twin_pixel := twin_png.get_pixel(x, y)
+			if detail.get_pixel(x, y).a > 0.01:
+				stone_checked = true
+				t.check(_color_distance(twin_pixel, tint) < _color_distance(plain_pixel, tint),
+						"the PNG twin's curbstone pixel at %s moved toward the tint" % Vector2i(x, y))
+			else:
+				paving_checked = true
+				t.check(twin_pixel == plain_pixel,
+						"the PNG twin leaves a paving pixel at %s identical to the plain source's" % Vector2i(x, y))
+	t.check(stone_checked and paving_checked,
+			"the PNG pixel sweep found both a curbstone and a paving pixel to check")
+
+	TextureResolver.reset_for_tests(true)
+	var svg_set := GroundLayers.build_tile_set(AUTHORED_GROUND)
+	var plain_svg := (svg_set.get_source(source_id) as TileSetAtlasSource).texture.get_image()
+	var twin_svg_source := svg_set.get_source(twin_id) as TileSetAtlasSource
+	t.check(twin_svg_source != null, "SVG mode registers the north kerb's route twin")
+	var twin_svg := twin_svg_source.texture.get_image()
+	# `sidewalk_kerb_n.svg` fills `y=0 width=32 height=2` with the stone; row 20 is well inside the
+	# paving the two internal slab-joint lines (`y=15`, `y=16..32` verticals) leave alone.
+	var stone_plain := plain_svg.get_pixel(5, 0)
+	var stone_twin := twin_svg.get_pixel(5, 0)
+	t.check(_color_distance(stone_twin, tint) < _color_distance(stone_plain, tint),
+			"the SVG twin's curbstone-band pixel moved toward the tint")
+	t.check(twin_svg.get_pixel(5, 20) == plain_svg.get_pixel(5, 20),
+			"the SVG twin leaves a paving pixel identical to the plain source's")
+
+	TextureResolver.reset_for_tests(DevFlags.svg_requested())
+
+func _color_distance(a: Color, b: Color) -> float:
+	return sqrt(pow(a.r - b.r, 2) + pow(a.g - b.g, 2) + pow(a.b - b.b, 2))
