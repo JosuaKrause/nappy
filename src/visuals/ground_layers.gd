@@ -18,11 +18,20 @@ static func build_tile_set(authored: TileSet) -> TileSet:
 		return null
 	var result := authored.duplicate(true) as TileSet
 	_replace_svg_transfers(result)
-	if TextureResolver.svg_requested():
-		return result
+	if not TextureResolver.svg_requested():
+		_compose_layers(result)
+	# Last, once every source's own texture is final: the shelf pack below reads them and points
+	# them all at one texture, so anything that replaces a source's picture has to have happened.
+	pack_into_one_texture(result)
+	return result
+
+## Composes the manifest's shared bases and transparent overlays onto every source that has them.
+## Split out of `build_tile_set()` so the packing pass can be the one thing that always runs last,
+## whichever presentation mode composed — or did not compose — the pictures before it.
+static func _compose_layers(result: TileSet) -> void:
 	var manifest := _load_manifest()
 	if manifest.is_empty() or int(manifest.get("tile_size", 0)) != TILE_SIZE.x:
-		return result
+		return
 	for source_index in result.get_source_count():
 		var source_id := result.get_source_id(source_index)
 		var source := result.get_source(source_id) as TileSetAtlasSource
@@ -36,15 +45,84 @@ static func build_tile_set(authored: TileSet) -> TileSet:
 				for variant in range(1, DAMAGE_VARIANTS):
 					source.create_tile(Vector2i(variant, 0))
 	var grass_atlas := _grass_atlas(manifest)
-	if grass_atlas != null:
-		for source_id in [GRASS_SOURCE_ID, FOREST_SOURCE_ID]:
-			var grass := result.get_source(source_id) as TileSetAtlasSource
-			if grass == null:
+	if grass_atlas == null:
+		return
+	for source_id in [GRASS_SOURCE_ID, FOREST_SOURCE_ID]:
+		var grass := result.get_source(source_id) as TileSetAtlasSource
+		if grass == null:
+			continue
+		grass.texture = grass_atlas
+		for variant in range(1, GRASS_VARIANTS):
+			grass.create_tile(Vector2i(variant, 0))
+
+## Points every `TileSetAtlasSource` in `tile_set` at one shared texture, so the ground stops
+## being thirty-odd separate image sources at draw time — the composite the player asked for
+## *(Playtest 76: "it is good to have everything built into atlases so the composite doesn't have
+## to deal with multiple image sources")*.
+##
+## **Every tile coordinate still lands on its own tile, and that is what `margins` is for.** A
+## source's grid is read from `margins` at `texture_region_size` steps with `separation` between
+## them; only the first of those moves here, to wherever the source's own picture was packed, so
+## `texture_region_size` and `separation` are untouched and a painter asking for cell (3,0) gets
+## exactly the pixels it got before. The texture is assigned before the margin, because assigning
+## a margin that pushes a tile outside the texture currently set would drop that tile.
+##
+## **Synchronous, not a `WorkerThreadPool` task**, unlike every other atlas in the game: this runs
+## inside `build_tile_set()`, which is called before the first day is drawn and again at each
+## day's repaint, and the ground has no fallback to draw from in the meantime — a `TileSet` has
+## one texture per source and no "until it is ready" state to be in. Its cost is a `texture` line
+## in the run log for exactly that reason.
+##
+## Sources sharing one texture object are packed once and given the same margin, since two source
+## IDs over one sheet is a thing the authored `TileSet` is allowed to do.
+static func pack_into_one_texture(tile_set: TileSet) -> void:
+	var started := Time.get_ticks_usec()
+	var sources: Array[TileSetAtlasSource] = []
+	var placement_of: Array[int] = []
+	var by_texture: Dictionary = {}
+	var images: Array[Image] = []
+	var sizes: Array[Vector2i] = []
+	for source_index in tile_set.get_source_count():
+		var source := tile_set.get_source(tile_set.get_source_id(source_index)) as TileSetAtlasSource
+		if source == null or source.texture == null:
+			continue
+		var texture := source.texture
+		if not by_texture.has(texture):
+			var image := texture.get_image()
+			if image == null:
 				continue
-			grass.texture = grass_atlas
-			for variant in range(1, GRASS_VARIANTS):
-				grass.create_tile(Vector2i(variant, 0))
-	return result
+			image = image.duplicate()
+			if image.is_compressed() and image.decompress() != OK:
+				continue
+			if image.get_format() != Image.FORMAT_RGBA8:
+				image.convert(Image.FORMAT_RGBA8)
+			by_texture[texture] = images.size()
+			images.append(image)
+			sizes.append(image.get_size())
+		sources.append(source)
+		placement_of.append(by_texture[texture])
+	if sources.is_empty():
+		return
+	var layout := TextureAtlas.plan(sizes)
+	assert(layout["fits"], "the ground is %s, over the %dpx phone-safe canvas side"
+			% [layout["size"], TextureAtlas.MAX_ATLAS_SIDE])
+	if not layout["fits"]:
+		return
+	var regions: Array = layout["regions"]
+	var atlas_size: Vector2i = layout["size"]
+	var atlas := Image.create(atlas_size.x, atlas_size.y, false, Image.FORMAT_RGBA8)
+	for index in images.size():
+		var image: Image = images[index]
+		atlas.blit_rect(image, Rect2i(Vector2i.ZERO, image.get_size()),
+				(regions[index] as Rect2i).position)
+	var shared := ImageTexture.create_from_image(atlas)
+	for index in sources.size():
+		var source: TileSetAtlasSource = sources[index]
+		source.texture = shared
+		source.margins = (regions[placement_of[index]] as Rect2i).position
+	Telemetry.note("texture", "ground packed: %d sources over %d pictures into %dx%d in %.1f ms"
+			% [sources.size(), images.size(), atlas_size.x, atlas_size.y,
+			(Time.get_ticks_usec() - started) / 1000.0])
 
 ## Returns the atlas coordinate selected for a ground cell. The source ID stays the map's own ID;
 ## grass and damage sources add visual-only atlas cells, so collision and semantic selection stay
@@ -53,13 +131,16 @@ static func atlas_coords_for(source_id: int, city_seed: int, tile: Vector2i,
 		tile_set: TileSet) -> Vector2i:
 	if source_id in [GRASS_SOURCE_ID, FOREST_SOURCE_ID]:
 		var grass := tile_set.get_source(source_id) as TileSetAtlasSource
-		if grass == null or grass.texture == null or grass.texture.get_width() < TILE_SIZE.x * 2:
+		# The question is whether the variation cells were actually created, asked of the source's
+		# own tiles rather than of its texture's width: every source shares one packed texture, so
+		# a width is the whole ground's and says nothing about this source at all.
+		if grass == null or not grass.has_tile(Vector2i(GRASS_VARIANTS - 1, 0)):
 			return Vector2i.ZERO
 		return Vector2i(posmod(hash("grass:%d:%d:%d" % [city_seed, tile.x, tile.y]), GRASS_VARIANTS), 0)
 	if source_id in DAMAGE_SOURCE_IDS:
 		var damage := tile_set.get_source(source_id) as TileSetAtlasSource
-		if damage == null or damage.texture == null or damage.texture.get_width() < TILE_SIZE.x * DAMAGE_VARIANTS \
-				or not damage.has_tile(Vector2i(DAMAGE_VARIANTS - 1, 0)):
+		# Its own tiles, not its texture's width — see the grass guard above.
+		if damage == null or not damage.has_tile(Vector2i(DAMAGE_VARIANTS - 1, 0)):
 			return Vector2i.ZERO
 		# Surface and A/B source IDs retain GroundTiles' placement semantics; this seed/cell hash only
 		# selects the shared drawing, so one coordinate has the same variation on every material.
