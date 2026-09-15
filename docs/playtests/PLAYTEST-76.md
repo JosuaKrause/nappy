@@ -72,3 +72,13 @@ Said on 2026-09-15 of the same session. The world's origin is the map's top-left
 drawn before the camera has taken her position shows that corner. Which frame is not known
 from the code alone — the first after boot, the title's own with the city behind it, or the
 run's first after the disc is pressed. Filed as M151 in `TODO.md`.
+
+## The spike view is its own layer
+
+> "also, spike view should be independent of debug layer 4 it should be its own debug layer
+> and turned off by default unless --spikes is set"
+
+Said on 2026-09-15. The spike view is the rolling frame-time graph M148 put under the
+readout, drawn and toggled with the readout on the `4` key. Decided: it is a debug layer of
+its own, on its own key, off by default, and on from the start when `--spikes` is set. Filed
+as M153 in `TODO.md`.

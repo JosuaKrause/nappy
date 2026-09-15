@@ -351,6 +351,35 @@ a kerb (`GroundTiles._sidewalk_variant`).
 
 ---
 
+## M153 — The spike view is its own debug layer · asked for 2026-09-15
+
+> "spike view should be independent of debug layer 4 it should be its own debug layer and
+> turned off by default unless --spikes is set"
+
+[PLAYTEST-76](playtests/PLAYTEST-76.md). The **cues** rule governs `src/ui/`, the **cli-tools**
+rule the flags, the **telemetry** rule `--spikes`. What is true today: `FrameGraph`, the
+rolling graph of the last 240 frames' lengths (`DECISIONS.md`, M148), is built by
+`Main._add_frame_graph()` on the readout's own layer and shown by `_set_readout_visible()`, so
+the `4` key toggles the readout and the graph together and `--debug` shows both; `--spikes`
+only turns on the run log's `spike` line (`DevFlags.spikes_requested()`), and the debug layer
+keys are `1` to `5` in `_debug_layer_key()`, with `--layers` naming which start on.
+
+- [ ] **The graph on its own key, off unless asked.** `6` is the graph's key in
+      `_debug_layer_key()` and `_toggle_debug_layer()`, with its own `_layer_graph_on`, `false`
+      by default and `true` at boot when `DevFlags.spikes_requested()` holds; `--layers` accepts
+      `6` like the others (the **cli-tools** rule: `--help` says so, an unknown layer is
+      rejected before anything starts). The graph is still built only where the readout is
+      (`_debug or _readout_requested`, the release-page terms `_add_frame_graph()`'s doc
+      states) and is drawn when `_layer_graph_on` holds, whatever `4` did to the readout; its
+      ring is fed only while it is visible, as now. `_set_readout_visible()` no longer touches
+      it. `tests/test_frame_graph.gd` or `tests/test_main.gd`: off by default under `--debug`,
+      on at boot under `--spikes`, `6` toggles it and `4` does not. `docs/TELEMETRY.md`'s "The
+      debug view" says what `6` shows and that `--spikes` starts it on; `README.md`'s `--debug`
+      and `--layers` rows follow. No evidence: the still M148 took shows the graph and nothing
+      about its key.
+
+---
+
 ## M129 — A path through the city never has to cost · the four rules built 2026-09-14, one question open
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable
