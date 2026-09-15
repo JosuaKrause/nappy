@@ -279,6 +279,10 @@ primitives and light in pixels is a geometry problem, and the reverse is a fill-
 second being exactly the cost a desktop measurement cannot see on a phone's own screen. `process`
 and `physics` are the two loop times, held apart rather than summed because they are fixed by
 different things, and together they say how much of the frame never reached the renderer at all.
+**The physics tick runs thirty times a second, so `physics`'s own reading is milliseconds per
+tick**, not per frame — a frame drawn at thirty or more fps carries one tick, and a slower one can
+carry two, so `physics` and `process` are not directly comparable the way two frame-rate figures
+would be.
 
 **`worst frame` is the longest single frame in that second, not an average of them.** "A bit
 laggy" is a hitch, and a mean is the statistic a hitch hides in.

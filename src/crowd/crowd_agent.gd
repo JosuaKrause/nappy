@@ -378,6 +378,14 @@ var _yield_left := 0.0
 ## Seconds this agent has left of the stride it owes its last about-face. See `_turn_round()`.
 var _turn_back_hold := 0.0
 
+## Moves itself in `_process`, not on the physics tick, so physics interpolation would draw it
+## gliding between two stale tick positions rather than where `_process` actually put it. Set on
+## the instance itself rather than inherited from a parent: every agent is added under `City`'s
+## shared, y-sorted `Entities` node (`City.add_entity()`), beside the player, who does want her
+## own physics-tick motion interpolated.
+func _ready() -> void:
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+
 func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: int,
 		axis_roll: float) -> void:
 	kind = agent_kind
