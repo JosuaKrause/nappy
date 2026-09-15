@@ -613,6 +613,37 @@ func is_on_the_tree(key: Vector3i) -> bool:
 	_ensure_street_keys()
 	return _street_keys.has(key)
 
+## Every junction a route passes through, and the junction at each end of every street the tree
+## runs along — **the crossings a walk along a route has no way around**.
+##
+## A junction is the only place a line may change from one pavement to the other, so a junction
+## whose box is covered is a route cut in a way no amount of ground on either side can answer:
+## `tests/probes/m129_zero_cost_line.gd` measured it as the shape that breaks more routes than
+## every other shape together (135 of 298 routes, 401 of the cuts). `EventScheduler` refuses a row
+## the ground that would close one — see `_leaves_the_route_junctions_open`.
+##
+## **Both halves are needed and neither implies the other.** A street on the tree is walked end to
+## end, so both of its junctions are crossings the route uses, even though no route *cell* need
+## stand inside either box. And a route that cuts across a junction from a park or an alley
+## contributes a junction no on-tree street names, because the cells either side of it resolve to
+## no segment at all.
+func junctions() -> Array[Vector2i]:
+	_ensure_street_keys()
+	var found := {}
+	for key: Vector3i in _street_keys:
+		var segment := StreetNetwork.by_key(key)
+		if segment:
+			found[segment.a] = true
+			found[segment.b] = true
+	for node: int in _colours:
+		var junction := CityMap.junction_at(grid.any_tile_of(node))
+		if junction != Vector2i(-1, -1):
+			found[junction] = true
+	var result: Array[Vector2i] = []
+	for junction: Vector2i in found:
+		result.append(junction)
+	return result
+
 ## The streets just outside the corridor: not on the tree, and meeting one that is at a junction.
 ##
 ## **Kept junction-based rather than moved to grid depth, on purpose, and this is the one place

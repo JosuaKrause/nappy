@@ -701,6 +701,41 @@ goal into an artefact of how the two routes are found.
 route is an offer the day makes when the ground allows one. What must still hold absolutely is only
 that **some** calm is reachable.
 
+### A route's junctions stay clear
+
+**A junction is the only place a line along a route may change from one pavement to the other**, so
+it is the one piece of a route that nothing on either side of it can answer. A street with a van on
+one pavement still has the other; a crossing covered end to end has nowhere to turn, and the walk
+has to go back the way it came.
+
+So **the junctions the day's routes cross are kept crossable** — the junctions at each end of every
+street the tree runs along, plus any the tree cuts through from a park or an alley
+(`RouteTree.junctions()`). A row is refused ground where its reach, together with everything the
+morning has already put down, would leave the junction box with no walk joining the route streets
+that meet there. **Checked before the row is accepted, never repaired after**, the same shape the
+closure invariant has: the day is asked, one row at a time, whether the city it is joining still has
+a line through every crossing, so a closed one never exists even for a moment.
+
+**Stating it over the pair rather than over the row is what makes it the rule the measurement asked
+for.** The crossing that breaks most routes is covered by two ordinary rows between them — a café on
+one corner and a yeller on the other — and a rule that only asked *does this one row take the whole
+box* would accept both of them.
+
+Four kinds of row are outside it, and each for a reason it already had. **A pursuer, and anything
+the director sites in front of her**, pay the telegraph contract instead and have no tile the day
+chose. **A city-wide row** has no place, so there is no other side of the street to be on. **A
+region door and a moving row that does not pace are not blocks at all** — a door costs by design,
+and a row that travels is passed by crossing, waiting and crossing back. And **a wall is outside
+it**, which is the same exemption the lethal-clearance rule makes: a wall *bounds* the corridor and
+is off the routes by construction, so a field reaching in from there is the guidance rather than a
+failure of it.
+
+**What it costs is the wide rows' corridor ground**, and that is the intended trade rather than a
+side effect. Every corridor street has a route junction at each of its ends, so a row whose reach
+covers a whole crossing loses most of the corridor; a row narrower than a junction box's own half
+width loses none of it. `tests/test_events.gd` asserts both halves — the corridor's overall share of
+the friction and, separately, the undiminished share of the rows no crossing rule can refuse.
+
 ### Two strands side by side, and the street between them
 
 Two strands of corridor running down neighbouring streets with nothing between them are not two

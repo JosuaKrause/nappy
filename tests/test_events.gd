@@ -70,6 +70,7 @@ func run(t) -> void:
 	_test_no_two_rows_draw_the_same_picture(t)
 	_test_every_look_carries_its_own_silhouette(t)
 	_test_the_day_is_placed_by_role(t)
+	_test_a_routes_junctions_stay_clear(t)
 	_test_a_flock_is_scenery(t)
 	_test_a_conversation_locks_her_and_releases(t)
 	_test_a_conversation_prices_by_the_babys_state(t)
@@ -2798,10 +2799,22 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 ## **Friction is aimed at the route**, which is the other half of the same sentence: *"benign
 ## blockers go on the route… to make it more challenging."* That one is a **weight** and is
 ## asserted as a proportion. About a third of the ground is on the corridor, so an unweighted day
-## lands about a third of its costly rows there — measured at 34% with `EVENT_CORRIDOR_WEIGHT`
-## flattened to 1, against 64% at 4. Half is a floor with room in it rather than a measurement, and
-## the upper bound matters as much: a corridor carrying nearly all of it would mean every street
-## off the route is empty, which reads as a set rather than as a city.
+## lands about a third of its costly rows there — `EVENT_CORRIDOR_WEIGHT` (four copies of an
+## on-corridor tile in the roll) is what lifts it. The upper bound matters as much as the floor: a
+## corridor carrying nearly all of it would mean every street off the route is empty, which reads
+## as a set rather than as a city.
+##
+## **The floor is stated twice, because one rule takes corridor ground away from a row for being
+## too wide for it.** A junction is the only place a line may change pavement, so a row whose reach
+## covers a whole crossing is refused that ground
+## (`EventScheduler._leaves_the_route_junctions_open`) — and every corridor street has a route
+## junction at each of its ends, so the refusal lands almost entirely on the corridor and almost
+## entirely on the wide rows. Measured over the days sampled here, turning that rule off and on
+## moves the whole share from 48% to 43%, the rows reaching further than a junction box's own half
+## width from 45% to 34%, and the rows narrower than that not at all (53% either way). So the
+## **narrow** share is the one that says the weight is still doing its job, and it is the assertion
+## that would go red if anybody stopped aiming friction at the route; the whole share keeps a floor
+## under it as well, with room for the wide rows to be pushed further off as their reaches move.
 ##
 ## An `AHEAD_OF_PLAYER` row is exempt from the first half and the exemption is the design rather
 ## than a hole: the charging dog is sited by `EventDirector` in front of wherever she turns out to
@@ -2816,11 +2829,19 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 ## arcs are calm is what a `RouteTree` grows from, so the tree has to be grown against today's
 ## paint. The shared map is handed out pristine and the day plans memoized against it would be
 ## answers about a city that no longer existed if this repainted underneath them.
+## Half the width of a junction box (`Tuning.STREET_WIDTH` tiles square, 192px), which is the reach
+## below which a row standing on a street beside a crossing cannot cover the box's own six-tile arm
+## however close it stands. Used to split the friction into the rows the junction rule can refuse
+## corridor ground and the rows it cannot.
+const _A_JUNCTION_BOXES_HALF_WIDTH := Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0.5
+
 func _test_the_day_is_placed_by_role(t) -> void:
 	var map := CityGenerator.generate(4242)
 	var walls := 0
 	var friction_on_the_route := 0
 	var friction := 0
+	var narrow_on_the_route := 0
+	var narrow := 0
 	var deep := {true: 0, false: 0}
 	var placed := {true: 0, false: 0}
 	# Every gap of every day sampled, and which of them a wall was put in. Keyed by day as well as
@@ -2860,12 +2881,24 @@ func _test_the_day_is_placed_by_role(t) -> void:
 				friction += 1
 				if away == 0:
 					friction_on_the_route += 1
+				# The rows small enough to stand beside a crossing without taking it: the junction
+				# rule cannot refuse one of these its corridor ground, so their share is the
+				# weight's own answer with nothing subtracted from it. See the docstring.
+				if EventScheduler._line_reach_of(plan.def) <= _A_JUNCTION_BOXES_HALF_WIDTH:
+					narrow += 1
+					if away == 0:
+						narrow_on_the_route += 1
 	# A sample with no walls in it would pass every assertion above and mean nothing.
 	t.check(walls > 20, "the days sampled place walls at all (%d)" % walls)
 	t.check(friction > 0, "and friction at all (%d)" % friction)
+	t.check(narrow > 50, "and enough of it narrow enough to stand beside a crossing (%d)" % narrow)
 	var share := float(friction_on_the_route) / maxf(1.0, float(friction))
-	t.check(share > 0.45, "%d of %d costly rows are on the corridor" % [friction_on_the_route, friction])
+	t.check(share > 0.35, "%d of %d costly rows are on the corridor" % [friction_on_the_route, friction])
 	t.check(share < 0.9, "and the streets off it are not empty (%.0f%% on it)" % (share * 100.0))
+	var narrow_share := float(narrow_on_the_route) / maxf(1.0, float(narrow))
+	t.check(narrow_share > 0.45,
+			"and the weight is undiminished for the rows no crossing rule can refuse "
+			+ "(%d of %d narrow rows on the corridor)" % [narrow_on_the_route, narrow])
 
 	# **The range, as a relationship rather than as two numbers.** *"It ranges from very costly to
 	# deadly"* is a claim about which of the two is further from the routes, so that is what is
@@ -2903,6 +2936,144 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	t.check(walled_share > 0.2, "%d of %d gaps carry a wall" % [gaps_walled.size(), gaps.size()])
 	t.check(walled_share < 0.85,
 			"and the rest are left open (%.0f%% walled)" % (walled_share * 100.0))
+
+## **A route's junctions stay clear.** *(PLAYTEST-69: "a path through the city must never hit
+## excitement — so all obstacles should be routable around by eg crossing to the other side of the
+## street".)* A junction is the only place a line along a route may change pavement, so a crossing
+## the day's rows have closed between them is a cut that the ground on either side of it cannot
+## answer: `tests/probes/m129_zero_cost_line.gd` measured it as the shape breaking more routes than
+## every other shape put together.
+##
+## **The assertion is about the finished day rather than about the refusal**, which is what keeps it
+## from being the rule read back to itself. `EventScheduler._leaves_the_route_junctions_open` refuses
+## one candidate at a time, against what is already down; what has to be true afterwards is that
+## nothing *else* the morning does — a scar prepended, an ambient placed, a park spoiled, the
+## walkability strip — has left a crossing closed. Measured over the five sampled days of seed 4242:
+## 50 of 360 route junctions were closed before the rule existed and none are with it.
+##
+## **The geometry is stated here rather than borrowed**, for the same reason: the box's own flood
+## fill is written out below, so a change to the scheduler's private helper cannot quietly change
+## what this file claims. Only the primitives are shared — which junctions the routes cross
+## (`RouteTree.junctions()`), which streets are on the corridor (`Corridor.depth`), and what a row
+## denies (`EventScheduler._counts_against_the_line` and `_line_reach_of`, the reading PLAYTEST-71
+## settled and the one place it is written down).
+##
+## **And it cannot pass vacuously**: a day where no counted row ever stood within reach of a route
+## junction would satisfy it with nothing checked, so the rows that do are counted and asserted.
+func _test_a_routes_junctions_stay_clear(t) -> void:
+	var map := CityGenerator.generate(4242)
+	var junctions := 0
+	var in_reach := 0
+	var closed := 0
+	var first := ""
+	for day in [1, 5, 9, 14]:
+		var state := CityState.new()
+		state.begin_day(map.block_plans, day)
+		map.repaint(state)
+		var tree := RouteTree.for_day(map, day)
+		var corridor := Corridor.of(tree)
+		var consumed: Array[String] = []
+		var counted: Array[EventScheduler.Planned] = []
+		for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
+			if EventScheduler._counts_against_the_line(plan):
+				counted.append(plan)
+		for junction in tree.junctions():
+			junctions += 1
+			var box := Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
+			var world := map.tile_rect_to_world(box)
+			var here: Array[EventScheduler.Planned] = []
+			for plan in counted:
+				var reach := EventScheduler._line_reach_of(plan.def)
+				if plan.distance_from(world.get_center()) <= reach + world.size.length() * 0.5:
+					here.append(plan)
+			in_reach += here.size()
+			if here.is_empty():
+				continue
+			if _the_crossing_is_walkable(map, corridor, junction, box, here):
+				continue
+			closed += 1
+			if first == "":
+				var ids := {}
+				for plan in here:
+					ids[plan.def.id] = true
+				first = "day %d, junction %s, covered by [%s]" \
+						% [day, junction, ", ".join(PackedStringArray(ids.keys()))]
+	t.check(junctions > 100, "the days sampled plan routes across junctions (%d)" % junctions)
+	t.check(in_reach > 100,
+			"and place rows within reach of them, so the check is not vacuous (%d)" % in_reach)
+	t.check(closed == 0, "no route junction is closed by what the day placed (%d closed%s)"
+			% [closed, "" if first == "" else ": " + first])
+
+## The test's own statement of *a line can still cross here*: take every row's reach off the
+## junction box and ask whether the box's remaining ground joins every route street that meets it.
+##
+## Both halves matter. A box with somewhere free left in it is not a crossing if the free ground is
+## a corner cut off from the streets, and a box whose two arms are each free is not a crossing if
+## nothing joins them — which is why this is a flood fill rather than a count.
+func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vector2i, box: Rect2i,
+		rows: Array[EventScheduler.Planned]) -> bool:
+	var free := {}
+	for y in range(box.position.y, box.end.y):
+		for x in range(box.position.x, box.end.x):
+			var tile := Vector2i(x, y)
+			if not map.is_open(tile):
+				continue
+			var taken := false
+			for plan in rows:
+				if EventScheduler._denies(plan, map.tile_to_world(tile),
+						EventScheduler._line_reach_of(plan.def)):
+					taken = true
+					break
+			if not taken:
+				free[tile] = true
+	if free.is_empty():
+		return false
+	var arms: Array = []
+	for segment in StreetNetwork.at_junction(junction):
+		if corridor.depth(segment.tile_rect().position) != 0:
+			continue
+		var open_here: Array[Vector2i] = []
+		var step := segment.other_end(junction) - junction
+		for i in Tuning.STREET_WIDTH:
+			var tile := box.position + Vector2i(i, i)
+			if step.x > 0:
+				tile = box.position + Vector2i(Tuning.STREET_WIDTH - 1, i)
+			elif step.x < 0:
+				tile = box.position + Vector2i(0, i)
+			elif step.y > 0:
+				tile = box.position + Vector2i(i, Tuning.STREET_WIDTH - 1)
+			else:
+				tile = box.position + Vector2i(i, 0)
+			if free.has(tile):
+				open_here.append(tile)
+		if open_here.is_empty():
+			return false
+		arms.append(open_here)
+	if arms.size() < 2:
+		return true
+	var reached := {}
+	var queue: Array[Vector2i] = []
+	for tile: Vector2i in arms[0]:
+		reached[tile] = true
+		queue.append(tile)
+	var head := 0
+	while head < queue.size():
+		var at: Vector2i = queue[head]
+		head += 1
+		for step in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+			var next: Vector2i = at + step
+			if free.has(next) and not reached.has(next):
+				reached[next] = true
+				queue.append(next)
+	for i in range(1, arms.size()):
+		var joined := false
+		for tile: Vector2i in arms[i]:
+			if reached.has(tile):
+				joined = true
+				break
+		if not joined:
+			return false
+	return true
 
 ## **A flock is scenery — overturned on 2026-09-13**, PLAYTEST-71: *"flocks are basically free
 ## already — don't count it as block, just count is scenery."* Under the plain cost rule a

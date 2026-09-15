@@ -521,6 +521,15 @@ as a check on what a roll came back with:
 None of this is a weight: a closed or held street is not somewhere anyone can get to, or is already
 standing for something else, or is a tree, so nothing about the role table below ever sees it.
 
+**And one refusal is about what a candidate would *do* rather than about the ground it stands on**,
+so it is asked of the placement instead of the pool: a row may not take a crossing the day's routes
+depend on. `EventScheduler._leaves_the_route_junctions_open` asks, before the row is accepted,
+whether the junction box still carries a walk joining the route streets that meet there — with this
+row standing and everything already down standing too — and re-rolls where it does not. A junction
+is the only place a line may change pavement, so this is the one refusal a street's far side cannot
+answer; see `docs/CITY.md`, "A route's junctions stay clear", for the rule and for the four kinds of
+row that are outside it.
+
 **A seal is checked the same way in a different place.** `SealPlanner` puts a body on every
 off-tree street whether or not the scheduler would have offered that tile, so it never asks
 `_open_ground_for` at all; `SealPlanner._seal_along_tile` applies the tree refusal at the one place
