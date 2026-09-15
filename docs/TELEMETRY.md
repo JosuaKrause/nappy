@@ -95,6 +95,12 @@ one *run*, not one session.
 the person playtesting has to remember to turn on, which means the interesting run is the one
 that was not recorded.
 
+**`--spikes` is off by default, unlike the log itself.** *(2026-09-14, the player, on the log's
+own `spike` line: "spike line sounds good"; "make that toggleable separately though since it can
+be quite noisy".)* A slow machine can turn one line a second into a permanent fixture of the log,
+so it stays behind its own dev flag rather than being folded into telemetry's own default — see
+"What a frame cost" below.
+
 **It is off by default on a web export**, and the page's own `?telemetry=1` query parameter is the
 one way to turn it on there — but only in a **debug** web export. `_web_override_requested()` is
 gated behind `DevFlags.enabled()` (`OS.is_debug_build()`) like every other developer flag: a
@@ -230,6 +236,7 @@ name the question it answers, or it is a metric and does not belong.
 | `blocked` | observer | **Is she stuck, or standing on purpose?** Movement input held for about a second while she goes nowhere — the direction, how long, and where. `idle` already covers the legitimate stand-still, no direction held; without this one an immobile rig's log reads exactly like a run, and a person pressing into a blocker the engine never stopped them at has no trace of having done it |
 | `cue` | observer | **What was she warned about, and for how long** — the mark over her head and the screen-edge badges, each written when the span ends so the duration is on the line. A cue is a claim about a moment, and a complaint about a cue's *timing* is invisible to a trace that writes only what was marked |
 | `frame` | observer | **What the frames cost on the device this was played on** — once a second, the frame rate, the worst single frame in that second, the draw calls, renderable objects and primitives the renderer was handed, and the milliseconds spent in `_process` and `_physics_process`. The one entry that is about the machine rather than about the day, and the only way a session played on a phone or on the web page can be read back at all. See "What a frame cost" below |
+| `spike` | observer | **Under `--spikes` only: which frame in the second ran past twice the mean of the frames before it, and what the game did in it.** The frame's own length and that mean, in milliseconds, followed by what changed since the previous frame — her tile, or the count of live event instances — or "nothing else changed that frame" when neither did. At most one line a second, the worst of that second if more than one frame qualified. See "What a frame cost" below |
 | `freeze` / `thaw` | observer | Was the day lost to noise or to the clock? Freezing is the invisible failure |
 | `asleep` / `woke` | observer | How long the walk actually took, and what woke her |
 | `quiet` | observer | The sabotage landed and the masts went off |
@@ -301,6 +308,29 @@ is already true of every other entry there.
 rules out. The distinction is what a reader can recompute: where she was is reconstructable from
 the entries around it, and what a frame cost on somebody else's phone is not recoverable from
 anything at all.
+
+### What a spike was
+
+`frame` gives the engine's own per-second maximum, and the engine cannot say *when in the second*
+that maximum fell or what the game was doing at the time. Under `--spikes`, the observer keeps the
+same second's running mean of its own frame deltas — the mean of every frame already seen since
+the last report, reusing `frame`'s own interval rather than a window of its own — and remembers
+whichever frame ran past twice that mean, the worst one if more than one did:
+
+```
+  12.0  spike    38.4ms, mean 16.2ms — her tile changed to (44, 12)
+```
+
+**The mean is of the frames before the spike, not including it**, so a single long frame cannot
+raise the bar it then has to clear. **At most one line a second**, the worst candidate — a slow
+machine cannot fill the log with it, which is the whole reason it stays behind its own flag: a
+`--spikes` run on a fast machine that never has a frame twice its neighbours writes none at all.
+
+**What changed** is read off state the observer already holds for other entries — the tile
+`_watch_the_ground` already looks up, the live event count `_watch_what_is_near` already scans —
+never a new per-frame hook added to a gameplay class. `"nothing else changed that frame"` is a
+finding of its own: the hitch was not the game doing something extra that frame, which points
+outside this project's own systems, toward the platform.
 
 ---
 
