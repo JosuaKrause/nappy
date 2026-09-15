@@ -730,6 +730,11 @@ var _heading := Vector2.RIGHT
 ## in `setup()` to the exact nearest sector for the instance's own siting, the same "no prior-view
 ## hold on a fresh placement" rule `EightDirection.nearest()`'s own doc names.
 var _view_sector := 2
+
+## This instance's `TextureAtlas` group, `family_name(def.look)`, cached in `_ready()`. Empty for
+## an instance that never entered the tree, which `TextureAtlas.texture_for()` answers the source
+## picture for — see `_packed()`.
+var _atlas_name := ""
 var _path_travelled := 0.0
 var _telegraph_announced := false
 var _activation_announced := false
@@ -945,6 +950,10 @@ func _ready() -> void:
 	# `City`'s shared, y-sorted `Entities` node (`City.add_entity()`), beside the player, who does
 	# want her own physics-tick motion interpolated.
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	# Held rather than rebuilt at every `_packed()` call: `_draw_body()` runs once for the body and
+	# once per ring offset for the halo, and a formatted string per picture per ring is work for an
+	# answer that cannot change while this instance exists.
+	_atlas_name = family_name(def.look)
 	EventBus.event_telegraphed.emit(self)
 	_telegraph_announced = true
 	if def.obstructs_radius > 0.0:
@@ -2543,6 +2552,149 @@ func _draw_mark() -> void:
 ## `_draw()`. Drawing nothing is instant either way; the fade timer keeps running underneath, so
 ## the ring reappears at whatever brightness it already had rather than fading back in. A hut or a
 ## gate keeps both its picture and its ring, because it never left.
+# ------------------------------------------------------------- the atlases ---
+# One `TextureAtlas` group per family, the family being **one `EventDef.Look`** — the set of
+# pictures one row can draw. The grouping is the `Look` and not something finer, because `Look` is
+# already the switch `_draw_body()` turns on: a row's `look` decides which branch runs and so
+# decides, exactly, which pictures it can reach, which makes "one `EventDef` never draws from two
+# families" true by construction rather than by a table somebody keeps in step.
+#
+# A picture shared between two looks — the guard, the dog, the boom kit — is packed into both, so
+# a family's atlas is self-contained and a released family cannot take a picture another live one
+# is still drawing. The cost of that is a few duplicated canvases across groups that are rarely
+# live at the same time, which is a cheaper thing to be wrong about than a shared group nobody
+# owns.
+
+## The `TextureAtlas` group name for a look. Named off the enum rather than hand-spelled, so a new
+## `Look` cannot be given a name that collides with an existing family's.
+static func family_name(look: EventDef.Look) -> String:
+	return "event/%s" % str(EventDef.Look.find_key(look)).to_lower()
+
+## Every picture a row with this look can draw, keyed by the source texture itself — which is what
+## the drawing path has in hand when it asks `_packed()` for the region standing in for it.
+##
+## Read straight off `_draw_body()`'s own arms: if a branch there can reach a texture, it is here.
+## A picture missing from this table is not a broken drawing — `texture_for()` answers the source
+## for a key it does not know — it is only a picture that stayed out of its family's atlas, which
+## is why the events suite checks the two lists against each other rather than trusting this one.
+static func family_sources(look: EventDef.Look) -> Dictionary:
+	var sources: Dictionary = {}
+	match look:
+		EventDef.Look.CAT:
+			_collect_views(sources, [CAT_CROUCHED_BY_VIEW, CAT_RUNNING_BY_VIEW,
+					CAT_RUNNING_BY_VIEW_B])
+		EventDef.Look.MOUSE:
+			_collect(sources, [MOUSE, MOUSE_B])
+		EventDef.Look.YELLER:
+			_collect_views(sources, [YELLER_BY_VIEW, YELLER_BY_VIEW_B])
+		EventDef.Look.DOG_WALKER:
+			_collect_views(sources, [PERSON_BY_VIEW, PERSON_BY_VIEW_B, DOG_BY_VIEW, DOG_BY_VIEW_B])
+		EventDef.Look.CAFE:
+			_collect_views(sources, [CAFE_SITTER_BY_VIEW, CAFE_SITTER_BY_VIEW_B])
+			_collect(sources, [CAFE_TABLE])
+		EventDef.Look.DELIVERY_VAN:
+			_collect_views(sources, [DELIVERY_VAN_BY_VIEW])
+		EventDef.Look.BUSKER:
+			_collect_views(sources, [BUSKER_BY_VIEW, BUSKER_BY_VIEW_B])
+		EventDef.Look.ROADWORKS:
+			_collect(sources, [BARRIER_SEGMENT, BARRIER_SEGMENT_VERTICAL, BARRIER_END])
+		EventDef.Look.FIRE_ENGINE:
+			_collect_views(sources, [FIRE_ENGINE_BY_VIEW])
+		EventDef.Look.BURNING_BUILDING:
+			_collect(sources, [FLAME])
+		EventDef.Look.BURNT_SHELL:
+			_collect(sources, [RUBBLE])
+		EventDef.Look.LOOSE_DOG:
+			_collect_views(sources, [DOG_BY_VIEW, DOG_BY_VIEW_B])
+		EventDef.Look.STALL:
+			_collect(sources, [STALL])
+		EventDef.Look.LEAF_BLOWER:
+			_collect_views(sources, [LEAF_BLOWER_BY_VIEW, LEAF_BLOWER_BY_VIEW_B])
+		EventDef.Look.BIRDS:
+			_collect_views(sources, [PIGEON_BY_VIEW, PIGEON_DOWN_BY_VIEW])
+		EventDef.Look.CYCLIST:
+			_collect_views(sources, [CYCLIST_BY_VIEW, CYCLIST_BY_VIEW_B])
+		EventDef.Look.ICE_CREAM_VAN:
+			_collect_views(sources, [ICE_CREAM_VAN_BY_VIEW])
+		EventDef.Look.LORRY:
+			_collect_views(sources, [LORRY_BY_VIEW])
+		EventDef.Look.CHARGING_DOG:
+			_collect_views(sources, [CHARGING_DOG_BY_VIEW, CHARGING_DOG_BY_VIEW_B])
+		EventDef.Look.CHATTING_MOTHER:
+			_collect_views(sources, [CHATTING_MOTHER_WALKING_BY_VIEW,
+					CHATTING_MOTHER_WALKING_BY_VIEW_B, CHATTING_MOTHER_TALKING_BY_VIEW])
+		EventDef.Look.POLICE_CAR:
+			_collect_views(sources, [POLICE_CAR_BY_VIEW])
+		EventDef.Look.POSTER_CREW:
+			_collect_views(sources, [POSTER_CREW_BY_VIEW])
+		EventDef.Look.ROADBLOCK:
+			_collect(sources, [ROADBLOCK_SEGMENT, ROADBLOCK_END, GUARD_STANDING, GUARD_LUNGING])
+		EventDef.Look.UNMARKED_VAN:
+			_collect_views(sources, [UNMARKED_VAN_BY_VIEW, VAN_VICTIM_BY_VIEW,
+					VAN_VICTIM_BY_VIEW_B])
+		EventDef.Look.ROBBER:
+			_collect_views(sources, [ROBBER_WAITING_BY_VIEW, ROBBER_LUNGING_BY_VIEW,
+					ROBBER_LUNGING_BY_VIEW_B])
+		EventDef.Look.RIOT_VAN:
+			_collect_views(sources, [RIOT_VAN_BY_VIEW])
+		EventDef.Look.ARMY_TRUCK:
+			_collect_views(sources, [ARMY_TRUCK_BY_VIEW])
+		EventDef.Look.BARRICADE:
+			_collect(sources, [BARRICADE_PILE])
+		EventDef.Look.PROTEST:
+			_collect_views(sources, [PROTESTER_BY_VIEW, PROTESTER_BY_VIEW_B])
+			_collect(sources, [PROTESTER])
+			_collect(sources, _POINTING_POSES)
+		EventDef.Look.FIREFIGHT:
+			_collect(sources, [GUNMAN])
+		EventDef.Look.FALLEN_TREE:
+			_collect(sources, [FALLEN_TREE, FALLEN_TREE_VERTICAL])
+		EventDef.Look.CAR_ACCIDENT:
+			_collect(sources, [CAR_ACCIDENT, CAR_ACCIDENT_VERTICAL, CAR_ACCIDENT_SHADOW,
+					CAR_ACCIDENT_VERTICAL_SHADOW])
+		EventDef.Look.BURST_MAIN:
+			_collect(sources, [BURST_MAIN, BURST_MAIN_VERTICAL])
+		EventDef.Look.COLLAPSED_FRONTAGE:
+			_collect(sources, [COLLAPSED_FRONTAGE])
+		EventDef.Look.SCAFFOLDING:
+			_collect(sources, [SCAFFOLDING])
+		EventDef.Look.SKIP:
+			_collect(sources, [SKIP])
+		EventDef.Look.MOVING_VAN:
+			_collect(sources, [MOVING_VAN, MOVING_VAN_VERTICAL])
+		EventDef.Look.BURNT_OUT_CAR:
+			_collect(sources, [BURNT_OUT_CAR, BURNT_OUT_CAR_VERTICAL])
+		EventDef.Look.CHECKPOINT_HUT:
+			_collect(sources, [HUT_NORTH, HUT_SOUTH, HUT_EAST, HUT_WEST, GUARD_STANDING])
+		EventDef.Look.CHECKPOINT_GATE:
+			_collect(sources, [BOOM_GATE_NS_LOWERED, BOOM_GATE_NS_RAISED, BOOM_GATE_EW_LOWERED,
+					BOOM_GATE_EW_RAISED])
+		EventDef.Look.CHECKPOINT_POST:
+			_collect(sources, [GUARD_STANDING])
+		EventDef.Look.IMPACT_CRATER:
+			_collect(sources, [IMPACT_CRATER])
+		EventDef.Look.MASKED_PURSUER:
+			_collect(sources, [GUARD_STANDING, GUARD_LUNGING])
+		EventDef.Look.STEAM:
+			_collect(sources, [STEAM])
+	return sources
+
+static func _collect(sources: Dictionary, textures: Array) -> void:
+	for texture: Texture2D in textures:
+		sources[texture] = texture
+
+static func _collect_views(sources: Dictionary, tables: Array) -> void:
+	for table: Dictionary in tables:
+		for view in table.keys():
+			var texture: Texture2D = table[view]
+			sources[texture] = texture
+
+## The region of this instance's family atlas standing in for `texture`, or `texture` itself while
+## the family has not been collected, has already been released, or was never asked for at all —
+## which is every instance a data-level rig builds without an `EventManager` behind it.
+func _packed(texture: Texture2D) -> Texture2D:
+	return TextureAtlas.texture_for(_atlas_name, texture, texture)
+
 func _draw_body(canvas: CanvasItem = self) -> void:
 	if is_suppressed_by_its_own_hold():
 		return
@@ -2672,7 +2824,7 @@ func _draw_simple(texture: Texture2D, canvas: CanvasItem = self,
 		texture_b: Texture2D = null) -> void:
 	_draw_body_shadow(canvas)
 	var drawn := texture_b if texture_b and _gait_stepping() else texture
-	Sprites.draw_standing(canvas, drawn, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	Sprites.draw_standing(canvas, _packed(drawn), Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 ## The five-view generalisation of `_draw_simple`, for a family that has the full
 ## front/back/side/diagonal set — `_select_view()` picks the view from `heading` and
@@ -2708,7 +2860,7 @@ func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem 
 	var texture: Texture2D = by_view[view]
 	if not by_view_b.is_empty() and _gait_stepping():
 		texture = by_view_b[view]
-	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, mirror)
+	Sprites.draw_standing(canvas, _packed(texture), Vector2.ZERO, Vector2.ZERO, mirror)
 
 ## A stationary vehicle projected along the axis of the street it occupies. Its side silhouette
 ## may mirror with its facing; an end-on silhouette keeps its authored proportions and orientation.
@@ -2720,7 +2872,7 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 	var texture := _stationary_vehicle_texture(look, _stationary_vehicle_side)
 	var extent := _stationary_vehicle_extent(texture, _stationary_vehicle_side, side_width)
 	_draw_body_shadow(canvas)
-	Sprites.draw_standing(canvas, texture, Vector2.ZERO, extent,
+	Sprites.draw_standing(canvas, _packed(texture), Vector2.ZERO, extent,
 			_stationary_vehicle_side and _heading_is_west())
 
 ## The dog, and the lead it is no longer on.
@@ -2737,7 +2889,7 @@ func _draw_loose_dog(canvas: CanvasItem = self) -> void:
 	canvas.draw_line(Vector2(0.0, -8.0), behind + Vector2(0.0, -2.0), Palette.OUTLINE, 2.0)
 	var view := _select_view(_heading)
 	var by_view := DOG_BY_VIEW_B if _gait_stepping() else DOG_BY_VIEW
-	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
+	Sprites.draw_standing(canvas, _packed(by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
 
 ## Every bird, drawn where it actually is.
@@ -2771,7 +2923,8 @@ func _draw_birds(canvas: CanvasItem = self) -> void:
 			# that has already gone — which is the thing the wait and the telegraph before it exist
 			# to show her instead.
 			wings = PIGEON_DOWN_BY_VIEW[view]
-		Sprites.draw_standing(canvas, wings, bird.at - Vector2(0.0, bird.lift), Vector2.ZERO, mirror)
+		Sprites.draw_standing(canvas, _packed(wings), bird.at - Vector2(0.0, bird.lift),
+				Vector2.ZERO, mirror)
 
 ## How high a bird's shadow survives to. Roughly first-floor height: above it, there is nothing on
 ## the pavement to cast one onto that the player can see.
@@ -2788,7 +2941,7 @@ func _draw_cat(canvas: CanvasItem = self) -> void:
 		by_view = CAT_RUNNING_BY_VIEW_B
 	_draw_body_shadow(canvas)
 	var view := _select_view(_heading)
-	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
+	Sprites.draw_standing(canvas, _packed(by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
 
 ## Hood up and hands in the coat while he is only somewhere; leaning out over a forward leg once
@@ -2813,7 +2966,7 @@ func _draw_robber(canvas: CanvasItem = self) -> void:
 	# the street is worth nothing next to a man watching *her* — see `_robber_waiting_heading()`.
 	var heading := _robber_waiting_heading() if waiting else _heading
 	var view := _select_view(heading)
-	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
+	Sprites.draw_standing(canvas, _packed(by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
 
 ## Which way the waiting posture faces: her, from the moment a caller has told this instance where
@@ -2843,7 +2996,8 @@ func _draw_roadblock(canvas: CanvasItem = self) -> void:
 	if def.pursues and not is_waiting():
 		_draw_shadow(canvas, Vector2.ZERO, _GUARD_SHADOW_RADIUS)
 		var texture := GUARD_STANDING if is_telegraphing() else GUARD_LUNGING
-		Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+		Sprites.draw_standing(canvas, _packed(texture), Vector2.ZERO, Vector2.ZERO,
+				_heading_is_west())
 		return
 	_draw_spread(ROADBLOCK_SEGMENT, ROADBLOCK_END, canvas)
 
@@ -2857,7 +3011,7 @@ func _draw_fire(canvas: CanvasItem = self) -> void:
 		var offset := (i - 2.0) * 11.0
 		var flicker := 1.0 + 0.25 * sin(age * 9.0 + i * 1.7)
 		var height := (34.0 + i % 2 * 14.0) * strength * flicker
-		Sprites.draw_standing(canvas, FLAME, Vector2(offset, 0.0), Vector2(18.0, height))
+		Sprites.draw_standing(canvas, _packed(FLAME), Vector2(offset, 0.0), Vector2(18.0, height))
 
 ## A point `offset` along whichever axis `_spread_vertical` says this instance spreads on — local X
 ## by default, local Y on an east-west street. See `_spread_is_vertical`.
@@ -2888,7 +3042,7 @@ func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null, canvas: Can
 	var segments := maxi(1, ceili(half * 2.0 / along_natural))
 	var width := half * 2.0 / segments
 	for i in segments:
-		Sprites.draw_standing(canvas, segment_texture,
+		Sprites.draw_standing(canvas, _packed(segment_texture),
 				_spread_at(-half + width * (i + 0.5)), _spread_extent(width, thickness))
 	if not cap:
 		return
@@ -2896,7 +3050,7 @@ func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null, canvas: Can
 	var cap_along := cap_size.y if _spread_vertical else cap_size.x
 	var cap_thickness := cap_size.x if _spread_vertical else cap_size.y
 	for side in [-1.0, 1.0]:
-		Sprites.draw_standing(canvas, cap, _spread_at(_cap_offset(half, cap_along, side)),
+		Sprites.draw_standing(canvas, _packed(cap), _spread_at(_cap_offset(half, cap_along, side)),
 				_spread_extent(cap_along, cap_thickness))
 
 ## A whole-scene picture is one body, including on an east-west street. Its vertical asset is
@@ -2912,7 +3066,7 @@ func _draw_wide_scene(texture: Texture2D, canvas: CanvasItem = self) -> void:
 	var anchor := _wide_scene_anchor(_spread_vertical, half)
 	var shadow := _wide_scene_shadow(texture)
 	if shadow and canvas != _halo:
-		canvas.draw_texture_rect(TextureResolver.resolve(shadow),
+		canvas.draw_texture_rect(_packed(shadow),
 				Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent),
 				false, Palette.SHADOW)
 	else:
@@ -2920,7 +3074,7 @@ func _draw_wide_scene(texture: Texture2D, canvas: CanvasItem = self) -> void:
 		# the shape's own capsule shadow follows the same span as the body, `-half` to `half`
 		# along the spread axis.
 		_draw_body_shadow(canvas)
-	Sprites.draw_standing(canvas, texture, anchor, extent)
+	Sprites.draw_standing(canvas, _packed(texture), anchor, extent)
 
 static func _wide_scene_anchor(vertical: bool, half: float) -> Vector2:
 	return Vector2(0.0, half) if vertical else Vector2.ZERO
@@ -2952,7 +3106,8 @@ func _draw_crater(canvas: CanvasItem = self) -> void:
 func _draw_masked_pursuer(canvas: CanvasItem = self) -> void:
 	_draw_shape_shadow(canvas, def.shape)
 	var texture := GUARD_STANDING if is_telegraphing() else GUARD_LUNGING
-	Sprites.draw_standing(canvas, texture, Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	Sprites.draw_standing(canvas, _packed(texture), Vector2.ZERO, Vector2.ZERO,
+			_heading_is_west())
 
 ## **Both halves have to be drawn**: the tables are what obstructs and the conversation is what it
 ## emits, so a café drawn as furniture alone is the loudest pleasant thing in act I looking like
@@ -2990,11 +3145,11 @@ func _draw_cafe(canvas: CanvasItem = self) -> void:
 		var view: String = EIGHT_VIEW_BY_SECTOR[sitter_sector]
 		var sitter: Texture2D = by_view[view]
 		var mirror := EightDirection.is_mirrored(sitter_sector)
-		Sprites.draw_standing(canvas, sitter, _spread_at(chair_along) + Vector2(0.0, -7.0),
+		Sprites.draw_standing(canvas, _packed(sitter), _spread_at(chair_along) + Vector2(0.0, -7.0),
 				Vector2.ZERO, mirror)
 	for i in segments:
 		var along := -half + width * (i + 0.5)
-		Sprites.draw_standing(canvas, CAFE_TABLE,
+		Sprites.draw_standing(canvas, _packed(CAFE_TABLE),
 				_spread_at(along), _spread_extent(width, thickness), i % 2 == 1)
 
 ## The bearing from an alternating café chair to its own table. This follows the chair anchor's
@@ -3014,7 +3169,7 @@ func _draw_busker(canvas: CanvasItem = self) -> void:
 	var view := _select_view(_heading)
 	var mirror := EightDirection.is_mirrored(_view_sector)
 	var by_view := BUSKER_BY_VIEW_B if _idle_stepping(BUSKER_STRUM_PERIOD) else BUSKER_BY_VIEW
-	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO, mirror)
+	Sprites.draw_standing(canvas, _packed(by_view[view]), Vector2.ZERO, Vector2.ZERO, mirror)
 
 ## The eight pointing poses, in the bearing order `_protester_texture()` indexes into: north
 ## first, then clockwise. Kept beside the poses themselves rather than built in the function, so
@@ -3106,7 +3261,7 @@ func _draw_protest(canvas: CanvasItem = self) -> void:
 		var shift := step * 0.5 if back else 0.0
 		for i in across - (1 if back else 0):
 			var x := -half + step * (i + 0.5) + shift
-			Sprites.draw_standing(canvas, texture, Vector2(x, lift), Vector2.ZERO, mirror)
+			Sprites.draw_standing(canvas, _packed(texture), Vector2(x, lift), Vector2.ZERO, mirror)
 
 ## People behind cover, shooting at each other. Not a building on fire, which is what it drew for
 ## fourteen milestones — the same five flames as `burning_building`, on the one event in the
@@ -3124,7 +3279,7 @@ func _draw_firefight(canvas: CanvasItem = self) -> void:
 		strength = clampf(current_intensity() / def.intensity, 0.0, 1.0)
 	for side in [-1.0, 1.0]:
 		var at := Vector2(side * half * 0.62, 0.0)
-		Sprites.draw_standing(canvas, GUNMAN, at, Vector2.ZERO, side > 0.0)
+		Sprites.draw_standing(canvas, _packed(GUNMAN), at, Vector2.ZERO, side > 0.0)
 		# Sized off the current emission and jittered per side, so the two are never in step.
 		var flare := strength * (0.6 + 0.4 * sin(age * 17.0 + side * 2.1))
 		if flare <= 0.25:
@@ -3163,8 +3318,8 @@ func _draw_dog_walker(canvas: CanvasItem = self) -> void:
 	var stepping := _gait_stepping()
 	var person_by_view := PERSON_BY_VIEW_B if stepping else PERSON_BY_VIEW
 	var dog_by_view := DOG_BY_VIEW_B if stepping else DOG_BY_VIEW
-	Sprites.draw_standing(canvas, person_by_view[view], Vector2.ZERO, Vector2.ZERO, mirror)
-	Sprites.draw_standing(canvas, dog_by_view[view], to_the_dog, Vector2.ZERO, mirror)
+	Sprites.draw_standing(canvas, _packed(person_by_view[view]), Vector2.ZERO, Vector2.ZERO, mirror)
+	Sprites.draw_standing(canvas, _packed(dog_by_view[view]), to_the_dog, Vector2.ZERO, mirror)
 
 ## The van, and the bystander it is taking while there is one to draw.
 ##
@@ -3198,7 +3353,7 @@ func _draw_abduction(canvas: CanvasItem = self) -> void:
 		# side view `_heading_is_west()` picked before, now read off the shared table.
 		var view := _select_view(-standing)
 		var by_view := VAN_VICTIM_BY_VIEW_B if _victim_gait_stepping() else VAN_VICTIM_BY_VIEW
-		Sprites.draw_standing(canvas, by_view[view], at, Vector2.ZERO,
+		Sprites.draw_standing(canvas, _packed(by_view[view]), at, Vector2.ZERO,
 				EightDirection.is_mirrored(_view_sector))
 	# West-authored, like `delivery_van` and `fire_engine` above — see `_draw_eight_view()`'s own
 	# doc comment on `side_faces_west`.
@@ -3218,7 +3373,7 @@ func _draw_chatting_mother(canvas: CanvasItem = self) -> void:
 	if not chatting and _gait_stepping():
 		by_view = CHATTING_MOTHER_WALKING_BY_VIEW_B
 	var view := _select_view(_heading)
-	Sprites.draw_standing(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
+	Sprites.draw_standing(canvas, _packed(by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
 
 ## Which way a mobile event is travelling, for art that has a front and a back. A
@@ -3250,7 +3405,7 @@ func _select_view(heading: Vector2) -> String:
 ## `Sprites.draw_standing` — nothing in the kit that draws this way ever needs to flip.
 func _draw_at_anchor(canvas: CanvasItem, texture: Texture2D, anchor: Vector2,
 		at: Vector2 = Vector2.ZERO) -> void:
-	texture = TextureResolver.resolve(texture)
+	texture = _packed(texture)
 	canvas.draw_texture_rect(texture, Rect2(at - anchor, texture.get_size()), false)
 
 ## The hut's own doorway direction, read off `CityMap.pavement_inward()` at the tile it actually

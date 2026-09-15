@@ -84,16 +84,30 @@ var _route_lines: RouteLines
 var _debug_mode_note: DebugModeNote
 ## The rolling bar graph of the last frames' own lengths, under `_status`. Set by
 ## `_add_frame_graph()`, or left `null` on the same "absent, not merely hidden" terms
-## `_debug_mode_note` is — a release page nobody asked `?debug=1` of never builds it. Every place
-## `_status.visible` changes goes through `_set_readout_visible()`, which keeps this in step with
-## it (`if _frame_graph:`, since it is null on exactly the builds that never call that setter with
-## anything true).
+## `_debug_mode_note` is — a release page nobody asked `?debug=1` of never builds it. **Built where
+## the readout is, but shown independently of it**: the player asked the graph's own switch to be
+## `6`, not `4`, which is a different question from whether the title screen is up — the title
+## still hides everything about a player who is not there, this included. So `_frame_graph.visible`
+## is `_layer_graph_on and not _in_the_title` in effect, kept true by three call sites rather than
+## one: `_toggle_debug_layer()`'s own `6` case, and `_open_the_title()`/`_on_title_start()` setting
+## it directly, since `_set_readout_visible()` does not touch it. `if _frame_graph:` at each site,
+## since it is null on exactly the builds that never build one.
 var _frame_graph: FrameGraph
 ## Whether the developer readout (`_status`) is showing, independent of `_debug`: the fourth
 ## layer `_toggle_debug_layer()` owns, on `_status`'s own pre-existing `CanvasLayer` rather than
 ## under `_debug_layers`, which is not a `CanvasLayer` this label could join. Starts `true`, so an
 ## unflagged debug run reads exactly as it did before this milestone.
 var _layer_readout_on := true
+## Whether the frame-time graph (`_frame_graph`) is showing — its own debug layer, key `6` in
+## `_debug_layer_key()`/`_toggle_debug_layer()`, independent of `_layer_readout_on`'s own `4`:
+## *(2026-09-15, the player: "spike view should be independent of debug layer 4 it should be its
+## own debug layer and turned off by default unless --spikes is set".)* Starts `false` — unlike
+## `_layer_readout_on`, which starts `true` — and `_add_frame_graph()` sets it `true` at boot
+## instead when `DevFlags.spikes_requested()` holds or `--layers` names `6`, the same way `--layers`
+## naming `5` starts `_route_lines` on. Toggling it off also empties `_frame_graph`'s own ring
+## (`FrameGraph.clear()`), so a graph switched off and back on again starts from blank rather than
+## picking up wherever the window it was not fed during happened to leave off.
+var _layer_graph_on := false
 ## The pointer controls, on their own layer for the same reason the danger edge is: they have to
 ## sit above the world they are drawn over. Built in `_ready()`, alongside `_touch_layer`.
 var _touch_controls: TouchControls
@@ -169,7 +183,12 @@ func _ready() -> void:
 	_city.build(CityGenerator.generate(GameState.run_seed))
 	print("[Main] city generated in %d ms (seed %d)" % [
 		Time.get_ticks_msec() - elapsed, _city.map.seed_used])
-	await _warm_the_pictures()
+	# On the doorstep before her own `Camera2D` exists, so the two frames `_warm_the_pictures()`
+	# awaits below draw the ground the title screen and the day itself will, rather than the
+	# world's default identity transform — see `_new_boot_camera()`'s own doc. Freed once
+	# `_start_day()` has put her camera in the same place for real.
+	var boot_camera := _new_boot_camera(_city.map.doorstep_world_position())
+	await _warm_the_pictures(boot_camera.global_position)
 
 	_player = STROLLER.instantiate()
 	_city.add_entity(_player)
@@ -234,6 +253,10 @@ func _ready() -> void:
 		_observer.setup(_city, _player, _baby, _day, _resistance, _edge)
 
 	_start_day()
+	# `_player.reset_at()` inside the call above has just put her own camera exactly where the
+	# boot camera was standing in for it, so freeing it now hands the viewport's current camera
+	# straight to hers — see `_new_boot_camera()`'s own doc for why freeing is what does that.
+	boot_camera.free()
 
 	if DevFlags.overview_requested():
 		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
@@ -285,8 +308,13 @@ func _ready_escape() -> void:
 		Telemetry.begin_run(GameState.run_seed, _somebody_is_playing())
 	# The second boot entry point `TextureResolver.warm()` has to reach — see `_warm_the_pictures()`
 	# — since the epilogue draws its own pictures (the building's props, the city's events) and is
-	# reached without ever passing through `_ready()`'s own call above.
-	await _warm_the_pictures()
+	# reached without ever passing through `_ready()`'s own call above. This path awaits the same
+	# way `_ready()` does before anything of the world exists — neither `_interior` nor `_city` is
+	# built yet, whichever section this run opens on — so it needs the same boot camera for
+	# `_warm_the_halo_shader()`'s probe to have a screen to draw on; world origin is as good as any
+	# other point, since nothing is in the tree yet to show a wrong corner of.
+	var boot_camera := _new_boot_camera(Vector2.ZERO)
+	await _warm_the_pictures(boot_camera.global_position)
 
 	_hud = HUD.instantiate()
 	add_child(_hud)
@@ -322,6 +350,11 @@ func _ready_escape() -> void:
 	_apply_orientation()
 	_finale.begin(FinaleController.Section.CITY if start_at_the_city
 			else FinaleController.Section.BUILDING)
+	# `begin()` just emitted `section_started` synchronously, which is what puts her (and her own
+	# camera) at this section's own start position — see `_on_finale_section_started()`. Freeing
+	# now hands the viewport's current camera straight to hers, the same moment `_ready()` frees
+	# its own boot camera.
+	boot_camera.free()
 
 	if DevFlags.overview_requested() and _city:
 		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
@@ -597,16 +630,28 @@ func _show_an_ending_for_a_rig() -> bool:
 ##   `Stroller.stand_aside()`.
 ##
 ## The HUD, the screen-edge badge and the developer readout all come off, because every one of them
-## is a statement about a player who is not there.
+## is a statement about a player who is not there. The frame graph comes off with them too — it is
+## independent of `4` (see `_layer_graph_on`'s own doc), not of the title, so this hides it directly
+## rather than through `_set_readout_visible()`, which no longer reaches it. **The ring itself is
+## untouched**: only a `6` toggle-off clears it (`_toggle_debug_layer()`), so a graph that was
+## recording keeps what it already has across the trip through this screen.
 func _open_the_title() -> void:
 	_in_the_title = true
-	get_tree().paused = true
+	# Guarded the same shape `_on_title_start()`'s own final line already is, and for the same
+	# reason: `tests/test_main.gd` drives this function on a script-only `main` with no tree behind
+	# it, to reach the graph-hiding line below without the rest of this function's live-tree
+	# dependencies. Never false in the running game, where this only ever fires on a real `main`
+	# already in the tree.
+	if is_inside_tree():
+		get_tree().paused = true
 	_city.process_mode = Node.PROCESS_MODE_ALWAYS
 	_player.process_mode = Node.PROCESS_MODE_PAUSABLE
 	_player.stand_aside()
 	_hud.visible = false
 	_edge_layer.visible = false
 	_set_readout_visible(false)
+	if _frame_graph:
+		_frame_graph.visible = false
 	_title.open(_ending_shown)
 
 ## The title screen has been pressed, which is also the start: hand the city back to the day it
@@ -637,6 +682,11 @@ func _on_title_start(mode: ControlsMode.Mode) -> void:
 	# turned it back on. `and _layer_readout_on` so a `4`-toggled-off readout stays off across a
 	# trip through the title rather than snapping back on underneath it.
 	_set_readout_visible((_debug or _readout_requested) and _layer_readout_on)
+	# The graph's own answer to the same question, off `_layer_graph_on` rather than
+	# `_layer_readout_on` — a `6`-toggled-on graph reappears here with whatever the ring already
+	# held, since `_open_the_title()` only hid it and never cleared it.
+	if _frame_graph:
+		_frame_graph.visible = _layer_graph_on
 	if is_inside_tree():
 		get_tree().paused = false
 
@@ -680,16 +730,47 @@ func _add_excitement_halo() -> void:
 	add_child(_halo)
 	_pauses_with_the_game(_halo)
 
+## A plain camera made current before either boot path's own player exists, so the two frames
+## `_warm_the_pictures()` awaits below draw `ground` — the doorstep, in `_ready()`'s case — rather
+## than the world's default identity transform, whose origin sits at the top-left of whatever is
+## in the tree under it.
+##
+## **Freeing it is what hands the viewport's current camera to the player's own.** A `Camera2D`
+## that exits the tree while it is the viewport's current one looks for another enabled camera on
+## the same canvas and makes that one current in its place, and the stroller's own `Camera2D`
+## (`scenes/player/stroller.tscn`) — sitting dormant since it entered the tree while this one was
+## already current — is the only other camera either boot path ever has in the tree by then.
+func _new_boot_camera(ground: Vector2) -> Camera2D:
+	var camera := Camera2D.new()
+	camera.name = "BootCamera"
+	camera.global_position = ground
+	# The stroller's own play zoom (`scenes/player/stroller.tscn`), so the warm-up frames read at
+	# the scale the title screen and the day itself will.
+	camera.zoom = Vector2(2, 2)
+	# Matches the stroller's own `Camera2D` (`process_callback = 0` in the scene) rather than the
+	# default idle callback — see the **godot** skill's "A paused `Camera2D` with smoothing on
+	# never arrives": with physics interpolation on project-wide, the default leaves the engine to
+	# override this itself and warn about it once a run.
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	add_child(camera)
+	_pauses_with_the_game(camera)
+	camera.make_current()
+	return camera
+
 ## M147, "every picture loaded before it is needed": loads every transfer PNG and gets the halo's
 ## shared shader compiled before either boot path's own `_start_day()`/`_finale.begin()`, so the
 ## first frame that actually needs a picture or a halo never pays for either. Printed beside
 ## "city generated in N ms" — the same shape `_plan_the_finale_city()` prints its own line beside
 ## — because a phone's longer first load belongs next to the other number that already tells a
 ## reader how long the boot took.
-func _warm_the_pictures() -> void:
+##
+## `ground` is where the boot camera made current just before this call is standing — see
+## `_new_boot_camera()` — and is handed straight through to `_warm_the_halo_shader()`, which needs
+## a point it can be sure is on screen.
+func _warm_the_pictures(ground: Vector2) -> void:
 	var elapsed := Time.get_ticks_msec()
 	var loaded := TextureResolver.warm()
-	await _warm_the_halo_shader()
+	await _warm_the_halo_shader(ground)
 	print("[Main] %d pictures warmed in %d ms" % [loaded, Time.get_ticks_msec() - elapsed])
 
 ## Gets the Compatibility renderer to compile the halo's shader program before a real halo ever
@@ -699,25 +780,24 @@ func _warm_the_pictures() -> void:
 ## open request — so the only lever left is a real draw call: a throwaway `Node2D` draws one
 ## transparent pixel with `EntityHalo.shared_material()` and is freed the frame after.
 ##
-## **At world origin, not off in the distance.** A canvas item outside the camera's visible rect
-## is culled before it reaches the renderer — see M139, "one atlas for the crowd", on why an
+## **At `ground`, not off in the distance.** A canvas item outside the camera's visible rect is
+## culled before it reaches the renderer — see M139, "one atlas for the crowd", on why an
 ## off-screen `CrowdAgent` costs nothing per frame — and a culled draw would compile nothing,
-## defeating the whole pass. No `Camera2D` exists yet at this point in either boot path (the one
-## in `scenes/player/stroller.tscn` is not built until after this call returns), so the viewport
-## still carries its default identity transform and world origin sits at the corner of the window
-## — on screen, in the renderer's own terms, whatever else has been drawn there this frame. Fully
-## transparent (`halo_colour`'s instance uniform default, never set here) makes it imperceptible
-## regardless: the GLSL program compiles from the material and the draw call alone, never from
-## the pixels it happens to write.
+## defeating the whole pass. `ground` is the boot camera's own `global_position` (see
+## `_new_boot_camera()`, made current by both boot paths before `_warm_the_pictures()` is ever
+## called), so a probe placed there sits exactly at that camera's own screen centre — on screen
+## regardless of zoom or viewport size. Fully transparent (`halo_colour`'s instance uniform
+## default, never set here) makes it imperceptible regardless: the GLSL program compiles from the
+## material and the draw call alone, never from the pixels it happens to write.
 ##
 ## **Two awaits, not one.** `SceneTree.process_frame` fires *before* the frame it names is drawn —
 ## `DaySummary._acknowledge_and_continue()` confirms this directly against `RenderingServer`'s own
 ## `frame_pre_draw`/`frame_post_draw` — so a single await would free the probe before its queued
 ## draw ever reached the renderer, and the shader would still compile late, on the first real halo.
-func _warm_the_halo_shader() -> void:
+func _warm_the_halo_shader(ground: Vector2) -> void:
 	var probe := Node2D.new()
 	probe.name = "HaloWarm"
-	probe.position = Vector2.ZERO
+	probe.global_position = ground
 	probe.material = EntityHalo.shared_material()
 	probe.draw.connect(func() -> void: probe.draw_rect(Rect2(Vector2.ZERO, Vector2.ONE), Color.WHITE))
 	add_child(probe)
@@ -767,8 +847,18 @@ func _add_frame_graph() -> void:
 	_frame_graph.name = "FrameGraph"
 	_frame_graph.text_colour = _status.get_theme_color("font_color")
 	_frame_graph.position = Vector2(_status.offset_left, 614.0)
-	_frame_graph.visible = (_debug or _readout_requested) and _layer_readout_on
+	_layer_graph_on = _graph_starts_on(DevFlags.spikes_requested(), DevFlags.layers_override())
+	_frame_graph.visible = _layer_graph_on
 	_status_layer.add_child(_frame_graph)
+
+## Whether `_layer_graph_on` starts `true`, with the command line taken out of it — pulled out the
+## same way `escape_part_for()` separates what `DevFlags.start_escape_at()`'s word means from the
+## word itself, so a test can drive the policy without a real `--spikes` or `--layers 6` on this
+## process's own command line. `--spikes` already means somebody is chasing a stutter, and
+## `--layers` naming `6` is the same "reproducible without a keypress" request `5` already answers
+## for `_route_lines` (`DevFlags.layers_override()`'s own doc).
+static func _graph_starts_on(spikes_requested: bool, layers: Array[int]) -> bool:
+	return spikes_requested or 6 in layers
 
 ## The fields, shadows and bounding-box overlays — see `DebugLayers`. **Absent from the tree
 ## outside a debug build**, not merely built and left invisible: `_debug_layers` stays `null`, so
@@ -1096,6 +1186,12 @@ func _tree_is_paused() -> bool:
 	return loop is SceneTree and (loop as SceneTree).paused
 
 func _process(delta: float) -> void:
+	# The one place in the running game that finishes a `TextureAtlas` request. It sits above
+	# every early return below on purpose: a group is asked for while the city is built or while
+	# an event is placed off screen, and the title screen, the interior and the finale all return
+	# from this function before reaching the day, so a pump further down would leave an atlas
+	# packed and never collected for as long as one of those is on screen.
+	TextureAtlas.collect_ready()
 	_dev_rig.update_follow_camera(_city)
 	# Re-asked every frame rather than only on `size_changed` — see `_apply_orientation()`'s own
 	# doc for why a signal alone can latch the wrong answer. The cost is one vector comparison.
@@ -1132,6 +1228,18 @@ func _process(delta: float) -> void:
 	_city.set_daylight(_day.fraction_remaining())
 	_hud.set_home_guidance(_day.phase == GameEnums.DayPhase.RETURNING,
 			_city.map.home_world_position())
+	# The bar graph's own ring, fed `delta` itself — `FrameCost` below already discards which frame
+	# in a second was the long one, and the graph exists to answer exactly that. Answered here,
+	# ahead of the readout's own early return below, because `_layer_graph_on` is this layer's own
+	# `6` key and must keep feeding (or stay silent) whatever `4` did to the readout — a
+	# `4`-toggled-off readout must not also silence a `6`-toggled-on graph. `push()` itself is a
+	# no-op unless `_frame_graph.visible` holds, which `_toggle_debug_layer()` keeps in step with
+	# `_layer_graph_on`, so nothing further needs asking here. `if _frame_graph:` because it is
+	# `null` under the same release-page terms `_add_frame_graph()` documents, and because a test
+	# that drives `_process()` directly (`tests/test_main.gd`) without also calling `_ready()` has
+	# never built one either.
+	if _frame_graph:
+		_frame_graph.push(delta)
 	# The developer readout, gated rather than merely hidden: it is a seed, a meter breakdown and
 	# what the frame cost (`FrameCost.readout_lines()` — fps, draw calls, objects, primitives and
 	# the two loop times, the same six quantities the run log's own `frame` entry carries), which a
@@ -1148,14 +1256,6 @@ func _process(delta: float) -> void:
 	# since the window is about wall-clock stutter and must keep moving through a pause, a
 	# compressed `--day-length` and `--invincible`'s own frozen day clock alike.
 	FrameCost.sample(Time.get_ticks_msec() / 1000.0)
-	# The bar graph's own ring, fed `delta` itself rather than anything `FrameCost` read above —
-	# `FrameCost` already discarded which frame in the last second was the long one, and the graph
-	# exists to answer exactly that. `if _frame_graph:` because it is `null` under the same
-	# release-page terms `_add_frame_graph()` documents, and because a test that drives
-	# `_process()` directly (`tests/test_main.gd`) without also calling `_ready()` has never built
-	# one either.
-	if _frame_graph:
-		_frame_graph.push(delta)
 	var tile := _city.map.world_to_tile(_player.global_position)
 	if _build_text == "":
 		_build_text = TitleScreen.build_text()
@@ -1312,9 +1412,10 @@ static func _debug_snapshot_action(event: InputEvent) -> StringName:
 		return &"snapshot"
 	return &""
 
-## `1` fields, `2` shadows, `3` bounding boxes, `4` the readout, `5` the day's routes — or `0` for
-## anything else. The same echo guard `_debug_snapshot_action()` carries, for the same reason: a
-## held key is one request, not a flood of toggles for as long as it stays down.
+## `1` fields, `2` shadows, `3` bounding boxes, `4` the readout, `5` the day's routes, `6` the
+## frame-time graph — or `0` for anything else. The same echo guard `_debug_snapshot_action()`
+## carries, for the same reason: a held key is one request, not a flood of toggles for as long as
+## it stays down.
 static func _debug_layer_key(event: InputEvent) -> int:
 	if not (event is InputEventKey and (event as InputEventKey).pressed):
 		return 0
@@ -1326,13 +1427,19 @@ static func _debug_layer_key(event: InputEvent) -> int:
 		KEY_3: return 3
 		KEY_4: return 4
 		KEY_5: return 5
+		KEY_6: return 6
 		_: return 0
 
 ## `4` is the readout's own key, answered here rather than on `_debug_layers` because the readout
 ## lives on `_status`'s pre-existing `CanvasLayer` rather than under that node — see
 ## `_layer_readout_on`'s own doc. `5` is `_route_lines`' own key, forwarded the same way `1`-`3`
 ## reach `_debug_layers` — a plain `visible` flip rather than a `set_layer` call, since that node
-## draws one thing rather than three.
+## draws one thing rather than three. `6` is `_frame_graph`'s own key, on the same terms as `5` but
+## answered without going through `_set_readout_visible()` — see `_layer_graph_on`'s own doc for why
+## it no longer shares `4`'s switch. Turning it off also empties the ring
+## (`FrameGraph.clear()`), so `6` twice leaves a blank graph that only fills again from that moment
+## — *(2026-09-15, the player: "spike recording should only be on while the layer is on. that means
+## toggling the layer twice will lead to a blank frame array".)*
 func _toggle_debug_layer(layer: int) -> void:
 	if layer == 4:
 		_layer_readout_on = not _layer_readout_on
@@ -1342,20 +1449,31 @@ func _toggle_debug_layer(layer: int) -> void:
 		if _route_lines:
 			_route_lines.visible = not _route_lines.visible
 		return
+	if layer == 6:
+		_layer_graph_on = not _layer_graph_on
+		if _frame_graph:
+			# `and not _in_the_title` so pressing `6` while the title is open (`_unhandled_input()`
+			# still reaches this — `main` stays `PROCESS_MODE_ALWAYS` for Esc's own sake) never draws
+			# the graph over it; `_on_title_start()` reads `_layer_graph_on` on the way out and shows
+			# it then if this left it `true`.
+			_frame_graph.visible = _layer_graph_on and not _in_the_title
+			if not _layer_graph_on:
+				_frame_graph.clear()
+		return
 	if _debug_layers:
 		_debug_layers.set_layer(layer, not _debug_layers.layer_on(layer))
 
 ## The one place `_status.visible` is actually assigned — every other spot in this file calls this
-## instead, so `_frame_graph` (`null` on a release page nobody asked `?debug=1` of, the same terms
-## `_debug_mode_note` is) can never fall out of step with the label it toggles beside: the fourth
-## debug layer, the title screen hiding both and `_on_title_start()` bringing both back. `if
-## _frame_graph:` rather than asserting it is set, because a test that drives one of these five call
-## sites directly (`tests/test_main.gd`, `tests/test_debug_layers.gd`) is exercising `_status`'s own
-## release shape and has no reason to have built the graph too.
+## instead, so the readout's own visibility can never fall out of step between the boot, the escape
+## boot, the title screen hiding it and `_on_title_start()` bringing it back. **Does not touch
+## `_frame_graph`** — the player asked the graph's own switch to be `6`, not `4`, so toggling `4`
+## alone leaves it exactly where `_layer_graph_on` already had it. The title screen is a different
+## question from `4` (it hides everything about a player who is not there) and still reaches the
+## graph, just through its own two call sites (`_open_the_title()`/`_on_title_start()`) rather than
+## through this setter, since a title trip must hide it without clearing the ring the way a `6`
+## toggle-off does.
 func _set_readout_visible(shown: bool) -> void:
 	_status.visible = shown
-	if _frame_graph:
-		_frame_graph.visible = shown
 
 ## `P` (or `F9`) writes a screenshot into the telemetry folder and a line of trace beside it. It is
 ## a debugging aid rather than a game feature.

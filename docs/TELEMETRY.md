@@ -236,7 +236,8 @@ name the question it answers, or it is a metric and does not belong.
 | `blocked` | observer | **Is she stuck, or standing on purpose?** Movement input held for about a second while she goes nowhere — the direction, how long, and where. `idle` already covers the legitimate stand-still, no direction held; without this one an immobile rig's log reads exactly like a run, and a person pressing into a blocker the engine never stopped them at has no trace of having done it |
 | `cue` | observer | **What was she warned about, and for how long** — the mark over her head and the screen-edge badges, each written when the span ends so the duration is on the line. A cue is a claim about a moment, and a complaint about a cue's *timing* is invisible to a trace that writes only what was marked |
 | `frame` | observer | **What the frames cost on the device this was played on** — once a second, the frame rate, the worst single frame in that second, the draw calls, renderable objects and primitives the renderer was handed, and the milliseconds spent in `_process` and `_physics_process`. The one entry that is about the machine rather than about the day, and the only way a session played on a phone or on the web page can be read back at all. See "What a frame cost" below |
-| `spike` | observer | **Under `--spikes` only: which frame in the second ran past twice the mean of the frames before it, and what the game did in it.** The frame's own length and that mean, in milliseconds, followed by what changed since the previous frame — her tile, the count of live event instances, or how many transfer PNGs `TextureResolver` loaded — or "nothing else changed that frame" when none did. At most one line a second, the worst of that second if more than one frame qualified. See "What a frame cost" below |
+| `spike` | observer | **Under `--spikes` only: which frame in the second ran past twice the mean of the frames before it, and what the game did in it.** The frame's own length and that mean, in milliseconds, followed by what changed since the previous frame — her tile, the count of live event instances, how many transfer PNGs `TextureResolver` loaded, or how many atlases `TextureAtlas` collected — or "nothing else changed that frame" when none did. At most one line a second, the worst of that second if more than one frame qualified. See "What a frame cost" below |
+| `texture` | `TextureResolver`, `TextureAtlas`, `GroundLayers` | **When a picture was loaded or dropped, and what it cost** — a transfer PNG read from disk with the path and the milliseconds the read took, an atlas becoming ready with its group, how many pictures it holds, its pixel size, the milliseconds from the request and how much of that the worker thread took, an atlas being released with how long it was drawn from, and the ground's own shared texture being packed with how many sources it covers and what that cost. It is what says whether a picture arrived before it was drawn rather than during the frame that wanted it |
 | `freeze` / `thaw` | observer | Was the day lost to noise or to the clock? Freezing is the invisible failure |
 | `asleep` / `woke` | observer | How long the walk actually took, and what woke her |
 | `quiet` | observer | The sabotage landed and the masts went off |
@@ -475,9 +476,12 @@ than read back from a log afterwards. `DebugLayers` (`src/dev/debug_layers.gd`) 
 outlines from what they answer; nothing about how any of them draws itself changes. `RouteLines`
 (`src/dev/route_lines.gd`), the fifth layer below, answers a different question — not what the
 game currently thinks is true this frame, but what it planned at the start of the day — and reads
-`City.route_tree()` once rather than querying anything live.
+`City.route_tree()` once rather than querying anything live. `FrameGraph` (`src/ui/frame_graph.gd`),
+the sixth layer below, answers a third question again — not the ground truth and not the day's
+plan, but what the last 240 frames actually cost — and reads `main._process`'s own `delta` each
+frame it is on rather than querying the world at all.
 
-Five layers, each a number key, read as a raw keycode rather than an input-map action so a release
+Six layers, each a number key, read as a raw keycode rather than an input-map action so a release
 build has nothing in `project.godot` to reach:
 
 - **`1` fields** — every emitter's actual falloff boundary, inner and outer level, for events,
@@ -553,25 +557,6 @@ build has nothing in `project.godot` to reach:
   reports what it has rather than a zero that would read as free. `line()` itself is unchanged: it
   already writes once a second, at the interval the mean covers, so a mean over that same second
   would be no different a number.
-
-  **A rolling bar graph of the last 240 frames' own lengths sits directly under the readout's own
-  block, toggled by the same `4` key** (`FrameGraph`, `src/ui/frame_graph.gd`) — what `process` and
-  `physics` cannot show, since both are the engine's own once-a-second worst (M138, above) and
-  cannot say *which* frame in that second was the long one, or what the fourteen ordinary frames
-  around it looked like. Fed from `main._process`'s own `delta`, not from `FrameCost`, because a
-  number that already discarded 239 of the last 240 readings cannot be un-discarded. One bar per
-  frame, one design pixel wide, newest at the right, in a 240 by 48 design-pixel box: height
-  scaled so a 33.3ms (30fps) frame reaches the top and anything longer clips, with two thin
-  reference lines at 16.7ms (labelled `60`) and 33.3ms (labelled `30`) and a third, unlabelled
-  thin line at the window's own mean. A bar longer than 16.7ms is amber (`Palette.MARK_COSTLY`),
-  longer than 33.3ms is deep red (`Palette.MARK_LETHAL`) — against the two drawn lines and never
-  against the mean, so a second in which every frame is slow shows every bar as slow — the same two
-  colours the caret, the badge and the `1` fields layer above already use, so this reads as the
-  vocabulary the game already has rather than a third meaning for the same two colours — and every
-  other bar is the readout's own text colour at half alpha. Gated exactly as the readout is: built
-  only while `_debug or _readout_requested` holds, so a release page nobody asked `?debug=1` of has
-  neither the text nor the graph, and nothing is pushed into its ring or redrawn while the `4` key
-  has hidden it.
 - **`5` the day's routes** — one purple polyline per route the day's `RouteTree` offers, doorstep
   to calm area, over the centres of the two-tile reachability cells the tree actually grew on
   (`ReachabilityGrid`, docs/DECISIONS.md M69) rather than individual tiles — the tree keeps no
@@ -582,13 +567,42 @@ build has nothing in `project.godot` to reach:
   what sharing is for. The same purple `TelemetryMap` already draws the day's corridor in on the
   dusk map (`CORRIDOR_MARK`), so the live overlay and the dusk picture agree on what "the corridor"
   looks like.
+- **`6` the spike view** — a rolling bar graph of the last 240 frames' own lengths (`FrameGraph`,
+  `src/ui/frame_graph.gd`), sat directly under the readout's own block: what `process` and
+  `physics` above cannot show, since both are the engine's own once-a-second worst (M138, above)
+  and cannot say *which* frame in that second was the long one, or what the fourteen ordinary
+  frames around it looked like. Fed from `main._process`'s own `delta`, not from `FrameCost`,
+  because a number that already discarded 239 of the last 240 readings cannot be un-discarded. One
+  bar per frame, one design pixel wide, newest at the right, in a 240 by 48 design-pixel box: height
+  scaled so a 33.3ms (30fps) frame reaches the top and anything longer clips, with two thin
+  reference lines at 16.7ms (labelled `60`) and 33.3ms (labelled `30`) and a third, unlabelled
+  thin line at the window's own mean. A bar longer than 16.7ms is amber (`Palette.MARK_COSTLY`),
+  longer than 33.3ms is deep red (`Palette.MARK_LETHAL`) — against the two drawn lines and never
+  against the mean, so a second in which every frame is slow shows every bar as slow — the same two
+  colours the caret, the badge and the `1` fields layer above already use, so this reads as the
+  vocabulary the game already has rather than a third meaning for the same two colours — and every
+  other bar is the readout's own text colour at half alpha. **Its own debug layer, independent of
+  `4`** — *(2026-09-15, the player: "spike view should be independent of debug layer 4 it should
+  be its own debug layer and turned off by default unless --spikes is set".)* Built only while
+  `_debug or _readout_requested` holds, the readout's own gate, since it sits on the readout's
+  layer and reads its text colour — but shown only while its own switch, `_layer_graph_on`, is on:
+  off by default, `true` at boot when `--spikes` (`DevFlags.spikes_requested()`) was given or
+  `--layers` names `6`, and flipped by the `6` key from there, whatever `4` does to the readout
+  beside it. **Fed only while its own layer is on, and emptied the moment it goes off**
+  (`FrameGraph.clear()`, called from `main._toggle_debug_layer()`) — *(2026-09-15, the player:
+  "spike recording should only be on while the layer is on. that means toggling the layer twice
+  will lead to a blank frame array".)* — so `6` twice leaves a blank graph that fills again only
+  from that moment rather than a window that silently skipped the time it spent off. The run log's
+  own `spike` line (see "What a frame cost" above) stays on `--spikes` alone regardless of `6`: it
+  is the log's own line, not this view's recording.
 
-The mapping above is printed once on boot in a debug build. With no `--layers` flag, a run opens
-with the readout on and the other four layers off, so an unflagged debug run looks exactly as it
-did before this existed. `--layers 1,3,5` (or the page's own `?layers=1,3,5`) sets which of the
-four non-readout layers start on instead, so a rig screenshot of a particular disagreement is
-reproducible without a keypress; a malformed entry is dropped with a printed note rather than
-failing the whole flag. `4` is not part of that list — it defaults on already.
+The mapping above is printed once on boot in a debug build. With no `--layers` flag and no
+`--spikes`, a run opens with the readout on and the other five layers off, so an unflagged debug
+run looks exactly as it did before this existed. `--layers 1,3,5,6` (or the page's own
+`?layers=1,3,5,6`) sets which of the five non-readout layers start on instead, so a rig screenshot
+of a particular disagreement is reproducible without a keypress; a malformed entry is dropped with
+a printed note rather than failing the whole flag. `4` is not part of that list — it defaults on
+already. `--spikes` starts `6` on the same way, whether or not `--layers` also names it.
 
 ## The city grid
 

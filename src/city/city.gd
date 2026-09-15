@@ -125,6 +125,10 @@ const DOOR_TEXTURE := preload("res://assets/props/door.svg")
 ## that lives in `start_day()`.
 func build(city_map: CityMap) -> void:
 	map = city_map
+	# The street's decoration, asked for before the first day is drawn. Until the pack is
+	# collected `CityDecals` and `Prop` draw the source pictures they draw today, so nothing here
+	# waits on it — see `TextureAtlas`.
+	TextureAtlas.request(CityDecals.DECORATION_ATLAS, CityDecals.decoration_sources())
 	_paint_ground()
 	# Buildings first: the door sits in the wall of the building above the notch, at exactly
 	# the same y. A y-sort tie is broken by tree order, so the door has to be added second
@@ -152,6 +156,13 @@ func build(city_map: CityMap) -> void:
 	add_child(_daylight)
 	set_daylight(1.0)
 	queue_redraw()
+
+## Hands the decoration atlas back. **A group whose packing task is never waited for is a task
+## the pool still holds at shutdown**, so the request in `build()` owes a release here —
+## `TextureAtlas.release()` is what waits for an outstanding blit. The event families are
+## `EventManager`'s own and are released by its own `_exit_tree()`.
+func _exit_tree() -> void:
+	TextureAtlas.release(CityDecals.DECORATION_ATLAS)
 
 ## Which act's cast the city is under. See Palette.act_tint.
 func set_act(act: int) -> void:
@@ -529,18 +540,25 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 ## (`GroundTiles.ROUTE_KERB_SOURCES`) a tinted twin (`GroundTiles.route_twin_of`), composed with the
 ## `curbstone` component (or, in SVG mode, the stone's own fill) blended toward
 ## `Palette.ROUTE_KERB_TINT` by `Tuning.ROUTE_KERB_TINT_ALPHA` — so the paving around the stone is
-## untouched. This only ever decides *which* cells qualify (a kerb source, on the corridor at depth
-## zero) and re-sets each straight onto `_ground` at its twin, same atlas coordinates: the two can
-## never disagree about a cell's coordinates, because there is only the one layer. A twin that was
-## never registered (an incomplete art drop) leaves the tile on its plain source, the same
-## graceful fallback `GroundLayers` gives everywhere else. Alpha zero is the trial's off switch,
-## with nothing else to change.
+## untouched. This only ever decides *which* cells qualify and re-sets each straight onto `_ground`
+## at its twin, same atlas coordinates: the two can never disagree about a cell's coordinates,
+## because there is only the one layer. A twin that was never registered (an incomplete art drop)
+## leaves the tile on its plain source, the same graceful fallback `GroundLayers` gives everywhere
+## else. Alpha zero is the trial's off switch, with nothing else to change.
+##
+## **A kerb tile qualifies when `_tree` carries it, not when its street does.** `Corridor.depth()`
+## answers at the grain of the whole street on purpose (see `Corridor`'s own doc — that grain is
+## what every placement rule is stated in), so asking it here tinted both pavements of every street
+## on the tree, although a route walks one of them and never crosses the carriageway between them
+## mid-block. The tree itself knows the side: it grows on `ReachabilityGrid`'s two-tile cells, a
+## street's six tiles are a pavement cell, a road cell and a pavement cell, the mid-block road cells
+## are off its graph entirely, so `RouteTree.branches_on(tile)` is non-empty exactly on the pavement
+## a route actually walks and empty on the far one and on every junction cell, which has no kerb
+## (`GroundTiles._sidewalk_variant`).
 ##
 ## Called from `_close_streets`, right after `_tree` is grown and before the region plan or the
-## closures, so a corridor a closure has not yet touched is what the tint answers for — the same
-## order `docs/TODO.md`'s M145 entry states.
+## closures, so a tree a closure has not yet touched is what the tint answers for.
 func _tint_the_route_kerbs() -> void:
-	var corridor := Corridor.of(_tree)
 	var tile_set := _ground.tile_set
 	for y in map.size.y:
 		for x in map.size.x:
@@ -548,7 +566,7 @@ func _tint_the_route_kerbs() -> void:
 			var source := GroundTiles.source_for(map, tile, _day)
 			if not (source in GroundTiles.ROUTE_KERB_SOURCES):
 				continue
-			if corridor.depth(tile) != 0:
+			if _tree.branches_on(tile).is_empty():
 				continue
 			var twin := GroundTiles.route_twin_of(source)
 			if twin < 0 or not tile_set.has_source(twin):

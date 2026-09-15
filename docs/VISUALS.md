@@ -45,6 +45,17 @@ creation-reference family for high-fidelity generation and its linked recipes fo
 back to the SVG. Drawing transforms, animation timing, mirroring, ground anchors, sorting,
 collision and camera framing remain the existing game's responsibility.
 
+`TextureAtlas` then relocates whichever raster the resolver chose into one shared texture per
+group of pictures — her family, the head indicators, the street's decoration, the crowd, and one
+group per event family — and hands out `AtlasTexture` regions over it. The atlas changes no
+picture: a region reports its source's own size, so scale, offsets, mirroring, anchors, shadows
+and sorting read the same numbers in either presentation mode. A group is requested when its
+first user is placed and released when its last user is gone; until it is collected, and again
+after it is released, every user draws the source texture it would otherwise draw, so nothing
+waits on an atlas and nothing draws a missing picture. `GroundLayers` packs the ground the same
+way but in one texture the `TileSet` holds directly, each source reaching its own pictures
+through `margins` with `texture_region_size` and `separation` unchanged.
+
 `GroundLayers` builds a presentation TileSet from the authored source resource. Its component
 manifest in `assets/illustrated/svg-transfer/tiles/layers/` assigns a shared base and transparent
 overlays to each supported source ID. Curbstones, street paint, crosswalks and damage blend in

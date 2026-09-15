@@ -1,5 +1,177 @@
 # Decisions
 
+## M153 — The spike view is its own debug layer · built 2026-09-15
+
+*(2026-09-15, [PLAYTEST-76](playtests/PLAYTEST-76.md): "spike view should be independent of
+debug layer 4 it should be its own debug layer and turned off by default unless --spikes is
+set" — "spike recording should only be on while the layer is on. that means toggling the layer
+twice will lead to a blank frame array".)* Two agent commits on `feature/m153-spike-layer`,
+reviewed on the PR.
+
+**What it is.** The frame-time graph (M148) has its own key, `6`, and its own switch,
+`_layer_graph_on`, false by default and true at boot under `--spikes` or when `--layers` names
+`6`; `parse_layers()` accepts one to six and still refuses `4`, which no flag reaches. `4` and
+`_set_readout_visible()` no longer touch the graph, and its ring is pushed above the readout's
+own early return, so a readout toggled off no longer silences a graph toggled on. The graph
+is still built only where the readout is. Turning the layer off empties the ring
+(`FrameGraph.clear()`), so `6` twice starts from a blank graph; the title screen hides the graph
+as it hides the readout and shows it again on the disc with the ring intact, since the
+independence asked for is from the `4` key and not from the title. The run log's `spike` line
+stays on `--spikes` alone (M144), read as not what "recording" named; overturn it there if it
+was. `docs/TELEMETRY.md` lists six layers and `README.md`'s `--layers`, `--debug` and
+`--spikes` rows follow. The agent's choices, open to overturn: `--layers 6` starts the layer on
+rather than merely being accepted, the way `5` starts the route lines; and the sixth key's
+entry in the debug-layer suite now answers `6` where it asserted nothing, with `7` taking the
+role of the key that answers nothing.
+
+## M151 — The first frame draws the doorstep · built 2026-09-15, the hidden city overturned
+
+*(2026-09-15, [PLAYTEST-76](playtests/PLAYTEST-76.md): "I don't really like blanking out the
+first frame. can we just position the camera to the home so it will just draw what the title
+screen will show anyway".)* One agent commit on `feature/m151-doorstep-frame`, reviewed on the
+PR; the sanity still is `evidence/m151-doorstep-frame-2026-09-15/`.
+
+**What it is.** The record below this one hid the city for the two frames `Main._ready()`
+awaits inside the picture warm-up, before her camera exists. Overturned: a plain `Camera2D` at
+the home's doorstep, at the stroller's play zoom and on the physics callback the scene camera
+uses, is made current before the first await and freed right after `_start_day()` has placed
+her, and freeing the current camera hands current to hers synchronously — checked against the
+engine with a throwaway script rather than assumed. The city is never hidden. The halo
+warm-up's probe, which stood at world origin because that is what the identity transform put
+on screen, now stands at the boot camera's own ground, and both warm-up functions take that
+ground as a parameter. The escape sequence's boot gets the same camera at world origin, where
+nothing exists yet to show wrongly. `tests/test_camera_start.gd` asserts at the first
+suspension that a current camera exists within a tile of the doorstep; it fails on the code
+before with no camera at all and passes after. The agent's choice, open to overturn: the boot
+camera targets the doorstep itself rather than a `--spawn` target, so under that developer flag
+on day 1 the two boot frames show the doorstep while the day starts elsewhere, since matching
+it would build the resistance before the day.
+
+## M150 — The tint follows the pavement the route walks, not the whole street · built 2026-09-15
+
+*(2026-09-15, [PLAYTEST-76](playtests/PLAYTEST-76.md): "why is the yellow tint on both sides?
+clearly the bottom path cannot be on any route.")* One agent commit on
+`feature/m150-tint-route-side`, reviewed on the PR; the two stills are
+`evidence/m150-tint-route-side-2026-09-15/`.
+
+**What it is.** `City._tint_the_route_kerbs()` tints a kerb tile when the tree carries it —
+`not _tree.branches_on(tile).is_empty()` — in place of the corridor's depth being zero.
+`Corridor.depth()` answers at the grain of a whole street on purpose, since every placement
+rule is stated in it, so it tinted both pavements of every street on the tree; the tree
+grows on the reachability grid's two-tile cells, where a street's six tiles split into a
+pavement cell, a road cell and a pavement cell and the mid-block road cells are off its graph
+since M129, so `branches_on` answers per pavement. `Corridor` is untouched. The routes
+suite's tint check recomputes the expected set through `branches_on` and adds the assertion
+that where a street has both kerb lines tinted, each side is a tree cell in its own right —
+non-vacuous, since on the suite's seed 26 of 74 tinted streets carry the tree on both
+pavements. That is the reading to keep in mind on the stills: the tinted street beside her
+spawn is one of those, both pavements walked by a branch, so both are tinted; the one-sided
+case is proven by the sweep over the whole map rather than by a still. `docs/CITY.md` says
+the tint follows the tree's own pavement and never the street's far side.
+
+## M149 — Atlases by group, loaded before they are drawn · built 2026-09-15
+
+*(2026-09-14, [PLAYTEST-75](playtests/PLAYTEST-75.md): "pack together graphics into atlases and
+load/unload atlases in a clever way so it happens while the things that will get drawn haven't
+been drawn yet"; 2026-09-15, [PLAYTEST-76](playtests/PLAYTEST-76.md): "it is good to have
+everything built into atlases so the composite doesn't have to deal with multiple image
+sources"; "make sure telemetry records when a texture is loaded/unloaded — atlas or not —
+ideally with timing information".)* Seven agent commits on `feature/m149-atlases`, reviewed on
+the PR; the runs and the still are `evidence/m149-atlases-2026-09-15/`, with a README that
+carries the table and the commands.
+
+**What it is.** `TextureAtlas` (`src/visuals/texture_atlas.gd`) is `CrowdAtlas`'s shelf packer
+lifted into a general one: `request(name, sources)` resolves every source through
+`TextureResolver.resolve()`, reads the images on the main thread, plans a tallest-first layout
+with a pixel of padding under the 2048 px side, and hands the blit to a `WorkerThreadPool`
+task; `collect()` on the main thread makes the `ImageTexture`; `texture_for(name, key, source)`
+answers the `AtlasTexture` once collected and the caller's own source before, after
+`release()`, and for a group never requested, so nothing ever draws a missing picture; the
+pump is the first thing `Main._process()` does, above its early returns. `CrowdAtlas` is a
+user of it with its API and suite unchanged. The groups: her family and the five head
+indicators as two groups requested in `Stroller._ready()` — two, because they are drawn for
+different reasons and the suite can assert the marks are on a different texture from her
+body; one group per `EventDef.Look`, requested by `EventManager` when the first instance of a
+look is placed and released when the last retires, the set recomputed from the live list after
+every change rather than counted, since instances leave it by four paths; the street's
+decoration — litter, tree bed, trees, swing frame, bollard, sack and pile — as one group
+requested in `City.build()`; and the ground, where `GroundLayers.pack_into_one_texture()` runs
+last in `build_tile_set()` and points every `TileSetAtlasSource` at one sheet through
+`margins`, `texture_region_size` and `separation` untouched, synchronous because a `TileSet`
+has no "until ready" state and its cost is 0.3 ms for 58 sources over 57 pictures into a
+2030×100 sheet against the 178 ms the same boot spends warming pictures. Buildings and the
+interior are not packed.
+
+**What the run log says.** One kind, `texture`: a line per transfer the resolver reads from
+disk with its path and milliseconds, one per atlas as it becomes ready with its group, picture
+count, size, the milliseconds from the request and the worker's own share, and one per
+release with how long it was drawn from. The observer's `spike` context reads the collected
+count the way it reads the resolver's load count. The boot line now warms 75 pictures rather
+than 86, because the decoration's request resolves twelve before the warm pass runs.
+
+**What it measured, on the desktop.** The desktop table's walk, draws as the mean of the run
+log's `frame` entries from two seconds in:
+
+| | draws | primitives | fps |
+|---|---|---|---|
+| before | 566 | 4546 | 112 |
+| every group packed | 560 | 4539 | 108 |
+
+About six calls, and the fps inside two windowed runs' noise. The crowd was already one atlas,
+a `TileMapLayer` batches a screen of tiles into one call whether or not its sources share a
+texture, and twenty seconds of that walk put few event families in front of the camera. The
+milestone's reason is the composite, not this number; the laptop's and the phone's readings
+are in `REVIEW.md`.
+
+**Found while building.** A group whose packing task is never collected crashed the process
+at exit — leaked RIDs and a segfault in a mutex after every check passed — because a headless
+suite has no pump; `EventManager`, `Stroller` and `City` now release what they requested in
+`_exit_tree()`, and `release()` waits for an outstanding blit, which a real game quitting
+mid-day needed too. Two ground guards decided whether the grass and damage variant cells
+existed by the source texture's width, which every source passes once they share one sheet;
+both ask the source's own `has_tile()` now. The merge with M145's tint twins registers the
+twins before the pack in both modes, and the twin's tint check reads a source's own tile
+region rather than the sheet's origin.
+
+**Not taken, open to overturn.** Offline PNG sheets loaded with
+`ResourceLoader.load_threaded_request`, which would need an SVG-mode twin per family and buy
+nothing while every source is a `preload` resident from boot; and turning the preload tables
+into lazy loads so a released family's memory actually goes, the step after this one if the
+phone's memory turns out to be a cost. The agent's other choices are in its commit messages:
+the family is the `Look` rather than the catalogue row, a picture two looks share is packed
+into both, the 2048 cap is a pure `plan()` the request asserts on, and the still is day 12 so
+litter and sacks are in it.
+
+## M151 — The city stays hidden until the camera is on her · built 2026-09-15
+
+*(2026-09-15, [PLAYTEST-76](playtests/PLAYTEST-76.md): "when starting the game I can briefly
+see the top left of the map".)* One agent commit on `feature/m151-camera-start`, reviewed on
+the PR.
+
+**Which frame it was.** Neither candidate the entry led with. `reset_smoothing()` after
+`Stroller.reset_at()` takes, and the title screen's camera is parked on her throughout by
+`stand_aside()`'s `process_mode = ALWAYS`. The frame is earlier than either: `Main._ready()`
+builds the city and adds it to the tree, then awaits twice inside `_warm_the_pictures()` — the
+halo shader's warm-up — before the player and her `Camera2D` exist. Those two frames are drawn
+through the viewport's default identity transform, whose origin is the map's top-left, with
+the built city under it; a headless boot printing the canvas transform at those awaits shows
+the identity.
+
+**The fix.** `_city.visible = false` when it is instantiated, and `true` right after
+`_player.reset_at()` in `_start_day()`, where the camera is on her the instant the call
+returns; every later day finds it already visible. Nothing about the camera's follow changes.
+
+**The check.** `tests/test_camera_start.gd` boots the real `scenes/main.tscn`: adding it runs
+`_ready()` up to its first suspension, which is the state the first frame draws from, and
+asserts there that no player exists and the city is hidden; then resumes the two awaits by
+emitting `process_frame` by hand, the way `tests/test_pause.gd` resumes a coroutine, and
+asserts that the two frames the entry named — the first with the run started and the first
+after the title's disc — draw within a tile of her. It failed on the code before the fix on the
+hidden-city check alone and passes after. No still: the frame is earlier than a screenshot rig
+exists in the tree. The agent's choices, open to overturn: the escape sequence was left alone,
+since its city is built only after the warm pass returns; the check writes a real run log,
+because a suite cannot pass `--no-telemetry` to its own process, and ends the run afterwards.
+
 ## M129 — A path through the city never has to cost · the four rules built 2026-09-14
 
 *(2026-09-13, [PLAYTEST-69](playtests/PLAYTEST-69.md); the reading decided in

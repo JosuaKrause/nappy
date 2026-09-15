@@ -13,6 +13,7 @@ func run(t) -> void:
 	_test_pram_offset_stays_continuous_through_side_facings(t)
 	_test_north_diagonal_contact_adjustment(t)
 	_test_the_pram_has_its_own_trailing_body(t)
+	_test_her_family_comes_from_one_atlas_once_it_is_collected(t)
 
 func _rig(t) -> Stroller:
 	var rig := Stroller.new()
@@ -22,6 +23,53 @@ func _rig(t) -> Stroller:
 	t.add_child(rig)
 	rig.set_physics_process(false)
 	return rig
+
+## The authored picture as the live drawing path actually hands it over — the region of her
+## family's atlas when that group is collected, the source picture when it is not.
+func _through_the_atlas(authored: Texture2D) -> Texture2D:
+	return TextureAtlas.texture_for(Stroller.FAMILY_ATLAS, authored, authored)
+
+## Every picture she draws comes from one texture once her family's group is packed, which is the
+## whole of what the atlas buys: her body, her pram and the mark over her head stop being three
+## textures for the batcher to break between. Collected by hand here, since nothing in a headless
+## suite runs `Main._process()`, which is what pumps the collect in a real run.
+func _test_her_family_comes_from_one_atlas_once_it_is_collected(t) -> void:
+	var rig := _rig(t)
+	TextureAtlas.collect(Stroller.FAMILY_ATLAS, true)
+	TextureAtlas.collect(Stroller.INDICATOR_ATLAS, true)
+	var atlas: Texture2D = null
+	for carrying in [false, true]:
+		rig.carrying = carrying
+		for direction in range(8):
+			rig._view_direction = direction
+			for frame in range(3):
+				var texture := rig._mother_texture(frame)
+				t.check(texture is AtlasTexture,
+						"%s direction %d pose %d is drawn from the atlas"
+						% ["carrying" if carrying else "pushing", direction, frame])
+				if not texture is AtlasTexture:
+					continue
+				if atlas == null:
+					atlas = (texture as AtlasTexture).atlas
+				t.check((texture as AtlasTexture).atlas == atlas,
+						"and from the same one every other view of her is on")
+				t.check(texture.get_size() == rig._mother_source(frame).get_size(),
+						"and it is exactly the size of the picture it stands in for")
+	rig.carrying = false
+	for direction in range(8):
+		rig._view_direction = direction
+		var pram := rig._pram_texture()
+		t.check(pram is AtlasTexture and (pram as AtlasTexture).atlas == atlas,
+				"the pram's direction %d view is on her family's own atlas" % direction)
+	for mark: Texture2D in Stroller.indicator_sources().keys():
+		var packed: Texture2D = TextureAtlas.texture_for(Stroller.INDICATOR_ATLAS, mark, mark)
+		t.check(packed is AtlasTexture,
+				"the head indicator %s is drawn from the indicators' atlas"
+				% mark.resource_path.get_file())
+		t.check(not (packed is AtlasTexture) or (packed as AtlasTexture).atlas != atlas,
+				"which is its own texture, not the one her body is on")
+	rig.free()
+	TextureAtlas.reset_for_tests()
 
 func _face(rig: Stroller, degrees: float) -> void:
 	rig.facing = Vector2.from_angle(deg_to_rad(degrees))
@@ -56,11 +104,15 @@ func _test_live_draw_selection(t) -> void:
 	var mirrored: Array[bool] = [false, false, false, true, true, true, false, false]
 	for direction in range(8):
 		rig._view_direction = direction
-		t.check(rig._mother_texture(0) == mother_first_frames[direction],
+		# Pinned through her family's atlas rather than against the authored constant directly:
+		# `_mother_texture()` and `_pram_texture()` answer the region once the group is collected
+		# and the source before that, and what these assertions are about is *which* view the
+		# selector picks, which is the same question either way.
+		t.check(rig._mother_texture(0) == _through_the_atlas(mother_first_frames[direction]),
 				"mother draw selects the authored texture for direction %d" % direction)
-		t.check(rig._mother_texture(1) == mother_second_frames[direction],
+		t.check(rig._mother_texture(1) == _through_the_atlas(mother_second_frames[direction]),
 				"mother draw selects gait frame B for direction %d" % direction)
-		t.check(rig._pram_texture() == pram_textures[direction],
+		t.check(rig._pram_texture() == _through_the_atlas(pram_textures[direction]),
 				"pram draw selects the authored texture for direction %d" % direction)
 		t.check(rig._mother_is_mirrored() == mirrored[direction],
 				"mother mirror matches direction %d" % direction)

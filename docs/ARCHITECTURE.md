@@ -56,7 +56,7 @@ src/
   crowd/
 	crowd.gd              owns the day's agents; sums their excitement
 	crowd_agent.gd        one walker or one car
-	crowd_atlas.gd        packs the crowd's own textures into one shared atlas texture
+	crowd_atlas.gd        the crowd's own six view tables as one TextureAtlas group
 	crowd_lanes.gd        the lane geometry of the street grid
 	crowd_field.gd        the box around the player the crowd is simulated in
 	crowd_pockets.gd      the ground today's seals shut in, per kind, so nobody is placed with nowhere to go
@@ -121,7 +121,11 @@ src/
 	quit_option.gd        whether the game can quit itself, answered once
   visuals/                PNG selection with SVG override; see the illustrated-png skill
 	texture_resolver.gd   cached same-size PNG selection, with SVG fallback
-	ground_layers.gd      shared ground bases, transparent overlays and sparse grass atlases
+	texture_atlas.gd      one shared texture per group of pictures: requested, packed on a
+	                       worker thread, collected on the main thread, released when its last
+	                       user is gone; users draw their source pictures until it is ready
+	ground_layers.gd      shared ground bases, transparent overlays and sparse grass atlases,
+	                       then every TileSetAtlasSource packed into one texture through margins
 	eight_direction.gd    the eight-sector heading selector the stroller and the crowd both draw by
   dev/
 	auto_screenshot.gd    render N frames, save a PNG, quit
