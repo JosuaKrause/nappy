@@ -481,33 +481,6 @@ a kerb (`GroundTiles._sidewalk_variant`).
 
 ---
 
-## M151 — The map's top-left corner shows for a moment when a run starts · asked for 2026-09-15
-
-> "also, when starting the game I can briefly see the top left of the map"
-
-[PLAYTEST-76](playtests/PLAYTEST-76.md). The **godot** rule governs, its camera-smoothing
-traps above all. What is true today: `Main._ready()` builds the city and calls `_start_day()`,
-which places her with `Stroller.reset_at()` — her position set, the camera's position and
-offset zeroed, `reset_smoothing()` and `reset_physics_interpolation()` called — and the title
-screen stands over the world until a disc is pressed. The world's origin is the map's top-left,
-so any frame drawn before the camera has taken her position shows that corner. Which frame is
-not known: the first after `_ready()` before the camera's first scroll update, the title's own
-frame with the city drawn behind it, or the run's first frame after the disc.
-
-- [ ] **Find the frame, then make it hers.** A rig check in the main suite or a new one: boot
-      headless with the run started and assert on the first drawn frame that the camera's
-      `get_screen_center_position()` is within a tile of her position, and the same on the first
-      frame after the title's disc is pressed. Then the fix where the frame is: if
-      `reset_smoothing()` called before the camera's first scroll update is lost — a `Camera2D`
-      aligns on that update, so a reset before it enters the viewport does nothing — call
-      `force_update_scroll()` or the reset again once the camera is current, after the day's
-      placement; if the title's frame shows the city, the city is not drawn until the run
-      starts or the camera is placed on her before the title. The commit says which frame it
-      was and what was tried. Evidence: the check is the evidence, since the frame is earlier
-      than any screenshot the rig takes; a still only if the fix moved something visible.
-
----
-
 ## M129 — A path through the city never has to cost · the four rules built 2026-09-14, one question open
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable
