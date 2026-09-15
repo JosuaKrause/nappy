@@ -30,6 +30,11 @@ const SEEDS := 12
 const RULE_SEEDS := 6
 const BASE_SEED := 5150
 
+## Built only by the route-kerb-tint test below, which needs a real scene tree (`City.start_day`
+## repaints `_ground`, a child node, and reads its own tile set back) rather than the bare
+## `CityMap`/`RouteTree` pair every other test here works from directly.
+const CITY_SCENE := preload("res://scenes/world/city.tscn")
+
 var _maps: Array[CityMap] = []
 
 func run(t) -> void:
@@ -55,6 +60,7 @@ func run(t) -> void:
 	_test_a_closure_never_lands_on_a_calm_areas_own_access(t)
 	_test_a_fallen_tree_only_falls_where_a_tree_stood(t)
 	_test_a_day_with_no_tree_lined_street_still_closes_its_quota(t)
+	_test_the_route_kerb_tint_matches_the_corridor_at_depth_zero(t)
 
 # ------------------------------------------------------------------ lattice ---
 
@@ -712,6 +718,71 @@ func _test_a_day_with_no_tree_lined_street_still_closes_its_quota(t) -> void:
 					% [map.seed_used, day, closures.size(), Tuning.closures_for_day(day)])
 	t.check(bare_days > 0,
 			"the sweep had days whose closures were all on bare streets (%d)" % bare_days)
+
+# ------------------------------------------------------------------ route kerb tint ---
+
+## M145's own trial: `City._tint_the_route_kerbs()` re-sets cells on `_ground` itself from the same
+## tiles `GroundTiles.source_for` and `Corridor.of(city.route_tree())` already answer independently,
+## so this test recomputes the expected set from those two rather than trusting the paint to have
+## used its own inputs correctly, and checks `_ground`'s cells directly since there is no second
+## layer to read back.
+func _test_the_route_kerb_tint_matches_the_corridor_at_depth_zero(t) -> void:
+	var kerb_sources := GroundTiles.ROUTE_KERB_SOURCES
+
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(90210))
+
+	var day := 1
+	var state := CityState.new()
+	state.begin_day(city.map.block_plans, day)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("m145-route-kerbs:closures:%d" % day)
+	city.start_day(state, day, rng)
+
+	var corridor := Corridor.of(city.route_tree())
+	var expected := {}
+	for y in city.map.size.y:
+		for x in city.map.size.x:
+			var tile := Vector2i(x, y)
+			if GroundTiles.source_for(city.map, tile, day) in kerb_sources \
+					and corridor.depth(tile) == 0:
+				expected[tile] = true
+	t.check(expected.size() > 0, "the sweep found kerb tiles on the corridor to check (%d)"
+			% expected.size())
+
+	var twin_source_ids := {}
+	for source in kerb_sources:
+		twin_source_ids[GroundTiles.route_twin_of(source)] = true
+
+	var twinned := {}
+	for cell in city._ground.get_used_cells():
+		if twin_source_ids.has(city._ground.get_cell_source_id(cell)):
+			twinned[cell] = true
+	t.check(twinned.size() == expected.size(),
+			"Ground carries a route-kerb twin on exactly the kerb tiles on the corridor at depth "
+			+ "zero (%d expected, %d twinned)" % [expected.size(), twinned.size()])
+	for cell in twinned:
+		t.check(expected.has(cell), "twinned cell %s is a kerb tile on the corridor at depth zero" % cell)
+	for tile in expected:
+		var plain_source := GroundTiles.source_for(city.map, tile, day)
+		var expected_atlas := GroundLayers.atlas_coords_for(plain_source, city.map.seed_used, tile,
+				city._ground.tile_set)
+		t.check(city._ground.get_cell_source_id(tile) == GroundTiles.route_twin_of(plain_source),
+				"Ground's cell at %s carries its kerb source's route twin" % tile)
+		t.check(city._ground.get_cell_atlas_coords(tile) == expected_atlas,
+				"Ground's twinned cell at %s keeps the atlas coordinates the plain source would have had"
+				% tile)
+
+	city.start_finale(state, day + 1)
+	var twinned_after_finale := 0
+	for cell in city._ground.get_used_cells():
+		if twin_source_ids.has(city._ground.get_cell_source_id(cell)):
+			twinned_after_finale += 1
+	t.check(twinned_after_finale == 0,
+			"start_finale paints no route-kerb twin, since the finale grows no tree")
+
+	city.free()
 
 func _plan(map: CityMap, day: int) -> Array[RoadClosure]:
 	_repaint_for(map, day)

@@ -42,6 +42,15 @@ item below for as long as looking takes.
   seconds, and does its line say "nothing else changed"?** A headless rig already wrote 29
   and 57 ms spikes with nothing changed, so the cadence and whether anything in the game lines
   up with it is what this run settles. Record is `DECISIONS.md`, M144, the 24 ms frame, found.
+- **Walk day 1 on the laptop without the debug layers and look at the curbstones along the
+  streets the routes take, then turn on `5` to see where the routes are.** The route's own
+  curbstones — the stone strip along the pavement's edge, not the paving beside it — carry a
+  faint yellow cast blended in at 0.45, a trial of whether a hint on the ground can stay below
+  being noticed as one. Three readings, and the number is one constant
+  (`Tuning.ROUTE_KERB_TINT_ALPHA`): **is it invisible, too obvious and on the nose, or somewhere
+  between that guides without being read as a hint?** And where a costly thing stands on the
+  route with its amber caret up, does the yellow curbstone read as part of the warning? Record
+  is `DECISIONS.md`, M145, the route's curbs.
 - **Cross a region door on foot, from day 7** (`--day 7`; a door is the hut-boom-hut across a
   boundary street). The boom hangs between its posts across the lanes, level with the huts; the
   inspection starts as soon as she stands against the hut; the camera eases from where it was
