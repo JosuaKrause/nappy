@@ -21,6 +21,11 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Start a run from the title, on the desktop and on the phone.** The city is hidden until
+  the camera is on her at the doorstep, so the two frames the picture warm-up awaits during
+  boot no longer draw the map's top-left corner. **Is the flash gone, and does the title screen
+  still show what it showed?** Record is `DECISIONS.md`, M151, the city stays hidden until the
+  camera is on her.
 - **Walk a minute of day 1 on the laptop with `--debug --spikes` and read the `spike` lines
   back.** Every picture is loaded before the day starts now and the halo's shader is compiled
   before play, and the laptop still draws a 24 to 26 ms frame every second at 85 to 91 fps
