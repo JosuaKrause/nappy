@@ -96,3 +96,15 @@ Said a few minutes later, on whether walls may be counted by the three rules at 
 condition is what the rule change above states: what a wall may still reach into a route
 junction is the part of its field under the walking decay, ground the walk takes without
 planning around it, and everything louder is checked like any other row's.
+
+## A row's own drop-off
+
+> "can we influence the drop off of excitement per row?" — "or is the rate by distance always
+> the same for every row?" — "1 doesn't change the leafblower row? we can do that for now.
+> also we can introduce the exponent but leave everything as is for now"
+
+Said on 2026-09-15, after the leaf blower's two-part field was filed. The rate by distance is
+one curve for every row today, shaped only by a row's two radii. Decided: the leaf blower gets
+its core as filed, which changes that row and no other; and the catalogue gains a per-row
+exponent on the drop-off, every row left at today's curve, so a row that later needs a shape
+its radii cannot give has the knob. Both in M129's closing items in `TODO.md`.

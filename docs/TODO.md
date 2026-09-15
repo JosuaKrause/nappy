@@ -569,6 +569,15 @@ the catalogue row; the probe is `tests/probes/m129_zero_cost_line.gd`.
       `REVIEW.md`, in the same PR: on a day with a leaf blower on a pavement, does walking past
       it read as a wall and standing a street away read as a hum that keeps the baby awake and
       nothing more; and at a junction inside its outer field, does crossing feel free.
+- [ ] **A row may shape its own drop-off, and none does yet.** *(2026-09-15: "can we
+      influence the drop off of excitement per row?" — "we can introduce the exponent but leave
+      everything as is for now".)* `EventDef` gains `falloff_power`, default 2.0, and
+      `Tuning.falloff` takes it: the drop between the radii is `intensity * (1 - t ** power)`,
+      so 2.0 is today's curve exactly, a power under 1 drops fast and tails long, a power above
+      2 holds near full then falls off a cliff. Every row stays at the default and every
+      measured number in the catalogue is unchanged, which the catalogue's ordering test and
+      `tests/test_events.gd`'s cost checks confirm by not moving; `docs/EVENTS.md` where it
+      describes the field's shape. The core above uses the same curve at the same default.
 ---
 
 ## M137 — The contact is whoever she hands the note to, and the trap comes to her · asked for 2026-09-13
