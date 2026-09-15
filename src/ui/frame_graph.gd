@@ -14,11 +14,14 @@ extends Control
 ##
 ## **Built where the readout is, shown on its own switch.** `main._add_frame_graph()` builds this
 ## only while `_debug or _readout_requested` holds — the same gate the readout's own text answers
-## to — but `visible` follows `main._layer_graph_on` alone from there on: off by default, `true` at
-## boot when `--spikes` was asked for or `--layers` names `6`, and flipped by the `6` key
-## (`main._toggle_debug_layer()`) whatever `4` does to the readout beside it. *(2026-09-15, the
-## player: "spike view should be independent of debug layer 4 it should be its own debug layer and
-## turned off by default unless --spikes is set".)* `push()` also checks `visible` itself, the same
+## to — but `visible` is `main._layer_graph_on and not main._in_the_title` from there on: off by
+## default, `true` at boot when `--spikes` was asked for or `--layers` names `6`, and flipped by the
+## `6` key (`main._toggle_debug_layer()`) whatever `4` does to the readout beside it. *(2026-09-15,
+## the player: "spike view should be independent of debug layer 4 it should be its own debug layer
+## and turned off by default unless --spikes is set".)* The title screen is a different question
+## from `4` — it hides every statement about a player who is not there, this graph included — so
+## `main._open_the_title()` and `main._on_title_start()` set `visible` directly too, without
+## clearing the ring the way a `6` toggle-off does. `push()` also checks `visible` itself, the same
 ## belt-and-suspenders `main.gd`'s own comments describe for the readout's text: a caller that
 ## somehow pushed while hidden must still cost nothing rather than quietly warming a ring nobody
 ## can see.

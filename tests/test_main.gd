@@ -12,6 +12,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 const DAY_SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE_SCREEN_SCENE := preload("res://scenes/ui/pause_screen.tscn")
+const TITLE_SCREEN_SCENE := preload("res://scenes/ui/title_screen.tscn")
 const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 
 const SEED := 4242
@@ -27,6 +28,7 @@ func run(t) -> void:
 	_test_key_six_twice_empties_the_ring(t)
 	_test_add_touch_controls_builds_the_one_control_reader(t)
 	_test_on_title_start_sets_the_controls_mode(t)
+	_test_the_title_hides_the_graph_and_keeps_its_ring(t)
 	_test_the_summary_and_pause_restart_signals_are_both_connected(t)
 	_test_no_interior_exists_outside_a_debug_build(t)
 	_test_play_seconds_only_advances_while_the_world_moves(t)
@@ -341,6 +343,72 @@ func _test_on_title_start_sets_the_controls_mode(t) -> void:
 			"pressing the joystick button on the title screen sets that mode on the one control reader")
 
 	main._status.free()
+	main._title.free()
+	main._edge_layer.free()
+	main._hud.free()
+	main._city.free()
+	main.free()
+	stroller.free()
+
+## The correction to M153 the same evening: the graph's independence is from `4`, not from the
+## title screen, which still hides everything about a player who is not there — this graph
+## included. *(2026-09-15, the coordinator, relaying the player: "the graph must not draw over the
+## title screen ... the independence the player asked for is from the 4 key, not from the
+## title".)* Built the same lightweight, off-tree way `_test_on_title_start_sets_the_controls_mode`
+## above is — `_open_the_title()`'s own `get_tree().paused = true` is guarded with
+## `is_inside_tree()` for exactly this reason, the same shape `_on_title_start()`'s own last line
+## already uses.
+func _test_the_title_hides_the_graph_and_keeps_its_ring(t) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._add_touch_controls()
+
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	var stroller := Stroller.new()
+	stroller.add_child(camera)
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+
+	main._player = stroller
+	main._city = City.new()
+	main._hud = CanvasLayer.new()
+	main._edge_layer = CanvasLayer.new()
+	main._status = Label.new()
+	main._status_layer = CanvasLayer.new()
+	# A real scene instance, added to the tree so its own `@onready` labels populate —
+	# `_test_on_title_start_sets_the_controls_mode` above gets away with a bare `TitleScreen.new()`
+	# because it only reaches `close()`; `open()` (`_open_the_title()`'s own call) writes `_name.text`
+	# and needs the scene's children to exist.
+	main._title = TITLE_SCREEN_SCENE.instantiate()
+	t.add_child(main._title)
+	main._debug = true
+	main._readout_requested = false
+	main._add_frame_graph()
+
+	main._toggle_debug_layer(6)
+	main._frame_graph.push(0.010)
+	main._frame_graph.push(0.020)
+	t.check(main._frame_graph.visible and main._frame_graph.frames().size() == 2,
+			"the graph is on and holds two frames before the title opens")
+
+	main._open_the_title()
+	t.check(not main._frame_graph.visible, "opening the title hides the graph")
+	t.check(main._frame_graph.frames().size() == 2,
+			"but does not clear the ring — only a 6 toggle-off does that")
+
+	main._toggle_debug_layer(4)
+	t.check(not main._frame_graph.visible, "4 does not move the graph while the title is open")
+
+	main._on_title_start(ControlsMode.Mode.TAP)
+	t.check(main._frame_graph.visible, "closing the title shows the graph again")
+	t.check(main._frame_graph.frames().size() == 2, "with the ring exactly as it was left")
+
+	main._toggle_debug_layer(4)
+	t.check(main._frame_graph.visible, "and 4 still does not move it once the title is closed again")
+
+	main._frame_graph.free()
+	main._status.free()
+	main._status_layer.free()
 	main._title.free()
 	main._edge_layer.free()
 	main._hud.free()

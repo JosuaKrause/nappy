@@ -85,9 +85,13 @@ var _debug_mode_note: DebugModeNote
 ## The rolling bar graph of the last frames' own lengths, under `_status`. Set by
 ## `_add_frame_graph()`, or left `null` on the same "absent, not merely hidden" terms
 ## `_debug_mode_note` is — a release page nobody asked `?debug=1` of never builds it. **Built where
-## the readout is, but no longer shown or hidden with it**: this player asked for the two split
-## apart, so `_frame_graph.visible` follows `_layer_graph_on` alone (`if _frame_graph:`, since it is
-## null on exactly the builds that never build one) and `_set_readout_visible()` does not touch it.
+## the readout is, but shown independently of it**: the player asked the graph's own switch to be
+## `6`, not `4`, which is a different question from whether the title screen is up — the title
+## still hides everything about a player who is not there, this included. So `_frame_graph.visible`
+## is `_layer_graph_on and not _in_the_title` in effect, kept true by three call sites rather than
+## one: `_toggle_debug_layer()`'s own `6` case, and `_open_the_title()`/`_on_title_start()` setting
+## it directly, since `_set_readout_visible()` does not touch it. `if _frame_graph:` at each site,
+## since it is null on exactly the builds that never build one.
 var _frame_graph: FrameGraph
 ## Whether the developer readout (`_status`) is showing, independent of `_debug`: the fourth
 ## layer `_toggle_debug_layer()` owns, on `_status`'s own pre-existing `CanvasLayer` rather than
@@ -616,16 +620,28 @@ func _show_an_ending_for_a_rig() -> bool:
 ##   `Stroller.stand_aside()`.
 ##
 ## The HUD, the screen-edge badge and the developer readout all come off, because every one of them
-## is a statement about a player who is not there.
+## is a statement about a player who is not there. The frame graph comes off with them too — it is
+## independent of `4` (see `_layer_graph_on`'s own doc), not of the title, so this hides it directly
+## rather than through `_set_readout_visible()`, which no longer reaches it. **The ring itself is
+## untouched**: only a `6` toggle-off clears it (`_toggle_debug_layer()`), so a graph that was
+## recording keeps what it already has across the trip through this screen.
 func _open_the_title() -> void:
 	_in_the_title = true
-	get_tree().paused = true
+	# Guarded the same shape `_on_title_start()`'s own final line already is, and for the same
+	# reason: `tests/test_main.gd` drives this function on a script-only `main` with no tree behind
+	# it, to reach the graph-hiding line below without the rest of this function's live-tree
+	# dependencies. Never false in the running game, where this only ever fires on a real `main`
+	# already in the tree.
+	if is_inside_tree():
+		get_tree().paused = true
 	_city.process_mode = Node.PROCESS_MODE_ALWAYS
 	_player.process_mode = Node.PROCESS_MODE_PAUSABLE
 	_player.stand_aside()
 	_hud.visible = false
 	_edge_layer.visible = false
 	_set_readout_visible(false)
+	if _frame_graph:
+		_frame_graph.visible = false
 	_title.open(_ending_shown)
 
 ## The title screen has been pressed, which is also the start: hand the city back to the day it
@@ -656,6 +672,11 @@ func _on_title_start(mode: ControlsMode.Mode) -> void:
 	# turned it back on. `and _layer_readout_on` so a `4`-toggled-off readout stays off across a
 	# trip through the title rather than snapping back on underneath it.
 	_set_readout_visible((_debug or _readout_requested) and _layer_readout_on)
+	# The graph's own answer to the same question, off `_layer_graph_on` rather than
+	# `_layer_readout_on` — a `6`-toggled-on graph reappears here with whatever the ring already
+	# held, since `_open_the_title()` only hid it and never cleared it.
+	if _frame_graph:
+		_frame_graph.visible = _layer_graph_on
 	if is_inside_tree():
 		get_tree().paused = false
 
@@ -1395,7 +1416,11 @@ func _toggle_debug_layer(layer: int) -> void:
 	if layer == 6:
 		_layer_graph_on = not _layer_graph_on
 		if _frame_graph:
-			_frame_graph.visible = _layer_graph_on
+			# `and not _in_the_title` so pressing `6` while the title is open (`_unhandled_input()`
+			# still reaches this — `main` stays `PROCESS_MODE_ALWAYS` for Esc's own sake) never draws
+			# the graph over it; `_on_title_start()` reads `_layer_graph_on` on the way out and shows
+			# it then if this left it `true`.
+			_frame_graph.visible = _layer_graph_on and not _in_the_title
 			if not _layer_graph_on:
 				_frame_graph.clear()
 		return
@@ -1405,10 +1430,12 @@ func _toggle_debug_layer(layer: int) -> void:
 ## The one place `_status.visible` is actually assigned — every other spot in this file calls this
 ## instead, so the readout's own visibility can never fall out of step between the boot, the escape
 ## boot, the title screen hiding it and `_on_title_start()` bringing it back. **Does not touch
-## `_frame_graph`** — the player asked for the graph off the readout's own switch, so `6`
-## (`_toggle_debug_layer()`) and `--spikes`/`--layers 6` at boot (`_add_frame_graph()`) are the only
-## places `_frame_graph.visible` is set; opening the title screen or toggling `4` leaves it exactly
-## where `_layer_graph_on` already had it.
+## `_frame_graph`** — the player asked the graph's own switch to be `6`, not `4`, so toggling `4`
+## alone leaves it exactly where `_layer_graph_on` already had it. The title screen is a different
+## question from `4` (it hides everything about a player who is not there) and still reaches the
+## graph, just through its own two call sites (`_open_the_title()`/`_on_title_start()`) rather than
+## through this setter, since a title trip must hide it without clearing the ring the way a `6`
+## toggle-off does.
 func _set_readout_visible(shown: bool) -> void:
 	_status.visible = shown
 
