@@ -291,6 +291,16 @@ func _ready() -> void:
 	# property of the camera and a focus can switch it off without owning the default.
 	_camera_smoothing_when_free = _camera.position_smoothing_enabled
 
+## Hands both of her groups back. **A group whose packing task is never waited for is a task the
+## pool still holds at shutdown**, so the request in `_ready()` owes a release here rather than
+## leaving the static registry holding it — `TextureAtlas.release()` is what waits for an
+## outstanding blit. A second rig alive at the same time would lose the atlas and fall back to
+## drawing its source pictures, which is the same thing it does before the first collect; there is
+## never more than one of her in a running game.
+func _exit_tree() -> void:
+	TextureAtlas.release(FAMILY_ATLAS)
+	TextureAtlas.release(INDICATOR_ATLAS)
+
 ## Takes her out of the world without taking her out of the tree, for the title screen's attract
 ## mode: the home and the street in front of it, with nobody in it.
 ##
