@@ -81,6 +81,10 @@ validate_dev_flags() {
     local i=0
     while (( i < n )); do
         local tok="${args[$i]}"
+        if [[ "$tok" == "--" ]]; then
+            echo "a bare -- is only accepted as the first argument, before any flag" >&2
+            return 1
+        fi
         if [[ "$tok" != --* ]]; then
             echo "unrecognized argument (not a known flag, and not the value of the flag before it): $tok" >&2
             return 1

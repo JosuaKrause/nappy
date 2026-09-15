@@ -140,6 +140,9 @@ assert_launch() {
 }
 assert_launch "run.sh -- --overview (separator dropped)" ./tools/run.sh -- --overview
 assert_launch "shot.sh ... -- --overview (separator dropped)" ./tools/shot.sh "$work_dir/shot-sep.png" 1 -- --overview
+# And only there: a `--` after a flag is not a separator, it is a stray word.
+assert_exit "run.sh --overview -- (late separator)"  nonzero ./tools/run.sh --overview -- --debug
+assert_exit "shot.sh ... --overview -- (late separator)" nonzero ./tools/shot.sh "$work_dir/shot-sep2.png" 1 --overview --
 
 # A run.sh / shot.sh dev flag missing its required value is the other rejected shape -- checked
 # once each here since lib_dev_flags.sh's own arity handling already has a focused smoke test in
