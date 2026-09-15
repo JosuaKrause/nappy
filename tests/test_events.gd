@@ -72,6 +72,7 @@ func run(t) -> void:
 	_test_the_day_is_placed_by_role(t)
 	_test_a_routes_junctions_stay_clear(t)
 	_test_no_row_takes_a_route_streets_whole_width(t)
+	_test_a_pacing_rows_opening_stays_open(t)
 	_test_a_flock_is_scenery(t)
 	_test_a_conversation_locks_her_and_releases(t)
 	_test_a_conversation_prices_by_the_babys_state(t)
@@ -3170,6 +3171,69 @@ func _a_walk_along_the_street(map: CityMap, segment: StreetNetwork.Segment,
 				seen[next] = true
 				queue.append(next)
 	return false
+
+## **A pacing row leaves the line open for part of its beat.** *(PLAYTEST-71: "time pass — don't
+## route around them".)* A man walking a footway and back is passed by waiting, so the ground his
+## beat denies is the ground it never leaves free — and what the probe finds broken is never the
+## beat by itself but the beat's one open end with something else standing in it.
+##
+## So the claim is about a **street carrying a pacing row**, asked of every row reaching that street
+## at once: a walk from one of its junctions to the other has to survive all of them together. That
+## is what `EventScheduler._leaves_a_pacing_beats_opening` refuses a placement for, and asserting it
+## over the finished day is what catches anything a later pass adds without asking.
+##
+## **It cannot pass vacuously**: a sample where no pacing row ever stood on a route street would
+## satisfy it having checked nothing, so those streets are counted and asserted. `homeless_yeller`
+## (14.0 over 210px, no body, paces) is the row the sample is really about.
+func _test_a_pacing_rows_opening_stays_open(t) -> void:
+	var map := CityGenerator.generate(4242)
+	var paced_streets := 0
+	var closed := 0
+	var first := ""
+	# Five days rather than four, and they are the ones `_test_the_day_is_placed_by_role` samples:
+	# a pacing row is one row of the catalogue and the junction and width rules have taken most of
+	# the corridor away from it, so four days turn up too few paced route streets for the guard
+	# below to be worth anything.
+	for day in [1, 5, 8, 11, 14]:
+		var state := CityState.new()
+		state.begin_day(map.block_plans, day)
+		map.repaint(state)
+		var tree := RouteTree.for_day(map, day)
+		var corridor := Corridor.of(tree)
+		var consumed: Array[String] = []
+		var counted: Array[EventScheduler.Planned] = []
+		for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
+			if EventScheduler._counts_against_the_line(plan):
+				counted.append(plan)
+		var streets := {}
+		for plan in counted:
+			if not plan.def.paces:
+				continue
+			var segment := StreetNetwork.segment_containing(map.world_to_tile(plan.position))
+			if segment and corridor.depth(segment.tile_rect().position) == 0:
+				streets[segment.key()] = segment
+		for key: Vector3i in streets:
+			var segment: StreetNetwork.Segment = streets[key]
+			paced_streets += 1
+			var rect := map.tile_rect_to_world(segment.tile_rect())
+			var standing: Array[EventScheduler.Planned] = []
+			for plan in counted:
+				if EventScheduler._reach_touches(plan, rect,
+						EventScheduler._line_reach_of(plan.def)):
+					standing.append(plan)
+			if _a_walk_along_the_street(map, segment, standing):
+				continue
+			closed += 1
+			if first == "":
+				var ids := {}
+				for plan in standing:
+					ids[plan.def.id] = true
+				first = "day %d, street %s, held by [%s]" \
+						% [day, key, ", ".join(PackedStringArray(ids.keys()))]
+	t.check(paced_streets >= 8,
+			"the days sampled pace a row along the route's own streets (%d)" % paced_streets)
+	t.check(closed == 0, "and the beat's opening is left open on every one (%d closed%s)"
+			% [closed, "" if first == "" else ": " + first])
 
 ## **A flock is scenery — overturned on 2026-09-13**, PLAYTEST-71: *"flocks are basically free
 ## already — don't count it as block, just count is scenery."* Under the plain cost rule a

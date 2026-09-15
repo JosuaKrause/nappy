@@ -760,6 +760,30 @@ about that ground rather than inventing an answer for it. A **precinct** needs n
 is paved frontage to frontage with no carriageway in it, so its whole width is the walk this asks
 about.
 
+### A pacing row leaves the line open for part of its beat
+
+**A man walking a footway and back is a timing problem rather than a routing one.** *"Time pass —
+don't route around them."* So the ground a pacing row denies is the ground its beat **never** leaves
+free — the intersection over the loop rather than the union — and a line that is clear at some phase
+of it can simply wait. That reading is the player's and it is what the whole cost rule is stated in.
+
+Which makes the beat's **open end** ground in its own right, and it is the only thing about a pacing
+row that can break a route: the intersection over a walk is far smaller than the disc, so a beat
+rarely closes a street by itself. What closes it is something else standing in the one end the
+yeller is away from.
+
+So **on a route street carrying a pacing row, the rows reaching that street are asked together**
+whether a walk from one of its junctions to the other survives. Both directions of the collision are
+the same question and both are refused: a pacing row may not take ground where what is already there
+would close its opening, and a standing row may not take the opening a pacing row already leaves.
+
+**It is scoped to the streets a pacing row stands on**, which is what keeps it from being a second,
+wider copy of the width rule. Two standing rows closing a street between them is a different shape,
+and this design does not have a rule for it.
+
+**The opening is a walkable tile wide** — 32px, against a stroller's 28px across — which is what a
+line is measured in and why no number had to be invented for it.
+
 ### Two strands side by side, and the street between them
 
 Two strands of corridor running down neighbouring streets with nothing between them are not two

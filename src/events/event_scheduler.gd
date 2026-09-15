@@ -824,6 +824,11 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 		# `_leaves_a_line_past_it`.
 		if not _leaves_a_line_past_it(candidate, map, corridor):
 			continue
+		# And the opening a pacing row's beat leaves is ground in its own right: the rows reaching
+		# one route street are asked together whether a walk along it survives, so nothing stands in
+		# the one end the yeller is away from. See `_leaves_a_pacing_beats_opening`.
+		if not _leaves_a_pacing_beats_opening(candidate, map, corridor, already):
+			continue
 		var room := _room_around(candidate, already)
 		if room == INF:
 			return candidate
@@ -1545,6 +1550,68 @@ static func _closes_the_street(map: CityMap, segment: StreetNetwork.Segment,
 				seen[next] = true
 				queue.append(next)
 	return true
+
+## **A pacing row leaves the line open for part of its beat.** *"Time pass — don't route around
+## them"* (PLAYTEST-71): a man walking two hundred and fifty pixels of footway and back is a timing
+## problem rather than a routing one, so the ground he denies is the ground his beat **never** leaves
+## free, and a line that is clear at some phase of the loop can simply wait for him.
+##
+## That reading is what makes the beat's opening worth protecting, and it is the whole of what the
+## probe finds broken: not a beat that closes a street by itself — the intersection over a walk is
+## far smaller than the disc — but a beat whose one open end has something else standing in it.
+## *"No other row's reach covers that open end."*
+##
+## So on a route street carrying a pacing row, the rows reaching it are asked **together** whether a
+## walk from one junction to the other survives. Both directions of the collision are the same
+## question and this is asked in both: a pacing row is refused ground where the rows already there
+## would close its opening, and a standing row is refused the opening a pacing row already leaves.
+##
+## **It is scoped to the streets a pacing row actually stands on**, which is what keeps it from
+## being a second, wider copy of the width rule. Two standing rows closing a street between them is
+## a different shape with a different answer, and the milestone does not write a rule for it.
+static func _leaves_a_pacing_beats_opening(candidate: Planned, map: CityMap, corridor: Corridor,
+		already: Array[Planned]) -> bool:
+	if not corridor or not _counts_against_the_line(candidate):
+		return true
+	var reach := _line_reach_of(candidate.def)
+	var streets := {}
+	var here := StreetNetwork.segment_containing(map.world_to_tile(candidate.position))
+	if candidate.def.paces and here and corridor.depth(here.tile_rect().position) == 0:
+		streets[here.key()] = here
+	for plan in already:
+		if plan == candidate or not plan.def.paces or not _counts_against_the_line(plan):
+			continue
+		var theirs := StreetNetwork.segment_containing(map.world_to_tile(plan.position))
+		if not theirs or corridor.depth(theirs.tile_rect().position) != 0:
+			continue
+		if _reach_touches(candidate, map.tile_rect_to_world(theirs.tile_rect()), reach):
+			streets[theirs.key()] = theirs
+
+	for key: Vector3i in streets:
+		var segment: StreetNetwork.Segment = streets[key]
+		var rect := map.tile_rect_to_world(segment.tile_rect())
+		var standing: Array[Planned] = [candidate]
+		for plan in already:
+			if plan == candidate or not _counts_against_the_line(plan):
+				continue
+			if _reach_touches(plan, rect, _line_reach_of(plan.def)):
+				standing.append(plan)
+		if _closes_the_street(map, segment, standing):
+			return false
+	return true
+
+## Whether a row's own reach gets anywhere near a rect at all — the cheap filter before the tile
+## work. Grown by the line reading's plain disc rather than `field_reach()`, and asked of every
+## corner of a beat as well as of where the row stands, since a pacing row's denied ground is
+## inside each of those discs.
+static func _reach_touches(plan: Planned, rect: Rect2, reach: float) -> bool:
+	var grown := rect.grow(reach)
+	if grown.has_point(plan.position):
+		return true
+	for point in plan.path:
+		if grown.has_point(point):
+			return true
+	return false
 
 ## Whether a tile between two junctions is carriageway a line may not cross there.
 ##
