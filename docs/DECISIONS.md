@@ -1,5 +1,42 @@
 # Decisions
 
+## M148 — A rolling graph of frame times on the readout · built 2026-09-14
+
+*(2026-09-14, [PLAYTEST-75](playtests/PLAYTEST-75.md): "I would expect there to be an overlay
+that shows the last x frames of frame times in a rolling window" — said of the `--spikes` line,
+which is a line in the run log and not what the player meant.)* One agent commit on
+`feature/m148-frame-graph`, reviewed on the PR; the still is
+`evidence/m148-frame-graph-2026-09-14/readout-graph.png`.
+
+**What it is.** `FrameGraph` (`src/ui/frame_graph.gd`), a `Control` on the readout's own
+`CanvasLayer`, built only while `_debug or _readout_requested` holds — absent, not hidden, on
+a release page nobody asked `?debug=1` of — and shown and hidden with the readout: one
+setter, `_set_readout_visible()`, is now the only place `main.gd` assigns the readout's
+visibility, and the boot, the escape boot, the title screen and the `4` key all go through
+it, so the two cannot drift apart. It keeps a ring of the last 240 frame deltas fed from
+`_process`'s own `delta` (the frame's actual length, not the engine's per-second maximum —
+M138, what the readout's lines measure), redraws each frame it is visible, and draws a 240
+by 48 design-pixel box: one one-pixel bar per frame, newest at the right, scaled so 33.3 ms
+reaches the top; reference lines at 16.7 and 33.3 ms labelled `60` and `30`; the window's
+mean as a thin line; a frame past twice the window mean in `Palette.MARK_COSTLY`, past
+33.3 ms in `Palette.MARK_LETHAL`, lethal winning where both hold, the rest the readout's own
+text colour at half alpha; a 0.75-alpha black backing so the bars read against the street.
+It sits 600 design pixels under the readout block's top, left-aligned with it, which clears
+the block's longest shape (thirty lines under `--skip`) and the phone's right focus ring
+(centred at y 480 with a 48 px radius, so it ends at 528). `mouse_filter` is `IGNORE` so a
+touch through it reaches the joystick. Tests: the ring keeps exactly the last 240 of 300
+pushes in order, the mean is the window's, the three classes come out for a known window, a
+hidden graph records nothing; and the graph exists under the readout's layer iff the readout
+was requested. `docs/TELEMETRY.md`'s debug view and `README.md`'s `--debug` row describe it.
+
+**Choices made where the entry was silent, open to overturn.** Lethal over costly when both
+hold; the backing at 0.75 rather than the 0.35 first tried, under which ordinary bars at half
+the readout's own alpha vanished against the world; the labels inside the box's left edge; the
+fixed offset rather than a per-frame measurement of the block's height; the visibility setter
+refactor across the five sites. In the still the bars are tiny — a headless rig draws in a
+few milliseconds — and no bar is coloured, since the day-start frame had aged out of the
+window by the fourth second; the red was seen on an earlier draft's still.
+
 ## M142 — A layer turned off is drawn off · built 2026-09-14
 
 *(2026-09-14, [PLAYTEST-75](playtests/PLAYTEST-75.md): "pressing number keys to turn off a

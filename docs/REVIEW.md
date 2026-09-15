@@ -21,6 +21,12 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Walk a minute of day 1 on the laptop with `--debug` and watch the graph under the
+  readout, then the same on the phone with `?debug=1`.** Each bar is one frame's length, newest
+  at the right, 240 frames wide; the lines are 60 and 30 fps and the window's mean; amber is a
+  frame past twice the mean and red one past 33 ms. **Is the 24 ms frame there as an amber bar
+  most seconds on the laptop, and on the phone does the graph fit under the block and read at
+  all?** Record is `DECISIONS.md`, M148, a rolling graph of frame times.
 - **Cross a region door on foot, from day 7** (`--day 7`; a door is the hut-boom-hut across a
   boundary street). The boom hangs between its posts across the lanes, level with the huts; the
   inspection starts as soon as she stands against the hut; the camera eases from where it was
