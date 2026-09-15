@@ -53,6 +53,10 @@ var fields_on := false
 var shadows_on := false
 var bodies_on := false
 
+## Set by `set_layer()` and `apply_initial_state()` on every change, cleared by `_process()` once
+## it has queued the redraw the change owed. See `_wants_a_redraw()`.
+var _redraw_owed := false
+
 var _events: EventManager
 var _crowd: Crowd
 var _city: City
@@ -71,6 +75,7 @@ func apply_initial_state(indices: Array[int]) -> void:
 	fields_on = 1 in indices
 	shadows_on = 2 in indices
 	bodies_on = 3 in indices
+	_redraw_owed = true
 
 ## `1` fields, `2` shadows, `3` bounding boxes — a number key's own numbering once `main.gd`
 ## wires one to each; `4` (the readout) lives on its own pre-existing layer and never reaches here.
@@ -79,6 +84,7 @@ func set_layer(index: int, on: bool) -> void:
 		1: fields_on = on
 		2: shadows_on = on
 		3: bodies_on = on
+	_redraw_owed = true
 
 func layer_on(index: int) -> bool:
 	match index:
@@ -87,18 +93,24 @@ func layer_on(index: int) -> bool:
 		3: return bodies_on
 		_: return false
 
-## Gated on a layer actually being on: with all three off there is nothing to redraw, and asking
-## for one anyway costs a queued `_draw()` call sixty times a second for a view that never turns
-## anything on. `_draw()` itself already returns early with everything off, but `queue_redraw()` is
-## what schedules that empty call in the first place.
+## Gated on a layer actually being on, or a redraw still owed: with all three off and nothing
+## owed, asking for one anyway would cost a queued `_draw()` call sixty times a second for a view
+## that never turns anything on. But `_draw()` is retained — it re-runs only on `queue_redraw()`
+## — so it keeps its last picture until something asks again, and the toggle that turns the last
+## layer off is exactly the change nothing was asking a redraw for any more. `set_layer()` and
+## `apply_initial_state()` mark `_redraw_owed` on every change, so the switch-off queues the one
+## `_draw()` that draws nothing and the picture goes back to matching the booleans; see
+## docs/DECISIONS.md, M142, "a layer turned off is drawn off".
 func _process(_delta: float) -> void:
 	if _wants_a_redraw():
 		queue_redraw()
+		_redraw_owed = false
 
 ## Pulled out of `_process()` so a test can hold the gate without a viewport to actually ask
-## `queue_redraw()`/`_draw()` about.
+## `queue_redraw()`/`_draw()` about. True while any layer is on, or while a redraw from the last
+## change to one is still owed — see `_process()`.
 func _wants_a_redraw() -> bool:
-	return fields_on or shadows_on or bodies_on
+	return fields_on or shadows_on or bodies_on or _redraw_owed
 
 func _draw() -> void:
 	if not _events or not _crowd or not _player:
