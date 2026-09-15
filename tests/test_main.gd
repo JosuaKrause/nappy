@@ -21,6 +21,10 @@ func run(t) -> void:
 	_test_the_readout_flag_shows_it_on_a_release_build(t)
 	_test_the_debug_mode_note_only_exists_when_requested(t)
 	_test_the_frame_graph_only_exists_when_requested(t)
+	_test_graph_starts_on_under_spikes_or_layers_six(t)
+	_test_key_six_resolves_to_the_frame_graph_layer(t)
+	_test_key_six_toggles_the_graph_independent_of_four(t)
+	_test_key_six_twice_empties_the_ring(t)
 	_test_add_touch_controls_builds_the_one_control_reader(t)
 	_test_on_title_start_sets_the_controls_mode(t)
 	_test_the_summary_and_pause_restart_signals_are_both_connected(t)
@@ -162,8 +166,12 @@ func _test_the_debug_mode_note_only_exists_when_requested(t) -> void:
 ## `_add_frame_graph()` gates itself on `_debug or _readout_requested`, the same shape
 ## `_add_debug_mode_note()` gates itself on `_readout_requested` alone — see that function's own
 ## doc — so a release build carrying neither flag never builds the graph either, and one carrying
-## `?debug=1` gets it parented under `_status`'s own `CanvasLayer` and shown, the same terms
-## `_status.visible` itself starts on.
+## `?debug=1` gets it parented under `_status`'s own `CanvasLayer`. **Off by default**, unlike
+## `_status.visible` itself: *(2026-09-15, the player: "spike view should be independent of debug
+## layer 4 it should be its own debug layer and turned off by default unless --spikes is set".)*
+## its own switch, `_layer_graph_on`, starts `false` and nothing in this suite's own command line
+## sets `--spikes` or names `6` in `--layers`, so a debug build that asked for the readout still
+## gets a graph nobody has turned on yet.
 func _test_the_frame_graph_only_exists_when_requested(t) -> void:
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._status = Label.new()
@@ -185,8 +193,102 @@ func _test_the_frame_graph_only_exists_when_requested(t) -> void:
 	main._add_frame_graph()
 	t.check(main._frame_graph != null and main._frame_graph.get_parent() == main._status_layer,
 			"the flag builds the graph and parents it under the readout's own CanvasLayer")
-	t.check(main._frame_graph.visible,
-			"and it is visible from the start, the same terms _status.visible starts on")
+	t.check(not main._layer_graph_on and not main._frame_graph.visible,
+			"but it starts off, unlike the readout it sits under — neither --spikes nor --layers 6 was given")
+	main._frame_graph.free()
+	main._status.free()
+	main._status_layer.free()
+	main.free()
+
+## `MAIN_SCRIPT._graph_starts_on()` is the boot policy with the command line taken out of it, the
+## same split `escape_part_for()` makes for `DevFlags.start_escape_at()` — this drives it directly
+## rather than through a real `--spikes` or `--layers 6` on this process's own argv, neither of
+## which this suite's own command line carries.
+func _test_graph_starts_on_under_spikes_or_layers_six(t) -> void:
+	var none: Array[int] = []
+	var six: Array[int] = [6]
+	var others: Array[int] = [1, 5]
+	t.check(MAIN_SCRIPT._graph_starts_on(true, none), "--spikes alone starts the graph on")
+	t.check(MAIN_SCRIPT._graph_starts_on(false, six),
+			"--layers naming 6 starts it on the same way, without --spikes")
+	t.check(not MAIN_SCRIPT._graph_starts_on(false, none),
+			"neither flag given leaves it off, the default")
+	t.check(not MAIN_SCRIPT._graph_starts_on(false, others),
+			"--layers naming other layers does not turn this one on")
+
+## `DevFlags.spikes_requested()` is a live read of `OS.get_cmdline_user_args()`, which this suite's
+## own process does not carry, so `_add_frame_graph()` cannot be asked to start the graph on that
+## path here — the case above already covers "neither flag was given". What this suite *can* drive
+## is `--layers` naming `6`, through the same seam `tests/test_route_lines.gd` uses for `5`:
+## `DevFlags.layers_override()` reads the real command line too, so this exercises
+## `_toggle_debug_layer()` and the key directly instead, which is the surface a rig or a player
+## actually reaches.
+func _test_key_six_resolves_to_the_frame_graph_layer(t) -> void:
+	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_6)) == 6, "6 is the spike view")
+	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_6, false)) == 0, "a release, not a press, does nothing")
+	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_6, true, true)) == 0,
+			"an echo does nothing — a held key is one request, not a flood of them")
+
+func _key(code: Key, pressed := true, echo := false) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.keycode = code
+	event.pressed = pressed
+	event.echo = echo
+	return event
+
+## `6` toggles `_layer_graph_on` and the graph's own visibility, independent of `4` — the whole
+## point of M153: *(2026-09-15, the player: "spike view should be independent of debug layer 4".)*
+## Pressing `4` first proves the two do not share a switch; pressing `6` then proves it has one of
+## its own.
+func _test_key_six_toggles_the_graph_independent_of_four(t) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._status = Label.new()
+	main._status_layer = CanvasLayer.new()
+	main._debug = true
+	main._readout_requested = false
+	main._add_frame_graph()
+
+	t.check(not main._frame_graph.visible, "the graph starts off")
+	# `_status` is a fresh `Label` (default `visible == true`) and `_layer_readout_on` starts
+	# `true`, so this first toggle is the readout's `4`-key answer to "turn off what started on".
+	main._toggle_debug_layer(4)
+	t.check(not main._status.visible and not main._frame_graph.visible,
+			"4 turns the readout off and leaves the graph exactly where it was")
+	main._toggle_debug_layer(6)
+	t.check(main._frame_graph.visible, "6 turns the graph on")
+	main._toggle_debug_layer(4)
+	t.check(main._status.visible and main._frame_graph.visible,
+			"4 turns the readout back on and still leaves the graph alone")
+	main._toggle_debug_layer(6)
+	t.check(not main._frame_graph.visible, "6 turns the graph back off")
+
+	main._frame_graph.free()
+	main._status.free()
+	main._status_layer.free()
+	main.free()
+
+## The player's own follow-on, said a minute after the first ask: pressing `6` twice must leave the
+## ring empty rather than merely hidden, so a graph turned back on fills from that moment instead of
+## picking up a stale window. *(2026-09-15: "spike recording should only be on while the layer is
+## on. that means toggling the layer twice will lead to a blank frame array".)*
+func _test_key_six_twice_empties_the_ring(t) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._status = Label.new()
+	main._status_layer = CanvasLayer.new()
+	main._debug = true
+	main._readout_requested = false
+	main._add_frame_graph()
+
+	main._toggle_debug_layer(6)
+	for i in range(10):
+		main._frame_graph.push(0.010)
+	t.check(main._frame_graph.frames().size() == 10, "the ring holds what was pushed while the layer was on")
+	main._toggle_debug_layer(6)
+	t.check(main._frame_graph.frames().is_empty(), "turning the layer back off empties the ring")
+	main._toggle_debug_layer(6)
+	t.check(main._frame_graph.frames().is_empty(),
+			"and turning it back on again starts from empty, not from what the ring held before")
+
 	main._frame_graph.free()
 	main._status.free()
 	main._status_layer.free()
