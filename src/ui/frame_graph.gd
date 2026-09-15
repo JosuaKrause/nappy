@@ -39,7 +39,11 @@ const _TARGET_MS := 16.7
 ## this length draws a bar reaching the box's own top edge.
 const _LETHAL_MS := 33.3
 
-## `costly`: longer than twice the window's own mean. `lethal`: longer than `_LETHAL_MS`. Kept as
+## `costly`: longer than `_TARGET_MS`, the 60fps line. `lethal`: longer than `_LETHAL_MS`, the 30fps
+## line. Both absolute, against the two lines the box draws, and neither against the window's
+## mean: a rule relative to the mean went blind whenever every frame was slow — under a burst's
+## per-frame readback nothing was twice the mean and the amber vanished *(2026-09-14, the player:
+## "picture taking shouldn't hide the amber")*. A slow frame is slow whatever its neighbours did. Kept as
 ## an enum rather than two bare booleans so `_bar_colour()` and a test can both name the three
 ## outcomes instead of re-deriving them from two comparisons.
 enum FrameClass { NORMAL, COSTLY, LETHAL }
@@ -74,8 +78,7 @@ func _ready() -> void:
 func push(delta: float) -> void:
 	if not visible:
 		return
-	# Classified against the frames *before* it, the same rule the run log's `spike` line uses:
-	# a frame does not get to raise the bar it has to clear.
+	# Classified once, here, against the two fixed lines; the answer travels with the frame.
 	_classes.append(classify(delta))
 	_deltas.append(delta)
 	if _deltas.size() > FRAME_GRAPH_FRAMES:
@@ -107,14 +110,13 @@ func mean() -> float:
 ## `LETHAL` beats `COSTLY` when a frame is both — a frame past `_LETHAL_MS` is "the frame is gone"
 ## whatever the window's own mean happened to be doing, so the worse of the two vocabulary colours
 ## wins rather than whichever condition is checked first. Answers against the window as it stands
-## now; `push()` calls it before appending, so a pushed frame is judged against the frames before
-## it, and the answer is stored with the frame rather than asked again at draw time.
+## `push()` stores the answer with the frame rather than asking again at draw time, so a bar keeps
+## the colour it was born with.
 func classify(delta: float) -> int:
 	var ms := delta * 1000.0
 	if ms > _LETHAL_MS:
 		return FrameClass.LETHAL
-	var window_mean := mean()
-	if window_mean > 0.0 and delta > 2.0 * window_mean:
+	if ms > _TARGET_MS:
 		return FrameClass.COSTLY
 	return FrameClass.NORMAL
 

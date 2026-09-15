@@ -79,8 +79,8 @@ it, so the two cannot drift apart. It keeps a ring of the last 240 frame deltas 
 M138, what the readout's lines measure), redraws each frame it is visible, and draws a 240
 by 48 design-pixel box: one one-pixel bar per frame, newest at the right, scaled so 33.3 ms
 reaches the top; reference lines at 16.7 and 33.3 ms labelled `60` and `30`; the window's
-mean as a thin line; a frame past twice the window mean in `Palette.MARK_COSTLY`, past
-33.3 ms in `Palette.MARK_LETHAL`, lethal winning where both hold, the rest the readout's own
+mean as a thin line; a frame past 16.7 ms in `Palette.MARK_COSTLY`, past 33.3 ms in
+`Palette.MARK_LETHAL`, the rest the readout's own
 text colour at half alpha; a 0.75-alpha black backing so the bars read against the street.
 It sits 600 design pixels under the readout block's top, left-aligned with it, which clears
 the block's longest shape (thirty lines under `--skip`) and the phone's right focus ring
@@ -97,7 +97,12 @@ fact)".)* The first build classified every bar at draw time against the window's
 mean, so as the mean moved, old bars turned amber or back. Now `push()` classifies the frame
 against the frames before it — the spike line's own rule, a frame does not raise the bar it
 has to clear — and stores the class beside the delta; `_draw()` reads the stored class. A bar
-keeps the colour it was born with and only ever scrolls left.
+keeps the colour it was born with and only ever scrolls left. **And later the same evening the
+rule itself went absolute**: *("picture taking shouldn't hide the amber")* — under a burst's
+per-frame readback every frame was 60 to 76 ms, nothing was twice the window's mean, and the
+amber vanished. Amber is now a frame past the 16.7 ms line and red one past 33.3 ms, the two
+lines the box draws, whatever the neighbours did; the mean line stays as a reading, not a
+threshold.
 
 **Choices made where the entry was silent, open to overturn.** Lethal over costly when both
 hold; the backing at 0.75 rather than the 0.35 first tried, under which ordinary bars at half

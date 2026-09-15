@@ -563,8 +563,9 @@ build has nothing in `project.godot` to reach:
   frame, one design pixel wide, newest at the right, in a 240 by 48 design-pixel box: height
   scaled so a 33.3ms (30fps) frame reaches the top and anything longer clips, with two thin
   reference lines at 16.7ms (labelled `60`) and 33.3ms (labelled `30`) and a third, unlabelled
-  thin line at the window's own mean. A bar longer than twice that mean is amber
-  (`Palette.MARK_COSTLY`), longer than 33.3ms is deep red (`Palette.MARK_LETHAL`) — the same two
+  thin line at the window's own mean. A bar longer than 16.7ms is amber (`Palette.MARK_COSTLY`),
+  longer than 33.3ms is deep red (`Palette.MARK_LETHAL`) — against the two drawn lines and never
+  against the mean, so a second in which every frame is slow shows every bar as slow — the same two
   colours the caret, the badge and the `1` fields layer above already use, so this reads as the
   vocabulary the game already has rather than a third meaning for the same two colours — and every
   other bar is the readout's own text colour at half alpha. Gated exactly as the readout is: built
