@@ -29,6 +29,15 @@ pushes in order, the mean is the window's, the three classes come out for a know
 hidden graph records nothing; and the graph exists under the readout's layer iff the readout
 was requested. `docs/TELEMETRY.md`'s debug view and `README.md`'s `--debug` row describe it.
 
+**Corrected the same evening: a bar's class is decided when its frame is pushed.** *(2026-09-14,
+the player: "I would assume that the graph adds a row on the right and moves the rest to the
+left. but I see things on the left side changing (notably adding yellow lines after the
+fact)".)* The first build classified every bar at draw time against the window's current
+mean, so as the mean moved, old bars turned amber or back. Now `push()` classifies the frame
+against the frames before it — the spike line's own rule, a frame does not raise the bar it
+has to clear — and stores the class beside the delta; `_draw()` reads the stored class. A bar
+keeps the colour it was born with and only ever scrolls left.
+
 **Choices made where the entry was silent, open to overturn.** Lethal over costly when both
 hold; the backing at 0.75 rather than the 0.35 first tried, under which ordinary bars at half
 the readout's own alpha vanished against the world; the labels inside the box's left edge; the
