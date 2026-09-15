@@ -365,18 +365,28 @@ per edge by the manifest `GroundLayers._load_manifest()` reads); in the SVG art 
 the two-pixel strip along the tile's road-side edge (`assets/tiles/sidewalk_kerb_e.svg`,
 `x=30 width=2`).
 
-- [ ] **Only the stone strip is tinted.** `RouteKerbs` no longer copies the kerb tile: it
-      draws the curbstone alone, tinted, over each route kerb tile — in PNG mode the
-      `curbstone` component image rotated as the manifest rotates it for that tile's edge, in
-      SVG mode the strip's own rectangle along the road-side edge at the SVG's width — so the
-      paving under it is untouched. Whether that is a `TileMapLayer` with a small tile set of
-      the four rotated curbstone pictures or a `Node2D` whose `_draw()` places them is the
-      implementer's call, stated in the commit; the cells or positions still come from the same
-      rule (a kerb source at corridor depth zero) and the same test asserts the same set. The
-      strip is a few pixels wide, so the alpha that read as nothing over a whole tile is
-      re-dialled: `Tuning.ROUTE_KERB_TINT_ALPHA` starts at 0.45 and the player sets it. The two
-      stills are retaken. The `DECISIONS.md` record and the `REVIEW.md` item are corrected in
-      the same PR.
+> "add the tint when compositing the curbstone onto the sidewalk"
+
+- [ ] **The tint is composited into the tile, on the curbstone alone.** No second layer:
+      `GroundLayers.build_tile_set()` gives each of the eight kerb sources a tinted twin — the
+      same base and the same rotated `curbstone` component, with the component's pixels
+      blended toward `Palette.ROUTE_KERB_TINT` by `Tuning.ROUTE_KERB_TINT_ALPHA` before it is
+      composited onto the sidewalk base (`compose_image`), so the paving is untouched and the
+      stone carries the cast. In SVG mode, where nothing is composed, the twin is the authored
+      kerb raster with the strip's own pixels (the two-pixel band along the road-side edge)
+      blended the same way, so both presentations agree. The twins are registered as their own
+      source ids, kept in one place beside the kerb constants in `GroundTiles` so `source_for`
+      and the painter cannot spell them differently. `City._paint_route_kerbs()` (renamed if a
+      better name fits) runs where it does now, after the tree is grown, and re-sets on
+      `Ground` itself every kerb cell at corridor depth zero to its tinted twin, same atlas
+      coordinates; `start_finale()` has no tree and paints plain kerbs. The `RouteKerbs` layer
+      leaves the scene. The strip is three pixels wide, so the alpha that read as nothing over a
+      whole tile is re-dialled: `ROUTE_KERB_TINT_ALPHA` starts at 0.45 and the player sets it.
+      The test asserts the set of cells carrying a tinted twin equals the kerb cells at depth
+      zero, that each twin's atlas coordinates match what the plain source would have had, and
+      that the finale paints none; a pixel test on one composed twin asserts the stone pixels
+      moved toward the tint and a paving pixel did not. The two stills are retaken. The
+      `DECISIONS.md` record and the `REVIEW.md` item are corrected in the same PR.
 
 ---
 
