@@ -82,6 +82,13 @@ var _route_lines: RouteLines
 ## Set by `_add_debug_mode_note()`, or left `null` when `_readout_requested` is `false` — a test's
 ## own way to check the release shape without a live tree search for the node.
 var _debug_mode_note: DebugModeNote
+## The rolling bar graph of the last frames' own lengths, under `_status`. Set by
+## `_add_frame_graph()`, or left `null` on the same "absent, not merely hidden" terms
+## `_debug_mode_note` is — a release page nobody asked `?debug=1` of never builds it. Every place
+## `_status.visible` changes goes through `_set_readout_visible()`, which keeps this in step with
+## it (`if _frame_graph:`, since it is null on exactly the builds that never call that setter with
+## anything true).
+var _frame_graph: FrameGraph
 ## Whether the developer readout (`_status`) is showing, independent of `_debug`: the fourth
 ## layer `_toggle_debug_layer()` owns, on `_status`'s own pre-existing `CanvasLayer` rather than
 ## under `_debug_layers`, which is not a `CanvasLayer` this label could join. Starts `true`, so an
@@ -132,6 +139,9 @@ func _ready() -> void:
 	# than being gated at the call site, the same shape `_add_debug_layers()` gates itself on
 	# `_debug`. See `_add_debug_mode_note()`'s own doc for why nothing afterwards may remove it.
 	_add_debug_mode_note()
+	# Same reason and the same gate as the note above — the graph has to exist before either boot
+	# path so `_ready_escape()` finds it already built. See `_add_frame_graph()`'s own doc.
+	_add_frame_graph()
 	# `--start-escape` is a different boot entirely — no title, no city, no day — so it branches
 	# before any of the ordinary run's own scaffolding exists. See `_ready_escape()`.
 	if _escape_scene_requested:
@@ -142,7 +152,7 @@ func _ready() -> void:
 	# path that never reaches one of them should still open with the right answer.
 	# `_layer_readout_on` defaults `true`, so this is `_debug or _readout_requested` alone on an
 	# unflagged run — the fourth debug layer starts on, the same as it always has.
-	_status.visible = (_debug or _readout_requested) and _layer_readout_on
+	_set_readout_visible((_debug or _readout_requested) and _layer_readout_on)
 	GameState.start_run(DevFlags.seed_override())
 	# After the run seed is settled and before anything is generated, so the log opens on the
 	# seed it is a trace of. Off with `-- --no-telemetry`; on otherwise, because a trace
@@ -265,7 +275,7 @@ func _ready_escape() -> void:
 	# release shape without also driving the rest of `_ready()`.
 	if not _escape_scene_requested:
 		return
-	_status.visible = (_debug or _readout_requested) and _layer_readout_on
+	_set_readout_visible((_debug or _readout_requested) and _layer_readout_on)
 	GameState.start_run(DevFlags.seed_override())
 	# Same opt-out and the same reasoning as the ordinary run: a trace behind a flag nobody
 	# remembers to turn on is a trace nobody gets, and `P`/`B` (`_snapshot_now()`/`_start_burst()`)
@@ -596,7 +606,7 @@ func _open_the_title() -> void:
 	_player.stand_aside()
 	_hud.visible = false
 	_edge_layer.visible = false
-	_status.visible = false
+	_set_readout_visible(false)
 	_title.open(_ending_shown)
 
 ## The title screen has been pressed, which is also the start: hand the city back to the day it
@@ -626,7 +636,7 @@ func _on_title_start(mode: ControlsMode.Mode) -> void:
 	# of build, since `_open_the_title()` always turns it off and this was the only place that
 	# turned it back on. `and _layer_readout_on` so a `4`-toggled-off readout stays off across a
 	# trip through the title rather than snapping back on underneath it.
-	_status.visible = (_debug or _readout_requested) and _layer_readout_on
+	_set_readout_visible((_debug or _readout_requested) and _layer_readout_on)
 	if is_inside_tree():
 		get_tree().paused = false
 
@@ -731,6 +741,34 @@ func _add_debug_mode_note() -> void:
 	_debug_mode_note = DebugModeNote.new()
 	_debug_mode_note.name = "DebugModeNote"
 	add_child(_debug_mode_note)
+
+## The rolling bar graph of the last frames' own lengths — see `FrameGraph`. **Absent from the tree
+## when neither `_debug` nor `_readout_requested` holds**, the same "gated rather than merely
+## hidden" shape `_add_debug_mode_note()` uses: a release page nobody asked `?debug=1` of never
+## builds it, so it never pays for a ring nobody can see. Parented under `_status`'s own
+## `CanvasLayer` rather than under `_debug_layers` — it lives beside the readout, on the readout's
+## own key, not among the four `_debug_layers` keys `1`-`3` and `5` toggle.
+##
+## Left-aligned with `_status` (`offset_left`, 960px in the design box) and placed a fixed 600px
+## below its own top (`offset_top`, 14px): the readout's block gains its 30th line only under
+## `--skip`, and 30 lines at this label's own font size (17px tall, 3px between lines — measured
+## off a headless `Label`, since neither number is exposed as a theme constant) reach about 597px
+## from the block's own top, so a fixed offset clears both shapes with a few pixels to spare
+## instead of re-measuring `_status`'s rendered height every frame for a difference that never
+## exceeds one line. **Below the block, not above it**, because the joystick focus ring `docs/
+## DECISIONS.md` (M139, "the phone reading") already finds under the readout's own lines — a 48px
+## ring centred at y=480 in the same design box reaches no further down than y=528 — comfortably
+## above this box's own top at y=614, so the graph clears the ring by placement rather than by
+## being moved out of its way.
+func _add_frame_graph() -> void:
+	if not (_debug or _readout_requested):
+		return
+	_frame_graph = FrameGraph.new()
+	_frame_graph.name = "FrameGraph"
+	_frame_graph.text_colour = _status.get_theme_color("font_color")
+	_frame_graph.position = Vector2(_status.offset_left, 614.0)
+	_frame_graph.visible = (_debug or _readout_requested) and _layer_readout_on
+	_status_layer.add_child(_frame_graph)
 
 ## The fields, shadows and bounding-box overlays — see `DebugLayers`. **Absent from the tree
 ## outside a debug build**, not merely built and left invisible: `_debug_layers` stays `null`, so
@@ -1110,6 +1148,14 @@ func _process(delta: float) -> void:
 	# since the window is about wall-clock stutter and must keep moving through a pause, a
 	# compressed `--day-length` and `--invincible`'s own frozen day clock alike.
 	FrameCost.sample(Time.get_ticks_msec() / 1000.0)
+	# The bar graph's own ring, fed `delta` itself rather than anything `FrameCost` read above —
+	# `FrameCost` already discarded which frame in the last second was the long one, and the graph
+	# exists to answer exactly that. `if _frame_graph:` because it is `null` under the same
+	# release-page terms `_add_frame_graph()` documents, and because a test that drives
+	# `_process()` directly (`tests/test_main.gd`) without also calling `_ready()` has never built
+	# one either.
+	if _frame_graph:
+		_frame_graph.push(delta)
 	var tile := _city.map.world_to_tile(_player.global_position)
 	if _build_text == "":
 		_build_text = TitleScreen.build_text()
@@ -1290,7 +1336,7 @@ static func _debug_layer_key(event: InputEvent) -> int:
 func _toggle_debug_layer(layer: int) -> void:
 	if layer == 4:
 		_layer_readout_on = not _layer_readout_on
-		_status.visible = (_debug or _readout_requested) and _layer_readout_on
+		_set_readout_visible((_debug or _readout_requested) and _layer_readout_on)
 		return
 	if layer == 5:
 		if _route_lines:
@@ -1298,6 +1344,18 @@ func _toggle_debug_layer(layer: int) -> void:
 		return
 	if _debug_layers:
 		_debug_layers.set_layer(layer, not _debug_layers.layer_on(layer))
+
+## The one place `_status.visible` is actually assigned — every other spot in this file calls this
+## instead, so `_frame_graph` (`null` on a release page nobody asked `?debug=1` of, the same terms
+## `_debug_mode_note` is) can never fall out of step with the label it toggles beside: the fourth
+## debug layer, the title screen hiding both and `_on_title_start()` bringing both back. `if
+## _frame_graph:` rather than asserting it is set, because a test that drives one of these five call
+## sites directly (`tests/test_main.gd`, `tests/test_debug_layers.gd`) is exercising `_status`'s own
+## release shape and has no reason to have built the graph too.
+func _set_readout_visible(shown: bool) -> void:
+	_status.visible = shown
+	if _frame_graph:
+		_frame_graph.visible = shown
 
 ## `P` (or `F9`) writes a screenshot into the telemetry folder and a line of trace beside it. It is
 ## a debugging aid rather than a game feature.

@@ -690,3 +690,6 @@ func teleport_to_door(door_id: String, player: Node2D) -> void:
 		(player as Stroller).reset_at(at, Vector2.UP)
 	else:
 		player.global_position = at
+		# `reset_at()` already does this for the `Stroller` branch above; a bare test double
+		# still needs it or physics interpolation draws it sliding in from the part it left.
+		player.reset_physics_interpolation()

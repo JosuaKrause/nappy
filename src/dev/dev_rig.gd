@@ -32,6 +32,9 @@ func setup_follow_camera(parent: Node) -> void:
 	_follow_camera = Camera2D.new()
 	parent.add_child(_follow_camera)
 	_follow_camera.make_current()
+	# `update_follow_camera()` snaps this every `_process` frame rather than on the physics tick,
+	# so physics interpolation would draw it a tick behind whatever it is chasing.
+	_follow_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 
 ## Called once a frame; a no-op until `setup_follow_camera()` has actually built a camera.
 func update_follow_camera(city: City) -> void:
@@ -270,6 +273,10 @@ static func make_overview_camera(parent: Node, city: City, viewport_size: Vector
 	var bounds := city.camera_bounds()
 	camera.position = bounds.get_center()
 	camera.zoom = Vector2.ONE * minf(viewport_size.x / bounds.size.x, viewport_size.y / bounds.size.y)
+	# Physics interpolation is on project-wide (docs/DECISIONS.md, M141, "the physics tick at
+	# thirty"), and the engine moves every interpolated `Camera2D` onto the physics tick, with a
+	# warning if it had to. Said here so there is nothing to override.
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	parent.add_child(camera)
 	camera.make_current()
 

@@ -21,6 +21,12 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Walk a minute of day 1 on the laptop with `--debug` and watch the graph under the
+  readout, then the same on the phone with `?debug=1`.** Each bar is one frame's length, newest
+  at the right, 240 frames wide; the lines are 60 and 30 fps and the window's mean; amber is a
+  frame past twice the mean and red one past 33 ms. **Is the 24 ms frame there as an amber bar
+  most seconds on the laptop, and on the phone does the graph fit under the block and read at
+  all?** Record is `DECISIONS.md`, M148, a rolling graph of frame times.
 - **Walk a minute of day 1 on the laptop with `--debug --spikes` and read the `spike` lines
   out of the run log** (`tools/telemetry.sh`, or the run folder printed at boot). Each names
   the one frame in its second that ran past twice the mean, and what changed since the frame
@@ -253,6 +259,21 @@ item below for as long as looking takes.
   rather than a fourth ending: two lines and the clock. **Is anything in it triumphant?** The tone
   rule is `NARRATIVE.md`'s *no triumphalism in the good ending*, and this is the one screen written
   after the escape, so it is the place that rule is easiest to break. Same record.
+
+- **Walk day 1 on the laptop at its own frame rate and watch her, not the crowd.** The
+  physics tick is thirty a second now and she is drawn between ticks by the engine's own
+  interpolation; the crowd and the events move per frame as before. **Does her walk read
+  smooth at a hundred frames, and does the camera's follow?** And at every jump she makes —
+  the day start, a door release, the escape's fade-and-teleport, a camera focus and its ease
+  back — is there a one-tick slide from the old place, or does she simply appear? Record is
+  `DECISIONS.md`, M141, the physics tick at thirty.
+
+- **On the phone, on the release that carries the tick, load the four settings on seed 123
+  again** — `?debug=1&seed=123`, then `&skip=crowd`, `&skip=motion`, `&skip=motion,crowd` —
+  within the first ten seconds of the day, and read `fps` against playtest 74's table
+  (`DECISIONS.md`, M140, the phone reading). The physics tick now runs half as often; the
+  `physics` line is per tick and the `process` line is the worst frame of the last second, so
+  `fps` is the number that says whether the frame moved. **Does it?** Same record, M141.
 
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 

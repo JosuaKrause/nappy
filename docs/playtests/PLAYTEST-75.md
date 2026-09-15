@@ -50,6 +50,58 @@ that would find it is M144 in `TODO.md`.
 Said to the M144 probe on 2026-09-14; it goes to an agent as filed, with the line behind its
 own flag.
 
+## The route's curbs, tinted
+
+> "also one gameplay experiment I want to try -- can we tint the curbstones that belong to a
+> path slightly yellow? to give a faint hint on an optimal path. I just want to try it out. this
+> is in addition to the environmental guidance through obstacles. it should be faint as to more
+> subconciously guide as well"
+
+> "that's why I'm framing it as experiment. I don't really want it to be how we show paths but
+> I want to assess whether it can be done without being too obvious and on the nose"
+
+Said on 2026-09-14. Filed as M145 in `TODO.md`, as the experiment it is: the city's own
+record says it never suggests a route and there is no cue of any kind toward calm
+(`CITY.md`, "Guiding her to the calm"), and this is not that rule overturned but a trial of
+whether a hint on the ground can stay under the threshold of being noticed as one — beside
+the guidance through obstacles, and not the way paths are meant to be shown.
+
+## A pocketed agent stands instead of pacing
+
+> "I get the remove entity when there is no route idea. maybe let's do instead stop the entity
+> if there is no way. and despawn once offscreen"
+> "it looks very weird otherwise"
+
+Said on 2026-09-14, on v0.10.7. What is built is M119, the crowd with nowhere to go leaves: an
+agent a seal goes up around is recycled at the first frame it is out of view, and in view it
+paces to the far seal and back, one stride between about-faces. The pacing is what looks
+weird. Filed as M146 in `TODO.md`: stand where the seal caught it, and leave unseen as today.
+
+## A route crossing the carriageway mid-block
+
+> "how is this path possible? the rule is to only allow crossing at crossings never across the
+> street"
+
+Said on 2026-09-14 to a v0.10.7 screenshot, seed 2128084176, day 1, with the route layer on:
+the purple route line runs down one pavement, jogs across the carriageway between two
+junctions and continues down the other. A re-report, closed from the older entry: M129, a
+path through the city never has to cost, carries the item *mid-block crossings are not
+counted on* — the route tree grows on the reachability grid's cells and crosses a carriageway
+mid-block about three times per route today, and the item is a change to how the corridor is
+grown, with the probe's own mid-block count as its test. Not yet built.
+
+## A rolling graph of frame times
+
+> "hmm, I don't see a graph showing the history of the fps / spikes"
+> "I would expect there to be an overlay that shows the last x frames of frame times in a
+> rolling window"
+> "not sure what you thought that would be"
+
+Said on 2026-09-14, on the `--spikes` branch. What "spike line" was built as is a line in the
+run log (M144); what the player meant by it was a graph on screen. Filed as M148 in
+`TODO.md`: an overlay under the readout drawing the last frames' own lengths as a rolling
+window, the spikes marked.
+
 ## A stutter whenever a new picture is shown
 
 > "I feel whenever a new entity/image/sprite is shown there is a visible stutter. this would be

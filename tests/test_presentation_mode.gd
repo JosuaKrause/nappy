@@ -30,6 +30,7 @@ func run(t) -> void:
 	_test_seed_from_query_takes_a_valid_seed_under_debug(t)
 	_test_seed_from_query_ignores_the_seed_without_debug(t)
 	_test_seed_from_query_refuses_non_positive_and_malformed_values(t)
+	_test_the_physics_tick_is_pinned_to_thirty_with_interpolation_on(t)
 
 func _test_command_line_defaults_to_png(t) -> void:
 	t.check(not DevFlags._svg_from_args(PackedStringArray()),
@@ -146,3 +147,15 @@ func _test_seed_from_query_refuses_non_positive_and_malformed_values(t) -> void:
 		"anything that is not an integer is refused the same as not given")
 	t.check(DevFlags._seed_from_query("?debug=1&seed=") == 0,
 		"an explicit but empty value is refused the same as not given")
+
+## Pins the engine's own physics rate and interpolation setting so a `project.godot` edit cannot
+## drift the tick out from under every test that steps the game world by hand with its own `STEP`
+## constant and never reads the engine's rate. Read from the running engine rather than the file,
+## so this fails if the setting is present but misspelled or overridden and the engine silently
+## kept its default of sixty.
+func _test_the_physics_tick_is_pinned_to_thirty_with_interpolation_on(t) -> void:
+	t.check(Engine.physics_ticks_per_second == 30,
+		"the physics tick runs at thirty a second, not the engine's default of sixty")
+	t.check(t.get_tree().physics_interpolation,
+		"physics interpolation is on, which is what keeps a physics-tick body's motion smooth "
+		+ "at the lower rate")
