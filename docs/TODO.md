@@ -352,6 +352,34 @@ which changes what the physics tick and the camera do per frame, may move it.
 
 ---
 
+## M145 — The curbstone, not the sidewalk · corrected 2026-09-14
+
+> "that is not the curbstone -- it's the sidewalk" — "I specifically said *curbstone*"
+
+[PLAYTEST-75](playtests/PLAYTEST-75.md). The first build (`DECISIONS.md`, M145, the route's
+curbs) drew the route's kerb *tiles* again under a faint yellow, and a kerb tile is the whole
+pavement-edge tile: paving with the curbstone along one edge. The player asked for the
+curbstone alone. In the illustrated art the tile is composed from a `sidewalk` base and a
+`curbstone` component (`assets/illustrated/svg-transfer/tiles/layers/curbstone.png`, rotated
+per edge by the manifest `GroundLayers._load_manifest()` reads); in the SVG art the stone is
+the two-pixel strip along the tile's road-side edge (`assets/tiles/sidewalk_kerb_e.svg`,
+`x=30 width=2`).
+
+- [ ] **Only the stone strip is tinted.** `RouteKerbs` no longer copies the kerb tile: it
+      draws the curbstone alone, tinted, over each route kerb tile — in PNG mode the
+      `curbstone` component image rotated as the manifest rotates it for that tile's edge, in
+      SVG mode the strip's own rectangle along the road-side edge at the SVG's width — so the
+      paving under it is untouched. Whether that is a `TileMapLayer` with a small tile set of
+      the four rotated curbstone pictures or a `Node2D` whose `_draw()` places them is the
+      implementer's call, stated in the commit; the cells or positions still come from the same
+      rule (a kerb source at corridor depth zero) and the same test asserts the same set. The
+      strip is a few pixels wide, so the alpha that read as nothing over a whole tile is
+      re-dialled: `Tuning.ROUTE_KERB_TINT_ALPHA` starts at 0.45 and the player sets it. The two
+      stills are retaken. The `DECISIONS.md` record and the `REVIEW.md` item are corrected in
+      the same PR.
+
+---
+
 ## M129 — A path through the city never has to cost · asked for 2026-09-13
 
 > "also framing from a different point of view a path through the city must never hit
