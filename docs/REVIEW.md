@@ -254,6 +254,21 @@ item below for as long as looking takes.
   rule is `NARRATIVE.md`'s *no triumphalism in the good ending*, and this is the one screen written
   after the escape, so it is the place that rule is easiest to break. Same record.
 
+- **Walk day 1 on the laptop at its own frame rate and watch her, not the crowd.** The
+  physics tick is thirty a second now and she is drawn between ticks by the engine's own
+  interpolation; the crowd and the events move per frame as before. **Does her walk read
+  smooth at a hundred frames, and does the camera's follow?** And at every jump she makes —
+  the day start, a door release, the escape's fade-and-teleport, a camera focus and its ease
+  back — is there a one-tick slide from the old place, or does she simply appear? Record is
+  `DECISIONS.md`, M141, the physics tick at thirty.
+
+- **On the phone, on the release that carries the tick, load the four settings on seed 123
+  again** — `?debug=1&seed=123`, then `&skip=crowd`, `&skip=motion`, `&skip=motion,crowd` —
+  within the first ten seconds of the day, and read `fps` against playtest 74's table
+  (`DECISIONS.md`, M140, the phone reading). The physics tick now runs half as often; the
+  `physics` line is per tick and the `process` line is the worst frame of the last second, so
+  `fps` is the number that says whether the frame moved. **Does it?** Same record, M141.
+
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
 

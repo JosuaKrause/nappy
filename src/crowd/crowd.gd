@@ -15,6 +15,10 @@ extends Node
 ## **The crowd lives in a box that travels with the player** rather than being spread across the
 ## whole map — see `CrowdField` for why, and `Tuning.CROWD_PEDESTRIANS_PER_ACT` for the population
 ## that box is stated over.
+##
+## **This node owns no agent as a scene child.** Every `CrowdAgent` is added under `City`'s shared,
+## y-sorted `Entities` node (`City.add_entity()`) rather than under here, so `CrowdAgent._ready()`
+## opts itself out of physics interpolation rather than inheriting the setting from this node.
 
 ## The traffic's name on the mark over the player's head, so it can take its own down again and
 ## nobody else's. See `Stroller.stand_down()`.

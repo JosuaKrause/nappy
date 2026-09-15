@@ -144,6 +144,17 @@ func _test_a_rotated_touch_still_aims_from_the_nearer_focus_correctly(t: Node) -
 	camera.ignore_rotation = false
 	camera.rotation = -deg_to_rad(90.0)
 	rig.add_child(camera)
+	# docs/DECISIONS.md, M141, the physics tick at thirty: physics interpolation forces a
+	# Camera2D onto the physics tick, and the viewport's canvas transform this test reads through
+	# `TouchControls._input()` follows that interpolated transform — whose previous and current
+	# tick poses are never filled in a rig that runs no physics tick, so it stays unrotated at the
+	# origin. `reset_physics_interpolation()` alone did not take without one; there is no tick
+	# here for it to matter to, so the camera opts out the same way an untouched `_process`-driven
+	# node does.
+	camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	# With interpolation off, `_update_scroll()` still only reads the fresh transform once asked;
+	# nothing here ever draws a frame to ask on its own.
+	camera.force_update_scroll()
 
 	var controls := _controls(t)
 	controls.rotated = true
