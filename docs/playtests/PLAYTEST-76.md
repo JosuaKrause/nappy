@@ -27,6 +27,17 @@ and the street's decoration. Rewritten as M149 in `TODO.md`, with the items an a
 still there with every picture warm — stand as written, and the run is asked for on the build
 that carries M149, so one sitting reads all of them.
 
+## Every texture load and release in the run log, with its time
+
+> "make sure telemetry records when a texture is loaded/unloaded" — "atlas or not" — "ideally
+> with timing information"
+
+Said on 2026-09-15 while M149 was being built. Every load the game does of a picture — a
+transfer read from disk by the resolver, an atlas packed and made ready, an atlas released,
+the ground's shared texture packed — writes a line to the run log with what was loaded and
+how long it took, so a run can be read back for whether a picture arrived before it was
+drawn. Added to M149 in `TODO.md` as its own item.
+
 ## M125 after this session's items
 
 > "is M125 still current? what needs to be done there?" — "okay we can finish M125 once the

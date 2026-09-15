@@ -482,6 +482,24 @@ resident anyway.
       overlapping, each region's pixels equal to its source's, the fallback answering the
       source before `collect()` and the region after, `release()` answering the source again,
       the 2048 assertion firing on a set that cannot fit, in both presentation modes.
+- [ ] **Every texture load and release is a line in the run log, with its time.**
+      *(2026-09-15: "make sure telemetry records when a texture is loaded/unloaded" — "atlas
+      or not" — "ideally with timing information".)* One kind, `texture`, in `docs/TELEMETRY.md`'s
+      table, noted at the place the load happens and nowhere else: `TextureResolver.resolve()`
+      when it reads a transfer from disk (the path and the milliseconds the read took);
+      `TextureAtlas.collect()` when a group becomes ready (the group's name, its source count,
+      the atlas's pixel size, the milliseconds from `request()` to ready and how much of that
+      the worker took); `TextureAtlas.release()` when a group is dropped (the name and how long
+      it was held); and `GroundLayers.build_tile_set()` when the ground's shared texture is
+      packed (the source count and the milliseconds). M147's warm-pass summary line stays. The
+      **telemetry** rule: no RNG, no per-frame check in a gameplay class, `Telemetry.note` where
+      the thing happens, and the line answers a question that is open — M149's own, whether a
+      picture arrived before it was drawn — so it belongs. The observer's `spike` context reads
+      the resolver's load count already; it reads the atlas count the same way, so a spike frame
+      that collected an atlas says so. The telemetry suite's check: a rig that requests and
+      collects one group writes one `texture` line for the collect and one for the release, each
+      with a millisecond figure, and the fourteen-day determinism check still plans identical
+      days with the log on and off.
 - [ ] **Her family and the head indicators.** `Stroller` requests both at `_ready()` and draws
       through `texture_for`: the mother's sets, the pram's views and the five marks. The gait
       loop, the mirroring, the alert height and the flash are untouched — the **illustrated-png**
