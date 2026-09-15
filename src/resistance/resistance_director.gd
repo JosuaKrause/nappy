@@ -6,6 +6,12 @@ extends Node
 ## Deterministic from the run seed and the day, like everything else, so an alley that was
 ## safe on day 9 of this run is safe on day 9 of this run every time you replay it. The
 ## pattern is learnable; that is the difference between risk and a coin flip.
+##
+## **The mark itself needs no physics-interpolation opt-out.** `ContactPoint` follows a rider on
+## the physics tick (correctly interpolated, like the player), and this director's own `_process`
+## only ever relocates an unseen mark (`_move_the_mark()`) while it is beyond `NOTICE_RADIUS` —
+## which exceeds the screen's own half-diagonal, so the jump is never on screen to be drawn
+## sliding in the first place.
 
 ## The day the first chalk mark can appear. Nothing is guarded before it, because nothing is
 ## offered before it.
