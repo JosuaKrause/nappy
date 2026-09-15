@@ -21,6 +21,14 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Walk day 1 on the laptop with `--no-telemetry --debug` and read the readout's `process`
+  line** (any seed). That line is the engine's own longest process interval of the last
+  second, render submit included, and needs no observer; playtest 75 read 16 to 24 ms there
+  in every second at 85 to 112 fps, a hitch two to three times its neighbours, on a cadence
+  that matches the observer's own once-a-second `frame` note. **Does the number fall to the
+  frame's own length without the observer running?** If it does, the note is the hitch; if it
+  stays, something else keeps the cadence. Record is `DECISIONS.md`, M138, what the readout's
+  `process` and `physics` lines measure.
 - **Cross a region door on foot, from day 7** (`--day 7`; a door is the hut-boom-hut across a
   boundary street). The boom hangs between its posts across the lanes, level with the huts; the
   inspection starts as soon as she stands against the hut; the camera eases from where it was

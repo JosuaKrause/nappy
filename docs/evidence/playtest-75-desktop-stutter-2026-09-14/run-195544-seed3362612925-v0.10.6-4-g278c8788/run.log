@@ -1,0 +1,40 @@
+nappy run log  2026-09-14T19:55:44  version v0.10.6-4-g278c8788
+
+day 1  act 1  run seed 3362612925  city seed 3362612925  length 180.0s
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  plan     closed: roadworks h(8,3)
+   0.0  plan     calm: 1 forest, 2 courtyard, 2 park, 4 quiet_square
+   0.0  plan     events: alley_mouse x4, burst_water_main x20, cafe_tables x74, car_accident x25, cat_dash x8, chatting_mother x2, delivery_van x45, dog_walker x23, fallen_tree x2, homeless_yeller x5, leaf_blower x9, loose_dog x16, market_stall x43, moving_van x45, pigeon_flock x4, playground x2, scaffolding x21, skip x13
+   0.0  start    doorstep (80,84), facing 180°
+   0.3  crowd    walked into somebody at (80,84) | exc 2, in 7.0/s (crowd 25.0, events 0.0), sleep 0
+   1.0  frame    fps 85, worst frame 126.7ms, draws 712, objects 1975, primitives 4902, process 102.05ms, physics 10.30ms
+   1.1  cross    stepped into the road at (79,86), mid-block
+   2.0  frame    fps 111, worst frame 16.3ms, draws 720, objects 1931, primitives 4892, process 24.68ms, physics 2.42ms
+   3.0  frame    fps 112, worst frame 24.3ms, draws 1128, objects 2759, primitives 6612, process 24.15ms, physics 2.88ms
+   3.4  crowd    a car sounded its horn at her in the road at (73,84) | exc 5, in 8.6/s (crowd 8.6, events 0.0), sleep 1
+   3.5  cross    stepped into the road at (73,84), at a signalled crossing
+   3.9  crowd    a car sounded its horn at her in the road at (72,83) | exc 15, in 26.0/s (crowd 26.0, events 0.0), sleep 1
+   4.0  frame    fps 92, worst frame 23.4ms, draws 901, objects 2522, primitives 5907, process 24.58ms, physics 2.83ms
+   4.5  freeze   sleep stopped filling | exc 36, in 42.0/s (crowd 42.0, events 0.0), sleep 2 | near: cafe_tables 290px (out of range)
+   4.6  crowd    walked into somebody at (72,81) | exc 38, in 41.3/s (crowd 59.3, events 0.0), sleep 2
+   4.7  path     0% of her street time on the corridor (0.0s on, 4.7s off, 0.0s off the streets)
+   4.7  lost     lost_hard_fail after 4.7s — It never slowed down. You were in the road. | exc 44, in 55.0/s (crowd 55.0, events 0.0), sleep 2 | near: cafe_tables 278px (out of range)
+   4.7  nerve    spent a nerve on day 1 (act 1); 4 left — day 1 again
+
+day 1  act 1  run seed 3362612925  city seed 3362612925  length 180.0s
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  plan     closed: roadworks h(8,3)
+   0.0  plan     calm: 1 forest, 2 courtyard, 2 park, 4 quiet_square
+   0.0  plan     events: alley_mouse x4, burst_water_main x20, cafe_tables x74, car_accident x25, cat_dash x8, chatting_mother x2, delivery_van x45, dog_walker x23, fallen_tree x2, homeless_yeller x5, leaf_blower x9, loose_dog x16, market_stall x43, moving_van x45, pigeon_flock x4, playground x2, scaffolding x21, skip x13
+   0.0  start    doorstep (80,84), facing 180°
+   1.0  frame    fps 9, worst frame 148.5ms, draws 703, objects 1938, primitives 4729, process 12.66ms, physics 1.67ms
+   2.0  frame    fps 89, worst frame 21.7ms, draws 704, objects 1907, primitives 4688, process 24.32ms, physics 1.73ms
+   2.0  shot     asked for a picture at (76,85) | exc 0, sleep 1 | playing
+   2.0  crowd    walked into somebody at (76,85) | exc 0, in 4.2/s (crowd 22.2, events 0.0), sleep 1
+   2.9  shot     asked for a picture at (74,85) | exc 3, sleep 1 | playing
+   3.0  frame    fps 85, worst frame 68.5ms, draws 871, objects 2216, primitives 5403, process 66.73ms, physics 1.71ms
+   3.0  crowd    a car sounded its horn at her in the road at (73,85) | exc 4, in 7.1/s (crowd 7.1, events 0.0), sleep 1
+   3.0  cross    stepped into the road at (73,85), at a signalled crossing
+   3.1  path     0% of her street time on the corridor (0.0s on, 3.1s off, 0.0s off the streets)
+   3.1  lost     lost_hard_fail after 3.1s — It never slowed down. You were in the road. | exc 6, in 23.6/s (crowd 23.6, events 0.0), sleep 1 | near: market_stall 410px (out of range)
+   3.1  nerve    spent a nerve on day 1 (act 1); 3 left — day 1 again
