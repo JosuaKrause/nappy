@@ -21,6 +21,17 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Walk a minute of day 1 on the laptop with `--debug --spikes`, on this build, and read the
+  run log back** (`tools/telemetry.sh`). Every picture is warm and every group is packed; the
+  log carries a `texture` line per picture loaded and per atlas made ready or released, with
+  milliseconds on each, so a spike that coincided with a pack says so on its own line. **Is the
+  once-a-second 24 ms frame still there, do the spike lines still name a cause, and is the
+  graph under the readout legible while walking?** *(2026-09-15: "and we can do another warm
+  test run".)* Record is `DECISIONS.md`, M149, atlases by group.
+- **Open the web build on the phone and walk a day.** Every atlas is under a 2048 px side and
+  every region is clipped, and the desktop shows no difference. **Does anything draw
+  differently — a neighbour's pixel bleeding into a sprite's edge, a ground tile on the wrong
+  cell, a mark over her head in the wrong place?** Same record.
 - **Start a run from the title, on the desktop and on the phone.** The city is hidden until
   the camera is on her at the doorstep, so the two frames the picture warm-up awaits during
   boot no longer draw the map's top-left corner. **Is the flash gone, and does the title screen

@@ -24,6 +24,9 @@ extends Node
 ## setting from this node.
 
 var _instances: Array[EventInstance] = []
+## The `TextureAtlas` group names this manager has asked for and not yet released, one per live
+## event family — see `_match_the_atlases_to_what_is_live()`.
+var _atlas_families: Dictionary = {}
 ## Today's whole plan, sited and unsited, spent and unspent. See `EventScheduler.Planned`.
 var _plans: Array[EventScheduler.Planned] = []
 var _director: EventDirector
@@ -237,6 +240,7 @@ func clear() -> void:
 	for instance in _instances:
 		instance.queue_free()
 	_instances.clear()
+	_match_the_atlases_to_what_is_live()
 	for plan in _plans:
 		plan.live = null
 	_plans.clear()
@@ -291,6 +295,7 @@ func _stream_in(plan: EventScheduler.Planned) -> void:
 	plan.live.resume(plan.age, plan.travelled, plan.noticed_at)
 	plan.was_live = true
 	_instances.append(plan.live)
+	_match_the_atlases_to_what_is_live()
 	_spend_the_rest_of_the_group(plan)
 
 ## A set piece is planned at **every** site of a covering set and happens at exactly one of them:
@@ -326,6 +331,7 @@ func _stream_out(plan: EventScheduler.Planned) -> void:
 	plan.noticed_at = plan.live._noticed_at
 	_map.release_obstruction(plan.live.get_instance_id())
 	_instances.erase(plan.live)
+	_match_the_atlases_to_what_is_live()
 	plan.live.queue_free()
 	plan.live = null
 
@@ -425,6 +431,7 @@ func _spawn_unplanned(def: EventDef, at: Vector2,
 		path := PackedVector2Array()) -> EventInstance:
 	var instance := _create(def, at, path)
 	_instances.append(instance)
+	_match_the_atlases_to_what_is_live()
 	return instance
 
 ## Builds an instance, puts it in the world, and records any permanent mark it leaves.
@@ -641,6 +648,7 @@ func _summon_the_sighted_row(source: EventDef, at: Vector2) -> bool:
 			continue
 		var instance := _create(summoned, entry, PackedVector2Array([entry, road_at]))
 		_instances.append(instance)
+		_match_the_atlases_to_what_is_live()
 		return true
 	return false
 
@@ -787,6 +795,45 @@ func _retire_finished() -> void:
 	# Assigned in place rather than reassigned: `instances()` hands this array out by reference,
 	# and the danger-edge indicator holds it across frames.
 	_instances.assign(survivors)
+	_match_the_atlases_to_what_is_live()
+
+## Keeps the event families' atlases in step with what is actually standing in the street: a
+## family is requested when the first instance of it is placed and released when the last one
+## retires.
+##
+## **Recomputed from `_instances` rather than counted up and down**, and called after every change
+## to that list rather than at the six places a change is made. A reference count is the obvious
+## shape and is the one that drifts: instances leave this list through streaming, retirement, a
+## successor swap and `clear()`, four paths with different shapes, and a count that misses one
+## decrement holds a family's atlas for the rest of the run while one that misses an increment
+## releases a family that is still being drawn. Rebuilding the wanted set is a sweep of a few
+## dozen instances and cannot be out of step with the thing it is derived from.
+##
+## Nothing waits on any of this: an instance placed before its family's atlas is collected draws
+## its source pictures, which are already resident, and picks up the atlas on a later frame.
+## Drops every family atlas this manager still holds. **A group whose packing task is never
+## waited for is a task the pool still holds at shutdown**, so a manager that is freed with live
+## events — a test rig freeing its city, and the real game quitting mid-day — has to hand them
+## back rather than leaving them to the static registry.
+func _exit_tree() -> void:
+	for name: String in _atlas_families.keys():
+		TextureAtlas.release(name)
+	_atlas_families.clear()
+
+func _match_the_atlases_to_what_is_live() -> void:
+	var wanted: Dictionary = {}
+	for instance in _instances:
+		wanted[EventInstance.family_name(instance.def.look)] = instance.def.look
+	for name: String in wanted.keys():
+		if _atlas_families.has(name):
+			continue
+		TextureAtlas.request(name, EventInstance.family_sources(wanted[name]))
+		_atlas_families[name] = true
+	for name: String in _atlas_families.keys():
+		if wanted.has(name):
+			continue
+		TextureAtlas.release(name)
+		_atlas_families.erase(name)
 
 ## An event that has finished has finished for the day: its plan is spent, so walking back past
 ## the place it happened does not start it over. This is the half of streaming that a rebuilt
