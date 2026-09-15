@@ -13,6 +13,7 @@ func run(t) -> void:
 	_test_the_mean_is_the_windows_own_mean(t)
 	_test_classification_of_an_ordinary_a_costly_and_a_lethal_frame(t)
 	_test_a_hidden_graph_records_nothing(t)
+	_test_a_bars_class_is_fixed_when_it_is_pushed(t)
 
 ## `FRAME_GRAPH_FRAMES` (240) pushes would leave the whole window; 300 is 60 past it, so the first
 ## 60 pushed (indices 0..59) must have aged out and the last 240 (indices 60..299) must be exactly
@@ -68,4 +69,32 @@ func _test_a_hidden_graph_records_nothing(t) -> void:
 	graph.push(0.033)
 	t.check(graph.frames().is_empty(), "nothing pushed while hidden reaches the ring")
 	t.check(is_equal_approx(graph.mean(), 0.0), "and the mean of an empty ring is 0.0, not a stale reading")
+	graph.free()
+
+## A frame's colour is decided once, when it is pushed, against the frames before it — not
+## re-derived at draw time against whatever the window's mean has since become. *(2026-09-14, the
+## player: "I see things on the left side changing (notably adding yellow lines after the fact)".)*
+## Ten steady 10ms frames, then a 25ms one: costly at push. Then a run of 30ms frames that drags
+## the window's mean well past 12.5ms, so re-classifying 25ms *now* would call it ordinary; the
+## stored class must still say costly, and the steady 10ms frames pushed after it, which a rising
+## mean could never touch, stay ordinary.
+func _test_a_bars_class_is_fixed_when_it_is_pushed(t) -> void:
+	var graph := FrameGraph.new()
+	for i in range(10):
+		graph.push(0.010)
+	graph.push(0.025)
+	var at_push: int = graph.classes()[10]
+	t.check(at_push == FrameGraph.FrameClass.COSTLY,
+			"25ms pushed after ten 10ms frames is classed costly at the moment it is pushed")
+	for i in range(100):
+		graph.push(0.030)
+	t.check(graph.mean() > 0.0125,
+			"the later 30ms frames have dragged the window's mean past half of 25ms (%.4f)" % graph.mean())
+	t.check(graph.classify(0.025) == FrameGraph.FrameClass.NORMAL,
+			"so re-classifying 25ms against the window as it now stands would call it ordinary")
+	t.check(graph.classes()[10] == FrameGraph.FrameClass.COSTLY,
+			"but the bar keeps the class it was given when pushed")
+	t.check(graph.classes().size() == graph.frames().size(),
+			"and the classes stay in step with the frames (%d against %d)"
+			% [graph.classes().size(), graph.frames().size()])
 	graph.free()

@@ -53,6 +53,13 @@ var text_colour := Color(1.0, 1.0, 1.0, 0.7)
 ## `FrameCost._sample_times` already makes for a window two orders of magnitude smaller than
 ## anything a `pop_front()` a frame would be worth optimising.
 var _deltas: Array[float] = []
+## Each frame's `FrameClass`, decided once when it was pushed and never again — a bar's colour is
+## a fact about the frame at the moment it happened, not about the window it later ends up in.
+## Classifying at draw time against the window's *current* mean recoloured old bars as the mean
+## moved: *(2026-09-14, the player: "I would assume that the graph adds a row on the right and
+## moves the rest to the left. but I see things on the left side changing (notably adding yellow
+## lines after the fact)".)* Kept beside `_deltas` in step, both trimmed together.
+var _classes: Array[int] = []
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(_BOX_WIDTH, _BOX_HEIGHT)
@@ -67,15 +74,24 @@ func _ready() -> void:
 func push(delta: float) -> void:
 	if not visible:
 		return
+	# Classified against the frames *before* it, the same rule the run log's `spike` line uses:
+	# a frame does not get to raise the bar it has to clear.
+	_classes.append(classify(delta))
 	_deltas.append(delta)
 	if _deltas.size() > FRAME_GRAPH_FRAMES:
 		_deltas.pop_front()
+		_classes.pop_front()
 	queue_redraw()
 
 ## The window, oldest first — a copy, so a caller cannot reach in and edit the ring this class is
 ## the only writer of.
 func frames() -> Array[float]:
 	return _deltas.duplicate()
+
+## Each surviving frame's class, in the same order as `frames()` — what the bars are actually
+## drawn from, so a test can check a class stays what it was when the frame was pushed.
+func classes() -> Array[int]:
+	return _classes.duplicate()
 
 ## The arithmetic mean of the window, in seconds (the same unit `push()` takes), `0.0` on an empty
 ## window — there is no instantaneous reading to fall back to the way `FrameCost`'s own window
@@ -90,7 +106,9 @@ func mean() -> float:
 
 ## `LETHAL` beats `COSTLY` when a frame is both — a frame past `_LETHAL_MS` is "the frame is gone"
 ## whatever the window's own mean happened to be doing, so the worse of the two vocabulary colours
-## wins rather than whichever condition is checked first.
+## wins rather than whichever condition is checked first. Answers against the window as it stands
+## now; `push()` calls it before appending, so a pushed frame is judged against the frames before
+## it, and the answer is stored with the frame rather than asked again at draw time.
 func classify(delta: float) -> int:
 	var ms := delta * 1000.0
 	if ms > _LETHAL_MS:
@@ -118,15 +136,15 @@ func _draw() -> void:
 		# empty rather than stretching what it has across the whole width.
 		var x := _BOX_WIDTH - count + i
 		var height := clampf(delta * 1000.0 / _LETHAL_MS, 0.0, 1.0) * _BOX_HEIGHT
-		draw_rect(Rect2(x, _BOX_HEIGHT - height, 1.0, height), _bar_colour(delta))
+		draw_rect(Rect2(x, _BOX_HEIGHT - height, 1.0, height), _bar_colour(_classes[i]))
 	_draw_reference_line(_TARGET_MS, "60")
 	_draw_reference_line(_LETHAL_MS, "30")
 	if count > 0:
 		var mean_y := _BOX_HEIGHT - clampf(window_mean * 1000.0 / _LETHAL_MS, 0.0, 1.0) * _BOX_HEIGHT
 		draw_line(Vector2(0.0, mean_y), Vector2(_BOX_WIDTH, mean_y), text_colour, 1.0)
 
-func _bar_colour(delta: float) -> Color:
-	match classify(delta):
+func _bar_colour(frame_class: int) -> Color:
+	match frame_class:
 		FrameClass.LETHAL:
 			return Palette.MARK_LETHAL
 		FrameClass.COSTLY:
