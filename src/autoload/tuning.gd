@@ -351,6 +351,13 @@ const CITY_BLOCKS := Vector2i(11, 11)
 ## by eye alone.
 const BUILDING_SHADOW_ALPHA := 0.22
 
+## Alpha of the route's kerb tint (`City._paint_route_kerbs()`, `Palette.ROUTE_KERB_TINT`) — the
+## whole of the M145 trial's own dial. The player sets it by eye against a still, not this
+## comment: raise it while the tint reads as invisible, lower it while it reads as a drawn hint
+## rather than a cast, and zero is the trial's off switch, with nothing else in the layer to
+## change.
+const ROUTE_KERB_TINT_ALPHA := 0.18
+
 # ------------------------------------------------------------- street trees ---
 # How rare a street tree is, in four numbers. **Trees read like obstacles** — *(2026-09-12, the
 # player: "trees read like obstacles (they add noise) so it makes detecting actual obstacles

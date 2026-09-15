@@ -30,6 +30,11 @@ const SEEDS := 12
 const RULE_SEEDS := 6
 const BASE_SEED := 5150
 
+## Built only by the route-kerb-tint test below, which needs a real scene tree (`City.start_day`
+## paints `RouteKerbs`, a child node) rather than the bare `CityMap`/`RouteTree` pair every other
+## test here works from directly.
+const CITY_SCENE := preload("res://scenes/world/city.tscn")
+
 var _maps: Array[CityMap] = []
 
 func run(t) -> void:
@@ -55,6 +60,7 @@ func run(t) -> void:
 	_test_a_closure_never_lands_on_a_calm_areas_own_access(t)
 	_test_a_fallen_tree_only_falls_where_a_tree_stood(t)
 	_test_a_day_with_no_tree_lined_street_still_closes_its_quota(t)
+	_test_the_route_kerb_tint_matches_the_corridor_at_depth_zero(t)
 
 # ------------------------------------------------------------------ lattice ---
 
@@ -712,6 +718,57 @@ func _test_a_day_with_no_tree_lined_street_still_closes_its_quota(t) -> void:
 					% [map.seed_used, day, closures.size(), Tuning.closures_for_day(day)])
 	t.check(bare_days > 0,
 			"the sweep had days whose closures were all on bare streets (%d)" % bare_days)
+
+# ------------------------------------------------------------------ route kerb tint ---
+
+## M145's own trial: `City._paint_route_kerbs()` paints `RouteKerbs` from the same tiles
+## `GroundTiles.source_for` and `Corridor.of(city.route_tree())` already answer independently, so
+## this test recomputes the expected set from those two rather than reading it back off the layer
+## itself, which could not catch the layer disagreeing with its own inputs.
+func _test_the_route_kerb_tint_matches_the_corridor_at_depth_zero(t) -> void:
+	var kerb_sources := [GroundTiles.SIDEWALK_KERB_N, GroundTiles.SIDEWALK_KERB_S,
+		GroundTiles.SIDEWALK_KERB_E, GroundTiles.SIDEWALK_KERB_W,
+		GroundTiles.SIDEWALK_KERB_MAIN_N, GroundTiles.SIDEWALK_KERB_MAIN_S,
+		GroundTiles.SIDEWALK_KERB_MAIN_E, GroundTiles.SIDEWALK_KERB_MAIN_W]
+
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(90210))
+
+	var day := 1
+	var state := CityState.new()
+	state.begin_day(city.map.block_plans, day)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("m145-route-kerbs:closures:%d" % day)
+	city.start_day(state, day, rng)
+
+	var corridor := Corridor.of(city.route_tree())
+	var expected := {}
+	for y in city.map.size.y:
+		for x in city.map.size.x:
+			var tile := Vector2i(x, y)
+			if GroundTiles.source_for(city.map, tile, day) in kerb_sources \
+					and corridor.depth(tile) == 0:
+				expected[tile] = true
+	t.check(expected.size() > 0, "the sweep found kerb tiles on the corridor to check (%d)"
+			% expected.size())
+
+	var used := city._route_kerbs.get_used_cells()
+	t.check(used.size() == expected.size(),
+			"RouteKerbs paints exactly the kerb tiles on the corridor at depth zero (%d expected, "
+			% expected.size() + "%d drawn)" % used.size())
+	for cell in used:
+		t.check(expected.has(cell), "drawn cell %s is a kerb tile on the corridor at depth zero" % cell)
+	for tile in expected:
+		t.check(city._route_kerbs.get_cell_source_id(tile) == city._ground.get_cell_source_id(tile)
+				and city._route_kerbs.get_cell_atlas_coords(tile) == city._ground.get_cell_atlas_coords(tile),
+				"RouteKerbs' cell at %s carries Ground's own source and atlas coords" % tile)
+
+	city.start_finale(state, day + 1)
+	t.check(city._route_kerbs.get_used_cells().is_empty(),
+			"start_finale clears the route-kerb tint, since the finale grows no tree")
+
+	city.free()
 
 func _plan(map: CityMap, day: int) -> Array[RoadClosure]:
 	_repaint_for(map, day)

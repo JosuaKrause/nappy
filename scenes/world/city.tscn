@@ -11,6 +11,8 @@ script = ExtResource("1_city")
 [node name="Ground" type="TileMapLayer" parent="."]
 tile_set = ExtResource("2_ground")
 
+[node name="RouteKerbs" type="TileMapLayer" parent="."]
+
 [node name="Decals" type="Node2D" parent="."]
 script = ExtResource("3_decals")
 
