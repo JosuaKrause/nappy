@@ -1,5 +1,46 @@
 # Decisions
 
+## M145 — The route's curbs, tinted faint yellow · built 2026-09-14, an experiment
+
+*(2026-09-14, [PLAYTEST-75](playtests/PLAYTEST-75.md): "can we tint the curbstones that belong
+to a path slightly yellow? to give a faint hint on an optimal path. I just want to try it out
+… it should be faint as to more subconciously guide as well" — "I don't really want it to be
+how we show paths but I want to assess whether it can be done without being too obvious and on
+the nose".)* One agent commit on `feature/m145-route-kerb-tint`, reviewed on the PR; the two
+stills are `evidence/m145-route-kerb-tint-2026-09-14/`.
+
+**What it is, and that it is a trial.** `docs/CITY.md`'s rule that there is no cue of any
+kind toward calm and that the city never suggests a route stands, with one qualification
+written beside it: the route's own kerb tiles carry a faint yellow cast, on trial, and the
+trial's question is whether a hint on the ground can stay below being noticed as one. Alpha
+zero is the off switch, and the answer is what gets kept, not the tint. A second
+`TileMapLayer`, `RouteKerbs`, sits between `Ground` and `Decals` in the city scene; after the
+day's tree is grown in `City._close_streets()`, `_paint_route_kerbs()` gives it `Ground`'s tile
+set and copies, cell for cell off `Ground` itself, every tile whose source is one of the eight
+`SIDEWALK_KERB_*` sources and whose `Corridor` depth is zero — both pavements of every street
+on the tree, since a street tile answers at the grain of its street, and never a junction,
+which has no kerb. The layer's `modulate` is `Palette.ROUTE_KERB_TINT`, a pale straw
+(`f2e07a`, chosen well away from `MARK_COSTLY`'s golden amber) at `Tuning.ROUTE_KERB_TINT_ALPHA`
+(0.18). `start_finale()` clears it. The test builds a real city, computes the expected set
+independently from `GroundTiles.source_for` and `Corridor.of`, and asserts the layer's cells
+equal it exactly with the same source and atlas coordinates as `Ground`, and empty after the
+finale.
+
+**What the stills say.** At 0.18 the cast is below what a still shows to the eye: the two
+pictures read as no tint at all, and only pixel sampling finds it — the kerb tile on the
+route's street reads a blue channel of about 107 against 118 to 123 on its untinted
+neighbour, the arithmetic of the blend, and a kerb far from the route shows no shift. The
+purple route line in the second still runs over the tinted kerbs and nowhere else. So the
+layer is correct and the number is the player's: the review asks whether 0.18 registers at
+all at play, and the dial is one constant.
+
+**Choices made where the entry was silent, open to overturn.** The hue; the constant's place
+beside `BUILDING_SHADOW_ALPHA`; all eight kerb sources listed though a route never runs
+alongside the main road, since the rule is "a kerb tile on an inside street" rather than a
+list of today's kerbs; the finale clearing the layer explicitly since nothing else would;
+the test in the routes suite, with the real-scene rig borrowed from the debug-layers suite
+because neither the routes nor the ground-layers suite built a city.
+
 ## M142 — A layer turned off is drawn off · built 2026-09-14
 
 *(2026-09-14, [PLAYTEST-75](playtests/PLAYTEST-75.md): "pressing number keys to turn off a
