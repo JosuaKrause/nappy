@@ -409,6 +409,37 @@ one stride between about-faces. The player keeps the leaving and takes out the p
 
 ---
 
+## M149 — Atlases by group, loaded before they are drawn · asked for 2026-09-14, waiting on an answer
+
+> "pack together graphics into atlases and load/unload atlases in a clever way so it happens
+> while the things that will get drawn haven't been drawn yet … all head indicators should be
+> in one atlas and loaded together … at least all 8 directions of an entity should be in one
+> atlas. since entities spawn off screen their graphics can be loaded before they will be
+> visible"
+
+[PLAYTEST-75](playtests/PLAYTEST-75.md). The design as asked: one atlas per group — the head
+indicators (`alert.svg`, `baby_zzz.svg` and the pram's states over the player; the caret and
+the tildes), and per entity family every view and stride frame in one atlas, the shape
+`CrowdAtlas` already gives the crowd (`DECISIONS.md`, M139) — packed ahead of time rather than
+at first use, loaded off the main thread (`ResourceLoader.load_threaded_request`) when the
+first entity of a family is placed, which is off screen by construction (M77, everything
+arrives from off screen), and unloaded when no entity of the family remains.
+
+**What the code says about the premise, read on 2026-09-14, and why this waits.** An
+entity's pictures are `preload`ed SVG imports on `EventInstance` and `CrowdAgent`: loaded and
+handed to the renderer when the script loads at boot, never at first draw — the events have
+no PNG transfers at all (274 SVGs, zero under `svg-transfer/`). The only pictures that ever
+loaded late were the 19 prop, 35 rig and 72 ground transfers, and M147 loads those before
+the day; the laptop's once-a-second 24 ms frame is unchanged with all of them warm
+(`DECISIONS.md`, M147). So an atlas loader would move no load that still happens. What an
+atlas per family would still buy is what the crowd's bought: fewer texture switches and draw
+calls per frame, which the phone reading says are not the phone's cost today (`DECISIONS.md`,
+M139, the phone reading). The design is recorded in full above so it is built as asked when
+the reason arrives; the open question to the player is whether to build it now regardless,
+for the phone's memory and first load, or to leave it here until draw calls are the cost.
+
+---
+
 ## M129 — A path through the city never has to cost · asked for 2026-09-13
 
 > "also framing from a different point of view a path through the city must never hit

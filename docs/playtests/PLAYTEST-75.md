@@ -130,3 +130,18 @@ a worst frame of 24 to 26 ms in every one of them, the same frame playtest 75 re
 v0.10.6 — so with every picture loaded before the day, the laptop's once-a-second hitch is
 still there and the late loads were not it. Read in `DECISIONS.md`, M147, every picture
 loaded before it is needed.
+
+## Atlases by group, loaded before they are drawn
+
+> "so I think the correct strategy is to pack together graphics into atlases and load/unload
+> atlases in a clever way so it happens while the things that will get drawn haven't been
+> drawn yet (so the graphics can be properly loaded asynchronously). for example all head
+> indicators should be in one atlas and loaded together (zzz and the exclamation sign and the
+> tildes etc.). at least all 8 directions of an entity should be in one atlas. since entities
+> spawn off screen their graphics can be loaded before they will be visible"
+
+Said on 2026-09-14, on the reading above. Filed as M149 in `TODO.md` with what the code says
+about its premise: an entity's pictures are imported SVG rasters preloaded with its script at
+boot, so no entity picture was ever loaded late; the late loads were the prop, rig and ground
+transfers, warm since M147; and the laptop's hitch outlived that. The question of whether to
+build it is put to the player there.

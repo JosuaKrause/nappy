@@ -9,9 +9,12 @@ reviewed on the PR.
 
 **What was true.** `TextureResolver.resolve()` loaded each picture's PNG transfer from disk
 the first time that picture was drawn, inside the frame, once per distinct picture per run;
-the crowd's were warm through `CrowdAtlas`, every event's, prop's and building's was not,
-and `EntityHalo` built its shader material at the first halo, which the Compatibility renderer
-compiles at first draw.
+the prop, rig and ground transfers (19, 35 and 72 of them) were loaded that way, and
+`EntityHalo` built its shader material at the first halo, which the Compatibility renderer
+compiles at first draw. **Not the events' pictures**, corrected the same evening: those are
+`preload`ed SVG imports with no PNG transfers at all, loaded when the script loads at boot,
+so they were never late — the warm test that resolves every texture `EventInstance` preloads
+passes because there is nothing there to load, not because the pass loaded it.
 
 **What it is.** First, the probe: the resolver counts every transfer it loads (`load_count()`)
 and the `spike` line's context says `N pictures loaded` when the count moved in the spike
