@@ -145,3 +145,13 @@ about its premise: an entity's pictures are imported SVG rasters preloaded with 
 boot, so no entity picture was ever loaded late; the late loads were the prop, rig and ground
 transfers, warm since M147; and the laptop's hitch outlived that. The question of whether to
 build it is put to the player there.
+
+## The route grower's graph
+
+> "why not just remove the street tiles and main street blocks from the graph entirely?"
+
+Said on 2026-09-14 while M129's four rules were being built, for the fourth: mid-block
+crossings are not counted on. The construction it names — the tree grows on a graph with no
+carriageway cell but the junctions' and no main-road cell at all — was handed to the agent on
+that branch as the way to build the rule, with the reachability grid the winnability and
+closure guarantees are stated over left as it is.
