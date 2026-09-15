@@ -101,6 +101,47 @@ const BABY_ZZZ := preload("res://assets/props/baby_zzz.svg")
 const BABY_FUSS := preload("res://assets/props/baby_fuss.svg")
 const BABY_CRY := preload("res://assets/props/baby_cry.svg")
 
+## The two `TextureAtlas` groups everything she draws comes from. **Her family and the marks over
+## her head are two groups rather than one** because they are drawn for different reasons and go
+## away at different times: the body and the pram are on screen for every frame of every day, and
+## a mark is up for a second or two when something is about to happen. Keeping them apart is what
+## lets the indicators be released one day without the body's atlas being repacked.
+##
+## The caret and the tildes are `Sprites.draw_caret()` primitives with no texture behind them, so
+## there is nothing of them to pack.
+const FAMILY_ATLAS := "stroller"
+const INDICATOR_ATLAS := "head_indicators"
+
+## Everything `FAMILY_ATLAS` packs: both rigs' five view sets across all three gait frames, and
+## the pram's five views. Keyed by the source texture itself, which is what `_mother_source()` and
+## `_pram_source()` have in hand at draw time, so the lookup at the draw is a dictionary hit on
+## the constant the selector already picked.
+static func family_sources() -> Dictionary:
+	var sources: Dictionary = {}
+	var view_sets: Array = [
+		MOTHER_FRONT, MOTHER_BACK, MOTHER_SIDE, MOTHER_FRONT_DIAGONAL, MOTHER_BACK_DIAGONAL,
+		MOTHER_CARRYING_FRONT, MOTHER_CARRYING_BACK, MOTHER_CARRYING_SIDE,
+		MOTHER_CARRYING_FRONT_DIAGONAL, MOTHER_CARRYING_BACK_DIAGONAL,
+	]
+	for views: Array in view_sets:
+		for texture: Texture2D in views:
+			sources[texture] = texture
+	var prams: Array[Texture2D] = [
+		PRAM_SIDE, PRAM_FRONT, PRAM_BACK, PRAM_FRONT_DIAGONAL, PRAM_BACK_DIAGONAL,
+	]
+	for texture in prams:
+		sources[texture] = texture
+	return sources
+
+## Everything `INDICATOR_ATLAS` packs: the two warning marks that ride over her head and the
+## baby's own three, which ride over the pram.
+static func indicator_sources() -> Dictionary:
+	var sources: Dictionary = {}
+	var marks: Array[Texture2D] = [ALERT, ALERT_CLOSE, BABY_ZZZ, BABY_FUSS, BABY_CRY]
+	for texture in marks:
+		sources[texture] = texture
+	return sources
+
 ## How far above her head the warning mark floats, and how fast it flashes. She is 46px tall,
 ## so this clears her head by a few pixels and no more: at 68 the mark drifted far enough up
 ## the screen to read as belonging to whatever was standing behind her, which for a cue that
@@ -238,6 +279,12 @@ var _camera_smoothing_when_free := true
 
 func _ready() -> void:
 	add_to_group("player")
+	# Asked for here rather than at parse time: the atlas has to be packed **after** the
+	# presentation mode is known, and `TextureResolver`'s own first call is what fixes that mode.
+	# Until the pack is collected every call below answers the source texture it answers today, so
+	# nothing waits on it and the first frame is drawn either way.
+	TextureAtlas.request(FAMILY_ATLAS, family_sources())
+	TextureAtlas.request(INDICATOR_ATLAS, indicator_sources())
 	if _pram_collision:
 		_pram_collision.disabled = carrying
 	# Read off the scene rather than written down here, so the camera's own smoothing stays a
@@ -767,8 +814,14 @@ func _draw_pram(at: Vector2) -> void:
 func _pram_draw_size() -> Vector2:
 	return _pram_texture().get_size() * PRAM_VISUAL_SCALE
 
-## The mother texture selected by the live drawing path for a gait frame.
+## The mother texture selected by the live drawing path for a gait frame — the region of her
+## family's atlas once it is collected, and the source picture itself before that and after a
+## release. Which picture is selected, and everything done with it, is unchanged.
 func _mother_texture(frame: int) -> Texture2D:
+	return TextureAtlas.texture_for(FAMILY_ATLAS, _mother_source(frame), _mother_source(frame))
+
+## The authored view this frame draws, before the atlas has anything to say about it.
+func _mother_source(frame: int) -> Texture2D:
 	if carrying:
 		if _view_direction == 0 or _view_direction == 4:
 			return MOTHER_CARRYING_SIDE[frame]
@@ -793,8 +846,14 @@ func _mother_texture(frame: int) -> Texture2D:
 func _mother_is_mirrored() -> bool:
 	return EightDirection.is_mirrored(_view_direction)
 
-## The pram texture selected by the live drawing path.
+## The pram texture selected by the live drawing path, through the same atlas her body comes
+## from — its size is the region's, which is the source's, so `_pram_draw_size()`'s seven-sixths
+## lands on exactly the same rectangle it always did.
 func _pram_texture() -> Texture2D:
+	return TextureAtlas.texture_for(FAMILY_ATLAS, _pram_source(), _pram_source())
+
+## The authored pram view for the direction she is facing.
+func _pram_source() -> Texture2D:
 	if _view_direction == 0 or _view_direction == 4:
 		return PRAM_SIDE
 	if _view_direction == 1 or _view_direction == 3:
@@ -855,7 +914,7 @@ func _draw_baby_cue(pram_offset: Vector2) -> void:
 	# The steady ones breathe rather than sit still, or a mark that is up for the whole walk
 	# home stops being read. The urgent two flash instead.
 	var breath := 0.0 if flashing else sin(_alert_phase * TAU) * BABY_CUE_BREATH
-	Sprites.draw_standing(self, texture,
+	Sprites.draw_standing(self, TextureAtlas.texture_for(INDICATOR_ATLAS, texture, texture),
 			pram_offset + Vector2(aside, -baby_cue_lift() + breath))
 
 ## *This spot is about to be bad; move* — or, doubled and red, *it is bad now.* Drawn over the
@@ -877,4 +936,5 @@ func _draw_alert() -> void:
 	if fmod(_alert_phase * rate, 1.0) > 0.55:
 		return
 	var mark := ALERT_CLOSE if _alert == Alert.NOW else ALERT
-	Sprites.draw_standing(self, mark, Vector2(0.0, -ALERT_HEIGHT))
+	Sprites.draw_standing(self, TextureAtlas.texture_for(INDICATOR_ATLAS, mark, mark),
+			Vector2(0.0, -ALERT_HEIGHT))

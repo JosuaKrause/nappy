@@ -102,7 +102,12 @@ func _test_every_view_resolves_every_pose_in_both_states(t) -> void:
 			var expected := _direction_textures(carrying, frame)
 			for direction in range(8):
 				rig._view_direction = direction
-				t.check(rig._mother_texture(frame) == expected[direction],
+				# Pinned through her family's atlas rather than against the authored constant
+				# directly: `_mother_texture()` answers the region once the group is collected
+				# and the source before that, and the assertion is about *which* view is
+				# selected either way.
+				t.check(rig._mother_texture(frame) == TextureAtlas.texture_for(
+						Stroller.FAMILY_ATLAS, expected[direction], expected[direction]),
 						"direction %d resolves %s pose %d"
 						% [direction, _state_name(carrying), frame])
 		rig.free()
