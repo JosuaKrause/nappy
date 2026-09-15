@@ -1,6 +1,6 @@
 class_name RouteLines
 extends Node2D
-## The day's planned routes, drawn as one purple polyline per route from the doorstep to its calm
+## The day's planned routes, drawn as one purple polyline per route from its first cell to its calm
 ## area — the fifth debug layer, key `5` and `--layers 5`/`?layers=5`. See docs/TELEMETRY.md, "The
 ## debug view", and `RouteTree`'s own class doc for what a route is.
 ##
@@ -31,26 +31,22 @@ extends Node2D
 ## (`ReachabilityGrid.CELL` = 2 tiles), honouring the day's plan at the grain it is actually stored
 ## in rather than inventing a tile-level path the tree never committed to.
 ##
-## **The two ends are real tiles, because each is a single, unambiguous one.** The first point is
-## the doorstep tile every day actually starts and ends on (`CityMap.doorstep_world_position()`).
-## The last is a calm tile immediately across the border from the route's own last cell:
-## `RouteTree` stores a route only as far as the *access* cell just outside the calm area — "a
-## door is not a route" holds at both ends, see `RouteTree`'s own class doc on the home side, and
-## `RouteTree._access_nodes()` builds the calm side the same way — so the one calm tile actually
-## inside the area is found here rather than read out of the tree.
+## **A polyline starts where the tree starts, and the doorstep is not on the tree.** "A door is
+## not a route" holds at both ends (see `RouteTree`'s own class doc on the home side): a route's
+## first cell is the node where it joins the home street's frontage, which can be anywhere along
+## it and on either pavement. The picture used to prepend the doorstep tile and draw a connector
+## to that cell — first as a straight hop, then as two axis-aligned legs — and both crossed the
+## carriageway between crossings whenever the tree joined the far pavement, which read as a route
+## crossing mid-block where no route cell was *(2026-09-14, the player, of exactly that picture:
+## "how is this path possible? the rule is to only allow crossing at crossings never across the
+## street")*. So the first point is the first cell's own centre and nothing is invented before it:
+## every segment of a drawn route is either a cell-to-cell step of the tree or the calm connector.
 ##
-## **The doorstep connector is not one step, and nothing here pretends it is.** `RouteTree`'s own
-## "the trunk" doc: a branch's probe reaches *some* node bordering the home street, "whichever the
-## random walk happened to find first" — a route can rejoin the home frontage anywhere along it,
-## not necessarily beside the one tile the day actually starts on. Measured over 6 seeds x 4 days
-## (301 routes), the cell a route actually meets home at is never closer than 2 reachability cells
-## from the doorstep's own cell. Drawing from the fixed doorstep tile regardless is what matches
-## what the player actually sees repeated every day — one fixed point every route fans out from —
-## rather than a different point on the kerb for every route; the first segment of a drawn
-## polyline is a straight hop to wherever the tree actually joins home, same as the "share a trunk"
-## overlap the milestone already accepts. The calm-side connector has no such gap: it is always the
-## route's own last cell's direct neighbour, because it is built from that cell rather than from a
-## second fixed point.
+## **The last point is a real tile, because it is a single, unambiguous one**: a calm tile
+## immediately across the border from the route's own last cell. `RouteTree` stores a route only
+## as far as the *access* cell just outside the calm area (`RouteTree._access_nodes()` builds the
+## calm side that way), so the one calm tile actually inside the area is found here rather than
+## read out of the tree, and it is always that cell's direct neighbour.
 
 ## The same purple `TelemetryMap` already draws the day's corridor in on the dusk map, so the live
 ## overlay and the dusk picture agree on what "the corridor" looks like rather than inventing a
@@ -88,15 +84,13 @@ func _draw() -> void:
 		if route.size() >= 2:
 			draw_polyline(route, ROUTE_COLOUR, LINE_WIDTH, true)
 
-## One polyline per route, doorstep first. `RouteTree.Branch.routes` runs calm-to-doorstep (see its
-## own class doc), so each is reversed before the doorstep tile is prepended and the calm tile
-## appended — see the class doc above for what each of those two extra points is and why neither
-## comes from the tree itself.
+## One polyline per route, home end first. `RouteTree.Branch.routes` runs calm-to-home (see its
+## own class doc), so each is reversed and the calm tile appended — see the class doc above for
+## why that is the only point not read out of the tree.
 func _build_routes(tree: RouteTree) -> Array[PackedVector2Array]:
 	var found: Array[PackedVector2Array] = []
 	if not tree or not _map:
 		return found
-	var doorstep := _map.tile_to_world(_map.world_to_tile(_map.doorstep_world_position()))
 	var areas := ClosurePlanner.calm_areas(_map)
 	var area_by_block := {}
 	for area in areas:
@@ -107,7 +101,6 @@ func _build_routes(tree: RouteTree) -> Array[PackedVector2Array]:
 			if route.is_empty():
 				continue
 			var points := PackedVector2Array()
-			points.append(doorstep)
 			var ordered := route.duplicate()
 			ordered.reverse()
 			for cell: Vector2i in ordered:

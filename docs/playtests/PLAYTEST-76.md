@@ -88,3 +88,11 @@ in a calm area within it, and nothing a walk has to route around. So a leaf blow
 pavement closes that pavement and not the street, and several of them spaced across a park
 keep the park awake. Filed as M129's closing items in `TODO.md`, with the rule change that
 follows from it: a row denies the ground it charges for, not the ground it can be heard on.
+
+> "option 2 is valid only if the influence at a junction is low enough that it can be taken
+> without having to worry or plan around it"
+
+Said a few minutes later, on whether walls may be counted by the three rules at all. The
+condition is what the rule change above states: what a wall may still reach into a route
+junction is the part of its field under the walking decay, ground the walk takes without
+planning around it, and everything louder is checked like any other row's.

@@ -320,95 +320,6 @@ such numbers — three columns of which one is a measurement. Every phone readin
 
 ---
 
-## M145 — The route's curbs, tinted faint yellow · asked for 2026-09-14, an experiment
-
-> "can we tint the curbstones that belong to a path slightly yellow? to give a faint hint on an
-> optimal path. I just want to try it out. this is in addition to the environmental guidance
-> through obstacles. it should be faint as to more subconciously guide as well"
-
-[PLAYTEST-75](playtests/PLAYTEST-75.md). The **city** rule governs the ground; the **cues**
-rule governs any colour that reads as a signal, and yellow is the family of the caret's amber
-(`Palette.MARK_COSTLY`, *worth going round*), which this must stay far enough below to be a
-cast rather than a mark.
-
-**What it overturns, and that it is an experiment.** `docs/CITY.md`, "Guiding her to the
-calm", says *there is no cue of any kind toward calm — no marker, no map, no HUD line, nothing
-on the ground*, and its summary is *the city permits routes to calm and protects them from
-becoming impossible; it never suggests one* (also `RouteTree`'s own class doc). This is not
-that rule overturned: *"I don't really want it to be how we show paths but I want to assess
-whether it can be done without being too obvious and on the nose"* (2026-09-14). The trial's
-question is the threshold — whether a hint on the ground can stay below being noticed as one
-— and the answer is what gets kept, not the tint. The guidance through obstacles (M129, a path
-through the city never has to cost) stands beside it, not under it. Those `CITY.md` sentences
-are rewritten in the same PR to say what is true with the tint on, and this entry's record
-in `DECISIONS.md` says it was a trial so it can be taken out on one sentence from the player.
-
-**What "the curbstones that belong to a path" are.** The day's routes are `RouteTree`, and
-`Corridor.of(tree).depth(tile) == 0` is the tile-level question — a street tile answers at the
-grain of its whole street, so both pavements of every street on the tree are inside, and a
-junction has no kerb at all (`GroundTiles._sidewalk_variant`). The kerb tiles are the eight
-`SIDEWALK_KERB_*` sources, main-road and ordinary. A route never runs along the main road
-(`RouteTree`, the main road), so in practice the ordinary four are what gets tinted, but the
-rule is "a kerb tile on an inside street", not a list of sources.
-
-- [ ] **A second ground layer, the route's kerb tiles again under a faint yellow.** A
-      `TileMapLayer` named `RouteKerbs` as `Ground`'s next sibling in `scenes/world/city.tscn`
-      (above it, below `Decals`), sharing `Ground`'s tile set, painted by a new
-      `City._paint_route_kerbs()` called in `_close_streets()` right after `_tree` is grown and
-      before the closures: for every tile whose ground source is a `SIDEWALK_KERB_*` and whose
-      corridor depth is zero, the same cell the ground has, so the tint is the kerb art drawn
-      once more through the layer's `modulate` — `Palette.ROUTE_KERB_TINT`, a yellow with the
-      alpha in `Tuning.ROUTE_KERB_TINT_ALPHA` (start at 0.18; the still says whether it is faint
-      and the player says whether it is subconscious), and alpha zero is the off switch. Cleared
-      by `start_finale()`, which grows no tree. The test in the routes or ground suite starts a
-      day on a rig city and asserts the layer's used cells are exactly the kerb tiles at depth
-      zero and nothing else, and that they are empty after `start_finale()`. `docs/CITY.md`'s
-      "Guiding her to the calm" sentences say the ground now carries this one faint cue as a
-      trial; `docs/MECHANICS.md` if it lists what the player is shown. Evidence: two desktop
-      stills of the same seed and day (`tools/shot.sh out.png 4 --seed 3265820891 --day 1
-      --walk 2s --debug`, once with `--layers 5` so the purple route line lies over the tinted
-      kerbs and once without), no burst, no `--invincible`. `REVIEW.md`, in the same PR, asks the
-      trial's own question: at play zoom, is the tint too obvious and on the nose, invisible,
-      or somewhere in between that guides without being read as a hint — and does it collide
-      with the caret's amber where a costly thing stands on the route.
-
----
-
-## M146 — A pocketed agent stands, then leaves unseen · asked for 2026-09-14
-
-> "I get the remove entity when there is no route idea. maybe let's do instead stop the entity
-> if there is no way. and despawn once offscreen" — "it looks very weird otherwise"
-
-[PLAYTEST-75](playtests/PLAYTEST-75.md). The **crowd-traffic** rule governs. What is true
-today is `DECISIONS.md`, M119, the crowd with nowhere to go leaves: a pocket is ground today's
-seals have shut in (`CrowdPockets`, a junction with every arm held and the lane stubs sealed
-in with it), nobody is placed in one, and an agent a seal goes up around is recycled at the
-first frame it is further than `Tuning.OUT_OF_SIGHT` (420px) from the camera — *nothing
-vanishes while you are looking at it*. In view it paces: `_divert()` turns it at each seal,
-one stride between about-faces. The player keeps the leaving and takes out the pacing.
-
-- [ ] **In a pocket, an agent stands where the seal caught it.** In `CrowdAgent._process`,
-      the pocket question moves ahead of the step: while `_is_in_a_pocket()` holds and the
-      agent is in view, nothing below runs but the redraw — no along-step, no steering, no turn
-      at a corridor, no gait, no lookahead, no divert — so a walker stands on its standing
-      frame facing the way it was going and a car stops where it is; the make-way and bump
-      the crowd applies from outside are unchanged, since a standing body still has to get
-      out of her way. Out of view it is recycled as today. The pocket flood already refreshes
-      on every change to the day's holds, so an agent stops the frame the seal goes up and
-      walks on the frame a pocket opens (a `FALLEN_TREE` closure clearing, a door), with no
-      state to reset. M119's stride-limited about-face stays for a single seal on open ground.
-      `_test_a_pocket_empties_once_it_is_out_of_view` in `tests/test_crowd_closures.gd` gains
-      the standing half: while the view is on the sealed junction, every agent inside it keeps
-      its position within a pixel across the watched seconds, and the count still never falls;
-      the out-of-view half is unchanged. Any doc sentence that says a pocketed agent paces —
-      `docs/MECHANICS.md`, `docs/CITY.md`, the **crowd-traffic** skill; grep `paces` and
-      `pocket` — says it stands. Evidence: the rig's own burst if a sealed junction with agents
-      in it can be captured within budget the way `evidence/m119-crowd-pockets-2026-09-13/`
-      was (`--invincible`, a burst, not a still — this is motion, or its absence); the test is
-      the proof either way.
-
----
-
 ## M149 — Atlases by group, loaded before they are drawn · asked for 2026-09-14, confirmed 2026-09-15
 
 > "pack together graphics into atlases and load/unload atlases in a clever way so it happens
@@ -597,72 +508,67 @@ frame with the city drawn behind it, or the run's first frame after the disc.
 
 ---
 
-## M129 — A path through the city never has to cost · asked for 2026-09-13
+## M129 — A path through the city never has to cost · the four rules built 2026-09-14, one question open
 
-> "also framing from a different point of view a path through the city must never hit
-> excitement -- so all obstacles should be routable around by eg crossing to the other side of
-> the street which in turn means the other side of the street must be open enough so we can
-> walk on it unimpeded. a yeller must loop in a way that the desired path has an opening where
-> the yeller is not present for example. also, the routing should only cross the street at
-> intersections. in block crossings are possible in game but shouldn't be counted on by the
-> routing algorithm"
+> "a path through the city must never hit excitement -- so all obstacles should be routable
+> around … the routing should only cross the street at intersections"
 
-[PLAYTEST-69](playtests/PLAYTEST-69.md). The **city** and **events** rules govern; the
-**balance** rule governs any number it moves.
+[PLAYTEST-69](playtests/PLAYTEST-69.md), [PLAYTEST-71](playtests/PLAYTEST-71.md),
+[PLAYTEST-75](playtests/PLAYTEST-75.md). The four rules are built and recorded
+(`DECISIONS.md`, M129, the four rules): a route's junctions stay clear, no single standing row
+takes a route street's whole width, a pacing row leaves the line open for part of its beat,
+and the tree grows on a graph with no carriageway cell but the junctions' and no main-road
+cell at all. The probe now finds a zero-cost line along a third of routes (100 of 296) where
+it found one along a sixth, and no route crosses a carriageway mid-block or touches the spine
+outside a junction. **The guarantee is still not true for two routes in three**, and the
+biggest remaining cause is a design decision, not a defect, so it waits on the player:
 
-**What is true today.** The day's routes are a corridor of two-tile cells grown on the
-reachability grid (`DECISIONS.md`, M69); `ClosurePlanner` accepts a closure only if the home
-still reaches two calm areas, `EventScheduler._ensure_the_city_is_still_walkable` drops
-obstructing bodies, widest first, until a park is reachable, and a `hard_fail` row keeps its
-whole field clear of other events (`_room_around`). Every one of those is about *reaching*, and
-a route that reaches through three friction fields in a row is as legal as an empty one. Costly
-rows land inside the corridor on purpose (the `friction` role). **The reading is the player's**
-([PLAYTEST-71](playtests/PLAYTEST-71.md), the three readings): a pacing row is passed by timing,
-so only the ground its beat never leaves free counts as blocked — *"time pass -- don't route
-around them"*; a moving row never counts — *"the player can cross the street, wait, then come
-back without ever getting excited by it"*; a region door never counts — *"it costs by design"*;
-and a flock is scenery — *"flocks are basically free already -- don't count it as block"* — so
-`pigeon_flock` carries `EventDef.scenery` and is outside the cost rule's wall and friction
-placement altogether. **The guarantee is measured under that reading and is far from true**:
-`tests/probes/m129_zero_cost_line.gd`, run by name, finds a zero-cost line along about one
-route in six over a run, one in three on day 1 and one in twenty-five from act III; the
-numbers, the readings and the failing shapes are in `DECISIONS.md` under M129, the reading
-decided. The dominant break is a *covered junction* — the only legal crossing sits inside some
-row's reach — then a single row wide enough to take a street alone (the street is 192px kerb to
-kerb and most reaches are 179 to 240px; `leaf_blower` most often), then a cut no one row
-makes, then the yeller's beat. A body with the far pavement also taken is the rarest shape and
-two friction fields on facing pavements never occur, so the far-pavement rule the entry first
-drafted is not written. The corridor grower itself crosses a carriageway mid-block about three
-times per route, on ordinary streets and never on the spine.
+**The answer, 2026-09-15** ([PLAYTEST-76](playtests/PLAYTEST-76.md)): *"walking past a leaf
+blower should still be like a wall. but staying away from it should only prevent sleeping in
+a calm area (much like the busker)"* — *"a leaf blower should be able to close one side of a
+street and spaced out correctly a calm area"* — and, on counting walls at all: *"option 2 is
+valid only if the influence at a junction is low enough that it can be taken without having to
+worry or plan around it"*. Neither option above: a field with two parts, and a rule that reads
+the part that costs. The **balance** rule governs every number below and the **events** rule
+the catalogue row; the probe is `tests/probes/m129_zero_cost_line.gd`.
 
-- [ ] **A route's junctions stay clear.** The junctions a route passes through, and the ones at
-      each end of each of its streets, are outside every counted row's reach: checked before a
-      row is placed, never repaired after (the city rule), so a row whose field would cover a
-      route junction is refused that ground. This is the shape that breaks most routes — more
-      than every other shape together — and no earlier item named it. Pursuers, `AHEAD_OF_PLAYER` and
-      `TOWARD_PLAYER` rows, city-wide rows, moving rows and doors are outside this — the first
-      three pay the telegraph contract, the last two are not blocks — and so is anything off
-      the corridor, where the wall role is the design. Re-run the probe after.
-- [ ] **No single standing row takes a route street's whole width.** A friction row that stands
-      or paces on a route's pavement is accepted only if its reach leaves the far pavement of
-      that street outside it for the stretch between the two nearest junctions; a row that
-      cannot — `busker`, `ice_cream_van` at today's reaches on a 192px street, and
-      `police_patrol` if it turns out to pace rather than travel — is refused corridor ground or
-      its reach on the corridor is the number the **balance** rule moves. Where the corridor
-      runs along a precinct, a park edge or an alley, say what "the other side" is there or
-      refuse the row that ground. Re-run the probe after.
-- [ ] **A pacing row leaves the line open for part of its beat.** This is the reading as well
-      as the rule, and the probe finds it broken only where a second row closes the beat's open
-      end: the yeller's route is sited and sized so that the pavement it paces is clear at one
-      end for a readable share of each loop, or its loop runs on the pavement the route does
-      not use, and no other row's reach covers that open end; the choice is measured with the
-      probe and the reach the line needs at the far end of its beat is the number. The same
-      for any other row that `paces`. Re-run the probe after.
-- [ ] **Mid-block crossings are not counted on.** The route tree's cells cross a carriageway
-      only at a junction; in play she may still cross anywhere. The probe finds the grower
-      crossing mid-block on most routes today, so this is a change to how the corridor is grown
-      on the reachability grid, and the probe's own mid-block count is its test.
-
+- [ ] **The leaf blower is a wall to walk past and a busker to stay near.** `EventDef` gains a
+      core — `core_intensity` and `core_radius`, both 0 by default so no other row changes —
+      and `emission_at()` answers the larger of the core's falloff (`core_intensity` at
+      `inner_radius`, falling to 0 at `core_radius` on the same curve `Tuning.falloff` uses) and
+      the field's own. `leaf_blower`'s field becomes the busker's — 19.3 over 45/190, its own
+      4.0 s pulse kept — and its core is sized by measurement: the smallest `core_radius` that
+      covers the pavement it stands on and not the road (about `Tuning.SIDEWALK_WIDTH *
+      TILE_SIZE`, 64 px, from a kerb-side tile), and the `core_intensity` at which the line
+      through the centre costs `Tuning.WALL_WORTH_OF_COST` (35.0) with a margin, while a line
+      past it at `core_radius` costs what the busker's does. `walk_through_cost()` integrates
+      the new shape as it stands, so the row stays a wall by role; `mean_emission_along_the_line`
+      and the caret's ordering follow. Measured the way `tests/probes/m117_decay.gd` measures,
+      the numbers in the commit and the record. `docs/EVENTS.md`'s leaf blower row says what the
+      two parts are.
+- [ ] **A row denies the ground it charges for, not the ground it can be heard on.**
+      `EventScheduler._line_reach_of()` answers the radius within which the row's emission is
+      above `Tuning.EXCITEMENT_DECAY_WALKING` (6.0/s) — the disc a walk through nets a cost in,
+      which is the player's own line: ground where the influence is low enough *"that it can be
+      taken without having to worry or plan around it"* is not denied — rather than
+      `outer_radius`; `obstructs_radius` and a `hard_fail` row's reach stay as they are. For the
+      leaf blower that disc is its core; for a plain quadratic row it is the outer part of the
+      field taken off, about 13% of the radius at intensity 20. The probe's five columns re-run
+      and filed against the four-rules table in `DECISIONS.md`; `docs/EVENTS.md` where it says
+      what ground a row denies.
+- [ ] **Walls count, on that reading only.** `_counts_against_the_line()` no longer exempts the
+      `WALL` role: a wall's charging disc is checked by the three rules like a friction row's and
+      refused where it would close a route junction, span a route street's width or shut a
+      beat's opening, and is offered another tile off the corridor as its weights already say.
+      What a wall may still reach into a junction is only the part under the walking decay, so
+      a junction inside a wall's outer field is one the walk takes without planning around it —
+      the condition the player set on counting walls at all. The probe before and after; the
+      entry closes when the record says what share of routes has a zero-cost line and what
+      stands in the rest — the seals a `SealPlanner` places before the scheduler runs are the
+      one reach the rules still never see, and are named there if they are what is left.
+      `REVIEW.md`, in the same PR: on a day with a leaf blower on a pavement, does walking past
+      it read as a wall and standing a street away read as a hum that keeps the baby awake and
+      nothing more; and at a junction inside its outer field, does crossing feel free.
 ---
 
 ## M137 — The contact is whoever she hands the note to, and the trap comes to her · asked for 2026-09-13

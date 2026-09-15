@@ -102,6 +102,15 @@ class Planted extends RefCounted:
 ## shops is not a shorter run, it is a different one, so the roll is taken again. Runs never
 ## overlap, which is what makes `Tuning.STREET_TREE_RUNS` a count of *places* rather than a count
 ## of rolls.
+##
+## **Two runs on the same kerb line still have to keep the pit-spacing floor between them.**
+## `_run_is_plantable`'s `taken` set only refuses a run that reuses a street another run already
+## has, which says nothing about a second run landing a few blocks further down the same junction
+## row or column — the two are planted by separate calls to `_plant_side`, each with its own
+## spacing accumulator that has no way to see the other's pits. `_too_close_to_a_run_on_the_same_line`
+## rejects that candidate here, before either run is planted, using the worst-case gap between the
+## last candidate tile of one run's last block and the first candidate tile of the other's first
+## block — the only distance this stage can know ahead of the random planting itself.
 static func runs(map: CityMap) -> Array[Run]:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("street_tree_runs:%d" % map.seed_used)
@@ -121,6 +130,8 @@ static func runs(map: CityMap) -> Array[Run]:
 		run.index = rng.randi_range(0, lines)
 		run.first = rng.randi_range(0, along_blocks - run.length)
 		if not _run_is_plantable(map, run, taken):
+			continue
+		if _too_close_to_a_run_on_the_same_line(run, found):
 			continue
 		for key in run.segment_keys():
 			taken[key] = true
@@ -220,6 +231,32 @@ static func _run_is_plantable(map: CityMap, run: Run, taken: Dictionary) -> bool
 		if not _fronts_a_qualifying_block(map, segment):
 			return false
 	return true
+
+## Whether `run` would land within `Tuning.STREET_TREE_PIT_SPACING` of a pit an already-accepted
+## run on the same kerb line (same direction, same junction row or column) could plant — the two
+## are planted by separate calls to `_plant_side`, each with its own accumulator, so only the
+## block gap between them is known before either is actually planted.
+static func _too_close_to_a_run_on_the_same_line(run: Run, found: Array[Run]) -> bool:
+	var needed := _min_run_gap_blocks()
+	for other in found:
+		if other.horizontal != run.horizontal or other.index != run.index:
+			continue
+		var gap := (run.first - (other.first + other.length - 1)) if run.first > other.first \
+				else (other.first - (run.first + run.length - 1))
+		if gap < needed:
+			return true
+	return false
+
+## The fewest empty blocks that have to separate two runs on the same kerb line for
+## `Tuning.STREET_TREE_PIT_SPACING` to hold between the closest pits either could plant — the
+## last candidate tile of one run's last block (`BLOCK_SIZE - _MOUTH_MARGIN_TILES - 1` cells in)
+## against the first candidate tile of the other's first block (`_MOUTH_MARGIN_TILES` cells in).
+static func _min_run_gap_blocks() -> int:
+	var period := CityMap.period()
+	var tiles_needed := Tuning.STREET_TREE_PIT_SPACING / float(Tuning.TILE_SIZE)
+	var gap := ceili((tiles_needed - 2.0 * _MOUTH_MARGIN_TILES + Tuning.BLOCK_SIZE - 1) \
+			/ float(period))
+	return maxi(gap, 1)
 
 static func _street_kind_of(map: CityMap, segment: StreetNetwork.Segment) -> GameEnums.StreetKind:
 	var vertical := not segment.horizontal

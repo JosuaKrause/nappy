@@ -492,8 +492,12 @@ a shut street is the street with nobody on it, and that is legible from a block 
   corridor, preferentially on a turning off it — see "Where a closure goes" below. Whether that
   **reads** as guidance to a person is unanswered; the picture says the walls are where they should
   be, and that is all anybody knows.
-- **There is no cue of any kind toward calm.** No marker, no map, no HUD line, nothing on the
-  ground. "Planning-time legibility" is named a paragraph above as not existing.
+- **There is no cue of any kind toward calm, except one faint trial.** No marker, no map, no HUD
+  line, nothing on the ground — bar M145, which tints the route's own curbstones, the stone strip
+  along the pavement's edge, a faint yellow (`Palette.ROUTE_KERB_TINT`, blended in by
+  `Tuning.ROUTE_KERB_TINT_ALPHA`). The trial's question is whether a hint this quiet can stay below
+  being noticed as one; alpha zero is the off switch the moment it cannot. "Planning-time
+  legibility" is named a paragraph above as not existing.
 - **The main road as a soft block** — the one thing in the design that would divide the city into
   a near half and a far half — is designed and not built; see `docs/TODO.md`.
 - **Blockers are not placed to guide anybody**, which is the whole of it. The design is below.
@@ -701,6 +705,124 @@ goal into an artefact of how the two routes are found.
 route is an offer the day makes when the ground allows one. What must still hold absolutely is only
 that **some** calm is reachable.
 
+### The graph the corridor grows on is smaller than the city
+
+**The corridor is grown on `ReachabilityGrid` cells, and a cell knows nothing about kerbs.** Left to
+the bare grid it steps pavement → carriageway → far pavement in the middle of a street, which plans
+a route around a crossing the city never promised — *"the routing should only cross the street at
+intersections. in block crossings are possible in game but shouldn't be counted on by the routing
+algorithm."*
+
+So the growth walks a **smaller graph**, and the player named the shape of the fix: *"why not just
+remove the street tiles and main street blocks from the graph entirely?"* Two kinds of cell are out
+of it:
+
+- **a carriageway between two junctions**, so a route crosses a street only where crossing is legal;
+- **the main road anywhere but at a junction** — its pavements as much as its carriageway, since the
+  rule about the spine is that a route never goes *alongside* it. Crossing it at a junction is
+  untouched.
+
+**A junction box is kept whole**, all nine cells of it. The box is six tiles square and both the
+street width and the lattice period are even, so it is exactly three by three cells and no cell is
+half in it; keeping only the crosswalk cells would refuse the corner cells a route turning at that
+junction has to pass through.
+
+**It is a filter on the growth's own view and on nothing else.** `ReachabilityGrid` is untouched, so
+every guarantee stated over walkable ground — the two-calm-areas invariant, the day's walkability
+check, the corridor's own proximity field — still sees the city as the player can walk it. **It
+gates the plan, not the player**: she may cross anywhere, stand in the road, and take the spine's
+pavement if she wants to.
+
+**Nothing can be cut off by it, and the reason is the lattice rather than a repair.** A street's two
+pavements are joined through the junction boxes at both ends of it, so refusing the carriageway
+takes no ground out of reach. The spine is the one place where that argument needs its own fallback,
+and it already had one: `RouteTree`'s trunk search puts the main road back when the doorstep has no
+other way out at all, because a tree that is not joined to the home is worse than a trunk on a bad
+street.
+
+### A route's junctions stay clear
+
+**A junction is the only place a line along a route may change from one pavement to the other**, so
+it is the one piece of a route that nothing on either side of it can answer. A street with a van on
+one pavement still has the other; a crossing covered end to end has nowhere to turn, and the walk
+has to go back the way it came.
+
+So **the junctions the day's routes cross are kept crossable** — the junctions at each end of every
+street the tree runs along, plus any the tree cuts through from a park or an alley
+(`RouteTree.junctions()`). A row is refused ground where its reach, together with everything the
+morning has already put down, would leave the junction box with no walk joining the route streets
+that meet there. **Checked before the row is accepted, never repaired after**, the same shape the
+closure invariant has: the day is asked, one row at a time, whether the city it is joining still has
+a line through every crossing, so a closed one never exists even for a moment.
+
+**Stating it over the pair rather than over the row is what makes it the rule the measurement asked
+for.** The crossing that breaks most routes is covered by two ordinary rows between them — a café on
+one corner and a yeller on the other — and a rule that only asked *does this one row take the whole
+box* would accept both of them.
+
+Four kinds of row are outside it, and each for a reason it already had. **A pursuer, and anything
+the director sites in front of her**, pay the telegraph contract instead and have no tile the day
+chose. **A city-wide row** has no place, so there is no other side of the street to be on. **A
+region door and a moving row that does not pace are not blocks at all** — a door costs by design,
+and a row that travels is passed by crossing, waiting and crossing back. And **a wall is outside
+it**, which is the same exemption the lethal-clearance rule makes: a wall *bounds* the corridor and
+is off the routes by construction, so a field reaching in from there is the guidance rather than a
+failure of it.
+
+**What it costs is the wide rows' corridor ground**, and that is the intended trade rather than a
+side effect. Every corridor street has a route junction at each of its ends, so a row whose reach
+covers a whole crossing loses most of the corridor; a row narrower than a junction box's own half
+width loses none of it. `tests/test_events.gd` asserts both halves — the corridor's overall share of
+the friction and, separately, the undiminished share of the rows no crossing rule can refuse.
+
+### No single standing row takes a route street's whole width
+
+**A street is walkable frontage to frontage, so the answer to a van is the other side of it** — and
+a row whose reach spans the whole width has taken the answer away with the question. That is the
+player's own framing: *"all obstacles should be routable around by eg crossing to the other side of
+the street, which in turn means the other side of the street must be open enough so we can walk on
+it unimpeded."*
+
+**The numbers make this shape rather than an unlucky roll.** An ordinary street is 192px kerb to
+kerb and the catalogue's reaches run to 240px, so a wide row standing anywhere across one closes it.
+So a counted row standing on a route street is accepted only if it leaves a four-connected walk from
+one of that street's junctions to the other, over the street's own ground — both pavements, the
+carriageway between the kerbs left out, since a line may not cross there anyway. A row that cannot
+is refused that ground and rolls again, landing on a street it fits or off the corridor entirely.
+
+**One row, by itself**, which is what separates this from the crossing rule above: two rows closing
+a street between them are a different shape and are answered where a pacing row's beat is.
+
+**Only a street has a far side.** Where a route's cells stand on an alley, a park cut or a square
+there is no second pavement to cross to and no two ends to walk between, so the rule says nothing
+about that ground rather than inventing an answer for it. A **precinct** needs no special case: it
+is paved frontage to frontage with no carriageway in it, so its whole width is the walk this asks
+about.
+
+### A pacing row leaves the line open for part of its beat
+
+**A man walking a footway and back is a timing problem rather than a routing one.** *"Time pass —
+don't route around them."* So the ground a pacing row denies is the ground its beat **never** leaves
+free — the intersection over the loop rather than the union — and a line that is clear at some phase
+of it can simply wait. That reading is the player's and it is what the whole cost rule is stated in.
+
+Which makes the beat's **open end** ground in its own right, and it is the only thing about a pacing
+row that can break a route: the intersection over a walk is far smaller than the disc, so a beat
+rarely closes a street by itself. What closes it is something else standing in the one end the
+yeller is away from.
+
+So **on a route street carrying a pacing row, the rows reaching that street are asked together**
+whether a walk from one of its junctions to the other survives. Both directions of the collision are
+the same question and both are refused: a pacing row may not take ground where what is already there
+would close its opening, and a standing row may not take the opening a pacing row already leaves.
+
+**It is scoped to the streets a pacing row stands on**, which is what keeps it from being a second,
+wider copy of the width rule. Two standing rows closing a street between them is a different shape,
+and this design does not have a rule for it.
+
+**The opening is a walkable tile wide** — 32px, against a stroller's 28px across — which is what a
+line is measured in and why no number had to be invented for it.
+
 ### Two strands side by side, and the street between them
 
 Two strands of corridor running down neighbouring streets with nothing between them are not two
@@ -808,7 +930,8 @@ that the city stays connected, so a sealed quarter is legal. `ClosurePlanner`'s 
 rule is likewise about reaching calm rather than about global connectivity.
 
 So the honest summary: **the city permits routes to calm and protects them from becoming
-impossible. It never suggests one.**
+impossible. It never suggests one** — except the faint kerb tint M145 is trialing, on trial
+precisely because the question is whether it stays under that threshold.
 
 ### The invariant
 
@@ -1004,9 +1127,10 @@ always tree ground — the fact `SealPlanner` already reads to refuse a seal. Wi
 street that join landed on was whatever a branch's own random walk happened to reach home through,
 and on a bad roll every street the home led to could be off-tree and sealed at once.
 
-**The main road is exempt too, and a route never runs along it in the first place.** `RouteTree`
-refuses to grow a strand along the spine's own length — she may still cross it wherever she likes,
-which is unchanged and unrestricted — so the main road is off every day's tree by construction.
+**The main road is exempt too, and a route never runs along it in the first place.** The spine's own
+cells are out of the graph `RouteTree` grows on everywhere but at a junction — she may still cross
+it wherever she likes, which is unchanged and unrestricted — so the main road is off every day's
+tree by construction.
 Sealing it as well would wall the one street the design deliberately leaves open, so `SealPlanner`
 refuses it outright rather than treating "off the tree" as reason enough. It is already the worst
 ground in the game to stand on (0.35× decay against an ordinary street's 1.0), which is why making
@@ -1361,7 +1485,8 @@ is loud, and the reason a park is quiet.
   under somebody already standing there is the one case a placement cannot prevent, so an agent in a
   pocket is recycled like anybody who has left the field — but only once it is more than
   `OUT_OF_SIGHT` from the camera, which is *nothing vanishes while you are looking at it* again. In
-  view it does what it has always done: walks to the far seal, turns, and walks back. The distance
+  view it stands exactly where the seal caught it — no step, no steering, no turn — so a sealed
+  crossing holds a few people standing rather than pacing between its seals. The distance
   is measured from `CrowdField.centre`, which is the player, and the field's own edge is twice as
   far out — so this is the only recycle that ever happens somewhere she could have been standing.
 
@@ -1550,7 +1675,11 @@ Top-down camera with a fake vertical extrusion:
   to read past, and a street full of them is a street where an obstacle is hard to spot.
 - **Inside a run, pits sit at `Tuning.STREET_TREE_PIT_SPACING` — two lot-lengths — on each kerb**,
   measured along the whole run rather than street by street, so a four-block run carries about two
-  pits a side rather than two per street. `StreetTrees.planted()` is the one function that decides,
+  pits a side rather than two per street. **And two runs on the same kerb line keep the same floor
+  between them**: `StreetTrees.runs()` refuses a candidate run closer to an already accepted run on
+  its line than the empty blocks the spacing needs between the last pit one could plant and the
+  first pit of the other, checked before either is planted, so the floor holds along the whole
+  line and not only inside one run. `StreetTrees.planted()` is the one function that decides,
   fixed for the run like a building rather than rebuilt daily like a park's own trees, since a
   street's frontage does not change with what a block behind it currently is. A tree stands at the
   kerb-side tile of a pavement, never within a

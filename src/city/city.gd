@@ -489,6 +489,11 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 ##
 ## The repaint, the ground, the litter and the block dressing all still happen, because the parks
 ## she walks through have to be the parks the run's seed built.
+##
+## And the route-kerb tint (M145) goes with the tree it has nothing to draw from without anything
+## extra here: `_tint_the_route_kerbs()` only ever runs from `_close_streets()`, which the finale
+## never calls, and `_paint_ground()` above paints every kerb cell its plain source, so a twin from
+## yesterday cannot survive the repaint.
 func start_finale(state: CityState, day: int) -> void:
 	map.repaint(state)
 	_sleepiness_tile = Vector2i(-1, -1)
@@ -505,6 +510,7 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 	_closure_nodes.clear()
 	# Before the closures, because they are placed off it. See `ClosurePlanner._shuffled_candidates`.
 	_tree = RouteTree.for_day(map, day)
+	_tint_the_route_kerbs()
 	# Before the closures too: a closure may not land on a region boundary (wall or door), which
 	# `ClosurePlanner.plan_day` needs handed to it rather than recomputing — see its own doc.
 	_region_plan = RegionPlanner.plan_day(map, day, _tree)
@@ -515,6 +521,39 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 	map.close_streets(_closures)
 	for closure in _closures:
 		_spawn_closure(closure)
+
+## The route's own curbstones, tinted — a trial (M145) of whether a faint hint on the ground can
+## stay under the threshold of being noticed as one; see `docs/CITY.md`, "Guiding her to the calm".
+##
+## No second layer: `GroundLayers.build_tile_set()` already gave every kerb source
+## (`GroundTiles.ROUTE_KERB_SOURCES`) a tinted twin (`GroundTiles.route_twin_of`), composed with the
+## `curbstone` component (or, in SVG mode, the stone's own fill) blended toward
+## `Palette.ROUTE_KERB_TINT` by `Tuning.ROUTE_KERB_TINT_ALPHA` — so the paving around the stone is
+## untouched. This only ever decides *which* cells qualify (a kerb source, on the corridor at depth
+## zero) and re-sets each straight onto `_ground` at its twin, same atlas coordinates: the two can
+## never disagree about a cell's coordinates, because there is only the one layer. A twin that was
+## never registered (an incomplete art drop) leaves the tile on its plain source, the same
+## graceful fallback `GroundLayers` gives everywhere else. Alpha zero is the trial's off switch,
+## with nothing else to change.
+##
+## Called from `_close_streets`, right after `_tree` is grown and before the region plan or the
+## closures, so a corridor a closure has not yet touched is what the tint answers for — the same
+## order `docs/TODO.md`'s M145 entry states.
+func _tint_the_route_kerbs() -> void:
+	var corridor := Corridor.of(_tree)
+	var tile_set := _ground.tile_set
+	for y in map.size.y:
+		for x in map.size.x:
+			var tile := Vector2i(x, y)
+			var source := GroundTiles.source_for(map, tile, _day)
+			if not (source in GroundTiles.ROUTE_KERB_SOURCES):
+				continue
+			if corridor.depth(tile) != 0:
+				continue
+			var twin := GroundTiles.route_twin_of(source)
+			if twin < 0 or not tile_set.has_source(twin):
+				continue
+			_ground.set_cell(tile, twin, _ground.get_cell_atlas_coords(tile))
 
 func closures() -> Array[RoadClosure]:
 	return _closures

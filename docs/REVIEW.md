@@ -42,6 +42,22 @@ item below for as long as looking takes.
   seconds, and does its line say "nothing else changed"?** A headless rig already wrote 29
   and 57 ms spikes with nothing changed, so the cadence and whether anything in the game lines
   up with it is what this run settles. Record is `DECISIONS.md`, M144, the 24 ms frame, found.
+- **Walk day 1 on the laptop without the debug layers and look at the curbstones along the
+  streets the routes take, then turn on `5` to see where the routes are.** The route's own
+  curbstones — the stone strip along the pavement's edge, not the paving beside it — carry a
+  faint yellow cast blended in at 0.45, a trial of whether a hint on the ground can stay below
+  being noticed as one. Three readings, and the number is one constant
+  (`Tuning.ROUTE_KERB_TINT_ALPHA`): **is it invisible, too obvious and on the nose, or somewhere
+  between that guides without being read as a hint?** And where a costly thing stands on the
+  route with its amber caret up, does the yellow curbstone read as part of the warning? Record
+  is `DECISIONS.md`, M145, the route's curbs.
+- **Turn on `5` on seed 2128084176, day 1, and follow every purple line with your eyes.** The
+  tree grows on a graph with no carriageway cell but the junctions' and none of the main
+  road's, and the doorstep connector is drawn along the street now rather than as a straight
+  hop. **Does any route line still cross a carriageway anywhere but at a crossing, or run on
+  the main road?** And walking one route end to end: is there a line through it that never
+  costs, and where it breaks, what stands in the way — the probe says a leaf blower most often.
+  Record is `DECISIONS.md`, M129, the four rules.
 - **Cross a region door on foot, from day 7** (`--day 7`; a door is the hut-boom-hut across a
   boundary street). The boom hangs between its posts across the lanes, level with the huts; the
   inspection starts as soon as she stands against the hut; the camera eases from where it was
@@ -97,9 +113,12 @@ item below for as long as looking takes.
   busier. Two questions. Does an empty sealed-off crossing read as *shut*, the way an empty
   sealed street does, or as a hole in the city? And do the open streets now read as crowded in a
   way that changes the route decision, which is a density question for `Tuning` rather than for
-  this rule? Also: a walker or car that turns back from a seal now keeps its new heading for one
-  stride before it may turn again — does the turn-back at a seal read as a decision rather than a
-  twitch? Record is `DECISIONS.md`, M119; the bursts are `evidence/m119-crowd-pockets-2026-09-13/`.
+  this rule? Also: whoever a seal goes up around now stands where it caught them until the view
+  moves off — does a sealed crossing with a few people standing in it read as people who gave
+  up, or as frozen? And a walker or car that turns back from a single seal on open ground keeps
+  its new heading for one stride before it may turn again — does that turn-back read as a
+  decision rather than a twitch? Records are `DECISIONS.md`, M119 and M146; the bursts are
+  `evidence/m119-crowd-pockets-2026-09-13/`.
 - **Walk the map's east and west edges facing outward, then stand at a plain edge and watch the
   traffic arrive.** The camera now stops short by the length of its glance, so no black column
   should show at any corner whichever way she faces. Two questions. Is the border whole in every
