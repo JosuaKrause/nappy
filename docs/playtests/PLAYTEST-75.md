@@ -66,6 +66,13 @@ record says it never suggests a route and there is no cue of any kind toward cal
 whether a hint on the ground can stay under the threshold of being noticed as one — beside
 the guidance through obstacles, and not the way paths are meant to be shown.
 
+> "that is not the curbstone -- it's the sidewalk"
+> "I specifically said *curbstone*"
+
+Said on 2026-09-14 to the first build, which tinted the whole kerb *tile* — the pavement's
+edge tile, paving and all — rather than the curbstone, the strip of stone along the tile's
+road-side edge. Re-opened as M145's correction in `TODO.md`.
+
 ## A pocketed agent stands instead of pacing
 
 > "I get the remove entity when there is no route idea. maybe let's do instead stop the entity

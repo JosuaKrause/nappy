@@ -814,6 +814,21 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 		# already on it, and because it can never bend.
 		if _reaches_any(candidate, leave_alone):
 			continue
+		# And before the spacing for the same reason: a crossing a route has no way around is
+		# ground the row may not have, not a preference that bends. See
+		# `_leaves_the_route_junctions_open`.
+		if not _leaves_the_route_junctions_open(candidate, map, corridor, ground, already):
+			continue
+		# And the same for the stretch between two junctions: a row that spans a route street
+		# frontage to frontage has taken the far pavement away as well as the near one. See
+		# `_leaves_a_line_past_it`.
+		if not _leaves_a_line_past_it(candidate, map, corridor):
+			continue
+		# And the opening a pacing row's beat leaves is ground in its own right: the rows reaching
+		# one route street are asked together whether a walk along it survives, so nothing stands in
+		# the one end the yeller is away from. See `_leaves_a_pacing_beats_opening`.
+		if not _leaves_a_pacing_beats_opening(candidate, map, corridor, already):
+			continue
 		var room := _room_around(candidate, already)
 		if room == INF:
 			return candidate
@@ -1241,6 +1256,375 @@ static func _gap_between(a: Planned, b: Planned) -> float:
 	for point in b.ends():
 		gap = minf(gap, a.distance_from(point))
 	return gap
+
+# ------------------------------------------------- a path never has to cost (M129) ---
+
+## Whether a row is one the **zero-cost line** has to get past — the reading PLAYTEST-71 settled,
+## stated once here and read by every rule in this section.
+##
+## A line along a route is a walk from the doorstep to the calm that never enters a placed row's
+## reach. Five kinds of row are outside it, and each is outside for its own reason rather than for
+## convenience:
+##
+## - **`city_wide`** has no place, so there is no other side of the street to walk on.
+## - **`scenery`** (`pigeon_flock`) is free already — *"flocks are basically free already, don't
+##   count it as block, just count is scenery"* — which is the same exemption `_role_for` makes.
+## - **a pursuer** follows her rather than sitting on a tile, and pays the telegraph contract
+##   instead; so does anything the director sites (`AHEAD_OF_PLAYER`, `TOWARD_PLAYER`), which
+##   reaches here as a plan with no position at all.
+## - **a region door** costs by design — *"it costs by design"* — so `checkpoint_hut` and
+##   `checkpoint_gate` are never a block. The region wall's own body is not a door and still counts.
+## - **a mobile row that does not pace** is passed by crossing, waiting and crossing back — *"the
+##   player can cross the street, wait, then come back without ever getting excited by it"*. A row
+##   that **paces** is not mobile in that sense: it comes back, so it is read over its beat.
+##
+## And **a wall is outside it**, which is the same exemption the lethal-clearance rule makes and for
+## the same reason: a wall *bounds* the corridor, so it is off the routes by construction
+## (`_copies_of` offers it zero copies of corridor ground), and a field that reaches from there onto
+## the ground she is being guided along is the guidance rather than a failure of it.
+##
+## **It is the role that is exempt and not the ground**, and that is a reading of the milestone's
+## own sentence — *"and so is anything off the corridor, where the wall role is the design"* — that
+## the probe chose between. Exempting every row that merely **stands** off the corridor leaves the
+## covered junction exactly where it was: measured over the same six seeds, refusing only
+## on-corridor rows moved the zero-cost line from 16.8% to 24.2% of routes and left the junction
+## shape at 135 routes, because the pair that closes a crossing is usually a café or a yeller one
+## turning out with its field reaching in. The wall is what the sentence names, `_copies_of`
+## already makes *wall* and *off the corridor* the same set, and reading it that way is what makes
+## the rule cut against the shape it was written for.
+static func _counts_against_the_line(plan: Planned) -> bool:
+	if not plan.is_placed() or plan.role == GameEnums.BlockerRole.WALL:
+		return false
+	var def := plan.def
+	if def.city_wide or def.scenery or def.pursues or def.id.begins_with(_DOOR_ID_PREFIX):
+		return false
+	if def.mobile and not def.paces:
+		return false
+	return _line_reach_of(def) > 0.0
+
+## `checkpoint_hut` and `checkpoint_gate`, the two rows that **are** a region's door. Matched on the
+## id the way `tests/probes/m129_zero_cost_line.gd` matches them, since what makes a door a door is
+## `RegionPlanner` choosing it rather than any field on the def.
+const _DOOR_ID_PREFIX := "checkpoint"
+
+## How far a row denies ground: `outer_radius` wherever it emits at all, `obstructs_radius` wherever
+## it has a body, the larger of the two where both apply. A row that neither emits nor obstructs —
+## the `playground` ambient, at intensity 0 — is not something a line has to avoid.
+##
+## The plain disc rather than `field_reach()`'s forward-stretched ellipse, because the milestone's
+## own wording is `outer_radius` and the two differ only for a mobile row and only ahead of it.
+static func _line_reach_of(def: EventDef) -> float:
+	return maxf(def.outer_radius if def.intensity > 0.0 else 0.0, def.obstructs_radius)
+
+## Whether a row denies a point, under the beat-opening reading.
+##
+## **A pacing row denies only the ground its beat never leaves free** — *"time pass, don't route
+## around them"* — so a point it is ever more than its reach away from can be walked past by
+## waiting. The intersection over a whole beat is the intersection over its **corners**, and that
+## is exact rather than a sample: a disc is convex, so a point within `reach` of both ends of a
+## straight run is within `reach` of every point of it.
+static func _denies(plan: Planned, at: Vector2, reach: float) -> bool:
+	if plan.def.paces and plan.path.size() >= 2:
+		for point in plan.path:
+			if at.distance_to(point) > reach:
+				return false
+		return true
+	return at.distance_to(plan.position) <= reach
+
+## The day's route junctions with the geometry the rule asks about, worked out once per day and
+## kept in the same `ground` dictionary every other day-lifetime answer in this file lives in.
+## Each entry is `[junction, the box's world centre, the box's own reach from that centre]`.
+const _ROUTE_JUNCTIONS_KEY := "route junctions"
+
+static func _route_junctions(map: CityMap, ground: Dictionary, corridor: Corridor) -> Array:
+	if not ground.has(_ROUTE_JUNCTIONS_KEY):
+		var found: Array = []
+		for junction in corridor.route_junctions():
+			var box := Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
+			var world := map.tile_rect_to_world(box)
+			found.append([junction, world.get_center(), world.size.length() * 0.5])
+		ground[_ROUTE_JUNCTIONS_KEY] = found
+	return ground[_ROUTE_JUNCTIONS_KEY]
+
+## **A route's junctions stay clear**, checked before a row is accepted and never repaired after.
+##
+## A junction is the only place a line may change pavement, so a crossing the day's rows have
+## closed between them is a cut nothing on either side can answer — the shape
+## `tests/probes/m129_zero_cost_line.gd` measured breaking more routes than every other shape put
+## together. The refusal is *this ground*, not *this row*: `_place_one` simply rolls again, and the
+## row lands somewhere it leaves the crossing open.
+##
+## **It is stated over the candidate together with what is already down**, which is what makes it
+## the rule the measurement asked for rather than a weaker one: the crossing the probe names most
+## often is covered by a pair (`cafe_tables` and `homeless_yeller` at one junction), and a rule that
+## only ever asked *does this row alone take the box* would accept both of them. Stating it
+## cumulatively is still *checked before accepted*: each row in turn is asked whether the day it is
+## joining still has a line through every crossing, so a closed one never exists even briefly.
+static func _leaves_the_route_junctions_open(candidate: Planned, map: CityMap,
+		corridor: Corridor, ground: Dictionary, already: Array[Planned]) -> bool:
+	if not corridor or not _counts_against_the_line(candidate):
+		return true
+	var reach := _line_reach_of(candidate.def)
+	for entry: Array in _route_junctions(map, ground, corridor):
+		var centre: Vector2 = entry[1]
+		var box_reach: float = entry[2]
+		if candidate.distance_from(centre) > reach + box_reach:
+			continue
+		if not _a_crossing_stays_open(map, corridor, entry, candidate, already):
+			return false
+	return true
+
+## Whether one junction box still carries a walk between every route street that meets it, with the
+## candidate standing and everything already down standing too.
+##
+## **The arms are the on-corridor streets and nothing else.** A junction where three route streets
+## meet has to connect all three, because a line may arrive down any of them; a turning off the
+## corridor is not ground the guarantee is about. Where the tree crosses a junction without using a
+## street at either side — a park cut, an alley mouth — there are no arms and the box only has to
+## have somewhere free left in it.
+static func _a_crossing_stays_open(map: CityMap, corridor: Corridor, entry: Array,
+		candidate: Planned, already: Array[Planned]) -> bool:
+	var junction: Vector2i = entry[0]
+	var centre: Vector2 = entry[1]
+	var box_reach: float = entry[2]
+	var standing: Array[Planned] = [candidate]
+	for plan in already:
+		if plan == candidate or not _counts_against_the_line(plan):
+			continue
+		if plan.distance_from(centre) <= _line_reach_of(plan.def) + box_reach:
+			standing.append(plan)
+
+	var origin := junction * CityMap.period()
+	var free := {}
+	for y in Tuning.STREET_WIDTH:
+		for x in Tuning.STREET_WIDTH:
+			var tile := origin + Vector2i(x, y)
+			if not map.is_open(tile):
+				continue
+			var at := map.tile_to_world(tile)
+			var taken := false
+			for plan in standing:
+				if _denies(plan, at, _line_reach_of(plan.def)):
+					taken = true
+					break
+			if not taken:
+				free[tile] = true
+	if free.is_empty():
+		return false
+
+	var arms: Array = []
+	for segment in StreetNetwork.at_junction(junction):
+		if corridor.depth(segment.tile_rect().position) != 0:
+			continue
+		var open_here: Array[Vector2i] = []
+		for tile in _arm_tiles(origin, junction, segment):
+			if free.has(tile):
+				open_here.append(tile)
+		if open_here.is_empty():
+			return false
+		arms.append(open_here)
+	if arms.size() < 2:
+		return true
+
+	var reached := {}
+	var queue: Array[Vector2i] = []
+	for tile: Vector2i in arms[0]:
+		reached[tile] = true
+		queue.append(tile)
+	var head := 0
+	while head < queue.size():
+		var at: Vector2i = queue[head]
+		head += 1
+		for step in _NEIGHBOUR_STEPS:
+			var next: Vector2i = at + step
+			if free.has(next) and not reached.has(next):
+				reached[next] = true
+				queue.append(next)
+	for i in range(1, arms.size()):
+		var joined := false
+		for tile: Vector2i in arms[i]:
+			if reached.has(tile):
+				joined = true
+				break
+		if not joined:
+			return false
+	return true
+
+## The one-tile strip of a junction box that a street opens onto — where a line enters the box from
+## that street and where it leaves it for that street.
+static func _arm_tiles(origin: Vector2i, junction: Vector2i,
+		segment: StreetNetwork.Segment) -> Array[Vector2i]:
+	var step := segment.other_end(junction) - junction
+	var found: Array[Vector2i] = []
+	for i in Tuning.STREET_WIDTH:
+		if step.x > 0:
+			found.append(origin + Vector2i(Tuning.STREET_WIDTH - 1, i))
+		elif step.x < 0:
+			found.append(origin + Vector2i(0, i))
+		elif step.y > 0:
+			found.append(origin + Vector2i(i, Tuning.STREET_WIDTH - 1))
+		else:
+			found.append(origin + Vector2i(i, 0))
+	return found
+
+const _NEIGHBOUR_STEPS: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]
+
+## **No single standing row takes a route street's whole width.** *"All obstacles should be routable
+## around by eg crossing to the other side of the street, which in turn means the other side of the
+## street must be open enough so we can walk on it unimpeded"* (PLAYTEST-69).
+##
+## A street is walkable frontage to frontage, so the answer to a van is the far pavement — and a row
+## whose reach spans the whole width has taken the answer away with the question. The street is
+## 192px kerb to kerb and the catalogue's reaches run to 240px, so this is a shape the numbers make
+## rather than a rare accident: the probe measured it breaking 39 routes in 97 cuts, `leaf_blower`,
+## `busker` and `ice_cream_van` most often.
+##
+## **One row, by itself** — that is the item's own wording and it is what separates this from the
+## junction rule above, which is about a pair closing a crossing between them. A row that cannot
+## leave a line past it is refused that ground and `_place_one` rolls again, so it lands on a street
+## it fits or off the corridor entirely.
+##
+## **Only a street has a far side.** Where a route's cells stand on an alley, a park cut or a square
+## there is no second pavement to cross to and no two ends to walk between, so the rule says nothing
+## about that ground rather than inventing an answer for it — a row there is answered by the
+## junction rule and by the walkability guarantee, the way it was before. A **precinct** needs no
+## special case: it is paved frontage to frontage with no carriageway in it, so its whole width is
+## the walk this asks about.
+static func _leaves_a_line_past_it(candidate: Planned, map: CityMap, corridor: Corridor) -> bool:
+	if not corridor or not _counts_against_the_line(candidate):
+		return true
+	var tile := map.world_to_tile(candidate.position)
+	if corridor.depth(tile) != 0:
+		return true
+	var segment := StreetNetwork.segment_containing(tile)
+	if not segment:
+		return true
+	var alone: Array[Planned] = [candidate]
+	return not _closes_the_street(map, segment, alone)
+
+## Whether these rows between them leave no walk from one end of a street to the other.
+##
+## Stated over the street's own ground — both pavements, the carriageway between the kerbs left out
+## because a line may not cross there anyway (*"in-block crossings are possible in game but
+## shouldn't be counted on by the routing algorithm"*) — and over a four-connected walk, so a
+## barrier laid diagonally counts as closing a street exactly as a straight band does. This is
+## `tests/probes/m129_zero_cost_line.gd`'s own question, asked at placement time instead of after
+## the fact, which is what makes the probe's number the measurement of the rule rather than a
+## second opinion about it.
+static func _closes_the_street(map: CityMap, segment: StreetNetwork.Segment,
+		rows: Array[Planned]) -> bool:
+	var rect := segment.tile_rect()
+	var free := {}
+	for y in range(rect.position.y, rect.end.y):
+		for x in range(rect.position.x, rect.end.x):
+			var tile := Vector2i(x, y)
+			if not map.is_open(tile) or _is_a_carriageway_tile(map, tile, segment.horizontal):
+				continue
+			var at := map.tile_to_world(tile)
+			var taken := false
+			for plan in rows:
+				if _denies(plan, at, _line_reach_of(plan.def)):
+					taken = true
+					break
+			if not taken:
+				free[tile] = true
+
+	var last := (rect.end.x - 1) if segment.horizontal else (rect.end.y - 1)
+	var queue: Array[Vector2i] = []
+	var seen := {}
+	for tile: Vector2i in free:
+		var at_the_start := tile.x == rect.position.x if segment.horizontal \
+				else tile.y == rect.position.y
+		if at_the_start:
+			seen[tile] = true
+			queue.append(tile)
+	var head := 0
+	while head < queue.size():
+		var at: Vector2i = queue[head]
+		head += 1
+		if (at.x if segment.horizontal else at.y) == last:
+			return false
+		for step in _NEIGHBOUR_STEPS:
+			var next: Vector2i = at + step
+			if free.has(next) and not seen.has(next):
+				seen[next] = true
+				queue.append(next)
+	return true
+
+## **A pacing row leaves the line open for part of its beat.** *"Time pass — don't route around
+## them"* (PLAYTEST-71): a man walking two hundred and fifty pixels of footway and back is a timing
+## problem rather than a routing one, so the ground he denies is the ground his beat **never** leaves
+## free, and a line that is clear at some phase of the loop can simply wait for him.
+##
+## That reading is what makes the beat's opening worth protecting, and it is the whole of what the
+## probe finds broken: not a beat that closes a street by itself — the intersection over a walk is
+## far smaller than the disc — but a beat whose one open end has something else standing in it.
+## *"No other row's reach covers that open end."*
+##
+## So on a route street carrying a pacing row, the rows reaching it are asked **together** whether a
+## walk from one junction to the other survives. Both directions of the collision are the same
+## question and this is asked in both: a pacing row is refused ground where the rows already there
+## would close its opening, and a standing row is refused the opening a pacing row already leaves.
+##
+## **It is scoped to the streets a pacing row actually stands on**, which is what keeps it from
+## being a second, wider copy of the width rule. Two standing rows closing a street between them is
+## a different shape with a different answer, and the milestone does not write a rule for it.
+static func _leaves_a_pacing_beats_opening(candidate: Planned, map: CityMap, corridor: Corridor,
+		already: Array[Planned]) -> bool:
+	if not corridor or not _counts_against_the_line(candidate):
+		return true
+	var reach := _line_reach_of(candidate.def)
+	var streets := {}
+	var here := StreetNetwork.segment_containing(map.world_to_tile(candidate.position))
+	if candidate.def.paces and here and corridor.depth(here.tile_rect().position) == 0:
+		streets[here.key()] = here
+	for plan in already:
+		if plan == candidate or not plan.def.paces or not _counts_against_the_line(plan):
+			continue
+		var theirs := StreetNetwork.segment_containing(map.world_to_tile(plan.position))
+		if not theirs or corridor.depth(theirs.tile_rect().position) != 0:
+			continue
+		if _reach_touches(candidate, map.tile_rect_to_world(theirs.tile_rect()), reach):
+			streets[theirs.key()] = theirs
+
+	for key: Vector3i in streets:
+		var segment: StreetNetwork.Segment = streets[key]
+		var rect := map.tile_rect_to_world(segment.tile_rect())
+		var standing: Array[Planned] = [candidate]
+		for plan in already:
+			if plan == candidate or not _counts_against_the_line(plan):
+				continue
+			if _reach_touches(plan, rect, _line_reach_of(plan.def)):
+				standing.append(plan)
+		if _closes_the_street(map, segment, standing):
+			return false
+	return true
+
+## Whether a row's own reach gets anywhere near a rect at all — the cheap filter before the tile
+## work. Grown by the line reading's plain disc rather than `field_reach()`, and asked of every
+## corner of a beat as well as of where the row stands, since a pacing row's denied ground is
+## inside each of those discs.
+static func _reach_touches(plan: Planned, rect: Rect2, reach: float) -> bool:
+	var grown := rect.grow(reach)
+	if grown.has_point(plan.position):
+		return true
+	for point in plan.path:
+		if grown.has_point(point):
+			return true
+	return false
+
+## Whether a tile between two junctions is carriageway a line may not cross there.
+##
+## **The tile's own type decides, not its offset across the corridor.** A four-block calm zone is
+## painted over the streets between its blocks, so those tiles sit at a road offset and are grass
+## somebody walks on — *"an absorbed street is calm ground, not a closure"*. A precinct is paving
+## frontage to frontage with no carriageway at all, and its middle tiles are not `ROAD` either, so
+## the same test covers it without naming it.
+static func _is_a_carriageway_tile(map: CityMap, tile: Vector2i, horizontal: bool) -> bool:
+	if not CityMap.is_road_offset(CityMap.corridor_offset(tile.y if horizontal else tile.x)):
+		return false
+	var type := map.tile_at(tile)
+	return type == GameEnums.TileType.ROAD or type == GameEnums.TileType.CROSSING
 
 ## Distance in tiles from a tile to the edge of the map along a direction, less a
 ## one-block margin so a route always ends inside the city rather than against the wall.
