@@ -72,3 +72,19 @@ Said on 2026-09-15 of the same session. The world's origin is the map's top-left
 drawn before the camera has taken her position shows that corner. Which frame is not known
 from the code alone — the first after boot, the title's own with the city behind it, or the
 run's first after the disc is pressed. Filed as M151 in `TODO.md`.
+
+## The leaf blower: a wall to walk past, a busker to stay near
+
+> "a leaf blower should be able to close one side of a street and spaced out correctly a calm
+> area" — "walking past a leaf blower should still be like a wall. but staying away from it
+> should only prevent sleeping in a calm area (much like the busker)"
+
+Said on 2026-09-15, answering M129's one open question — the wall exemption, and the leaf
+blower standing in a cut on 156 of the 196 routes the four rules leave without a zero-cost
+line. The answer is neither of the two options put (its reach under the street's width, or the
+wall exemption narrowed): it is a field with two parts. Close in, the price of walking past it
+is a wall's. Further out, its field is the busker's — loud enough that a baby does not sleep
+in a calm area within it, and nothing a walk has to route around. So a leaf blower on a
+pavement closes that pavement and not the street, and several of them spaced across a park
+keep the park awake. Filed as M129's closing items in `TODO.md`, with the rule change that
+follows from it: a row denies the ground it charges for, not the ground it can be heard on.
