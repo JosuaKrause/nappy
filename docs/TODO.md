@@ -406,41 +406,6 @@ rule is "a kerb tile on an inside street", not a list of sources.
 
 ---
 
-## M146 — A pocketed agent stands, then leaves unseen · asked for 2026-09-14
-
-> "I get the remove entity when there is no route idea. maybe let's do instead stop the entity
-> if there is no way. and despawn once offscreen" — "it looks very weird otherwise"
-
-[PLAYTEST-75](playtests/PLAYTEST-75.md). The **crowd-traffic** rule governs. What is true
-today is `DECISIONS.md`, M119, the crowd with nowhere to go leaves: a pocket is ground today's
-seals have shut in (`CrowdPockets`, a junction with every arm held and the lane stubs sealed
-in with it), nobody is placed in one, and an agent a seal goes up around is recycled at the
-first frame it is further than `Tuning.OUT_OF_SIGHT` (420px) from the camera — *nothing
-vanishes while you are looking at it*. In view it paces: `_divert()` turns it at each seal,
-one stride between about-faces. The player keeps the leaving and takes out the pacing.
-
-- [ ] **In a pocket, an agent stands where the seal caught it.** In `CrowdAgent._process`,
-      the pocket question moves ahead of the step: while `_is_in_a_pocket()` holds and the
-      agent is in view, nothing below runs but the redraw — no along-step, no steering, no turn
-      at a corridor, no gait, no lookahead, no divert — so a walker stands on its standing
-      frame facing the way it was going and a car stops where it is; the make-way and bump
-      the crowd applies from outside are unchanged, since a standing body still has to get
-      out of her way. Out of view it is recycled as today. The pocket flood already refreshes
-      on every change to the day's holds, so an agent stops the frame the seal goes up and
-      walks on the frame a pocket opens (a `FALLEN_TREE` closure clearing, a door), with no
-      state to reset. M119's stride-limited about-face stays for a single seal on open ground.
-      `_test_a_pocket_empties_once_it_is_out_of_view` in `tests/test_crowd_closures.gd` gains
-      the standing half: while the view is on the sealed junction, every agent inside it keeps
-      its position within a pixel across the watched seconds, and the count still never falls;
-      the out-of-view half is unchanged. Any doc sentence that says a pocketed agent paces —
-      `docs/MECHANICS.md`, `docs/CITY.md`, the **crowd-traffic** skill; grep `paces` and
-      `pocket` — says it stands. Evidence: the rig's own burst if a sealed junction with agents
-      in it can be captured within budget the way `evidence/m119-crowd-pockets-2026-09-13/`
-      was (`--invincible`, a burst, not a still — this is motion, or its absence); the test is
-      the proof either way.
-
----
-
 ## M148 — A rolling graph of frame times on the readout · asked for 2026-09-14
 
 > "I would expect there to be an overlay that shows the last x frames of frame times in a

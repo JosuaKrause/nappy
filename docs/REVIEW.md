@@ -76,9 +76,12 @@ item below for as long as looking takes.
   busier. Two questions. Does an empty sealed-off crossing read as *shut*, the way an empty
   sealed street does, or as a hole in the city? And do the open streets now read as crowded in a
   way that changes the route decision, which is a density question for `Tuning` rather than for
-  this rule? Also: a walker or car that turns back from a seal now keeps its new heading for one
-  stride before it may turn again — does the turn-back at a seal read as a decision rather than a
-  twitch? Record is `DECISIONS.md`, M119; the bursts are `evidence/m119-crowd-pockets-2026-09-13/`.
+  this rule? Also: whoever a seal goes up around now stands where it caught them until the view
+  moves off — does a sealed crossing with a few people standing in it read as people who gave
+  up, or as frozen? And a walker or car that turns back from a single seal on open ground keeps
+  its new heading for one stride before it may turn again — does that turn-back read as a
+  decision rather than a twitch? Records are `DECISIONS.md`, M119 and M146; the bursts are
+  `evidence/m119-crowd-pockets-2026-09-13/`.
 - **Walk the map's east and west edges facing outward, then stand at a plain edge and watch the
   traffic arrive.** The camera now stops short by the length of its glance, so no black column
   should show at any corner whichever way she faces. Two questions. Is the border whole in every

@@ -1361,7 +1361,8 @@ is loud, and the reason a park is quiet.
   under somebody already standing there is the one case a placement cannot prevent, so an agent in a
   pocket is recycled like anybody who has left the field — but only once it is more than
   `OUT_OF_SIGHT` from the camera, which is *nothing vanishes while you are looking at it* again. In
-  view it does what it has always done: walks to the far seal, turns, and walks back. The distance
+  view it stands exactly where the seal caught it — no step, no steering, no turn — so a sealed
+  crossing holds a few people standing rather than pacing between its seals. The distance
   is measured from `CrowdField.centre`, which is the player, and the field's own edge is twice as
   far out — so this is the only recycle that ever happens somewhere she could have been standing.
 
