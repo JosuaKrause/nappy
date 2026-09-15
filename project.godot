@@ -83,6 +83,16 @@ snapshot_burst={
 ]
 }
 
+[physics]
+
+; The tick runs slower than the render loop draws, so interpolation is what keeps a
+; physics-moved body smooth: Godot draws every such Node2D between its last two ticks rather
+; than snapping it forward once every few frames on a desktop drawing well above thirty. A tree
+; that moves its own nodes in `_process` rather than on the tick opts out for itself
+; (`PHYSICS_INTERPOLATION_MODE_OFF`) rather than being drawn between two stale tick positions.
+common/physics_ticks_per_second=30
+common/physics_interpolation=true
+
 [rendering]
 
 textures/canvas_textures/default_texture_filter=0

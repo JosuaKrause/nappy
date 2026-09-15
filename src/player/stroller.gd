@@ -411,6 +411,10 @@ func focus_camera_on(point: Vector2) -> void:
 	_camera.top_level = true
 	_camera.offset = Vector2.ZERO
 	_camera.global_position = drawn_from
+	# Stops a one-tick slide from the old place: `top_level` just changed how this position is
+	# computed, and without this the first interpolated frame draws from wherever the camera's
+	# transform sat under the old composition.
+	_camera.reset_physics_interpolation()
 	_camera.reset_smoothing()
 	_camera_ease_from = drawn_from
 	_camera_ease_elapsed = 0.0
@@ -454,6 +458,9 @@ func baby_is_awake() -> bool:
 ## caller.
 func teleport_to(where: Vector2) -> void:
 	global_position = where
+	# Stops a one-tick slide from the old place: without it, physics interpolation draws her
+	# gliding from the band she was released in rather than simply standing at the door.
+	reset_physics_interpolation()
 	velocity = Vector2.ZERO
 	_shove = Vector2.ZERO
 
@@ -603,6 +610,10 @@ func _update_camera(delta: float) -> void:
 			_camera_easing_back = false
 			_camera.top_level = false
 			_camera.position = Vector2.ZERO
+			# Stops a one-tick slide from the old place: handing the transform back to the
+			# parented follow is its own jump in the composed global position, same as the
+			# focus took one going the other way.
+			_camera.reset_physics_interpolation()
 			_camera.position_smoothing_enabled = _camera_smoothing_when_free
 			_camera.reset_smoothing()
 		return
@@ -612,6 +623,9 @@ func _update_camera(delta: float) -> void:
 ## Puts the rig back on the doorstep at the start of a day, stopped and facing the street.
 func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	global_position = where
+	# Stops a one-tick slide from the old place: a day boundary (or a finale section's own
+	# restart) has no previous frame worth drawing a glide from.
+	reset_physics_interpolation()
 	velocity = Vector2.ZERO
 	facing = look.normalized()
 	_shove = Vector2.ZERO
@@ -630,6 +644,9 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 		_camera.offset = Vector2.ZERO
 		_camera.position_smoothing_enabled = _camera_smoothing_when_free
 		_camera.reset_smoothing()
+		# Same reset as her own, for the same reason: the camera has just been snapped back onto
+		# her rather than eased there, so there is no previous frame to draw a glide from either.
+		_camera.reset_physics_interpolation()
 	# A reset has no preceding turn to preserve, so choose `look` directly instead of applying the
 	# moving-view hold from whichever direction the last day happened to finish facing.
 	_view_direction = _nearest_view_direction()

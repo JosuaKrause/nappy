@@ -17,6 +17,11 @@ extends Node
 ## in which **zero** events ever come within reach: a twenty-second event planted across the city
 ## fires and finishes at dawn, unobserved, and the budget bought nothing. An event that waits for
 ## her is an event she meets.
+##
+## **This node owns no instance as a scene child.** Every `EventInstance` is added under `City`'s
+## shared, y-sorted `Entities` node (`City.add_entity()`) rather than under here, so
+## `EventInstance._ready()` opts itself out of physics interpolation rather than inheriting the
+## setting from this node.
 
 var _instances: Array[EventInstance] = []
 ## Today's whole plan, sited and unsited, spent and unspent. See `EventScheduler.Planned`.

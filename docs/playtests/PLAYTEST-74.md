@@ -21,3 +21,12 @@ half only the player can answer, and the screenshots came without a word on it. 
 2026-09-14 alongside the question the reading opens: whether the next probe is the physics tick
 that is not the crowd's, or the slower tick for off-screen agents that the crowd's own 5 to 10
 fps would pay for.
+
+## The physics tick, answered
+
+> "physics should be capped at 30fps at the least not 60"
+
+Said to the reading above, on 2026-09-14, to the finding that the physics tick is the larger
+half of what is left of the phone's frame and is not the crowd's. Filed as M141 in `TODO.md`.
+The felt half of playtest 73 and the choice between the two probes were not answered in words;
+the tick instruction is the answer to what to do next.
