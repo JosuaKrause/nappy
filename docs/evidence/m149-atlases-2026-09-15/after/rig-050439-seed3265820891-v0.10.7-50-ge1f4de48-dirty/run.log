@@ -1,0 +1,202 @@
+nappy rig log  2026-09-15T05:04:39  version v0.10.7-50-ge1f4de48-dirty
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/litter_apple.png read from disk in 0.4 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/litter_newspaper.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/litter_cup.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/litter_bag.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/litter_can.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/tree_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/tree_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/tree_pit.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/bollard.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/garbage_sack.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/garbage_sacks_pile.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_line_e.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_line_w.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_line_n.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_line_s.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/crossing_v.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/crossing_h.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_n.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_s.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_e.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_w.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/grass.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sand.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/alley.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/plaza.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/stoop.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/forest.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/quiet_square.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/courtyard.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/spoiled.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_main.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_main_line_e.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_main_line_w.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_main_line_n.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_main_line_s.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_n.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_s.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_e.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_w.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/precinct.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/water.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/bulkhead.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/fence.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/mountain.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/scree.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/crossing_main_n.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/crossing_main_s.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/crossing_main_w.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/crossing_main_e.png read from disk in 0.2 ms
+   0.0  texture  ground packed: 58 sources over 57 pictures into 2030x100 in 0.8 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/roof_duct_corner.png read from disk in 0.3 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/roof_hvac_unit.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/roof_water_tank.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/roof_hvac_unit_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/roof_duct_straight.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/roof_skylight.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/roof_vent_stack.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/roof_skylight_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/alley_draft.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/main_crosswalk.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/alley_base.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/main_edge_red.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_base.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_hairline_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/yellow_main_line.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/crosswalk.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_cracked_a.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/yellow_half_line.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_broken_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/grass_base.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_hairline_a.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_cracked_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/asphalt_base.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_hairline_a.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_cracked_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_hairline_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_broken_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/grass_feature_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_hairline_a.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_cracked_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_broken_a.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_hairline_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_broken_a.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_cracked_a.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_broken_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_cracked_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/grass_feature_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/grass_feature_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_broken_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/curbstone.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_front_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_side_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_front_diagonal_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_back_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_front_diagonal_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_back_diagonal_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_back_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_front_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_back_diagonal_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_back_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/pram_back.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_back_diagonal_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_side_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_back_diagonal_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_back_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_front_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_side_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_back_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/pram_back_diagonal.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_front_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_front_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_side_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_side_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_back_diagonal_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_front_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_back_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_side_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_front_diagonal_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/pram_side.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_front_diagonal_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/pram_front_diagonal.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_front_diagonal_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_back_diagonal_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/pram_front.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_front_diagonal_a.png read from disk in 0.2 ms
+   0.0  texture  atlas decoration ready: 12 pictures in 423x54, 340.4 ms from request (0.0 ms packed off the main thread)
+
+day 1  act 1  run seed 3265820891  city seed 3265820891  length 180.0s
+   0.0  texture  ground packed: 58 sources over 57 pictures into 2030x100 in 0.8 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 0]
+   0.0  texture  atlas crowd ready: 30 pictures in 823x48, 0.9 ms from request (0.0 ms packed off the main thread)
+   0.0  plan     closed: roadworks h(1,9)
+   0.0  plan     calm: 1 forest, 2 courtyard, 2 quiet_square, 3 park
+   0.0  plan     events: alley_mouse x4, burst_water_main x17, cafe_tables x56, car_accident x26, cat_dash x8, chatting_mother x2, delivery_van x69, dog_walker x22, homeless_yeller x8, leaf_blower x15, loose_dog x11, market_stall x52, moving_van x42, pigeon_flock x5, playground x3, scaffolding x23, skip x20
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  texture  atlas stroller ready: 35 pictures in 960x48, 1150.2 ms from request (0.0 ms packed off the main thread)
+   0.0  texture  atlas head_indicators ready: 5 pictures in 128x28, 1150.0 ms from request (0.0 ms packed off the main thread)
+   0.0  texture  atlas event/cafe ready: 11 pictures in 196x32, 294.5 ms from request (0.0 ms packed off the main thread)
+   0.0  texture  atlas event/mouse ready: 2 pictures in 51x16, 294.1 ms from request (0.0 ms packed off the main thread)
+   0.0  texture  atlas event/dog_walker ready: 20 pictures in 525x44, 294.1 ms from request (0.0 ms packed off the main thread)
+   0.0  texture  atlas event/delivery_van ready: 5 pictures in 234x52, 293.4 ms from request (0.0 ms packed off the main thread)
+   0.0  texture  atlas event/leaf_blower ready: 10 pictures in 351x44, 293.2 ms from request (0.0 ms packed off the main thread)
+   0.0  texture  atlas event/burst_main ready: 2 pictures in 253x202, 292.7 ms from request (0.0 ms packed off the main thread)
+   0.0  texture  atlas event/car_accident ready: 4 pictures in 505x202, 292.6 ms from request (0.0 ms packed off the main thread)
+   0.0  texture  atlas event/stall ready: 1 pictures in 28x38, 291.7 ms from request (0.0 ms packed off the main thread)
+   0.0  texture  atlas event/moving_van ready: 2 pictures in 103x58, 291.5 ms from request (0.0 ms packed off the main thread)
+   0.8  cross    stepped into the road at (80,86), mid-block
+   1.0  frame    fps 1, worst frame 277.3ms, draws 855, objects 2182, primitives 5066, process 20.31ms, physics 2.38ms
+   2.0  frame    fps 48, worst frame 25.5ms, draws 567, objects 1899, primitives 4356, process 24.60ms, physics 1.86ms
+   2.9  blocked  pressed 180° for 1.0s at (80,89) without moving
+   3.0  frame    fps 98, worst frame 24.1ms, draws 803, objects 2449, primitives 5506, process 25.49ms, physics 2.06ms
+   4.0  frame    fps 114, worst frame 24.1ms, draws 503, objects 1933, primitives 4526, process 24.10ms, physics 1.63ms
+   4.5  path     onto the corridor at (84,89), after 4.5s off it
+   5.0  frame    fps 113, worst frame 10.5ms, draws 596, objects 2151, primitives 4908, process 24.02ms, physics 2.24ms
+   5.2  cross    stepped into the road at (86,89), at a signalled crossing
+   5.3  crowd    a car sounded its horn at her in the road at (86,89) | exc 2, in 3.4/s (crowd 3.4, events 0.0), sleep 2
+   5.9  cue      the mark over her head: soon for 0.6s (0.6s of it on the road) | a car, and she is in the road
+   6.0  frame    fps 120, worst frame 24.4ms, draws 603, objects 2234, primitives 5125, process 10.50ms, physics 1.82ms
+   6.5  texture  atlas event/scaffolding ready: 1 pictures in 24x38, 1.2 ms from request (0.0 ms packed off the main thread)
+   7.0  frame    fps 81, worst frame 24.3ms, draws 511, objects 1923, primitives 4584, process 24.37ms, physics 2.18ms
+   7.8  texture  atlas event/skip ready: 1 pictures in 46x30, 1.2 ms from request (0.0 ms packed off the main thread)
+   8.0  frame    fps 88, worst frame 24.5ms, draws 506, objects 1869, primitives 4452, process 24.29ms, physics 1.86ms
+   9.0  frame    fps 109, worst frame 24.1ms, draws 498, objects 1858, primitives 4322, process 24.51ms, physics 2.01ms
+   9.5  near     leaf_blower at (104,89), 198px, exc 3, in 0.5/s (crowd 0.0, events 0.5), sleep 4
+  10.1  frame    fps 114, worst frame 13.3ms, draws 476, objects 1861, primitives 4061, process 24.07ms, physics 1.94ms
+  10.1  cross    stepped into the road at (100,89), at a zebra
+  10.5  near     leaf_blower at (104,89), 107px, exc 8, in 17.0/s (crowd 2.0, events 14.9), sleep 4
+  10.7  path     off the corridor at (102,89), after 6.2s on it
+  10.8  near     cafe_tables at (103,91), 64px, exc 11, in 14.4/s (crowd 0.2, events 14.1), sleep 4
+  11.0  near     leaf_blower at (104,89), 57px, exc 13, in 14.0/s (crowd 0.0, events 13.9), sleep 5
+  11.1  frame    fps 119, worst frame 24.5ms, draws 556, objects 2062, primitives 4439, process 13.30ms, physics 1.79ms
+  11.4  near     leaf_blower at (104,89), 31px, exc 15, in 8.5/s (crowd 0.0, events 8.4), sleep 5
+  11.4  near     delivery_van at (108,88), 148px, exc 15, in 7.8/s (crowd 0.0, events 7.8), sleep 5
+  12.1  frame    fps 111, worst frame 23.6ms, draws 555, objects 2010, primitives 4335, process 23.56ms, physics 2.39ms
+  12.5  blocked  pressed 90° for 1.0s at (104,89) without moving
+  13.1  frame    fps 119, worst frame 12.5ms, draws 557, objects 2017, primitives 4373, process 12.46ms, physics 1.72ms
+  14.1  frame    fps 116, worst frame 24.0ms, draws 555, objects 2016, primitives 4344, process 24.01ms, physics 1.99ms
+  14.5  freeze   sleep stopped filling | exc 35, in 17.6/s (crowd 0.0, events 17.5), sleep 6 | near: leaf_blower 25px
+  15.1  frame    fps 119, worst frame 14.4ms, draws 558, objects 2066, primitives 4468, process 12.40ms, physics 1.72ms
+  15.5  blocked  pressed 90° for 4.0s at (104,89) without moving
+  16.1  frame    fps 119, worst frame 13.9ms, draws 560, objects 2067, primitives 4497, process 12.39ms, physics 1.71ms
+  17.1  frame    fps 119, worst frame 13.8ms, draws 560, objects 2069, primitives 4501, process 13.74ms, physics 1.77ms
+  18.1  frame    fps 118, worst frame 12.3ms, draws 558, objects 2068, primitives 4472, process 12.24ms, physics 1.98ms
+  18.5  blocked  pressed 90° for 7.0s at (104,89) without moving
+  19.1  frame    fps 115, worst frame 23.9ms, draws 556, objects 2063, primitives 4438, process 23.86ms, physics 2.00ms
+  20.1  texture  atlas event/cafe released after 19716.9 ms drawn from
+  20.1  texture  atlas event/mouse released after 19716.9 ms drawn from
+  20.1  texture  atlas event/dog_walker released after 19716.9 ms drawn from
+  20.1  texture  atlas event/delivery_van released after 19716.8 ms drawn from
+  20.1  texture  atlas event/leaf_blower released after 19716.8 ms drawn from
+  20.1  texture  atlas event/burst_main released after 19716.8 ms drawn from
+  20.1  texture  atlas event/car_accident released after 19716.7 ms drawn from
+  20.1  texture  atlas event/stall released after 19716.7 ms drawn from
+  20.1  texture  atlas event/moving_van released after 19716.7 ms drawn from
+  20.1  texture  atlas event/scaffolding released after 13530.7 ms drawn from
+  20.1  texture  atlas event/skip released after 12263.8 ms drawn from
+  20.1  texture  atlas stroller released after 19717.8 ms drawn from
+  20.1  texture  atlas head_indicators released after 19717.7 ms drawn from
+  20.1  texture  atlas decoration released after 20914.9 ms drawn from

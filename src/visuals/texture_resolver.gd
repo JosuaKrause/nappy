@@ -33,8 +33,14 @@ static func resolve(texture: Texture2D) -> Texture2D:
 	var transfer_path := TRANSFER_ROOT + source_path.trim_prefix("res://assets/").trim_suffix(".svg") + ".png"
 	var replacement: Texture2D = texture
 	if ResourceLoader.exists(transfer_path):
+		var started := Time.get_ticks_usec()
 		var candidate := load(transfer_path) as Texture2D
 		_load_count += 1
+		# Where the load actually happens, which is the only place that can time it. A picture
+		# read here rather than during `warm()` is one that arrived late, and the clock on the
+		# line is what says which of the two it was.
+		Telemetry.note("texture", "transfer %s read from disk in %.1f ms"
+				% [transfer_path, (Time.get_ticks_usec() - started) / 1000.0])
 		if candidate != null and candidate.get_size() == texture.get_size():
 			replacement = candidate
 		elif candidate != null:

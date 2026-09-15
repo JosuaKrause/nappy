@@ -21,6 +21,22 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Walk a minute of day 1 on the laptop with `--debug --spikes`, on this build, and read the
+  run log back** (`tools/telemetry.sh`). Every picture is warm and every group is packed; the
+  log carries a `texture` line per picture loaded and per atlas made ready or released, with
+  milliseconds on each, so a spike that coincided with a pack says so on its own line. **Is the
+  once-a-second 24 ms frame still there, do the spike lines still name a cause, and is the
+  graph under the readout legible while walking?** *(2026-09-15: "and we can do another warm
+  test run".)* Record is `DECISIONS.md`, M149, atlases by group.
+- **Open the web build on the phone and walk a day.** Every atlas is under a 2048 px side and
+  every region is clipped, and the desktop shows no difference. **Does anything draw
+  differently — a neighbour's pixel bleeding into a sprite's edge, a ground tile on the wrong
+  cell, a mark over her head in the wrong place?** Same record.
+- **Start a run from the title, on the desktop and on the phone.** The city is hidden until
+  the camera is on her at the doorstep, so the two frames the picture warm-up awaits during
+  boot no longer draw the map's top-left corner. **Is the flash gone, and does the title screen
+  still show what it showed?** Record is `DECISIONS.md`, M151, the city stays hidden until the
+  camera is on her.
 - **Walk a minute of day 1 on the laptop with `--debug --spikes` and read the `spike` lines
   back.** Every picture is loaded before the day starts now and the halo's shader is compiled
   before play, and the laptop still draws a 24 to 26 ms frame every second at 85 to 91 fps
@@ -51,6 +67,13 @@ item below for as long as looking takes.
   between that guides without being read as a hint?** And where a costly thing stands on the
   route with its amber caret up, does the yellow curbstone read as part of the warning? Record
   is `DECISIONS.md`, M145, the route's curbs.
+- **Turn on `5` on seed 2128084176, day 1, and follow every purple line with your eyes.** The
+  tree grows on a graph with no carriageway cell but the junctions' and none of the main
+  road's, and the doorstep connector is drawn along the street now rather than as a straight
+  hop. **Does any route line still cross a carriageway anywhere but at a crossing, or run on
+  the main road?** And walking one route end to end: is there a line through it that never
+  costs, and where it breaks, what stands in the way — the probe says a leaf blower most often.
+  Record is `DECISIONS.md`, M129, the four rules.
 - **Cross a region door on foot, from day 7** (`--day 7`; a door is the hut-boom-hut across a
   boundary street). The boom hangs between its posts across the lanes, level with the huts; the
   inspection starts as soon as she stands against the hut; the camera eases from where it was

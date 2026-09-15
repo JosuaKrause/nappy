@@ -1,0 +1,80 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+
+== M129: the zero-cost line, 6 seeds x one day per act [1, 5, 9, 13] ==
+
+-- 24 days planned, 427.2 placed rows a day that a line has to avoid --
+
+-- routes with a zero-cost line: pacing rows only where their beat never opens (the primary reading) --
+   act 1   39 of  88   44.3%
+   act 2   23 of  88   26.1%
+   act 3   19 of  73   26.0%
+   act 4    9 of  49   18.4%
+   all     90 of 298   30.2%
+
+-- routes with a zero-cost line: pacing rows over their whole beat --
+   act 1   27 of  88   30.7%
+   act 2   12 of  88   13.6%
+   act 3   12 of  73   16.4%
+   act 4    5 of  49   10.2%
+   all     56 of 298   18.8%
+
+-- routes with a zero-cost line: primary, the day's own catalogue rows only (no seals or region wall) --
+   act 1   39 of  88   44.3%
+   act 2   23 of  88   26.1%
+   act 3   21 of  73   28.8%
+   act 4   17 of  49   34.7%
+   all    100 of 298   33.6%
+
+-- what broke the line (primary reading) --
+   routes = the first cut a walk out of the door runs into; cuts = every stretch on
+   every broken route, which is what a rule would have to cover.
+   routes   cuts  shape
+        0      8  a body on one pavement, the far pavement also taken
+        0      9  a pacing row whose beat never leaves an opening
+       19     41  one row covering the street's whole width by itself
+        e.g. seed 129129 day 5 area (8, 3) route 0: street (0, 4, 1) (north-south) closed end to end by [leaf_blower]
+        e.g. seed 129129 day 5 area (9, 9) route 0: street (0, 4, 1) (north-south) closed end to end by [leaf_blower]
+        e.g. seed 129129 day 5 area (9, 6) route 0: street (0, 4, 1) (north-south) closed end to end by [leaf_blower]
+      128    241  the junction itself is taken
+        e.g. seed 129129 day 1 area (9, 1) route 0: street (7, 6, 0) (east-west): the crossing is covered by [cafe_tables, leaf_blower, homeless_yeller]
+        e.g. seed 129129 day 1 area (8, 3) route 0: street (7, 8, 0) (east-west): the crossing is covered by [leaf_blower, cafe_tables, delivery_van, homeless_yeller, market_stall]
+        e.g. seed 129129 day 1 area (6, 1) route 1: street (7, 6, 0) (east-west): the crossing is covered by [cafe_tables, leaf_blower, homeless_yeller]
+       42    136  the cut is not a straight band across one street
+        e.g. seed 129129 day 1 area (1, 1) route 0: street (4, 2, 1) (north-south), held by [leaf_blower, cafe_tables], none of which closes that street on its own
+        e.g. seed 129129 day 1 area (9, 1) route 1: street (4, 2, 1) (north-south), held by [leaf_blower, cafe_tables], none of which closes that street on its own
+        e.g. seed 129129 day 1 area (6, 1) route 0: street (4, 2, 1) (north-south), held by [leaf_blower, cafe_tables], none of which closes that street on its own
+       19     35  other
+        e.g. seed 129129 day 13 area (9, 9) route 1: street (5, 6, 0) (east-west) closed end to end by [roadblock, leaf_blower] (both on the same pavement)
+        e.g. seed 129129 day 13 area (1, 1) route 0: street (5, 6, 0) (east-west) closed end to end by [roadblock, leaf_blower] (both on the same pavement)
+        e.g. seed 129226 day 5 area (8, 9) route 0: street (9, 5, 1) (north-south) closed end to end by [busker, market_stall] (both on the same pavement)
+
+-- how much of a route is blocked (primary reading, 208 broken routes) --
+   separate stretches to clear before a line exists: 2.3 on average, 12 at worst
+   the rows standing in those stretches, by how many routes they break:
+      156  leaf_blower (intensity 20.0 over 200px, body 11px)
+      154  cafe_tables (intensity 12.0 over 64px, body 24px)
+      102  market_stall (intensity 14.0 over 64px, body 28px)
+      102  poster_crew (intensity 5.0 over 110px, body 11px)
+      100  homeless_yeller (intensity 14.0 over 210px, body 0px, paces)
+      90   roadblock (intensity 13.0 over 179px, body 60px)
+      88   delivery_van (intensity 0.0 over 150px, body 22px)
+      80   busker (intensity 19.3 over 190px, body 11px)
+      67   construction (intensity 0.0 over 200px, body 32px)
+      36   alley_robbery (intensity 16.0 over 200px, body 0px)
+      35   ice_cream_van (intensity 13.0 over 240px, body 24px)
+      21   reversing_lorry (intensity 16.0 over 175px, body 28px)
+
+-- the grower's own mid-block crossings --
+   routes with at least one cell on a carriageway between junctions: 258
+   complete mid-block crossings (pavement -> road -> far pavement): 871
+      on ORDINARY streets: 871
+      on MAIN streets: 0
+      on PEDESTRIAN streets: 0
+   routes with any cell on the spine at all: 161
+
+-- 30.7s --
+-- m129_zero_cost_line.gd       30806 ms
+
+1 checks, 0 failures
+PARTIAL RUN — only suites matching probes/m129_zero_cost_line.gd. Not a green build.

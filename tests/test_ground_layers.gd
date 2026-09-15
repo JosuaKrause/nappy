@@ -17,6 +17,7 @@ func run(t) -> void:
 	_test_composed_sources_keep_ids_and_visible_detail(t)
 	_test_svg_override_and_repaint_source_are_idempotent(t)
 	_test_route_kerb_twin_tints_the_stone_alone(t)
+	_test_every_source_shares_one_texture_and_keeps_its_tiles(t)
 
 func _test_transparent_pixels_leave_the_base_unchanged(t) -> void:
 	var base := Image.create(4, 4, false, Image.FORMAT_RGBA8)
@@ -166,16 +167,18 @@ func _test_composed_sources_keep_ids_and_visible_detail(t) -> void:
 	var curbed := composed.get_source(8) as TileSetAtlasSource
 	var base_image := SIDEWALK_BASE.get_image()
 	var detail_image := CURBSTONE.get_image()
-	var curbed_image := curbed.texture.get_image()
+	var curbed_image := _tile_image(curbed, Vector2i.ZERO)
 	t.check(composed.get_source(8) == curbed and composed.get_source(39) != null,
 			"compositing preserves every authored source ID used by GroundTiles")
 	t.check(curbed_image.get_size() == GroundLayers.TILE_SIZE,
 			"a composed ground source remains one native 32px tile")
+	# Asked of the source's own tiles rather than of its texture's width: every source is packed
+	# into one shared texture, so a width is the whole ground's and says nothing about this source.
 	var grass := composed.get_source(GroundLayers.GRASS_SOURCE_ID) as TileSetAtlasSource
-	t.check(grass.texture.get_width() == GroundLayers.TILE_SIZE.x * GroundLayers.GRASS_VARIANTS,
+	t.check(grass.has_tile(Vector2i(GroundLayers.GRASS_VARIANTS - 1, 0)),
 			"PNG ground mode installs the sparse grass variation atlas")
 	var forest := composed.get_source(GroundLayers.FOREST_SOURCE_ID) as TileSetAtlasSource
-	t.check(forest.texture.get_width() == GroundLayers.TILE_SIZE.x * GroundLayers.GRASS_VARIANTS,
+	t.check(forest.has_tile(Vector2i(GroundLayers.GRASS_VARIANTS - 1, 0)),
 			"PNG ground mode gives forest the same sparse grass variation atlas")
 	var visible := false
 	for y in GroundLayers.TILE_SIZE.y:
@@ -192,13 +195,12 @@ func _test_composed_sources_keep_ids_and_visible_detail(t) -> void:
 	var source_types: Dictionary = manifest.get("source_damage_types", {})
 	for source_id in [40, 46, 52]:
 		var damage := composed.get_source(source_id) as TileSetAtlasSource
-		var damage_image := damage.texture.get_image() if damage and damage.texture else null
-		t.check(damage_image != null and damage_image.get_width() == GroundLayers.TILE_SIZE.x * GroundLayers.DAMAGE_VARIANTS,
+		t.check(damage != null and damage.has_tile(Vector2i(GroundLayers.DAMAGE_VARIANTS - 1, 0)),
 				"damage source %d receives a six-cell shared-stencil atlas" % source_id)
 		for variant in GroundLayers.DAMAGE_VARIANTS:
 			t.check(damage.has_tile(Vector2i(variant, 0)),
 					"damage source %d exposes atlas cell %d to TileMapLayer" % [source_id, variant])
-		if damage_image == null:
+		if damage == null:
 			continue
 		var base_name: String = str(source_bases.get(str(source_id), ""))
 		var base_path: String = "res://assets/illustrated/svg-transfer/tiles/layers/%s_base.png" % base_name
@@ -207,7 +209,8 @@ func _test_composed_sources_keep_ids_and_visible_detail(t) -> void:
 		for variant in GroundLayers.DAMAGE_VARIANTS:
 			var overlay_path: String = "res://assets/illustrated/svg-transfer/tiles/layers/%s" % _components_filename(manifest, str(pool[variant]))
 			var overlay_texture: Texture2D = load(overlay_path) as Texture2D
-			_check_damage_base_pixels(t, damage_image, base_texture.get_image(), overlay_texture.get_image(), source_id, variant)
+			_check_damage_base_pixels(t, _tile_image(damage, Vector2i(variant, 0)),
+					base_texture.get_image(), overlay_texture.get_image(), source_id, variant)
 
 func _test_damage_atlas_selection_is_stable_and_shared(t) -> void:
 	TextureResolver.reset_for_tests(false)
@@ -228,26 +231,113 @@ func _test_damage_atlas_selection_is_stable_and_shared(t) -> void:
 	t.check(seen.size() > 1, "nearby damage cells use more than one shared stencil variation")
 	TextureResolver.reset_for_tests(DevFlags.svg_requested())
 
+## One tile's own pixels, wherever the packing pass put its source's picture in the shared
+## texture. `get_tile_texture_region()` is the engine's own answer to "where does cell (x,y) of
+## this source live", built from `margins`, `texture_region_size` and `separation` — so reading
+## through it is also what checks that the margin the pack wrote actually lands each coordinate on
+## its own tile.
+func _tile_image(source: TileSetAtlasSource, coords: Vector2i) -> Image:
+	return source.texture.get_image().get_region(source.get_tile_texture_region(coords))
+
+## The authored raster at `path`, converted the way the packing pass converts everything, so a
+## pixel comparison is against what was blitted rather than against a format that disagrees on
+## channel layout.
+func _authored_pixels(path: String) -> PackedByteArray:
+	var texture: Texture2D = load(path)
+	var image := texture.get_image().duplicate()
+	if image.get_format() != Image.FORMAT_RGBA8:
+		image.convert(Image.FORMAT_RGBA8)
+	return image.get_data()
+
+## The ground is one image source at draw time, in both presentation modes, and every tile
+## coordinate still lands on its own tile: the margin moved and `texture_region_size` and
+## `separation` did not. *(Playtest 76: "it is good to have everything built into atlases so the
+## composite doesn't have to deal with multiple image sources.")*
+##
+## Each source's cell (0,0) is checked against the picture it had before the pack, which is the
+## pixel-for-pixel half — an unpacked build of the same TileSet is the reference, since the
+## composition that fed it differs by mode and by manifest.
+func _test_every_source_shares_one_texture_and_keeps_its_tiles(t) -> void:
+	for svg in [false, true]:
+		TextureResolver.reset_for_tests(svg)
+		var label := "forced SVG rasters" if svg else "default PNG transfers"
+		var packed := GroundLayers.build_tile_set(AUTHORED_GROUND)
+		var reference := _unpacked_tile_set(svg)
+		var shared: Texture2D = null
+		var seen := 0
+		for index in packed.get_source_count():
+			var id := packed.get_source_id(index)
+			var source := packed.get_source(id) as TileSetAtlasSource
+			var before := reference.get_source(id) as TileSetAtlasSource
+			if source == null or source.texture == null or before == null:
+				continue
+			seen += 1
+			if shared == null:
+				shared = source.texture
+			t.check(source.texture == shared,
+					"%s: source %d draws from the one shared ground texture" % [label, id])
+			t.check(source.texture_region_size == before.texture_region_size,
+					"%s: source %d keeps its authored tile size (%s against %s)"
+					% [label, id, source.texture_region_size, before.texture_region_size])
+			t.check(source.separation == before.separation,
+					"%s: source %d keeps its authored separation" % [label, id])
+			t.check(source.get_tiles_count() == before.get_tiles_count(),
+					"%s: source %d keeps every tile it had (%d against %d)"
+					% [label, id, source.get_tiles_count(), before.get_tiles_count()])
+			for tile in before.get_tiles_count():
+				var coords := before.get_tile_id(tile)
+				t.check(source.has_tile(coords),
+						"%s: source %d still has cell %s" % [label, id, coords])
+				if not source.has_tile(coords):
+					continue
+				t.check(_tile_image(source, coords).get_data()
+						== _tile_image(before, coords).get_data(),
+						"%s: source %d cell %s is the same picture it was before the pack"
+						% [label, id, coords])
+		t.check(seen > 20, "%s: there were sources to ask about (%d)" % [label, seen])
+		t.check(shared != null and Vector2i(shared.get_size()).x <= TextureAtlas.MAX_ATLAS_SIDE
+				and Vector2i(shared.get_size()).y <= TextureAtlas.MAX_ATLAS_SIDE,
+				"%s: the ground fits the %dpx phone-safe side (%s)"
+				% [label, TextureAtlas.MAX_ATLAS_SIDE, shared.get_size() if shared else Vector2.ZERO])
+	TextureResolver.reset_for_tests(DevFlags.svg_requested())
+
+## The same TileSet `build_tile_set()` would return with the packing pass left off — the
+## reference every "unchanged by the pack" comparison above is made against.
+func _unpacked_tile_set(svg: bool) -> TileSet:
+	var result := AUTHORED_GROUND.duplicate(true) as TileSet
+	for index in result.get_source_count():
+		var source := result.get_source(result.get_source_id(index)) as TileSetAtlasSource
+		if source != null:
+			source.texture = TextureResolver.resolve(source.texture)
+	if not svg:
+		GroundLayers._compose_layers(result)
+	return result
+
 func _components_filename(manifest: Dictionary, component: String) -> String:
 	var components: Dictionary = manifest.get("components", {})
 	return str(components.get(component, ""))
 
-func _check_damage_base_pixels(t, atlas: Image, base: Image, overlay: Image, source_id: int,
+func _check_damage_base_pixels(t, cell: Image, base: Image, overlay: Image, source_id: int,
 		variant: int) -> void:
 	for y in GroundLayers.TILE_SIZE.y:
 		for x in GroundLayers.TILE_SIZE.x:
 			if overlay.get_pixel(x, y).a <= 0.01:
-				t.check(atlas.get_pixel(x + variant * GroundLayers.TILE_SIZE.x, y) == base.get_pixel(x, y),
+				t.check(cell.get_pixel(x, y) == base.get_pixel(x, y),
 						"damage atlas %d cell %d preserves its semantic base outside the stencil at %s" % [source_id, variant, Vector2i(x, y)])
 
 func _test_svg_override_and_repaint_source_are_idempotent(t) -> void:
 	TextureResolver.reset_for_tests(true)
 	var svg := GroundLayers.build_tile_set(AUTHORED_GROUND)
+	# Asserted against the authored raster's own pixels rather than against a `resource_path`:
+	# every source is packed into one shared `ImageTexture`, which has no path, and the picture
+	# is the thing the override is actually about.
 	var svg_curb := svg.get_source(8) as TileSetAtlasSource
-	t.check(svg_curb.texture.resource_path.ends_with("assets/tiles/sidewalk_kerb_n.svg"),
+	t.check(_tile_image(svg_curb, Vector2i.ZERO).get_data()
+			== _authored_pixels("res://assets/tiles/sidewalk_kerb_n.svg"),
 			"the SVG override retains the authored ground source without a PNG composite")
 	var svg_damage := svg.get_source(40) as TileSetAtlasSource
-	t.check(svg_damage.texture.resource_path.ends_with("assets/tiles/road_cracked_hairline_a.svg"),
+	t.check(_tile_image(svg_damage, Vector2i.ZERO).get_data()
+			== _authored_pixels("res://assets/tiles/road_cracked_hairline_a.svg"),
 			"the SVG override keeps the authored damage source instead of a shared PNG atlas")
 	TextureResolver.reset_for_tests(false)
 	var first := GroundLayers.build_tile_set(AUTHORED_GROUND)
@@ -262,6 +352,12 @@ func _test_svg_override_and_repaint_source_are_idempotent(t) -> void:
 ## beside it. Checked against `GroundTiles.SIDEWALK_KERB_N` in each mode, since its plain source's
 ## own image is what both `CURBSTONE` (PNG) and the authored SVG (SVG) put the stone in a known
 ## place: rows 0-2 of `curbstone.png` and `y=0 height=2` of `assets/tiles/sidewalk_kerb_n.svg`.
+## A source's own first tile as an image. After `GroundLayers.pack_into_one_texture()` every
+## source's `texture` is the shared sheet, so a pixel read from the texture's origin is some other
+## source's pixel; the source's tile region, which carries its `margins`, is the picture it owns.
+static func _own_tile_image(source: TileSetAtlasSource) -> Image:
+	return source.texture.get_image().get_region(source.get_tile_texture_region(Vector2i.ZERO))
+
 func _test_route_kerb_twin_tints_the_stone_alone(t) -> void:
 	var tint := Palette.ROUTE_KERB_TINT
 	var source_id := GroundTiles.SIDEWALK_KERB_N
@@ -270,10 +366,10 @@ func _test_route_kerb_twin_tints_the_stone_alone(t) -> void:
 
 	TextureResolver.reset_for_tests(false)
 	var png_set := GroundLayers.build_tile_set(AUTHORED_GROUND)
-	var plain_png := (png_set.get_source(source_id) as TileSetAtlasSource).texture.get_image()
+	var plain_png := _own_tile_image(png_set.get_source(source_id) as TileSetAtlasSource)
 	var twin_png_source := png_set.get_source(twin_id) as TileSetAtlasSource
 	t.check(twin_png_source != null, "PNG mode registers the north kerb's route twin")
-	var twin_png := twin_png_source.texture.get_image()
+	var twin_png := _own_tile_image(twin_png_source)
 	var detail := CURBSTONE.get_image()
 	var stone_checked := false
 	var paving_checked := false
@@ -294,10 +390,10 @@ func _test_route_kerb_twin_tints_the_stone_alone(t) -> void:
 
 	TextureResolver.reset_for_tests(true)
 	var svg_set := GroundLayers.build_tile_set(AUTHORED_GROUND)
-	var plain_svg := (svg_set.get_source(source_id) as TileSetAtlasSource).texture.get_image()
+	var plain_svg := _own_tile_image(svg_set.get_source(source_id) as TileSetAtlasSource)
 	var twin_svg_source := svg_set.get_source(twin_id) as TileSetAtlasSource
 	t.check(twin_svg_source != null, "SVG mode registers the north kerb's route twin")
-	var twin_svg := twin_svg_source.texture.get_image()
+	var twin_svg := _own_tile_image(twin_svg_source)
 	# `sidewalk_kerb_n.svg` fills `y=0 width=32 height=2` with the stone; row 20 is well inside the
 	# paving the two internal slab-joint lines (`y=15`, `y=16..32` verticals) leave alone.
 	var stone_plain := plain_svg.get_pixel(5, 0)

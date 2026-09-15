@@ -6,6 +6,11 @@ extends RefCounted
 ## textures for the compatibility renderer's batcher to break on. *(Playtest 72: "I can see lag
 ## only if the crowd is being drawn though.")*
 ##
+## The packing itself is `TextureAtlas`'s, under the group name `ATLAS_NAME`; what lives here is
+## the crowd's own shape on top of it — a dictionary of dictionaries in, the same dictionary of
+## dictionaries out with `AtlasTexture` values, which is what `CrowdAgent._draw_body()` indexes
+## by group and view.
+##
 ## Built once, lazily, on first use rather than at parse time — the atlas has to be packed
 ## **after** the presentation mode is known, and `TextureResolver`'s own first call is what fixes
 ## that mode, so packing at load time could pack the wrong half of the SVG/PNG choice. Every
@@ -13,6 +18,11 @@ extends RefCounted
 ## transfer is what gets packed by default and `--svg`/`?svg=1` packs the SVG rasters instead; the
 ## picture on screen cannot change by a pixel either way, since the atlas only relocates whichever
 ## raster the resolver already chose.
+##
+## **This one waits for its own blit rather than falling back to the sources while it runs**,
+## which is the one thing it does differently from every other `TextureAtlas` user: `pack()`'s
+## contract is that its caller can index the result straight away, and `CrowdAgent` asks for it
+## from inside `_draw_body()`, where there is no earlier moment at which to have asked.
 ##
 ## `pack()` builds from whatever `sources` its first caller supplies and **ignores the argument on
 ## every later call** until `reset_for_tests()` clears it — the same "read once" shape
@@ -22,14 +32,14 @@ extends RefCounted
 ## across cases has to call `reset_for_tests()` between them or it is reading the first case's
 ## atlas.
 
+## The group name the crowd's pictures are packed under in `TextureAtlas`.
+const ATLAS_NAME := "crowd"
 ## The safe upper bound for one canvas texture's side on a phone.
-const MAX_ATLAS_SIDE := 2048
+const MAX_ATLAS_SIDE := TextureAtlas.MAX_ATLAS_SIDE
 ## The margin kept between two packed images, and between the atlas edge and its first shelf, so
 ## bilinear filtering at a region's own edge never samples a neighbour's pixel.
-const PADDING := 1
+const PADDING := TextureAtlas.PADDING
 
-static var _built := false
-static var _atlas_texture: ImageTexture
 static var _result: Dictionary = {}
 
 ## Packs every dictionary in `sources` (an arbitrary group name -> {view name: Texture2D}) into
@@ -37,7 +47,7 @@ static var _result: Dictionary = {}
 ## values are dictionaries of the same shape as the inputs but with `AtlasTexture` values over the
 ## shared atlas. See the class doc for why a later call's own `sources` argument is ignored.
 static func pack(sources: Dictionary) -> Dictionary:
-	if not _built:
+	if _result.is_empty():
 		_build(sources)
 	return _result
 
@@ -46,67 +56,27 @@ static func pack(sources: Dictionary) -> Dictionary:
 ## presentation mode, since a suite that toggles `--svg` mid-run otherwise keeps drawing through
 ## whichever mode's atlas was built first.
 static func reset_for_tests() -> void:
-	_built = false
-	_atlas_texture = null
+	TextureAtlas.release(ATLAS_NAME)
 	_result = {}
 
+## The one flat key a group/view pair is packed under. `TextureAtlas` indexes by whatever its
+## caller hands it and the crowd's index is a pair, so the pair is spelled out here rather than
+## the packer being taught about nesting it has no other user for.
+static func _key(group: String, view: Variant) -> String:
+	return "%s|%s" % [group, view]
+
 static func _build(sources: Dictionary) -> void:
-	# One flat list of [group, view, Image] so the shelf layout below does not have to know the
-	# dictionary-of-dictionaries shape at all; tallest first, so a shelf's own height is set by the
-	# first image placed on it and never grows once later, shorter images are added beside it.
-	var placements: Array = []
+	var flat: Dictionary = {}
 	for group: String in sources.keys():
 		var views: Dictionary = sources[group]
 		for view in views.keys():
-			var texture: Texture2D = TextureResolver.resolve(views[view])
-			var image := texture.get_image()
-			image = image.duplicate()
-			if image.get_format() != Image.FORMAT_RGBA8:
-				image.convert(Image.FORMAT_RGBA8)
-			placements.append([group, view, image])
-	placements.sort_custom(func(a, b): return a[2].get_height() > b[2].get_height())
-
-	var regions: Array[Rect2i] = []
-	var shelf_x := PADDING
-	var shelf_y := PADDING
-	var shelf_height := 0
-	var atlas_width := 0
-	for placement in placements:
-		var image: Image = placement[2]
-		var w := image.get_width()
-		var h := image.get_height()
-		if shelf_x + w + PADDING > MAX_ATLAS_SIDE:
-			shelf_y += shelf_height + PADDING
-			shelf_x = PADDING
-			shelf_height = 0
-		regions.append(Rect2i(shelf_x, shelf_y, w, h))
-		atlas_width = maxi(atlas_width, shelf_x + w)
-		shelf_x += w + PADDING
-		shelf_height = maxi(shelf_height, h)
-	var atlas_height := shelf_y + shelf_height + PADDING
-	atlas_width += PADDING
-
-	assert(atlas_width <= MAX_ATLAS_SIDE and atlas_height <= MAX_ATLAS_SIDE,
-			"crowd atlas is %dx%d, over the %dpx phone-safe canvas side"
-			% [atlas_width, atlas_height, MAX_ATLAS_SIDE])
-
-	var atlas_image := Image.create(atlas_width, atlas_height, false, Image.FORMAT_RGBA8)
-	for i in placements.size():
-		var image: Image = placements[i][2]
-		atlas_image.blit_rect(image, Rect2i(Vector2i.ZERO, image.get_size()), regions[i].position)
-	_atlas_texture = ImageTexture.create_from_image(atlas_image)
-
+			flat[_key(group, view)] = views[view]
+	TextureAtlas.request(ATLAS_NAME, flat)
+	TextureAtlas.collect(ATLAS_NAME, true)
 	_result = {}
-	for i in placements.size():
-		var group: String = placements[i][0]
-		var view = placements[i][1]
-		if not _result.has(group):
-			_result[group] = {}
-		var atlas_texture := AtlasTexture.new()
-		atlas_texture.atlas = _atlas_texture
-		atlas_texture.region = Rect2(regions[i])
-		# So a neighbour's pixel is never sampled across a region's own edge under bilinear
-		# filtering — see `PADDING`.
-		atlas_texture.filter_clip = true
-		_result[group][view] = atlas_texture
-	_built = true
+	for group: String in sources.keys():
+		var views: Dictionary = sources[group]
+		var packed: Dictionary = {}
+		for view in views.keys():
+			packed[view] = TextureAtlas.texture_for(ATLAS_NAME, _key(group, view), views[view])
+		_result[group] = packed

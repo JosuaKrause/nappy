@@ -71,6 +71,8 @@ var _segment_depth := {}
 var _sites: Array[Vector3i] = []
 ## The streets between two adjacent strands of corridor, as a set. See `RouteTree.gaps()`.
 var _gaps := {}
+## The junctions today's routes cross. See `RouteTree.junctions()` and `route_junctions()`.
+var _junctions: Array[Vector2i] = []
 
 ## The corridor of a tree. An empty tree gives a corridor that answers `AWAY` everywhere, which
 ## is the right answer rather than a special case: a day with no reachable calm has no route for
@@ -90,7 +92,19 @@ static func of(tree: RouteTree) -> Corridor:
 	corridor._sites = tree.covering_sites()
 	for key in tree.gaps():
 		corridor._gaps[key] = true
+	corridor._junctions = tree.junctions()
 	return corridor
+
+## The junctions today's routes cross — `RouteTree.junctions()`, carried here because every
+## placement decision is stated against a `Corridor` rather than against the tree itself.
+##
+## It is a list of **junction coordinates** rather than a question about a tile, which is the one
+## place this class answers in the tree's own units: the rule stated over it
+## (`EventScheduler._leaves_the_route_junctions_open`) is about a whole junction **box** staying
+## crossable, and a box is six tiles square. A per-tile answer would say *this tile is in a route
+## junction* and could not say *that crossing is still open*, which is the whole question.
+func route_junctions() -> Array[Vector2i]:
+	return _junctions
 
 ## The streets a set piece is placed on: every route touches one of them.
 ##

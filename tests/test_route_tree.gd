@@ -50,6 +50,7 @@ func run(t) -> void:
 	_test_a_route_is_a_walk_from_the_calm_to_the_door(t)
 	_test_the_tree_only_uses_streets_that_are_there(t)
 	_test_no_route_runs_along_the_main_road(t)
+	_test_a_route_crosses_a_carriageway_only_at_a_junction(t)
 	_test_the_two_routes_of_one_area_share_no_cell(t)
 	_test_a_tile_says_which_branches_it_carries(t)
 	_test_different_areas_share_ground(t)
@@ -133,14 +134,20 @@ func _test_the_tree_only_uses_streets_that_are_there(t) -> void:
 					% [planned.map.seed_used, planned.day])
 
 ## *(2026-09-03, playtest 22: "a path should never go alongside the main road — main road by
-## itself can be considered a blocker — paths can only cross the main road".)* Restated
-## independently of `RouteTree._runs_along_the_spine` rather than calling it, for the reason
+## itself can be considered a blocker — paths can only cross the main road"; 2026-09-14, the
+## player: "why not just remove the street tiles and main street blocks from the graph entirely?")*
+##
+## The spine is out of the graph the growth walks, everywhere but at a junction — so the claim is
+## no longer *no two consecutive cells step along it* but the stronger and simpler *no route cell
+## stands on it at all unless it is inside a junction box*, which is where crossing is legal and
+## where a zebra or a signalled line stands.
+##
+## **Restated independently of `RouteTree`'s own filter rather than calling it**, for the reason
 ## `_home_nodes` above is restated rather than exposed: a check that shares the rule's own code
-## cannot catch the rule being wrong. Every route is a chain of adjacent cells
-## (`_test_a_route_is_a_walk_from_the_calm_to_the_door` establishes that); this asks whether any
-## two consecutive cells of one are a **y-step inside the main road's own x-band** — a step along
-## the spine's length rather than across its width — checked against `CityMap.street_kind_at`
-## directly rather than against anything `RouteTree` computed.
+## cannot catch the rule being wrong. Which corridor is the main road and which tiles are a
+## junction box are asked of `CityMap.street_kind_at` and `CityMap.junction_at` directly, and every
+## tile of a route's cell is asked rather than its origin alone, so a cell half on the spine could
+## not slip through.
 func _test_no_route_runs_along_the_main_road(t) -> void:
 	var on_the_spine := 0
 	for planned in _days:
@@ -149,22 +156,69 @@ func _test_no_route_runs_along_the_main_road(t) -> void:
 		for branch in planned.tree.branches:
 			for route: Array in branch.routes:
 				for cell: Vector2i in route:
-					if planned.map.street_kind_at(true, cell * ReachabilityGrid.CELL) \
-							== GameEnums.StreetKind.MAIN:
+					for offset in _CELL_TILE_OFFSETS:
+						var tile: Vector2i = cell * ReachabilityGrid.CELL + offset
+						if planned.map.street_kind_at(true, tile) != GameEnums.StreetKind.MAIN:
+							continue
 						on_the_spine += 1
-				for i in range(1, route.size()):
-					var a: Vector2i = route[i - 1]
-					var b: Vector2i = route[i]
-					if a.x != b.x:
-						continue   # an x-step: crossing the spine's width, never refused
-					var both_on_spine := planned.map.street_kind_at(true, a * ReachabilityGrid.CELL) \
-							== GameEnums.StreetKind.MAIN
-					t.check(not both_on_spine,
-							("seed %d day %d: %s's route does not run along the main road " +
-							"(%s -> %s)") % [planned.map.seed_used, planned.day, branch.area, a, b])
+						t.check(CityMap.junction_at(tile) != Vector2i(-1, -1),
+								("seed %d day %d: %s's route stands on the main road only where " +
+								"it crosses at a junction (%s)")
+								% [planned.map.seed_used, planned.day, branch.area, tile])
 	# Not a lower bound to defend — crossing is luck, the same as an alley (see RouteTree's own
 	# doc, "It stays luck"). Reported so a run of zero is visible rather than silently unchecked.
-	t.check(on_the_spine >= 0, "%d route cells crossed the main road" % on_the_spine)
+	t.check(on_the_spine >= 0, "%d route tiles stood on the main road's own corridor" % on_the_spine)
+
+## **A route crosses a carriageway only at a junction.** *(2026-09-13, PLAYTEST-69: "the routing
+## should only cross the street at intersections. in block crossings are possible in game but
+## shouldn't be counted on by the routing algorithm"; 2026-09-14, the player: "why not just remove
+## the street tiles and main street blocks from the graph entirely?")*
+##
+## **What is asserted is the ground, not the crossing**, which is how the rule is stated: a cell on
+## a carriageway between two junctions is out of the graph the growth walks, so a route that never
+## stands on one cannot cross mid-block whatever order its cells are in. Asking about the ground
+## also catches the thing a crossing check would miss — a route running *along* a carriageway,
+## which is worse than one crossing it.
+##
+## The carriageway is read off the tile's own type as well as its offset, because a four-block calm
+## zone paints grass over the street between its blocks and those tiles sit at a road offset while
+## being somewhere she walks; a precinct has no carriageway at all. Both are ground the corridor is
+## meant to be able to take.
+##
+## **It cannot pass vacuously**: a sample whose routes never went near a street would satisfy it
+## having checked nothing, so the tiles actually examined are counted and asserted.
+func _test_a_route_crosses_a_carriageway_only_at_a_junction(t) -> void:
+	var street_tiles := 0
+	var on_a_carriageway := 0
+	var first := ""
+	for planned in _days:
+		for branch in planned.tree.branches:
+			for route: Array in branch.routes:
+				for cell: Vector2i in route:
+					for offset in _CELL_TILE_OFFSETS:
+						var tile: Vector2i = cell * ReachabilityGrid.CELL + offset
+						var segment := StreetNetwork.segment_containing(tile)
+						if not segment:
+							continue   # a junction box, or ground off the lattice
+						street_tiles += 1
+						var across := CityMap.corridor_offset(
+								tile.y if segment.horizontal else tile.x)
+						if not CityMap.is_road_offset(across):
+							continue
+						var type := planned.map.tile_at(tile)
+						if type != GameEnums.TileType.ROAD \
+								and type != GameEnums.TileType.CROSSING:
+							continue   # a calm zone's absorbed street, which is grass
+						on_a_carriageway += 1
+						if first == "":
+							first = "seed %d day %d, %s, tile %s on street %s" \
+									% [planned.map.seed_used, planned.day, branch.area, tile,
+									segment.key()]
+	t.check(street_tiles > 500,
+			"the days sampled run their routes down streets at all (%d tiles)" % street_tiles)
+	t.check(on_a_carriageway == 0,
+			"and no route cell stands on a carriageway between two junctions (%d does%s)"
+			% [on_a_carriageway, "" if first == "" else ": " + first])
 
 ## **Same colours may not merge.** The two probes from one area can never become one path, so
 ## where a second route exists at all the area is reached two genuinely distinct ways. This is

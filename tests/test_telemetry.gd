@@ -54,6 +54,7 @@ func run(t) -> void:
 	_test_two_spikes_in_one_second_write_only_the_worse_one(t)
 	_test_no_spike_line_with_the_flag_off(t)
 	_test_a_late_picture_load_names_itself_in_the_spike_line(t)
+	_test_an_atlas_says_when_it_arrived_and_when_it_went(t)
 
 # ------------------------------------------------------------------ dormancy ---
 
@@ -1334,6 +1335,44 @@ func _test_a_late_picture_load_names_itself_in_the_spike_line(t) -> void:
 	observer._city.free()
 	observer.free()
 	TextureResolver.reset_for_tests(DevFlags.svg_requested())
+
+## An atlas is a load and a release the run log has to be able to answer for. *(2026-09-15:
+## "make sure telemetry records when a texture is loaded/unloaded" — "atlas or not" — "ideally
+## with timing information".)* Without a line each way, a run where a group arrived a second late
+## reads exactly like one where it was ready before the first draw.
+##
+## Filtered to the lines naming this group rather than counting every `texture` line: resolving
+## the two sources may itself read a transfer from disk, which is a `texture` line of its own and
+## is the other half of what the kind is for.
+func _test_an_atlas_says_when_it_arrived_and_when_it_went(t) -> void:
+	Telemetry.begin_memory_log()
+	TextureAtlas.reset_for_tests()
+	TextureAtlas.request("test_group", {Prop.BOLLARD: Prop.BOLLARD, Prop.SACK: Prop.SACK})
+	TextureAtlas.collect("test_group", true)
+	TextureAtlas.release("test_group")
+	var ready_lines: Array[String] = []
+	var released_lines: Array[String] = []
+	for line: String in Telemetry.current_log().lines:
+		if not line.contains("atlas test_group"):
+			continue
+		if line.contains("released"):
+			released_lines.append(line)
+		else:
+			ready_lines.append(line)
+	Telemetry.end_run()
+	TextureAtlas.reset_for_tests()
+
+	t.check(ready_lines.size() == 1, "collecting a group writes exactly one texture line (got %d)"
+			% ready_lines.size())
+	t.check(released_lines.size() == 1, "and releasing it writes exactly one (got %d)"
+			% released_lines.size())
+	for line in ready_lines + released_lines:
+		t.check(line.substr(6, 2) == "  " and line.contains("texture"),
+				"the atlas line is an ordinary texture entry (got '%s')" % line)
+		t.check(line.contains(" ms"), "and carries a millisecond figure (got '%s')" % line)
+	for line in ready_lines:
+		t.check(line.contains("2 pictures"),
+				"the ready line says how many pictures the group holds (got '%s')" % line)
 
 # ------------------------------------------------------------------ helpers ---
 

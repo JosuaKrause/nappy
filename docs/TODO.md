@@ -320,259 +320,30 @@ such numbers — three columns of which one is a measurement. Every phone readin
 
 ---
 
-## M149 — Atlases by group, loaded before they are drawn · asked for 2026-09-14, confirmed 2026-09-15
+## M129 — A path through the city never has to cost · the four rules built 2026-09-14, one question open
 
-> "pack together graphics into atlases and load/unload atlases in a clever way so it happens
-> while the things that will get drawn haven't been drawn yet … all head indicators should be
-> in one atlas and loaded together … at least all 8 directions of an entity should be in one
-> atlas. since entities spawn off screen their graphics can be loaded before they will be
-> visible"
+> "a path through the city must never hit excitement -- so all obstacles should be routable
+> around … the routing should only cross the street at intersections"
 
-> "M149 yes, especially for things like parks with grass features or damage patterns / garbage
-> in the street it is good to have everything built into atlases so the composite doesn't have
-> to deal with multiple image sources. same for 8 directions of entities."
+[PLAYTEST-69](playtests/PLAYTEST-69.md), [PLAYTEST-71](playtests/PLAYTEST-71.md),
+[PLAYTEST-75](playtests/PLAYTEST-75.md). The four rules are built and recorded
+(`DECISIONS.md`, M129, the four rules): a route's junctions stay clear, no single standing row
+takes a route street's whole width, a pacing row leaves the line open for part of its beat,
+and the tree grows on a graph with no carriageway cell but the junctions' and no main-road
+cell at all. The probe now finds a zero-cost line along a third of routes (100 of 296) where
+it found one along a sixth, and no route crosses a carriageway mid-block or touches the spine
+outside a junction. **The guarantee is still not true for two routes in three**, and the
+biggest remaining cause is a design decision, not a defect, so it waits on the player:
 
-[PLAYTEST-75](playtests/PLAYTEST-75.md) and [PLAYTEST-76](playtests/PLAYTEST-76.md). The
-**illustrated-png** rule governs `src/visuals/`; the **crowd-traffic** rule governs
-`CrowdAtlas`; the **events** and **godot** rules govern the rest. The reason is the composite,
-not a late load: every entity picture is a `preload`ed import on its script, resident from boot
-(`DECISIONS.md`, M147, every picture loaded before it is needed), so no atlas here moves a load
-that still happens. What a group's atlas buys is one image source per group at draw time —
-the shape `CrowdAtlas` already gives the crowd (`DECISIONS.md`, M139, one atlas for the crowd):
-one `ImageTexture` on a shelf layout, `AtlasTexture` regions with `filter_clip`, packed from
-whatever raster `TextureResolver.resolve()` chose so the picture cannot change by a pixel in
-either presentation mode.
-
-**The groups.** Her family: the mother's five view sets in both rigs, walking and carrying,
-three frames each, and the pram's five views — everything `Stroller` draws of her. The head
-indicators: `alert`, `alert_close`, `baby_zzz`, `baby_fuss` and `baby_cry`, the five marks that
-ride over her and the pram; the caret and the tildes are `Sprites.draw_caret` primitives with
-no texture, so there is nothing of them to pack. Each event family in `EventInstance`'s tables
-— every view and stride frame of the yeller, the van victim, the robber waiting and lunging,
-the unmarked van, the busker, the cat, the mouse, the person and the rest — one atlas per
-family, the family being the set of textures one `EventDef` can draw. The ground: every
-`TileSetAtlasSource` `GroundLayers.build_tile_set()` composes — the sidewalk and road bases with
-their kerb components, the eight grass variants with their features, the six damage variants
-per damage source, the route kerb twins — in one texture. The street's decoration: the five
-litter decals, the tree pit, the garbage sack and its pile, the bollard, the two park trees and
-the swing frame — what `CityDecals` and `Prop` draw. The crowd's atlas stays as it is.
-Buildings and the interior are not in this milestone: neither is an eight-direction family
-and neither is a composite, and their canvases are the ones most likely to break the 2048 px
-side; if one of them is wanted it is a later item with its own measurement.
-
-**Loading.** An atlas is requested when its first user is placed and released when its last
-user is gone. Her family, the indicators, the ground and the decoration are requested when the
-city is built, before the first day is drawn. An event family is requested when the scheduler
-places the first instance of that family, which is off screen by construction (M77, everything
-arrives from off screen), and released when its last instance retires. Until an atlas is
-ready, its users draw the source textures they draw today, so nothing ever waits on a picture
-or draws a missing one; once ready, the same call returns the atlas region. The packing runs
-off the main thread: the source images are read on the main thread at request time
-(`Texture2D.get_image()` talks to the renderer), the blitting runs as a `WorkerThreadPool`
-task, and the `ImageTexture` is created on the main thread when the task's result is
-collected — the **godot** rule's line between what a thread may touch and what it may not.
-Releasing drops the atlas texture; the `preload`ed sources stay resident, since a `preload`
-holds them for the script's life. Turning the source tables into lazy loads so that a released
-family's memory actually goes is the step after this one, recorded as open, and not taken
-here because the phone reading says memory is not the phone's cost today (`DECISIONS.md`,
-M139, the phone reading). Offline atlases — PNG sheets packed by a tool and loaded with
-`ResourceLoader.load_threaded_request` — were considered and not taken: they would need an SVG
-twin for `--svg` mode and a manifest per family, and they buy nothing while the sources are
-resident anyway.
-
-- [ ] **`TextureAtlas`, the packer, in `src/visuals/texture_atlas.gd`.** `CrowdAtlas`'s shelf
-      packer lifted into a general one: `request(name: String, sources: Dictionary)` takes a
-      dictionary of key to `Texture2D` (keys are whatever the caller indexes by — a view name,
-      a frame index, a tile source id), resolves each through `TextureResolver.resolve()`,
-      reads the images on the main thread, packs on a `WorkerThreadPool` task with one pixel of
-      padding, tallest first, and asserts against the 2048 px side; `collect()` on the main
-      thread creates the `ImageTexture` when the task is done, and `texture_for(name, key)`
-      returns the `AtlasTexture` once ready and the source texture before. `release(name)`
-      drops the atlas. `CrowdAtlas` becomes a user of it with its API and its suite unchanged.
-      The new suite in `tests/test_texture_atlas.gd`: every region inside the atlas, none
-      overlapping, each region's pixels equal to its source's, the fallback answering the
-      source before `collect()` and the region after, `release()` answering the source again,
-      the 2048 assertion firing on a set that cannot fit, in both presentation modes.
-- [ ] **Every texture load and release is a line in the run log, with its time.**
-      *(2026-09-15: "make sure telemetry records when a texture is loaded/unloaded" — "atlas
-      or not" — "ideally with timing information".)* One kind, `texture`, in `docs/TELEMETRY.md`'s
-      table, noted at the place the load happens and nowhere else: `TextureResolver.resolve()`
-      when it reads a transfer from disk (the path and the milliseconds the read took);
-      `TextureAtlas.collect()` when a group becomes ready (the group's name, its source count,
-      the atlas's pixel size, the milliseconds from `request()` to ready and how much of that
-      the worker took); `TextureAtlas.release()` when a group is dropped (the name and how long
-      it was held); and `GroundLayers.build_tile_set()` when the ground's shared texture is
-      packed (the source count and the milliseconds). M147's warm-pass summary line stays. The
-      **telemetry** rule: no RNG, no per-frame check in a gameplay class, `Telemetry.note` where
-      the thing happens, and the line answers a question that is open — M149's own, whether a
-      picture arrived before it was drawn — so it belongs. The observer's `spike` context reads
-      the resolver's load count already; it reads the atlas count the same way, so a spike frame
-      that collected an atlas says so. The telemetry suite's check: a rig that requests and
-      collects one group writes one `texture` line for the collect and one for the release, each
-      with a millisecond figure, and the fourteen-day determinism check still plans identical
-      days with the log on and off.
-- [ ] **Her family and the head indicators.** `Stroller` requests both at `_ready()` and draws
-      through `texture_for`: the mother's sets, the pram's views and the five marks. The gait
-      loop, the mirroring, the alert height and the flash are untouched — the **illustrated-png**
-      rule: resolve textures only. The existing stroller view suites pin the authored views
-      through the atlas; a check that after `collect()` every texture `_mother_texture()`
-      returns is an `AtlasTexture` of her family's atlas.
-- [ ] **One atlas per event family.** `EventInstance`'s tables grouped by family — the agent
-      names the grouping in the commit; the test is that one `EventDef` never draws from two
-      families — and `EventScheduler` requests a family's atlas when it places the first
-      instance of it and releases it when the last retires; `EventManager` or the scheduler
-      keeps the count, whichever already knows the live instances. The check in the events
-      suite: a rig day that places one family asks for exactly that atlas, draws it from the
-      atlas once collected, and releases it when the day retires the instance.
-- [ ] **The ground as one texture.** After `build_tile_set()` has composed every source, pack
-      every `TileSetAtlasSource`'s texture into one `ImageTexture` and point each source at it
-      through `margins` — the region's offset — with `texture_region_size` and `separation`
-      unchanged, so every tile coordinate the painter uses still lands on its own tile. This
-      one runs synchronously inside `build_tile_set()`, which already runs before the first
-      day beside M147's warm pass; its cost is measured and goes in the commit message, and if
-      it is over the warm pass's own it moves to the worker. The ground suite asserts one
-      texture across every source and each tile's pixels unchanged, in both modes.
-- [ ] **The street's decoration in one atlas.** The litter decals, the tree pit, the sack, the
-      pile, the bollard, the trees and the swing frame, requested when `City` builds and drawn
-      by `CityDecals` and `Prop` through `texture_for`; the shadow, the y-sort, the ground shape
-      and the feet anchor untouched. The check: after `collect()` every decal and prop texture
-      is a region of that one atlas.
-- [ ] **Measurement, evidence and the review.** The desktop table's walk (`tools/shot.sh
-      out.png 20 --seed 3265820891 --day 1 --walk 3s17e`, draws as the mean of the run log's
-      `frame` entries from two seconds in) before and after, in the same table as M139's; one
-      still of a street with litter, sacks and a park in view, no burst; the run folders under
-      `evidence/m149-atlases-2026-09-15/`. `docs/VISUALS.md`'s replacement contract says the
-      atlases relocate the resolved raster and change no picture; `docs/ARCHITECTURE.md` gets
-      `texture_atlas.gd`. `REVIEW.md`, in the same PR: the laptop's warm run again — `--debug
-      --spikes` for a minute of day 1 on this build, the same three questions the M144, M147
-      and M148 items ask — *(2026-09-15: "and we can do another warm test run")* — and on the
-      phone whether anything drew differently.
-
----
-
-## M150 — The tint follows the pavement the route walks, not the whole street · asked for 2026-09-15
-
-> "why is the yellow tint on both sides? clearly the bottom path cannot be on any route."
-
-[PLAYTEST-76](playtests/PLAYTEST-76.md). The **city** rule governs; the tint's colour and
-alpha are M145's trial and unchanged here. What is true today: `City._tint_the_route_kerbs()`
-tints a kerb tile when `Corridor.of(_tree).depth(tile) == 0`, and `Corridor.depth()` answers
-through `StreetNetwork.segment_containing(tile)` at the grain of the whole street, so both
-pavements of every street on the tree are tinted — M145's entry chose that grain, and the
-still says it reads wrong: the far pavement is across a carriageway the route never crosses
-mid-block (M129, the fourth rule). The tree itself knows the side. It grows on the
-reachability grid's two-tile cells; a street's six tiles are a pavement cell, a road cell and
-a pavement cell; the mid-block road cells are off its graph; so `RouteTree.branches_on(tile)`
-is non-empty exactly on the pavement a route walks, and on junction cells, where no tile has
-a kerb (`GroundTiles._sidewalk_variant`).
-
-- [ ] **Tint a kerb tile only when the tree carries it.** In `_tint_the_route_kerbs()`,
-      `not _tree.branches_on(tile).is_empty()` in place of the corridor's depth; `Corridor`
-      untouched, since its street grain is what every placement rule is stated in. The routes
-      suite's tint check (`tests/test_routes.gd`, the one asserting the tinted cells are exactly
-      the kerb tiles at depth zero) becomes: exactly the kerb tiles the tree carries — and, the
-      new assertion, a street with both kerb lines tinted has tree cells on both its pavements.
-      `docs/CITY.md`'s tint sentences say the tint follows the tree's own pavement. Evidence:
-      M145's two stills again (`tools/shot.sh out.png 4 --seed 3265820891 --day 1 --walk 2s
-      --debug`, once with `--layers 5` so the purple line lies over the tint and once without),
-      under `evidence/m150-tint-route-side-2026-09-15/`. `REVIEW.md`'s M145 item gains the
-      question: is the tint on one pavement only now, and is it the one the purple line runs
-      along.
-
----
-
-## M151 — The map's top-left corner shows for a moment when a run starts · asked for 2026-09-15
-
-> "also, when starting the game I can briefly see the top left of the map"
-
-[PLAYTEST-76](playtests/PLAYTEST-76.md). The **godot** rule governs, its camera-smoothing
-traps above all. What is true today: `Main._ready()` builds the city and calls `_start_day()`,
-which places her with `Stroller.reset_at()` — her position set, the camera's position and
-offset zeroed, `reset_smoothing()` and `reset_physics_interpolation()` called — and the title
-screen stands over the world until a disc is pressed. The world's origin is the map's top-left,
-so any frame drawn before the camera has taken her position shows that corner. Which frame is
-not known: the first after `_ready()` before the camera's first scroll update, the title's own
-frame with the city drawn behind it, or the run's first frame after the disc.
-
-- [ ] **Find the frame, then make it hers.** A rig check in the main suite or a new one: boot
-      headless with the run started and assert on the first drawn frame that the camera's
-      `get_screen_center_position()` is within a tile of her position, and the same on the first
-      frame after the title's disc is pressed. Then the fix where the frame is: if
-      `reset_smoothing()` called before the camera's first scroll update is lost — a `Camera2D`
-      aligns on that update, so a reset before it enters the viewport does nothing — call
-      `force_update_scroll()` or the reset again once the camera is current, after the day's
-      placement; if the title's frame shows the city, the city is not drawn until the run
-      starts or the camera is placed on her before the title. The commit says which frame it
-      was and what was tried. Evidence: the check is the evidence, since the frame is earlier
-      than any screenshot the rig takes; a still only if the fix moved something visible.
-
----
-
-## M129 — A path through the city never has to cost · asked for 2026-09-13
-
-> "also framing from a different point of view a path through the city must never hit
-> excitement -- so all obstacles should be routable around by eg crossing to the other side of
-> the street which in turn means the other side of the street must be open enough so we can
-> walk on it unimpeded. a yeller must loop in a way that the desired path has an opening where
-> the yeller is not present for example. also, the routing should only cross the street at
-> intersections. in block crossings are possible in game but shouldn't be counted on by the
-> routing algorithm"
-
-[PLAYTEST-69](playtests/PLAYTEST-69.md). The **city** and **events** rules govern; the
-**balance** rule governs any number it moves.
-
-**What is true today.** The day's routes are a corridor of two-tile cells grown on the
-reachability grid (`DECISIONS.md`, M69); `ClosurePlanner` accepts a closure only if the home
-still reaches two calm areas, `EventScheduler._ensure_the_city_is_still_walkable` drops
-obstructing bodies, widest first, until a park is reachable, and a `hard_fail` row keeps its
-whole field clear of other events (`_room_around`). Every one of those is about *reaching*, and
-a route that reaches through three friction fields in a row is as legal as an empty one. Costly
-rows land inside the corridor on purpose (the `friction` role). **The reading is the player's**
-([PLAYTEST-71](playtests/PLAYTEST-71.md), the three readings): a pacing row is passed by timing,
-so only the ground its beat never leaves free counts as blocked — *"time pass -- don't route
-around them"*; a moving row never counts — *"the player can cross the street, wait, then come
-back without ever getting excited by it"*; a region door never counts — *"it costs by design"*;
-and a flock is scenery — *"flocks are basically free already -- don't count it as block"* — so
-`pigeon_flock` carries `EventDef.scenery` and is outside the cost rule's wall and friction
-placement altogether. **The guarantee is measured under that reading and is far from true**:
-`tests/probes/m129_zero_cost_line.gd`, run by name, finds a zero-cost line along about one
-route in six over a run, one in three on day 1 and one in twenty-five from act III; the
-numbers, the readings and the failing shapes are in `DECISIONS.md` under M129, the reading
-decided. The dominant break is a *covered junction* — the only legal crossing sits inside some
-row's reach — then a single row wide enough to take a street alone (the street is 192px kerb to
-kerb and most reaches are 179 to 240px; `leaf_blower` most often), then a cut no one row
-makes, then the yeller's beat. A body with the far pavement also taken is the rarest shape and
-two friction fields on facing pavements never occur, so the far-pavement rule the entry first
-drafted is not written. The corridor grower itself crosses a carriageway mid-block about three
-times per route, on ordinary streets and never on the spine.
-
-- [ ] **A route's junctions stay clear.** The junctions a route passes through, and the ones at
-      each end of each of its streets, are outside every counted row's reach: checked before a
-      row is placed, never repaired after (the city rule), so a row whose field would cover a
-      route junction is refused that ground. This is the shape that breaks most routes — more
-      than every other shape together — and no earlier item named it. Pursuers, `AHEAD_OF_PLAYER` and
-      `TOWARD_PLAYER` rows, city-wide rows, moving rows and doors are outside this — the first
-      three pay the telegraph contract, the last two are not blocks — and so is anything off
-      the corridor, where the wall role is the design. Re-run the probe after.
-- [ ] **No single standing row takes a route street's whole width.** A friction row that stands
-      or paces on a route's pavement is accepted only if its reach leaves the far pavement of
-      that street outside it for the stretch between the two nearest junctions; a row that
-      cannot — `busker`, `ice_cream_van` at today's reaches on a 192px street, and
-      `police_patrol` if it turns out to pace rather than travel — is refused corridor ground or
-      its reach on the corridor is the number the **balance** rule moves. Where the corridor
-      runs along a precinct, a park edge or an alley, say what "the other side" is there or
-      refuse the row that ground. Re-run the probe after.
-- [ ] **A pacing row leaves the line open for part of its beat.** This is the reading as well
-      as the rule, and the probe finds it broken only where a second row closes the beat's open
-      end: the yeller's route is sited and sized so that the pavement it paces is clear at one
-      end for a readable share of each loop, or its loop runs on the pavement the route does
-      not use, and no other row's reach covers that open end; the choice is measured with the
-      probe and the reach the line needs at the far end of its beat is the number. The same
-      for any other row that `paces`. Re-run the probe after.
-- [ ] **Mid-block crossings are not counted on.** The route tree's cells cross a carriageway
-      only at a junction; in play she may still cross anywhere. The probe finds the grower
-      crossing mid-block on most routes today, so this is a change to how the corridor is grown
-      on the reachability grid, and the probe's own mid-block count is its test.
+- [ ] **The wall exemption, and `leaf_blower` in particular.** Every rule exempts the `WALL`
+      role, since a wall is placed off the corridor by design — and `leaf_blower` is a wall
+      (its walk-through cost of 37.7 clears `Tuning.WALL_WORTH_OF_COST`, 35.0) with a 200 px
+      reach across a 192 px street, so it stands in a cut on 156 of the 196 routes still
+      broken. Two ways out, each the **balance** rule's: its reach comes under the street's
+      width, or the wall exemption narrows so a wall's field may not close a route junction
+      or a route street's width either. Which, or neither, is the player's call; the seals a
+      `SealPlanner` places before the scheduler runs are the other reach the rules never
+      see, and are the same question one step further out.
 
 ---
 

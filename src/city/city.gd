@@ -125,6 +125,10 @@ const DOOR_TEXTURE := preload("res://assets/props/door.svg")
 ## that lives in `start_day()`.
 func build(city_map: CityMap) -> void:
 	map = city_map
+	# The street's decoration, asked for before the first day is drawn. Until the pack is
+	# collected `CityDecals` and `Prop` draw the source pictures they draw today, so nothing here
+	# waits on it — see `TextureAtlas`.
+	TextureAtlas.request(CityDecals.DECORATION_ATLAS, CityDecals.decoration_sources())
 	_paint_ground()
 	# Buildings first: the door sits in the wall of the building above the notch, at exactly
 	# the same y. A y-sort tie is broken by tree order, so the door has to be added second
@@ -152,6 +156,13 @@ func build(city_map: CityMap) -> void:
 	add_child(_daylight)
 	set_daylight(1.0)
 	queue_redraw()
+
+## Hands the decoration atlas back. **A group whose packing task is never waited for is a task
+## the pool still holds at shutdown**, so the request in `build()` owes a release here —
+## `TextureAtlas.release()` is what waits for an outstanding blit. The event families are
+## `EventManager`'s own and are released by its own `_exit_tree()`.
+func _exit_tree() -> void:
+	TextureAtlas.release(CityDecals.DECORATION_ATLAS)
 
 ## Which act's cast the city is under. See Palette.act_tint.
 func set_act(act: int) -> void:
