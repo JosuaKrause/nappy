@@ -578,6 +578,12 @@ func _test_the_whole_hold_reads_as_one_move(t) -> void:
 	var stroller := _real_stroller(t)
 	manager._player = stroller
 	stroller._camera.make_current()
+	# docs/DECISIONS.md, M141, the physics tick at thirty: physics interpolation forces a
+	# Camera2D onto the physics tick, and its screen centre reads the interpolated transform —
+	# whose previous and current tick poses are never filled in a rig that runs no physics tick.
+	# `reset_physics_interpolation()` alone did not take without one; there is no tick here for it
+	# to matter to, so the camera opts out the same way an untouched `_process`-driven node does.
+	stroller._camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 
 	var axis := Vector2.RIGHT
 	var road := Vector2(5600.0, 5600.0)
