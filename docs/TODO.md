@@ -351,6 +351,80 @@ a kerb (`GroundTiles._sidewalk_variant`).
 
 ---
 
+## M152 — Cars teleport at their turns · asked for 2026-09-15
+
+> "cars are super buggy now. when they turn in the final stretch the teleport a car length
+> somewhere else. also in some case instead of routing a turn (or u turn) they just teleport."
+
+[PLAYTEST-76](playtests/PLAYTEST-76.md). The **crowd-traffic** rule governs. Seen on
+`v0.10.7-85-gd5d784f2` and not on the day before's builds, so it is one of the day's merges.
+The two that touch a car: **M146** (`DECISIONS.md`, a pocketed agent stands, then leaves
+unseen), which put `if _is_in_a_pocket(): if _out_of_view(): _recycle(); return` ahead of the
+step in `CrowdAgent._process` — a car in a turn returns before it, but a car that reaches a
+pocket now stands rather than pacing to the far seal, and is recycled once further than
+`Tuning.OUT_OF_SIGHT` from the field's centre, a distance measured against the viewport's far
+corner at play zoom; and **M149** (`DECISIONS.md`, atlases by group), which rebuilt
+`CrowdAtlas` on `TextureAtlas` with `"group|view"` keys — a drawing change, so it can move where
+a picture lands but not where a body is. A recycle is a teleport by construction, and the one
+place the design allows it is out of sight; a jump of a car length at a turn is either a
+recycle in sight, a turn path whose start or end is off its lane, or a picture drawn off its
+body.
+
+- [ ] **Bisect it with a probe before touching anything.** A probe under `tests/probes/`
+      runs a rig day on a few seeds with the crowd on and records, per physics frame, every
+      car's position and whether it is within the play viewport of the rig's camera; it
+      reports every frame-to-frame jump larger than twice the car's top speed times the frame,
+      with the car's state (turning, pocketed, recycled, give-way) and whether the jump was in
+      view. Run it at `main` and at the merge commits of the day in order — the base before
+      today, the commit PR 196 merged onto, then after M146 (PR 200), after M129 (PR 203), after M149 (PR 204)
+      — and name the merge that introduces the in-view jumps. Then the drawing: on the
+      merge that introduces it, if the positions are continuous, compare the car's drawn
+      picture per view before and after (`CrowdAtlas`'s regions against the source tables,
+      size and anchor, for all five car views and the trim) — a picture that is a different
+      size from its source moves the body it is drawn on by half the difference.
+- [ ] **Fix the cause where it is, checked before it acts.** If it is M146: a pocketed car in
+      sight must never recycle, and a car whose way is shut turns round or queues the way
+      M119's own turn-around test expects (`tests/test_crowd_closures.gd`), so the fix is in
+      which agents the pocket branch may recycle and when, never a nudge after the fact. If it
+      is the turn path: the curve's end must be the lane centre it was checked against. If it
+      is the atlas: the region's size and the draw anchor equal the source's, asserted in
+      `tests/test_crowd_atlas.gd` per view. Evidence: one burst on a rig aimed at a junction
+      where the probe saw the jump (`--seed` and `--day` from the probe, `--press
+      snapshot_burst 3`, `--invincible`), before and after, under
+      `evidence/m152-car-teleport-2026-09-15/`; the probe's output for every commit it ran
+      at. `REVIEW.md`, in the same PR: do the cars turn and U-turn on this build without a
+      jump, in the final stretch and at seals.
+
+---
+
+## M151 — The first frame draws the doorstep, not black · reopened 2026-09-15
+
+> "I don't really like blanking out the first frame. can we just position the camera to the
+> home so it will just draw what the title screen will show anyway"
+
+[PLAYTEST-76](playtests/PLAYTEST-76.md). What was built first is in `DECISIONS.md`, M151, the
+city stays hidden until the camera is on her: the two frames `Main._ready()` awaits inside
+`_warm_the_pictures()` come after the city is built and before her `Camera2D` exists, so they
+drew the world through the viewport's identity transform, and the fix hid the city for them.
+Overturned by the player: those frames should show what the title screen shows, the doorstep.
+The halo warm-up inside `_warm_the_halo_shader()` places its probe where the identity
+transform puts world origin on screen, so a camera before it moves that probe's ground too.
+
+- [ ] **A camera on the doorstep before the first await, and the city never hidden.** In
+      `_ready()`, before `await _warm_the_pictures()`, a plain `Camera2D` at the home's
+      doorstep — the same `start_at` `_start_day()` later hands `reset_at()`, with the play
+      zoom the stroller's camera uses — made current, so the two warm-up frames draw the
+      doorstep as the title will; freed the moment `_player`'s own camera is current, which
+      `reset_at()` makes true. `_city.visible = false` and its reveal go. The halo warm-up's
+      probe is placed relative to that camera's view rather than to world origin, and its own
+      doc says so. `tests/test_camera_start.gd` asserts instead that at the first suspension a
+      current camera exists whose screen centre is within a tile of the doorstep, and keeps its
+      two later checks; it fails on today's code on the first and passes after. The escape
+      sequence's boot (`_ready_escape()`) gets the same camera if it awaits the same way. No
+      still: the frame is earlier than the screenshot rig exists.
+
+---
+
 ## M129 — A path through the city never has to cost · the four rules built 2026-09-14, one question open
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable
