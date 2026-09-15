@@ -113,3 +113,20 @@ frame, once per distinct picture per run, and the halo's shader is built at the 
 Filed as M147 in `TODO.md`: every picture loaded before the day starts, and the spike line
 naming a late load when one happens. The atlas is recorded as the player's word for when
 draw calls are the cost; the phone reading says they are not yet.
+
+## The stutter branch on the laptop, with every picture warm
+
+> "hmm, burst/screenshots prevent spikes from happening"
+
+Said on 2026-09-14 of a run on the stutter branch (v0.10.7-37, the graph, the warm pass and
+the spike line all present; "86 pictures warmed in 233 ms" at boot), seed 3762731053, day 1,
+with two bursts pressed; the whole run is
+`evidence/playtest-75-desktop-stutter-2026-09-14/run-220628-seed3762731053-v0.10.7-37-gcf305c28/`.
+The log reads the bursts differently from the graph: while a burst records, every frame is 60
+to 76 ms and the second draws 33 to 47 fps, since the capture reads the viewport back each
+frame — so nothing in such a second is twice its mean and the graph colours no bar amber,
+while a frame past 33 ms is still red. Outside the bursts the seconds read 85 to 91 fps with
+a worst frame of 24 to 26 ms in every one of them, the same frame playtest 75 read on
+v0.10.6 — so with every picture loaded before the day, the laptop's once-a-second hitch is
+still there and the late loads were not it. Read in `DECISIONS.md`, M147, every picture
+loaded before it is needed.

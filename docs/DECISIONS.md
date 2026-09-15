@@ -41,6 +41,18 @@ rule never makes a candidate, so the field's proof is its test. A 74.5 ms spike 
 the warm run says "nothing else changed" — the hitch M138 and M144 describe is still there,
 just no longer joined by the late loads. The laptop's reading is the `REVIEW.md` item.
 
+**On the laptop, the hitch is still there with every picture warm.** *(2026-09-14, playtest 75,
+the stutter branch on the laptop.)* A run with "86 pictures warmed in 233 ms" at boot read 85
+to 91 fps with a worst frame of 24 to 26 ms in every second outside its bursts — the same
+frame v0.10.6 read — so the late loads were the headless rig's early spikes and not the
+laptop's once-a-second frame. What the same run also showed: a burst's per-frame readback
+makes every frame 60 to 76 ms, and in such a second no bar is twice the mean, so the graph's
+amber disappears under a burst while its red does not; the player read that as the burst
+preventing spikes. What is left for the hitch is what M138 listed minus the pictures: the
+present path between the engine and the driver (OpenGL on Metal), or something in the game
+on a cadence the `spike` line, run with `--spikes`, would catch as "nothing else changed" —
+which is exactly the line that would send the search to the driver side.
+
 **Choices made where the entry was silent, open to overturn.** The ground's own component PNGs
 are warmed too, harmlessly; a transfer with no loadable source is skipped with a warning
 rather than failing the boot; the escape boot prints its warm line alone since it has no
