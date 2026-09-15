@@ -352,6 +352,83 @@ which changes what the physics tick and the camera do per frame, may move it.
 
 ---
 
+## M146 — A pocketed agent stands, then leaves unseen · asked for 2026-09-14
+
+> "I get the remove entity when there is no route idea. maybe let's do instead stop the entity
+> if there is no way. and despawn once offscreen" — "it looks very weird otherwise"
+
+[PLAYTEST-75](playtests/PLAYTEST-75.md). The **crowd-traffic** rule governs. What is true
+today is `DECISIONS.md`, M119, the crowd with nowhere to go leaves: a pocket is ground today's
+seals have shut in (`CrowdPockets`, a junction with every arm held and the lane stubs sealed
+in with it), nobody is placed in one, and an agent a seal goes up around is recycled at the
+first frame it is further than `Tuning.OUT_OF_SIGHT` (420px) from the camera — *nothing
+vanishes while you are looking at it*. In view it paces: `_divert()` turns it at each seal,
+one stride between about-faces. The player keeps the leaving and takes out the pacing.
+
+- [ ] **In a pocket, an agent stands where the seal caught it.** In `CrowdAgent._process`,
+      the pocket question moves ahead of the step: while `_is_in_a_pocket()` holds and the
+      agent is in view, nothing below runs but the redraw — no along-step, no steering, no turn
+      at a corridor, no gait, no lookahead, no divert — so a walker stands on its standing
+      frame facing the way it was going and a car stops where it is; the make-way and bump
+      the crowd applies from outside are unchanged, since a standing body still has to get
+      out of her way. Out of view it is recycled as today. The pocket flood already refreshes
+      on every change to the day's holds, so an agent stops the frame the seal goes up and
+      walks on the frame a pocket opens (a `FALLEN_TREE` closure clearing, a door), with no
+      state to reset. M119's stride-limited about-face stays for a single seal on open ground.
+      `_test_a_pocket_empties_once_it_is_out_of_view` in `tests/test_crowd_closures.gd` gains
+      the standing half: while the view is on the sealed junction, every agent inside it keeps
+      its position within a pixel across the watched seconds, and the count still never falls;
+      the out-of-view half is unchanged. Any doc sentence that says a pocketed agent paces —
+      `docs/MECHANICS.md`, `docs/CITY.md`, the **crowd-traffic** skill; grep `paces` and
+      `pocket` — says it stands. Evidence: the rig's own burst if a sealed junction with agents
+      in it can be captured within budget the way `evidence/m119-crowd-pockets-2026-09-13/`
+      was (`--invincible`, a burst, not a still — this is motion, or its absence); the test is
+      the proof either way.
+
+---
+
+## M148 — A rolling graph of frame times on the readout · asked for 2026-09-14
+
+> "I would expect there to be an overlay that shows the last x frames of frame times in a
+> rolling window" — "hmm, I don't see a graph showing the history of the fps / spikes"
+
+[PLAYTEST-75](playtests/PLAYTEST-75.md). The **cues** rule governs `src/ui/`; this is a debug
+overlay, not a danger cue, but its colours come from the vocabulary rather than beside it.
+What is true today: the readout is text, its `process` and `physics` lines are the engine's
+per-second worst (`DECISIONS.md`, M138, what the readout's lines measure), `FrameCost.sample`
+keeps one second of those, and the observer keeps every frame's delta but writes only the
+worst per second (`frame`) and, under `--spikes`, the one outlier per second (M144). Nothing
+on screen shows the frames themselves, so a stutter is a number a second late rather than a
+bar where it happened.
+
+- [ ] **`FrameGraph`, the last frames' lengths as bars, under the readout.** A `Control` in
+      `src/ui/frame_graph.gd` on the readout's own `CanvasLayer` beside `_status`, gated exactly
+      as the readout is — assembled only while `_debug or _readout_requested` holds and shown
+      with `_layer_readout_on`, so `4` toggles both and a release page nobody asked `?debug=1`
+      of has neither. It keeps a ring of the last `FRAME_GRAPH_FRAMES` (240) frame deltas, fed
+      from `_process`'s own `delta` (the frame's actual length, not the engine's per-second
+      numbers), and redraws every frame it is visible: one bar per frame, one design pixel
+      wide, newest at the right, in a 240 by 48 design-pixel box, height scaled so 33.3 ms
+      reaches the top and anything longer clips; two thin reference lines at 16.7 and 33.3 ms
+      with a two-character label each; the window's mean as a thin line. A bar longer than
+      twice the window's mean is `Palette.MARK_COSTLY`, longer than 33.3 ms `Palette.MARK_LETHAL`,
+      the rest the readout's own text colour at half alpha — the vocabulary's two colours in
+      their own sense, *costly* and *the frame is gone*. Placed directly under the readout
+      block's last line, left-aligned with it; on a phone it must not cross the right focus
+      ring the readout already touches (`DECISIONS.md`, M139, the phone reading, "the readout
+      crosses the right focal ring") — if the block's bottom lands on the ring, the graph goes
+      above the block instead, and the commit says which. Costs nothing while off: no ring fed,
+      no redraw. A test in a new `tests/test_frame_graph.gd` feeds the ring by hand: after more
+      than 240 pushes only the last 240 remain, the mean is the window's, a frame past twice the
+      mean is classed costly and one past 33.3 ms lethal, and a hidden graph classes nothing.
+      `docs/TELEMETRY.md`'s "The debug view" says what `4` now shows and what the bars, lines
+      and colours mean; `README.md` where it names the readout. Evidence: one desktop still,
+      `tools/shot.sh out.png 4 --seed 3265820891 --day 1 --walk 3s --debug`, showing the graph
+      under the block; no burst. `REVIEW.md`, in the same PR: on the laptop, is the 24 ms frame
+      a visible bar most seconds, and does the graph fit and read on the phone.
+
+---
+
 ## M129 — A path through the city never has to cost · asked for 2026-09-13
 
 > "also framing from a different point of view a path through the city must never hit
@@ -789,19 +866,22 @@ re-pitched:
       same shape as the audio item's *breathing as the diegetic version of the meters*. Not
       designed, and it needs the playing that the status-line cut is about to produce
 - [ ] **`CrowdAgent` moves at frame rate; every rule about that movement is applied at physics
-      rate.** `src/crowd/crowd_agent.gd:701` is `_process(delta)` — frame rate — while everything
+      rate.** `src/crowd/crowd_agent.gd:751` is `_process(delta)` — frame rate — while everything
       that governs it (`space_out_the_traffic()`, `_hold_walkers_at_doors()`,
       `give_way_at_junctions()`, `_strike()`, `_horn()`, `_bump()`, `_make_way()`) is in
-      `src/crowd/crowd.gd:625`, `_physics_process(delta)` — fixed 60 Hz. Speeds are frame-rate
-      independent, so this is not a speed bug; what varies with the machine is the **decision
-      cadence relative to the motion** — how far a car travels between two applications of
-      "nothing enters a box it cannot leave." The verify skill records the windowed build drawing
-      ~110fps, so a desktop car covers roughly 1.8 movement steps per right-of-way pass, against
-      0.5 at 30fps: a headway or junction-capacity number set against `Crowd.step()` does not
-      reproduce on the player's own machine at the ratio it was measured at. **The audit's own
-      recommendation**: move `CrowdAgent._process` to `_physics_process`, which fixes the ratio at
-      1:1 everywhere, at the cost of re-measuring every crowd number and giving up
-      frame-rate-smooth motion for the agents — against leaving it as it is. Docs/evidence/
+      `src/crowd/crowd.gd:637`, `_physics_process(delta)` — the physics tick, thirty a second.
+      Speeds are frame-rate independent, so this is not a speed bug; what varies with the machine
+      is the **decision cadence relative to the motion** — how far a car travels between two
+      applications of "nothing enters a box it cannot leave." The verify skill records the
+      windowed build drawing ~110fps, so a desktop car covers roughly 3.7 movement steps per
+      right-of-way pass, against 1.0 at 30fps: a headway or junction-capacity number set against
+      `Crowd.step()` does not reproduce on the player's own machine at the ratio it was measured
+      at. **The audit's own recommendation**: move `CrowdAgent._process` to `_physics_process`,
+      which fixes the ratio at 1:1 everywhere, at the cost of re-measuring every crowd number and
+      giving up frame-rate-smooth motion for the agents — against leaving it as it is. That cost
+      is no longer frame-rate-smooth against a fixed sixty either: with the tick at thirty, moving
+      the agents onto it would draw the whole crowd at thirty frames a second, not merely decide
+      for it at that rate, which is a larger piece of the trade than it was. Docs/evidence/
       audit-2026-09-13/AUDIT.md, finding 3.1, has the full reasoning.
 
 ---

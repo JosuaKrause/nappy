@@ -20,6 +20,12 @@ real element type at the call site.
 **Some warnings are errors by default.** `var x := some_variant` ("the variable type is being
 inferred from a Variant value") fails the parse outright. Annotate instead: `var x: int = ...`.
 
+**And no warning the engine prints is left standing.** *(2026-09-14: "we don't want warnings --
+we want to do things properly".)* A warning at boot, in `check.sh`'s log or in a test run is fixed
+at its cause rather than read around: a `Camera2D` under physics interpolation wants
+`process_callback` set to physics in its scene, so the engine has nothing to override and nothing
+to say about it once a run.
+
 This does not show up until the project actually boots, which is why `check.sh` exists. The form
 that catches people is `var x := load(path).instantiate()`, because it reads as obviously typed and
 is not — and in a **test** it fails at load time, so the suite prints nothing at all and looks like

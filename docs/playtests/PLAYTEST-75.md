@@ -72,3 +72,39 @@ the guidance through obstacles, and not the way paths are meant to be shown.
 Said on 2026-09-14 to the first build, which tinted the whole kerb *tile* — the pavement's
 edge tile, paving and all — rather than the curbstone, the strip of stone along the tile's
 road-side edge. Re-opened as M145's correction in `TODO.md`.
+
+## A pocketed agent stands instead of pacing
+
+> "I get the remove entity when there is no route idea. maybe let's do instead stop the entity
+> if there is no way. and despawn once offscreen"
+> "it looks very weird otherwise"
+
+Said on 2026-09-14, on v0.10.7. What is built is M119, the crowd with nowhere to go leaves: an
+agent a seal goes up around is recycled at the first frame it is out of view, and in view it
+paces to the far seal and back, one stride between about-faces. The pacing is what looks
+weird. Filed as M146 in `TODO.md`: stand where the seal caught it, and leave unseen as today.
+
+## A route crossing the carriageway mid-block
+
+> "how is this path possible? the rule is to only allow crossing at crossings never across the
+> street"
+
+Said on 2026-09-14 to a v0.10.7 screenshot, seed 2128084176, day 1, with the route layer on:
+the purple route line runs down one pavement, jogs across the carriageway between two
+junctions and continues down the other. A re-report, closed from the older entry: M129, a
+path through the city never has to cost, carries the item *mid-block crossings are not
+counted on* — the route tree grows on the reachability grid's cells and crosses a carriageway
+mid-block about three times per route today, and the item is a change to how the corridor is
+grown, with the probe's own mid-block count as its test. Not yet built.
+
+## A rolling graph of frame times
+
+> "hmm, I don't see a graph showing the history of the fps / spikes"
+> "I would expect there to be an overlay that shows the last x frames of frame times in a
+> rolling window"
+> "not sure what you thought that would be"
+
+Said on 2026-09-14, on the `--spikes` branch. What "spike line" was built as is a line in the
+run log (M144); what the player meant by it was a graph on screen. Filed as M148 in
+`TODO.md`: an overlay under the readout drawing the last frames' own lengths as a rolling
+window, the spikes marked.
