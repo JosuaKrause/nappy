@@ -53,6 +53,7 @@ func run(t) -> void:
 	_test_steady_frames_write_no_spike_line(t)
 	_test_two_spikes_in_one_second_write_only_the_worse_one(t)
 	_test_no_spike_line_with_the_flag_off(t)
+	_test_a_late_picture_load_names_itself_in_the_spike_line(t)
 
 # ------------------------------------------------------------------ dormancy ---
 
@@ -1302,6 +1303,37 @@ func _test_no_spike_line_with_the_flag_off(t) -> void:
 	observer._player.free()
 	observer._city.free()
 	observer.free()
+
+## `TextureResolver.load_count()` is what M147's spike context reads, so this bumps the real
+## counter — `resolve()` on a texture whose PNG transfer exists, the same one `test_visuals.gd`
+## checks against — rather than adding a test-only setter to production code for a single call.
+func _test_a_late_picture_load_names_itself_in_the_spike_line(t) -> void:
+	Telemetry.begin_memory_log()
+	# After `_spike_rig()`, not before: building the real `City` scene resolves the whole tile set
+	# through `GroundLayers._replace_svg_transfers()`, which would otherwise leave `load_count()`
+	# already above zero before this test's own bump, and the exact-one-load assertion below false.
+	var observer := _spike_rig(t)
+	TextureResolver.reset_for_tests(false)
+	_feed_frames(observer, _steady_frames(10, 0.02))
+	var transfer_texture := TextureResolver.resolve(preload("res://assets/rig/mother_side_a.svg"))
+	t.check(transfer_texture != null and TextureResolver.load_count() == 1,
+			"the resolve call actually loaded one transfer before the spike frame")
+	_feed_frames(observer, [0.1])
+	_feed_frames(observer, _steady_frames(36, 0.02))
+
+	var spikes := _spike_lines(t)
+	t.check(spikes.size() == 1,
+			"the picture load lands inside the one spike line this second wrote (got %d)"
+			% spikes.size())
+	if not spikes.is_empty():
+		t.check(spikes[0].contains("1 pictures loaded"),
+				"the spike line names the transfer loaded since the previous frame (got '%s')"
+				% spikes[0])
+
+	observer._player.free()
+	observer._city.free()
+	observer.free()
+	TextureResolver.reset_for_tests(DevFlags.svg_requested())
 
 # ------------------------------------------------------------------ helpers ---
 

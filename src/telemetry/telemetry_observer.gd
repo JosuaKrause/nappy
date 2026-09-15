@@ -220,11 +220,12 @@ var _spike_delta := 0.0
 var _spike_mean := 0.0
 var _spike_what := ""
 
-# The previous frame's tile and live event count, so a spike's own context can say what changed
-# *that* frame rather than merely what the world looked like. Updated every frame `_spikes_on`
-# holds, spike or not — see `_watch_for_a_spike`.
+# The previous frame's tile, live event count and picture-load count, so a spike's own context
+# can say what changed *that* frame rather than merely what the world looked like. Updated every
+# frame `_spikes_on` holds, spike or not — see `_watch_for_a_spike`.
 var _spike_tile := Vector2i.ZERO
 var _spike_events := 0
+var _spike_pictures := 0
 
 # The cues. What was up over her head, since when, and how much of that she spent on the road;
 # and which edge badges are up, each with the clock reading it went up at.
@@ -283,6 +284,7 @@ func start_day() -> void:
 	_reset_the_spike_window()
 	_spike_tile = Vector2i.ZERO
 	_spike_events = 0
+	_spike_pictures = 0
 	_tree = RouteTree.for_day(_map, GameState.day)
 	_corridor = Corridor.of(_tree)
 	_path_time = {"on": 0.0, "off": 0.0, "away": 0.0}
@@ -394,29 +396,33 @@ func _watch_the_frame(delta: float) -> void:
 func _watch_for_a_spike(delta: float) -> void:
 	var tile := _map.world_to_tile(_player.global_position)
 	var events := _city.events.instances().size() if _city.events else 0
+	var pictures := TextureResolver.load_count()
 	if _frame_count > 0:
 		var mean: float = _frame_sum / _frame_count
 		if delta > 2.0 * mean and delta > _spike_delta:
 			_spike_delta = delta
 			_spike_mean = mean
-			_spike_what = _spike_context(tile, events)
+			_spike_what = _spike_context(tile, events, pictures)
 	_frame_sum += delta
 	_frame_count += 1
 	_spike_tile = tile
 	_spike_events = events
+	_spike_pictures = pictures
 
 ## What changed since the previous frame, read off state this observer already holds for other
 ## entries — `_map.world_to_tile` for `_watch_the_ground`'s own tile lookups, `_city.events` for
-## `_watch_what_is_near`'s scan — rather than a new per-frame hook on a gameplay class, which the
-## **telemetry** rule rules out. `"nothing else changed that frame"` is itself an answer: it says
-## the spike was not the game doing extra work, which is the other half of the question the
-## probe exists to ask.
-func _spike_context(tile: Vector2i, events: int) -> String:
+## `_watch_what_is_near`'s scan, `TextureResolver.load_count()` for the resolver's own static
+## counter — rather than a new per-frame hook on a gameplay class, which the **telemetry** rule
+## rules out. `"nothing else changed that frame"` is itself an answer: it says the spike was not
+## the game doing extra work, which is the other half of the question the probe exists to ask.
+func _spike_context(tile: Vector2i, events: int, pictures: int) -> String:
 	var changes: Array[String] = []
 	if tile != _spike_tile:
 		changes.append("her tile changed to %s" % TelemetryLog.tile(tile))
 	if events != _spike_events:
 		changes.append("live events %d -> %d" % [_spike_events, events])
+	if pictures != _spike_pictures:
+		changes.append("%d pictures loaded" % (pictures - _spike_pictures))
 	return ", ".join(changes) if not changes.is_empty() else "nothing else changed that frame"
 
 ## The per-second spike-candidate bookkeeping, cleared alongside `_frame_since`/`_frame_worst`
