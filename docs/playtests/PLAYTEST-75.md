@@ -43,3 +43,7 @@ at 119 fps, a second with no hitch in it. So the observer's log write is not the
 whatever is, it makes a frame of about 24 ms in most seconds and none in some. Read in
 `DECISIONS.md`, M138, what the readout's `process` and `physics` lines measure; the probe
 that would find it is M144 in `TODO.md`.
+
+> "spike line sounds good"
+
+Said to the M144 probe on 2026-09-14; it goes to an agent as filed.
