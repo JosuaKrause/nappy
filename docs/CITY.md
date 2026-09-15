@@ -701,6 +701,41 @@ goal into an artefact of how the two routes are found.
 route is an offer the day makes when the ground allows one. What must still hold absolutely is only
 that **some** calm is reachable.
 
+### The graph the corridor grows on is smaller than the city
+
+**The corridor is grown on `ReachabilityGrid` cells, and a cell knows nothing about kerbs.** Left to
+the bare grid it steps pavement → carriageway → far pavement in the middle of a street, which plans
+a route around a crossing the city never promised — *"the routing should only cross the street at
+intersections. in block crossings are possible in game but shouldn't be counted on by the routing
+algorithm."*
+
+So the growth walks a **smaller graph**, and the player named the shape of the fix: *"why not just
+remove the street tiles and main street blocks from the graph entirely?"* Two kinds of cell are out
+of it:
+
+- **a carriageway between two junctions**, so a route crosses a street only where crossing is legal;
+- **the main road anywhere but at a junction** — its pavements as much as its carriageway, since the
+  rule about the spine is that a route never goes *alongside* it. Crossing it at a junction is
+  untouched.
+
+**A junction box is kept whole**, all nine cells of it. The box is six tiles square and both the
+street width and the lattice period are even, so it is exactly three by three cells and no cell is
+half in it; keeping only the crosswalk cells would refuse the corner cells a route turning at that
+junction has to pass through.
+
+**It is a filter on the growth's own view and on nothing else.** `ReachabilityGrid` is untouched, so
+every guarantee stated over walkable ground — the two-calm-areas invariant, the day's walkability
+check, the corridor's own proximity field — still sees the city as the player can walk it. **It
+gates the plan, not the player**: she may cross anywhere, stand in the road, and take the spine's
+pavement if she wants to.
+
+**Nothing can be cut off by it, and the reason is the lattice rather than a repair.** A street's two
+pavements are joined through the junction boxes at both ends of it, so refusing the carriageway
+takes no ground out of reach. The spine is the one place where that argument needs its own fallback,
+and it already had one: `RouteTree`'s trunk search puts the main road back when the doorstep has no
+other way out at all, because a tree that is not joined to the home is worse than a trunk on a bad
+street.
+
 ### A route's junctions stay clear
 
 **A junction is the only place a line along a route may change from one pavement to the other**, so
@@ -1087,9 +1122,10 @@ always tree ground — the fact `SealPlanner` already reads to refuse a seal. Wi
 street that join landed on was whatever a branch's own random walk happened to reach home through,
 and on a bad roll every street the home led to could be off-tree and sealed at once.
 
-**The main road is exempt too, and a route never runs along it in the first place.** `RouteTree`
-refuses to grow a strand along the spine's own length — she may still cross it wherever she likes,
-which is unchanged and unrestricted — so the main road is off every day's tree by construction.
+**The main road is exempt too, and a route never runs along it in the first place.** The spine's own
+cells are out of the graph `RouteTree` grows on everywhere but at a junction — she may still cross
+it wherever she likes, which is unchanged and unrestricted — so the main road is off every day's
+tree by construction.
 Sealing it as well would wall the one street the design deliberately leaves open, so `SealPlanner`
 refuses it outright rather than treating "off the tree" as reason enough. It is already the worst
 ground in the game to stand on (0.35× decay against an ordinary street's 1.0), which is why making

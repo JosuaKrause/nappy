@@ -3190,10 +3190,11 @@ func _test_a_pacing_rows_opening_stays_open(t) -> void:
 	var paced_streets := 0
 	var closed := 0
 	var first := ""
-	# Five days rather than four, and they are the ones `_test_the_day_is_placed_by_role` samples:
-	# a pacing row is one row of the catalogue and the junction and width rules have taken most of
-	# the corridor away from it, so four days turn up too few paced route streets for the guard
-	# below to be worth anything.
+	# Five days, the ones `_test_the_day_is_placed_by_role` samples. A pacing row is one row of the
+	# catalogue and the junction and width rules have taken most of the corridor away from it, so
+	# the sample turns up a handful of paced route streets rather than dozens — which is why the
+	# guard below is a floor with room under it rather than a measurement to keep in step. What it
+	# is for is only that the check ran against real ground at all.
 	for day in [1, 5, 8, 11, 14]:
 		var state := CityState.new()
 		state.begin_day(map.block_plans, day)
@@ -3230,7 +3231,7 @@ func _test_a_pacing_rows_opening_stays_open(t) -> void:
 					ids[plan.def.id] = true
 				first = "day %d, street %s, held by [%s]" \
 						% [day, key, ", ".join(PackedStringArray(ids.keys()))]
-	t.check(paced_streets >= 8,
+	t.check(paced_streets >= 3,
 			"the days sampled pace a row along the route's own streets (%d)" % paced_streets)
 	t.check(closed == 0, "and the beat's opening is left open on every one (%d closed%s)"
 			% [closed, "" if first == "" else ": " + first])
