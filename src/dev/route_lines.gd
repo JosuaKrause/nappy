@@ -46,11 +46,15 @@ extends Node2D
 ## (301 routes), the cell a route actually meets home at is never closer than 2 reachability cells
 ## from the doorstep's own cell. Drawing from the fixed doorstep tile regardless is what matches
 ## what the player actually sees repeated every day — one fixed point every route fans out from —
-## rather than a different point on the kerb for every route; the first segment of a drawn
-## polyline is a straight hop to wherever the tree actually joins home, same as the "share a trunk"
-## overlap the milestone already accepts. The calm-side connector has no such gap: it is always the
-## route's own last cell's direct neighbour, because it is built from that cell rather than from a
-## second fixed point.
+## rather than a different point on the kerb for every route. **The connector is drawn as two
+## axis-aligned legs, never one straight hop**: a straight line from the doorstep to a join cell
+## further along the frontage cut diagonally across the carriageway, and read as a route crossing
+## mid-block where no route cell was — *(2026-09-14, the player, of exactly that picture: "how is
+## this path possible? the rule is to only allow crossing at crossings never across the street")*.
+## The corner is whichever of the two axis-aligned candidates lies nearer the doorstep, which is the
+## point on the frontage in front of the door; from there the second leg runs along the street to
+## the join. The calm-side connector has no such gap: it is always the route's own last cell's
+## direct neighbour, because it is built from that cell rather than from a second fixed point.
 
 ## The same purple `TelemetryMap` already draws the day's corridor in on the dusk map, so the live
 ## overlay and the dusk picture agree on what "the corridor" looks like rather than inventing a
@@ -110,6 +114,7 @@ func _build_routes(tree: RouteTree) -> Array[PackedVector2Array]:
 			points.append(doorstep)
 			var ordered := route.duplicate()
 			ordered.reverse()
+			points.append(_doorstep_corner(doorstep, _cell_centre_world(ordered[0])))
 			for cell: Vector2i in ordered:
 				points.append(_cell_centre_world(cell))
 			if area:
@@ -117,6 +122,15 @@ func _build_routes(tree: RouteTree) -> Array[PackedVector2Array]:
 						_calm_endpoint_tile(ordered[ordered.size() - 1], area)))
 			found.append(points)
 	return found
+
+## The corner of the doorstep connector's two legs — see the class doc. Of the two axis-aligned
+## candidates between `doorstep` and `join`, the one nearer the doorstep; when the join is already
+## in line with the door the corner coincides with one end and the second leg has no length, which
+## draws nothing and keeps the polyline's shape fixed (doorstep, corner, cells, calm) for the test.
+func _doorstep_corner(doorstep: Vector2, join: Vector2) -> Vector2:
+	var a := Vector2(doorstep.x, join.y)
+	var b := Vector2(join.x, doorstep.y)
+	return a if doorstep.distance_to(a) <= doorstep.distance_to(b) else b
 
 ## The world position of a two-tile reachability cell's own centre — the point equidistant from
 ## all four of its tiles' centres, at `(cell * CELL + (1, 1)) * TILE_SIZE` rather than any one

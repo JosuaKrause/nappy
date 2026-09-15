@@ -116,7 +116,9 @@ func _plan(seed: int, day: int) -> _Built:
 ## (see `RouteLines`'s own class doc), and a fixed, provably exact distance for the one calm-side
 ## connector this class adds beyond the tree — **except the doorstep connector**, which the class
 ## doc explains is not one step at all: a route can rejoin the home street anywhere along its own
-## frontage, not necessarily beside the fixed tile every day starts on.
+## frontage, not necessarily beside the fixed tile every day starts on. It is two axis-aligned
+## legs through a corner (index 1), so the check on it is that each leg is axis-aligned — never a
+## diagonal across a carriageway.
 func _test_a_planned_day_yields_one_polyline_per_route_from_doorstep_to_calm(t) -> void:
 	var cell_step := float(ReachabilityGrid.CELL) * Tuning.TILE_SIZE
 	# The exact distance from a two-tile cell's own centre to the centre of a tile one 4-neighbour
@@ -151,10 +153,17 @@ func _test_a_planned_day_yields_one_polyline_per_route_from_doorstep_to_calm(t) 
 				var last_tile := built.map.world_to_tile(route[route.size() - 1])
 				t.check(Tile.is_calm(built.map.tile_at(last_tile)),
 						"seed %d day %d: the last point sits on a calm tile" % [built.map.seed_used, day])
-				# Interior cell-to-cell steps, skipping the doorstep connector (index 0->1, not
-				# asserted here — see the class doc) and the calm connector (the last pair, checked
-				# on its own fixed distance below).
-				for i2 in range(1, route.size() - 2):
+				# The doorstep connector's two legs (0->1->2) are each axis-aligned: a corner that
+				# shares x or y with the doorstep, and x or y with the first cell.
+				if route.size() >= 3:
+					var corner := route[1]
+					t.check(is_equal_approx(corner.x, route[0].x) or is_equal_approx(corner.y, route[0].y),
+							"seed %d day %d: the connector's first leg is axis-aligned" % [built.map.seed_used, day])
+					t.check(is_equal_approx(corner.x, route[2].x) or is_equal_approx(corner.y, route[2].y),
+							"seed %d day %d: and so is its second leg" % [built.map.seed_used, day])
+				# Interior cell-to-cell steps, skipping the doorstep connector (indices 0->1->2, checked
+				# above) and the calm connector (the last pair, checked on its own fixed distance below).
+				for i2 in range(2, route.size() - 2):
 					t.close_to(route[i2].distance_to(route[i2 + 1]), cell_step,
 							"seed %d day %d: consecutive route cells are one reachability-cell step "
 							% [built.map.seed_used, day] + "(%.0fpx) apart" % cell_step, 0.5)
