@@ -366,9 +366,11 @@ cast rather than a mark.
 **What it overturns, and that it is an experiment.** `docs/CITY.md`, "Guiding her to the
 calm", says *there is no cue of any kind toward calm — no marker, no map, no HUD line, nothing
 on the ground*, and its summary is *the city permits routes to calm and protects them from
-becoming impossible; it never suggests one* (also `RouteTree`'s own class doc). This is the
-player asking to try the opposite, faintly: *asked for no cue · overturned as a trial on
-2026-09-14, "I just want to try it out"*. The guidance through obstacles (M129, a path
+becoming impossible; it never suggests one* (also `RouteTree`'s own class doc). This is not
+that rule overturned: *"I don't really want it to be how we show paths but I want to assess
+whether it can be done without being too obvious and on the nose"* (2026-09-14). The trial's
+question is the threshold — whether a hint on the ground can stay below being noticed as one
+— and the answer is what gets kept, not the tint. The guidance through obstacles (M129, a path
 through the city never has to cost) stands beside it, not under it. Those `CITY.md` sentences
 are rewritten in the same PR to say what is true with the tint on, and this entry's record
 in `DECISIONS.md` says it was a trial so it can be taken out on one sentence from the player.
@@ -397,9 +399,10 @@ rule is "a kerb tile on an inside street", not a list of sources.
       trial; `docs/MECHANICS.md` if it lists what the player is shown. Evidence: two desktop
       stills of the same seed and day (`tools/shot.sh out.png 4 --seed 3265820891 --day 1
       --walk 2s --debug`, once with `--layers 5` so the purple route line lies over the tinted
-      kerbs and once without), no burst, no `--invincible`. `REVIEW.md`, in the same PR: does
-      the tint read at all at play zoom, does it read as a hint or as paint, and does it
-      collide with the caret's amber where a costly thing stands on the route.
+      kerbs and once without), no burst, no `--invincible`. `REVIEW.md`, in the same PR, asks the
+      trial's own question: at play zoom, is the tint too obvious and on the nose, invisible,
+      or somewhere in between that guides without being read as a hint — and does it collide
+      with the caret's amber where a costly thing stands on the route.
 
 ---
 
