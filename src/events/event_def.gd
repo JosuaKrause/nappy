@@ -276,6 +276,17 @@ func solid_reach() -> float:
 @export var core_intensity := 0.0
 @export var core_radius := 0.0
 
+## **The exponent on the drop between the two radii**, so a row may shape its own falloff where its
+## radii cannot say what it needs: `intensity * (1 - t ** falloff_power)`. 2.0 is the curve the
+## whole catalogue is measured at — three quarters of the intensity still there at the midpoint of
+## the band — a power under 1 drops fast and tails long, and a power over 2 holds near full and then
+## falls off a cliff.
+##
+## **Nothing sets it.** It is here so that the shape of a field is a decision a row may take rather
+## than a change to `Tuning.falloff` that moves all thirty of them; a row that does take it owes the
+## same fairness contract, which is stated over distance and does not care.
+@export var falloff_power := 2.0
+
 ## Seconds at full strength. 0 means it lasts the whole day.
 @export var duration := 0.0
 ## Seconds of visible warning before full intensity, during which it emits only
@@ -801,6 +812,10 @@ func validate() -> bool:
 	# past the field's own edge — which would put the row's loudest ground outside the radius every
 	# fairness rule is stated over. Checked before the ambient and city-wide returns below, since
 	# those rows have a field too.
+	if falloff_power <= 0.0:
+		push_error("event '%s' has a falloff power of %.2f: a field has to fall away from its own "
+				% [id, falloff_power] + "centre")
+		return false
 	if (core_intensity > 0.0) != (core_radius > 0.0):
 		push_error(("event '%s' sets half a core (%.1f/s over %.0fpx): a core is a rate and a band "
 				% [id, core_intensity, core_radius]) + "and neither means anything alone")
@@ -1029,7 +1044,7 @@ func emission_at(at: Vector2) -> float:
 	for i in flock_size:
 		var angle := TAU * float(i) / float(flock_size)
 		var bird := Vector2(cos(angle), sin(angle)) * flock_spread * 0.65
-		total += Tuning.falloff(bird.distance_to(at), share, inner_radius, outer)
+		total += Tuning.falloff(bird.distance_to(at), share, inner_radius, outer, falloff_power)
 	return total
 
 ## What a row with one field emits at a distance from its centre — the field, and the core over the
@@ -1040,8 +1055,9 @@ func emission_at(at: Vector2) -> float:
 ## charged has no core in it: a cored row costs what the table below says only in the table and in
 ## the placement rules that read it. Routing that query through here is the one change that would
 ## close the gap.
-func emission_at_distance(d: float) -> float:
-	var field := Tuning.falloff(d, intensity, inner_radius, outer_radius)
+func emission_at_distance(at_distance: float) -> float:
+	var field := Tuning.falloff(at_distance, intensity, inner_radius, outer_radius, falloff_power)
 	if core_intensity <= 0.0:
 		return field
-	return maxf(field, Tuning.falloff(d, core_intensity, inner_radius, core_radius))
+	return maxf(field, Tuning.falloff(at_distance, core_intensity, inner_radius, core_radius,
+			falloff_power))

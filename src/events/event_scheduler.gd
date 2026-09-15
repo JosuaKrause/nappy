@@ -551,13 +551,13 @@ static func _spoiling_grid(ground: Rect2, pool: Array[EventDef]) -> Array[Vector
 ## may stand beside a park* is a decision about the parks and not about how fast the pram settles.
 ## Read off the decay, every rise in the walking rate would admit louder rows here as a side
 ## effect of a change nobody made about parks.
+##
+## **The zero case is not the line rules' zero case.** `_reach_above` answers nothing at all for a
+## row quieter than the rate it is asked about, which is right there — ground a walk nets the meter
+## down in is not denied — and wrong here: a source she is standing on top of keeps her awake
+## whatever its rate does further out, so the floor is its own `inner_radius`.
 static func _denial_radius(def: EventDef) -> float:
-	var decay := Tuning.CALM_ZONE_DENIAL_RATE
-	if def.intensity <= decay:
-		return def.inner_radius
-	# `Tuning.falloff` is `1 - t²`, inverted for the t at which it equals the decay.
-	var t := sqrt(1.0 - decay / def.intensity)
-	return def.inner_radius + t * (def.outer_radius - def.inner_radius)
+	return maxf(def.inner_radius, _reach_above(def, Tuning.CALM_ZONE_DENIAL_RATE))
 
 static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
 	var best := tiles[0]
@@ -1339,15 +1339,25 @@ static func _line_reach_of(def: EventDef) -> float:
 ## field itself, and the core where it has one (a cored row's loud part can outlive its quiet one,
 ## which is the whole point of having it).
 static func _reach_above(def: EventDef, rate: float) -> float:
-	return maxf(_band_crossing(def.intensity, def.inner_radius, def.outer_radius, rate),
-			_band_crossing(def.core_intensity, def.inner_radius, def.core_radius, rate))
+	return maxf(_band_crossing(def.intensity, def.inner_radius, def.outer_radius, rate,
+			def.falloff_power),
+			_band_crossing(def.core_intensity, def.inner_radius, def.core_radius, rate,
+			def.falloff_power))
 
 ## Where one falloff band crosses `rate`, or zero if it is never above it — `Tuning.falloff`'s
-## `1 − t²` inverted for the `t` at which it equals `rate`.
-static func _band_crossing(intensity: float, inner: float, outer: float, rate: float) -> float:
+## `1 − t^power` inverted for the `t` at which it equals `rate`. The row's own `falloff_power`
+## rather than a squared constant, so a row that ever shapes its own drop-off is denied the ground
+## it actually charges for rather than the ground a quadratic row of the same numbers would.
+static func _band_crossing(intensity: float, inner: float, outer: float, rate: float,
+		power: float) -> float:
 	if intensity <= rate or outer <= inner:
 		return 0.0
-	return inner + sqrt(1.0 - rate / intensity) * (outer - inner)
+	var left := 1.0 - rate / intensity
+	# `sqrt` at the default rather than `pow(x, 0.5)`, for the reason `Tuning.falloff` writes its
+	# own default out: the two may differ in the last bit, and every radius the catalogue was
+	# measured at came from this one.
+	var t := sqrt(left) if is_equal_approx(power, 2.0) else pow(left, 1.0 / power)
+	return inner + t * (outer - inner)
 
 ## Whether a row denies a point, under the beat-opening reading.
 ##

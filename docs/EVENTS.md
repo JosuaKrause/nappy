@@ -24,6 +24,8 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `placement` | Which tile types it may spawn on |
 | `intensity` | Peak excitement per second at the centre |
 | `inner_radius` / `outer_radius` | Falloff geometry (px) |
+| `core_intensity` / `core_radius` | A louder inner part of the same field, both `0` for every row but `leaf_blower`. The same curve over the shorter band `inner_radius`..`core_radius`, and the row's price is **the larger** of the core and the field — see "The emission model" |
+| `falloff_power` | The exponent on the drop between the two radii: `intensity * (1 - t ** falloff_power)`. `2.0` is the curve every number in this document was measured at; under 1 drops fast and tails long, over 2 holds near full and then falls off a cliff. Nothing sets it |
 | `duration` | Seconds active (`0` = whole day) |
 | `telegraph_time` | Seconds of visible warning before full intensity |
 | `pulse_period` | Seconds per intensity cycle (`0` = constant) |
@@ -1013,8 +1015,8 @@ subtracts the walking decay, against a meter of 100 where sleep freezes at 35 an
 cannot drift apart. Regenerate the table from `EventDef.walk_through_cost()` whenever a rate in
 `Tuning` moves; it is the fastest way to see what a balance change did to the catalogue as a whole.
 
-**The shape of `Tuning.falloff` is `1−t²`**, so a field holds three quarters of its intensity at the
-midpoint of its band. The middle distances are what cost: the meter has to go substantially up from
+**The shape of `Tuning.falloff` is `1−t^power`, and every row is at the 2.0 default**, so a field
+holds three quarters of its intensity at the midpoint of its band. The middle distances are what cost: the meter has to go substantially up from
 some way off rather than waiting for contact, and a `(1−t)²` field — a quarter of its intensity at
 the midpoint — is one you can stand almost inside for free.
 
