@@ -71,6 +71,7 @@ func run(t) -> void:
 	_test_every_look_carries_its_own_silhouette(t)
 	_test_the_day_is_placed_by_role(t)
 	_test_a_routes_junctions_stay_clear(t)
+	_test_no_row_takes_a_route_streets_whole_width(t)
 	_test_a_flock_is_scenery(t)
 	_test_a_conversation_locks_her_and_releases(t)
 	_test_a_conversation_prices_by_the_babys_state(t)
@@ -3074,6 +3075,101 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 		if not joined:
 			return false
 	return true
+
+## **No single standing row takes a route street's whole width.** *(PLAYTEST-69: "all obstacles
+## should be routable around by eg crossing to the other side of the street, which in turn means the
+## other side of the street must be open enough so we can walk on it unimpeded".)* A street is
+## walkable frontage to frontage, so the answer to a van is the far pavement — and a row whose reach
+## spans the whole width has taken the answer away with the question.
+##
+## **It is a shape the numbers make rather than a rare accident**, which is why it is worth a check
+## of its own: the street is 192px kerb to kerb and the catalogue reaches to 240px, so a wide row
+## standing anywhere across an ordinary street closes it. The probe measured it breaking 39 routes
+## in 97 cuts before the rule existed.
+##
+## Asserted over the finished day and over **one row at a time**, which is the rule's own wording:
+## two rows closing a street between them are a different shape with a different answer. The walk is
+## written out here rather than borrowed from the scheduler, for the reason the junction check gives
+## — only the reading of what a row denies is shared, since there is one place that is written down.
+func _test_no_row_takes_a_route_streets_whole_width(t) -> void:
+	var map := CityGenerator.generate(4242)
+	var on_route_streets := 0
+	var spanned := 0
+	var first := ""
+	for day in [1, 5, 9, 14]:
+		var state := CityState.new()
+		state.begin_day(map.block_plans, day)
+		map.repaint(state)
+		var tree := RouteTree.for_day(map, day)
+		var corridor := Corridor.of(tree)
+		var consumed: Array[String] = []
+		for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
+			if not EventScheduler._counts_against_the_line(plan):
+				continue
+			var tile := map.world_to_tile(plan.position)
+			if corridor.depth(tile) != 0:
+				continue
+			var segment := StreetNetwork.segment_containing(tile)
+			if not segment:
+				continue
+			on_route_streets += 1
+			var alone: Array[EventScheduler.Planned] = [plan]
+			if _a_walk_along_the_street(map, segment, alone):
+				continue
+			spanned += 1
+			if first == "":
+				first = "day %d, '%s' on street %s" % [day, plan.def.id, segment.key()]
+	t.check(on_route_streets > 50,
+			"the days sampled stand rows on the route's own streets (%d)" % on_route_streets)
+	t.check(spanned == 0, "and none of them takes a street's whole width on its own (%d does%s)"
+			% [spanned, "" if first == "" else ": " + first])
+
+## Whether a walk exists from one end of a street to the other with these rows standing on it: the
+## street's own ground, both pavements, the carriageway between the kerbs left out because a line
+## may not cross there anyway, four-connected so a barrier laid diagonally counts as closing it.
+func _a_walk_along_the_street(map: CityMap, segment: StreetNetwork.Segment,
+		rows: Array[EventScheduler.Planned]) -> bool:
+	var rect := segment.tile_rect()
+	var free := {}
+	for y in range(rect.position.y, rect.end.y):
+		for x in range(rect.position.x, rect.end.x):
+			var tile := Vector2i(x, y)
+			if not map.is_open(tile):
+				continue
+			var across := CityMap.corridor_offset(tile.y if segment.horizontal else tile.x)
+			var type := map.tile_at(tile)
+			if CityMap.is_road_offset(across) and (type == GameEnums.TileType.ROAD
+					or type == GameEnums.TileType.CROSSING):
+				continue
+			var taken := false
+			for plan in rows:
+				if EventScheduler._denies(plan, map.tile_to_world(tile),
+						EventScheduler._line_reach_of(plan.def)):
+					taken = true
+					break
+			if not taken:
+				free[tile] = true
+	var last := (rect.end.x - 1) if segment.horizontal else (rect.end.y - 1)
+	var seen := {}
+	var queue: Array[Vector2i] = []
+	for tile: Vector2i in free:
+		var at_the_start := tile.x == rect.position.x if segment.horizontal \
+				else tile.y == rect.position.y
+		if at_the_start:
+			seen[tile] = true
+			queue.append(tile)
+	var head := 0
+	while head < queue.size():
+		var at: Vector2i = queue[head]
+		head += 1
+		if (at.x if segment.horizontal else at.y) == last:
+			return true
+		for step in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+			var next: Vector2i = at + step
+			if free.has(next) and not seen.has(next):
+				seen[next] = true
+				queue.append(next)
+	return false
 
 ## **A flock is scenery — overturned on 2026-09-13**, PLAYTEST-71: *"flocks are basically free
 ## already — don't count it as block, just count is scenery."* Under the plain cost rule a

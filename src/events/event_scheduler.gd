@@ -819,6 +819,11 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 		# `_leaves_the_route_junctions_open`.
 		if not _leaves_the_route_junctions_open(candidate, map, corridor, ground, already):
 			continue
+		# And the same for the stretch between two junctions: a row that spans a route street
+		# frontage to frontage has taken the far pavement away as well as the near one. See
+		# `_leaves_a_line_past_it`.
+		if not _leaves_a_line_past_it(candidate, map, corridor):
+			continue
 		var room := _room_around(candidate, already)
 		if room == INF:
 			return candidate
@@ -1458,6 +1463,101 @@ static func _arm_tiles(origin: Vector2i, junction: Vector2i,
 	return found
 
 const _NEIGHBOUR_STEPS: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]
+
+## **No single standing row takes a route street's whole width.** *"All obstacles should be routable
+## around by eg crossing to the other side of the street, which in turn means the other side of the
+## street must be open enough so we can walk on it unimpeded"* (PLAYTEST-69).
+##
+## A street is walkable frontage to frontage, so the answer to a van is the far pavement — and a row
+## whose reach spans the whole width has taken the answer away with the question. The street is
+## 192px kerb to kerb and the catalogue's reaches run to 240px, so this is a shape the numbers make
+## rather than a rare accident: the probe measured it breaking 39 routes in 97 cuts, `leaf_blower`,
+## `busker` and `ice_cream_van` most often.
+##
+## **One row, by itself** — that is the item's own wording and it is what separates this from the
+## junction rule above, which is about a pair closing a crossing between them. A row that cannot
+## leave a line past it is refused that ground and `_place_one` rolls again, so it lands on a street
+## it fits or off the corridor entirely.
+##
+## **Only a street has a far side.** Where a route's cells stand on an alley, a park cut or a square
+## there is no second pavement to cross to and no two ends to walk between, so the rule says nothing
+## about that ground rather than inventing an answer for it — a row there is answered by the
+## junction rule and by the walkability guarantee, the way it was before. A **precinct** needs no
+## special case: it is paved frontage to frontage with no carriageway in it, so its whole width is
+## the walk this asks about.
+static func _leaves_a_line_past_it(candidate: Planned, map: CityMap, corridor: Corridor) -> bool:
+	if not corridor or not _counts_against_the_line(candidate):
+		return true
+	var tile := map.world_to_tile(candidate.position)
+	if corridor.depth(tile) != 0:
+		return true
+	var segment := StreetNetwork.segment_containing(tile)
+	if not segment:
+		return true
+	var alone: Array[Planned] = [candidate]
+	return not _closes_the_street(map, segment, alone)
+
+## Whether these rows between them leave no walk from one end of a street to the other.
+##
+## Stated over the street's own ground — both pavements, the carriageway between the kerbs left out
+## because a line may not cross there anyway (*"in-block crossings are possible in game but
+## shouldn't be counted on by the routing algorithm"*) — and over a four-connected walk, so a
+## barrier laid diagonally counts as closing a street exactly as a straight band does. This is
+## `tests/probes/m129_zero_cost_line.gd`'s own question, asked at placement time instead of after
+## the fact, which is what makes the probe's number the measurement of the rule rather than a
+## second opinion about it.
+static func _closes_the_street(map: CityMap, segment: StreetNetwork.Segment,
+		rows: Array[Planned]) -> bool:
+	var rect := segment.tile_rect()
+	var free := {}
+	for y in range(rect.position.y, rect.end.y):
+		for x in range(rect.position.x, rect.end.x):
+			var tile := Vector2i(x, y)
+			if not map.is_open(tile) or _is_a_carriageway_tile(map, tile, segment.horizontal):
+				continue
+			var at := map.tile_to_world(tile)
+			var taken := false
+			for plan in rows:
+				if _denies(plan, at, _line_reach_of(plan.def)):
+					taken = true
+					break
+			if not taken:
+				free[tile] = true
+
+	var last := (rect.end.x - 1) if segment.horizontal else (rect.end.y - 1)
+	var queue: Array[Vector2i] = []
+	var seen := {}
+	for tile: Vector2i in free:
+		var at_the_start := tile.x == rect.position.x if segment.horizontal \
+				else tile.y == rect.position.y
+		if at_the_start:
+			seen[tile] = true
+			queue.append(tile)
+	var head := 0
+	while head < queue.size():
+		var at: Vector2i = queue[head]
+		head += 1
+		if (at.x if segment.horizontal else at.y) == last:
+			return false
+		for step in _NEIGHBOUR_STEPS:
+			var next: Vector2i = at + step
+			if free.has(next) and not seen.has(next):
+				seen[next] = true
+				queue.append(next)
+	return true
+
+## Whether a tile between two junctions is carriageway a line may not cross there.
+##
+## **The tile's own type decides, not its offset across the corridor.** A four-block calm zone is
+## painted over the streets between its blocks, so those tiles sit at a road offset and are grass
+## somebody walks on — *"an absorbed street is calm ground, not a closure"*. A precinct is paving
+## frontage to frontage with no carriageway at all, and its middle tiles are not `ROAD` either, so
+## the same test covers it without naming it.
+static func _is_a_carriageway_tile(map: CityMap, tile: Vector2i, horizontal: bool) -> bool:
+	if not CityMap.is_road_offset(CityMap.corridor_offset(tile.y if horizontal else tile.x)):
+		return false
+	var type := map.tile_at(tile)
+	return type == GameEnums.TileType.ROAD or type == GameEnums.TileType.CROSSING
 
 ## Distance in tiles from a tile to the edge of the map along a direction, less a
 ## one-block margin so a route always ends inside the city rather than against the wall.

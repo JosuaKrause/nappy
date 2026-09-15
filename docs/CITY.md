@@ -736,6 +736,30 @@ covers a whole crossing loses most of the corridor; a row narrower than a juncti
 width loses none of it. `tests/test_events.gd` asserts both halves — the corridor's overall share of
 the friction and, separately, the undiminished share of the rows no crossing rule can refuse.
 
+### No single standing row takes a route street's whole width
+
+**A street is walkable frontage to frontage, so the answer to a van is the other side of it** — and
+a row whose reach spans the whole width has taken the answer away with the question. That is the
+player's own framing: *"all obstacles should be routable around by eg crossing to the other side of
+the street, which in turn means the other side of the street must be open enough so we can walk on
+it unimpeded."*
+
+**The numbers make this shape rather than an unlucky roll.** An ordinary street is 192px kerb to
+kerb and the catalogue's reaches run to 240px, so a wide row standing anywhere across one closes it.
+So a counted row standing on a route street is accepted only if it leaves a four-connected walk from
+one of that street's junctions to the other, over the street's own ground — both pavements, the
+carriageway between the kerbs left out, since a line may not cross there anyway. A row that cannot
+is refused that ground and rolls again, landing on a street it fits or off the corridor entirely.
+
+**One row, by itself**, which is what separates this from the crossing rule above: two rows closing
+a street between them are a different shape and are answered where a pacing row's beat is.
+
+**Only a street has a far side.** Where a route's cells stand on an alley, a park cut or a square
+there is no second pavement to cross to and no two ends to walk between, so the rule says nothing
+about that ground rather than inventing an answer for it. A **precinct** needs no special case: it
+is paved frontage to frontage with no carriageway in it, so its whole width is the walk this asks
+about.
+
 ### Two strands side by side, and the street between them
 
 Two strands of corridor running down neighbouring streets with nothing between them are not two

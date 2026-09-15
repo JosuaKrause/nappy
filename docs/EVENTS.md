@@ -530,6 +530,12 @@ is the only place a line may change pavement, so this is the one refusal a stree
 answer; see `docs/CITY.md`, "A route's junctions stay clear", for the rule and for the four kinds of
 row that are outside it.
 
+**The stretch between two junctions is asked the same way.**
+`EventScheduler._leaves_a_line_past_it` refuses a counted row standing on a route street where its
+own reach alone would leave no walk from one of that street's junctions to the other — the far
+pavement is the answer to a van, and a row that spans the width has taken it. See `docs/CITY.md`,
+"No single standing row takes a route street's whole width".
+
 **A seal is checked the same way in a different place.** `SealPlanner` puts a body on every
 off-tree street whether or not the scheduler would have offered that tile, so it never asks
 `_open_ground_for` at all; `SealPlanner._seal_along_tile` applies the tree refusal at the one place
