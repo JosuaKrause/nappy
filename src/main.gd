@@ -159,6 +159,7 @@ func _ready() -> void:
 	_city.build(CityGenerator.generate(GameState.run_seed))
 	print("[Main] city generated in %d ms (seed %d)" % [
 		Time.get_ticks_msec() - elapsed, _city.map.seed_used])
+	await _warm_the_pictures()
 
 	_player = STROLLER.instantiate()
 	_city.add_entity(_player)
@@ -272,6 +273,10 @@ func _ready_escape() -> void:
 	# "no drawable viewport" refusal, which is really "no active log", not a rendering question.
 	if not "--no-telemetry" in OS.get_cmdline_user_args():
 		Telemetry.begin_run(GameState.run_seed, _somebody_is_playing())
+	# The second boot entry point `TextureResolver.warm()` has to reach — see `_warm_the_pictures()`
+	# — since the epilogue draws its own pictures (the building's props, the city's events) and is
+	# reached without ever passing through `_ready()`'s own call above.
+	await _warm_the_pictures()
 
 	_hud = HUD.instantiate()
 	add_child(_hud)
@@ -664,6 +669,53 @@ func _add_excitement_halo() -> void:
 	_halo.setup(_city.events, _city.crowd, _player)
 	add_child(_halo)
 	_pauses_with_the_game(_halo)
+
+## M147, "every picture loaded before it is needed": loads every transfer PNG and gets the halo's
+## shared shader compiled before either boot path's own `_start_day()`/`_finale.begin()`, so the
+## first frame that actually needs a picture or a halo never pays for either. Printed beside
+## "city generated in N ms" — the same shape `_plan_the_finale_city()` prints its own line beside
+## — because a phone's longer first load belongs next to the other number that already tells a
+## reader how long the boot took.
+func _warm_the_pictures() -> void:
+	var elapsed := Time.get_ticks_msec()
+	var loaded := TextureResolver.warm()
+	await _warm_the_halo_shader()
+	print("[Main] %d pictures warmed in %d ms" % [loaded, Time.get_ticks_msec() - elapsed])
+
+## Gets the Compatibility renderer to compile the halo's shader program before a real halo ever
+## draws with it. **Godot 4.7 has no precompile call for this renderer** — `RenderingServer`'s own
+## pipeline cache is a Forward+/Mobile (RenderingDevice) feature, and the engine's own proposal
+## tracker still carries "Add shader precompilation to the Compatibility rendering method" as an
+## open request — so the only lever left is a real draw call: a throwaway `Node2D` draws one
+## transparent pixel with `EntityHalo.shared_material()` and is freed the frame after.
+##
+## **At world origin, not off in the distance.** A canvas item outside the camera's visible rect
+## is culled before it reaches the renderer — see M139, "one atlas for the crowd", on why an
+## off-screen `CrowdAgent` costs nothing per frame — and a culled draw would compile nothing,
+## defeating the whole pass. No `Camera2D` exists yet at this point in either boot path (the one
+## in `scenes/player/stroller.tscn` is not built until after this call returns), so the viewport
+## still carries its default identity transform and world origin sits at the corner of the window
+## — on screen, in the renderer's own terms, whatever else has been drawn there this frame. Fully
+## transparent (`halo_colour`'s instance uniform default, never set here) makes it imperceptible
+## regardless: the GLSL program compiles from the material and the draw call alone, never from
+## the pixels it happens to write.
+##
+## **Two awaits, not one.** `SceneTree.process_frame` fires *before* the frame it names is drawn —
+## `DaySummary._acknowledge_and_continue()` confirms this directly against `RenderingServer`'s own
+## `frame_pre_draw`/`frame_post_draw` — so a single await would free the probe before its queued
+## draw ever reached the renderer, and the shader would still compile late, on the first real halo.
+func _warm_the_halo_shader() -> void:
+	var probe := Node2D.new()
+	probe.name = "HaloWarm"
+	probe.position = Vector2.ZERO
+	probe.material = EntityHalo.shared_material()
+	probe.draw.connect(func() -> void: probe.draw_rect(Rect2(Vector2.ZERO, Vector2.ONE), Color.WHITE))
+	add_child(probe)
+	_pauses_with_the_game(probe)
+	probe.queue_redraw()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	probe.queue_free()
 
 ## The one thing `?debug=1` (or `--debug`) adds beyond the readout itself: a fixed note, for the
 ## whole session, that nothing removes — not the `4` key, not a press, not `_open_the_title()`
