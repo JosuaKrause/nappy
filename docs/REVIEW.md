@@ -21,6 +21,13 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Watch a car finish a turn into a street that already has traffic in it** (any day with a
+  closure; `--spawn closure:0` stands the camera at the junction outside the barrier, and
+  `evidence/m152-car-teleport-2026-09-15/` carries the before-and-after bursts). The arrival
+  stands where its arc ended and the car behind it eases off; nothing is flung to the back of
+  the lane. **Do the cars turn without a jump in the final stretch and at seals, does a car
+  arriving into a queue read as traffic making room, and does an about-face at a seal still
+  read as a car flipping on the spot?** Record is `DECISIONS.md`, M152.
 - **Walk a minute of day 1 on the laptop with `--debug --spikes`, on this build, and read the
   run log back** (`tools/telemetry.sh`). Every picture is warm and every group is packed; the
   log carries a `texture` line per picture loaded and per atlas made ready or released, with
@@ -218,7 +225,8 @@ item below for as long as looking takes.
   scenery, and M129 in `TODO.md` puts it back on them — so this asks only about the encounter.
   Record is `DECISIONS.md`, M131; the burst is `evidence/m131-flock-on-the-ground-2026-09-13/`.
 - **Watch a car about-face into a street with a queue in it.** The lane holds a gap for the
-  car that is coming and the arrival gives way if the gap has closed, so nobody already in the
+  car that is coming and the arrival stands where its arc ended while the car
+  behind it eases off (M152), so nobody already in the
   lane should jump. Does the merge read as traffic making room, or as the turning car waiting for
   nothing? Same record.
 - **Look at a parked delivery van and, from day 7, a police car on patrol.** The delivery van and

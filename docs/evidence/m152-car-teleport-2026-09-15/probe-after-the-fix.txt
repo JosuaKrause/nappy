@@ -1,0 +1,59 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+m152 car-jump probe — threshold 6.17 px/frame (2 x CAR_SPEED.y x 0.0167s), view box (320.0, 180.0)
+
+seed 4242 day 1: 2400 frames, 34 cars, 1 closures, 2 watch points
+    landings          90   (every one, jump or not)
+    turn-rounds       52   (every one, jump or not)
+    recycle           69   (0 in view)
+    spacing           23   (0 in view)
+    in-view jumps: 0
+
+seed 4242 day 13: 2400 frames, 16 cars, 4 closures, 8 watch points
+    landings          99   (every one, jump or not)
+    turn-rounds       17   (every one, jump or not)
+    recycle           81   (0 in view)
+    spacing            2   (0 in view)
+    in-view jumps: 0
+
+seed 24757 day 1: 2400 frames, 34 cars, 1 closures, 2 watch points
+    landings          93   (every one, jump or not)
+    turn-rounds       17   (every one, jump or not)
+    recycle           76   (0 in view)
+    spacing           42   (0 in view)
+    in-view jumps: 0
+
+seed 24757 day 13: 2400 frames, 16 cars, 4 closures, 8 watch points
+    landings          64   (every one, jump or not)
+    turn-rounds       13   (every one, jump or not)
+    recycle           32   (0 in view)
+    spacing            2   (0 in view)
+    in-view jumps: 0
+
+seed 91117 day 1: 2400 frames, 34 cars, 1 closures, 2 watch points
+    landings          89   (every one, jump or not)
+    turn-rounds       20   (every one, jump or not)
+    recycle          133   (0 in view)
+    spacing           13   (1 in view)
+    in-view jumps: 1
+    worst: seed 91117 day 1 frame 0: spacing jumped 59px, (2654.348, 2768.0) -> (2713.181, 2768.0), camera at (2561.488, 2704.369) (113px away)
+
+seed 91117 day 13: 2400 frames, 16 cars, 4 closures, 8 watch points
+    landings          76   (every one, jump or not)
+    turn-rounds       13   (every one, jump or not)
+    recycle           59   (0 in view)
+    spacing            8   (0 in view)
+    in-view jumps: 0
+
+TOTAL over 3 seeds x days [1, 13], 40s each: 150 cars watched
+    landings         511   (every one, jump or not)
+    turn-rounds      132   (every one, jump or not)
+    recycle          450   (0 in view)
+    spacing           90   (1 in view)
+  worst in-view jump per rig day:
+    seed 91117 day 1 frame 0: spacing jumped 59px, (2654.348, 2768.0) -> (2713.181, 2768.0), camera at (2561.488, 2704.369) (113px away)
+PROBE m152 in-view jumps: 1
+-- m152_car_jumps.gd            42572 ms
+
+1 checks, 0 failures
+PARTIAL RUN — only suites matching probes/m152_car_jumps.gd. Not a green build.
