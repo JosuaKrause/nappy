@@ -1940,7 +1940,7 @@ func _invalidate_contribution_cache() -> void:
 ## `age`-keyed shape `_caret_strength()` documents below: `Baby._update_excitement()` (physics
 ## rate) and `ExcitementHalo.select_sources()` (frame rate) both ask every live instance for its
 ## contribution at the same point most frames, so a repeat this tick answers from the cache
-## instead of re-running `Tuning.falloff()`. `expected_impact_at()`'s own projection passes an
+## instead of re-running the field. `expected_impact_at()`'s own projection passes an
 ## override or a translated `world_position` for every sample but its first, so those calls never
 ## match the cache key and always recompute, which is correct — the cache is only ever for the
 ## single point every ordinary caller actually asks about.
@@ -1967,8 +1967,12 @@ func _contribution_at_uncached(world_position: Vector2, intensity_override: floa
 	if not _flock.is_empty():
 		return _flock_contribution_at(world_position, intensity)
 	var velocity := velocity_override if velocity_override != Vector2.INF else travel_velocity()
-	return Tuning.falloff(_field_distance(world_position, velocity),
-			intensity, def.inner_radius, def.outer_radius)
+	# `EventDef.emission_at_distance()` rather than `Tuning.falloff` direct, so the one row with a
+	# two-part field is charged for both parts here and not only in the cost table — and so that a
+	# row shaping its own drop-off (`EventDef.falloff_power`) is felt as the shape it is priced at.
+	# The peak handed over is this phase's, so the telegraph and the pulse damp the core and the
+	# field together; an uncored row comes back bit for bit what it always did.
+	return def.emission_at_distance(_field_distance(world_position, velocity), intensity)
 
 ## The distance `contribution_at()` prices this row's field at — `GroundShape.field_distance()`
 ## over this row's own shape (D1's `body ⊕ disc` stationary, D2's `point ⊕ ellipse` moving), or the
@@ -2003,7 +2007,7 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 	for bird in _flock:
 		var d := GroundShape.eccentric_distance(global_position + bird.at, bird.heading * bird.speed,
 				world_position)
-		total += Tuning.falloff(d, share, def.inner_radius, outer)
+		total += Tuning.falloff(d, share, def.inner_radius, outer, def.falloff_power)
 	return total
 
 ## True when a point is inside the radius that ends the day, for a hard-fail event that is

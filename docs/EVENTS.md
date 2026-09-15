@@ -883,8 +883,8 @@ stimulus at its position, and the world sums `contribution_at()` over the live i
 ```gdscript
 func contribution_at(world_position: Vector2, ...) -> float:
     var velocity := travel_velocity()  # or the override expected_impact_at() passes
-    return Tuning.falloff(_field_distance(world_position, velocity),
-            current_intensity(), def.inner_radius, def.outer_radius)
+    return def.emission_at_distance(_field_distance(world_position, velocity),
+            current_intensity())
 ```
 
 Because it is a pure query there is no ordering to get wrong, events compose by simple
@@ -895,11 +895,15 @@ addition, and an instance can be tested without a scene.
 the core and the field at every distance, so a core only ever adds and only ever inside itself.
 `leaf_blower` is the row it exists for — past `core_radius` it is a busker, number for number, and
 inside it, it is a wall — and every other row leaves both at zero and is one field as before.
-`EventDef.emission_at_distance()` is where the two are put together, and it is what every cost in
-this document is integrated from. **The instance does not ask it.**
-`EventInstance.contribution_at()` calls `Tuning.falloff` on the plain field, as the code above
-shows, so what the baby is charged for standing beside a cored row is the field alone: the core is
-in the prices and in the placement rules that read them, and not yet in the meter.
+
+**`EventDef.emission_at_distance()` is the one place the two parts are put together**, and
+everything that prices this row goes through it: the cost table below, the placement rules that
+read what a row denies, and `contribution_at()` above, which is what the baby is actually charged.
+The instance hands it `current_intensity()` rather than the catalogued peak, so **the telegraph and
+the pulse damp the core by the same fraction they damp the field by** — a leaf blower between
+bursts is a quarter of a wall inside a quarter of a busker, not a full wall inside a quiet field.
+A row with no core comes back as `Tuning.falloff` on its own field and nothing else, bit for bit;
+`tests/test_events.gd` walks the whole catalogue at 16px steps and holds that.
 
 **The field is the Minkowski sum of the body and a kernel.** `Tuning.falloff()` is still the one
 arithmetic home and still prices a plain distance `d` — what changed is what `d` means.

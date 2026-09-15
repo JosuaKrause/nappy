@@ -1047,17 +1047,28 @@ func emission_at(at: Vector2) -> float:
 		total += Tuning.falloff(bird.distance_to(at), share, inner_radius, outer, falloff_power)
 	return total
 
-## What a row with one field emits at a distance from its centre — the field, and the core over the
-## top of it where there is one. Every cost this file quotes goes through here.
+## What a row emits at a distance from its centre — the field, and the core over the top of it
+## where there is one. **Every price in the game goes through here**: the cost table's integral,
+## the placement rules that read it, and `EventInstance.contribution_at()`, which is what the baby
+## is actually charged.
 ##
-## **The runtime does not.** `EventInstance._contribution_at_uncached()` calls `Tuning.falloff`
-## itself with this row's `intensity` scaled by the pulse and the telegraph, so what the baby is
-## charged has no core in it: a cored row costs what the table below says only in the table and in
-## the placement rules that read it. Routing that query through here is the one change that would
-## close the gap.
-func emission_at_distance(at_distance: float) -> float:
-	var field := Tuning.falloff(at_distance, intensity, inner_radius, outer_radius, falloff_power)
+## `at_intensity` is the peak the *caller* is carrying rather than the row's catalogued one — an
+## instance's `current_intensity()`, after the telegraph damping and the pulse envelope. **The core
+## is scaled by the same fraction**, so a two-part field damps as one thing: a leaf blower at a
+## quarter of its beat is a quarter of a wall and a quarter of a busker, not a full wall inside a
+## quiet field. Left out, it is the row's own peak, which is what a cost integrated from the
+## catalogue wants.
+##
+## A row with no core is `Tuning.falloff` on its own field and nothing else, bit for bit — the
+## fraction is applied to the peak that is handed in rather than divided back out of it, so nothing
+## uncored moves by so much as a last bit. `tests/test_events.gd` walks the whole catalogue at 16px
+## steps and holds that.
+func emission_at_distance(at_distance: float, at_intensity: float = -1.0) -> float:
+	var peak := intensity if at_intensity < 0.0 else at_intensity
+	var field := Tuning.falloff(at_distance, peak, inner_radius, outer_radius, falloff_power)
 	if core_intensity <= 0.0:
 		return field
-	return maxf(field, Tuning.falloff(at_distance, core_intensity, inner_radius, core_radius,
-			falloff_power))
+	var core := core_intensity
+	if at_intensity >= 0.0 and intensity > 0.0:
+		core *= at_intensity / intensity
+	return maxf(field, Tuning.falloff(at_distance, core, inner_radius, core_radius, falloff_power))
