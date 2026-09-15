@@ -49,3 +49,26 @@ current: `tests/suite_costs.txt` records the events suite at 161 s and the route
 suites — the crowd atlas, the day controller, the frame graph and the route lines — have no
 cost row yet. The order set: after the pull requests open at the session's start (the desktop
 stutter, M145's tint trial, M146's standing agent, M129's four rules) and after M149.
+
+## The tint is on both pavements
+
+> "why is the yellow tint on both sides? clearly the bottom path cannot be on any route."
+
+Said on 2026-09-15 of a desktop debug still, build v0.10.7-54-g16e6d876-dirty, seed
+2533738392, day 1, her at tile 92,85 on the upper pavement of an east-west street with the
+readout on: both kerb lines of the street carry the yellow cast, the one she walks and the one
+across the carriageway. The still arrived in the conversation rather than as a file and could
+not be copied under `evidence/`; the seed and tile reproduce the city. The cause is read from
+the code: the tint asks the corridor's depth, and the corridor answers at the grain of a whole
+street, so a street on the tree tints both its pavements although the tree itself walks one of
+them and, since M129's fourth rule, never crosses the carriageway between them. Filed as M150
+in `TODO.md`.
+
+## The map's top-left corner shows for a moment at the start
+
+> "also, when starting the game I can briefly see the top left of the map"
+
+Said on 2026-09-15 of the same session. The world's origin is the map's top-left, so a frame
+drawn before the camera has taken her position shows that corner. Which frame is not known
+from the code alone — the first after boot, the title's own with the city behind it, or the
+run's first after the disc is pressed. Filed as M151 in `TODO.md`.
