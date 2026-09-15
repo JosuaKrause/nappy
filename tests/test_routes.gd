@@ -60,7 +60,7 @@ func run(t) -> void:
 	_test_a_closure_never_lands_on_a_calm_areas_own_access(t)
 	_test_a_fallen_tree_only_falls_where_a_tree_stood(t)
 	_test_a_day_with_no_tree_lined_street_still_closes_its_quota(t)
-	_test_the_route_kerb_tint_matches_the_corridor_at_depth_zero(t)
+	_test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t)
 
 # ------------------------------------------------------------------ lattice ---
 
@@ -721,12 +721,12 @@ func _test_a_day_with_no_tree_lined_street_still_closes_its_quota(t) -> void:
 
 # ------------------------------------------------------------------ route kerb tint ---
 
-## M145's own trial: `City._tint_the_route_kerbs()` re-sets cells on `_ground` itself from the same
-## tiles `GroundTiles.source_for` and `Corridor.of(city.route_tree())` already answer independently,
-## so this test recomputes the expected set from those two rather than trusting the paint to have
-## used its own inputs correctly, and checks `_ground`'s cells directly since there is no second
-## layer to read back.
-func _test_the_route_kerb_tint_matches_the_corridor_at_depth_zero(t) -> void:
+## M145's own trial, on the pavement M150 narrowed it to: `City._tint_the_route_kerbs()` re-sets
+## cells on `_ground` itself from the same tiles `GroundTiles.source_for` and
+## `city.route_tree().branches_on` already answer independently, so this test recomputes the
+## expected set from those two rather than trusting the paint to have used its own inputs
+## correctly, and checks `_ground`'s cells directly since there is no second layer to read back.
+func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t) -> void:
 	var kerb_sources := GroundTiles.ROUTE_KERB_SOURCES
 
 	var city: City = CITY_SCENE.instantiate()
@@ -740,15 +740,25 @@ func _test_the_route_kerb_tint_matches_the_corridor_at_depth_zero(t) -> void:
 	rng.seed = hash("m145-route-kerbs:closures:%d" % day)
 	city.start_day(state, day, rng)
 
-	var corridor := Corridor.of(city.route_tree())
+	var tree := city.route_tree()
 	var expected := {}
+	# One representative tile per distinct tinted kerb source, grouped by street segment: a
+	# segment with two entries has both its pavements tinted, which is legitimate whenever two
+	# branches of the same tree run down opposite sides of the same street length -- the case
+	# the `sides` check below confirms is not read off one side's answer for both.
+	var sides_by_segment := {}
 	for y in city.map.size.y:
 		for x in city.map.size.x:
 			var tile := Vector2i(x, y)
-			if GroundTiles.source_for(city.map, tile, day) in kerb_sources \
-					and corridor.depth(tile) == 0:
+			var source := GroundTiles.source_for(city.map, tile, day)
+			if source in kerb_sources and not tree.branches_on(tile).is_empty():
 				expected[tile] = true
-	t.check(expected.size() > 0, "the sweep found kerb tiles on the corridor to check (%d)"
+				var segment := StreetNetwork.segment_containing(tile)
+				if segment:
+					var sides: Dictionary = sides_by_segment.get(segment.key(), {})
+					sides[source] = tile
+					sides_by_segment[segment.key()] = sides
+	t.check(expected.size() > 0, "the sweep found kerb tiles the tree carries to check (%d)"
 			% expected.size())
 
 	var twin_source_ids := {}
@@ -760,10 +770,10 @@ func _test_the_route_kerb_tint_matches_the_corridor_at_depth_zero(t) -> void:
 		if twin_source_ids.has(city._ground.get_cell_source_id(cell)):
 			twinned[cell] = true
 	t.check(twinned.size() == expected.size(),
-			"Ground carries a route-kerb twin on exactly the kerb tiles on the corridor at depth "
-			+ "zero (%d expected, %d twinned)" % [expected.size(), twinned.size()])
+			"Ground carries a route-kerb twin on exactly the kerb tiles the tree carries "
+			+ "(%d expected, %d twinned)" % [expected.size(), twinned.size()])
 	for cell in twinned:
-		t.check(expected.has(cell), "twinned cell %s is a kerb tile on the corridor at depth zero" % cell)
+		t.check(expected.has(cell), "twinned cell %s is a kerb tile the tree carries" % cell)
 	for tile in expected:
 		var plain_source := GroundTiles.source_for(city.map, tile, day)
 		var expected_atlas := GroundLayers.atlas_coords_for(plain_source, city.map.seed_used, tile,
@@ -773,6 +783,22 @@ func _test_the_route_kerb_tint_matches_the_corridor_at_depth_zero(t) -> void:
 		t.check(city._ground.get_cell_atlas_coords(tile) == expected_atlas,
 				"Ground's twinned cell at %s keeps the atlas coordinates the plain source would have had"
 				% tile)
+
+	# A street with both kerb lines tinted has tree cells on both its pavements -- not a corner
+	# case: this seed's day 1 finds one on most of its tinted streets, which is what the guard
+	# below is for. Without it, a passing suite would not say whether this shape was ever
+	# actually exercised, and "both kerb lines tinted" reads exactly like the corridor-grain bug
+	# this milestone fixed unless the record shows each side is a real tree cell on its own.
+	var dual_pavement_streets := sides_by_segment.values().filter(
+			func(sides: Dictionary) -> bool: return sides.size() >= 2)
+	t.check(dual_pavement_streets.size() > 0,
+			"the sweep found a street with both kerb lines tinted, to check (%d)"
+			% dual_pavement_streets.size())
+	for sides: Dictionary in dual_pavement_streets:
+		for source: int in sides:
+			var tile: Vector2i = sides[source]
+			t.check(not tree.branches_on(tile).is_empty(),
+					"tile %s, one pavement of a street tinted on both, is a cell the tree carries" % tile)
 
 	city.start_finale(state, day + 1)
 	var twinned_after_finale := 0
