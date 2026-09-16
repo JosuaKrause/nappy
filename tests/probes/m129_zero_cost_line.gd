@@ -18,7 +18,8 @@ extends RefCounted
 ## So this measures the thing before a rule is written against it: for each planned day, for every
 ## route in that day's `RouteTree` from the doorstep to its calm area, is there a line of tiles that
 ##
-## - stays **out of every placed row's `outer_radius`** (and out of any body's `obstructs_radius`),
+## - stays **out of the disc every placed row charges for** (and out of any body's
+##   `obstructs_radius`),
 ## - moves between the two pavements of a street **only at a junction**, never mid-block,
 ## - and treats the corridor's own park-and-alley cuts as ground like any other.
 ##
@@ -50,22 +51,28 @@ extends RefCounted
 ##   closure invariant already makes: the line starts anywhere in `CityMap.home_rect` (with the home
 ##   street, which is never closed and never sealed, as ground) and arrives the moment it reaches
 ##   any calm tile of the area's own rect.
-## - **A row blocks where it costs or where it stands**: `outer_radius` for a row that emits at all
-##   (`intensity > 0`), `obstructs_radius` for a body, the larger of the two where both apply. A row
-##   that neither emits nor obstructs — the `playground` ambient, at intensity 0 — is not something
-##   a line has to avoid and is skipped.
+## - **A row blocks where it costs or where it stands**, and *where it costs* is the disc inside
+##   which it out-emits `Tuning.EXCITEMENT_DECAY_WALKING` rather than its whole `outer_radius`:
+##   past that crossing a walk through the field nets the meter down, which is ground taken without
+##   planning around it — *"the influence at a junction is low enough that it can be taken without
+##   having to worry or plan around it"*, PLAYTEST-76. A lethal row keeps its whole radius, a body
+##   its `obstructs_radius`, and the larger applies where both do. A row that neither charges nor
+##   obstructs — the `playground` ambient, at intensity 0 — is not something a line has to avoid and
+##   is skipped. `EventScheduler._line_reach_of()` is the one place that arithmetic lives, and this
+##   probe asks it rather than keeping a second copy: the placement rules refuse what this measures,
+##   so a probe reading a different disc could not tell whether they had worked.
 ## - **`city_wide` rows are excluded**: they have no place, so there is no other side of the street
 ##   to walk on, and the telegraph contract exempts them for the same reason.
 ## - **Rows with no tile are excluded**: `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` queue rows are sited
 ##   by `EventDirector` out of where the player turns out to walk, so they have no position at plan
 ##   time (`Planned.is_placed()` is false) and no route can be measured against them. They are
 ##   outside this guarantee by construction, and the milestone says so.
-## - **The top of the beat is the full `outer_radius`.** A pulse is an intensity envelope
+## - **The top of the beat is the full disc.** A pulse is an intensity envelope
 ##   (`intensity × (0.25 + 0.75 × pulse(t))`, `docs/EVENTS.md`) and moves no radius, so the top of a
-##   pulsing row's beat is its catalogued disc, which is what is used.
-## - **A row's field is read as the plain disc of its `outer_radius`**, not the forward-stretched
-##   ellipse `EventDef.field_reach()` gives a moving one. The milestone's own wording is
-##   `outer_radius`; the two differ only for the handful of mobile rows and only ahead of them.
+##   pulsing row's beat is what its catalogued numbers give, which is what is used.
+## - **A row's field is read as a plain disc**, not the forward-stretched ellipse
+##   `EventDef.field_reach()` gives a moving one. The milestone's own wording is a radius; the two
+##   differ only for the handful of mobile rows and only ahead of them.
 ## - **A pacing row is passed by timing, not routed around.** The primary reading is the
 ##   **intersection** over its beat — only the ground it never leaves free counts as blocked, so a
 ##   line free at *some* phase of the loop can simply wait for it (`Reading.BEAT_OPENING`, *"time
@@ -375,7 +382,7 @@ func _rows_of(plans: Array[EventScheduler.Planned]) -> Array:
 		if def.scenery or def.id.begins_with("checkpoint") or (def.mobile and not def.paces):
 			continue
 		var emits := def.intensity > 0.0
-		var radius := maxf(def.outer_radius if emits else 0.0, def.obstructs_radius)
+		var radius := EventScheduler._line_reach_of(def)
 		if radius <= 0.0:
 			continue
 		var row := Row.new()
@@ -1092,9 +1099,10 @@ func _report(tally: Dictionary, shapes: Dictionary, cut_shapes: Dictionary, exam
 	for i in mini(12, ranked.size()):
 		var id: String = ranked[i]
 		var def := EventCatalogue.by_id(id)
-		var reach := "" if not def else " (intensity %.1f over %.0fpx, body %.0fpx%s)" \
-				% [def.intensity, def.outer_radius, def.obstructs_radius,
-				", paces" if def.paces else ""]
+		var reach := "" if not def else \
+				" (intensity %.1f over %.0fpx, denies %.0fpx, body %.0fpx%s)" \
+				% [def.intensity, def.outer_radius, EventScheduler._line_reach_of(def),
+				def.obstructs_radius, ", paces" if def.paces else ""]
 		print("      %-4d %s%s" % [blame[id], id, reach])
 
 	print("\n-- the grower's own mid-block crossings --")

@@ -351,30 +351,31 @@ on the first frame of a day she is looking at her own street.
 
 ---
 
-## M129 — A path through the city never has to cost · the four rules built 2026-09-14, one question open
+## M129 — A path through the city never has to cost · two routes in five still break
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable
 > around … the routing should only cross the street at intersections"
 
 [PLAYTEST-69](playtests/PLAYTEST-69.md), [PLAYTEST-71](playtests/PLAYTEST-71.md),
-[PLAYTEST-75](playtests/PLAYTEST-75.md). The four rules are built and recorded
-(`DECISIONS.md`, M129, the four rules): a route's junctions stay clear, no single standing row
-takes a route street's whole width, a pacing row leaves the line open for part of its beat,
-and the tree grows on a graph with no carriageway cell but the junctions' and no main-road
-cell at all. The probe now finds a zero-cost line along a third of routes (100 of 296) where
-it found one along a sixth, and no route crosses a carriageway mid-block or touches the spine
-outside a junction. **The guarantee is still not true for two routes in three**, and the
-biggest remaining cause is a design decision, not a defect, so it waits on the player:
+[PLAYTEST-75](playtests/PLAYTEST-75.md), [PLAYTEST-76](playtests/PLAYTEST-76.md). The four rules
+and the leaf blower's two-part field are built and recorded (`DECISIONS.md`, M129, the four
+rules; M129, the leaf blower is a wall to walk past and a busker to stay near). The probe,
+`tests/probes/m129_zero_cost_line.gd`, finds a zero-cost line along 183 of 296 routes. The
+guarantee is not true for the rest, and what stands in them is a route junction covered by
+several rows together (69 routes), with the leaf blower in the cut on 74 of the 113. The three
+placement rules refuse a candidate whose reach *together with everything already down* would
+close a junction, so a crossing the probe finds under four to six rows is one that either
+reached the day past the rules or is read as covered differently by the probe and the rule:
 
-- [ ] **The wall exemption, and `leaf_blower` in particular.** Every rule exempts the `WALL`
-      role, since a wall is placed off the corridor by design — and `leaf_blower` is a wall
-      (its walk-through cost of 37.7 clears `Tuning.WALL_WORTH_OF_COST`, 35.0) with a 200 px
-      reach across a 192 px street, so it stands in a cut on 156 of the 196 routes still
-      broken. Two ways out, each the **balance** rule's: its reach comes under the street's
-      width, or the wall exemption narrows so a wall's field may not close a route junction
-      or a route street's width either. Which, or neither, is the player's call; the seals a
-      `SealPlanner` places before the scheduler runs are the other reach the rules never
-      see, and are the same question one step further out.
+- [ ] **Which placements the three rules never see.** `_place_one`'s candidate loop is where
+      the rules run. Find every other path a row reaches the day by — the calm-ground pass
+      that covers a park by area, `_ensure_one_usable_park`, the seals a `SealPlanner` places
+      before the scheduler runs, the region walls and doors — and say, per broken route in the
+      probe, which path placed the rows in its cut and whether the probe's *covered* and the
+      rule's *open* agree on it. Then either those paths ask the same three questions, or the
+      record says why a route may pay there. The probe's "what broke the line" table is the
+      measurement; the seals alone cost about five points (66.9% on the day's own rows against
+      61.8% with them).
 
 ---
 

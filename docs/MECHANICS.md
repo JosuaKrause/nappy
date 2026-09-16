@@ -683,13 +683,25 @@ Each active event has an `intensity`, an `inner_radius` and an `outer_radius`.
 
 ```
 contribution(d) = intensity                              , d <= inner_radius
-                = intensity × (1 − t²)                   , inner < d < outer
+                = intensity × (1 − t^power)               , inner < d < outer
                 = 0                                      , d >= outer_radius
    where t = (d − inner_radius) / (outer_radius − inner_radius)
 ```
 
+`power` is `EventDef.falloff_power` and **every row in the catalogue is at its 2.0 default**, which
+is the curve the rest of this section is about. It exists so that a row needing a shape its two
+radii cannot give — a fast drop with a long tail, or a plateau with a cliff at the end of it — is a
+decision that row takes rather than a change to the one function thirty other rows share.
+
 **The shape has a shoulder on it, and that is a design decision rather than an implementation
 detail.** The meter has to go substantially up from some way off rather than waiting for contact.
+
+**One row has a second, louder part close in.** `EventDef.core_intensity` and `core_radius` put the
+same curve over a shorter band and the row emits the larger of the two at every distance, so the
+leaf blower is a wall inside the pavement it stands on and a busker beyond it. Both numbers are
+zero everywhere else. It is one field rather than two: the same
+`EventDef.emission_at_distance()` answers the meter, the cost table and the placement rules, and an
+instance's telegraph and pulse damp the core by the fraction they damp the field by.
 
 **`d` is a distance to a field, not always to a point.** The field is the Minkowski sum of the
 object's own `GroundShape` and a kernel — a disc while it stands still, an ellipse while it
