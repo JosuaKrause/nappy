@@ -295,6 +295,32 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
+## M154 — The day summary says when the day ended · asked for 2026-09-15
+
+> "can you show the time of the day when dieing/completing a day (not the total like on the
+> game over / win screen). ...fell asleep after xx:xx or something like that"
+
+[PLAYTEST-77](playtests/PLAYTEST-77.md). The **cues** rule governs `src/ui/`. The day
+summary (`DaySummary.show_day()`) carries the day number, a lost day's reason, the nerves and
+the resistance tally; the ending screen carries the run's whole length to the millisecond
+(`GameState.format_clock()`), which is the total the player does not want here.
+
+- [ ] **The summary carries the day's clock at the moment it ended.** `DayController` holds
+      `time_total` and `time_remaining`; the elapsed time is their difference at the instant
+      `day_finished` is emitted, captured before anything resets it, and handed to
+      `show_day()` alongside the reason. Shown in the HUD clock's own shape, `m:ss` to the
+      second (`hud.gd`'s `"%d:%02d"`), never the millisecond form. One line under the title,
+      phrased for the outcome: a won day *She fell asleep after 1:24.*; a lost day the reason
+      it already shows, followed by *after 1:24* on the same line or the next, so a crying
+      loss reads *She started crying after 1:24. There is no settling her now.* and a hard
+      fail reads its own sentence then the time; a timeout is the whole day and says so
+      rather than printing the day's length back. A check in `tests/test_day_loop.gd` beside
+      `_test_a_lost_days_brief_is_shown_and_then_cleared`: `show_day()` with a known elapsed
+      time puts that `m:ss` in the body for each `DayResult`, and the ending screen's body is
+      unchanged. `docs/MECHANICS.md` where it describes the day summary.
+
+---
+
 ## M143 — The readout's `process` and `physics` lines say what they measure · asked for 2026-09-14
 
 [PLAYTEST-75](playtests/PLAYTEST-75.md), the desktop stutter, and `DECISIONS.md`, M138, what
@@ -373,7 +399,37 @@ reached the day past the rules or is read as covered differently by the probe an
       record says why a route may pay there. The probe's "what broke the line" table is the
       measurement; the seals alone cost about five points (66.9% on the day's own rows against
       61.8% with them).
-
+- [ ] **A wall is also what cannot physically be walked past, and it never stands on the
+      route's own pavement.** *(2026-09-15: "on the side of the street where the path was
+      chosen only obstacles that can be bypassed should be possible" — "the market stall should
+      appear on the other side of the street" — "a wall is also when you physically cannot walk
+      through"; offered a placement-only rule instead, the player chose this: "that seems to
+      be more thorough".)* Today `EventScheduler._role_for` answers `WALL` only for a lethal
+      row or one whose walk-through cost reaches `Tuning.WALL_WORTH_OF_COST` (35), so a market
+      stall — a 28 px body denying 58 px of a 64 px pavement, no 28 px line past it — is
+      *friction* and is weighted onto the corridor four to one (`Tuning.EVENT_CORRIDOR_WEIGHT`).
+      The width rule (`_leaves_a_line_past_it`, via `_closes_the_street`) then only asks that
+      *either* pavement stays walkable end to end, so the stall may close the pavement the
+      tree walks while the tint (`DECISIONS.md`, M150) marks exactly that pavement. Three
+      changes, the **balance** rule governing every number: (1) `_role_for` also answers `WALL`
+      for a row whose body and charging disc (`_line_reach_of`) leave no four-connected line
+      the stroller's width (the 28 px the probe uses) along a pavement it may be placed on —
+      a passability reading beside the cost reading, decided from the row's own numbers, so
+      `docs/EVENTS.md`'s role column moves for every row it catches (`cafe_tables` and
+      `market_stall` at least; list them all in the record). (2) `_copies_of` reads the
+      corridor per pavement, the way M150's tint does (`Corridor.depth` answers at the grain of
+      a whole street today; `docs/CITY.md` where that grain is described): a wall gets its zero
+      copies on the pavement the tree walks and its ordinary off-corridor copies on the *other*
+      pavement of the same street, which is where the player put the stall. (3) The width rule
+      reads the route's pavement, not the street: a counted row reaching onto the tree's
+      pavement between two junctions is refused unless a stroller-wide line survives along that
+      pavement, cumulatively with what is already down, the way the junction rule reads.
+      Measure with `tests/probes/m129_zero_cost_line.gd` before and after, and with
+      `_test_the_day_is_placed_by_role`'s corridor floors and the wall caps, which will move:
+      the two act I rows built to force a crossing become walls across the street from the
+      route, so say what day 1's corridor now carries and what forced crossings are left,
+      rather than retuning floors or caps to pass. `docs/EVENTS.md` where it describes the
+      roles and the three rules.
 ---
 
 ## M137 — The contact is whoever she hands the note to, and the trap comes to her · asked for 2026-09-13
