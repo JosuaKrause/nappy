@@ -303,15 +303,13 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
   `REVIEW.md` items; the felt half of playtest 73, whether the lag still *feels* the same, is
   still the player's. `?debug=1&seed=N` answers on the live page and the readout's columns fit
   a phone (`DECISIONS.md`, M138).
-- **M129, a path through the city never has to cost, is the next design work and its four
-  rules are ready for an agent, one at a time.** The reading is the player's
-  ([PLAYTEST-71](playtests/PLAYTEST-71.md)) and the probe measures it (`DECISIONS.md`, M129,
-  the reading decided): a flock is scenery and lands on routes again, and a zero-cost line
-  exists along about one route in six, one in three on day 1, one in twenty-five from act
-  III. The covered junction is the first rule's shape and a single wide row the second; the
-  yeller's beat, once the second shape, is now the fifth. The busker's street-side spill
-  (`DECISIONS.md`, M128) is read against these rules: with a line on the far pavement, a spill
-  onto one side is a price, not a wall.
+- **M129, a path through the city never has to cost, has its four rules and the leaf blower's
+  two-part field built** (`DECISIONS.md`, M129, the four rules; M129, the leaf blower is a wall
+  to walk past and a busker to stay near). The probe finds a zero-cost line on three routes in
+  five; what still breaks the rest, and which placement paths the rules never see, is the one
+  open item under M129 in `TODO.md`. The busker's street-side spill (`DECISIONS.md`, M128) is
+  read against these rules: with a line on the far pavement, a spill onto one side is a price,
+  not a wall.
 - **M137, the contact is whoever she hands the note to and the trap comes to her**, is
   specified and unbuilt: the robber spawns off screen, already pursuing, at the handoff instead
   of standing beside one seeded yeller from dawn.

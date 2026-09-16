@@ -366,76 +366,32 @@ body.
 
 ---
 
-## M129 — A path through the city never has to cost · the four rules built 2026-09-14, one question open
+## M129 — A path through the city never has to cost · two routes in five still break
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable
 > around … the routing should only cross the street at intersections"
 
 [PLAYTEST-69](playtests/PLAYTEST-69.md), [PLAYTEST-71](playtests/PLAYTEST-71.md),
-[PLAYTEST-75](playtests/PLAYTEST-75.md). The four rules are built and recorded
-(`DECISIONS.md`, M129, the four rules): a route's junctions stay clear, no single standing row
-takes a route street's whole width, a pacing row leaves the line open for part of its beat,
-and the tree grows on a graph with no carriageway cell but the junctions' and no main-road
-cell at all. The probe now finds a zero-cost line along a third of routes (100 of 296) where
-it found one along a sixth, and no route crosses a carriageway mid-block or touches the spine
-outside a junction. **The guarantee is still not true for two routes in three**, and the
-biggest remaining cause is a design decision, not a defect, so it waits on the player:
+[PLAYTEST-75](playtests/PLAYTEST-75.md), [PLAYTEST-76](playtests/PLAYTEST-76.md). The four rules
+and the leaf blower's two-part field are built and recorded (`DECISIONS.md`, M129, the four
+rules; M129, the leaf blower is a wall to walk past and a busker to stay near). The probe,
+`tests/probes/m129_zero_cost_line.gd`, finds a zero-cost line along 183 of 296 routes. The
+guarantee is not true for the rest, and what stands in them is a route junction covered by
+several rows together (69 routes), with the leaf blower in the cut on 74 of the 113. The three
+placement rules refuse a candidate whose reach *together with everything already down* would
+close a junction, so a crossing the probe finds under four to six rows is one that either
+reached the day past the rules or is read as covered differently by the probe and the rule:
 
-**The answer, 2026-09-15** ([PLAYTEST-76](playtests/PLAYTEST-76.md)): *"walking past a leaf
-blower should still be like a wall. but staying away from it should only prevent sleeping in
-a calm area (much like the busker)"* — *"a leaf blower should be able to close one side of a
-street and spaced out correctly a calm area"* — and, on counting walls at all: *"option 2 is
-valid only if the influence at a junction is low enough that it can be taken without having to
-worry or plan around it"*. Neither option above: a field with two parts, and a rule that reads
-the part that costs. The **balance** rule governs every number below and the **events** rule
-the catalogue row; the probe is `tests/probes/m129_zero_cost_line.gd`.
+- [ ] **Which placements the three rules never see.** `_place_one`'s candidate loop is where
+      the rules run. Find every other path a row reaches the day by — the calm-ground pass
+      that covers a park by area, `_ensure_one_usable_park`, the seals a `SealPlanner` places
+      before the scheduler runs, the region walls and doors — and say, per broken route in the
+      probe, which path placed the rows in its cut and whether the probe's *covered* and the
+      rule's *open* agree on it. Then either those paths ask the same three questions, or the
+      record says why a route may pay there. The probe's "what broke the line" table is the
+      measurement; the seals alone cost about five points (66.9% on the day's own rows against
+      61.8% with them).
 
-- [ ] **The leaf blower is a wall to walk past and a busker to stay near.** `EventDef` gains a
-      core — `core_intensity` and `core_radius`, both 0 by default so no other row changes —
-      and `emission_at()` answers the larger of the core's falloff (`core_intensity` at
-      `inner_radius`, falling to 0 at `core_radius` on the same curve `Tuning.falloff` uses) and
-      the field's own. `leaf_blower`'s field becomes the busker's — 19.3 over 45/190, its own
-      4.0 s pulse kept — and its core is sized by measurement: the smallest `core_radius` that
-      covers the pavement it stands on and not the road (about `Tuning.SIDEWALK_WIDTH *
-      TILE_SIZE`, 64 px, from a kerb-side tile), and the `core_intensity` at which the line
-      through the centre costs `Tuning.WALL_WORTH_OF_COST` (35.0) with a margin, while a line
-      past it at `core_radius` costs what the busker's does. `walk_through_cost()` integrates
-      the new shape as it stands, so the row stays a wall by role; `mean_emission_along_the_line`
-      and the caret's ordering follow. Measured the way `tests/probes/m117_decay.gd` measures,
-      the numbers in the commit and the record. `docs/EVENTS.md`'s leaf blower row says what the
-      two parts are.
-- [ ] **A row denies the ground it charges for, not the ground it can be heard on.**
-      `EventScheduler._line_reach_of()` answers the radius within which the row's emission is
-      above `Tuning.EXCITEMENT_DECAY_WALKING` (6.0/s) — the disc a walk through nets a cost in,
-      which is the player's own line: ground where the influence is low enough *"that it can be
-      taken without having to worry or plan around it"* is not denied — rather than
-      `outer_radius`; `obstructs_radius` and a `hard_fail` row's reach stay as they are. For the
-      leaf blower that disc is its core; for a plain quadratic row it is the outer part of the
-      field taken off, about 13% of the radius at intensity 20. The probe's five columns re-run
-      and filed against the four-rules table in `DECISIONS.md`; `docs/EVENTS.md` where it says
-      what ground a row denies.
-- [ ] **Walls count, on that reading only.** `_counts_against_the_line()` no longer exempts the
-      `WALL` role: a wall's charging disc is checked by the three rules like a friction row's and
-      refused where it would close a route junction, span a route street's width or shut a
-      beat's opening, and is offered another tile off the corridor as its weights already say.
-      What a wall may still reach into a junction is only the part under the walking decay, so
-      a junction inside a wall's outer field is one the walk takes without planning around it —
-      the condition the player set on counting walls at all. The probe before and after; the
-      entry closes when the record says what share of routes has a zero-cost line and what
-      stands in the rest — the seals a `SealPlanner` places before the scheduler runs are the
-      one reach the rules still never see, and are named there if they are what is left.
-      `REVIEW.md`, in the same PR: on a day with a leaf blower on a pavement, does walking past
-      it read as a wall and standing a street away read as a hum that keeps the baby awake and
-      nothing more; and at a junction inside its outer field, does crossing feel free.
-- [ ] **A row may shape its own drop-off, and none does yet.** *(2026-09-15: "can we
-      influence the drop off of excitement per row?" — "we can introduce the exponent but leave
-      everything as is for now".)* `EventDef` gains `falloff_power`, default 2.0, and
-      `Tuning.falloff` takes it: the drop between the radii is `intensity * (1 - t ** power)`,
-      so 2.0 is today's curve exactly, a power under 1 drops fast and tails long, a power above
-      2 holds near full then falls off a cliff. Every row stays at the default and every
-      measured number in the catalogue is unchanged, which the catalogue's ordering test and
-      `tests/test_events.gd`'s cost checks confirm by not moving; `docs/EVENTS.md` where it
-      describes the field's shape. The core above uses the same curve at the same default.
 ---
 
 ## M137 — The contact is whoever she hands the note to, and the trap comes to her · asked for 2026-09-13
