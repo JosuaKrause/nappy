@@ -295,31 +295,6 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
-## M154 — The day summary says when the day ended · asked for 2026-09-15
-
-> "can you show the time of the day when dieing/completing a day (not the total like on the
-> game over / win screen). ...fell asleep after xx:xx or something like that"
-
-[PLAYTEST-77](playtests/PLAYTEST-77.md). The **cues** rule governs `src/ui/`. The day
-summary (`DaySummary.show_day()`) carries the day number, a lost day's reason, the nerves and
-the resistance tally; the ending screen carries the run's whole length to the millisecond
-(`GameState.format_clock()`), which is the total the player does not want here.
-
-- [ ] **The summary carries the day's clock at the moment it ended.** `DayController` holds
-      `time_total` and `time_remaining`; the elapsed time is their difference at the instant
-      `day_finished` is emitted, captured before anything resets it, and handed to
-      `show_day()` alongside the reason. Shown in the HUD clock's own shape, `m:ss` to the
-      second (`hud.gd`'s `"%d:%02d"`), never the millisecond form. One line under the title,
-      phrased for the outcome: a won day *She fell asleep after 1:24.*; a lost day the reason
-      it already shows, followed by *after 1:24* on the same line or the next, so a crying
-      loss reads *She started crying after 1:24. There is no settling her now.* and a hard
-      fail reads its own sentence then the time; a timeout is the whole day and says so
-      rather than printing the day's length back. A check in `tests/test_day_loop.gd` beside
-      `_test_a_lost_days_brief_is_shown_and_then_cleared`: `show_day()` with a known elapsed
-      time puts that `m:ss` in the body for each `DayResult`, and the ending screen's body is
-      unchanged. `docs/MECHANICS.md` where it describes the day summary.
-
----
 
 ## M143 — The readout's `process` and `physics` lines say what they measure · asked for 2026-09-14
 
