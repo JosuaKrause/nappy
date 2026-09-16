@@ -21,6 +21,19 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Stand at a sealed street and watch one car meet the barrier**, on seed 3126506586 day 1, which
+  is where the player photographed a car twitching between the two sides of the road
+  (`--seed 3126506586 --day 1 --spawn closure:0 --invincible`, and `--press snapshot_burst 3` if it
+  wants recording). The car now brakes a half turn short of the barrier, waits there while the
+  oncoming lane is busy, and drives the arc round when it clears; where the arc's own ground is
+  blocked it still reverses on the spot, and where there is no road either way it stands still until
+  the camera leaves it. **Does the wait read as a driver hesitating rather than as a parked car, is
+  the sideways twitching gone, and does the half turn itself read as a manoeuvre?** Record is
+  `DECISIONS.md`, M152, the about-face is planned.
+- **Start a day and look at the first thing drawn**, on any seed, from the doorstep and again from a
+  summary screen's continue button on day 2. The morning's traffic is pulled apart before the frame
+  is drawn rather than on the frame after it. **Does any car on her own street move before she
+  does?** Same record.
 - **Watch a car finish a turn into a street that already has traffic in it** (any day with a
   closure; `--spawn closure:0` stands the camera at the junction outside the barrier, and
   `evidence/m152-car-teleport-2026-09-15/` carries the before-and-after bursts). The arrival

@@ -1,0 +1,157 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+m152 car-jump probe — threshold 6.17 px/frame (2 x CAR_SPEED.y x 0.0167s), view box (320.0, 180.0)
+
+seed 4242 day 1: 2400 frames, 34 cars, 1 closures, 112 watch points
+    landings          84   (every one, jump or not) (6 in view)
+    turn-rounds      122   (0 in view)
+    sway               1   (0 in view)
+    recycle           90   (0 in view)
+    spacing           51   (0 in view)
+    in-view jumps: 0
+  why cars reversed on the spot:
+       47  stopped-no-room  arcs[-/-/past-blockage/too-tight] blocked_in=3 room=0 gap=<reach speed=0 turned_before=no off-camera
+       41  stopped-no-room  arcs[out-of-sight/out-of-sight/out-of-sight/too-tight] blocked_in=2 room=0 gap=<reach speed=0 turned_before=no off-camera
+       15  stopped-no-room  arcs[-/-/too-tight/sweep-blocked] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        9  stopped-no-room  arcs[out-of-sight/-/out-of-sight/too-tight] blocked_in=2 room=0 gap=<reach speed=0 turned_before=no off-camera
+        2  stopped-no-room  arcs[-/-/too-tight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no off-camera
+        2  stopped-no-room  arcs[-/-/past-blockage/too-tight] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        2  stopped-no-room  arcs[out-of-sight/-/out-of-sight/sweep-blocked] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[out-of-sight/-/out-of-sight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[-/-/past-blockage/too-tight] blocked_in=1 room=0 gap=<nose speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[out-of-sight/past-blockage/out-of-sight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[-/-/past-blockage/exit-plugged] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+
+seed 4242 day 13: 2400 frames, 16 cars, 4 closures, 228 watch points
+    landings          65   (every one, jump or not) (2 in view)
+    turn-rounds       10   (0 in view)
+    recycle           53   (0 in view)
+    in-view jumps: 0
+  why cars reversed on the spot:
+        7  stopped-no-room  arcs[-/-/out-of-sight/sweep-blocked] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[sweep-blocked/-/too-tight/too-tight] blocked_in=2 room=0 gap=<nose speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[sweep-blocked/-/too-tight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[-/-/past-blockage/landing-taken] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+
+seed 24757 day 1: 2400 frames, 34 cars, 1 closures, 110 watch points
+    landings          57   (every one, jump or not) (0 in view)
+    turn-rounds       26   (0 in view)
+    recycle           34   (0 in view)
+    spacing           44   (0 in view)
+    in-view jumps: 0
+  why cars reversed on the spot:
+        9  stopped-no-room  arcs[sweep-blocked/sweep-blocked/too-tight/sweep-blocked] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=yes off-camera
+        7  stopped-no-room  arcs[out-of-sight/out-of-sight/out-of-sight/landing-taken] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=yes off-camera
+        7  stopped-no-room  arcs[out-of-sight/out-of-sight/out-of-sight/landing-taken] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[sweep-blocked/sweep-blocked/too-tight/sweep-blocked] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[too-tight/-/too-tight/sweep-blocked] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[out-of-sight/-/out-of-sight/landing-taken] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+
+seed 24757 day 13: 2400 frames, 16 cars, 4 closures, 244 watch points
+    landings          67   (every one, jump or not) (5 in view)
+    turn-rounds        7   (1 in view)
+    recycle           42   (0 in view)
+    spacing            2   (0 in view)
+    in-view jumps: 0
+  why cars reversed on the spot:
+        2  stopped-no-room  arcs[-/-/too-tight/sweep-blocked] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[sweep-blocked/-/too-tight/too-tight] blocked_in=1 room=0 gap=0 speed=0 turned_before=no off-camera
+        1  stopped-no-room  arcs[out-of-sight/-/out-of-sight/too-tight] blocked_in=2 room=0 gap=<nose speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[sweep-blocked/-/too-tight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no in-view
+        1  stopped-no-room  arcs[sweep-blocked/sweep-blocked/too-tight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[-/-/too-tight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no off-camera
+
+seed 91117 day 1: 2400 frames, 34 cars, 1 closures, 106 watch points
+    landings          59   (every one, jump or not) (2 in view)
+    turn-rounds       16   (0 in view)
+    recycle           56   (0 in view)
+    spacing           33   (2 in view)
+    in-view jumps: 2
+    worst: seed 91117 day 1 frame 1713: spacing jumped 64px, (2941.721, 2800.0) -> (2878.005, 2800.0), camera at (2590.552, 2672.0) (374px away)
+  why cars reversed on the spot:
+       14  stopped-no-room  arcs[out-of-sight/-/out-of-sight/landing-taken] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[sweep-blocked/sweep-blocked/too-tight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[past-blockage/-/past-blockage/landing-taken] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+
+seed 91117 day 13: 2400 frames, 16 cars, 4 closures, 230 watch points
+    landings          49   (every one, jump or not) (2 in view)
+    turn-rounds        2   (0 in view)
+    recycle           32   (0 in view)
+    spacing            3   (0 in view)
+    in-view jumps: 0
+  why cars reversed on the spot:
+        1  stopped-no-room  arcs[sweep-blocked/sweep-blocked/too-tight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[past-blockage/-/past-blockage/sweep-blocked] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+
+seed 3126506586 day 1: 2400 frames, 34 cars, 1 closures, 104 watch points
+    landings          65   (every one, jump or not) (3 in view)
+    turn-rounds      132   (0 in view)
+    sway              10   (0 in view)
+    recycle           92   (0 in view)
+    spacing           59   (0 in view)
+    in-view jumps: 0
+  why cars reversed on the spot:
+       55  stopped-no-room  arcs[-/-/past-blockage/sweep-blocked] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+       48  stopped-no-room  arcs[out-of-sight/out-of-sight/out-of-sight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no off-camera
+        7  stopped-no-room  arcs[-/-/past-blockage/too-tight] blocked_in=2 room=0 gap=<nose speed=0 turned_before=no off-camera
+        7  stopped-no-room  arcs[out-of-sight/out-of-sight/out-of-sight/too-tight] blocked_in=2 room=0 gap=<nose speed=0 turned_before=no off-camera
+        4  stopped-no-room  arcs[-/-/past-blockage/too-tight] blocked_in=2 room=0 gap=<reach speed=0 turned_before=no off-camera
+        3  stopped-no-room  arcs[out-of-sight/out-of-sight/out-of-sight/too-tight] blocked_in=2 room=0 gap=<reach speed=0 turned_before=no off-camera
+        2  stopped-no-room  arcs[out-of-sight/out-of-sight/out-of-sight/landing-taken] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[-/-/past-blockage/too-tight] blocked_in=1 room=0 gap=<nose speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[out-of-sight/-/out-of-sight/too-tight] blocked_in=2 room=0 gap=<reach speed=0 turned_before=no off-camera
+        1  stopped-no-room  arcs[out-of-sight/out-of-sight/out-of-sight/too-tight] blocked_in=1 room=0 gap=<nose speed=0 turned_before=no off-camera
+        1  stopped-no-room  arcs[-/-/past-blockage/too-tight] blocked_in=3 room=0 gap=<reach speed=0 turned_before=no off-camera
+        1  stopped-no-room  arcs[out-of-sight/out-of-sight/out-of-sight/too-tight] blocked_in=1 room=0 gap=0 speed=0 turned_before=no off-camera
+        1  stopped-no-room  arcs[sweep-blocked/sweep-blocked/too-tight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no off-camera
+
+TOTAL over 7 rig days, 40s each: 184 cars watched
+    landings         446   (every one, jump or not) (20 in view)
+    turn-rounds      315   (1 in view)
+    sway              11   (0 in view)
+    recycle          399   (0 in view)
+    spacing          192   (2 in view)
+  worst in-view jump per rig day:
+    seed 91117 day 1 frame 1713: spacing jumped 64px, (2941.721, 2800.0) -> (2878.005, 2800.0), camera at (2590.552, 2672.0) (374px away)
+  why cars reversed on the spot, over every rig day:
+       55  stopped-no-room  arcs[-/-/past-blockage/sweep-blocked] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+       48  stopped-no-room  arcs[out-of-sight/out-of-sight/out-of-sight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no off-camera
+       48  stopped-no-room  arcs[-/-/past-blockage/too-tight] blocked_in=3 room=0 gap=<reach speed=0 turned_before=no off-camera
+       44  stopped-no-room  arcs[out-of-sight/out-of-sight/out-of-sight/too-tight] blocked_in=2 room=0 gap=<reach speed=0 turned_before=no off-camera
+       17  stopped-no-room  arcs[-/-/too-tight/sweep-blocked] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+       15  stopped-no-room  arcs[out-of-sight/-/out-of-sight/landing-taken] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+       10  stopped-no-room  arcs[out-of-sight/-/out-of-sight/too-tight] blocked_in=2 room=0 gap=<reach speed=0 turned_before=no off-camera
+        9  stopped-no-room  arcs[out-of-sight/out-of-sight/out-of-sight/landing-taken] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        9  stopped-no-room  arcs[sweep-blocked/sweep-blocked/too-tight/sweep-blocked] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=yes off-camera
+        7  stopped-no-room  arcs[out-of-sight/out-of-sight/out-of-sight/too-tight] blocked_in=2 room=0 gap=<nose speed=0 turned_before=no off-camera
+        7  stopped-no-room  arcs[-/-/past-blockage/too-tight] blocked_in=2 room=0 gap=<nose speed=0 turned_before=no off-camera
+        7  stopped-no-room  arcs[-/-/out-of-sight/sweep-blocked] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        7  stopped-no-room  arcs[out-of-sight/out-of-sight/out-of-sight/landing-taken] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=yes off-camera
+        4  stopped-no-room  arcs[-/-/past-blockage/too-tight] blocked_in=2 room=0 gap=<reach speed=0 turned_before=no off-camera
+        4  stopped-no-room  arcs[sweep-blocked/sweep-blocked/too-tight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no off-camera
+        3  stopped-no-room  arcs[-/-/too-tight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no off-camera
+        2  stopped-no-room  arcs[-/-/past-blockage/too-tight] blocked_in=1 room=0 gap=<nose speed=<nose turned_before=no off-camera
+        2  stopped-no-room  arcs[-/-/past-blockage/too-tight] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        2  stopped-no-room  arcs[out-of-sight/-/out-of-sight/sweep-blocked] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[out-of-sight/-/out-of-sight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[out-of-sight/out-of-sight/out-of-sight/too-tight] blocked_in=1 room=0 gap=0 speed=0 turned_before=no off-camera
+        1  stopped-no-room  arcs[out-of-sight/out-of-sight/out-of-sight/too-tight] blocked_in=1 room=0 gap=<nose speed=0 turned_before=no off-camera
+        1  stopped-no-room  arcs[-/-/past-blockage/exit-plugged] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[sweep-blocked/-/too-tight/too-tight] blocked_in=2 room=0 gap=<nose speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[past-blockage/-/past-blockage/sweep-blocked] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[past-blockage/-/past-blockage/landing-taken] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[sweep-blocked/-/too-tight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[sweep-blocked/-/too-tight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no in-view
+        1  stopped-no-room  arcs[out-of-sight/-/out-of-sight/too-tight] blocked_in=2 room=0 gap=<nose speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[sweep-blocked/-/too-tight/too-tight] blocked_in=1 room=0 gap=0 speed=0 turned_before=no off-camera
+        1  stopped-no-room  arcs[-/-/past-blockage/landing-taken] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[sweep-blocked/sweep-blocked/too-tight/sweep-blocked] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[too-tight/-/too-tight/sweep-blocked] blocked_in=3 room=0 gap=<gap speed=<nose turned_before=no off-camera
+        1  stopped-no-room  arcs[out-of-sight/past-blockage/out-of-sight/too-tight] blocked_in=1 room=0 gap=0 speed=<nose turned_before=no off-camera
+PROBE m152 in-view jumps: 2
+PROBE m152 turn-rounds: 315 (1 in view)
+PROBE m152 sway episodes: 11 (0 in view)
+-- m152_car_jumps.gd            53083 ms
+
+1 checks, 0 failures
+PARTIAL RUN — only suites matching probes/m152_car_jumps.gd. Not a green build.

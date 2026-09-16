@@ -30,10 +30,19 @@ choosing an arm of a junction has to look before it commits. Three things to car
   `_join_the_back_of_the_queue()` is the fallback, because behind the last car is the one place in a
   lane that is free by construction.
 
-**The one place a large correction is right is frame zero of a day**, where the crowd is placed
-without consulting itself and the first pass unpacks it. Nobody has seen a previous frame of that
-street. **Do not "fix" it by spacing the crowd in `start_day`**: that turns a random morning into
-tight platoons at minimum headway, and three balance tests correctly object.
+**The morning is placed without consulting itself, so the unpack happens before the first frame is
+drawn.** `Crowd.start_day()` ends by running the same front-to-back resolve the first physics frame
+would run, because a day starts from an *idle* frame: the engine draws the placement and only then
+reaches the tick that would have corrected it, so a correction left to frame one is a car jumping a
+car's length on the street she is standing in. Nobody has seen a previous frame of that street,
+which is what makes the correction legal — and nobody has seen a *drawn* frame of it either, which
+is what makes doing it early free.
+
+**That is not the same thing as spacing the crowd in `start_day`, which stays refused**: spacing
+places cars at `Tuning.CAR_GAP_MIN` headway and turns a random morning into tight platoons, and
+three balance tests correctly object. The resolve chooses no position — a car that was not inside
+another one does not move at all. Keep the distinction in the docstring at the call site, because
+the two look identical from the outside and only one of them is allowed.
 
 **And a retry is not a guarantee one scale out either.** When re-rolling the small decision keeps
 failing, re-take the big one — a car handed a corridor whose visible stretch is all precinct
@@ -85,6 +94,20 @@ Three things about the shape of it that are easy to get wrong:
 - **Refusing outright is not available.** Cars that cannot turn round stop, one nose-to-wall car
   holds the junction it is standing in, and the street behind it queues: measured, 33 of 34 cars at
   a standstill inside ninety seconds. Whatever replaces a manoeuvre has to keep the road moving.
+- **And the last resort is stated over *why* an arc was refused, never over how much room is left.**
+  Reversing a heading where the car stands is the one manoeuvre with no path in it, so it may only
+  be reached from a state that waiting cannot mend. "Stopped with less than a nose's length of
+  manoeuvring room" is not that state — it is every car that has braked to its own aim point, which
+  is where the brake was aiming, so the test fires on the ordinary case and a single frame's refusal
+  is enough to spin a car round. Split the refusals: **a lane occupied at the landing empties by
+  itself and the ground, the geometry and the map do not.** Wait on the first, and bound the wait,
+  because waiting on a car that is itself stopped is the deadlock the entry above measures.
+- **A reversal that lands in the same state is the flicker, not the escape.** It swaps the lane a
+  car belongs to without moving it, and the ordinary cross-steer then slides the body to the other
+  lane's centre at three pixels a frame — under every jump threshold, and from outside a car shaking
+  its head. So a car with less than a half turn's road *both* ways stands still instead, and leaves
+  the way a pocketed body leaves, once nobody can see it go. **Ask what the manoeuvre changes about
+  the state that caused it**; if the answer is nothing, it is not a manoeuvre.
 
 **And a car that lands from a turn has to be able to leave.** The arm probe is a single point seven
 tiles out and looks straight past a two-tile plug — harmless while a car could reverse its heading
@@ -134,6 +157,14 @@ reads as a walker standing in a café.
 **`_lane` is where the walker belongs and the detour is how far off it currently is.** State the
 decision over the first and it is stable while the second is being acted on. Ties go to `_lane`,
 which is what makes *"and it steps back afterwards"* happen at all.
+
+**A car's lookahead is the same rule and the row either side of a lane is why.** `_look_ahead()`
+walks tiles from the car's *lane centre*, not from its body: a car still steering onto its lane
+straddles two rows, and the neighbouring row of a carriageway is the other lane or the kerb — where
+a solid body this car will never meet stands and where a precinct's paving starts. Asked from the
+body, the scan reports a wall two tiles ahead that is not on this car's road, and reports it
+*intermittently*, as the body crosses the row boundary and back. A walker still asks from its body,
+because a walker acting on a detour really is on the ground it is standing on.
 
 **The same trap one level up: a turn has no runway.** A walker rounds a corner wherever its old
 along coordinate left it, which can be a few pixels from the next street's first tile — so the lane
