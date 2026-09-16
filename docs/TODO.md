@@ -320,34 +320,31 @@ such numbers — three columns of which one is a measurement. Every phone readin
 
 ---
 
-## M152 — Cars teleport at their turns · the landing fixed 2026-09-15, the about-face open
+## M152 — Cars teleport at their turns · the landing and the about-face fixed 2026-09-15, one shunt open
 
 > "cars are super buggy now. when they turn in the final stretch the teleport a car length
 > somewhere else. also in some case instead of routing a turn (or u turn) they just teleport."
 
-[PLAYTEST-76](playtests/PLAYTEST-76.md). The **crowd-traffic** rule governs. The first shape is
-fixed and recorded (`DECISIONS.md`, M152, a turn's landing stands where its arc ended): a
-car that finished a turn was sent to the back of its exit lane by the merge a recycle makes,
-and the probe found it older than the day's merges. The second shape is the about-face itself,
-and it is a design question rather than a defect: `CrowdAgent._turn_round()` is the last
-resort when no arc fits (`_plan_a_turn()`), and it reverses a car's heading and swaps it to
-the other lane in one frame, then steers it across at `STEER_SPEED` — no distance moved, so no
-positional check sees it, but from outside a car flips round on the spot. The probe counts
-about 130 of them over 240 s across three seeds and two days. Also open: the first frame of a
-day unpacks the morning's placement by up to a car length in view, which the **crowd-traffic**
-rule sanctions as the one large correction nobody has seen a previous frame of — except that
-on the first frame of a day she is looking at her own street.
+[PLAYTEST-76](playtests/PLAYTEST-76.md), [PLAYTEST-77](playtests/PLAYTEST-77.md). The
+**crowd-traffic** rule governs. Both shapes are fixed and recorded (`DECISIONS.md`, M152, a
+turn's landing stands where its arc ended; M152, the about-face is planned and the morning is
+unpacked early). The probe `tests/probes/m152_car_jumps.gd` now finds one in-view jump that is
+neither: on seed 91117 day 1 a follower is moved a car's length backwards in one frame by the
+queue's front-to-back resolve, at (2941, 2800) → (2878, 2800), in the before and the after run
+alike.
 
-- [ ] **The about-face gets an arc, or a reason not to.** The player's call: either
-      `_turn_round()` becomes a real manoeuvre — a three-point turn or a tight U-turn arc
-      across the carriageway, checked for room the way `_plan_a_turn()` checks an arc before it
-      commits, and a car that has no room for it queues at the seal rather than flipping — or
-      the flip stays as the last resort and the record says why. The probe
-      `tests/probes/m152_car_jumps.gd` counts the flips, so the number after is the measurement.
-- [ ] **The morning unpack, in view.** Whether the first frame's separation pass may still
-      move a car a car length on the street she starts on, or the placement has to be
-      separated before the first frame is drawn. The player's call too; the probe reports it as
-      the one in-view jump left.
+- [ ] **A follower is shunted a car's length by the resolve, in view.**
+      `Crowd._resolve_the_queues()` moves a car by its whole overlap in one frame, which is
+      right for a placement nobody has seen and is the first shape the player reported when it
+      happens to a follower on camera — here the follower of a landing, since
+      `_land_the_turn()` leaves the arrival where its arc ended and the queue resolves whoever
+      is too close behind. Find what put the follower a car's length inside its leader on that
+      frame — the landing's claim, the follower's brake, or the lane key changing under it — and
+      fix that where it happens; a resolve that spreads the correction over frames is a force,
+      which the rule refuses. The probe's `spacing` class in view is the measurement, 0 after.
+      The last resort's own residual is measured and not asked about: one reversal on the spot
+      in view over seven rig days, where a stopped car outsat the wait on the landing; the PR
+      review names the shape to try if it shows in play.
 
 ---
 
@@ -633,6 +630,11 @@ is still true.
       row that waits — a flock, an alley robbery — `first_event_position()` stands her *inside*
       the trigger, so no rig can photograph the silence before it; a `--spawn` that lands her
       just outside the trigger is the other half of this item
+- [ ] **The balance rig's camera is overridden to physics process mode, with a warning.**
+      `tests/test_balance.gd`'s `_build_rig` adds a `Camera2D` that Godot moves to physics
+      process mode because physics interpolation is on, and says so on every run. The
+      **godot** rule leaves no warning standing: set the process mode the engine wants, or
+      turn interpolation off on the rig's camera, whichever the real camera does.
 - [ ] **`Crowd.step()` and `Crowd._physics_process()` duplicate four lines in two orders.**
       `src/crowd/crowd.gd:230-237` (`step`) and `:625-638` (`_physics_process`) both open with
       `_signals.advance` → `_pockets.refresh` → `space_out_the_traffic` →

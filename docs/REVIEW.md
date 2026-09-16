@@ -29,7 +29,7 @@ item below for as long as looking takes.
   blocked it still reverses on the spot, and where there is no road either way it stands still until
   the camera leaves it. **Does the wait read as a driver hesitating rather than as a parked car, is
   the sideways twitching gone, and does the half turn itself read as a manoeuvre?** Record is
-  `DECISIONS.md`, M152.
+  `DECISIONS.md`, M152, the about-face is planned.
 - **Start a day and look at the first thing drawn**, on any seed, from the doorstep and again from a
   summary screen's continue button on day 2. The morning's traffic is pulled apart before the frame
   is drawn rather than on the frame after it. **Does any car on her own street move before she

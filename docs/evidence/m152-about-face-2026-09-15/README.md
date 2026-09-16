@@ -17,6 +17,7 @@ tools/test.sh probes/m152_car_jumps.gd
 |---|---|
 | `probe-before.txt` | the probe as it is now, against `main`'s crowd code at `c7dfc4ed` |
 | `probe-after.txt` | this branch, with the morning unpacked early and the about-face planned |
+| `run-202436-seed3126506586-v0.10.7-107-gc7dfc4ed/` | the player's own desktop run on `main` at `c7dfc4ed`, copied whole; its `asked/burst-25017518-001/` is the burst [PLAYTEST-77](../../playtests/PLAYTEST-77.md) describes, a car at a sealed street sliding between the two lanes |
 
 The two runs are comparable because the probe itself is identical in both: only
 `src/crowd/crowd.gd` and `src/crowd/crowd_agent.gd` differ.
