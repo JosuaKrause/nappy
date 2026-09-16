@@ -52,6 +52,7 @@ func run(t) -> void:
 	_test_the_crowd_does_not_bunch_against_the_wall(t)
 	_test_the_field_is_wider_than_the_screen(t)
 	_test_cars_do_not_drive_through_each_other(t)
+	_test_the_morning_is_unpacked_before_the_first_frame(t)
 	_test_a_car_can_honour_the_headway_it_keeps(t)
 	_test_a_car_looks_before_it_turns(t)
 	_test_the_traffic_index_is_emptied_every_frame(t)
@@ -1207,6 +1208,58 @@ func _test_cars_do_not_drive_through_each_other(t) -> void:
 	t.check(overlapping == 0,
 			"no frame of a minute's traffic has one car inside another (%d did, worst %.0fpx)"
 			% [overlapping, worst])
+
+## **Nothing is corrected on the first frame of a day, because the correction has already happened.**
+##
+## The morning places every car without consulting the ones already placed, so some of them start
+## inside each other; the separation pass is what pulls them apart and it moves a body by the whole
+## overlap, up to a car's length. A day starts from an idle frame, so the engine draws that placement
+## before it reaches the physics tick that resolves it — which makes the correction a car visibly
+## jumping on the street she is standing in, and she is standing on exactly the street the day built
+## the crowd around.
+##
+## So the assertion is over the **first step**: after `start_day()`, one `Crowd.step()` may move no
+## car further than a car can drive in one. It is a relationship rather than a number — a frame's
+## travel at the fastest a car goes — and it fails loudly on any return to resolving the morning on
+## frame one, whatever that resolve is worth in pixels.
+##
+## Every act, because the population comes from the act and the overlap is a function of how many
+## cars share a street. The guard against a vacuous pass is the count: a rig day with no cars on it
+## proves nothing about what the cars do.
+##
+## **A recycle is excluded and is the one teleport the design allows**, since it only ever happens
+## where nobody is looking — `CrowdAgent._out_of_view()` is the condition on every one of them. It is
+## named the same way `tests/probes/m152_car_jumps.gd` names it: `_cruise` is written only where a
+## car is handed a fresh lane, so a car whose cruise changed over the frame was placed rather than
+## moved.
+func _test_the_morning_is_unpacked_before_the_first_frame(t) -> void:
+	var a_frames_travel := Tuning.CAR_SPEED.y * STEP + 0.01
+	var watched := 0
+	var worst := 0.0
+	var worst_day := 0
+	for day in [1, 5, 9, 13]:
+		_city.crowd.start_day(day, _rng(day))
+		var before := {}
+		for agent in _city.crowd.agents():
+			if agent.kind != CrowdAgent.Kind.CAR:
+				continue
+			before[agent.get_instance_id()] = [agent.position, agent._cruise]
+			watched += 1
+		_city.crowd.step(STEP)
+		for agent in _city.crowd.agents():
+			if agent.kind != CrowdAgent.Kind.CAR:
+				continue
+			var was: Array = before.get(agent.get_instance_id(), [])
+			if was.is_empty() or not is_equal_approx(float(was[1]), agent._cruise):
+				continue
+			var moved: float = (was[0] as Vector2).distance_to(agent.position)
+			if moved > worst:
+				worst = moved
+				worst_day = day
+	t.check(watched > 0, "the rig days put cars on the road to watch (%d)" % watched)
+	t.check(worst <= a_frames_travel,
+			"the first frame of a day moves no car further than it could drive in one (worst "
+			+ "%.1fpx on day %d, against %.1fpx)" % [worst, worst_day, a_frames_travel])
 
 ## **A turn is a placement, and it has to look before it commits.** *(M38: "when a car turns into an
 ## occupied lane the other car just disappears.")*

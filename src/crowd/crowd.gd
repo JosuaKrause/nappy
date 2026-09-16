@@ -157,6 +157,21 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> vo
 	var act := Tuning.act_for_day(day)
 	_populate(CrowdAgent.Kind.WALKER, Tuning.crowd_pedestrians(act), rng)
 	_populate(CrowdAgent.Kind.CAR, Tuning.crowd_cars(act), rng)
+	# **The unpack the first frame would do anyway, done before the first frame is drawn.** The
+	# morning places every car without consulting the ones already placed, so some of them start
+	# inside each other and the first `space_out_the_traffic()` pulls them apart — a correction of up
+	# to a car's length. A day is started from an *idle* frame, so the engine draws the placement
+	# before it ever reaches the physics tick that resolves it, and the street she is standing in on
+	# the first frame of a day is the one street that unpack is certain to be seen on. Running the
+	# same resolve here means the state the first physics frame is handed is the state it would have
+	# left, and there is nothing for it to correct.
+	#
+	# **This is not spacing the crowd in `start_day`**, which is a different thing and stays refused:
+	# that would place cars at `Tuning.CAR_GAP_MIN` headway and turn a random morning into platoons,
+	# which the balance suites read as a street busier than the day asked for. Nothing here chooses a
+	# position. It is the front-to-back overlap resolve and only that, so a car that was not inside
+	# another one does not move at all.
+	_resolve_the_queues()
 
 ## Where the simulated patch of city is centred. `Crowd` moves it onto the player itself; this
 ## exists so `main` can put it on the doorstep before the player is standing there.
@@ -263,33 +278,7 @@ func step(delta: float) -> void:
 ## overlap a probe finds. Resolving the queue from the front backwards fixes a
 ## whole chain in one pass, and the correction is a few pixels except in the case it exists for.
 func space_out_the_traffic(delta: float) -> void:
-	var lanes := {}
-	for agent in _agents:
-		if agent.kind != CrowdAgent.Kind.CAR:
-			continue
-		agent.gap_ahead = INF
-		agent.leader_speed = 0.0
-		var key := agent.lane_key()
-		if not lanes.has(key):
-			lanes[key] = [] as Array[CrowdAgent]
-		lanes[key].append(agent)
-
-	for key: String in lanes:
-		var queue: Array[CrowdAgent] = lanes[key]
-		if queue.size() < 2:
-			continue
-		queue.sort_custom(func(a: CrowdAgent, b: CrowdAgent) -> bool:
-			return a.queue_position() < b.queue_position())
-		# Front to back, so a car pushed back is pushed against a neighbour that has not been
-		# placed yet rather than one that has.
-		for i in range(queue.size() - 2, -1, -1):
-			var gap := queue[i + 1].queue_position() - queue[i].queue_position()
-			if gap < Tuning.CAR_GAP_MIN:
-				queue[i].nudge_back(Tuning.CAR_GAP_MIN - gap)
-				gap = Tuning.CAR_GAP_MIN
-			queue[i].gap_ahead = gap
-			queue[i].leader_speed = queue[i + 1].speed()
-
+	var lanes := _resolve_the_queues()
 	_keep_room_for_the_turning(lanes)
 
 	# And the same buckets, as bare positions, for the cars that have not turned yet. Built after
@@ -316,6 +305,43 @@ func space_out_the_traffic(delta: float) -> void:
 			_traffic.claim(agent.turn_lane_key(), agent.turn_landing())
 	give_way_at_junctions()
 	_stop_for_gates(delta)
+
+## The separation itself: cars bucketed by lane, each lane sorted along itself, and any two inside
+## each other pulled apart from the front backwards. Returns the buckets, since the rest of the
+## frame wants the same ones.
+##
+## **Its own function because the morning calls it too.** `start_day()` places a crowd without
+## consulting itself and needs exactly this and nothing else — not the junction negotiation, not the
+## gates, not the index rebuild, none of which moves a body. See `start_day()` for why that call is
+## not the thing the crowd rules refuse.
+func _resolve_the_queues() -> Dictionary:
+	var lanes := {}
+	for agent in _agents:
+		if agent.kind != CrowdAgent.Kind.CAR:
+			continue
+		agent.gap_ahead = INF
+		agent.leader_speed = 0.0
+		var key := agent.lane_key()
+		if not lanes.has(key):
+			lanes[key] = [] as Array[CrowdAgent]
+		lanes[key].append(agent)
+
+	for key: String in lanes:
+		var queue: Array[CrowdAgent] = lanes[key]
+		if queue.size() < 2:
+			continue
+		queue.sort_custom(func(a: CrowdAgent, b: CrowdAgent) -> bool:
+			return a.queue_position() < b.queue_position())
+		# Front to back, so a car pushed back is pushed against a neighbour that has not been
+		# placed yet rather than one that has.
+		for i in range(queue.size() - 2, -1, -1):
+			var gap := queue[i + 1].queue_position() - queue[i].queue_position()
+			if gap < Tuning.CAR_GAP_MIN:
+				queue[i].nudge_back(Tuning.CAR_GAP_MIN - gap)
+				gap = Tuning.CAR_GAP_MIN
+			queue[i].gap_ahead = gap
+			queue[i].leader_speed = queue[i + 1].speed()
+	return lanes
 
 ## Gives a turning car's booked landing to the lane it is joining, as a leader for whoever is behind
 ## it there.
