@@ -1108,6 +1108,13 @@ func _event_summary() -> String:
 
 func _on_day_finished(result: GameEnums.DayResult) -> void:
 	var finished_day := GameState.day
+	# Captured here, before anything below touches `_day`, so the summary's clock reads the
+	# instant the day actually ended rather than whatever `_day.time_remaining` holds by the time
+	# `show_day()` is called several lines down. Clamped because `_process()` can call `_end()`
+	# one frame after `time_remaining` has gone slightly negative (a timeout checks `<= 0.0` after
+	# subtracting `delta`, not the instant it crosses zero), which would otherwise read a few
+	# milliseconds past the day's own length.
+	var elapsed_seconds := clampf(_day.time_total - _day.time_remaining, 0.0, _day.time_total)
 	# Before the calendar moves, so the outcome is written above the nerve it cost — and
 	# before `end_day()` stops the clock, so it is timestamped where it happened.
 	if _observer:
@@ -1136,7 +1143,7 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 			_city.events.plans(), true, trail, met)
 	Telemetry.end_day()
 	_run_over = not GameState.finish_day(result)
-	_summary.show_day(finished_day, result, _day.failure_reason, GameState.nerves)
+	_summary.show_day(finished_day, result, _day.failure_reason, GameState.nerves, elapsed_seconds)
 
 func _on_summary_continued() -> void:
 	if not _run_over:

@@ -311,10 +311,12 @@ func _refresh_state() -> void:
 
 func _on_day_time_changed(remaining: float, total: float) -> void:
 	# A day reads to the second and the escape reads to the millisecond. `GameState.format_clock()`
-	# is the one place the longer form is written, shared with the run length on an ending screen so
-	# the two can never carry two copies of the same format string.
+	# is the one place the longer form is written, shared with the run length on an ending screen;
+	# `GameState.format_clock_seconds()` is this clock's own shape, shared with the day summary's
+	# elapsed-time line (`DaySummary.show_day()`) so the two can never carry two copies of the same
+	# format string.
 	_clock.text = GameState.format_clock(remaining) if _finale \
-			else "%d:%02d" % [int(remaining) / 60, int(remaining) % 60]
+			else GameState.format_clock_seconds(remaining)
 	# The last minute is the one worth panicking about.
 	var urgent := remaining < 60.0 and total > 0.0
 	_clock.modulate = Color("e5765f") if urgent else Color(1, 1, 1)

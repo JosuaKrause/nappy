@@ -115,16 +115,21 @@ func _refresh_buttons() -> void:
 	_buttons.visible = true
 	_continue_column.visible = not _showing_ending
 
-func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int) -> void:
+## `elapsed_seconds` is the day's own clock at the instant it ended — `main._on_day_finished()`
+## takes `DayController.time_total - DayController.time_remaining`, clamped to the day, before
+## anything about the next day can touch either field, and hands it here alongside the reason.
+## Defaults to `0.0` only so the handful of test call sites that do not care about the clock (the
+## pause and resume rig in `tests/test_pause.gd`) do not all need an argument they never read.
+func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int,
+		elapsed_seconds: float = 0.0) -> void:
 	# A lost *day* is not the end of a run — there are nerves left, and the screen says so two lines
 	# down. The heading belongs to the screen that ends the run and to nothing else.
 	_heading.hide()
 	_showing_ending = false
 	_title.text = _DAY_TITLE.get(result, "The day ends.")
 	var lines: Array[String] = ["Day %d of %d" % [day, Tuning.RUN_LENGTH_DAYS]]
-	if reason != "":
-		lines.append("")
-		lines.append(reason)
+	lines.append("")
+	lines.append(_elapsed_line(result, reason, GameState.format_clock_seconds(elapsed_seconds)))
 	lines.append("")
 	var retrying := result != GameEnums.DayResult.WON and nerves > 0
 	if result == GameEnums.DayResult.WON:
@@ -160,6 +165,32 @@ func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int
 	# made there.
 	_hint.text = ""
 	_present()
+
+## The line under the title that says when the day ended — the ask behind M154: *"can you show
+## the time of the day when dieing/completing a day ... fell asleep after xx:xx or something like
+## that"*. `clock` is `GameState.format_clock_seconds()`'s `m:ss`, never the ending screen's
+## millisecond form (`GameState.format_clock()`), because the player asked for the HUD clock's own
+## shape and named the millisecond one as what they did not want.
+##
+## Phrased per outcome rather than one suffix appended everywhere, because `reason` is not a single
+## shape: `LOST_CRYING`'s reason names the moment itself ("She started crying. ...") so the clock
+## reads into that first sentence rather than trailing the second one, and every other reason keeps
+## its own sentence whole with the clock as a sentence of its own after it. `LOST_TIMEOUT` shows no
+## clock at all — dusk *is* the whole day, so printing the day's own length back is the total the
+## TODO item says the player does not want here, only in a different place.
+func _elapsed_line(result: GameEnums.DayResult, reason: String, clock: String) -> String:
+	match result:
+		GameEnums.DayResult.WON:
+			return "She fell asleep after %s." % clock
+		GameEnums.DayResult.LOST_TIMEOUT:
+			return reason
+		GameEnums.DayResult.LOST_CRYING:
+			var cut := reason.find(". ")
+			if cut == -1:
+				return "%s after %s." % [reason, clock]
+			return "%s after %s.%s" % [reason.substr(0, cut), clock, reason.substr(cut + 1)]
+		_:
+			return "%s After %s." % [reason, clock]
 
 ## The tally alone — how many errands are done and how many are lost. The chalk mark's own
 ## words are `_brief`'s job now, shown and cleared directly in `show_day()` regardless of

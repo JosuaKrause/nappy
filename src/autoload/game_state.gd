@@ -25,6 +25,17 @@ static func format_clock(seconds: float) -> String:
 	var total_seconds := total_ms / 1000
 	return "%d:%02d.%03d" % [total_seconds / 60, total_seconds % 60, total_ms % 1000]
 
+## `%d:%02d` — minutes and seconds, no millisecond term — the day clock's own shape wherever it is
+## shown: the HUD corner while a day runs (`hud.gd`'s `_on_day_time_changed()`) and the day summary
+## once it ends (`DaySummary.show_day()`). Truncates rather than rounds, matching the HUD's own
+## `int(remaining)` so a value read from the same clock a frame apart never disagrees by a second.
+## Its own function rather than `format_clock()` with the millisecond term dropped, so the day
+## clock and the run clock stay two callers of two small functions instead of one function two
+## call sites have to remember to call correctly.
+static func format_clock_seconds(seconds: float) -> String:
+	var total_seconds := int(seconds)
+	return "%d:%02d" % [total_seconds / 60, total_seconds % 60]
+
 ## One-shot event ids already consumed this run, so they never fire twice.
 var consumed_one_shots: Array[String] = []
 ## Resistance steps completed, and steps failed beyond recovery.

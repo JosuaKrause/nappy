@@ -295,6 +295,7 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
+
 ## M143 — The readout's `process` and `physics` lines say what they measure · asked for 2026-09-14
 
 [PLAYTEST-75](playtests/PLAYTEST-75.md), the desktop stutter, and `DECISIONS.md`, M138, what
@@ -373,7 +374,37 @@ reached the day past the rules or is read as covered differently by the probe an
       record says why a route may pay there. The probe's "what broke the line" table is the
       measurement; the seals alone cost about five points (66.9% on the day's own rows against
       61.8% with them).
-
+- [ ] **A wall is also what cannot physically be walked past, and it never stands on the
+      route's own pavement.** *(2026-09-15: "on the side of the street where the path was
+      chosen only obstacles that can be bypassed should be possible" — "the market stall should
+      appear on the other side of the street" — "a wall is also when you physically cannot walk
+      through"; offered a placement-only rule instead, the player chose this: "that seems to
+      be more thorough".)* Today `EventScheduler._role_for` answers `WALL` only for a lethal
+      row or one whose walk-through cost reaches `Tuning.WALL_WORTH_OF_COST` (35), so a market
+      stall — a 28 px body denying 58 px of a 64 px pavement, no 28 px line past it — is
+      *friction* and is weighted onto the corridor four to one (`Tuning.EVENT_CORRIDOR_WEIGHT`).
+      The width rule (`_leaves_a_line_past_it`, via `_closes_the_street`) then only asks that
+      *either* pavement stays walkable end to end, so the stall may close the pavement the
+      tree walks while the tint (`DECISIONS.md`, M150) marks exactly that pavement. Three
+      changes, the **balance** rule governing every number: (1) `_role_for` also answers `WALL`
+      for a row whose body and charging disc (`_line_reach_of`) leave no four-connected line
+      the stroller's width (the 28 px the probe uses) along a pavement it may be placed on —
+      a passability reading beside the cost reading, decided from the row's own numbers, so
+      `docs/EVENTS.md`'s role column moves for every row it catches (`cafe_tables` and
+      `market_stall` at least; list them all in the record). (2) `_copies_of` reads the
+      corridor per pavement, the way M150's tint does (`Corridor.depth` answers at the grain of
+      a whole street today; `docs/CITY.md` where that grain is described): a wall gets its zero
+      copies on the pavement the tree walks and its ordinary off-corridor copies on the *other*
+      pavement of the same street, which is where the player put the stall. (3) The width rule
+      reads the route's pavement, not the street: a counted row reaching onto the tree's
+      pavement between two junctions is refused unless a stroller-wide line survives along that
+      pavement, cumulatively with what is already down, the way the junction rule reads.
+      Measure with `tests/probes/m129_zero_cost_line.gd` before and after, and with
+      `_test_the_day_is_placed_by_role`'s corridor floors and the wall caps, which will move:
+      the two act I rows built to force a crossing become walls across the street from the
+      route, so say what day 1's corridor now carries and what forced crossings are left,
+      rather than retuning floors or caps to pass. `docs/EVENTS.md` where it describes the
+      roles and the three rules.
 ---
 
 ## M137 — The contact is whoever she hands the note to, and the trap comes to her · asked for 2026-09-13
