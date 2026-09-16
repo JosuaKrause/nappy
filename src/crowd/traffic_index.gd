@@ -66,12 +66,18 @@ func claim(key: String, at: float) -> void:
 ## Gives one entry back — the mirror of `claim()`, for the one caller that has to ask about a lane
 ## it has already booked a place in.
 ##
-## **A turning car's own reservation is indistinguishable from somebody else's car**, and the frame
-## it lands is exactly the frame it has to ask whether the spot is still free. Without this it finds
-## its own booking sitting on the landing point, decides the lane is occupied, and merges in behind
-## itself. `CrowdAgent._land_the_turn()` is the only caller; the entry nearest `at` is the one
-## dropped, since a claim is made at a point rather than by identity and two bookings a hair apart
-## are the same piece of road either way.
+## **A turning car's own reservation is indistinguishable from somebody else's car**, so the booking
+## and the body that takes it up may never both stand in the lane: `CrowdAgent._land_the_turn()`
+## hands the booking back on the frame it arrives and claims its real position instead, which is the
+## same piece of road counted once rather than twice. Left in, it is a phantom standing on the spot
+## the car is really on, and every other car that looks at that lane for the rest of the frame reads
+## two bodies where there is one — a recycle and a turn both ask, several times a second. Nothing
+## else ever takes a claim out: `_claim_the_turn()` writes a fresh one on every frame of a
+## manoeuvre.
+##
+## `_land_the_turn()` is the only caller; the entry nearest `at` is the one dropped, since a claim is
+## made at a point rather than by identity and two bookings a hair apart are the same piece of road
+## either way.
 func give_back(key: String, at: float) -> void:
 	var queue: PackedFloat32Array = _lanes.get(key, PackedFloat32Array())
 	var nearest := -1

@@ -494,18 +494,22 @@ past the end of the arc for the car to leave by. A turn that fails any of those 
 the separation pass is never asked to repair one — `Crowd.space_out_the_traffic()` refuses to slide
 a car that is on an arc.
 
-**A lane makes room for a car that is coming, and is never rearranged once one has arrived.** The
-room above is a fact about the frame the turn was committed in, and the car is not standing there
-until a run-up and a whole arc later; the traffic in that lane keeps driving in the meantime. So the
-booked landing is given to the lane as a **stopped leader**: the nearest car behind it keeps a
-headway to the spot exactly as it would to any car in front of it, and the gap is open by the time
-the turn arrives. Nobody ahead of the landing is told anything, since they are driving away from it
-and a leader behind a car is how a queue deadlocks. If the gap has closed anyway, it is the
-**arrival** that gives way — it drops in behind the lane's rearmost car, the one place free by
-construction, the same merge a recycled car makes. Nothing about joining a lane may move a car that
-was already in it: the front-to-back resolve compounds, so one newcomer standing in the middle of a
-queue shunts every car behind it by the overlap plus everything moved ahead of them, and a whole
-queue jumps at once.
+**A lane makes room for a car that is coming.** The room above is a fact about the frame the turn
+was committed in, and the car is not standing there until a run-up and a whole arc later; the
+traffic in that lane keeps driving in the meantime. So the booked landing is given to the lane as a
+**stopped leader**: the nearest car behind it keeps a headway to the spot exactly as it would to any
+car in front of it, and the gap is open by the time the turn arrives. Nobody ahead of the landing is
+told anything, since they are driving away from it and a leader behind a car is how a queue
+deadlocks.
+
+**And the arrival is never moved off the end of its own arc.** A brake aims at a point and arrives
+late, so the follower that was holding back can settle a little inside the minimum gap rather than
+outside it — and a body too close *behind* an arrival is what the front-to-back resolve is for: it
+moves the car behind, by the overlap. The alternative, sending the arrival to the back of the lane
+the way a recycled car merges, is the one thing a turn may not rest on: off screen at the entry band
+"further back" is more off-screen road, and at a junction it is most of a street, so a car drives a
+visible arc and then disappears backwards past every other car in it. **The room a turn needs is
+checked before the arc starts or the turn is not taken**, and the landing frame decides nothing.
 
 **What a car does when nothing fits is brake.** It aims to stop a half turn's worth of road short of
 whatever is in the way, which is what leaves it somewhere it can still turn round.

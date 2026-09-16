@@ -1,0 +1,74 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+m152 car-jump probe — threshold 6.17 px/frame (2 x CAR_SPEED.y x 0.0167s), view box (320.0, 180.0)
+
+seed 4242 day 1: 2400 frames, 34 cars, 1 closures, 2 watch points
+    landings         150   (every one, jump or not)
+    turn-rounds       59   (every one, jump or not)
+    recycle          113   (0 in view)
+    turn-landed        1   (1 in view)
+    spacing           15   (0 in view)
+    in-view jumps: 1
+    worst: seed 4242 day 1 frame 174: turn-landed jumped 383px, (2320.011, 2497.095) -> (2320.0, 2114.007), camera at (2481.874, 2447.311) (169px away)
+    retreat: flung 383px back; nearest car in the exit lane was 35px behind the landing
+
+seed 4242 day 13: 2400 frames, 16 cars, 4 closures, 8 watch points
+    landings          71   (every one, jump or not)
+    turn-rounds       15   (every one, jump or not)
+    recycle           62   (0 in view)
+    turn-landed        3   (0 in view)
+    spacing            9   (0 in view)
+    in-view jumps: 0
+    retreat: flung 621px back; nearest car in the exit lane was 47px behind the landing
+    retreat: flung 533px back; nearest car in the exit lane was 62px behind the landing
+    retreat: flung 448px back; nearest car in the exit lane was 63px behind the landing
+
+seed 24757 day 1: 2400 frames, 34 cars, 1 closures, 2 watch points
+    landings         128   (every one, jump or not)
+    turn-rounds       10   (every one, jump or not)
+    recycle           74   (0 in view)
+    turn-landed        1   (0 in view)
+    spacing           37   (0 in view)
+    in-view jumps: 0
+    retreat: flung 650px back; nearest car in the exit lane was 32px behind the landing
+
+seed 24757 day 13: 2400 frames, 16 cars, 4 closures, 8 watch points
+    landings          54   (every one, jump or not)
+    turn-rounds       35   (every one, jump or not)
+    recycle           29   (0 in view)
+    spacing            2   (0 in view)
+    in-view jumps: 0
+
+seed 91117 day 1: 2400 frames, 34 cars, 1 closures, 2 watch points
+    landings          39   (every one, jump or not)
+    recycle          104   (0 in view)
+    spacing            4   (1 in view)
+    in-view jumps: 1
+    worst: seed 91117 day 1 frame 0: spacing jumped 59px, (2654.348, 2768.0) -> (2713.181, 2768.0), camera at (2561.202, 2704.952) (112px away)
+
+seed 91117 day 13: 2400 frames, 16 cars, 4 closures, 8 watch points
+    landings          90   (every one, jump or not)
+    turn-rounds       22   (every one, jump or not)
+    recycle           48   (0 in view)
+    turn-landed        2   (1 in view)
+    spacing           14   (0 in view)
+    in-view jumps: 1
+    worst: seed 91117 day 13 frame 200: turn-landed jumped 562px, (3237.525, 2351.995) -> (2675.821, 2352.0), camera at (2806.294, 2518.703) (462px away)
+    retreat: flung 562px back; nearest car in the exit lane was 19px behind the landing
+    retreat: flung 200px back; nearest car in the exit lane was 59px behind the landing
+
+TOTAL over 3 seeds x days [1, 13], 40s each: 150 cars watched
+    landings         532   (every one, jump or not)
+    turn-rounds      141   (every one, jump or not)
+    recycle          430   (0 in view)
+    turn-landed        7   (2 in view)
+    spacing           81   (1 in view)
+  worst in-view jump per rig day:
+    seed 4242 day 1 frame 174: turn-landed jumped 383px, (2320.011, 2497.095) -> (2320.0, 2114.007), camera at (2481.874, 2447.311) (169px away)
+    seed 91117 day 1 frame 0: spacing jumped 59px, (2654.348, 2768.0) -> (2713.181, 2768.0), camera at (2561.202, 2704.952) (112px away)
+    seed 91117 day 13 frame 200: turn-landed jumped 562px, (3237.525, 2351.995) -> (2675.821, 2352.0), camera at (2806.294, 2518.703) (462px away)
+PROBE m152 in-view jumps: 3
+-- m152_car_jumps.gd            49571 ms
+
+1 checks, 0 failures
+PARTIAL RUN — only suites matching probes/m152_car_jumps.gd. Not a green build.

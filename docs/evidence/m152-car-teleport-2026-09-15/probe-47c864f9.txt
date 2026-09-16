@@ -1,0 +1,79 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+m152 car-jump probe — threshold 6.17 px/frame (2 x CAR_SPEED.y x 0.0167s), view box (320.0, 180.0)
+
+seed 4242 day 1: 2400 frames, 34 cars, 1 closures, 2 watch points
+    landings          96   (every one, jump or not)
+    turn-rounds       52   (every one, jump or not)
+    recycle           67   (0 in view)
+    turn-landed        3   (0 in view)
+    spacing           26   (0 in view)
+    in-view jumps: 0
+    retreat: flung 1472px back; nearest car in the exit lane was 65px behind the landing
+    retreat: flung 919px back; nearest car in the exit lane was 64px behind the landing
+    retreat: flung 416px back; nearest car in the exit lane was 36px behind the landing
+
+seed 4242 day 13: 2400 frames, 16 cars, 4 closures, 8 watch points
+    landings         113   (every one, jump or not)
+    turn-rounds       16   (every one, jump or not)
+    recycle           86   (0 in view)
+    turn-landed        1   (0 in view)
+    in-view jumps: 0
+    retreat: flung 1244px back; nearest car in the exit lane was 57px behind the landing
+
+seed 24757 day 1: 2400 frames, 34 cars, 1 closures, 2 watch points
+    landings          88   (every one, jump or not)
+    turn-rounds       17   (every one, jump or not)
+    recycle           80   (0 in view)
+    turn-landed        2   (0 in view)
+    spacing           41   (0 in view)
+    in-view jumps: 0
+    retreat: flung 407px back; nearest car in the exit lane was 11px behind the landing
+    retreat: flung 120px back; nearest car in the exit lane was 54px behind the landing
+
+seed 24757 day 13: 2400 frames, 16 cars, 4 closures, 8 watch points
+    landings          68   (every one, jump or not)
+    turn-rounds       13   (every one, jump or not)
+    recycle           38   (0 in view)
+    turn-landed        1   (1 in view)
+    spacing            1   (0 in view)
+    in-view jumps: 1
+    worst: seed 24757 day 13 frame 116: turn-landed jumped 360px, (3263.722, 2800.002) -> (2903.252, 2800.0), camera at (2723.074, 2778.782) (541px away)
+    retreat: flung 360px back; nearest car in the exit lane was 19px behind the landing
+
+seed 91117 day 1: 2400 frames, 34 cars, 1 closures, 2 watch points
+    landings          89   (every one, jump or not)
+    turn-rounds       20   (every one, jump or not)
+    recycle          133   (0 in view)
+    spacing           13   (1 in view)
+    in-view jumps: 1
+    worst: seed 91117 day 1 frame 0: spacing jumped 59px, (2654.348, 2768.0) -> (2713.181, 2768.0), camera at (2561.488, 2704.369) (113px away)
+
+seed 91117 day 13: 2400 frames, 16 cars, 4 closures, 8 watch points
+    landings          83   (every one, jump or not)
+    turn-rounds        7   (every one, jump or not)
+    recycle           58   (0 in view)
+    turn-landed        4   (1 in view)
+    spacing            5   (2 in view)
+    in-view jumps: 3
+    worst: seed 91117 day 13 frame 1753: turn-landed jumped 127px, (4591.974, 1599.222) -> (4592.0, 1726.434), camera at (4273.73, 1440.0) (356px away)
+    retreat: flung 651px back; nearest car in the exit lane was 17px behind the landing
+    retreat: flung 127px back; nearest car in the exit lane was 61px behind the landing
+    retreat: flung 119px back; nearest car in the exit lane was 53px behind the landing
+    retreat: flung 127px back; nearest car in the exit lane was 61px behind the landing
+
+TOTAL over 3 seeds x days [1, 13], 40s each: 150 cars watched
+    landings         537   (every one, jump or not)
+    turn-rounds      125   (every one, jump or not)
+    recycle          462   (0 in view)
+    turn-landed       11   (2 in view)
+    spacing           86   (3 in view)
+  worst in-view jump per rig day:
+    seed 24757 day 13 frame 116: turn-landed jumped 360px, (3263.722, 2800.002) -> (2903.252, 2800.0), camera at (2723.074, 2778.782) (541px away)
+    seed 91117 day 1 frame 0: spacing jumped 59px, (2654.348, 2768.0) -> (2713.181, 2768.0), camera at (2561.488, 2704.369) (113px away)
+    seed 91117 day 13 frame 1753: turn-landed jumped 127px, (4591.974, 1599.222) -> (4592.0, 1726.434), camera at (4273.73, 1440.0) (356px away)
+PROBE m152 in-view jumps: 5
+-- m152_car_jumps.gd            56503 ms
+
+1 checks, 0 failures
+PARTIAL RUN — only suites matching probes/m152_car_jumps.gd. Not a green build.

@@ -2254,20 +2254,29 @@ func _follow_the_turn(delta: float) -> void:
 ## arc ends — so there is nothing to steer back to and nothing that has to be spaced out. The
 ## lookahead is thrown away, since it is a cached answer about an axis this car no longer has.
 ##
-## **Joining is the joiner's business, and the lane it joins is never rearranged for it.** The room
-## `_has_room_to_land()` checked is a fact about the frame the turn was *committed* in, a second or
-## more before the car actually arrives, and the traffic in the exit lane keeps moving in the
-## meantime. `Crowd.space_out_the_traffic()` is what holds that gap open — it gives the booking to
-## the lane as a leader, so whoever is behind it keeps a headway for a car that is on its way rather
-## than driving into the spot — and this is the backstop for the frames where it could not: the
-## arrival drops in behind the lane's rearmost car, exactly as a recycled car does, rather than
-## standing in the middle of a queue and letting the separation pass shunt everybody behind it
-## backwards. That shunt compounds front to back, so an about-face into a queued lane used to move
-## the whole queue at once; nothing here can move anybody but this car.
+## **The arrival stands where its own arc ended and nothing moves it off that point.** It is the
+## point `_has_room_to_land()` checked before the car committed, `_claim_the_turn()` has held in
+## `TrafficIndex` on every frame of the manoeuvre since, and `Crowd._keep_room_for_the_turning()`
+## has been braking the exit lane's nearest follower for. **The room a turn needs is checked before
+## the arc starts or the turn is not taken** — there is nothing left for the landing frame to
+## decide.
 ##
-## The booking is handed back first, because `_join_the_back_of_the_queue()` reads the same index
-## `_claim_the_turn()` has been writing to every frame of the manoeuvre and would otherwise find
-## this car's own reservation sitting on the landing point — see `TrafficIndex.give_back()`.
+## What can still be too close when the car gets there is that **follower**, and only ever from
+## behind: a brake aims at a point and arrives late, so it settles a little inside
+## `Tuning.CAR_GAP_MIN` rather than outside it. A body too close behind the arrival is the queue's
+## business and the queue already has the rule for it —
+## `Crowd.space_out_the_traffic()` resolves front to back and moves the car *behind*, by the
+## overlap. **Sending the arrival to `_join_the_back_of_the_queue()` instead is the trap here**: it
+## drops the car a gap behind the **rearmost** car in the whole lane, which is where a recycled car
+## belongs — at the entry band, with nothing but off-screen road behind it — and is most of a street
+## behind a junction the player is watching. A car that drives a visible arc and then disappears
+## backwards past every other car in the street is a manoeuvre being repaired after the fact, which
+## is the one thing a turn may not rest on.
+##
+## The booking is handed back all the same, because `_claim_the_turn()` has been writing this car's
+## own reservation into the index every frame and nothing else would ever take it out — a lane that
+## kept it would refuse the next car to turn into that piece of road for the rest of the day. See
+## `TrafficIndex.give_back()`.
 func _land_the_turn() -> void:
 	if traffic:
 		traffic.give_back(turn_lane_key(), _turn.landing())
@@ -2282,7 +2291,6 @@ func _land_the_turn() -> void:
 	_lane_centre = _lane_centre_here()
 	_forget_the_detour()
 	_scan_at = Vector2i(-9999, -9999)
-	_join_the_back_of_the_queue()
 	_claim_the_road_here()
 
 ## Whether every tile the car's own body passes over during the arc is road it may drive on.
@@ -2731,19 +2739,21 @@ func _keep_within_the_room_beyond_the_map() -> void:
 		return
 	_set_along(clampf(_along(), -beyond, limit + beyond))
 
-## Drops the car in behind whatever is already in its lane, when the place it arrived at is not
-## free. Nothing at all if it landed somewhere free, which is almost always.
+## Drops a **recycled** car in behind whatever is already in its lane, when the entry point it
+## rolled is not free. Nothing at all if it landed somewhere free, which is almost always.
 ##
-## **Two ways into a lane, one merge rule.** A `_recycle()` rolls an entry point six times and can
-## miss; a turn books a landing a second or more before it reaches it, and the queue moves in the
-## meantime. Both end with a car standing where another one already is, and the failure is the same
-## either way: the separation pass shunts everybody *behind* it back by the overlap **plus**
-## everything moved in front of them — 180px, measured, on the recycle — so one arrival rearranges
-## a whole queue. Behind the last car is the one place in a lane that is free by construction, and
-## moving the arrival there is the only correction that touches nobody else.
+## **`_recycle()` is the only caller, and where a recycle happens is the whole of why this is
+## right.** An entry point is rolled six times against `TrafficIndex` and can still miss, and a car
+## standing where another one already is leaves the separation pass the one thing it can do — shunt
+## everybody *behind* it back by the overlap **plus** everything already moved in front of them,
+## which compounds front to back so that one arrival rearranges a whole queue. Behind the last car
+## is the one place in a lane that is free by construction, and moving the arrival there is the only
+## correction that touches nobody else.
 ##
-## It may put the car further back than the entry band is deep, which is exactly right: further back
-## is further off-screen, and the alternative is a car appearing inside another one.
+## It may put the car further back than the entry band is deep, which is exactly right **here**:
+## further back is further off screen, and the alternative is a car appearing inside another one.
+## That sentence is also the whole of why a turn's landing does not come through here — see
+## `_land_the_turn()`, where further back is a junction the player is looking straight at.
 ##
 ## **Never past ground it could not have driven onto itself**, for the same reason `nudge_back`
 ## checks it: the rearmost car's own position says nothing about what stands behind it, and a queue
