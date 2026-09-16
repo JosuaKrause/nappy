@@ -50,6 +50,8 @@ func run(t) -> void:
 	_test_a_car_turns_into_each_arm_from_every_approach(t)
 	_test_a_car_turns_round_when_every_arm_is_shut(t)
 	_test_a_car_turns_round_in_the_street_short_of_a_closure(t)
+	_test_a_car_waits_for_the_lane_its_half_turn_lands_in(t)
+	_test_a_car_with_no_road_either_way_stands_rather_than_flickering(t)
 	_test_a_plugged_arm_is_refused_rather_than_driven_into(t)
 	_test_the_heading_is_the_direction_it_is_actually_travelling(t)
 	_test_a_queue_keeps_its_distance_behind_a_turning_car(t)
@@ -161,13 +163,7 @@ func _test_a_car_turns_round_when_every_arm_is_shut(t) -> void:
 ## itself is still refused, which is what "never drive through a barrier" means.
 func _test_a_car_turns_round_in_the_street_short_of_a_closure(t) -> void:
 	_clear_the_holds()
-	var band := _junction.y * CityMap.period()
-	var closed: Array[Vector2i] = []
-	for offset in range(0, Tuning.STREET_WIDTH):
-		for lane in CrowdLanes.ROAD_OFFSETS:
-			closed.append(Vector2i(_junction.x * CityMap.period() + lane, band + offset))
-	for tile in closed:
-		_city.map.closed_tiles[tile] = true
+	var closed := _close_the_junction_band()
 	var car := _place_a_car(true, 1.0)
 	var watched := _watch(car, 12.0, true)
 	t.check(watched.turned and watched.finished,
@@ -179,6 +175,136 @@ func _test_a_car_turns_round_in_the_street_short_of_a_closure(t) -> void:
 	# the pavement does, which is what *never drive through a barrier* means here.
 	for tile in closed:
 		_city.map.closed_tiles.erase(tile)
+
+## **A car that cannot turn *this frame* waits and asks again; it does not give up and spin round.**
+##
+## The lane a half turn lands in is the other side of the car's own carriageway, and a car standing
+## on the landing is traffic that is going somewhere. Reversing on the spot instead is the last
+## resort (`CrowdAgent._turn_round()`), and it is the manoeuvre the player sees as a car flipping
+## round without moving — so it may only be reached from a state that waiting cannot mend.
+##
+## The scenario is the street about-face above with one car added, parked in the oncoming lane
+## exactly where the arc would put this one down. Held there by the rig rather than by any rule: a
+## real car would be driving, and what is being asked is what the planner does while the spot is
+## taken.
+func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t) -> void:
+	_clear_the_holds()
+	var closed := _close_the_junction_band()
+	var car := _place_a_car(true, 1.0)
+	# Where the car will come to rest, and therefore where its half turn will land: its brake aims a
+	# half turn plus the geometry's own slack short of the barrier, and the arc ends level with the
+	# entry on the other lane. See `CarTurn.about_face()` — the semicircle moves the car across the
+	# carriageway and not along it.
+	var barrier := float(_junction.y * CityMap.period() * Tuning.TILE_SIZE)
+	var rests_at := barrier - Tuning.CAR_STRIKE_HALF_LENGTH - CarTurn.about_face_reach() \
+			- CrowdAgent.TURN_ROOM_MARGIN
+	var blocker := _place_a_car(true, -1.0)
+	var landing_lane := CrowdAgent.make_lane_key(true, blocker._corridor,
+			CrowdLanes.road_lane(true, -1.0), -1.0)
+	blocker._cruise = 0.0
+	blocker._speed = 0.0
+	# Stood on the landing and put into the index before the car is ever asked, because
+	# `TrafficIndex` is rebuilt at the *end* of a frame: a car that asks on the very first one reads
+	# an empty index and commits to a spot the rig has already filled.
+	_join_the_lane(blocker, landing_lane, rests_at * -1.0)
+	_city.crowd.space_out_the_traffic(STEP)
+
+	var waited := false
+	var flipped := false
+	var turned := false
+	for frame in int(round(14.0 / STEP)):
+		# Pinned every frame, because the separation pass moves a car that something lands on and the
+		# question here is what happens while it has *not* moved.
+		if not waited:
+			_join_the_lane(blocker, landing_lane, rests_at * -1.0)
+			blocker._cruise = 0.0
+			blocker._speed = 0.0
+		_city.crowd.set_focus(car.position)
+		var facing := car._direction
+		_city.crowd.step(STEP)
+		flipped = flipped or car._direction != facing
+		if car.is_turning():
+			turned = true
+			break
+		if not waited and car._waited_to_turn > 0.0:
+			# It is stopped at its aim point with the landing taken and it has not reversed. That is
+			# the whole assertion; now let the lane clear and watch it take the arc it was refused.
+			waited = true
+			_join_the_lane(blocker, landing_lane, (rests_at - 900.0) * -1.0)
+			blocker._cruise = Tuning.CAR_SPEED.x
+	t.check(waited, "the car reached its aim point and waited for the lane its half turn lands in "
+			+ "rather than finding it empty")
+	t.check(not flipped, "it did not reverse on the spot while the landing was taken")
+	t.check(turned, "and it took the arc once the lane cleared")
+	for tile in closed:
+		_city.map.closed_tiles.erase(tile)
+	_clear_the_holds()
+
+## **And a car with no road either way stands still rather than shaking its head.**
+##
+## *(Playtest 76: "cars are still jumping around".)* A reversal swaps the lane a car belongs to
+## without moving it, so the ordinary cross-steer then slides the body over to the other lane's
+## centre — three pixels a frame, under every jump threshold there is, and from outside it is a car
+## twitching between the two sides of the street. It repeats because the state that caused it is
+## unchanged: a stub of carriageway shorter than a half turn is still a stub when the car is pointing
+## the other way.
+##
+## So the last resort is refused where it cannot help, and the car does what any body with nowhere
+## to go does — it stands, and leaves once nobody can see it go. The rig keeps the camera on it, so
+## what is measured here is the standing rather than the leaving.
+func _test_a_car_with_no_road_either_way_stands_rather_than_flickering(t) -> void:
+	_clear_the_holds()
+	var car := _place_a_car(true, 1.0)
+	var band := _junction.y * CityMap.period()
+	var here := floori(car.position.y / float(Tuning.TILE_SIZE))
+	var closed: Array[Vector2i] = []
+	for step in [-2, 2]:
+		for lane in CrowdLanes.ROAD_OFFSETS:
+			closed.append(Vector2i(_junction.x * CityMap.period() + lane, here + step))
+	for tile in closed:
+		_city.map.closed_tiles[tile] = true
+	# Standing in the middle of the stub, at rest: there is less than a half turn's road at either
+	# end of it, which is the state being asked about rather than one to be driven into.
+	car.position.y = float(here * Tuning.TILE_SIZE) + float(Tuning.TILE_SIZE) * 0.5
+	car._speed = 0.0
+	car._scan_at = Vector2i(-9999, -9999)
+	var facing := car._direction
+	var lane_before := car._lane
+	var flips := 0
+	var swings := 0.0
+	var turned := false
+	for frame in int(round(6.0 / STEP)):
+		_city.crowd.set_focus(car.position)
+		var was := car._direction
+		var across := car.position.x
+		_city.crowd.step(STEP)
+		if car._direction != was:
+			flips += 1
+		swings = maxf(swings, absf(car.position.x - across))
+		turned = turned or car.is_turning()
+	t.check(flips == 0,
+			"a car with less than a half turn's road at either end stands rather than reversing "
+			+ "where it stands (%d reversals in six seconds)" % flips)
+	t.check(car._direction == facing and car._lane == lane_before and not turned,
+			"it keeps the heading and the lane it had, so nothing slides it across the carriageway")
+	t.check(swings < 1.0, "and it does not drift across its own street (%.1fpx in a frame)" % swings)
+	t.check(car._nowhere_to_turn, "the planner knows why, rather than the car merely being stuck")
+	for tile in closed:
+		_city.map.closed_tiles.erase(tile)
+	# Guards against a scenario that proved nothing: the stub really was short at both ends.
+	t.check(band >= 0, "the rig had a junction band to build the stub against")
+
+## Closes both lanes of the junction band ahead, which is the barrier a car has to turn round short
+## of. Returns the tiles so the caller can open them again.
+func _close_the_junction_band() -> Array[Vector2i]:
+	var band := _junction.y * CityMap.period()
+	var closed: Array[Vector2i] = []
+	for offset in range(0, Tuning.STREET_WIDTH):
+		for lane in CrowdLanes.ROAD_OFFSETS:
+			closed.append(Vector2i(_junction.x * CityMap.period() + lane, band + offset))
+	for tile in closed:
+		_city.map.closed_tiles[tile] = true
+	return closed
 
 ## An arm with a plug two tiles in is refused rather than turned into.
 ##

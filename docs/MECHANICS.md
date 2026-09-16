@@ -512,7 +512,10 @@ visible arc and then disappears backwards past every other car in it. **The room
 checked before the arc starts or the turn is not taken**, and the landing frame decides nothing.
 
 **What a car does when nothing fits is brake.** It aims to stop a half turn's worth of road short of
-whatever is in the way, which is what leaves it somewhere it can still turn round.
+whatever is in the way, plus the slack a 28px body has in a 32px lane, which is what leaves it
+somewhere it can still turn round with a little to spare. **A manoeuvre that fits exactly does not
+fit**: a brake arrives a frame late and a swept body is sampled rather than solved, so a car that
+stops with precisely the arc's own length in front of it finds its own turn refused.
 
 Three places a turn can happen, in order of preference: the arm the car picked, the other arm, an
 about-face in the middle of the junction box, and — only when a barrier leaves it no junction to
@@ -521,6 +524,26 @@ kerb**, by 8px, and it is a fact about the city rather than a concession: a half
 lanes 32px apart is a 16px arc, and a car's corners then reach 40px from the centre of it. The
 alternative manoeuvre is a three-point turn, and the traffic has no reverse gear. Every hard blocker
 is still refused, so a car turning round in a dead end never touches what it stopped for.
+
+**And a car that finds no arc this frame waits, because most of the reasons an arc is refused go
+away on their own.** The lane a half turn lands in is the other side of the car's own carriageway
+and the traffic on it is driving somewhere, so a landing that is taken now is free a moment later;
+the ground the body sweeps, the geometry of the arc and the shape of the map are not going anywhere.
+A car refused for the first reason stands at the point it braked to and asks again, with its
+followers queueing behind it exactly as they queue behind any stopped car, and takes the arc as soon
+as the lane clears. **The wait is bounded** — long enough for a car to clear its own minimum gap at
+the speed a turn is taken at — because waiting on a car that is itself stopped is a deadlock, and a
+car that never moves again takes its whole street with it.
+
+**The last resort is a heading reversed where the car stands**, with no path in it at all, and it is
+reached only from a state that waiting cannot mend: the ground the arc would sweep is a wall, a
+closure, a seal or a precinct's paving. It costs a stride before the car may reverse again. **A
+reversal that lands in the same state is not an escape** — it swaps the lane the car belongs to
+without moving it, and the ordinary steering then slides the body over to the other lane's centre at
+three pixels a frame, which is a car shaking its head rather than turning round. So a car with less
+than a half turn's road at *both* ends of the piece of carriageway it is on does not reverse. It
+stands where it is and leaves the way any body with nowhere to go leaves — recycled at the first
+frame the camera is not on it, the same rule a body caught in a pocket already follows.
 
 ### Which side of the road
 
@@ -638,7 +661,21 @@ recycle refuse a spot inside one, so a sealed-off crossing fills with nobody. An
 up around while already standing there stands exactly where it caught them — no step, no steering,
 no turn — until they are recycled out of it, at the first frame they are further from the camera
 than `OUT_OF_SIGHT`: the field's own edge is off camera by hundreds of pixels, and this is the one
-recycle that has to check.
+recycle that has to check. **A car can be caught one scale below a pocket** — on a stub of
+carriageway too short to turn round in, between a precinct's paving and a van parked on its lane,
+which is not a junction and so is invisible to the pocket record. It does the same thing for the
+same reason: it stands, and it goes when nobody is looking.
+
+**The morning's own placement is unpacked before the first frame is drawn.** Every car is placed
+without consulting the ones already placed, so some of them start inside each other, and the
+front-to-back resolve is what pulls them apart. A day starts from an idle frame — the engine draws
+what was placed and only then reaches the physics tick that would correct it — so a correction left
+to the first frame is a car jumping most of its own length on the street she is standing in, on the
+first thing she sees. `Crowd.start_day()` therefore runs that resolve itself, once, before returning.
+**It is the overlap resolve and nothing else**: no car is given a position, and a car that was not
+inside another one does not move at all. Spacing the morning out to a minimum headway would be a
+different thing and is not done — it would turn a random morning into platoons and make every street
+read as busier than the day asked for.
 
 **Events stream.** `EventScheduler` still plans the whole day across the whole city — every
 guarantee the game makes is a property of the *plan*, so nothing about one usable park, two

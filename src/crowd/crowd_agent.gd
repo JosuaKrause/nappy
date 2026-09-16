@@ -309,6 +309,43 @@ var _turn: CarTurn = null
 ## How much straight lane is left before the arc begins, in px. The car drives its own lane for
 ## this much and then curves, so the approach is ordinary travel with every ordinary rule on it.
 var _turn_run_up := 0.0
+
+## Why each arc `_plan_a_turn()` tried on its last run was refused, one `TurnRefusal` per
+## `TurnCandidate` slot — the planner's own record of a decision that otherwise leaves no trace.
+##
+## **A refusal that is never written down is a manoeuvre nobody can account for.** Every entry in
+## `_plan_a_turn()`'s list of places to turn either fits or is turned away by exactly one check, and
+## which check it was is the difference between *wait, this will clear* and *this can never fit
+## here* — the distinction the planner itself acts on and the one a measurement of the traffic needs
+## to read back. Four ints written where the decision is taken, and `tests/probes/m152_car_jumps.gd`
+## is what reads them.
+var turn_refusals := PackedInt32Array()
+## Which of `_plan_a_turn()`'s two ways out reversed this car where it stood, or `NONE` when the
+## last run of the planner did not. Reset at the top of every `_plan_a_turn()`.
+var turn_round_cause := TurnRoundCause.NONE
+## Whether this car has already committed to an arc since the last time the road in front of it was
+## clear — what tells a turn that was planned and taken apart from one that was never found. Cleared
+## by `_look_ahead()` the moment nothing is blocking the lane any more.
+var turned_on_this_approach := false
+
+## Seconds this car has stood at a barrier with an arc that fits everywhere but in the lane it would
+## land in. Runs while it waits and is put back to zero the moment anything about the situation
+## changes — a turn taken, the road ahead clear again, or a refusal that waiting cannot mend. See
+## `TURN_WAIT_SECONDS`.
+var _waited_to_turn := 0.0
+
+## True while this car has run out of road in **both** directions — less than a half turn's worth
+## ahead of it and less than a half turn's worth in the lane it would reverse into.
+##
+## **It is a pocket one scale down.** A junction with all four arms shut catches a body between
+## walls and `CrowdPockets` is what names that; a lane can be caught the same way between a
+## precinct's paving and a solid body parked on it, which is a stretch of road too short to turn
+## round in and is not a junction at all, so nothing above the lane can see it. What a body with
+## nowhere to go does is settled — it stands where it is, and it leaves the way anybody else leaves
+## the field, once nobody can see it go. Cleared by `_look_ahead()` the moment the road in front of
+## it is clear again, so a seal that lifts puts the car back on the road rather than leaving it
+## marked for the rest of the day.
+var _nowhere_to_turn := false
 ## The sector, flip and (walker only) gait frame currently drawn, so a redraw only happens when
 ## one of them changes. The third component is always 0 for a car, which never bobs a stride.
 ##
@@ -822,8 +859,11 @@ func _process(delta: float) -> void:
 		_advance_walker_gait(delta)
 	_look_ahead()
 	if _blocked_in <= LOOKAHEAD_TILES:
-		_divert()
-	if _has_left_the_field():
+		_divert(delta)
+	# A car with no road either way goes when nobody is looking, which is the rule a body a pocket
+	# has caught already follows a few lines above. It is the same situation read off the lane
+	# instead of off the junction — see `_nowhere_to_turn`.
+	if _has_left_the_field() or (_nowhere_to_turn and _out_of_view()):
 		_recycle()
 	_redraw_if_the_picture_changed()
 
@@ -1895,8 +1935,20 @@ func _stop_going_round_a_body() -> void:
 ## for the day. An agent covers a tile in about twenty frames at walking pace, so seven lookups per
 ## tile is cheaper than the one probe per frame it replaces — and the probe was the version that
 ## could not see a wall.
+##
+## **A car's question is about its lane, so it is asked from the lane and not from the body.** The
+## two are the same tile for a car sitting on its centre line and are different tiles for one that
+## is still steering onto it, and the row either side of a carriageway lane is the *other* lane or
+## the kerb — where a solid body that this car will never meet stands, and where a precinct's paving
+## begins. A scan taken from the body's own tile therefore reports a wall two tiles ahead that is
+## not on this car's road at all, and reports it *intermittently*, as the body crosses the row
+## boundary and back. This is the same rule `_detour` already forces on a walker one section down:
+## **a lane decision is stated over the lane, never over where the body happens to be.** A walker
+## keeps asking from its body, because a walker with a detour running really is on the ground it is
+## standing on and `_step_around_a_body` is a question about that ground.
 func _look_ahead() -> void:
-	var here := _map.world_to_tile(position)
+	var here := _map.world_to_tile(position) if kind != Kind.CAR \
+			else _map.world_to_tile(CarTurn.world(_vertical, _along(), _lane_centre))
 	if here == _scan_at and _vertical == _scan_vertical and _direction == _scan_direction:
 		return
 	_scan_at = here
@@ -1913,6 +1965,12 @@ func _look_ahead() -> void:
 		if _cannot_go_on(_vertical, here + step * i):
 			_blocked_in = i
 			return
+	# Nothing in the way any more, so whatever this car did about the last thing that was is over
+	# and the next blockage is a fresh approach. See `turned_on_this_approach` and
+	# `_nowhere_to_turn`.
+	turned_on_this_approach = false
+	_nowhere_to_turn = false
+	_waited_to_turn = 0.0
 
 ## Traffic goes round a closure, and that is half of what makes one legible: the street with
 ## nobody on it is the street that is shut, which reads from a block away — further than the
@@ -1926,9 +1984,9 @@ func _look_ahead() -> void:
 ## function is the walker's own version: a person changes direction in a stride, has no lane to be
 ## on the correct side of and no length to swing round, so there is nothing for a path to be
 ## continuous about.
-func _divert() -> void:
+func _divert(delta: float) -> void:
 	if kind == Kind.CAR:
-		_plan_a_turn()
+		_plan_a_turn(delta)
 		return
 	var crossing := CrowdLanes.corridor_at(_along())
 	if crossing < 0:
@@ -2106,6 +2164,35 @@ func _can_turn_here() -> bool:
 # smaller one and does not fall back on the separation pass to repair it — it brakes for the
 # blockage and stands there. See `_distance_to_the_blockage`.
 
+## The places `_plan_a_turn()` looks for room, in the order it tries them, and the slots of
+## `turn_refusals`. See that function for what each one is.
+enum TurnCandidate { NEAR_ARM, FAR_ARM, BOX_ABOUT_FACE, STREET_ABOUT_FACE }
+
+## What turned one candidate arc away — the answer `_commit_to_a_turn()` gives back.
+##
+## **Read the list in two halves, and the split is the whole point of naming them.** `LANDING_TAKEN`
+## is another car standing where this one wants to stop, and another car drives away; everything
+## below it is the ground, the geometry or the map, and none of those changes while the car waits
+## where it is. So a refusal from the first half means *ask again next frame* and one from the
+## second means *this arc will never fit from here*.
+enum TurnRefusal {
+	FITS,              ## Not a refusal: the car is committed to this arc.
+	NOT_TRIED,         ## The planner stopped before this slot, or there is no such arm at all.
+	LANDING_TAKEN,     ## Somebody is parked where the arc ends. Temporary.
+	OUT_OF_SIGHT,      ## The run-up is longer than a car can see a junction from.
+	PAST_THE_BLOCKAGE, ## The run-up would drive through the thing being turned away from.
+	TOO_TIGHT,         ## What is left of the junction is a tighter arc than a car can turn.
+	SWEEP_BLOCKED,     ## The body would pass over ground a car may not drive on.
+	EXIT_PLUGGED,      ## The street the arc lands in has no room to turn round in further on.
+}
+
+## Which call reversed a car where it stood. `NONE` on a planner run that did not.
+enum TurnRoundCause {
+	NONE,
+	OFF_THE_STREET,   ## Standing on ground no arc could legally sweep from — already illegal.
+	STOPPED_NO_ROOM,  ## At rest with less than a nose's length of manoeuvring room in front.
+}
+
 ## A car plans its way round the blockage ahead and commits to the whole of it before it moves.
 ##
 ## Called instead of the walker's `_divert` body, and it takes the same two decisions in the same
@@ -2128,13 +2215,15 @@ func _can_turn_here() -> bool:
 ##    traffic: measured over ninety seconds, stopped cars at the end went 10 → 33 of 34, because one
 ##    car nose-to-wall in a dead end takes its whole street with it. Nothing else is relaxed — the
 ##    wall, the closure, the seal and the building are all still refused.
-func _plan_a_turn() -> void:
+func _plan_a_turn(delta: float) -> void:
 	if _turn:
 		return
+	_forget_the_last_plan()
 	# Standing on ground it may not be on at all, which is a day that started behind a barrier. There
 	# is no legal space to sweep and nothing to be gained by waiting for some, so the about-face on
 	# the spot stays exactly what it was: the way out of a state that is already illegal.
 	if not _stands_on_a_street():
+		turn_round_cause = TurnRoundCause.OFF_THE_STREET
 		_turn_round()
 		return
 	var band := _junction_index()
@@ -2145,30 +2234,117 @@ func _plan_a_turn() -> void:
 	var first := 1.0 if _rng.randf() < 0.5 else -1.0
 	var turning := _pick_an_arm(band, first, probe)
 	if turning != 0.0:
-		if _commit_to_a_turn(_arm_turn(band, turning, box)):
+		if _try_a_turn(TurnCandidate.NEAR_ARM, _arm_turn(band, turning, box)):
 			return
 		var other := _pick_an_arm(band, -turning, probe)
-		if other != 0.0 and other != turning and _commit_to_a_turn(_arm_turn(band, other, box)):
+		if other != 0.0 and other != turning \
+				and _try_a_turn(TurnCandidate.FAR_ARM, _arm_turn(band, other, box)):
 			return
-	if _commit_to_a_turn(_about_face_at(CarTurn.carriageway_centre(band), box)):
+	if _try_a_turn(TurnCandidate.BOX_ABOUT_FACE, _about_face_at(CarTurn.carriageway_centre(band),
+			box)):
 		return
 	var blockage := _distance_to_the_blockage()
 	if blockage == INF:
 		return
-	if _commit_to_a_turn(_about_face_at(_along() + (blockage - CarTurn.about_face_reach())
-			* _direction, Vector2i(-1, -1)), true):
+	# **Clamped to where the car already is, because an entry a hair behind it is not a tighter
+	# arc.** A car that has braked for the barrier has come to rest at exactly this point, give or
+	# take whatever fraction of a pixel its last frame bought, and a negative run-up sends the arc
+	# to `tighten_to`, which an about-face can never satisfy — its radius is half the distance
+	# between the two lanes and there is no other value that lands on one. Clamping makes the
+	# question the one that actually matters: from here, is the ground the body sweeps still clear.
+	if _try_a_turn(TurnCandidate.STREET_ABOUT_FACE,
+			_about_face_at(_along() + maxf(0.0, blockage - CarTurn.about_face_reach()) * _direction,
+			Vector2i(-1, -1)), true):
 		return
-	# **Nothing fits, and the car has run out of road to find something that does.** A car still
-	# rolling keeps asking, since a few pixels further on the answer changes; one that has come to
-	# rest with less than a half turn's room in front of it has no manoeuvre left at all — it is
-	# parked closer to the barrier than any curve needs, which is a state the model does not cover
-	# and only a placement or a barrier that arrived after it did can produce. The alternative to
-	# reversing its heading where it stands is a car that never moves again, and a car that never
-	# moves again holds the junction box it is standing in and takes the whole street behind it: 33
-	# of 34 cars at a standstill in ninety seconds, measured. Reverse gear is the manoeuvre this
-	# wants and the traffic has none.
-	if _speed < Tuning.CAR_STOPPED_SPEED and _room_to_stop_in() < _nose():
-		_turn_round()
+	# **Nothing fits, and everything below is about the car that has run out of road to look with.** A
+	# car still rolling keeps asking and nothing else happens to it, since a few pixels further on
+	# the answer changes; one that has come to rest a half turn short of the barrier has arrived
+	# where its own brake was aiming and has nowhere left to ask from.
+	if _speed >= Tuning.CAR_STOPPED_SPEED or _room_to_stop_in() >= _nose():
+		return
+	# **But "no arc fitted this frame" is not "no arc can fit here".** The lane a half turn lands in
+	# is the other side of this carriageway, and the traffic on it is going somewhere: a car standing
+	# in the way of the landing is gone a moment later, and the arc that was refused for it fits on
+	# the frame after that. So a temporary refusal is a reason to stand still and ask again rather
+	# than a reason to give up on the manoeuvre — which is what the car is already doing anyway,
+	# stopped at its own aim point with its followers queueing behind it exactly as they queue behind
+	# any stopped car. See `TurnRefusal` for which refusals are which.
+	#
+	# **And the wait is bounded, which is the half that cannot be left out.** Waiting for a lane that
+	# never clears is a car that never moves again, and a car that never moves again holds the
+	# junction it is standing in and takes the whole street behind it: 33 of 34 cars at a standstill
+	# in ninety seconds, measured, which is the reason this manoeuvre exists at all. See
+	# `TURN_WAIT_SECONDS` for how long is long enough to tell passing traffic from a queue that is
+	# waiting on something else.
+	if _an_arc_may_yet_fit():
+		_waited_to_turn += delta
+		if _waited_to_turn < TURN_WAIT_SECONDS:
+			return
+	_waited_to_turn = 0.0
+	# **And the way back has to be a way.** Reversing into a lane whose own road runs out inside a
+	# half turn buys nothing: the car arrives in the same state pointing the other way, reverses
+	# again a stride later, and what a player sees is a car shaking its head while the ordinary
+	# cross-steer slides it between the two lane centres. A car with no road either way has nowhere
+	# to go at all, which the crowd already has an answer for — it stands, and leaves once nobody
+	# can see it go. See `_nowhere_to_turn`.
+	if _no_road_the_other_way():
+		_nowhere_to_turn = true
+		return
+	turn_round_cause = TurnRoundCause.STOPPED_NO_ROOM
+	_turn_round()
+
+## How long a car waits for the lane a half turn lands in to clear before it gives up and reverses
+## where it stands.
+##
+## **The number is what the car in the way costs, and anything longer is waiting on a queue.** What
+## is standing on the landing is almost always the car that turned round just before this one, so
+## what it has to do is clear its own minimum gap from a standing start, and the speed it does that
+## at is the speed a turn is taken at. A landing still taken after that long is taken by something
+## that is not driving away at all — and a car that waits on a stopped car is the beginning of a
+## deadlock, which is the failure this whole manoeuvre exists to avoid.
+const TURN_WAIT_SECONDS := Tuning.CAR_GAP_MIN / Tuning.CAR_TURN_SPEED
+
+## Whether any arc the planner has just tried was turned away by something that will move on its
+## own. See `TurnRefusal`: a lane that is occupied empties, and nothing else on that list does.
+func _an_arc_may_yet_fit() -> bool:
+	for slot in turn_refusals.size():
+		if turn_refusals[slot] == TurnRefusal.LANDING_TAKEN:
+			return true
+	return false
+
+## Whether the lane this car would reverse into has less road in front of it than a half turn needs,
+## measured from that lane's own centre line and in the direction the car would then be pointing.
+##
+## Asked before the reversal rather than discovered after it, because discovering it after is the
+## flicker: the reversal costs a stride (`_turn_round()`), the stride runs out, the state is
+## unchanged, and the car reverses again for ever.
+func _no_road_the_other_way() -> bool:
+	var lane := CrowdLanes.road_lane(_vertical, -_direction)
+	var centre := CrowdLanes.lane_centre(_corridor, lane)
+	var from := _map.world_to_tile(CarTurn.world(_vertical, _along(), centre))
+	var step := (Vector2i.DOWN if _vertical else Vector2i.RIGHT) * -int(signf(_direction))
+	var needed := ceili((CarTurn.about_face_reach() + _nose()) / float(Tuning.TILE_SIZE))
+	for i in range(1, needed + 1):
+		if _cannot_go_on(_vertical, from + step * i):
+			return true
+	return false
+
+## Empties the record of what the planner last decided, so that every entry in it is about the run
+## that is about to happen rather than a leftover from the approach before.
+func _forget_the_last_plan() -> void:
+	turn_round_cause = TurnRoundCause.NONE
+	# Re-established below or not at all, so a car whose way out opened again is never left carrying
+	# a reason to be recycled that stopped being true.
+	_nowhere_to_turn = false
+	if turn_refusals.size() != TurnCandidate.size():
+		turn_refusals.resize(TurnCandidate.size())
+	turn_refusals.fill(TurnRefusal.NOT_TRIED)
+
+## Tries one candidate arc, writes down what happened to it, and says whether the car took it.
+func _try_a_turn(slot: TurnCandidate, turn: CarTurn, over_the_kerb := false) -> bool:
+	var refusal := _commit_to_a_turn(turn, over_the_kerb)
+	turn_refusals[slot] = refusal
+	return refusal == TurnRefusal.FITS
 
 ## The half turn back down the other lane, taken at a given point along this corridor.
 func _about_face_at(at_along: float, box: Vector2i) -> CarTurn:
@@ -2182,43 +2358,49 @@ func _arm_turn(band: int, turning: float, box: Vector2i) -> CarTurn:
 	return CarTurn.into_an_arm(_vertical, _direction, _corridor, _cross(), band,
 			CrowdLanes.road_lane(not _vertical, turning), turning, box)
 
-## Takes a planned turn if it fits, and says whether it did.
+## Takes a planned turn if it fits, and says what turned it away if it does not.
 ##
 ## Three things have to be true, and none of them is revisited afterwards: there is a straight
 ## run-up to the arc rather than the arc starting behind the car, the ground the body sweeps is road
 ## it may drive on, and the lane it lands in has a car's length free. The room is then *held* for
 ## every frame of the manoeuvre, run-up included, so nothing else turns or recycles into the piece of
 ## road this car is already committed to.
-func _commit_to_a_turn(turn: CarTurn, over_the_kerb := false) -> bool:
+##
+## **Which check said no is part of the answer rather than a diagnostic afterthought**, because the
+## caller's next move depends on it: the lane the arc lands in empties by itself and the ground it
+## sweeps does not. See `TurnRefusal`.
+func _commit_to_a_turn(turn: CarTurn, over_the_kerb := false) -> TurnRefusal:
 	var run_up := (turn.entry_along - _along()) * _direction
 	# Further off than the car watches a junction from is further off than it can know the road is
 	# still going to be clear when it gets there.
 	if run_up > Tuning.CAR_JUNCTION_SIGHT:
-		return false
+		return TurnRefusal.OUT_OF_SIGHT
 	# **The run-up is driving, and it has to be legal driving.** Only the arc's own ground is swept
 	# and checked; the straight before it is ordinary lane travel, so what says whether it is clear
 	# is the lookahead. Without this a car blocked in mid-street plans for the junction *beyond* the
 	# barrier — `_junction_index()` names the one it is heading for — and drives through the barrier
 	# to reach it.
 	if run_up > _distance_to_the_blockage():
-		return false
+		return TurnRefusal.PAST_THE_BLOCKAGE
 	if run_up < 0.0:
 		# Past the entry the geometry would have chosen — a car that only found out it was turning
 		# once it was already in the box. What is left of the junction is a tighter arc, and one
 		# tighter than `Tuning.CAR_TURN_RADIUS_MIN` is refused rather than squeezed.
 		if not turn.tighten_to(_along(), _cross()):
-			return false
+			return TurnRefusal.TOO_TIGHT
 		run_up = 0.0
 	if not _the_ground_a_turn_sweeps_is_clear(turn, over_the_kerb):
-		return false
+		return TurnRefusal.SWEEP_BLOCKED
 	if not _the_exit_has_room_to_leave(turn):
-		return false
+		return TurnRefusal.EXIT_PLUGGED
 	if not _has_room_to_land(turn):
-		return false
+		return TurnRefusal.LANDING_TAKEN
 	_turn = turn
 	_turn_run_up = run_up
+	turned_on_this_approach = true
+	_waited_to_turn = 0.0
 	_claim_the_turn()
-	return true
+	return TurnRefusal.FITS
 
 ## Moves this car along its own planned turn: the straight run-up first, then the arc.
 ##
@@ -2460,7 +2642,18 @@ func _room_to_stop_in() -> float:
 	var blockage := _distance_to_the_blockage()
 	if blockage == INF:
 		return INF
-	return maxf(0.0, blockage - CarTurn.about_face_reach())
+	return maxf(0.0, blockage - CarTurn.about_face_reach() - TURN_ROOM_MARGIN)
+
+## How much more road than the arc needs a car aims to leave itself when it brakes for a barrier.
+##
+## **A manoeuvre that fits exactly does not fit.** The brake aims at a point and arrives a frame
+## late, the sweep is sampled rather than solved, and both of those are worth a fraction of a pixel
+## — so a car that comes to rest with precisely `CarTurn.about_face_reach()` in front of it finds
+## its own about-face refused, either as an arc starting behind the car or as a swept body clipping
+## the tile the barrier is on. Stated as the slack the geometry already has: a 28px body in a 32px
+## lane, which is the one spare distance anywhere in a turn and the same four pixels the arc's own
+## entry is offset by where it swings its tail toward its kerb.
+const TURN_ROOM_MARGIN := float(Tuning.TILE_SIZE) - 2.0 * Tuning.CAR_STRIKE_HALF_WIDTH
 
 ## Whether this agent has walked out of the patch of city that is being simulated — either off
 ## the map entirely, or out of the box that travels with the player.
