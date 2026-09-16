@@ -27,6 +27,7 @@ func run(t) -> void:
 	_test_the_city_learns_where_she_settled(t)
 	_test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t)
 	_test_a_lost_days_brief_is_shown_and_then_cleared(t)
+	_test_the_summary_shows_when_the_day_ended(t)
 	_test_a_lost_day_gives_the_resistance_back(t)
 	_test_the_retry_meets_the_same_mark_in_the_same_alley(t)
 	_test_a_lost_summary_repeats_the_days_own_instruction(t)
@@ -417,6 +418,42 @@ func _test_a_lost_days_brief_is_shown_and_then_cleared(t) -> void:
 	t.get_tree().paused = saved_paused
 	GameState.resistance_progress = saved_progress
 	GameState.pending_resistance_brief = saved_brief
+
+## M154: the summary carries the day's own clock at the instant it ended, phrased per outcome —
+## `docs/TODO.md`'s M154 item, quoting the player: *"fell asleep after xx:xx or something like
+## that"*. `elapsed_seconds` is a known value here (84.0, `1:24`) rather than anything a rig walks
+## to, since what is under test is the phrasing `show_day()` builds from it, not the capture in
+## `main._on_day_finished()`.
+func _test_the_summary_shows_when_the_day_ended(t) -> void:
+	var saved_paused: bool = t.get_tree().paused
+	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	t.add_child(summary)
+
+	summary.show_day(4, GameEnums.DayResult.WON, "", 3, 84.0)
+	t.check("She fell asleep after 1:24." in summary._body.text,
+			"a won day names the clock it ended on ('%s')" % summary._body.text)
+
+	summary.show_day(4, GameEnums.DayResult.LOST_CRYING,
+			"She started crying. There is no settling her now.", 2, 84.0)
+	t.check("She started crying after 1:24. There is no settling her now." in summary._body.text,
+			"a crying loss reads the clock into its own first sentence ('%s')"
+					% summary._body.text)
+
+	summary.show_day(4, GameEnums.DayResult.LOST_HARD_FAIL,
+			"It never slowed down. You were in the road.", 1, 84.0)
+	t.check("It never slowed down. You were in the road. After 1:24." in summary._body.text,
+			"a hard fail keeps its own sentence whole, with the clock following it ('%s')"
+					% summary._body.text)
+
+	summary.show_day(4, GameEnums.DayResult.LOST_TIMEOUT, "Dusk. You are still out.", 3, 180.0)
+	t.check("Dusk. You are still out." in summary._body.text,
+			"a timeout still shows its own reason ('%s')" % summary._body.text)
+	t.check(not "3:00" in summary._body.text,
+			"and the day's own length is not printed back at it, since dusk already is the whole "
+			+ "day ('%s')" % summary._body.text)
+
+	summary.free()
+	t.get_tree().paused = saved_paused
 
 # ------------------------------------------------------- the resistance's own day ---
 
