@@ -490,9 +490,10 @@ static func _spoil_one_park(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## Rolls one of the pool, weighted by how much ground it can actually take.
 ##
 ## Everywhere else in the scheduler a def's `weight` is how *common* it is, which is a statement
-## about a city. Here the job is covering a lot, and a leaf blower covers four times the ground a
-## busker does — so the roll is by area as well as by weight, and the quiet rows become the garnish
-## on a spoiled park rather than half of it. It stays a roll rather than becoming "always the
+## about a city. Here the job is covering a lot, and what a row denies goes as the square of its
+## reach — a busker covers several times the ground a market stall does — so the roll is by area
+## as well as by weight, and the quiet rows become the garnish on a spoiled park rather than half
+## of it. It stays a roll rather than becoming "always the
 ## loudest" for the reason the mix exists at all: a park that is busy today is busy with several
 ## different things, and one repeated sprite reads as a duplicated sprite.
 static func _pick_by_what_it_denies(defs: Array[EventDef], rng: RandomNumberGenerator) -> EventDef:
@@ -550,13 +551,13 @@ static func _spoiling_grid(ground: Rect2, pool: Array[EventDef]) -> Array[Vector
 ## may stand beside a park* is a decision about the parks and not about how fast the pram settles.
 ## Read off the decay, every rise in the walking rate would admit louder rows here as a side
 ## effect of a change nobody made about parks.
+##
+## **The zero case is not the line rules' zero case.** `_reach_above` answers nothing at all for a
+## row quieter than the rate it is asked about, which is right there — ground a walk nets the meter
+## down in is not denied — and wrong here: a source she is standing on top of keeps her awake
+## whatever its rate does further out, so the floor is its own `inner_radius`.
 static func _denial_radius(def: EventDef) -> float:
-	var decay := Tuning.CALM_ZONE_DENIAL_RATE
-	if def.intensity <= decay:
-		return def.inner_radius
-	# `Tuning.falloff` is `1 - t²`, inverted for the t at which it equals the decay.
-	var t := sqrt(1.0 - decay / def.intensity)
-	return def.inner_radius + t * (def.outer_radius - def.inner_radius)
+	return maxf(def.inner_radius, _reach_above(def, Tuning.CALM_ZONE_DENIAL_RATE))
 
 static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
 	var best := tiles[0]
@@ -1278,22 +1279,21 @@ static func _gap_between(a: Planned, b: Planned) -> float:
 ##   player can cross the street, wait, then come back without ever getting excited by it"*. A row
 ##   that **paces** is not mobile in that sense: it comes back, so it is read over its beat.
 ##
-## And **a wall is outside it**, which is the same exemption the lethal-clearance rule makes and for
-## the same reason: a wall *bounds* the corridor, so it is off the routes by construction
-## (`_copies_of` offers it zero copies of corridor ground), and a field that reaches from there onto
-## the ground she is being guided along is the guidance rather than a failure of it.
+## **A wall is not outside it**, and that is the player's own decision on the one thing the four
+## rules left open: *"option 2 is valid only if the influence at a junction is low enough that it
+## can be taken without having to worry or plan around it."* A wall bounds the corridor — `_copies_of`
+## offers it zero copies of corridor ground, so it never stands on a route — but its field reaches
+## in from one street out, and being told to walk a corridor whose crossings are covered by what is
+## bounding it is being told to pay for the guidance. So a wall's own charging disc is asked the
+## same three questions every other row's is, and the condition the player set on that is exactly
+## `_line_reach_of()`: what a wall may still put over a junction is the part of its field under the
+## walking decay, which is a crossing the walk takes without planning around it.
 ##
-## **It is the role that is exempt and not the ground**, and that is a reading of the milestone's
-## own sentence — *"and so is anything off the corridor, where the wall role is the design"* — that
-## the probe chose between. Exempting every row that merely **stands** off the corridor leaves the
-## covered junction exactly where it was: measured over the same six seeds, refusing only
-## on-corridor rows moved the zero-cost line from 16.8% to 24.2% of routes and left the junction
-## shape at 135 routes, because the pair that closes a crossing is usually a café or a yeller one
-## turning out with its field reaching in. The wall is what the sentence names, `_copies_of`
-## already makes *wall* and *off the corridor* the same set, and reading it that way is what makes
-## the rule cut against the shape it was written for.
+## The lethal-clearance rule's wall exemption is a different rule about a different thing and is
+## untouched — `_keeps_its_field_clear` is about keeping other events out of a lethal field, not
+## about whether a line exists past one.
 static func _counts_against_the_line(plan: Planned) -> bool:
-	if not plan.is_placed() or plan.role == GameEnums.BlockerRole.WALL:
+	if not plan.is_placed():
 		return false
 	var def := plan.def
 	if def.city_wide or def.scenery or def.pursues or def.id.begins_with(_DOOR_ID_PREFIX):
@@ -1307,14 +1307,57 @@ static func _counts_against_the_line(plan: Planned) -> bool:
 ## `RegionPlanner` choosing it rather than any field on the def.
 const _DOOR_ID_PREFIX := "checkpoint"
 
-## How far a row denies ground: `outer_radius` wherever it emits at all, `obstructs_radius` wherever
-## it has a body, the larger of the two where both apply. A row that neither emits nor obstructs —
-## the `playground` ambient, at intensity 0 — is not something a line has to avoid.
+## How far a row denies ground: **the disc it charges for**, `obstructs_radius` wherever it has a
+## body, the larger of the two where both apply. A row that neither charges nor obstructs — the
+## `playground` ambient, at intensity 0 — is not something a line has to avoid.
+##
+## **Charging for is not the same as being heard on**, and the difference is the player's own
+## condition on any of this being checked at all: *"option 2 is valid only if the influence at a
+## junction is low enough that it can be taken without having to worry or plan around it."* A walk
+## through ground where a row emits less than `Tuning.EXCITEMENT_DECAY_WALKING` nets the meter
+## *down*, so it is ground a route does not have to be planned around and the rules in this section
+## have no business refusing a placement over it. The disc is therefore where the emission crosses
+## that rate, not `outer_radius`, which is where it stops reaching at all — the same distinction
+## `_denial_radius()` makes about calm ground, at a different rate and with a different zero: a row
+## quieter than the rate everywhere denies **nothing** here, where it still denies its own inner
+## disc to a pram trying to settle.
+##
+## **A lethal row keeps its whole `outer_radius`.** Its price is not a rate and nothing about being
+## quiet at the rim makes walking into it survivable, so the arithmetic below says nothing about it.
 ##
 ## The plain disc rather than `field_reach()`'s forward-stretched ellipse, because the milestone's
-## own wording is `outer_radius` and the two differ only for a mobile row and only ahead of it.
+## own wording is a radius and the two differ only for a mobile row and only ahead of it. A flock
+## would need its own answer — its intensity is shared between bodies, so the closed form below
+## reads it far too wide — and does not have one: `pigeon_flock` is `scenery` and
+## `_counts_against_the_line` is done with it before this is ever asked.
 static func _line_reach_of(def: EventDef) -> float:
-	return maxf(def.outer_radius if def.intensity > 0.0 else 0.0, def.obstructs_radius)
+	if def.hard_fail:
+		return maxf(def.outer_radius, def.obstructs_radius)
+	return maxf(_reach_above(def, Tuning.EXCITEMENT_DECAY_WALKING), def.obstructs_radius)
+
+## How far from the centre a row still emits more than `rate`, over both parts of its field: the
+## field itself, and the core where it has one (a cored row's loud part can outlive its quiet one,
+## which is the whole point of having it).
+static func _reach_above(def: EventDef, rate: float) -> float:
+	return maxf(_band_crossing(def.intensity, def.inner_radius, def.outer_radius, rate,
+			def.falloff_power),
+			_band_crossing(def.core_intensity, def.inner_radius, def.core_radius, rate,
+			def.falloff_power))
+
+## Where one falloff band crosses `rate`, or zero if it is never above it — `Tuning.falloff`'s
+## `1 − t^power` inverted for the `t` at which it equals `rate`. The row's own `falloff_power`
+## rather than a squared constant, so a row that ever shapes its own drop-off is denied the ground
+## it actually charges for rather than the ground a quadratic row of the same numbers would.
+static func _band_crossing(intensity: float, inner: float, outer: float, rate: float,
+		power: float) -> float:
+	if intensity <= rate or outer <= inner:
+		return 0.0
+	var left := 1.0 - rate / intensity
+	# `sqrt` at the default rather than `pow(x, 0.5)`, for the reason `Tuning.falloff` writes its
+	# own default out: the two may differ in the last bit, and every radius the catalogue was
+	# measured at came from this one.
+	var t := sqrt(left) if is_equal_approx(power, 2.0) else pow(left, 1.0 / power)
+	return inner + t * (outer - inner)
 
 ## Whether a row denies a point, under the beat-opening reading.
 ##

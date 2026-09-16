@@ -784,7 +784,25 @@ static func _market_stall() -> EventDef:
 ##
 ## Deliberately allowed on `PARK`: a calm block with a leaf blower in it is calm ground she cannot
 ## use, which is what a spoiled park is made of — somewhere to walk to that turns out to be
-## occupied. Pitched above `busker` because a two-stroke engine is not a violin.
+## occupied.
+##
+## **A field with two parts, and they answer two different questions** — *"walking past a leaf
+## blower should still be like a wall. but staying away from it should only prevent sleeping in a
+## calm area (much like the busker)"*, and *"a leaf blower should be able to close one side of a
+## street and spaced out correctly a calm area"*. Away from it the row **is** the busker, number
+## for number, so several of them spaced across a park keep the park awake and a walk one street
+## over pays a price rather than meeting a wall. Close in, the core carries the wall.
+##
+## **The core is the pavement it stands on.** `core_radius` is
+## `Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE` (64px) because that is a pavement's own width: it is
+## the smallest radius that holds the whole footway from anywhere on it, and from the kerb-side
+## tile — the worst one the row can be placed on — it stops short of the far kerb, so the thing
+## closes one side of a street and never the street. `core_intensity` is the lowest tenth whose
+## line through the middle costs at least what this row has always cost, which is comfortably past
+## `Tuning.WALL_WORTH_OF_COST` (35.0 of a hundred-point meter): the two parts change *where* the
+## row is a wall, never whether it is one, so `_role_for` and the danger caret both read it exactly
+## as they did. A line past the core at `core_radius` costs what the same line past a busker costs,
+## because past `core_radius` it is one.
 static func _leaf_blower() -> EventDef:
 	var def := EventDef.new()
 	def.id = "leaf_blower"
@@ -792,9 +810,13 @@ static func _leaf_blower() -> EventDef:
 	def.look = EventDef.Look.LEAF_BLOWER
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.PARK,
 			GameEnums.TileType.SQUARE]
-	def.intensity = 20.0
-	def.inner_radius = 40.0
-	def.outer_radius = 200.0
+	# The busker's field exactly — see `_busker()` for how 19.3 over 45/190 was measured and why
+	# neither radius moved with it.
+	def.intensity = 19.3
+	def.inner_radius = 45.0
+	def.outer_radius = 190.0
+	def.core_intensity = 22.2
+	def.core_radius = float(Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
 	def.telegraph_time = 1.8
 	# Swept in bursts rather than held, so there is a rhythm to time a pass through — the same
 	# counterplay `homeless_yeller` has, at a scale that makes a whole corner of a park unusable.

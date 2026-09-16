@@ -115,3 +115,38 @@ is emptied when the layer goes off, so turning it off and on again starts from a
 Added to M153. The run log's own `spike` line stays on `--spikes` alone, as M144 decided it,
 since the sentence is about the view's recording and not the log's; that reading is written in
 the entry so it can be overturned.
+## The leaf blower: a wall to walk past, a busker to stay near
+
+> "a leaf blower should be able to close one side of a street and spaced out correctly a calm
+> area" — "walking past a leaf blower should still be like a wall. but staying away from it
+> should only prevent sleeping in a calm area (much like the busker)"
+
+Said on 2026-09-15, answering M129's one open question — the wall exemption, and the leaf
+blower standing in a cut on 156 of the 196 routes the four rules leave without a zero-cost
+line. The answer is neither of the two options put (its reach under the street's width, or the
+wall exemption narrowed): it is a field with two parts. Close in, the price of walking past it
+is a wall's. Further out, its field is the busker's — loud enough that a baby does not sleep
+in a calm area within it, and nothing a walk has to route around. So a leaf blower on a
+pavement closes that pavement and not the street, and several of them spaced across a park
+keep the park awake. Filed as M129's closing items in `TODO.md`, with the rule change that
+follows from it: a row denies the ground it charges for, not the ground it can be heard on.
+
+> "option 2 is valid only if the influence at a junction is low enough that it can be taken
+> without having to worry or plan around it"
+
+Said a few minutes later, on whether walls may be counted by the three rules at all. The
+condition is what the rule change above states: what a wall may still reach into a route
+junction is the part of its field under the walking decay, ground the walk takes without
+planning around it, and everything louder is checked like any other row's.
+
+## A row's own drop-off
+
+> "can we influence the drop off of excitement per row?" — "or is the rate by distance always
+> the same for every row?" — "1 doesn't change the leafblower row? we can do that for now.
+> also we can introduce the exponent but leave everything as is for now"
+
+Said on 2026-09-15, after the leaf blower's two-part field was filed. The rate by distance is
+one curve for every row today, shaped only by a row's two radii. Decided: the leaf blower gets
+its core as filed, which changes that row and no other; and the catalogue gains a per-row
+exponent on the drop-off, every row left at today's curve, so a row that later needs a shape
+its radii cannot give has the knob. Both in M129's closing items in `TODO.md`.

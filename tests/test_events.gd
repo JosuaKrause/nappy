@@ -17,6 +17,8 @@ func run(t) -> void:
 	_test_every_other_row_is_one_body(t)
 	_test_telegraph_damps_emission(t)
 	_test_pulse_envelope(t)
+	_test_the_leaf_blowers_core_is_in_the_meter(t)
+	_test_no_other_rows_field_moved(t)
 	_test_a_pursuer_leaves_room_to_answer(t)
 	_test_the_answer_is_priced_by_how_soon_it_is_given(t)
 	_test_a_pursuer_is_sited_where_it_can_be_seen(t)
@@ -553,6 +555,82 @@ func _test_pulse_envelope(t) -> void:
 	t.check(lowest > 0.0, "a pulsing event never goes completely silent")
 	t.check(highest <= def.intensity + 0.001, "the pulse never exceeds the stated intensity")
 	instance.free()
+
+## **A two-part field is two parts in the meter, not only in the cost table.** The leaf blower is a
+## wall close in and a busker further out (`EventDef.core_intensity` / `core_radius`), and the thing
+## that makes that a *field* rather than a price is that an instance charges for it — walked past,
+## against the row the outer half was copied from.
+##
+## Both are asked through a real `EventInstance`, at the peak each catalogues, so what is compared is
+## the query the baby makes. 32px is inside the leaf blower's core and 100px is well outside it,
+## where the two rows are the same numbers and have to answer the same rate.
+func _test_the_leaf_blowers_core_is_in_the_meter(t) -> void:
+	var leaf := EventCatalogue.by_id("leaf_blower")
+	var busker := EventCatalogue.by_id("busker")
+	t.check(leaf.core_intensity > 0.0 and leaf.core_radius > 0.0,
+			"the leaf blower carries a core")
+	t.check(busker.core_intensity == 0.0,
+			"the busker is one field, which is what makes it the row to compare against")
+	t.check(is_equal_approx(leaf.intensity, busker.intensity)
+			and is_equal_approx(leaf.outer_radius, busker.outer_radius),
+			"away from the core the leaf blower is the busker, number for number")
+
+	var blower := _instance(t, leaf)
+	var player := _instance(t, busker)
+	var near := Vector2(32.0, 0.0)
+	var far := Vector2(100.0, 0.0)
+	t.check(near.length() < leaf.core_radius and far.length() > leaf.core_radius,
+			"32px is inside the core and 100px is outside it")
+
+	var blower_near := blower.contribution_at(near, leaf.intensity)
+	var busker_near := player.contribution_at(near, busker.intensity)
+	t.check(blower_near > busker_near + 1.0,
+			"a leaf blower charges more than a busker inside its core (%.2f/s against %.2f/s)"
+			% [blower_near, busker_near])
+	t.close_to(blower_near, leaf.core_intensity,
+			"and what it charges there is the core's own rate")
+	t.close_to(blower.contribution_at(far, leaf.intensity),
+			player.contribution_at(far, busker.intensity),
+			"past the core the two rows charge the same rate")
+
+	# The damping is the half a def-level check cannot see: a quarter of a beat has to be a quarter
+	# of *both* parts, or a leaf blower between bursts is a full wall inside a quiet field. Stated
+	# as the fraction the phase put on the row's own peak, so it holds wherever in the telegraph and
+	# the pulse envelope this instance happens to be standing.
+	t.check(blower.is_telegraphing(), "an instance starts in its telegraph")
+	var fraction := blower.current_intensity() / leaf.intensity
+	t.check(fraction < 1.0, "and is emitting less than its catalogued peak while it does")
+	t.close_to(blower.contribution_at(near), leaf.core_intensity * fraction,
+			"the phase damps the core by exactly the fraction it damps the field by")
+	blower.free()
+	player.free()
+
+## **Adding a second part to the field may not have moved the first one**, and "may not" here means
+## bit for bit rather than nearly: every cost in `docs/EVENTS.md`, every denial radius the placement
+## rules invert, and every balance number anyone has measured was taken against
+## `Tuning.falloff(d, intensity, inner_radius, outer_radius)` on a plain disc.
+##
+## So every uncored row — which is all of them but one — is walked out past its own rim in 16px
+## steps and has to answer exactly that, at its catalogued peak and at a damped one. Exact equality
+## on purpose: `is_equal_approx` would pass a change of a tenth, and the whole claim being made is
+## that nothing moved at all.
+func _test_no_other_rows_field_moved(t) -> void:
+	var checked := 0
+	for def in EventCatalogue.all():
+		if def.core_intensity > 0.0:
+			continue
+		var damped := def.intensity * Tuning.TELEGRAPH_INTENSITY_FRACTION
+		var d := 0.0
+		while d <= def.outer_radius + 32.0:
+			checked += 1
+			t.check(def.emission_at_distance(d) == Tuning.falloff(d, def.intensity,
+					def.inner_radius, def.outer_radius),
+					"'%s' emits what a plain field emits at %.0fpx" % [def.id, d])
+			t.check(def.emission_at_distance(d, damped) == Tuning.falloff(d, damped,
+					def.inner_radius, def.outer_radius),
+					"'%s' damps to what a plain field damps to at %.0fpx" % [def.id, d])
+			d += 16.0
+	t.check(checked > 0, "there were rows and distances to ask (%d)" % checked)
 
 ## **The one encounter in the game with a right answer, walked three ways.** *(M35, playtest 08
 ## finding 4: "I like the running tutorial on day 3 but I don't know how to solve it yet — I died
