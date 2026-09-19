@@ -25,6 +25,9 @@ func run(t) -> void:
 	_test_the_fire_closes_one_stairwell_and_leaves_the_other(t)
 	_test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t)
 	_test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t)
+	_test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t)
+	_test_a_vent_never_closes_around_her(t)
+	_test_no_pocket_between_two_vents_outlasts_the_noise(t)
 	_test_an_explosion_flashes_every_hallway_window(t)
 
 func _test_the_map_builds(t: Node) -> void:
@@ -851,9 +854,15 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 	events.free()
 	scene.free()
 
-## *"Maybe some mice. ... Maybe some steam in the basement etc."* Both stand on the basement's own
-## corridor, which has no branches — so they are things she walks past rather than things she may
-## happen not to find.
+## *"Maybe some mice. ... Maybe some steam in the basement etc."* The mouse and every vent stand on
+## the basement's own corridor, which has no branches — so they are things she walks past rather
+## than things she may happen not to find.
+##
+## A vent stands on the **seam** between the corridor's two rows rather than on either of them, and
+## that is what makes it a gate: her centre is held `obstructs_radius + PLAYER_BODY_RADIUS` from
+## the middle of the passage, and the walls leave it only `TILE - PLAYER_BODY_RADIUS` either side
+## of that middle, so there is no line past a vent that is blowing. Stated as those two reaches
+## rather than as the numbers they come out at today.
 func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
@@ -865,17 +874,247 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) ->
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
 	events.setup(scene, rng)
-	for id in ["alley_mouse", "basement_steam"]:
-		var found: EventInstance = null
-		for instance in events.instances():
-			if instance.def.id == id:
-				found = instance
-		t.check(found != null, "'%s' is in the building" % id)
-		if found:
-			t.check(walk.has(scene.world_to_tile(found.global_position)),
-					"'%s' stands on the basement's own corridor" % id)
+	var mouse: EventInstance = null
+	for instance in events.instances():
+		if instance.def.id == "alley_mouse":
+			mouse = instance
+	t.check(mouse != null, "the mouse is in the building")
+	if mouse:
+		t.check(walk.has(scene.world_to_tile(mouse.global_position)),
+				"and stands on the basement's own corridor")
+
+	var steam := EventCatalogue.by_id("basement_steam")
+	var vents := events.vents()
+	t.check(vents.size() == Tuning.FINALE_STEAM_PERIODS.size(),
+			"the corridor has one vent per period in `Tuning` (%d)" % vents.size())
+	t.check(steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
+			> InteriorScene.TILE - Tuning.PLAYER_BODY_RADIUS,
+			"a blowing vent is held %.0fpx wide against the %.0fpx the walls leave her centre, "
+			% [steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS,
+			InteriorScene.TILE - Tuning.PLAYER_BODY_RADIUS] + "so there is no line past one")
+	var periods := {}
+	var spacing := INF
+	for i in vents.size():
+		var vent: InteriorEvents.Vent = vents[i]
+		periods[vent.period] = true
+		var north := scene.world_to_tile(vent.at + Vector2(0.0, -InteriorScene.TILE * 0.5))
+		var south := scene.world_to_tile(vent.at + Vector2(0.0, InteriorScene.TILE * 0.5))
+		t.check(scene.is_walkable(north) and scene.is_walkable(south),
+				"vent %d straddles two walkable rows of the corridor" % i)
+		t.check(walk.has(north) or walk.has(south),
+				"vent %d stands on the walk she has to take" % i)
+		t.check(is_zero_approx(fmod(vent.at.y, InteriorScene.TILE)),
+				"vent %d sits on the seam between them rather than on a row" % i)
+		if i > 0:
+			spacing = minf(spacing, vent.at.distance_to((vents[i - 1] as InteriorEvents.Vent).at))
+	t.check(periods.size() == vents.size(),
+			"and no two vents share a period, so their gaps do not line up by themselves")
+	t.check(spacing > (steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) * 2.0,
+			"consecutive vents leave a pocket she fits in (%.0fpx apart)" % spacing)
+	print("Basement vents: %d, %.0fpx apart at the closest, periods %s"
+			% [vents.size(), spacing, Tuning.FINALE_STEAM_PERIODS])
 	events.free()
 	scene.free()
+
+## The corridor as a timing puzzle: *"have them turn off an on in different intervals"*. Driven
+## through `InteriorEvents._physics_process()` and each instance's own `_process()`, the two calls
+## the running game makes every frame, since a synchronous suite advances no clock of its own.
+##
+## Three contracts, and none of them is a number this test chose:
+##
+## - **A blow gives its notice before it closes anything.** `solid_once_it_starts` means the body
+##   goes down at the end of the telegraph, and the telegraph has to be longer than walking out
+##   from under the body takes.
+## - **A vent's own gaps are its own period.** Measured between successive blows rather than read
+##   off `Tuning`, so a stagger or a retire that quietly dropped a beat would show.
+## - **A vent that is off is not there at all** — no instance, so no body and nothing charged.
+func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: Node) -> void:
+	const STEP := 1.0 / 60.0
+	const WINDOW := 24.0
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	var steam := EventCatalogue.by_id("basement_steam")
+	t.check(steam.telegraph_time
+			>= (steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) / Tuning.WALK_SPEED,
+			"the notice (%.2fs) covers walking out from under the body (%.2fs)"
+			% [steam.telegraph_time,
+			(steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) / Tuning.WALK_SPEED])
+
+	# Far enough away that nothing is ever withheld for her sake — that half is the next test.
+	var far := Vector2(-10000.0, -10000.0)
+	var blows := {}
+	var solid_before_the_notice := 0
+	var seen := {}
+	var live := 0.0
+	while live < WINDOW:
+		events._physics_process(STEP)
+		for instance in events.instances():
+			if instance.def.id != "basement_steam":
+				continue
+			instance.player_at = far
+			var id := instance.get_instance_id()
+			if not seen.has(id):
+				seen[id] = true
+				if not blows.has(instance.global_position):
+					blows[instance.global_position] = [] as Array[float]
+				(blows[instance.global_position] as Array[float]).append(live)
+				if instance.is_solid():
+					solid_before_the_notice += 1
+			if instance.is_solid() and instance.age < steam.telegraph_time:
+				solid_before_the_notice += 1
+			instance._process(STEP)
+		live += STEP
+	t.check(solid_before_the_notice == 0,
+			"no blow was ever solid before its notice was over (%d were)" % solid_before_the_notice)
+	t.check(blows.size() == events.vents().size(),
+			"every vent blew inside %.0fs and nothing blew anywhere else (%d places)"
+			% [WINDOW, blows.size()])
+	var off_period := 0
+	var beats := 0
+	for vent: InteriorEvents.Vent in events.vents():
+		var times: Array = blows.get(vent.at, [])
+		t.check(times.size() >= 2, "vent at %s blew more than once (%d)" % [vent.at, times.size()])
+		for i in range(1, times.size()):
+			beats += 1
+			if absf((times[i] - times[i - 1]) - vent.period) > STEP * 2.0:
+				off_period += 1
+	t.check(beats > 0, "there were gaps between blows to measure (%d)" % beats)
+	t.check(off_period == 0, "and every one of them is that vent's own period (%d were not)"
+			% off_period)
+	events.free()
+	scene.free()
+
+## *"A vent never turns on with her inside its body."* The one thing a notice, however long, cannot
+## be an answer to is walking **into** the thing that is about to close: a body built around her is
+## a wall she is inside, and the only ways out of one are teleporting her or deleting it again.
+##
+## So the body is withheld for as long as she stands in the footprint and goes down the moment she
+## is clear — a precondition rather than a repair, and the steam charges her the whole time, so
+## standing in a vent is the most expensive way through it rather than a way past it.
+func _test_a_vent_never_closes_around_her(t: Node) -> void:
+	const STEP := 1.0 / 60.0
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	var steam := EventCatalogue.by_id("basement_steam")
+	var vents := events.vents()
+	t.check(not vents.is_empty(), "there are vents to stand in")
+	if vents.is_empty():
+		events.free()
+		scene.free()
+		return
+	var inside: Vector2 = (vents[0] as InteriorEvents.Vent).at
+
+	# Driven only as far as the first blow at that vent getting past its own notice, which is the
+	# frame the contract is about: any longer and the instance under test would be a later cycle
+	# still telegraphing, and "not solid" would pass for the wrong reason.
+	var blow: EventInstance = null
+	var live := 0.0
+	var charged := 0.0
+	var solid_while_she_was_in_it := 0
+	var blowing := false
+	while live < Tuning.FINALE_LENGTH_SECONDS and not blowing:
+		events._physics_process(STEP)
+		for instance in events.instances():
+			if instance.def.id != "basement_steam" or instance.global_position != inside:
+				continue
+			blow = instance
+			instance.player_at = inside
+			instance._process(STEP)
+			if instance.is_solid():
+				solid_while_she_was_in_it += 1
+			charged += instance.contribution_at(inside) * STEP
+			blowing = instance.age > steam.telegraph_time and not instance.is_finished
+		live += STEP
+	t.check(blow != null and blowing, "the vent she is standing in blew, and is past its notice")
+	t.check(solid_while_she_was_in_it == 0,
+			"and never became solid while she was inside it (%d frames)" % solid_while_she_was_in_it)
+	t.check(charged > 0.0,
+			"while charging her for standing there (%.0f points of meter)" % charged)
+	if blow and blowing:
+		# One frame with her clear of the footprint is all it takes.
+		blow.player_at = inside + Vector2(1000.0, 0.0)
+		blow._process(STEP)
+		t.check(blow.is_solid(), "and it closes the corridor the moment she steps out of it")
+	events.free()
+	scene.free()
+
+## *"No pair of adjacent vents can hold her in a pocket whose both ends are shut for longer than
+## she can stand the noise."*
+##
+## Both halves are asked of the things they are made of rather than of a number written here. The
+## pocket's length is the worst overlap of two adjacent vents' solid windows, simulated over the
+## whole sequence's own clock; what she can stand is the meter — `Tuning.METER_MAX` — against the
+## rate the two fields charge her at the quietest point she can reach, which is the middle of the
+## pocket, standing still, where the ground gives nothing back (`EXCITEMENT_DECAY_IDLE` is zero
+## recovery). If the vents are far enough apart that the middle is outside both fields, the pocket
+## costs nothing and can hold her all day, which is why the rate is measured rather than assumed.
+func _test_no_pocket_between_two_vents_outlasts_the_noise(t: Node) -> void:
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	var steam := EventCatalogue.by_id("basement_steam")
+	var vents := events.vents()
+	var pairs := 0
+	for i in range(1, vents.size()):
+		var a: InteriorEvents.Vent = vents[i - 1]
+		var b: InteriorEvents.Vent = vents[i]
+		pairs += 1
+		var shut := _longest_both_shut(a, b, steam)
+		var half := a.at.distance_to(b.at) * 0.5
+		var rate := 2.0 * Tuning.falloff(half, steam.intensity, steam.inner_radius,
+				steam.outer_radius, steam.falloff_power)
+		t.check(shut * rate < Tuning.METER_MAX,
+				("a pocket %.0fpx wide is shut at both ends for at most %.2fs at %.1f/s, "
+				% [half * 2.0, shut, rate])
+				+ "which is %.0f of the %.0f the meter holds"
+				% [shut * rate, Tuning.METER_MAX])
+		print("Steam pocket %d: %.0fpx wide, shut at both ends for %.2fs at %.1f/s (%.0f of %.0f)"
+				% [pairs, half * 2.0, shut, rate, shut * rate, Tuning.METER_MAX])
+	t.check(pairs > 0, "there were adjacent vents to make a pocket (%d pairs)" % pairs)
+	events.free()
+	scene.free()
+
+## The longest run of seconds during which both vents are solid at once, over the whole sequence's
+## own clock. Sampled rather than solved: the two windows are periodic with different periods and
+## the overlap pattern does not repeat inside the clock, so the honest answer is to walk it.
+func _longest_both_shut(a: InteriorEvents.Vent, b: InteriorEvents.Vent, steam: EventDef) -> float:
+	const STEP := 1.0 / 60.0
+	var longest := 0.0
+	var run := 0.0
+	var at := 0.0
+	while at < Tuning.FINALE_LENGTH_SECONDS:
+		if _is_shut(a, at, steam) and _is_shut(b, at, steam):
+			run += STEP
+			longest = maxf(longest, run)
+		else:
+			run = 0.0
+		at += STEP
+	return longest
+
+## Whether one vent's body is down at `at` seconds into the section. A vent's cycle is its notice,
+## then `Tuning.FINALE_STEAM_BLOWS_FOR` of blowing, then nothing until its own period comes round;
+## `until_the_next_blow` is how far into the first cycle it starts.
+func _is_shut(vent: InteriorEvents.Vent, at: float, steam: EventDef) -> bool:
+	var since := at - (vent.until_the_next_blow - vent.period)
+	if since < 0.0:
+		return false
+	var phase := fmod(since, vent.period)
+	return phase >= steam.telegraph_time \
+			and phase < steam.telegraph_time + Tuning.FINALE_STEAM_BLOWS_FOR
 
 ## *"The hallway windows that flash when an explosion goes off."* There is no burst on the street
 ## to see and no arc drawn for the noise, so the flash is the whole of the cue — driven here

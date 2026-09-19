@@ -329,8 +329,8 @@ item below for as long as looking takes.
 - **Walk the whole escape end to end** (`tools/run.sh --start-escape --seed 4242`; debug only).
   She starts at her own door with the baby asleep, goes down past the barricaded lobby to the
   service exit, and the same run continues into the city and ends at the tunnel or the bridge.
-  Inside: a mouse and a paced steam vent in the basement, a masked man on one stairwell and a
-  fire on the other, and the hallway windows flashing every 22 seconds
+  Inside: a mouse and three fixed steam vents on their own timers in the basement, a masked man
+  running one stairwell and a fire on the other, and the hallway windows flashing every 22 seconds
   (`Tuning.FINALE_EXPLOSION_INTERVAL`) for `FINALE_WINDOW_FLASH_SECONDS` (0.12s). The question
   only a walk answers: does the fire actually force the other shaft, or is walking back up the
   obvious answer anyway? Record is `DECISIONS.md`, M102, the finale built behind the flag.
