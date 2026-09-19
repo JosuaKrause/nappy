@@ -6,7 +6,7 @@ editable and record each SVG/PNG pair; generated source sheets are generation ev
 
 The game uses a registered PNG when one exists. `--svg`, or `?svg=1` on the web,
 forces original SVG graphics. The same drawing code handles both formats.
-The transferred artwork covers the mother's pushing and carrying animation frames and the pram's
+The transferred artwork covers both parents' pushing and carrying animation frames and the pram's
 five authored views, supplying eight directions through explicit east/west mirroring. The garbage
 sack, sack pile and five litter decals also use registered PNGs. The outdoor ground catalogue
 under `assets/tiles/` uses registered PNG materials and components. Shared ground bases and transparent damage, markings
@@ -16,8 +16,10 @@ skylights, vent stack and ducts also have comic replacements. Other families use
 The logo, social card and exported stroller icon sizes use the comic identity mark, documented
 with their SVG source mappings in the
 [identity generation record](evidence/comic-identity-2026-09-12/GENERATION.md).
-Compare directions, gait frames and state variants together so the mother
-carrying the baby reads as the same woman pushing the stroller.
+Compare directions, gait frames and state variants together so each parent carrying the baby
+reads as the same person pushing the stroller. The female presentation wears red; the male
+presentation has short brown hair and a blue overshirt. A run selects one with equal probability
+from an independent seeded stream, before its player is placed; days and state changes only read it.
 Both carrying and pushing use three distinct poses in four phases: open, together, opposite open,
 together. Stopping selects the together pose in either state.
 
@@ -35,7 +37,7 @@ Keep the game's perspective and the SVG subject's identity.
 
 The [player authoring sources](graphics-creation/player/README.md) preserve the high-fidelity SVG
 targets used for the accepted PNG sprites. Their manifest distinguishes those creation references
-from the runtime SVG fallback artwork. Both families provide contact and together poses. Use the
+from the runtime SVG fallback artwork. Both presentations provide contact and together poses. Use the
 creation-reference family for high-fidelity generation and its linked recipes for reproduction.
 
 ## Replacement contract
@@ -46,7 +48,7 @@ back to the SVG. Drawing transforms, animation timing, mirroring, ground anchors
 collision and camera framing remain the existing game's responsibility.
 
 `TextureAtlas` then relocates whichever raster the resolver chose into one shared texture per
-group of pictures — her family, the head indicators, the street's decoration, the crowd, and one
+group of pictures — both player families, the head indicators, the street's decoration, the crowd, and one
 group per event family — and hands out `AtlasTexture` regions over it. The atlas changes no
 picture: a region reports its source's own size, so scale, offsets, mirroring, anchors, shadows
 and sorting read the same numbers in either presentation mode. A group is requested when its
@@ -69,6 +71,10 @@ Identity/export variants retain their documented source-derived canvas sizes. Re
 the redrawn artwork's real transparency rather than stamping the SVG's primitive silhouette
 over it. Opaque ground stays opaque; outlines, transparent gaps, internal placement and visual
 quality require inspection alongside dimension and anchor checks.
+Both complete player families are warmed before gameplay and packed into the shared player atlas,
+including every carrying pose. Resolution and atlas collection never select or reroll a presentation.
+The [male player recipe](evidence/male-player-2026-09-19/GENERATION.md) preserves its SVG-first
+sources, generated pushing/carrying sheets, native registration and eight-direction comparisons.
 The [pushing stride record](evidence/comic-pushing-strides-2026-09-12/GENERATION.md) documents
 P2 — Three-pose push, including SVG sources, whole-figure registration and all-direction
 contact sheets. The [comic rig record](evidence/comic-rig-2026-09-12/GENERATION.md) preserves
