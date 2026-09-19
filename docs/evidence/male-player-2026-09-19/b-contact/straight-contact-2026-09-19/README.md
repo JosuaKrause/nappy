@@ -5,9 +5,11 @@ Review the [clean eight-direction sheet](generated/father-spritesheet-6x.png), i
 [native](generated/father-animation-native.gif) or
 [6×](generated/father-animation-6x.gif) animation loop.
 
-These are uninstalled candidates for PLAYTEST-88 and M160, the father's opposite B contact.
-Only E/W and SE/SW B change. All A/C frames and accepted N/S and NE/NW B frames are byte-identical
-to the prior review's files. Runtime art and shared graphics procedures remain unchanged.
+PLAYTEST-90 provisionally accepts these four father B contacts for runtime use. Only E/W and
+SE/SW B change. All A/C frames and accepted N/S and NE/NW B frames are byte-identical to the
+prior review's files. The four authored B PNGs install byte-identically from `generated/rig/`;
+the shared graphics procedure records this narrow, approved splice while a separate refinement
+attempt seeks more natural-looking legs without changing these accepted positions.
 
 Columns are N, NE, E, SE, S, SW, W, NW; rows are A, C, B, C. GIFs place N/NE/E/SE above
 S/SW/W/NW and repeat four 190ms phases. The sheet and loop reuse the
@@ -48,7 +50,8 @@ The advancing far leg is partly occluded at the upper thigh; both knees retain a
 The projected diagonal has a higher trailing foot. The native pelvis meets the preserved shirt hem
 without a gap, and the protected upper-body landmarks remain fixed.
 These are static pose and offline-loop checks, not a live stroller-contact or gameplay-motion
-capture. Player acceptance is outstanding.
+capture. Player acceptance covers provisional runtime use; a motion burst remains separate
+runtime evidence.
 
 ## Generation provenance
 

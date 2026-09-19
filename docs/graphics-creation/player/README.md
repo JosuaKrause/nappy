@@ -12,7 +12,9 @@ the authoring copies under `docs/graphics-creation/player/` prevents high-fideli
 references from becoming an implicit runtime fallback.
 
 `manifest.json` records the byte hashes, native canvases, runtime-to-authoring pairing, frame
-roles, accepted PNG hashes, and the generation recipe
+roles, accepted PNG hashes, and the generation recipe.
+The four player-approved father pushing B overrides additionally record their accepted generated
+source and the preserved original registered PNG, so provenance does not rewrite historical output.
 for both complete families. The recipe links point to the retained P2 pushing, F carrying and
 [male player records](../../evidence/male-player-2026-09-19/GENERATION.md), which preserve source
 inputs and reproduction instructions. Male authoring SVGs and runtime fallbacks are byte-identical;

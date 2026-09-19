@@ -295,59 +295,35 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
-## M160 — The father's B contact puts the other leg forward · asked for 2026-09-19
+## M167 — The father's legs read as legs · asked for 2026-09-19
 
-[PLAYTEST-90](playtests/PLAYTEST-90.md) accepts the straight-contact candidate for provisional
-use and authorizes merging after installation and verification. In parallel, prepare an early
-review attempt that makes the legs read more naturally, retaining the accepted positions and
-protected frames. That drawing refinement does not delay use of the accepted contact correction.
+> "the leg positions are correct now. we can use it for now (and merge) but in parallel do another fix attempt to just make the legs look like legs"
 
-> "actually now that I look again the B frames going north, east, south east, south, south west,
-> and west show the wrong leg in front. the other two directions are correct"
+> "I approved the graphics for now but also noted that we need to fix the leg's appearance in the next pr"
 
-[PLAYTEST-79](playtests/PLAYTEST-79.md). M157's father presentation is built and its identity, blue
-overshirt and illustration style are accepted. This item corrects only the pushing cycle's B
-contact on a new pull request. Runtime north uses `father_back_b`; east and west share
-`father_side_b` through mirroring; southeast and southwest share `father_front_diagonal_b`; and
-south uses `father_front_b`. Northeast and northwest share `father_back_diagonal_b`, which the
-player identified as correct and which stays untouched.
+[PLAYTEST-90](playtests/PLAYTEST-90.md) and [PLAYTEST-91](playtests/PLAYTEST-91.md).
+The provisionally accepted contact baseline and its narrow father-only splice exception are
+recorded in `DECISIONS.md` under M160, provisional contact acceptance. This separate drawing
+follow-up does not replace that baseline without visual approval.
 
-- [ ] **Show the intended leg in front in the woman's established review format, then install only
-      what the player approves.** [PLAYTEST-88](playtests/PLAYTEST-88.md) accepts N/S and NE/NW
-      after clarifying the mirrored pairs, but rejects E/W and SE/SW: the same leg still leads
-      and the knee bends unnaturally. Preserve the accepted directions and all A/C frames.
-      Correct the complete hip–knee–shoe chain in the two remaining B views, not only the
-      position of the shoe. The [straight-contact candidate](evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/README.md)
-      awaits judgment of those contacts before installation. [PLAYTEST-87](playtests/PLAYTEST-87.md) rejects a before/after
-      comparison because the failed frame is not a useful review target. Reuse the accepted woman
-      review format and show attempts early: [PLAYTEST-89](playtests/PLAYTEST-89.md) welcomes
-      repeated player feedback before further internal visual revisions. Reuse the woman
-      pushing pipeline without inventing another strategy: one clean sprite sheet contains the
-      father's A/C/B/C loop in all eight runtime directions, and native/6× GIFs animate the same
-      four 190ms phases in N, NE, E, SE, S, SW, W, NW order. Front and back B preserve the accepted
-      upper body and use the correctly sized A lower body mirrored into the opposite contact. Side
-      and front-diagonal B correct the continuous hip-to-shoe ownership; the player authorizes a
-      deterministic splice of correct father legs beneath the preserved father upper body for
-      review, and west and southwest are their runtime mirrors. The accepted back-diagonal source
-      supplies northeast and northwest unchanged. Every candidate keeps the A/C canvas,
-      bottom-center anchor, scale and alpha bounds,
-      with no overflow. Do not show another comparison, touch carrying frames, alter A/C, or install
-      a runtime replacement before the complete sheet and loops are approved. After approval,
-      update the four affected runtime SVGs, their graphics-creation copies and corresponding native
-      PNG replacements; regenerate source and registered evidence plus manifest hashes, and prove
-      each runtime SVG matches its creation copy and each shipped PNG matches its registered source.
-
-> "for the leg corrections write down the procedure for fixing because you mess it up *every*
-> time. so let's be proactive about it. still waiting on reviewable results btw"
-
-The reusable correction procedure keeps its existing rules until the player approves a final
-image. This pass records exact source hashes, crop boundaries, transforms, compositing order,
-commands and output hashes beside the evidence; after approval, only the successful method is
-promoted into the SVG and illustrated-PNG workflows. A corrected source or generated candidate is
-not a reviewable result until the clean eight-direction sheet and both animation loops show
-continuous hip-to-shoe ownership, occlusion order, ground contacts and preserved proportions
-through A/C/B/C. The woman pipeline's native and 6× outputs are the authority; there is no separate
-evidence design for the father.
+- [ ] **Match the legs to the rest of the family.** E/W B needs A/C's clear dark far-leg cue,
+      folded and shaded trousers, and chunky brown highlighted shoes instead of thin dark slivers.
+      Keep the accepted near leg trailing and the far leg advancing, with a continuous
+      hip–knee–shoe chain and natural knees. SE/SW must read as a three-quarter stride under
+      its torso, not a full-width profile stride: narrow it toward A and the accepted NE/NW
+      contacts so A/C/B/C does not alternate short and long steps like a limp.
+- [ ] **Publish an early attempt and ask for feedback.** Use the established clean eight-direction
+      A/C/B/C sheet and native/6× four-phase GIFs at 190ms per phase. Push and embed them in
+      the next PR description with commit-pinned links before asking; the CLI cannot show local
+      images. Repeated feedback is welcome, per [PLAYTEST-89](playtests/PLAYTEST-89.md).
+      Preserve N/S, NE/NW, all A/C frames, upper-body landmarks, native canvases, scale and anchors.
+      Do not change carrying poses, stroller art or gameplay. Keep exact prompts, raw inputs,
+      crops, transforms, commands and hashes with the evidence. The first attempt may expose
+      remaining defects; do not spend another internal revision loop hiding them from review.
+- [ ] **Install only the visually accepted refinement.** Keep corresponding reviewed SVGs,
+      creation copies, registered PNGs and manifest hashes in agreement, preserve import sidecars,
+      and verify actual runtime bindings. The provisional splice is not a general successful
+      procedure; update shared graphics guidance only with a method accepted for final appearance.
 
 ---
 

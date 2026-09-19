@@ -1,14 +1,15 @@
 # Father B-contact source review
 
 This record contains the four editable pushing B-pose corrections and their source review.
-The illustrated runtime PNGs retain the original registration; source and raster leg poses
-therefore differ in these four assets. This is source evidence, not a completed raster transfer.
+The illustrated runtime PNGs use the player-approved straight-contact derivatives. Their manifest
+entries preserve the original registered PNGs and identify the accepted override source and hash.
 
-The [straight-contact trial](straight-contact-2026-09-19/README.md) is the current review
-candidate: a new father-only donor keeps the near hip, knee and shoe on a continuous backward
-chain. Side and front diagonal use the authorized splice construction, with the diagonal's
-trailing foot raised by the recorded projection. Accepted N/S, NE/NW and every A/C frame
-remain byte-identical to the previous sheet. Complete-image approval is still required.
+The [straight-contact recipe](straight-contact-2026-09-19/README.md) supplies the accepted
+provisional raster: a new father-only donor keeps the near hip, knee and shoe on a continuous
+backward chain. Side and front diagonal use the authorized splice construction, with the
+diagonal's trailing foot raised by the recorded projection. Accepted N/S, NE/NW and every A/C
+frame remain byte-identical to the previous sheet. A separate refinement remains subject to
+visual review and cannot replace these accepted positions on its own.
 
 The [retained father-only splice trial](loops-2026-09-19/README.md) preserves the rejected
 eight-direction A/C/B/C sprite sheet and native/6× animation loops. It preserves A's upper pixels
@@ -74,11 +75,10 @@ The northeast/northwest source and PNG are unchanged:
 - `father_back_diagonal_b.png`: SHA-256
   `6d737538aa63cb48334a84f2f3ef2547fe8f75d11b1d0d2ca4cb3538f997afe5`.
 
-All A/C poses, carrying poses, stroller pictures, import sidecars and illustrated runtime
-PNGs remain unchanged. The player manifest records current creation hashes and existing
-shipped PNG hashes. Its pair verifier still proves creation/runtime equality and equality
-between shipped PNGs and their original registered files; that does not establish a corrected
-raster pose.
+All A/C poses, carrying poses, stroller pictures and import sidecars remain unchanged. The
+player manifest records current creation hashes and shipped PNG hashes. Its pair verifier proves
+creation/runtime equality, requires each approved runtime B PNG to match its accepted
+straight-contact source, and separately pins the original registered PNG for all four overrides.
 
 ## Regeneration
 
@@ -99,10 +99,9 @@ uv run python docs/evidence/male-player-2026-09-19/verify-pairs.py
 
 The proof script supplies the above-pelvis identity references for raster work.
 The source preview, target crop and JSON files in `inputs/` reproduce with these commands.
-The original `../registration.json` remains immutable: its SVG hashes describe the
-generation inputs for the original PNGs. Running its registration verifier against the
-revised SVG tree intentionally reports a changed input. A completed transfer needs a
-separate explicit four-pose override record, while preserving the original raw atlas.
+The original `../registration.json` remains immutable: its SVG hashes describe the generation
+inputs for the original PNGs. The manifest's explicit four-pose override records the accepted
+runtime derivatives while preserving the original raw atlas and registered PNGs.
 
 ## Raster acceptance gate
 
@@ -132,10 +131,9 @@ uv run python docs/evidence/male-player-2026-09-19/b-contact/review-raster.py \
   --raw /path/to/generated-atlas.png --output-dir /tmp/father-b-candidate
 ```
 
-Side and front-diagonal B corrections remain required, with the accepted N/S and NE/NW pixels
-and every A/C frame preserved. The side needs the near knee and shoe behind its hip, without
-changing head size, torso length or hand height relative to A/C. Front diagonal needs its own
-projected near trailing thigh visibly in front of the far advancing thigh. A father-only splice
-is authorized, but the complete native sheet and animation loops must pass visual review before
-installation. The shared procedure awaits approval of the complete result. These source artifacts
-alone do not establish a corrected PNG contact. No gameplay motion burst covers this presentation.
+The accepted side and front-diagonal contacts preserve the N/S and NE/NW pixels and every A/C
+frame. The side's near knee and shoe trail behind its hip without changing head size, torso
+length or hand height relative to A/C; the front diagonal keeps its projected near trailing thigh
+in front of the far advancing thigh. This father-only splice is accepted provisionally. These
+source artifacts alone do not establish gameplay motion; no runtime motion burst covers this
+presentation.

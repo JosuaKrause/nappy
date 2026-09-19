@@ -12,7 +12,9 @@ from PIL import __version__ as pillow_version
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[4]
-RIG = ROOT / "assets/illustrated/svg-transfer/rig"
+# This rejected trial is reconstructed from its retained original frames, never from
+# current runtime art. Later approved B contacts must not change historical evidence.
+HISTORICAL_RIG = HERE / "generated/rig"
 P2_RECIPE = ROOT / "docs/evidence/comic-pushing-strides-2026-09-12/convert.py"
 VIEWS = ("front", "back", "side", "front_diagonal", "back_diagonal")
 LOOP = ("a", "c", "b", "c")
@@ -38,7 +40,7 @@ def p2_recipe():
 
 def inputs():
     paths = [HERE / "father-side-leg-donor.png", P2_RECIPE, Path(__file__), HERE / "chronology.json"]
-    paths += [RIG / f"father_{view}_{pose}.png" for view in VIEWS for pose in ("a", "c", "b")]
+    paths += [HISTORICAL_RIG / f"father_{view}_{pose}.png" for view in VIEWS for pose in ("a", "c", "b")]
     return {str(path.relative_to(ROOT)): sha(path) for path in paths}
 
 
@@ -131,9 +133,9 @@ def verify(output, p2):
             bounds = picture.getchannel("A").getbbox()
             assert bounds and bounds[3] == 46 and bounds[1] <= 1, (path, bounds)
             if pose != "b" or view == "back_diagonal":
-                assert path.read_bytes() == (RIG / path.name).read_bytes(), path
+                assert path.read_bytes() == (HISTORICAL_RIG / path.name).read_bytes(), path
             else:
-                original = rgba(RIG / f"father_{view}_a.png")
+                original = rgba(HISTORICAL_RIG / f"father_{view}_a.png")
                 assert (
                     picture.crop((0, 0, picture.width, CUT_Y)).tobytes()
                     == original.crop((0, 0, picture.width, CUT_Y)).tobytes()
@@ -173,12 +175,12 @@ def main():
     records = {}
     for view in VIEWS:
         for pose in ("a", "c", "b"):
-            source = RIG / f"father_{view}_{pose}.png"
+            source = HISTORICAL_RIG / f"father_{view}_{pose}.png"
             destination = args.output_dir / "rig" / source.name
             if pose != "b" or view == "back_diagonal":
                 shutil.copy2(source, destination)
                 continue
-            original = rgba(RIG / f"father_{view}_a.png")
+            original = rgba(HISTORICAL_RIG / f"father_{view}_a.png")
             if view in ("front", "back"):
                 picture = mirror_cardinal(original)
                 record = {
