@@ -29,13 +29,13 @@ Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
 
 -- delivery_van, density and where it stands --
    placed: 1036 over 24 days (43.2/day)
-   on a route street's far sidewalk (legal ground for a wall): 46
+   on a route street's far sidewalk (legal ground for a wall): 45
 
 -- the ten worst concrete cases --
    none: every walked-sidewalk band in the sample kept a lane
 
--- 28.6s --
--- m129_walked_sidewalk_walls.gd   28663 ms
+-- 24.4s --
+-- m129_walked_sidewalk_walls.gd   24418 ms
 
 1 checks, 0 failures
 PARTIAL RUN — only suites matching probes/m129_walked_sidewalk_walls.gd. Not a green build.

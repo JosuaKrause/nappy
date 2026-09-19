@@ -1338,6 +1338,16 @@ static func _police_patrol() -> EventDef:
 	return def
 
 ## Cosmetic dread. Barely moves the meter; it is here so the walls change.
+##
+## **`AGAINST_THE_BUILDING`, the way `reversing_lorry` stands.** A crew pastes posters at the wall
+## it works on rather than in the middle of the pavement, and the placement answers the width rule
+## as well as the picture: centred (the `ANY` default) an 11px body leaves under 28px on each side
+## of the 64px band and is a wall by physical fit (`EventScheduler._closes_the_band_by_its_own_
+## placement`); pinned to the frontage lane's own tile centre, `TILE_SIZE * 0.5` from the wall, it
+## spans 5-27px of the band from that edge and leaves 37px to the kerb — over the 28px she needs,
+## so it stays friction. `_wants_this_side` narrows its `SIDEWALK` ground to north-south streets
+## with a real building on the far side, the same restriction `reversing_lorry` already carries;
+## its `SQUARE` ground answers no `pavement_inward` at all and is no longer offered.
 static func _poster_crew() -> EventDef:
 	var def := EventDef.new()
 	def.id = "poster_crew"
@@ -1346,6 +1356,7 @@ static func _poster_crew() -> EventDef:
 	def.first_day = 4
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
+	def.pavement_side = EventDef.Pavement.AGAINST_THE_BUILDING
 	def.intensity = 5.0
 	def.inner_radius = 30.0
 	def.outer_radius = 110.0

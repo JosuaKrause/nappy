@@ -2996,16 +2996,21 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 ## still the one to state a floor over, because it is the part the junction rule cannot touch and
 ## the part a reader would expect to be unaffected. What the floor defends is that the four-to-one
 ## corridor weight still shows through all three rules; it is not a claim that nothing diminishes
-## it. Measured over the days sampled here it stands at 40% with the three rules live, which is
-## where the floor is set from. The whole share keeps its own floor as well, with room for the wide
-## rows to be pushed further off as their reaches move.
+## it.
 ##
-## **Both floors moved once, and are open to overturn again.** `delivery_van` (and, once caught the
-## same way, `poster_crew`) left the friction pool entirely once `_closes_the_band_by_its_own_placement`
-## made them walls by physical fit rather than by cost — two silent, narrow rows that used to sit on
-## the corridor and no longer do, so both the whole share (35% to 32%) and the narrow one (44% to
-## 40%) lost the ground those two used to hold. Re-measure rather than trust either number if the
-## catalogue's `pavement_side`/`obstructs_radius` pairing moves again.
+## **Both floors moved once and did not fully recover.** `delivery_van` leaving the friction pool
+## for good (`_closes_the_band_by_its_own_placement` reads it as a wall by physical fit,
+## `AT_THE_KERB`) cost the whole share 35% to 32% and the narrow one 44% to 40%. Standing
+## `poster_crew` `AGAINST_THE_BUILDING` instead of `ANY` put it back on the corridor as friction —
+## its own 11px body leaves 37px to the kerb from the frontage lane's own tile centre, over the
+## 28px she needs, where centred it left only 21px each side — which recovered most but not all of
+## that ground: measured over the days sampled here, the whole share now stands at 36.13% (was
+## 37.31% with neither row ever a wall) and the narrow one at 42.55% (was 44.26%). Both floors are
+## set just under those figures rather than restored to their pre-`delivery_van` values, since
+## neither measurement clears the old floor by the margin it originally had — the whole share's own
+## margin over 0.35 more than halved (2.31 points to 1.13) and the narrow share's did too (4.26 to
+## 2.55). Re-measure rather than trust either number if the catalogue's `pavement_side`/
+## `obstructs_radius` pairing moves again.
 ##
 ## An `AHEAD_OF_PLAYER` row is exempt from the first half and the exemption is the design rather
 ## than a hole: the charging dog is sited by `EventDirector` in front of wherever she turns out to
@@ -3098,10 +3103,10 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	t.check(friction > 0, "and friction at all (%d)" % friction)
 	t.check(narrow > 50, "and enough of it narrow enough to stand beside a crossing (%d)" % narrow)
 	var share := float(friction_on_the_route) / maxf(1.0, float(friction))
-	t.check(share > 0.32, "%d of %d costly rows are on the corridor" % [friction_on_the_route, friction])
+	t.check(share > 0.34, "%d of %d costly rows are on the corridor" % [friction_on_the_route, friction])
 	t.check(share < 0.9, "and the streets off it are not empty (%.0f%% on it)" % (share * 100.0))
 	var narrow_share := float(narrow_on_the_route) / maxf(1.0, float(narrow))
-	t.check(narrow_share > 0.38,
+	t.check(narrow_share > 0.39,
 			"and the corridor weight still shows through the three rules that can refuse a narrow "
 			+ "row (%d of %d narrow rows on the corridor)" % [narrow_on_the_route, narrow])
 
@@ -3163,18 +3168,20 @@ func _test_the_day_is_placed_by_role(t) -> void:
 ## than a lane. `_test_a_pacing_row_on_the_routes_sidewalk_can_be_left` is its half of the same
 ## question, and this count would be the wrong instrument for it.
 ##
-## **The catalogue currently has none left to check the cost clause against, and that is itself
-## the fact to assert rather than a vacuous sweep.** `_closes_the_band_by_its_own_placement`
-## (`src/events/event_scheduler.gd`) reads a solid, non-pacing sidewalk row's own numbers against
-## where it actually ends up standing — the kerb or the frontage lane's own tile centre for
-## `AT_THE_KERB`/`AGAINST_THE_BUILDING`, the exact middle of the 64px band for `ANY`
-## (`EventInstance._centred_on_the_pavement_band()`) — and every one of those three positions
-## leaves so little edge-to-edge gap that a body over 8px wide already denies the 28px she needs
-## (`delivery_van`'s own kerbed 22px leaves 26px; a centred `ANY` body needs only 4px of radius to
-## do the same). Nothing the catalogue draws is narrower than that, so every solid, non-pacing
-## sidewalk row is already a wall by this reading before the cost clause is ever asked — checked
-## below independently of `_role_for`, so a future row narrow enough to stay friction is caught
-## the moment one exists rather than assumed impossible.
+## **A body narrow enough to move off the wall's own middle can still stay friction**, and
+## `poster_crew` is the row that proves it: `AGAINST_THE_BUILDING` rather than `ANY` (a crew pastes
+## posters at the wall it works on, not in the middle of the pavement) pins its 11px body to the
+## frontage lane's own tile centre, `TILE_SIZE * 0.5` from the wall, spanning 5-27px of the 64px
+## band and leaving 37px to the kerb — over the 28px she needs — where centred it would have left
+## only 21px on each side. So the population below is one row across two days rather than the two
+## rows (`delivery_van` and `poster_crew`) it used to be before either was read against the
+## physical clause at all; `delivery_van` stays a wall by the same reading
+## (`_closes_the_band_by_its_own_placement`'s own doc has its arithmetic).
+##
+## **The second loop is independent of `_role_for` on purpose**, re-deriving the edge-to-edge gap
+## by hand rather than calling the function under test, so a future row narrow enough to slip both
+## readings is caught by its own numbers rather than assumed impossible. `burning_building`
+## (`ONE_SHOT`) is excluded from it since a set piece is never asked the friction-or-wall question.
 func _test_friction_on_a_sidewalk_can_be_walked_past(t) -> void:
 	var checked := 0
 	for day in [1, 8]:
@@ -3190,6 +3197,8 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t) -> void:
 					"day %d: '%s' is friction on a sidewalk and denies %.1fpx of it, so the far"
 					% [day, def.id, EventScheduler._line_reach_of(def)]
 					+ " lane (%.0fpx out) is still a line" % EventScheduler._THE_FAR_LANE)
+	t.check(checked >= 2,
+			"and the catalogue has rows on a sidewalk to ask it of (%d)" % checked)
 
 	var solid_on_a_sidewalk := 0
 	var band := float(Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE

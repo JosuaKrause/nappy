@@ -16,8 +16,8 @@ Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
    act 1   37 of  86   43.0%
    act 2   27 of  88   30.7%
    act 3   29 of  74   39.2%
-   act 4   12 of  48   25.0%
-   all    105 of 296   35.5%
+   act 4   15 of  48   31.2%
+   all    108 of 296   36.5%
 
 -- routes with a zero-cost line: primary, the day's own catalogue rows only (no seals or region wall) --
    act 1   82 of  86   95.3%
@@ -31,13 +31,13 @@ Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
    every broken route, which is what a rule would have to cover.
    routes   cuts  shape
         0      1  a pacing row whose beat never leaves an opening
-       36     48  the junction itself is taken
+       36     45  the junction itself is taken
         e.g. seed 129129 day 5 area (1, 8) route 0: street (5, 7, 0) (east-west): the crossing is covered by [ice_cream_van, leaf_blower, construction]
-        e.g. seed 129129 day 13 area (9, 9) route 0: street (7, 2, 0) (east-west): the crossing is covered by [leaf_blower, busker, construction, charging_dog, homeless_yeller, cafe_tables, delivery_van, roadblock, alley_robbery, ice_cream_van]
+        e.g. seed 129129 day 13 area (9, 9) route 0: street (7, 2, 0) (east-west): the crossing is covered by [leaf_blower, busker, construction, poster_crew, cafe_tables, charging_dog, homeless_yeller, delivery_van, roadblock, alley_robbery, ice_cream_van]
         e.g. seed 129226 day 13 area (5, 9) route 0: street (6, 7, 0) (east-west): the crossing is covered by [roadblock, homeless_yeller]
         1      3  the cut is not a straight band across one street
-        e.g. seed 129323 day 5 area (1, 2) route 0: street (5, 3, 1) (north-south), held by [poster_crew, homeless_yeller, cafe_tables, ice_cream_van, busker], none of which closes that street on its own
-        1      5  other
+        e.g. seed 129323 day 5 area (1, 2) route 0: street (5, 3, 1) (north-south), held by [homeless_yeller, cafe_tables, ice_cream_van, busker], none of which closes that street on its own
+        1      8  other
         e.g. seed 129614 day 9 area (7, 9) route 1: street (6, 8, 0) (east-west) closed end to end by [ice_cream_van, alley_robbery] (both on the same pavement)
 
 -- how much of a route is blocked (primary reading, 38 broken routes) --
@@ -48,9 +48,9 @@ Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
       24   cafe_tables (intensity 12.0 over 64px, denies 56px, body 24px)
       20   leaf_blower (intensity 19.3 over 190px, denies 165px, body 11px)
       16   alley_robbery (intensity 16.0 over 200px, denies 200px, body 0px)
-      15   poster_crew (intensity 5.0 over 110px, denies 11px, body 11px)
       13   busker (intensity 19.3 over 190px, denies 165px, body 11px)
       13   market_stall (intensity 14.0 over 64px, denies 58px, body 28px)
+      12   poster_crew (intensity 5.0 over 110px, denies 11px, body 11px)
       9    ice_cream_van (intensity 13.0 over 240px, denies 189px, body 24px)
       6    construction (intensity 0.0 over 200px, denies 32px, body 32px)
       6    charging_dog (intensity 12.0 over 150px, denies 150px, body 0px)
@@ -64,8 +64,8 @@ Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
       on PEDESTRIAN streets: 0
    routes with any cell on the spine at all: 165
 
--- 42.4s --
--- m129_zero_cost_line.gd       42477 ms
+-- 29.4s --
+-- m129_zero_cost_line.gd       29434 ms
 
 1 checks, 0 failures
 PARTIAL RUN — only suites matching probes/m129_zero_cost_line.gd. Not a green build.

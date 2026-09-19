@@ -595,7 +595,7 @@ from the doorstep to the calm areas still worth reaching.
 | kind of row | role | where it may go |
 | --- | --- | --- |
 | lethal (`hard_fail`), or a walk-through cost of `WALL_WORTH_OF_COST` or more | **wall** | never on ground a route runs along; `EVENT_WALL_RIM_WEIGHT` toward a turning off the corridor |
-| a standing row that leaves no line past it along a sidewalk it may stand on, by cost (`cafe_tables`, `construction`, `market_stall`, `ice_cream_van`) or by physical fit alone (`delivery_van`, `poster_crew`, and any future row this narrow) | **wall** | the same, which includes the far sidewalk of a route's own street |
+| a standing row that leaves no line past it along a sidewalk it may stand on, by cost (`cafe_tables`, `construction`, `market_stall`, `ice_cream_van`) or by physical fit alone (`delivery_van`, and any future row this narrow) | **wall** | the same, which includes the far sidewalk of a route's own street |
 | a **pacing** row that leaves no line past it and whose beat passes no way off its sidewalk (`homeless_yeller`, where its beat is truncated short of one) | **wall** | the same, decided per placement rather than per row |
 | a **pacing** row whose beat passes a junction's crosswalk or a side route (`homeless_yeller`, almost everywhere) | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor, the route's own sidewalk included |
 | everything else placed on a tile | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor |
@@ -622,9 +622,12 @@ lane tile it is never re-centred off — it leaves `(SIDEWALK_WIDTH * TILE_SIZE 
 edge its `pavement_side` stands it at — the kerb or the frontage lane's own tile centre, or the
 band's true middle for `ANY` (where `EventInstance._centred_on_the_pavement_band()` always puts a
 stationary, unpinned body) — rather than against a fixed threshold, so a row narrow enough to slip
-under the cost clause is still caught if its body alone leaves no edge-to-edge gap that wide.
-`poster_crew` (11px, `ANY`) is the other row this catches: centred on the band, `32 - 11 = 21px` on
-each side is still under 28.
+under the cost clause is still caught if its body alone leaves no edge-to-edge gap that wide. The
+same reading is also why `poster_crew` stands `AGAINST_THE_BUILDING` rather than `ANY`: centred, an
+11px body would leave only `32 - 11 = 21px` on each side of the band, under the 28px she needs; at
+the frontage lane's own tile centre it spans 5-27px of the band from that edge and leaves 37px to
+the kerb, over 28 — a body this narrow only needs to move off the exact middle to stay friction,
+where a wider one could not.
 
 Both readings are read off the row's own numbers rather than a list of ids, and asked of *a*
 sidewalk rather than of the tile — the role is decided before a tile is chosen, so a row that may
@@ -887,7 +890,7 @@ neighbourhood's own rather than a patrol's.
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `police_patrol` | RECURRING | 4 | Mobile, unhurried, along a corridor. Not dangerous yet — the danger is that you start planning around it. In acts III and IV, extra copies of this row are also what the return leg owes — see "The return owes her patrols" above. |
-| `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. `ANY` pavement side re-centres it on the 64px band, and 11px there is still enough to leave under 28px on each side — a **wall** by physical fit, the way a much wider body already was. |
+| `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. `AGAINST_THE_BUILDING`, the way `reversing_lorry` stands — pasting posters at the wall it works on, on a north-south street with a real building on the far side. Centred (`ANY`, the default) it would leave under 28px on each side of the band and be a wall by physical fit; pinned at the frontage, it spans 5-27px of the band and leaves 37px to the kerb, so it stays friction. |
 | `loudspeaker` | SCRIPTED | 5 | **City-wide**: no falloff, no edge, nowhere in the city it does not reach. The first event the player cannot walk away from. Pitched under the walking decay, so like a back street it does not raise the meter — it stops you clearing it. |
 | `curfew_announce` | SCRIPTED | 6 | City-wide, brief, and fading (`intensity_ramp` 0.2). The mechanical bite is in `Tuning.day_length`, which shortens every day from 6 onward; this is the moment you are told. |
 | `roadblock` **`heat_response HUNTS`** | RECURRING | 7 | Loud, and **physically closes a street** (`obstructs_radius` 60), drawn as one continuous barrier (`roadblock_segment.svg`/`roadblock_end.svg`) rather than a row of blocks. The first event that takes a route away rather than making it expensive. Named `roadblock` rather than `checkpoint` because the region wall's own door structure — a hut, a gate and guards you can pass at a price — took that word; the two rows mean opposite things about whether a street can be crossed. Below `Tuning.HEAT_HUNTS_LEVEL` that is all it ever does; at or above it its guards leave the post — the band cannot chase, so the hunting posture is a guard on foot, `guard_standing.svg` then `guard_lunging.svg`, coming at 130px/s once she comes within 180px, `hard_fail` inside `inner_radius` 86. |
