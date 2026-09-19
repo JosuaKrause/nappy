@@ -384,30 +384,62 @@ govern. Nothing reads a focus notification today, so a day runs on behind anothe
 > progress" — "there is no need for manual save state management since you can just hold
 > restart to clear the game"
 
-[PLAYTEST-80](playtests/PLAYTEST-80.md), which lists what a run holds in memory today and what
-inside a day is not a function of the seed. It shares its trigger with M161, the game pauses
-when it loses focus, so M161 is built first or with it.
+[PLAYTEST-80](playtests/PLAYTEST-80.md) and [PLAYTEST-82](playtests/PLAYTEST-82.md). It shares
+its trigger with M161, the game pauses when it loses focus, so it is built on top of M161. The
+**godot**, **cli-tools**, **cues**, **svg-art** and **verify** rules govern.
 
-- [ ] **Ask what *exact* has to cover before building.** The run (`GameState`) and the day's
-      plan (seed and day) come back exactly for free. The moment inside a day is her, the two
-      meters, the clock, every event instance's phase and position, pursuits, the errand and
-      the crowd. Put to the player, with the cost of each: everything including each walker
-      and car; everything but the crowd, which is re-seeded around her as at dawn; or the run
-      and the day only, resuming at that day's dawn. The player's words are *"that exact
-      state"*, so anything less is theirs to agree to.
-- [ ] **Saving is implicit: on focus loss and on quit**, never by a button. One save, no
-      slots. A save names the build that wrote it, and a save a newer build cannot read is
-      dropped for a fresh title screen rather than half-loaded.
-- [ ] **Opening the game resumes it, paused.** With a save present the game comes up on the
-      saved moment behind the pause screen; continue goes on, and the held restart — already
-      on the pause screen and the day summary — clears the save and starts over. A finished
-      run (either ending) leaves no save.
+**A save holds the run and the day, never the moment inside a day.** *Asked for "that exact
+state", the crowd included ("if I walk in front of a car I shouldn't be able to quit and resume
+without the car being there") · overturned by the player on 2026-09-19 to a restart at dawn that
+costs a nerve: "If that is too hard then we do start at dawn. But that has a potential to be
+exploited" — "Unless we give a penalty of ending the current day losing a nerve" — "No penalty
+when exiting at a next day/win/lose screen".* The requirement under both is that **quitting is
+never an escape**; the exact snapshot and why it was not taken are in playtest 82.
+
+- [ ] **The save is the run.** `GameState` — the seed, the day, nerves, resistance progress,
+      scars, consumed one-shot events, where she settled each day, the run's clock — and one
+      more fact: whether a day was under way when it was written. The city and each day's plan
+      are functions of the seed and the day and are not saved. One save, no slots, no button.
+      It names the build that wrote it, and a save a newer build cannot read is dropped for a
+      fresh title screen rather than half-loaded.
+- [ ] **It is written at dawn, at each day's end, on focus loss and on quit.** The player named
+      the last two; dawn and the day's end are added because a killed process never writes its
+      quit save, and a penalty a force-quit avoids is no penalty — the dawn save already says
+      *a day is under way*. Recorded in playtest 82 as open to overturn.
+- [ ] **Opening a game whose save says a day was under way loses that day.** It costs what any
+      lost day costs — one nerve, the resistance given back, the same day again — through the
+      same code path a lost day takes, the last nerve ending the run as it does there. She
+      comes up at that day's dawn behind the pause screen, with a line that says the day was
+      lost to leaving it; the wording is the agent's to draft and the player's to change.
+      Losing focus and continuing in the same session costs nothing: the penalty is applied on
+      *load*, never on pause. A save written at a day summary comes back to the next day's
+      dawn, paused, with no cost; a finished run (either ending) leaves no save.
+- [ ] **The held restart clears the save** — the disc already on the pause screen and the day
+      summary — and starts over. Nothing new is drawn for clearing.
+- [ ] **A small save symbol shows for a few seconds after each write.** *(2026-09-19: "show a
+      small save symbol for a few seconds after saving" — "That way it's clear when a state
+      was saved".)* `assets/ui/save.svg`, SVG first, in a corner clear of the pause button and
+      the meters, on whatever screen is up, fading out; how many seconds is a constant the
+      agent picks and says. It is not a danger cue, names no key, and is not drawn on a run
+      that does not save.
 - [ ] **The browser keeps it across a refresh and a reopened page.** `user://` on a web build
       is the browser's IndexedDB, which persists; confirm on the deployed page that a refresh
       and a closed tab both come back, and that a new release (files under a directory named
-      for the tag) still finds the save of the one before.
-- [ ] **A rig never resumes and never saves**, the way it never pauses on focus: a dev-flagged
-      run (`--screenshot`, `--seed`, `--day` and the rest) starts what it was told to start.
+      for the tag) still finds the save of the one before. A tab being closed may give no quit
+      notification at all, which is the other reason the dawn save exists.
+- [ ] **An agent never lands in a saved game.** *(2026-09-19: "make sure that agents don't
+      accidentally work on saved states so they don't get confused".)* Every checkout and
+      worktree shares one `user://`, so the player's save is in reach of any game an agent
+      starts. A run carrying any dev flag (`--screenshot`, `--seed`, `--day`, `--walk` and the
+      rest), a headless run, the test runner and `tools/check.sh`'s boot neither read nor
+      write the save and start what they were told to start. `--no-save` says the same for a
+      `tools/run.sh` with no other flag, listed and rejected like any flag, and the **verify**
+      and **orchestrating** skills say an agent's run always carries a dev flag or
+      `--no-save`. A test that exercises saving writes to a path of its own, never the
+      player's.
+- [ ] **What a run should look at** goes to `REVIEW.md`: whether a nerve lost to an accidental
+      close or a browser crash reads as fair, and whether the symbol is noticed without
+      distracting.
 
 ---
 
@@ -757,8 +789,6 @@ re-pitched:
       the visual channel comes **before** audio.
 - [ ] **Audio**, once the above is done and judged on its own: per-act beds, per-event cues, the
       baby's breathing as the diegetic version of the meters. Additive by design
-- [ ] Save and continue a run (`GameState` is already shaped for it, so this is serialisation
-      rather than design); there is a title screen and no menu, on purpose
 - [ ] Accessibility: colourblind-safe meters, a telegraph-time multiplier, reduced motion
 - [ ] Controller support
 - [ ] **Whether a stranger arriving at the page understands what it is.** Playtests 27 onward
