@@ -209,6 +209,34 @@ func begin_day(day: int, act: int, run_seed: int, city_seed: int, length: float)
 		line += "  invincible"
 	_log.header(line)
 
+## Starts the **escape's** timestamped section — the fifteenth walk, which is not a day, so it has
+## no day number, no act and no city seed of its own to head a section with.
+##
+## **Without it every line of an escape run is stamped `0.0`.** `set_clock()` below only moves the
+## clock while a section is open, and a section was only ever opened by `begin_day()`, which the
+## escape's own boot (`main._ready_escape()`) never reaches — so an escape run wrote a log that
+## could not say when anything in it happened. This is the same two lines `begin_day()` writes,
+## with the fields that mean something here: the run seed and the length of the sequence.
+##
+## `_day_attempts` is deliberately untouched, so `_attempt_suffix()` keeps naming the escape's
+## pictures as a first attempt. A lost section is not a retry the calendar knows about — nothing
+## is spent on it and the sequence is one walk — so counting them would put an attempt number on
+## filenames that no day number distinguishes anyway.
+func begin_finale(run_seed: int, length: float) -> void:
+	if not _log:
+		return
+	_clock = 0.0
+	_day_open = true
+	_shots_today = 0
+	_last_shot = -INF
+	_log.header("")
+	var line := "escape  run seed %d  length %.1fs" % [run_seed, length]
+	# For the reason `begin_day()` gives: a log from an --invincible walk must not be mistaken for
+	# one where a loss meant anything.
+	if DevFlags.invincible():
+		line += "  invincible"
+	_log.header(line)
+
 ## Closes a day's section. The clock stops here, so the between-days screen — during which the
 ## tree is paused anyway — cannot advance it.
 func end_day() -> void:
@@ -235,8 +263,9 @@ func note(kind: String, text: String) -> void:
 		return
 	_log.note(_clock, kind, text)
 
-## The day clock, in seconds since dawn. Pushed in rather than counted here so that the log
-## and the HUD never disagree: there is one clock in the game and this is a mirror of it.
+## The clock of whatever section is open, in seconds since it began — since dawn on a day, since
+## the escape started on the escape. Pushed in rather than counted here so that the log and the
+## HUD never disagree: there is one clock in the game and this is a mirror of it.
 func set_clock(seconds: float) -> void:
 	if _day_open:
 		_clock = seconds
