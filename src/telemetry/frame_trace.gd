@@ -67,6 +67,7 @@ func environment() -> Dictionary:
 		"refresh_hz": -1.0 if headless else DisplayServer.screen_get_refresh_rate(),
 		"vsync_mode": -1 if headless else DisplayServer.window_get_vsync_mode(),
 		"render_thread_model": ProjectSettings.get_setting("rendering/driver/threads/thread_model", 1),
+		"main_thread_is_render_thread": RenderingServer.is_on_render_thread(),
 		"renderer": RenderingServer.get_current_rendering_method(),
 		"rendering_driver": RenderingServer.get_current_rendering_driver_name(),
 		"video_adapter": RenderingServer.get_video_adapter_name(),
@@ -74,7 +75,10 @@ func environment() -> Dictionary:
 			get_viewport().get_visible_rect().size.y],
 		"window_size": [window.size.x, window.size.y],
 		"engine": Engine.get_version_info(), "max_fps": Engine.max_fps,
-		"engine_flags": Array(OS.get_cmdline_args()), "user_flags": Array(OS.get_cmdline_user_args())}
+		"engine_flags": Array(OS.get_cmdline_args()),
+		"engine_flags_complete": false,
+		"engine_flags_note": "Godot omits consumed startup switches; retain the launch command too",
+		"user_flags": Array(OS.get_cmdline_user_args())}
 
 func _exit_tree() -> void:
 	if RenderingServer.frame_post_draw.is_connected(_sample):

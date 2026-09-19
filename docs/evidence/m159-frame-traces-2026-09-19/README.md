@@ -13,6 +13,12 @@ setting is 1. VSync's driver-reported enum is 1 (enabled), except the disabled-V
 Metadata at both ends records the same display configuration. A VSync getter is not proof of
 compositor pacing: callback rates can exceed the reported display refresh.
 
+Godot consumes the pacing switches before `OS.get_cmdline_args()` exposes arguments, so these
+files' `engine_flags` arrays are empty even for the VSync/FPS trials. Their effective VSync and
+FPS-cap fields and the launch variations below establish the settings. The recorder's metadata
+explicitly marks this incomplete argument list; these retained files identify the earlier
+measured source above and are not rewritten to add fields it did not record.
+
 ## Recipe
 
 Run each trial serially, with no headless suite running alongside it. The base invocation is:

@@ -358,8 +358,10 @@ explicitly requested diagnostic file.
 
 The clock is `Time.get_ticks_usec()` at `RenderingServer.frame_post_draw`: **a raw monotonic CPU
 callback timestamp after render submission, not physical display presentation/scanout or GPU
-time**. A threaded renderer can defer this callback; the trace records the thread-model setting
-and command line so that configuration is visible. Draw, process and physics frame IDs identify
+time**. A threaded renderer can defer this callback; `main_thread_is_render_thread` records
+whether the main thread owns rendering. If false, counters are callback-time observations and
+same-render-frame attribution is not established. The project thread-model setting is also
+recorded, but a startup override can supersede it. Draw, process and physics frame IDs identify
 the engine state at the callback. Render counters are sampled at that callback, alongside the
 world counters; `Performance.TIME_PROCESS` and `TIME_PHYSICS_PROCESS` are deliberately absent
 because they are previous-second maxima, not costs of the sampled frame. The existing graph
@@ -383,8 +385,11 @@ above the 60 Hz, 30 Hz and reported display-refresh budgets. These are budget-ex
 intervals, not a count of physically dropped display frames. Unknown refresh is `-1` in metadata
 and gives a zero refresh budget/count. Metadata records driver-reported VSync mode (Godot's enum;
 `-1` headless), display server, rendering method/driver, viewport/window sizes, engine version,
-FPS cap, seed and both engine/user flags. The compositor can still pace independently of the
-driver-reported VSync mode.
+FPS cap, seed and the arguments Godot exposes. `user_flags` preserves the complete dev argument
+list; `engine_flags` can omit consumed startup switches, marked by `engine_flags_complete: false`.
+Retain the launch command beside a trace: the effective VSync mode and FPS cap are recorded even
+when their switches are absent from that array. The compositor can still pace independently of
+the driver-reported VSync mode.
 
 For a bounded capture-free walk, use `./tools/run.sh --frame-trace --after 20 --no-title
 --seed 4242 --walk 3s17e`. With `--frame-trace` and `--after`, the input harness accepts walking
