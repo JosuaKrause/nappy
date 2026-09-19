@@ -147,15 +147,21 @@ func _test_a_hard_seal_shuts_its_street_to_the_crowd(t) -> void:
 # "pedestrians with nowhere to go (all four sides of the intersection are blocked off) should just
 # despawn (or never spawn in the first place) right now they're accumulating in one place and move
 # back and forth or worth flicker … the same with cars" (playtest 66, 2026-09-12). A junction whose
-# every arm is held is a **pocket**: legal ground with no street out of it. The three tests below
-# are the three parts of the answer — nobody is put in one, whoever is in one stands exactly where
-# the seal caught it and leaves once nobody is watching, and an about-face still costs a stride
-# wherever an agent is trapped on ground that is not itself a pocket. All three stand a junction
-# sealed on every side; the last of them watches the arms rather than the box, since a pocketed
-# body — everything inside the box, once all four arms are held — now stands rather than reversing.
+# every arm is held is a **pocket** to a *car*: roadway with no street out of it, and a car cannot
+# turn round against a barrier. The three tests below are the three parts of the answer — no car is
+# put in one, a car in one stands exactly where the seal caught it and leaves once nobody is
+# watching, and an about-face still costs a stride wherever an agent is trapped on ground that is
+# not itself a pocket.
+#
+# **The same ground carries walkers, and that is the 2026-09-19 correction to the reading above.**
+# *("the pacing back and forth I complained about was because walkers never actually tried walking
+# to the edge … they should still go into the section until they cannot continue.")* A person turns
+# round in a stride, so a sealed-off crossing is somewhere to walk into, down each stub to the
+# barrier on the end of it and back — which is what the first test asks for now, in the same breath
+# as asking that no car is there.
 
-## M119, item 1: nobody is placed inside a junction sealed on every side, on the morning or on any
-## recycle after it.
+## M119, item 1, as M156 leaves it: no car is placed inside a junction sealed on every side, on the
+## morning or on any recycle after it — and the walkers are in there walking.
 func _test_nobody_is_placed_in_a_sealed_junction(t) -> void:
 	var sealed := _a_junction_to_seal(t)
 	if sealed.is_empty():
@@ -169,40 +175,69 @@ func _test_nobody_is_placed_in_a_sealed_junction(t) -> void:
 	_city.crowd.set_focus(at)
 
 	var pockets := _city.crowd.pockets()
-	# The guard against a vacuous sweep: "nobody stands in a pocket" passes on its own where the
+	# The guard against a vacuous sweep: "no car stands in a pocket" passes on its own where the
 	# seals made no pocket at all.
-	t.check(pockets.tile_count(false) > 0 and pockets.tile_count(true) > 0,
-			"sealing every arm of a junction pockets ground for both kinds (%d walker tiles, %d car)"
-			% [pockets.tile_count(false), pockets.tile_count(true)])
-	t.check(pockets.holds(rect.get_center(), false) and pockets.holds(rect.get_center(), true),
+	t.check(pockets.tile_count() > 0,
+			"sealing every arm of a junction pockets roadway (%d tiles)" % pockets.tile_count())
+	t.check(pockets.holds(rect.get_center()),
 			"and the junction box itself is inside the pocket")
 
-	var placed_inside := 0
-	for agent in _city.crowd.agents():
-		if rect.has_point(_city.map.world_to_tile(agent.position)):
-			placed_inside += 1
-	t.check(placed_inside == 0,
-			"nobody is placed inside it on the morning (%d were)" % placed_inside)
+	var cars_inside := 0
+	var walkers_sealed_in := 0
+	var arm_rects: Array[Rect2i] = []
+	for arm: StreetNetwork.Segment in sealed["arms"]:
+		arm_rects.append(arm.tile_rect())
+	for agent: CrowdAgent in _city.crowd.agents():
+		var tile := _city.map.world_to_tile(agent.position)
+		if agent.kind == CrowdAgent.Kind.CAR and rect.has_point(tile):
+			cars_inside += 1
+		elif agent.kind == CrowdAgent.Kind.WALKER and _on_any_rect(arm_rects, tile):
+			walkers_sealed_in += 1
+	t.check(cars_inside == 0, "no car is placed inside it on the morning (%d were)" % cars_inside)
+	# Placement treats sealed-in ground like any other street: "they should be able to spawn inside
+	# a closed off section but shouldn't stand in one place".
+	t.check(walkers_sealed_in > 0,
+			"and the morning places walkers on the sealed-off arms like any street (%d of them)"
+			% walkers_sealed_in)
 
-	var frames_inside := 0
+	var car_frames := 0
+	var walkers_moving := 0
+	var walker_positions := {}
 	for frame in int(round(20.0 / STEP)):
 		_city.crowd.set_focus(at)
 		_city.crowd.step(STEP)
-		for agent in _city.crowd.agents():
-			if rect.has_point(_city.map.world_to_tile(agent.position)):
-				frames_inside += 1
-	t.check(frames_inside == 0,
-			("and nobody is recycled into it over twenty seconds of the field sitting on it "
-			+ "(%d agent-frames inside)") % frames_inside)
+		for agent: CrowdAgent in _city.crowd.agents():
+			if not rect.has_point(_city.map.world_to_tile(agent.position)):
+				continue
+			if agent.kind == CrowdAgent.Kind.CAR:
+				car_frames += 1
+				continue
+			var id := agent.get_instance_id()
+			if walker_positions.has(id) \
+					and agent.position.distance_to(walker_positions[id]) > 0.1:
+				walkers_moving += 1
+			walker_positions[id] = agent.position
+	t.check(car_frames == 0,
+			("and no car is recycled into it over twenty seconds of the field sitting on it "
+			+ "(%d car-frames inside)") % car_frames)
+	# The other half, and the one the 2026-09-19 correction asks for: the sealed crossing is not
+	# empty, and nobody in it is standing still. Frames rather than bodies, because a walker leaves
+	# by walking out of the box the way it walked in.
+	t.check(walkers_moving > 0,
+			"while walkers walk through the sealed crossing (%d walker-frames of movement in it)"
+			% walkers_moving)
 
 	_city.map.clear_day_holds()
 
-## M119, item 2: whoever is sealed in leaves — but not while she is looking at them. And while she
-## is looking, it stands rather than pacing (M146, "a pocketed agent stands, then leaves unseen" —
+## M119, item 2: a car sealed in leaves — but not while she is looking at it. And while she is
+## looking, it stands rather than pacing (M146, "a pocketed agent stands, then leaves unseen" —
 ## the player's own *"it looks very weird otherwise"* about the pacing this replaces).
 ##
 ## The crowd is placed first and the seals go up under it, which is the one case a placement cannot
-## prevent and is also the only way to get anybody into a pocket now that `setup()` refuses to.
+## prevent and is also the only way to get a car into a pocket now that `setup()` refuses to.
+##
+## **Cars only, because there is no walker pocket**: a walker caught by the same seals walks the
+## stubs and turns at the barrier on the end of each, which is the test above.
 func _test_a_pocket_empties_once_it_is_out_of_view(t) -> void:
 	var sealed := _a_junction_to_seal(t)
 	if sealed.is_empty():
@@ -216,23 +251,24 @@ func _test_a_pocket_empties_once_it_is_out_of_view(t) -> void:
 		_city.map.hold_segment(arm.key())
 	_city.crowd.step(STEP)
 
-	var watched := _inside(rect)
+	var watched := _inside(rect, CrowdAgent.Kind.CAR)
 	t.check(watched > 0,
-			"there were agents standing in the junction when it was sealed (%d)" % watched)
+			"there were cars standing in the junction when it was sealed (%d)" % watched)
 	# Positions recorded here, right after the seal and one crowd step, and compared once more
 	# below after the whole watch — a standing body's position is what M146 asks for, not merely
 	# that the count holds, which a body pacing the box from one seal to the other would pass too.
 	var standing_at := {}
 	for agent: CrowdAgent in _city.crowd.agents():
-		if rect.has_point(_city.map.world_to_tile(agent.position)):
+		if agent.kind == CrowdAgent.Kind.CAR \
+				and rect.has_point(_city.map.world_to_tile(agent.position)):
 			standing_at[agent.get_instance_id()] = agent.position
 	var lowest := watched
 	for frame in int(round(3.0 / STEP)):
 		_city.crowd.set_focus(at)
 		_city.crowd.step(STEP)
-		lowest = mini(lowest, _inside(rect))
+		lowest = mini(lowest, _inside(rect, CrowdAgent.Kind.CAR))
 	t.check(lowest == watched,
-			("nobody sealed into it disappears while the view is on it — %d were there and the "
+			("no car sealed into it disappears while the view is on it — %d were there and the "
 			+ "count never fell below %d") % [watched, lowest])
 
 	var moved := 0
@@ -241,7 +277,7 @@ func _test_a_pocket_empties_once_it_is_out_of_view(t) -> void:
 		if standing_at.has(id) and agent.position.distance_to(standing_at[id]) > 1.0:
 			moved += 1
 	t.check(moved == 0,
-			("and every one of the %d agents caught in it stands within a pixel of where the seal "
+			("and every one of the %d cars caught in it stands within a pixel of where the seal "
 			+ "caught it across the watched seconds (%d moved further than that)")
 			% [standing_at.size(), moved])
 
@@ -254,9 +290,9 @@ func _test_a_pocket_empties_once_it_is_out_of_view(t) -> void:
 	for frame in int(round(3.0 / STEP)):
 		_city.crowd.set_focus(away)
 		_city.crowd.step(STEP)
-	t.check(_inside(rect) == 0,
+	t.check(_inside(rect, CrowdAgent.Kind.CAR) == 0,
 			"and every one of them is gone once the view has moved off it (%d left)"
-			% _inside(rect))
+			% _inside(rect, CrowdAgent.Kind.CAR))
 
 	_city.map.clear_day_holds()
 
@@ -265,14 +301,12 @@ func _test_a_pocket_empties_once_it_is_out_of_view(t) -> void:
 ## an agent is already standing on ground that becomes shut at both ends, which the arms of this
 ## same sealed junction still are.
 ##
-## **Asked on the arms rather than in the box.** The box itself is a pocket once all four arms are
-## held (`CrowdPockets`), and a pocketed agent now stands rather than reversing — that is the whole
-## of M146, "a pocketed agent stands, then leaves unseen". But each arm's own segment is held in
-## full, both ends, and is *not* pocketed ground — it is excluded from the flood entirely, the same
-## "ground it may not stand on" `_may_stand_on()` already reads for a body already there — so
-## whoever was already walking one when the seal went up still finds the way ahead **and** the way
-## behind shut and still reverses, which is the single-seal-on-open-ground case this milestone
-## leaves standing.
+## **Asked on the arms rather than in the box.** The box itself is a pocket to a car once all four
+## arms are held (`CrowdPockets`), and a pocketed car stands rather than reversing — that is the
+## whole of M146, "a pocketed agent stands, then leaves unseen". Each arm's own segment is held in
+## full, both ends, and is not pocketed ground, so whoever is walking or driving one finds the way
+## ahead **and** the way behind shut and reverses — which is the single-seal-on-open-ground case
+## this milestone leaves standing, and the one the stride is measured against.
 ##
 ## The floor is each agent's own `_stride_seconds()` rather than a number, so it survives any
 ## rebalancing of walking speed or of the gait — what it pins is that a reversal is worth a stride,
@@ -480,10 +514,12 @@ func _on_any_rect(rects: Array[Rect2i], tile: Vector2i) -> bool:
 			return true
 	return false
 
-## How many agents are standing inside a tile rect right now.
-func _inside(rect: Rect2i) -> int:
+## How many agents are standing inside a tile rect right now, of one kind or of both.
+func _inside(rect: Rect2i, kind := -1) -> int:
 	var count := 0
-	for agent in _city.crowd.agents():
+	for agent: CrowdAgent in _city.crowd.agents():
+		if kind >= 0 and agent.kind != kind:
+			continue
 		if rect.has_point(_city.map.world_to_tile(agent.position)):
 			count += 1
 	return count

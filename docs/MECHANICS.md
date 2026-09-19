@@ -684,16 +684,27 @@ The radius has one floor and it is the screen: half the viewport diagonal is the
 anything visible can be from the camera, so an agent recycled outside that is always off-camera
 when it appears, whichever way she is facing.
 
-**And a recycle never lands somewhere with no way out.** A junction with every arm shut is a
-*pocket* — see docs/CITY.md, "Life on the streets" — and both the morning's placement and every
-recycle refuse a spot inside one, so a sealed-off crossing fills with nobody. Anybody a seal goes
-up around while already standing there stands exactly where it caught them — no step, no steering,
-no turn — until they are recycled out of it, at the first frame they are further from the camera
-than `OUT_OF_SIGHT`: the field's own edge is off camera by hundreds of pixels, and this is the one
-recycle that has to check. **A car can be caught one scale below a pocket** — on a stub of
-carriageway too short to turn round in, between a precinct's paving and a van parked on its lane,
-which is not a junction and so is invisible to the pocket record. It does the same thing for the
-same reason: it stands, and it goes when nobody is looking.
+**And a recycle never lands a car somewhere with no way out.** A junction with every arm shut is a
+*pocket* — carriageway with no street out of it — and both the morning's placement and every
+recycle refuse a car a spot inside one, because a car cannot turn round against a barrier and one
+stopped nose-on holds the queue behind it. A car a seal goes up around while it is already standing
+there stands exactly where it caught it — no step, no steering, no turn — until it is recycled out,
+at the first frame it is further from the camera than `OUT_OF_SIGHT`: the field's own edge is off
+camera by hundreds of pixels, and this is the one recycle that has to check. **A car can be caught
+one scale below a pocket** — on a stub of carriageway too short to turn round in, between a
+precinct's paving and a van parked on its lane, which is not a junction and so is invisible to the
+pocket record. It does the same thing for the same reason: it stands, and it goes when nobody is
+looking.
+
+**Sealed-off ground has walkers in it, and they keep walking.** *(2026-09-19: "they should be able
+to spawn inside a closed off section but shouldn't stand in one place but instead walk until they
+are forced to turn around (by the environment)".)* There is no walker pocket: a person turns round
+in a stride, so a crossing sealed on all four sides is ground to walk the whole of — down each stub
+to the barrier on the end of it, about-face, and back out into the next one. The morning places
+walkers there like any street and a recycle lands them there like any street. What used to make
+that ground look like a trap was walkers giving a street up from a junction away and pacing the
+one junction they had left, which is fixed where it was caused — see "The crowd goes round a seal"
+above — rather than by emptying the ground of people.
 
 **The morning's own placement is unpacked before the first frame is drawn.** Every car is placed
 without consulting the ones already placed, so some of them start inside each other, and the

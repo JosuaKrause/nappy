@@ -561,21 +561,26 @@ func _stands_on_a_street() -> bool:
 		return false
 	return _map.is_street(tile)
 
-## Whether this agent is standing on ground today's seals have shut in — a junction with all four
-## arms held, and whatever stub of lane is sealed in with it. See `CrowdPockets`.
+## Whether this **car** is standing on carriageway today's seals have shut in — a junction with all
+## four arms held, and whatever stub of lane is sealed in with it. See `CrowdPockets`.
+##
+## **A walker is never in one, and that is the record's own rule rather than a shortcut here.**
+## Sealed-in ground is ground a person can walk the whole of, turning round at the barrier on the
+## end of each stub, so there is nothing to keep walkers out of and nothing to stand still about. A
+## car cannot turn round against a barrier, which is the whole difference.
 ##
 ## **Asked beside `_stands_on_a_street()` at a placement rather than folded into it**, because the
-## two questions have different answers for an agent that is already standing somewhere. Ground it
-## may not stand on is a state to get out of *now*, which is what `_divert()` and `_plan_a_turn()`
-## both do about it; a pocket is legal ground it simply cannot leave, and the answer to that is to
-## stand where the seal caught it and go when nobody is looking, rather than to turn on the spot at
-## all. Folding it in would turn the whole pocket into a wall and give every agent in one a reason
-## to steer at it every frame, which is exactly the state `_process()` avoids by asking this
-## question ahead of the step instead: nothing below it runs while this is true.
+## two questions have different answers for a car that is already standing somewhere. Ground it
+## may not stand on is a state to get out of *now*, which is what `_plan_a_turn()` does about it;
+## a pocket is legal ground it simply cannot leave, and the answer to that is to stand where the
+## seal caught it and go when nobody is looking, rather than to turn on the spot at all. Folding it
+## in would turn the whole pocket into a wall and give every car in one a reason to steer at it
+## every frame, which is exactly the state `_process()` avoids by asking this question ahead of the
+## step instead: nothing below it runs while this is true.
 func _is_in_a_pocket() -> bool:
-	if pockets == null:
+	if kind != Kind.CAR or pockets == null:
 		return false
-	return pockets.holds(_map.world_to_tile(position), kind == Kind.CAR)
+	return pockets.holds(_map.world_to_tile(position))
 
 ## Whether this agent is far enough from the camera that taking it away cannot be seen.
 ##
@@ -797,16 +802,15 @@ func _hold_factor() -> float:
 func _is_inside_a_hut() -> bool:
 	return _door_state == DoorState.INSPECTION
 
-## How fast this agent is going as a fraction of its own pace while a pocket has caught it: nothing
-## at all while it is standing where the seal caught it, its ordinary pace otherwise.
+## How fast this car is going as a fraction of its own pace while a pocket has caught it: nothing at
+## all while it is standing where the seal caught it, its ordinary pace otherwise. Always one for a
+## walker, which is never in a pocket.
 ##
 ## A factor beside `_hold_factor()` and `_yield_factor()` for the same reason those two are: nothing
-## has to remember what the speed used to be. And it is what makes the standing frame free —
-## `_walker_gait_frame()` rests on `velocity().length()` reaching zero, not on this agent's own step
-## having stopped running, so a pocketed walker whose stride simply stopped advancing would freeze
-## on whichever of its two frames the stride happened to be on when the seal went up. Reading
-## `velocity()` down to zero here is the same trick a door hold already relies on, and it is why a
-## door-held walker already shows its standing frame today.
+## has to remember what the speed used to be. And it is what makes the stopped picture free —
+## everything that draws or predicts a body reads `velocity()` rather than this agent's own step,
+## so a car whose step simply stopped advancing would still be drawn and predicted as travelling.
+## Reading `velocity()` down to zero here is the same trick a door hold already relies on.
 func _pocket_factor() -> float:
 	return 0.0 if _is_in_a_pocket() else 1.0
 
@@ -849,13 +853,13 @@ func _process(delta: float) -> void:
 			_recycle()
 		_redraw_if_the_picture_changed()
 		return
-	# Sealed in — the one case a placement cannot prevent (`setup()` already refuses to put anybody
-	# in one). It stands where the seal caught it: a walker on its standing frame, facing the way it
-	# was going (`_pocket_factor()` reads `velocity()` down to zero, which is what both of those come
-	# from for free), and a car simply stops. Make-way and bump still land from outside, since a
-	# standing body still has to be got round. It leaves the way anybody else leaves the field, once
-	# nobody can see it go — pacing to the far seal and back is the M119 behaviour this replaces
-	# (docs/DECISIONS.md, M119, "the crowd with nowhere to go leaves").
+	# A car sealed in — the one case a placement cannot prevent (`setup()` already refuses to put one
+	# in a pocket). It stands where the seal caught it, since it cannot turn round against a barrier:
+	# `_pocket_factor()` reads `velocity()` down to zero, which is where the stopped picture comes
+	# from for free. Make-way and bump still land from outside, since a standing body still has to be
+	# got round. It leaves the way anybody else leaves the field, once nobody can see it go. A walker
+	# is never in a pocket — it walks the sealed-in ground and turns at the end of each stub, which
+	# is what `CrowdPockets` no longer has a walker half for.
 	if _is_in_a_pocket():
 		if _out_of_view():
 			_recycle()
