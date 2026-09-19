@@ -30,7 +30,9 @@ limit was reached you wouldn't see anything.")*
 **Delegation is recommended in Codex too.** Hand specified implementation and routine
 investigation to a model suited to that delegated task, keeping design, ambiguous decisions and
 final review in the orchestrating session. The orchestrator may use any model; choose the
-subagent independently by the difficulty of the delegated task:
+subagent independently by the difficulty of the delegated task. Describe the parent as the
+orchestrator in task briefs, without naming or assuming its model. Prefer the least costly
+model that can handle the task reliably:
 
 - Use `gpt-5.6-luna` for simple, routine or mechanical bounded work and waits.
 - Use `gpt-5.6-terra` for ordinary implementation whose requirements and boundaries are clear.
