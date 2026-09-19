@@ -7,7 +7,60 @@
     "docs/evidence/male-player-2026-09-19/b-contact/GENERATION.md",
     "docs/evidence/male-player-2026-09-19/b-contact/inputs/pushing-source-3x.png"
   ],
+  "bounded_ownership_strategy": {
+    "initial_attempts": 1,
+    "targeted_retries": 1,
+    "remaining_retries": 0,
+    "installed": false,
+    "status": "Stopped: both generated atlases fail side/front-diagonal ownership; retry also exceeds the side canvas at full stature.",
+    "source_proof": "proof/proof.json",
+    "identity_reference": "proof/identity-upper-only.png",
+    "identity_reference_sha256": "c0083e626fc1056f97b2161d4529ebd3eb248f401ec951c9a23d9468e970ad4c",
+    "rejected_lower_body_used_as_reference": false
+  },
   "attempts": [
+    {
+      "method": "ownership-diagram transfer with above-pelvis identity family",
+      "tool": "built-in image_gen",
+      "prompt_file": "prompt-ownership-transfer.txt",
+      "prompt_sha256": "363b42cfe32670713b6fd6108ae014183444042bf5dc302199fb1fd119ef3410",
+      "references_in_order": [
+        "inputs/svg-targets-8x.png",
+        "proof/ownership-source-8x.png",
+        "proof/identity-upper-only.png",
+        "../../graphics-reference-urban-01.jpeg",
+        "../../graphics-reference-cardinal.jpeg"
+      ],
+      "output_sha256": "20d4a2542b6e32f811fcc7a638682941bc56b86490ce2e65bb54c9520e4add50",
+      "rejected_output_external_path": "/Users/krause/.codex/generated_images/01a0b9bd-c552-7250-aae5-3fba8d84a760/exec-f775fa2c-6b17-468e-9429-a0514050d05c.png",
+      "registration_measurements": "raster-first-measurements.json",
+      "review_outputs_external_path": "/tmp/m160-raster-review-first-spaced",
+      "front": "Image-right anatomical left advances and image-left right recedes. Contact ownership passes visually, but head/chin and hand height grow/lower relative to A/C after 45px registration; rejected as a family member.",
+      "back": "Image-right anatomical right advances away; image-left left trails nearer. Depth passes visually, but head and upper-body breadth exceed A/C; rejected as a family member.",
+      "side": "Rejected: unbroken foreground thigh runs from the image-left side of the hem down-right to the advancing shoe. The down-left trailing thigh disappears behind it; ownership is opposite to the source proof.",
+      "front_diagonal": "Rejected: foreground thigh again connects image-left hem to lower-right advancing shoe, hiding the upper-left trailing thigh. Required near image-right hip to left trailing shoe is absent.",
+      "landmarks": "Visual landmarks on the front raw figure: top y~53, chin y~229, hands y~425, hem y~504, baseline y~734. About 26%, 55%, 66% down the figure versus accepted ~21%, 48%, 62%; approximately 2.2px extra head depth and 3px lower hands at 45px stature. Approximate manual readings, not segmentation measurements.",
+      "coverage": "Inspected raw atlas and native/3x registered eight-direction A/C/B and stroller-contact sheets. All four fit native canvases with original alpha, but pixel registration does not establish acceptance."
+    },
+    {
+      "method": "single targeted retry: B-only ownership diagram and explicit failed landmark ratios",
+      "tool": "built-in image_gen",
+      "prompt_file": "prompt-ownership-retry.txt",
+      "prompt_sha256": "f37a0eb47e26d710a011c3046d132101d03869a1a3188132d4d9d9e4a51857dc",
+      "references_in_order": [
+        "proof/ownership-b-only-8x.png",
+        "proof/identity-upper-only.png",
+        "../../graphics-reference-urban-01.jpeg",
+        "../../graphics-reference-cardinal.jpeg"
+      ],
+      "output_sha256": "871f5eb163095a201938beaaedcf6a26c7f0826f91d1306b931d85530a866f54",
+      "rejected_output_external_path": "/Users/krause/.codex/generated_images/01a0b9bd-c552-7250-aae5-3fba8d84a760/exec-f1370b5e-cc73-4370-815c-e604dcbaeccf.png",
+      "front": "Opposite leg depth remains readable, but there is no accepted complete-family result.",
+      "back": "Right foot advances away and left heel trails near, but there is no accepted complete-family result.",
+      "side": "Rejected: near foreground trouser tube still slopes down-right to the advancing shoe. Full-stature registration also refuses x=2 plus width=314 on a 312px-wide 12x working canvas (26 native pixels). No scale or anchor compensation applied.",
+      "front_diagonal": "Rejected in raw pixels: the down-right foreground trouser tube occludes the left-going leg, repeating incorrect ownership. Registration stops at the preceding side failure, so no complete native/3x retry matrix exists.",
+      "verdict": "Bounded approach exhausted. No raster accepted, proposed for human review, retained in the repository, or installed. No further generation call is permitted for this approach."
+    },
     {
       "method": "atlas edit",
       "tool": "built-in image_gen",

@@ -1,0 +1,17 @@
+Use case: style-transfer
+Asset type: transparent four-figure B-contact sprite atlas, one horizontal row.
+Primary request: the SINGLE correction retry for an anatomical-transfer failure. Generate the four complete figures from the B-only guide. No rejected raster is attached or permitted as a reference.
+
+Inputs, in order:
+1. proof/ownership-b-only-8x.png: B POSE AND LEG OWNERSHIP AUTHORITY. Four columns FRONT, BACK, RIGHT PROFILE, FRONT-RIGHT THREE-QUARTER. Cyan/amber lines explain anatomy but must not be drawn in the result. H is each leg's own hip, K its knee, S its shoe. At the profile and diagonal crossings, the cyan near leg travels from the right-side hip DOWN-LEFT and passes IN FRONT of the amber leg. Follow this visible topology exactly.
+2. proof/identity-upper-only.png: approved face, hair, shirt and arm reference only, cropped above pelvis. Reproduce this man's identity and comic style, keeping proportions fixed by the landmark ratios below. The blue shirt, cream undershirt, short brown hair and pushing grip belong to this identity.
+3. graphics-reference-urban-01.jpeg: comic drawing language only, no scenery or interface.
+4. graphics-reference-cardinal.jpeg: comic drawing language only, no scenery or interface.
+
+Correct the specific failed overlap: in columns 3 and 4 the FOREGROUND THIGH MUST SLOPE DOWN-LEFT. Its unbroken outer and inner trouser contours start at the RIGHT side of the pelvis, pass across the other thigh, and lead to the LEFT knee and LEFT trailing shoe. Draw this complete left-going trouser tube LAST. The right-going advancing thigh lies BEHIND it; break the right-going thigh's contour at the crossover. Both hips keep their own location. Both shoes face right. For column 4 retain a front three-quarter chest and face, and a southeast travel axis with the left trailing shoe higher than the right advancing shoe. A foreground thigh sloping down-right is a failed result.
+
+Column 1 FRONT: image-right leg, the man's anatomical left, advances toward camera and ends at the lower right shoe. Image-left anatomical right leg recedes to a higher left shoe. Column 2 BACK: image-right anatomical right leg advances AWAY to a higher right foot, while image-left anatomical left trails to the lower near heel. These are opposite depth cases despite the same right-side leading leg. Both shoes remain connected to their own hips.
+
+Fix the specific proportion drift as well: every complete figure has the same approved visible stature, with head top at 0%, chin at 20–21%, hands at 48%, shirt hem at 62%, and bottom of shoes at 100%. The unsuccessful first redraw had chin about 26%, hands about 55%, and hem about 66%; those oversized-head and low-hand proportions must not be repeated. Use the accepted identity with smaller head relative to the full body and restore its hand and hem heights. Preserve each view's head width, chest width and arm reach from the identity reference at those proportions. The first input is a small symbolic geometry guide, so do not borrow its large head or short legs.
+
+Redraw every whole figure continuously through the pelvis, hem and thighs. This is not a splice, pixel overlay or detached-shoe swap. Fine black-brown comic outlines, muted blue-gray trousers and dark sneakers, modest folds and cel shading. Exactly four equally tall figures in one horizontal row, generous transparent gutters, identical head-top and nearest-shoe baselines. True transparent alpha, no text, labels, colored traces, grid, shadows, stroller or props.
