@@ -454,11 +454,10 @@ func basement_walk() -> Array[Vector2i]:
 ## Breadth-first over walkable tiles, unwound into the path itself — `from` first, `to` last, or
 ## empty when there is no walk between them.
 ##
-## **Eight-connected, not four.** A flight is a run of diagonal steps — the kit's tile drops one
-## tile height over one tile width — so the basement's own entry flight touches the floor above it
-## only at a corner, and a four-connected walk finds no route out of the door at all. She walks
-## those corners (`InteriorMap._mark_diagonal_clearances()` is what frees them physically), so a
-## walk that could not is not the walk she takes.
+## **Eight-connected, not four.** A shaft's flights are runs of diagonal steps — the reviewed
+## `t/m` and `T/M` roles drop one tile height over one tile width — so a four-connected walk finds
+## no way down a staircase at all. She walks those corners, so a walk that could not is not the
+## walk she takes.
 func _shortest_walk(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	var previous := {from: from}
 	var queue: Array[Vector2i] = [from]

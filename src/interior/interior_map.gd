@@ -23,8 +23,8 @@ extends RefCounted
 ## entrance and doors to both stairwells and the basement. Each stairwell is the corrected
 ## ten-column symbol grammar:
 ## its reviewed stair-side pictures are the walkable `t/m/T/M` cells themselves, while `c/C/b`
-## and background stay solid. The basement is the winding corridor with its own short entry flight
-## and the exit at the top.
+## and background stay solid. The basement is the winding corridor with its own one-tile entry
+## stair and the exit at the top.
 
 const _SLOT_STRIDE := 64
 const _HALLWAY_THIRD_ORIGIN := Vector2i(0 * _SLOT_STRIDE, 0)
@@ -55,10 +55,14 @@ static func build() -> InteriorMapPlan:
 	_mark_diagonal_clearances(f)
 	return f
 
-## A diagonal step pinches only when neither orthogonal neighbor is walkable. The basement's narrow
-## entry has that shape, so both absent flanks are cleared. The main shafts deliberately do not:
-## their `t/m` and `T/M` pairs make a two-row surface, leaving every `.` background cell and every
-## painted `c/C/b` side blocked exactly as the grammar says.
+## A diagonal step pinches only when neither orthogonal neighbor is walkable, and **nothing in the
+## building has that shape today**: the main shafts' `t/m` and `T/M` pairs make a two-row surface
+## whose every diagonal step has the other role in one corner, and the basement's entry is a
+## straight column from its door. The pass stays because the shape is one tile away — a flight
+## narrowed to one row, or a jog cut to a corner — and a 14px body cannot cross a corner point
+## between two full-cell blockers at all, which is a map that looks connected and is not. It only
+## ever *frees* an absent corner: every `.` background cell and every painted `c/C/b` side stays
+## blocked exactly as the grammar says.
 static func _mark_diagonal_clearances(f: InteriorMapPlan) -> void:
 	var diagonals: Array[Vector2i] = [Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]
 	for t: Vector2i in f.tiles.keys():
@@ -261,10 +265,14 @@ static func _build_basement(f: InteriorMapPlan, origin: Vector2i) -> void:
 	# Band C, back under band A's own columns — the sketch's leftward jog, and the exit's band.
 	_lay_basement_band(f, origin, 0, 0, 4)
 
-	# The entry: a short diagonal flight up from the lobby's own door into band A's floor.
+	# The entry: the lobby's own door, the stair she came down, and band A's floor — one straight
+	# column, north from the door, seen from the front. *(Playtest 55, sketching the basement:
+	# "basement starts at the bottom (horizontal lines indicate a small stair leading down)".)*
+	# One cell rather than a run of them, because `stair_down.svg` draws a complete flight inside
+	# its own tile — widest tread at the near edge, narrowest at the far one — so two of them
+	# stacked read as two stairs rather than as one longer flight.
 	_add_door(f, "basement:entry", origin + Vector2i(2, 13), "lobby:basement")
-	f.tiles[origin + Vector2i(1, 12)] = InteriorTile.Kind.STAIR_FLIGHT_E
-	f.tiles[origin + Vector2i(0, 11)] = InteriorTile.Kind.STAIR_FLIGHT_E
+	f.tiles[origin + Vector2i(2, 12)] = InteriorTile.Kind.STAIR_DOWN
 
 	f.exit_tile = origin + Vector2i(1, 0)
 	f.tiles[f.exit_tile] = InteriorTile.Kind.EMERGENCY_EXIT

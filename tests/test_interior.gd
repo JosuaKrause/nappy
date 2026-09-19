@@ -19,6 +19,7 @@ func run(t) -> void:
 	_test_a_sideways_press_on_a_flight_walks_its_slope(t)
 	_test_a_real_stroller_physically_crosses_both_flight_directions(t)
 	_test_every_diagonal_step_has_both_its_pinch_corners_cleared(t)
+	_test_the_basement_entry_is_a_straight_level_stair(t)
 	_test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t)
 	_test_a_door_release_latch_keeps_a_door_from_retaking_her(t)
 	_test_the_fire_closes_one_stairwell_and_leaves_the_other(t)
@@ -511,6 +512,35 @@ func _test_every_diagonal_step_has_both_its_pinch_corners_cleared(t: Node) -> vo
 	# A guard that the sweep found real diagonal adjacencies to check — every flight in both
 	# shafts plus the basement's own entry flight.
 	t.check(checked > 0, "the map has at least one diagonal adjacency to check (got %d)" % checked)
+
+## *"Basement stairs are just not stairs."* What replaced the two diagonal treads is a stair seen
+## from the front, and the three things that makes it: the cell between the entry door and the
+## corridor is the one-tile `STAIR_DOWN` picture, the walk out of the door is a straight column
+## with no diagonal step in it, and the cell is level — `flight_direction()` answers zero, so a
+## sideways press on it is a sideways step rather than a slide along a slope.
+func _test_the_basement_entry_is_a_straight_level_stair(t: Node) -> void:
+	var f := InteriorMap.build()
+	var entry := f.door("basement:entry")
+	t.check(entry != null, "the basement keeps its entry door")
+	if entry == null:
+		return
+	var stair := entry.tile + Vector2i.UP
+	t.check(f.tiles.get(stair) == InteriorTile.Kind.STAIR_DOWN,
+			"the cell north of the door is the one-tile front-facing stair")
+	t.check(InteriorTile.is_walkable(InteriorTile.Kind.STAIR_DOWN)
+			and InteriorTile.flight_direction(InteriorTile.Kind.STAIR_DOWN) == 0,
+			"which is walkable and level, so nothing redirects a press along it")
+	t.check(InteriorTileSet.source_id_for(InteriorTile.Kind.STAIR_DOWN) >= 0,
+			"and it is painted")
+	t.check(f.is_walkable(stair + Vector2i.UP),
+			"and the corridor is the next cell straight on")
+	# And the consequence for the whole building: with the entry straight, no diagonal step
+	# anywhere is pinched between two absent corners, so the clearance pass has nothing left to
+	# free. `_test_every_diagonal_step_has_both_its_pinch_corners_cleared` is the other half — it
+	# checks that a pinch which did appear would be freed; this checks that none does.
+	t.check(f.collision_clearance.is_empty(),
+			"no cell in the building needs its collision cleared to be crossable (%d do)"
+			% f.collision_clearance.size())
 
 ## **Steps `InteriorScene`'s own transition functions directly rather than driving `Stroller` by
 ## input.** `transition_at()` and `teleport_to_door()` are the exact functions `process_player()`
