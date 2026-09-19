@@ -1606,7 +1606,9 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 	var twin_rng := RandomNumberGenerator.new()
 	twin_rng.seed = 4242
 	twin.setup(twin_scene, twin_rng)
-	twin._wait_for_the_next_distant_flash()
+	# `restart()` reseeds the flash stream from the run seed, which is what makes this a comparison
+	# of two nights rather than of two points in one stream — the loop above is run after its own
+	# `restart()` for the same reason, since the draws taken for the distribution came first.
 	twin.restart()
 	var twin_when: Array[float] = []
 	var twin_was := false
