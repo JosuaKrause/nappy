@@ -28,7 +28,7 @@ Some visible graphics are code rather than image files:
 | Danger carets | `Sprites.draw_caret()` supplies the shared filled chevron used above live events and crowd traffic. `src/ui/danger_edge.gd` separately draws screen-edge chevrons, a circular icon backing and an event's own silhouette. |
 | Event composites | `src/events/event_instance.gd` arranges repeated barriers, café furniture, crowds, muzzle flashes, leads, shadows and state-dependent poses around each event's ground point. |
 | Traffic lamps | `src/city/traffic_light.gd` combines one of three signal-head SVG views with red, amber or green rectangles driven by the signal phase. |
-| Player cues | `src/player/stroller.gd` assembles the mother and pram, then places the baby-state texture above the pram and the alert texture above the mother. |
+| Player cues | `src/player/stroller.gd` assembles the selected parent and pram, then places the baby-state texture above the pram and the alert texture above the parent. |
 | HUD and touch controls | `src/ui/meter_bar.gd`, `home_arrow.gd`, `danger_edge.gd`, `mode_button.gd` and `touch_controls.gd` draw bars, labels, chevrons, button plates and touch focus shapes; the button glyphs named below are SVGs. |
 | Excitement halo | `src/ui/entity_halo.gd` applies `assets/shaders/excitement_halo.gdshader` to a duplicated source drawing. This is shader output rather than an SVG asset. |
 
@@ -57,8 +57,8 @@ Some visible graphics are code rather than image files:
 
 | Assets | Runtime binding and behaviour |
 |---|---|
-| `assets/rig/mother_{front,back,side,front_diagonal,back_diagonal}_{a,b,c}.svg` | `src/player/stroller.gd` chooses among eight upright views and plays A/C/B/C: opposite open contacts separated by the feet-together pose. Movement distance advances the loop; stopping selects C. East-authored side and diagonal views mirror explicitly for west. Mother canvases are 24×46 cardinal front/back, 26×46 side/diagonal, all bottom-center grounded. |
-| `assets/rig/mother_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b,c}.svg` | `src/player/stroller.gd` selects these when `Stroller.carrying` is set, including the escape scene behind `--start-escape`. Three distinct poses play A, C, B, C: open contact, feet together, opposite contact, feet together. Movement distance advances the loop; stopping selects C. Five authored views supply eight directions through the same west mirrors as the pushing set. The baby's cue (`baby_{zzz,fuss,cry}.svg`) draws over the bundle at her own position, with no pram sprite. |
+| `assets/rig/{mother,father}_{front,back,side,front_diagonal,back_diagonal}_{a,b,c}.svg` | `src/player/stroller.gd` chooses among eight upright views in the run's selected family and plays A/C/B/C: opposite open contacts separated by the feet-together pose. Movement distance advances the loop; stopping selects C. East-authored side and diagonal views mirror explicitly for west. Both parents' canvases are 24×46 cardinal front/back, 26×46 side/diagonal, all bottom-center grounded. The father has short brown hair and a blue overshirt; the mother retains her red coat. |
+| `assets/rig/{mother,father}_carrying_{front,back,side,front_diagonal,back_diagonal}_{a,b,c}.svg` | `src/player/stroller.gd` selects the same parent's carrying family when `Stroller.carrying` is set, including the escape scene behind `--start-escape`. Three distinct poses play A, C, B, C: open contact, feet together, opposite contact, feet together. Movement distance advances the loop; stopping selects C. Five authored views supply eight directions through the same west mirrors as the pushing set. The baby's cue (`baby_{zzz,fuss,cry}.svg`) draws over the bundle at the parent's own position, with no pram sprite. |
 | `assets/rig/pram_{front,back,side}.svg`, `pram_{front,back}_diagonal.svg` | `src/player/stroller.gd` chooses the matching eight-direction pram view; east-authored side and diagonal views mirror explicitly for west. Native canvases are 30×30 cardinal and 36×30 side/diagonal. A uniform 7/6 drawing scale about the bottom-center anchor gives 35×35 and 42×35 rectangles, connecting the handle without lifting the wheels. The side views share the mother's ground baseline; other directions retain projected ground depth. |
 | `assets/props/baby_{zzz,fuss,cry}.svg` | `src/player/stroller.gd` chooses sleeping, awake/fussing or crying state above the pram. |
 | `assets/props/alert.svg`, `assets/props/alert_close.svg` | `src/player/stroller.gd` draws the exclamation over the player when an event is about her, using the close variant at the nearer threshold. |
@@ -227,7 +227,14 @@ pairings, exact prompts, raw outputs and repeated-tile comparisons.
 `assets/illustrated/svg-transfer/<family>/<name>.png` for a corresponding SVG. Missing or
 differently sized PNGs fall back to the SVG. Existing draw transforms and animation still apply.
 
-The live replacement family is `assets/illustrated/svg-transfer/rig/`:
+The live replacement families are in `assets/illustrated/svg-transfer/rig/`.
+The names below use `mother`; the complete male counterpart uses `father` with the same
+dimensions, poses, states and registration. `GameState.start_run()` makes an equal two-way
+choice through its independent seeded `player-presentation` stream, and `Main._make_player()`
+binds that choice before every ordinary or escape player enters the tree. Days, retries, pauses,
+carrying changes and texture resolution never reroll it. Both complete families share the warm
+player atlas; the stroller remains shared and the wife/event NPC artwork is independent.
+
 `mother_{front,back}_{a,b,c}.png` (24×46), `mother_side_{a,b,c}.png` (26×46),
 `pram_front.png` and `pram_back.png` (30×30), and `pram_side.png`
 (36×30). `mother_{front,back}_diagonal_{a,b,c}.png` (26×46) and
@@ -238,14 +245,16 @@ east-authored partners. The carrying set adds
 resolver during the escape scene. All use bottom-center anchors and retain their redrawn
 silhouettes and true transparency. **P2 — Three-pose push** and its grounded contact sheets are
 documented in the [pushing stride record](evidence/comic-pushing-strides-2026-09-12/GENERATION.md).
-The current carrying family is **F — Hip motion**; its SVG sources, three whole-figure poses,
+The female carrying family is **F — Hip motion**; its SVG sources, three whole-figure poses,
 closed idle frame, registration and eight-direction GIF recipe are in the
 [carrying hip-motion record](evidence/comic-carrying-hip-motion-2026-09-12/GENERATION.md).
 The [graphics recipe index](evidence/README.md#graphics-recipes) also locates the named comparison
 versions and their preserved rollouts.
 The [player authoring directory](graphics-creation/player/README.md) holds the high-fidelity SVG
 generation targets and their runtime/PNG pairings. The runtime SVG catalogue supplies vector
-artwork for contact and together poses. The PNG presentation uses the accepted F and P2 textures.
+artwork for contact and together poses. The female PNG presentation uses the accepted F and P2
+textures. The [male player recipe](evidence/male-player-2026-09-19/GENERATION.md) preserves its
+SVG-first sources, two generated sheets, native extraction and complete eight-facing comparisons.
 The [stroller view recipe](evidence/stroller-view-assignment-2026-09-12/GENERATION.md) defines the
 final illustrated facing contract: N/NE/NW show the baby and canopy opening; S/SE/SW show the
 outside of the hood; E/W retain the original side image. These names mean travel direction.

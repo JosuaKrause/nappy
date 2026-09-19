@@ -1,5 +1,119 @@
 # Decisions
 
+## M155 — The crowd's reach comes in, and walkers step aside more politely · built 2026-09-19
+
+*(2026-09-19, [PLAYTEST-78](playtests/PLAYTEST-78.md): "it is easier to go to a completely closed
+off area (eg walking via the roadway) to calm the baby down than it is to just walk back and
+forth on the regular sidewalk on a path … the noise from the crowd itself is too high. we need
+to nerf the crowd influence a little bit." Offered a shorter reach, a lower intensity, a wider
+step-aside or fewer walkers: "I like the shorter reach idea. main road can stay as expensive as
+before. we can also let the walkers step aside more politely".)* Three agent commits on
+`feature/m155-crowd-reach`; the probe at three states is
+`evidence/m155-crowd-reach-2026-09-19/`, with a README saying which tree each was taken on.
+
+**The probe.** `tests/probes/m117_decay.gd`, three seeds, net points per second while walking
+(negative is given back):
+
+| Leg | before | louder cars, rejected | built |
+|---|---:|---:|---:|
+| Quiet sidewalk, day 1 | −3.95 | −4.20 | **−4.73** |
+| Quiet sidewalk, day 9 | −5.77 | −5.73 | −5.88 |
+| Main road, day 1 | +5.71 | +5.70 | **+5.69** |
+| Main road, day 9 | −0.13 | −0.12 | **+1.36** |
+| Precinct, day 1 | −6.53 | −8.13 | −8.13 |
+| Alley, day 1 | −0.10 | −0.45 | −0.45 |
+| Calm | −10.60 | −10.60 | −10.60 |
+
+**The reach.** `PEDESTRIAN_OUTER_RADIUS` 55 → **30**, with `PEDESTRIAN_INTENSITY` (4.2) and
+`PEDESTRIAN_INNER_RADIUS` (22) untouched, so a close pass keeps its price and the middle of a
+sidewalk between walkers is nearly free. 40 and 35 were tried and gave back less (−4.62, −4.68);
+28 moved nothing further. The aim was four fifths of the empty street's 6.0; it reaches 79%.
+The precinct and the alley move with the radius and were not held: nobody asked for them to be.
+
+**The main road's price is held by the main road's own ground.** The shorter reach takes the
+walkers on the spine's sidewalks out of what the spine costs, and the player's instruction was
+that it stays as expensive. The agent's first lever was `CAR_INTENSITY` 5.4 → 7.7, which held
+day 1 exactly and was rejected in review: a car is on every street, so it took back half of
+what the radius had bought the quiet sidewalk and made every ordinary crossing dearer.
+`EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` 0.35 → **0.02** replaced it, the one number that is
+only true of main-road tiles. Day 1 is the day held, because `tests/test_crowd.gd`'s arterial
+floor, ceiling and crossing cost are stated against it; the worst-of-eight crossing reads 27.8
+of the meter against 26.2 before, under the half-meter line, since the shorter reach lightens
+what a crossing walks through by about what the ground stops giving back.
+**The orchestrator's choice, shown to the player with the table above and accepted** *(2026-09-19: "numbers look good")*: one multiplier
+serves the whole run, so day 9's main road goes from giving a sliver back to costing 1.36 a
+second — the spine in the emptied acts is dearer than it was, which *"as expensive as before"*
+does not ask for. A multiplier per act, or more walkers on the spine's own sidewalks, would hold
+both days; neither was built.
+
+**The step-aside.** `CROWD_YIELD_LATERAL` 22 → **30**. At 22 it equalled the walker's
+full-intensity core, so it only fired for a pass already inside it, and the ordinary pass — her
+on the midline of a two-lane sidewalk, a walker holding a lane 24 px away — never made anyone
+move. 30 catches that pass and stays short of the 48 px between a sidewalk's two lanes, so the
+far lane is left alone and a sidewalk does not part in front of her. `BUMP_STEP_ASIDE` (32 px,
+how far a walker steps) already clears it. On a throwaway rig driving `Crowd._make_way` on a
+generated city, three seeds: closest approach on a head-on midline pass 24 → 32 px, walker
+noise over the approach 0.73 → 0.00 points, contacts none either way.
+
+Whether pacing a quiet sidewalk now reads as recovery, and whether walkers stepping aside read
+as polite rather than as fleeing, are in `REVIEW.md`.
+
+---
+
+## M157 — Peregrine may be the father · built 2026-09-19
+
+*(2026-09-19: "we need to create a second set of player graphics for a male protagonist ... he
+should have a blue shirt to easily distinguish him from his wife. the style etc should match. at
+the beginning of a run the gender gets chosen randomly (50/50) and it stays throughout the run.")*
+Three agent commits on `feature/m157-male-protagonist`, reviewed in the source matrices and one
+normal-scale run still.
+
+**The name stays Peregrine.** The two playable presentations are the same protagonist, so the
+story still spends only two proper nouns: Peregrine and Wren. `NARRATIVE.md` now states the premise
+with a parent and uses singular they where either presentation can stand in the sentence. The
+historical alternative removed from that present-tense document is preserved here: **Hal** was
+considered for the halcyon and its fourteen days of calm — a run is fourteen days and the bird's
+whole job is to make the world quiet enough to nest in — then rejected because the name read male
+on sight and cost the mother-only premise more than that arithmetic bought. M157 keeps the existing
+gender-neutral name rather than making the random presentation choose a different identity.
+
+**One complete second family.** `assets/rig/father_*` adds five authored views by three gait poses
+for pushing and carrying; the runtime mirrors the east-authored side and diagonals to supply all
+eight directions. The corresponding 30 native PNGs under `assets/illustrated/svg-transfer/rig/`
+keep the current 24×46 cardinal and 26×46 side/diagonal canvases, bottom-center ground anchors and
+45px visible stature. Short brown hair, a clean-shaven face, cream undershirt, blue overshirt,
+blue-gray trousers and dark shoes establish one identity across both states. The female family,
+the shared stroller and event NPCs are unchanged.
+
+The generation record is `evidence/male-player-2026-09-19/`: SVG sources and exact source renders,
+the player's supplied male scene as identity reference, two retained 15-figure generator outputs,
+prompts, fixed cell boundaries, alpha-preserving extraction, registration hashes, native and 3×
+matrices, female/male comparisons and stroller-contact sheets. Carrying uses the generated pushing
+sheet as its identity reference. Uniform whole-figure scaling and upper-body-centroid placement
+preserve stature and hand position without splicing fixed anatomy across moving legs. A normal
+gameplay still and its entire run folder are under
+`evidence/archive/session-captures/2026-09-19/rig-074419-seed3-v0.11.1-3-gaa5a6b38-dirty/`;
+it proves appearance only. `REVIEW.md` asks for the human verdict on identity, gait and handle
+contact in motion for both presentations and both carrying states.
+
+**One choice owns the run.** `GameState.start_run()` makes an inclusive two-way draw from a new
+independent `player-presentation` stream derived from the run seed. Keeping it off the city and day
+streams means an existing seed's layout and events do not move. `Main._make_player()` copies the
+stored choice before each of the ordinary, escape-interior and finale-city player instances enters
+the tree; days, retries, pause/continue, carrying and texture resolution only read it. Seed 3 is a
+male example and seed 1 a female example. `Stroller.family_sources()` warms both complete families
+and the shared stroller into one atlas, while `--svg` selects the corresponding SVG source for
+every pose rather than changing the family choice.
+
+**Checks.** The focused presentation test reproduces the seeded draw, crosses wins, retries and new
+days without a reroll, walks both presentations through every facing, pose and carrying state, and
+requires the warmed PNG and forced-SVG paths to cover both families in one atlas without a late
+load. Existing player and orientation rigs explicitly select the physics camera callback their
+scenes already use, removing the engine's override warning rather than changing their assertion.
+The boot check, governed-doc lint, SVG XML checks, reproducible registration/pair checks and focused
+player, lifecycle, texture, orientation and performance suites pass. The unfiltered suite remains
+CI's merge-result gate.
+
 ## M154 — The day summary says when the day ended · built 2026-09-15
 
 *(2026-09-15, [PLAYTEST-77](playtests/PLAYTEST-77.md): "can you show the time of the day when

@@ -295,7 +295,6 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
-
 ## M143 — The readout's `process` and `physics` lines say what they measure · asked for 2026-09-14
 
 [PLAYTEST-75](playtests/PLAYTEST-75.md), the desktop stutter, and `DECISIONS.md`, M138, what
@@ -346,42 +345,6 @@ alike.
       The last resort's own residual is measured and not asked about: one reversal on the spot
       in view over seven rig days, where a stopped car outsat the wait on the landing; the PR
       review names the shape to try if it shows in play.
-
----
-
-## M155 — The crowd's reach comes in, and walkers step aside more politely · asked for 2026-09-19
-
-> "it is easier to go to a completely closed off area (eg walking via the roadway) to calm the
-> baby down than it is to just walk back and forth on the regular sidewalk on a path … the
-> noise from the crowd itself is too high. we need to nerf the crowd influence a little bit."
-> — "I like the shorter reach idea. main road can stay as expensive as before. we can also let
-> the walkers step aside more politely"
-
-[PLAYTEST-78](playtests/PLAYTEST-78.md). The **balance** and **crowd-traffic** rules govern.
-Walking gives the meter back `Tuning.EXCITEMENT_DECAY_WALKING` (6.0 a second) and a quiet
-act I sidewalk nets about 3.6, because every walker charges up to `PEDESTRIAN_INTENSITY` (4.2 a
-second) inside 22 px and fades out at `PEDESTRIAN_OUTER_RADIUS` (55 px) on a sidewalk 64 px
-wide. `tests/probes/m117_decay.gd` is the instrument: it walks a forty-second leg on each kind
-of ground with the day's crowd around her and prints the net rate.
-
-- [ ] **The walker's outer radius comes down, the close pass keeps its price.** Measure with
-      the probe first, three seeds, day 1 and day 9. Then lower `PEDESTRIAN_OUTER_RADIUS` from
-      55 px toward 40 px, leaving `PEDESTRIAN_INTENSITY` and `PEDESTRIAN_INNER_RADIUS` alone,
-      until the quiet ordinary sidewalk on day 1 nets about 4.8 a second given back — four
-      fifths of the empty street's rate — and report the radius that gets there and every leg
-      of the probe before and after. **The main road stays as expensive as it measures
-      before the change**: if its net rate falls with the walkers' reach, the car's numbers
-      make the difference up, and `tests/test_crowd.gd`'s arterial floor and ceiling are the
-      check. The comment on the three pedestrian constants in `tuning.gd` says what they
-      defend and follows the new number; `docs/MECHANICS.md` where it describes the crowd's
-      field.
-- [ ] **Walkers give her more room when they step aside.** `Tuning.CROWD_YIELD_LATERAL`
-      (22 px) is how near a walker's predicted closest approach has to come before it moves
-      out of her way, from `CROWD_YIELD_DISTANCE` (96 px) off and `CROWD_YIELD_LEAD` (1.4 s)
-      ahead. Widen it so a walker that would pass inside its own charging core steps clear of
-      it, without parting a whole sidewalk in front of her — the comment beside the constant
-      names that failure. Measure contacts and the probe's quiet-sidewalk leg before and
-      after, and say what the head-on pass on a two-lane sidewalk now costs on the midline.
 
 ---
 

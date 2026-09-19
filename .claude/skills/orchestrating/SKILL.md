@@ -38,6 +38,15 @@ parallel task to do, but model choice follows the difficulty of the delegated ta
 - Use `gpt-6-astra` for complex or difficult tasks. Do not make a weaker subagent struggle through
   work whose geometry, architecture, ambiguity or cross-system contracts warrant Astra.
 
+**Route on the reasoning that remains, not the subject's label.** An art, visual or geometry task
+is not Astra merely because it contains pictures or spatial placement. Once the geometry and
+acceptance contract are settled, binding approved assets through known callers is ordinary
+implementation: use Terra when it still has to reconcile placement, draw order, preserved
+behavior, tests or runtime evidence; use Luna when it is a direct mechanical substitution with no
+interpretive placement or integration choice. Astra is for geometry, architecture, ambiguity or
+cross-system contracts that are still genuinely unresolved, not complexity already removed by the
+brief.
+
 `.codex/config.toml` sets the default subagent model and reasoning effort. It selects
 `gpt-5.6-luna` at medium effort for routine bounded work. Select Terra, Sol or Astra explicitly
 when the task's difficulty warrants it, and choose reasoning effort separately from model tier.

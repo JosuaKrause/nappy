@@ -21,6 +21,14 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Compare both presentations at normal scale**, using seed 3 for the blue-overshirt father
+  and seed 1 for the red-coat mother, then the same seeds with `--start-escape` for carrying.
+  Walk and stop in all eight directions. Does each parent keep the same face, stature and
+  clothing through A/C/B/C, and does the father remain recognizably himself when carrying?
+  Check hand-to-handle contact during turns as well as at rest. The
+  [source and native comparison sheets](evidence/male-player-2026-09-19/GENERATION.md) document
+  registration; they do not establish smooth motion. Does the blue overshirt read clearly against
+  the existing red coat without looking like a different illustration style?
 - **Stand at a sealed street and watch one car meet the barrier**, on seed 3126506586 day 1, which
   is where the player photographed a car twitching between the two sides of the road
   (`--seed 3126506586 --day 1 --spawn closure:0 --invincible`, and `--press snapshot_burst 3` if it
@@ -350,6 +358,13 @@ item below for as long as looking takes.
   `physics` line is per tick and the `process` line is the worst frame of the last second, so
   `fps` is the number that says whether the frame moved. **Does it?** Same record, M141.
 
+- **Pace a quiet ordinary sidewalk back and forth for a stretch, then hold its midline through a
+  few oncoming walkers**, any seed, day 1 (`--seed 4242 --day 1`; `--invincible` if the timing to
+  watch several passes through is otherwise hard to hold). `PEDESTRIAN_OUTER_RADIUS` came in and
+  `EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` came down to hold the main road's own price in its
+  place. **Does pacing a quiet route sidewalk now read as recovery, closer to how an empty street
+  already did, and do walkers stepping out of her way read as polite rather than as a crowd
+  fleeing her?** Record is `DECISIONS.md`, M155, the crowd's reach comes in.
 - **Walk day 1 along the tinted kerbs and look at both sides of every street.** Four rows are
   walls by passability now — the café tables, the market stall, the roadworks and the ice cream
   van — so none of them stands on the sidewalk the route is drawn down, and they are drawn to the
