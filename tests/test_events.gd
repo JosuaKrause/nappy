@@ -2892,17 +2892,24 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 ## corridor carrying nearly all of it would mean every street off the route is empty, which reads
 ## as a set rather than as a city.
 ##
-## **The floor is stated twice, because one rule takes corridor ground away from a row for being
-## too wide for it.** A junction is the only place a line may change pavement, so a row whose reach
-## covers a whole crossing is refused that ground
-## (`EventScheduler._leaves_the_route_junctions_open`) — and every corridor street has a route
-## junction at each of its ends, so the refusal lands almost entirely on the corridor and almost
-## entirely on the wide rows. Measured over the days sampled here, turning that rule off and on
-## moves the whole share from 48% to 43%, the rows reaching further than a junction box's own half
-## width from 45% to 34%, and the rows narrower than that not at all (53% either way). So the
-## **narrow** share is the one that says the weight is still doing its job, and it is the assertion
-## that would go red if anybody stopped aiming friction at the route; the whole share keeps a floor
-## under it as well, with room for the wide rows to be pushed further off as their reaches move.
+## **The floor is stated twice, because three rules take corridor ground away from a row.** A
+## junction is the only place a line may change pavement, so a row whose reach covers a whole
+## crossing is refused it (`EventScheduler._leaves_the_route_junctions_open`), and every corridor
+## street has a route junction at each end; a row that would close the sidewalk the route is walked
+## along is refused that band, cumulatively with what is already down
+## (`_leaves_the_routes_sidewalk_open`); and a pacing row whose beat passes no way off its sidewalk
+## is a wall and is refused the walked band outright (`_a_pacing_beat_walls_a_sidewalk`). All three
+## bite on the corridor and nowhere else, so the share they leave is what the weight shows *through*
+## them rather than the weight's own answer.
+##
+## The **narrow** share — the rows small enough to stand beside a crossing without taking it — is
+## still the one to state a floor over, because it is the part the junction rule cannot touch and
+## the part a reader would expect to be unaffected. What the floor defends is that the four-to-one
+## corridor weight still shows through all three rules; it is not a claim that nothing diminishes
+## it. Measured over the days sampled here it stands at 44% with the three rules live and 47% with
+## the route-sidewalk rule switched off, which is where the floor is set from. The whole share keeps
+## its own floor as well, with room for the wide rows to be pushed further off as their reaches
+## move.
 ##
 ## An `AHEAD_OF_PLAYER` row is exempt from the first half and the exemption is the design rather
 ## than a hole: the charging dog is sited by `EventDirector` in front of wherever she turns out to
@@ -2998,9 +3005,9 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	t.check(share > 0.35, "%d of %d costly rows are on the corridor" % [friction_on_the_route, friction])
 	t.check(share < 0.9, "and the streets off it are not empty (%.0f%% on it)" % (share * 100.0))
 	var narrow_share := float(narrow_on_the_route) / maxf(1.0, float(narrow))
-	t.check(narrow_share > 0.45,
-			"and the weight is undiminished for the rows no crossing rule can refuse "
-			+ "(%d of %d narrow rows on the corridor)" % [narrow_on_the_route, narrow])
+	t.check(narrow_share > 0.40,
+			"and the corridor weight still shows through the three rules that can refuse a narrow "
+			+ "row (%d of %d narrow rows on the corridor)" % [narrow_on_the_route, narrow])
 
 	# **The range, as a relationship rather than as two numbers.** *"It ranges from very costly to
 	# deadly"* is a claim about which of the two is further from the routes, so that is what is
