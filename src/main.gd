@@ -143,9 +143,11 @@ var _in_the_title := false
 ## opposed to one that exists but is waiting behind a screen she has not yet dismissed — the
 ## title, on a fresh day 1, or the pause this milestone opens a resumed run behind. Read by
 ## `_day_under_way_for_save()`; a save written before this flips can never cost the day it names
-## anything on the *next* load, because nothing has happened in it yet. Flips `true` in
-## `_on_title_start()` and `_on_pause_resumed()`, and is set explicitly `true` in
-## `_on_summary_continued()`, which reaches no gating screen at all between one day and the next.
+## anything on the *next* load, because nothing has happened in it yet. Flipped by
+## `_engage_the_day()`, called from `_on_title_start()` and `_on_pause_resumed()` — that function,
+## not a bare assignment, because the transition itself has to write the save (see its own doc) —
+## and set explicitly `true` in `_on_summary_continued()`, which reaches no gating screen at all
+## between one day and the next.
 var _day_engaged := false
 
 ## The pause screen's own line for a game resumed from a save whose day was under way — drafted
@@ -753,9 +755,9 @@ func _open_the_title() -> void:
 func _on_title_start(mode: ControlsMode.Mode) -> void:
 	_touch_controls.set_mode(mode)
 	_in_the_title = false
-	# The day behind this screen becomes the one she is actually playing — see `_day_engaged`'s
-	# own doc for why closing before this point costs nothing.
-	_day_engaged = true
+	# The day behind this screen becomes the one she is actually playing — see `_engage_the_day()`'s
+	# own doc for why this has to write a save immediately rather than only flip the flag.
+	_engage_the_day()
 	_title.close()
 	_player.step_back_in()
 	_pauses_with_the_game(_city)
@@ -1544,11 +1546,39 @@ func _pause_on_focus_lost() -> void:
 	_pause.open()
 
 ## `PauseScreen.resumed` — Esc, space or a tap closing an ordinary pause, as well as the moment a
-## resumed run's own gating pause is dismissed for the first time. See `_day_engaged`'s own doc:
-## an ordinary pause reaches this harmlessly (the day was already engaged before it could open at
-## all), and a resumed run's pause is the one case where this is the actual, load-bearing flip.
+## resumed run's own gating pause is dismissed for the first time. See `_engage_the_day()`'s own
+## doc: an ordinary pause reaches this harmlessly (the day was already engaged before it could
+## open at all, so `_engage_the_day()` writes nothing the second time), and a resumed run's pause
+## is the one case where this is the actual, load-bearing transition.
 func _on_pause_resumed() -> void:
+	_engage_the_day()
+
+## The one place `_day_engaged` is ever set `true`, called from `_on_title_start()` (day 1's title
+## dismissed) and `_on_pause_resumed()` (a resumed run's own gating pause dismissed, or an
+## ordinary mid-day pause closing).
+##
+## **Writes the save immediately, on the transition, rather than leaving the next write to
+## whichever of the four ordinary triggers happens next.** The dawn write already on disk for a
+## day sitting behind either gate says `day_under_way: false`, since nothing had been played in it
+## yet — correct at the time, but wrong the instant the gate opens and stays wrong until a focus
+## loss or a quit notification updates it. Those notifications are not guaranteed to ever arrive:
+## a crash, a force-kill, or — the ordinary case on mobile web — a backgrounded tab whose page is
+## discarded outright all skip them, and the dawn write exists in the first place because exactly
+## this class of event cannot be relied on to notify anybody. Left unfixed, the day between the
+## gate opening and the next notification would read as "not under way" to a load that catches a
+## silent kill in that window, so closing there would cost nothing — every second escape free:
+## quit mid-day (pay), resume, dismiss the gate, kill the tab (free).
+##
+## One function rather than two call sites each writing their own line, so the flip and the write
+## cannot drift apart the way they did when this milestone first shipped without this function at
+## all — see the commit that added it. No-ops past the first call (`if _day_engaged: return`), so
+## an ordinary pause closing on an already-engaged day writes nothing and flashes nothing every
+## time Esc is pressed.
+func _engage_the_day() -> void:
+	if _day_engaged:
+		return
 	_day_engaged = true
+	_save_now(true)
 
 ## Whether the day currently in `_day` should be saved as "under way" right now — read by
 ## `_notification()`'s own focus-loss and quit writes, never by the dawn write, which passes

@@ -41,6 +41,15 @@ static func set_path_override(path: String) -> void:
 static func _path() -> String:
 	return _path_override if _path_override != "" else _DEFAULT_PATH
 
+## Set by a test to force `uses_save()`'s own answer, bypassing the headless display server this
+## suite always boots against — the same seam `DevFlags._invincible_override` is for the same
+## reason: a headless runner can drive `write()`/`try_resume()` (the gated names `main.gd` actually
+## calls) no other way, since `uses_save()` refuses a headless run unconditionally. `null` (the
+## default) means "answer normally"; a test sets this to `true` before exercising the gated path
+## against a scratch file (`set_path_override()` first, never `_DEFAULT_PATH`) and clears it back
+## to `null` when done, or the override leaks into every suite that runs after it.
+static var _uses_save_override: Variant = null
+
 ## The one function every read and write of the player's save goes through. Every checkout and
 ## worktree of this repository shares one `user://`, so a dev flag, a headless run, the test
 ## runner and `tools/check.sh`'s boot must all fall through to an ordinary, unsaved run rather than
@@ -57,6 +66,8 @@ static func _path() -> String:
 ## `tools/run.sh` apart from the player's own desktop build otherwise, and the flag exists exactly
 ## so an agent can ask for one anyway.
 static func uses_save() -> bool:
+	if _uses_save_override != null:
+		return bool(_uses_save_override)
 	if DisplayServer.get_name() == "headless":
 		return false
 	if not DevFlags.enabled():

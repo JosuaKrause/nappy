@@ -40,6 +40,10 @@ func run(t) -> void:
 
 	_test_focus_loss_never_charges_a_nerve(t)
 	_test_pause_screen_shows_or_hides_the_resume_note(t)
+	_test_dismissing_the_title_writes_the_save_under_way(t)
+	_test_dismissing_a_resumed_pause_writes_under_way_and_a_second_load_costs_again(t)
+	_test_an_ordinary_pause_on_an_engaged_day_writes_nothing(t)
+	_test_a_restart_notes_nothing_that_pre_engages_the_next_run(t)
 
 	GameSave.clear()
 	GameSave.set_path_override("")
@@ -348,7 +352,9 @@ const _TITLE_SCENE := preload("res://scenes/ui/title_screen.tscn")
 
 ## A script-only `main`, the same shape `tests/test_main.gd`'s own focus-loss rig builds — a bare
 ## `DayController` stands in for a live one, since all `_notification()` asks of it is `.phase`.
-func _build_bare_main(t) -> Node2D:
+## `day_engaged` defaults `true` (an ordinary played day) since that is what every existing caller
+## wants; the engagement tests below pass `false` for the gated-but-not-yet-dismissed shape.
+func _build_bare_main(t, day_engaged := true) -> Node2D:
 	var main: Node2D = _MAIN_SCRIPT.new()
 	main._summary = _SUMMARY_SCENE.instantiate()
 	t.add_child(main._summary)
@@ -359,7 +365,7 @@ func _build_bare_main(t) -> Node2D:
 	main._no_focus_pause = false
 	main._day = DayController.new()
 	main._day.phase = GameEnums.DayPhase.WALKING
-	main._day_engaged = true
+	main._day_engaged = day_engaged
 	return main
 
 func _free_bare_main(t, main: Node2D) -> void:
@@ -405,3 +411,126 @@ func _test_pause_screen_shows_or_hides_the_resume_note(t) -> void:
 
 	t.get_tree().paused = false
 	pause.queue_free()
+
+## The seam that lets a gated write actually land under this headless runner — see
+## `GameSave._uses_save_override`'s own doc. Every test below that calls `main._engage_the_day()`
+## (directly or through `_on_title_start()`/`_on_pause_resumed()`) needs `main._save_now()`'s own
+## call to `GameSave.write()` to really write, which `uses_save()` would otherwise refuse
+## unconditionally under `DisplayServer.get_name() == "headless"`.
+func _with_forced_save(callable: Callable) -> void:
+	GameSave._uses_save_override = true
+	GameSave.clear()
+	callable.call()
+	GameSave.clear()
+	GameSave._uses_save_override = null
+
+## **The regression this whole commit exists for.** `_day_engaged` used to flip `true` in
+## `_on_title_start()` with no write beside it, so the save on disk kept saying `day_under_way:
+## false` — correctly written at dawn, for a day nobody had touched yet — for the entire time
+## between the title closing and the next focus-loss or quit notification. A crash, a force-kill,
+## or a backgrounded mobile tab whose page is simply discarded never sends one, so a day playtested
+## start to finish and killed with no notification at all would have resumed for free. Asserted
+## directly: dismissing day 1's title, with no notification sent at all, already leaves the save on
+## disk saying the day is under way.
+func _test_dismissing_the_title_writes_the_save_under_way(t) -> void:
+	# A fresh run, since an earlier test in this suite may have left `GameState.ending` set —
+	# `GameSave._write_now()` refuses once an ending is set, on purpose, and `start_run()` is the
+	# same reset an ordinary day 1 boot itself performs before ever reaching the title.
+	GameState.start_run(123)
+	_with_forced_save(func() -> void:
+		var main: Node2D = _MAIN_SCRIPT.new()
+		main._add_touch_controls()
+		var camera := Camera2D.new()
+		camera.name = "Camera2D"
+		var stroller := Stroller.new()
+		stroller.add_child(camera)
+		t.add_child(stroller)
+		stroller.set_physics_process(false)
+		main._player = stroller
+		main._city = City.new()
+		main._hud = CanvasLayer.new()
+		main._edge_layer = CanvasLayer.new()
+		main._status = Label.new()
+		main._title = TitleScreen.new()
+		main._day_engaged = false
+
+		t.check(not GameSave.has_save(), "nothing on disk before the title is dismissed")
+		main._on_title_start(ControlsMode.Mode.TAP)
+		t.check(main._day_engaged, "the day is engaged the instant the title closes")
+		var saved := GameSave._read_now()
+		t.check(saved.get("day_under_way") == true,
+				"and the save on disk already says so, with no focus-loss or quit notification sent")
+
+		main._status.free()
+		main._title.free()
+		main._edge_layer.free()
+		main._hud.free()
+		main._city.free()
+		main.free()
+		stroller.free()
+	)
+
+## The other gate: dismissing a resumed run's own pause. Chained into the full loop the coordinator
+## asked to see closed — load (day under way), pay the first nerve, the fresh dawn's own write
+## (`day_under_way: false`, unplayed), dismiss the gate (this test's own assertion: the save flips
+## to `day_under_way: true` with no notification), then a *second* close-and-reopen now correctly
+## costs a *second* nerve, since this time something really was played.
+func _test_dismissing_a_resumed_pause_writes_under_way_and_a_second_load_costs_again(t) -> void:
+	_with_forced_save(func() -> void:
+		GameState.start_run(456)
+		GameState.day = 6
+		GameState.nerves = 5
+		GameState.begin_day()
+		t.check(GameSave._write_now(true), "the original mid-day save, before the first close")
+
+		var first := GameSave._read_now()
+		t.check(first.get("day_under_way") == true, "the first load finds a day under way")
+		GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+		t.check(GameState.nerves == 4, "and spends its one nerve")
+		t.check(GameSave._write_now(false),
+				"main._start_day()'s own dawn write for the fresh, unplayed retry")
+
+		var main := _build_bare_main(t, false)
+		t.check(not main._day_engaged, "the fresh retry starts out not engaged, behind the pause")
+		main._on_pause_resumed()
+		t.check(main._day_engaged, "dismissing the resume pause engages it")
+		var engaged_save := GameSave._read_now()
+		t.check(engaged_save.get("day_under_way") == true,
+				"and the save already says so, before any notification could have")
+		_free_bare_main(t, main)
+
+		var second := GameSave._read_now()
+		t.check(second.get("day_under_way") == true,
+				"a second close now finds a day genuinely under way")
+		GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+		t.check(GameState.nerves == 3,
+				"and costs a second nerve, since this time something was actually played")
+	)
+
+## The no-op half: an ordinary `Esc` pause on a day that was already engaged before it could even
+## open must not write or flash the symbol every time it is dismissed — see `_engage_the_day()`'s
+## own doc for why the function is one no-op check rather than two bare assignments.
+func _test_an_ordinary_pause_on_an_engaged_day_writes_nothing(t) -> void:
+	_with_forced_save(func() -> void:
+		var main := _build_bare_main(t, true)
+		main._on_pause_resumed()
+		t.check(not GameSave.has_save(),
+				"dismissing an already-engaged day's ordinary pause writes nothing at all")
+		_free_bare_main(t, main)
+	)
+
+## The restart-path finding: `main._restart_run()` clears the save and defers a scene reload: the
+## reloaded `_ready()` runs `GameSave.try_resume()` against nothing (the file is gone), so it takes
+## the ordinary fresh-run boot and reaches `_open_the_title()` exactly as day 1 always has —
+## `TitleScreen.note_restart_requested()` only records a timestamp `_unhandled_input()` uses to
+## swallow one stray press crossing the reload, and touches nothing about whether the title itself
+## opens. There is no code path in this project where an un-flagged day 1 becomes engaged other
+## than `_on_title_start()`, so the held restart's own next run is exactly the case
+## `_test_dismissing_the_title_writes_the_save_under_way()` already covers, and a fresh `main` here
+## still starts unengaged regardless of a restart having just been noted.
+func _test_a_restart_notes_nothing_that_pre_engages_the_next_run(t) -> void:
+	TitleScreen.note_restart_requested()
+	var main: Node2D = _MAIN_SCRIPT.new()
+	t.check(not main._day_engaged,
+			"a freshly constructed main is not engaged even right after a restart was noted")
+	main.free()
