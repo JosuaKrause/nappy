@@ -557,19 +557,19 @@ func _test_a_row_across_the_whole_street_still_turns_a_car(t, city: City, map: C
 ## reads: a seed whose day happened to place nothing solid would pass vacuously, so the tile count
 ## is checked as well.
 ##
-## **A crash's two cars are asked about separately, and off the catalogue rather than off the
-## record.** They are not in the record at all — a crash is a hard seal and the record skips a body
-## on held ground — so what keeps the crowd out of them is `CityMap.held_segments` shutting the
-## whole street, and that is a different sentence worth its own count. Vacuity is guarded the same
-## way: the number of car bodies the days actually placed is checked.
+## **A crash's two cars are asked about separately, off the catalogue rather than off the record,
+## and the sentence they hold is the siting's.** The cars are in the record like every other body,
+## so the tile count above already keeps the crowd off the tiles they stand on; what this second
+## count holds is that a crash is only ever sited on a street that is sealed — every agent ever
+## found within one of its cars is on ground held for the day, never on open street it could have
+## strolled in from. Vacuity is guarded the same way: the number of car bodies the days actually
+## placed is checked.
 ##
-## **Stated as *reaches* rather than *stands in*, and the difference is the placement fallback.**
-## `CrowdAgent.setup()` re-rolls a position 24 times against `_stands_on_a_street()` and places the
-## agent anyway if every draw lands on shut ground, which a day with many hard seals can produce —
-## so a body does occasionally start the day standing on a sealed street, inside a crash among other
-## places, and walks off it. That is the crowd's placement, not the seal's siting. What this holds
-## is the sentence the siting owns: every agent ever found inside a car is on ground the crowd is
-## held off, so no car is ever sited somewhere the crowd can legitimately walk.
+## **Stated as *reaches* rather than *stands in*, and the difference is the crash's own geometry.**
+## A car body is a 14px disc centred on the carriageway and it reaches a few pixels over the kerb,
+## so a walker on the nearest pavement lane can be inside its radius while standing on a tile whose
+## middle it does not cover — which is a walker beside a wreck rather than a walker in one. Held
+## ground is the line this draws instead, because that is the property the siting owns.
 func _test_nobody_ever_stands_in_a_body_on_a_real_day(t) -> void:
 	var cars_seen := 0
 	for city_seed: int in [4242, 24757, 91117]:
