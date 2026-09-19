@@ -16,6 +16,20 @@ that stands against a building cannot be placed on a square, so squares lost it.
    The sidewalk crew stays against the building; the square gets a row of its own rather than the
    sidewalk row being bent to serve both.
 
+## The parked van gets no pull toward junctions
+
+Asked whether the parked delivery van, now a wall because it leaves her 26px of lane where she
+needs 28, should also get the weighting that draws walls toward the ground beside junctions
+(`Tuning.EVENT_WALL_RIM_WEIGHT`) — which had cost four act III routes their zero-cost line — and
+given three options, the player chose the first:
+
+> "A. No (my recommendation). -- do that"
+
+2. **A row that is a wall only by fit is kept off the walked sidewalk and gets no junction
+   weighting.** The pull toward junction rims is for rows that are walls by cost, the big noisy
+   things meant to be seen from a distance before she commits to a street. The van is spread along
+   streets as it was.
+
 ## What was not spoken to
 
 What the square's crew pastes onto, where a square has no wall; its picture; and how the two rows

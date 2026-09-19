@@ -493,11 +493,12 @@ the probe and the rule:
       stands `AGAINST_THE_BUILDING` and so cannot be placed on a `SQUARE` tile, which its
       `placement` still lists. A second row places on squares only, with a look and a picture of
       its own, and `poster_crew` stops listing `SQUARE`.
-- [ ] **The parked van at a junction's rim.** Since `delivery_van` is a wall by fit it is weighed
-      toward junction rims with the other walls (`Tuning.EVENT_WALL_RIM_WEIGHT`), and the
-      zero-cost-line share fell from 262 to 258 of 296, all four in act III. Whether a van
-      belongs at a rim at all, or the rim weight is for the rows that were walls by cost, is a
-      number in `src/autoload/tuning.gd` and the player's call on what a junction may carry.
+- [ ] **A wall by fit gets no pull toward junction rims.** *(2026-09-19: "A. No … do that",
+      [PLAYTEST-99](playtests/PLAYTEST-99.md).)* `delivery_van` is a wall because it leaves 26px
+      of lane, and as a wall it is weighed toward junction rims (`Tuning.EVENT_WALL_RIM_WEIGHT`),
+      which took the zero-cost-line share from 262 to 258 of 296. The rim weight is for rows that
+      are walls by cost; a row that is a wall only by fit keeps the zero copies on route cells and
+      is otherwise placed as friction is. Re-measure both probes.
 - [ ] **Which placements the three rules never see.** `_place_one`'s candidate loop is where
       the rules run. Find every other path a row reaches the day by — the calm-ground pass
       that covers a park by area, `_ensure_one_usable_park`, the seals a `SealPlanner` places
