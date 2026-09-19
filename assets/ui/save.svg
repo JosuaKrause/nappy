@@ -1,0 +1,32 @@
+<!-- The save symbol `SaveIndicator` fades in and back out again after a write — see
+     docs/MECHANICS.md, "Saving and resuming". A floppy disk rather than a disc or a checkmark: the
+     vocabulary already uses a plain disc for pause and a triangle for continue, and a check would
+     read as a completed task rather than as "written to disk", which is the one thing this symbol
+     has to say and nothing else in the game says.
+     This is the one glyph in the set that carries its own colours rather than plain white
+     (2026-09-19, the player: "make it bluish and the metal parts should be silver/gray") —
+     pause.svg, restart.svg and continue.svg stay white on transparent because a single flat
+     runtime tint is enough to tell a disc from two bars or a triangle from nothing; a floppy
+     disk's own case, metal shutter and paper label are three parts of one object that a single
+     hue cannot hold apart, so this file owns three fills instead and `SaveIndicator` only ever
+     fades it, never tints it. The blue (`#5f7a99`) sits beside `Palette.LIGHT_DUSK` and
+     `Palette.HOME_ARROW`'s own blues; the shutter's silver-gray (`#a8adb3`) and its small
+     write-protect slot (`#4a4e54`, a shade darker again) sit beside `Palette.CAR_PAINT`'s own
+     light and dark grays; the label's off-white (`#ede8de`) is warmer than the case so it still
+     reads as paper rather than as a fourth shade of the case. None of these has its own `Palette`
+     constant: nothing outside this file needs to agree with them, the same reason the rest of
+     this set's colours live in `assets/` rather than in code.
+     The shapes are the ones the shutter and the label have had since the cutout revision: the
+     shutter is flush with the case's own top edge and the label sits with a margin on every side,
+     which is what let their outline alone read as a floppy disk before colour was available to do
+     the same job — the two now agree, shape and colour both drawing the same three-part read.
+     The chamfered top-right corner is the shape's own write-protect notch, standing in for the
+     whole object the way pause.svg's two bars stand in for a pause button — enough silhouette to
+     read as a floppy disk at a glance, not a traced photo of one.
+     Authored on the same 128 grid as the rest of this set, with antialiasing left on. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <path d="M24 24 L92 24 L104 36 L104 104 L24 104 Z" fill="#5f7a99"/>
+  <rect x="40" y="24" width="36" height="24" fill="#a8adb3"/>
+  <rect x="58" y="30" width="8" height="12" fill="#4a4e54"/>
+  <rect x="36" y="62" width="56" height="30" fill="#ede8de"/>
+</svg>

@@ -54,9 +54,20 @@ def main():
                 raise ValueError(f"native dimensions mismatch: {native}")
             if picture.mode != "RGBA" or picture.getchannel("A").getextrema() != (0, 255):
                 raise ValueError(f"missing real transparency: {native}")
-        registered = Path(__file__).parent / "registered/rig" / native.name
-        if registered.read_bytes() != native.read_bytes():
-            raise ValueError(f"installed PNG differs from registered output: {native}")
+        override = row.get("registration_override")
+        if override is None:
+            registered = Path(__file__).parent / "registered/rig" / native.name
+            if registered.read_bytes() != native.read_bytes():
+                raise ValueError(f"installed PNG differs from registered output: {native}")
+        else:
+            accepted_source = ROOT / override["accepted_source"]
+            original_registered = ROOT / override["original_registered"]
+            if digest(accepted_source) != override["accepted_source_sha256"]:
+                raise ValueError(f"changed accepted override source: {accepted_source}")
+            if native.read_bytes() != accepted_source.read_bytes():
+                raise ValueError(f"installed PNG differs from accepted override: {native}")
+            if digest(original_registered) != override["original_registered_sha256"]:
+                raise ValueError(f"changed original registered PNG: {original_registered}")
     for folder in ("assets/rig", "assets/illustrated/svg-transfer/rig"):
         for sidecar in sorted((ROOT / folder).glob("*.import")):
             contents = sidecar.read_text()

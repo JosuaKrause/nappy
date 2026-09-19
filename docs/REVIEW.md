@@ -21,6 +21,25 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Close the game in the middle of a day and open it again**, on the desktop build, and on
+  the released page in a laptop browser (refresh, close the tab). The phone is answered:
+  reloading there brings up the proper day brief ([PLAYTEST-94](playtests/PLAYTEST-94.md)). Does the title come up, and does pressing start bring up the day brief — the
+  day, the nerves, the resistance's own pending brief — one nerve down, with the line *"Left
+  before the day ended. That cost a nerve — it starts over from dawn."* — and is that wording
+  right, and does the screen read clearly as a brief rather than as an ending on its own? Does
+  continuing from the day brief start the day, and does closing again before continuing past it
+  come back to the same brief at no further cost? Does closing at an end-of-day message come
+  back to the day brief at no cost, and does a new release still find the save of the one
+  before? No rig can look at any of this, since a dev-flagged run never reads or writes the
+  save (`DECISIONS.md`, M162).
+- **Does a nerve lost to an accidental close or a browser crash read as fair?** It is the price
+  of quitting never being an escape ([PLAYTEST-82](playtests/PLAYTEST-82.md)); the exact
+  snapshot is what was given up for it.
+- **Is the save symbol a floppy disk, and is it noticed without distracting?** Bottom right, a
+  second and a half held and the same fading, twice in an ordinary day. It is a blue disk with a
+  silver shutter and a paper label, drawn in its own colors and only faded; look at it on the
+  phone, over a daylight street and over dusk. The drawing is accepted on a render
+  ([PLAYTEST-95](playtests/PLAYTEST-95.md)); what is unseen is the symbol in play. Record is `DECISIONS.md`, M169.
 - **Click away from the game in the middle of a day**, on the desktop build, in the browser
   (another tab, another window) and on the phone (the home button). Does the pause screen come
   up every time, and never on the title, a day summary or an ending? The desktop case rests on
@@ -196,10 +215,9 @@ item below for as long as looking takes.
   meets a full door from inside the door's own street, read as wrong? Record is `DECISIONS.md`,
   M110, walkers are held at a door.
 - **Find a roadblock on day 7 or later** (a 120px barrier across a road, drawn as one continuous
-  barrier with end posts). Does it read as one barrier rather than blocks? At resistance progress
-  3 of 4 performs, its guards leave the post and come for her on foot, standing then lunging —
-  nobody has reached that state. Does a guard on foot read as *the roadblock coming for her*, and
-  does the street it left read as open? Record is `DECISIONS.md`, M56, the roadblock hunts.
+  barrier with end posts). Does it read as one barrier rather than blocks? Its guards leaving the post was seen in the escape and read as a
+  barrier turning into a man ([PLAYTEST-94](playtests/PLAYTEST-94.md)); that is M168, the escape
+  after playtest 94, in `TODO.md`. Record is `DECISIONS.md`, M56, the roadblock hunts.
 - **Find the burning building on day 3** (`--day 3`; it is on a pavement against a building). The
   engine arrives along the fire's street only once the fire is on screen. Does the engine read as
   *summoned by the sight*, and does a day where she never finds the fire feel different? Record
@@ -308,12 +326,29 @@ item below for as long as looking takes.
 - **Walk the whole escape end to end** (`tools/run.sh --start-escape --seed 4242`; debug only).
   She starts at her own door with the baby asleep, goes down past the barricaded lobby to the
   service exit, and the same run continues into the city and ends at the tunnel or the bridge.
-  Inside: a mouse and a paced steam vent in the basement, a masked man on one stairwell and a
-  fire on the other, and the hallway windows flashing every 22 seconds
-  (`Tuning.FINALE_EXPLOSION_INTERVAL`) for `FINALE_WINDOW_FLASH_SECONDS` (0.12s). Two questions
-  only a walk answers: does the fire actually force the other shaft, or is walking back up the
-  obvious answer anyway; and does the paced steam leave a line to walk in a corridor two tiles
-  wide? Record is `DECISIONS.md`, M102, the finale built behind the flag.
+
+  **What is in there now.** A masked man runs the whole height of one shaft over its own ground —
+  the level `F` columns and the `t/m` and `T/M` diagonals — and a fire stands on the inner cell of
+  a level approach in the other, closing one flight and leaving every door reachable. The basement
+  is entered down a one-tile front-facing stair (`stair_down.svg`) and holds a mouse and three
+  steam vents at fixed places on the corridor. A vent blows for `Tuning.FINALE_STEAM_BLOWS_FOR`
+  after its own notice and is gone until its period comes round, one period each out of
+  `FINALE_STEAM_PERIODS`, and while it blows it shuts the corridor outright. The hallway windows
+  flash every 22 seconds (`FINALE_EXPLOSION_INTERVAL`) for `FINALE_WINDOW_FLASH_SECONDS` (0.12s).
+
+  **Three questions only a walk answers.** Does the fire actually force the other shaft, or is
+  walking back up the obvious answer anyway? Is stepping through a door a *usable* answer to the
+  masked man — the shaft is one or two cells wide everywhere, so a door tile is 32px off his line
+  against the 28px that takes the baby, and whether that is enough time to reach one is a question
+  about hands rather than about geometry. And does the one-tile stair read as a stair at the scale it
+  is played at, given the player's *"at the very least"*?
+
+  Records are `DECISIONS.md`, M165, the escape after the corrected stairs, and M102, the finale
+  built behind the flag. The steam was walked and reads as something to squeeze past
+  ([PLAYTEST-94](playtests/PLAYTEST-94.md)); it is M168, the escape after playtest 94, in `TODO.md`.
+  [PLAYTEST-84](playtests/PLAYTEST-84.md) is the last walk of it, and
+  [PLAYTEST-85](playtests/PLAYTEST-85.md) is where the steam, the basement stair and the spawn
+  were settled in the player's own words.
 
 - **Stand at the service exit and choose** (`tools/run.sh --start-escape city --seed 4242` boots
   section two on its own). Two chains leave the door, one north to the tunnel and one south to
@@ -378,8 +413,9 @@ item below for as long as looking takes.
   walls by passability now — the café tables, the market stall, the roadworks and the ice cream
   van — so none of them stands on the sidewalk the route is drawn down, and they are drawn to the
   far side of that same street. Day 1's own side carries the dog walker, the parked van, the
-  shouting man and a playground. Three questions a rig cannot answer. **Does the walked side read
-  as a street** with the things she cannot pass taken off it? **Is the far side visible enough to
+  shouting man and a playground. Hard walls are still met on the walked side
+  ([PLAYTEST-94](playtests/PLAYTEST-94.md)), which is the open item under M129, a path through the
+  city never has to cost, in `TODO.md`. Two questions a rig cannot answer. **Is the far side visible enough to
   be the answer** — a wall across the road is only a route decision if she can see it before she
   commits to the side she is on. And **does the shouting man read as something to time** rather
   than as a thing in the way: he stays on the route because his beat reaches the crossing at the
@@ -389,18 +425,15 @@ item below for as long as looking takes.
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
 
-- **Walk the apartment and judge the reference-based interior graphics.** `tools/run.sh --start-escape` (debug only;
-  `--start-escape stairwell:left|stairwell:right|lobby|basement|floor:2|floor:1` boots into a
-  part) puts her, carrying the baby, in front of her door on the third floor of a building with
-  three hallways, two switchback stairwells at opposite ends, a barricaded lobby and a winding
-  basement to the emergency exit — one map, the parts 64 tiles apart, every door a fade and a
-  teleport. The south-edge doors are plain indents now, a brown bar across an indent being the
-  whole of what says closed, and every flight's treads are vertical lines, one per step: do the
-  bars read as closed doors and the lines as steps at play scale? Record is `DECISIONS.md`,
-  M102, the south-edge doors are indents. Both stairwells have recorded physical walks, but the feel of
-  the sideways controls and fade-and-teleport still needs a person's verdict: does a diagonal
-  flight read as *descending* when a sideways press walks it, and does the fade-and-teleport
-  read as a door or as a cut? Records are in `DECISIONS.md` under M112, the escape scene and
+- **Walk the apartment and judge the remaining reference-based interior graphics.**
+  `tools/run.sh --start-escape` (debug only; `--start-escape stairwell:left|stairwell:right|lobby|basement|floor:2|floor:1`
+  boots into a part) puts her, carrying the baby, in front of her door on the third floor of a
+  building with three hallways, two switchback stairwells at opposite ends, a barricaded lobby and
+  a winding basement to the emergency exit — one map, the parts 64 tiles apart, every door a fade
+  and a teleport. The south-edge doors are plain indents, with a brown bar across an indent being
+  the whole of what says closed: do the bars read as closed doors at play scale, and does the
+  fade-and-teleport read as a door or as a cut?
+  Records for the remaining interior are in `DECISIONS.md` under M112, the escape scene and
   interior graphics; what the finale lays on top of the building — its events, and the way out
   through the service door — is the escape walk in the list above.
 
@@ -566,10 +599,3 @@ item below for as long as looking takes.
   became a wall: a walker or a car that reaches the boundary pavement turns or is clamped onto the
   map's last row, and the one body allowed out is a car on the spine by the tunnel or the bridge.
   Whether that reads as a city edge or as bodies bunching against glass is a played question.
-- **M167, matching body texture, jacket hem and trouser colors.** PR #234 embeds the
-  [pushing sheet](evidence/male-player-2026-09-19/b-contact/whole-figure-color-2026-09-19/generated/pushing/pushing-spritesheet-6x.png)
-  and [carrying sheet](evidence/male-player-2026-09-19/b-contact/whole-figure-color-2026-09-19/generated/carrying/carrying-spritesheet-6x.png)
-  with their GIFs. Check the restored existing upper-body texture and full-size carrying baby,
-  the new hem edge at the other frames' jacket height, and the lighter trousers through the
-  loop. Legs and pose are already approved; their geometry below the hem is unchanged.
-  Approved E/W and all other frames are unchanged. The candidate remains uninstalled.

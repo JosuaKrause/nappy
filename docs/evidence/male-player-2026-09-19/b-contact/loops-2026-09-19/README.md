@@ -64,6 +64,9 @@ The chronology's initial "correct-ownership" assessment is a historical claim ov
 PLAYTEST-88; its exact bytes remain frozen for reproduction of this trial.
 
 `inputs.json` pins every final source image, the donor, recipe, chronology and reused P2 code.
+Its father-frame inputs are the retained original `generated/rig/` files, rather than the live
+runtime directory, so later approved runtime contacts cannot alter this rejected trial's
+reproduction.
 `generated/manifest.json` records crops, transformations, compositing order, canvas/alpha bounds,
 direction order, timing and output hashes. The original runtime images remain unchanged. The
 rejected four-pose comparison remains preserved in `../review-2026-09-19/` as superseded evidence.

@@ -1,78 +1,68 @@
-# Correcting the opposite walking contact
+# Walking-frame correction toolbox
 
-Use this procedure when a walking frame repeats the wrong leading leg or loses anatomical
-ownership during SVG-to-PNG transfer. A generator's compliance with a prompt is not proof.
-The continuous anatomical chain and its occlusion in the actual pixels are the proof.
+These are reusable strategies for revising an existing illustrated family. Choose the operation
+that addresses the visible defect and review its result; none guarantees acceptance. Preserve
+SVG-first source provenance, frozen raster inputs, prompts, masks, transforms and reproducible
+assembly recipes. The attempts and player verdicts are recorded under M160, the father's opposite
+contact, and M167, the father's natural legs, in `docs/DECISIONS.md`.
 
-## Define the contact before drawing
+## Select a donor by anatomy and projection
 
-Compare the accepted A contact with the intended B contact in each authored view. Write a
-table naming each leg at its hip, knee and shoe, which leg leads along the travel axis,
-and which thigh is in front at their overlap. In profile and three-quarter views use
-near/far relative to the viewer; in exact front/back views use anatomical left/right and
-its screen side. Do not infer anatomical identity from trouser color or the lowest shoe.
-Walking away makes the advancing foot farther and usually higher in the picture.
+Trace each leg from its own hip through knee to shoe. Identify the leading and trailing leg
+along the travel direction separately from which thigh overlaps in front. Inspect the actual
+image: an A/B label or a front-diagonal filename cannot establish its contact or projection.
+Check western mirrors too. A same-clothing donor can supply useful leg artwork across character
+or carrying states, but its view, proportions and ownership must fit the target.
 
-Trace each leg from its own hip through its knee to its own shoe. B exchanges leading
-and trailing roles relative to A without exchanging hips, rotating the travel axis or
-merely recoloring the same silhouettes. State the far-to-near draw order separately
-from which leg advances: a far advancing leg is behind the near trailing thigh.
-Include western runtime mirrors; they reverse screen sides, not authored ownership.
-Pin hashes for every direction/frame explicitly outside the correction.
+Prefer the original large artwork for cropping and generated normalization. Mask along the
+garment contour rather than assuming a horizontal row separates coat and legs. A longer coat
+can hide anatomy the target's shorter jacket exposes; that region needs a coherent transition.
+Supply approved upper-body crops for identity, excluding the wrong legs from that reference.
+Give each saved generation input an explicit role: identity, pose, material or style.
 
-Foreground overlap is a depth relationship, not a command to cross the legs. Establish each
-projected hip from the torso and pelvis before assigning screen coordinates. A natural stride
-keeps separate lateral walking tracks; do not force an X-shaped hip-to-opposite-shoe diagram
-merely to make a foreground contour continuous.
+## Guide an uncrossed contact
 
-## Prove the SVG contact first
+Colored hip–knee–shoe chains placed in the target figure can guide generated leg ownership.
+Establish the projected hips from the accepted torso first. Keep separate lateral walking
+tracks: foreground overlap does not require an X between opposite hips and shoes. The near
+leg can trail while the far leg advances. Inspect the generated anatomy afresh; obeying a
+mistaken guide produces a mistaken pose. Remove guide colors with a saved material transform,
+then review native-size and enlarged results before adopting the frame.
 
-Draw the continuous pose, including pelvis, hem, thigh joins, knees and shoes.
-Keep approved head, hand/handle landmarks, canvas and ground anchor. Save a labeled
-source overlay tracing hip–knee–shoe chains in distinct colors, alongside the clean source.
-At a crossing, the foreground chain stays continuous and the farther contour stops
-behind it. A “near” label cannot excuse the opposite overlap in the drawing.
+## Match materials independently
 
-Render with Godot at native size and 3×. Compare A/B on the same canvas and ground line,
-including C for head/torso stability. Review the whole eight-direction matrix and a
-source contact assembly with the unchanged stroller and current draw offsets. Confirm
-travel axis, foot depth and hand-to-handle contact before raster work. Preserve the
-artifacts and their reproducible assembly recipe.
+Once geometry is accepted, use deterministic color transforms instead of another generation.
+Sample corresponding materials from adjacent accepted A/C frames. Separate trousers, jacket,
+skin, shoes and baby/blanket; opposite brightness errors need opposite corrections. A whole
+figure darkening cannot fix dark trousers and a bright jacket together. Preserve alpha and
+unaffected pixels, record masks and parameters, and inspect the complete animation for flicker.
 
-## Keep the wrong lower body out of identity references
+## Reuse a stable body and move the new hem
 
-The corrected SVG owns pose; approved illustrated art owns identity and rendering.
-Never feed a rejected lower-body pose back as an identity reference. Crop the approved
-raster above the pelvis and use it only for face, hair, clothes and head/hand landmarks.
-State each input's role in the saved prompt. A correct same-family contact can demonstrate
-occlusion, but its camera direction cannot replace the target view. Internally rejected
-raster drafts stay outside the repository unless human review requires preservation.
+When the adjacent accepted frame has the correct body pose and registration, its native upper
+body can restore consistent texture, hands, face and carried-baby proportions. Copy the complete
+carrying upper at its original scale rather than resizing the baby separately. Keep the approved
+new legs and the new frame's hem contour. Select only the actual garment edge, move that contour
+to the neighboring frames' hem height, and fill behind it with the matching jacket texture.
+Exclude trouser pixels and preserve alpha outside the authorized body/hem region.
 
-Specify the chain positively: which hip connects to which knee and shoe, which contour
-stays unbroken at the overlap, and which disappears behind it. “Other leg forward” alone
-is insufficient. Request a continuous whole-figure redraw; never splice a fixed upper
-raster onto moving hips or fix ownership by swapping isolated shoes.
+This is a constrained composite, not permission to paste an arbitrary rectangular upper over
+moving hips. It works only when the body pose, garment transition and leg articulation remain
+continuous. Check for a hard horizontal seam, doubled outline, abrupt leg-width change and lost
+hand contact. Use generation for unresolved anatomy; retain accepted pixels for a local material
+or edge correction. The reproducible accepted example is
+`docs/evidence/male-player-2026-09-19/b-contact/whole-figure-color-2026-09-19/assemble.py`.
 
-## Register and judge the actual pixels
+## Freeze and review the complete family
 
-Preserve accepted raw output and exact prompt. Use the family's deterministic extraction
-and whole-figure registration, retaining true alpha and unchanged canvas/ground anchors.
-Measure head top/chin, hands, hem and total stature against A/C after registration.
-Equal total height does not prove equal proportions: longer legs can shrink the head
-and raise the hands. Do not install a raster that fixes ownership at that cost or
-compensate with runtime scale, offsets, camera or animation changes.
+Freeze each accepted direction and state with hashes before the next edit. Verify untouched
+frames byte-for-byte, native canvas and anchors, protected lower-body alpha, and restored upper
+pixels outside the moved edge. Rebuild from frozen inputs to check reproducibility. Review both
+pushing and carrying as clean eight-direction A/C/B/C PNG sheets and GIFs: an unchanged carrying
+preview cannot demonstrate a carrying correction. Use nearest-neighbor enlargement and recorded
+phase timing; include both native and enlarged views. Keep diagnostic overlays separate.
 
-Inspect registered native and 3× A/B/C matrices covering every runtime direction, enlarged
-hip-to-shoe overlays and a stroller-contact assembly. Trace the raster chains afresh;
-the source overlay does not prove the derivative. Check identity, proportions, contact and
-transparent gaps separately. Prove creation SVG = runtime SVG, shipped PNG = registered
-derivative, and protected directions/frames retain their hashes. Static sheets establish
-poses and registration; motion requires a bounded burst.
-
-## Stop a failed approach explicitly
-
-Use one targeted retry for a specific failed anatomical or proportion check. If it still
-fails, stop that generation approach. Preserve unambiguous source work, report the exact
-pixel chain or landmark that fails, and leave the raster correction open. Do not install
-ambiguous art, repeat the same request without changing the reference strategy, or describe
-source-only progress as a reviewable PNG correction.
+Install only the accepted family. Keep original generation records immutable and use explicit
+manifest overrides for accepted derivatives; verify runtime bytes against those derivatives,
+preserve import identities, and check the actual texture loader and atlas bindings. Static
+sheets establish poses; a runtime burst establishes the moving assembly.

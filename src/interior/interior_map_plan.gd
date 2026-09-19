@@ -19,10 +19,11 @@ class Door:
 	var tile := Vector2i.ZERO ## Where this door's threshold stands.
 	var target_door := ""     ## The id of the door this one teleports to.
 
-## Tile position -> `InteriorTile.Kind`, for every walkable and non-walkable-but-standable
-## interior cell any part actually has (door thresholds included). A position absent from this
-## dictionary has no floor at all and is therefore not walkable — see `is_walkable()`. The gaps
-## between parts are exactly the positions absent here.
+## Tile position -> `InteriorTile.Kind`, for every painted interior cell any part actually has
+## (door thresholds included). Most are walkable ground; the stair grammar also paints `c`, `C`
+## and `b` as non-walkable stair sides. A position absent from this dictionary has no floor at all
+## and is therefore not walkable — see `is_walkable()`. The gaps between parts are exactly the
+## positions absent here.
 var tiles: Dictionary = {}
 ## A wall-anchor position -> `InteriorTile.Kind`, elevation drawn at that cell's own north edge.
 ## Not part of `tiles`: nothing ever stands *on* a wall cell, so a wall needs a position to be
@@ -45,12 +46,11 @@ var entrance_tiles: Array[Vector2i] = []
 ## Ground decals — `PUDDLE`, `DEBRIS` or `RAT` — that change nothing about what is walkable
 ## beneath them. `tile -> InteriorTile.Kind`.
 var decals: Dictionary = {}
-## Cells that are not floor (absent from `tiles`, so `is_walkable()` still says no and no flood
-## fill ever steps onto one) but must not get a collision blocker either — the two cells flanking
-## each diagonal step between two walkable tiles, which touch each other only at a single corner
-## point. A circular body of any real radius cannot cross a corner pinched between two full-tile
-## blockers on both flanks, so `InteriorMap._mark_diagonal_clearances()` frees them after every
-## part is laid, and `InteriorScene._rebuild_collision()` skips them the same way it skips `tiles`.
+## Cells that are not floor (absent from `tiles`) but must not get a collision blocker either.
+## Only a diagonal step with no walkable orthogonal neighbor needs the two flanks cleared: the
+## basement's one-cell entry can otherwise pinch a circular body between two blockers. The main
+## stair grammar has two walkable rows, so its `.` background remains blocked and its `c`, `C`
+## and `b` cells remain explicit blockers.
 var collision_clearance: Dictionary = {}
 ## A named position that is not a door — a stairwell's own landing platform, a hallway's mid-point,
 ## the lobby's own floor — used both as `--start-escape <part>`'s teleport target and, in

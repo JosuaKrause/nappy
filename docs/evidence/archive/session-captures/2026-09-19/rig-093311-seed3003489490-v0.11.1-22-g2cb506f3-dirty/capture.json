@@ -1,0 +1,20 @@
+{
+  "purpose": "Normal-scale reviewed stair-side assembly in the live escape stairwell",
+  "command": "./tools/shot.sh /private/tmp/m158-stairwell-left-centered.png 1.5 --start-escape stairwell:left --walk 1@45@1e",
+  "initial_attempt": {
+    "command": "./tools/shot.sh /private/tmp/m158-stairwell-left.png 3 --start-escape stairwell:left",
+    "outcome": "Inspected and not retained: it showed the left stairwell but clipped the representative flight's lower end."
+  },
+  "resolution": [1280, 720],
+  "seed": 3003489490,
+  "day": 1,
+  "presentation": "default illustrated PNG presentation with the reviewed stair-side SVGs bound directly",
+  "capture_after_seconds": 1.5,
+  "build": "v0.11.1-22-g2cb506f3-dirty",
+  "build_note": "Uncommitted escape-stairwell side binding and focused test on the named base.",
+  "original_output": "/private/tmp/m158-stairwell-left-centered.png",
+  "retained_output": "m158-stairwell-left-centered.png",
+  "telemetry": "The final capture's complete run log is retained beside this file.",
+  "coverage": "The player starts at stairwell:left, walks southeast for one second, then east, centering a complete east-descending full flight with its unchanged deck, rail and landing around the bound upper/lower/continuation side modules.",
+  "limitations": "Single still: it establishes visual assembly only, not collision, route behavior or movement. No --invincible flag was used."
+}

@@ -293,6 +293,86 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
+## M170 — The route's tint is on both sides of the street · asked for 2026-09-19
+
+> "let's do the mark for the correct path on the full segment (both sides) again -- that way those
+> obvious problems now (with obstacles on the path side but no obstacle on the other side) are not
+> obvious anymore -- I can still confirm whether you actually fixed those issues via the path
+> debug view."
+
+[PLAYTEST-97](playtests/PLAYTEST-97.md). *Asked for one side on 2026-09-15
+([PLAYTEST-76](playtests/PLAYTEST-76.md)) · overturned by the player on 2026-09-19.*
+
+- [ ] **`City._tint_the_route_kerbs()` tints both kerb lines of every street the day's route tree
+      uses**, where today it tints a kerb tile only when the tree carries that sidewalk's own
+      cell (`_tree.branches_on(tile)`). **A segment is tinted whole, from intersection to
+      intersection, or not at all** *("no signle street tiles")*: a tree that uses part of a
+      segment tints all of it. The route lines of debug layer `5` and every placement
+      rule keep reading the tree's own sidewalk. The routes suite's tint check, `docs/CITY.md`
+      and the two tint entries in `REVIEW.md` say one-sided and move with it.
+
+---
+
+## M168 — The escape after playtest 94 · asked for 2026-09-19
+
+> "the escape is okay but there should be a fire on the left like it is right now but the top
+> floor right side should be completely blocked off with rubble. then the pursuing guy should
+> respawn forcing to switch the side again. the steam frequencies are too slow and there are only
+> two steams and they are not blocking in any way they should go in the narrow hallways. I still
+> spawn with flashing !!! in the city. restarting should still have the day brief for both the
+> apartment escape and the city escape even if the nerves don't go down. also I just saw a barrier
+> turn into a mask men (the barrier disappeared and the masked man appeared) and the pursuit ended
+> way too early (I got caught when I was still very visibly away from him)"
+
+[PLAYTEST-94](playtests/PLAYTEST-94.md) has each finding with what stands there today. Reached
+through `tools/run.sh --start-escape --seed 4242`.
+
+- [ ] **The top floor's right side is blocked off with rubble, and the fire stays on the left.**
+      From her own door the right stairwell cannot be entered on the top floor at all. Rubble is
+      a body and a drawing (an SVG first), placed by construction rather than checked.
+- [ ] **The masked man comes again.** After his first run he respawns so that the side she
+      switched to stops being safe and she has to switch back: *"forcing to switch the side
+      again"*. When and where he comes again is the design to settle against the fire and the
+      rubble, since the three together must leave a way down.
+- [ ] **The steam blows more often, and stands where one cloud is the whole width.** The periods
+      are 6.5, 8 and 9.5 seconds with a 2 second blow (`Tuning.FINALE_STEAM_PERIODS`,
+      `FINALE_STEAM_BLOWS_FOR`), which the player reads as too slow; a blow is a 32px cloud and
+      the vents stand where the corridor is 64px wide, so she walks past one. The vents go *"in
+      the narrow hallways"*, and all three are met on the way, where the player met two.
+      [PLAYTEST-85](playtests/PLAYTEST-85.md)'s design stands: fixed places, *"fully block the
+      path"*, differing intervals.
+- [ ] **She comes out of the service exit with no danger mark up.** The ground she arrives on is
+      free of every lethal reach by construction, the same rule PLAYTEST-85 set for bodies:
+      *"the spawning shouldn't be a check"*. Trace which row raises the flashing mark on seed
+      4242 first.
+- [ ] **A section restart shows the brief screen**, for the building and for the city alike, with
+      the nerves unchanged. The restart still costs nothing.
+- [ ] **A guard stands at the roadblock from the beginning, and catches her at a man's reach.**
+      *(2026-09-19: "the guard needs to be at the barrier from the beginning, standing. only then
+      does it make sense for it to start pursuing. 86px is huge".)* The finale's masked men on
+      foot are `roadblock` at full resistance progress; today the barrier picture is swapped for
+      a guard the moment one notices her, and the row's lethal `inner_radius` is 86px because
+      `EventDef.validate()` refuses a lethal radius inside the row's own body (60px barrier plus
+      her 14px). So: a standing guard is drawn at every roadblock from placement, hunting or not;
+      when a hunting one notices her, that guard telegraphs and sets off while the barrier stays
+      drawn and solid where it is; the catch is measured from the guard at a man's reach (the
+      building's masked man takes the baby at 28px), and the barrier itself catches nobody. The
+      same row hunts from day 7 on ordinary days, so this changes there too. Whether the street
+      behind a roadblock whose guard has left stays shut is the consequence to state in the
+      record: the barrier staying means it does.
+- [ ] **The hallway windows flash more often.** *(2026-09-19: "the flashing lights in the window
+      are too rare", [PLAYTEST-96](playtests/PLAYTEST-96.md).)* A window lights only with an
+      explosion, every 22 seconds (`Tuning.FINALE_EXPLOSION_INTERVAL`), and an explosion costs
+      excitement. Built as light without noise, open to overturn: distant flashes light the
+      windows between the loud ones, the time between two flashes random between 0.1 and 5 seconds with a mean of 1.3
+      seconds on a smooth curve *("a biased random distribution … the rest of the curve is smooth")*,
+      and cost nothing; the loud explosions stay at 22 seconds and still flash. **Every window
+      flashes together, always** *("a single window cannot flash by itself")*. The alternative
+      the player may prefer is simply more explosions, which is one constant and makes the
+      building louder.
+- [ ] **The escape's run log stamps every line `0.0`.** The log of the played run cannot say when
+      anything happened (`docs/evidence/playtest-94-2026-09-19/`).
+
 ---
 
 ## M167 — The father's legs read as legs · asked for 2026-09-19
@@ -392,73 +472,6 @@ alike.
 
 ---
 
-## M162 — A game can be resumed · asked for 2026-09-19
-
-> "we need to be able to resume a previous game. saving should be implicit (on focus loss or
-> game quit) and it should bring you back to that exact state but paused. in the browser it
-> should be handled via local storage so refreshing or opening again the page doesn't lose
-> progress" — "there is no need for manual save state management since you can just hold
-> restart to clear the game"
-
-[PLAYTEST-80](playtests/PLAYTEST-80.md) and [PLAYTEST-82](playtests/PLAYTEST-82.md). It shares
-its trigger with the focus-loss pause (`DECISIONS.md`, M161), so it is built on top of it. The
-**godot**, **cli-tools**, **cues**, **svg-art** and **verify** rules govern.
-
-**A save holds the run and the day, never the moment inside a day.** *Asked for "that exact
-state", the crowd included ("if I walk in front of a car I shouldn't be able to quit and resume
-without the car being there") · overturned by the player on 2026-09-19 to a restart at dawn that
-costs a nerve: "If that is too hard then we do start at dawn. But that has a potential to be
-exploited" — "Unless we give a penalty of ending the current day losing a nerve" — "No penalty
-when exiting at a next day/win/lose screen".* The requirement under both is that **quitting is
-never an escape**; the exact snapshot and why it was not taken are in playtest 82.
-
-- [ ] **The save is the run.** `GameState` — the seed, the day, nerves, resistance progress,
-      scars, consumed one-shot events, where she settled each day, the run's clock — and one
-      more fact: whether a day was under way when it was written. The city and each day's plan
-      are functions of the seed and the day and are not saved. One save, no slots, no button.
-      It names the build that wrote it, and a save a newer build cannot read is dropped for a
-      fresh title screen rather than half-loaded.
-- [ ] **It is written at dawn, at each day's end, on focus loss and on quit.** The player named
-      the last two; dawn and the day's end are added because a killed process never writes its
-      quit save, and a penalty a force-quit avoids is no penalty — the dawn save already says
-      *a day is under way*. Recorded in playtest 82 as open to overturn.
-- [ ] **Opening a game whose save says a day was under way loses that day.** It costs what any
-      lost day costs — one nerve, the resistance given back, the same day again — through the
-      same code path a lost day takes, the last nerve ending the run as it does there. She
-      comes up at that day's dawn behind the pause screen, with a line that says the day was
-      lost to leaving it; the wording is the agent's to draft and the player's to change.
-      Losing focus and continuing in the same session costs nothing: the penalty is applied on
-      *load*, never on pause. A save written at a day summary comes back to the next day's
-      dawn, paused, with no cost; a finished run (either ending) leaves no save.
-- [ ] **The held restart clears the save** — the disc already on the pause screen and the day
-      summary — and starts over. Nothing new is drawn for clearing.
-- [ ] **A small save symbol shows for a few seconds after each write.** *(2026-09-19: "show a
-      small save symbol for a few seconds after saving" — "That way it's clear when a state
-      was saved".)* `assets/ui/save.svg`, SVG first, in a corner clear of the pause button and
-      the meters, on whatever screen is up, fading out; how many seconds is a constant the
-      agent picks and says. It is not a danger cue, names no key, and is not drawn on a run
-      that does not save.
-- [ ] **The browser keeps it across a refresh and a reopened page.** `user://` on a web build
-      is the browser's IndexedDB, which persists; confirm on the deployed page that a refresh
-      and a closed tab both come back, and that a new release (files under a directory named
-      for the tag) still finds the save of the one before. A tab being closed may give no quit
-      notification at all, which is the other reason the dawn save exists.
-- [ ] **An agent never lands in a saved game.** *(2026-09-19: "make sure that agents don't
-      accidentally work on saved states so they don't get confused".)* Every checkout and
-      worktree shares one `user://`, so the player's save is in reach of any game an agent
-      starts. A run carrying any dev flag (`--screenshot`, `--seed`, `--day`, `--walk` and the
-      rest), a headless run, the test runner and `tools/check.sh`'s boot neither read nor
-      write the save and start what they were told to start. `--no-save` says the same for a
-      `tools/run.sh` with no other flag, listed and rejected like any flag, and the **verify**
-      and **orchestrating** skills say an agent's run always carries a dev flag or
-      `--no-save`. A test that exercises saving writes to a path of its own, never the
-      player's.
-- [ ] **What a run should look at** goes to `REVIEW.md`: whether a nerve lost to an accidental
-      close or a browser crash reads as fair, and whether the symbol is noticed without
-      distracting.
-
----
-
 ## M129 — A path through the city never has to cost · one route in nine still breaks
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable
@@ -478,6 +491,15 @@ over a crossing from one street out. The three placement rules refuse a candidat
 covered is one that either reached the day past the rules or is read as covered differently by
 the probe and the rule:
 
+- [ ] **A hard wall still stands on the route's own sidewalk in play.** *(2026-09-19: "I still
+      get hard walls on the side of the sidewalk that is on the path -- how can this be so hard to
+      do correctly?", [PLAYTEST-94](playtests/PLAYTEST-94.md).)* The player did not name the body,
+      the seed or the day. The route-sidewalk rule names four rows — the café tables, the market
+      stall, the roadworks and the ice cream van — and runs in the scheduler's candidate loop
+      only. Measure it rather than guess: over the probe's seeds, every solid body on a walked
+      sidewalk that leaves her no lane on that sidewalk (she needs 46px), by row and by the path
+      that placed it. The answer is a rule about *any* body that closes the walked sidewalk,
+      whichever row and whichever path, asserted in the suite at zero.
 - [ ] **Which placements the three rules never see.** `_place_one`'s candidate loop is where
       the rules run. Find every other path a row reaches the day by — the calm-ground pass
       that covers a park by area, `_ensure_one_usable_park`, the seals a `SealPlanner` places

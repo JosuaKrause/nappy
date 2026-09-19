@@ -1,5 +1,212 @@
 # Decisions
 
+## M169 — The save symbol reads as a floppy disk · built 2026-09-19
+
+> "the save icon is basically a white square" ([PLAYTEST-94](playtests/PLAYTEST-94.md), on a phone)
+
+> "make it bluish and the metal parts should be silver/gray" · "no tint for the save symbol"
+> ([PLAYTEST-95](playtests/PLAYTEST-95.md))
+
+`assets/ui/save.svg` was three white shapes told apart by opacity alone — the body at 0.85, the
+shutter at 1.0, the label at 0.35 — and `SaveIndicator` tinted and faded the whole texture with one
+modulate, `Palette.CHALK_DONE`, so the differences shrank with the fade and were gone at the 48px it
+is shown at.
+
+**Built:** the symbol carries its own colors and is never tinted. The chamfered case is a muted
+blue (`#5f7a99`), the shutter a silver gray (`#a8adb3`) with a darker slot (`#4a4e54`), the label a
+pale paper (`#ede8de`), on the geometry the three shapes always had. `SaveIndicator` fades it with
+a white modulate and nothing else; the peak alpha stays 0.9, the value the tint carried, so the
+hold and the fade are timed as they were. `pause.svg`, `restart.svg` and `continue.svg` stay white
+and tinted: this is the one symbol of the set with colors of its own, by the player's instruction.
+
+**Tried first and replaced the same day:** one white path with the shutter and the label cut out
+as holes (`fill-rule="evenodd"`), still tinted green. It read as a floppy disk on a dark ground
+and weakly on a light one, since a hole shows whatever is behind it; the player saw it and asked
+for color. **Rejected before that:** the body as an outline with the shutter and label filled
+inside it, which leaves all three the same white.
+
+**Chosen where the player said nothing, and then accepted on the render** *("the latest version
+(blue with gray) looks good")*: the label's paper color rather than a hole, the slot in the
+shutter, and the exact blue and gray.
+
+Checked on a headless render through Godot's own SVG loader, each state under the modulate it
+really had, at 48px and 16px on a dark and a light ground:
+`evidence/m169-save-symbol-2026-09-19/save-symbol-color-comparison-3x.png`. Whether it is noticed
+without distracting on a phone is `REVIEW.md`'s.
+
+## M165 — The escape after the corrected stairs · built 2026-09-19
+
+*([PLAYTEST-84](playtests/PLAYTEST-84.md): "the basement stairs are bad. the steam walks for some
+reason. the masked man is floating in the stairwell … the spawn in the city from the basement can
+end up inside an obstacle. pathing is not done from the spawn but from the original door which is
+incorrect" · [PLAYTEST-85](playtests/PLAYTEST-85.md): "the spawning shouldn't be a check. the
+pathing should start from the position. then obstacles can never happen. basement stairs are just
+not stairs. at the very least use the one tile upward facing stairs we had earlier. how would steam
+move? it doesn't make sense. have multiple fixed locations with steam that fully block the path and
+have them turn off an on in different intervals so it becomes a timing puzzle.")* The first two
+items were found reviewing M158, the staircase follows the corrected tile grammar, and kept out of
+it on the player's word. Built by an agent on `feature/m165-escape`.
+
+**What was built.**
+
+- **The masked man runs the stairs.** His path was two points, lobby landing to top landing, on
+  the reasoning that every landing sits on one column; the corrected grammar alternates them
+  between columns 1 and 8, so the line crossed solid cells. `InteriorScene.stairwell_walk()` is
+  the shaft's one branchless walk and his path is built from it. The test asks tile steps rather
+  than sampled segments, since a diagonal step passes through the corner where four cells meet.
+  **Measured: the nearest door is 32px off his line against the 28px `inner_radius` that takes
+  the baby**, which is the whole of the brief's "going into a corridor and letting them pass".
+- **The basement's entry is `stair_down.svg`**, restored from `60071de3` as one level walkable
+  cell between the entry door and the corridor, so no diagonal is left for the clearance pass.
+- **The steam is three fixed vents.** `basement_steam` is a solid 16px body on the seam of the
+  two-tile corridor, which shuts it outright: her centre is held 30px out and the walls leave
+  18px. The reasoning recorded under M102 that a standing vent left a four-pixel lane was wrong
+  about where the body stands. `Tuning.FINALE_STEAM_PERIODS` is 6.5, 8 and 9.5 seconds and
+  `FINALE_STEAM_BLOWS_FOR` is 2. Measured: vents 128px apart at the closest, and the worst
+  pocket shut at both ends for 1.83s, which costs 32 of the meter's 100. One new `EventDef`
+  field, `solid_once_it_starts`: the body goes down when the notice ends and is withheld while
+  she stands inside it. Skipping the beat and moving her clear were both rejected, the second
+  because it is a repair.
+- **The finale plans from where she stands.** What started elsewhere was
+  `SealPlanner.plan_finale()`, which spared the *front door's* street, and
+  `EventScheduler.build_finale()`, which was offered her own tile. Both now take her position;
+  placements refuse ground within a body's reach of it plus the half tile a stationary body is
+  moved when it is built. The ten-seed test reproduced the defect first: an `abduction` van 32px
+  from the spawn on seeds 31337, 808 and 6. The chains themselves already started at her cell.
+- **The fire's words** and `InteriorScene.inner_floor_approaches()` say where it stands; the
+  thirteen unbound deck, rail and landing sources are in the rejected-graphics archive and the
+  `StairStructure` node is gone.
+- **Found by the captures:** `--start-escape basement` showed the lobby and `lobby` the basement,
+  because each part's waypoint was the two sides of one door and a transition fires on any frame
+  she stands on one. Both waypoints moved off their thresholds.
+
+**Chosen where the design was silent, open to overturn.** The stair picture is mirrored
+vertically from the file as committed, so the treads narrow away from her as she walks in. It is
+one cell rather than a stacked run, because the picture is a whole flight and a second copy reads
+as a second stair; a longer flight is new art. A vent that finishes its notice with her inside it
+is on and charging her but not solid until she steps clear, since "never turns on with her inside
+its body" and "fully block the path" cannot both hold there. The periods and the two-second blow
+are first numbers. **The masked man's margin is 4px**: raising `masked_pursuer.inner_radius` past
+32 removes the answer to him, and the ways out are a wider level approach in the grammar or a
+smaller radius.
+
+---
+
+## M166 — The save is written when a day starts, and a saved game opens on the day brief · built 2026-09-19
+
+*(2026-09-19, [PLAYTEST-85](playtests/PLAYTEST-85.md): "write the save when starting a day; not
+when the focus is lost etc. also if there is a saved game the title screen should go to the day
+brief screen instead of starting outright" — and, asked whether a day's end also writes: "save as
+"played" when the day starts. save as "nothing played yet" for the day brief and end of day
+message. nothing else will change the state and doesn't need to be saved".)* *Asked for "saving
+should be implicit (on focus loss or game quit)" in [PLAYTEST-80](playtests/PLAYTEST-80.md) ·
+overturned by the player on 2026-09-19 to the two writes below.* Built by an agent on
+`feature/m166-save-at-day-start`; it replaces the four write moments and the resumed pause screen
+of M162, a game can be resumed, recorded directly below.
+
+**What was built.**
+
+- **Two writes.** `main._engage_the_day()` writes `day_under_way: true` when the title is
+  dismissed on a fresh run or the day brief is continued from, and `main._on_summary_continued()`
+  writes `true` after starting the next day from an end-of-day message. `main._on_day_finished()`
+  writes `false` as the end-of-day message comes up. Focus loss, application pause, the window's
+  close request and the pause screen's quit write nothing; focus loss still pauses.
+- **The day brief's write is made at boot, before the title.** `main._write_dawn_for_a_resumed_run()`
+  writes `false` on a resumed boot only, right after `GameState.finish_day()` has charged whatever
+  the load owes, so the charged nerve is on disk before either gate is shown. A kill before the
+  day is engaged finds `false` and costs nothing more; a kill after finds `true` and costs the
+  day. No instant hands back a free retry or charges one abandoned day twice.
+- **A fresh run writes nothing until its title is dismissed.** The first build wrote at every
+  dawn, so merely opening the game made a day-1 save, the next launch showed a day brief for a day
+  nobody had touched, and the held restart re-created the save it had just cleared. Review caught
+  it; the boot write is gated on a resumed run.
+- **The title comes up on every boot.** With a save, its start opens `DaySummary.show_day_brief()`
+  — "Day N of 14", the nerve count, the resistance's pending brief, and the lost-day line when the
+  load charged a nerve — or the ending when the load spent the last one. `PauseScreen.open()`'s
+  note and its label, `main._day_engaged`, `_day_under_way_for_save()`, `_on_pause_resumed()` and
+  `_show_resume_outcome()` are gone.
+
+**Chosen where the design was silent, open to overturn.** The day brief is its own small
+presentation rather than `show_day()` with an invented result. The resumed boot's write happens
+before the title rather than as the brief appears, for the kill ordering above, so the save symbol
+shows behind the title on a resumed boot. `main._quit()` losing its write is verified by reading,
+since calling it ends the test process.
+
+**What only a person can check** is in `REVIEW.md`: no rig reaches the title-to-day-brief flow,
+because a dev-flagged run never reads or writes the save.
+
+---
+
+## M162 — A game can be resumed · built 2026-09-19
+
+*(2026-09-19, [PLAYTEST-80](playtests/PLAYTEST-80.md): "we need to be able to resume a previous
+game. saving should be implicit (on focus loss or game quit) and it should bring you back to
+that exact state but paused." [PLAYTEST-82](playtests/PLAYTEST-82.md): "If that is too hard
+then we do start at dawn. But that has a potential to be exploited" — "Unless we give a penalty
+of ending the current day losing a nerve" — "No penalty when exiting at a next day/win/lose
+screen".)* Built by an agent on `feature/m162-resume`.
+
+**The design, and what was overturned on the way.** *Asked for "that exact state", the crowd
+included · overturned by the player on 2026-09-19 to a restart at dawn that costs a nerve.* The
+requirement under both is that **quitting is never an escape**. Three shapes were put to the
+player: everything, including some two hundred walkers and the cars with their lanes, turns,
+queues and signal phases; everything but the crowd, re-seeded around her, which was the
+recommendation and was refused because a car she stepped in front of would be gone on resume;
+and the run and the day only. The player chose the last with a penalty, which closes the same
+exploit without the save format depending on the crowd's internals.
+
+**What was built.**
+
+- **The save is the run.** `GameSave` (a static namespace, like `DevFlags`) writes
+  `user://save.json`: every field `GameState` owns, `CityState`'s block-arc history (run
+  history, not recomputable from the seed), whether a day was under way, a format version and
+  the build string. `GameState._SAVE_FIELDS` is checked against the script's own property list
+  by `tests/test_save.gd`, so a field added later and not saved fails a test. **Only
+  `FORMAT_VERSION` is compared on load**: a release never invalidates a save by being newer, a
+  change of shape does, and an unreadable save is dropped for a fresh title screen.
+- **It is written at dawn, at each day's end, on focus loss, on quit, and the instant a day
+  is first stepped into.** The player named focus loss and quit; the rest exist because a
+  crash, a force-kill and a discarded mobile tab send no notification at all.
+- **Opening a save that says a day was under way loses the day** through
+  `GameState.finish_day()`, the path every lost day takes: one nerve, the resistance given
+  back, the same day again, the last nerve ending the run. She comes up at dawn behind the
+  pause screen with a note line. A save written at a day summary comes back to the next dawn
+  at no cost; either ending and the held restart clear the save.
+- **The save symbol** is `assets/ui/save.svg`, a floppy disk tinted `Palette.CHALK_DONE`, bottom
+  right of the design box, on its own always-processing layer.
+- **The browser**: after each write on a web build `FS.syncfs` is called so the IndexedDB
+  write starts at once rather than on the next main-loop turn.
+- **An agent never lands in a saved game**: `GameSave.uses_save()` is the one gate — false for
+  a headless run, for any debug run carrying a dev flag, and for `--no-save` — and every read
+  and write passes through it. Tests point the save at a scratch path.
+
+**What review caught.** The first build flipped "this day is being played" when the title or
+the resume's pause screen was dismissed, and wrote nothing at that moment, so the save on disk
+said *not under way* until a notification happened to arrive. A killed process or a discarded
+tab then resumed free — all of day 1, and every second escape. `main._engage_the_day()` is now
+the one place the flag turns true and it writes the save on that transition; closing an
+ordinary pause writes nothing. None of the milestone's first tests exercised the gap between a
+gate opening and the next notification; four now do.
+
+**Choices made where the design was silent, open to overturn.**
+
+- **A day behind an undismissed title or resume pause is not under way**, so closing the game
+  again before touching the retry costs no second nerve, and opening the game and closing it
+  at the title costs nothing.
+- **The penalty is applied on load, never on a pause that is continued**, and the save is
+  rewritten with the nerve already spent before the resumed day is playable, so no kill
+  between the two charges twice or not at all.
+- The note's wording: *"Left before the day ended. That cost a nerve — it starts over from
+  dawn."* The symbol holds a second and a half and fades for the same.
+- The load-time loss is recorded as `DayResult.LOST_HARD_FAIL`; nothing displays it, since no
+  day summary is shown on that path.
+- `?nosave=1` exists for consistency with the other flags though a web build shares its
+  storage with no checkout.
+
+**Not verified by anything but a person**, and filed in `REVIEW.md`: the deployed page keeping
+the save across a closed tab and a new release, the note and the symbol on a real screen
+(unreachable by any dev-flagged run, by design), and whether the penalty reads as fair.
+
 ## M161 — The game pauses when it loses focus, and a rig can say not to · built 2026-09-19
 
 *(2026-09-19, [PLAYTEST-80](playtests/PLAYTEST-80.md): "can we make the game pause on focus
@@ -19125,6 +19332,112 @@ The player's CLI cannot display images, so a review is delivered by pushing the 
 embedding them in the PR description or naming their exact location there. The complete candidate
 sheet and loops were pushed and embedded in PR #221 before the visual question was reissued.
 
+### M160, provisional contact acceptance — 2026-09-19
+
+[PLAYTEST-90](playtests/PLAYTEST-90.md) accepted the straight-contact sheet's leg positions:
+"the leg positions are correct now. we can use it for now (and merge) but in parallel do another
+fix attempt to just make the legs look like legs". The four accepted B PNGs were installed
+byte-for-byte from the retained straight-contact assembly, alongside the corrected runtime SVGs
+and their identical graphics-creation copies. Other directions, all A/C, carrying frames,
+stroller art, native canvases and import sidecars were preserved. Original registered evidence
+was not overwritten; manifest overrides name the four accepted replacements explicitly.
+
+The contact correction is provisionally usable, not approval of final leg appearance. The
+[PR review](https://github.com/JosuaKrause/nappy/pull/221#issuecomment-5744799678), retained in
+[PLAYTEST-91](playtests/PLAYTEST-91.md), assigns E/W's weak far-leg shading, thin dark shoes and
+inconsistent trouser drawing to the next PR. SE/SW's full profile stride under a three-quarter
+torso needs narrowing toward A and the accepted NE/NW contacts. Those remaining requirements
+are M167, the father's legs read as legs, independently open in TODO. The contact review item
+was removed from REVIEW rather than asking the player to approve it twice.
+
+The proposed shared correction procedure was not promoted into a mandatory rule. Its links
+were removed from the two shared skills, and the retained case notes distinguish the narrow
+player-authorized provisional splice from an accepted general method. Exact recipes and
+failed-attempt records remain available without teaching a still-imperfect result as a gate.
+
+The player subsequently held the PR merge for review, then explicitly authorized resolving
+main's conflicts and pushing, and finally restored PR merge permission once the comments were
+addressed. That permission is specific to PR #221; it does not authorize deleting branches or
+switching the player's checkout.
+
+---
+
+## M158, the staircase follows the corrected tile grammar — 2026-09-19
+
+[PLAYTEST-81](playtests/PLAYTEST-81.md) replaces the first live stair assembly with the player's
+literal 10-column cell grammar. `InteriorMap.STAIRWELL_ROWS` is the authority for drawing,
+walkability, collision and stair direction: `F` is level floor; `D` keeps the corresponding
+corridor transition; `t`/`m` and `T`/`M` are the two-row walkable slopes; `b`, `c`, `C` and `.`
+are solid. The right-side `b` in `.....TMCb.` is present. The same alternation extends only far
+enough to join the lobby.
+
+Seven 32×32 SVG roles draw the grammar directly. The upper and lower east/west pairs make the
+walkable flights, east/west continuation triangles close their diagonal sides, and the neutral
+block's 16px-deep gray top rectangle matches the adjacent continuation. The old broad decks,
+landing overlays and every rail remain absent. This preserves the reviewed lateral-flight source
+shapes while letting the map, rather than a decorative overlay, own the stair.
+
+The focused interior suite drives the real 14px player body across complete east- and
+west-descending flights in both normalized directions, checks the blocked side/background cells
+and checks every door pairing. The complete capture folder at
+`docs/evidence/archive/session-captures/2026-09-19/rig-110853-seed3349946719-v0.11.1-38-g2663c361-dirty/`
+retains the normal-scale left shaft and its run provenance.
+
+[PLAYTEST-83](playtests/PLAYTEST-83.md) gives the played verdict: *"the stairs look good."* That
+accepts the corrected live assembly without adding a railing or restoring any discarded deck.
+
+### M160, main reconciliation and identity audit — 2026-09-19
+
+The synchronization used original father tip `7a97598958532abf56f278d50b3fc8d6f90d545b`,
+prepared installation tip `e29c0eb90eeb44eeca0eabd326d61f74c91018cc`, incoming main
+`0afb8c679a5d4a1b67b032e543a6de0681d98bfd`, and common ancestor
+`b1e7263f78168771a2e58f4e8ab2972ad2f6eddd`. The pending merge's actual first parent is the
+prepared tip. Each conflict was shown as Theirs (main), Ours (father), and Base before resolution.
+
+DECISIONS retained both the independent staircase record and the father's attempt/acceptance
+history. HANDOFF retained main's removal of completed staircase and save work, replacing stale
+father/performance state with the current independently owned threads. TODO retained main's
+completed-save removal and M165 escape brief, plus the distinct M167 leg-drawing follow-up;
+the redundant separators were removed. No identifier mapping was needed: main's PLAYTEST-81,
+83, 84 and 85 remain separate from father records 79 and 87–91 and PR #216's PLAYTEST-86.
+M158, M159, M160, M162, M163, M164, M165, M166 and M167 retain their own subjects.
+
+The clean-file semantic review checked more than the conflict paths. Incoming saves preserve
+`player_is_male`, and `main.gd` restores it into the stroller, so resumed father runs use the
+same corrected pushing assets. Incoming stair changes use the carrying family, untouched here.
+The resolver, atlas, stroller and sprite callers are unchanged by incoming main; matching native
+canvases and existing paths bind the four PNGs without runtime scale or offset changes. Import
+sidecars remain unchanged. Main's save/stair docs and review questions, no-save guard and
+model-independent delegation guidance survive intact; performance measurements stay on PR #216.
+
+### M167, first drawing refinement rejected; woman's legs proposed — 2026-09-19
+
+The first one-call lower-body refinement in PR #234 added knee and trouser definition without
+changing the accepted contact endpoints. It preserved all protected frames and reproduced
+exactly, but [PLAYTEST-92](playtests/PLAYTEST-92.md) still rejected its drawing: "still bad legs --
+maybe use the legs of the woman in those cases?" — "they have the same pants". The first preview
+remains retained, not used as a style reference. The next attempt may borrow the woman's accepted
+pushing legs for E/W and SE/SW B while retaining the father's upper body and opposite-contact
+ownership. This expands the earlier father-only donor permission for this trial; it does not
+authorize runtime installation or change the other protected frames.
+
+### M160, reconcile the externally merged escape work — 2026-09-19
+
+Main advanced while the contact PR was being verified. The second synchronization used
+original father tip `c3116321fcb7ac20518d3c71c8d7b0e4385cc30c`, prepared feedback tip
+`3d8bf4ff1af4cd2b8521073ebaedc1090e68547a`, incoming main
+`aca1cf6658689179f29afabc7212a760902c4656`, and ancestor
+`0afb8c679a5d4a1b67b032e543a6de0681d98bfd`. It merged without textual conflicts.
+
+The whole-result review retained main's M165 escape completion and review questions, including
+fixed timer-driven steam, staircase paths, spawn-relative placement and archived unused stair art.
+The father change touches pushing pictures, not carrying pictures, placement, collision, event
+definitions or save selection; all incoming runtime/test files match main and all father assets
+match the prepared tip. Main's early-preview guidance also survives. Numbered records remain
+distinct, with the mother's-leg proposal added as PLAYTEST-92 rather than modifying an earlier
+primary source. M165 leaves TODO; M167 remains open. Boot, focused visuals/player-presentation/
+interior/finale suites, forced-SVG visuals, document lint and diff checks passed on this tree.
+
 ## M167, use the woman's corresponding final leg images — 2026-09-19
 
 [PLAYTEST-93](playtests/PLAYTEST-93.md) rejects the first woman-leg trial in PR #234:
@@ -19322,3 +19635,40 @@ Fresh assembly reproduces every output byte. Checks confirm the restored upper m
 outside the moved edge, alpha changes remain within the authorized upper/hem region, approved
 leg geometry is unchanged, and all other authored frames remain byte-identical. Native sizes,
 nearest-neighbor enlargement and 190ms phase timing pass, as do lint and whitespace checks.
+
+## M167, final acceptance and merge reconciliation — 2026-09-19
+
+[PLAYTEST-104](playtests/PLAYTEST-104.md) accepts the final family: "234 is perfect now --
+let's ship it. do the $merging-main skill". The accepted native family is retained under
+`b-contact/whole-figure-color-2026-09-19/generated/`, with pushing and carrying PNGs and GIFs.
+The player also requests an attempt-history audit and a reusable toolbox of successful techniques.
+The illustrated-PNG toolbox now documents donor inspection, large-source normalization,
+uncrossed colored guides, material-specific color matching, constrained native body/hem reuse,
+and protected-frame/reproduction checks. These are conditional strategies, not the previously
+withheld mandatory procedure or a claim that every generated candidate is acceptable.
+
+The merge used original PR tip `4503d1c0745b22f65701930cdf9e814b300fcb3d`, incoming main
+`70486699eefd842455ca43212ea5d957af9df5fc`, base
+`f42aa0e91ec63d5adaaa3a3d0ec81bdf30f76c89`, and prepared first parent
+`6cffdc84d67b8d67974f65fe209abe6680d11f7a`. Main's independent save-symbol, window-flash and
+route-tint playtests keep 95, 96 and 97. The branch's crop correction, wrong-contact donor and
+color/carrying records move respectively from 95/96/97 to 101/102/103. Their words, date and
+order were compared against the original tip; only labels and attributed references changed.
+M167 is a shared continuation, while M168, escape feedback, and M170, whole-street route tint,
+retain independent queue ownership. Nested finding numbers have no independent collision.
+
+All five conflicted paths were presented as Theirs/Ours/Base before resolution. DECISIONS keeps
+both histories; TODO keeps the complete escape brief and latest father requirements; HANDOFF
+separates current threads; generation guidance distinguishes provisional and final evidence.
+The skill conflict does not restore the unaccepted generic procedure: the newly accepted
+techniques are documented under the player's explicit toolbox request.
+
+The whole-result review preserves main's saves, staircase/escape changes, save indicator,
+event contracts, tests and documentation. Every runtime/source/test file equals incoming main
+at this synchronization point; installation follows separately. Saves retain father selection,
+so the same family is used on resume. The atlas/resolver and player callers are unchanged;
+the incoming manifest's explicit derivative overrides preserve frozen original registrations.
+The identical CI concurrency blocks merge once. The boot check and focused visuals,
+presentation, orientation, interior, finale and save suites pass; the save suite's deliberate
+invalid-JSON case prints its expected parse error. Sandbox-denied scratch writes were rerun
+with the required access. Document lint and whitespace checks pass.

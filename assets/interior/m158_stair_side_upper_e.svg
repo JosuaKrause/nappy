@@ -1,0 +1,8 @@
+<!-- Upper tile for the live stair-side assembly. Four 8px columns descend east: 32, 24, 16, 8px,
+     each anchored to the bottom edge. The rectangles alone have no outline along their bottom join. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges" stroke-linejoin="miter">
+  <path d="M0 0H8V8H16V16H24V24H32V32H0Z" fill="#767a7d"/>
+  <path d="M0 32V0H8V8H16V16H24V24H32V32" fill="none" stroke="#3b3034" stroke-width="1"/>
+  <path d="M8 8V32 M16 16V32 M24 24V32" fill="none" stroke="#3b3034" stroke-width="1"/>
+  <path d="M1 1H7 M9 9H15 M17 17H23 M25 25H31" fill="none" stroke="#a3988a" stroke-width="1"/>
+</svg>

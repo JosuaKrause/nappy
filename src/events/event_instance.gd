@@ -956,7 +956,9 @@ func _ready() -> void:
 	_atlas_name = family_name(def.look)
 	EventBus.event_telegraphed.emit(self)
 	_telegraph_announced = true
-	if def.obstructs_radius > 0.0:
+	# `solid_once_it_starts` is the one row shape that does not put its body down here — see that
+	# field's own doc, and `_become_solid_once_it_starts()` below, which is where it goes down.
+	if def.obstructs_radius > 0.0 and not def.solid_once_it_starts:
 		_build_obstruction()
 	if def.flock_size > 0:
 		_build_the_flock()
@@ -1020,9 +1022,32 @@ func _build_halo() -> void:
 	add_child(_halo)
 
 ## Whether this instance is solid right now. True from `_ready()` for anything with
-## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_process()`.
+## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_process()` — and
+## false through the notice of a `solid_once_it_starts` row, which is what that flag is for.
 func is_solid() -> bool:
 	return _obstruction != null
+
+## The body of a `solid_once_it_starts` row, put down the frame its notice ends — **unless she is
+## standing in it**, in which case the vent goes on emitting at full rate and stays passable until
+## she is out of the footprint.
+##
+## Her centre comes to rest `obstructs_radius + PLAYER_BODY_RADIUS` from the middle of a body, so
+## that distance is exactly "inside it": closing at any point nearer would put a wall around her
+## rather than in front of her, and the only ways out of one are teleporting her or deleting the
+## body again, which are a repair and an admission respectively. Deferring costs nothing and can
+## only leave ground reachable that would otherwise have been closed.
+##
+## `player_at` is `Vector2.INF` until something tells the instance where she is — every world that
+## has her does, once a frame — and an infinite distance is outside every footprint, so a rig with
+## no player in it gets the body immediately rather than never.
+func _become_solid_once_it_starts() -> void:
+	if not def.solid_once_it_starts or _obstruction != null:
+		return
+	if is_finished or is_leaving or is_waiting() or is_telegraphing():
+		return
+	if global_position.distance_to(player_at) <= def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS:
+		return
+	_build_obstruction()
 
 func _process(delta: float) -> void:
 	if is_finished:
@@ -1097,6 +1122,8 @@ func _process(delta: float) -> void:
 		# it is coming for her, and the body comes down the same frame.
 		_obstruction.queue_free()
 		_obstruction = null
+
+	_become_solid_once_it_starts()
 
 	if def.look == EventDef.Look.UNMARKED_VAN:
 		_update_the_take()

@@ -224,6 +224,13 @@ func _end_run(which: GameEnums.Ending) -> void:
 		resistance_progress, Tuning.RESISTANCE_GOAL,
 		"done" if sabotage_done else "not done", format_clock(play_seconds)])
 	EventBus.run_ended.emit(which)
+	# A finished run leaves no save: there is nothing left to resume, and a
+	# save that named an ended run would have to be specially refused on load rather than simply
+	# not existing. Cleared here, at the one place a run ever actually ends, rather than only where
+	# a player presses on past the ending screen (`main._restart_run()` also clears it, for the
+	# held restart that abandons a run before it ends on its own) — a save must not survive between
+	# the two, however the process happens to close in that window.
+	GameSave.clear()
 
 ## Records a permanent mark, ignoring duplicates from the same spot.
 func add_scar(id: String, position: Vector2) -> void:
@@ -374,3 +381,114 @@ func _new_seed() -> int:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	return rng.randi()
+
+# ------------------------------------------------------------------- save ---
+
+## Every field a save has to carry — `GameSave` reads this to write a file and calls
+## `restore_snapshot()` to read one back. Named exactly after the script variables above
+## (including the leading underscore on the dawn fields) rather than a prettied-up copy, so
+## `tests/test_save.gd` can compare this list directly against `get_property_list()` and fail
+## loudly the moment a field is added up there and forgotten down here.
+##
+## Plain JSON-safe values only — a `Vector2i` or an int-keyed `Dictionary` cannot survive
+## `JSON.stringify()`, so `scars`, `city_state` and `settled_in` are each turned into arrays of
+## small dictionaries here rather than carried through as the shapes the rest of the game reads.
+## `city_state` delegates to `CityState.snapshot()`, since `_stage`/`_changed_on` are that class's
+## own private fields and reaching into them from here would be the same mistake the **godot**
+## skill warns against for a dictionary built by hand — one place decides the shape.
+const _SAVE_FIELDS := [
+	"run_seed", "player_is_male", "day", "nerves", "resistance_progress", "ending",
+	"play_seconds", "consumed_one_shots", "completed_resistance_steps", "failed_resistance_steps",
+	"scars", "city_state", "sabotage_done", "resistance_carrying_package",
+	"pending_resistance_brief", "_dawn_completed_steps", "_dawn_failed_steps", "_dawn_progress",
+	"_dawn_sabotage_done", "_dawn_carrying_package", "_dawn_brief", "settled_in",
+]
+
+func save_snapshot() -> Dictionary:
+	var scars_data: Array = []
+	for scar in scars:
+		var position: Vector2 = scar["position"]
+		scars_data.append({
+			"id": scar["id"], "x": position.x, "y": position.y, "since_day": scar["since_day"],
+		})
+	var settled_data: Array = []
+	for settled_day: int in settled_in:
+		var block: Vector2i = settled_in[settled_day]
+		settled_data.append({"day": settled_day, "x": block.x, "y": block.y})
+	return {
+		"run_seed": run_seed,
+		"player_is_male": player_is_male,
+		"day": day,
+		"nerves": nerves,
+		"resistance_progress": resistance_progress,
+		"ending": ending,
+		"play_seconds": play_seconds,
+		"consumed_one_shots": consumed_one_shots.duplicate(),
+		"completed_resistance_steps": completed_resistance_steps.duplicate(),
+		"failed_resistance_steps": failed_resistance_steps.duplicate(),
+		"scars": scars_data,
+		"city_state": city_state.snapshot(),
+		"sabotage_done": sabotage_done,
+		"resistance_carrying_package": resistance_carrying_package,
+		"pending_resistance_brief": pending_resistance_brief,
+		"_dawn_completed_steps": _dawn_completed_steps.duplicate(),
+		"_dawn_failed_steps": _dawn_failed_steps.duplicate(),
+		"_dawn_progress": _dawn_progress,
+		"_dawn_sabotage_done": _dawn_sabotage_done,
+		"_dawn_carrying_package": _dawn_carrying_package,
+		"_dawn_brief": _dawn_brief,
+		"settled_in": settled_data,
+	}
+
+## Whether `data` (a save's own `"state"` object) carries every field `save_snapshot()` writes —
+## checked before `restore_snapshot()` ever runs, so a save missing a field from a shape this
+## build no longer writes is dropped for a fresh title screen rather than partly applied.
+func snapshot_is_complete(data: Dictionary) -> bool:
+	for field in _SAVE_FIELDS:
+		if not data.has(field):
+			return false
+	return true
+
+## The other half of `save_snapshot()`. JSON has no integer type, so every number `data` carries
+## is a `float` regardless of what was written — every field read back into a typed `int` or a
+## typed array below is cast explicitly rather than assigned, which is what keeps this from being
+## the silent-type-drop trap the **godot** skill warns about.
+func restore_snapshot(data: Dictionary) -> void:
+	run_seed = int(data["run_seed"])
+	player_is_male = bool(data["player_is_male"])
+	day = int(data["day"])
+	nerves = int(data["nerves"])
+	resistance_progress = int(data["resistance_progress"])
+	ending = int(data["ending"]) as GameEnums.Ending
+	play_seconds = float(data["play_seconds"])
+	consumed_one_shots.assign(data["consumed_one_shots"])
+	completed_resistance_steps = _to_int_array(data["completed_resistance_steps"])
+	failed_resistance_steps = _to_int_array(data["failed_resistance_steps"])
+	scars.clear()
+	for raw: Dictionary in data["scars"]:
+		scars.append({
+			"id": String(raw["id"]),
+			"position": Vector2(float(raw["x"]), float(raw["y"])),
+			"since_day": int(raw["since_day"]),
+		})
+	city_state.restore(data["city_state"])
+	sabotage_done = bool(data["sabotage_done"])
+	resistance_carrying_package = bool(data["resistance_carrying_package"])
+	pending_resistance_brief = String(data["pending_resistance_brief"])
+	_dawn_completed_steps = _to_int_array(data["_dawn_completed_steps"])
+	_dawn_failed_steps = _to_int_array(data["_dawn_failed_steps"])
+	_dawn_progress = int(data["_dawn_progress"])
+	_dawn_sabotage_done = bool(data["_dawn_sabotage_done"])
+	_dawn_carrying_package = bool(data["_dawn_carrying_package"])
+	_dawn_brief = String(data["_dawn_brief"])
+	settled_in.clear()
+	for raw: Dictionary in data["settled_in"]:
+		settled_in[int(raw["day"])] = Vector2i(int(raw["x"]), int(raw["y"]))
+
+## `Array[int]` from a JSON array of floats — see `restore_snapshot()`'s own doc for why every
+## number here is cast rather than assigned.
+func _to_int_array(raw: Array) -> Array[int]:
+	var result: Array[int] = []
+	for value in raw:
+		result.append(int(value))
+	return result

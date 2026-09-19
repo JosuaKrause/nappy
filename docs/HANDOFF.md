@@ -288,30 +288,23 @@ checks and worktrees can move independently of this file.
 
 - **PR #216 — M159, reduce crowd contribution cost and retain stutter measurements** is a draft with merge conflicts
   and no CI result for its current head. The crowd-rejection optimization is locally verified;
-  paired measurements show an 84.7–87.1% reduction in query medians, while whole-frame tails remain.
+  its retained paired measurements show cheaper queries, while whole-frame tails remain.
   Phone measurements and CPU attribution remain open. PLAYTEST-86 is its performance clarification.
   Fetch the live PR and inspect its evidence before continuing.
-- **PR #234 — M167, the father's legs read as legs** prepares an uninstalled pushing and
-  carrying refinement. [PLAYTEST-98](playtests/PLAYTEST-98.md) accepts the E/W result in
-  `color-match-2026-09-19/final/`: preserve those pixels exactly.
-  [PLAYTEST-100](playtests/PLAYTEST-100.md) accepts the legs and pose in
-  `uncrossed-southeast-2026-09-19/`. Preserve the new leg geometry, registration and alpha
-  below the extended jacket hem. The pants are too dark and the jacket too bright. Match
-  those materials separately to A/C. The specified construction uses the matching existing
-  C frame's body texture and the new B frame's hem edge, moved down to A/C height. Fill with
-  existing jacket texture; retain the new legs and lighten their trousers. Carrying copies
-  the full existing upper body and baby at its original scale, correcting the too-short baby.
-  `whole-figure-color-2026-09-19/` contains that construction, its comparison sheets and
-  reproducible recipe. Review the PNGs and GIFs for both states; approved E/W and all other
-  frames are unchanged.
-  The provisional contact baseline
-  on main remains in use. Push plausible attempts early and welcome repeated feedback;
-  the CLI cannot display local images. The next branch synchronization requires explicit permission.
+- **PR #234 — M167, the father's legs read as legs** has an approved final pushing and
+  carrying family. Install the exact `whole-figure-color-2026-09-19/` outputs, verify their
+  runtime bindings, and close the work before the authorized merge.
+
+- **[PLAYTEST-94](playtests/PLAYTEST-94.md) is filed and unbuilt.** It opened M168, the escape
+  after playtest 94, and added the walked-side
+  wall measurement under M129, a path through the city never has to cost. Both are in
+  `TODO.md` and each is one agent's brief.
 
 Number ownership remains distinct: PLAYTEST-84 and PLAYTEST-85 are the escape/save records
 on main, PLAYTEST-86 belongs to the performance work, and PLAYTEST-87 belongs to the father
-sheet instructions. PLAYTEST-88 through PLAYTEST-93 and PLAYTEST-101 through PLAYTEST-100 are
-separate father follow-ups. PLAYTEST-94 belongs to the independent escape/save feedback.
+sheet instructions. Father follow-ups retain separate identities in PLAYTEST-88 through
+PLAYTEST-93 and PLAYTEST-98 through PLAYTEST-103. PLAYTEST-94 through PLAYTEST-97 belong
+to main's independent escape, save-symbol, window and route-tint feedback.
 
 No merge, auto-merge, rebase, merge from main or branch deletion is authorized without explicit permission in the current
 session. New implementation or investigation uses fresh agents with self-contained briefs; do not

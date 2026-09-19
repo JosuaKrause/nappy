@@ -13,7 +13,7 @@ the short brown hair, blue overshirt, cream undershirt, canvas, pose and functio
 Their three-pose pushing/carrying geometry follows the current female creation family.
 The SVGs are authored and inspected before the corresponding raster generation.
 The [B-contact source review](b-contact/GENERATION.md) documents the four revised pushing
-sources and their native/3× sheets. Their raster transfer remains incomplete; the raw atlases,
+sources, native/3× sheets and provisionally accepted runtime derivatives. The raw atlases,
 registered PNGs and original generation-input hashes below remain unchanged.
 The [final-woman-leg crop evidence](b-contact/final-woman-legs-2026-09-19/README.md)
 preserves the rejected literal-copy preview. The
