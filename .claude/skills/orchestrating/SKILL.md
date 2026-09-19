@@ -25,17 +25,24 @@ limit message from an earlier agent or turn forward as a reason to implement loc
 *(2026-09-12: "when you see usage limit errors that means they are already resolved. if the usage
 limit was reached you wouldn't see anything.")*
 
-## Codex: use cheaper models for bounded implementation
+## Codex: match the subagent to the task's difficulty
 
 **Delegation is recommended in Codex too.** Hand specified implementation and routine
 investigation to a less costly model, keeping design, ambiguous decisions and final review in
 the orchestrating session. Cost savings are a reason to delegate even when the parent has no
-parallel task to do.
+parallel task to do, but model choice follows the difficulty of the delegated task:
+
+- Use `gpt-5.6-luna` for simple, routine or mechanical bounded work and waits.
+- Use `gpt-5.6-terra` for ordinary implementation whose requirements and boundaries are clear.
+- Use `gpt-5.6-sol` for involved work that needs stronger investigation, integration or judgment.
+- Use `gpt-6-astra` for complex or difficult tasks. Do not make a weaker subagent struggle through
+  work whose geometry, architecture, ambiguity or cross-system contracts warrant Astra.
 
 `.codex/config.toml` sets the default subagent model and reasoning effort. It selects
-`gpt-5.6-luna` at medium effort for bounded work. Choose a stronger available model explicitly
-when the task needs it; do not keep retrying an underpowered model. Keep the same scope and
-verification contracts regardless of model cost.
+`gpt-5.6-luna` at medium effort for routine bounded work. Select Terra, Sol or Astra explicitly
+when the task's difficulty warrants it, and choose reasoning effort separately from model tier.
+Do not keep retrying an underpowered model. Keep the same scope and verification contracts
+regardless of model cost.
 
 If the host does not apply repository subagent defaults, select the model and effort explicitly
 when spawning. With the collaboration tool, use a fresh context (`fork_turns="none"`) and a
