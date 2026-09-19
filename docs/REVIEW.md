@@ -14,13 +14,6 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-**M160, the father's opposite B contact, has an image-only review before gameplay.** Open the
-[straight-contact sheet and native/6× animation loops](evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/README.md).
-Do E/W and SE/SW now exchange the leading leg naturally, with the near thigh and knee following
-the rear shoe, a clean hip join and consistent proportions through A/C/B/C? N/S and NE/NW are
-the accepted pairs and remain unchanged. This candidate is not installed; approval of the complete
-sheet and loops is the gate for installation and updating the shared graphics procedure.
-
 Each line is a thing to try or look at and the question it settles. `tools/run.sh` plays the
 desktop build; `--seed <n> --day <n>` puts a run where an item says; `1` to `5` in a debug build
 toggle the field, shadow, bounding-box, readout and route-line layers (`docs/TELEMETRY.md`, "The
@@ -573,3 +566,13 @@ item below for as long as looking takes.
   became a wall: a walker or a car that reaches the boundary pavement turns or is clamped onto the
   map's last row, and the one body allowed out is a car on the spine by the tunnel or the bridge.
   Whether that reads as a city edge or as bodies bunching against glass is a played question.
+
+## Father leg-drawing preview
+
+**M167, the father's legs read as legs, has an uninstalled woman's-leg trial in
+[PR #234](https://github.com/JosuaKrause/nappy/pull/234).** Open the clean eight-direction
+sheet and native/6× A/C/B/C animation in its description. Do E/W and SE/SW now look like
+natural legs, with a convincing jacket-to-pants join and a consistent step rhythm?
+The woman's accepted side and diagonal B frames supply the legs and shoes; the father's
+upper body, N/S, NE/NW and all A/C frames are preserved. This is a visual review, not a
+request to install it. The first refinement is rejected in PLAYTEST-92.
