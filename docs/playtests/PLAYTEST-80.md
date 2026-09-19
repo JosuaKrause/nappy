@@ -1,4 +1,4 @@
-# Playtest 79 — 2026-09-19
+# Playtest 80 — 2026-09-19
 
 Said in conversation on 2026-09-19, the same day as [PLAYTEST-78](PLAYTEST-78.md), with no run
 attached. Two requests, both asked to wait for the next session: *"let's not immediately start
@@ -25,7 +25,7 @@ a screenshot run carries it without being told to.
 Two details the request left open, decided here and open to overturn: getting focus back does
 not resume the day — the pause screen stays up until the player continues, the way it does
 after `Esc` — and focus loss only pauses a day that is being played, so it does nothing on the
-title, on the day summary, on the ending or while the pause screen is already up. Filed as M160
+title, on the day summary, on the ending or while the pause screen is already up. Filed as M161
 in `TODO.md`.
 
 ## A game can be resumed
@@ -41,7 +41,7 @@ in `TODO.md`.
 What is asked for, as statements:
 
 - **Saving is implicit.** It happens when the game loses focus and when it quits; there is no
-  save button, no slot and no menu. Focus loss is the same moment M160 pauses on, so the two
+  save button, no slot and no menu. Focus loss is the same moment M161 pauses on, so the two
   share a trigger.
 - **Resuming brings back that exact state, paused.** Opening the game again lands on the
   moment it was left, behind the pause screen, and continuing goes on from there.
@@ -62,6 +62,6 @@ as opposed to being re-seeded around her the way it is when a day starts — is 
 put to the player before building, with what each answer costs. A Godot web build's `user://`
 is kept in the browser's IndexedDB rather than in `localStorage`; both survive a refresh, and
 which one is used is an implementation detail unless the player means something by the name.
-Filed as M161 in `TODO.md`.
+Filed as M162 in `TODO.md`.
 
 ---

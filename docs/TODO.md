@@ -348,12 +348,12 @@ alike.
 
 ---
 
-## M160 — The game pauses when it loses focus, and a rig can say not to · asked for 2026-09-19
+## M161 — The game pauses when it loses focus, and a rig can say not to · asked for 2026-09-19
 
 > "can we make the game pause on focus loss? and also an override to *not* stop the game or
 > pause for agents trying to take a screenshot"
 
-[PLAYTEST-79](playtests/PLAYTEST-79.md). The **godot**, **cli-tools** and **verify** rules
+[PLAYTEST-80](playtests/PLAYTEST-80.md). The **godot**, **cli-tools** and **verify** rules
 govern. Nothing reads a focus notification today, so a day runs on behind another window.
 
 - [ ] **Losing focus opens the pause screen.** On `NOTIFICATION_APPLICATION_FOCUS_OUT` (the
@@ -376,7 +376,7 @@ govern. Nothing reads a focus notification today, so a day runs on behind anothe
 
 ---
 
-## M161 — A game can be resumed · asked for 2026-09-19
+## M162 — A game can be resumed · asked for 2026-09-19
 
 > "we need to be able to resume a previous game. saving should be implicit (on focus loss or
 > game quit) and it should bring you back to that exact state but paused. in the browser it
@@ -384,9 +384,9 @@ govern. Nothing reads a focus notification today, so a day runs on behind anothe
 > progress" — "there is no need for manual save state management since you can just hold
 > restart to clear the game"
 
-[PLAYTEST-79](playtests/PLAYTEST-79.md), which lists what a run holds in memory today and what
-inside a day is not a function of the seed. It shares its trigger with M160, the game pauses
-when it loses focus, so M160 is built first or with it.
+[PLAYTEST-80](playtests/PLAYTEST-80.md), which lists what a run holds in memory today and what
+inside a day is not a function of the seed. It shares its trigger with M161, the game pauses
+when it loses focus, so M161 is built first or with it.
 
 - [ ] **Ask what *exact* has to cover before building.** The run (`GameState`) and the day's
       plan (seed and day) come back exactly for free. The moment inside a day is her, the two

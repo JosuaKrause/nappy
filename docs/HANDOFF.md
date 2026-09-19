@@ -299,10 +299,10 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
   in `TODO.md` are the briefs. M155 and M156 share `src/crowd/crowd_agent.gd` by function —
   the noise field and the step-aside are M155's, turning and placement are M156's — so the
   second to merge takes `main` first under the **merging-main** rules.
-- **Two requests from [PLAYTEST-79](playtests/PLAYTEST-79.md) are filed and deliberately
-  unstarted**, because the player asked for them to wait for a session of their own: M160, the
-  game pauses when it loses focus and a rig can say not to, and M161, a game can be resumed.
-  M160 is specified and ready for an agent. M161 opens with a question for the player — what
+- **Two requests from [PLAYTEST-80](playtests/PLAYTEST-80.md) are filed and deliberately
+  unstarted**, because the player asked for them to wait for a session of their own: M161, the
+  game pauses when it loses focus and a rig can say not to, and M162, a game can be resumed.
+  M161 is specified and ready for an agent. M162 opens with a question for the player — what
   *that exact state* has to cover inside a day, the crowd above all — and nothing of it goes
   to an agent before that is answered.
 - **The phone's frame is the open measurement, and the crowd's drawing is ruled out of
