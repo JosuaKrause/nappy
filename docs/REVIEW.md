@@ -331,11 +331,11 @@ item below for as long as looking takes.
   service exit, and the same run continues into the city and ends at the tunnel or the bridge.
   Inside: a mouse and a paced steam vent in the basement, a masked man on one stairwell and a
   fire on the other, and the hallway windows flashing every 22 seconds
-  (`Tuning.FINALE_EXPLOSION_INTERVAL`) for `FINALE_WINDOW_FLASH_SECONDS` (0.12s). Two questions
+  (`Tuning.FINALE_EXPLOSION_INTERVAL`) for `FINALE_WINDOW_FLASH_SECONDS` (0.12s). The question
   only a walk answers: does the fire actually force the other shaft, or is walking back up the
-  obvious answer anyway; and does the paced steam leave a line to walk in a corridor two tiles
-  wide? Record is `DECISIONS.md`, M102, the finale built behind the flag.
-  [PLAYTEST-84](playtests/PLAYTEST-84.md) walked it and answered neither question; what it
+  obvious answer anyway? Record is `DECISIONS.md`, M102, the finale built behind the flag.
+  [PLAYTEST-84](playtests/PLAYTEST-84.md) walked it without answering that, and
+  [PLAYTEST-85](playtests/PLAYTEST-85.md) settles the steam: it does not move. What the walk
   found instead — the masked man off the stairs, the basement's entry flight, steam that walks,
   a spawn inside an obstacle — is M165, the escape after the corrected stairs, in `TODO.md`.
   **Walk it again once M165 is built, not before.**

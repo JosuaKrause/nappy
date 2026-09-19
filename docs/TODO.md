@@ -184,7 +184,8 @@ answered collisions, and the one item still open: the entry from day 14's own su
 what would make it a run's ending rather than a flag's. The record of what was built is in
 `DECISIONS.md`. M165, the escape after the corrected stairs, sits directly before it and holds
 what [PLAYTEST-84](playtests/PLAYTEST-84.md) found walking the sequence: the masked man off the
-stairs, the basement's entry flight, the steam, and the spawn at the service exit.
+stairs, the basement's entry flight, the steam, and the spawn at the service exit. M166, the save is
+written when a day starts, sits before both.
 
 **[PLAYTEST-50.md](playtests/PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
@@ -769,6 +770,36 @@ re-pitched:
 
 ---
 
+## M166 — The save is written when a day starts, and a saved game opens on the day brief · asked for 2026-09-19
+
+[PLAYTEST-85](playtests/PLAYTEST-85.md): *"write the save when starting a day; not when the focus
+is lost etc. also if there is a saved game the title screen should go to the day brief screen
+instead of starting outright."* *Asked for "saving should be implicit (on focus loss or game
+quit)" in [PLAYTEST-80](playtests/PLAYTEST-80.md) · overturned by the player on 2026-09-19 to a
+write when a day starts.* What M162, a game can be resumed, built is in `DECISIONS.md`.
+
+- [ ] **The focus-loss and quit writes go.** `main._notification()` and `main._quit()` stop
+      calling `main._save_now()`; losing focus still pauses. The save symbol then shows once per
+      day boundary rather than on every switch of window
+- [ ] **The title comes up on every boot, and with a save its start leads to the day brief.**
+      Today `main._ready()` skips the title for a resumed run and `_show_resume_outcome()` opens
+      the pause screen over the day, with a note line when the load cost a nerve. Instead: the
+      title shows as it does for a fresh run; pressing start with a save on disk brings up the
+      screen between days that `DaySummary` draws — the day, the nerves, the resistance's brief —
+      carrying the lost-day line when the load charged one; continuing from it starts the day,
+      which is the moment the save is written. `PauseScreen.open()`'s `note` parameter and
+      `main._day_engaged`, the flag that kept a resumed pause screen from charging twice, go if
+      nothing else needs them
+- [ ] **Waits on the player: whether a day's end also writes.**
+      [PLAYTEST-82](playtests/PLAYTEST-82.md) says *"No penalty when exiting at a next
+      day/win/lose screen"*. With the day's start as the only write, a game closed on the summary
+      of a day just won still holds that day's dawn save, so reopening replays the won day and
+      charges a nerve. A second write when a day ends keeps that sentence true and is what this
+      side would build; the day's start alone is simpler and makes closing on a summary cost the
+      day
+
+---
+
 ## M165 — The escape after the corrected stairs · found 2026-09-19
 
 Found reviewing PR #217 — M158, the staircase follows the corrected tile grammar — and kept out of
@@ -794,37 +825,45 @@ door which is incorrect"*.
       the existing test only checks the tile he starts on. The brief's own answer to him, *"going
       into a corridor and letting them pass"*, has to survive: a door's approach must leave her
       somewhere off his line
-- [ ] **The basement's entry flight.** *(PLAYTEST-84: "the basement stairs are bad")* The one
-      stair the corrected grammar did not reach: `InteriorMap._build_basement()` lays two
-      `STAIR_FLIGHT_E` cells painted with the old `stair_flight_e.svg` tread, and
-      `_mark_diagonal_clearances()` frees both flanks of each step so a 14px body can cross the
-      pinch. The player has not said whether it is the picture, the walk or both. **Proposed, not
-      agreed:** lay the entry as a short run of the same grammar the shafts use — level `F`
-      approaches, `t`/`m` walkable slope cells, solid `c` and `b` sides — so it draws and walks
-      like every other stair in the building and the clearance pass has nothing left to clear
-- [ ] **The steam stands still.** *(PLAYTEST-84: "the steam walks for some reason")* The brief
-      says *"maybe some steam in the basement"*; `basement_steam` is `mobile` and `paces` at
-      18px/s along the corridor, which was this side's answer to a standing vent leaving a
-      four-pixel lane in a corridor two tiles wide (`DECISIONS.md`, M102, the finale built behind
-      the flag). **Proposed, not agreed:** a vent fixed at the wall that vents on a timer — loud
-      for a few seconds, quiet for a few — with no solid body, so what she routes around is the
-      moment rather than a thing in the way, and the lane problem does not arise
-- [ ] **She comes out of the service exit onto clear ground.** *(PLAYTEST-84: "the spawn in the
-      city from the basement can end up inside an obstacle")* `FinalePlanner.service_exit_tile()`
-      takes the pavement tile beside the home lot's middle row and checks only
-      `CityMap.is_walkable()`, which answers for the tile type and knows nothing of what stands on
-      it — street furniture, a burnt car, a seal body, a crater. Check before accepting, both
-      ways: the exit tile is chosen among tiles with no static body within her own reach, and the
-      finale's placements (`FinalePlanner.plan()`'s `placements`, handed to
-      `EventScheduler.start_finale()`) refuse a spot whose body would cover it. A test walks
-      seeds and asserts a 14px body at the exit overlaps nothing
-- [ ] **Pathing starts where she is put.** *(PLAYTEST-84: "pathing is not done from the spawn but
-      from the original door which is incorrect")* The finale's two chains are grown from
-      `service_exit_tile()`, the tile she is put on, so first find what still starts at the home's
-      own doorstep — the debug route overlay `RouteLines`, the city's own route tree and closures
-      planned for the day underneath the finale, or the chain snapping to `grid.node_at(start)`,
-      the nearest junction rather than the tile — and ask the player which they saw if more than
-      one does. Then every route the section owns starts at the service exit
+- [ ] **The basement's entry is a stair.** *([PLAYTEST-85](playtests/PLAYTEST-85.md): "basement
+      stairs are just not stairs. at the very least use the one tile upward facing stairs we had
+      earlier")* `InteriorMap._build_basement()` lays two diagonal `STAIR_FLIGHT_E` cells painted
+      with `stair_flight_e.svg`, and `_mark_diagonal_clearances()` frees their flanks so a 14px
+      body can cross the pinch. Replace them with a straight run seen from the front: the
+      one-tile stair the kit had before the diagonal treads, `assets/interior/stair_down.svg` —
+      recoverable with `git show 60071de3:assets/interior/stair_down.svg`, a 32×32 tile whose
+      treads are horizontal lines narrowing away from her, the shape of the player's own sketch
+      in [PLAYTEST-55](playtests/PLAYTEST-55.md), *"horizontal lines indicate a small stair
+      leading down"*. It is a level walkable cell with no slope redirection, stacked vertically
+      between the entry door and the corridor, so the clearance pass has no diagonal left to
+      clear. That tile is the floor of what is acceptable, not the ceiling
+- [ ] **The steam is fixed vents on timers, and the corridor is a timing puzzle.**
+      *([PLAYTEST-85](playtests/PLAYTEST-85.md): "how would steam move? it doesn't make sense.
+      have multiple fixed locations with steam that fully block the path and have them turn off
+      an on in different intervals so it becomes a timing puzzle")* `basement_steam` stops being
+      `mobile` and `paces`. Several vents stand at fixed places along `InteriorScene
+      .basement_walk()`, the basement's one branchless route; while a vent is on, its solid body
+      spans the corridor's whole two-tile width, and while it is off it has no body and costs
+      nothing. Each vent has its own period, the periods differing so that the gaps do not line
+      up by themselves. What the fairness contracts owe it: the change from off to on is
+      telegraphed for at least the time it takes to walk out from under it, a vent never turns
+      on with her inside its body, and no pair of adjacent vents can hold her in a pocket whose
+      both ends are shut for longer than she can stand the noise. The count, the periods and the
+      on/off split are `Tuning` numbers under the **balance** skill
+- [ ] **The finale's routes start where she stands.** *([PLAYTEST-84](playtests/PLAYTEST-84.md):
+      "the spawn in the city from the basement can end up inside an obstacle. pathing is not done
+      from the spawn but from the original door which is incorrect" ·
+      [PLAYTEST-85](playtests/PLAYTEST-85.md): "the spawning shouldn't be a check. the pathing
+      should start from the position. then obstacles can never happen")* One fix for both
+      findings, and the rejected option is a check that refuses or moves a bad spawn. Whatever
+      the section plans — the two chains of `FinalePlanner.plan()`, the seals off them, and the
+      placements handed to `EventScheduler.start_finale()` — is planned from her position at the
+      service exit, so the ground she stands on is route by construction and nothing the finale
+      places can be on it. First find what starts elsewhere today: the chains are grown from
+      `service_exit_tile()` but enter the grid at `grid.node_at(start)`, the nearest junction,
+      and the city underneath still carries whatever the day's own planner rooted at the home's
+      doorstep. A test walks seeds and asserts that a 14px body at the spawn overlaps no static
+      body, as a consequence to confirm rather than as the mechanism
 - [ ] **The fire's words match where it stands.** `InteriorScene.turn_landings()` returns the inner
       level `F` cell below the second- and first-floor doors, two tiles from the door; the grammar
       has no turn landing and no main-shaft cell of kind `LANDING`. `_place_the_fire()` and
