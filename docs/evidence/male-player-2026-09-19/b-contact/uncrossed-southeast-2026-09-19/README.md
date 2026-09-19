@@ -1,10 +1,10 @@
 # Uncrossed southeast contact review
 
 [PLAYTEST-100](../../../../playtests/PLAYTEST-100.md) accepts these legs and this pose.
-The remaining correction uses the existing matching frame's body texture, restoring the
-full-size carrying baby, with this B frame's hem edge moved down to match A/C. Lighten the
-too-dark trousers and match the hem's jacket colors independently. Preserve the new leg
-geometry and alpha below the extended hem exactly.
+The [accepted final assembly](../whole-figure-color-2026-09-19/README.md) uses the existing
+matching frame's body texture and full-size carrying baby, with this B frame's hem edge moved
+down to match A/C. It lightens the trousers and matches the hem's jacket colors independently,
+preserving this leg geometry and alpha below the extended hem.
 
 This uninstalled candidate addresses [PLAYTEST-99](../../../../playtests/PLAYTEST-99.md).
 Only southeast B and its southwest mirror change in pushing and carrying. Every other frame,
@@ -26,8 +26,9 @@ This is an early appearance candidate. The pelvis remains somewhat frontal, with
 expressed through the foot positions and shoe angles. The jacket hem sits approximately 2–3
 native pixels above A/C, and the legs and shoes have different proportions. The coherent upper
 redraw retains recognizable father identity, hands, baby and carrying pose, but does not preserve
-their exact pixels. These offline sheets and loops do not establish live stroller alignment or
-player acceptance. Runtime assets remain unchanged.
+their exact pixels. These offline sheets and loops do not establish live stroller alignment.
+The player's acceptance covers the legs and pose; the final assembly supplies the accepted
+body, hem and colors. This intermediate family is retained as evidence.
 
 ## Inputs and generation
 

@@ -19704,7 +19704,7 @@ changing accepted geometry. Native body reuse and a bounded hem move solve stabl
 without regenerating accepted legs. All retain source hashes, protected pixels and whole-family
 PNG/GIF review; none turns a rejected intermediate into an approved source.
 
-## M171, build-time atlases and single GPU texture residency — 2026-09-19
+## M171, build-time atlases replace individual textures — 2026-09-19
 
 [PLAYTEST-105](playtests/PLAYTEST-105.md) requests an implementation TODO: atlases must be
 created at build time for cheap runtime loading, related items must share an atlas to avoid

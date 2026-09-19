@@ -6,7 +6,7 @@ side pixels; the diagonal frames in these sheets are not an approved replacement
 
 This uninstalled review set applies one deterministic native-pixel color transform to the two
 generated pushing B trouser areas. The pose, contour, alpha, shoes, skin, jacket, head and hands
-come unchanged from the current correct-contact candidate. The selector begins at native row 28,
+come unchanged from the frozen correct-contact candidate. The selector begins at native row 28,
 below the painted hem, and selects only saturated blue pixels; the saved white masks identify every
 changed pixel. The accepted A/C samples set the mapping: their 10th, 50th and 90th-percentile
 trouser luminances are 61.5, 90.3 and 118.2, versus the candidate's 41.3, 79.8 and 111.0. The
@@ -16,7 +16,7 @@ The manifest preserves these sample bounds and the exact formula.
 
 Review the clean [native sheet](generated/father-spritesheet-native.png), enlarged
 [6× sheet](generated/father-spritesheet-6x.png), [native GIF](generated/father-animation-native.gif),
-and [6× GIF](generated/father-animation-6x.gif). The current southeast pose remains an early
+and [6× GIF](generated/father-animation-6x.gif). This southeast pose is an intermediate
 candidate: this folder changes its trouser color only.
 
 ## Corrected pushing and carrying review

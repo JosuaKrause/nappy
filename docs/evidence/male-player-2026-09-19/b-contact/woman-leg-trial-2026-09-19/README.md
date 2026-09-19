@@ -17,11 +17,11 @@ S/SW/W/NW and use four 190ms phases.
 ## Donor choice and one edit
 
 The accepted `mother_side_b.png` and `mother_front_diagonal_b.png` are both 26×46 with the same
-bottom-center registration as the father. Their B contacts already provide the required far-leg
-advance and near-leg trail. The front-diagonal is its own narrow three-quarter drawing rather than
-a projected profile stride. Mother A/C were inspected beside B to confirm anatomical exchange,
-trouser material and shoe construction. The creation SVGs were inspected to confirm the authored
-hip–knee–shoe ownership.
+bottom-center registration as the father. Their filenames and corresponding creation SVGs do
+not prove the raster's required far-leg advance and near-leg trail. This trial is rejected;
+the donor-selection error and subsequent pixel-chain inspection are recorded under M167,
+the father's natural legs, in `docs/DECISIONS.md`. The final accepted family is the
+[body-texture and hem assembly](../whole-figure-color-2026-09-19/README.md).
 
 `assemble.py prepare` makes [the transparent edit target](edit-target.png) without scaling native
 geometry before its final 12× nearest-neighbor enlargement. For each changed view it starts from

@@ -2,7 +2,7 @@
 
 The pushing candidate is rejected because it copies the wrong anatomical contact; see
 [PLAYTEST-102](../../../../playtests/PLAYTEST-102.md). These files preserve the failed donor
-selection and normalization. The current carrying GIFs below remain independent review evidence.
+selection and normalization. The carrying GIFs below preserve the separate baseline review.
 
 Inspect the [clean eight-direction sheet](generated/father-spritesheet-6x.png), its
 [native version](generated/father-spritesheet-native.png), and the
@@ -11,12 +11,13 @@ Inspect the [clean eight-direction sheet](generated/father-spritesheet-6x.png), 
 candidate for M167, the father's legs read as legs. Only E/W B and SE/SW B differ from
 the straight-contact baseline; every other rig PNG is byte-identical.
 
-For the separate baby-carrying review, see the current installed family's
+For the separate baby-carrying baseline review, see the frozen family's
 [native](carrying-generated/carrying-native.gif) or
 [6×](carrying-generated/carrying-6x.gif) A/C/B/C loop and the
 [clean 6× sheet](carrying-generated/carrying-spritesheet-6x.png). Those artifacts read the
-installed `father_carrying_*` PNGs directly. They do not use the normalized pushing candidate
-and make no carrying-art change.
+baseline `father_carrying_*` PNGs. They do not use the normalized pushing candidate;
+the accepted carrying correction is in the
+[final family](../whole-figure-color-2026-09-19/README.md).
 
 The preview removes the hard native crop, but it does not establish an accepted contact.
 The generated side figure's foreground thigh appears to continue to the advancing

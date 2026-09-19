@@ -9,7 +9,8 @@ This is one early, uninstalled drawing-refinement attempt for PLAYTEST-90 and M1
 opposite B contact. It retains the provisionally accepted leg positions and changes only E/W and
 SE/SW B lower-body pixels. Every A/C frame, N/S B and NE/NW B is byte-identical to the accepted
 straight-contact candidate. The head, hands and upper 28 rows of both changed authored B frames
-are pixel-identical too. Runtime artwork and shared graphics procedures remain unchanged.
+are pixel-identical too. This retained trial is not the installed family; the accepted result
+is the [body-texture and hem assembly](../whole-figure-color-2026-09-19/README.md).
 
 Columns are N, NE, E, SE, S, SW, W, NW; rows are A, C, B, C. GIFs place N/NE/E/SE above
 S/SW/W/NW and repeat four 190ms phases.

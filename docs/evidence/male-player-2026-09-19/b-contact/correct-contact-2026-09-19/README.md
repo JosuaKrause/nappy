@@ -20,14 +20,15 @@ diagonal keeps the screen-left shoe higher and screen-right shoe lower. This est
 early contact candidate, not final acceptance. The generator redraws all pixels, including face,
 hands, jacket, trousers and shoes, so B can pulse against the protected A/C frames. At native size
 the profile B also fills the full 26px width, and both B frames have cleaner, heavier outlines and
-brighter trousers than A/C. Player review still determines whether the crossing reads clearly in
-motion.
+brighter trousers than A/C. The subsequent player verdict and corrections are recorded under
+M167, the father's natural legs, in `docs/DECISIONS.md`.
 
-The separate current baby-carrying review remains unchanged in the rejected preview folder:
+The separate baby-carrying baseline review is preserved in the rejected preview folder:
 [native GIF](../normalized-crop-2026-09-19/carrying-generated/carrying-native.gif),
 [6× GIF](../normalized-crop-2026-09-19/carrying-generated/carrying-6x.gif), and
 [6× sheet](../normalized-crop-2026-09-19/carrying-generated/carrying-spritesheet-6x.png).
-Those artifacts display the installed carrying PNGs and do not use this pushing candidate.
+Those artifacts display the frozen carrying baseline and do not use this pushing candidate.
+The [final family](../whole-figure-color-2026-09-19/README.md) contains the accepted correction.
 
 ## Frozen source selection
 
