@@ -33,6 +33,12 @@ restored diagonal drawing. The [natural southeast recipe](b-contact/natural-sout
 preserves the crossed-leg candidate rejected in PLAYTEST-99 and its deterministic clothing
 palette restoration. Its X-shaped pose guide is not a valid target for a natural walking stride.
 The accepted E/W pixels remain protected.
+For the uncrossed correction, the source A picture places the near thigh at the screen-left
+hip. Keep that hip fixed while exchanging lead and trail; the old front-diagonal ownership
+table in the B-contact evidence is not a valid anatomical guide.
+The [uncrossed southeast recipe](b-contact/uncrossed-southeast-2026-09-19/README.md) keeps
+those hips fixed, with the near leg trailing on the left and the far leg advancing down-right.
+Its review sheets and GIFs cover pushing and carrying while preserving the accepted side frames.
 
 `source/` preserves Godot's 1×, 3× and 8× rasterization of every SVG.
 `inputs/*_source-{1,3,8}x.png` assembles them in columns front, back, side, front diagonal,

@@ -306,6 +306,9 @@ checks and worktrees can move independently of this file.
   `natural-southeast-2026-09-19/`. Correct the diagonal to an uncrossed natural stride:
   each leg stays on its own side of the pelvis. The old screen-right-hip-to-left-shoe
   X diagram is not valid pose guidance. Preserve E/W and all other frames.
+  `uncrossed-southeast-2026-09-19/` contains the replacement candidate: the near screen-left
+  leg trails on its own track and the far screen-right leg advances down-right. Review its
+  pushing/carrying PNGs and GIFs for natural diagonal motion and upper-body stability.
   The provisional contact baseline
   on main remains in use. Push plausible attempts early and welcome repeated feedback;
   the CLI cannot display local images. The next branch synchronization requires explicit permission.

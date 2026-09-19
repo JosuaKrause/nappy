@@ -319,8 +319,9 @@ Select the actual opposite contact from the final woman artwork before another c
 normalization. Trace the foreground thigh through its knee to the trailing shoe; the current
 normalized candidate is rejected, and its B filename is not evidence of the correct pose.
 The final carrying family's side B supplies the visible foreground trailing thigh. Its
-front-diagonal A is too frontal for the southeast correction; use the accepted southeast
-contact target to establish that projection. Preserve the father's pushing upper body.
+front-diagonal A is too frontal for the southeast correction. Establish the diagonal's
+projection from the torso and original A hips, with the uncrossed constraint below.
+Preserve the father's pushing upper-body identity and landmarks.
 Crop father identity references
 above the pelvis so his wrong original contact cannot steer normalization back to itself.
 

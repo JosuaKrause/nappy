@@ -1,11 +1,17 @@
 # Father B-contact source review
 
+**Pose-guidance correction:** [PLAYTEST-99](../../../playtests/PLAYTEST-99.md) rejects the
+crossed diagonal derived from this record's image-right near-hip assignment. The original
+father A raster places the near thigh at the screen-left hip. The diagonal table and source
+overlays below describe the retained construction, not a valid anatomical target for the
+uncrossed refinement. Follow the current M167, the father's legs read as legs, brief instead.
+
 This record contains the four editable pushing B-pose corrections and their source review.
 The illustrated runtime PNGs retain the original registration; source and raster leg poses
 therefore differ in these four assets. This is source evidence, not a completed raster transfer.
 
-The [straight-contact trial](straight-contact-2026-09-19/README.md) is the current review
-candidate: a new father-only donor keeps the near hip, knee and shoe on a continuous backward
+The [straight-contact trial](straight-contact-2026-09-19/README.md) preserves the provisional
+contact candidate: a father-only donor keeps the near hip, knee and shoe on a continuous backward
 chain. Side and front diagonal use the authorized splice construction, with the diagonal's
 trailing foot raised by the recorded projection. Accepted N/S, NE/NW and every A/C frame
 remain byte-identical to the previous sheet. Complete-image approval is still required.
