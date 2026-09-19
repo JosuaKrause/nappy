@@ -790,13 +790,16 @@ write when a day starts.* What M162, a game can be resumed, built is in `DECISIO
       which is the moment the save is written. `PauseScreen.open()`'s `note` parameter and
       `main._day_engaged`, the flag that kept a resumed pause screen from charging twice, go if
       nothing else needs them
-- [ ] **Waits on the player: whether a day's end also writes.**
-      [PLAYTEST-82](playtests/PLAYTEST-82.md) says *"No penalty when exiting at a next
-      day/win/lose screen"*. With the day's start as the only write, a game closed on the summary
-      of a day just won still holds that day's dawn save, so reopening replays the won day and
-      charges a nerve. A second write when a day ends keeps that sentence true and is what this
-      side would build; the day's start alone is simpler and makes closing on a summary cost the
-      day
+- [ ] **Two writes, each saying which it is.** *([PLAYTEST-85](playtests/PLAYTEST-85.md): "save
+      as "played" when the day starts. save as "nothing played yet" for the day brief and end of
+      day message. nothing else will change the state and doesn't need to be saved")* When a day
+      starts — she continues from the title on a fresh run, or from the day brief — the save is
+      written with `day_under_way: true`, and opening it costs what a lost day costs. When the day
+      brief or the end-of-day message comes up, it is written with `day_under_way: false`, and
+      opening it costs nothing; that includes the day brief a saved game opens on, so a nerve the
+      load itself charged is on disk before she continues. `main._start_day()`'s dawn write behind
+      a screen nobody has dismissed, and `main._engage_the_day()`'s write on dismissing one, fold
+      into those two. A run that has ended still writes nothing
 
 ---
 

@@ -33,8 +33,18 @@ changes when the save is written and what a saved game opens onto.
 **One collision, asked of the player rather than inferred.** [PLAYTEST-82](PLAYTEST-82.md) says
 *"No penalty when exiting at a next day/win/lose screen"*. If the *only* write is at a day's
 start, a game closed on the summary of a day she has just won still holds that day's dawn save,
-so reopening it replays the won day and charges the nerve a day left unfinished costs. Keeping
-that sentence true needs a second write when a day ends.
+so reopening it replays the won day and charges the nerve a day left unfinished costs. Asked
+whether a day's end also writes, the player answered:
+
+> "no, save as "played" when the day starts. save as "nothing played yet" for the day brief and
+> end of day message. nothing else will change the state and doesn't need to be saved, no?"
+
+- **Two writes, and each says which it is.** When a day starts, the save is written as *played*:
+  opening it costs what a lost day costs. When the day brief or the end-of-day message comes up,
+  it is written as *nothing played yet*: opening it costs nothing.
+- **Nothing else writes**, because nothing else changes what a save holds. A save is the run and
+  the day, never the moment inside one, so focus loss, a pause, a quit or a closed window have
+  nothing new to record.
 
 ### The service exit
 
