@@ -349,6 +349,81 @@ alike.
 
 ---
 
+## M155 — The crowd's reach comes in, and walkers step aside more politely · asked for 2026-09-19
+
+> "it is easier to go to a completely closed off area (eg walking via the roadway) to calm the
+> baby down than it is to just walk back and forth on the regular sidewalk on a path … the
+> noise from the crowd itself is too high. we need to nerf the crowd influence a little bit."
+> — "I like the shorter reach idea. main road can stay as expensive as before. we can also let
+> the walkers step aside more politely"
+
+[PLAYTEST-78](playtests/PLAYTEST-78.md). The **balance** and **crowd-traffic** rules govern.
+Walking gives the meter back `Tuning.EXCITEMENT_DECAY_WALKING` (6.0 a second) and a quiet
+act I sidewalk nets about 3.6, because every walker charges up to `PEDESTRIAN_INTENSITY` (4.2 a
+second) inside 22 px and fades out at `PEDESTRIAN_OUTER_RADIUS` (55 px) on a sidewalk 64 px
+wide. `tests/probes/m117_decay.gd` is the instrument: it walks a forty-second leg on each kind
+of ground with the day's crowd around her and prints the net rate.
+
+- [ ] **The walker's outer radius comes down, the close pass keeps its price.** Measure with
+      the probe first, three seeds, day 1 and day 9. Then lower `PEDESTRIAN_OUTER_RADIUS` from
+      55 px toward 40 px, leaving `PEDESTRIAN_INTENSITY` and `PEDESTRIAN_INNER_RADIUS` alone,
+      until the quiet ordinary sidewalk on day 1 nets about 4.8 a second given back — four
+      fifths of the empty street's rate — and report the radius that gets there and every leg
+      of the probe before and after. **The main road stays as expensive as it measures
+      before the change**: if its net rate falls with the walkers' reach, the car's numbers
+      make the difference up, and `tests/test_crowd.gd`'s arterial floor and ceiling are the
+      check. The comment on the three pedestrian constants in `tuning.gd` says what they
+      defend and follows the new number; `docs/MECHANICS.md` where it describes the crowd's
+      field.
+- [ ] **Walkers give her more room when they step aside.** `Tuning.CROWD_YIELD_LATERAL`
+      (22 px) is how near a walker's predicted closest approach has to come before it moves
+      out of her way, from `CROWD_YIELD_DISTANCE` (96 px) off and `CROWD_YIELD_LEAD` (1.4 s)
+      ahead. Widen it so a walker that would pass inside its own charging core steps clear of
+      it, without parting a whole sidewalk in front of her — the comment beside the constant
+      names that failure. Measure contacts and the probe's quiet-sidewalk leg before and
+      after, and say what the head-on pass on a two-lane sidewalk now costs on the midline.
+
+---
+
+## M156 — The crowd only turns at what physically stops it · asked for 2026-09-19
+
+> "cars shouldn't avoid it. I noticed cars turning around even though the obstacle is on the
+> sidewalk. only things like a fallen tree (which blocks the whole street) should prevent cars
+> from entering … pedestrians should only avoid the area if they cannot reach it physically.
+> right now they give up if there is an event at all when they should only give up if they
+> touch an impassable wall. that leads to two changes: 1) they should still walk through a car
+> accident since the sidewalk is free there 2) they should be able to spawn inside a closed
+> off section but shouldn't stand in one place but instead walk until they are forced to turn
+> around (by the environment)"
+
+[PLAYTEST-78](playtests/PLAYTEST-78.md), which also says what `CrowdAgent._cannot_go_on`
+treats as shut for each kind today. The **crowd-traffic** and **city** rules govern. It is the
+cause under M155's complaint: a street the crowd has given up on is a free calm area, and a
+street only a whole-width obstacle shuts is one the player cannot exploit either.
+
+- [ ] **Find where a car turns for an obstacle on the sidewalk.** A car's own rule is a body
+      on its own lane tile (`CityMap.is_obstructed`), a held segment, a closed tile or a
+      precinct. Say which of those a sidewalk obstacle reaches — a body whose recorded tiles
+      spill onto the lane, a seal held across the whole segment for a row that takes only a
+      sidewalk, or something else — with the seed, day and tile, before changing anything.
+- [ ] **A car is turned only by what blocks its roadway.** Whatever the first item finds
+      is fixed where it happens, so a row standing on a sidewalk leaves both lanes driving and
+      a row across the whole street (the fallen tree) still turns cars at the last junction.
+- [ ] **A walker turns where it meets what it cannot pass, and not before.** Today a walker
+      turns off at the last junction ahead of a soft seal, a held segment or a fully taken
+      sidewalk. It walks up to the impassable thing and turns round there instead, and a row
+      that leaves a walkable line on its sidewalk — the car accident is the named one — is
+      walked past. The turn is an about-face a walker can make anywhere; say what keeps two
+      walkers turning at one barrier from stacking, since the 2026-09-12 complaint was walkers
+      *"accumulating in one place and move back and forth or worth flicker"*.
+- [ ] **A closed-off section has walkers in it, and they keep walking.** Placement and
+      recycling put walkers on sealed-in ground of two junctions or more the way they do on
+      any street, and nobody stands still there. Whether the single shut-in junction
+      `CrowdPockets` empties stays empty is put to the player in PLAYTEST-78 and is not built
+      either way until answered.
+
+---
+
 ## M129 — A path through the city never has to cost · two routes in five still break
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable
