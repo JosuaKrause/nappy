@@ -14,6 +14,10 @@ signal restart_requested()
 @onready var _root: Control = $Root
 @onready var _heading: Label = $Root/Center/Lines/Heading
 @onready var _title: Label = $Root/Center/Lines/Title
+## Empty and hidden except when `show_day_brief()` is given a lost-day note — the one line the day
+## brief shows that is not always the same words, see that function's own doc. Its own label, not
+## folded into `_body`, since the two hide independently of each other.
+@onready var _note: Label = $Root/Center/Lines/Note
 @onready var _body: Label = $Root/Center/Lines/Body
 ## The chalk mark's own words, once a pickup has just been touched — its own label, not a line
 ## folded into `_body`, because a screen full of ordinary lines is exactly what playtest 69
@@ -115,6 +119,31 @@ func _refresh_buttons() -> void:
 	_buttons.visible = true
 	_continue_column.visible = not _showing_ending
 
+## What a saved game opens on instead of starting the day outright, once the title's own start
+## button has been pressed — `main._show_the_resume_gate()`'s own call, made after
+## `GameState.finish_day()` has already charged whatever the load itself costs, so `day` and
+## `nerves` are already the numbers the retry (or the day exactly as the save left it) actually
+## has. Three things, no more: the day, the nerves, and the resistance's own pending brief — the
+## same field `show_day()` reads and clears below, so words queued and never shown (a save closed
+## before its own end-of-day message was read) are never dropped on the way past. `lost_note` is
+## `main._RESUMED_DAY_LOST_NOTE` when the load itself spent a nerve, or `""` for a save that cost
+## nothing, in which case this is exactly what a fresh day 1 skips by going straight from the title
+## into `main._engage_the_day()` instead. Continuing from here reaches that same function, through
+## `main._on_summary_continued()`'s own `_resume_gate_open` branch — the moment the day actually
+## starts, and the moment the save says so.
+func show_day_brief(day: int, nerves: int, lost_note: String = "") -> void:
+	_heading.hide()
+	_showing_ending = false
+	_note.text = lost_note
+	_note.visible = lost_note != ""
+	_title.text = "Day %d of %d" % [day, Tuning.RUN_LENGTH_DAYS]
+	_body.text = "last nerve" if nerves == 1 else "%d nerves left" % nerves
+	_brief.text = GameState.pending_resistance_brief
+	_brief.visible = _brief.text != ""
+	GameState.pending_resistance_brief = ""
+	_hint.text = ""
+	_present()
+
 ## `elapsed_seconds` is the day's own clock at the instant it ended — `main._on_day_finished()`
 ## takes `DayController.time_total - DayController.time_remaining`, clamped to the day, before
 ## anything about the next day can touch either field, and hands it here alongside the reason.
@@ -126,6 +155,9 @@ func show_day(day: int, result: GameEnums.DayResult, reason: String, nerves: int
 	# down. The heading belongs to the screen that ends the run and to nothing else.
 	_heading.hide()
 	_showing_ending = false
+	# Never carried from a day brief this same day might have opened on — this is a real day's own
+	# result, not the load-time note a brief shows instead of one.
+	_note.visible = false
 	_title.text = _DAY_TITLE.get(result, "The day ends.")
 	var lines: Array[String] = ["Day %d of %d" % [day, Tuning.RUN_LENGTH_DAYS]]
 	lines.append("")
@@ -226,6 +258,9 @@ func show_ending(ending: GameEnums.Ending) -> void:
 	# The ending is not a day summary and never reads a brief back — a run that ends still
 	# carrying a pending one just has nowhere left to spend it.
 	_brief.visible = false
+	# Never carried from the day brief a resumed run's own last nerve replaces with this screen —
+	# see `main._show_the_resume_gate()`.
+	_note.visible = false
 	_showing_ending = true
 	_present()
 

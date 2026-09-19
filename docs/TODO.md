@@ -184,8 +184,7 @@ answered collisions, and the one item still open: the entry from day 14's own su
 what would make it a run's ending rather than a flag's. The record of what was built is in
 `DECISIONS.md`. M165, the escape after the corrected stairs, sits directly before it and holds
 what [PLAYTEST-84](playtests/PLAYTEST-84.md) found walking the sequence: the masked man off the
-stairs, the basement's entry flight, the steam, and the spawn at the service exit. M166, the save is
-written when a day starts, sits before both.
+stairs, the basement's entry flight, the steam, and the spawn at the service exit.
 
 **[PLAYTEST-50.md](playtests/PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
@@ -767,36 +766,6 @@ re-pitched:
       the agents onto it would draw the whole crowd at thirty frames a second, not merely decide
       for it at that rate, which is a larger piece of the trade than it was. Docs/evidence/
       audit-2026-09-13/AUDIT.md, finding 3.1, has the full reasoning.
-
----
-
-## M166 — The save is written when a day starts, and a saved game opens on the day brief · asked for 2026-09-19
-
-[PLAYTEST-85](playtests/PLAYTEST-85.md): *"write the save when starting a day; not when the focus
-is lost etc. also if there is a saved game the title screen should go to the day brief screen
-instead of starting outright."* *Asked for "saving should be implicit (on focus loss or game
-quit)" in [PLAYTEST-80](playtests/PLAYTEST-80.md) · overturned by the player on 2026-09-19 to a
-write when a day starts.* What M162, a game can be resumed, built is in `DECISIONS.md`.
-
-- [ ] **The focus-loss and quit writes go.** `main._notification()` and `main._quit()` stop
-      calling `main._save_now()`; losing focus still pauses. The save symbol then shows once per
-      day boundary rather than on every switch of window
-- [ ] **The title comes up on every boot, and with a save its start leads to the day brief.**
-      Today `main._ready()` skips the title for a resumed run and `_show_resume_outcome()` opens
-      the pause screen over the day, with a note line when the load cost a nerve. Instead: the
-      title shows as it does for a fresh run; pressing start with a save on disk brings up the
-      screen between days that `DaySummary` draws — the day, the nerves, the resistance's brief —
-      carrying the lost-day line when the load charged one; continuing from it starts the day,
-      which is the moment the save is written. `PauseScreen.open()`'s `note` parameter and
-      `main._day_engaged`, the flag that kept a resumed pause screen from charging twice, go if
-      nothing else needs them
-- [ ] **Waits on the player: whether a day's end also writes.**
-      [PLAYTEST-82](playtests/PLAYTEST-82.md) says *"No penalty when exiting at a next
-      day/win/lose screen"*. With the day's start as the only write, a game closed on the summary
-      of a day just won still holds that day's dawn save, so reopening replays the won day and
-      charges a nerve. A second write when a day ends keeps that sentence true and is what this
-      side would build; the day's start alone is simpler and makes closing on a summary cost the
-      day
 
 ---
 

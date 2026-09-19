@@ -139,19 +139,22 @@ var _run_over := false
 var _ending_shown := false
 ## Whether the title screen is up, with the city running behind it and nobody in it.
 var _in_the_title := false
-## Whether the day currently in `_day` is one the player has actually started controlling, as
-## opposed to one that exists but is waiting behind a screen she has not yet dismissed — the
-## title, on a fresh day 1, or the pause this milestone opens a resumed run behind. Read by
-## `_day_under_way_for_save()`; a save written before this flips can never cost the day it names
-## anything on the *next* load, because nothing has happened in it yet. Flipped by
-## `_engage_the_day()`, called from `_on_title_start()` and `_on_pause_resumed()` — that function,
-## not a bare assignment, because the transition itself has to write the save (see its own doc) —
-## and set explicitly `true` in `_on_summary_continued()`, which reaches no gating screen at all
-## between one day and the next.
-var _day_engaged := false
+## `GameSave.try_resume()`'s own return: `{}` on a fresh run, or `{"day_under_way": bool}` once
+## `GameState` already carries a resumed run's fields — set once in `_ready()` and read by
+## `_on_title_start()`, which is the only place the title's own dismissal is not simply "start
+## playing": with a save on disk, pressing start opens the day brief (or the ending, on the load's
+## own last nerve) instead. Empty for every dev-flag or headless boot, since `GameSave.uses_save()`
+## already refuses all of them — see that function's own doc.
+var _resume := {}
+## Whether the day brief opened by `_on_title_start()` is the screen currently up, so
+## `_on_summary_continued()` knows a "continue" from `_summary` means *engage the day just built*
+## rather than *start the next one* — the two are the same signal (`DaySummary.continued`) on two
+## different screens this class draws with it, and this is the one member that tells them apart.
+## Cleared the instant that continue is read, since a day brief is shown at most once per boot.
+var _resume_gate_open := false
 
-## The pause screen's own line for a game resumed from a save whose day was under way — drafted
-## here rather than on `PauseScreen` itself, the same way every other screen's day-specific text is
+## The day brief's own line for a resumed run whose save said a day was under way — drafted here
+## rather than on `DaySummary` itself, the same way every other screen's day-specific text is
 ## assembled in `main.gd` and only drawn by the screen it is handed to.
 const _RESUMED_DAY_LOST_NOTE := \
 		"Left before the day ended. That cost a nerve — it starts over from dawn."
@@ -195,10 +198,11 @@ func _ready() -> void:
 	# Tried before a fresh run is started, so a resumed run keeps the seed, the day and everything
 	# else it held rather than being handed a new one. `GameSave.uses_save()` is the one gate every
 	# read and write of the save goes through, so a dev flag, a headless boot or a release build
-	# with nothing on disk yet all fall straight through to `resume.is_empty()` and an ordinary
-	# fresh run below — see `GameSave`'s own doc.
-	var resume := GameSave.try_resume()
-	if resume.is_empty():
+	# with nothing on disk yet all fall straight through to `_resume.is_empty()` and an ordinary
+	# fresh run below — see `GameSave`'s own doc. Kept on the instance, not a local, so
+	# `_on_title_start()` can still read it once the title's own start button is pressed.
+	_resume = GameSave.try_resume()
+	if _resume.is_empty():
 		GameState.start_run(DevFlags.seed_override())
 		GameState.day = DevFlags.day_override()
 	# After the run seed is settled and before anything is generated, so the log opens on the
@@ -212,8 +216,9 @@ func _ready() -> void:
 	# the last nerve ending the run exactly as it does there. Applied before anything downstream
 	# (the HUD, the city's own act) ever reads a nerve count or a resistance state that has not
 	# been charged yet. `_run_over` mirrors `_on_day_finished()`'s own variable, so the tail of
-	# this function shows the same ending screen a run that ends there does.
-	if resume.get("day_under_way", false):
+	# this function shows the same ending screen a run that ends there does; `_on_title_start()` is
+	# what actually shows either screen, once the title itself has been dismissed.
+	if _resume.get("day_under_way", false):
 		_run_over = not GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 
 	_city = CITY.instantiate()
@@ -298,8 +303,9 @@ func _ready() -> void:
 		_observer.setup(_city, _player, _baby, _day, _resistance, _edge)
 
 	_start_day()
-	# `_player.reset_at()` inside the call above has just put her own camera exactly where the
-	# boot camera was standing in for it, so freeing it now hands the viewport's current camera
+	_write_dawn_for_a_resumed_run()
+	# `_player.reset_at()` inside `_start_day()` above has just put her own camera exactly where
+	# the boot camera was standing in for it, so freeing it now hands the viewport's current camera
 	# straight to hers — see `_new_boot_camera()`'s own doc for why freeing is what does that.
 	boot_camera.free()
 
@@ -311,20 +317,15 @@ func _ready() -> void:
 	if screenshot:
 		add_child(screenshot)
 
-	# A run resumed from a save never reaches the title, and reaches at most one of the two screens
-	# `_show_resume_outcome()` picks between instead. Mutually exclusive with every dev-flag branch
-	# underneath it: `resume` is only ever non-empty when `GameSave.uses_save()` held, which is
-	# `false` for every one of them (see that function's own doc), so a resumed boot and a rig boot
-	# can never both be true here.
-	if not resume.is_empty():
-		_show_resume_outcome(resume)
-		return
-
 	# **Except under a rig.** A screenshot tool that opened onto the title screen would photograph
 	# the title screen, which is every `tools/shot.sh` recipe quietly answering the wrong
 	# question, and `--press` and `--walk` would hold keys against a game that has not begun.
 	# A rig is driving, so it starts the day the way the player would. `--title` is how the screen
-	# itself gets photographed.
+	# itself gets photographed. `_resume` is always empty here for every one of these branches —
+	# `GameSave.uses_save()` already refuses a dev-flagged or headless run, so a rig boot and a
+	# resumed boot can never both be true — but the title still comes up for an ordinary resumed
+	# boot exactly as it does for a fresh one; see `_on_title_start()` for what pressing start on it
+	# then leads to.
 	# Through `DevFlags`, which answers with nothing outside a debug build, so a release export
 	# cannot be told to skip its own front door: `--no-title` is a rig's convenience like every
 	# other flag here, and the title screen is the game's first screen.
@@ -334,24 +335,6 @@ func _ready() -> void:
 	if (screenshot or "--no-title" in args) and not "--title" in args:
 		return
 	_open_the_title()
-
-## Picks between the two screens a resumed boot can land on, and is the whole of what a load-time
-## resume looks like once `GameState` already carries the save's own fields and, if the save's day
-## was under way, has already paid for it through `GameState.finish_day()` — see `_ready()`'s own
-## call to it, just above where this is reached. Pulled into its own function so a test can drive
-## the outcome directly against a bare `_pause`/`_summary`, without paying for the whole boot this
-## is normally reached from.
-func _show_resume_outcome(resume: Dictionary) -> void:
-	if _run_over:
-		# The last nerve the load itself spent — same ending, same screen, as a run that reaches
-		# zero nerves any other way.
-		_ending_shown = true
-		_summary.show_ending(GameState.ending)
-		return
-	# `_day_engaged` is still `false` here — see its own doc — so closing again from this screen
-	# before pressing continue costs nothing more than the load already did (or nothing at all,
-	# for a save written at a day's own summary).
-	_pause.open(_RESUMED_DAY_LOST_NOTE if resume["day_under_way"] else "")
 
 ## `--start-escape`'s own boot: the whole escape sequence, which is the run's ending played behind
 ## a flag rather than reached from day 14's summary. Section one is the building — the third
@@ -658,11 +641,6 @@ func _connect_summary_and_pause_signals() -> void:
 	_summary.restart_requested.connect(_restart_run)
 	_pause.quit_requested.connect(_quit)
 	_pause.restart_requested.connect(_restart_run)
-	# `_day_engaged`'s own doc says what this is for: a day freshly loaded from a save sits behind
-	# this screen unplayed, and closing again from there must not cost a second nerve for a day
-	# nothing has yet been done in. An ordinary `Esc` pause reaches this too, harmlessly — the day
-	# is already engaged by the time a player can even open it.
-	_pause.resumed.connect(_on_pause_resumed)
 
 ## Dev flag: `-- --ending bad|neutral|good` puts the last screen of a run on screen at boot.
 ##
@@ -752,13 +730,52 @@ func _open_the_title() -> void:
 ## which `is_inside_tree()` never does, so this is the check to make rather than a null check on
 ## `get_tree()`'s own return. Never false in the running game, where this only ever fires on a real
 ## `main` already in the tree.
+##
+## **With no resume, this is also the moment she starts playing** — `_engage_the_day()` runs
+## immediately. **With one, it is not**: `_show_the_resume_gate()` opens instead, and it is *that*
+## screen's own continue that reaches `_engage_the_day()`, through `_on_summary_continued()`'s own
+## `_resume_gate_open` branch — see that function's own doc for why the same signal reaches two
+## different places depending on which screen raised it.
 func _on_title_start(mode: ControlsMode.Mode) -> void:
 	_touch_controls.set_mode(mode)
 	_in_the_title = false
-	# The day behind this screen becomes the one she is actually playing — see `_engage_the_day()`'s
-	# own doc for why this has to write a save immediately rather than only flip the flag.
-	_engage_the_day()
 	_title.close()
+	if not _resume.is_empty():
+		_show_the_resume_gate()
+		return
+	_engage_the_day()
+
+## What pressing start on the title leads to when a save was resumed — the day brief showing what
+## the load already paid for, or the ending directly when the load itself spent the run's last
+## nerve, the same screen and the same `_on_summary_continued()` path any other run-ending reaches.
+## Split out of `_on_title_start()` so a test can drive the outcome directly against a bare
+## `_summary`, without paying for the whole boot this is normally reached from.
+##
+## Writes nothing itself: `_ready()`'s own write right after `_start_day()` — `false`, made before
+## the title was ever shown — already has the load's own charge on disk, for a resumed run, so a
+## kill at any instant between here and the day brief's own continue finds exactly what this
+## screen is showing, never a second charge and never a free one.
+func _show_the_resume_gate() -> void:
+	if _run_over:
+		# The last nerve the load itself spent — same ending, same screen, as a run that reaches
+		# zero nerves any other way. `GameState.ending` is already set (`GameState.finish_day()`
+		# set it in `_ready()`), so nothing downstream can write a save naming this run again.
+		_ending_shown = true
+		_summary.show_ending(GameState.ending)
+		return
+	_resume_gate_open = true
+	_summary.show_day_brief(GameState.day, GameState.nerves,
+			_RESUMED_DAY_LOST_NOTE if _resume["day_under_way"] else "")
+
+## Hands the day already built and paused behind a gate — the title, on a fresh or a resumed run
+## the load left with nothing charged, or the day brief the load put on top of it — over to the
+## player: the moment she is actually playing it, which is also the moment the save has to say so,
+## immediately rather than leaving the next write to whichever of the day's own two other moments
+## (a resumed run's own dawn write in `_ready()`, or the day's own end) happens to come next.
+## Called from `_on_title_start()` directly (no resume) and from `_on_summary_continued()`'s own
+## `_resume_gate_open` branch (the day brief's continue) — the two, and the only two, places a gate
+## she has not yet dismissed stands between a built day and the day she is actually walking.
+func _engage_the_day() -> void:
 	_player.step_back_in()
 	_pauses_with_the_game(_city)
 	_hud.visible = true
@@ -775,6 +792,7 @@ func _on_title_start(mode: ControlsMode.Mode) -> void:
 		_frame_graph.visible = _layer_graph_on
 	if is_inside_tree():
 		get_tree().paused = false
+	_save_now(true)
 
 ## The screen-edge half of the danger vocabulary, in its own layer.
 ##
@@ -1065,6 +1083,10 @@ func _pauses_with_the_game(node: Node) -> void:
 
 # --------------------------------------------------------------- the day loop ---
 
+## Builds and starts the day; writes nothing itself. Each caller decides what, if anything, the
+## save should say about the day this just built — see `_ready()`'s own call (nothing for a fresh
+## run, `false` for a resumed one) and `_on_summary_continued()`'s (`true`, since nothing gates an
+## ordinary continue into the next day at all).
 func _start_day() -> void:
 	# Timed for the same reason `_ready()` times `CityGenerator.generate()`: playtest 27 named
 	# this path — planning the day's closures, placing every event, streaming the world around
@@ -1150,12 +1172,26 @@ func _start_day() -> void:
 	if _observer:
 		_observer.start_day()
 
-	# The dawn write — one of the four moments a run is saved (see docs/MECHANICS.md, "Saving and
-	# resuming"). `_day_engaged` says whether this dawn is one the player has actually started
-	# controlling yet (see its own doc); the value is exactly what the save should carry, since
-	# closing behind a title or a resume-pause that has not been dismissed must not cost anything
-	# more than a load already has.
-	_save_now(_day_engaged)
+## Whatever `_start_day()`'s own dawn should say about the day it just built, said right after
+## that call returns — pulled out of `_ready()` on its own so a test can drive the decision
+## directly without paying for the world `_start_day()` builds around it.
+##
+## **A resumed run writes `false` here**, before the title — and, on the way to the day brief,
+## that screen too — is ever shown, so whatever `GameState.finish_day()` already charged earlier
+## in `_ready()` is on disk the instant either gate appears rather than only once she presses past
+## one. This is what the kill-at-any-instant argument in docs/MECHANICS.md, "Saving and resuming",
+## rests on: nothing between this write and `_engage_the_day()`'s own `true` ever depends on a
+## notification catching anything.
+##
+## **A fresh run (`_resume.is_empty()`) writes nothing at all.** Merely opening the game to look at
+## the title is not playing it, and there is no earlier save to protect a charge on — the first
+## write for a fresh run is `_engage_the_day()`'s own `true`, the instant she actually starts. The
+## held restart reaches the same case: `GameSave.clear()` (`_restart_run()`) leaves
+## `GameSave.try_resume()` nothing to find on the reload that follows, so `_resume` is empty there
+## too and the reloaded boot writes nothing until its own title is dismissed.
+func _write_dawn_for_a_resumed_run() -> void:
+	if not _resume.is_empty():
+		_save_now(false)
 
 ## What calm ground today has, by kind. Cheap, and the thing most worth knowing about a day
 ## now that a day can only be won on calm ground.
@@ -1236,20 +1272,30 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 			_city.events.plans(), true, trail, met)
 	Telemetry.end_day()
 	_run_over = not GameState.finish_day(result)
-	# The day's-end write — one of the four moments a run is saved. Skipped when the run just
+	# The end-of-day write — one of the two moments a run is saved. Skipped when the run just
 	# ended: `GameState._end_run()` (called from inside `finish_day()` above) already cleared the
 	# save, and writing here would resurrect a file naming a run that is over.
 	if not _run_over:
 		_save_now(false)
 	_summary.show_day(finished_day, result, _day.failure_reason, GameState.nerves, elapsed_seconds)
 
+## The same `DaySummary.continued` signal reaches this from two different screens `_summary` can be
+## showing, told apart by `_resume_gate_open`: the day brief a resumed run's title opened
+## (`_show_the_resume_gate()`), or the ordinary end-of-day message every other day reaches here
+## with. Only the first of those is *engaging* an already-built day rather than starting a new one.
 func _on_summary_continued() -> void:
+	if _resume_gate_open:
+		_resume_gate_open = false
+		_summary.dismiss()
+		_engage_the_day()
+		return
 	if not _run_over:
 		_summary.dismiss()
-		# No gate stands between one day's summary and the next day's dawn, unlike the title on a
-		# fresh day 1 or the pause a resumed run opens behind — see `_day_engaged`'s own doc.
-		_day_engaged = true
 		_start_day()
+		# No gate stands between one day's own end-of-day message and the next day's dawn, unlike
+		# the title (and, on a resumed run, the day brief behind it) a fresh day 1 opens behind —
+		# so this is already the moment she is playing the next day, and the write says so at once.
+		_save_now(true)
 		return
 	if not _ending_shown:
 		_ending_shown = true
@@ -1545,52 +1591,6 @@ func _pause_on_focus_lost() -> void:
 		return
 	_pause.open()
 
-## `PauseScreen.resumed` — Esc, space or a tap closing an ordinary pause, as well as the moment a
-## resumed run's own gating pause is dismissed for the first time. See `_engage_the_day()`'s own
-## doc: an ordinary pause reaches this harmlessly (the day was already engaged before it could
-## open at all, so `_engage_the_day()` writes nothing the second time), and a resumed run's pause
-## is the one case where this is the actual, load-bearing transition.
-func _on_pause_resumed() -> void:
-	_engage_the_day()
-
-## The one place `_day_engaged` is ever set `true`, called from `_on_title_start()` (day 1's title
-## dismissed) and `_on_pause_resumed()` (a resumed run's own gating pause dismissed, or an
-## ordinary mid-day pause closing).
-##
-## **Writes the save immediately, on the transition, rather than leaving the next write to
-## whichever of the four ordinary triggers happens next.** The dawn write already on disk for a
-## day sitting behind either gate says `day_under_way: false`, since nothing had been played in it
-## yet — correct at the time, but wrong the instant the gate opens and stays wrong until a focus
-## loss or a quit notification updates it. Those notifications are not guaranteed to ever arrive:
-## a crash, a force-kill, or — the ordinary case on mobile web — a backgrounded tab whose page is
-## discarded outright all skip them, and the dawn write exists in the first place because exactly
-## this class of event cannot be relied on to notify anybody. Left unfixed, the day between the
-## gate opening and the next notification would read as "not under way" to a load that catches a
-## silent kill in that window, so closing there would cost nothing — every second escape free:
-## quit mid-day (pay), resume, dismiss the gate, kill the tab (free).
-##
-## One function rather than two call sites each writing their own line, so the flip and the write
-## cannot drift apart the way they did when this milestone first shipped without this function at
-## all — see the commit that added it. No-ops past the first call (`if _day_engaged: return`), so
-## an ordinary pause closing on an already-engaged day writes nothing and flashes nothing every
-## time Esc is pressed.
-func _engage_the_day() -> void:
-	if _day_engaged:
-		return
-	_day_engaged = true
-	_save_now(true)
-
-## Whether the day currently in `_day` should be saved as "under way" right now — read by
-## `_notification()`'s own focus-loss and quit writes, never by the dawn write, which passes
-## `_day_engaged` directly since nothing about `_day.phase` says anything useful before
-## `_day.start()` has even run for the attempt in question. `false` before `_day` exists at all
-## (the earliest sliver of boot) and once a day has actually ended (`GameEnums.DayPhase.OVER`,
-## which `_on_day_finished()` sets before either summary screen comes up) — the phase this is
-## really asking about is *whether closing right now would lose anything*, and a day that has
-## already resolved into a summary or an ending has nothing left in it to lose.
-func _day_under_way_for_save() -> bool:
-	return _day_engaged and _day != null and _day.phase != GameEnums.DayPhase.OVER
-
 ## Every write goes through here so the symbol only ever flashes for one that actually happened —
 ## see `GameSave.write()`'s own doc for the runs and moments that draw nothing.
 func _save_now(day_under_way: bool) -> void:
@@ -1709,9 +1709,6 @@ func _start_burst() -> void:
 	Telemetry.start_burst("asked for an animation burst at %s" % _capture_context())
 
 func _quit() -> void:
-	# Before `Telemetry.end_run()` closes the log, so a `save` entry lands inside the run it is
-	# about rather than after the header that closes it.
-	_save_now(_day_under_way_for_save())
 	Telemetry.end_run()
 	get_tree().quit()
 
@@ -1730,12 +1727,6 @@ func _quit() -> void:
 ## answered at all — see `_pause_on_focus_lost()`'s own doc for why coming back does not resume.
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
-		_save_now(_day_under_way_for_save())
 		Telemetry.end_run()
 	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
-		# Saved unconditionally, even where `_pause_on_focus_lost()` below is about to return early
-		# because the day summary or the title is already up — saving and pausing are separate
-		# decisions, and a write here is what lets a browser tab backgrounded on a day summary come
-		# back to the next day's dawn for free rather than to whatever the day before it left.
-		_save_now(_day_under_way_for_save())
 		_pause_on_focus_lost()
