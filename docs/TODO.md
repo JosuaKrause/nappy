@@ -488,6 +488,11 @@ over a crossing from one street out. The three placement rules refuse a candidat
 covered is one that either reached the day past the rules or is read as covered differently by
 the probe and the rule:
 
+- [ ] **A poster crew for squares, as its own row.** *(2026-09-19: "we need a separate square
+      poster crew entity for this", [PLAYTEST-99](playtests/PLAYTEST-99.md).)* `poster_crew`
+      stands `AGAINST_THE_BUILDING` and so cannot be placed on a `SQUARE` tile, which its
+      `placement` still lists. A second row places on squares only, with a look and a picture of
+      its own, and `poster_crew` stops listing `SQUARE`.
 - [ ] **The parked van at a junction's rim.** Since `delivery_van` is a wall by fit it is weighed
       toward junction rims with the other walls (`Tuning.EVENT_WALL_RIM_WEIGHT`), and the
       zero-cost-line share fell from 262 to 258 of 296, all four in act III. Whether a van
