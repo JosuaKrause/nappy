@@ -19,6 +19,7 @@ func _rig(t) -> Stroller:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	rig.add_child(camera)
 	t.add_child(rig)
 	rig.set_physics_process(false)

@@ -5,6 +5,8 @@ extends Node
 ## global `randi()`. Layout comes from `city_rng()`, a day's events from `day_rng()`.
 
 var run_seed: int = 0
+## A run owns its presentation just as it owns its seed. Days and scene changes only read it.
+var player_is_male := false
 var day: int = 1
 var nerves: int = Tuning.STARTING_NERVES
 var resistance_progress: int = 0
@@ -125,6 +127,7 @@ func remember_where_she_settled(block: Vector2i) -> void:
 ## Begin a fresh run. Pass a seed to reproduce a previous city, or omit for a new one.
 func start_run(seed_value: int = 0) -> void:
 	run_seed = seed_value if seed_value != 0 else _new_seed()
+	player_is_male = run_rng("player-presentation").randi_range(0, 1) == 1
 	day = 1
 	nerves = Tuning.STARTING_NERVES
 	resistance_progress = 0
@@ -344,6 +347,13 @@ func _instruction_the_day_began_with() -> String:
 	return ResistanceSteps.unlocking_brief(step)
 
 # ---------------------------------------------------------------------- RNG ---
+
+## Independent reproducible choices whose lifetime is the whole run, rather than one day.
+## Keeping presentation off the city/day streams preserves every seeded gameplay layout.
+func run_rng(stream: String) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%d:run:%s" % [run_seed, stream])
+	return rng
 
 ## Deterministic RNG for city layout. Same seed, same city, for the whole run.
 func city_rng() -> RandomNumberGenerator:

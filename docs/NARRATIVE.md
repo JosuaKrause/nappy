@@ -2,13 +2,16 @@
 
 ## Premise
 
-Nothing is explained. The player is a mother with a baby that will not sleep. She walks.
-The story is entirely in *what she walks past*, and the fact that she keeps having to walk
+Nothing is explained. The player is a parent with a baby that will not sleep. They walk.
+The story is entirely in *what they walk past*, and the fact that they keep having to walk
 past it because the baby still will not sleep.
+
+A new run chooses either the mother or the father with equal probability. That presentation
+stays fixed through every day, retry and escape; it changes no route, rules or story outcome.
 
 ## The two names
 
-She is **Peregrine**. The baby is **Wren**.
+The parent is **Peregrine**, in either presentation. The baby is **Wren**.
 
 They are the only proper nouns in the game — the city has no name, the country has no name, and
 nobody on the other side of a checkpoint is ever given one. Two is what the premise can afford:
@@ -18,12 +21,8 @@ which is the one piece of explaining that costs nothing.
 Both are birds and neither reason is on the surface, which is the register this wants. A **wren**
 is small and will not settle. *Peregrinus* is a common noun before it is a name — *the one from
 abroad, the one passing through* — and the falcon is the **pilgrim** falcon, named for only ever
-being seen on passage, never where it nests. She has a home she cannot stay in, and the city gets
-less hers every day. The whole game is the walk between those two facts.
-
-Considered and rejected: **Hal**, for the halcyon and its fourteen days of calm — the arithmetic
-was perfect (a run is fourteen days, and the halcyon's whole job is to make the world quiet enough
-to nest in) and the name reads male on sight, which costs the premise more than the reason buys.
+being seen on passage, never where it nests. The parent has a home they cannot stay in, and the city
+belongs to them less every day. The whole game is the walk between those two facts.
 
 **These names are content and never identifiers.** Nothing in `src/` is named after them; see
 `CLAUDE.md`, "Names are content, never identifiers". A name can change and a rename that has
@@ -69,7 +68,7 @@ from this first appearance on — see "Risk" below.
 Cold palette, overcast. Streets are emptier — literally: from act I's crowd, the streets
 keep about a fifth of the people and a quarter of the cars, and the arterial that ran at
 three times the idle decay in act I falls below it. The city gets *quieter*. This is the cruellest joke in the design, and it
-is now something the player can see rather than only feel: the pavement she walked down on
+is now something the player can see rather than only feel: the pavement they walked down on
 day 1 shoulder to shoulder is empty. The city gets easier to put a baby to sleep in,
 because there is nobody left in it.
 
@@ -103,7 +102,7 @@ entirely and still reach the good ending.
 
 | Days | Task | What |
 | --- | --- | --- |
-| 4 / 5 | A note for a stranger | A chalk mark, then touch whichever `homeless_yeller` she reaches first — several are live at once and look alike, so there is no wrong one to single out first. |
+| 4 / 5 | A note for a stranger | A chalk mark, then touch whichever `homeless_yeller` they reach first — several are live at once and look alike, so there is no wrong one to single out first. |
 | 6 / 7 | The package | A chalk mark, then touch the delivery van's drop. Picking it up makes the pram heavier for the rest of the day. |
 | 8 / 9 | The checkpoint | A chalk mark, then walk into the `roadblock`'s own band — the poured-concrete street closure, not a region door's hut — rather than round it. |
 | 10 / 11 | The wall | A chalk mark, then reach the poster crew's wall before they finish it — the window closes if the crew moves on first. |
@@ -114,21 +113,21 @@ entirely and still reach the good ending.
 
 - **Every mark is guarded**, from the day the first one can appear. A robber waits somewhere
   between 66px and 176px of it — inside that band touching the mark is death, always; above
-  it he never wakes at all; between them, which side she approaches from decides whether he
-  notices her. Seeded from the run and the day, so the distance that was safe on day 9 of
+  it he never wakes at all; between them, which side the player approaches from decides whether he
+  notices them. Seeded from the run and the day, so the distance that was safe on day 9 of
   this run is safe on day 9 every time you replay it — the pattern is learnable, which is
   the difference between risk and a coin flip.
-- **The contact is whichever look-alike she hands the note to.** A perform step's contact does
+- **The contact is whichever look-alike the player hands the note to.** A perform step's contact does
   not wait at the one instance the day happened to seed; it rides onto whichever live
   look-alike — a `homeless_yeller`, a `delivery_van`, a `roadblock`, a `poster_crew` or a
-  `protest` — she is within reach of, and follows her from one to the next until she touches
-  one. There is no exhaustive check to run and no wrong candidate to cost her anything:
-  approaching the field of any of them is still the cost, but any one she has noticed and walks
+  `protest` — the player is within reach of, and follows them from one to the next until they touch
+  one. There is no exhaustive check to run and no wrong candidate to cost the player anything:
+  approaching the field of any of them is still the cost, but any one they have noticed and walk
   up to is the right one. *(2026-09-13: "the task is always solved by going to any yeller she
   notices.")*
 - **The deadline.** The wall's window closes when the poster crew's own instance is gone —
   paste it over and the contact goes with it, for the rest of the run.
-- **Only a day she wins counts.** *"a task is only complete if it is done on the day that won"* —
+- **Only a day the player wins counts.** *"a task is only complete if it is done on the day that won"* —
   a mark touched, a step performed, a contact lost to its deadline, a package picked up or the
   last night's sabotage are all given back when the day is lost, and the retry offers the same
   mark or contact again. So the errand is never spent on an attempt that failed, and a task
@@ -146,32 +145,32 @@ legwork and then walks straight home on the last night gets the neutral ending.
 There is no quest log and no marker. In the world a pickup is a chalk mark on an alley
 wall, drawn *under* everything that stands on it, found by walking past it; a perform's
 contact is invisible, riding silently on the ordinary-looking thing it rides on. The day
-brief is the only channel that ever tells her what is next — touching a mark reads its
-words back to her on the following day's screen — and the HUD carries one terse line,
-*somewhere out there* and what she is looking for. How far in she is belongs between days
+brief is the only channel that ever tells the player what is next — touching a mark reads its
+words back on the following day's screen — and the HUD carries one terse line,
+*somewhere out there* and what they are looking for. How far in they are belongs between days
 rather than during one. **That line is silent until the first mark has been touched** —
 the first encounter comes with no hint at all, and only later ones are named.
 
 **A lost day repeats its own instruction rather than moving on.** *"the words shown on the lost
 day are the words that show at the beginning of that day not the nexts."* The summary of a day
-she lost reads out the words of the mark that unlocked the task she was out to perform — the
-same words the summary of the day she found that mark already gave her — because a mark touched
+they lost reads out the words of the mark that unlocked the task they were out to perform — the
+same words the summary of the day they found that mark already gave them — because a mark touched
 on a lost day has its touch given back with the attempt, and the retry needs telling what the day
 is for. A lost day 4 says nothing at all: its whole content is finding the mark, so there is
 nothing yet to repeat.
 
 A pickup mark that has never been on screen has never really been placed, so it follows
-her rather than sitting where the dawn plan first put it: once she is far enough from it
-to have missed it, it moves to the alley she has just come near instead, guard and all —
-so a mark she can actually walk up to is what makes the silent first encounter fair
+the player rather than sitting where the dawn plan first put it: once they are far enough from it
+to have missed it, it moves to the alley they have just come near instead, guard and all —
+so a mark the player can actually walk up to is what makes the silent first encounter fair
 rather than a dead end.
 
 ## Endings
 
 ### Bad — Nerves at 0
 
-Whichever day it happens on, the run ends. She stops going out. The city continues without
-her. Short, flat epilogue text over a static shot of the apartment window.
+Whichever day it happens on, the run ends. The parent stops going out. The city continues without
+them. Short, flat epilogue text over a static shot of the apartment window.
 
 ### Neutral — survive 14 days, resistance incomplete
 

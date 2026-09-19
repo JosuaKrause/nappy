@@ -138,6 +138,7 @@ func _test_a_rotated_touch_still_aims_from_the_nearer_focus_correctly(t: Node) -
 	rig.add_to_group("player")
 	t.add_child(rig)
 	var camera := Camera2D.new()
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	# `Camera2D.ignore_rotation` defaults to `true` — see `Stroller.set_screen_rotation()`'s own
 	# doc for why a camera's own rotation does nothing to the canvas transform unless this is
 	# turned off, which is exactly the mistake a first version of this test made.

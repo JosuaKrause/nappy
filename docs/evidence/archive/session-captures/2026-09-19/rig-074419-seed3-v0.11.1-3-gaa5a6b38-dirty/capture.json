@@ -1,0 +1,16 @@
+{
+  "purpose": "Normal-scale blue-overshirt male player pushing the shared stroller",
+  "command": "./tools/shot.sh /private/tmp/m157-male-player.png 4 --seed 3 --walk 1s3e --invincible",
+  "resolution": [1280, 720],
+  "seed": 3,
+  "day": 1,
+  "presentation": "default illustrated PNG, male",
+  "capture_after_seconds": 4,
+  "build": "v0.11.1-3-gaa5a6b38-dirty",
+  "build_note": "Uncommitted M157 player-family implementation and matching artwork on the named base. The enclosing change preserves the implementation.",
+  "original_output": "/private/tmp/m157-male-player.png",
+  "retained_output": "m157-male-player.png",
+  "telemetry": "The entire original run folder is retained, including run.log and maps.",
+  "coverage": "Male identity, blue shirt, east-facing stroller relationship, ordinary game scale and existing HUD. The log starts at tile (80,84), passes (84,86), and the captured readout reaches (88,86).",
+  "limitations": "Single still: no claim about gait smoothness or turns. Invincibility freezes the gameplay clock and meter; this is appearance evidence, not route cost or performance evidence. No forced-SVG gameplay still is taken."
+}
