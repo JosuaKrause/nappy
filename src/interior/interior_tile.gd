@@ -19,12 +19,16 @@ enum Kind {
 	                        ## the view.
 	HALLWAY_FLOOR_EDGE_W,   ## Unused for the same reason as the east edge above.
 	STAIRWELL_FLOOR,        ## The mechanical floor a `DOOR` tile's own threshold stands on.
-	STAIR_FLIGHT_E,         ## A walkable tread tile. Its picture drops one tile height over one
-	                        ## tile width toward the south-east, so a run of them is a diagonal
-	                        ## line — see `InteriorMap._lay_flight()`.
-	STAIR_FLIGHT_W,         ## The same, toward the south-west.
-	LANDING,                ## The flat platform at a switchback's turn, or a lower landing that
-	                         ## doubles as the next floor's own top landing.
+	STAIR_FLIGHT_E,         ## The basement entry's walkable tread, descending south-east.
+	STAIR_FLIGHT_W,         ## Its retained mirror, available to the tileset but currently unused.
+	LANDING,                ## The retained old flat stair platform kind, currently unused.
+	STAIR_TOP_E,            ## `t`: the reviewed upper stair-side role, walkable toward east.
+	STAIR_MIDDLE_E,         ## `m`: the reviewed lower stair-side role, walkable toward east.
+	STAIR_TOP_W,            ## `T`: the mirrored upper role, walkable toward west.
+	STAIR_MIDDLE_W,         ## `M`: the mirrored lower role, walkable toward west.
+	STAIR_CORNER_E,         ## `c`: the east continuation triangle. Drawn, but not walkable.
+	STAIR_CORNER_W,         ## `C`: its west mirror. Drawn, but not walkable.
+	STAIR_BLOCK,            ## `b`: the 16px-deep top-edge side block. Drawn, but not walkable.
 	BASEMENT_FLOOR,         ## The short jogs connecting one basement stretch to the next — see
 	                         ## `InteriorMap._build_basement()`.
 	BASEMENT_FLOOR_EDGE_N,
@@ -67,6 +71,10 @@ const _WALKABLE := {
 	Kind.STAIR_FLIGHT_E: true,
 	Kind.STAIR_FLIGHT_W: true,
 	Kind.LANDING: true,
+	Kind.STAIR_TOP_E: true,
+	Kind.STAIR_MIDDLE_E: true,
+	Kind.STAIR_TOP_W: true,
+	Kind.STAIR_MIDDLE_W: true,
 	Kind.BASEMENT_FLOOR: true,
 	Kind.BASEMENT_FLOOR_EDGE_N: true,
 	Kind.BASEMENT_FLOOR_EDGE_E: true,
@@ -80,12 +88,13 @@ const _WALKABLE := {
 static func is_walkable(kind: Kind) -> bool:
 	return _WALKABLE.get(kind, false)
 
-## `+1` if `kind` is a flight tile descending toward east (`STAIR_FLIGHT_E`), `-1` toward west
-## (`STAIR_FLIGHT_W`), `0` for every other kind — including `LANDING`, which is flat. The one
-## number `Stroller`'s own slope redirection needs; see `InteriorScene.slope_dir_at()`.
+## `+1` if `kind` is a flight surface descending toward east, `-1` toward west, `0` for every
+## other kind. The basement keeps the original `STAIR_FLIGHT_E` entry tiles; the main shafts use
+## both reviewed walkable roles in each direction. This is the one number `Stroller`'s own slope
+## redirection needs; see `InteriorScene.slope_dir_at()`.
 static func flight_direction(kind: Kind) -> int:
-	if kind == Kind.STAIR_FLIGHT_E:
+	if kind in [Kind.STAIR_FLIGHT_E, Kind.STAIR_TOP_E, Kind.STAIR_MIDDLE_E]:
 		return 1
-	if kind == Kind.STAIR_FLIGHT_W:
+	if kind in [Kind.STAIR_FLIGHT_W, Kind.STAIR_TOP_W, Kind.STAIR_MIDDLE_W]:
 		return -1
 	return 0
