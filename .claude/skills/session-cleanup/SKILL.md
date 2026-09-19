@@ -123,3 +123,17 @@ costs a whole run.
 `docs/HANDOFF.md` is the last thing to write and the first thing the next session reads. It says the
 tree state, what is queued in order, and nothing else. **If it is wrong, everything downstream of it
 is wrong too.**
+
+### 8. End with a fresh-context restart prompt
+
+Every session handover ends with a copy-paste prompt the player can use to start the next session
+with a genuinely fresh context. Do not require the next session to have read this conversation or
+to resume an old agent transcript. The prompt tells it to fetch and inspect live PR state, then read
+`CLAUDE.md`, `docs/HANDOFF.md`, `docs/TODO.md` and the named work-item sources before acting.
+
+Name every open thread by PR number and short title, branch or worktree when relevant, current
+checkpoint, exact next action, remaining gate and verification already completed. Restate the
+scope fences and merge authority that matter. If delegation should continue, say to start fresh
+agents with self-contained briefs rather than resuming the session's agents. Keep the prompt
+self-contained and current at the moment of handover; the final report may summarize it, but the
+copy-paste block must stand on its own.
