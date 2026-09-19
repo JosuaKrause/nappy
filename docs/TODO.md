@@ -411,21 +411,24 @@ when it loses focus, so M161 is built first or with it.
 
 ---
 
-## M129 — A path through the city never has to cost · two routes in five still break
+## M129 — A path through the city never has to cost · one route in nine still breaks
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable
 > around … the routing should only cross the street at intersections"
 
 [PLAYTEST-69](playtests/PLAYTEST-69.md), [PLAYTEST-71](playtests/PLAYTEST-71.md),
-[PLAYTEST-75](playtests/PLAYTEST-75.md), [PLAYTEST-76](playtests/PLAYTEST-76.md). The four rules
-and the leaf blower's two-part field are built and recorded (`DECISIONS.md`, M129, the four
-rules; M129, the leaf blower is a wall to walk past and a busker to stay near). The probe,
-`tests/probes/m129_zero_cost_line.gd`, finds a zero-cost line along 183 of 296 routes. The
-guarantee is not true for the rest, and what stands in them is a route junction covered by
-several rows together (69 routes), with the leaf blower in the cut on 74 of the 113. The three
-placement rules refuse a candidate whose reach *together with everything already down* would
-close a junction, so a crossing the probe finds under four to six rows is one that either
-reached the day past the rules or is read as covered differently by the probe and the rule:
+[PLAYTEST-75](playtests/PLAYTEST-75.md), [PLAYTEST-76](playtests/PLAYTEST-76.md),
+[PLAYTEST-77](playtests/PLAYTEST-77.md). The four rules, the leaf blower's two-part field and
+the wall reading are built and recorded (`DECISIONS.md`, M129, the four rules; M129, the leaf
+blower is a wall to walk past and a busker to stay near; M129, a wall is also what cannot be
+walked past). The probe, `tests/probes/m129_zero_cost_line.gd`, finds a zero-cost line along
+262 of 296 routes. The guarantee is not true for the rest, and what stands in them is almost
+all one shape: a route junction taken by several rows together (32 of the 34 broken routes),
+with `leaf_blower`, `homeless_yeller` and `roadblock` each in the cut on 23 to 27 of the 34. No sidewalk rule reaches a `roadblock` on a carriageway or a wall's wide field reaching
+over a crossing from one street out. The three placement rules refuse a candidate whose reach
+*together with everything already down* would close a junction, so a crossing the probe finds
+covered is one that either reached the day past the rules or is read as covered differently by
+the probe and the rule:
 
 - [ ] **Which placements the three rules never see.** `_place_one`'s candidate loop is where
       the rules run. Find every other path a row reaches the day by — the calm-ground pass
@@ -434,39 +437,9 @@ reached the day past the rules or is read as covered differently by the probe an
       probe, which path placed the rows in its cut and whether the probe's *covered* and the
       rule's *open* agree on it. Then either those paths ask the same three questions, or the
       record says why a route may pay there. The probe's "what broke the line" table is the
-      measurement; the seals alone cost about five points (66.9% on the day's own rows against
-      61.8% with them).
-- [ ] **A wall is also what cannot physically be walked past, and it never stands on the
-      route's own pavement.** *(2026-09-15: "on the side of the street where the path was
-      chosen only obstacles that can be bypassed should be possible" — "the market stall should
-      appear on the other side of the street" — "a wall is also when you physically cannot walk
-      through"; offered a placement-only rule instead, the player chose this: "that seems to
-      be more thorough".)* Today `EventScheduler._role_for` answers `WALL` only for a lethal
-      row or one whose walk-through cost reaches `Tuning.WALL_WORTH_OF_COST` (35), so a market
-      stall — a 28 px body denying 58 px of a 64 px pavement, no 28 px line past it — is
-      *friction* and is weighted onto the corridor four to one (`Tuning.EVENT_CORRIDOR_WEIGHT`).
-      The width rule (`_leaves_a_line_past_it`, via `_closes_the_street`) then only asks that
-      *either* pavement stays walkable end to end, so the stall may close the pavement the
-      tree walks while the tint (`DECISIONS.md`, M150) marks exactly that pavement. Three
-      changes, the **balance** rule governing every number: (1) `_role_for` also answers `WALL`
-      for a row whose body and charging disc (`_line_reach_of`) leave no four-connected line
-      the stroller's width (the 28 px the probe uses) along a pavement it may be placed on —
-      a passability reading beside the cost reading, decided from the row's own numbers, so
-      `docs/EVENTS.md`'s role column moves for every row it catches (`cafe_tables` and
-      `market_stall` at least; list them all in the record). (2) `_copies_of` reads the
-      corridor per pavement, the way M150's tint does (`Corridor.depth` answers at the grain of
-      a whole street today; `docs/CITY.md` where that grain is described): a wall gets its zero
-      copies on the pavement the tree walks and its ordinary off-corridor copies on the *other*
-      pavement of the same street, which is where the player put the stall. (3) The width rule
-      reads the route's pavement, not the street: a counted row reaching onto the tree's
-      pavement between two junctions is refused unless a stroller-wide line survives along that
-      pavement, cumulatively with what is already down, the way the junction rule reads.
-      Measure with `tests/probes/m129_zero_cost_line.gd` before and after, and with
-      `_test_the_day_is_placed_by_role`'s corridor floors and the wall caps, which will move:
-      the two act I rows built to force a crossing become walls across the street from the
-      route, so say what day 1's corridor now carries and what forced crossings are left,
-      rather than retuning floors or caps to pass. `docs/EVENTS.md` where it describes the
-      roles and the three rules.
+      measurement; the seals and the region wall cost about four points (92.2% on the day's
+      own rows against 88.5% with them).
+
 ---
 
 ## M137 — The contact is whoever she hands the note to, and the trap comes to her · asked for 2026-09-13
