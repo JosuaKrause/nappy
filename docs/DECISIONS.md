@@ -4,25 +4,34 @@
 
 > "the save icon is basically a white square" ([PLAYTEST-94](playtests/PLAYTEST-94.md), on a phone)
 
+> "make it bluish and the metal parts should be silver/gray" · "no tint for the save symbol"
+> ([PLAYTEST-95](playtests/PLAYTEST-95.md))
+
 `assets/ui/save.svg` was three white shapes told apart by opacity alone — the body at 0.85, the
-shutter at 1.0, the label at 0.35 — and `SaveIndicator` tints and fades the whole texture with one
-modulate, so the differences shrank with the fade and were gone at the 48px it is shown at.
+shutter at 1.0, the label at 0.35 — and `SaveIndicator` tinted and faded the whole texture with one
+modulate, `Palette.CHALK_DONE`, so the differences shrank with the fade and were gone at the 48px it
+is shown at.
 
-**Built:** one path with `fill-rule="evenodd"`. The chamfered body is unchanged; the shutter and
-the label are holes in it, on the coordinates the two rectangles had. The shutter's hole meets the
-body's top edge, so it reads as a notch open to the top, and the label's is enclosed, so it reads
-as a window: transparency is the second value, and a flat tint cannot take it away. No code
-changed.
+**Built:** the symbol carries its own colors and is never tinted. The chamfered case is a muted
+blue (`#5f7a99`), the shutter a silver gray (`#a8adb3`) with a darker slot (`#4a4e54`), the label a
+pale paper (`#ede8de`), on the geometry the three shapes always had. `SaveIndicator` fades it with
+a white modulate and nothing else; the peak alpha stays 0.9, the value the tint carried, so the
+hold and the fade are timed as they were. `pause.svg`, `restart.svg` and `continue.svg` stay white
+and tinted: this is the one symbol of the set with colors of its own, by the player's instruction.
 
-**Rejected:** the body as an outline with the shutter and label filled inside it. The two would
-still be the same white as the outline, which is the same problem moved.
+**Tried first and replaced the same day:** one white path with the shutter and the label cut out
+as holes (`fill-rule="evenodd"`), still tinted green. It read as a floppy disk on a dark ground
+and weakly on a light one, since a hole shows whatever is behind it; the player saw it and asked
+for color. **Rejected before that:** the body as an outline with the shutter and label filled
+inside it, which leaves all three the same white.
 
-**Open to overturn, chosen where the player said nothing:** the holes reuse the old rectangles'
-proportions, and the shutter is an open notch rather than an enclosed slot.
+**Open to overturn, chosen where the player said nothing:** the label's paper color rather than a
+hole, the slot in the shutter, and the exact blue and gray.
 
-Checked on a headless render through Godot's own SVG loader, tinted `Palette.CHALK_DONE` on a dark
-ground at 48px and at 16px: `evidence/m169-save-symbol-2026-09-19/save-symbol-before-after.png`.
-Whether it is noticed without distracting on a phone is `REVIEW.md`'s.
+Checked on a headless render through Godot's own SVG loader, each state under the modulate it
+really had, at 48px and 16px on a dark and a light ground:
+`evidence/m169-save-symbol-2026-09-19/save-symbol-color-comparison-3x.png`. Whether it is noticed
+without distracting on a phone is `REVIEW.md`'s.
 
 ## M165 — The escape after the corrected stairs · built 2026-09-19
 
