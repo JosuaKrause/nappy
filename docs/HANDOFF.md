@@ -285,23 +285,26 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
 checks and worktrees can move independently of this file.
 
-- **PR #216 — M159, a slow frame names the frame that was slow** is a green draft. Four
-  equal-window desktop repetitions still drift enough
-  that no toggle causality is claimed. Atlas phase timing is recorded outside the retained walking
-  window; GPU completion, deferred rendering and release wait remain unresolved. The next action is
-  quiet-host/player-laptop repetition and phone CPU attribution, keeping M143's readout-label work
-  separate. Its branch also carries the fix-ready M163 ground-atlas reference-fixture report and
-  M164 engine-errors-make-the-gate-red report; neither fix is implemented.
-- **PR #221 — M160, the father's B contact puts the other leg forward** is a green draft. Corrected
-  SVG ownership proof is complete, but the bounded initial
-  raster and one targeted retry both failed leg ownership or proportions, so no replacement PNG is
-  reviewable or installed. The next deliverable remains four genuinely reviewable complete PNG
-  figures, using a changed raster strategy and the corrected SVG as pose authority; do not reuse the
-  rejected lower body or repeat the exhausted prompt.
+- **PR #216 — M159, reduce crowd contribution cost and retain stutter measurements** is a draft with merge conflicts
+  and no CI result for its current head. The crowd-rejection optimization is locally verified;
+  its retained paired measurements show cheaper queries, while whole-frame tails remain.
+  Phone measurements and CPU attribution remain open. PLAYTEST-86 is its performance clarification.
+  Fetch the live PR and inspect its evidence before continuing.
+- **PR #234 — M167, the father's legs read as legs** is the separate drawing follow-up in `TODO.md`.
+  [PLAYTEST-90](playtests/PLAYTEST-90.md) and [PLAYTEST-91](playtests/PLAYTEST-91.md) require
+  more natural legs, A/C-consistent shading and shoes, and a narrower three-quarter stride.
+  [PLAYTEST-92](playtests/PLAYTEST-92.md) asks for the woman's legs as the next donor because
+  the pants match. Keep the accepted contact ownership, father upper body, N/S, NE/NW and
+  every A/C frame fixed. Show the clean sheet and native/6× loops in its draft PR description;
+  nothing in this follow-up replaces the provisionally accepted runtime baseline without review.
 
-No PR is merged or put on auto-merge without explicit permission in the current session. New
-implementation or investigation uses fresh agents with self-contained briefs; do not resume the
-agents from this handoff.
+Number ownership remains distinct: PLAYTEST-84 and PLAYTEST-85 are the escape/save records
+on main, PLAYTEST-86 belongs to the performance work, and PLAYTEST-87 belongs to the father
+sheet instructions. PLAYTEST-88 is the father's subsequent visual verdict.
+
+No merge, auto-merge, rebase, merge from main or branch deletion is authorized without explicit permission in the current
+session. New implementation or investigation uses fresh agents with self-contained briefs; do not
+resume the agents from this handoff.
 
 ## The queue, as prioritised on 2026-09-09
 

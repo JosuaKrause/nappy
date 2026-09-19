@@ -12,6 +12,9 @@ pairs every runtime source, creation reference and native illustrated PNG. The S
 the short brown hair, blue overshirt, cream undershirt, canvas, pose and functional placement.
 Their three-pose pushing/carrying geometry follows the current female creation family.
 The SVGs are authored and inspected before the corresponding raster generation.
+The [B-contact source review](b-contact/GENERATION.md) documents the four revised pushing
+sources, native/3× sheets and provisionally accepted runtime derivatives. The raw atlases,
+registered PNGs and original generation-input hashes below remain unchanged.
 
 `source/` preserves Godot's 1×, 3× and 8× rasterization of every SVG.
 `inputs/*_source-{1,3,8}x.png` assembles them in columns front, back, side, front diagonal,

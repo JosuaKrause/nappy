@@ -1,0 +1,30 @@
+Use case: precise-object-edit
+Repeat the woman's accepted P2 targeted atlas correction for this father. Input 1 is the father's
+5-column by 3-row atlas to edit. Input 2 is the woman's accepted P2 selected-generation atlas,
+also five columns by three rows: it supplies the exact opposite-contact leg overlap and gait
+that already works. Input 3 is the corrected father SVG B pose sheet, ordered front, back,
+side, front diagonal: it supplies the intended hip-to-shoe ownership. Inputs 4 and 5 are the
+official comic style references, excluding scenery and interface.
+
+Change only bottom-row columns 3 and 4 of input 1 (side B and front-diagonal B). Transfer the
+corresponding bottom-row woman's leg poses from input 2 to the same father. The man keeps his
+exact head, short brown hair, face, blue overshirt, cream shirt, hand positions, stature and
+upper-body proportions. Keep his blue-gray trouser fabric and dark shoes. No female body or
+clothing is introduced. Redraw the two complete figures coherently while keeping all landmarks.
+
+SIDE B: copy the woman's bottom-row column 3 contact anatomy. Her near thigh goes from the
+right side of the hip toward the LEFT trailing shoe with the heel lifted; it is continuously
+visible over the far thigh. The far leg advances to the RIGHT planted shoe, with its upper
+thigh occluded. That near leg must not continue to the right shoe as it does in the father's A.
+The unbroken foreground contour slopes from upper right to lower left.
+
+FRONT DIAGONAL B: copy the woman's bottom-row column 4 opposite-contact ownership with the
+father's more open stride, following column 4 of the SVG sheet. The image-right near hip must
+connect continuously down-left to the upper-left trailing shoe, passing IN FRONT OF the far
+thigh. The image-left far hip advances toward the lower-right shoe, with its thigh interrupted
+at the crossing. Do not connect the near hip to the advancing right shoe again.
+
+The specific failure to correct is foreground ownership at the crossing, not a foot's shape,
+color, knee crease or stride size. Keep the original father's compact width, leg length,
+45-pixel stature proportions, hand height and head size. Keep the other thirteen cells as input
+1. Full five-column, three-row atlas, same layout and alpha transparency, no text or shadows.

@@ -19229,6 +19229,105 @@ or ask the player to rediscover known defects just because the endpoint assertio
 
 ---
 
+## M160, the father's opposite-contact review uses the woman pipeline — 2026-09-19
+
+[PLAYTEST-87](playtests/PLAYTEST-87.md) rejects the four-row before/after comparison as the review
+deliverable: *"I know that the before looks bad. there is nothing to compare against."* It asks for
+exactly what reviewed the woman's pushing family, with the same tricks and no new strategy: one
+clean sprite sheet showing A/C/B/C in all eight runtime directions, plus native and 6× GIFs of the
+four-phase animation loop.
+
+The correction itself is narrower than another whole-family redraw. South/front has the correct
+leg action at the wrong size, so its accepted A upper body stays and its correctly sized A lower
+body is mirrored into the B contact. North/back uses the same construction. East/side and
+southeast/front-diagonal still have the wrong hip-to-shoe ownership and require corrected legs;
+after the generation route repeated that ownership error, the player authorized trying a
+deterministic splice of correct father legs beneath the preserved father upper body — *"you can try
+splicing -- I will judge."* West and southwest remain the eastern corrections' runtime mirrors.
+The accepted back-diagonal source continues to supply northeast and northwest. The A/C canvases,
+bottom-center anchors, scale, upper-body identity and alpha bounds are fixed constraints.
+
+The rejected comparison and its uninstalled raster attempt remain provenance, not a template for
+another review. The trial records its exact inputs, crop boundaries, transforms, compositing order,
+commands and output hashes beside the evidence. The shared correction procedure changes only after
+the player approves a final image, and then keeps the successful method rather than its failed
+precursors. No candidate becomes runtime art until the complete all-direction sheet and both loops
+are approved.
+
+## M160, the splice's trailing shoe did not establish an opposite contact — 2026-09-19
+
+[PLAYTEST-88](playtests/PLAYTEST-88.md) accepts N/S and the NE/NW mirrored pair, with the
+pairing clarified after the initial report named NE/SW. E/W and SE/SW remain rejected:
+*"the others have STILL the same leg in front only now the leg is also weirdly bent"*.
+The existing eight-direction sheet, GIFs, donor and their frozen reproduction inputs stay
+retained; no runtime artwork was installed.
+
+The donor's near thigh still travels forward from the hip to a forward knee, then its shin
+folds backward to reach the trailing shoe. The previous claim of correct ownership checked
+the trailing shoe and the overlap without checking that complete chain. Reusing those legs
+for the diagonal and raising one foot by affine projection inherited the same defect and
+did not provide the diagonal's own pelvis. The review README now states the rejection;
+the immutable chronology keeps the original assessment as history.
+
+The remaining correction targets are separate side and front-diagonal B contacts. Their
+corrected SVGs already specify a near knee and shoe behind the hip, with the near trailing
+thigh drawn over the far advancing leg. Preserve the accepted N/S and NE/NW frames, every
+A/C frame, the native canvases and fixed upper-body landmarks. The player-authorized
+father-only splice remains available, but approval of the complete sheet and loops still
+precedes installation and promotion of a successful method into the shared procedure.
+
+The next trial generated lower-body-only donors to remove the full-figure proportion conflict.
+The side's first result failed overlap; its one targeted retry produced the backward near
+hip–knee–shoe chain. Both separately generated front-diagonal attempts failed: the first kept
+the forward-knee fold, and its retry restored the foreground advancing thigh. Generation stopped
+for that approach. The existing authorized side-donor splice and diagonal projection were then
+applied to the corrected side donor. At native and enlarged sizes, the resulting E/W and SE/SW
+contacts showed the continuous trailing foreground leg without the old kink; the diagonal is
+explicitly a projected splice, not a separately drawn three-quarter lower body.
+
+The [straight-contact recipe](evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/README.md)
+retains the new donor, exact prompts, failed-attempt records, input hashes, crop, fit, placement,
+projection and assembly command. N/S, NE/NW and all A/C files remain byte-identical to the
+accepted portions of the prior sheet, and the upper pixels stay exact. The complete clean sheet
+and native/6× A/C/B/C GIFs are a new review candidate. Hip joins, the projected diagonal and the
+overall animation still await the player's judgment; no runtime image or shared procedure changed.
+
+[PLAYTEST-89](playtests/PLAYTEST-89.md) changes the collaboration cadence: show attempts early
+and welcome repeated visual feedback instead of spending a long time on internal revisions.
+The player's CLI cannot display images, so a review is delivered by pushing the artifacts and
+embedding them in the PR description or naming their exact location there. The complete candidate
+sheet and loops were pushed and embedded in PR #221 before the visual question was reissued.
+
+### M160, provisional contact acceptance — 2026-09-19
+
+[PLAYTEST-90](playtests/PLAYTEST-90.md) accepted the straight-contact sheet's leg positions:
+"the leg positions are correct now. we can use it for now (and merge) but in parallel do another
+fix attempt to just make the legs look like legs". The four accepted B PNGs were installed
+byte-for-byte from the retained straight-contact assembly, alongside the corrected runtime SVGs
+and their identical graphics-creation copies. Other directions, all A/C, carrying frames,
+stroller art, native canvases and import sidecars were preserved. Original registered evidence
+was not overwritten; manifest overrides name the four accepted replacements explicitly.
+
+The contact correction is provisionally usable, not approval of final leg appearance. The
+[PR review](https://github.com/JosuaKrause/nappy/pull/221#issuecomment-5744799678), retained in
+[PLAYTEST-91](playtests/PLAYTEST-91.md), assigns E/W's weak far-leg shading, thin dark shoes and
+inconsistent trouser drawing to the next PR. SE/SW's full profile stride under a three-quarter
+torso needs narrowing toward A and the accepted NE/NW contacts. Those remaining requirements
+are M167, the father's legs read as legs, independently open in TODO. The contact review item
+was removed from REVIEW rather than asking the player to approve it twice.
+
+The proposed shared correction procedure was not promoted into a mandatory rule. Its links
+were removed from the two shared skills, and the retained case notes distinguish the narrow
+player-authorized provisional splice from an accepted general method. Exact recipes and
+failed-attempt records remain available without teaching a still-imperfect result as a gate.
+
+The player subsequently held the PR merge for review, then explicitly authorized resolving
+main's conflicts and pushing, and finally restored PR merge permission once the comments were
+addressed. That permission is specific to PR #221; it does not authorize deleting branches or
+switching the player's checkout.
+
+---
+
 ## M158, the staircase follows the corrected tile grammar — 2026-09-19
 
 [PLAYTEST-81](playtests/PLAYTEST-81.md) replaces the first live stair assembly with the player's
@@ -19252,3 +19351,55 @@ retains the normal-scale left shaft and its run provenance.
 
 [PLAYTEST-83](playtests/PLAYTEST-83.md) gives the played verdict: *"the stairs look good."* That
 accepts the corrected live assembly without adding a railing or restoring any discarded deck.
+
+### M160, main reconciliation and identity audit — 2026-09-19
+
+The synchronization used original father tip `7a97598958532abf56f278d50b3fc8d6f90d545b`,
+prepared installation tip `e29c0eb90eeb44eeca0eabd326d61f74c91018cc`, incoming main
+`0afb8c679a5d4a1b67b032e543a6de0681d98bfd`, and common ancestor
+`b1e7263f78168771a2e58f4e8ab2972ad2f6eddd`. The pending merge's actual first parent is the
+prepared tip. Each conflict was shown as Theirs (main), Ours (father), and Base before resolution.
+
+DECISIONS retained both the independent staircase record and the father's attempt/acceptance
+history. HANDOFF retained main's removal of completed staircase and save work, replacing stale
+father/performance state with the current independently owned threads. TODO retained main's
+completed-save removal and M165 escape brief, plus the distinct M167 leg-drawing follow-up;
+the redundant separators were removed. No identifier mapping was needed: main's PLAYTEST-81,
+83, 84 and 85 remain separate from father records 79 and 87–91 and PR #216's PLAYTEST-86.
+M158, M159, M160, M162, M163, M164, M165, M166 and M167 retain their own subjects.
+
+The clean-file semantic review checked more than the conflict paths. Incoming saves preserve
+`player_is_male`, and `main.gd` restores it into the stroller, so resumed father runs use the
+same corrected pushing assets. Incoming stair changes use the carrying family, untouched here.
+The resolver, atlas, stroller and sprite callers are unchanged by incoming main; matching native
+canvases and existing paths bind the four PNGs without runtime scale or offset changes. Import
+sidecars remain unchanged. Main's save/stair docs and review questions, no-save guard and
+model-independent delegation guidance survive intact; performance measurements stay on PR #216.
+
+### M167, first drawing refinement rejected; woman's legs proposed — 2026-09-19
+
+The first one-call lower-body refinement in PR #234 added knee and trouser definition without
+changing the accepted contact endpoints. It preserved all protected frames and reproduced
+exactly, but [PLAYTEST-92](playtests/PLAYTEST-92.md) still rejected its drawing: "still bad legs --
+maybe use the legs of the woman in those cases?" — "they have the same pants". The first preview
+remains retained, not used as a style reference. The next attempt may borrow the woman's accepted
+pushing legs for E/W and SE/SW B while retaining the father's upper body and opposite-contact
+ownership. This expands the earlier father-only donor permission for this trial; it does not
+authorize runtime installation or change the other protected frames.
+
+### M160, reconcile the externally merged escape work — 2026-09-19
+
+Main advanced while the contact PR was being verified. The second synchronization used
+original father tip `c3116321fcb7ac20518d3c71c8d7b0e4385cc30c`, prepared feedback tip
+`3d8bf4ff1af4cd2b8521073ebaedc1090e68547a`, incoming main
+`aca1cf6658689179f29afabc7212a760902c4656`, and ancestor
+`0afb8c679a5d4a1b67b032e543a6de0681d98bfd`. It merged without textual conflicts.
+
+The whole-result review retained main's M165 escape completion and review questions, including
+fixed timer-driven steam, staircase paths, spawn-relative placement and archived unused stair art.
+The father change touches pushing pictures, not carrying pictures, placement, collision, event
+definitions or save selection; all incoming runtime/test files match main and all father assets
+match the prepared tip. Main's early-preview guidance also survives. Numbered records remain
+distinct, with the mother's-leg proposal added as PLAYTEST-92 rather than modifying an earlier
+primary source. M165 leaves TODO; M167 remains open. Boot, focused visuals/player-presentation/
+interior/finale suites, forced-SVG visuals, document lint and diff checks passed on this tree.

@@ -291,6 +291,46 @@ junction-paint and robber-placement records are filed there under M49 and the sm
 Everything below is in the order the gameplay queue above gives it, and was reassessed on
 2026-09-09.
 
+---
+
+## M167 — The father's legs read as legs · asked for 2026-09-19
+
+> "the leg positions are correct now. we can use it for now (and merge) but in parallel do another fix attempt to just make the legs look like legs"
+
+> "I approved the graphics for now but also noted that we need to fix the leg's appearance in the next pr"
+
+[PLAYTEST-90](playtests/PLAYTEST-90.md) and [PLAYTEST-91](playtests/PLAYTEST-91.md).
+The provisionally accepted contact baseline and its narrow father-only splice exception are
+recorded in `DECISIONS.md` under M160, provisional contact acceptance. This separate drawing
+follow-up does not replace that baseline without visual approval.
+
+[PLAYTEST-92](playtests/PLAYTEST-92.md) rejects the first refinement: "still bad legs -- maybe
+use the legs of the woman in those cases?" — "they have the same pants". The next preview may
+reuse the woman's accepted pushing-leg artwork in E/W and SE/SW B, with the father's upper
+body and the accepted contact ownership preserved. This is a specific donor exception, not
+permission to replace the father's identity or change protected frames.
+
+- [ ] **Match the legs to the rest of the family.** E/W B needs A/C's clear dark far-leg cue,
+      folded and shaded trousers, and chunky brown highlighted shoes instead of thin dark slivers.
+      Keep the accepted near leg trailing and the far leg advancing, with a continuous
+      hip–knee–shoe chain and natural knees. SE/SW must read as a three-quarter stride under
+      its torso, not a full-width profile stride: narrow it toward A and the accepted NE/NW
+      contacts so A/C/B/C does not alternate short and long steps like a limp.
+- [ ] **Publish an early attempt and ask for feedback.** Use the established clean eight-direction
+      A/C/B/C sheet and native/6× four-phase GIFs at 190ms per phase. Push and embed them in
+      the next PR description with commit-pinned links before asking; the CLI cannot show local
+      images. Repeated feedback is welcome, per [PLAYTEST-89](playtests/PLAYTEST-89.md).
+      Preserve N/S, NE/NW, all A/C frames, upper-body landmarks, native canvases, scale and anchors.
+      Do not change carrying poses, stroller art or gameplay. Keep exact prompts, raw inputs,
+      crops, transforms, commands and hashes with the evidence. The first attempt may expose
+      remaining defects; do not spend another internal revision loop hiding them from review.
+- [ ] **Install only the visually accepted refinement.** Keep corresponding reviewed SVGs,
+      creation copies, registered PNGs and manifest hashes in agreement, preserve import sidecars,
+      and verify actual runtime bindings. The provisional splice is not a general successful
+      procedure; update shared graphics guidance only with a method accepted for final appearance.
+
+---
+
 ## M143 — The readout's `process` and `physics` lines say what they measure · asked for 2026-09-14
 
 [PLAYTEST-75](playtests/PLAYTEST-75.md), the desktop stutter, and `DECISIONS.md`, M138, what

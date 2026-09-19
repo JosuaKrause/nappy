@@ -1,0 +1,146 @@
+{
+  "purpose": "Bounded lower-body-only transfer after PLAYTEST-88; exact prompts, references and output provenance.",
+  "strategy": "Generate father-only waist-to-sole art from existing corrected SVG. Preserve accepted upper pixels by explicitly authorized splice. This removes full-figure proportions from the generation task. Do not use bent rejected donor.",
+  "time_basis": "Output filesystem modification time in UTC; submission_group 2 contains concurrent independent calls, not an inferred exact start time.",
+  "attempt_budget": "One first attempt and one targeted retry per authored view, exhausted. No further generation in this approach.",
+  "attempts": [
+    {
+      "tool": "image_gen.imagegen",
+      "submission_group": 1,
+      "output_file_mtime_utc": "2026-09-19T19:19:52.975Z",
+      "prompt_file": "prompt-side-01.txt",
+      "prompt_sha256": "ea8e8d046ab3eb510370aac6ec2dfc630c3af23bc0b89aa87b5ed4d5544920e9",
+      "references_in_order": [
+        {
+          "path": "docs/evidence/male-player-2026-09-19/b-contact/inputs/father_side_b-8x.png",
+          "role": "SVG-first pose and camera authority",
+          "sha256": "c9822f0bcc46c314e71f19704c9f013bc301eb27de8f7f41d67d5ae8bed552b7"
+        },
+        {
+          "path": "docs/evidence/male-player-2026-09-19/b-contact/proof/side-identity-upper.png",
+          "role": "approved father identity and rendering only",
+          "sha256": "4a7e04e19546840d061c28a90a4f46a76ff6dfb4e116f74d025fd8fa8654d947"
+        },
+        {
+          "path": "docs/evidence/graphics-reference-urban-01.jpeg",
+          "role": "comic style only; omit subjects, scene, UI",
+          "sha256": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d"
+        },
+        {
+          "path": "docs/evidence/graphics-reference-cardinal.jpeg",
+          "role": "comic style only; omit subjects, scene, UI",
+          "sha256": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7"
+        }
+      ],
+      "original_output_path": "/Users/krause/.codex/generated_images/01a0bb18-5db2-7573-ac71-1b3411da0c4a/exec-e174dae1-1c7e-4307-91fe-c80f0a62655c.png",
+      "output_sha256": "b07185e511ade517519eb12a8160a0129e8dcd285937852a1cb32059ae9000a9",
+      "retained_output": null,
+      "verdict": "Rejected internally: foreground trouser tube still advances down-right; trailing leg is hidden. No derivative used."
+    },
+    {
+      "tool": "image_gen.imagegen",
+      "submission_group": 2,
+      "output_file_mtime_utc": "2026-09-19T19:21:30.803Z",
+      "prompt_file": "prompt-side-02.txt",
+      "prompt_sha256": "17d137148ac091a6a25c9c33f23ac6109a1334688c59cf8331f9436138926edc",
+      "references_in_order": [
+        {
+          "path": "docs/evidence/male-player-2026-09-19/b-contact/inputs/father_side_b-8x.png",
+          "role": "SVG-first pose and camera authority",
+          "sha256": "c9822f0bcc46c314e71f19704c9f013bc301eb27de8f7f41d67d5ae8bed552b7"
+        },
+        {
+          "path": "docs/evidence/male-player-2026-09-19/b-contact/proof/side-identity-upper.png",
+          "role": "approved father identity and rendering only",
+          "sha256": "4a7e04e19546840d061c28a90a4f46a76ff6dfb4e116f74d025fd8fa8654d947"
+        },
+        {
+          "path": "docs/evidence/graphics-reference-urban-01.jpeg",
+          "role": "comic style only; omit subjects, scene, UI",
+          "sha256": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d"
+        },
+        {
+          "path": "docs/evidence/graphics-reference-cardinal.jpeg",
+          "role": "comic style only; omit subjects, scene, UI",
+          "sha256": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7"
+        }
+      ],
+      "original_output_path": "/Users/krause/.codex/generated_images/01a0bb18-5db2-7573-ac71-1b3411da0c4a/exec-3115851b-8489-4699-98c0-1fc37db05f5c.png",
+      "output_sha256": "62a5680553d51fcb709e1a8edeefa534f2bf0ed1094a602821c74adef956b939",
+      "retained_output": "side-donor-raw.png",
+      "verdict": "Selected for uninstalled splice trial: foreground near thigh, knee and shin slope continuously down-left; far advancing leg is occluded at upper overlap."
+    },
+    {
+      "tool": "image_gen.imagegen",
+      "submission_group": 2,
+      "output_file_mtime_utc": "2026-09-19T19:22:05.505Z",
+      "prompt_file": "prompt-front-diagonal-01.txt",
+      "prompt_sha256": "4e7041f284a46825752cce81c21047a85d2bcb448af26f3e4513e48617906952",
+      "references_in_order": [
+        {
+          "path": "docs/evidence/male-player-2026-09-19/b-contact/inputs/father_front_diagonal_b-8x.png",
+          "role": "SVG-first pose and camera authority",
+          "sha256": "4b88c49f4cf00bfeb87033d4c6fface6f4fb32846627acf4b34580821d308303"
+        },
+        {
+          "path": "docs/evidence/male-player-2026-09-19/b-contact/proof/front_diagonal-identity-upper.png",
+          "role": "approved father identity and rendering only",
+          "sha256": "bb8b96ab4ddc1e4af95b784e9ea041a90cf412eee0fd336633d958eb275ff556"
+        },
+        {
+          "path": "docs/evidence/graphics-reference-urban-01.jpeg",
+          "role": "comic style only; omit subjects, scene, UI",
+          "sha256": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d"
+        },
+        {
+          "path": "docs/evidence/graphics-reference-cardinal.jpeg",
+          "role": "comic style only; omit subjects, scene, UI",
+          "sha256": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7"
+        }
+      ],
+      "original_output_path": "/Users/krause/.codex/generated_images/01a0bb18-5db2-7573-ac71-1b3411da0c4a/exec-2ad98aaa-56d1-43b6-9590-0848cc9f16b5.png",
+      "output_sha256": "6b610463fe200a4d0e28a1d1cc586819e4f0da50275ddacb722aa58762d7ca35",
+      "retained_output": null,
+      "verdict": "Rejected internally: foreground thigh points down-right to a forward knee before shin folds back left. No derivative used."
+    },
+    {
+      "tool": "image_gen.imagegen",
+      "submission_group": 3,
+      "output_file_mtime_utc": "2026-09-19T19:23:39.686Z",
+      "prompt_file": "prompt-front-diagonal-02.txt",
+      "prompt_sha256": "fd8159e58eb6b4ecf7626f5989f169a3c9920c754b2b6460dd5c326d6dc34613",
+      "references_in_order": [
+        {
+          "path": "docs/evidence/male-player-2026-09-19/b-contact/inputs/father_front_diagonal_b-8x.png",
+          "role": "SVG-first pose and camera authority",
+          "sha256": "4b88c49f4cf00bfeb87033d4c6fface6f4fb32846627acf4b34580821d308303"
+        },
+        {
+          "path": "docs/evidence/male-player-2026-09-19/b-contact/proof/front_diagonal-identity-upper.png",
+          "role": "approved father identity and rendering only",
+          "sha256": "bb8b96ab4ddc1e4af95b784e9ea041a90cf412eee0fd336633d958eb275ff556"
+        },
+        {
+          "path": "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/side-donor-raw.png",
+          "role": "same-family correct straight-leg occlusion only, not side camera",
+          "sha256": "62a5680553d51fcb709e1a8edeefa534f2bf0ed1094a602821c74adef956b939"
+        },
+        {
+          "path": "docs/evidence/graphics-reference-urban-01.jpeg",
+          "role": "comic style only; omit subjects, scene, UI",
+          "sha256": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d"
+        },
+        {
+          "path": "docs/evidence/graphics-reference-cardinal.jpeg",
+          "role": "comic style only; omit subjects, scene, UI",
+          "sha256": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7"
+        }
+      ],
+      "original_output_path": "/Users/krause/.codex/generated_images/01a0bb18-5db2-7573-ac71-1b3411da0c4a/exec-d8fd3b72-a50f-4d54-a8b5-083f5990f948.png",
+      "output_sha256": "87203dba46e751301057a54e35abbf66472fabe9951b17fed48584f0d1e8fff2",
+      "retained_output": null,
+      "verdict": "Rejected internally: knee is straighter but foreground leg again advances down-right while the trailing leg is hidden. Separate diagonal generation stops; no derivative used."
+    }
+  ],
+  "deterministic_selection": "Use side-02 donor for both side and front-diagonal, with existing authorized uniform-fit and diagonal 3px shear construction. Separate diagonal donor attempts are unused. Both views remain player-review candidates, not accepted or installed."
+}
