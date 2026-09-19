@@ -10,6 +10,10 @@ green of a touched chalk mark, the shutter and the label cut out of it as holes.
 
 > "make it bluish and the metal parts should be silver/gray"
 
+And, told that the runtime tint would have to go for the colors to survive:
+
+> "no tint for the save symbol"
+
 ## What is asked for, as statements
 
 1. **The disk's body is bluish.** The symbol carries its own color rather than being a white
@@ -19,7 +23,8 @@ green of a touched chalk mark, the shutter and the label cut out of it as holes.
 3. **What this collides with, and what gives.** `assets/ui/save.svg` is white on transparent like
    `pause.svg`, `restart.svg` and `continue.svg`, and `SaveIndicator` tints it with the same
    modulate that fades it. A symbol with two colors of its own cannot be tinted by one: the
-   modulate keeps the fade and loses the tint. The other three symbols are untouched.
+   modulate keeps the fade and loses the tint. The player confirmed it: *"no tint for the save
+   symbol"*. The other three symbols are untouched.
 
 ## What was not spoken to
 
