@@ -30,6 +30,11 @@ var _debug := DevFlags.enabled()
 ## `DevFlags.start_escape()` again, the same shape `_add_debug_layers()` reads `_debug`.
 var _escape_scene_requested := DevFlags.start_escape()
 
+## `DevFlags.no_focus_pause()`, read once for the same reason `_debug` is: so a test can set it
+## directly and check the release shape. `_notification()` reads this member rather than calling
+## the getter again on every focus change.
+var _no_focus_pause := DevFlags.no_focus_pause()
+
 ## Whether the readout was asked for by the page's own `?debug=1` (or the command line's
 ## `--debug`) — `DevFlags.readout_requested()`, read once for the same reason `_debug` is: so a
 ## test can set it directly and check the release shape. `_status.visible` and the text assembly
@@ -1414,6 +1419,33 @@ func _unhandled_input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 	_pause.open()
 
+## The window losing focus — Alt-Tabbing or clicking away from it, a browser tab going to the
+## background — or a phone sending the app away opens the same screen `_pause.open()` above does,
+## through the same call: one pause rather than a second kind of it. `_notification()` is the
+## caller, on `NOTIFICATION_APPLICATION_FOCUS_OUT` and `NOTIFICATION_APPLICATION_PAUSED`.
+##
+## **Unlike Esc, this does not open over the day summary or the ending.** Both live behind
+## `_summary.is_showing()`, which `_unhandled_input()`'s own Esc guard above does not even ask —
+## Esc is a choice the player made to open a second screen over the one already up, and focus loss
+## is not a choice at all, so opening over a screen already asking for the player's attention would
+## read as the game answering a question nobody asked. The title screen and an already-open pause
+## are excluded for the same reason `_unhandled_input()` excludes them.
+##
+## `_no_focus_pause` is the override — see `DevFlags.no_focus_pause()` — so a rig's window, which
+## usually opens with no focus to lose in the first place, is never handed a picture of this screen
+## instead of the day it was sent to look at.
+func _pause_on_focus_lost() -> void:
+	if _no_focus_pause:
+		return
+	# `_pause` is never built under `--start-escape` — see `_ready_escape()` — so losing focus does
+	# nothing there rather than opening a screen with no ordinary run behind it to pause, the same
+	# guard `_unhandled_input()`'s own Esc handler makes.
+	if not _pause:
+		return
+	if _pause.is_open() or _title.is_open() or (_summary and _summary.is_showing()):
+		return
+	_pause.open()
+
 ## Resolves the two developer capture controls before input dispatch. Key echoes do not make a
 ## second capture: a held shortcut is one request, not a sequence of separate user decisions.
 static func _debug_snapshot_action(event: InputEvent) -> StringName:
@@ -1531,6 +1563,19 @@ func _quit() -> void:
 
 ## Closing the window is the other way a run ends, and an abandoned run is worth reading —
 ## every line is already on disk, so this only closes the handle tidily.
+##
+## `NOTIFICATION_APPLICATION_FOCUS_OUT` is the one this game has exactly one window to lose: it
+## fires whenever the OS gives focus to a different application, which is the whole of "Alt-Tabbing
+## away" on a single-window desktop app, a browser tab going to the background, or a click on
+## another window on the same machine. `NOTIFICATION_WM_WINDOW_FOCUS_OUT` is a **per-`Window`**
+## signal instead — the one a game with more than one of its own windows would need to tell which
+## of them lost focus, including to another window of the *same* game — and this project never
+## builds a second one, so it is not read here.
+## `NOTIFICATION_APPLICATION_PAUSED` is a phone sending the whole app to the background. Getting
+## focus back (`NOTIFICATION_APPLICATION_FOCUS_IN`/`NOTIFICATION_APPLICATION_RESUMED`) is not
+## answered at all — see `_pause_on_focus_lost()`'s own doc for why coming back does not resume.
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		Telemetry.end_run()
+	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
+		_pause_on_focus_lost()
