@@ -25,6 +25,13 @@ prints numbers, an assertion in a suite, or a `check.sh` boot beats a screenshot
 is not a picture. When a picture genuinely is the question, take it once with everything you need
 already in the flags rather than iterating live.
 
+**A rig never pauses on focus, unlike the game itself.** The game opens the pause screen on
+`NOTIFICATION_APPLICATION_FOCUS_OUT`, the same notification a window loses the moment it opens
+behind whatever the operator is doing — so left alone, every windowed run in this section would
+capture a picture of the pause screen rather than the day it was sent to look at. `--screenshot`
+carries `--no-focus-pause` on its own, so `shot.sh` needs nothing extra; a `run.sh` session with no
+screenshot passes `--no-focus-pause` itself.
+
 **And a screenshot cannot be taken at all without a display**, which is worth knowing before
 planning a verification around one. `shot.sh` runs Godot *without* `--headless` on purpose, so a
 process with no window server to open a window against falls back to the null display server, where

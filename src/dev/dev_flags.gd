@@ -51,6 +51,7 @@ extends RefCounted
 ##   --debug         0
 ##   --skip          1
 ##   --invincible    0
+##   --no-focus-pause 0
 ##   --spikes        0
 ##   --no-telemetry  0
 ##   --screenshot    1
@@ -494,6 +495,33 @@ static func _invincible_from_query(query: String) -> bool:
 	for parameter in query.trim_prefix("?").split("&"):
 		var pair := parameter.split("=", true, 1)
 		if pair.size() == 2 and pair[0] == "invincible" and pair[1] == "1":
+			return true
+	return false
+
+## `--no-focus-pause` (or the page's own `?nofocuspause=1`, a debug web build only) turns off the
+## pause `main._notification()` opens when the window loses focus — see that function's own doc.
+## **`--screenshot` implies it without being told to**: a screenshot rig's window usually opens
+## behind whatever the operator is doing, so it never has focus to lose, or loses it the instant it
+## opens — either way a game that pauses on that would hand the rig a picture of the pause screen
+## rather than the day it was asked to capture. The flag by itself is what a `tools/run.sh` session
+## with no screenshot needs, since that rig has the same unfocused window and nothing else here
+## would cover it.
+##
+## Gated behind `enabled()` explicitly, the same as `invincible()` gates its own query read: this
+## reaches whether the game can be walked away from behind another window, which stays a developer
+## question rather than one an exported release answers to a visitor's address bar.
+static func no_focus_pause() -> bool:
+	if not enabled():
+		return false
+	return _no_focus_pause_from_args(_args()) or _no_focus_pause_from_query(_web_query())
+
+static func _no_focus_pause_from_args(args: PackedStringArray) -> bool:
+	return "--no-focus-pause" in args or "--screenshot" in args
+
+static func _no_focus_pause_from_query(query: String) -> bool:
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() == 2 and pair[0] == "nofocuspause" and pair[1] == "1":
 			return true
 	return false
 
