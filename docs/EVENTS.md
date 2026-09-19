@@ -541,12 +541,13 @@ route is walked along".
 
 **A pacing row is answered in time rather than in width, and twice.** It is out of the rule above —
 a beat takes its ground for part of a loop, so what a walk past one needs is a phase rather than a
-lane. What it is asked instead is whether its beat reaches a junction box, the ground every
-crosswalk in the city is painted on: a beat that does is one she can leave at the zebra while he is
-at the far end of it, and a beat that stays between two junctions leaves her nothing but walking
-through him. `EventScheduler._a_pacing_beat_walls_a_sidewalk` is that question, asked of the
-candidate in the placement loop, and a beat that fails it is a wall and may not stand on the
-sidewalk a route walks.
+lane. What it is asked instead is whether its beat passes a **way out**, of which there are two
+kinds: a **junction box**, the ground every crosswalk in the city is painted on, which she leaves by
+the zebra while he is at the far end of his loop; or a **side route** — ground off the street
+opening off the sidewalk's own side, an alley mouth, a park or square edge, a courtyard — which she
+leaves by without crossing anything. A beat with neither leaves her nothing but walking through him.
+`EventScheduler._a_pacing_beat_walls_a_sidewalk` is that question, asked of the candidate in the
+placement loop, and a beat that fails it is a wall and may not stand on the sidewalk a route walks.
 
 **And a pacing row's opening is ground.** `EventDef.paces` means a beat rather than a journey, so
 what it denies is the ground the loop never leaves free and the rest is passed by waiting — which
@@ -576,8 +577,8 @@ from the doorstep to the calm areas still worth reaching.
 | --- | --- | --- |
 | lethal (`hard_fail`), or a walk-through cost of `WALL_WORTH_OF_COST` or more | **wall** | never on ground a route runs along; `EVENT_WALL_RIM_WEIGHT` toward a turning off the corridor |
 | a standing row that leaves no line past it along a sidewalk it may stand on (`cafe_tables`, `construction`, `market_stall`, `ice_cream_van`, and every wide row that was already one) | **wall** | the same, which includes the far sidewalk of a route's own street |
-| a **pacing** row that leaves no line past it and whose beat reaches no crossing (`homeless_yeller`, where its beat is truncated short of a junction) | **wall** | the same, decided per placement rather than per row |
-| a **pacing** row whose beat reaches a junction's crosswalk (`homeless_yeller`, almost everywhere) | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor, the route's own sidewalk included |
+| a **pacing** row that leaves no line past it and whose beat passes no way off its sidewalk (`homeless_yeller`, where its beat is truncated short of one) | **wall** | the same, decided per placement rather than per row |
+| a **pacing** row whose beat passes a junction's crosswalk or a side route (`homeless_yeller`, almost everywhere) | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor, the route's own sidewalk included |
 | everything else placed on a tile | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor |
 | a `ONE_SHOT` | **set piece** | one placement at *each* site of a covering set; one of them happens |
 | `AMBIENT`, `AHEAD_OF_PLAYER`, a scar, a park spoiler, `EventDef.scenery` (`pigeon_flock`) | **none** | wherever its own rule says |
@@ -599,17 +600,24 @@ stand on a sidewalk is judged on the narrowest ground it may be rolled onto.
 then there is a way to avoid them. if they stay on the segment for the whole time with no side
 route then there is no way to avoid them. distinguish those cases when deciding whether the yeller
 is a wall".)* A beat runs *along* a sidewalk and moves the row nowhere across it, so the width of
-the line past a man walking one is the same at every phase of his loop — but the way past him is
-not a wider sidewalk, it is a **crossing**: a beat that reaches a junction box is one she can step
-off at the zebra there while he is at the far end of it. So the same numbers are friction where the
-beat reaches a junction and a wall where it stays between two of them, and
-`EventScheduler._a_pacing_beat_walls_a_sidewalk` asks it of the candidate inside the placement loop,
-where the beat exists. A junction box is where every crosswalk in the city is painted, so *crosses
-a crosswalk* and *reaches a junction* are one question — and it is the crossing this whole design
-counts on, since a mid-block crossing exists in play and is never planned around. `homeless_yeller`
-paces eight tiles against a block of eight, so its beat runs into a junction unless a closure, a
-calm zone's absorbed corridor or the map's own margin cuts it short: friction almost everywhere, a
-wall where the street gave it no way out.
+the line past a man walking one is the same at every phase of his loop — but the way past him was
+never a wider sidewalk. It is somewhere his beat passes that she can **leave** by: a junction box,
+where she takes the zebra while he is at the far end of his loop, or a side route off the sidewalk's
+own side. So the same numbers are friction where the beat passes one and a wall where it passes
+neither, and `EventScheduler._a_pacing_beat_walls_a_sidewalk` asks it of the candidate inside the
+placement loop, where the beat exists. A junction box is where every crosswalk in the city is
+painted, so *crosses a crosswalk* and *reaches a junction* are one question — and it is the crossing
+this whole design counts on, since a mid-block crossing exists in play and is never planned around.
+`homeless_yeller` paces eight tiles against a block of eight, so its beat runs into a junction unless
+a closure, a calm zone's absorbed corridor or the map's own margin cuts it short: friction almost
+everywhere, a wall where the street gave it no way out.
+
+**A pacing wall is offered its ground at friction's weights and takes only the wall's refusal**, and
+that is the one place the two halves of a role come apart: `_ground_for` builds a pool per role
+before any tile is rolled, and a beat does not exist until one is — so the tile it lands on was
+offered as friction's and the corridor's own sidewalk is then refused it. What it lands on in
+practice is the far side of a route street, which is where the rim weight would have sent it
+anyway.
 
 Two things about the mechanism rather than the table. It is **the same weighting the precinct
 uses** — a tile is offered to the roll several times over — so every spacing rule downstream keeps

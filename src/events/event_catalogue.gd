@@ -370,11 +370,11 @@ static func _alley_mouse() -> EventDef:
 ## reads as a man who does nothing.
 ##
 ## **Whether he is a wall is a fact about where his beat runs, not about his field.** He charges
-## over 170px against a 64px sidewalk, so the way past him is never a lane — it is a **crossing**.
-## A beat that reaches a junction box is one she can step off at the zebra there while he is at the
-## far end of his loop, so he is friction and stays on the route, which is what pacing is for. A
-## beat with no junction in it leaves her nothing but walking through him, and that placement is a
-## wall. `path_length_tiles` (8) against a block of `Tuning.BLOCK_SIZE` (8) is why the first is the
+## over 170px against a 64px sidewalk, so the way past him is never a lane — it is somewhere his
+## beat passes that she can **leave** by. A junction box is one (she takes the zebra while he is at
+## the far end of his loop) and a side route off the sidewalk's own side is the other, so he is
+## friction and stays on the route, which is what pacing is for. A beat that passes neither leaves
+## her nothing but walking through him, and that placement is a wall. `path_length_tiles` (8) against a block of `Tuning.BLOCK_SIZE` (8) is why the first is the
 ## ordinary case: a beat runs into a junction unless a closure, a calm zone's absorbed corridor or
 ## the map's own margin cuts it short. `EventScheduler._a_pacing_beat_walls_a_sidewalk` decides it,
 ## per placement.

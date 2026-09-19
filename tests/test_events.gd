@@ -3085,18 +3085,23 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t) -> void:
 ##
 ## Both halves of that sentence are asserted over the finished day, because it is one rule read from
 ## its two sides: a pacing row whose field leaves no line along a sidewalk may stand on the route's
-## own side **only** where its beat reaches a junction box — the ground every crosswalk in the city
-## is painted on — and where it does not, it is a wall and stands anywhere but there.
+## own side **only** where its beat passes a way out, and where it passes none, it is a wall and
+## stands anywhere but there. A way out is a **junction box** — the ground every crosswalk in the
+## city is painted on — or a **side route**, ground off the street opening off the sidewalk's own
+## side, which is the *"no side route"* half of the same sentence.
 ##
 ## The beat's own geometry is written out here rather than borrowed from the scheduler, for the
 ## reason the junction check gives: only the reading of which rows the question is about
 ## (`_counts_against_the_line`) and what the corridor walks (`Corridor.carries_a_route`) is shared.
 ##
-## **Its non-vacuity is two counts**, one per half: a sample with no pacing row on a route sidewalk
-## proves nothing about the first, and one where every beat happened to reach a junction proves
-## nothing about the second.
+## **Its non-vacuity is three counts**, because each could pass having seen nothing: a sample with no
+## pacing row on a route sidewalk, one where no beat was ever walled, and one where the side-route
+## half of the reading never saw a side route at all. The third is reported with the number of beats
+## the side route answers for **on its own** beside it, which is the interesting one: where that is
+## zero, every beat with a side route also reaches a junction and the half changes no placement in
+## this sample — it is still what a beat truncated beside a park would be answered by.
 ##
-## **The second count is small, and the arithmetic says it has to be.** `homeless_yeller` paces
+## **The walled count is small, and the arithmetic says it has to be.** `homeless_yeller` paces
 ## `path_length_tiles` (8) against a block of `Tuning.BLOCK_SIZE` (8), so a beat laid anywhere on a
 ## street runs into the junction box at one end of it unless `_along_street_path` truncates it —
 ## at a closure, at a calm zone's absorbed corridor, or against the map's own margin. The walled
@@ -3106,6 +3111,8 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 	var map := CityGenerator.generate(4242)
 	var on_the_route := 0
 	var walled := 0
+	var by_a_side_route := 0
+	var passes_a_side_route := 0
 	var unavoidable_on_the_route := 0
 	var first := ""
 	for day in [1, 5, 8, 11, 14]:
@@ -3121,12 +3128,17 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 			if EventScheduler._line_reach_of(plan.def) < EventScheduler._THE_FAR_LANE:
 				continue
 			var crossed := _a_beat_touches_a_junction(map, plan)
-			if not crossed:
+			var sideways := _a_beat_passes_a_side_route(map, plan)
+			if sideways:
+				passes_a_side_route += 1
+				if not crossed:
+					by_a_side_route += 1
+			if not crossed and not sideways:
 				walled += 1
 			if not corridor.carries_a_route(map.world_to_tile(plan.position)):
 				continue
 			on_the_route += 1
-			if crossed:
+			if crossed or sideways:
 				continue
 			unavoidable_on_the_route += 1
 			if first == "":
@@ -3135,27 +3147,55 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 	t.check(on_the_route > 5,
 			"the days sampled pace a row along the route's own sidewalk (%d)" % on_the_route)
 	t.check(walled >= 1,
-			"and pace one where no crossing can be reached from its beat (%d)" % walled)
+			"and pace one whose beat passes no way off its sidewalk (%d)" % walled)
+	t.check(passes_a_side_route >= 1,
+			"and pace one whose beat passes a side route off its sidewalk (%d, of which %d have no"
+			% [passes_a_side_route, by_a_side_route] + " junction in the beat either)")
 	t.check(unavoidable_on_the_route == 0,
-			"and every one on the route's own sidewalk has a crossing inside its beat (%d does not%s)"
+			"and every one on the route's own sidewalk has a way out inside its beat (%d does not%s)"
 			% [unavoidable_on_the_route, "" if first == "" else ": " + first])
 
 ## Whether a beat's straight run touches a junction box, which is the only ground in the city a
 ## crosswalk is painted on (`CityGenerator._street_tile`).
 func _a_beat_touches_a_junction(map: CityMap, plan: EventScheduler.Planned) -> bool:
+	for at in _beat_tiles(map, plan):
+		if CityMap.junction_at(at) != Vector2i(-1, -1):
+			return true
+	return false
+
+## Whether a beat's straight run passes ground off the street opening off the sidewalk's own side —
+## an alley mouth, a park or square edge, a courtyard. Two tiles deep, so a doorway notch is not a
+## way out; written out here rather than borrowed for the reason the walk below is.
+func _a_beat_passes_a_side_route(map: CityMap, plan: EventScheduler.Planned) -> bool:
+	for at in _beat_tiles(map, plan):
+		var inward := map.pavement_inward(at)
+		if inward == Vector2i.ZERO:
+			continue
+		var edge := at
+		for _across in Tuning.SIDEWALK_WIDTH:
+			edge += inward
+			if map.tile_at(edge) != GameEnums.TileType.SIDEWALK:
+				break
+		if map.is_open(edge) and not map.is_street(edge) \
+				and map.is_open(edge + inward) and not map.is_street(edge + inward):
+			return true
+	return false
+
+## The tiles a beat's straight run covers, ends included.
+func _beat_tiles(map: CityMap, plan: EventScheduler.Planned) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
 	if plan.path.size() < 2:
-		return false
+		return found
 	var from := map.world_to_tile(plan.path[0])
 	var to := map.world_to_tile(plan.path[plan.path.size() - 1])
 	var step := Vector2i(signi(to.x - from.x), signi(to.y - from.y))
 	var at := from
 	while true:
-		if CityMap.junction_at(at) != Vector2i(-1, -1):
-			return true
+		found.append(at)
 		if at == to or step == Vector2i.ZERO:
-			return false
+			return found
 		at += step
-	return false
+	return found
 
 ## **A route's junctions stay clear.** *(PLAYTEST-69: "a path through the city must never hit
 ## excitement — so all obstacles should be routable around by eg crossing to the other side of the

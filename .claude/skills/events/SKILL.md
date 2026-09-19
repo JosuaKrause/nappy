@@ -31,8 +31,8 @@ three seconds of cat is not a place — and it may not obstruct.
 **wall** and goes off the day's corridor, a one-shot is a **set piece** and goes where every route
 touches it, anything else placed on a tile is **friction** and is weighted onto the corridor. One
 row's role is read off its **placement** instead and for a reason worth copying: what makes a
-**pacing** row passable is where its beat runs — one that reaches a junction's crosswalk can be
-left there, one that stays between two junctions cannot — so `_a_pacing_beat_walls_a_sidewalk`
+**pacing** row passable is where its beat runs — one that passes a junction's crosswalk or a side
+route off the sidewalk can be left there, one that passes neither cannot — so `_a_pacing_beat_walls_a_sidewalk`
 answers it in the candidate loop, where the beat exists. A role that depends on geometry the def
 does not carry belongs there rather than in `_role_for`. A new
 row is placed against the day's routes without anybody writing a rule for it. If a new row wants a

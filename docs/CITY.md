@@ -662,7 +662,8 @@ of her.
   where it stands** — a row whose body and charging disc leave no lane of a sidewalk free is a wall
   at any price, because *"a wall is also when you physically cannot walk through"*. For a row that
   **paces**, "where it stands" is its beat, so that last question is asked of the placement rather
-  than of the row: a beat she can leave at a crossing is friction and a beat she cannot is a wall. **Never on
+  than of the row: a beat she can leave, at a crossing or by a side route, is friction and a beat she
+  cannot is a wall. **Never on
   ground a route runs along**, which is asked per sidewalk rather than per street, so the far side
   of a route's own street is legal for one and the side the tree walks never is. Preferentially on
   the **rim**, which is where a wall can be seen from and therefore where it bounds anything
@@ -859,19 +860,26 @@ Which makes the beat's **open end** ground in its own right: the intersection ov
 smaller than the disc, so a beat rarely closes a street by itself. What closes it is something else
 standing in the one end the yeller is away from.
 
-**And a beat is left at a crossing, which is the other half of being able to get past one.**
+**And a beat is left at a way out, which is the other half of being able to get past one.**
 *"If the yeller paces across a crosswalk then there is a way to avoid them. If they stay on the
 segment for the whole time with no side route then there is no way to avoid them."* A man whose
 field is wider than a sidewalk takes both of its lanes at every phase of his loop, so the way past
-him is never a lane: it is the **junction box** his beat reaches, where she steps onto the zebra
-while he is at the far end of it. So whether a pacing row is a wall is a fact about its
-**placement** — friction where the beat reaches a junction, a wall where it stays between two of
-them, and the wall takes a wall's one rule with it and never stands on the sidewalk a route walks.
-A junction box is the only ground in the city a crosswalk is painted on, so *crosses a crosswalk*
-and *reaches a junction* are the same question, and it is the crossing this design counts on
-anywhere else. The ordinary case is friction: the one pacing row in the catalogue paces a block's
-length, so its beat runs into a junction unless a closure, a calm zone's absorbed corridor or the
-map's own margin cuts it short.
+him is never a lane. It is somewhere his beat passes that she can leave by, and the player named
+both kinds:
+
+- a **junction box**, where she steps onto the zebra while he is at the far end of his beat. It is
+  the only ground in the city a crosswalk is painted on, so *crosses a crosswalk* and *reaches a
+  junction* are the same question, and it is the crossing this design counts on anywhere else.
+- a **side route** — ground off the street opening off the sidewalk's own side: an alley mouth, a
+  park or square edge, a courtyard, a precinct opening. She leaves by it without crossing anything.
+  It is read off the tiles, two deep past the sidewalk band, so that a doorway notch is not a way
+  out and no flood fill runs inside the placement loop.
+
+So whether a pacing row is a wall is a fact about its **placement** — friction where the beat
+passes a way out, a wall where it passes neither, and the wall takes a wall's one rule with it and
+never stands on the sidewalk a route walks. The ordinary case is friction: the one pacing row in
+the catalogue paces a block's length, so its beat runs into a junction unless a closure, a calm
+zone's absorbed corridor or the map's own margin cuts it short.
 
 So **on a route street carrying a pacing row, the rows reaching that street are asked together**
 whether a walk from one of its junctions to the other survives. Both directions of the collision are

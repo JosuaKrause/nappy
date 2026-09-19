@@ -1403,25 +1403,32 @@ static func _takes_a_whole_sidewalk(def: EventDef) -> bool:
 ## The arithmetic of the first half is the plain clause above — a beat runs *along* a sidewalk and
 ## moves the row nowhere across it, so the width of the line past a yeller is the same at every
 ## phase of his loop and waiting does not widen a sidewalk. What the second half adds is the way out
-## that is not a wider sidewalk: **a crossing**. A beat that reaches a junction box is a beat she
-## can step off, on the zebra there, while he is at the other end of it; a beat that stays between
-## two junctions with nothing to cross leaves her the choice of walking through him or turning
-## round.
+## that is not a wider sidewalk: **somewhere his beat passes that she can leave by**, of which there
+## are two kinds and the player named both. *"If they stay on the segment for the whole time with no
+## side route then there is no way to avoid them."*
 ##
-## **A junction box is where every crosswalk in the city is**, so *his beat crosses a crosswalk* and
-## *his beat reaches a junction* are one question — `CityGenerator._street_tile` paints `CROSSING`
-## only where both corridor offsets are inside a street and exactly one of them is a carriageway
-## offset, which is a junction box by definition. It is also the crossing this whole milestone
-## counts on: a mid-block crossing exists in play and is not planned around.
+## - **A crossing.** A beat that reaches a junction box is one she can step off at the zebra there
+##   while he is at the other end of it. **A junction box is where every crosswalk in the city is**,
+##   so *his beat crosses a crosswalk* and *his beat reaches a junction* are one question —
+##   `CityGenerator._street_tile` paints `CROSSING` only where both corridor offsets are inside a
+##   street and exactly one of them is a carriageway offset, which is a junction box by definition.
+##   It is also the crossing this whole milestone counts on: a mid-block crossing exists in play and
+##   is not planned around.
+## - **A side route**, which is the other half and asks nothing of the carriageway: ground off the
+##   street opening off the sidewalk on its **own** side — an alley mouth, a park or square edge, a
+##   courtyard or a precinct opening. She leaves by it without crossing anything.
+##
+## A beat with neither leaves her the choice of walking through him or turning round, and that
+## placement is the wall.
 static func _a_pacing_beat_walls_a_sidewalk(plan: Planned, map: CityMap) -> bool:
 	if not plan.def.paces or not _leaves_no_line_along_a_sidewalk(plan.def):
 		return false
-	return not _a_beat_reaches_a_crossing(plan, map)
+	return not _a_beat_reaches_a_way_out(plan, map)
 
-## Whether a beat's own run touches a junction box. Two waypoints and a straight run between them
-## (`_along_street_path`), so the tiles are a step along one axis; a row with no beat laid at all
-## answers no, which is the conservative side of a rule that only ever refuses ground.
-static func _a_beat_reaches_a_crossing(plan: Planned, map: CityMap) -> bool:
+## Whether a beat's own run passes a junction box or a side route. Two waypoints and a straight run
+## between them (`_along_street_path`), so the tiles are a step along one axis; a row with no beat
+## laid at all answers no, which is the conservative side of a rule that only ever refuses ground.
+static func _a_beat_reaches_a_way_out(plan: Planned, map: CityMap) -> bool:
 	if plan.path.size() < 2:
 		return false
 	var from := map.world_to_tile(plan.path[0])
@@ -1429,12 +1436,40 @@ static func _a_beat_reaches_a_crossing(plan: Planned, map: CityMap) -> bool:
 	var step := Vector2i(signi(to.x - from.x), signi(to.y - from.y))
 	var at := from
 	while true:
-		if CityMap.junction_at(at) != Vector2i(-1, -1):
+		if CityMap.junction_at(at) != Vector2i(-1, -1) or _a_side_route_opens_off(map, at):
 			return true
 		if at == to or step == Vector2i.ZERO:
 			return false
 		at += step
 	return false
+
+## Whether ground off the street opens off this sidewalk tile, on the sidewalk's own side.
+##
+## **It is a question about tiles and costs a handful of them**, which is the whole reason it is
+## stated this way: a flood fill per candidate would answer *does this lead anywhere* exactly and
+## would run inside the placement loop, hundreds of times a day. The tile reading that is honest
+## without it is **depth**: step across the sidewalk band to its frontage edge — `pavement_inward`
+## is which way that is, and it answers zero inside a junction box, which the caller has already
+## covered — and ask whether the first two tiles past the band are walkable ground that is not
+## street. Two rather than one, because one tile of walkable ground against a frontage is a doorway
+## notch rather than a way out, and everything that really leads somewhere — an alley, a park, a
+## square, a courtyard — is a lot's worth of ground deep.
+static func _a_side_route_opens_off(map: CityMap, tile: Vector2i) -> bool:
+	var inward := map.pavement_inward(tile)
+	if inward == Vector2i.ZERO:
+		return false
+	var at := tile
+	for _across in Tuning.SIDEWALK_WIDTH:
+		at += inward
+		if map.tile_at(at) != GameEnums.TileType.SIDEWALK:
+			break
+	return _is_ground_off_the_street(map, at) and _is_ground_off_the_street(map, at + inward)
+
+## Walkable today and not part of a street: a park, a square, an alley, a courtyard, a precinct's
+## own ground. A carriageway is walkable and is not a way off a street, which is why this asks
+## `is_street` rather than only `is_open`.
+static func _is_ground_off_the_street(map: CityMap, tile: Vector2i) -> bool:
+	return map.is_open(tile) and not map.is_street(tile)
 
 ## `checkpoint_hut` and `checkpoint_gate`, the two rows that **are** a region's door. Matched on the
 ## id the way `tests/probes/m129_zero_cost_line.gd` matches them, since what makes a door a door is
