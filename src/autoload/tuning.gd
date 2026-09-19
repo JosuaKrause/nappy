@@ -915,7 +915,9 @@ const CAR_SPEED := Vector2(130.0, 185.0)
 ## radius: at 48px apart the midline is **24px from each lane and outside `PEDESTRIAN_INNER_RADIUS`**,
 ## worth 56 points per forty seconds against 74 unspread. **That is the one change to make if this
 ## stops being true** — the intensity and the radii are pinned by the arterial floor and the shoulder,
-## and the geometry is not.
+## and the geometry is not. A pass at that 24px still reads as close to full intensity even at the
+## shorter outer radius, which is why `CROWD_YIELD_LATERAL` below widens far enough to send a walker
+## holding that lane out of it rather than leaving the noise floor to the radius alone.
 const PEDESTRIAN_INTENSITY := 4.2
 const PEDESTRIAN_INNER_RADIUS := 22.0
 const PEDESTRIAN_OUTER_RADIUS := 30.0
@@ -1132,10 +1134,12 @@ const BUMP_STEP_ASIDE_TIME := 2.5
 ## the 0.36s they need to clear a lane, so **running still hits people**.
 const CROWD_YIELD_DISTANCE := 96.0
 ## How near they have to come to her — at their **closest approach**, not right now — to bother
-## getting out of the way. A little over `BUMP_RADIUS`, so it is "we are going to touch" rather
-## than "we will be near each other", and a pavement does not part like the Red Sea in front of
-## her.
-const CROWD_YIELD_LATERAL := 22.0
+## getting out of the way. Wider than the lane-to-midline gap on an ordinary two-lane footway
+## (24px, half the 48px `CrowdLanes.SIDEWALK_LANE_SPREAD` puts between the footway's own two lanes),
+## so a walker holding an ordinary lane on an ordinary head-on pass steps aside instead of brushing
+## past at close to full intensity the whole way. Short of that 48px itself, so only the lane she is
+## actually closing on empties and a pavement does not part like the Red Sea in front of her.
+const CROWD_YIELD_LATERAL := 30.0
 ## How far ahead that approach is predicted. Long enough to be worth acting on — a walker needs
 ## 0.36s to clear a lane — and short enough that somebody two seconds away carries on as normal.
 const CROWD_YIELD_LEAD := 1.4
