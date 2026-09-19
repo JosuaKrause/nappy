@@ -142,7 +142,7 @@ const EXCITEMENT_DECAY_RUNNING := 0.5
 ## **The multipliers are ratios and the absolute rates are the design**, so a change to the walking
 ## rate above moves every one of these to keep its own ground where it was put:
 ##
-##     calm 12.0/s   precinct 9.0/s   street 6.0/s   alley 3.5/s   main road 2.1/s
+##     calm 12.0/s   precinct 9.0/s   street 6.0/s   alley 3.5/s   main road 0.12/s
 ##
 ## The park has to read on *both* bars, not just the sleepiness one — half of "this is working" is
 ## the excitement visibly falling away as she walks in under the trees. **Its floor is that a park
@@ -150,16 +150,30 @@ const EXCITEMENT_DECAY_RUNNING := 0.5
 ## to clear, which is long enough to be somewhere she walks to and stays in. Much faster and the
 ## park is a button she taps.
 ##
-## The main road is the same sentence inverted: it is the one ground in the city that is actively
-## bad at letting her recover, which is most of what "a main road is crossed, not walked" means
-## arithmetically. **An alley sits between the two** — pressured ground rather than a shortcut to
-## recovery, which is what keeps `EXCITEMENT_FROM_ALLEY` (3.0/s of constant dread) meaning
-## something: it sits just under the 3.5/s an alley gives back, so an empty alley is very nearly
-## flat and is never quite recovery.
+## The main road is the same sentence inverted, and nearly all the way there: it is the one ground
+## in the city that gives back next to nothing, at any density, which is most of what "a main road
+## is crossed, not walked" means arithmetically — walking it for any stretch is walking ground that
+## does not recover rather than ground that merely recovers slowly. `tests/probes/m117_decay.gd`'s
+## main-road leg reads +5.69/s net on day 1 and +1.36/s on day 9, three seeds each: even where the
+## spine has thinned to the lightest traffic of the run, it still costs rather than gives anything
+## back.
+##
+## **It is the lever that holds the spine's own price**, because it is the one number exclusive to
+## this corridor — the pedestrian field above only reaches `PEDESTRIAN_OUTER_RADIUS` now, short
+## enough that the arterial's own crowd noise cannot carry that price alone, and a louder car would
+## be loud on every street it also drives down rather than only this one. Crossing the road stays a
+## soft block rather than a wall: `tests/test_crowd.gd`'s worst-of-eight crossing reads 27.76 of a
+## hundred-point meter, comfortably under half, because the same short pedestrian reach that costs
+## the ground its own recovery also lightens what a crossing itself loads.
+##
+## **An alley sits between the two** — pressured ground rather than a shortcut to recovery, which
+## is what keeps `EXCITEMENT_FROM_ALLEY` (3.0/s of constant dread) meaning something: it sits just
+## under the 3.5/s an alley gives back, so an empty alley is very nearly flat and is never quite
+## recovery.
 const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.0
 const EXCITEMENT_DECAY_PRECINCT_MULTIPLIER := 1.5
 const EXCITEMENT_DECAY_ALLEY_MULTIPLIER := 0.58
-const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.35
+const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.02
 
 ## The rate a source has to beat before it is counted as denying the calm ground near it —
 ## `EventScheduler._denial_radius`, and `EventCatalogue`'s own reasoning for the one ambient row
@@ -902,10 +916,11 @@ const CAR_SPEED := Vector2(130.0, 185.0)
 ## intensity and the inner radius; two tiles away is 0/s. What the tight outer radius removes is a
 ## wide middle that would be worth a great deal for walking anywhere near anybody, and the narrower
 ## it is, the more of an ordinary sidewalk that wide middle gives back: a quiet act I sidewalk, with
-## the day's own crowd on it and nothing authored in range, nets about −4.2/s against the empty
-## street's own −6.0/s (`tests/probes/m117_decay.gd`, three seeds) — most of the way to reading as
-## recovery, and not the whole way there, because `CAR_INTENSITY` below carries a share of the
-## arterial's own price and a car is not confined to the arterial.
+## the day's own crowd on it and nothing authored in range, nets about −4.7/s against the empty
+## street's own −6.0/s (`tests/probes/m117_decay.gd`, three seeds), close to reading as recovery the
+## way the empty street already does. The main road's own price is untouched by this radius —
+## `EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` is what holds it, since that number is exclusive to the
+## one corridor it prices and this one is not.
 ##
 ## **"Two tiles away" is true of one walker and is only reachable if the lanes are spread.** A
 ## footway is two tiles, so lanes on their tile centres are 32px apart — and the midline, the only
@@ -936,20 +951,8 @@ const PEDESTRIAN_OUTER_RADIUS := 30.0
 ## car's field is 208px across, so every tile of both footways is inside it, and the frontage lane,
 ## the furthest place from a carriageway there is, sits 64px from the nearer lane centre. Nowhere on
 ## an ordinary street is out of the traffic's earshot, which is most of why the noise floor measures
-## flat across a pavement — and it is also why the intensity is the lever below rather than the
-## radius: the reach already covers the whole street, so widening it further would only carry the
-## same noise onto streets further off the road it describes.
-##
-## **Set to hold the main road's own price against `PEDESTRIAN_OUTER_RADIUS`'s short reach.**
-## Walkers on the arterial's own footways are part of what a crossing there measures, so a tight
-## pedestrian field alone leaves the spine's floor lower than the rest of the street asks it to be.
-## `tests/probes/m117_decay.gd`'s main-road leg is what this is set from and reads 5.70/s net on day
-## 1 and −0.12/s on day 9, three seeds each — well clear of the spine's own 2.1/s ground, which is
-## the shape `tests/test_crowd.gd`'s arterial floor asks for. Because a car is not confined to the
-## arterial, the same number also lands on every other street's own light traffic, which is the
-## reason the quiet sidewalk above does not reach the full recovery its own radius alone would have
-## bought it.
-const CAR_INTENSITY := 7.7
+## flat across a pavement.
+const CAR_INTENSITY := 5.4
 const CAR_INNER_RADIUS := 38.0
 const CAR_OUTER_RADIUS := 104.0
 

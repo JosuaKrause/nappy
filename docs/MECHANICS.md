@@ -88,7 +88,7 @@ Sources:
 | --- | --- |
 | Proximity to an active event | `intensity × falloff(distance)` per second |
 | Proximity to a passer-by | `4.2 × falloff(distance)`, inner `22`, outer `30` |
-| Proximity to a passing car | `7.7 × falloff(distance)`, inner `38`, outer `104` |
+| Proximity to a passing car | `5.4 × falloff(distance)`, inner `38`, outer `104` |
 | Running | `+ (speed − walk_speed) / (run_speed − walk_speed) × 14.0` per second |
 | Standing in an alley | `+3.0` per second (slow, constant dread) |
 | Sudden events (cat dash) | one-shot impulse on trigger |
@@ -113,14 +113,14 @@ what she is doing, times what she is standing on.
 | Precinct | `1.5` | `9.0/s` |
 | Ordinary street | `1.0` | `6.0/s` |
 | Alley | `0.58` | `3.5/s` |
-| Main road | `0.35` | `2.1/s` |
+| Main road | `0.02` | `0.12/s` |
 
 **The decay is what the bar shows.** A player watching the meter on a street with nothing on it is
 watching this number and nothing else, so it is set from a *net* measurement rather than from
 taste: the quietest ordinary pavement, with the day's own crowd on it and nothing authored in
-range, loads about 2.1/s, which leaves 4.2/s downward and a full meter in a little under
-twenty-four seconds of walking. Quiet ground has to read as recovery while she is on it, not
-merely come out negative on paper.
+range, loads about 1.3/s, which leaves 4.7/s downward and a full meter in about twenty-one seconds
+of walking. Quiet ground has to read as recovery while she is on it, not merely come out negative
+on paper.
 
 **The multipliers are ratios; the rates on the right are the design.** Each ground is somewhere
 she is meant to be able to recover at a particular speed, so a change to the walking rate re-derives
@@ -162,13 +162,14 @@ pavement's width is nearly nobody and an empty street reads as recovery — whic
 sentence the decay was raised for. What costs is walking **into** them, `18/s` of jolt for a second
 and a bit, and that is a thing she did rather than a thing that happened; and what costs more is
 several of them, because the load is a sum and a crowded pavement never stops emitting. One car is
-`7.7`, and no single car is dangerous either. The danger is that on a main road there is always
-another one, and the arterial's mean load runs three to four times what the spine's own ground
-gives back. Above about half the meter to cross it, it is a street nobody can use rather than a
-route decision; `tests/test_crowd.gd` holds both ends of that.
+`5.4`, and no single car is dangerous either. The danger is that on a main road there is always
+another one, and the ground itself gives back next to nothing to offset it — the arterial's mean
+load runs many times what its own ground recovers, where an ordinary street's load stays under
+what it recovers. Above about half the meter to cross it, it is a street nobody can use rather than
+a route decision; `tests/test_crowd.gd` holds both ends of that.
 
 **Every one of those comparisons is against the decay on the ground it is measured on**, not
-against the walking rate on its own. The spine gives back `2.1/s` and a back street `6.0/s`, so
+against the walking rate on its own. The spine gives back `0.12/s` and a back street `6.0/s`, so
 pricing a crowd load against the unmultiplied number flatters one street and libels the other — and
 standing still settles nothing at all, so the only question a street has to answer is what it costs
 to walk down, which is what a route is made of.
@@ -987,7 +988,7 @@ Parks, quiet squares, forests and courtyards are `CALM` tiles. Inside them:
 **And the excitement half is a rate everywhere**, not calm-or-not:
 `WorldContext.decay_multiplier()` answers with what this ground does, and the order is
 
-    calm 2.0  >  precinct 1.5  >  ordinary street 1.0  >  alley 0.58  >  main road 0.35
+    calm 2.0  >  precinct 1.5  >  ordinary street 1.0  >  alley 0.58  >  main road 0.02
 
 so a route is a **recovery rate** and not only a set of things to walk past. Three consequences
 worth holding on to. A precinct is worth walking to although it is loud — a retail street is busy,
