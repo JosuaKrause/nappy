@@ -191,8 +191,9 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: Node) -> void:
 
 ## The full-flight side uses the six reviewed 32px sources as three complete modules, rather than
 ## turning its visual assembly into map cells. This checks the runtime placement function itself:
-## selection follows the descent direction, and each following module moves diagonally by one tile.
-## The existing walkability and slope suites continue to own the map and input contracts.
+## selection follows the descent direction, each following module moves diagonally by one tile, and
+## every side starts from a narrow vertical platform. The walkability and slope suites own the map
+## and input contracts.
 func _test_full_flight_side_modules_select_and_place_the_reviewed_tiles(t: Node) -> void:
 	var origin := Vector2(320.0, 448.0)
 	var east := InteriorScene.stair_side_placements(origin, true)
@@ -244,6 +245,7 @@ func _test_full_flight_side_modules_select_and_place_the_reviewed_tiles(t: Node)
 		if east_kind == InteriorTile.Kind.STAIR_FLIGHT_E or west_kind == InteriorTile.Kind.STAIR_FLIGHT_W:
 			full_flights += 1
 	var bound_side_tiles := 0
+	var bound_platforms: Array[Sprite2D] = []
 	var side_textures: Array[Texture2D] = [
 		InteriorScene.STAIR_SIDE_UPPER_E,
 		InteriorScene.STAIR_SIDE_LOWER_E,
@@ -256,10 +258,60 @@ func _test_full_flight_side_modules_select_and_place_the_reviewed_tiles(t: Node)
 		var sprite := child as Sprite2D
 		if sprite != null and side_textures.has(sprite.texture):
 			bound_side_tiles += 1
+		if sprite != null and sprite.texture == InteriorScene.STAIR_LANDING_VERTICAL:
+			bound_platforms.append(sprite)
 	var expected_side_tiles := full_flights * east.size()
 	t.check(bound_side_tiles == expected_side_tiles,
 			"every full flight binds the reviewed side while the map remains its source of truth (%d of %d)"
 					% [bound_side_tiles, expected_side_tiles])
+	t.check(InteriorScene.STAIR_LANDING_VERTICAL.get_width() == int(InteriorScene.TILE)
+				and InteriorScene.STAIR_LANDING_VERTICAL.get_height() == int(InteriorScene.TILE * 2.0),
+			"the landing platform is one tile wide and exactly two stair tiles high")
+	t.check(bound_platforms.size() == full_flights,
+			"every full flight starts at one narrow vertical landing platform")
+	for landing: Vector2i in f.tiles:
+		if f.tiles[landing] != InteriorTile.Kind.LANDING:
+			continue
+		var east_kind: int = f.tiles.get(landing + Vector2i(1, 1), InteriorTile.Kind.NONE)
+		var west_kind: int = f.tiles.get(landing + Vector2i(-1, 1), InteriorTile.Kind.NONE)
+		if east_kind != InteriorTile.Kind.STAIR_FLIGHT_E and west_kind != InteriorTile.Kind.STAIR_FLIGHT_W:
+			continue
+		var descends_east := east_kind == InteriorTile.Kind.STAIR_FLIGHT_E
+		var platform_x := landing.x if descends_east else landing.x - 1
+		var expected_platform := Vector2(platform_x * InteriorScene.TILE,
+				(landing.y - 1) * InteriorScene.TILE)
+		var found_platform := false
+		for platform in bound_platforms:
+			if platform.position == expected_platform:
+				found_platform = true
+				break
+		t.check(found_platform,
+				"the %s platform joins its side at %s"
+						% ["east" if descends_east else "west", expected_platform])
+	var removed_flight_e: Texture2D = load("res://assets/interior/stair_flight_run_e.svg")
+	var removed_flight_w: Texture2D = load("res://assets/interior/stair_flight_run_w.svg")
+	var removed_landing_floor: Texture2D = load("res://assets/interior/stair_landing_floor.svg")
+	var removed_landing_turn: Texture2D = load("res://assets/interior/stair_landing_turn.svg")
+	var removed_rail_e: Texture2D = load("res://assets/interior/stair_rail_run_e.svg")
+	var removed_rail_w: Texture2D = load("res://assets/interior/stair_rail_run_w.svg")
+	var removed_rear_rail_e: Texture2D = load("res://assets/interior/stair_rail_run_e_rear.svg")
+	var removed_rear_rail_w: Texture2D = load("res://assets/interior/stair_rail_run_w_rear.svg")
+	var removed_short_flight: Texture2D = load("res://assets/interior/stair_flight_short_e.svg")
+	var removed_short_rail: Texture2D = load("res://assets/interior/stair_rail_short_e.svg")
+	var removed_short_rear_rail: Texture2D = load("res://assets/interior/stair_rail_short_e_rear.svg")
+	var removed_textures: Array[Texture2D] = [
+		removed_flight_e, removed_flight_w, removed_landing_floor, removed_landing_turn,
+		removed_rail_e, removed_rail_w, removed_rear_rail_e, removed_rear_rail_w,
+		removed_short_flight, removed_short_rail, removed_short_rear_rail,
+	]
+	var removed_bound := 0
+	for layer_name in ["StairStructure", "Entities"]:
+		for child in scene.get_node(layer_name).get_children():
+			var sprite := child as Sprite2D
+			if sprite != null and removed_textures.has(sprite.texture):
+				removed_bound += 1
+	t.check(removed_bound == 0,
+			"the escape review has no broad flight deck, floor or turn landing, or foreground or rear rail texture")
 	scene.free()
 
 ## The switchback's own redirection: a sideways press on a diagonal flight walks its slope rather

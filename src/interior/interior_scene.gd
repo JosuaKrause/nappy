@@ -50,23 +50,13 @@ const CHANDELIER_TEXTURE := preload("res://assets/interior/chandelier.svg")
 const STAIRWELL_SEGMENT_BACKDROP := preload("res://assets/interior/stairwell_segment_backdrop.svg")
 const STAIRWELL_SHAFT_CAP_TOP := preload("res://assets/interior/stairwell_shaft_cap_top.svg")
 const STAIRWELL_SHAFT_CAP_BOTTOM := preload("res://assets/interior/stairwell_shaft_cap_bottom.svg")
-const STAIR_FLIGHT_RUN_E := preload("res://assets/interior/stair_flight_run_e.svg")
-const STAIR_FLIGHT_RUN_W := preload("res://assets/interior/stair_flight_run_w.svg")
 const STAIR_SIDE_UPPER_E := preload("res://assets/interior/m158_stair_side_upper_e.svg")
 const STAIR_SIDE_LOWER_E := preload("res://assets/interior/m158_stair_side_lower_e.svg")
 const STAIR_SIDE_CONTINUE_E := preload("res://assets/interior/m158_stair_side_continue_e.svg")
 const STAIR_SIDE_UPPER_W := preload("res://assets/interior/m158_stair_side_upper_w.svg")
 const STAIR_SIDE_LOWER_W := preload("res://assets/interior/m158_stair_side_lower_w.svg")
 const STAIR_SIDE_CONTINUE_W := preload("res://assets/interior/m158_stair_side_continue_w.svg")
-const STAIR_LANDING_FLOOR := preload("res://assets/interior/stair_landing_floor.svg")
-const STAIR_LANDING_TURN := preload("res://assets/interior/stair_landing_turn.svg")
-const STAIR_RAIL_RUN_E := preload("res://assets/interior/stair_rail_run_e.svg")
-const STAIR_RAIL_RUN_W := preload("res://assets/interior/stair_rail_run_w.svg")
-const STAIR_RAIL_RUN_E_REAR := preload("res://assets/interior/stair_rail_run_e_rear.svg")
-const STAIR_RAIL_RUN_W_REAR := preload("res://assets/interior/stair_rail_run_w_rear.svg")
-const STAIR_FLIGHT_SHORT_E := preload("res://assets/interior/stair_flight_short_e.svg")
-const STAIR_RAIL_SHORT_E := preload("res://assets/interior/stair_rail_short_e.svg")
-const STAIR_RAIL_SHORT_E_REAR := preload("res://assets/interior/stair_rail_short_e_rear.svg")
+const STAIR_LANDING_VERTICAL := preload("res://assets/interior/stair_landing_vertical.svg")
 
 const TILE := float(Tuning.TILE_SIZE)
 ## Three complete three-tile modules occupy a full flight's five-tile visual height: every next
@@ -355,13 +345,12 @@ func _add_threshold(tile: Vector2i, texture: Texture2D) -> void:
 	sprite.position = Vector2((tile.x + 0.5) * TILE, (tile.y + 1) * TILE)
 	_entities.add_child(sprite)
 
-## Draws one broad architectural bay behind every landing that has a flight below it, then puts a
-## continuous deck over the same four diagonal cells. The cells, collision clearance and slope
-## callback remain exactly the map's existing walkable graph; this only gives their presentation
-## the breadth and enclosure the references call for.
+## Draws one shaft bay behind every landing that has a flight below it. The map's cells, collision
+## clearance and slope callback remain the walkable graph; the side modules and their narrow
+## landings are presentation only.
 func _rebuild_stairwell_structure() -> void:
 	# A named floor landing owns its enclosed eight-row backdrop. Turn landings need no second
-	# backdrop, but both kinds own a broad half-flight assembly below.
+	# backdrop, but both kinds receive the same narrow vertical platform at a flight start.
 	for id: String in _plan.waypoints:
 		if not id.begins_with("stairwell_") or not id.contains(":landing_"):
 			continue
@@ -380,7 +369,6 @@ func _rebuild_stairwell_structure() -> void:
 		_add_shaft_cap(top, STAIRWELL_SHAFT_CAP_TOP, Vector2(0, -64))
 		var bottom: Vector2i = _plan.waypoints["stairwell_%s:landing_lobby" % side]
 		_add_shaft_cap(bottom, STAIRWELL_SHAFT_CAP_BOTTOM, Vector2.ZERO)
-	_add_basement_entry_stair()
 	for landing: Vector2i in _plan.tiles:
 		if _plan.tiles[landing] != InteriorTile.Kind.LANDING:
 			continue
@@ -389,29 +377,9 @@ func _rebuild_stairwell_structure() -> void:
 		if east != InteriorTile.Kind.STAIR_FLIGHT_E and west != InteriorTile.Kind.STAIR_FLIGHT_W:
 			continue
 		var descends_east := east == InteriorTile.Kind.STAIR_FLIGHT_E
-		var deck: Texture2D = STAIR_FLIGHT_RUN_E if descends_east else STAIR_FLIGHT_RUN_W
 		var origin := _flight_origin(landing, descends_east)
-		_add_flight_deck(origin, deck)
 		_add_flight_side(origin, descends_east)
-		if _is_floor_landing(landing):
-			var rear_rail: Texture2D = STAIR_RAIL_RUN_E_REAR if descends_east else STAIR_RAIL_RUN_W_REAR
-			_add_flight_rear_rail(origin, rear_rail)
-		var rail: Texture2D = STAIR_RAIL_RUN_E if descends_east else STAIR_RAIL_RUN_W
-		_add_flight_rail(origin, rail)
-	for landing: Vector2i in _plan.tiles:
-		if _plan.tiles[landing] != InteriorTile.Kind.LANDING:
-			continue
-		if _is_floor_landing(landing):
-			_add_floor_landing_platform(landing)
-			continue
-		var east: int = _plan.tiles.get(landing + Vector2i(1, 1), InteriorTile.Kind.NONE)
-		_add_turn_landing_platform(landing, east == InteriorTile.Kind.STAIR_FLIGHT_E)
-
-func _is_floor_landing(landing: Vector2i) -> bool:
-	for id: String in _plan.waypoints:
-		if id.begins_with("stairwell_") and id.contains(":landing_") and _plan.waypoints[id] == landing:
-			return true
-	return false
+		_add_landing_platform(landing, descends_east)
 
 func _add_shaft_cap(landing: Vector2i, texture: Texture2D, offset: Vector2) -> void:
 	var sprite := Sprite2D.new()
@@ -420,39 +388,21 @@ func _add_shaft_cap(landing: Vector2i, texture: Texture2D, offset: Vector2) -> v
 	sprite.position = Vector2((landing.x - 4) * TILE, landing.y * TILE) + offset
 	_backdrops.add_child(sprite)
 
-func _add_floor_landing_platform(landing: Vector2i) -> void:
+## A two-tile vertical landing, attached to the top of the departing side. The east platform starts
+## at the landing column; the west platform ends there, so the same 32px source joins its mirrored
+## side without adding a wider deck over the walkable cells.
+func _add_landing_platform(landing: Vector2i, descends_east: bool) -> void:
 	var sprite := Sprite2D.new()
-	sprite.texture = STAIR_LANDING_FLOOR
-	sprite.centered = false
-	sprite.position = Vector2((landing.x - 1) * TILE, landing.y * TILE)
-	_structure.add_child(sprite)
-
-func _add_turn_landing_platform(landing: Vector2i, descends_east: bool) -> void:
-	var sprite := Sprite2D.new()
-	sprite.texture = STAIR_LANDING_TURN
+	sprite.name = "StairLandingVertical"
+	sprite.texture = STAIR_LANDING_VERTICAL
 	sprite.centered = false
 	var x := landing.x if descends_east else landing.x - 1
 	sprite.position = Vector2(x * TILE, (landing.y - 1) * TILE)
 	_structure.add_child(sprite)
 
-func _add_basement_entry_stair() -> void:
-	var entry: InteriorMapPlan.Door = _plan.door("basement:entry")
-	var top: Vector2i = entry.tile - Vector2i(2, 2)
-	var origin: Vector2 = Vector2(top) * TILE
-	_add_flight_deck(origin, STAIR_FLIGHT_SHORT_E)
-	_add_flight_rear_rail(origin, STAIR_RAIL_SHORT_E_REAR)
-	_add_flight_rail(origin, STAIR_RAIL_SHORT_E)
-
 func _flight_origin(landing: Vector2i, descends_east: bool) -> Vector2:
 	var x := landing.x if descends_east else landing.x - 4
 	return Vector2(x * TILE, landing.y * TILE)
-
-func _add_flight_deck(origin: Vector2, texture: Texture2D) -> void:
-	var sprite := Sprite2D.new()
-	sprite.texture = texture
-	sprite.centered = false
-	sprite.position = origin
-	_structure.add_child(sprite)
 
 ## One source tile in the reviewed stair-side assembly. Kept as a value instead of deriving
 ## positions separately in drawing and tests, so a placement correction cannot select the right
@@ -469,9 +419,9 @@ class StairSidePlacement:
 		role = tile_role
 		module = module_index
 
-## The reviewed assembly for one full 160px flight. East starts at the deck's west edge and advances
-## east; west begins at its east edge and advances west, making the two complete assemblies mirror
-## one another while all six sources retain their native 32px registration.
+## The reviewed assembly for one full flight. East starts at its landing column and advances east;
+## west arrives at that column from the west, making the complete assemblies mirror one another
+## while all six sources retain their native 32px registration.
 static func stair_side_placements(origin: Vector2, descends_east: bool) -> Array[StairSidePlacement]:
 	var pictures: Array[Texture2D] = [
 		STAIR_SIDE_UPPER_E if descends_east else STAIR_SIDE_UPPER_W,
@@ -489,9 +439,7 @@ static func stair_side_placements(origin: Vector2, descends_east: bool) -> Array
 					pictures[role], roles[role], module))
 	return placements
 
-## Places the reviewed side after its deck but before either rail, preserving the rail's existing
-## structural and foreground order. The deck keeps its tread surface; these tiles replace only the
-## broad flight's side reading.
+## Places the reviewed side in the structural layer; the assembly includes no broad deck or rails.
 func _add_flight_side(origin: Vector2, descends_east: bool) -> void:
 	for placement: StairSidePlacement in stair_side_placements(origin, descends_east):
 		var sprite := Sprite2D.new()
@@ -500,22 +448,6 @@ func _add_flight_side(origin: Vector2, descends_east: bool) -> void:
 		sprite.centered = false
 		sprite.position = placement.position
 		_structure.add_child(sprite)
-
-func _add_flight_rear_rail(origin: Vector2, texture: Texture2D) -> void:
-	var sprite := Sprite2D.new()
-	sprite.texture = texture
-	sprite.centered = false
-	sprite.position = origin
-	_structure.add_child(sprite)
-
-func _add_flight_rail(origin: Vector2, texture: Texture2D) -> void:
-	var sprite := Sprite2D.new()
-	sprite.texture = texture
-	sprite.centered = false
-	# The bottom-edge sort key leaves the walker behind the foreground rail throughout the flight.
-	sprite.offset = Vector2(0, -texture.get_height())
-	sprite.position = origin + Vector2(0, texture.get_height())
-	_entities.add_child(sprite)
 
 # ------------------------------------------------------------------ placement and queries ---
 

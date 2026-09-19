@@ -376,13 +376,21 @@ renders and an assembled review for player steering.
 
 > "okay hook the stairs up in the escape sequence so I can take a look there"
 
+> "for the assembly. the landing platform is vertical and the height of the two stair tiles.
+> remove the old tiles and the railing tiles -- no railing before we get the rest working"
+
+> "landing platform should be vertical it is horizontal now"
+
 - [ ] **Bind the reviewed six-tile side in the escape stairwell.** Replace only the current visual
       treatment of each full stair flight's side with the matching east/west upper, lower and
-      continuation roles, repeated with the reviewed one-tile-right-and-down module shift. Keep the
-      escape map, walkable stair tiles, slope redirection, landings, rails, collision and route
-      unchanged. Update the graphics inventory from prepared to live, cover the selection and
-      placement with a focused interior test, and provide one normal-scale still in the escape
-      stairwell for player review. This is a review binding, not approval of the final stair art.
+      continuation roles, repeated with the reviewed one-tile-right-and-down module shift. For this
+      assembly review, remove the old full-flight and landing visual tiles and remove both rear and
+      foreground railing tiles; no railing returns until the rest of the assembly works. Draw the
+      landing platform vertically at two stair tiles high. Keep the escape map, walkable stair
+      tiles, slope redirection, collision, waypoints, doors and route unchanged. Update the graphics
+      inventory, cover the selection, placement and deliberate old-visual omissions with a focused
+      interior test, and provide one normal-scale still in the escape stairwell for player review.
+      This is a review binding, not approval of the final stair art.
 
 ---
 

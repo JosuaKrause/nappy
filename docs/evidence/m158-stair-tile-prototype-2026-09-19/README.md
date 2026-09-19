@@ -1,4 +1,4 @@
-# M158 stair-side tile prototype
+# M158 stair-side tile prototype and escape review
 
 This review preserves the six 32×32 SVG sources now bound by `InteriorScene._add_flight_side()` as
 structural sprites, not TileSet sources. The east-facing upper tile contains four 8px-wide rectangles
@@ -16,6 +16,15 @@ the top-right (top-left in the mirrored source): its legs span two 8px steps and
 side into the next shifted module without background art hiding the join. The width is a silent,
 overturnable choice: 8px is the largest divisor of the 32px tile that gives four steps rather than
 only two.
+
+The escape review binds these six side sources without a broad flight deck or any foreground or
+rear rail. Every full-flight start instead has one narrow 32×64 vertical landing platform. It begins
+at the landing column for an east-descending side and ends there for a west-descending side, so its
+inside edge joins the side's native 32px registration. The tile-sized flight and landing ground
+sources remain the walkable map; the review overlay changes no route, slope or collision data.
+The [normal-scale escape still](../archive/session-captures/2026-09-19/rig-094848-seed2333690523-v0.11.1-23-g27508bfc-dirty/m158-vertical-landing.png)
+shows this runtime composition; its dated run folder carries the command and telemetry rather than
+serving as a source-art reference.
 
 `renders/stair-side-review.png` places upper, lower and continuation roles vertically. A second
 east module is one tile east and one tile down; its mirrored counterpart is one tile west and one
