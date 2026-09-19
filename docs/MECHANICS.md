@@ -1172,23 +1172,28 @@ same seed. A won day commits the photograph.
 
 ## Saving and resuming
 
-The run is saved implicitly — there is no save button, no slot and no menu — at dawn, when a day
-ends, when the window loses focus, and on quit. `GameSave` is the one place every read and write
-of it happens, gated behind `GameSave.uses_save()` so a dev flag, a headless run, the test runner
-and `tools/check.sh`'s own boot never touch it: every checkout and worktree of this repository
-shares one `user://`, and none of those runs may land in or overwrite what may be the player's own
-day 9. A run carrying any dev flag already falls outside the gate by being one; `--no-save` is
-what a flagless `tools/run.sh` session asks for the same thing with.
+The run is saved implicitly — there is no save button, no slot and no menu — at exactly two
+moments, each saying which one it is. `GameSave` is the one place every read and write of it
+happens, gated behind `GameSave.uses_save()` so a dev flag, a headless run, the test runner and
+`tools/check.sh`'s own boot never touch it: every checkout and worktree of this repository shares
+one `user://`, and none of those runs may land in or overwrite what may be the player's own day 9.
+A run carrying any dev flag already falls outside the gate by being one; `--no-save` is what a
+flagless `tools/run.sh` session asks for the same thing with.
 
-**A day sitting behind a screen she has not yet dismissed — day 1's title, or the pause a resumed
-run opens behind — is saved as not under way, and the moment she dismisses that screen is a fifth
-write, immediate rather than waiting on the next of the four above.** The dawn write already on
-disk for such a day says *not under way*, correctly, since nothing has happened in it yet; the
-instant the gate opens that stops being true, and none of a crash, a force-kill or a backgrounded
-tab whose page is simply discarded — the ordinary way a phone reclaims memory — can be counted on
-to ever send a focus-loss or quit notification that would otherwise be the next chance to say so.
-Dismissing an ordinary mid-day pause reaches the same function and writes nothing a second time,
-since the day was already under way before it could be opened.
+**Written `day_under_way: false` the instant a day exists but has not yet been handed to the
+player** — `main._start_day()`'s own dawn, made before any of the title, or the title and then the
+day brief, is ever shown — **and written `day_under_way: true` the instant she actually starts
+playing it**: continuing from the title on a fresh run, from the day brief a resumed one opens on,
+or from the previous day's own end-of-day message straight into the next day, which has no gate at
+all between the two. Because the `false` write always lands before the day brief a resumed run
+shows itself, whatever the load just charged is already on disk by the time she is looking at that
+screen — so a kill at any instant finds exactly what is on screen, never a free retry of a day
+that was started and never a second charge for one abandoned day. The end-of-day message writes
+the same `false`, at the moment it comes up rather than at a dawn nothing yet stands behind. Nothing
+else writes: losing focus, a phone sending the game to the background, closing the window and
+quitting all still do what they always have — the game still pauses on focus loss (M161), the run
+log still closes — but none of them changes what a save holds, since a save is the run and the
+day, never the moment inside one (PLAYTEST-82).
 
 **A save holds the run, never the moment inside a day.** `GameState.save_snapshot()` — the seed,
 the day, nerves, resistance progress, scars, consumed one-shot events, the block arcs the run's own
@@ -1203,15 +1208,17 @@ satisfies at dawn instead.
 
 **Opening a game whose save says a day was under way loses that day**, through the same code path
 an ordinary lost day takes: one nerve, the resistance given back, the same day again, the last
-nerve ending the run exactly as it does there. She comes up at that day's dawn behind the pause
-screen, with a line saying the day was lost to leaving it. The penalty is charged on *load*, never
-on a focus loss by itself — a browser tab backgrounded and returned to in the same session costs
-nothing, since nothing was ever closed. A save written once a day has already ended at its own
-summary costs nothing either, and lands at that day's (or the next day's) dawn paused for free —
-until she presses on past that pause, at which point the day is under way again and closing costs
-what it always does. A finished run, either ending, leaves no save at all: there is nothing left
-to resume, and a save naming an ended run would only have to be specially refused on the next load
-rather than simply not existing.
+nerve ending the run exactly as it does there. **The title comes up on every boot**, with the
+street outside her own front door running behind it exactly as it does for a fresh run; pressing
+start with a save on disk brings up the day brief instead of starting the day outright — the
+screen `DaySummary` draws between days, carrying the day, the nerves and the resistance's own
+pending brief, plus the line that a day was lost to leaving it when the load itself charged the
+nerve above. Continuing from the day brief is the moment the day actually starts, and the moment
+the first of the two writes above says so. If the load spends the run's last nerve, the day brief
+never shows at all — the ending does, the same screen and the same continue any other
+run-ending reaches. A save written once a day has already ended at its own summary, or at a day
+brief before it is ever continued past, costs nothing: opening it again finds the same nerve count
+and shows the same screen, and pressing on from there is what actually spends anything.
 
 **A save a newer build cannot read is dropped for a fresh title screen, never half-loaded.**
 `GameSave.FORMAT_VERSION` is what a build compares — an ordinary release never bumps it, so a
@@ -1223,5 +1230,7 @@ against; releasing a newer build must not by itself throw an old save away.
 starting over is what it has always meant — nothing new is drawn for clearing it.
 
 A small symbol appears in a corner for a few seconds after each write and fades out, on whatever
-screen is up. It names no key and is not a danger cue; it is the only thing that ever tells the
-player a write happened at all, since saving itself is otherwise silent.
+screen is up — twice in an ordinary day: once when it starts, once when the day brief or the
+end-of-day message comes up for the next one. It names no key and is not a danger cue; it is the
+only thing that ever tells the player a write happened at all, since saving itself is otherwise
+silent.

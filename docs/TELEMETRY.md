@@ -192,8 +192,8 @@ window and nothing else here would cover it.
 
 ### `--no-save`
 
-The run is saved implicitly at dawn, when a day ends, on focus loss and on quit — see
-`docs/MECHANICS.md`, "Saving and resuming". `GameSave.uses_save()` is the one gate every read and
+The run is saved implicitly when a day starts being played and when the day brief or the
+end-of-day message comes up — see `docs/MECHANICS.md`, "Saving and resuming". `GameSave.uses_save()` is the one gate every read and
 write goes through, and it already refuses a headless run and any run carrying a dev flag, since
 every checkout and worktree of this repository shares one `user://` and none of those runs may
 land in or overwrite the player's own save.
