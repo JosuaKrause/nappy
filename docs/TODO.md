@@ -340,6 +340,14 @@ through `tools/run.sh --start-escape --seed 4242`.
       same row hunts from day 7 on ordinary days, so this changes there too. Whether the street
       behind a roadblock whose guard has left stays shut is the consequence to state in the
       record: the barrier staying means it does.
+- [ ] **The hallway windows flash more often.** *(2026-09-19: "the flashing lights in the window
+      are too rare", [PLAYTEST-96](playtests/PLAYTEST-96.md).)* A window lights only with an
+      explosion, every 22 seconds (`Tuning.FINALE_EXPLOSION_INTERVAL`), and an explosion costs
+      excitement. Built as light without noise, open to overturn: distant flashes light the
+      windows between the loud ones, on an irregular interval of their own a few seconds long,
+      and cost nothing; the loud explosions stay at 22 seconds and still flash. The alternative
+      the player may prefer is simply more explosions, which is one constant and makes the
+      building louder.
 - [ ] **The escape's run log stamps every line `0.0`.** The log of the played run cannot say when
       anything happened (`docs/evidence/playtest-94-2026-09-19/`).
 
