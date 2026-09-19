@@ -893,29 +893,32 @@ const CAR_SPEED := Vector2(130.0, 185.0)
 ## **The radius is tight because `falloff` has a shoulder on it.** Every source holds three quarters
 ## of its intensity at the midpoint of its band, which is right for an **event** — a thing on the map
 ## to route around — and wrong for a **body**, which is one of a couple of hundred and is supposed to
-## be inaudible from across the pavement. At an event's kind of radius the same shoulder puts the
-## arterial floor around 18/s against a walking decay of 3.5, which is a main road that fills the
-## meter in six seconds.
+## be inaudible from across the pavement. An event's kind of radius on a body puts the arterial floor
+## several times the walking decay, which is a main road that fills the meter in seconds rather than
+## one that is merely expensive to cross.
 ##
 ## So the crowd pays the shape back in radius, and what that defends is the measured character of
 ## the street: **careless is expensive and careful is free.** A close pass costs 4.2/s, set by the
 ## intensity and the inner radius; two tiles away is 0/s. What the tight outer radius removes is a
-## wide middle that would be worth a great deal for walking anywhere near anybody.
+## wide middle that would be worth a great deal for walking anywhere near anybody, and the narrower
+## it is, the more of an ordinary sidewalk that wide middle gives back: a quiet act I sidewalk, with
+## the day's own crowd on it and nothing authored in range, nets about −4.2/s against the empty
+## street's own −6.0/s (`tests/probes/m117_decay.gd`, three seeds) — most of the way to reading as
+## recovery, and not the whole way there, because `CAR_INTENSITY` below carries a share of the
+## arterial's own price and a car is not confined to the arterial.
 ##
 ## **"Two tiles away" is true of one walker and is only reachable if the lanes are spread.** A
 ## footway is two tiles, so lanes on their tile centres are 32px apart — and the midline, the only
 ## line with no head-on contact on it, is then 16px from two lane centres and inside the
-## **full-intensity core** of both. Measured that way the ambient floor is flat across a pavement
-## (4.30 frontage / 4.96 midline / 4.76 kerb), the careful line for contacts is the careless one for
-## noise, and *how close to pass* is not a choice at all.
-##
-## `CrowdLanes.SIDEWALK_LANE_SPREAD` is what makes it one: at 48px apart the midline is **24px from
-## each lane and outside `PEDESTRIAN_INNER_RADIUS`**, worth 56 points per forty seconds against 74
-## unspread. **That is the one change to make if this stops being true** — the intensity and the
-## radii are pinned by the arterial floor and the shoulder, and the geometry is not.
+## **full-intensity core** of both — the careful line for contacts and the careless one for noise,
+## which is why `CrowdLanes.SIDEWALK_LANE_SPREAD` moves the lanes apart instead of narrowing this
+## radius: at 48px apart the midline is **24px from each lane and outside `PEDESTRIAN_INNER_RADIUS`**,
+## worth 56 points per forty seconds against 74 unspread. **That is the one change to make if this
+## stops being true** — the intensity and the radii are pinned by the arterial floor and the shoulder,
+## and the geometry is not.
 const PEDESTRIAN_INTENSITY := 4.2
 const PEDESTRIAN_INNER_RADIUS := 22.0
-const PEDESTRIAN_OUTER_RADIUS := 55.0
+const PEDESTRIAN_OUTER_RADIUS := 30.0
 
 ## A car is louder than a person and passes much faster. No single car outruns the walking
 ## decay — the point is not that one car is dangerous, it is that on a main road there is
@@ -931,8 +934,20 @@ const PEDESTRIAN_OUTER_RADIUS := 55.0
 ## car's field is 208px across, so every tile of both footways is inside it, and the frontage lane,
 ## the furthest place from a carriageway there is, sits 64px from the nearer lane centre. Nowhere on
 ## an ordinary street is out of the traffic's earshot, which is most of why the noise floor measures
-## flat across a pavement.
-const CAR_INTENSITY := 5.4
+## flat across a pavement — and it is also why the intensity is the lever below rather than the
+## radius: the reach already covers the whole street, so widening it further would only carry the
+## same noise onto streets further off the road it describes.
+##
+## **Set to hold the main road's own price against `PEDESTRIAN_OUTER_RADIUS`'s short reach.**
+## Walkers on the arterial's own footways are part of what a crossing there measures, so a tight
+## pedestrian field alone leaves the spine's floor lower than the rest of the street asks it to be.
+## `tests/probes/m117_decay.gd`'s main-road leg is what this is set from and reads 5.70/s net on day
+## 1 and −0.12/s on day 9, three seeds each — well clear of the spine's own 2.1/s ground, which is
+## the shape `tests/test_crowd.gd`'s arterial floor asks for. Because a car is not confined to the
+## arterial, the same number also lands on every other street's own light traffic, which is the
+## reason the quiet sidewalk above does not reach the full recovery its own radius alone would have
+## bought it.
+const CAR_INTENSITY := 7.7
 const CAR_INNER_RADIUS := 38.0
 const CAR_OUTER_RADIUS := 104.0
 

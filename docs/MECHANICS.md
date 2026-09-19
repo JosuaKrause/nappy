@@ -87,8 +87,8 @@ Sources:
 | Source | Contribution |
 | --- | --- |
 | Proximity to an active event | `intensity × falloff(distance)` per second |
-| Proximity to a passer-by | `4.2 × falloff(distance)`, inner `22`, outer `55` |
-| Proximity to a passing car | `5.4 × falloff(distance)`, inner `38`, outer `104` |
+| Proximity to a passer-by | `4.2 × falloff(distance)`, inner `22`, outer `30` |
+| Proximity to a passing car | `7.7 × falloff(distance)`, inner `38`, outer `104` |
 | Running | `+ (speed − walk_speed) / (run_speed − walk_speed) × 14.0` per second |
 | Standing in an alley | `+3.0` per second (slow, constant dread) |
 | Sudden events (cat dash) | one-shot impulse on trigger |
@@ -118,8 +118,8 @@ what she is doing, times what she is standing on.
 **The decay is what the bar shows.** A player watching the meter on a street with nothing on it is
 watching this number and nothing else, so it is set from a *net* measurement rather than from
 taste: the quietest ordinary pavement, with the day's own crowd on it and nothing authored in
-range, loads about 2.5/s, which leaves 3.8/s downward and a full meter in a little over
-twenty-five seconds of walking. Quiet ground has to read as recovery while she is on it, not
+range, loads about 2.1/s, which leaves 4.2/s downward and a full meter in a little under
+twenty-four seconds of walking. Quiet ground has to read as recovery while she is on it, not
 merely come out negative on paper.
 
 **The multipliers are ratios; the rates on the right are the design.** Each ground is somewhere
@@ -162,7 +162,7 @@ pavement's width is nearly nobody and an empty street reads as recovery — whic
 sentence the decay was raised for. What costs is walking **into** them, `18/s` of jolt for a second
 and a bit, and that is a thing she did rather than a thing that happened; and what costs more is
 several of them, because the load is a sum and a crowded pavement never stops emitting. One car is
-`5.4`, and no single car is dangerous either. The danger is that on a main road there is always
+`7.7`, and no single car is dangerous either. The danger is that on a main road there is always
 another one, and the arterial's mean load runs three to four times what the spine's own ground
 gives back. Above about half the meter to cross it, it is a street nobody can use rather than a
 route decision; `tests/test_crowd.gd` holds both ends of that.
@@ -768,7 +768,7 @@ outer edge. Two consequences worth knowing before touching it again:
   to be outside the radius — and no radius moved.
 - **It applies to the crowd too, and the crowd compensates in radius.** A field that bites from a
   distance is right for an authored event and wrong for one of a couple of hundred bodies, so the
-  pedestrian and car outer radii are tight (55 and 104) — a close pass costs what it should and the
+  pedestrian and car outer radii are tight (30 and 104) — a close pass costs what it should and the
   summed street floor lands where the balance wants it.
 
 ## Running that matters
