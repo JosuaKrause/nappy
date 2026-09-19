@@ -238,7 +238,12 @@ static func _build_lobby(f: InteriorMapPlan, origin: Vector2i) -> void:
 	_add_door(f, "lobby:right", origin + Vector2i(LOBBY_RIGHT_DOOR_COLUMN, 1), "stairwell_right:landing_lobby")
 	_add_door(f, "lobby:basement", origin + Vector2i(LOBBY_BASEMENT_COLUMN, 1), "basement:entry")
 
-	f.waypoints["lobby"] = origin + Vector2i(LOBBY_ENTRANCE_COLUMN, 1)
+	# **A part's waypoint is never a door's own tile.** `--start-escape <part>` puts her down at
+	# this position with nothing armed, and `InteriorScene.process_player()` fires a transition on
+	# the frame she is standing on a door — so a waypoint that *is* the basement notch sends her
+	# straight down to the basement instead of showing her the lobby. One column east of the
+	# entrance, which is still in front of the barricade and is nobody's threshold.
+	f.waypoints["lobby"] = origin + Vector2i(LOBBY_ENTRANCE_COLUMN + 1, 1)
 
 # -------------------------------------------------------------------------------- basement ---
 
@@ -281,7 +286,9 @@ static func _build_basement(f: InteriorMapPlan, origin: Vector2i) -> void:
 	f.decals[origin + Vector2i(5, 7)] = InteriorTile.Kind.DEBRIS
 	f.decals[origin + Vector2i(2, 3)] = InteriorTile.Kind.RAT
 
-	f.waypoints["basement"] = f.doors["basement:entry"].tile
+	# The corridor cell the entry stair arrives at, for the same reason the lobby's is not its own
+	# notch: the entry door's tile would teleport her back up to the lobby on the first frame.
+	f.waypoints["basement"] = origin + Vector2i(2, 11)
 
 ## One two-row band of basement floor, brick-walled along its own north edge (`wall_row`), from
 ## `x_min` to `x_max` inclusive, all local to `origin`.
