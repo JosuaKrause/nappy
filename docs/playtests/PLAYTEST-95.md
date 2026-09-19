@@ -26,7 +26,17 @@ And, told that the runtime tint would have to go for the colors to survive:
    modulate keeps the fade and loses the tint. The player confirmed it: *"no tint for the save
    symbol"*. The other three symbols are untouched.
 
+## The verdict on the redrawn symbol
+
+On seeing the blue disk with the silver shutter, the slot and the paper label in PR #236's
+description (`evidence/m169-save-symbol-2026-09-19/save-symbol-color-comparison-3x.png`):
+
+> "the latest version (blue with gray) looks good"
+
+4. **The blue-and-gray symbol is accepted as drawn**, the paper label and the shutter's slot
+   included, on the render. It has not been seen on a phone in play.
+
 ## What was not spoken to
 
-The label's color, the exact blue and gray, and whether the symbol is noticed without distracting
+Whether the symbol is noticed without distracting
 on a phone, which stays in `REVIEW.md`.

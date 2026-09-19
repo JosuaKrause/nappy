@@ -38,7 +38,8 @@ item below for as long as looking takes.
 - **Is the save symbol a floppy disk, and is it noticed without distracting?** Bottom right, a
   second and a half held and the same fading, twice in an ordinary day. It is a blue disk with a
   silver shutter and a paper label, drawn in its own colors and only faded; look at it on the
-  phone, over a daylight street and over dusk. Is the paper label right, or should it be a hole? Record is `DECISIONS.md`, M169.
+  phone, over a daylight street and over dusk. The drawing is accepted on a render
+  ([PLAYTEST-95](playtests/PLAYTEST-95.md)); what is unseen is the symbol in play. Record is `DECISIONS.md`, M169.
 - **Click away from the game in the middle of a day**, on the desktop build, in the browser
   (another tab, another window) and on the phone (the home button). Does the pause screen come
   up every time, and never on the title, a day summary or an ending? The desktop case rests on

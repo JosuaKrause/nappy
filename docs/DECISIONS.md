@@ -25,8 +25,9 @@ and weakly on a light one, since a hole shows whatever is behind it; the player 
 for color. **Rejected before that:** the body as an outline with the shutter and label filled
 inside it, which leaves all three the same white.
 
-**Open to overturn, chosen where the player said nothing:** the label's paper color rather than a
-hole, the slot in the shutter, and the exact blue and gray.
+**Chosen where the player said nothing, and then accepted on the render** *("the latest version
+(blue with gray) looks good")*: the label's paper color rather than a hole, the slot in the
+shutter, and the exact blue and gray.
 
 Checked on a headless render through Godot's own SVG loader, each state under the modulate it
 really had, at 48px and 16px on a dark and a light ground:
