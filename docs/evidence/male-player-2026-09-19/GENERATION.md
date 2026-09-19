@@ -15,6 +15,9 @@ The SVGs are authored and inspected before the corresponding raster generation.
 The [B-contact source review](b-contact/GENERATION.md) documents the four revised pushing
 sources and their native/3× sheets. Their raster transfer remains incomplete; the raw atlases,
 registered PNGs and original generation-input hashes below remain unchanged.
+The [final-woman-leg literal-copy preview](b-contact/final-woman-legs-2026-09-19/README.md)
+uses the accepted P2 mother's high-resolution side and front-diagonal B figures directly for an
+uninstalled father animation review; it does not alter this registered family.
 
 `source/` preserves Godot's 1×, 3× and 8× rasterization of every SVG.
 `inputs/*_source-{1,3,8}x.png` assembles them in columns front, back, side, front diagonal,

@@ -1,0 +1,163 @@
+{
+  "status": "uninstalled one-pass player-review preview; no runtime art changed",
+  "directions": [
+    [
+      "N",
+      "back",
+      false,
+      -90
+    ],
+    [
+      "NE",
+      "back_diagonal",
+      false,
+      -45
+    ],
+    [
+      "E",
+      "side",
+      false,
+      0
+    ],
+    [
+      "SE",
+      "front_diagonal",
+      false,
+      45
+    ],
+    [
+      "S",
+      "front",
+      false,
+      90
+    ],
+    [
+      "SW",
+      "front_diagonal",
+      true,
+      135
+    ],
+    [
+      "W",
+      "side",
+      true,
+      180
+    ],
+    [
+      "NW",
+      "back_diagonal",
+      true,
+      225
+    ]
+  ],
+  "loop": [
+    "a",
+    "c",
+    "b",
+    "c"
+  ],
+  "frame_ms": [
+    190,
+    190,
+    190,
+    190
+  ],
+  "protected": "all frames except side/front-diagonal B byte-identical; changed B rows 0..30 exact",
+  "registration": {
+    "side": {
+      "source": "docs/evidence/comic-pushing-strides-2026-09-12/registered/p2-acb-pass4-side-ne-extracted.png",
+      "source_sha256": "b67f962870ee64cf4301c2eed1c448a47b6ab51259a086b5a8d1c5ae455db4a3",
+      "whole_figure_bounds": [
+        748,
+        623,
+        904,
+        911
+      ],
+      "lower_crop": [
+        748,
+        798,
+        904,
+        911
+      ],
+      "visible_pants_y_in_whole_figure": 192,
+      "fit_at_12x": [
+        298,
+        216
+      ],
+      "placement_at_12x": [
+        0,
+        336
+      ],
+      "operation": "literal RGBA crop; hide pixels above visible pants; uniform Lanczos fit",
+      "protected_father_rows": [
+        0,
+        30
+      ],
+      "alpha_bounds": [
+        0,
+        0,
+        26,
+        46
+      ]
+    },
+    "front_diagonal": {
+      "source": "docs/evidence/comic-pushing-strides-2026-09-12/registered/p2-acb-pass2-extracted.png",
+      "source_sha256": "f810a0b54821f7e3cb5669cce674c6c574d0f01656e9bc67bbd7fab5235b0c2d",
+      "whole_figure_bounds": [
+        1088,
+        625,
+        1203,
+        916
+      ],
+      "lower_crop": [
+        1088,
+        800,
+        1203,
+        916
+      ],
+      "visible_pants_y_in_whole_figure": 192,
+      "fit_at_12x": [
+        214,
+        216
+      ],
+      "placement_at_12x": [
+        48,
+        336
+      ],
+      "operation": "literal RGBA crop; hide pixels above visible pants; uniform Lanczos fit",
+      "protected_father_rows": [
+        0,
+        30
+      ],
+      "alpha_bounds": [
+        2,
+        0,
+        24,
+        46
+      ]
+    }
+  },
+  "input_manifest_sha256": "116fa1f8be0ee89f5c9751b321ea2dc0894d0148169b960c4107d349cf6f56bd",
+  "outputs": {
+    "father-animation-6x.gif": "6803164f9f357f459fcf2c1d63a575ce6f109903a1273e1298d9f887957b139e",
+    "father-animation-native.gif": "3cdc64df795190a851eacf56074f24bd71a1b15c32b7bc30c28a80d41aec829c",
+    "father-spritesheet-6x.png": "31f5f609b9ccee3ccf548178fb134cea8f1bc4efc1896ee22ed65115d96178aa",
+    "father-spritesheet-native.png": "f16c45f459e33b6ed6bf661087980a22e506587268bb5209db8c74eb0edc0511",
+    "final-mother-b-donors.png": "8110b329fb6aef98daf4f8dc1a0715b2a012fd4655abed64843a722839506874",
+    "rig/father_back_a.png": "ce72244b2ae09c2986767dd5fb6b2326cb662fcee65a6d611349ae1c97433aec",
+    "rig/father_back_b.png": "3bc4297fef285d64578f7051f91eba3ce1962519a63d3cf4e40c5105bb1d9b7b",
+    "rig/father_back_c.png": "132533ac4e979eeccf769b2e347706b542797142d6de338cbe2ad1cc649be9f1",
+    "rig/father_back_diagonal_a.png": "68dc4b1a4a11ee36e2ce5e8abb682e88723d8d59b6b6ed4042a6a82d49a17384",
+    "rig/father_back_diagonal_b.png": "6d737538aa63cb48334a84f2f3ef2547fe8f75d11b1d0d2ca4cb3538f997afe5",
+    "rig/father_back_diagonal_c.png": "e45da614f86a08f4ae7af9a450bcacddc643f41818aa3e4b11f339c346d615d4",
+    "rig/father_front_a.png": "3466cddf142ea505e48d4f78670a99bd7964d3c9b5dfb87093821798e8beeece",
+    "rig/father_front_b.png": "6bd88f5fe27cabfc1f8684922315f1f33a16e3462031a14e1eee0dea4456cccc",
+    "rig/father_front_c.png": "964d42efbabe022492fc63acda0e7b74db045b97ef6aa08d8d72815fc726ebd7",
+    "rig/father_front_diagonal_a.png": "3ddb32d5c7e0fe2488940b27c42d29f3f4d80a6b173e04218d0c009782d4821b",
+    "rig/father_front_diagonal_b.png": "c2f95ac18054ae4d54383aa26d2b04ccfefc82e6987943a8b3ee698195101993",
+    "rig/father_front_diagonal_c.png": "e6595ac94a46dfa9d11ffd2e1249ff0fc66f570ddfdc2ebfe3fca4feec82009f",
+    "rig/father_side_a.png": "bcc6a84f943aacc2522fa18b5a5a96c6e7e3e96e9e271c8e354938910f2587af",
+    "rig/father_side_b.png": "6e41d40744770f6d190e3e513a92b600672965597e02a0c3f72a515ceaa3ea87",
+    "rig/father_side_c.png": "f7e312a8d594a375a69d82ded150b4c638329c0ab060aa6dff09fcf45d11140b"
+  }
+}
