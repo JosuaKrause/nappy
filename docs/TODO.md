@@ -295,41 +295,6 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
-## M157 — Peregrine may be the father · asked for 2026-09-19
-
-> "we need to create a second set of player graphics for a male protagonist (does the current
-> name apply here as well or do we need to think of a new name for him?) see the reference image.
-> he should have a blue shirt to easily distinguish him from his wife. the style etc should match.
-> at the beginning of a run the gender gets chosen randomly (50/50) and it stays throughout the
-> run."
-
-Peregrine remains the protagonist's name in either presentation. `NARRATIVE.md` chose it because
-it does not read as one gender on sight and limits the story to two proper nouns, Peregrine and
-Wren; the male presentation is the same protagonist and his partner is the wife named by the
-request, not a third named playable character.
-
-- [ ] **One complete male player family, blue-shirted and matched to the current family.** Author
-      SVG sources first, then native illustrated PNG replacements in the same comic style and at
-      the same functional registration: all eight displayed facings through the five authored
-      views and mirrors, all three gait contacts, both pushing-the-stroller and carrying-Wren
-      states. Preserve Peregrine's stature, ground anchor, hand contact, stroller relationship and
-      readable gait while giving him a consistent male identity and the reference image's blue
-      overshirt. Review the whole facing × gait × state matrix together at native size and enlarged.
-- [ ] **Choose the presentation once per run, evenly, and never again inside it.** A fresh run makes
-      one 50/50 choice through the run's reproducible random source before the player is first
-      drawn; every day and the escape scene use that same choice. Continuing a day, pausing,
-      changing state between stroller and carrying, or resolving a texture must not reroll it.
-      Keep identifiers descriptive (`male`, `female`, `father`, `mother`, `player`), never the
-      narrative name. A focused test holds the equal two-way selection contract and lifetime.
-- [ ] **Keep the binding and catalogue truthful.** Register every SVG/PNG pair in the graphics
-      manifest and `GRAPHICS.md`, include the male sources in the player's warm atlas, preserve
-      `--svg` as the exact fallback comparison, and update narrative language that currently says
-      the player can only be a mother. Provide source previews for the family and one purposeful
-      gameplay still; no motion claim rests on a still.
-
----
-
-
 ## M143 — The readout's `process` and `physics` lines say what they measure · asked for 2026-09-14
 
 [PLAYTEST-75](playtests/PLAYTEST-75.md), the desktop stutter, and `DECISIONS.md`, M138, what
