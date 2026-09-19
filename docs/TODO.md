@@ -312,25 +312,38 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 - [ ] **Prepare the SVG-only checkpoint, without binding it.** Draw a 32×32 left-to-right upper
       stair tile from fixed-width rectangles whose heights descend by that width, beginning at the
-      full tile height and ending at one width; draw the lower tile as the converse, beginning at
-      one width and ending at full tile height. The tread rectangles' zigzag is the top boundary of
-      one continuous gray diagonal side band; its lower boundary is straight. A third 32×32 tile
-      carries only the small gray top-right continuation triangle. Stack upper, lower and triangle
-      vertically; the next three-tile module shifts one tile right and one tile down. Mirror the
-      complete tiles for right-to-left travel. Match the live interior palette and outline weight,
-      but do not revise or bind the current stair kit until the player has steered this preview.
-      Validate XML, render every source at native size and 3×, and provide an assembled review image
-      showing at least two shifted modules in both directions on the live stairwell background.
+      full tile height and ending at one width, all anchored to the tile's bottom edge. This upper
+      tile has no gray diagonal section and no stroke along the rectangles' bottom join. Draw the
+      lower tile as the converse, beginning at one width and ending at full tile height. Its
+      rectangles have no stroke along their top join; below them, their zigzag bounds the top of a
+      continuous gray diagonal side band whose lower boundary is straight. A third 32×32 tile
+      carries only a gray top-right continuation triangle with 16px sides. Stack upper, lower and
+      triangle vertically; the next three-tile module shifts one tile right and one tile down.
+      Mirror the complete tiles for right-to-left travel. Match the live interior palette and
+      outline weight, but do not revise or bind the current stair kit until the player has steered
+      this preview. Validate XML, render every source at native size and 3×, and provide an assembled
+      review image showing at least two shifted modules in both directions on the live stairwell
+      background.
 
 > "the top tile needs change -- it doesn't include a diagonal section and the rectangles are
 > anchored at the *bottom* not at the top as they are now. the third small triangle tile needs a
 > bigger triangle so it connects to the adjacent tiles. triangle side is two widths"
 
-The first SVG checkpoint made the upper tile's rectangles hang from its top edge, which consumed
-the area where its side band needed to read. Revise that tile so every rectangle is anchored to the
-bottom edge and its diagonal gray section is visibly present. With the chosen 8px rectangle width,
-the continuation tile's triangle has 16px sides — two widths — and its joins to both adjacent tile
-roles must be visible in the next assembled review.
+The first SVG checkpoint made the upper tile's rectangles hang from its top edge. Revise that tile
+so every rectangle is anchored to the bottom edge. With the chosen 8px rectangle width, the
+continuation tile's triangle has 16px sides — two widths — and its joins to both adjacent tile roles
+must be visible in the next assembled review.
+
+> "the top tile doesn't need a diagonal section at all. the bottom of the rectangles in the top
+> tile shouldn't have a border. the top of the rectangles in the bottom tile shouldn't have a
+> border. let's fix that and let me know when it's updated."
+
+This overturns only the earlier instruction to keep a gray section in the upper tile: the upper
+tile is now rectangles alone, still anchored to its bottom edge, and the rectangles have no stroke
+along that bottom join. The lower tile keeps the gray diagonal side band below its growing
+rectangles, but their top join has no stroke. Preserve the remaining outer and step outlines, the
+16px continuation triangle, both mirrored directions, and the native-size, 3× and assembled review
+renders.
 
 ---
 
