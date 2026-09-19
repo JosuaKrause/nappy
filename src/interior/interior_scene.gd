@@ -61,7 +61,6 @@ var _tile_set: TileSet
 var _ground: TileMapLayer
 var _backdrops: Node2D
 var _walls: Node2D
-var _structure: Node2D
 var _entities: Node2D
 ## Plain `StaticBody2D` blockers, one per non-walkable cell in a margin around the building's own
 ## footprint — the physical half of `InteriorMapPlan.is_walkable()`. A `TileMapLayer` only gives
@@ -106,10 +105,6 @@ func build() -> void:
 	_walls.name = "Walls"
 	_walls.z_index = 1
 	add_child(_walls)
-	_structure = Node2D.new()
-	_structure.name = "StairStructure"
-	_structure.z_index = 1
-	add_child(_structure)
 	_entities = Node2D.new()
 	_entities.name = "Entities"
 	_entities.z_index = 2

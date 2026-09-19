@@ -8,10 +8,13 @@ PLAYTEST-60 (see `docs/playtests/PLAYTEST-60.md`, "The stairs"):
 > the stairways are also somewhat improved but the staircase floor graphic should be vertical
 > lines for steps
 
-Superseded by the current sources, which keep the exact same deck outline, canvas size and
-top-landing registration — nothing in `src/interior/interior_scene.gd` moves — but draw the
-treads as vertical lines clipped to the tread body, one per step, thickening toward the bottom
-landing so the flight still reads as descending.
+Superseded by vertical-tread versions of the same three files, which kept the exact same deck
+outline, canvas size and top-landing registration but drew the treads as vertical lines clipped to
+the tread body, one per step, thickening toward the bottom landing so the flight still read as
+descending. **Those successors are archived too**, in
+`../escape-interior-deck-and-rail-kit-2026-09-19/`, alongside the rest of the deck-and-rail
+assembly: a stairwell is the ten-column grammar's own ground cells now, with no deck to draw
+treads on at all.
 
 This file is preserved for historical reference only. It is not design guidance, a style
 reference, or an implementation target for new art; no import sidecar belongs in this ignored

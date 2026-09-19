@@ -16,7 +16,7 @@ func run(t) -> void:
 	_test_the_tileset_carries_every_walkable_ground_kind(t)
 	_test_the_scene_paints_the_whole_map(t)
 	_test_collision_blocks_exactly_the_non_walkable_ground(t)
-	_test_stair_roles_are_live_tiles_and_old_overlays_are_unbound(t)
+	_test_the_grammar_tiles_are_the_whole_staircase(t)
 	_test_a_sideways_press_on_a_flight_walks_its_slope(t)
 	_test_a_real_stroller_physically_crosses_both_flight_directions(t)
 	_test_every_diagonal_step_has_both_its_pinch_corners_cleared(t)
@@ -284,10 +284,18 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: Node) -> void:
 	t.check(paired_steps > 0, "both-row diagonal continuity has real steps to check")
 	scene.free()
 
-## The reviewed sources are the TileSet pictures selected by the grammar. No structural overlay —
-## including the rejected vertical landing — or broad deck/rail is allowed to recreate the old
-## sparse map on top of them.
-func _test_stair_roles_are_live_tiles_and_old_overlays_are_unbound(t: Node) -> void:
+## **The reviewed grammar tiles are the whole of a staircase**, and this asks it as a closed list
+## rather than as a list of absentees. The deck, rail and landing sources a shaft used to be
+## assembled from live in `docs/evidence/archive/rejected-graphics/` now, and the archive is behind
+## a `.gdignore`, so a test naming them by path would fail to *load* rather than fail its check —
+## which is the wrong answer to "is it bound", and would have to be rewritten every time one more
+## picture left the tree.
+##
+## So: every stair source the TileSet carries is one of the kit, the kit is all of them, and
+## nothing standing in the scene draws a stair picture at all. All three halves are needed. The
+## first two alone would let a `Sprite2D` overlay rebuild the old assembly over the top; the last
+## alone would let a source nothing paints sit in the atlas unnoticed.
+func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
 	var expected_sources := {
 		InteriorTile.Kind.STAIR_TOP_E: load("res://assets/interior/m158_stair_side_upper_e.svg"),
 		InteriorTile.Kind.STAIR_MIDDLE_E: load("res://assets/interior/m158_stair_side_lower_e.svg"),
@@ -303,32 +311,48 @@ func _test_stair_roles_are_live_tiles_and_old_overlays_are_unbound(t: Node) -> v
 		var source := tile_set.get_source(source_id) as TileSetAtlasSource
 		t.check(source != null and source.texture == expected_sources[kind],
 				"stair role %d binds its reviewed tile source" % kind)
+
+	# Every shaft picture the whole TileSet carries, by the file it was built from. `stairwell_
+	# floor.svg` is the level `F` ground and the tread under each `D`; the basement's own
+	# front-facing stair and the retained diagonal treads and landing are the rest of the stair
+	# vocabulary. Anything else showing up here is an assembly source coming back.
+	var kit := {
+		"m158_stair_side_upper_e.svg": true, "m158_stair_side_lower_e.svg": true,
+		"m158_stair_side_upper_w.svg": true, "m158_stair_side_lower_w.svg": true,
+		"m158_stair_side_continue_e.svg": true, "m158_stair_side_continue_w.svg": true,
+		"m158_stair_side_block.svg": true, "stair_down.svg": true,
+		"stair_flight_e.svg": true, "stair_flight_w.svg": true, "stair_landing.svg": true,
+		"stairwell_floor.svg": true,
+	}
+	var stair_sources := {}
+	for kind: InteriorTile.Kind in InteriorTile.Kind.values():
+		var id := InteriorTileSet.source_id_for(kind)
+		if id < 0:
+			continue
+		var atlas := tile_set.get_source(id) as TileSetAtlasSource
+		var file: String = atlas.texture.resource_path.get_file()
+		if not file.begins_with("stair") and not file.begins_with("m158_stair"):
+			continue
+		stair_sources[file] = true
+		t.check(kit.has(file), "the TileSet's stair source '%s' is one of the kit" % file)
+	t.check(stair_sources.size() == kit.size(),
+			"and the kit is all of them (%d sources against %d named)"
+			% [stair_sources.size(), kit.size()])
+
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	scene.build()
-	var removed_textures: Array[Texture2D] = [
-		load("res://assets/interior/stair_landing_vertical.svg"),
-		load("res://assets/interior/stair_flight_run_e.svg"),
-		load("res://assets/interior/stair_flight_run_w.svg"),
-		load("res://assets/interior/stair_landing_floor.svg"),
-		load("res://assets/interior/stair_landing_turn.svg"),
-		load("res://assets/interior/stair_rail_run_e.svg"),
-		load("res://assets/interior/stair_rail_run_w.svg"),
-		load("res://assets/interior/stair_rail_run_e_rear.svg"),
-		load("res://assets/interior/stair_rail_run_w_rear.svg"),
-		load("res://assets/interior/stair_rail_short_e.svg"),
-		load("res://assets/interior/stair_rail_short_e_rear.svg"),
-	]
-	var removed_bound := 0
-	for layer_name in ["StairStructure", "Entities"]:
-		for child in scene.get_node(layer_name).get_children():
-			var sprite := child as Sprite2D
-			if sprite != null and removed_textures.has(sprite.texture):
-				removed_bound += 1
-	t.check(removed_bound == 0,
-			"no vertical landing, broad deck, platform, foreground rail or rear rail is bound")
-	t.check(scene.get_node("StairStructure").get_child_count() == 0,
-			"the corrected grammar needs no presentation-only stair structure")
+	var drawn_stairs := 0
+	for child in scene.get_node("Entities").get_children():
+		var sprite := child as Sprite2D
+		if sprite == null or sprite.texture == null:
+			continue
+		var file: String = sprite.texture.resource_path.get_file()
+		if file.begins_with("stair") and file != "stairwell_door.svg":
+			drawn_stairs += 1
+	t.check(drawn_stairs == 0,
+			"nothing standing in the scene draws a stair: the ground cells are the staircase (%d)"
+			% drawn_stairs)
 	scene.free()
 
 ## The switchback's own redirection: a sideways press on a diagonal flight walks its slope rather
