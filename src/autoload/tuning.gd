@@ -2190,6 +2190,19 @@ const FINALE_EXPLOSION_INTERVAL := 22.0
 ## frames"* at 60fps, taken as a span in seconds so it does not depend on the frame rate.
 const FINALE_WINDOW_FLASH_SECONDS := 0.12
 
+## How long after the masked man has finished his run before another one comes up the same shaft,
+## in seconds. *(2026-09-19: "then the pursuing guy should respawn forcing to switch the side
+## again.")*
+##
+## **Stated against what one run costs her rather than against a feeling.** A shaft is three floors
+## of eight tiles (768px) and he runs it at `HEAT_HUNTS_SPEED` (130px/s), so a run is about six
+## seconds, and he spends `masked_pursuer.telegraph_time` (3.6s) standing at the foot before it.
+## Six seconds of nothing against that is a shaft that is his about two thirds of the time: long
+## enough that stepping out of a door and straight back in is a real answer, short enough that
+## waiting one out and strolling down is not. It is a first number and the one to move if the
+## shaft reads as either a corridor with a man in it or a corridor with a man near it.
+const FINALE_PURSUER_RESPAWN_SECONDS := 6.0
+
 ## The basement's steam vents, one entry per vent: how often each one blows, in seconds.
 ##
 ## *"Have multiple fixed locations with steam that fully block the path and have them turn off an

@@ -1135,6 +1135,14 @@ leave her nothing). Getting past the fire means stepping through the nearest cor
 walking to the other end of that hallway, which is why the two stair doors are at opposite ends;
 the right shaft it leads to is where the masked man is.
 
+**And he keeps coming.** A masked man runs the right shaft foot to top; once he is out of the top
+of it, another comes up from the foot `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` later, for as long
+as she is in the building. The answer is the one the row is built around — step through the
+nearest corridor door and let him pass — and it stays available because from every cell of his
+line a door is well under the three and a half seconds he spends standing still before he moves.
+So the side she switched to is not a side she can settle on, which is the whole point of him: the
+way down is a sequence of crossings rather than one.
+
 **Two hint lines, said once each**, the way day 1 teaches tapping and then never again:
 *"Escape the apartment"* at the start of the first section and *"Exit the city"* at the service
 exit. A retry is not told either of them a second time.

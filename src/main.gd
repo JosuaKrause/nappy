@@ -580,6 +580,13 @@ func _on_finale_section_started(section: int, restarted: bool) -> void:
 		if not restarted:
 			_hud.say_once("Escape the apartment")
 	else:
+		# The building is behind her and nobody is in it, so its own events stop rather than
+		# playing on to an empty map — the vents, the window flashes and the masked man who comes
+		# up the shaft every few seconds would otherwise run for the rest of the sequence, unseen
+		# and in the log. `InteriorEvents.restart()` is what starts them again, and section one is
+		# never entered without it.
+		if _interior_events:
+			_interior_events.stand_down()
 		# A restart of section two replans it: see `_plan_the_finale_city()`.
 		if restarted:
 			_plan_the_finale_city()

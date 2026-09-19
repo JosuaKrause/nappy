@@ -104,8 +104,8 @@ src/
 	                      again where it began, at no Nerve cost
 	finale_planner.gd     the two chains — service exit, three calm areas, tunnel or bridge —
 	                      and the whole plan built off them
-	interior_events.gd    section one's events: the mouse, the masked man, the fire, the steam,
-	                      and the explosions outside
+	interior_events.gd    section one's events: the mouse, the masked man who keeps coming back,
+	                      the fire, the steam, and the explosions outside
   ui/
 	hud.gd                the clock, the two bars, the teach line and the status line
 	meter_bar.gd

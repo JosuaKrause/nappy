@@ -1,7 +1,8 @@
 class_name InteriorEvents
 extends Node
-## The escape's first section, inside the building: a mouse, a masked man on one stairwell, a fire
-## on the other, steam in the basement, and the explosions going off outside.
+## The escape's first section, inside the building: a mouse, a masked man coming up one stairwell
+## again and again, a fire on the other, steam in the basement, and the explosions going off
+## outside.
 ##
 ## **The smallest thing that can host an `EventInstance`**, and deliberately not an `EventManager`.
 ## That class is a day: a plan streamed around a walking player, a director owing rows ahead of
@@ -54,6 +55,11 @@ var _seed := 0
 var _until_the_next_explosion := 0.0
 ## The basement's vents, in the order she meets them walking the corridor. Rebuilt by `restart()`.
 var _vents: Array[Vent] = []
+## The masked man currently on the stairs, or null between his runs. Held so this can tell *his*
+## instance retiring from any other row's — see `_send_the_masked_man_again()`.
+var _pursuer: EventInstance = null
+## Seconds until the next masked man comes up the shaft, counted only while there is none.
+var _until_the_next_pursuer := 0.0
 ## Which stairwell the fire closes, and it is **always the left one**. *(2026-09-19: "there should
 ## be a fire on the left like it is right now but the top floor right side should be completely
 ## blocked off with rubble.")* The two have to agree: the rubble shuts the right stairwell off the
@@ -79,12 +85,29 @@ func restart() -> void:
 		instance.queue_free()
 	_instances.clear()
 	_hard_failed = false
+	set_physics_process(true)
 	_until_the_next_explosion = Tuning.FINALE_EXPLOSION_INTERVAL
+	_pursuer = null
+	_until_the_next_pursuer = Tuning.FINALE_PURSUER_RESPAWN_SECONDS
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _seed
 	_place_the_fire(rng)
 	_place_the_masked_man()
 	_place_the_basement(rng)
+
+## Everything in the building stops, because she is not in it any more: she has walked out of the
+## service exit and section two is running. Called by `main` when the city section starts.
+##
+## **Without this the building goes on playing to an empty map** — the vents keep blowing, the
+## windows keep flashing and a masked man comes up the shaft every few seconds for the rest of the
+## sequence, none of it seen and all of it in the run log. `restart()` is what brings it back, and
+## it is called on every entry into section one, fresh or retried.
+func stand_down() -> void:
+	set_physics_process(false)
+	for instance in _instances:
+		instance.queue_free()
+	_instances.clear()
+	_pursuer = null
 
 ## Which stairwell is shut. Read by `tests/test_interior.gd`, which asserts the other one is still
 ## walkable — *"there might be a fire on one staircase forcing us to use the other staircase (all
@@ -117,6 +140,13 @@ func _place_the_fire(rng: RandomNumberGenerator) -> void:
 
 ## The masked man, at the foot of the stairwell the fire did not take, running its whole height.
 ##
+## **One of him at a time, and there is always another.** *(2026-09-19: "then the pursuing guy
+## should respawn forcing to switch the side again.")* The fire shuts the left shaft part way down
+## and the rubble shuts the right one off the top floor, so the walk is left, across a hallway,
+## right — and a man who was spent after one run left the second half of that with nothing in it.
+## `_send_the_masked_man_again()` owns the clock; this is only the placement, called again with a
+## fresh instance each time so the telegraph, the wait and the line are the ones the first man had.
+##
 ## **His path is the staircase itself**, asked of the map rather than drawn between the two
 ## landings: the landings alternate between the grammar's two `F` columns, so a straight line from
 ## one to the other crosses the background and the solid `c`/`C`/`b` sides and meets each flight
@@ -135,7 +165,7 @@ func _place_the_masked_man() -> void:
 	var path := PackedVector2Array()
 	for tile in walk:
 		path.append(_interior.tile_to_world(tile))
-	_spawn(EventCatalogue.by_id(_PURSUER_ID), path[0], path)
+	_pursuer = _spawn(EventCatalogue.by_id(_PURSUER_ID), path[0], path)
 
 ## The mouse a third of the way along the basement's own corridor, and the vents spread down the
 ## rest of it.
@@ -270,6 +300,7 @@ func _physics_process(delta: float) -> void:
 	_retire_finished()
 	_explode_every_so_often(delta)
 	_blow_the_vents(delta)
+	_send_the_masked_man_again(delta)
 	if not _find_player():
 		return
 	_tell_them_where_she_is()
@@ -303,6 +334,35 @@ func _retire_finished() -> void:
 			survivors.append(instance)
 	if survivors.size() != _instances.size():
 		_instances.assign(survivors)
+
+## Another masked man at the foot of the same shaft, `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` after
+## the last one finished — for as long as she is in the building, which is for as long as this node
+## is processing at all (see `stand_down()`).
+##
+## **A fresh instance rather than a rewound one**, which is what keeps him fair: a new
+## `EventInstance` waits at the foot until she is within `masked_pursuer.pursues_within` and then
+## spends its whole `telegraph_time` standing there before it moves, so every run he makes gives
+## the same notice the first one did. Resuming an old instance would hand her a man already at
+## speed, which is the one thing `still_while_telegraphing` exists to prevent.
+func _send_the_masked_man_again(delta: float) -> void:
+	if _pursuer != null:
+		# **His run is over when he is off the end of it**, not when his instance is finally
+		# deleted. A mobile row that has run out of path spends a leaving phase walking out of
+		# sight (`EventInstance._leave()`), which ends on whichever of `Tuning.OUT_OF_SIGHT` and
+		# `LEAVING_GIVES_UP` comes first — so a gap counted from the deletion would be the stated
+		# interval plus a leaving phase, and would not be the same length twice.
+		if is_instance_valid(_pursuer) and not _pursuer.is_leaving and not _pursuer.is_finished:
+			return
+		_pursuer = null
+		_until_the_next_pursuer = Tuning.FINALE_PURSUER_RESPAWN_SECONDS
+		return
+	_until_the_next_pursuer -= delta
+	if _until_the_next_pursuer > 0.0:
+		return
+	# Reset before the placement, not after it: a building with no shaft to run places nobody, and
+	# a clock left at zero would try again on every frame for the rest of the section.
+	_until_the_next_pursuer = Tuning.FINALE_PURSUER_RESPAWN_SECONDS
+	_place_the_masked_man()
 
 func _find_player() -> bool:
 	if not _player or not is_instance_valid(_player):
