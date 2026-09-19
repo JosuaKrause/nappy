@@ -25,6 +25,7 @@ func run(t) -> void:
 	_test_both_exits_are_reachable_through_the_open_cells_alone(t)
 	_test_the_service_exit_is_beside_the_home_block(t)
 	_test_nothing_the_finale_places_stands_where_she_comes_out(t)
+	_test_no_lethal_field_covers_the_ground_she_comes_out_on(t)
 	_test_the_finale_city_has_nobody_in_it(t)
 	_test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t)
 	_test_the_clock_reads_milliseconds_only_in_the_finale(t)
@@ -268,6 +269,52 @@ func _test_nothing_the_finale_places_stands_where_she_comes_out(t) -> void:
 							% (def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS))
 	t.check(checked > 0, "there were escape placements to ask about (%d)" % checked)
 	t.check(on_her == 0, "and none of them is standing on her (%d of %d)" % [on_her, checked])
+
+## *"I still spawn with flashing !!! in the city."* The same rule as the test above, read one field
+## wider: the ground she is put down on is free of every **lethal reach**, not only of every body.
+##
+## **The mark means one thing and one condition raises it.**
+## `EventManager._warn_about_the_ground_she_is_on()` puts `Stroller.Alert.SOON` over her head for
+## any `hard_fail` row that is still telegraphing, or still waiting to notice her, whose **outer**
+## radius covers her — because that radius is exactly what the telegraph fairness contract promises
+## her time to walk out of. On the first frame of section two every placement the finale made is in
+## one of those two states, so that one inequality is the whole of the mark, and it is asked here
+## as `distance > outer_radius` for every lethal row on the plan. `NOW` needs a live instance and
+## cannot fire on the frame the section begins; `distance > inner_radius` falls out of the same
+## check, since a row's outer radius is never under its inner one.
+##
+## **This is the confirmation, not the mechanism**, exactly as for the bodies above:
+## `EventScheduler._clearance_around_her()` is never offered ground within a lethal row's own outer
+## radius of her, so nothing is placed there to be cleared up afterwards.
+##
+## Seeds rather than one city, and the guard counts the lethal rows it actually found: an escape
+## plan that happened to place none at all would otherwise pass this without checking anything.
+func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t) -> void:
+	var lethal := 0
+	var over_her := 0
+	for seed_value in SPAWN_SEEDS:
+		var map := CityGenerator.generate(seed_value)
+		GameState.city_state.begin_day(map.block_plans, 1)
+		map.repaint(GameState.city_state)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_value
+		var plan := FinalePlanner.plan(map, rng)
+		var spawn := FinalePlanner.service_exit_world_position(map)
+		for placement: EventScheduler.Planned in plan.placements:
+			if not placement.def.hard_fail:
+				continue
+			lethal += 1
+			var gap := placement.position.distance_to(spawn)
+			if gap <= placement.def.outer_radius:
+				over_her += 1
+				t.check(false,
+						"seed %d: the escape's '%s' stands %.0fpx from the spawn, inside the %.0fpx "
+						% [seed_value, placement.def.id, gap, placement.def.outer_radius]
+						+ "field that raises the mark over her head")
+	t.check(lethal > 0, "the escape places lethal rows to ask about (%d)" % lethal)
+	t.check(over_her == 0,
+			"and none of their fields reaches the ground she comes out on (%d of %d)"
+			% [over_her, lethal])
 
 # ------------------------------------------------------------------ the city ---
 

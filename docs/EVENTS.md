@@ -936,6 +936,16 @@ corridor to weight against and no closure to avoid. Of the five refusals above i
 that are still true of a walk with no day behind it: a tile must be open, and **a standing street
 tree's ground is refused here exactly as it is on a day** (`docs/CITY.md`, "Street trees").
 
+**And the ground she is put down on is refused to everything that could already be reaching her**
+(`EventScheduler._clearance_around_her`), because *"the spawning shouldn't be a check. the pathing
+should start from the position. then obstacles can never happen."* Two reaches, and the wider one
+wins: a row with a body keeps her body plus its body clear, and a `hard_fail` row keeps its whole
+**`outer_radius`** clear — the radius `EventManager` raises the doubled exclamation mark over,
+because it is what the telegraph contract promises her time to walk out of, and a lethal row
+placed inside it has spent her notice before she has taken a step. Both carry half a tile on top,
+since a stationary body is recentred on the pavement band when the instance is built. Refused at
+the candidate loop, never moved afterwards.
+
 | id | kind | where | Behaviour |
 | --- | --- | --- | --- |
 | `finale_explosion` | SCRIPTED | the chains' carriageways, and once a beat indoors | The bang she hears and does not see. **Draws nothing** — the fourth row in the catalogue with no picture — because there is no burst on the street, only the noise and the hole afterwards. Off screen is bought with the streaming radius rather than with a rule: a `MAP` placement enters the world at `Tuning.EVENT_STREAM_RADIUS` (900px) against a 640×360 view, and its telegraph plus duration (3.7s, about 340px of walking) are over before she can reach it. `intensity` 24 over a 300–520px band, so a burst just past the screen edge still lands close to full strength. Not lethal: *the danger is always noise*. `spawns_on_finish` names the crater. |
