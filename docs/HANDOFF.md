@@ -280,16 +280,25 @@ zebra running into the mountain, four dotted crossings under one light — and n
 drives off the map, or onto it, except a car by the tunnel or the bridge. All of it was checked on rig captures
 and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
-## Where the last session stopped, 2026-09-14
+## Where the last session stopped, 2026-09-19
 
 **This section is the pick-up for the next session and is removed by it.** `gh pr list` and
 `git worktree list` are the truth; this is the map.
 
 - **Everything playtests 69 to 72 asked for is built, merged and released**, and so are
   M136's build stamp, M124's skip flag and M129's flock and probe re-run; each has its record
-  in `DECISIONS.md` and its played questions in `REVIEW.md`. Nothing is in flight: no worktree,
-  no open PR. `git tag --list 'v*'` says what the site serves, and the newest tag carries the
-  crowd atlas, the seed under the note and the readout's columns.
+  in `DECISIONS.md` and its played questions in `REVIEW.md`. `git tag --list 'v*'` says what
+  the site serves.
+- **Three milestones are in flight, each in its own worktree on its own draft pull request**:
+  M129's wall reading (a row nobody can walk past is a wall and stands across the street from
+  the route), M155, the crowd's reach comes in and walkers step aside more politely, and M156,
+  the crowd only turns at what physically stops it. The last two are
+  [PLAYTEST-78](playtests/PLAYTEST-78.md): a closed-off street calms the baby better than the
+  route's own sidewalk, because the crowd's noise eats two fifths of the walking decay and
+  because walkers and cars give a street up at the junction before an obstacle. Their entries
+  in `TODO.md` are the briefs. M155 and M156 share `src/crowd/crowd_agent.gd` by function —
+  the noise field and the step-aside are M155's, turning and placement are M156's — so the
+  second to merge takes `main` first under the **merging-main** rules.
 - **The phone's frame is the open measurement, and the crowd's drawing is ruled out of
   it.** With the crowd atlas released, the phone reads the same with the crowd drawn and with
   `skip=crowd` (`DECISIONS.md`, M139, the phone reading), so by the numbers neither the draw
@@ -306,8 +315,9 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 - **M129, a path through the city never has to cost, has its four rules and the leaf blower's
   two-part field built** (`DECISIONS.md`, M129, the four rules; M129, the leaf blower is a wall
   to walk past and a busker to stay near). The probe finds a zero-cost line on three routes in
-  five; what still breaks the rest, and which placement paths the rules never see, is the one
-  open item under M129 in `TODO.md`. The busker's street-side spill (`DECISIONS.md`, M128) is
+  five; what still breaks the rest, and which placement paths the rules never see, is the
+  unstarted item under M129 in `TODO.md`, to brief once the wall reading has merged since both
+  edit the scheduler. The busker's street-side spill (`DECISIONS.md`, M128) is
   read against these rules: with a line on the far pavement, a spill onto one side is a price,
   not a wall.
 - **M137, the contact is whoever she hands the note to and the trap comes to her**, is

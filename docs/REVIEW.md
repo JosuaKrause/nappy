@@ -21,6 +21,14 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Compare both presentations at normal scale**, using seed 3 for the blue-overshirt father
+  and seed 1 for the red-coat mother, then the same seeds with `--start-escape` for carrying.
+  Walk and stop in all eight directions. Does each parent keep the same face, stature and
+  clothing through A/C/B/C, and does the father remain recognizably himself when carrying?
+  Check hand-to-handle contact during turns as well as at rest. The
+  [source and native comparison sheets](evidence/male-player-2026-09-19/GENERATION.md) document
+  registration; they do not establish smooth motion. Does the blue overshirt read clearly against
+  the existing red coat without looking like a different illustration style?
 - **Stand at a sealed street and watch one car meet the barrier**, on seed 3126506586 day 1, which
   is where the player photographed a car twitching between the two sides of the road
   (`--seed 3126506586 --day 1 --spawn closure:0 --invincible`, and `--press snapshot_burst 3` if it
