@@ -289,9 +289,10 @@ func _acknowledge_and_resume() -> void:
 ## ended — a day gone wrong on a city you do not want to walk any more is exactly when somebody
 ## reaches for the pause — so the key belongs here and not only on the ending.
 ##
-## It is deliberately not confirmed. Everything a run holds is a fourteen-day walk with no save in
-## it, `R` is not next to `Esc`, and a confirmation on the one key that gets you out of a stuck game
-## is a second way to be stuck.
+## It is deliberately not confirmed. `R` clears the save the same way the held restart button does
+## (`GameSave.clear()`, wired through `main._restart_run()`) and starts the run over; `R` is not
+## next to `Esc`, and a confirmation on the one key that gets you out of a stuck game is a second
+## way to be stuck.
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return

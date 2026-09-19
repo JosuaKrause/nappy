@@ -293,8 +293,8 @@ checks and worktrees can move independently of this file.
 - **PR #234 — M167, the father's legs read as legs** is the separate drawing follow-up in `TODO.md`.
   [PLAYTEST-90](playtests/PLAYTEST-90.md) and [PLAYTEST-91](playtests/PLAYTEST-91.md) require
   more natural legs, A/C-consistent shading and shoes, and a narrower three-quarter stride.
-  Keep the accepted contact ownership, N/S, NE/NW and every A/C frame fixed. Publish the
-  early attempt as a clean sheet and native/6× animation loops through its draft PR;
+  Keep the accepted contact ownership, N/S, NE/NW and every A/C frame fixed. Review the
+  early attempt's clean sheet and native/6× animation loops in its draft PR description;
   nothing in this follow-up replaces the provisionally accepted runtime baseline without review.
 - **PR #232 — share visual attempts early through the PR** carries the player's collaboration
   preference from [PLAYTEST-89](playtests/PLAYTEST-89.md). Push a plausible attempt in the

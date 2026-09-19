@@ -1,5 +1,120 @@
 # Decisions
 
+## M166 — The save is written when a day starts, and a saved game opens on the day brief · built 2026-09-19
+
+*(2026-09-19, [PLAYTEST-85](playtests/PLAYTEST-85.md): "write the save when starting a day; not
+when the focus is lost etc. also if there is a saved game the title screen should go to the day
+brief screen instead of starting outright" — and, asked whether a day's end also writes: "save as
+"played" when the day starts. save as "nothing played yet" for the day brief and end of day
+message. nothing else will change the state and doesn't need to be saved".)* *Asked for "saving
+should be implicit (on focus loss or game quit)" in [PLAYTEST-80](playtests/PLAYTEST-80.md) ·
+overturned by the player on 2026-09-19 to the two writes below.* Built by an agent on
+`feature/m166-save-at-day-start`; it replaces the four write moments and the resumed pause screen
+of M162, a game can be resumed, recorded directly below.
+
+**What was built.**
+
+- **Two writes.** `main._engage_the_day()` writes `day_under_way: true` when the title is
+  dismissed on a fresh run or the day brief is continued from, and `main._on_summary_continued()`
+  writes `true` after starting the next day from an end-of-day message. `main._on_day_finished()`
+  writes `false` as the end-of-day message comes up. Focus loss, application pause, the window's
+  close request and the pause screen's quit write nothing; focus loss still pauses.
+- **The day brief's write is made at boot, before the title.** `main._write_dawn_for_a_resumed_run()`
+  writes `false` on a resumed boot only, right after `GameState.finish_day()` has charged whatever
+  the load owes, so the charged nerve is on disk before either gate is shown. A kill before the
+  day is engaged finds `false` and costs nothing more; a kill after finds `true` and costs the
+  day. No instant hands back a free retry or charges one abandoned day twice.
+- **A fresh run writes nothing until its title is dismissed.** The first build wrote at every
+  dawn, so merely opening the game made a day-1 save, the next launch showed a day brief for a day
+  nobody had touched, and the held restart re-created the save it had just cleared. Review caught
+  it; the boot write is gated on a resumed run.
+- **The title comes up on every boot.** With a save, its start opens `DaySummary.show_day_brief()`
+  — "Day N of 14", the nerve count, the resistance's pending brief, and the lost-day line when the
+  load charged a nerve — or the ending when the load spent the last one. `PauseScreen.open()`'s
+  note and its label, `main._day_engaged`, `_day_under_way_for_save()`, `_on_pause_resumed()` and
+  `_show_resume_outcome()` are gone.
+
+**Chosen where the design was silent, open to overturn.** The day brief is its own small
+presentation rather than `show_day()` with an invented result. The resumed boot's write happens
+before the title rather than as the brief appears, for the kill ordering above, so the save symbol
+shows behind the title on a resumed boot. `main._quit()` losing its write is verified by reading,
+since calling it ends the test process.
+
+**What only a person can check** is in `REVIEW.md`: no rig reaches the title-to-day-brief flow,
+because a dev-flagged run never reads or writes the save.
+
+---
+
+## M162 — A game can be resumed · built 2026-09-19
+
+*(2026-09-19, [PLAYTEST-80](playtests/PLAYTEST-80.md): "we need to be able to resume a previous
+game. saving should be implicit (on focus loss or game quit) and it should bring you back to
+that exact state but paused." [PLAYTEST-82](playtests/PLAYTEST-82.md): "If that is too hard
+then we do start at dawn. But that has a potential to be exploited" — "Unless we give a penalty
+of ending the current day losing a nerve" — "No penalty when exiting at a next day/win/lose
+screen".)* Built by an agent on `feature/m162-resume`.
+
+**The design, and what was overturned on the way.** *Asked for "that exact state", the crowd
+included · overturned by the player on 2026-09-19 to a restart at dawn that costs a nerve.* The
+requirement under both is that **quitting is never an escape**. Three shapes were put to the
+player: everything, including some two hundred walkers and the cars with their lanes, turns,
+queues and signal phases; everything but the crowd, re-seeded around her, which was the
+recommendation and was refused because a car she stepped in front of would be gone on resume;
+and the run and the day only. The player chose the last with a penalty, which closes the same
+exploit without the save format depending on the crowd's internals.
+
+**What was built.**
+
+- **The save is the run.** `GameSave` (a static namespace, like `DevFlags`) writes
+  `user://save.json`: every field `GameState` owns, `CityState`'s block-arc history (run
+  history, not recomputable from the seed), whether a day was under way, a format version and
+  the build string. `GameState._SAVE_FIELDS` is checked against the script's own property list
+  by `tests/test_save.gd`, so a field added later and not saved fails a test. **Only
+  `FORMAT_VERSION` is compared on load**: a release never invalidates a save by being newer, a
+  change of shape does, and an unreadable save is dropped for a fresh title screen.
+- **It is written at dawn, at each day's end, on focus loss, on quit, and the instant a day
+  is first stepped into.** The player named focus loss and quit; the rest exist because a
+  crash, a force-kill and a discarded mobile tab send no notification at all.
+- **Opening a save that says a day was under way loses the day** through
+  `GameState.finish_day()`, the path every lost day takes: one nerve, the resistance given
+  back, the same day again, the last nerve ending the run. She comes up at dawn behind the
+  pause screen with a note line. A save written at a day summary comes back to the next dawn
+  at no cost; either ending and the held restart clear the save.
+- **The save symbol** is `assets/ui/save.svg`, a floppy disk tinted `Palette.CHALK_DONE`, bottom
+  right of the design box, on its own always-processing layer.
+- **The browser**: after each write on a web build `FS.syncfs` is called so the IndexedDB
+  write starts at once rather than on the next main-loop turn.
+- **An agent never lands in a saved game**: `GameSave.uses_save()` is the one gate — false for
+  a headless run, for any debug run carrying a dev flag, and for `--no-save` — and every read
+  and write passes through it. Tests point the save at a scratch path.
+
+**What review caught.** The first build flipped "this day is being played" when the title or
+the resume's pause screen was dismissed, and wrote nothing at that moment, so the save on disk
+said *not under way* until a notification happened to arrive. A killed process or a discarded
+tab then resumed free — all of day 1, and every second escape. `main._engage_the_day()` is now
+the one place the flag turns true and it writes the save on that transition; closing an
+ordinary pause writes nothing. None of the milestone's first tests exercised the gap between a
+gate opening and the next notification; four now do.
+
+**Choices made where the design was silent, open to overturn.**
+
+- **A day behind an undismissed title or resume pause is not under way**, so closing the game
+  again before touching the retry costs no second nerve, and opening the game and closing it
+  at the title costs nothing.
+- **The penalty is applied on load, never on a pause that is continued**, and the save is
+  rewritten with the nerve already spent before the resumed day is playable, so no kill
+  between the two charges twice or not at all.
+- The note's wording: *"Left before the day ended. That cost a nerve — it starts over from
+  dawn."* The symbol holds a second and a half and fades for the same.
+- The load-time loss is recorded as `DayResult.LOST_HARD_FAIL`; nothing displays it, since no
+  day summary is shown on that path.
+- `?nosave=1` exists for consistency with the other flags though a web build shares its
+  storage with no checkout.
+
+**Not verified by anything but a person**, and filed in `REVIEW.md`: the deployed page keeping
+the save across a closed tab and a new release, the note and the symbol on a real screen
+(unreachable by any dev-flagged run, by design), and whether the penalty reads as fair.
+
 ## M161 — The game pauses when it loses focus, and a rig can say not to · built 2026-09-19
 
 *(2026-09-19, [PLAYTEST-80](playtests/PLAYTEST-80.md): "can we make the game pause on focus
@@ -19152,3 +19267,53 @@ The player subsequently held the PR merge for review, then explicitly authorized
 main's conflicts and pushing, and finally restored PR merge permission once the comments were
 addressed. That permission is specific to PR #221; it does not authorize deleting branches or
 switching the player's checkout.
+
+---
+
+## M158, the staircase follows the corrected tile grammar — 2026-09-19
+
+[PLAYTEST-81](playtests/PLAYTEST-81.md) replaces the first live stair assembly with the player's
+literal 10-column cell grammar. `InteriorMap.STAIRWELL_ROWS` is the authority for drawing,
+walkability, collision and stair direction: `F` is level floor; `D` keeps the corresponding
+corridor transition; `t`/`m` and `T`/`M` are the two-row walkable slopes; `b`, `c`, `C` and `.`
+are solid. The right-side `b` in `.....TMCb.` is present. The same alternation extends only far
+enough to join the lobby.
+
+Seven 32×32 SVG roles draw the grammar directly. The upper and lower east/west pairs make the
+walkable flights, east/west continuation triangles close their diagonal sides, and the neutral
+block's 16px-deep gray top rectangle matches the adjacent continuation. The old broad decks,
+landing overlays and every rail remain absent. This preserves the reviewed lateral-flight source
+shapes while letting the map, rather than a decorative overlay, own the stair.
+
+The focused interior suite drives the real 14px player body across complete east- and
+west-descending flights in both normalized directions, checks the blocked side/background cells
+and checks every door pairing. The complete capture folder at
+`docs/evidence/archive/session-captures/2026-09-19/rig-110853-seed3349946719-v0.11.1-38-g2663c361-dirty/`
+retains the normal-scale left shaft and its run provenance.
+
+[PLAYTEST-83](playtests/PLAYTEST-83.md) gives the played verdict: *"the stairs look good."* That
+accepts the corrected live assembly without adding a railing or restoring any discarded deck.
+
+### M160, main reconciliation and identity audit — 2026-09-19
+
+The synchronization used original father tip `7a97598958532abf56f278d50b3fc8d6f90d545b`,
+prepared installation tip `e29c0eb90eeb44eeca0eabd326d61f74c91018cc`, incoming main
+`0afb8c679a5d4a1b67b032e543a6de0681d98bfd`, and common ancestor
+`b1e7263f78168771a2e58f4e8ab2972ad2f6eddd`. The pending merge's actual first parent is the
+prepared tip. Each conflict was shown as Theirs (main), Ours (father), and Base before resolution.
+
+DECISIONS retained both the independent staircase record and the father's attempt/acceptance
+history. HANDOFF retained main's removal of completed staircase and save work, replacing stale
+father/performance state with the current independently owned threads. TODO retained main's
+completed-save removal and M165 escape brief, plus the distinct M167 leg-drawing follow-up;
+the redundant separators were removed. No identifier mapping was needed: main's PLAYTEST-81,
+83, 84 and 85 remain separate from father records 79 and 87–91 and PR #216's PLAYTEST-86.
+M158, M159, M160, M162, M163, M164, M165, M166 and M167 retain their own subjects.
+
+The clean-file semantic review checked more than the conflict paths. Incoming saves preserve
+`player_is_male`, and `main.gd` restores it into the stroller, so resumed father runs use the
+same corrected pushing assets. Incoming stair changes use the carrying family, untouched here.
+The resolver, atlas, stroller and sprite callers are unchanged by incoming main; matching native
+canvases and existing paths bind the four PNGs without runtime scale or offset changes. Import
+sidecars remain unchanged. Main's save/stair docs and review questions, no-save guard and
+model-independent delegation guidance survive intact; performance measurements stay on PR #216.

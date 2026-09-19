@@ -27,6 +27,23 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Close the game in the middle of a day and open it again**, on the desktop build, and on
+  the released page in a laptop browser and on the phone (refresh, close the tab, swipe the
+  browser away). Does the title come up, and does pressing start bring up the day brief — the
+  day, the nerves, the resistance's own pending brief — one nerve down, with the line *"Left
+  before the day ended. That cost a nerve — it starts over from dawn."* — and is that wording
+  right, and does the screen read clearly as a brief rather than as an ending on its own? Does
+  continuing from the day brief start the day, and does closing again before continuing past it
+  come back to the same brief at no further cost? Does closing at an end-of-day message come
+  back to the day brief at no cost, and does a new release still find the save of the one
+  before? No rig can look at any of this, since a dev-flagged run never reads or writes the
+  save (`DECISIONS.md`, M162).
+- **Does a nerve lost to an accidental close or a browser crash read as fair?** It is the price
+  of quitting never being an escape ([PLAYTEST-82](playtests/PLAYTEST-82.md)); the exact
+  snapshot is what was given up for it.
+- **Is the save symbol noticed without distracting?** A floppy disk, bottom right, a second and
+  a half held and the same fading — twice in an ordinary day, once when it starts and once when
+  the day brief or the end-of-day message comes up for the next one.
 - **Click away from the game in the middle of a day**, on the desktop build, in the browser
   (another tab, another window) and on the phone (the home button). Does the pause screen come
   up every time, and never on the title, a day summary or an ending? The desktop case rests on
@@ -316,10 +333,14 @@ item below for as long as looking takes.
   service exit, and the same run continues into the city and ends at the tunnel or the bridge.
   Inside: a mouse and a paced steam vent in the basement, a masked man on one stairwell and a
   fire on the other, and the hallway windows flashing every 22 seconds
-  (`Tuning.FINALE_EXPLOSION_INTERVAL`) for `FINALE_WINDOW_FLASH_SECONDS` (0.12s). Two questions
+  (`Tuning.FINALE_EXPLOSION_INTERVAL`) for `FINALE_WINDOW_FLASH_SECONDS` (0.12s). The question
   only a walk answers: does the fire actually force the other shaft, or is walking back up the
-  obvious answer anyway; and does the paced steam leave a line to walk in a corridor two tiles
-  wide? Record is `DECISIONS.md`, M102, the finale built behind the flag.
+  obvious answer anyway? Record is `DECISIONS.md`, M102, the finale built behind the flag.
+  [PLAYTEST-84](playtests/PLAYTEST-84.md) walked it without answering that, and
+  [PLAYTEST-85](playtests/PLAYTEST-85.md) settles the steam: it does not move. What the walk
+  found instead — the masked man off the stairs, the basement's entry flight, steam that walks,
+  a spawn inside an obstacle — is M165, the escape after the corrected stairs, in `TODO.md`.
+  **Walk it again once M165 is built, not before.**
 
 - **Stand at the service exit and choose** (`tools/run.sh --start-escape city --seed 4242` boots
   section two on its own). Two chains leave the door, one north to the tunnel and one south to
@@ -395,18 +416,15 @@ item below for as long as looking takes.
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
 
-- **Walk the apartment and judge the reference-based interior graphics.** `tools/run.sh --start-escape` (debug only;
-  `--start-escape stairwell:left|stairwell:right|lobby|basement|floor:2|floor:1` boots into a
-  part) puts her, carrying the baby, in front of her door on the third floor of a building with
-  three hallways, two switchback stairwells at opposite ends, a barricaded lobby and a winding
-  basement to the emergency exit — one map, the parts 64 tiles apart, every door a fade and a
-  teleport. The south-edge doors are plain indents now, a brown bar across an indent being the
-  whole of what says closed, and every flight's treads are vertical lines, one per step: do the
-  bars read as closed doors and the lines as steps at play scale? Record is `DECISIONS.md`,
-  M102, the south-edge doors are indents. Both stairwells have recorded physical walks, but the feel of
-  the sideways controls and fade-and-teleport still needs a person's verdict: does a diagonal
-  flight read as *descending* when a sideways press walks it, and does the fade-and-teleport
-  read as a door or as a cut? Records are in `DECISIONS.md` under M112, the escape scene and
+- **Walk the apartment and judge the remaining reference-based interior graphics.**
+  `tools/run.sh --start-escape` (debug only; `--start-escape stairwell:left|stairwell:right|lobby|basement|floor:2|floor:1`
+  boots into a part) puts her, carrying the baby, in front of her door on the third floor of a
+  building with three hallways, two switchback stairwells at opposite ends, a barricaded lobby and
+  a winding basement to the emergency exit — one map, the parts 64 tiles apart, every door a fade
+  and a teleport. The south-edge doors are plain indents, with a brown bar across an indent being
+  the whole of what says closed: do the bars read as closed doors at play scale, and does the
+  fade-and-teleport read as a door or as a cut?
+  Records for the remaining interior are in `DECISIONS.md` under M112, the escape scene and
   interior graphics; what the finale lays on top of the building — its events, and the way out
   through the service door — is the escape walk in the list above.
 

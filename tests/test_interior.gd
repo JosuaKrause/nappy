@@ -5,8 +5,8 @@ extends RefCounted
 
 func run(t) -> void:
 	_test_the_map_builds(t)
-	_test_every_flight_and_landing_tile_is_walkable(t)
-	_test_the_anti_shortcut_property_in_each_shaft(t)
+	_test_the_stairwell_grammar_is_exact_in_both_shafts(t)
+	_test_stair_symbols_define_walkability_and_art(t)
 	_test_every_door_has_the_counterpart_it_claims(t)
 	_test_the_exit_and_the_entrance_are_what_they_claim(t)
 	_test_the_ground_between_parts_is_not_walkable(t)
@@ -15,7 +15,9 @@ func run(t) -> void:
 	_test_the_tileset_carries_every_walkable_ground_kind(t)
 	_test_the_scene_paints_the_whole_map(t)
 	_test_collision_blocks_exactly_the_non_walkable_ground(t)
+	_test_stair_roles_are_live_tiles_and_old_overlays_are_unbound(t)
 	_test_a_sideways_press_on_a_flight_walks_its_slope(t)
+	_test_a_real_stroller_physically_crosses_both_flight_directions(t)
 	_test_every_diagonal_step_has_both_its_pinch_corners_cleared(t)
 	_test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t)
 	_test_a_door_release_latch_keeps_a_door_from_retaking_her(t)
@@ -29,43 +31,96 @@ func _test_the_map_builds(t: Node) -> void:
 	for part in InteriorMap.PARTS:
 		t.check(f.waypoints.has(part), "the map carries a waypoint for '%s'" % part)
 
-func _test_every_flight_and_landing_tile_is_walkable(t: Node) -> void:
-	var f := InteriorMap.build()
-	var count := 0
-	for tile: Vector2i in f.tiles:
-		var k: InteriorTile.Kind = f.tiles[tile]
-		if k in [InteriorTile.Kind.STAIR_FLIGHT_E, InteriorTile.Kind.STAIR_FLIGHT_W, InteriorTile.Kind.LANDING]:
-			count += 1
-			t.check(f.is_walkable(tile), "tile %s (kind %d) is walkable" % [tile, k])
-	# A guard that the sweep above was not vacuous — two shafts, each three floor-to-floor gaps of
-	# a 3-tile flight down, a 1-tile half-landing and a 3-tile flight back, plus its four floor
-	# landings (`LANDING` kind), plus the basement's own two-tile entry flight (`STAIR_FLIGHT_E`,
-	# the same kit tiles, counted in this sweep too since it asks about the whole map at once).
-	t.check(count == 2 * (3 * (3 + 1 + 3) + 4) + 2,
-			"both shafts have every gap's flight and half-landing tiles and every floor landing, "
-			+ "plus the basement's own entry flight (got %d)" % count)
-
-## The property `InteriorMap._lay_flight()`'s own doc exists to guarantee: the only walkable way
-## from one landing to the next is along the flights it lays — checked as a graph distance rather
-## than a raw adjacency test, since a diagonal layout has no single "gap row" left to measure. If
-## any tile off the intended chain were walkable and adjacent to two non-consecutive tiles on it, a
-## shorter path would exist and this would catch it.
-func _test_the_anti_shortcut_property_in_each_shaft(t: Node) -> void:
+## The first 22 rows are the player's literal corrected diagram. The last four finish the same
+## alternation only through the fourth door's two-cell level approach. This checks the authored
+## rows and the parsed cells in both shafts, so a correct-looking constant that is not what the map
+## paints cannot pass.
+func _test_the_stairwell_grammar_is_exact_in_both_shafts(t: Node) -> void:
+	var expected: Array[String] = [
+		"..........",
+		".D........",
+		".Ft.......",
+		".Fmt......",
+		".bcmt.....",
+		"...cmt....",
+		"....cmt...",
+		".....cmtD.",
+		"......cmF.",
+		".......cF.",
+		".......TF.",
+		"......TMF.",
+		".....TMCb.",
+		"....TMC...",
+		"...TMC....",
+		".DTMC.....",
+		".FMC......",
+		".FC.......",
+		".Ft.......",
+		".Fmt......",
+		".bcmt.....",
+		"...cmt....",
+		"....cmt...",
+		".....cmtD.",
+		"......cmF.",
+		".......cF.",
+	]
+	t.check(InteriorMap.STAIRWELL_ROWS == expected,
+			"the runtime grammar is the literal 22-row diagram plus one completed lobby approach")
 	var f := InteriorMap.build()
 	for side in ["left", "right"]:
 		var part := "stairwell_%s" % side
-		var ids: Array = ["landing_third", "landing_second", "landing_first", "landing_lobby"]
-		for i in ids.size() - 1:
-			var here: Vector2i = f.waypoints["%s:%s" % [part, ids[i]]]
-			var there: Vector2i = f.waypoints["%s:%s" % [part, ids[i + 1]]]
-			var steps := _shortest_path_length(f, here, there)
-			# 9 nodes on the chain (landing, 3 down, the turn, 3 back, landing) is 8 edges; a
-			# shorter answer means some other walkable tile cut the corner.
-			t.check(steps == 8, "%s: %s to %s is exactly 8 steps along the flights (got %d)"
-					% [part, ids[i], ids[i + 1], steps])
+		var origin: Vector2i = f.waypoints[part] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+		for y in expected.size():
+			for x in expected[y].length():
+				var symbol := expected[y].substr(x, 1)
+				var at := origin + Vector2i(x, y)
+				if symbol == ".":
+					t.check(not f.tiles.has(at), "%s row %d column %d stays background" % [part, y, x])
+				elif symbol == "D":
+					t.check(f.tiles.get(at) == InteriorTile.Kind.DOOR,
+							"%s row %d column %d is its corridor door" % [part, y, x])
+				else:
+					t.check(f.tiles.get(at) == InteriorMap.stair_kind_for_symbol(symbol),
+							"%s row %d column %d paints '%s'" % [part, y, x, symbol])
+
+## Walkability and drawing are properties of the symbol roles, not of a second sparse flight map.
+## The walkable roles have TileSet sources because they are the surface; the three side roles also
+## have sources but remain solid.
+func _test_stair_symbols_define_walkability_and_art(t: Node) -> void:
+	for symbol in ["F", "t", "m", "T", "M"]:
+		var kind: InteriorTile.Kind = InteriorMap.stair_kind_for_symbol(symbol)
+		t.check(InteriorTile.is_walkable(kind), "'%s' is walkable" % symbol)
+		t.check(InteriorTileSet.source_id_for(kind) >= 0, "'%s' has a live tile source" % symbol)
+	t.check(InteriorTile.is_walkable(InteriorTile.Kind.DOOR), "'D' is a walkable transition")
+	for symbol in ["b", "c", "C"]:
+		var kind: InteriorTile.Kind = InteriorMap.stair_kind_for_symbol(symbol)
+		t.check(not InteriorTile.is_walkable(kind), "'%s' is not walkable" % symbol)
+		t.check(InteriorTileSet.source_id_for(kind) >= 0, "'%s' is still painted" % symbol)
+	t.check(not InteriorTile.is_walkable(InteriorTile.Kind.NONE), "'.' is not walkable")
 
 func _test_every_door_has_the_counterpart_it_claims(t: Node) -> void:
 	var f := InteriorMap.build()
+	var expected_pairs: Array[Array] = [
+		["hallway_third:left", "stairwell_left:landing_third"],
+		["hallway_third:right", "stairwell_right:landing_third"],
+		["hallway_second:left", "stairwell_left:landing_second"],
+		["hallway_second:right", "stairwell_right:landing_second"],
+		["hallway_first:left", "stairwell_left:landing_first"],
+		["hallway_first:right", "stairwell_right:landing_first"],
+		["lobby:left", "stairwell_left:landing_lobby"],
+		["lobby:right", "stairwell_right:landing_lobby"],
+		["lobby:basement", "basement:entry"],
+	]
+	t.check(f.doors.size() == expected_pairs.size() * 2,
+			"the building keeps exactly the nine external door pairs")
+	for pair: Array in expected_pairs:
+		var a: InteriorMapPlan.Door = f.door(pair[0])
+		var b: InteriorMapPlan.Door = f.door(pair[1])
+		t.check(a != null and b != null, "door pair '%s' / '%s' exists" % pair)
+		if a == null or b == null:
+			continue
+		t.check(a.target_door == b.id and b.target_door == a.id,
+				"'%s' and '%s' remain exact counterparts" % pair)
 	for id: String in f.doors:
 		var door: InteriorMapPlan.Door = f.doors[id]
 		var back: InteriorMapPlan.Door = f.door(door.target_door)
@@ -184,8 +239,90 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: Node) -> void:
 	for body in scene.get_node("Collision").get_children():
 		blocked[scene.world_to_tile(body.position)] = true
 	for tile: Vector2i in f.tiles:
-		t.check(not blocked.has(tile), "every tile with a floor (%s) is unblocked" % tile)
+		if f.is_walkable(tile):
+			t.check(not blocked.has(tile), "walkable tile %s is unblocked" % tile)
+		else:
+			t.check(blocked.has(tile), "painted non-walkable tile %s is blocked" % tile)
 	t.check(blocked.has(Vector2i(30, 0)), "a gap tile between two parts is blocked")
+	for side in ["left", "right"]:
+		var part := "stairwell_%s" % side
+		var origin: Vector2i = f.waypoints[part] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+		for y in InteriorMap.STAIRWELL_ROWS.size():
+			var row: String = InteriorMap.STAIRWELL_ROWS[y]
+			for x in row.length():
+				var symbol := row.substr(x, 1)
+				var at := origin + Vector2i(x, y)
+				var should_block := symbol in [".", "b", "c", "C"]
+				t.check(blocked.has(at) == should_block,
+						"%s '%s' collision matches its grammar role at row %d column %d"
+						% [part, symbol, y, x])
+	# The two-row diagonal is wider at its narrowest cross-section than the player's circular body,
+	# and each diagonal same-role step has the other role in one orthogonal corner. One outside
+	# blocker therefore cannot recreate the two-blocker pinch the old one-row flight needed repaired.
+	t.check(Tuning.PLAYER_BODY_RADIUS * 2.0 < InteriorScene.TILE * sqrt(2.0),
+			"the player fits inside the two-row diagonal surface")
+	var paired_steps := 0
+	for tile: Vector2i in f.tiles:
+		var kind: InteriorTile.Kind = f.tiles[tile]
+		var direction := InteriorTile.flight_direction(kind)
+		if direction == 0:
+			continue
+		var next := tile + Vector2i(direction, 1)
+		if f.tiles.get(next) != kind:
+			continue
+		paired_steps += 1
+		var corner_a := Vector2i(next.x, tile.y)
+		var corner_b := Vector2i(tile.x, next.y)
+		t.check(f.is_walkable(corner_a) or f.is_walkable(corner_b),
+				"the diagonal surface from %s to %s has a walkable orthogonal corner" % [tile, next])
+	t.check(paired_steps > 0, "both-row diagonal continuity has real steps to check")
+	scene.free()
+
+## The reviewed sources are the TileSet pictures selected by the grammar. No structural overlay —
+## including the rejected vertical landing — or broad deck/rail is allowed to recreate the old
+## sparse map on top of them.
+func _test_stair_roles_are_live_tiles_and_old_overlays_are_unbound(t: Node) -> void:
+	var expected_sources := {
+		InteriorTile.Kind.STAIR_TOP_E: load("res://assets/interior/m158_stair_side_upper_e.svg"),
+		InteriorTile.Kind.STAIR_MIDDLE_E: load("res://assets/interior/m158_stair_side_lower_e.svg"),
+		InteriorTile.Kind.STAIR_CORNER_E: load("res://assets/interior/m158_stair_side_continue_e.svg"),
+		InteriorTile.Kind.STAIR_TOP_W: load("res://assets/interior/m158_stair_side_upper_w.svg"),
+		InteriorTile.Kind.STAIR_MIDDLE_W: load("res://assets/interior/m158_stair_side_lower_w.svg"),
+		InteriorTile.Kind.STAIR_CORNER_W: load("res://assets/interior/m158_stair_side_continue_w.svg"),
+		InteriorTile.Kind.STAIR_BLOCK: load("res://assets/interior/m158_stair_side_block.svg"),
+	}
+	var tile_set := InteriorTileSet.build()
+	for kind: InteriorTile.Kind in expected_sources:
+		var source_id := InteriorTileSet.source_id_for(kind)
+		var source := tile_set.get_source(source_id) as TileSetAtlasSource
+		t.check(source != null and source.texture == expected_sources[kind],
+				"stair role %d binds its reviewed tile source" % kind)
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	scene.build()
+	var removed_textures: Array[Texture2D] = [
+		load("res://assets/interior/stair_landing_vertical.svg"),
+		load("res://assets/interior/stair_flight_run_e.svg"),
+		load("res://assets/interior/stair_flight_run_w.svg"),
+		load("res://assets/interior/stair_landing_floor.svg"),
+		load("res://assets/interior/stair_landing_turn.svg"),
+		load("res://assets/interior/stair_rail_run_e.svg"),
+		load("res://assets/interior/stair_rail_run_w.svg"),
+		load("res://assets/interior/stair_rail_run_e_rear.svg"),
+		load("res://assets/interior/stair_rail_run_w_rear.svg"),
+		load("res://assets/interior/stair_rail_short_e.svg"),
+		load("res://assets/interior/stair_rail_short_e_rear.svg"),
+	]
+	var removed_bound := 0
+	for layer_name in ["StairStructure", "Entities"]:
+		for child in scene.get_node(layer_name).get_children():
+			var sprite := child as Sprite2D
+			if sprite != null and removed_textures.has(sprite.texture):
+				removed_bound += 1
+	t.check(removed_bound == 0,
+			"no vertical landing, broad deck, platform, foreground rail or rear rail is bound")
+	t.check(scene.get_node("StairStructure").get_child_count() == 0,
+			"the corrected grammar needs no presentation-only stair structure")
 	scene.free()
 
 ## The switchback's own redirection: a sideways press on a diagonal flight walks its slope rather
@@ -198,35 +335,49 @@ func _test_a_sideways_press_on_a_flight_walks_its_slope(t: Node) -> void:
 	t.add_child(scene)
 	scene.build()
 	var f := InteriorMap.build()
-	var east_tile := Vector2i(-1, -1)
-	var west_tile := Vector2i(-1, -1)
-	for tile: Vector2i in f.tiles:
-		if f.tiles[tile] == InteriorTile.Kind.STAIR_FLIGHT_E and east_tile.x < 0:
-			east_tile = tile
-		if f.tiles[tile] == InteriorTile.Kind.STAIR_FLIGHT_W and west_tile.x < 0:
-			west_tile = tile
-	t.check(east_tile.x >= 0 and west_tile.x >= 0, "the shaft has both flight kinds to test against")
-
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	var player := Stroller.new()
 	player.add_child(camera)
 	t.add_child(player)
 	player.slope_dir_at = scene.slope_dir_at
-
-	player.global_position = scene.tile_to_world(east_tile)
-	var right_on_e := player._redirect_along_a_flight(Vector2(1, 0))
-	t.check(right_on_e.x > 0 and right_on_e.y > 0,
-			"pressing right on a descending-east flight moves lower and further right")
-	var left_on_e := player._redirect_along_a_flight(Vector2(-1, 0))
-	t.check(left_on_e.x < 0 and left_on_e.y < 0, "pressing left on the same flight climbs toward its upper end")
-	var up_on_e := player._redirect_along_a_flight(Vector2(0, -1))
-	t.check(up_on_e == Vector2.ZERO, "a vertical press on a flight moves nowhere")
-
-	player.global_position = scene.tile_to_world(west_tile)
-	var right_on_w := player._redirect_along_a_flight(Vector2(1, 0))
-	t.check(right_on_w.x > 0 and right_on_w.y < 0,
-			"pressing right on a descending-west flight climbs toward its upper end")
+	var roles: Array[InteriorTile.Kind] = [
+		InteriorTile.Kind.STAIR_TOP_E,
+		InteriorTile.Kind.STAIR_MIDDLE_E,
+		InteriorTile.Kind.STAIR_TOP_W,
+		InteriorTile.Kind.STAIR_MIDDLE_W,
+	]
+	for kind: InteriorTile.Kind in roles:
+		var role_tile := Vector2i(-1, -1)
+		for tile: Vector2i in f.tiles:
+			if f.tiles[tile] == kind:
+				role_tile = tile
+				break
+		t.check(role_tile.x >= 0, "flight role %d exists in the shaft" % kind)
+		if role_tile.x < 0:
+			continue
+		player.global_position = scene.tile_to_world(role_tile)
+		var right := player._redirect_along_a_flight(Vector2(1, 0))
+		var left := player._redirect_along_a_flight(Vector2(-1, 0))
+		var descends_east := InteriorTile.flight_direction(kind) > 0
+		if descends_east:
+			t.check(right.x > 0 and right.y > 0,
+					"east role %d: right moves equally right and down" % kind)
+			t.check(left.x < 0 and left.y < 0,
+					"east role %d: left moves equally left and up" % kind)
+		else:
+			t.check(left.x < 0 and left.y > 0,
+					"west role %d: left moves equally left and down" % kind)
+			t.check(right.x > 0 and right.y < 0,
+					"west role %d: right moves equally right and up" % kind)
+		for redirected in [right, left]:
+			t.check(is_equal_approx(absf(redirected.x), absf(redirected.y)),
+					"flight role %d gives equal horizontal and vertical components" % kind)
+			t.check(is_equal_approx(redirected.length(), 1.0),
+					"flight role %d normalizes the diagonal to ordinary movement speed" % kind)
+		var vertical := player._redirect_along_a_flight(Vector2(0, -1))
+		t.check(vertical == Vector2.ZERO, "flight role %d ignores pure vertical input" % kind)
 
 	var landing_tile: Vector2i = f.waypoints["stairwell_left:landing_third"]
 	player.global_position = scene.tile_to_world(landing_tile)
@@ -236,43 +387,126 @@ func _test_a_sideways_press_on_a_flight_walks_its_slope(t: Node) -> void:
 	player.free()
 	scene.free()
 
+## A real carrying rig starts on the level `F` approach and holds the same horizontal action the
+## running game reads. The synchronous runner cannot advance `move_and_slide()`'s engine-owned
+## delta, so each call to the real `_physics_process()` supplies its redirected, accelerated
+## velocity and this test applies that frame's displacement through `move_and_collide()` against
+## the scene's registered full-cell blockers, sliding the collision remainder along the reported
+## normal. Reaching the next `F` approach therefore proves the 14px circle crossed every blocker
+## corner in a complete flight; a graph path, assigned position or bare `Stroller.new()` cannot
+## make this pass.
+func _test_a_real_stroller_physically_crosses_both_flight_directions(t: Node) -> void:
+	var f := InteriorMap.build()
+	var origin: Vector2i = f.waypoints["stairwell_left"] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+	_test_physical_flight(t, origin + Vector2i(1, 2), origin + Vector2i(8, 8), "move_right", "east")
+	_test_physical_flight(t, origin + Vector2i(8, 10), origin + Vector2i(1, 16), "move_left", "west")
+
+func _test_physical_flight(
+		t: Node, start: Vector2i, target: Vector2i, action: StringName, label: String) -> void:
+	const STEP := 1.0 / 60.0
+	const MAX_STEPS := 360
+	var f := InteriorMap.build()
+	t.check(f.tiles.get(start) == InteriorTile.Kind.STAIRWELL_FLOOR,
+			"the %s physical traversal starts on its level F approach" % label)
+	t.check(f.tiles.get(target) == InteriorTile.Kind.STAIRWELL_FLOOR,
+			"the %s physical traversal targets the next level F approach" % label)
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	scene.build()
+	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
+	var player: Stroller = packed.instantiate()
+	player.carrying = true
+	player.slope_dir_at = scene.slope_dir_at
+	scene.add_entity(player)
+	player.set_physics_process(false)
+	var body_collision := player.get_node("CollisionShape2D") as CollisionShape2D
+	var body_circle := body_collision.shape as CircleShape2D
+	t.check(not body_collision.disabled and body_circle != null
+			and is_equal_approx(body_circle.radius, Tuning.PLAYER_BODY_RADIUS),
+			"the %s traversal uses the enabled real 14px player circle" % label)
+	var pram_collision := player.get_node("PramCollisionShape2D") as CollisionShape2D
+	t.check(pram_collision.disabled,
+			"the %s escape traversal disables the pram body while she carries the baby" % label)
+	player.global_position = scene.tile_to_world(start)
+	player.velocity = Vector2.ZERO
+
+	Input.action_release("move_left")
+	Input.action_release("move_right")
+	Input.action_press(action)
+	var steps := 0
+	var collision_contacts := 0
+	while steps < MAX_STEPS and scene.world_to_tile(player.global_position) != target:
+		player._physics_process(STEP)
+		collision_contacts += _move_real_body_one_step(player, player.velocity * STEP)
+		steps += 1
+	Input.action_release(action)
+	var displacement := player.global_position - scene.tile_to_world(start)
+	var expected_sign := 1.0 if label == "east" else -1.0
+	t.check(scene.world_to_tile(player.global_position) == target,
+			("the real %s-moving circle reaches the next F approach after %d physics steps; "
+			+ "ended at %s, displacement %s")
+			% [label, steps, player.global_position, displacement])
+	t.check(signf(displacement.x) == expected_sign and displacement.y > 0.0,
+			"the real %s flight makes forward and downward progress (%s)" % [label, displacement])
+	t.check(absf(displacement.x) > InteriorScene.TILE * 6.0
+			and displacement.y > InteriorScene.TILE * 5.0,
+			"the real %s traversal crosses the complete flight (%s)" % [label, displacement])
+	t.check(collision_contacts > 0,
+			"the real %s circle contacts the flight's full-cell blockers while still crossing" % label)
+	print("M158 physical %s flight: %d steps, displacement %s, %d blocker contacts" \
+			% [label, steps, displacement, collision_contacts])
+	scene.free()
+
+## The explicit-displacement half `move_and_slide()` normally derives from the physics delta that
+## the synchronous test runner cannot advance. The real body's sweep supplies every collision
+## normal and remainder; up to `max_slides` applies the same bounded sliding shape as the runtime.
+func _move_real_body_one_step(player: CharacterBody2D, motion: Vector2) -> int:
+	var collision := player.move_and_collide(motion)
+	var slides := 0
+	var contacts := 0
+	while collision != null and slides < player.max_slides:
+		contacts += 1
+		motion = collision.get_remainder().slide(collision.get_normal())
+		if motion.is_zero_approx():
+			return contacts
+		collision = player.move_and_collide(motion)
+		slides += 1
+	return contacts
+
 ## Drives a rig from her own door on the top hallway through a stair door, down the whole shaft by
 ## the left flights and again by the right, into the lobby, down to the basement and out — the walk
 ## the TODO item asks for, on both stairwells.
 ##
-## **The regression test for the actual defect a capture session found.** A diagonal flight tile
-## touches its own diagonal neighbour at a single corner point; the two cells flanking that step
-## are full-tile collision blockers on both sides by default, and a circular body of any real
-## radius cannot cross a gap pinched to nothing between them. Every headless test above this one —
-## the tile arithmetic, the anti-shortcut graph distance, even the redirected velocity's own
-## direction — passed while a real body stood still against a wall it could not see, because
-## nothing headless exercises `move_and_slide()` against freshly built collision bodies with no
-## physics frame having actually elapsed (the project's own established shape: "a bare
-## `Stroller.new()` has no `CollisionShape2D`, so `move_and_slide()` never moves it — assert on
-## velocity, not on position," and no suite in this repo drives real collision-checked movement
-## either). So this asserts the fix at the level headless *can* see: the data.
-## `InteriorMap._mark_diagonal_clearances()` must have freed both corner cells for every diagonal
-## adjacency in `tiles`, or `InteriorScene._rebuild_collision()` places a blocker back in the pinch
-## and the defect returns.
+## **The structural half of the regression a capture session found.** A diagonal flight tile
+## touches its own diagonal neighbour at a single corner point; two full-cell blockers on both
+## flanks pinch the passage to nothing. The physical test above owns the resulting body motion;
+## this one proves the map only clears an absent two-blocker pinch and never turns a painted side
+## role into walkable space.
+## `InteriorMap._mark_diagonal_clearances()` frees both corners only when neither is already
+## walkable. That keeps the basement entry open without clearing the corrected shaft's explicit
+## `.` background or its painted side cells.
 func _test_every_diagonal_step_has_both_its_pinch_corners_cleared(t: Node) -> void:
 	var f := InteriorMap.build()
 	var diagonals: Array[Vector2i] = [Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]
 	var checked := 0
 	for t1: Vector2i in f.tiles:
+		if not f.is_walkable(t1):
+			continue
 		for d in diagonals:
 			var t2 := t1 + d
-			if not f.tiles.has(t2):
+			if not f.is_walkable(t2):
 				continue
 			checked += 1
 			var corner_a := Vector2i(t1.x + d.x, t1.y)
 			var corner_b := Vector2i(t1.x, t1.y + d.y)
-			# Safe from `_rebuild_collision()`'s own blocker either way: floor of its own, or
-			# explicitly cleared. Either satisfies the geometry; what matters is that it is never
-			# both un-floored and un-cleared, which is the pinch.
-			t.check(f.tiles.has(corner_a) or f.collision_clearance.has(corner_a),
-					"the corner %s pinching %s to %s is floor or cleared" % [corner_a, t1, t2])
-			t.check(f.tiles.has(corner_b) or f.collision_clearance.has(corner_b),
-					"the corner %s pinching %s to %s is floor or cleared" % [corner_b, t1, t2])
+			if f.is_walkable(corner_a) or f.is_walkable(corner_b):
+				continue
+			t.check(not f.tiles.has(corner_a) and not f.tiles.has(corner_b),
+					"a required pinch clearance never overrides a painted stair-side cell")
+			t.check(f.collision_clearance.has(corner_a),
+					"the absent corner %s pinching %s to %s is cleared" % [corner_a, t1, t2])
+			t.check(f.collision_clearance.has(corner_b),
+					"the absent corner %s pinching %s to %s is cleared" % [corner_b, t1, t2])
 	# A guard that the sweep found real diagonal adjacencies to check — every flight in both
 	# shafts plus the basement's own entry flight.
 	t.check(checked > 0, "the map has at least one diagonal adjacency to check (got %d)" % checked)
@@ -280,11 +514,10 @@ func _test_every_diagonal_step_has_both_its_pinch_corners_cleared(t: Node) -> vo
 ## **Steps `InteriorScene`'s own transition functions directly rather than driving `Stroller` by
 ## input.** `transition_at()` and `teleport_to_door()` are the exact functions `process_player()`
 ## calls every frame in the running game — the only thing skipped is the fade `Tween`'s own timing,
-## which is presentation rather than logic (see `_start_door_transition()`'s own doc). Driving a
-## `Stroller` by `--walk`-style input instead would additionally exercise `move_and_slide()` and
-## real collision, which `_test_a_real_stroller_physically_crosses_a_diagonal_step` already covers
-## on its own, over a real `CollisionShape2D` rather than a teleport that skips physics entirely —
-## repeating that here would double the work rather than test anything new. **Not vacuous**: every
+## which is presentation rather than logic (see `_start_door_transition()`'s own doc). The real
+## input, slope redirection and collision sweep are separately covered on complete east and west
+## flights by `_test_a_real_stroller_physically_crosses_both_flight_directions()`; repeating those
+## here would double the work rather than test anything new. **Not vacuous**: every
 ## assertion below reads the player's own `global_position` back after the call, not from a value
 ## this test computed itself, so a `teleport_to_door()` that silently failed to move the player
 ## would fail the very next line rather than being asserted past.
@@ -297,6 +530,7 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: Node) -> voi
 		scene.build()
 		var camera := Camera2D.new()
 		camera.name = "Camera2D"
+		camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 		var player := Stroller.new()
 		player.add_child(camera)
 		t.add_child(player)
@@ -310,14 +544,21 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: Node) -> voi
 		t.check(player.global_position == scene.tile_to_world(f.door("%s:landing_third" % part).tile),
 				"the %s walk arrives at its own top landing's own door" % side)
 
-		# Down the whole shaft by the flights — no teleport until the bottom door, since every
-		# intermediate landing's own door stands beside the vertical path rather than on it (see
-		# `InteriorMapPlan.waypoints`'s own doc), so passing floor 2 and floor 1 on the way down
-		# triggers nothing.
+		# The level `F` approach at each floor remains on the stair route while its `D` is one cell
+		# beside it. Walking past a floor therefore does not trigger its corridor transition.
+		var landing_ids: Array[String] = [
+			"landing_third", "landing_second", "landing_first", "landing_lobby",
+		]
+		for index in landing_ids.size() - 1:
+			var from: Vector2i = f.waypoints["%s:%s" % [part, landing_ids[index]]]
+			var to: Vector2i = f.waypoints["%s:%s" % [part, landing_ids[index + 1]]]
+			t.check(_shortest_path_length(f, from, to) > 0,
+					"%s has a continuous walk from %s to %s"
+					% [part, landing_ids[index], landing_ids[index + 1]])
 		for id in ["landing_third", "landing_second", "landing_first"]:
 			var landing_tile: Vector2i = f.waypoints["%s:%s" % [part, id]]
 			var mid_result := scene.transition_at(landing_tile)
-			t.check(mid_result.is_empty(), "%s: passing %s's own landing triggers nothing" % [part, id])
+			t.check(mid_result.is_empty(), "%s: passing %s's `F` approach triggers nothing" % [part, id])
 
 		var bottom_door := f.door("%s:landing_lobby" % part)
 		player.global_position = scene.tile_to_world(bottom_door.tile)
@@ -466,7 +707,7 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 		var other := "right" if burning == "left" else "left"
 		t.check(scene.turn_landings("stairwell_%s" % burning).has(
 				scene.world_to_tile(fire.global_position)),
-				"the fire stands on a half-landing of the %s shaft" % burning)
+				"the fire stands on an interior level approach of the %s shaft" % burning)
 		var reach := fire.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
 		t.check(reach > 0.0, "and it is solid at all (%.0fpx)" % reach)
 		var shut := 0
@@ -493,18 +734,9 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 	events.free()
 	scene.free()
 
-## Every tile of one stairwell: its landings and its flights, taken as the box the shaft occupies
-## between its top and bottom landings.
+## Every painted grammar cell in one stairwell, including its non-walkable sides.
 func _shaft_tiles(scene: InteriorScene, part_id: String) -> Array[Vector2i]:
-	var f := InteriorMap.build()
-	var top: Vector2i = scene.waypoint(part_id)
-	var bottom: Vector2i = scene.waypoint("%s:landing_lobby" % part_id)
-	var swing := InteriorMap.STAIRWELL_FLIGHT_LEN + 1
-	var found: Array[Vector2i] = []
-	for tile: Vector2i in f.tiles:
-		if absi(tile.x - top.x) <= swing and tile.y >= top.y and tile.y <= bottom.y:
-			found.append(tile)
-	return found
+	return scene.stairwell_tiles(part_id)
 
 ## *"Maybe some mice. ... Maybe some steam in the basement etc."* Both stand on the basement's own
 ## corridor, which has no branches — so they are things she walks past rather than things she may

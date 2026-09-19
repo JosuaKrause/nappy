@@ -47,6 +47,11 @@ should have got, and the branch is worth pulling and photographing from a sessio
 display. A missing screenshot from an agent is a missing check, never evidence that the change is
 wrong.
 
+**An agent's run always carries a dev flag or `--no-save`.** Every checkout and worktree of this
+repository shares one `user://`, so the player's save is in reach of any game an agent starts.
+`GameSave.uses_save()` already refuses a headless run and any run carrying a dev flag; `--no-save`
+is what a flagless `tools/run.sh` session needs to say the same thing.
+
 ---
 
 Run these before committing. They are fast and they each catch a different class of bug.

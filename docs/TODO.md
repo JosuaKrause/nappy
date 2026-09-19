@@ -182,7 +182,9 @@ with the code's constraints in hand. It is not queued and it is not rejected.
 last scene — out of the apartment, out of the city — and its section holds the brief, the four
 answered collisions, and the one item still open: the entry from day 14's own summary, which is
 what would make it a run's ending rather than a flag's. The record of what was built is in
-`DECISIONS.md`.
+`DECISIONS.md`. M165, the escape after the corrected stairs, sits directly before it and holds
+what [PLAYTEST-84](playtests/PLAYTEST-84.md) found walking the sequence: the masked man off the
+stairs, the basement's entry flight, the steam, and the spawn at the service exit.
 
 **[PLAYTEST-50.md](playtests/PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
@@ -293,8 +295,6 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
----
-
 ## M167 — The father's legs read as legs · asked for 2026-09-19
 
 > "the leg positions are correct now. we can use it for now (and merge) but in parallel do another fix attempt to just make the legs look like legs"
@@ -377,73 +377,6 @@ alike.
       The last resort's own residual is measured and not asked about: one reversal on the spot
       in view over seven rig days, where a stopped car outsat the wait on the landing; the PR
       review names the shape to try if it shows in play.
-
----
-
-## M162 — A game can be resumed · asked for 2026-09-19
-
-> "we need to be able to resume a previous game. saving should be implicit (on focus loss or
-> game quit) and it should bring you back to that exact state but paused. in the browser it
-> should be handled via local storage so refreshing or opening again the page doesn't lose
-> progress" — "there is no need for manual save state management since you can just hold
-> restart to clear the game"
-
-[PLAYTEST-80](playtests/PLAYTEST-80.md) and [PLAYTEST-82](playtests/PLAYTEST-82.md). It shares
-its trigger with the focus-loss pause (`DECISIONS.md`, M161), so it is built on top of it. The
-**godot**, **cli-tools**, **cues**, **svg-art** and **verify** rules govern.
-
-**A save holds the run and the day, never the moment inside a day.** *Asked for "that exact
-state", the crowd included ("if I walk in front of a car I shouldn't be able to quit and resume
-without the car being there") · overturned by the player on 2026-09-19 to a restart at dawn that
-costs a nerve: "If that is too hard then we do start at dawn. But that has a potential to be
-exploited" — "Unless we give a penalty of ending the current day losing a nerve" — "No penalty
-when exiting at a next day/win/lose screen".* The requirement under both is that **quitting is
-never an escape**; the exact snapshot and why it was not taken are in playtest 82.
-
-- [ ] **The save is the run.** `GameState` — the seed, the day, nerves, resistance progress,
-      scars, consumed one-shot events, where she settled each day, the run's clock — and one
-      more fact: whether a day was under way when it was written. The city and each day's plan
-      are functions of the seed and the day and are not saved. One save, no slots, no button.
-      It names the build that wrote it, and a save a newer build cannot read is dropped for a
-      fresh title screen rather than half-loaded.
-- [ ] **It is written at dawn, at each day's end, on focus loss and on quit.** The player named
-      the last two; dawn and the day's end are added because a killed process never writes its
-      quit save, and a penalty a force-quit avoids is no penalty — the dawn save already says
-      *a day is under way*. Recorded in playtest 82 as open to overturn.
-- [ ] **Opening a game whose save says a day was under way loses that day.** It costs what any
-      lost day costs — one nerve, the resistance given back, the same day again — through the
-      same code path a lost day takes, the last nerve ending the run as it does there. She
-      comes up at that day's dawn behind the pause screen, with a line that says the day was
-      lost to leaving it; the wording is the agent's to draft and the player's to change.
-      Losing focus and continuing in the same session costs nothing: the penalty is applied on
-      *load*, never on pause. A save written at a day summary comes back to the next day's
-      dawn, paused, with no cost; a finished run (either ending) leaves no save.
-- [ ] **The held restart clears the save** — the disc already on the pause screen and the day
-      summary — and starts over. Nothing new is drawn for clearing.
-- [ ] **A small save symbol shows for a few seconds after each write.** *(2026-09-19: "show a
-      small save symbol for a few seconds after saving" — "That way it's clear when a state
-      was saved".)* `assets/ui/save.svg`, SVG first, in a corner clear of the pause button and
-      the meters, on whatever screen is up, fading out; how many seconds is a constant the
-      agent picks and says. It is not a danger cue, names no key, and is not drawn on a run
-      that does not save.
-- [ ] **The browser keeps it across a refresh and a reopened page.** `user://` on a web build
-      is the browser's IndexedDB, which persists; confirm on the deployed page that a refresh
-      and a closed tab both come back, and that a new release (files under a directory named
-      for the tag) still finds the save of the one before. A tab being closed may give no quit
-      notification at all, which is the other reason the dawn save exists.
-- [ ] **An agent never lands in a saved game.** *(2026-09-19: "make sure that agents don't
-      accidentally work on saved states so they don't get confused".)* Every checkout and
-      worktree shares one `user://`, so the player's save is in reach of any game an agent
-      starts. A run carrying any dev flag (`--screenshot`, `--seed`, `--day`, `--walk` and the
-      rest), a headless run, the test runner and `tools/check.sh`'s boot neither read nor
-      write the save and start what they were told to start. `--no-save` says the same for a
-      `tools/run.sh` with no other flag, listed and rejected like any flag, and the **verify**
-      and **orchestrating** skills say an agent's run always carries a dev flag or
-      `--no-save`. A test that exercises saving writes to a path of its own, never the
-      player's.
-- [ ] **What a run should look at** goes to `REVIEW.md`: whether a nerve lost to an accidental
-      close or a browser crash reads as fair, and whether the symbol is noticed without
-      distracting.
 
 ---
 
@@ -867,6 +800,91 @@ re-pitched:
       the agents onto it would draw the whole crowd at thirty frames a second, not merely decide
       for it at that rate, which is a larger piece of the trade than it was. Docs/evidence/
       audit-2026-09-13/AUDIT.md, finding 3.1, has the full reasoning.
+
+---
+
+## M165 — The escape after the corrected stairs · found 2026-09-19
+
+Found reviewing PR #217 — M158, the staircase follows the corrected tile grammar — and kept out of
+it *(2026-09-19: "add the other items to the todos they're not the focus of this pr")*. Each
+stairwell's landings alternate between column 1 and column 8 of `InteriorMap.STAIRWELL_ROWS`, the
+ten-column symbol grammar that is the map; `src/finale/interior_events.gd` still places and
+describes its events for a shaft whose landings stack on one column.
+[PLAYTEST-84](playtests/PLAYTEST-84.md) walked the sequence on that build, accepted the stairwell
+graphics a second time, and found the rest: *"the basement stairs are bad. the steam walks for
+some reason. the masked man is floating in the stairwell … the spawn in the city from the
+basement can end up inside an obstacle. pathing is not done from the spawn but from the original
+door which is incorrect"*.
+
+- [ ] **The masked man runs the stairs rather than a line through the walls.** *(PLAYTEST-84:
+      "the masked man is floating in the stairwell")*
+      `InteriorEvents._place_the_masked_man()` gives him a two-point path from the
+      `stairwell_<side>:landing_lobby` waypoint to the `stairwell_<side>` waypoint, on the reasoning
+      its docstring gives: *"every landing in a shaft sits on one column, so a line up that column
+      is the shaft"*. Those two waypoints are local `(8, 24)` and `(1, 2)`, so the line crosses `.`
+      background and the solid `c`/`C`/`b` cells and meets each flight at an arbitrary point. Give
+      him a path that follows the grammar — the level `F` columns and the `t/m` and `T/M`
+      diagonals, landing to landing — and add a check that every segment stays over walkable cells;
+      the existing test only checks the tile he starts on. The brief's own answer to him, *"going
+      into a corridor and letting them pass"*, has to survive: a door's approach must leave her
+      somewhere off his line
+- [ ] **The basement's entry is a stair.** *([PLAYTEST-85](playtests/PLAYTEST-85.md): "basement
+      stairs are just not stairs. at the very least use the one tile upward facing stairs we had
+      earlier")* `InteriorMap._build_basement()` lays two diagonal `STAIR_FLIGHT_E` cells painted
+      with `stair_flight_e.svg`, and `_mark_diagonal_clearances()` frees their flanks so a 14px
+      body can cross the pinch. Replace them with a straight run seen from the front: the
+      one-tile stair the kit had before the diagonal treads, `assets/interior/stair_down.svg` —
+      recoverable with `git show 60071de3:assets/interior/stair_down.svg`, a 32×32 tile whose
+      treads are horizontal lines narrowing away from her, the shape of the player's own sketch
+      in [PLAYTEST-55](playtests/PLAYTEST-55.md), *"horizontal lines indicate a small stair
+      leading down"*. It is a level walkable cell with no slope redirection, stacked vertically
+      between the entry door and the corridor, so the clearance pass has no diagonal left to
+      clear. That tile is the floor of what is acceptable, not the ceiling
+- [ ] **The steam is fixed vents on timers, and the corridor is a timing puzzle.**
+      *([PLAYTEST-85](playtests/PLAYTEST-85.md): "how would steam move? it doesn't make sense.
+      have multiple fixed locations with steam that fully block the path and have them turn off
+      an on in different intervals so it becomes a timing puzzle")* `basement_steam` stops being
+      `mobile` and `paces`. Several vents stand at fixed places along `InteriorScene
+      .basement_walk()`, the basement's one branchless route; while a vent is on, its solid body
+      spans the corridor's whole two-tile width, and while it is off it has no body and costs
+      nothing. Each vent has its own period, the periods differing so that the gaps do not line
+      up by themselves. What the fairness contracts owe it: the change from off to on is
+      telegraphed for at least the time it takes to walk out from under it, a vent never turns
+      on with her inside its body, and no pair of adjacent vents can hold her in a pocket whose
+      both ends are shut for longer than she can stand the noise. The count, the periods and the
+      on/off split are `Tuning` numbers under the **balance** skill
+- [ ] **The finale's routes start where she stands.** *([PLAYTEST-84](playtests/PLAYTEST-84.md):
+      "the spawn in the city from the basement can end up inside an obstacle. pathing is not done
+      from the spawn but from the original door which is incorrect" ·
+      [PLAYTEST-85](playtests/PLAYTEST-85.md): "the spawning shouldn't be a check. the pathing
+      should start from the position. then obstacles can never happen")* One fix for both
+      findings, and the rejected option is a check that refuses or moves a bad spawn. Whatever
+      the section plans — the two chains of `FinalePlanner.plan()`, the seals off them, and the
+      placements handed to `EventScheduler.start_finale()` — is planned from her position at the
+      service exit, so the ground she stands on is route by construction and nothing the finale
+      places can be on it. First find what starts elsewhere today: the chains are grown from
+      `service_exit_tile()` but enter the grid at `grid.node_at(start)`, the nearest junction,
+      and the city underneath still carries whatever the day's own planner rooted at the home's
+      doorstep. A test walks seeds and asserts that a 14px body at the spawn overlaps no static
+      body, as a consequence to confirm rather than as the mechanism
+- [ ] **The fire's words match where it stands.** `InteriorScene.turn_landings()` returns the inner
+      level `F` cell below the second- and first-floor doors, two tiles from the door; the grammar
+      has no turn landing and no main-shaft cell of kind `LANDING`. `_place_the_fire()` and
+      `_turn_landings()` in `interior_events.gd` still say *"on a **turn** landing rather than a
+      floor landing"*, *"the half-landing between two floors"* and *"a `LANDING` tile that is not
+      one of the four named floor landings"*, and `docs/ARCHITECTURE.md` still calls
+      `interior_map.gd` *"the switchback layout"*. Rename the query for what it returns and rewrite
+      the three docstrings and the line. The placement itself holds: the fire's blocking reach is
+      its 30px body plus her 14px, the door tile is 64px from its centre, and a door arrival lands
+      on the door tile
+- [ ] **The discarded stair art leaves `assets/interior/`.** `stair_landing_vertical.svg`,
+      `stairwell_shaft_cap_bottom.svg`, `stair_flight_run_{e,w}.svg`,
+      `stair_landing_{floor,turn}.svg`, the four `stair_rail_run_*` sources and the three
+      `stair_*_short_e*` sources are bound nowhere; their one reference is the `removed_textures`
+      list in `tests/test_interior.gd`, and `InteriorScene._structure`, the `StairStructure` node,
+      is built only so that test can count its children at zero. Move what a person reviewed or
+      rejected under the **rejected-graphics** skill, delete the node, and make the test assert
+      what is bound rather than load what is not
 
 ---
 
