@@ -1,0 +1,157 @@
+{
+  "status": "uninstalled one-pass corrected-donor normalization for player review",
+  "raw_sha256": "0ec2cc8eef27aa3c7ee9275e96c5cd770f72f795bb7b943cd88fa06533790be0",
+  "raw_dimensions": [
+    1376,
+    1143
+  ],
+  "directions": [
+    [
+      "N",
+      "back",
+      false,
+      -90
+    ],
+    [
+      "NE",
+      "back_diagonal",
+      false,
+      -45
+    ],
+    [
+      "E",
+      "side",
+      false,
+      0
+    ],
+    [
+      "SE",
+      "front_diagonal",
+      false,
+      45
+    ],
+    [
+      "S",
+      "front",
+      false,
+      90
+    ],
+    [
+      "SW",
+      "front_diagonal",
+      true,
+      135
+    ],
+    [
+      "W",
+      "side",
+      true,
+      180
+    ],
+    [
+      "NW",
+      "back_diagonal",
+      true,
+      225
+    ]
+  ],
+  "loop": [
+    "a",
+    "c",
+    "b",
+    "c"
+  ],
+  "frame_ms": [
+    190,
+    190,
+    190,
+    190
+  ],
+  "protected": "all frames except side/front-diagonal B byte-identical to straight-contact baseline",
+  "registration": {
+    "side": {
+      "raw_cell": [
+        0,
+        0,
+        688,
+        1143
+      ],
+      "visible_bounds_in_cell": [
+        38,
+        26,
+        634,
+        1107
+      ],
+      "fit_at_12x": [
+        298,
+        540
+      ],
+      "x_at_12x": 0,
+      "requested_x_at_12x": 0,
+      "canvas_edge_adjustment_x": 0,
+      "y_at_12x": 12,
+      "anchor": "top-57-percent opacity centroid of protected C frame",
+      "native_alpha_bounds": [
+        0,
+        0,
+        26,
+        46
+      ]
+    },
+    "front_diagonal": {
+      "raw_cell": [
+        688,
+        0,
+        1376,
+        1143
+      ],
+      "visible_bounds_in_cell": [
+        153,
+        32,
+        602,
+        1115
+      ],
+      "fit_at_12x": [
+        224,
+        540
+      ],
+      "x_at_12x": 43,
+      "requested_x_at_12x": 43,
+      "canvas_edge_adjustment_x": 0,
+      "y_at_12x": 12,
+      "anchor": "top-57-percent opacity centroid of protected C frame",
+      "native_alpha_bounds": [
+        1,
+        0,
+        25,
+        46
+      ]
+    }
+  },
+  "input_manifest_sha256": "e1b7466f054856c729a630233ba93fa35b0b11826f6fcb321c010a47a998f0c8",
+  "outputs": {
+    "father-animation-6x.gif": "93d4e8263df83013a6be67cb5af997898a7fd034c37a291f4043849d138f8651",
+    "father-animation-native.gif": "d2de9762e5ed436a3054427b3598bb9e459c308def856415ebe131ca7d75e729",
+    "father-spritesheet-6x.png": "3debf17bb3a55a90a9b34ce1b9aa7b7d3453d816a5c52054881443796b7a9f72",
+    "father-spritesheet-native.png": "52209ccdf4c35e8bc94e8322652fe9bbad7e99ef28386304390958352f476f56",
+    "father_front_diagonal_b-12x.png": "f2a99c0d2b0bfd66ef25a1635da118c97baa5f3c84318408f99e9d5e0fe93857",
+    "father_front_diagonal_b-generated-panel.png": "d01e78c7812b5ee686f68417204f8139b3bb0f3ec59ea6f14dadbc83ea606128",
+    "father_side_b-12x.png": "483572d5f10eef2efc5a91c829f173a297a5ec51fdf5db7ba762dff425ad1058",
+    "father_side_b-generated-panel.png": "ea022379e299c47df52be73c7db4d3bdef16ac5cdf146993fb9ad56b7104bcc2",
+    "rig/father_back_a.png": "ce72244b2ae09c2986767dd5fb6b2326cb662fcee65a6d611349ae1c97433aec",
+    "rig/father_back_b.png": "3bc4297fef285d64578f7051f91eba3ce1962519a63d3cf4e40c5105bb1d9b7b",
+    "rig/father_back_c.png": "132533ac4e979eeccf769b2e347706b542797142d6de338cbe2ad1cc649be9f1",
+    "rig/father_back_diagonal_a.png": "68dc4b1a4a11ee36e2ce5e8abb682e88723d8d59b6b6ed4042a6a82d49a17384",
+    "rig/father_back_diagonal_b.png": "6d737538aa63cb48334a84f2f3ef2547fe8f75d11b1d0d2ca4cb3538f997afe5",
+    "rig/father_back_diagonal_c.png": "e45da614f86a08f4ae7af9a450bcacddc643f41818aa3e4b11f339c346d615d4",
+    "rig/father_front_a.png": "3466cddf142ea505e48d4f78670a99bd7964d3c9b5dfb87093821798e8beeece",
+    "rig/father_front_b.png": "6bd88f5fe27cabfc1f8684922315f1f33a16e3462031a14e1eee0dea4456cccc",
+    "rig/father_front_c.png": "964d42efbabe022492fc63acda0e7b74db045b97ef6aa08d8d72815fc726ebd7",
+    "rig/father_front_diagonal_a.png": "3ddb32d5c7e0fe2488940b27c42d29f3f4d80a6b173e04218d0c009782d4821b",
+    "rig/father_front_diagonal_b.png": "a16f872385baa865fe5392186f99965b812d0b8e3b1f08e780c2a722ae1d7dc5",
+    "rig/father_front_diagonal_c.png": "e6595ac94a46dfa9d11ffd2e1249ff0fc66f570ddfdc2ebfe3fca4feec82009f",
+    "rig/father_side_a.png": "bcc6a84f943aacc2522fa18b5a5a96c6e7e3e96e9e271c8e354938910f2587af",
+    "rig/father_side_b.png": "33d67d5d1a1176e637398d3a827d2fff8992579bd8104721f7ee18d6d6b49dc5",
+    "rig/father_side_c.png": "f7e312a8d594a375a69d82ded150b4c638329c0ab060aa6dff09fcf45d11140b"
+  }
+}

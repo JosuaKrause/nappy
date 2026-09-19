@@ -304,7 +304,7 @@ protected frames. The contact baseline is installed on main; this drawing refine
 separate visual approval. The contact history is recorded under M160 in `DECISIONS.md`.
 
 [PLAYTEST-93](playtests/PLAYTEST-93.md) identifies the donors: "take the ones from the corresponding
-final image". [PLAYTEST-94](playtests/PLAYTEST-94.md) specifies the correction: "it's the wrong
+final image". [PLAYTEST-95](playtests/PLAYTEST-95.md) specifies the correction: "it's the wrong
 part but maybe do the crop in the larger version and then let the image generation normalize
 it?". Crop the correct E/W and SE/SW B leg artwork from those larger final woman images,
 assemble at high resolution and use image generation to normalize the join and proportions
@@ -312,6 +312,16 @@ before native registration. Preserve the father identity, accepted contact owner
 NE/NW and every A/C frame. Publish the clean sheet and native/6× GIFs in PR #234; leave the
 new result uninstalled for visual judgment. The rejected literal-copy crop and the reason for
 generated normalization are recorded under M167, final-woman-leg crop rejected, in `DECISIONS.md`.
+
+[PLAYTEST-96](playtests/PLAYTEST-96.md) identifies the source-selection error: "you took the
+wrong leg picture for the cropping -_- it's the one where the wrong leg is in front".
+Select the actual opposite contact from the final woman artwork before another crop or
+normalization. Trace the foreground thigh through its knee to the trailing shoe; the current
+normalized candidate is rejected, and its B filename is not evidence of the correct pose.
+The final carrying family's side B supplies the visible foreground trailing thigh; its
+front-diagonal A supplies the corresponding near-trailing/far-advancing contact. Use those
+large leg crops, preserving the father's pushing upper body. Crop father identity references
+above the pelvis so his wrong original contact cannot steer normalization back to itself.
 
 - [ ] **Match the legs to the rest of the family.** E/W B needs clear far-leg shading, folded
       trousers and substantial shoes. Preserve the accepted near leg trailing and far leg
@@ -322,7 +332,7 @@ generated normalization are recorded under M167, final-woman-leg crop rejected, 
       A/C/B/C sheet and native/6× GIFs at 190ms per phase from [PLAYTEST-87](playtests/PLAYTEST-87.md).
       Push and embed commit-pinned links before asking: the CLI cannot show local images.
       Include the father's current baby-carrying GIF beside the pushing candidate, as requested
-      in [PLAYTEST-94](playtests/PLAYTEST-94.md), clearly labeling the two animation states.
+      in [PLAYTEST-95](playtests/PLAYTEST-95.md), clearly labeling the two animation states.
       Repeated feedback is welcome, per [PLAYTEST-89](playtests/PLAYTEST-89.md).
       Preserve native canvases, scale, anchors and upper-body landmarks. Do not change carrying
       poses, stroller art or gameplay. Retain source crops, transforms, commands and hashes.

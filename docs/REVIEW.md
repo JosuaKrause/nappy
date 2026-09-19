@@ -567,15 +567,21 @@ item below for as long as looking takes.
   map's last row, and the one body allowed out is a car on the spine by the tunnel or the bridge.
   Whether that reads as a city edge or as bodies bunching against glass is a played question.
 
-## Father high-resolution crop and normalization
+## Father opposite-contact donor and normalization
 
 **M167, the father's legs read as legs:** [PR #234](https://github.com/JosuaKrause/nappy/pull/234)
-shows the large father/mother-leg input assembly, its generated normalization and the complete
-eight-direction sheet with native/6× A/C/B/C loops. Does the new crop use the intended portion
-of the final woman's legs, and does the normalized connection read naturally beneath the
-father's jacket? The generator changes trouser/shoe detail and the side pose appears to put
-the advancing leg in front, so accepted contact ownership is not established. Compare B against
-A/C for head, hand and stature stability too. This is early visual feedback on an uninstalled
-candidate, not a request to accept those known limitations for runtime use.
-The same PR includes a separately labeled native/6× GIF of the current father carrying the
-baby, made from the installed sprites without applying the pushing candidate to that family.
+shows the selected final woman leg crops with their anatomical chains, the large normalized
+father figures, and the clean native/6× eight-direction sheet and A/C/B/C loops. The profile
+foreground thigh continues down-left to the trailing shoe; the advancing thigh emerges behind
+it. The diagonal uses the near screen-left trailing and far screen-right advancing contact.
+Does the selected donor and resulting gait now show the intended opposite contact? Compare
+the changed B frames against A/C for head, hand, jacket and stature consistency. These are
+uninstalled review artifacts; generation can change details and proportions within the figures.
+The candidate's B trousers are brighter than A/C, and the diagonal stride reads more front-facing.
+
+## Father carrying animation
+
+[PR #234](https://github.com/JosuaKrause/nappy/pull/234) includes a separately labeled native/6×
+GIF of the current father carrying the baby. It uses the installed sprites, independent of
+M167, the father's legs read as legs, and its pushing corrections. Does carrying hold the
+father and baby's identity and proportions through all directions and A/C/B/C phases?

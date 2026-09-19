@@ -18,9 +18,12 @@ registered PNGs and original generation-input hashes below remain unchanged.
 The [final-woman-leg crop evidence](b-contact/final-woman-legs-2026-09-19/README.md)
 preserves the rejected literal-copy preview. The
 [high-resolution normalization recipe](b-contact/normalized-crop-2026-09-19/README.md)
-uses the corresponding final P2 leg crops beneath the father's original large upper-body
-artwork, with generated normalization before native registration. These are uninstalled
-review artifacts; they do not alter this registered family.
+preserves the rejected P2 donor selection and its generated normalization. Its separately
+labeled carrying GIFs show the current installed carrying family. These review artifacts
+do not alter this registered family.
+The [correct-contact donor recipe](b-contact/correct-contact-2026-09-19/README.md) uses the
+final carrying family's actual opposite leg overlap and above-pelvis father identity inputs
+for a new uninstalled normalization preview.
 
 `source/` preserves Godot's 1×, 3× and 8× rasterization of every SVG.
 `inputs/*_source-{1,3,8}x.png` assembles them in columns front, back, side, front diagonal,

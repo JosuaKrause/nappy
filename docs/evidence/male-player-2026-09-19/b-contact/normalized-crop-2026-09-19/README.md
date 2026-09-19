@@ -1,6 +1,10 @@
 # Father's high-resolution crop-normalization preview
 
-Review the [clean eight-direction sheet](generated/father-spritesheet-6x.png), its
+The pushing candidate is rejected because it copies the wrong anatomical contact; see
+[PLAYTEST-96](../../../../playtests/PLAYTEST-96.md). These files preserve the failed donor
+selection and normalization. The current carrying GIFs below remain independent review evidence.
+
+Inspect the [clean eight-direction sheet](generated/father-spritesheet-6x.png), its
 [native version](generated/father-spritesheet-native.png), and the
 [native](generated/father-animation-native.gif) or
 [6×](generated/father-animation-6x.gif) A/C/B/C loop. This is an uninstalled early
