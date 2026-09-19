@@ -13,6 +13,10 @@ and that the rule is being rebuilt by physical fit. No run attached.
 > are not obvious anymore -- I can still confirm whether you actually fixed those issues via the
 > path debug view."
 
+And, a few minutes later:
+
+> "also the full street segment from intersection to intersection -- no signle street tiles"
+
 ## What is asked for, as statements
 
 1. **The route's yellow curbstone tint is on both sidewalks of every street the route uses,
@@ -20,8 +24,12 @@ and that the rule is being rebuilt by physical fit. No run attached.
    tint on both sides? clearly the bottom path cannot be on any route") · overturned by the
    player to both sides on 2026-09-19, because a one-sided mark makes a wall on the marked side
    with an empty sidewalk opposite obvious.* The mark says *this street*, not *this sidewalk*.
-2. **The route debug view stays exact.** The purple route lines (layer `5`) keep following the
+2. **A street is tinted whole or not at all.** The tint runs the full segment from intersection to
+   intersection on both kerb lines; no street carries a tinted tile or a tinted stretch on its
+   own. Where the route tree touches part of a segment — leaving it through an alley or a park,
+   or ending at a calm area partway along — the whole segment is tinted.
+3. **The route debug view stays exact.** The purple route lines (layer `5`) keep following the
    tree's own sidewalk, which is how the player checks that nothing she cannot pass stands on the
    walked side.
-3. **The placement rule does not move with the mark.** Bodies that leave no lane are still kept
+4. **The placement rule does not move with the mark.** Bodies that leave no lane are still kept
    off the sidewalk the route actually walks; the tint is the only thing that widens.

@@ -305,7 +305,9 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 - [ ] **`City._tint_the_route_kerbs()` tints both kerb lines of every street the day's route tree
       uses**, where today it tints a kerb tile only when the tree carries that sidewalk's own
-      cell (`_tree.branches_on(tile)`). The route lines of debug layer `5` and every placement
+      cell (`_tree.branches_on(tile)`). **A segment is tinted whole, from intersection to
+      intersection, or not at all** *("no signle street tiles")*: a tree that uses part of a
+      segment tints all of it. The route lines of debug layer `5` and every placement
       rule keep reading the tree's own sidewalk. The routes suite's tint check, `docs/CITY.md`
       and the two tint entries in `REVIEW.md` say one-sided and move with it.
 
