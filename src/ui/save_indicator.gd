@@ -24,10 +24,13 @@ const HOLD_SECONDS := 1.5
 const FADE_SECONDS := 1.5
 const _TOTAL := HOLD_SECONDS + FADE_SECONDS
 
-## The glyph's own colour — `Palette.CHALK_DONE`, the same soft confirming green a touched chalk
-## mark turns, reused rather than invented: this is a confirmation, not a danger cue, and the
-## **cues** skill's vocabulary already has a colour for "this went well".
-const _TINT := Palette.CHALK_DONE
+## The fade's own peak alpha, once fully shown — the same figure `Palette.CHALK_DONE.a` carried
+## back when this modulate also tinted the icon green. `assets/ui/save.svg` now carries its own
+## blue case, silver-gray shutter and paper label (PLAYTEST-95: "make it bluish and the metal
+## parts should be silver/gray"), so this modulate only ever multiplies alpha: a colour here would
+## multiply into the icon's own hues and turn the blue case back toward green-gray, which is the
+## bug a shared tint constant would reintroduce.
+const _PEAK_ALPHA := 0.9
 
 ## Above the title screen's own 95 (`TitleScreen.layer`), so a write mid-boot still shows through
 ## it rather than being hidden the moment the title opens over a fresh day 1.
@@ -73,7 +76,7 @@ func _ready() -> void:
 	_icon_rect.offset_top = -_MARGIN - _SIZE
 	_icon_rect.offset_right = -_MARGIN
 	_icon_rect.offset_bottom = -_MARGIN
-	_icon_rect.modulate = Color(_TINT.r, _TINT.g, _TINT.b, 0.0)
+	_icon_rect.modulate = Color(1.0, 1.0, 1.0, 0.0)
 	root.add_child(_icon_rect)
 
 ## Called by `main._save_now()` once a write actually happened — never on a run `GameSave.write()`
@@ -99,4 +102,4 @@ func _apply_alpha() -> void:
 		alpha = 1.0
 	elif _remaining > 0.0:
 		alpha = _remaining / FADE_SECONDS
-	_icon_rect.modulate = Color(_TINT.r, _TINT.g, _TINT.b, _TINT.a * alpha)
+	_icon_rect.modulate = Color(1.0, 1.0, 1.0, _PEAK_ALPHA * alpha)

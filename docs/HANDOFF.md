@@ -92,7 +92,8 @@ duration, so the editor's rewrite never survives an export either.
 
 **The game is published, and a push is a check while a tag is a release.**
 `https://nappy.josuakrause.com/` serves it. `.github/workflows/ci.yml` runs lint, check and the full
-suite as eight shards on every push to `main` and every pull request; `.github/workflows/deploy.yml`
+suite as eight shards on every push to `main` and every pull request, a new push to a pull
+request cancelling that pull request's older runs while a run on `main` is never cancelled; `.github/workflows/deploy.yml`
 fires on a `v*` tag and nothing else — verify, boot check, export, upload, publish, in that order.
 **The deploy does not run the suite again.** The `version tags` ruleset requires the `test` check
 on the commit a tag points at, so a tag on a red or untested commit cannot be pushed, and the
@@ -299,8 +300,8 @@ checks and worktrees can move independently of this file.
   nothing in this follow-up replaces the provisionally accepted runtime baseline without review.
 
 - **[PLAYTEST-94](playtests/PLAYTEST-94.md) is filed and unbuilt.** It opened M168, the escape
-  after playtest 94, and M169, the save symbol reads as a floppy disk, and added the walked-side
-  wall measurement under M129, a path through the city never has to cost. All three are in
+  after playtest 94, and added the walked-side
+  wall measurement under M129, a path through the city never has to cost. Both are in
   `TODO.md` and each is one agent's brief.
 
 Number ownership remains distinct: PLAYTEST-84 and PLAYTEST-85 are the escape/save records

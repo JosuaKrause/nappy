@@ -103,6 +103,25 @@ release build writes none.
     drawn, the same 86px — more than two and a half tiles — is measured from him, so she is caught
     at a distance that made sense for a barricade and not for a person.
 
+## The roadblock's guard, answered the same day
+
+Asked how a masked man on foot in the city should work — the barrier staying with guards stepping
+out from behind it, the swap kept but shown, or a row of its own for the escape — the player said:
+
+> "the guard needs to be at the barrier from the beginning, standing. only then does it make sense
+> for it to start pursuing. 86px is huge why is that the fix for the problem that the radius is too
+> big?"
+
+13. **A guard stands at the barrier from the beginning.** He is drawn standing at a roadblock
+    from the moment it is placed, whether or not it ever hunts, so that when he starts to pursue
+    it is a man who was already there setting off. Nothing appears and nothing turns into anything.
+14. **86px is not an answer to anything and goes.** It was never a fix for a radius being too
+    big: the lethal radius was 24px and was *raised* to 86 because `EventDef.validate()` refuses a
+    lethal radius that lies inside the row's own solid body — the 60px barrier plus her 14px body
+    is 74px, so a 24px kill could never fire. That made the barrier's size the man's reach. With
+    the guard a figure of his own, the catch is measured from him at a man's reach, and the
+    barrier is a body that catches nobody.
+
 ## What was not spoken to
 
 Whether a nerve lost to an accidental close reads as fair, whether the save symbol distracts, the
