@@ -28,9 +28,9 @@ limit was reached you wouldn't see anything.")*
 ## Codex: match the subagent to the task's difficulty
 
 **Delegation is recommended in Codex too.** Hand specified implementation and routine
-investigation to a less costly model, keeping design, ambiguous decisions and final review in
-the orchestrating session. Cost savings are a reason to delegate even when the parent has no
-parallel task to do, but model choice follows the difficulty of the delegated task:
+investigation to a model suited to that delegated task, keeping design, ambiguous decisions and
+final review in the orchestrating session. The orchestrator may use any model; choose the
+subagent independently by the difficulty of the delegated task:
 
 - Use `gpt-5.6-luna` for simple, routine or mechanical bounded work and waits.
 - Use `gpt-5.6-terra` for ordinary implementation whose requirements and boundaries are clear.
@@ -56,7 +56,8 @@ regardless of model cost.
 If the host does not apply repository subagent defaults, select the model and effort explicitly
 when spawning. With the collaboration tool, use a fresh context (`fork_turns="none"`) and a
 self-contained brief so the model override takes effect. A full-history fork inherits the
-parent model. Do not confuse that inheritance with automatic routing to a cheaper model.
+parent model, so use a fresh fork when the delegated task needs a different tier. Do not let
+the orchestrator's model determine the subagent choice: route by the delegated task's needs.
 
 ## Delegating is the default, and implementing by hand is the decision
 
