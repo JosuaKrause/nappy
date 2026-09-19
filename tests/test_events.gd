@@ -72,6 +72,7 @@ func run(t) -> void:
 	_test_no_two_rows_draw_the_same_picture(t)
 	_test_every_look_carries_its_own_silhouette(t)
 	_test_the_day_is_placed_by_role(t)
+	_test_friction_on_a_sidewalk_can_be_walked_past(t)
 	_test_a_routes_junctions_stay_clear(t)
 	_test_no_row_takes_a_route_streets_whole_width(t)
 	_test_a_pacing_rows_opening_stays_open(t)
@@ -2949,9 +2950,10 @@ func _test_the_day_is_placed_by_role(t) -> void:
 			if plan.role == GameEnums.BlockerRole.WALL:
 				walls += 1
 				t.check(plan.def.hard_fail
-						or plan.def.walk_through_cost() >= Tuning.WALL_WORTH_OF_COST,
-						"day %d: '%s' is a wall because it is very costly or worse"
-						% [day, plan.def.id])
+						or plan.def.walk_through_cost() >= Tuning.WALL_WORTH_OF_COST
+						or EventScheduler._takes_a_whole_sidewalk(plan.def),
+						"day %d: '%s' is a wall because it is lethal, very costly, or leaves no"
+						% [day, plan.def.id] + " line past it on a sidewalk")
 				t.check(away > 0, "day %d: the wall '%s' at %s is off the corridor"
 						% [day, plan.def.id, TelemetryLog.tile(tile)])
 				placed[plan.def.hard_fail] += 1
@@ -3016,6 +3018,39 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	t.check(walled_share > 0.2, "%d of %d gaps carry a wall" % [gaps_walled.size(), gaps.size()])
 	t.check(walled_share < 0.85,
 			"and the rest are left open (%.0f%% walled)" % (walled_share * 100.0))
+
+## **Anything the day still aims at the route can be walked past on the route's own sidewalk.**
+## *(PLAYTEST-77: "on the side of the street where the path was chosen only obstacles that can be
+## bypassed should be possible.")* Friction is the role weighted *onto* the corridor
+## (`Tuning.EVENT_CORRIDOR_WEIGHT`, four copies of an on-corridor tile in the roll), so what stays
+## friction is what the guidance walks her into — and a sidewalk is two lanes of tile, so a row
+## reaching across both of them from either has taken the last line along it.
+##
+## **This asserts the consequence rather than the clause.** `EventScheduler._role_for` answers
+## `WALL` for a row that leaves no line; what has to be true afterwards is that every row still
+## aimed at the route leaves one, which is the sentence the player wrote and the thing that would
+## go red if the clause were weakened or if a new catalogue row were given a wider field than its
+## role can carry.
+##
+## Asked on two days because a role can move with the day: `charging_dog` is director-sited on
+## `Tuning.RUN_TAUGHT_DAY` and map-placed after it.
+func _test_friction_on_a_sidewalk_can_be_walked_past(t) -> void:
+	var checked := 0
+	for day in [1, 8]:
+		for def in EventCatalogue.all():
+			if not def.placement.has(GameEnums.TileType.SIDEWALK):
+				continue
+			if EventScheduler._role_for(def, day) != GameEnums.BlockerRole.FRICTION:
+				continue
+			if not EventScheduler._a_line_has_to_avoid(def):
+				continue
+			checked += 1
+			t.check(EventScheduler._line_reach_of(def) < EventScheduler._THE_FAR_LANE,
+					"day %d: '%s' is friction on a sidewalk and denies %.1fpx of it, so the far"
+					% [day, def.id, EventScheduler._line_reach_of(def)]
+					+ " lane (%.0fpx out) is still a line" % EventScheduler._THE_FAR_LANE)
+	t.check(checked >= 4,
+			"and the catalogue has rows on a sidewalk to ask it of (%d)" % checked)
 
 ## **A route's junctions stay clear.** *(PLAYTEST-69: "a path through the city must never hit
 ## excitement — so all obstacles should be routable around by eg crossing to the other side of the

@@ -338,6 +338,15 @@ static func _for_day(def: EventDef, day: int) -> EventDef:
 ## caret by — rather than over a new field, because *how expensive a row is* is a question the
 ## catalogue already answers, and a second answer to it is how two tables of one fact drift apart.
 ##
+## **And a wall is also what cannot be walked past.** *(PLAYTEST-77: "a wall is also when you
+## physically cannot walk through".)* Cost and passability are different questions and the cheap
+## answer to the second one is not the first: a market stall costs 8.5 points to walk through, well
+## under `WALL_WORTH_OF_COST`, and denies 58px of a 64px sidewalk, so there is no line past it on
+## the sidewalk it stands on at any price. `_takes_a_whole_sidewalk` is that reading, taken from the
+## row's own numbers exactly as the cost one is. What it buys is the placement: friction is aimed at
+## the route, and a row aimed at the route she is meant to walk has to be one she can get past
+## there.
+##
 ## **`EventDef.scenery` is checked before the cost is, and it answers `NONE` rather than a fifth
 ## role.** *"Flocks are basically free already — don't count it as block, just count is
 ## scenery."* `pigeon_flock`'s 42-over-168px field crosses `WALL_WORTH_OF_COST` on the plain
@@ -352,7 +361,8 @@ static func _role_for(def: EventDef, day: int = 0) -> GameEnums.BlockerRole:
 		return GameEnums.BlockerRole.NONE
 	if def.kind == GameEnums.EventKind.ONE_SHOT:
 		return GameEnums.BlockerRole.SET_PIECE
-	if def.hard_fail or def.walk_through_cost() >= Tuning.WALL_WORTH_OF_COST:
+	if def.hard_fail or def.walk_through_cost() >= Tuning.WALL_WORTH_OF_COST \
+			or _takes_a_whole_sidewalk(def):
 		return GameEnums.BlockerRole.WALL
 	return GameEnums.BlockerRole.FRICTION
 
@@ -1293,14 +1303,56 @@ static func _gap_between(a: Planned, b: Planned) -> float:
 ## untouched — `_keeps_its_field_clear` is about keeping other events out of a lethal field, not
 ## about whether a line exists past one.
 static func _counts_against_the_line(plan: Planned) -> bool:
-	if not plan.is_placed():
-		return false
-	var def := plan.def
+	return plan.is_placed() and _a_line_has_to_avoid(plan.def)
+
+## The same five exemptions asked of the **def** alone, for the one caller that has no placement to
+## ask about: `_role_for` decides a role before any tile is chosen. Everything a placement adds —
+## *is it actually standing anywhere* — is the caller's own question above.
+static func _a_line_has_to_avoid(def: EventDef) -> bool:
 	if def.city_wide or def.scenery or def.pursues or def.id.begins_with(_DOOR_ID_PREFIX):
 		return false
 	if def.mobile and not def.paces:
 		return false
 	return _line_reach_of(def) > 0.0
+
+## The line a stroller needs across a sidewalk, measured between the two lanes of one:
+## `SIDEWALK_WIDTH` (2) tiles of sidewalk means the far lane's centre is one tile (32px) from the
+## near one, and a free tile is a line because a tile is wider than the 28px stroller
+## (`2 * PLAYER_BODY_RADIUS`). It is the same tile-grained reading every other rule in this section
+## measures a line in.
+const _THE_FAR_LANE := float((Tuning.SIDEWALK_WIDTH - 1) * Tuning.TILE_SIZE)
+
+## **Whether a row's own numbers leave no way past it along a sidewalk it may stand on** — the
+## passability reading of a wall, beside the cost one. *(PLAYTEST-77: "how is market stall a
+## friction? you can't walk through it"; "a wall is also when you physically cannot walk through".)*
+##
+## A sidewalk is two lanes of tile, and a row stands in one of them, so the only line past it is the
+## other lane — one tile across, which `_denies` reads as free while the row's reach is under it.
+## What the reach is, is the whole point: **the body plus the ground it charges for**
+## (`_line_reach_of`), not the body alone. A café whose tables are 24px across but which bills
+## anybody within 56px of them is a café nobody walks past on that sidewalk for free, and *free* is
+## what the guarantee is about.
+##
+## **It is asked of the def and nothing else**, because a role is decided before a tile is chosen —
+## so the question is *a* sidewalk rather than *this* sidewalk, and a row that may stand on one is
+## judged on the narrowest ground it may be rolled onto. A row the placement rolls onto a square or
+## a park instead is still the same row with the same field, and being a wall costs it nothing
+## there: the role only ever decides which ground it is offered.
+##
+## **A pacing row is judged the same way and that is not the beat reading being forgotten.** A beat
+## runs *along* the sidewalk (`EventDef.paces` with `PathMode.ALONG_STREET`), so it moves the row
+## nowhere across it: the width of the line past a yeller is the same at every phase of his loop,
+## and waiting for him does not widen a sidewalk.
+##
+## The five rows outside the line reading entirely — a pursuer, a door, a city-wide row, scenery, a
+## mobile row that does not pace — are outside this too, by asking `_a_line_has_to_avoid` rather
+## than repeating the list.
+static func _takes_a_whole_sidewalk(def: EventDef) -> bool:
+	if not def.placement.has(GameEnums.TileType.SIDEWALK):
+		return false
+	if not _a_line_has_to_avoid(def):
+		return false
+	return _line_reach_of(def) >= _THE_FAR_LANE
 
 ## `checkpoint_hut` and `checkpoint_gate`, the two rows that **are** a region's door. Matched on the
 ## id the way `tests/probes/m129_zero_cost_line.gd` matches them, since what makes a door a door is

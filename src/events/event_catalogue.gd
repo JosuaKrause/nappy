@@ -368,6 +368,11 @@ static func _alley_mouse() -> EventDef:
 ## walking through him is the meter alone, which is why he is 14 over 210px: he is one of the two
 ## rows on day 1 that a player is most likely to walk *into* rather than around, and a quiet one
 ## reads as a man who does nothing.
+##
+## **And a field that wide makes him a wall by passability**, on 19.8 points of walk-through cost:
+## he charges over 170px, a sidewalk is 64, and his beat runs along the sidewalk rather than across
+## it, so no phase of the loop opens a lane. `EventScheduler._takes_a_whole_sidewalk` is where that
+## is decided; what it changes is where he is placed and not what he does.
 static func _homeless_yeller() -> EventDef:
 	var def := EventDef.new()
 	def.id = "homeless_yeller"
@@ -440,8 +445,11 @@ static func _dog_walker() -> EventDef:
 ## The pavement, taken. A café spilling out of its frontage: chairs, tables, conversation, and
 ## no way past on this side.
 ##
-## **The first event available on day one that cannot be walked through**, and the thing that forces
-## a crossing. `construction` does the same job from day 2 and is the loud version of it; this one is
+## **The first event available on day one that cannot be walked through**, and a **wall** for exactly
+## that reason rather than for what it costs: the body is 24px and the field bills anybody within
+## 56px of it, so no lane of the 64px sidewalk it stands on is left free and
+## `EventScheduler._role_for` answers `WALL` on 6.1 points of walk-through cost.
+## `construction` does the same job from day 2 and is the loud version of it; this one is
 ## pleasant, which is worse: nothing about it looks like a hazard and it still costs the street.
 ## Stationary, so it can never pin the player the way a moving obstruction could.
 ##
@@ -564,9 +572,10 @@ static func _busker() -> EventDef:
 	def.max_per_day = 10
 	return def
 
-## The only Act I event that is physically in the way. Blocking the sidewalk forces a
-## reroute rather than merely inviting one — and since a street is sidewalk|road|sidewalk,
-## the road is always still there, so it costs time and exposure, never the day.
+## The widest body in Act I. It fills the sidewalk band it stands on, which is what makes it a
+## **wall** although it is silent and cheap to walk past: a band with no lane left has no line
+## along it, whatever the meter says. Since a street is sidewalk|road|sidewalk the road is always
+## still there, so it costs time and exposure, never the day.
 ##
 ## **Silent.** *"static blockages in general shouldn't increase excitement"* — a hoarding is not a
 ## source, it is a thing to walk around, and `obstructs_radius` already prices the detour. It is one
@@ -751,11 +760,15 @@ static func _loose_dog() -> EventDef:
 	def.cost = 2
 	return def
 
-## A market trestle taking the pavement, and the second thing on day 1 that forces a crossing.
+## A market trestle taking the pavement, and the second thing on day 1 she has to walk round.
 ##
 ## **One obstacle repeated eighteen times is a rule, not a decision**, which is why day 1 needs a
 ## second one. This is louder and wider than `cafe_tables` and on the other side of pleasant: a café
 ## you squeeze past is a nuisance, a market is a crowd.
+##
+## **The row the passability reading of a wall was written from**, and its numbers are the whole
+## argument: 28px of body denying 58px of a 64px sidewalk leaves no lane a stroller fits along, on
+## 8.5 points of walk-through cost. See `EventScheduler._takes_a_whole_sidewalk`.
 ##
 ## **Keeps a field, derived from the body the same way `cafe_tables` is** — a market is a real
 ## crowd, not scenery, but the reach has to match the source. Its body's own rounding is the same
@@ -1031,6 +1044,10 @@ static func _cyclist() -> EventDef:
 ## At the kerb, for the same reason as the delivery van: a van parked in a traffic lane is a van the
 ## crowd drives through, and an ice cream van is a thing children cross a road to reach rather than
 ## a thing standing in one.
+##
+## **A wall by passability, unlike the van**: its field charges over 189px against the van's 22, so
+## there is no lane of a sidewalk left free beside it and `EventScheduler._role_for` keeps it off
+## the route's own side of the street.
 static func _ice_cream_van() -> EventDef:
 	var def := EventDef.new()
 	def.id = "ice_cream_van"
