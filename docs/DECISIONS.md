@@ -1,5 +1,492 @@
 # Decisions
 
+## M169 — The save symbol reads as a floppy disk · built 2026-09-19
+
+> "the save icon is basically a white square" ([PLAYTEST-94](playtests/PLAYTEST-94.md), on a phone)
+
+> "make it bluish and the metal parts should be silver/gray" · "no tint for the save symbol"
+> ([PLAYTEST-95](playtests/PLAYTEST-95.md))
+
+`assets/ui/save.svg` was three white shapes told apart by opacity alone — the body at 0.85, the
+shutter at 1.0, the label at 0.35 — and `SaveIndicator` tinted and faded the whole texture with one
+modulate, `Palette.CHALK_DONE`, so the differences shrank with the fade and were gone at the 48px it
+is shown at.
+
+**Built:** the symbol carries its own colors and is never tinted. The chamfered case is a muted
+blue (`#5f7a99`), the shutter a silver gray (`#a8adb3`) with a darker slot (`#4a4e54`), the label a
+pale paper (`#ede8de`), on the geometry the three shapes always had. `SaveIndicator` fades it with
+a white modulate and nothing else; the peak alpha stays 0.9, the value the tint carried, so the
+hold and the fade are timed as they were. `pause.svg`, `restart.svg` and `continue.svg` stay white
+and tinted: this is the one symbol of the set with colors of its own, by the player's instruction.
+
+**Tried first and replaced the same day:** one white path with the shutter and the label cut out
+as holes (`fill-rule="evenodd"`), still tinted green. It read as a floppy disk on a dark ground
+and weakly on a light one, since a hole shows whatever is behind it; the player saw it and asked
+for color. **Rejected before that:** the body as an outline with the shutter and label filled
+inside it, which leaves all three the same white.
+
+**Chosen where the player said nothing, and then accepted on the render** *("the latest version
+(blue with gray) looks good")*: the label's paper color rather than a hole, the slot in the
+shutter, and the exact blue and gray.
+
+Checked on a headless render through Godot's own SVG loader, each state under the modulate it
+really had, at 48px and 16px on a dark and a light ground:
+`evidence/m169-save-symbol-2026-09-19/save-symbol-color-comparison-3x.png`. Whether it is noticed
+without distracting on a phone is `REVIEW.md`'s.
+
+## M165 — The escape after the corrected stairs · built 2026-09-19
+
+*([PLAYTEST-84](playtests/PLAYTEST-84.md): "the basement stairs are bad. the steam walks for some
+reason. the masked man is floating in the stairwell … the spawn in the city from the basement can
+end up inside an obstacle. pathing is not done from the spawn but from the original door which is
+incorrect" · [PLAYTEST-85](playtests/PLAYTEST-85.md): "the spawning shouldn't be a check. the
+pathing should start from the position. then obstacles can never happen. basement stairs are just
+not stairs. at the very least use the one tile upward facing stairs we had earlier. how would steam
+move? it doesn't make sense. have multiple fixed locations with steam that fully block the path and
+have them turn off an on in different intervals so it becomes a timing puzzle.")* The first two
+items were found reviewing M158, the staircase follows the corrected tile grammar, and kept out of
+it on the player's word. Built by an agent on `feature/m165-escape`.
+
+**What was built.**
+
+- **The masked man runs the stairs.** His path was two points, lobby landing to top landing, on
+  the reasoning that every landing sits on one column; the corrected grammar alternates them
+  between columns 1 and 8, so the line crossed solid cells. `InteriorScene.stairwell_walk()` is
+  the shaft's one branchless walk and his path is built from it. The test asks tile steps rather
+  than sampled segments, since a diagonal step passes through the corner where four cells meet.
+  **Measured: the nearest door is 32px off his line against the 28px `inner_radius` that takes
+  the baby**, which is the whole of the brief's "going into a corridor and letting them pass".
+- **The basement's entry is `stair_down.svg`**, restored from `60071de3` as one level walkable
+  cell between the entry door and the corridor, so no diagonal is left for the clearance pass.
+- **The steam is three fixed vents.** `basement_steam` is a solid 16px body on the seam of the
+  two-tile corridor, which shuts it outright: her centre is held 30px out and the walls leave
+  18px. The reasoning recorded under M102 that a standing vent left a four-pixel lane was wrong
+  about where the body stands. `Tuning.FINALE_STEAM_PERIODS` is 6.5, 8 and 9.5 seconds and
+  `FINALE_STEAM_BLOWS_FOR` is 2. Measured: vents 128px apart at the closest, and the worst
+  pocket shut at both ends for 1.83s, which costs 32 of the meter's 100. One new `EventDef`
+  field, `solid_once_it_starts`: the body goes down when the notice ends and is withheld while
+  she stands inside it. Skipping the beat and moving her clear were both rejected, the second
+  because it is a repair.
+- **The finale plans from where she stands.** What started elsewhere was
+  `SealPlanner.plan_finale()`, which spared the *front door's* street, and
+  `EventScheduler.build_finale()`, which was offered her own tile. Both now take her position;
+  placements refuse ground within a body's reach of it plus the half tile a stationary body is
+  moved when it is built. The ten-seed test reproduced the defect first: an `abduction` van 32px
+  from the spawn on seeds 31337, 808 and 6. The chains themselves already started at her cell.
+- **The fire's words** and `InteriorScene.inner_floor_approaches()` say where it stands; the
+  thirteen unbound deck, rail and landing sources are in the rejected-graphics archive and the
+  `StairStructure` node is gone.
+- **Found by the captures:** `--start-escape basement` showed the lobby and `lobby` the basement,
+  because each part's waypoint was the two sides of one door and a transition fires on any frame
+  she stands on one. Both waypoints moved off their thresholds.
+
+**Chosen where the design was silent, open to overturn.** The stair picture is mirrored
+vertically from the file as committed, so the treads narrow away from her as she walks in. It is
+one cell rather than a stacked run, because the picture is a whole flight and a second copy reads
+as a second stair; a longer flight is new art. A vent that finishes its notice with her inside it
+is on and charging her but not solid until she steps clear, since "never turns on with her inside
+its body" and "fully block the path" cannot both hold there. The periods and the two-second blow
+are first numbers. **The masked man's margin is 4px**: raising `masked_pursuer.inner_radius` past
+32 removes the answer to him, and the ways out are a wider level approach in the grammar or a
+smaller radius.
+
+---
+
+## M166 — The save is written when a day starts, and a saved game opens on the day brief · built 2026-09-19
+
+*(2026-09-19, [PLAYTEST-85](playtests/PLAYTEST-85.md): "write the save when starting a day; not
+when the focus is lost etc. also if there is a saved game the title screen should go to the day
+brief screen instead of starting outright" — and, asked whether a day's end also writes: "save as
+"played" when the day starts. save as "nothing played yet" for the day brief and end of day
+message. nothing else will change the state and doesn't need to be saved".)* *Asked for "saving
+should be implicit (on focus loss or game quit)" in [PLAYTEST-80](playtests/PLAYTEST-80.md) ·
+overturned by the player on 2026-09-19 to the two writes below.* Built by an agent on
+`feature/m166-save-at-day-start`; it replaces the four write moments and the resumed pause screen
+of M162, a game can be resumed, recorded directly below.
+
+**What was built.**
+
+- **Two writes.** `main._engage_the_day()` writes `day_under_way: true` when the title is
+  dismissed on a fresh run or the day brief is continued from, and `main._on_summary_continued()`
+  writes `true` after starting the next day from an end-of-day message. `main._on_day_finished()`
+  writes `false` as the end-of-day message comes up. Focus loss, application pause, the window's
+  close request and the pause screen's quit write nothing; focus loss still pauses.
+- **The day brief's write is made at boot, before the title.** `main._write_dawn_for_a_resumed_run()`
+  writes `false` on a resumed boot only, right after `GameState.finish_day()` has charged whatever
+  the load owes, so the charged nerve is on disk before either gate is shown. A kill before the
+  day is engaged finds `false` and costs nothing more; a kill after finds `true` and costs the
+  day. No instant hands back a free retry or charges one abandoned day twice.
+- **A fresh run writes nothing until its title is dismissed.** The first build wrote at every
+  dawn, so merely opening the game made a day-1 save, the next launch showed a day brief for a day
+  nobody had touched, and the held restart re-created the save it had just cleared. Review caught
+  it; the boot write is gated on a resumed run.
+- **The title comes up on every boot.** With a save, its start opens `DaySummary.show_day_brief()`
+  — "Day N of 14", the nerve count, the resistance's pending brief, and the lost-day line when the
+  load charged a nerve — or the ending when the load spent the last one. `PauseScreen.open()`'s
+  note and its label, `main._day_engaged`, `_day_under_way_for_save()`, `_on_pause_resumed()` and
+  `_show_resume_outcome()` are gone.
+
+**Chosen where the design was silent, open to overturn.** The day brief is its own small
+presentation rather than `show_day()` with an invented result. The resumed boot's write happens
+before the title rather than as the brief appears, for the kill ordering above, so the save symbol
+shows behind the title on a resumed boot. `main._quit()` losing its write is verified by reading,
+since calling it ends the test process.
+
+**What only a person can check** is in `REVIEW.md`: no rig reaches the title-to-day-brief flow,
+because a dev-flagged run never reads or writes the save.
+
+---
+
+## M162 — A game can be resumed · built 2026-09-19
+
+*(2026-09-19, [PLAYTEST-80](playtests/PLAYTEST-80.md): "we need to be able to resume a previous
+game. saving should be implicit (on focus loss or game quit) and it should bring you back to
+that exact state but paused." [PLAYTEST-82](playtests/PLAYTEST-82.md): "If that is too hard
+then we do start at dawn. But that has a potential to be exploited" — "Unless we give a penalty
+of ending the current day losing a nerve" — "No penalty when exiting at a next day/win/lose
+screen".)* Built by an agent on `feature/m162-resume`.
+
+**The design, and what was overturned on the way.** *Asked for "that exact state", the crowd
+included · overturned by the player on 2026-09-19 to a restart at dawn that costs a nerve.* The
+requirement under both is that **quitting is never an escape**. Three shapes were put to the
+player: everything, including some two hundred walkers and the cars with their lanes, turns,
+queues and signal phases; everything but the crowd, re-seeded around her, which was the
+recommendation and was refused because a car she stepped in front of would be gone on resume;
+and the run and the day only. The player chose the last with a penalty, which closes the same
+exploit without the save format depending on the crowd's internals.
+
+**What was built.**
+
+- **The save is the run.** `GameSave` (a static namespace, like `DevFlags`) writes
+  `user://save.json`: every field `GameState` owns, `CityState`'s block-arc history (run
+  history, not recomputable from the seed), whether a day was under way, a format version and
+  the build string. `GameState._SAVE_FIELDS` is checked against the script's own property list
+  by `tests/test_save.gd`, so a field added later and not saved fails a test. **Only
+  `FORMAT_VERSION` is compared on load**: a release never invalidates a save by being newer, a
+  change of shape does, and an unreadable save is dropped for a fresh title screen.
+- **It is written at dawn, at each day's end, on focus loss, on quit, and the instant a day
+  is first stepped into.** The player named focus loss and quit; the rest exist because a
+  crash, a force-kill and a discarded mobile tab send no notification at all.
+- **Opening a save that says a day was under way loses the day** through
+  `GameState.finish_day()`, the path every lost day takes: one nerve, the resistance given
+  back, the same day again, the last nerve ending the run. She comes up at dawn behind the
+  pause screen with a note line. A save written at a day summary comes back to the next dawn
+  at no cost; either ending and the held restart clear the save.
+- **The save symbol** is `assets/ui/save.svg`, a floppy disk tinted `Palette.CHALK_DONE`, bottom
+  right of the design box, on its own always-processing layer.
+- **The browser**: after each write on a web build `FS.syncfs` is called so the IndexedDB
+  write starts at once rather than on the next main-loop turn.
+- **An agent never lands in a saved game**: `GameSave.uses_save()` is the one gate — false for
+  a headless run, for any debug run carrying a dev flag, and for `--no-save` — and every read
+  and write passes through it. Tests point the save at a scratch path.
+
+**What review caught.** The first build flipped "this day is being played" when the title or
+the resume's pause screen was dismissed, and wrote nothing at that moment, so the save on disk
+said *not under way* until a notification happened to arrive. A killed process or a discarded
+tab then resumed free — all of day 1, and every second escape. `main._engage_the_day()` is now
+the one place the flag turns true and it writes the save on that transition; closing an
+ordinary pause writes nothing. None of the milestone's first tests exercised the gap between a
+gate opening and the next notification; four now do.
+
+**Choices made where the design was silent, open to overturn.**
+
+- **A day behind an undismissed title or resume pause is not under way**, so closing the game
+  again before touching the retry costs no second nerve, and opening the game and closing it
+  at the title costs nothing.
+- **The penalty is applied on load, never on a pause that is continued**, and the save is
+  rewritten with the nerve already spent before the resumed day is playable, so no kill
+  between the two charges twice or not at all.
+- The note's wording: *"Left before the day ended. That cost a nerve — it starts over from
+  dawn."* The symbol holds a second and a half and fades for the same.
+- The load-time loss is recorded as `DayResult.LOST_HARD_FAIL`; nothing displays it, since no
+  day summary is shown on that path.
+- `?nosave=1` exists for consistency with the other flags though a web build shares its
+  storage with no checkout.
+
+**Not verified by anything but a person**, and filed in `REVIEW.md`: the deployed page keeping
+the save across a closed tab and a new release, the note and the symbol on a real screen
+(unreachable by any dev-flagged run, by design), and whether the penalty reads as fair.
+
+## M161 — The game pauses when it loses focus, and a rig can say not to · built 2026-09-19
+
+*(2026-09-19, [PLAYTEST-80](playtests/PLAYTEST-80.md): "can we make the game pause on focus
+loss? and also an override to *not* stop the game or pause for agents trying to take a
+screenshot".)* Built by an agent on `feature/m161-focus-pause`.
+
+**What was built.** `main.gd`'s `_notification()` answers `NOTIFICATION_APPLICATION_FOCUS_OUT`
+(another application, window or browser tab takes focus) and `NOTIFICATION_APPLICATION_PAUSED`
+(a phone sends the app away) by calling `_pause_on_focus_lost()`, which opens the pause screen
+through the same `_pause.open()` the `pause` action uses — one pause, not a second kind. It
+does nothing on the title, on the day summary or the ending (one `DaySummary` node), while the
+pause screen is already open, or under `--start-escape`, where no pause screen is built.
+Getting focus back is not answered at all, so the player continues when they are back.
+
+**The override.** `DevFlags.no_focus_pause()` is true for `--no-focus-pause`, for `--screenshot`
+— a rig's window opens without focus and would otherwise capture the pause screen, so
+`tools/shot.sh` and every existing capture command work unchanged — and for `?nofocuspause=1`
+on a debug web build. It is gated behind `DevFlags.enabled()` like `--invincible`, so a release
+build's address bar cannot turn the pause off.
+
+**Choices made where the design was silent, open to overturn.**
+
+- **Unlike `Esc`, focus loss does not open over the day summary.** `Esc` there is the player
+  asking for a second screen; focus loss is not a choice, and the summary is already waiting
+  on the player. Playtest 80 decided this; the code comment carries the reasoning.
+- **`NOTIFICATION_WM_WINDOW_FOCUS_OUT` is not read.** It is the per-`Window` notification a
+  game with several windows of its own needs, and this one has a single window. **This rests
+  on the engine's documentation, not on a captured run**: the agent's sandbox never gave its
+  window focus, scripted or otherwise, so a real desktop focus change was not observed. The
+  tests drive `main.notification(...)` directly. The played check is in `REVIEW.md`.
+- **The flag's commit precedes the behaviour's**, the reverse of the entry's order, because
+  `main.gd`'s member initializer calls `DevFlags.no_focus_pause()` and the other order leaves a
+  commit that does not parse.
+
+**Verified with** `tools/check.sh`, `tools/test.sh main pause invincible`, `tools/lint.sh`,
+`tools/test_cli_help.sh`, and one `tools/shot.sh` still showing the day rather than the pause
+screen from an unfocused window.
+
+## M129 — A wall is also what cannot be walked past, and it stands across the street from the route · built 2026-09-19
+
+*(2026-09-15, [PLAYTEST-77](playtests/PLAYTEST-77.md): "on the side of the street where the path
+was chosen only obstacles that can be bypassed should be possible" — "the market stall should
+appear on the other side of the street" — "a wall is also when you physically cannot walk
+through". Offered a placement-only rule instead, the player chose the role reading: "that seems
+to be more thorough".)* Built by an agent on `feature/m129-wall-passability`; the probe at three
+states is `evidence/m129-wall-passability-2026-09-15/`, with a README saying which commit each
+was taken on.
+
+**What was wrong.** `EventScheduler._role_for` answered `WALL` only for a lethal row or one whose
+walk-through cost reaches `Tuning.WALL_WORTH_OF_COST` (35 of the meter). A market stall — a 28 px
+body denying 58 px of a 64 px sidewalk — was therefore *friction*, weighted onto the corridor four
+to one by `Tuning.EVENT_CORRIDOR_WEIGHT`, and the width rule only asked that *either* sidewalk of
+the street stayed walkable. So a stall could close the very sidewalk M150's kerb tint marks as
+the route.
+
+**The three changes.**
+
+1. **`_role_for` gains a passability clause.** A standing row is also a wall when its body plus
+   the ground it charges for (`_line_reach_of`) leave no line past it along a sidewalk it may
+   stand on — the far lane of a two-lane sidewalk, one tile out, the tile grain every other rule
+   here is measured in. The rows it catches, with what each denies of the 64 px and its
+   walk-through cost: `cafe_tables` 56 px, +6.1; `market_stall` 58 px, +8.5; `construction`
+   32 px of body alone, −26.1; `ice_cream_van` 189 px, +18.4. `delivery_van` (22 px) stays
+   friction, since a lane of its sidewalk is still free.
+2. **`_copies_of` reads the corridor per sidewalk.** `Corridor.carries_a_route(tile)` answers
+   whether the tree runs along *this* sidewalk, at the grain of M150's tint. A wall gets zero
+   copies there, so the far side of a route's own street is legal ground for one.
+3. **The width rule reads the sidewalk the route is walked along**, cumulatively with
+   everything already down. A street's two sidewalks are not four-connected to each other, so
+   the question was already *one band is open*, and the band it accepted could be the one no
+   route walks.
+
+**The two forks the player answered on the pull request (2026-09-19).**
+
+- **A wall across the street is common, not rare.** Asked whether the far sidewalk of a route's
+  own street should carry the baseline one copy, as first built, or the rim's four, the player
+  chose often. The costly half of the wall band takes `EVENT_WALL_RIM_WEIGHT` (4) at one street
+  out *or nearer*, so the rim has two members: a turning she might wrongly take, and the far
+  side of the street she is already on. The lethal half keeps `WALL_DEEP_WEIGHT` past the rim,
+  so nothing that ends the day is drawn to the other side of her street in particular. Seed
+  4242 over days 1/5/8/11/14, walls on a route street's far sidewalk: 7, then 31 with the
+  shouting man still a wall, then 21 once the second fork gave him back to the corridor.
+- **A pacing row is a wall only where its beat has no way out.** *"Yeller is something you can
+  time. It stays on the route"*, and: *"if the yeller paces across a crosswalk then there is a
+  way to avoid them. if they stay on the segment for the whole time with no side route then
+  there is no way to avoid them. distinguish those cases when deciding whether the yeller is a
+  wall."* So the clause splits. `_takes_a_whole_sidewalk`, the role's question, answers no for
+  a pacing row: `homeless_yeller` is friction and corridor-weighted.
+  `_a_pacing_beat_walls_a_sidewalk` is asked per candidate, where the beat exists, and a beat is
+  not a wall when its run passes a **junction box** — the only ground a crosswalk is painted
+  on — or a **side route**, ground off the street opening off the sidewalk's own side. A beat
+  that passes neither records `WALL` and is refused any tile a route runs along. Its pool was
+  built at friction's weights, because a role that depends on the beat cannot be known before
+  the tile is rolled; it takes the wall's refusal and friction's weighting, and `EVENTS.md` says
+  so. The width rule skips pacing rows entirely: counting his lens as a width would have
+  refused him the route's sidewalk for the one reason the player ruled out.
+
+**Rejected.**
+
+- *A placement-only rule*, leaving the role alone: offered, and the player chose the role
+  reading as the more thorough.
+- *The yeller as a wall by arithmetic.* A beat runs along a sidewalk and moves the row nowhere
+  across it, 170 px of charged ground over 64 px, and the discs at the beat's two ends still
+  overlap 112 px across, so no phase opens a lane. True, and beside the point the player made:
+  the way past a man walking a beat was never a lane.
+- *A flood fill for "does this side route lead anywhere".* It is the exact question, per
+  candidate inside the placement loop, hundreds of times a day. The side route is read two
+  tiles deep instead: one tile of walkable ground against a frontage is a doorway notch, and
+  everything that leads somewhere is a lot deep. It errs toward refusing, the conservative
+  side of a rule that only ever refuses ground.
+
+**Measured.** `tests/probes/m129_zero_cost_line.gd`, six seeds by one day per act, routes with
+a zero-cost line under the primary reading:
+
+| | before | the three changes | with the forks |
+| --- | ---: | ---: | ---: |
+| act I | 83.7% | 100.0% | 95.3% |
+| act II | 67.0% | 95.5% | 93.2% |
+| act III | 54.1% | 93.2% | 86.5% |
+| act IV | 25.0% | 75.0% | 70.8% |
+| all | 183 of 296 (61.8%) | 275 of 296 (92.9%) | 262 of 296 (88.5%) |
+
+Density does not move: 431 placed rows a day at every state. The 4.4 points between the last
+two columns are the shouting man back on the route, the price the player accepted with "it
+stays on the route": the probe prices a beat at the ground it never leaves free, which for a
+170 px field over a 64 px sidewalk is both lanes at the middle of the beat. He never breaks a
+route by himself — the shape named for a beat is no routes and one cut — but he stands in the
+blocked stretches of 25 of the 34 broken routes, behind `leaf_blower`'s 27 and ahead of
+`roadblock`'s 23. The side route changed no placement the primary reading can see: of 52 pacing
+placements in the suite's sample, 7 pass a side route and all 7 pass a junction as well.
+
+What still breaks a line is almost all one shape, the junction itself taken (32 routes, 40
+cuts), by rows no sidewalk rule reaches: `roadblock` on a carriageway and a wall's wide field
+reaching over a crossing from one street out. That is the item left under M129 in `TODO.md`,
+which placements the three rules never see.
+
+**The suite**, seed 4242 over days 1/5/8/11/14: friction on the corridor 42% to 37% against an
+untouched floor of 35%; paced route streets 19 to 23 against an untouched floor of 3; walls on
+a route street's far sidewalk 0 to 21; every one of 15 pacing placements on a walked sidewalk
+has a way out in its beat. **One floor moved and is open to overturn**: the narrow-friction
+share went 50% to 44% and its floor 0.45 to 0.40. Its docstring named the junction rule as the
+one rule that takes corridor ground from a row; there are three now, all biting on the corridor
+and nowhere else, so what the floor defends is that the four-to-one weight shows *through* all
+three. With the route-sidewalk rule switched off the same sample reads 47%.
+
+The look a rig cannot take — whether the walked side still reads as a street, whether the far
+side is visible early enough to be the answer, whether the shouting man reads as something to
+time — is an entry in `REVIEW.md`.
+
+## M156 — The crowd only turns at what physically stops it · built 2026-09-19
+
+*(2026-09-19, [PLAYTEST-78](playtests/PLAYTEST-78.md): "cars shouldn't avoid it. I noticed cars
+turning around even though the obstacle is on the sidewalk. only things like a fallen tree (which
+blocks the whole street) should prevent cars from entering … pedestrians should only avoid the area
+if they cannot reach it physically. right now they give up if there is an event at all when they
+should only give up if they touch an impassable wall"; and, on the 2026-09-12 complaint it
+explains, "the pacing back and forth I complained about was because walkers never actually tried
+walking to the edge. they saw that a road section was closed of and never entered it. this
+shouldn't happen. they should still go into the section until they cannot continue. this should
+also happen from inside the path since right now we have offshoots that are clear because nobody
+attempts to go in".)* Agent commits on `feature/m156-crowd-turns`, one per queue item; the burst
+is `evidence/m156-crowd-turns-2026-09-19/`, seed 4242 day 1 at a fallen tree's closure.
+
+**The measurement came first, and it named the cause.** `tests/probes/m156_car_turns.gd` re-asks
+`CrowdAgent._cannot_go_on`'s clauses at the tile each car's lookahead stopped on and charges the
+answer to one of the day's placements; three seeds by three days, twenty seconds each.
+
+| car-frames turned by | before | after |
+|---|---:|---:|
+| a solid body | 24369 | 670 |
+| of which a body standing on a sidewalk | 24369 | 0 |
+| a held segment | 17220 | 15675 |
+
+Every car a body turned was turned by a body on a *sidewalk*, and none by one on its own lane.
+Seed 4242, day 1: a car in lane tile (101, 94) stopped by a `delivery_van` on (102, 94), the kerb
+lane of the sidewalk; `skip`, `moving_van` and `construction` the same way. The 670 left are a
+region wall's `roadblock` standing on the carriageway.
+
+**A body stands on the tiles whose middle it covers.** `GroundShape.tiles_under()` took every tile
+a body touched, so a van pinned to the kerb — 22px around a lane centre 16px from the kerb —
+overhung the road by six pixels and was handed a whole 32px lane. The middle is the rule because
+every lane is travelled down its own centre line, so a tile whose centre is clear still has a line
+down it; the change only ever removes tiles from the record, which is the safe direction. A
+fallen tree still takes all six lanes and the crash exactly its two carriageway lanes. Two guards
+came with it: the body's own centre tile is always in, or a small disc near a tile corner stands
+on nothing, and the rasteriser is exact for a diagonal axis. Rejected: filtering in
+`EventManager.obstructed_footprint()` with the rasteriser left alone — two answers to where a
+body stands — and "more than half the tile", the same number with no sentence behind it.
+
+**A hold is a car's warning and a body is a walker's, and the asymmetry is the manoeuvre.** A
+car's answer to a wall is an arc that needs a junction box, so it decides while the last junction
+is still ahead. A walker turns in a stride anywhere, so deciding early buys nothing and costs the
+city a street's length of sidewalk. `CrowdAgent._segment_is_shut()` answers for a car, and for a
+walker only at a region door it turns back from; hard-seal and region-wall bodies are recorded in
+`CityMap.obstructed_tiles` like any other; `_acts_on_a_barrier_within()` gives a car the whole
+lookahead and a walker the next tile. A walker that turns leaves, and `_turn_round()` commits the
+new heading for a stride, which is what keeps two walkers at one barrier from stacking or
+flickering. Rejected: keeping the hold for walkers and turning them later — a hold is a fact
+about a segment and can never say that a crash leaves its sidewalks open.
+
+**A walker picking an arm asks the city, not the day.** `_cannot_go_on` split into
+`_never_a_street_here()` — the map edge, the lattice, a precinct's paving to a car — and today's
+barriers; a walker's arm probe asks only the first, so a street sealed further along weighs like
+an open one from either end, offshoots of the route included, while a calm zone's park arm is
+still refused. A car keeps the whole predicate. Rejected: a weight instead of a gate, a number
+nobody can set from anything observable.
+
+**The walker pocket is gone and the car's stays.** `CrowdPockets` emptied a junction sealed on
+every side for both kinds, which answered the 2026-09-12 pacing; the player has since named the
+cause as the lookahead, and a walker there now walks each stub to its barrier and turns. Emptying
+the ground cost 48 of 144 junctions' worth of sidewalk on seed 4242 day 1. A car cannot turn
+round against a barrier, so its pocket stays.
+
+**Open to overturn, the agent's choices where the entry was silent.** A walker acts on a barrier
+when it is the next tile, the last moment the cached lookahead leaves room for. A soft seal still
+marks both lanes of its sidewalk where its body covers one, so it is the one place a walker is
+turned by slightly more than the body. `docs/ARCHITECTURE.md`'s line on `crowd_pockets.gd` was
+corrected outside the agent's fence because it would otherwise have shipped false.
+
+Whether closed-off streets and offshoots read as peopled, whether a turn at a barrier reads as a
+decision, and whether cars flow past a sidewalk obstacle are in `REVIEW.md`.
+## M155 — The crowd's reach comes in, and walkers step aside more politely · built 2026-09-19
+
+*(2026-09-19, [PLAYTEST-78](playtests/PLAYTEST-78.md): "it is easier to go to a completely closed
+off area (eg walking via the roadway) to calm the baby down than it is to just walk back and
+forth on the regular sidewalk on a path … the noise from the crowd itself is too high. we need
+to nerf the crowd influence a little bit." Offered a shorter reach, a lower intensity, a wider
+step-aside or fewer walkers: "I like the shorter reach idea. main road can stay as expensive as
+before. we can also let the walkers step aside more politely".)* Three agent commits on
+`feature/m155-crowd-reach`; the probe at three states is
+`evidence/m155-crowd-reach-2026-09-19/`, with a README saying which tree each was taken on.
+
+**The probe.** `tests/probes/m117_decay.gd`, three seeds, net points per second while walking
+(negative is given back):
+
+| Leg | before | louder cars, rejected | built |
+|---|---:|---:|---:|
+| Quiet sidewalk, day 1 | −3.95 | −4.20 | **−4.73** |
+| Quiet sidewalk, day 9 | −5.77 | −5.73 | −5.88 |
+| Main road, day 1 | +5.71 | +5.70 | **+5.69** |
+| Main road, day 9 | −0.13 | −0.12 | **+1.36** |
+| Precinct, day 1 | −6.53 | −8.13 | −8.13 |
+| Alley, day 1 | −0.10 | −0.45 | −0.45 |
+| Calm | −10.60 | −10.60 | −10.60 |
+
+**The reach.** `PEDESTRIAN_OUTER_RADIUS` 55 → **30**, with `PEDESTRIAN_INTENSITY` (4.2) and
+`PEDESTRIAN_INNER_RADIUS` (22) untouched, so a close pass keeps its price and the middle of a
+sidewalk between walkers is nearly free. 40 and 35 were tried and gave back less (−4.62, −4.68);
+28 moved nothing further. The aim was four fifths of the empty street's 6.0; it reaches 79%.
+The precinct and the alley move with the radius and were not held: nobody asked for them to be.
+
+**The main road's price is held by the main road's own ground.** The shorter reach takes the
+walkers on the spine's sidewalks out of what the spine costs, and the player's instruction was
+that it stays as expensive. The agent's first lever was `CAR_INTENSITY` 5.4 → 7.7, which held
+day 1 exactly and was rejected in review: a car is on every street, so it took back half of
+what the radius had bought the quiet sidewalk and made every ordinary crossing dearer.
+`EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` 0.35 → **0.02** replaced it, the one number that is
+only true of main-road tiles. Day 1 is the day held, because `tests/test_crowd.gd`'s arterial
+floor, ceiling and crossing cost are stated against it; the worst-of-eight crossing reads 27.8
+of the meter against 26.2 before, under the half-meter line, since the shorter reach lightens
+what a crossing walks through by about what the ground stops giving back.
+**The orchestrator's choice, shown to the player with the table above and accepted** *(2026-09-19: "numbers look good")*: one multiplier
+serves the whole run, so day 9's main road goes from giving a sliver back to costing 1.36 a
+second — the spine in the emptied acts is dearer than it was, which *"as expensive as before"*
+does not ask for. A multiplier per act, or more walkers on the spine's own sidewalks, would hold
+both days; neither was built.
+
+**The step-aside.** `CROWD_YIELD_LATERAL` 22 → **30**. At 22 it equalled the walker's
+full-intensity core, so it only fired for a pass already inside it, and the ordinary pass — her
+on the midline of a two-lane sidewalk, a walker holding a lane 24 px away — never made anyone
+move. 30 catches that pass and stays short of the 48 px between a sidewalk's two lanes, so the
+far lane is left alone and a sidewalk does not part in front of her. `BUMP_STEP_ASIDE` (32 px,
+how far a walker steps) already clears it. On a throwaway rig driving `Crowd._make_way` on a
+generated city, three seeds: closest approach on a head-on midline pass 24 → 32 px, walker
+noise over the approach 0.73 → 0.00 points, contacts none either way.
+
+Whether pacing a quiet sidewalk now reads as recovery, and whether walkers stepping aside read
+as polite rather than as fleeing, are in `REVIEW.md`.
+
+---
 ## M159 — Cheaper crowd contribution sweeps · measured and optimized 2026-09-19
 
 The player clarified in [PLAYTEST-86](playtests/PLAYTEST-86.md): "well the point was to actually
@@ -18827,3 +19314,180 @@ from before a correction is evidence of the defect, not proof of the correction.
 Report separate outcomes for source approval, registration tests, smooth motion, live sorting
 and player acceptance. Keep any unverified or visibly failing gate open. Do not expand a family
 or ask the player to rediscover known defects just because the endpoint assertions pass.
+
+---
+
+## M160, the father's opposite-contact review uses the woman pipeline — 2026-09-19
+
+[PLAYTEST-87](playtests/PLAYTEST-87.md) rejects the four-row before/after comparison as the review
+deliverable: *"I know that the before looks bad. there is nothing to compare against."* It asks for
+exactly what reviewed the woman's pushing family, with the same tricks and no new strategy: one
+clean sprite sheet showing A/C/B/C in all eight runtime directions, plus native and 6× GIFs of the
+four-phase animation loop.
+
+The correction itself is narrower than another whole-family redraw. South/front has the correct
+leg action at the wrong size, so its accepted A upper body stays and its correctly sized A lower
+body is mirrored into the B contact. North/back uses the same construction. East/side and
+southeast/front-diagonal still have the wrong hip-to-shoe ownership and require corrected legs;
+after the generation route repeated that ownership error, the player authorized trying a
+deterministic splice of correct father legs beneath the preserved father upper body — *"you can try
+splicing -- I will judge."* West and southwest remain the eastern corrections' runtime mirrors.
+The accepted back-diagonal source continues to supply northeast and northwest. The A/C canvases,
+bottom-center anchors, scale, upper-body identity and alpha bounds are fixed constraints.
+
+The rejected comparison and its uninstalled raster attempt remain provenance, not a template for
+another review. The trial records its exact inputs, crop boundaries, transforms, compositing order,
+commands and output hashes beside the evidence. The shared correction procedure changes only after
+the player approves a final image, and then keeps the successful method rather than its failed
+precursors. No candidate becomes runtime art until the complete all-direction sheet and both loops
+are approved.
+
+## M160, the splice's trailing shoe did not establish an opposite contact — 2026-09-19
+
+[PLAYTEST-88](playtests/PLAYTEST-88.md) accepts N/S and the NE/NW mirrored pair, with the
+pairing clarified after the initial report named NE/SW. E/W and SE/SW remain rejected:
+*"the others have STILL the same leg in front only now the leg is also weirdly bent"*.
+The existing eight-direction sheet, GIFs, donor and their frozen reproduction inputs stay
+retained; no runtime artwork was installed.
+
+The donor's near thigh still travels forward from the hip to a forward knee, then its shin
+folds backward to reach the trailing shoe. The previous claim of correct ownership checked
+the trailing shoe and the overlap without checking that complete chain. Reusing those legs
+for the diagonal and raising one foot by affine projection inherited the same defect and
+did not provide the diagonal's own pelvis. The review README now states the rejection;
+the immutable chronology keeps the original assessment as history.
+
+The remaining correction targets are separate side and front-diagonal B contacts. Their
+corrected SVGs already specify a near knee and shoe behind the hip, with the near trailing
+thigh drawn over the far advancing leg. Preserve the accepted N/S and NE/NW frames, every
+A/C frame, the native canvases and fixed upper-body landmarks. The player-authorized
+father-only splice remains available, but approval of the complete sheet and loops still
+precedes installation and promotion of a successful method into the shared procedure.
+
+The next trial generated lower-body-only donors to remove the full-figure proportion conflict.
+The side's first result failed overlap; its one targeted retry produced the backward near
+hip–knee–shoe chain. Both separately generated front-diagonal attempts failed: the first kept
+the forward-knee fold, and its retry restored the foreground advancing thigh. Generation stopped
+for that approach. The existing authorized side-donor splice and diagonal projection were then
+applied to the corrected side donor. At native and enlarged sizes, the resulting E/W and SE/SW
+contacts showed the continuous trailing foreground leg without the old kink; the diagonal is
+explicitly a projected splice, not a separately drawn three-quarter lower body.
+
+The [straight-contact recipe](evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/README.md)
+retains the new donor, exact prompts, failed-attempt records, input hashes, crop, fit, placement,
+projection and assembly command. N/S, NE/NW and all A/C files remain byte-identical to the
+accepted portions of the prior sheet, and the upper pixels stay exact. The complete clean sheet
+and native/6× A/C/B/C GIFs are a new review candidate. Hip joins, the projected diagonal and the
+overall animation still await the player's judgment; no runtime image or shared procedure changed.
+
+[PLAYTEST-89](playtests/PLAYTEST-89.md) changes the collaboration cadence: show attempts early
+and welcome repeated visual feedback instead of spending a long time on internal revisions.
+The player's CLI cannot display images, so a review is delivered by pushing the artifacts and
+embedding them in the PR description or naming their exact location there. The complete candidate
+sheet and loops were pushed and embedded in PR #221 before the visual question was reissued.
+
+### M160, provisional contact acceptance — 2026-09-19
+
+[PLAYTEST-90](playtests/PLAYTEST-90.md) accepted the straight-contact sheet's leg positions:
+"the leg positions are correct now. we can use it for now (and merge) but in parallel do another
+fix attempt to just make the legs look like legs". The four accepted B PNGs were installed
+byte-for-byte from the retained straight-contact assembly, alongside the corrected runtime SVGs
+and their identical graphics-creation copies. Other directions, all A/C, carrying frames,
+stroller art, native canvases and import sidecars were preserved. Original registered evidence
+was not overwritten; manifest overrides name the four accepted replacements explicitly.
+
+The contact correction is provisionally usable, not approval of final leg appearance. The
+[PR review](https://github.com/JosuaKrause/nappy/pull/221#issuecomment-5744799678), retained in
+[PLAYTEST-91](playtests/PLAYTEST-91.md), assigns E/W's weak far-leg shading, thin dark shoes and
+inconsistent trouser drawing to the next PR. SE/SW's full profile stride under a three-quarter
+torso needs narrowing toward A and the accepted NE/NW contacts. Those remaining requirements
+are M167, the father's legs read as legs, independently open in TODO. The contact review item
+was removed from REVIEW rather than asking the player to approve it twice.
+
+The proposed shared correction procedure was not promoted into a mandatory rule. Its links
+were removed from the two shared skills, and the retained case notes distinguish the narrow
+player-authorized provisional splice from an accepted general method. Exact recipes and
+failed-attempt records remain available without teaching a still-imperfect result as a gate.
+
+The player subsequently held the PR merge for review, then explicitly authorized resolving
+main's conflicts and pushing, and finally restored PR merge permission once the comments were
+addressed. That permission is specific to PR #221; it does not authorize deleting branches or
+switching the player's checkout.
+
+---
+
+## M158, the staircase follows the corrected tile grammar — 2026-09-19
+
+[PLAYTEST-81](playtests/PLAYTEST-81.md) replaces the first live stair assembly with the player's
+literal 10-column cell grammar. `InteriorMap.STAIRWELL_ROWS` is the authority for drawing,
+walkability, collision and stair direction: `F` is level floor; `D` keeps the corresponding
+corridor transition; `t`/`m` and `T`/`M` are the two-row walkable slopes; `b`, `c`, `C` and `.`
+are solid. The right-side `b` in `.....TMCb.` is present. The same alternation extends only far
+enough to join the lobby.
+
+Seven 32×32 SVG roles draw the grammar directly. The upper and lower east/west pairs make the
+walkable flights, east/west continuation triangles close their diagonal sides, and the neutral
+block's 16px-deep gray top rectangle matches the adjacent continuation. The old broad decks,
+landing overlays and every rail remain absent. This preserves the reviewed lateral-flight source
+shapes while letting the map, rather than a decorative overlay, own the stair.
+
+The focused interior suite drives the real 14px player body across complete east- and
+west-descending flights in both normalized directions, checks the blocked side/background cells
+and checks every door pairing. The complete capture folder at
+`docs/evidence/archive/session-captures/2026-09-19/rig-110853-seed3349946719-v0.11.1-38-g2663c361-dirty/`
+retains the normal-scale left shaft and its run provenance.
+
+[PLAYTEST-83](playtests/PLAYTEST-83.md) gives the played verdict: *"the stairs look good."* That
+accepts the corrected live assembly without adding a railing or restoring any discarded deck.
+
+### M160, main reconciliation and identity audit — 2026-09-19
+
+The synchronization used original father tip `7a97598958532abf56f278d50b3fc8d6f90d545b`,
+prepared installation tip `e29c0eb90eeb44eeca0eabd326d61f74c91018cc`, incoming main
+`0afb8c679a5d4a1b67b032e543a6de0681d98bfd`, and common ancestor
+`b1e7263f78168771a2e58f4e8ab2972ad2f6eddd`. The pending merge's actual first parent is the
+prepared tip. Each conflict was shown as Theirs (main), Ours (father), and Base before resolution.
+
+DECISIONS retained both the independent staircase record and the father's attempt/acceptance
+history. HANDOFF retained main's removal of completed staircase and save work, replacing stale
+father/performance state with the current independently owned threads. TODO retained main's
+completed-save removal and M165 escape brief, plus the distinct M167 leg-drawing follow-up;
+the redundant separators were removed. No identifier mapping was needed: main's PLAYTEST-81,
+83, 84 and 85 remain separate from father records 79 and 87–91 and PR #216's PLAYTEST-86.
+M158, M159, M160, M162, M163, M164, M165, M166 and M167 retain their own subjects.
+
+The clean-file semantic review checked more than the conflict paths. Incoming saves preserve
+`player_is_male`, and `main.gd` restores it into the stroller, so resumed father runs use the
+same corrected pushing assets. Incoming stair changes use the carrying family, untouched here.
+The resolver, atlas, stroller and sprite callers are unchanged by incoming main; matching native
+canvases and existing paths bind the four PNGs without runtime scale or offset changes. Import
+sidecars remain unchanged. Main's save/stair docs and review questions, no-save guard and
+model-independent delegation guidance survive intact; performance measurements stay on PR #216.
+
+### M167, first drawing refinement rejected; woman's legs proposed — 2026-09-19
+
+The first one-call lower-body refinement in PR #234 added knee and trouser definition without
+changing the accepted contact endpoints. It preserved all protected frames and reproduced
+exactly, but [PLAYTEST-92](playtests/PLAYTEST-92.md) still rejected its drawing: "still bad legs --
+maybe use the legs of the woman in those cases?" — "they have the same pants". The first preview
+remains retained, not used as a style reference. The next attempt may borrow the woman's accepted
+pushing legs for E/W and SE/SW B while retaining the father's upper body and opposite-contact
+ownership. This expands the earlier father-only donor permission for this trial; it does not
+authorize runtime installation or change the other protected frames.
+
+### M160, reconcile the externally merged escape work — 2026-09-19
+
+Main advanced while the contact PR was being verified. The second synchronization used
+original father tip `c3116321fcb7ac20518d3c71c8d7b0e4385cc30c`, prepared feedback tip
+`3d8bf4ff1af4cd2b8521073ebaedc1090e68547a`, incoming main
+`aca1cf6658689179f29afabc7212a760902c4656`, and ancestor
+`0afb8c679a5d4a1b67b032e543a6de0681d98bfd`. It merged without textual conflicts.
+
+The whole-result review retained main's M165 escape completion and review questions, including
+fixed timer-driven steam, staircase paths, spawn-relative placement and archived unused stair art.
+The father change touches pushing pictures, not carrying pictures, placement, collision, event
+definitions or save selection; all incoming runtime/test files match main and all father assets
+match the prepared tip. Main's early-preview guidance also survives. Numbered records remain
+distinct, with the mother's-leg proposal added as PLAYTEST-92 rather than modifying an earlier
+primary source. M165 leaves TODO; M167 remains open. Boot, focused visuals/player-presentation/
+interior/finale suites, forced-SVG visuals, document lint and diff checks passed on this tree.

@@ -92,35 +92,43 @@ func reach() -> float:
 	return half_length + radius
 
 ## Every tile of the lattice this shape's own body stands on when it is placed at `at` in world
-## space, lying along `axis` — the same ground the debug view's bounding-box layer draws, turned
-## into the tiles `CityMap.obstructed_tiles` records so the crowd can ask about a body it cannot
-## see. A tile is in when the tile's own square comes within the shape's rounding of its spine, so
-## a body overhanging a tile by a pixel takes that tile: the crowd is kept out of the whole square
-## it stands on rather than half of it.
+## space, lying along `axis` — turned into the tiles `CityMap.obstructed_tiles` records so the
+## crowd can ask about a body it cannot see.
 ##
-## **Exact for a cardinal `axis`, which is the only kind anything in the game has** —
-## `EventInstance.solid_axis()` answers `Vector2.RIGHT` or `Vector2.DOWN` and nothing else, because
-## a body lies along a street and the streets are a lattice. Handed a diagonal it is *conservative*
-## rather than wrong: the spine's own bounding box stands in for it, which can only add tiles, and
-## adding tiles can only make the crowd give a body more room.
+## **A tile is in when the body covers the middle of it, and the middle is the whole of the rule.**
+## Every lane in this city is travelled down its own centre line: a car sits on its lane centre,
+## which is a tile centre, and a walker on one `CrowdLanes.SIDEWALK_LANE_SPREAD` (8px) either side
+## of one. So a tile whose centre the body leaves clear still has a line down it to walk or drive,
+## and a tile whose centre it covers has none — which is exactly the question the crowd asks of
+## this record. Counting every tile a body merely *touches* reads a van parked at the kerb, whose
+## 22px body reaches six pixels past a lane centre 16px from the kerb, as a whole 32px lane of
+## carriageway taken, and turns every car on the street for something standing on the pavement.
+##
+## **The tile the body's own centre stands on is always in**, whatever its rounding reaches: a
+## body is on the ground underneath it. It is what stops a small body dropped near a tile corner —
+## a 14px disc is 22px from the nearest tile centre there — from standing on no ground at all.
+##
+## **Exact for any `axis`**, cardinal or not: the tile centre is rotated into the shape's own frame
+## and measured against the spine, the same `distance_to_spine()` the field is priced over, rather
+## than against the spine's axis-aligned bounding box.
 func tiles_under(at: Vector2, axis: Vector2 = Vector2.RIGHT) -> Array[Vector2i]:
 	var along := axis.normalized()
 	var core := _spine_half_extents(along)
 	var tile := float(Tuning.TILE_SIZE)
-	var half_tile := tile * 0.5
 	var covered: Array[Vector2i] = []
+	covered.append(Vector2i(floori(at.x / tile), floori(at.y / tile)))
 	var low := Vector2i(floori((at.x - core.x - radius) / tile),
 			floori((at.y - core.y - radius) / tile))
 	var high := Vector2i(floori((at.x + core.x + radius) / tile),
 			floori((at.y + core.y + radius) / tile))
 	for y in range(low.y, high.y + 1):
 		for x in range(low.x, high.x + 1):
+			var here := Vector2i(x, y)
+			if here == covered[0]:
+				continue
 			var centre := Vector2((float(x) + 0.5) * tile, (float(y) + 0.5) * tile)
-			var gap := Vector2(
-					maxf(absf(centre.x - at.x) - core.x - half_tile, 0.0),
-					maxf(absf(centre.y - at.y) - core.y - half_tile, 0.0))
-			if gap.length() <= radius:
-				covered.append(Vector2i(x, y))
+			if distance_to_spine((centre - at).rotated(-along.angle())) <= radius:
+				covered.append(here)
 	return covered
 
 ## The half-extents, in world axes, of the box the rounding is applied around: the origin for a

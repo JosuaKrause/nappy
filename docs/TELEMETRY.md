@@ -175,6 +175,34 @@ invincible day is recognisable without reading a single `lost` or `nerve` line t
 The HUD's own debug header (`hud.gd`'s `_refresh_header()`) appends `INVINCIBLE` for the same
 reason, so no capture from such a run is mistaken for one where a loss meant anything.
 
+### `--no-focus-pause`
+
+The game pauses itself, the same way the `pause` action does, the moment
+`NOTIFICATION_APPLICATION_FOCUS_OUT` or `NOTIFICATION_APPLICATION_PAUSED` reaches `main.gd` — the
+window losing focus, a browser tab backgrounding, or a phone sending the app away. A rig's window
+usually opens with no focus to lose in the first place, so left alone this would hand every rig a
+picture of the pause screen rather than the day it was sent to capture.
+
+`--no-focus-pause` (or the page's own `?nofocuspause=1`, a debug web build only) turns that off —
+`DevFlags`' own developer flag, gated behind `DevFlags.enabled()` like every other one, listed in
+README.md's "Dev flags" table. **`--screenshot` implies it without being told to**, so
+`tools/shot.sh` and every existing capture command keep working unchanged; the flag by itself is
+what a `tools/run.sh` session with no screenshot needs, since that rig has the same unfocused
+window and nothing else here would cover it.
+
+### `--no-save`
+
+The run is saved implicitly when a day starts being played and when the day brief or the
+end-of-day message comes up — see `docs/MECHANICS.md`, "Saving and resuming". `GameSave.uses_save()` is the one gate every read and
+write goes through, and it already refuses a headless run and any run carrying a dev flag, since
+every checkout and worktree of this repository shares one `user://` and none of those runs may
+land in or overwrite the player's own save.
+
+`--no-save` (or the page's own `?nosave=1`, a debug web build only) says the same thing for a
+flagless `tools/run.sh` session, which carries no other flag for `uses_save()` to refuse on —
+`DevFlags`' own developer flag, gated behind `DevFlags.enabled()` like every other one, listed in
+README.md's "Dev flags" table.
+
 ---
 
 ## What is recorded, and what is not
@@ -244,6 +272,7 @@ name the question it answers, or it is a metric and does not belong.
 | `home` / `lost` | observer | The outcome, the margin, and what was around when it happened |
 | `nerve` | `GameState` | Where the nerves went — which day, which act |
 | `ending` | `GameState` | How the run finished, and how long the world was actually moving to get there — `GameState.play_seconds`, formatted `%d:%02d.%03d` |
+| `save` | `GameSave` | When the run was written to disk, and whether a day was under way at the time — the only record of the one thing a trace cannot otherwise see, since a closed window and a reopened one are two different runs of the game and not two lines in the same log |
 | `shot` | `main.gd`, `Telemetry` | **A person requested a screenshot or animation burst** — where she was, what the meters read, which screen was up, and capture start/completion/refusal context. This entry records somebody observing the game |
 
 ### Reading the meter breakdown

@@ -1,0 +1,69 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+
+== M129: the zero-cost line, 6 seeds x one day per act [1, 5, 9, 13] ==
+
+-- 24 days planned, 431.1 placed rows a day that a line has to avoid --
+
+-- routes with a zero-cost line: pacing rows only where their beat never opens (the primary reading) --
+   act 1   86 of  86  100.0%
+   act 2   84 of  88   95.5%
+   act 3   69 of  74   93.2%
+   act 4   36 of  48   75.0%
+   all    275 of 296   92.9%
+
+-- routes with a zero-cost line: pacing rows over their whole beat --
+   act 1   46 of  86   53.5%
+   act 2   38 of  88   43.2%
+   act 3   45 of  74   60.8%
+   act 4   22 of  48   45.8%
+   all    151 of 296   51.0%
+
+-- routes with a zero-cost line: primary, the day's own catalogue rows only (no seals or region wall) --
+   act 1   86 of  86  100.0%
+   act 2   84 of  88   95.5%
+   act 3   73 of  74   98.6%
+   act 4   40 of  48   83.3%
+   all    283 of 296   95.6%
+
+-- what broke the line (primary reading) --
+   routes = the first cut a walk out of the door runs into; cuts = every stretch on
+   every broken route, which is what a rule would have to cover.
+   routes   cuts  shape
+       20     32  the junction itself is taken
+        e.g. seed 129129 day 13 area (9, 9) route 0: street (7, 2, 0) (east-west): the crossing is covered by [delivery_van, busker, homeless_yeller, ice_cream_van, charging_dog, leaf_blower, poster_crew, roadblock, cafe_tables, construction, alley_robbery]
+        e.g. seed 129226 day 9 area (1, 2) route 0: street (2, 2, 1) (north-south): the crossing is covered by [leaf_blower, roadblock, poster_crew]
+        e.g. seed 129226 day 9 area (9, 4) route 1: street (6, 5, 0) (east-west): the crossing is covered by [roadblock]
+        1      2  the cut is not a straight band across one street
+        e.g. seed 129323 day 13 area (5, 1) route 0: street (6, 5, 1) (north-south), held by [roadblock], none of which closes that street on its own
+        0      3  other
+
+-- how much of a route is blocked (primary reading, 21 broken routes) --
+   separate stretches to clear before a line exists: 1.8 on average, 6 at worst
+   the rows standing in those stretches, by how many routes they break:
+      17   leaf_blower (intensity 19.3 over 190px, denies 165px, body 11px)
+      17   roadblock (intensity 13.0 over 179px, denies 154px, body 60px)
+      15   homeless_yeller (intensity 14.0 over 210px, denies 170px, body 0px, paces)
+      12   poster_crew (intensity 5.0 over 110px, denies 11px, body 11px)
+      10   delivery_van (intensity 0.0 over 150px, denies 22px, body 22px)
+      10   busker (intensity 19.3 over 190px, denies 165px, body 11px)
+      8    ice_cream_van (intensity 13.0 over 240px, denies 189px, body 24px)
+      8    construction (intensity 0.0 over 200px, denies 32px, body 32px)
+      8    alley_robbery (intensity 16.0 over 200px, denies 200px, body 0px)
+      6    charging_dog (intensity 12.0 over 150px, denies 150px, body 0px)
+      5    cafe_tables (intensity 12.0 over 64px, denies 56px, body 24px)
+      4    market_stall (intensity 14.0 over 64px, denies 58px, body 28px)
+
+-- the grower's own mid-block crossings --
+   routes with at least one cell on a carriageway between junctions: 0
+   complete mid-block crossings (pavement -> road -> far pavement): 0
+      on ORDINARY streets: 0
+      on MAIN streets: 0
+      on PEDESTRIAN streets: 0
+   routes with any cell on the spine at all: 165
+
+-- 50.7s --
+-- m129_zero_cost_line.gd       50834 ms
+
+1 checks, 0 failures
+PARTIAL RUN — only suites matching probes/m129_zero_cost_line.gd. Not a green build.

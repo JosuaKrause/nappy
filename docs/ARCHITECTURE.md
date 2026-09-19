@@ -25,6 +25,8 @@ src/
 	event_bus.gd          global signals                  (autoload: EventBus)
 	telemetry.gd          the run log; inert until asked   (autoload: Telemetry)
 	game_state.gd         run/day/nerves/resistance       (autoload: GameState)
+	game_save.gd          persists a run to disk and reads one back; not an autoload, the same
+	                      static-namespace shape as DevFlags
   player/
 	stroller.gd           movement, input, speed state
 	baby.gd               the two meters + baby state machine
@@ -59,7 +61,7 @@ src/
 	crowd_atlas.gd        the crowd's own six view tables as one TextureAtlas group
 	crowd_lanes.gd        the lane geometry of the street grid
 	crowd_field.gd        the box around the player the crowd is simulated in
-	crowd_pockets.gd      the ground today's seals shut in, per kind, so nobody is placed with nowhere to go
+	crowd_pockets.gd      the carriageway today's seals shut in, so no car is placed with nowhere to go
 	car_turn.gd           the arc a car follows out of one lane and into another
 	traffic_index.gd      where the cars are, lane by lane, so a turn can check for room
   events/
@@ -91,7 +93,8 @@ src/
 	interior_tile.gd      the tile-kind enum and which kinds are walkable
 	interior_map_plan.gd  the whole building's plan: tiles, walls, doors, decals, waypoints
 	interior_map.gd       lays all seven parts (three hallways, two stairwells, the lobby, the
-	                      basement) into one plan, 64 tiles apart, and the switchback layout
+	                      basement) into one plan, 64 tiles apart, and parses STAIRWELL_ROWS,
+	                      the ten-column symbol grammar each shaft is drawn and walked from
 	interior_tileset.gd   the interior's own TileSet, built in code from the SVGs it binds
 	interior_scene.gd     the WorldContext node: paints the building once, every door's
 	                      fade-teleport-fade transition, the service exit, and the hallway
@@ -113,6 +116,8 @@ src/
 	title_screen.gd       the screen a run opens on and goes back to; asks which control scheme
 	day_summary.gd        the screen between days, and the one at the end of a run
 	pause_screen.gd       the pause
+	save_indicator.gd     the small corner symbol that fades in and out after a write GameSave
+	                      actually makes
 	mode_button.gd        a circular icon-only button, drawn from a StyleBox and an icon
 	touch_controls.gd     the pointer scheme in its two modes, and the pause button
 	controls_mode.gd      which aiming origin a press is measured from

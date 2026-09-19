@@ -33,6 +33,16 @@ func run(t) -> void:
 	_test_no_interior_exists_outside_a_debug_build(t)
 	_test_play_seconds_only_advances_while_the_world_moves(t)
 	_test_the_border_reaches_the_window_from_every_corner(t)
+	_test_no_focus_pause_from_args(t)
+	_test_no_focus_pause_from_query(t)
+	_test_focus_lost_opens_the_pause_during_a_played_day(t)
+	_test_application_paused_also_opens_the_pause(t)
+	_test_focus_lost_does_nothing_on_the_title(t)
+	_test_focus_lost_does_nothing_over_the_day_summary(t)
+	_test_focus_lost_does_nothing_over_the_ending(t)
+	_test_focus_lost_does_nothing_when_the_pause_is_already_open(t)
+	_test_focus_gained_does_not_resume(t)
+	_test_focus_lost_does_nothing_under_the_override(t)
 
 ## `main._debug` is read once from `DevFlags.enabled()` rather than asked of the OS inside
 ## `_process()`, precisely so this can set it directly and check the release shape — the same
@@ -621,3 +631,138 @@ func _test_the_border_reaches_the_window_from_every_corner(t) -> void:
 
 	city.free()
 	GameState.play_seconds = 0.0
+
+# ------------------------------------------------------------- focus pause ---
+
+## `DevFlags.no_focus_pause()` reads the real command line, so a test drives the two private
+## parsing helpers directly instead — the same seam `tests/test_invincible.gd` uses for
+## `_invincible_from_args()`/`_invincible_from_query()`.
+func _test_no_focus_pause_from_args(t) -> void:
+	t.check(not DevFlags._no_focus_pause_from_args(PackedStringArray()),
+			"no command-line modifier leaves focus loss pausing the game")
+	t.check(DevFlags._no_focus_pause_from_args(PackedStringArray(["--no-focus-pause"])),
+			"--no-focus-pause turns it off directly")
+	t.check(DevFlags._no_focus_pause_from_args(PackedStringArray(["--screenshot", "out.png"])),
+			"--screenshot implies it without being told to, since a rig's window opens unfocused")
+	t.check(not DevFlags._no_focus_pause_from_args(PackedStringArray(["--seed", "1"])),
+			"an unrelated flag does not imply it")
+
+func _test_no_focus_pause_from_query(t) -> void:
+	t.check(not DevFlags._no_focus_pause_from_query(""),
+			"an absent URL parameter leaves focus loss pausing the game")
+	t.check(not DevFlags._no_focus_pause_from_query("?nofocuspause=0"),
+			"nofocuspause=0 leaves it pausing")
+	t.check(DevFlags._no_focus_pause_from_query("?nofocuspause=1"),
+			"?nofocuspause=1 turns it off")
+	t.check(DevFlags._no_focus_pause_from_query("?seed=1&nofocuspause=1&day=2"),
+			"the parameter is found among other URL parameters")
+
+## A script-only `main`, the same shape `_test_the_summary_and_pause_restart_signals_are_both_
+## connected()` above builds, with the three real screens `_pause_on_focus_lost()` asks about
+## added to the live tree so `is_open()`/`is_showing()` and `get_tree().paused` answer for real.
+## `_no_focus_pause` starts `false` — a played day, no override — the release shape each test
+## changes only what it means to check.
+func _build_focus_pause_main(t) -> Node2D:
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._summary = DAY_SUMMARY_SCENE.instantiate()
+	t.add_child(main._summary)
+	main._pause = PAUSE_SCREEN_SCENE.instantiate()
+	t.add_child(main._pause)
+	main._title = TITLE_SCREEN_SCENE.instantiate()
+	t.add_child(main._title)
+	main._no_focus_pause = false
+	return main
+
+func _teardown_focus_pause_main(t, main: Node2D) -> void:
+	t.get_tree().paused = false
+	main._summary.queue_free()
+	main._pause.queue_free()
+	main._title.queue_free()
+	main.free()
+
+## The heart of the milestone: losing focus during a played day reaches the same
+## `PauseScreen.open()` the `pause` action does, driven by calling `notification()` directly
+## rather than by real window focus — a sandboxed rig's window is not guaranteed to ever hold or
+## lose real OS focus, so the engine's own dispatch is what a suite can rely on.
+func _test_focus_lost_opens_the_pause_during_a_played_day(t) -> void:
+	var main := _build_focus_pause_main(t)
+	t.get_tree().paused = false
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(main._pause.is_open(),
+			"losing focus opens the same pause screen the pause action does")
+	t.check(t.get_tree().paused, "and pauses the tree behind it, exactly as that action leaves it")
+	_teardown_focus_pause_main(t, main)
+
+## A phone sending the app away reaches the same call through the other notification
+## `main._notification()` listens for.
+func _test_application_paused_also_opens_the_pause(t) -> void:
+	var main := _build_focus_pause_main(t)
+	t.get_tree().paused = false
+	main.notification(Node.NOTIFICATION_APPLICATION_PAUSED)
+	t.check(main._pause.is_open(), "a phone sending the app away pauses a played day the same way")
+	_teardown_focus_pause_main(t, main)
+
+## The title has nothing behind it to pause — the same reason the `pause` action itself does not
+## open over it, in `_unhandled_input()` above.
+func _test_focus_lost_does_nothing_on_the_title(t) -> void:
+	var main := _build_focus_pause_main(t)
+	main._title.open(false)
+	t.get_tree().paused = false
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(not main._pause.is_open(), "the title screen has nothing behind it to pause")
+	t.check(not t.get_tree().paused, "so the tree keeps running")
+	_teardown_focus_pause_main(t, main)
+
+## **Unlike `Esc`, which opens the pause over the day summary on purpose** (see
+## `_unhandled_input()`'s own doc), losing focus does not choose to open a second screen over one
+## already asking for the player's attention.
+func _test_focus_lost_does_nothing_over_the_day_summary(t) -> void:
+	var main := _build_focus_pause_main(t)
+	main._summary.show_day(3, GameEnums.DayResult.WON, "", 3)
+	t.check(main._summary.is_showing(), "the day summary is up")
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(not main._pause.is_open(),
+			"focus loss does not open a second screen over the day summary, unlike the pause action")
+	_teardown_focus_pause_main(t, main)
+
+## The ending is the same `_summary` screen showing a different body — see `DaySummary.
+## show_ending()` — so it is covered by the same `is_showing()` guard rather than a case of its own.
+func _test_focus_lost_does_nothing_over_the_ending(t) -> void:
+	var main := _build_focus_pause_main(t)
+	main._summary.show_ending(GameEnums.Ending.GOOD)
+	t.check(main._summary.is_showing(), "the ending screen is up")
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(not main._pause.is_open(), "focus loss does not open a second screen over the ending")
+	_teardown_focus_pause_main(t, main)
+
+func _test_focus_lost_does_nothing_when_the_pause_is_already_open(t) -> void:
+	var main := _build_focus_pause_main(t)
+	main._pause.open()
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(main._pause.is_open(), "the pause stays exactly as it was — open, not toggled")
+	_teardown_focus_pause_main(t, main)
+
+## The decided detail this milestone leaves open to overturn: getting focus back does not resume —
+## the player continues when they are back, the pause screen stays up until they do.
+func _test_focus_gained_does_not_resume(t) -> void:
+	var main := _build_focus_pause_main(t)
+	t.get_tree().paused = false
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(main._pause.is_open() and t.get_tree().paused, "focus loss opened and paused it")
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	t.check(main._pause.is_open() and t.get_tree().paused,
+			"getting focus back does not resume — the player continues when they are back")
+	_teardown_focus_pause_main(t, main)
+
+## `--no-focus-pause` and `--screenshot` (see `_test_no_focus_pause_from_args()` above for the
+## implication itself) both reach `main` as the one member the notification reads — this is the
+## behaviour half of that flag, driven the same way `_debug`/`_readout_requested` are throughout
+## this file.
+func _test_focus_lost_does_nothing_under_the_override(t) -> void:
+	var main := _build_focus_pause_main(t)
+	main._no_focus_pause = true
+	t.get_tree().paused = false
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(not main._pause.is_open(), "--no-focus-pause turns off the notification's own pause")
+	t.check(not t.get_tree().paused, "and the tree keeps running")
+	_teardown_focus_pause_main(t, main)

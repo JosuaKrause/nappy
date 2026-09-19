@@ -8,10 +8,11 @@ extends WorldContext
 ## Ground is a `TileMapLayer` built from `InteriorTileSet`; walls, doors, the barricade and the
 ## brick stand in elevation in a plain layer under everything, the same reasoning `Building` and
 ## `City`'s own `Buildings` layer use — nothing can ever legitimately stand *behind* a wall, so
-## nothing needs to sort against one. Rails, newels, the chandelier, ground decals and every door
-## threshold's own standing sprite live in a y-sorted layer above the ground, the same layer the
-## player joins through `add_entity()`, so she walks behind a rail the same way she walks behind an
-## event's shadow outdoors.
+## nothing needs to sort against one. The chandelier, ground decals and every door threshold's own
+## standing sprite live in a y-sorted layer above the ground, the same layer the player joins
+## through `add_entity()`. The stair-side roles are ground cells now: the TileMap paints exactly
+## the grammar the collision pass reads instead of placing a second visual assembly over another
+## walkable map.
 ##
 ## **One map, seven parts, no loading.** `InteriorMap.build()` lays all seven parts at once, `64`
 ## tiles apart from each other — comfortably more than the 20×11.25 tiles a 640×360 view at zoom 2
@@ -49,18 +50,6 @@ const RAT_TEXTURE := preload("res://assets/interior/rat.svg")
 const CHANDELIER_TEXTURE := preload("res://assets/interior/chandelier.svg")
 const STAIRWELL_SEGMENT_BACKDROP := preload("res://assets/interior/stairwell_segment_backdrop.svg")
 const STAIRWELL_SHAFT_CAP_TOP := preload("res://assets/interior/stairwell_shaft_cap_top.svg")
-const STAIRWELL_SHAFT_CAP_BOTTOM := preload("res://assets/interior/stairwell_shaft_cap_bottom.svg")
-const STAIR_FLIGHT_RUN_E := preload("res://assets/interior/stair_flight_run_e.svg")
-const STAIR_FLIGHT_RUN_W := preload("res://assets/interior/stair_flight_run_w.svg")
-const STAIR_LANDING_FLOOR := preload("res://assets/interior/stair_landing_floor.svg")
-const STAIR_LANDING_TURN := preload("res://assets/interior/stair_landing_turn.svg")
-const STAIR_RAIL_RUN_E := preload("res://assets/interior/stair_rail_run_e.svg")
-const STAIR_RAIL_RUN_W := preload("res://assets/interior/stair_rail_run_w.svg")
-const STAIR_RAIL_RUN_E_REAR := preload("res://assets/interior/stair_rail_run_e_rear.svg")
-const STAIR_RAIL_RUN_W_REAR := preload("res://assets/interior/stair_rail_run_w_rear.svg")
-const STAIR_FLIGHT_SHORT_E := preload("res://assets/interior/stair_flight_short_e.svg")
-const STAIR_RAIL_SHORT_E := preload("res://assets/interior/stair_rail_short_e.svg")
-const STAIR_RAIL_SHORT_E_REAR := preload("res://assets/interior/stair_rail_short_e_rear.svg")
 
 const TILE := float(Tuning.TILE_SIZE)
 ## How long the fade to black takes, each way — brisk, since it stands in for a flight of stairs
@@ -72,7 +61,6 @@ var _tile_set: TileSet
 var _ground: TileMapLayer
 var _backdrops: Node2D
 var _walls: Node2D
-var _structure: Node2D
 var _entities: Node2D
 ## Plain `StaticBody2D` blockers, one per non-walkable cell in a margin around the building's own
 ## footprint — the physical half of `InteriorMapPlan.is_walkable()`. A `TileMapLayer` only gives
@@ -117,10 +105,6 @@ func build() -> void:
 	_walls.name = "Walls"
 	_walls.z_index = 1
 	add_child(_walls)
-	_structure = Node2D.new()
-	_structure.name = "StairStructure"
-	_structure.z_index = 1
-	add_child(_structure)
 	_entities = Node2D.new()
 	_entities.name = "Entities"
 	_entities.z_index = 2
@@ -148,13 +132,13 @@ func build() -> void:
 		if source >= 0:
 			_ground.set_cell(tile, source, Vector2i.ZERO)
 	_rebuild_walls()
-	_rebuild_stairwell_structure()
+	_rebuild_stairwell_backdrops()
 	_rebuild_overlays()
 	_rebuild_collision()
 
-## The bounding box of every walkable-or-standable cell in the whole building — every part and
-## every gap between them, since the collision pass and the camera limits both need to cover the
-## gaps too (she must not be able to walk, or be framed, off the building's own combined edge).
+## The bounding box of every painted cell in the whole building — every part and every gap between
+## them, since the collision pass and the camera limits both need to cover the gaps too (she must
+## not be able to walk, or be framed, off the building's own combined edge).
 func _footprint() -> Rect2i:
 	var min_t := Vector2i(999999, 999999)
 	var max_t := Vector2i(-999999, -999999)
@@ -176,7 +160,11 @@ func _rebuild_collision() -> void:
 	for y in range(box.position.y, box.position.y + box.size.y):
 		for x in range(box.position.x, box.position.x + box.size.x):
 			var tile := Vector2i(x, y)
-			if _plan.tiles.has(tile) or _plan.collision_clearance.has(tile):
+			if _plan.is_walkable(tile):
+				continue
+			# A clearance is only for an absent pinch corner. Painted `c`, `C` and `b` cells stay
+			# solid even if another diagonal elsewhere happens to name the same position.
+			if not _plan.tiles.has(tile) and _plan.collision_clearance.has(tile):
 				continue
 			var body := StaticBody2D.new()
 			var shape := CollisionShape2D.new()
@@ -277,9 +265,8 @@ func _wall_texture(kind: InteriorTile.Kind) -> Texture2D:
 		_:
 			return null
 
-## Doors, rails, newels, the chandeliers and every ground decal — everything that stands above the
-## floor rather than being the floor, all in the y-sorted layer the player joins through
-## `add_entity()`.
+## Doors, the chandeliers and every ground decal — everything that stands above the floor rather
+## than being the floor, all in the y-sorted layer the player joins through `add_entity()`.
 func _rebuild_overlays() -> void:
 	for id: String in _plan.doors:
 		var door: InteriorMapPlan.Door = _plan.doors[id]
@@ -345,119 +332,24 @@ func _add_threshold(tile: Vector2i, texture: Texture2D) -> void:
 	sprite.position = Vector2((tile.x + 0.5) * TILE, (tile.y + 1) * TILE)
 	_entities.add_child(sprite)
 
-## Draws one broad architectural bay behind every landing that has a flight below it, then puts a
-## continuous deck over the same four diagonal cells. The cells, collision clearance and slope
-## callback remain exactly the map's existing walkable graph; this only gives their presentation
-## the breadth and enclosure the references call for.
-func _rebuild_stairwell_structure() -> void:
-	# A named floor landing owns its enclosed eight-row backdrop. Turn landings need no second
-	# backdrop, but both kinds own a broad half-flight assembly below.
-	for id: String in _plan.waypoints:
-		if not id.begins_with("stairwell_") or not id.contains(":landing_"):
-			continue
-		var landing: Vector2i = _plan.waypoints[id]
-		var east: int = _plan.tiles.get(landing + Vector2i(1, 1), InteriorTile.Kind.NONE)
-		var west: int = _plan.tiles.get(landing + Vector2i(-1, 1), InteriorTile.Kind.NONE)
-		if east != InteriorTile.Kind.STAIR_FLIGHT_E and west != InteriorTile.Kind.STAIR_FLIGHT_W:
-			continue
-		var backdrop := Sprite2D.new()
-		backdrop.texture = STAIRWELL_SEGMENT_BACKDROP
-		backdrop.centered = false
-		backdrop.position = Vector2((landing.x - 4) * TILE, landing.y * TILE)
-		_backdrops.add_child(backdrop)
+## Repeats the shaft wall behind the ten-column grammar. The four eight-row panels cover the
+## complete 26-row stairwell, including the final two-cell lobby approach, but add no floor:
+## collision and walkability still come only from the parsed symbols.
+func _rebuild_stairwell_backdrops() -> void:
 	for side in ["left", "right"]:
-		var top: Vector2i = _plan.waypoints["stairwell_%s" % side]
-		_add_shaft_cap(top, STAIRWELL_SHAFT_CAP_TOP, Vector2(0, -64))
-		var bottom: Vector2i = _plan.waypoints["stairwell_%s:landing_lobby" % side]
-		_add_shaft_cap(bottom, STAIRWELL_SHAFT_CAP_BOTTOM, Vector2.ZERO)
-	_add_basement_entry_stair()
-	for landing: Vector2i in _plan.tiles:
-		if _plan.tiles[landing] != InteriorTile.Kind.LANDING:
-			continue
-		var east: int = _plan.tiles.get(landing + Vector2i(1, 1), InteriorTile.Kind.NONE)
-		var west: int = _plan.tiles.get(landing + Vector2i(-1, 1), InteriorTile.Kind.NONE)
-		if east != InteriorTile.Kind.STAIR_FLIGHT_E and west != InteriorTile.Kind.STAIR_FLIGHT_W:
-			continue
-		var descends_east := east == InteriorTile.Kind.STAIR_FLIGHT_E
-		var deck: Texture2D = STAIR_FLIGHT_RUN_E if descends_east else STAIR_FLIGHT_RUN_W
-		var origin := _flight_origin(landing, descends_east)
-		_add_flight_deck(origin, deck)
-		if _is_floor_landing(landing):
-			var rear_rail: Texture2D = STAIR_RAIL_RUN_E_REAR if descends_east else STAIR_RAIL_RUN_W_REAR
-			_add_flight_rear_rail(origin, rear_rail)
-		var rail: Texture2D = STAIR_RAIL_RUN_E if descends_east else STAIR_RAIL_RUN_W
-		_add_flight_rail(origin, rail)
-	for landing: Vector2i in _plan.tiles:
-		if _plan.tiles[landing] != InteriorTile.Kind.LANDING:
-			continue
-		if _is_floor_landing(landing):
-			_add_floor_landing_platform(landing)
-			continue
-		var east: int = _plan.tiles.get(landing + Vector2i(1, 1), InteriorTile.Kind.NONE)
-		_add_turn_landing_platform(landing, east == InteriorTile.Kind.STAIR_FLIGHT_E)
-
-func _is_floor_landing(landing: Vector2i) -> bool:
-	for id: String in _plan.waypoints:
-		if id.begins_with("stairwell_") and id.contains(":landing_") and _plan.waypoints[id] == landing:
-			return true
-	return false
-
-func _add_shaft_cap(landing: Vector2i, texture: Texture2D, offset: Vector2) -> void:
-	var sprite := Sprite2D.new()
-	sprite.texture = texture
-	sprite.centered = false
-	sprite.position = Vector2((landing.x - 4) * TILE, landing.y * TILE) + offset
-	_backdrops.add_child(sprite)
-
-func _add_floor_landing_platform(landing: Vector2i) -> void:
-	var sprite := Sprite2D.new()
-	sprite.texture = STAIR_LANDING_FLOOR
-	sprite.centered = false
-	sprite.position = Vector2((landing.x - 1) * TILE, landing.y * TILE)
-	_structure.add_child(sprite)
-
-func _add_turn_landing_platform(landing: Vector2i, descends_east: bool) -> void:
-	var sprite := Sprite2D.new()
-	sprite.texture = STAIR_LANDING_TURN
-	sprite.centered = false
-	var x := landing.x if descends_east else landing.x - 1
-	sprite.position = Vector2(x * TILE, (landing.y - 1) * TILE)
-	_structure.add_child(sprite)
-
-func _add_basement_entry_stair() -> void:
-	var entry: InteriorMapPlan.Door = _plan.door("basement:entry")
-	var top: Vector2i = entry.tile - Vector2i(2, 2)
-	var origin: Vector2 = Vector2(top) * TILE
-	_add_flight_deck(origin, STAIR_FLIGHT_SHORT_E)
-	_add_flight_rear_rail(origin, STAIR_RAIL_SHORT_E_REAR)
-	_add_flight_rail(origin, STAIR_RAIL_SHORT_E)
-
-func _flight_origin(landing: Vector2i, descends_east: bool) -> Vector2:
-	var x := landing.x if descends_east else landing.x - 4
-	return Vector2(x * TILE, landing.y * TILE)
-
-func _add_flight_deck(origin: Vector2, texture: Texture2D) -> void:
-	var sprite := Sprite2D.new()
-	sprite.texture = texture
-	sprite.centered = false
-	sprite.position = origin
-	_structure.add_child(sprite)
-
-func _add_flight_rear_rail(origin: Vector2, texture: Texture2D) -> void:
-	var sprite := Sprite2D.new()
-	sprite.texture = texture
-	sprite.centered = false
-	sprite.position = origin
-	_structure.add_child(sprite)
-
-func _add_flight_rail(origin: Vector2, texture: Texture2D) -> void:
-	var sprite := Sprite2D.new()
-	sprite.texture = texture
-	sprite.centered = false
-	# The bottom-edge sort key leaves the walker behind the foreground rail throughout the flight.
-	sprite.offset = Vector2(0, -texture.get_height())
-	sprite.position = origin + Vector2(0, texture.get_height())
-	_entities.add_child(sprite)
+		var top_landing: Vector2i = _plan.waypoints["stairwell_%s" % side]
+		var origin := top_landing - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+		for panel in 4:
+			var backdrop := Sprite2D.new()
+			backdrop.texture = STAIRWELL_SEGMENT_BACKDROP
+			backdrop.centered = false
+			backdrop.position = Vector2(origin + Vector2i(0, panel * 8)) * TILE
+			_backdrops.add_child(backdrop)
+		var cap := Sprite2D.new()
+		cap.texture = STAIRWELL_SHAFT_CAP_TOP
+		cap.centered = false
+		cap.position = Vector2(origin + Vector2i(0, -2)) * TILE
+		_backdrops.add_child(cap)
 
 # ------------------------------------------------------------------ placement and queries ---
 
@@ -501,28 +393,55 @@ const NOWHERE := Vector2i(-999999, -999999)
 func waypoint(id: String) -> Vector2i:
 	return _plan.waypoints.get(id, NOWHERE)
 
-## The half-landings of one shaft: every `LANDING` tile inside it that is not one of the four named
-## floor landings. What tells them apart is the plan's own waypoint list rather than the
-## switchback's arithmetic, so a change to `InteriorMap.STAIRWELL_FLIGHT_LEN` needs no change here.
-func turn_landings(part_id: String) -> Array[Vector2i]:
+## The inner cell of each intermediate floor's level approach, in one shaft — the second of the two
+## level `F` cells below a `D`, two tiles from the door. Named for what it is: **the grammar has no
+## half-landing between floors and no cell of kind `LANDING` in a shaft at all**, so anything
+## sited here is on a floor's own approach, one cell further in than the door.
+##
+## Which is exactly what the fire wants: two tiles from the door, its body closes the flight the
+## approach leads onto without covering the corridor transition itself, so the way past it is
+## through that floor's door rather than back up the stairs. The top and lobby approaches are
+## excluded, since neither has a flight above it to close.
+func inner_floor_approaches(part_id: String) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	for landing_id in ["landing_second", "landing_first"]:
+		var first: Vector2i = waypoint("%s:%s" % [part_id, landing_id])
+		if first == NOWHERE:
+			continue
+		var inner := first + Vector2i.DOWN
+		if _plan.is_walkable(inner):
+			found.append(inner)
+	return found
+
+## Every painted cell inside one grammar rectangle, including the non-walkable stair-side roles.
+## Finale placement and focused tests use the same bounds rather than inferring a shaft from the
+## changing positions of its alternating doors.
+func stairwell_tiles(part_id: String) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
 	var top: Vector2i = waypoint(part_id)
-	var bottom: Vector2i = waypoint("%s:landing_lobby" % part_id)
-	if top == NOWHERE or bottom == NOWHERE:
+	if top == NOWHERE:
 		return found
-	var named := {}
-	for id: String in _plan.waypoints:
-		named[_plan.waypoints[id]] = true
-	# The switchback swings a flight either side of the landing column and never further, so the
-	# shaft's own tiles are the box between its top and bottom landings, widened by that swing.
-	var swing := InteriorMap.STAIRWELL_FLIGHT_LEN + 1
+	var origin := top - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+	var bounds := Rect2i(origin, InteriorMap.STAIRWELL_SIZE)
 	for tile: Vector2i in _plan.tiles:
-		if _plan.tiles[tile] != InteriorTile.Kind.LANDING or named.has(tile):
-			continue
-		if absi(tile.x - top.x) <= swing and tile.y >= top.y and tile.y <= bottom.y:
+		if bounds.has_point(tile):
 			found.append(tile)
-	found.sort()
 	return found
+
+## One shaft's own walk, its lobby landing to its top landing, tile by tile. A shaft is a corridor
+## with no branches too — the level `F` columns and the `t/m` and `T/M` diagonals are the only
+## ground in the grammar — so its shortest walk *is* the staircase, and anything that has to travel
+## the shaft travels it over cells she could stand on rather than across the solid `c`/`C`/`b`
+## sides and the background between the flights.
+##
+## The doors are dead ends off it: each `D` cell's only walkable neighbours are the level approach
+## below it, so a shortest walk never stands on one.
+func stairwell_walk(part_id: String) -> Array[Vector2i]:
+	var bottom := waypoint("%s:landing_lobby" % part_id)
+	var top := waypoint(part_id)
+	if bottom == NOWHERE or top == NOWHERE:
+		return []
+	return _shortest_walk(bottom, top)
 
 ## The basement's corridor, entry to exit, tile by tile. The corridor has no branches, so its
 ## shortest walk *is* the corridor, and anything sited a fraction of the way along it stands
@@ -536,11 +455,10 @@ func basement_walk() -> Array[Vector2i]:
 ## Breadth-first over walkable tiles, unwound into the path itself — `from` first, `to` last, or
 ## empty when there is no walk between them.
 ##
-## **Eight-connected, not four.** A flight is a run of diagonal steps — the kit's tile drops one
-## tile height over one tile width — so the basement's own entry flight touches the floor above it
-## only at a corner, and a four-connected walk finds no route out of the door at all. She walks
-## those corners (`InteriorMap._mark_diagonal_clearances()` is what frees them physically), so a
-## walk that could not is not the walk she takes.
+## **Eight-connected, not four.** A shaft's flights are runs of diagonal steps — the reviewed
+## `t/m` and `T/M` roles drop one tile height over one tile width — so a four-connected walk finds
+## no way down a staircase at all. She walks those corners, so a walk that could not is not the
+## walk she takes.
 func _shortest_walk(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	var previous := {from: from}
 	var queue: Array[Vector2i] = [from]

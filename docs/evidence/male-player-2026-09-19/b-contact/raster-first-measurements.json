@@ -1,0 +1,119 @@
+{
+  "raw_sha256": "20d4a2542b6e32f811fcc7a638682941bc56b86490ce2e65bb54c9520e4add50",
+  "raw_dimensions": [
+    2011,
+    782
+  ],
+  "measurements": {
+    "front": {
+      "cell": [
+        0,
+        0,
+        503,
+        782
+      ],
+      "visible_bounds": [
+        106,
+        53,
+        425,
+        734
+      ],
+      "scale": 0.06607929515418502,
+      "x_at_12x": 13,
+      "extraction": "original alpha",
+      "native_alpha_bounds": [
+        0,
+        0,
+        24,
+        46
+      ]
+    },
+    "back": {
+      "cell": [
+        503,
+        0,
+        1006,
+        782
+      ],
+      "visible_bounds": [
+        71,
+        56,
+        403,
+        734
+      ],
+      "scale": 0.06637168141592921,
+      "x_at_12x": 6,
+      "extraction": "original alpha",
+      "native_alpha_bounds": [
+        0,
+        0,
+        24,
+        46
+      ]
+    },
+    "side": {
+      "cell": [
+        1006,
+        0,
+        1508,
+        782
+      ],
+      "visible_bounds": [
+        66,
+        54,
+        423,
+        736
+      ],
+      "scale": 0.06598240469208211,
+      "x_at_12x": 7,
+      "extraction": "original alpha",
+      "native_alpha_bounds": [
+        0,
+        0,
+        26,
+        46
+      ]
+    },
+    "front_diagonal": {
+      "cell": [
+        1508,
+        0,
+        2011,
+        782
+      ],
+      "visible_bounds": [
+        91,
+        57,
+        400,
+        734
+      ],
+      "scale": 0.06646971935007386,
+      "x_at_12x": 31,
+      "extraction": "original alpha",
+      "native_alpha_bounds": [
+        0,
+        0,
+        25,
+        46
+      ]
+    }
+  },
+  "outputs": {
+    "contact-3x.png": "5c3ab391fb9e334e3d702f6a26e884ed2c29d3cf017f8570a828433dde8614cb",
+    "contact-native.png": "beb3cf9a27fe726963142fd63b6179f2f837bfd37a0134c596653c71edee6453",
+    "father_back_b-12x.png": "87f285229cd2da73b5f8233acbf42365732aef29dd81d3a5cfb94a3775202d00",
+    "father_back_b-extracted.png": "7b444902c2c40b1534504a2edfc41795712160b0e20a0fedfa5bec10a0e395b4",
+    "father_back_b.png": "bdf47b0f4aa2618dba90dd15b142da6b99b2e25e698e7d55de4031b30e1498f0",
+    "father_front_b-12x.png": "9b43a2de95964581e3fb7a00035901f1a796236f92ca56f27ade2ff1e6d00250",
+    "father_front_b-extracted.png": "736a1adbadaa40e75313dba28bd20ee420d8e0c450dd3873825ff37debcb58a3",
+    "father_front_b.png": "b25d1da4caf81fe097024c46120282a2528cb339efd0d0856c0b6bc4e3a8c370",
+    "father_front_diagonal_b-12x.png": "fb74c8c4e3610ad6d6a22ef9dcebde47dc52917cdf5672ca934cfcb78cf47599",
+    "father_front_diagonal_b-extracted.png": "cf6fcc6083bcda52370e834292b34417b5e50aeca0f826b1ad92823f2b587278",
+    "father_front_diagonal_b.png": "bab2f2992be01fc5ffa4a109f3c0e503df5a0c5022268354942d9b9b019def44",
+    "father_side_b-12x.png": "2202e5bd08cfa5a5a93e5e7cff41b14caa9e0c7c924b06347475db358ca43fb5",
+    "father_side_b-extracted.png": "e3a4aa3039f0dfa72e1469c28eee01f5064f39c254169bba2168252de37ed072",
+    "father_side_b.png": "7e8074939ee1e6ffdac34e332d2356f19ded779de07c1b025bd0b9eeb396be7d",
+    "pushing-3x.png": "e8b23111ac62ccd1298f151493e2d63e25480a834ae6c7c1f121cd061733da4a",
+    "pushing-native.png": "4500baee235f7f511a7c64ac756e29a170f7ad132986a801a556822db72bfe1f"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "purpose": "Normal-scale corrected left-stairwell grammar review",
+  "command": "./tools/shot.sh /private/tmp/m158-corrected-left.png 2 --start-escape stairwell:left --invincible",
+  "resolution": [1280, 720],
+  "seed": 3349946719,
+  "day": 1,
+  "presentation": "default illustrated PNG presentation with the corrected ten-column stair grammar",
+  "capture_after_seconds": 2.0,
+  "build": "v0.11.1-38-g2663c361-dirty",
+  "build_note": "Uncommitted corrected-grammar implementation on the named base.",
+  "original_output": "/private/tmp/m158-corrected-left.png",
+  "retained_output": "m158-corrected-left.png",
+  "telemetry": "The complete telemetry run folder is retained here; this capture generated run.log only.",
+  "coverage": "The player starts on the corrected left shaft's top F approach. The still shows the east-descending reviewed t/m surface, its adjacent blocked side roles, the corridor doors and the absence of deck, landing and rail overlays.",
+  "limitations": "Single still: it establishes static layout only, not movement or collision. Invincibility keeps timing and meters out of scope; the opening objective text partly overlaps the lower flight."
+}

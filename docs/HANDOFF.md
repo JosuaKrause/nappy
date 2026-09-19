@@ -283,30 +283,38 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
 ## Where the last session stopped, 2026-09-19
 
-**This section is the pick-up for the next session and is removed by it.** `gh pr list` and
-`git worktree list` are the truth; this is the map.
+**This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
+checks and worktrees can move independently of this file.
 
-- **M159, optimize the measured performance cost**, is on draft
-  [PR #216](https://github.com/JosuaKrause/nappy/pull/216), with main conflicts and no CI result
-  for its head. The crowd contribution rejection is locally verified; its controlled workload
-  shows an 84.7–87.1% reduction in median query cost, with exact result parity. The
-  [retained before/after evidence](evidence/m159-crowd-rejection-2026-09-19/README.md) records
-  the workload and equal active-play windows. Whole-frame tails remain; phone measurement and
-  causal attribution remain open, and there is no toggle-causality claim. The player's demand
-  for an actual optimization is [PLAYTEST-86](playtests/PLAYTEST-86.md). M163, ground-atlas
-  reference parity, and M164, engine errors fail the gate, remain separate follow-on briefs.
-- **M160, the father's B-frame leg contact**, is on draft
-  [PR #221](https://github.com/JosuaKrause/nappy/pull/221), with main conflicts and no CI result
-  for its head. The clean sheet and animated GIF await the player's judgment; nothing is
-  installed in the game. Its later father feedback is PLAYTEST-87 on that PR.
-- **M165, the escape after the corrected stairs, and M166, when the save is written**, are on
-  [PR #229](https://github.com/JosuaKrause/nappy/pull/229), which owns PLAYTEST-84 and
-  PLAYTEST-85. Fetch and inspect its live head and checks before picking it up; CI is running
-  at this handoff, so do not assume its result.
-- **Resume with fresh, bounded agents in the existing isolated worktrees.** Fetch origin and
-  read the live PR descriptions, comments, heads and checks before relying on this map. Do not
-  merge, enable auto-merge or delete branches without explicit permission; do not sync main
-  into these branches by merge, rebase or cherry-pick without permission either.
+- **M159, a slow frame names the frame that was slow, has its first optimization in and three
+  items open in `TODO.md`.** `CrowdAgent.contribution_at()` rejects distant sources before the
+  velocity and ellipse work, with exact result parity (`DECISIONS.md`, M159, cheaper crowd
+  contribution sweeps; [PLAYTEST-86](playtests/PLAYTEST-86.md) is the player's demand for an
+  optimization rather than a measurement). Whole-frame tails remain: attributing the remaining
+  slow intervals, profiling the phone, and completing the atlas measurements are the open items,
+  and no toggle causality is claimed. M163, the ground atlas test builds the same reference it
+  compares, and M164, engine errors make the test gate red, are separate fix-ready briefs there.
+- **PR #234 — M167, the father's legs read as legs** is the separate drawing follow-up in `TODO.md`.
+  [PLAYTEST-90](playtests/PLAYTEST-90.md) and [PLAYTEST-91](playtests/PLAYTEST-91.md) require
+  more natural legs, A/C-consistent shading and shoes, and a narrower three-quarter stride.
+  [PLAYTEST-92](playtests/PLAYTEST-92.md) asks for the woman's legs as the next donor because
+  the pants match. Keep the accepted contact ownership, father upper body, N/S, NE/NW and
+  every A/C frame fixed. Show the clean sheet and native/6× loops in its draft PR description;
+  nothing in this follow-up replaces the provisionally accepted runtime baseline without review.
+
+- **[PLAYTEST-94](playtests/PLAYTEST-94.md) is filed and unbuilt.** It opened M168, the escape
+  after playtest 94, and added the walked-side
+  wall measurement under M129, a path through the city never has to cost. Both are in
+  `TODO.md` and each is one agent's brief.
+
+Number ownership remains distinct: PLAYTEST-84 and PLAYTEST-85 are the escape/save records
+on main, PLAYTEST-86 belongs to the performance work, and PLAYTEST-87 belongs to the father
+sheet instructions. PLAYTEST-88 is the father's subsequent visual verdict. PLAYTEST-93 is on PR #234's branch, and
+PLAYTEST-94 is the save, escape and route-wall record.
+
+No merge, auto-merge, rebase, merge from main or branch deletion is authorized without explicit permission in the current
+session. New implementation or investigation uses fresh agents with self-contained briefs; do not
+resume the agents from this handoff.
 
 ## The queue, as prioritised on 2026-09-09
 

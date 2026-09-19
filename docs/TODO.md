@@ -293,6 +293,124 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
+## M170 — The route's tint is on both sides of the street · asked for 2026-09-19
+
+> "let's do the mark for the correct path on the full segment (both sides) again -- that way those
+> obvious problems now (with obstacles on the path side but no obstacle on the other side) are not
+> obvious anymore -- I can still confirm whether you actually fixed those issues via the path
+> debug view."
+
+[PLAYTEST-97](playtests/PLAYTEST-97.md). *Asked for one side on 2026-09-15
+([PLAYTEST-76](playtests/PLAYTEST-76.md)) · overturned by the player on 2026-09-19.*
+
+- [ ] **`City._tint_the_route_kerbs()` tints both kerb lines of every street the day's route tree
+      uses**, where today it tints a kerb tile only when the tree carries that sidewalk's own
+      cell (`_tree.branches_on(tile)`). **A segment is tinted whole, from intersection to
+      intersection, or not at all** *("no signle street tiles")*: a tree that uses part of a
+      segment tints all of it. The route lines of debug layer `5` and every placement
+      rule keep reading the tree's own sidewalk. The routes suite's tint check, `docs/CITY.md`
+      and the two tint entries in `REVIEW.md` say one-sided and move with it.
+
+---
+
+## M168 — The escape after playtest 94 · asked for 2026-09-19
+
+> "the escape is okay but there should be a fire on the left like it is right now but the top
+> floor right side should be completely blocked off with rubble. then the pursuing guy should
+> respawn forcing to switch the side again. the steam frequencies are too slow and there are only
+> two steams and they are not blocking in any way they should go in the narrow hallways. I still
+> spawn with flashing !!! in the city. restarting should still have the day brief for both the
+> apartment escape and the city escape even if the nerves don't go down. also I just saw a barrier
+> turn into a mask men (the barrier disappeared and the masked man appeared) and the pursuit ended
+> way too early (I got caught when I was still very visibly away from him)"
+
+[PLAYTEST-94](playtests/PLAYTEST-94.md) has each finding with what stands there today. Reached
+through `tools/run.sh --start-escape --seed 4242`.
+
+- [ ] **The top floor's right side is blocked off with rubble, and the fire stays on the left.**
+      From her own door the right stairwell cannot be entered on the top floor at all. Rubble is
+      a body and a drawing (an SVG first), placed by construction rather than checked.
+- [ ] **The masked man comes again.** After his first run he respawns so that the side she
+      switched to stops being safe and she has to switch back: *"forcing to switch the side
+      again"*. When and where he comes again is the design to settle against the fire and the
+      rubble, since the three together must leave a way down.
+- [ ] **The steam blows more often, and stands where one cloud is the whole width.** The periods
+      are 6.5, 8 and 9.5 seconds with a 2 second blow (`Tuning.FINALE_STEAM_PERIODS`,
+      `FINALE_STEAM_BLOWS_FOR`), which the player reads as too slow; a blow is a 32px cloud and
+      the vents stand where the corridor is 64px wide, so she walks past one. The vents go *"in
+      the narrow hallways"*, and all three are met on the way, where the player met two.
+      [PLAYTEST-85](playtests/PLAYTEST-85.md)'s design stands: fixed places, *"fully block the
+      path"*, differing intervals.
+- [ ] **She comes out of the service exit with no danger mark up.** The ground she arrives on is
+      free of every lethal reach by construction, the same rule PLAYTEST-85 set for bodies:
+      *"the spawning shouldn't be a check"*. Trace which row raises the flashing mark on seed
+      4242 first.
+- [ ] **A section restart shows the brief screen**, for the building and for the city alike, with
+      the nerves unchanged. The restart still costs nothing.
+- [ ] **A guard stands at the roadblock from the beginning, and catches her at a man's reach.**
+      *(2026-09-19: "the guard needs to be at the barrier from the beginning, standing. only then
+      does it make sense for it to start pursuing. 86px is huge".)* The finale's masked men on
+      foot are `roadblock` at full resistance progress; today the barrier picture is swapped for
+      a guard the moment one notices her, and the row's lethal `inner_radius` is 86px because
+      `EventDef.validate()` refuses a lethal radius inside the row's own body (60px barrier plus
+      her 14px). So: a standing guard is drawn at every roadblock from placement, hunting or not;
+      when a hunting one notices her, that guard telegraphs and sets off while the barrier stays
+      drawn and solid where it is; the catch is measured from the guard at a man's reach (the
+      building's masked man takes the baby at 28px), and the barrier itself catches nobody. The
+      same row hunts from day 7 on ordinary days, so this changes there too. Whether the street
+      behind a roadblock whose guard has left stays shut is the consequence to state in the
+      record: the barrier staying means it does.
+- [ ] **The hallway windows flash more often.** *(2026-09-19: "the flashing lights in the window
+      are too rare", [PLAYTEST-96](playtests/PLAYTEST-96.md).)* A window lights only with an
+      explosion, every 22 seconds (`Tuning.FINALE_EXPLOSION_INTERVAL`), and an explosion costs
+      excitement. Built as light without noise, open to overturn: distant flashes light the
+      windows between the loud ones, the time between two flashes random between 0.1 and 5 seconds with a mean of 1.3
+      seconds on a smooth curve *("a biased random distribution … the rest of the curve is smooth")*,
+      and cost nothing; the loud explosions stay at 22 seconds and still flash. **Every window
+      flashes together, always** *("a single window cannot flash by itself")*. The alternative
+      the player may prefer is simply more explosions, which is one constant and makes the
+      building louder.
+- [ ] **The escape's run log stamps every line `0.0`.** The log of the played run cannot say when
+      anything happened (`docs/evidence/playtest-94-2026-09-19/`).
+
+---
+
+## M167 — The father's legs read as legs · asked for 2026-09-19
+
+> "the leg positions are correct now. we can use it for now (and merge) but in parallel do another fix attempt to just make the legs look like legs"
+
+> "I approved the graphics for now but also noted that we need to fix the leg's appearance in the next pr"
+
+[PLAYTEST-90](playtests/PLAYTEST-90.md) and [PLAYTEST-91](playtests/PLAYTEST-91.md).
+The provisionally accepted contact baseline and its narrow father-only splice exception are
+recorded in `DECISIONS.md` under M160, provisional contact acceptance. This separate drawing
+follow-up does not replace that baseline without visual approval.
+
+[PLAYTEST-92](playtests/PLAYTEST-92.md) rejects the first refinement: "still bad legs -- maybe
+use the legs of the woman in those cases?" — "they have the same pants". The next preview may
+reuse the woman's accepted pushing-leg artwork in E/W and SE/SW B, with the father's upper
+body and the accepted contact ownership preserved. This is a specific donor exception, not
+permission to replace the father's identity or change protected frames.
+
+- [ ] **Match the legs to the rest of the family.** E/W B needs A/C's clear dark far-leg cue,
+      folded and shaded trousers, and chunky brown highlighted shoes instead of thin dark slivers.
+      Keep the accepted near leg trailing and the far leg advancing, with a continuous
+      hip–knee–shoe chain and natural knees. SE/SW must read as a three-quarter stride under
+      its torso, not a full-width profile stride: narrow it toward A and the accepted NE/NW
+      contacts so A/C/B/C does not alternate short and long steps like a limp.
+- [ ] **Publish an early attempt and ask for feedback.** Use the established clean eight-direction
+      A/C/B/C sheet and native/6× four-phase GIFs at 190ms per phase. Push and embed them in
+      the next PR description with commit-pinned links before asking; the CLI cannot show local
+      images. Repeated feedback is welcome, per [PLAYTEST-89](playtests/PLAYTEST-89.md).
+      Preserve N/S, NE/NW, all A/C frames, upper-body landmarks, native canvases, scale and anchors.
+      Do not change carrying poses, stroller art or gameplay. Keep exact prompts, raw inputs,
+      crops, transforms, commands and hashes with the evidence. The first attempt may expose
+      remaining defects; do not spend another internal revision loop hiding them from review.
+- [ ] **Install only the visually accepted refinement.** Keep corresponding reviewed SVGs,
+      creation copies, registered PNGs and manifest hashes in agreement, preserve import sidecars,
+      and verify actual runtime bindings. The provisional splice is not a general successful
+      procedure; update shared graphics guidance only with a method accepted for final appearance.
+
 ---
 
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
@@ -479,108 +597,34 @@ alike.
 
 ---
 
-## M155 — The crowd's reach comes in, and walkers step aside more politely · asked for 2026-09-19
-
-> "it is easier to go to a completely closed off area (eg walking via the roadway) to calm the
-> baby down than it is to just walk back and forth on the regular sidewalk on a path … the
-> noise from the crowd itself is too high. we need to nerf the crowd influence a little bit."
-> — "I like the shorter reach idea. main road can stay as expensive as before. we can also let
-> the walkers step aside more politely"
-
-[PLAYTEST-78](playtests/PLAYTEST-78.md). The **balance** and **crowd-traffic** rules govern.
-Walking gives the meter back `Tuning.EXCITEMENT_DECAY_WALKING` (6.0 a second) and a quiet
-act I sidewalk nets about 3.6, because every walker charges up to `PEDESTRIAN_INTENSITY` (4.2 a
-second) inside 22 px and fades out at `PEDESTRIAN_OUTER_RADIUS` (55 px) on a sidewalk 64 px
-wide. `tests/probes/m117_decay.gd` is the instrument: it walks a forty-second leg on each kind
-of ground with the day's crowd around her and prints the net rate.
-
-- [ ] **The walker's outer radius comes down, the close pass keeps its price.** Measure with
-      the probe first, three seeds, day 1 and day 9. Then lower `PEDESTRIAN_OUTER_RADIUS` from
-      55 px toward 40 px, leaving `PEDESTRIAN_INTENSITY` and `PEDESTRIAN_INNER_RADIUS` alone,
-      until the quiet ordinary sidewalk on day 1 nets about 4.8 a second given back — four
-      fifths of the empty street's rate — and report the radius that gets there and every leg
-      of the probe before and after. **The main road stays as expensive as it measures
-      before the change**: if its net rate falls with the walkers' reach, the car's numbers
-      make the difference up, and `tests/test_crowd.gd`'s arterial floor and ceiling are the
-      check. The comment on the three pedestrian constants in `tuning.gd` says what they
-      defend and follows the new number; `docs/MECHANICS.md` where it describes the crowd's
-      field.
-- [ ] **Walkers give her more room when they step aside.** `Tuning.CROWD_YIELD_LATERAL`
-      (22 px) is how near a walker's predicted closest approach has to come before it moves
-      out of her way, from `CROWD_YIELD_DISTANCE` (96 px) off and `CROWD_YIELD_LEAD` (1.4 s)
-      ahead. Widen it so a walker that would pass inside its own charging core steps clear of
-      it, without parting a whole sidewalk in front of her — the comment beside the constant
-      names that failure. Measure contacts and the probe's quiet-sidewalk leg before and
-      after, and say what the head-on pass on a two-lane sidewalk now costs on the midline.
-
----
-
-## M156 — The crowd only turns at what physically stops it · asked for 2026-09-19
-
-> "cars shouldn't avoid it. I noticed cars turning around even though the obstacle is on the
-> sidewalk. only things like a fallen tree (which blocks the whole street) should prevent cars
-> from entering … pedestrians should only avoid the area if they cannot reach it physically.
-> right now they give up if there is an event at all when they should only give up if they
-> touch an impassable wall. that leads to two changes: 1) they should still walk through a car
-> accident since the sidewalk is free there 2) they should be able to spawn inside a closed
-> off section but shouldn't stand in one place but instead walk until they are forced to turn
-> around (by the environment)"
-
-[PLAYTEST-78](playtests/PLAYTEST-78.md), which also says what `CrowdAgent._cannot_go_on`
-treats as shut for each kind today. The **crowd-traffic** and **city** rules govern. It is the
-cause under M155's complaint: a street the crowd has given up on is a free calm area, and a
-street only a whole-width obstacle shuts is one the player cannot exploit either.
-
-- [ ] **Find where a car turns for an obstacle on the sidewalk.** A car's own rule is a body
-      on its own lane tile (`CityMap.is_obstructed`), a held segment, a closed tile or a
-      precinct. Say which of those a sidewalk obstacle reaches — a body whose recorded tiles
-      spill onto the lane, a seal held across the whole segment for a row that takes only a
-      sidewalk, or something else — with the seed, day and tile, before changing anything.
-- [ ] **A car is turned only by what blocks its roadway.** Whatever the first item finds
-      is fixed where it happens, so a row standing on a sidewalk leaves both lanes driving and
-      a row across the whole street (the fallen tree) still turns cars at the last junction.
-- [ ] **A walker turns where it meets what it cannot pass, and not before.** Today a walker
-      turns off at the last junction ahead of a soft seal, a held segment or a fully taken
-      sidewalk. It walks up to the impassable thing and turns round there instead, and a row
-      that leaves a walkable line on its sidewalk — the car accident is the named one — is
-      walked past. The turn is an about-face a walker can make anywhere; say what keeps two
-      walkers turning at one barrier from stacking, since the 2026-09-12 complaint was walkers
-      *"accumulating in one place and move back and forth or worth flicker"*.
-- [ ] **A walker goes into a street that is closed further along, from either side.**
-      *(2026-09-19: "they saw that a road section was closed of and never entered it. this
-      shouldn't happen. they should still go into the section until they cannot continue.
-      this should also happen from inside the path since right now we have offshoots that are
-      clear because nobody attempts to go in".)* A walker choosing an arm at a junction gives
-      a street with a barrier somewhere along it the same weight as an open one, so a side
-      street off the day's route fills as far as its barrier and a walker arriving at the
-      barrier turns round and walks back out.
-- [ ] **Closed-off ground has walkers in it, and they keep walking.** Placement and recycling
-      put walkers on sealed-in ground the way they do on any street, and nobody stands still
-      there. The walker half of `CrowdPockets` — never placing a walker on ground no street
-      leads out of, and standing one still that is caught there — answered walkers pacing a
-      junction whose every arm they refused to enter; with the two items above a walker there
-      has each stub to walk to its end, so say whether any walker pocket is still needed and
-      remove what is not. A car's pocket stays: a car is kept out by what blocks the whole
-      roadway, which it cannot turn round against in a stub.
-
----
-
-## M129 — A path through the city never has to cost · two routes in five still break
+## M129 — A path through the city never has to cost · one route in nine still breaks
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable
 > around … the routing should only cross the street at intersections"
 
 [PLAYTEST-69](playtests/PLAYTEST-69.md), [PLAYTEST-71](playtests/PLAYTEST-71.md),
-[PLAYTEST-75](playtests/PLAYTEST-75.md), [PLAYTEST-76](playtests/PLAYTEST-76.md). The four rules
-and the leaf blower's two-part field are built and recorded (`DECISIONS.md`, M129, the four
-rules; M129, the leaf blower is a wall to walk past and a busker to stay near). The probe,
-`tests/probes/m129_zero_cost_line.gd`, finds a zero-cost line along 183 of 296 routes. The
-guarantee is not true for the rest, and what stands in them is a route junction covered by
-several rows together (69 routes), with the leaf blower in the cut on 74 of the 113. The three
-placement rules refuse a candidate whose reach *together with everything already down* would
-close a junction, so a crossing the probe finds under four to six rows is one that either
-reached the day past the rules or is read as covered differently by the probe and the rule:
+[PLAYTEST-75](playtests/PLAYTEST-75.md), [PLAYTEST-76](playtests/PLAYTEST-76.md),
+[PLAYTEST-77](playtests/PLAYTEST-77.md). The four rules, the leaf blower's two-part field and
+the wall reading are built and recorded (`DECISIONS.md`, M129, the four rules; M129, the leaf
+blower is a wall to walk past and a busker to stay near; M129, a wall is also what cannot be
+walked past). The probe, `tests/probes/m129_zero_cost_line.gd`, finds a zero-cost line along
+262 of 296 routes. The guarantee is not true for the rest, and what stands in them is almost
+all one shape: a route junction taken by several rows together (32 of the 34 broken routes),
+with `leaf_blower`, `homeless_yeller` and `roadblock` each in the cut on 23 to 27 of the 34. No sidewalk rule reaches a `roadblock` on a carriageway or a wall's wide field reaching
+over a crossing from one street out. The three placement rules refuse a candidate whose reach
+*together with everything already down* would close a junction, so a crossing the probe finds
+covered is one that either reached the day past the rules or is read as covered differently by
+the probe and the rule:
 
+- [ ] **A hard wall still stands on the route's own sidewalk in play.** *(2026-09-19: "I still
+      get hard walls on the side of the sidewalk that is on the path -- how can this be so hard to
+      do correctly?", [PLAYTEST-94](playtests/PLAYTEST-94.md).)* The player did not name the body,
+      the seed or the day. The route-sidewalk rule names four rows — the café tables, the market
+      stall, the roadworks and the ice cream van — and runs in the scheduler's candidate loop
+      only. Measure it rather than guess: over the probe's seeds, every solid body on a walked
+      sidewalk that leaves her no lane on that sidewalk (she needs 46px), by row and by the path
+      that placed it. The answer is a rule about *any* body that closes the walked sidewalk,
+      whichever row and whichever path, asserted in the suite at zero.
 - [ ] **Which placements the three rules never see.** `_place_one`'s candidate loop is where
       the rules run. Find every other path a row reaches the day by — the calm-ground pass
       that covers a park by area, `_ensure_one_usable_park`, the seals a `SealPlanner` places
@@ -588,39 +632,9 @@ reached the day past the rules or is read as covered differently by the probe an
       probe, which path placed the rows in its cut and whether the probe's *covered* and the
       rule's *open* agree on it. Then either those paths ask the same three questions, or the
       record says why a route may pay there. The probe's "what broke the line" table is the
-      measurement; the seals alone cost about five points (66.9% on the day's own rows against
-      61.8% with them).
-- [ ] **A wall is also what cannot physically be walked past, and it never stands on the
-      route's own pavement.** *(2026-09-15: "on the side of the street where the path was
-      chosen only obstacles that can be bypassed should be possible" — "the market stall should
-      appear on the other side of the street" — "a wall is also when you physically cannot walk
-      through"; offered a placement-only rule instead, the player chose this: "that seems to
-      be more thorough".)* Today `EventScheduler._role_for` answers `WALL` only for a lethal
-      row or one whose walk-through cost reaches `Tuning.WALL_WORTH_OF_COST` (35), so a market
-      stall — a 28 px body denying 58 px of a 64 px pavement, no 28 px line past it — is
-      *friction* and is weighted onto the corridor four to one (`Tuning.EVENT_CORRIDOR_WEIGHT`).
-      The width rule (`_leaves_a_line_past_it`, via `_closes_the_street`) then only asks that
-      *either* pavement stays walkable end to end, so the stall may close the pavement the
-      tree walks while the tint (`DECISIONS.md`, M150) marks exactly that pavement. Three
-      changes, the **balance** rule governing every number: (1) `_role_for` also answers `WALL`
-      for a row whose body and charging disc (`_line_reach_of`) leave no four-connected line
-      the stroller's width (the 28 px the probe uses) along a pavement it may be placed on —
-      a passability reading beside the cost reading, decided from the row's own numbers, so
-      `docs/EVENTS.md`'s role column moves for every row it catches (`cafe_tables` and
-      `market_stall` at least; list them all in the record). (2) `_copies_of` reads the
-      corridor per pavement, the way M150's tint does (`Corridor.depth` answers at the grain of
-      a whole street today; `docs/CITY.md` where that grain is described): a wall gets its zero
-      copies on the pavement the tree walks and its ordinary off-corridor copies on the *other*
-      pavement of the same street, which is where the player put the stall. (3) The width rule
-      reads the route's pavement, not the street: a counted row reaching onto the tree's
-      pavement between two junctions is refused unless a stroller-wide line survives along that
-      pavement, cumulatively with what is already down, the way the junction rule reads.
-      Measure with `tests/probes/m129_zero_cost_line.gd` before and after, and with
-      `_test_the_day_is_placed_by_role`'s corridor floors and the wall caps, which will move:
-      the two act I rows built to force a crossing become walls across the street from the
-      route, so say what day 1's corridor now carries and what forced crossings are left,
-      rather than retuning floors or caps to pass. `docs/EVENTS.md` where it describes the
-      roles and the three rules.
+      measurement; the seals and the region wall cost about four points (92.2% on the day's
+      own rows against 88.5% with them).
+
 ---
 
 ## M137 — The contact is whoever she hands the note to, and the trap comes to her · asked for 2026-09-13
@@ -938,8 +952,6 @@ re-pitched:
       the visual channel comes **before** audio.
 - [ ] **Audio**, once the above is done and judged on its own: per-act beds, per-event cues, the
       baby's breathing as the diegetic version of the meters. Additive by design
-- [ ] Save and continue a run (`GameState` is already shaped for it, so this is serialisation
-      rather than design); there is a title screen and no menu, on purpose
 - [ ] Accessibility: colourblind-safe meters, a telegraph-time multiplier, reduced motion
 - [ ] Controller support
 - [ ] **Whether a stranger arriving at the page understands what it is.** Playtests 27 onward

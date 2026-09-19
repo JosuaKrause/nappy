@@ -142,7 +142,7 @@ const EXCITEMENT_DECAY_RUNNING := 0.5
 ## **The multipliers are ratios and the absolute rates are the design**, so a change to the walking
 ## rate above moves every one of these to keep its own ground where it was put:
 ##
-##     calm 12.0/s   precinct 9.0/s   street 6.0/s   alley 3.5/s   main road 2.1/s
+##     calm 12.0/s   precinct 9.0/s   street 6.0/s   alley 3.5/s   main road 0.12/s
 ##
 ## The park has to read on *both* bars, not just the sleepiness one — half of "this is working" is
 ## the excitement visibly falling away as she walks in under the trees. **Its floor is that a park
@@ -150,16 +150,30 @@ const EXCITEMENT_DECAY_RUNNING := 0.5
 ## to clear, which is long enough to be somewhere she walks to and stays in. Much faster and the
 ## park is a button she taps.
 ##
-## The main road is the same sentence inverted: it is the one ground in the city that is actively
-## bad at letting her recover, which is most of what "a main road is crossed, not walked" means
-## arithmetically. **An alley sits between the two** — pressured ground rather than a shortcut to
-## recovery, which is what keeps `EXCITEMENT_FROM_ALLEY` (3.0/s of constant dread) meaning
-## something: it sits just under the 3.5/s an alley gives back, so an empty alley is very nearly
-## flat and is never quite recovery.
+## The main road is the same sentence inverted, and nearly all the way there: it is the one ground
+## in the city that gives back next to nothing, at any density, which is most of what "a main road
+## is crossed, not walked" means arithmetically — walking it for any stretch is walking ground that
+## does not recover rather than ground that merely recovers slowly. `tests/probes/m117_decay.gd`'s
+## main-road leg reads +5.69/s net on day 1 and +1.36/s on day 9, three seeds each: even where the
+## spine has thinned to the lightest traffic of the run, it still costs rather than gives anything
+## back.
+##
+## **It is the lever that holds the spine's own price**, because it is the one number exclusive to
+## this corridor — the pedestrian field above only reaches `PEDESTRIAN_OUTER_RADIUS` now, short
+## enough that the arterial's own crowd noise cannot carry that price alone, and a louder car would
+## be loud on every street it also drives down rather than only this one. Crossing the road stays a
+## soft block rather than a wall: `tests/test_crowd.gd`'s worst-of-eight crossing reads 27.76 of a
+## hundred-point meter, comfortably under half, because the same short pedestrian reach that costs
+## the ground its own recovery also lightens what a crossing itself loads.
+##
+## **An alley sits between the two** — pressured ground rather than a shortcut to recovery, which
+## is what keeps `EXCITEMENT_FROM_ALLEY` (3.0/s of constant dread) meaning something: it sits just
+## under the 3.5/s an alley gives back, so an empty alley is very nearly flat and is never quite
+## recovery.
 const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.0
 const EXCITEMENT_DECAY_PRECINCT_MULTIPLIER := 1.5
 const EXCITEMENT_DECAY_ALLEY_MULTIPLIER := 0.58
-const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.35
+const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.02
 
 ## The rate a source has to beat before it is counted as denying the calm ground near it —
 ## `EventScheduler._denial_radius`, and `EventCatalogue`'s own reasoning for the one ambient row
@@ -893,29 +907,35 @@ const CAR_SPEED := Vector2(130.0, 185.0)
 ## **The radius is tight because `falloff` has a shoulder on it.** Every source holds three quarters
 ## of its intensity at the midpoint of its band, which is right for an **event** — a thing on the map
 ## to route around — and wrong for a **body**, which is one of a couple of hundred and is supposed to
-## be inaudible from across the pavement. At an event's kind of radius the same shoulder puts the
-## arterial floor around 18/s against a walking decay of 3.5, which is a main road that fills the
-## meter in six seconds.
+## be inaudible from across the pavement. An event's kind of radius on a body puts the arterial floor
+## several times the walking decay, which is a main road that fills the meter in seconds rather than
+## one that is merely expensive to cross.
 ##
 ## So the crowd pays the shape back in radius, and what that defends is the measured character of
 ## the street: **careless is expensive and careful is free.** A close pass costs 4.2/s, set by the
 ## intensity and the inner radius; two tiles away is 0/s. What the tight outer radius removes is a
-## wide middle that would be worth a great deal for walking anywhere near anybody.
+## wide middle that would be worth a great deal for walking anywhere near anybody, and the narrower
+## it is, the more of an ordinary sidewalk that wide middle gives back: a quiet act I sidewalk, with
+## the day's own crowd on it and nothing authored in range, nets about −4.7/s against the empty
+## street's own −6.0/s (`tests/probes/m117_decay.gd`, three seeds), close to reading as recovery the
+## way the empty street already does. The main road's own price is untouched by this radius —
+## `EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` is what holds it, since that number is exclusive to the
+## one corridor it prices and this one is not.
 ##
 ## **"Two tiles away" is true of one walker and is only reachable if the lanes are spread.** A
 ## footway is two tiles, so lanes on their tile centres are 32px apart — and the midline, the only
 ## line with no head-on contact on it, is then 16px from two lane centres and inside the
-## **full-intensity core** of both. Measured that way the ambient floor is flat across a pavement
-## (4.30 frontage / 4.96 midline / 4.76 kerb), the careful line for contacts is the careless one for
-## noise, and *how close to pass* is not a choice at all.
-##
-## `CrowdLanes.SIDEWALK_LANE_SPREAD` is what makes it one: at 48px apart the midline is **24px from
-## each lane and outside `PEDESTRIAN_INNER_RADIUS`**, worth 56 points per forty seconds against 74
-## unspread. **That is the one change to make if this stops being true** — the intensity and the
-## radii are pinned by the arterial floor and the shoulder, and the geometry is not.
+## **full-intensity core** of both — the careful line for contacts and the careless one for noise,
+## which is why `CrowdLanes.SIDEWALK_LANE_SPREAD` moves the lanes apart instead of narrowing this
+## radius: at 48px apart the midline is **24px from each lane and outside `PEDESTRIAN_INNER_RADIUS`**,
+## worth 56 points per forty seconds against 74 unspread. **That is the one change to make if this
+## stops being true** — the intensity and the radii are pinned by the arterial floor and the shoulder,
+## and the geometry is not. A pass at that 24px still reads as close to full intensity even at the
+## shorter outer radius, which is why `CROWD_YIELD_LATERAL` below widens far enough to send a walker
+## holding that lane out of it rather than leaving the noise floor to the radius alone.
 const PEDESTRIAN_INTENSITY := 4.2
 const PEDESTRIAN_INNER_RADIUS := 22.0
-const PEDESTRIAN_OUTER_RADIUS := 55.0
+const PEDESTRIAN_OUTER_RADIUS := 30.0
 
 ## A car is louder than a person and passes much faster. No single car outruns the walking
 ## decay — the point is not that one car is dangerous, it is that on a main road there is
@@ -1117,10 +1137,12 @@ const BUMP_STEP_ASIDE_TIME := 2.5
 ## the 0.36s they need to clear a lane, so **running still hits people**.
 const CROWD_YIELD_DISTANCE := 96.0
 ## How near they have to come to her — at their **closest approach**, not right now — to bother
-## getting out of the way. A little over `BUMP_RADIUS`, so it is "we are going to touch" rather
-## than "we will be near each other", and a pavement does not part like the Red Sea in front of
-## her.
-const CROWD_YIELD_LATERAL := 22.0
+## getting out of the way. Wider than the lane-to-midline gap on an ordinary two-lane footway
+## (24px, half the 48px `CrowdLanes.SIDEWALK_LANE_SPREAD` puts between the footway's own two lanes),
+## so a walker holding an ordinary lane on an ordinary head-on pass steps aside instead of brushing
+## past at close to full intensity the whole way. Short of that 48px itself, so only the lane she is
+## actually closing on empties and a pavement does not part like the Red Sea in front of her.
+const CROWD_YIELD_LATERAL := 30.0
 ## How far ahead that approach is predicted. Long enough to be worth acting on — a walker needs
 ## 0.36s to clear a lane — and short enough that somebody two seconds away carries on as normal.
 const CROWD_YIELD_LEAD := 1.4
@@ -1451,9 +1473,12 @@ const EVENT_PLACEMENT_TRIES := 24
 # tile in a precinct is offered sixteen times.
 #
 # Neither is a filter, and the one filter there is lives in `EventScheduler._copies_of`: **a wall
-# is never inside the corridor.** That one can be absolute because the whole off-corridor city
-# remains available to it, so it cannot starve a row of ground — which is what a weight buys
-# everywhere else here and is why these are weights.
+# never stands on ground a route runs along.** That one can be absolute because the whole
+# off-corridor city remains available to it, so it cannot starve a row of ground — which is what a
+# weight buys everywhere else here and is why these are weights. It is stated per **sidewalk**, so
+# the far side of a route's own street is legal ground for a wall at the weight of ordinary far
+# ground; the weights below are still read off the street's depth, so the rim is still where a wall
+# is pulled.
 
 ## How many times over a tile on the day's routes is offered to a **friction** placement.
 ##
@@ -1464,13 +1489,18 @@ const EVENT_PLACEMENT_TRIES := 24
 ## nothing in the design asks for that.
 const EVENT_CORRIDOR_WEIGHT := 4
 
-## How many times over a turning off the corridor is offered to a **wall** placement, against a
-## street further out.
+## How many times over the **rim** is offered to a **wall** placement, against ground further out.
 ##
 ## A wall bounds the corridor, so it has to be somewhere the corridor can see; a lethal thing four
 ## streets away bounds nothing. That is the preference. What is not a preference is the exclusion
 ## beside it — the same reasoning as `CLOSURE_WALL_BIAS`, which is this number's twin one system
 ## over and deliberately the same value.
+##
+## **The rim is two kinds of ground, not one.** A turning off the corridor is the first: one street
+## out, seen from the junction where the wrong choice is made. The **far side of a route's own
+## street** is the second, and it is the nearer of the two — she reads it without leaving her line,
+## and a café or a stall standing there is what a street with a route down one side looks like.
+## *(2026-09-19: asked whether a wall across the street should be rare or common, "often".)*
 ##
 ## **It applies to the *costly* half of the wall band only.** A very costly row is what the rim is
 ## for — she has strayed one turning and it is expensive — and a lethal row wants the ground beyond
@@ -2159,6 +2189,31 @@ const FINALE_EXPLOSION_INTERVAL := 22.0
 ## How long a hallway window holds its lit picture when an explosion goes off — *"one or two
 ## frames"* at 60fps, taken as a span in seconds so it does not depend on the frame rate.
 const FINALE_WINDOW_FLASH_SECONDS := 0.12
+
+## The basement's steam vents, one entry per vent: how often each one blows, in seconds.
+##
+## *"Have multiple fixed locations with steam that fully block the path and have them turn off an
+## on in different intervals so it becomes a timing puzzle."* **The count is the length of this
+## list rather than a second constant**, so a vent without a period of its own is not a thing that
+## can be written down.
+##
+## **Three, and no two periods share a factor with each other**, which is the whole of what makes
+## the corridor a puzzle instead of a rhythm: 13, 16 and 19 half-seconds are pairwise coprime, so
+## the pattern the three of them make together only repeats after their product — 1976s, ten times
+## the whole sequence's own clock — and she never walks the same corridor twice. Three rather than more
+## because the basement's corridor is about forty tiles end to end and a vent closes it outright:
+## a fourth would make the walk a queue of gates rather than a route with waits in it.
+const FINALE_STEAM_PERIODS: Array[float] = [6.5, 8.0, 9.5]
+
+## How long one vent blows, in seconds, once its notice is over — the *on* half of the on/off
+## split, against the periods above.
+##
+## **Short against every period**, so every vent is off far more than it is on: with the row's own
+## notice ahead of it a cycle is 3.2s of something and 3.3–6.3s of nothing, and a gap she can walk
+## through is the thing she is waiting for. And short in its own right, because a vent closes a
+## corridor with no way round it: the pocket between two of them is only ever shut for as long as
+## the shorter of the two is blowing, which is this.
+const FINALE_STEAM_BLOWS_FOR := 2.0
 
 ## How many of each kind of danger the finale's own plan puts on one open chain street. *"Lots of
 ## lethal and dangerous events"*: a street is `BLOCK_SIZE` (8) tiles long, so one truck, one van
