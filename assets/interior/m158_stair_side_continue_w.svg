@@ -1,0 +1,6 @@
+<!-- Prepared, unbound M158 continuation tile, horizontally mirrored for westward descent. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges" stroke-linejoin="miter">
+  <g transform="translate(32 0) scale(-1 1)">
+    <path d="M24 0H32V8Z" fill="#62656a" stroke="#3b3034" stroke-width="1"/>
+  </g>
+</svg>
