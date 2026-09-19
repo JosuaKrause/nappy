@@ -4,8 +4,8 @@ The zero-cost line probe at three states of the branch: before it, after the thr
 queue item asks for (the passability clause in `EventScheduler._role_for`, `_copies_of` reading the
 corridor per sidewalk, and the width rule reading the sidewalk the route is walked along), and
 after the two answers the player gave on the pull request — a wall across the street is common
-rather than rare, and a pacing row is a wall only where its beat reaches no crossing. Each file is
-the whole printed output of
+rather than rare, and a pacing row is a wall only where its beat passes no way off its sidewalk.
+Each file is the whole printed output of
 
 ```
 tools/test.sh probes/m129_zero_cost_line.gd
@@ -17,7 +17,7 @@ six seeds by one day per act, unchanged between the runs.
 | --- | --- |
 | `probe-before.txt` | `bbcfe15e`, `main` at the branch point |
 | `probe-after.txt` | `0bb5cff2`, the third of the branch's first three commits |
-| `probe-after-forks.txt` | `39b3cd4a`, the commit that answers both forks |
+| `probe-after-forks.txt` | `e4918f6a`, the branch's last commit of work |
 
 ## What moved
 
@@ -50,6 +50,12 @@ wait for reads here as a row she has to get past.
 | one row covering the street's whole width by itself | 1 / 1 | 0 / 0 | 0 / 0 |
 | three or more rows covering the width between them | 1 / 1 | 0 / 0 | 0 / 0 |
 | other | 10 / 33 | 0 / 3 | 1 / 8 |
+
+**The side route changes nothing the primary reading can see.** Counting ground off the street
+opening off a sidewalk as a way out of a beat, beside the junction crossing, moves one placement in
+the probe's six seeds and leaves every number above untouched; under the strictest pacing reading —
+the one that prices a beat over its whole beat rather than over the ground it never leaves free —
+three more act I routes carry a line, 96 of 296 to 99.
 
 **A yeller on the route never breaks it by himself**: the shape named for a beat is no routes and
 one cut. Where he is in a cut he is in it with others, at a junction — he stands in the blocked

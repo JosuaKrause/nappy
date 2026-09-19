@@ -13,11 +13,11 @@ Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
    all    262 of 296   88.5%
 
 -- routes with a zero-cost line: pacing rows over their whole beat --
-   act 1   34 of  86   39.5%
+   act 1   37 of  86   43.0%
    act 2   25 of  88   28.4%
    act 3   26 of  74   35.1%
    act 4   11 of  48   22.9%
-   all     96 of 296   32.4%
+   all     99 of 296   33.4%
 
 -- routes with a zero-cost line: primary, the day's own catalogue rows only (no seals or region wall) --
    act 1   82 of  86   95.3%
@@ -64,8 +64,8 @@ Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
       on PEDESTRIAN streets: 0
    routes with any cell on the spine at all: 165
 
--- 42.4s --
--- m129_zero_cost_line.gd       42505 ms
+-- 29.9s --
+-- m129_zero_cost_line.gd       29924 ms
 
 1 checks, 0 failures
 PARTIAL RUN — only suites matching probes/m129_zero_cost_line.gd. Not a green build.
