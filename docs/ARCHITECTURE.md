@@ -25,6 +25,8 @@ src/
 	event_bus.gd          global signals                  (autoload: EventBus)
 	telemetry.gd          the run log; inert until asked   (autoload: Telemetry)
 	game_state.gd         run/day/nerves/resistance       (autoload: GameState)
+	game_save.gd          persists a run to disk and reads one back; not an autoload, the same
+	                      static-namespace shape as DevFlags
   player/
 	stroller.gd           movement, input, speed state
 	baby.gd               the two meters + baby state machine
