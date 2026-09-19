@@ -6,7 +6,7 @@ flags and summary. The neighboring log is that process's stdout. The telemetry-o
 run folder is retained beside them; it contains its startup map and ordered log, with no `auto/`
 or `asked/` captures. No trial requests a screenshot, burst or invincibility.
 
-The measured source is commit 37042d184bcdb541047368a84ad1eaf1535f0b38. All runs use seed 4242,
+The initial seven trials measure commit 37042d184bcdb541047368a84ad1eaf1535f0b38. All runs use seed 4242,
 Godot 4.7.2 stable official (ed1daf0bf), macOS, Apple M2, `gl_compatibility` / `opengl3`
 (OpenGL on Metal), a 1280 × 720 viewport/window and a reported 60 Hz display. The render-thread
 setting is 1. VSync's driver-reported enum is 1 (enabled), except the disabled-VSync trial's 0.
@@ -101,3 +101,52 @@ still has long intervals; its common-window p99 is 27.973 ms. This is not a ship
 decision, nor proof that a cap removes perceived stutter. A quiet-host repetition on the player's
 laptop, and perception during the route, remain useful acceptance checks. Phone CPU profiling
 and atlas-phase timing remain separate investigations.
+
+## Four baseline repetitions with equal comparison windows
+
+`repeat_a` through `repeat_d` measure the runtime source at
+71db375929b1db9a0177104edd94b0d070cb25bc. Their dirty build marker comes from the new evidence
+files, not runtime edits. Each process exits normally. They run serially, with the other agent's
+Godot and CPU-heavy work held during the block. No test suite runs alongside them. The host is on
+AC power with a full battery; `pmset -g therm` reports no recorded thermal or performance warning.
+A process snapshot still shows WindowServer, GIMP and other desktop services doing work. This is
+a reduction of our own contention, not a claim that the player's laptop is globally idle.
+
+The exact invocation from the M159 worktree, identical for all four trials, is:
+
+```sh
+/Applications/Godot.app/Contents/MacOS/Godot --path . -- \
+  --frame-trace --after 12 --no-title --seed 4242 \
+  --walk 3s2e2w2e2w1e --no-telemetry
+```
+
+The shorter, twelve-second input ends before the early loss seen in the initial baseline. It
+retains the same first twelve seconds of that input route. Each trial has five seconds of raw
+wall-clock warmup, one uninterrupted active-play segment, zero omitted samples, and the same
+six-second comparison window starting at its first retained anchor. Include only positive
+intervals ending within that window; the callback crossing its end stays outside it. Input and
+exit use simulation delta, so complete retained spans are 6.554, 6.604, 6.558 and 6.587 seconds;
+those unequal tails are not used for the comparison. Every route moves and ends at
+(2646.807, 2863.953) pixels. First retained positions differ by at most one 30 Hz walking step.
+
+| Trial | Intervals in six seconds | p50 ms | p95 ms | p99 ms | Max ms | Over 60 Hz budget |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| repeat_a | 506 | 10.623 | 23.946 | 25.869 | 29.856 | 44 |
+| repeat_b | 551 | 9.410 | 25.687 | 26.063 | 26.286 | 43 |
+| repeat_c | 536 | 9.842 | 23.863 | 26.041 | 26.276 | 44 |
+| repeat_d | 541 | 9.729 | 23.795 | 24.100 | 24.824 | 54 |
+
+The display/renderer settings match the original normal-VSync baseline: 60 Hz reported refresh,
+VSync enum 1, no FPS cap, Apple M2, OpenGL on Metal, 1280 × 720, and render-thread model 1.
+The added metadata reports that the main thread owns rendering. Layer 4 is on, layer 6 and
+telemetry are off throughout. The raw JSON and stdout for every repetition are retained.
+
+Recompute any six-second row from this directory with `jq -f six_seconds.jq repeat_a.json`
+(substitute the desired raw trace). The filter rejects a short trace or a gap within the window.
+
+The median range is about 13% of the lowest median; the callback count varies by about 9%, and
+the share over the 60 Hz budget ranges from 7.8% to 10.0%. Baselines therefore do not establish
+the repeatability needed to rank modest toggle costs. No new toggle trials are interpreted.
+The long-interval tail recurs, but the evidence does not identify its cause or establish perceived
+smoothness. Neither a globally quiet host nor exact replay of frame-dependent crowd interactions
+is established.
