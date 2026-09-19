@@ -2,7 +2,7 @@
 
 This record measures a behavior-preserving reduction in crowd contribution work for M159,
 a slow frame names the frame that was slow. Its acceptance criterion comes from
-[PLAYTEST-84](../../playtests/PLAYTEST-84.md): the deliverable is an optimization.
+[PLAYTEST-85](../../playtests/PLAYTEST-85.md): the deliverable is an optimization.
 
 The retained headless workload and ordinary-gameplay frame traces answer different questions.
 The workload isolates contribution sweeps over repeated identical simulated crowd states;
