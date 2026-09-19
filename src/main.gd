@@ -252,6 +252,12 @@ func _ready() -> void:
 		_pauses_with_the_game(_observer)
 		_observer.setup(_city, _player, _baby, _day, _resistance, _edge)
 
+	if DevFlags.frame_trace_requested():
+		var trace := FrameTrace.new()
+		trace.name = "FrameTrace"
+		add_child(trace)
+		trace.setup(self, _city, _player, _day)
+
 	_start_day()
 	# `_player.reset_at()` inside the call above has just put her own camera exactly where the
 	# boot camera was standing in for it, so freeing it now hands the viewport's current camera

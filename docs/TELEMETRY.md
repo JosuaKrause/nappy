@@ -340,10 +340,63 @@ new per-frame hook added to a gameplay class. A late load reads:
   12.0  spike    38.4ms, mean 16.2ms — 1 pictures loaded
 ```
 
-`"nothing else changed that frame"` is a finding of its own: the hitch was not the game doing
-something extra that frame, which points outside this project's own systems, toward the
-platform. `TextureResolver.warm()` loads every transfer before the day starts, so a `pictures
+`"nothing else changed that frame"` means only that the watched tile, live count, picture loads
+and collected atlases did not change. It cannot exclude other game work, or a retirement and
+spawn that leave the live count unchanged. The legacy delta is simulation time; the counters on
+the once-a-second `frame` line belong to the reporting frame. Use the raw trace below for temporal
+attribution. `TextureResolver.warm()` loads every transfer before the day starts, so a `pictures
 loaded` line in play means the warm pass missed one rather than that late loading is expected.
+
+## Raw frame traces
+
+`--frame-trace` adds an independent debug observer, including under `--no-telemetry`. It observes
+the ordinary city day, after five seconds of initial active-play wall-clock warmup, with no RNG,
+gameplay changes, per-frame printing or file writes. On scene exit (quit or restart), it exports
+one JSON file under `user://frame-traces/` and prints its absolute path. A forced kill or crash
+loses the in-memory capture. The ordered log's flush-on-entry policy does not apply to this
+explicitly requested diagnostic file.
+
+The clock is `Time.get_ticks_usec()` at `RenderingServer.frame_post_draw`: **a raw monotonic CPU
+callback timestamp after render submission, not physical display presentation/scanout or GPU
+time**. A threaded renderer can defer this callback; the trace records the thread-model setting
+and command line so that configuration is visible. Draw, process and physics frame IDs identify
+the engine state at the callback. Render counters are sampled at that callback, alongside the
+world counters; `Performance.TIME_PROCESS` and `TIME_PHYSICS_PROCESS` are deliberately absent
+because they are previous-second maxima, not costs of the sampled frame. The existing graph
+continues to show simulation delta and the readout retains its separate labels.
+
+Schema version 1 has `columns` naming the positional fields of every `samples` row, plus
+`environment_start`, `environment_end` and `summary`. An interval ends at its row's timestamp;
+its start is the preceding row's timestamp. A zero interval anchors each new segment. Pauses,
+title screens and ended days break the segment, so idle time is not a hitch. Rows include render
+draws/objects/primitives, live event count and instance-ID sum (a replacement can change the sum
+without changing the count; it is not a collision-free identity record), crowd count, cumulative
+picture loads and atlas collections, object/node/orphan counts, player position in thousandths of
+a pixel, day, and the readout/graph/telemetry states. These describe coincident work; an unchanged
+counter does not establish a cause or rule out unobserved work.
+
+The buffer retains the **first 36,000 samples** in preallocated integer storage (6,336,000 bytes
+for the sample payload). Once full it preserves those samples and increments
+`dropped_after_capacity`; it does not overwrite the hitch or grow. Summaries cover retained
+positive intervals only: nearest-rank p50, p95, p99 and max in milliseconds, plus counts strictly
+above the 60 Hz, 30 Hz and reported display-refresh budgets. These are budget-exceeding callback
+intervals, not a count of physically dropped display frames. Unknown refresh is `-1` in metadata
+and gives a zero refresh budget/count. Metadata records driver-reported VSync mode (Godot's enum;
+`-1` headless), display server, rendering method/driver, viewport/window sizes, engine version,
+FPS cap, seed and both engine/user flags. The compositor can still pace independently of the
+driver-reported VSync mode.
+
+For a bounded capture-free walk, use `./tools/run.sh --frame-trace --after 20 --no-title
+--seed 4242 --walk 3s17e`. With `--frame-trace` and `--after`, the input harness accepts walking
+and timed key presses and quits without a screenshot; `--frame-trace` alone waits for your normal
+quit. Engine flags for the pacing trials go before `--` in a direct Godot invocation.
+
+For a controlled trial, keep the seed, walking script, duration and warmup fixed; record without
+screenshots, bursts or `--invincible`. Compare layer `4` off/on, layer `6` off/on and telemetry
+off/on separately. Then compare normal VSync, engine `--disable-vsync`, and engine `--max-fps 60`
+as separate diagnostic trials, keeping the other controls fixed. Inspect the recorded positions
+to verify the route moved, and reject a run with automatic telemetry captures during its measured
+interval. Use a normal exit so the export runs. A pacing trial does not choose shipping settings.
 
 ---
 

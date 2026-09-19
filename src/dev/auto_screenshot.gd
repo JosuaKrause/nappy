@@ -133,8 +133,8 @@ var _presses: Array[Dictionary] = []
 ## Where `--tap X Y` asks for a synthetic tap, or `Vector2.INF` for none given. See `_tap_screen()`.
 var _tap_at := Vector2.INF
 
-## Returns a configured instance, or null if the command line did not ask for a screenshot —
-## including every time it is asked from outside a debug build. `--screenshot`, `--after`,
+## Returns a configured instance for a screenshot or a timed, capture-free frame trace.
+## Returns null without either request or outside a debug build. `--screenshot`, `--after`,
 ## `--walk`, `--flee` and `--press` are developer furniture like every flag `DevFlags` gates, and
 ## are gated here rather than moved there because this file already owns their parsing.
 ##
@@ -150,10 +150,12 @@ static func from_command_line() -> AutoScreenshot:
 		return null
 	var args := OS.get_cmdline_user_args()
 	var index := args.find("--screenshot")
-	if index == -1 or index + 1 >= args.size():
+	var has_picture := index != -1 and index + 1 < args.size()
+	var timed_trace := DevFlags.frame_trace_requested() and "--after" in args
+	if not has_picture and not timed_trace:
 		return null
 	var node := AutoScreenshot.new()
-	node._path = args[index + 1]
+	node._path = args[index + 1] if has_picture else ""
 	var after := args.find("--after")
 	if after != -1 and after + 1 < args.size():
 		node._seconds_to_wait = float(args[after + 1])
@@ -312,7 +314,10 @@ func _process(delta: float) -> void:
 		Input.action_release(_holding)
 	_release_direction()
 	Input.action_release("run")
-	_capture()
+	if _path.is_empty():
+		get_tree().quit()
+	else:
+		_capture()
 
 ## Taps an action, or a bare key, so that it **propagates** — which `--walk` does not need and this
 ## does.
