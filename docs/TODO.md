@@ -293,6 +293,65 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
+## M168 — The escape after playtest 94 · asked for 2026-09-19
+
+> "the escape is okay but there should be a fire on the left like it is right now but the top
+> floor right side should be completely blocked off with rubble. then the pursuing guy should
+> respawn forcing to switch the side again. the steam frequencies are too slow and there are only
+> two steams and they are not blocking in any way they should go in the narrow hallways. I still
+> spawn with flashing !!! in the city. restarting should still have the day brief for both the
+> apartment escape and the city escape even if the nerves don't go down. also I just saw a barrier
+> turn into a mask men (the barrier disappeared and the masked man appeared) and the pursuit ended
+> way too early (I got caught when I was still very visibly away from him)"
+
+[PLAYTEST-94](playtests/PLAYTEST-94.md) has each finding with what stands there today. Reached
+through `tools/run.sh --start-escape --seed 4242`.
+
+- [ ] **The top floor's right side is blocked off with rubble, and the fire stays on the left.**
+      From her own door the right stairwell cannot be entered on the top floor at all. Rubble is
+      a body and a drawing (an SVG first), placed by construction rather than checked.
+- [ ] **The masked man comes again.** After his first run he respawns so that the side she
+      switched to stops being safe and she has to switch back: *"forcing to switch the side
+      again"*. When and where he comes again is the design to settle against the fire and the
+      rubble, since the three together must leave a way down.
+- [ ] **The steam blows more often, and stands where one cloud is the whole width.** The periods
+      are 6.5, 8 and 9.5 seconds with a 2 second blow (`Tuning.FINALE_STEAM_PERIODS`,
+      `FINALE_STEAM_BLOWS_FOR`), which the player reads as too slow; a blow is a 32px cloud and
+      the vents stand where the corridor is 64px wide, so she walks past one. The vents go *"in
+      the narrow hallways"*, and all three are met on the way, where the player met two.
+      [PLAYTEST-85](playtests/PLAYTEST-85.md)'s design stands: fixed places, *"fully block the
+      path"*, differing intervals.
+- [ ] **She comes out of the service exit with no danger mark up.** The ground she arrives on is
+      free of every lethal reach by construction, the same rule PLAYTEST-85 set for bodies:
+      *"the spawning shouldn't be a check"*. Trace which row raises the flashing mark on seed
+      4242 first.
+- [ ] **A section restart shows the brief screen**, for the building and for the city alike, with
+      the nerves unchanged. The restart still costs nothing.
+- [ ] **A masked man on foot in the city does not appear out of a barrier, and catches her at a
+      man's reach.** The finale's masked men are `roadblock` at full resistance progress: the
+      barrier picture is swapped for a guard the moment one notices her, and its lethal
+      `inner_radius` of 86px, sized so a kill can fire from outside a 60px barrier, is then
+      measured from a man. Both readings failed in play. The same row hunts in acts III and IV,
+      so what changes here changes there.
+- [ ] **The escape's run log stamps every line `0.0`.** The log of the played run cannot say when
+      anything happened (`docs/evidence/playtest-94-2026-09-19/`).
+
+---
+
+## M169 — The save symbol reads as a floppy disk · asked for 2026-09-19
+
+> "the save icon is basically a white square"
+
+[PLAYTEST-94](playtests/PLAYTEST-94.md). `assets/ui/save.svg` tells its shutter and its label from
+the body by opacity alone (1.0 and 0.35 against 0.85, all white), and `SaveIndicator` tints and
+fades the whole texture with one modulate, so on a phone the three merge.
+
+- [ ] **The shutter and the label are told from the body by shape** — cut out as holes, or the
+      body drawn as an outline — so the silhouette survives one flat tint at the size it is shown.
+      Look at it at the phone's scale before proposing it.
+
+---
+
 ## M167 — The father's legs read as legs · asked for 2026-09-19
 
 > "the leg positions are correct now. we can use it for now (and merge) but in parallel do another fix attempt to just make the legs look like legs"
@@ -403,6 +462,15 @@ over a crossing from one street out. The three placement rules refuse a candidat
 covered is one that either reached the day past the rules or is read as covered differently by
 the probe and the rule:
 
+- [ ] **A hard wall still stands on the route's own sidewalk in play.** *(2026-09-19: "I still
+      get hard walls on the side of the sidewalk that is on the path -- how can this be so hard to
+      do correctly?", [PLAYTEST-94](playtests/PLAYTEST-94.md).)* The player did not name the body,
+      the seed or the day. The route-sidewalk rule names four rows — the café tables, the market
+      stall, the roadworks and the ice cream van — and runs in the scheduler's candidate loop
+      only. Measure it rather than guess: over the probe's seeds, every solid body on a walked
+      sidewalk that leaves her no lane on that sidewalk (she needs 46px), by row and by the path
+      that placed it. The answer is a rule about *any* body that closes the walked sidewalk,
+      whichever row and whichever path, asserted in the suite at zero.
 - [ ] **Which placements the three rules never see.** `_place_one`'s candidate loop is where
       the rules run. Find every other path a row reaches the day by — the calm-ground pass
       that covers a park by area, `_ensure_one_usable_park`, the seals a `SealPlanner` places

@@ -298,9 +298,15 @@ checks and worktrees can move independently of this file.
   every A/C frame fixed. Show the clean sheet and native/6× loops in its draft PR description;
   nothing in this follow-up replaces the provisionally accepted runtime baseline without review.
 
+- **[PLAYTEST-94](playtests/PLAYTEST-94.md) is filed and unbuilt.** It opened M168, the escape
+  after playtest 94, and M169, the save symbol reads as a floppy disk, and added the walked-side
+  wall measurement under M129, a path through the city never has to cost. All three are in
+  `TODO.md` and each is one agent's brief.
+
 Number ownership remains distinct: PLAYTEST-84 and PLAYTEST-85 are the escape/save records
 on main, PLAYTEST-86 belongs to the performance work, and PLAYTEST-87 belongs to the father
-sheet instructions. PLAYTEST-88 is the father's subsequent visual verdict.
+sheet instructions. PLAYTEST-88 is the father's subsequent visual verdict. PLAYTEST-93 is on PR #234's branch, and
+PLAYTEST-94 is the save, escape and route-wall record.
 
 No merge, auto-merge, rebase, merge from main or branch deletion is authorized without explicit permission in the current
 session. New implementation or investigation uses fresh agents with self-contained briefs; do not
