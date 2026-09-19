@@ -355,6 +355,13 @@ item below for as long as looking takes.
   `physics` line is per tick and the `process` line is the worst frame of the last second, so
   `fps` is the number that says whether the frame moved. **Does it?** Same record, M141.
 
+- **Pace a quiet ordinary sidewalk back and forth for a stretch, then hold its midline through a
+  few oncoming walkers**, any seed, day 1 (`--seed 4242 --day 1`; `--invincible` if the timing to
+  watch several passes through is otherwise hard to hold). `PEDESTRIAN_OUTER_RADIUS` came in and
+  `EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` came down to hold the main road's own price in its
+  place. **Does pacing a quiet route sidewalk now read as recovery, closer to how an empty street
+  already did, and do walkers stepping out of her way read as polite rather than as a crowd
+  fleeing her?** Record is `DECISIONS.md`, M155, the crowd's reach comes in.
 - **Walk a day's sealed streets, its side streets and a street with something parked on the
   pavement** — any seed, any day; `--spawn closure` puts the camera at the mouth of one of the
   day's own closed streets, and the streets off the day's route are the sealed ones. The crowd now
