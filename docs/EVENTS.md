@@ -595,22 +595,38 @@ from the doorstep to the calm areas still worth reaching.
 | kind of row | role | where it may go |
 | --- | --- | --- |
 | lethal (`hard_fail`), or a walk-through cost of `WALL_WORTH_OF_COST` or more | **wall** | never on ground a route runs along; `EVENT_WALL_RIM_WEIGHT` toward a turning off the corridor |
-| a standing row that leaves no line past it along a sidewalk it may stand on (`cafe_tables`, `construction`, `market_stall`, `ice_cream_van`, and every wide row that was already one) | **wall** | the same, which includes the far sidewalk of a route's own street |
+| a standing row that leaves no line past it along a sidewalk it may stand on, by cost (`cafe_tables`, `construction`, `market_stall`, `ice_cream_van`) or by physical fit alone (`delivery_van`, `poster_crew`, and any future row this narrow) | **wall** | the same, which includes the far sidewalk of a route's own street |
 | a **pacing** row that leaves no line past it and whose beat passes no way off its sidewalk (`homeless_yeller`, where its beat is truncated short of one) | **wall** | the same, decided per placement rather than per row |
 | a **pacing** row whose beat passes a junction's crosswalk or a side route (`homeless_yeller`, almost everywhere) | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor, the route's own sidewalk included |
 | everything else placed on a tile | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor |
 | a `ONE_SHOT` | **set piece** | one placement at *each* site of a covering set; one of them happens |
 | `AMBIENT`, `AHEAD_OF_PLAYER`, a scar, a park spoiler, `EventDef.scenery` (`pigeon_flock`) | **none** | wherever its own rule says |
 
-**The second row is a question about the ground, not about the price.** *(PLAYTEST-77: "how is
-market stall a friction? you can't walk through it"; "a wall is also when you physically cannot walk
-through".)* A sidewalk is `Tuning.SIDEWALK_WIDTH` tiles — two lanes, 64px — so the only line past a
-row standing in one of them is the other lane, a tile away; a row whose body and charging disc
-(`EventScheduler._line_reach_of`, "What a row denies is what it charges for" in `docs/CITY.md`)
-reach that far leaves no line at all. A market stall costs 8.5 points to walk through, well under
-`WALL_WORTH_OF_COST`, and denies 58px of the 64: cheap and impassable are not the same question, and
-friction is the role aimed *at* the route, so a row aimed there has to be one she can get past
-there. It is read off the row's own numbers exactly as the cost clause is, and asked of *a*
+**The second row is a question about the ground, not about the price, and it is asked two ways.**
+*(PLAYTEST-77: "how is market stall a friction? you can't walk through it"; "a wall is also when you
+physically cannot walk through".)* A sidewalk is `Tuning.SIDEWALK_WIDTH` tiles — two lanes, 64px —
+so the only line past a row standing in one of them is the other lane, a tile away; a row whose body
+and charging disc (`EventScheduler._line_reach_of`, "What a row denies is what it charges for" in
+`docs/CITY.md`) reach that far leaves no line at all. A market stall costs 8.5 points to walk
+through, well under `WALL_WORTH_OF_COST`, and denies 58px of the 64: cheap and impassable are not the
+same question, and friction is the role aimed *at* the route, so a row aimed there has to be one she
+can get past there.
+
+**A silent, narrow body can still close a lane no cost ever priced.** *(PLAYTEST-94: "I still get
+hard walls on the side of the sidewalk that is on the path -- how can this be so hard to do
+correctly?")* `delivery_van` bills nothing (`intensity` 0) and its 22px `obstructs_radius` stays
+under the cost clause's 32px threshold, but parked `AT_THE_KERB` — 16px in from the kerb edge, the
+lane tile it is never re-centred off — it leaves `(SIDEWALK_WIDTH * TILE_SIZE - TILE_SIZE * 0.5) -
+22 = 26px` to the frontage, narrower than the 28px she needs (`2 * PLAYER_BODY_RADIUS`). So
+`EventScheduler._closes_the_band_by_its_own_placement` reads a row's own numbers against the exact
+edge its `pavement_side` stands it at — the kerb or the frontage lane's own tile centre, or the
+band's true middle for `ANY` (where `EventInstance._centred_on_the_pavement_band()` always puts a
+stationary, unpinned body) — rather than against a fixed threshold, so a row narrow enough to slip
+under the cost clause is still caught if its body alone leaves no edge-to-edge gap that wide.
+`poster_crew` (11px, `ANY`) is the other row this catches: centred on the band, `32 - 11 = 21px` on
+each side is still under 28.
+
+Both readings are read off the row's own numbers rather than a list of ids, and asked of *a*
 sidewalk rather than of the tile — the role is decided before a tile is chosen, so a row that may
 stand on a sidewalk is judged on the narrowest ground it may be rolled onto.
 
@@ -845,7 +861,7 @@ All implemented.
 | `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Intensity 26 on a tight radius, barking on a 3.5s pulse: it owns the pavement it is on, so walking straight through it is never the cheap option. Deliberately given no `obstructs_radius` — a moving wall on a two-tile pavement pins the player against a building. |
 | `cafe_tables` | RECURRING | 1 | A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and a **wall** by passability rather than by price: 24px of tables billing anybody within 56px of them leaves no line along the 64px sidewalk it stands on, so it is what the far side of a day-one street carries and never what the route's own sidewalk does. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. The people at the tables are drawn as well as the tables, because the tables are what obstructs and the conversation is what it emits — a real source, derived from the body itself: `inner_radius` 38px (touching the tables), `outer_radius` 64px (the pavement band's own centre to the carriageway's), so it bills somebody at the tables and not somebody across the street. |
 | `homeless_yeller` | RECURRING | 1 | Intensity 14 over a 210px field, yelling on a 5s **pulse**, and **pacing** eight tiles of pavement (`EventDef.paces`). A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. Mobile, so he has no body. **Friction or a wall depending on where his beat runs**: the 170px he charges over covers a 64px sidewalk from either lane, so the way past him is never a lane and always a crossing — a beat that reaches a junction box is one she can leave at the zebra there while he is at the far end of it, and he stays on the route like any other timing problem; a beat truncated short of a junction by a closure or a calm zone leaves no way off his sidewalk, and that placement is a wall. His silhouette is his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. |
-| `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Silent: standing in the way is its entire price, and `obstructs_radius` already charges it — see "Solid things are solid". At the kerb rather than on the carriageway, and solid at `VEHICLE_BODY`: 44px of van across a 64px footway is a street that costs the other side. |
+| `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Silent: standing in the way is its entire price, and `obstructs_radius` already charges it — see "Solid things are solid". At the kerb rather than on the carriageway, and solid at `VEHICLE_BODY`: 44px of van across a 64px footway leaves 26px to the frontage, narrower than the pram — a **wall** by physical fit, silent or not, so the street it is on is one she walks the far side of. |
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
 | `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it — which is what makes it a **wall** by passability although it is silent and cheap, since a band with no lane left is a band with no line along it. Since a street is sidewalk\|road\|sidewalk the road is always still there, so it costs time, never the day. Silent, like `delivery_van`: a hoarding is not a source. |
 | `burning_building` | ONE_SHOT | 3 | Placed in a building, `AGAINST_THE_BUILDING`, the way `reversing_lorry` is. `spawns_on_sight` calls `fire_truck` in the moment she first sees it. Burns for the rest of the day, and you cannot walk through the fire. |
@@ -871,7 +887,7 @@ neighbourhood's own rather than a patrol's.
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `police_patrol` | RECURRING | 4 | Mobile, unhurried, along a corridor. Not dangerous yet — the danger is that you start planning around it. In acts III and IV, extra copies of this row are also what the return leg owes — see "The return owes her patrols" above. |
-| `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. |
+| `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. `ANY` pavement side re-centres it on the 64px band, and 11px there is still enough to leave under 28px on each side — a **wall** by physical fit, the way a much wider body already was. |
 | `loudspeaker` | SCRIPTED | 5 | **City-wide**: no falloff, no edge, nowhere in the city it does not reach. The first event the player cannot walk away from. Pitched under the walking decay, so like a back street it does not raise the meter — it stops you clearing it. |
 | `curfew_announce` | SCRIPTED | 6 | City-wide, brief, and fading (`intensity_ramp` 0.2). The mechanical bite is in `Tuning.day_length`, which shortens every day from 6 onward; this is the moment you are told. |
 | `roadblock` **`heat_response HUNTS`** | RECURRING | 7 | Loud, and **physically closes a street** (`obstructs_radius` 60), drawn as one continuous barrier (`roadblock_segment.svg`/`roadblock_end.svg`) rather than a row of blocks. The first event that takes a route away rather than making it expensive. Named `roadblock` rather than `checkpoint` because the region wall's own door structure — a hut, a gate and guards you can pass at a price — took that word; the two rows mean opposite things about whether a street can be crossed. Below `Tuning.HEAT_HUNTS_LEVEL` that is all it ever does; at or above it its guards leave the post — the band cannot chase, so the hunting posture is a guard on foot, `guard_standing.svg` then `guard_lunging.svg`, coming at 130px/s once she comes within 180px, `hard_fail` inside `inner_radius` 86. |
