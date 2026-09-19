@@ -108,8 +108,18 @@ static func plan(map: CityMap, rng: RandomNumberGenerator) -> Plan:
 		for cell: Vector2i in chain.cells:
 			result.open_cells[cell] = true
 	result.open_streets = _streets_covering(map, result.open_cells)
-	result.placements.append_array(SealPlanner.plan_finale(map, result.open_cells, rng))
-	result.placements.append_array(EventScheduler.build_finale(map, rng, result.open_streets))
+	# **Every pass below is handed the tile she is put down on.** *(2026-09-19: "the spawning
+	# shouldn't be a check. the pathing should start from the position. then obstacles can never
+	# happen.")* The chains already start there — `_grow()` enters the grid at her own cell — so
+	# what was left was the two passes that place things: the sealing, which was sparing the street
+	# the front door opens onto rather than the one she is standing in, and the events, which were
+	# offered every tile of an open street including hers. Neither is a check on the spawn and
+	# neither moves anything afterwards: they are never offered the ground she is on.
+	var standing_at := map.tile_to_world(start)
+	result.placements.append_array(
+			SealPlanner.plan_finale(map, result.open_cells, rng, standing_at))
+	result.placements.append_array(
+			EventScheduler.build_finale(map, rng, result.open_streets, standing_at))
 	return result
 
 ## One chain: the door, each stop in turn, then the edge. Each leg is a shortest walk on the grid

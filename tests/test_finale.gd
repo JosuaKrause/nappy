@@ -24,6 +24,7 @@ func run(t) -> void:
 	_test_every_street_off_the_chains_is_sealed(t)
 	_test_both_exits_are_reachable_through_the_open_cells_alone(t)
 	_test_the_service_exit_is_beside_the_home_block(t)
+	_test_nothing_the_finale_places_stands_where_she_comes_out(t)
 	_test_the_finale_city_has_nobody_in_it(t)
 	_test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t)
 	_test_the_clock_reads_milliseconds_only_in_the_finale(t)
@@ -138,7 +139,10 @@ func _test_every_street_off_the_chains_is_sealed(t) -> void:
 		for placement: EventScheduler.Planned in plan.placements:
 			if placement.def.obstructs_radius > 0.0:
 				sealed_at[map.world_to_tile(placement.position)] = true
-		var home := ClosurePlanner.home_street(map)
+		# The one exempt street is the one she is standing in, not the one the front door opens
+		# onto: on the last night she comes out of the service exit and never uses that door.
+		var hers := StreetNetwork.segment_containing(
+				FinalePlanner.service_exit_tile(map))
 		var open_and_unsealed := 0
 		var closed := 0
 		for segment in StreetNetwork.segments():
@@ -146,7 +150,7 @@ func _test_every_street_off_the_chains_is_sealed(t) -> void:
 				continue
 			if SealPlanner.runs_through(segment, plan.open_cells):
 				continue
-			if home and segment.key() == home.key():
+			if hers and segment.key() == hers.key():
 				continue
 			var found := false
 			for tile in map.rect_tiles(segment.tile_rect()):
@@ -208,6 +212,62 @@ func _test_the_service_exit_is_beside_the_home_block(t) -> void:
 		var spine := map.main_road * CityMap.period()
 		var on_the_spine := tile.x >= spine and tile.x < spine + Tuning.STREET_WIDTH
 		t.check(not on_the_spine, "seed %d: and not on the main road's own frontage" % seed_value)
+
+## Seeds for the one question that is about a single tile rather than about the shape of a walk.
+## *"The spawn in the city from the basement can end up inside an obstacle"* was found on a city
+## nobody had planned for, so four cities is not enough of an answer: the ground she is put down on
+## is one tile out of a lattice, and whether anything lands on it is a coin the generator tosses
+## once per seed.
+const SPAWN_SEEDS := [4242, 1, 77, 9001, 5, 1234, 31337, 808, 6, 27]
+
+## *"The spawning shouldn't be a check. The pathing should start from the position. Then obstacles
+## can never happen."*
+##
+## **This is the confirmation, not the mechanism.** What makes it true is that everything the
+## section plans is planned from the tile she is put down on — the chains enter the grid at her own
+## cell, `SealPlanner.plan_finale()` spares the street she is standing in rather than the one the
+## front door opens onto, and `EventScheduler.build_finale()` is never offered ground its own body
+## would reach her on. This walks seeds and asks the outcome instead.
+##
+## **A 14px body at the spawn overlaps no static body**, and in this scene that is exactly the two
+## sources checked below, because nothing else in a finale city has one: the props and the street
+## trees are plain `Node2D`s with no collision at all, a `Building` stands on block ground and
+## `service_exit_tile()` answers with walkable ground, the boundary walls are outside the map, and
+## the crowd is cleared before the plan is made. An event's obstruction body and a seal's are what
+## is left — both arrive as `EventScheduler.Planned`, and a burst's crater arrives as one of those
+## spawning its successor where it stood, which is asked about too.
+##
+## Asked of the plan rather than of the physics server on purpose: a `StaticBody2D` is not
+## registered with the server until a physics frame has run, and a suite's `run()` is synchronous,
+## so a shape query here would answer "nothing is anywhere" whatever the plan said.
+func _test_nothing_the_finale_places_stands_where_she_comes_out(t) -> void:
+	var checked := 0
+	var on_her := 0
+	for seed_value in SPAWN_SEEDS:
+		var map := CityGenerator.generate(seed_value)
+		GameState.city_state.begin_day(map.block_plans, 1)
+		map.repaint(GameState.city_state)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_value
+		var plan := FinalePlanner.plan(map, rng)
+		var spawn := FinalePlanner.service_exit_world_position(map)
+		t.check(map.is_walkable(map.world_to_tile(spawn)),
+				"seed %d: she is put down on walkable ground" % seed_value)
+		for placement: EventScheduler.Planned in plan.placements:
+			checked += 1
+			for def in [placement.def, EventCatalogue.by_id(placement.def.spawns_on_finish)]:
+				if def == null or def.obstructs_radius <= 0.0:
+					continue
+				if placement.position.distance_to(spawn) \
+						<= def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS:
+					on_her += 1
+					t.check(false,
+							"seed %d: the escape's '%s' stands %.0fpx from the spawn, inside the "
+							% [seed_value, def.id, placement.position.distance_to(spawn)]
+							+ "%.0fpx its body and her own take up"
+							% (def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS))
+	t.check(checked > 0, "there were escape placements to ask about (%d)" % checked)
+	t.check(on_her == 0, "and none of them is standing on her (%d of %d)" % [on_her, checked])
 
 # ------------------------------------------------------------------ the city ---
 
@@ -420,14 +480,15 @@ func _test_nothing_the_escape_places_stands_in_a_street_tree(t) -> void:
 		# event's own row.
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		for placement in EventScheduler.build_finale(map, rng, plan.open_streets):
+		var standing_at := FinalePlanner.service_exit_world_position(map)
+		for placement in EventScheduler.build_finale(map, rng, plan.open_streets, standing_at):
 			var tile := map.world_to_tile(placement.position)
 			t.check(not trees.has(tile),
 					"seed %d: the escape's '%s' stands in a street tree at %s"
 							% [seed_value, placement.def.id, tile])
 			checked += 1
 		rng.seed = seed_value
-		for seal in SealPlanner.plan_finale(map, plan.open_cells, rng):
+		for seal in SealPlanner.plan_finale(map, plan.open_cells, rng, standing_at):
 			if trees.has(map.world_to_tile(seal.position)):
 				in_a_tree += 1
 			checked += 1

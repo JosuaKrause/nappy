@@ -247,16 +247,24 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree,
 ##   `Tuning.ALLEY_MOUTH_SEAL_CHANCE` exists so an alley reads as an occasional exception on an
 ##   ordinary day; one open alley in the finale is a second way through.
 ##
-## The doorstep stays exempt for the reason it always is: the home is a notch with one exit.
+## **The exempt street is the one she is standing in, not the one the front door opens onto.** A
+## day's exemption is the doorstep, because the home is a notch with one exit and sealing that
+## street seals her in. The escape does not use that door at all: she comes out of the service exit
+## on the side of the block, and `standing_at` is where. Sealing *that* street is the same mistake
+## the doorstep exemption exists to stop, one door along — a wall across the first street of a walk
+## whose whole plan was grown from the cell she is put down in, placed by a pass that never asked
+## where she was. *(2026-09-19: "pathing is not done from the spawn but from the original door
+## which is incorrect".)* The home street is sealed like any other now, because on the last night
+## nobody uses it.
 static func plan_finale(map: CityMap, open_cells: Dictionary,
-		rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
+		rng: RandomNumberGenerator, standing_at: Vector2) -> Array[EventScheduler.Planned]:
 	map.clear_day_soft_seals()
 	# And no pit is emptied, for the same reason the soft seals are cleared: whatever a day left on
 	# this map is not the escape's, and nothing here fells a tree. `plan_day` makes the same call
 	# on its own no-tree path.
 	map.set_seal_tree_pits([] as Array[Vector2i])
 	var planned: Array[EventScheduler.Planned] = []
-	var home := ClosurePlanner.home_street(map)
+	var hers := StreetNetwork.segment_containing(map.world_to_tile(standing_at))
 	# A seal never stands in a street tree here either — the same rule `plan_day` keeps, and a
 	# `City` plants its trees in `build()`, so the escape's city has the row it has always had. No
 	# `emptied` pit ever comes back: `fallen_tree_seal` is a day's candidate and none of
@@ -267,7 +275,7 @@ static func plan_finale(map: CityMap, open_cells: Dictionary,
 		var key := segment.key()
 		if not map.has_street(key) or runs_through(segment, open_cells):
 			continue
-		if home and key == home.key():
+		if hers and key == hers.key():
 			continue
 		var candidate := _finale_candidate(rng)
 		# **Stepping off a tree may never step onto the chain.** The street was spared the walk at
