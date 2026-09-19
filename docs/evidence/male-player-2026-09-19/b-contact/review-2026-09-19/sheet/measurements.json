@@ -1,0 +1,93 @@
+{
+  "pillow": "12.3.0",
+  "font": "Pillow bundled default",
+  "raw_dimensions": [
+    2011,
+    782
+  ],
+  "measurements": {
+    "front": {
+      "cell": [
+        0,
+        0,
+        503,
+        782
+      ],
+      "visible_bounds": [
+        113,
+        58,
+        417,
+        730
+      ],
+      "x_at_12x": 17,
+      "width_at_12x": 244,
+      "native_canvas_width": 24,
+      "registration_clips": false,
+      "diagnostic_padding_each_side": 12
+    },
+    "back": {
+      "cell": [
+        503,
+        0,
+        1006,
+        782
+      ],
+      "visible_bounds": [
+        76,
+        60,
+        371,
+        729
+      ],
+      "x_at_12x": 21,
+      "width_at_12x": 238,
+      "native_canvas_width": 24,
+      "registration_clips": false,
+      "diagnostic_padding_each_side": 12
+    },
+    "side": {
+      "cell": [
+        1006,
+        0,
+        1508,
+        782
+      ],
+      "visible_bounds": [
+        64,
+        63,
+        452,
+        720
+      ],
+      "x_at_12x": -16,
+      "width_at_12x": 319,
+      "native_canvas_width": 26,
+      "registration_clips": true,
+      "diagnostic_padding_each_side": 12
+    },
+    "front_diagonal": {
+      "cell": [
+        1508,
+        0,
+        2011,
+        782
+      ],
+      "visible_bounds": [
+        123,
+        58,
+        427,
+        730
+      ],
+      "x_at_12x": 30,
+      "width_at_12x": 244,
+      "native_canvas_width": 26,
+      "registration_clips": false,
+      "diagnostic_padding_each_side": 12
+    }
+  },
+  "outputs": {
+    "comparison.png": "afc01da862b72c9a3f149d773b0f926b2758301c44fe37ea40e8bbb319bd273f",
+    "father_back_b-diagnostic-padded.png": "e92361d5d47686d63e32ab3109d4b5e3b38954bbe245da20e34dd46983ae2ebe",
+    "father_front_b-diagnostic-padded.png": "1a7385fca801ccd16d7cfd00b6ce15929a3206b9b2edcecacfffb118a54e6ee5",
+    "father_front_diagonal_b-diagnostic-padded.png": "af235732e16619609abe63a2b8d8426845cc157cf3b5d83ab3e90647a817a490",
+    "father_side_b-diagnostic-padded.png": "ca164fe5b5a9527025424a8f74dfb21508ea7dff137cb53c8e6480a74015f660"
+  }
+}

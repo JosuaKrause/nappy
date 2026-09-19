@@ -4,6 +4,11 @@ This record contains the four editable pushing B-pose corrections and their sour
 The illustrated runtime PNGs retain the original registration; source and raster leg poses
 therefore differ in these four assets. This is source evidence, not a completed raster transfer.
 
+The [four-pose comparison](review-2026-09-19/README.md) places a fresh, uninstalled raster
+candidate beside installed A/C/B and the intended SVG B poses at native scale and 3×. Its side
+and front-diagonal ownership fail; the larger raw-detail panels expose those contours directly.
+It is diagnostic evidence for inspection, not a replacement family.
+
 ## Source contract
 
 The affected sources are `father_back_b.svg`, `father_side_b.svg`,
