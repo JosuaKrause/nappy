@@ -1,5 +1,5 @@
-<!-- Prepared, unbound M158 continuation tile. Its 16px legs span two 8px step widths, visibly
+<!-- Prepared, unbound M158 continuation tile. Its borderless 16px legs span two 8px step widths,
      bridging an east-descending lower side band into the next shifted module. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges" stroke-linejoin="miter">
-  <path d="M16 0H32V16Z" fill="#62656a" stroke="#3b3034" stroke-width="1"/>
+  <path d="M16 0H32V16Z" fill="#62656a"/>
 </svg>

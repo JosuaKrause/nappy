@@ -354,8 +354,12 @@ stays inked in both directions.
 
 > "also remove the borders of the diagonal section where it touches the side of the tile"
 
-The gray diagonal section has no outline along any tile boundary it meets. Its internal diagonal
-edge stays inked; only the tile-edge contacts are borderless so adjacent roles join without a seam.
+> "I marked places in green where the border should be there and in red where it shouldn't"
+
+The [annotated edge mask](evidence/m158-stair-tile-prototype-2026-09-19/stair-border-annotation-2026-09-19.jpeg)
+settles which edges those words mean. Keep the vertical rectangle side segments marked green.
+Remove the diagonal segments marked red as well as the already specified upper-bottom and
+lower-top borders; apply the same edge rule to every corresponding segment and to the west mirror.
 
 ---
 

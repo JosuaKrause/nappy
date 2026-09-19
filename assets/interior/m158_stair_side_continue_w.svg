@@ -1,7 +1,7 @@
 <!-- Prepared, unbound M158 continuation tile, horizontally mirrored for westward descent. Its
-     16px legs bridge two 8px step widths. -->
+     borderless 16px legs bridge two 8px step widths. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges" stroke-linejoin="miter">
   <g transform="translate(32 0) scale(-1 1)">
-    <path d="M16 0H32V16Z" fill="#62656a" stroke="#3b3034" stroke-width="1"/>
+    <path d="M16 0H32V16Z" fill="#62656a"/>
   </g>
 </svg>
