@@ -190,6 +190,19 @@ README.md's "Dev flags" table. **`--screenshot` implies it without being told to
 what a `tools/run.sh` session with no screenshot needs, since that rig has the same unfocused
 window and nothing else here would cover it.
 
+### `--no-save`
+
+The run is saved implicitly at dawn, when a day ends, on focus loss and on quit — see
+`docs/MECHANICS.md`, "Saving and resuming". `GameSave.uses_save()` is the one gate every read and
+write goes through, and it already refuses a headless run and any run carrying a dev flag, since
+every checkout and worktree of this repository shares one `user://` and none of those runs may
+land in or overwrite the player's own save.
+
+`--no-save` (or the page's own `?nosave=1`, a debug web build only) says the same thing for a
+flagless `tools/run.sh` session, which carries no other flag for `uses_save()` to refuse on —
+`DevFlags`' own developer flag, gated behind `DevFlags.enabled()` like every other one, listed in
+README.md's "Dev flags" table.
+
 ---
 
 ## What is recorded, and what is not

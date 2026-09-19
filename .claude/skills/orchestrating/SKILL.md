@@ -140,6 +140,10 @@ A vague prompt returns work that cannot be merged. Every agent prompt contains, 
   to happen in front of it, where a rig left to itself dies to the meter or the clock before the
   moment arrives; an agent not told about it will burn runs landing on the summary screen. Leave
   it off only for a capture whose subject is a cost or a loss.
+- **An agent's run always carries a dev flag or `--no-save`.** Every checkout and worktree of this
+  repository shares one `user://`, so the player's save is in reach of any game an agent starts.
+  `GameSave.uses_save()` already refuses a headless run and any run carrying a dev flag;
+  `--no-save` is what a flagless `tools/run.sh` session needs to say the same thing.
 - **Forks come back, never guessed.** If the design is ambiguous, or two recorded instructions
   conflict, the agent implements the unambiguous part and states the fork precisely in its report.
   Where the design is merely silent on a small detail, it chooses the smallest implementation
