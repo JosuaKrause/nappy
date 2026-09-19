@@ -318,6 +318,14 @@ player identified as correct and which stays untouched.
       corrected B contacts and the two unchanged back-diagonal contacts readable at native size and
       3×. Do not touch carrying frames or A/C pushing frames.
 
+> "for the leg corrections write down the procedure for fixing because you mess it up *every*
+> time. so let's be proactive about it. still waiting on reviewable results btw"
+
+Add the reusable correction procedure to the SVG and illustrated-PNG workflow before installing
+the replacements. A corrected source or generated candidate is not a reviewable result until its
+continuous hip-to-shoe ownership, occlusion order, ground contacts and preserved proportions are
+shown together across A/B and all eight runtime directions at native size and 3×.
+
 ---
 
 ## M143 — The readout's `process` and `physics` lines say what they measure · asked for 2026-09-14

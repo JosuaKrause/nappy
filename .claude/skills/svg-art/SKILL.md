@@ -44,6 +44,10 @@ For modular states, preserve the shared canvas and the meaningful fixed point: a
 a person's feet or a hut's ground anchor. Annotate non-default anchors inside the SVG. Ground
 decals use their centre; standing sprites usually use bottom centre through `Sprites`.
 
+Before correcting a walking contact, read the
+[leg-contact correction procedure](../illustrated-png/references/leg-contact-corrections.md).
+Its hip–knee–shoe overlay and occlusion review are the source gate before raster transfer.
+
 Compare a character's state variants as one family: carrying the baby and pushing the stroller
 must preserve the mother's identity, clothing and proportions across every facing. Keep shared
 head geometry consistent between gait frames. Articulate the pelvis, thighs and coat hem with a

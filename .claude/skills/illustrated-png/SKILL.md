@@ -63,6 +63,10 @@ visual contract when generating or assigning views. Upstream front/back filename
 it. The final assignment recipe is `docs/evidence/stroller-view-assignment-2026-09-12/GENERATION.md`;
 it reads frozen originals. Never apply another N/S or opposite-diagonal swap to installed textures.
 
+Before correcting a walking contact, read the
+[leg-contact correction procedure](references/leg-contact-corrections.md): it requires anatomical
+ownership proof, pose-safe references and registered proportion checks before accepting a raster.
+
 For walking figures, preserve identity through coherent full-figure edits. Do not composite fixed
 upper pixel rows over moving lower legs: the pelvis, coat hem, thighs and knees need continuous
 articulation. Check anatomical leg ownership from hip to shoe through both contacts; recoloring
