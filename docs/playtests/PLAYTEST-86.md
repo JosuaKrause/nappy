@@ -1,4 +1,4 @@
-# Playtest 85 — Father's sprite sheet and animation loops
+# Playtest 86 — Father's sprite sheet and animation loops
 
 2026-09-19. Follow-up to PLAYTEST-79 and M160, the father's opposite B contact. The player
 reviews the four-pose comparison and specifies the intended deliverable and construction.

@@ -42,7 +42,7 @@
     {
       "conversation_order": "After the two failed atlas attempts, before deterministic splicing",
       "action": "Player authorizes father-only splicing: you can try splicing -- I will judge.",
-      "source": "../../../../playtests/PLAYTEST-85.md",
+      "source": "../../../../playtests/PLAYTEST-86.md",
       "constraints": "Father-only image inputs; fixed accepted upper body, native canvases and anchors; review artifacts only, no runtime install."
     },
     {

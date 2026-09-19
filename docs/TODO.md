@@ -308,7 +308,7 @@ south uses `father_front_b`. Northeast and northwest share `father_back_diagonal
 player identified as correct and which stays untouched.
 
 - [ ] **Show the intended leg in front in the woman's established review format, then install only
-      what the player approves.** [PLAYTEST-85](playtests/PLAYTEST-85.md) rejects a before/after
+      what the player approves.** [PLAYTEST-86](playtests/PLAYTEST-86.md) rejects a before/after
       comparison because the failed frame is not a useful review target. Reuse the accepted woman
       pushing pipeline without inventing another strategy: one clean sprite sheet contains the
       father's A/C/B/C loop in all eight runtime directions, and native/6× GIFs animate the same

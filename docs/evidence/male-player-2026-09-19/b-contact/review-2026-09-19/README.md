@@ -2,7 +2,7 @@
 
 This comparison is superseded as the review deliverable by the
 [clean eight-direction sheet and animation loops](../loops-2026-09-19/README.md).
-It remains preserved as rejected evidence; PLAYTEST-85 records the player's replacement brief.
+It remains preserved as rejected evidence; PLAYTEST-86 records the player's replacement brief.
 
 [Open the comparison sheet](sheet/comparison.png). It answers whether the four affected
 illustrated B poses have reviewable anatomy. The fresh candidate fails the side and front-diagonal
