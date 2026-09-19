@@ -35,6 +35,10 @@ item below for as long as looking takes.
 - **Does a nerve lost to an accidental close or a browser crash read as fair?** It is the price
   of quitting never being an escape ([PLAYTEST-82](playtests/PLAYTEST-82.md)); the exact
   snapshot is what was given up for it.
+- **Is the save symbol a floppy disk, and is it noticed without distracting?** Bottom right, a
+  second and a half held and the same fading, twice in an ordinary day. It is one shape with the
+  shutter and the label cut out of it; look at it on the phone, where the one before it read as a
+  white square. Record is `DECISIONS.md`, M169.
 - **Click away from the game in the middle of a day**, on the desktop build, in the browser
   (another tab, another window) and on the phone (the home button). Does the pause screen come
   up every time, and never on the title, a day summary or an ending? The desktop case rests on

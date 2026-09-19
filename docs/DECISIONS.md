@@ -1,5 +1,29 @@
 # Decisions
 
+## M169 — The save symbol reads as a floppy disk · built 2026-09-19
+
+> "the save icon is basically a white square" ([PLAYTEST-94](playtests/PLAYTEST-94.md), on a phone)
+
+`assets/ui/save.svg` was three white shapes told apart by opacity alone — the body at 0.85, the
+shutter at 1.0, the label at 0.35 — and `SaveIndicator` tints and fades the whole texture with one
+modulate, so the differences shrank with the fade and were gone at the 48px it is shown at.
+
+**Built:** one path with `fill-rule="evenodd"`. The chamfered body is unchanged; the shutter and
+the label are holes in it, on the coordinates the two rectangles had. The shutter's hole meets the
+body's top edge, so it reads as a notch open to the top, and the label's is enclosed, so it reads
+as a window: transparency is the second value, and a flat tint cannot take it away. No code
+changed.
+
+**Rejected:** the body as an outline with the shutter and label filled inside it. The two would
+still be the same white as the outline, which is the same problem moved.
+
+**Open to overturn, chosen where the player said nothing:** the holes reuse the old rectangles'
+proportions, and the shutter is an open notch rather than an enclosed slot.
+
+Checked on a headless render through Godot's own SVG loader, tinted `Palette.CHALK_DONE` on a dark
+ground at 48px and at 16px: `evidence/m169-save-symbol-2026-09-19/save-symbol-before-after.png`.
+Whether it is noticed without distracting on a phone is `REVIEW.md`'s.
+
 ## M165 — The escape after the corrected stairs · built 2026-09-19
 
 *([PLAYTEST-84](playtests/PLAYTEST-84.md): "the basement stairs are bad. the steam walks for some
