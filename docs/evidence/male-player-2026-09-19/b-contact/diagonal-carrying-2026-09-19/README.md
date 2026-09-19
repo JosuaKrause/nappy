@@ -6,7 +6,7 @@ attempt; its SE/SW output is not an approved solution. The separately color-matc
 result is accepted and must remain unchanged.
 
 This uninstalled early preview provides actual carrying leg changes for
-[PLAYTEST-97](../../../../playtests/PLAYTEST-97.md). Inspect the clean eight-direction
+[PLAYTEST-103](../../../../playtests/PLAYTEST-103.md). Inspect the clean eight-direction
 [carrying PNG](generated/carrying/carrying-spritesheet-6x.png) and
 [carrying GIF](generated/carrying/carrying-animation-6x.gif), alongside the
 [pushing PNG](generated/pushing/pushing-spritesheet-6x.png) and

@@ -1,6 +1,6 @@
 # Correct carrying-contact normalization preview
 
-This uninstalled preview answers [PLAYTEST-96](../../../../playtests/PLAYTEST-96.md) with the
+This uninstalled preview answers [PLAYTEST-102](../../../../playtests/PLAYTEST-102.md) with the
 selected woman-carrying-F contact. Inspect the [clean 6× eight-direction sheet](generated/father-spritesheet-6x.png),
 its [native version](generated/father-spritesheet-native.png), and the
 [native](generated/father-animation-native.gif) or [6×](generated/father-animation-6x.gif)

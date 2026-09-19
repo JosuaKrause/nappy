@@ -19147,7 +19147,7 @@ join, proportions and overall appearance remain unaccepted. The runtime assets s
 
 ## M167, final-woman-leg crop rejected — 2026-09-19
 
-[PLAYTEST-95](playtests/PLAYTEST-95.md): "the crop in 234 is pretty bad". The final-image
+[PLAYTEST-101](playtests/PLAYTEST-101.md): "the crop in 234 is pretty bad". The final-image
 preview in PR #234 was rejected on its crop. Its source images, assembler and sheet remain
 under `docs/evidence/male-player-2026-09-19/b-contact/final-woman-legs-2026-09-19/` as evidence.
 The implementation fitted the lower donor to an eighteen-pixel region and pasted father
@@ -19157,7 +19157,7 @@ shorter jacket. These are inspection findings, not a more specific statement fro
 The player clarified: "it's the wrong part but maybe do the crop in the larger version and
 then let the image generation normalize it?". The crop itself is the complaint. Asked for
 literal copying without generation in PLAYTEST-93 · overturned to high-resolution cropping
-followed by generated normalization in PLAYTEST-95 on 2026-09-19, because the literal-copy
+followed by generated normalization in PLAYTEST-101 on 2026-09-19, because the literal-copy
 crop was rejected. The corresponding final donors, father identity and protected frames
 remain the contract. No replacement art was installed at this point.
 
@@ -19181,7 +19181,7 @@ gameplay code, full local suite or windowed gameplay capture was involved.
 
 ## M167, choose the actual opposite leg contact — 2026-09-19
 
-[PLAYTEST-96](playtests/PLAYTEST-96.md) rejects the normalization's source: "you took the wrong
+[PLAYTEST-102](playtests/PLAYTEST-102.md) rejects the normalization's source: "you took the wrong
 leg picture for the cropping -_- it's the one where the wrong leg is in front". This repeats
 the anatomical contact requirement in PLAYTEST-87 and PLAYTEST-88. The selected P2 pushing
 side A and B both show the advancing down-right thigh in front. The B label and the generation
@@ -19197,8 +19197,9 @@ body. This is a leg donor choice, not a change to carrying art. The rejected nor
 also supplied an entire old father figure as an identity reference, including its wrong
 legs; the new identity input ends above the pelvis to remove that competing pose.
 
-The prior crop-feedback record is numbered PLAYTEST-95 to avoid the independent escape/save
-PLAYTEST-94 present on another open branch. Its original words and separate identity are preserved.
+The crop-feedback record was first moved from PLAYTEST-94 to PLAYTEST-95 to avoid the
+independent escape/save feedback. Its current identity is PLAYTEST-101; its original words
+and separate identity are preserved.
 
 One normalization attempt with the corrected carrying-F donor crops retained the profile
 foreground thigh's continuous down-left chain into the trailing shoe; the far advancing thigh
@@ -19215,7 +19216,7 @@ lint and whitespace checks passed. The prior boot check covered the unchanged ru
 
 ## M167, color match, southeast projection and actual carrying corrections — 2026-09-19
 
-[PLAYTEST-97](playtests/PLAYTEST-97.md) requests color transformation rather than another
+[PLAYTEST-103](playtests/PLAYTEST-103.md) requests color transformation rather than another
 generation for the side result, direct PNG embedding beside GIFs, and actual carrying leg
 corrections: "you didn't update the legs at all". The posted carrying animation had shown the
 unchanged installed family. That did not apply the pushing contact corrections to carrying.

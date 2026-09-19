@@ -300,7 +300,7 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 The provisional contact baseline is installed on main. This separate drawing refinement
 remains uninstalled; its source choices and rejected attempts are recorded under M160 and
 M167 in `DECISIONS.md`. Both pushing and carrying require clean PNG sheets and GIFs, per
-[PLAYTEST-97](playtests/PLAYTEST-97.md).
+[PLAYTEST-103](playtests/PLAYTEST-103.md).
 
 [PLAYTEST-98](playtests/PLAYTEST-98.md) accepts the left/right result in
 `color-match-2026-09-19/final/`: preserve those pixels exactly, along with N/S, NE/NW and
@@ -327,10 +327,10 @@ trousers and darken the jacket separately; uniform whole-picture darkening is wr
       A/C/B/C sheet and native/6× GIFs at 190ms per phase from [PLAYTEST-87](playtests/PLAYTEST-87.md).
       Push and embed commit-pinned links before asking: the CLI cannot show local images.
       Embed PNG sheets and GIFs for corrected pushing and carrying candidates, as requested
-      in [PLAYTEST-97](playtests/PLAYTEST-97.md), clearly labeling the two animation states.
+      in [PLAYTEST-103](playtests/PLAYTEST-103.md), clearly labeling the two animation states.
       Repeated feedback is welcome, per [PLAYTEST-89](playtests/PLAYTEST-89.md).
       Preserve native canvases, scale, anchors and upper-body landmarks. Carrying corrections
-      belong to the PLAYTEST-97 request above; keep stroller art and gameplay unchanged.
+      belong to the PLAYTEST-103 request above; keep stroller art and gameplay unchanged.
       Retain source crops, transforms, commands and hashes.
 - [ ] **Install only the visually accepted refinement.** Keep corresponding reviewed SVGs,
       creation copies, registered PNGs and manifest hashes in agreement, preserve import sidecars,

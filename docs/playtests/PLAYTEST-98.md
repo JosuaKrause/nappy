@@ -7,7 +7,7 @@
 The restored provisional southeast/southwest drawing is rejected as a solution to the
 natural-leg refinement. Correct the diagonal drawing and projection without replacing the
 new work with the old thin legs. Keep the corresponding carrying corrections and PNG/GIF
-publication requirements from PLAYTEST-97.
+publication requirements from PLAYTEST-103.
 
 > "left right is correct now at least"
 

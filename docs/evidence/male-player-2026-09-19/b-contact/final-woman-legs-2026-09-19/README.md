@@ -1,7 +1,7 @@
 # Father's final-woman-leg literal-copy preview
 
 This is rejected crop evidence, retained with its exact recipe. The player's verdict is in
-[PLAYTEST-95](../../../../playtests/PLAYTEST-95.md); the correction is open under M167,
+[PLAYTEST-101](../../../../playtests/PLAYTEST-101.md); the correction is open under M167,
 the father's legs read as legs, in `docs/TODO.md`.
 
 Inspect the [clean eight-direction sheet](generated/father-spritesheet-6x.png), its
