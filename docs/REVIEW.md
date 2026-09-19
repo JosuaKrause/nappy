@@ -351,7 +351,9 @@ item below for as long as looking takes.
   waiting for — or as a queue of gates? And does the one-tile stair read as a stair at the scale it
   is played at, given the player's *"at the very least"*?
 
-  Record is `DECISIONS.md`, M102, the finale built behind the flag.
+  Records are `DECISIONS.md`, M165, the escape after the corrected stairs, and M102, the finale
+  built behind the flag. A blowing vent is drawn as one 32px cloud in a corridor 64px wide: does
+  it read as shutting the whole passage, or as something to squeeze past?
   [PLAYTEST-84](playtests/PLAYTEST-84.md) is the last walk of it, and
   [PLAYTEST-85](playtests/PLAYTEST-85.md) is where the steam, the basement stair and the spawn
   were settled in the player's own words.
