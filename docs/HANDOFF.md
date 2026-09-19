@@ -285,13 +285,6 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
 checks and worktrees can move independently of this file.
 
-- **PR #217 — M158, the stair side is three stackable tiles** is a draft. The player-test checkout
-  carries the six reviewed side
-  sources, a narrow 32×64 vertical landing at each full-flight start, and no broad flight deck,
-  horizontal landing overlay or rail. The map, slope, collision, doors and route are unchanged.
-  Focused import, interior, document and SVG gates pass, and CI is green. The remaining gate is
-  player review in the escape sequence. Do not revise the geometry, restore old tiles or add rails
-  without that feedback.
 - **PR #216 — M159, a slow frame names the frame that was slow** is a green draft. Four
   equal-window desktop repetitions still drift enough
   that no toggle causality is claimed. Atlas phase timing is recorded outside the retained walking

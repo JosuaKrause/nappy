@@ -17,11 +17,14 @@ extends RefCounted
 ## Three hallways share one layout: a 14-tile east-west hallway, two rows deep, with a stair door
 ## at each end — opposite ends, not the two the sketch drew both at the right, a player decision
 ## (playtest 55: "that way having a fire on the stairs forces you to enter a floor hallway and walk
-## to the other end"). Two independent stairwells, each a tall plain switchback — one flight down
-## and one flight back per floor, alternating direction — with no map load mid-shaft, since there
-## is only the one map. The lobby is the hallway's own width with the barricaded entrance and doors
-## to both stairwells and the basement. The basement is the winding corridor with its own short
-## entry flight and the exit at the top.
+## to the other end"). Two independent stairwells each alternate one lateral flight per floor, with
+## corridor doors beside the level approaches at opposite flight ends and no map load mid-shaft,
+## since there is only the one map. The lobby is the hallway's own width with the barricaded
+## entrance and doors to both stairwells and the basement. Each stairwell is the corrected
+## ten-column symbol grammar:
+## its reviewed stair-side pictures are the walkable `t/m/T/M` cells themselves, while `c/C/b`
+## and background stay solid. The basement is the winding corridor with its own short entry flight
+## and the exit at the top.
 
 const _SLOT_STRIDE := 64
 const _HALLWAY_THIRD_ORIGIN := Vector2i(0 * _SLOT_STRIDE, 0)
@@ -52,19 +55,26 @@ static func build() -> InteriorMapPlan:
 	_mark_diagonal_clearances(f)
 	return f
 
-## The two cells flanking every diagonal step between two walkable tiles touch each other only at
-## a single corner point — a circular body of any real radius cannot cross a pinch with a full-tile
-## blocker on both flanks, which is what made a diagonal flight unwalkable in practice the first
-## time this was played rather than only stepped by a headless test. Freeing both flanks of every
-## diagonal adjacency, once, over the whole finished plan, fixes every flight and the basement's own
-## entry flight alike without threading the concept through each place a diagonal tile is laid.
+## A diagonal step pinches only when neither orthogonal neighbor is walkable. The basement's narrow
+## entry has that shape, so both absent flanks are cleared. The main shafts deliberately do not:
+## their `t/m` and `T/M` pairs make a two-row surface, leaving every `.` background cell and every
+## painted `c/C/b` side blocked exactly as the grammar says.
 static func _mark_diagonal_clearances(f: InteriorMapPlan) -> void:
 	var diagonals: Array[Vector2i] = [Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]
 	for t: Vector2i in f.tiles.keys():
+		if not f.is_walkable(t):
+			continue
 		for d in diagonals:
-			if f.tiles.has(t + d):
-				f.collision_clearance[Vector2i(t.x + d.x, t.y)] = true
-				f.collision_clearance[Vector2i(t.x, t.y + d.y)] = true
+			if not f.is_walkable(t + d):
+				continue
+			var corner_a := Vector2i(t.x + d.x, t.y)
+			var corner_b := Vector2i(t.x, t.y + d.y)
+			if f.is_walkable(corner_a) or f.is_walkable(corner_b):
+				continue
+			if not f.tiles.has(corner_a):
+				f.collision_clearance[corner_a] = true
+			if not f.tiles.has(corner_b):
+				f.collision_clearance[corner_b] = true
 
 # -------------------------------------------------------------------------------- hallway ---
 
@@ -110,18 +120,40 @@ static func _build_hallway(f: InteriorMapPlan, id: String, origin: Vector2i, is_
 
 # ------------------------------------------------------------------------------ stairwell ---
 
-## Rows between one landing and the next: a landing (1) + a 3-tile flight down + a 1-tile
-## half-landing at the turn + a 3-tile flight back = 8, which returns to the same column, so
-## landings stack in one vertical line down the shaft.
-const STAIRWELL_LANDING_GAP := 8
-const STAIRWELL_FLIGHT_LEN := 3
-## The column every landing sits at (local to the shaft's own origin); the switchback swings
-## `STAIRWELL_FLIGHT_LEN + 1` tiles either side of it, so this is comfortably clear of both the
-## shaft's own left edge and the next part's slot.
-const STAIRWELL_X0 := 4
-## One step off a landing, to the side rather than on the vertical line the flights travel —
-## arbitrary, and the same side for every landing on every shaft.
-const STAIRWELL_DOOR_OFFSET := Vector2i(-1, 0)
+## The player-supplied grammar's first 22 rows are literal. The final four finish the same
+## east-descending landing far enough to place the fourth (`lobby`) door and its two-cell level
+## approach; no unused next flight is appended below it.
+const STAIRWELL_ROWS: Array[String] = [
+	"..........",
+	".D........",
+	".Ft.......",
+	".Fmt......",
+	".bcmt.....",
+	"...cmt....",
+	"....cmt...",
+	".....cmtD.",
+	"......cmF.",
+	".......cF.",
+	".......TF.",
+	"......TMF.",
+	".....TMCb.",
+	"....TMC...",
+	"...TMC....",
+	".DTMC.....",
+	".FMC......",
+	".FC.......",
+	".Ft.......",
+	".Fmt......",
+	".bcmt.....",
+	"...cmt....",
+	"....cmt...",
+	".....cmtD.",
+	"......cmF.",
+	".......cF.",
+]
+const STAIRWELL_SIZE := Vector2i(10, 26)
+## Every named landing waypoint is the first level `F` below its door, local to the grammar.
+const STAIRWELL_TOP_LANDING_LOCAL := Vector2i(1, 2)
 
 ## Top to bottom. The last has no flights of its own — it is the shaft's own floor, and its door
 ## leads to the lobby rather than to a hallway.
@@ -130,40 +162,53 @@ const _STAIRWELL_HALLWAYS: Array[String] = ["hallway_third", "hallway_second", "
 
 static func _build_stairwell(f: InteriorMapPlan, side: String, origin: Vector2i) -> void:
 	var part_id := "stairwell_%s" % side
-	for i in _STAIRWELL_LANDINGS.size():
-		var landing_id: String = _STAIRWELL_LANDINGS[i]
-		var y0 := i * STAIRWELL_LANDING_GAP
-		var at := origin + Vector2i(STAIRWELL_X0, y0)
-		f.tiles[at] = InteriorTile.Kind.LANDING
-		f.waypoints["%s:%s" % [part_id, landing_id]] = at
-		if i == 0:
-			f.waypoints[part_id] = at
-		var door_tile := at + STAIRWELL_DOOR_OFFSET
-		var counterpart := "%s:%s" % [_STAIRWELL_HALLWAYS[i], side] if i < _STAIRWELL_HALLWAYS.size() \
-				else "lobby:%s" % side
-		_add_door(f, "%s:%s" % [part_id, landing_id], door_tile, counterpart)
-		if i == _STAIRWELL_LANDINGS.size() - 1:
-			continue   # The lobby landing has nothing further down.
-		# Alternates so the shaft zigzags floor by floor rather than always swinging the same way.
-		var dir := 1 if i % 2 == 0 else -1
-		_lay_flight(f, at, dir)
+	var door_index := 0
+	for y in STAIRWELL_ROWS.size():
+		var row: String = STAIRWELL_ROWS[y]
+		for x in row.length():
+			var symbol := row.substr(x, 1)
+			if symbol == ".":
+				continue
+			var at := origin + Vector2i(x, y)
+			if symbol == "D":
+				var landing_id: String = _STAIRWELL_LANDINGS[door_index]
+				var counterpart := "%s:%s" % [_STAIRWELL_HALLWAYS[door_index], side] \
+						if door_index < _STAIRWELL_HALLWAYS.size() else "lobby:%s" % side
+				_add_door(f, "%s:%s" % [part_id, landing_id], at, counterpart)
+				var landing := at + Vector2i.DOWN
+				f.waypoints["%s:%s" % [part_id, landing_id]] = landing
+				if door_index == 0:
+					f.waypoints[part_id] = landing
+				door_index += 1
+				continue
+			f.tiles[at] = stair_kind_for_symbol(symbol)
+	if door_index != _STAIRWELL_LANDINGS.size():
+		push_error("Stairwell grammar placed %d doors, expected %d" \
+				% [door_index, _STAIRWELL_LANDINGS.size()])
 
-## One floor's worth of switchback: a flight of `STAIRWELL_FLIGHT_LEN` diagonal tiles down from
-## `top` in `dir` (east for `1`, west for `-1`), a one-tile half-landing at the turn, and a second
-## flight back the other way to `top + Vector2i(0, STAIRWELL_LANDING_GAP)` — the next floor's own
-## landing, laid by the next loop iteration in `_build_stairwell()`. Every step is diagonal — see
-## `InteriorTile.Kind.STAIR_FLIGHT_E`'s own doc — so no walkable tile ever stands beside the run
-## without also being part of it, which is the anti-shortcut property `tests/test_interior.gd`
-## checks: the only way from one landing to the next is along these flights.
-static func _lay_flight(f: InteriorMapPlan, top: Vector2i, dir: int) -> void:
-	var down_kind := InteriorTile.Kind.STAIR_FLIGHT_E if dir > 0 else InteriorTile.Kind.STAIR_FLIGHT_W
-	var back_kind := InteriorTile.Kind.STAIR_FLIGHT_W if dir > 0 else InteriorTile.Kind.STAIR_FLIGHT_E
-	for i in range(1, STAIRWELL_FLIGHT_LEN + 1):
-		f.tiles[top + Vector2i(dir * i, i)] = down_kind
-	var turn := top + Vector2i(dir * (STAIRWELL_FLIGHT_LEN + 1), STAIRWELL_FLIGHT_LEN + 1)
-	f.tiles[turn] = InteriorTile.Kind.LANDING
-	for i in range(1, STAIRWELL_FLIGHT_LEN + 1):
-		f.tiles[turn + Vector2i(-dir * i, i)] = back_kind
+## The tile kind one non-background stair symbol paints. Kept public so the focused suite can ask
+## the same parser the runtime uses instead of maintaining a second symbol-to-kind table.
+static func stair_kind_for_symbol(symbol: String) -> InteriorTile.Kind:
+	match symbol:
+		"F":
+			return InteriorTile.Kind.STAIRWELL_FLOOR
+		"t":
+			return InteriorTile.Kind.STAIR_TOP_E
+		"m":
+			return InteriorTile.Kind.STAIR_MIDDLE_E
+		"T":
+			return InteriorTile.Kind.STAIR_TOP_W
+		"M":
+			return InteriorTile.Kind.STAIR_MIDDLE_W
+		"c":
+			return InteriorTile.Kind.STAIR_CORNER_E
+		"C":
+			return InteriorTile.Kind.STAIR_CORNER_W
+		"b":
+			return InteriorTile.Kind.STAIR_BLOCK
+		_:
+			push_error("Unknown stairwell grammar symbol '%s'" % symbol)
+			return InteriorTile.Kind.NONE
 
 # ---------------------------------------------------------------------------------- lobby ---
 

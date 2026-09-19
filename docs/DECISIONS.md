@@ -19123,3 +19123,29 @@ from before a correction is evidence of the defect, not proof of the correction.
 Report separate outcomes for source approval, registration tests, smooth motion, live sorting
 and player acceptance. Keep any unverified or visibly failing gate open. Do not expand a family
 or ask the player to rediscover known defects just because the endpoint assertions pass.
+
+---
+
+## M158, the staircase follows the corrected tile grammar — 2026-09-19
+
+[PLAYTEST-81](playtests/PLAYTEST-81.md) replaces the first live stair assembly with the player's
+literal 10-column cell grammar. `InteriorMap.STAIRWELL_ROWS` is the authority for drawing,
+walkability, collision and stair direction: `F` is level floor; `D` keeps the corresponding
+corridor transition; `t`/`m` and `T`/`M` are the two-row walkable slopes; `b`, `c`, `C` and `.`
+are solid. The right-side `b` in `.....TMCb.` is present. The same alternation extends only far
+enough to join the lobby.
+
+Seven 32×32 SVG roles draw the grammar directly. The upper and lower east/west pairs make the
+walkable flights, east/west continuation triangles close their diagonal sides, and the neutral
+block's 16px-deep gray top rectangle matches the adjacent continuation. The old broad decks,
+landing overlays and every rail remain absent. This preserves the reviewed lateral-flight source
+shapes while letting the map, rather than a decorative overlay, own the stair.
+
+The focused interior suite drives the real 14px player body across complete east- and
+west-descending flights in both normalized directions, checks the blocked side/background cells
+and checks every door pairing. The complete capture folder at
+`docs/evidence/archive/session-captures/2026-09-19/rig-110853-seed3349946719-v0.11.1-38-g2663c361-dirty/`
+retains the normal-scale left shaft and its run provenance.
+
+[PLAYTEST-83](playtests/PLAYTEST-83.md) gives the played verdict: *"the stairs look good."* That
+accepts the corrected live assembly without adding a railing or restoring any discarded deck.

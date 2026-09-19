@@ -1,0 +1,9 @@
+<!-- Two-tile vertical platform for the stair-side review. It uses the shaft's checker plate and
+     remains narrow so the reviewed modular side, rather than a broad deck or rail, defines a flight. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="64" viewBox="0 0 32 64" shape-rendering="crispEdges">
+  <rect width="32" height="64" fill="#55595d"/>
+  <path d="M0 0L8 8 M16 0L24 8 M8 8L16 16 M24 8L32 16 M0 16L8 24 M16 16L24 24 M8 24L16 32 M24 24L32 32 M0 32L8 40 M16 32L24 40 M8 40L16 48 M24 40L32 48 M0 48L8 56 M16 48L24 56 M8 56L16 64 M24 56L32 64" stroke="#747a7c" stroke-width="2"/>
+  <path d="M0 8L8 0 M16 8L24 0 M8 16L16 8 M24 16L32 8 M0 24L8 16 M16 24L24 16 M8 32L16 24 M24 32L32 24 M0 40L8 32 M16 40L24 32 M8 48L16 40 M24 48L32 40 M0 56L8 48 M16 56L24 48 M8 64L16 56 M24 64L32 56" stroke="#3b3f43" stroke-width="1"/>
+  <rect x="1" y="1" width="30" height="62" fill="none" stroke="#b5aea0" stroke-width="1.5"/>
+  <path d="M0 63H32" stroke="#2d2d32" stroke-width="1"/>
+</svg>

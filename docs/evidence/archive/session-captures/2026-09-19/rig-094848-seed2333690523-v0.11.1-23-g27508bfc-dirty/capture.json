@@ -1,0 +1,16 @@
+{
+  "purpose": "Normal-scale revised escape stair assembly review",
+  "command": "./tools/shot.sh /private/tmp/m158-vertical-landing.png 1.5 --start-escape stairwell:left --walk 1@45@1e",
+  "resolution": [1280, 720],
+  "seed": 2333690523,
+  "day": 1,
+  "presentation": "default illustrated PNG presentation with the six reviewed stair-side SVGs and the 32x64 vertical landing platform",
+  "capture_after_seconds": 1.5,
+  "build": "v0.11.1-23-g27508bfc-dirty",
+  "build_note": "Uncommitted vertical-landing review binding on the named base.",
+  "original_output": "/private/tmp/m158-vertical-landing.png",
+  "retained_output": "m158-vertical-landing.png",
+  "telemetry": "The complete run log is retained beside this file.",
+  "coverage": "The player starts at stairwell:left, walks southeast for one second, then east, centering the vertical landing and a complete east-descending side assembly without a broad flight deck or any rail.",
+  "limitations": "Single still: it establishes visual assembly only, not collision, route behavior or movement. No --invincible flag was used."
+}

@@ -1,0 +1,5 @@
+<!-- Non-walkable `b` tile for either flight direction. Its gray top-edge rectangle is 16px deep,
+     matching the reviewed continuation triangle's two 8px step widths without adding a deck. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="16" fill="#62656a"/>
+</svg>
