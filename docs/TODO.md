@@ -295,6 +295,35 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
+## M158 — The stair side is three stackable tiles · asked for 2026-09-19
+
+> "the stair tiles should be two tiles. the top part is rectangles of a fixed width assuming the
+> stair goes down from the left to right has the full length of the tile on the left side then the
+> next rectangle gets shorter by its width from the top and the next rectangle one width shorter
+> still. the last rectangle on the tile must be exactly as high as its width. the bottom tile is
+> the opposite. it starts with a rectangle whose width is the same as the height from the top the
+> each next rectangle grows by the width from the top the rightmost rectangle is as high as the
+> tile. below those rectangles there is a diagonal gray band bounded by the zig zag of the
+> rectangles at the top and diagonal at the bottom. this is the side of the stairs. this requires a
+> third tile with just a small gray triangle at the top right so this band can seemlessly continue.
+> stack all three on top of each other for the stair layout and the next section of the stairs has
+> all three move one tile over and down. for right to left mirror the tiles. try this with svg first
+> and show me when you have it so I can give feedback and steer."
+
+- [ ] **Prepare the SVG-only checkpoint, without binding it.** Draw a 32×32 left-to-right upper
+      stair tile from fixed-width rectangles whose heights descend by that width, beginning at the
+      full tile height and ending at one width; draw the lower tile as the converse, beginning at
+      one width and ending at full tile height. The tread rectangles' zigzag is the top boundary of
+      one continuous gray diagonal side band; its lower boundary is straight. A third 32×32 tile
+      carries only the small gray top-right continuation triangle. Stack upper, lower and triangle
+      vertically; the next three-tile module shifts one tile right and one tile down. Mirror the
+      complete tiles for right-to-left travel. Match the live interior palette and outline weight,
+      but do not revise or bind the current stair kit until the player has steered this preview.
+      Validate XML, render every source at native size and 3×, and provide an assembled review image
+      showing at least two shifted modules in both directions on the live stairwell background.
+
+---
+
 
 ## M143 — The readout's `process` and `physics` lines say what they measure · asked for 2026-09-14
 
