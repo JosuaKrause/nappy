@@ -33,6 +33,8 @@ description (`evidence/m169-save-symbol-2026-09-19/save-symbol-color-comparison-
 
 > "the latest version (blue with gray) looks good"
 
+> "it actually looks like a floppy disk this time"
+
 4. **The blue-and-gray symbol is accepted as drawn**, the paper label and the shutter's slot
    included, on the render. It has not been seen on a phone in play.
 
