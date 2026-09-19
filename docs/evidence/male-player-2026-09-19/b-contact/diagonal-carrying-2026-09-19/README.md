@@ -1,5 +1,10 @@
 # Pushing and carrying contact preview
 
+[PLAYTEST-98](../../../../playtests/PLAYTEST-98.md) rejects the restored diagonal drawing:
+it is the old thin artwork this PR is meant to refine. This recipe preserves the reviewed
+attempt; its SE/SW output is not an approved solution. The separately color-matched E/W
+result is accepted and must remain unchanged.
+
 This uninstalled early preview provides actual carrying leg changes for
 [PLAYTEST-97](../../../../playtests/PLAYTEST-97.md). Inspect the clean eight-direction
 [carrying PNG](generated/carrying/carrying-spritesheet-6x.png) and

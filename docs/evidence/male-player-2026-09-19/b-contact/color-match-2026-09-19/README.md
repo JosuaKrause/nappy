@@ -1,5 +1,9 @@
 # Father B trouser color match
 
+[PLAYTEST-98](../../../../playtests/PLAYTEST-98.md) accepts the E/W artwork in `final/` and
+rejects its old SE/SW drawing as the solution to the leg refinement. Preserve the accepted
+side pixels; the diagonal frames in these sheets are not an approved replacement.
+
 This uninstalled review set applies one deterministic native-pixel color transform to the two
 generated pushing B trouser areas. The pose, contour, alpha, shoes, skin, jacket, head and hands
 come unchanged from the current correct-contact candidate. The selector begins at native row 28,

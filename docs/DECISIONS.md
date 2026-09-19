@@ -19235,3 +19235,12 @@ early review artifact, not a validated full-figure normalization method. The sid
 stride and heavier shoes than A; the diagonal retains the thin provisional drawing. Both states
 have clean PNG sheets and 190ms A/C/B/C GIFs at native and enlarged sizes. Runtime art remains
 unchanged.
+
+## M167, side accepted and diagonal fallback rejected — 2026-09-19
+
+[PLAYTEST-98](playtests/PLAYTEST-98.md) confirms the current left/right artwork is correct and
+rejects the restored southeast drawing: "you just reverted back to the bad legs from before
+this PR?" and "but SE is just the bad leg from before this PR". Reverting to provisionally
+accepted contact positions did not satisfy the separate request to make those legs look natural.
+The side pixels and color transformation are protected; remaining drawing work concerns the
+diagonal B contact in both pushing and carrying.

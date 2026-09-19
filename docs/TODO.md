@@ -333,9 +333,14 @@ The pushing southeast legs also read south-facing in PLAYTEST-97. Correct their 
 three-quarter stride before reusing them for carrying; a front-diagonal filename alone
 does not establish the projection. Preserve the accepted trailing/advancing leg ownership.
 
-- [ ] **Match the legs to the rest of the family.** E/W B needs clear far-leg shading, folded
-      trousers and substantial shoes. Preserve the accepted near leg trailing and far leg
-      advancing, with a continuous hip–knee–shoe chain and natural knees. SE/SW uses its own
+[PLAYTEST-98](playtests/PLAYTEST-98.md) accepts the current left/right result: "left right is
+correct now at least". Preserve the color-matched E/W pixels exactly. The same review rejects
+restoring the old thin diagonal legs as this PR's solution. Remaining drawing work is SE/SW
+for pushing and carrying, with genuine three-quarter projection and natural trouser anatomy.
+
+- [ ] **Match the diagonal legs to the rest of the family.** Preserve the accepted E/W artwork.
+      Keep the near leg trailing and far leg advancing, with a continuous hip–knee–shoe chain
+      and natural knees. SE/SW uses its own
       three-quarter donor rather than a projected profile stride. Compare the complete loop
       for consistent step length, not only the B pose.
 - [ ] **Publish an early attempt and ask for feedback.** Use the clean eight-direction

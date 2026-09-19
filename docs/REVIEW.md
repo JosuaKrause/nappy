@@ -566,11 +566,3 @@ item below for as long as looking takes.
   became a wall: a walker or a car that reaches the boundary pavement turns or is clamped onto the
   map's last row, and the one body allowed out is a car on the spine by the tunnel or the bridge.
   Whether that reads as a city edge or as bodies bunching against glass is a played question.
-- **M167, the father's leg drawing — early pushing and carrying contact previews.**
-  PR #234 embeds both states as clean PNG sheets and GIFs. The
-  [color-matched pushing sheet](evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/final/pushing/pushing-spritesheet-6x.png)
-  and [carrying sheet](evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/final/carrying/carrying-spritesheet-6x.png)
-  show the corrected profile overlap and actual carrying B changes. Compare the trouser colors
-  through A/C/B/C and the carrying leg contacts. Southeast uses the accepted provisional
-  diagonal; its natural drawing refinement remains open. Side B has a wider stride and heavier
-  shoes than A. These uninstalled previews do not establish runtime hand contact or final approval.

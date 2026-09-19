@@ -298,18 +298,17 @@ checks and worktrees can move independently of this file.
   frames, a genuine southeast stride, and the corresponding leg corrections applied to
   carrying too. Embed clean PNG sheets and GIFs for both states directly in the PR. Preserve
   the father's identity, baby and carrying upper-body pose, and all unaffected frames.
-  `color-match-2026-09-19/` supplies the deterministic trouser transformation;
-  `diagonal-carrying-2026-09-19/` supplies actual carrying B changes and restores the accepted
-  southeast contact. Natural southeast drawing remains open after generated attempts failed
-  the leg-ownership check. The side B stride and shoes remain heavier than A. These are early
-  uninstalled previews, not an approved full-figure carrying normalization.
+  [PLAYTEST-98](playtests/PLAYTEST-98.md) accepts the E/W result in
+  `color-match-2026-09-19/final/`: preserve those pixels exactly. SE/SW remains unresolved;
+  restoring the old thin legs is rejected as a solution. Replace only the diagonal B artwork
+  with a natural three-quarter stride in both states, preserving all other frames.
   The provisional contact baseline
   on main remains in use. Push plausible attempts early and welcome repeated feedback;
   the CLI cannot display local images. The next branch synchronization requires explicit permission.
 
 Number ownership remains distinct: PLAYTEST-84 and PLAYTEST-85 are the escape/save records
 on main, PLAYTEST-86 belongs to the performance work, and PLAYTEST-87 belongs to the father
-sheet instructions. PLAYTEST-88 through PLAYTEST-93 and PLAYTEST-95 through PLAYTEST-97 are
+sheet instructions. PLAYTEST-88 through PLAYTEST-93 and PLAYTEST-95 through PLAYTEST-98 are
 separate father follow-ups. PLAYTEST-94 belongs to the independent escape/save feedback.
 
 No merge, auto-merge, rebase, merge from main or branch deletion is authorized without explicit permission in the current
