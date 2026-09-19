@@ -308,7 +308,11 @@ south uses `father_front_b`. Northeast and northwest share `father_back_diagonal
 player identified as correct and which stays untouched.
 
 - [ ] **Show the intended leg in front in the woman's established review format, then install only
-      what the player approves.** [PLAYTEST-87](playtests/PLAYTEST-87.md) rejects a before/after
+      what the player approves.** [PLAYTEST-88](playtests/PLAYTEST-88.md) accepts N/S and NE/NW
+      after clarifying the mirrored pairs, but rejects E/W and SE/SW: the same leg still leads
+      and the knee bends unnaturally. Preserve the accepted directions and all A/C frames.
+      Correct the complete hip–knee–shoe chain in the two remaining B views, not only the
+      position of the shoe. [PLAYTEST-87](playtests/PLAYTEST-87.md) rejects a before/after
       comparison because the failed frame is not a useful review target. Reuse the accepted woman
       pushing pipeline without inventing another strategy: one clean sprite sheet contains the
       father's A/C/B/C loop in all eight runtime directions, and native/6× GIFs animate the same

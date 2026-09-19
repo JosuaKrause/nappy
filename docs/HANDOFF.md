@@ -285,22 +285,27 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
 checks and worktrees can move independently of this file.
 
-- **PR #216 — M159, a slow frame names the frame that was slow** is a draft with merge conflicts
+- **PR #216 — M159, reduce crowd contribution cost and retain stutter measurements** is a draft with merge conflicts
   and no CI result for its current head. The crowd-rejection optimization is locally verified;
   paired measurements show an 84.7–87.1% reduction in query medians, while whole-frame tails remain.
   Phone measurements and CPU attribution remain open. PLAYTEST-86 is its performance clarification.
   Fetch the live PR and inspect its evidence before continuing.
-- **PR #221 — M160, the father's B contact puts the other leg forward** is a draft with merge
-  conflicts and no CI result for its current head. It awaits player judgment of the clean
-  eight-direction A/C/B/C sheet and native/6× animation-loop GIFs specified in
-  [PLAYTEST-87](playtests/PLAYTEST-87.md). Front/back use the A lower-body mirror; side/front-diagonal
-  use the authorized father-only splice. Nothing is installed, and shared procedures remain
-  unchanged pending approval. The next action is player review, not another generation strategy.
-- **PR #229 — M165, the escape after the corrected stairs, and M166, when the save is written**
-  owns PLAYTEST-84 and PLAYTEST-85. Its CI is running at this pickup; fetch and inspect the live
-  head and checks before acting. Do not infer completion from this snapshot.
+- **PR #221 — M160, the father's B contact puts the other leg forward** requires corrected E/W
+  and SE/SW contacts. [PLAYTEST-88](playtests/PLAYTEST-88.md) accepts N/S and NE/NW after
+  clarifying the mirrored pairs; keep those and every A/C frame fixed. The near knee must
+  trail its hip, rather than folding a forward leg backward at the shin. The review format
+  remains the clean eight-direction A/C/B/C sheet and native/6× animation loops from
+  [PLAYTEST-87](playtests/PLAYTEST-87.md). Nothing is installed. Complete-image approval remains
+  the gate for installation and adding the successful method to the shared graphics procedure.
+- **PR #230 — M166, save at day start and reopen on the day brief** owns the save-timing
+  implementation. Fetch its live head, description and checks before review; its work is
+  independent of the father and performance corrections.
 
-No merge, auto-merge or branch deletion is authorized without explicit permission in the current
+Number ownership remains distinct: PLAYTEST-84 and PLAYTEST-85 are the escape/save records
+on main, PLAYTEST-86 belongs to the performance work, and PLAYTEST-87 belongs to the father
+sheet instructions. PLAYTEST-88 is the father's subsequent visual verdict.
+
+No merge, auto-merge, rebase, merge from main or branch deletion is authorized without explicit permission in the current
 session. New implementation or investigation uses fresh agents with self-contained briefs; do not
 resume the agents from this handoff.
 

@@ -19080,3 +19080,25 @@ commands and output hashes beside the evidence. The shared correction procedure 
 the player approves a final image, and then keeps the successful method rather than its failed
 precursors. No candidate becomes runtime art until the complete all-direction sheet and both loops
 are approved.
+
+## M160, the splice's trailing shoe did not establish an opposite contact — 2026-09-19
+
+[PLAYTEST-88](playtests/PLAYTEST-88.md) accepts N/S and the NE/NW mirrored pair, with the
+pairing clarified after the initial report named NE/SW. E/W and SE/SW remain rejected:
+*"the others have STILL the same leg in front only now the leg is also weirdly bent"*.
+The existing eight-direction sheet, GIFs, donor and their frozen reproduction inputs stay
+retained; no runtime artwork was installed.
+
+The donor's near thigh still travels forward from the hip to a forward knee, then its shin
+folds backward to reach the trailing shoe. The previous claim of correct ownership checked
+the trailing shoe and the overlap without checking that complete chain. Reusing those legs
+for the diagonal and raising one foot by affine projection inherited the same defect and
+did not provide the diagonal's own pelvis. The review README now states the rejection;
+the immutable chronology keeps the original assessment as history.
+
+The remaining correction targets are separate side and front-diagonal B contacts. Their
+corrected SVGs already specify a near knee and shoe behind the hip, with the near trailing
+thigh drawn over the far advancing leg. Preserve the accepted N/S and NE/NW frames, every
+A/C frame, the native canvases and fixed upper-body landmarks. The player-authorized
+father-only splice remains available, but approval of the complete sheet and loops still
+precedes installation and promotion of a successful method into the shared procedure.

@@ -7,7 +7,9 @@ therefore differ in these four assets. This is source evidence, not a completed 
 The [father-only splice trial](loops-2026-09-19/README.md) provides the requested clean
 eight-direction A/C/B/C sprite sheet and native/6× animation loops. It preserves A's upper pixels
 and native registration, mirrors A's front/back lower body, and uses a retained father leg drawing
-for the side/front-diagonal B trial. The player judges these uninstalled review candidates.
+for the side/front-diagonal B trial. [PLAYTEST-88](../../../playtests/PLAYTEST-88.md) accepts
+N/S and NE/NW, but rejects E/W and SE/SW: the near thigh still advances and its shin folds
+backward to the trailing shoe. The rejected donor and deterministic trial remain preserved.
 The [four-pose comparison](review-2026-09-19/README.md) remains superseded evidence.
 
 ## Source contract
@@ -124,9 +126,10 @@ uv run python docs/evidence/male-player-2026-09-19/b-contact/review-raster.py \
   --raw /path/to/generated-atlas.png --output-dir /tmp/father-b-candidate
 ```
 
-Four corresponding whole-figure PNG redraws, registered/contact/comparison sheets and a
-hash-checked override recipe remain required. The side needs the near leg trailing without
-changing head size, torso length or hand height relative to A/C. Front diagonal needs the
-near trailing thigh visibly in front of the far advancing thigh. No raster candidate is
-installed or retained here as an accepted result. These source artifacts are not a reviewable
-PNG correction. No motion burst is captured for this incomplete presentation.
+Side and front-diagonal B corrections remain required, with the accepted N/S and NE/NW pixels
+and every A/C frame preserved. The side needs the near knee and shoe behind its hip, without
+changing head size, torso length or hand height relative to A/C. Front diagonal needs its own
+projected near trailing thigh visibly in front of the far advancing thigh. A father-only splice
+is authorized, but the complete native sheet and animation loops must pass visual review before
+installation. The shared procedure awaits approval of the complete result. These source artifacts
+alone do not establish a corrected PNG contact. No gameplay motion burst covers this presentation.

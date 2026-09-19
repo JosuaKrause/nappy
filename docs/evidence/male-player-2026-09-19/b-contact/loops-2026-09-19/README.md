@@ -8,7 +8,9 @@ its [native version](generated/father-spritesheet-native.png), and the
 The sheet columns are N, NE, E, SE, S, SW, W, NW. Its four rows are A, C, B, C. The GIF layout
 is N/NE/E/SE across the top and S/SW/W/NW below, repeating the same four 190ms phases forever.
 The outputs contain only the father sprites, without comparison panels or annotations.
-They are review artifacts: no candidate is installed or approved.
+They are retained review artifacts, not installed assets. [PLAYTEST-88](../../../../playtests/PLAYTEST-88.md)
+accepts N/S and NE/NW but rejects E/W and SE/SW for repeating the leading leg and adding an
+unnatural knee bend. The complete sheet is not approved for installation.
 
 The [woman pushing recipe](../../../comic-pushing-strides-2026-09-12/GENERATION.md) supplies
 the assembly authority. `assemble.py` imports its direction order, placement helper, gray review
@@ -40,15 +42,15 @@ runtime scale or canvas adjustment is applied.
   `source_y = output_y - (36/254) * output_x + (36/254) * 278`. Paste the exact front-diagonal
   A upper rows last. This is the splice trial the player judges, not an accepted diagonal redraw.
 
-The side donor's near leg crosses in front and reaches the trailing left shoe; the far leg reaches
-the leading right shoe. Splicing preserves that visible overlap. The source shirt and hands stay
-fixed, while the diagonal projection changes the two foot depths. Hip joins, trouser shading and
-the borrowed leg perspective still require the player's visual judgment. No clipping or overflow
-is hidden with padding, and no candidate upper body is substituted for the accepted father.
+The side donor's near shin crosses in front and reaches the trailing left shoe, but its thigh
+still points forward to a forward knee. The backwards-folded shin does not establish the opposite
+contact. The diagonal projection inherits this defect while changing the two foot depths; it
+does not create a three-quarter pelvis. These are the rejected E/W and SE/SW poses. No clipping
+or overflow is hidden with padding, and no candidate upper body substitutes for the accepted father.
 
 `father-side-leg-donor.png` is the unchanged original generated file; `donor-prompt.txt` preserves
-its exact prompt from `../raster-attempts.json`. The earlier whole-figure attempt is unsuitable
-because its head and hand proportions differ; only its authorized leg crop is used here.
+its exact prompt from `../raster-attempts.json`. Its head/hand proportions and its bent leg chain
+make it unsuitable for installation. Only its authorized leg crop is used in this rejected trial.
 
 ## Provenance and reproduction
 
@@ -58,6 +60,8 @@ events retain their order without an invented timestamp. The exact failed prompt
 input hashes live in `attempts/`. Their internally rejected output files stay outside the repo
 at the recorded paths and never enter the final assembly. The failed retry's woman pose reference
 is recorded honestly as history; it is not a current input or an edited/generated woman asset.
+The chronology's initial "correct-ownership" assessment is a historical claim overturned by
+PLAYTEST-88; its exact bytes remain frozen for reproduction of this trial.
 
 `inputs.json` pins every final source image, the donor, recipe, chronology and reused P2 code.
 `generated/manifest.json` records crops, transformations, compositing order, canvas/alpha bounds,
