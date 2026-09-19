@@ -285,38 +285,24 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
 checks and worktrees can move independently of this file.
 
-- **PR #217 — M158, the stair side is three stackable tiles** is a draft. The player-test checkout
-  carries the six reviewed side
-  sources, a narrow 32×64 vertical landing at each full-flight start, and no broad flight deck,
-  horizontal landing overlay or rail. The map, slope, collision, doors and route are unchanged.
-  Focused import, interior, document and SVG gates pass, and CI is green. The remaining gate is
-  player review in the escape sequence. Do not revise the geometry, restore old tiles or add rails
-  without that feedback.
-- **PR #216 — M159, a slow frame names the frame that was slow** is a green draft. Four
-  equal-window desktop repetitions still drift enough
-  that no toggle causality is claimed. Atlas phase timing is recorded outside the retained walking
-  window; GPU completion, deferred rendering and release wait remain unresolved. The next action is
-  quiet-host/player-laptop repetition and phone CPU attribution, keeping M143's readout-label work
-  separate. Its branch also carries the fix-ready M163 ground-atlas reference-fixture report and
-  M164 engine-errors-make-the-gate-red report; neither fix is implemented.
-- **PR #221 — M160, the father's B contact puts the other leg forward** is a green draft. Corrected
-  SVG ownership proof is complete, but no replacement PNG is approved or installed. The player
-  rejected the before/after comparison itself and specified the established woman-pushing review
-  deliverable instead: one clean eight-direction A/C/B/C sprite sheet and native/6× animation-loop
-  GIFs. Front and back use their correctly sized A lower body mirrored into the opposite contact;
-  side and front diagonal use the player-authorized trial splice of correct father legs beneath the
-  preserved father upper body; the other runtime directions use the existing mirror rules. Reuse
-  the woman pipeline exactly, retain the splice recipe beside the evidence, and install nothing or
-  update the shared procedure before player review.
-- **M162, a game can be resumed, is specified and ready for an agent.** Its question is
-  answered ([PLAYTEST-82](playtests/PLAYTEST-82.md)): a save holds the run and the day, a game
-  left in the middle of a day comes back at dawn one nerve down, and an agent's run never reads
-  or writes the save. Its `TODO.md` entry is the brief; it builds on the focus-loss pause
-  (`DECISIONS.md`, M161), whose one played question is in `REVIEW.md`.
+- **PR #216 — M159, a slow frame names the frame that was slow** is a draft with merge conflicts
+  and no CI result for its current head. The crowd-rejection optimization is locally verified;
+  paired measurements show an 84.7–87.1% reduction in query medians, while whole-frame tails remain.
+  Phone measurements and CPU attribution remain open. PLAYTEST-86 is its performance clarification.
+  Fetch the live PR and inspect its evidence before continuing.
+- **PR #221 — M160, the father's B contact puts the other leg forward** is a draft with merge
+  conflicts and no CI result for its current head. It awaits player judgment of the clean
+  eight-direction A/C/B/C sheet and native/6× animation-loop GIFs specified in
+  [PLAYTEST-87](playtests/PLAYTEST-87.md). Front/back use the A lower-body mirror; side/front-diagonal
+  use the authorized father-only splice. Nothing is installed, and shared procedures remain
+  unchanged pending approval. The next action is player review, not another generation strategy.
+- **PR #229 — M165, the escape after the corrected stairs, and M166, when the save is written**
+  owns PLAYTEST-84 and PLAYTEST-85. Its CI is running at this pickup; fetch and inspect the live
+  head and checks before acting. Do not infer completion from this snapshot.
 
-No PR is merged or put on auto-merge without explicit permission in the current session. New
-implementation or investigation uses fresh agents with self-contained briefs; do not resume the
-agents from this handoff.
+No merge, auto-merge or branch deletion is authorized without explicit permission in the current
+session. New implementation or investigation uses fresh agents with self-contained briefs; do not
+resume the agents from this handoff.
 
 ## The queue, as prioritised on 2026-09-09
 
