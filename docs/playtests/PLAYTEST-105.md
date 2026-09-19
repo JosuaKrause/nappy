@@ -18,3 +18,11 @@ the original individual textures as well violates the memory requirement. Retain
 source assets for authoring without loading those originals into GPU memory in the game.
 This extends the grouped-atlas requirements in PLAYTEST-75 and PLAYTEST-76; it does not ask
 for immediate implementation or change the approved father artwork.
+
+The player strengthens the build and memory boundary:
+
+> "must not also be loaded individually into GPU memory. -- or any memory. they should cease existing in the build once they get baked into an atlas"
+
+Exclude individual baked textures and their imported resource copies from the shipped build
+entirely. Runtime must not load them into CPU or GPU memory. Original SVGs and PNGs remain
+repository authoring inputs only; runtime packages contain the atlases and region metadata.

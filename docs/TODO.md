@@ -293,12 +293,13 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
-## M171 — Build-time atlases with no duplicate texture residency · asked for 2026-09-19
+## M171 — Build-time atlases replace individual textures · asked for 2026-09-19
 
 [PLAYTEST-105](playtests/PLAYTEST-105.md) requires atlases to be created at build time so the
 game can load them cheaply. Related items belong together to avoid loading an atlas mostly
 occupied by unrelated pictures. Any image loaded through an atlas must not also be loaded
-as an individual GPU texture. This extends PLAYTEST-75 and PLAYTEST-76's grouped-atlas
+as an individual texture in CPU or GPU memory. Baked constituents must be absent from the
+shipped build entirely, including their imported resource copies. This extends PLAYTEST-75 and PLAYTEST-76's grouped-atlas
 contract; see `DECISIONS.md`, M171, build-time atlases, for the design and current cost.
 
 - [ ] **Generate atlas images and region metadata during the build.** Replace runtime packing
@@ -307,25 +308,31 @@ contract; see `DECISIONS.md`, M171, build-time atlases, for the design and curre
       atlas images or repack them at startup, first draw or day repaint. Use a reproducible
       build step that runs before desktop/web export and supports development checkouts;
       detect missing or stale outputs before shipping. Keep editable SVGs and original PNGs
-      as authoring inputs, with source hashes and deterministic region mappings.
+      as repository authoring inputs only, with source hashes and deterministic region mappings.
+      Exclude their individual images and imported resources from export once baked; the shipped
+      representation consists only of atlas textures and region metadata.
 - [ ] **Group pictures by related use and lifetime.** Keep an entity's directions, animation
       frames and related state variants together; group shared head indicators, ground
       components and other families by their actual consumers. Document membership and loading
       boundaries so unrelated rarely used pictures do not force wasteful residency. Preserve
       the texture-size limit, padding and filtering contract; use explicit related pages where
       a family exceeds a page, not one indiscriminate atlas for the whole catalogue.
-- [ ] **Load the atlas once, never its constituents as individual textures.** Route all covered
+- [ ] **Load the atlas once; baked constituents do not exist in the build.** Route all covered
       consumers to regions of a shared atlas resource. Remove eager source `preload()` tables,
       resolver warm scans/caches and fallback paths that load the same pictures separately.
-      Audit scripts, scenes, resources, TileSets and exports for indirect source loads as well.
-      Releasing the group must release its GPU texture when its last consumer lets go. Preserve
+      Audit scripts, scenes, resources, TileSets and export dependencies for indirect source
+      inclusion as well as loads. Runtime may not reconstruct or cache individual image copies
+      in CPU memory, nor upload them as separate GPU textures. Releasing the group must release
+      its CPU image storage and GPU texture when their last consumers let go. Preserve
       PNG and forced-SVG presentation through separately built resources selected before load;
-      neither mode may load the other mode's atlas or duplicate constituent textures.
+      neither mode may load the other mode's atlas or retain any constituent textures.
 - [ ] **Prove memory ownership, loading cost and appearance.** Verify every covered image maps
-      to the intended atlas region, consumers share its texture, and no original constituent
-      GPU texture is loaded. Check group release/reload, presentation modes and the exported
+      to the intended atlas region and consumers share its texture. Inspect exported package
+      contents and dependencies to prove no baked constituent image or imported copy is present;
+      prove no individual CPU image or GPU texture is loaded or reconstructed at runtime.
+      Check group release/reload, presentation modes and the exported
       web build, including startup, first appearance and day transitions. Record atlas
-      load/release timings and GPU texture memory with clear measurement limits. Preserve
+      load/release timings and CPU/GPU texture memory with clear measurement limits. Preserve
       native dimensions, alpha, tinting, placement, mirroring, animation and ground seams;
       use focused tests and bounded motion evidence. Update the architecture, graphics and
       telemetry docs with the implementation. The full suite remains CI's gate.

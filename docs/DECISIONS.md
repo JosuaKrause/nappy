@@ -19725,3 +19725,10 @@ PNG and SVG comparison modes remain available through separately built, exclusiv
 resources. Source files remain editable authoring inputs without becoming runtime constituent
 textures. Validation must cover exports, indirect preloads, group release, GPU residency and
 the existing visual/animation contracts. No atlas implementation changes accompany this design.
+
+The player then clarifies that the exclusion is stronger than avoiding duplicate GPU uploads:
+"or any memory. they should cease existing in the build once they get baked into an atlas".
+The TODO therefore excludes individual baked images and their imported resource copies from
+the exported package, forbids runtime CPU/GPU constituent copies, and requires package-content
+and dependency checks in addition to memory measurements. Source artwork stays in the repository
+for authoring; it is not a fallback dependency in the shipped atlas-only representation.
