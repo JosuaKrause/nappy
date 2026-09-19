@@ -566,3 +566,11 @@ item below for as long as looking takes.
   became a wall: a walker or a car that reaches the boundary pavement turns or is clamped onto the
   map's last row, and the one body allowed out is a car on the spine by the tunnel or the bridge.
   Whether that reads as a city edge or as bodies bunching against glass is a played question.
+- **M167, natural southeast legs in pushing and carrying.** PR #234 embeds the
+  [new pushing sheet](evidence/male-player-2026-09-19/b-contact/natural-southeast-2026-09-19/generated/pushing/pushing-spritesheet-6x.png)
+  and [carrying sheet](evidence/male-player-2026-09-19/b-contact/natural-southeast-2026-09-19/generated/carrying/carrying-spritesheet-6x.png)
+  with their animation GIFs. Compare only SE/SW B: the foreground thigh continues into the
+  trailing shoe and crosses the far advancing leg. Does the new drawing read naturally at
+  the three-quarter angle through the full loop? Check the diagonal upper-body stability too;
+  these are whole-figure redraws. Accepted E/W and all other frames are unchanged. The candidate
+  remains uninstalled pending visual judgment.

@@ -302,6 +302,10 @@ checks and worktrees can move independently of this file.
   `color-match-2026-09-19/final/`: preserve those pixels exactly. SE/SW remains unresolved;
   restoring the old thin legs is rejected as a solution. Replace only the diagonal B artwork
   with a natural three-quarter stride in both states, preserving all other frames.
+  `natural-southeast-2026-09-19/` contains a new generated diagonal candidate and its
+  reproducible recoloring/registration. Review its PNG sheets and GIFs for both states;
+  the E/W result and all other frames remain protected. Diagonal upper-body proportions
+  require visual judgment because the candidate redraws the complete figures.
   The provisional contact baseline
   on main remains in use. Push plausible attempts early and welcome repeated feedback;
   the CLI cannot display local images. The next branch synchronization requires explicit permission.

@@ -28,7 +28,10 @@ its southeast legs are too frontal. The [color-match recipe](b-contact/color-mat
 transforms trouser colors without changing geometry or pixels outside the material mask.
 The [diagonal and carrying contact recipe](b-contact/diagonal-carrying-2026-09-19/README.md)
 restores the accepted southeast contact and applies actual carrying B leg changes. These are
-uninstalled review candidates; natural southeast drawing remains unresolved.
+retained review artifacts: PLAYTEST-98 accepts their color-matched E/W result and rejects the
+restored diagonal drawing. The [natural southeast recipe](b-contact/natural-southeast-2026-09-19/README.md)
+uses colored leg chains to establish the crossing during generation, then restores the clothing
+palette deterministically. Its pushing and carrying sheets preserve the accepted E/W pixels.
 
 `source/` preserves Godot's 1×, 3× and 8× rasterization of every SVG.
 `inputs/*_source-{1,3,8}x.png` assembles them in columns front, back, side, front diagonal,
