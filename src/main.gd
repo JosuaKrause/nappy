@@ -1580,17 +1580,6 @@ func _engage_the_day() -> void:
 	_day_engaged = true
 	_save_now(true)
 
-## Whether the day currently in `_day` should be saved as "under way" right now — read by
-## `_notification()`'s own focus-loss and quit writes, never by the dawn write, which passes
-## `_day_engaged` directly since nothing about `_day.phase` says anything useful before
-## `_day.start()` has even run for the attempt in question. `false` before `_day` exists at all
-## (the earliest sliver of boot) and once a day has actually ended (`GameEnums.DayPhase.OVER`,
-## which `_on_day_finished()` sets before either summary screen comes up) — the phase this is
-## really asking about is *whether closing right now would lose anything*, and a day that has
-## already resolved into a summary or an ending has nothing left in it to lose.
-func _day_under_way_for_save() -> bool:
-	return _day_engaged and _day != null and _day.phase != GameEnums.DayPhase.OVER
-
 ## Every write goes through here so the symbol only ever flashes for one that actually happened —
 ## see `GameSave.write()`'s own doc for the runs and moments that draw nothing.
 func _save_now(day_under_way: bool) -> void:
@@ -1709,9 +1698,6 @@ func _start_burst() -> void:
 	Telemetry.start_burst("asked for an animation burst at %s" % _capture_context())
 
 func _quit() -> void:
-	# Before `Telemetry.end_run()` closes the log, so a `save` entry lands inside the run it is
-	# about rather than after the header that closes it.
-	_save_now(_day_under_way_for_save())
 	Telemetry.end_run()
 	get_tree().quit()
 
@@ -1730,12 +1716,6 @@ func _quit() -> void:
 ## answered at all — see `_pause_on_focus_lost()`'s own doc for why coming back does not resume.
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
-		_save_now(_day_under_way_for_save())
 		Telemetry.end_run()
 	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
-		# Saved unconditionally, even where `_pause_on_focus_lost()` below is about to return early
-		# because the day summary or the title is already up — saving and pausing are separate
-		# decisions, and a write here is what lets a browser tab backgrounded on a day summary come
-		# back to the next day's dawn for free rather than to whatever the day before it left.
-		_save_now(_day_under_way_for_save())
 		_pause_on_focus_lost()

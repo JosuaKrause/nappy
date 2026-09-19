@@ -39,6 +39,7 @@ func run(t) -> void:
 	_test_either_ending_clears_the_save(t)
 
 	_test_focus_loss_never_charges_a_nerve(t)
+	_test_focus_loss_and_window_close_write_nothing(t)
 	_test_pause_screen_shows_or_hides_the_resume_note(t)
 	_test_dismissing_the_title_writes_the_save_under_way(t)
 	_test_dismissing_a_resumed_pause_writes_under_way_and_a_second_load_costs_again(t)
@@ -393,6 +394,32 @@ func _test_focus_loss_never_charges_a_nerve(t) -> void:
 	main._pause.close()
 
 	_free_bare_main(t, main)
+
+## **`main._notification()` stops calling `_save_now()` on either notification.** Losing focus
+## still opens the pause (asserted above) and a window close still ends the telemetry log, but
+## neither touches the save any more — only a day starting, or its own brief or end-of-day message
+## coming up, changes what a save holds (docs/MECHANICS.md, "Saving and resuming"). Forced through
+## `_with_forced_save()` so a stray write here would actually land and be caught; without it
+## `uses_save()` already answers `false` under the headless runner regardless of what `main` calls,
+## and the assertion would pass whether or not the write survived. `main._quit()` makes the same
+## change on its one remaining line, but it also calls `get_tree().quit()`, which would end this
+## test run rather than this test — there is no way to call it from here at all, so that half is
+## read off the diff rather than asserted.
+func _test_focus_loss_and_window_close_write_nothing(t) -> void:
+	_with_forced_save(func() -> void:
+		var main := _build_bare_main(t)
+		t.get_tree().paused = false
+
+		main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+		t.check(main._pause.is_open(), "focus loss still opens the pause")
+		t.check(not GameSave.has_save(), "but writes nothing")
+		main._pause.close()
+
+		main.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
+		t.check(not GameSave.has_save(), "and neither does the window-close notification")
+
+		_free_bare_main(t, main)
+	)
 
 func _test_pause_screen_shows_or_hides_the_resume_note(t) -> void:
 	var pause: PauseScreen = _PAUSE_SCENE.instantiate()
