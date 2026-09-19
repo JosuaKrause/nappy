@@ -10,20 +10,17 @@ extends RefCounted
 ## rather than guessed: over the probe's seeds, every solid body on a walked sidewalk that leaves
 ## her no lane on that sidewalk, by row and by the path that placed it.
 ##
-## # What is built today, and what this measures instead
+## # What this measures
 ##
-## `EventScheduler._leaves_the_routes_sidewalk_open` (`src/events/event_scheduler.gd`) is the one
-## rule that already exists for this, and it runs in exactly one place: `_place_one`'s candidate
-## loop, which `_place_scripted`, `_place_one_shots` and `_fill_with_recurring` all funnel through.
-## Everything else that can put a solid body on a street — the seals a `SealPlanner` places before
-## the scheduler runs, the calm-ground pass (`_spoil_the_parks_she_used`, which drops rows straight
-## onto `planned` with no rule asked of them), the region wall and door bodies, and a closure
-## barrier — never asks it. `docs/DECISIONS.md`'s own record of the rule (the three changes, M129)
-## says the same about the width clause specifically: it is asked of `EventDef.obstructs_radius`
-## and `_line_reach_of()`, a **cost** reading that denies more ground than a body's own edge for a
-## row that "bills anybody within reach" — right for pricing a route, but not the question a
-## *hard* wall asks. This probe asks the narrower, physical one instead: with only the body's own
-## `obstructs_radius` in the way, is there still a lane she fits through?
+## `EventScheduler._leaves_no_line_along_a_sidewalk` asks two questions of a row's own numbers now:
+## a **cost** one (`_line_reach_of` against `_THE_FAR_LANE`, "what does this row bill a passer-by")
+## and a **physical** one (`_closes_the_band_by_its_own_placement`, "does a passer-by have anywhere
+## left to stand"), and either is enough to make the row a wall — refused a route cell entirely by
+## `_copies_of`. Both are asked once, from the def alone, before a tile is ever chosen, and only in
+## `_place_one`'s candidate loop. This probe checks the result of that decision against the day as
+## it is actually planned and placed: does any body, from any placing path, still end up standing
+## where it leaves no lane on a walked sidewalk — a genuine gap in what the rule covers, or, if one
+## the rule itself is supposed to refuse turns up anyway, a bug in the rule rather than a gap in it.
 ##
 ## # Reused rather than re-derived
 ##
@@ -33,9 +30,11 @@ extends RefCounted
 ##   runs along, or the whole street where neither does. Asked here exactly as the rule asks it,
 ##   because a probe reading a different band could not tell whether the rule (or a gap in it) had
 ##   fired on the ground the player actually meant.
-## - **A carriageway tile inside a fallback whole-street band.** `EventScheduler._is_a_carriageway_tile`,
-##   the same test `_closes_the_run` uses, so a body parked on the road between two kerbs is never
-##   read as taking a pavement it was never on.
+## - **The closing test.** `EventScheduler.closes_a_walked_sidewalk_band()` is the one place the
+##   tile-grained physical reading lives — the suite (`tests/test_events.gd`) asks the same
+##   function of the same kind of sample, so the probe's printed number and the suite's asserted
+##   one can never quietly disagree about what "closed" means. See its own doc for why the walk
+##   only has to connect the band's genuinely open ends rather than its raw tile-rect corners.
 ## - **The day, planned the way the game plans it.** `RouteTree.for_day` grows the corridor,
 ##   `RegionPlanner.plan_day` decides the wall and doors, `ClosurePlanner.plan_day` closes streets,
 ##   `SealPlanner.plan_day` seals the tree, `EventScheduler.build_day`'s own phases fill the city —
@@ -60,10 +59,8 @@ extends RefCounted
 ## does not generalise — a body's own `obstructs_radius` varies per row. The general form of that
 ## same formula, *"her centre is stopped `obstructs_radius + PLAYER_BODY_RADIUS` from a body's
 ## centre"* (`EventDef.detain_distance()`'s doc; the **events** skill, "A lethal radius and a solid
-## body are the same mechanism"), is what this probe uses per tile: a tile's own centre point is
-## free of a body when it is further than that sum away, which is the tile-grained reading
-## `_closes_the_run` already measures a lane in, substituting the body's physical
-## `obstructs_radius` for the rule's cost-based `_line_reach_of()`.
+## body are the same mechanism"), is what `closes_a_walked_sidewalk_band()` uses per tile: a tile's
+## own centre point is free of a body when it is further than that sum away.
 ##
 ## # What counts as a solid body
 ##
@@ -79,15 +76,13 @@ extends RefCounted
 ##
 ## # What "closes" means
 ##
-## Per walked-sidewalk band, a tile-grained 4-connected walk from one end to the other over the
-## band's own tiles, exactly as `EventScheduler._closes_the_run` asks it of a street — a tile is
-## free unless a body's own physical reach (`obstructs_radius + PLAYER_BODY_RADIUS`) covers its
-## centre. **Cumulative with everything else down that day**, the same reading the production rule
-## and `docs/DECISIONS.md` both state it in: a body on each of the two lanes closes a band neither
-## could close alone. Where a band is closed, the minimal culprit set is found the way
-## `tests/probes/m129_zero_cost_line.gd`'s `_barrier_of` finds one — one body, then a pair, then
-## the whole touching set — and each member of that set is counted once as a closing body, tagged
-## with the pass that placed it.
+## Per walked-sidewalk band, `EventScheduler.closes_a_walked_sidewalk_band()` — a tile-grained
+## 4-connected walk between the band's own genuinely open ends. **Cumulative with everything else
+## down that day**, the same reading the production rule and `docs/DECISIONS.md` both state it in:
+## a body on each of the two lanes closes a band neither could close alone. Where a band is closed,
+## the minimal culprit set is found the way `tests/probes/m129_zero_cost_line.gd`'s `_barrier_of`
+## finds one — one body, then a pair, then the whole touching set — and each member of that set is
+## counted once as a closing body, tagged with the pass that placed it.
 ##
 ## # Exemptions this probe does *not* make
 ##
@@ -110,15 +105,9 @@ const BASE_SEED := 129129
 const DAYS: Array[int] = [1, 5, 9, 13]
 
 ## The lane width her own collision circle needs — see the class doc, "The clearance figure". Not
-## read directly by the closing test below (which asks the per-tile radius-sum question instead),
-## but printed so the report states the figure it is equivalent to.
+## read directly by the closing test (which asks the per-tile radius-sum question instead), but
+## printed so the report states the figure it is equivalent to.
 const HER_CLEARANCE := 2.0 * Tuning.PLAYER_BODY_RADIUS
-
-## The four rows the production width rule already refuses the route's own sidewalk to
-## (`docs/DECISIONS.md`, M129, "the three changes"). A single-culprit closure whose row is one of
-## these, placed by the candidate loop, is the shape that would mean the rule itself has a bug
-## rather than a gap in what it covers.
-const _RULE_COVERS: Array[String] = ["cafe_tables", "market_stall", "construction", "ice_cream_van"]
 
 ## A region door costs by design and is exempt from being a wall the same way the production rule
 ## and `tests/probes/m129_zero_cost_line.gd` both exempt it; the wall body beside it is not a door
@@ -185,6 +174,8 @@ func _measure() -> void:
 	var ground_only_bands := 0
 	var rule_scope_singles := 0
 	var single_culprit_bands := 0
+	var van_placed := 0
+	var van_far_sidewalk := 0
 
 	for i in SEEDS:
 		var seed_used := BASE_SEED + i * 97
@@ -206,9 +197,11 @@ func _measure() -> void:
 				var per_act: Array = tally[act]
 				per_act[1] += 1
 
-				var ground_alone := _band_is_closed(map, band, segment.horizontal, [], closed_tiles)
+				var ground_alone := EventScheduler.closes_a_walked_sidewalk_band(
+						map, band, segment.horizontal, [], closed_tiles)
 				var candidates := _bodies_touching(world, bodies)
-				var full := _band_is_closed(map, band, segment.horizontal, candidates, closed_tiles)
+				var full := EventScheduler.closes_a_walked_sidewalk_band(
+						map, band, segment.horizontal, _as_vectors(candidates), closed_tiles)
 				if not full:
 					continue
 				per_act[0] += 1
@@ -244,16 +237,26 @@ func _measure() -> void:
 				if culprits.size() == 1:
 					single_culprit_bands += 1
 					var solo: Body = culprits[0]
-					if solo.source == Source.CANDIDATE_LOOP and _RULE_COVERS.has(solo.id):
-						rule_scope_singles += 1
+					if solo.source == Source.CANDIDATE_LOOP:
+						var def := EventCatalogue.by_id(solo.id)
+						if def and EventScheduler._leaves_no_line_along_a_sidewalk(def):
+							rule_scope_singles += 1
 				for culprit: Body in culprits:
 					if not by_row.has(culprit.id):
 						by_row[culprit.id] = {}
 					var per_source: Dictionary = by_row[culprit.id]
 					per_source[culprit.source] = int(per_source.get(culprit.source, 0)) + 1
 
+			for body: Body in bodies:
+				if body.id != "delivery_van":
+					continue
+				van_placed += 1
+				if _stands_on_a_route_streets_far_sidewalk(map, corridor, body.position):
+					van_far_sidewalk += 1
+
 	_report(tally, by_row, closed_examples, days_measured, ground_only_bands,
-			single_culprit_bands, rule_scope_singles, Time.get_ticks_msec() - started)
+			single_culprit_bands, rule_scope_singles, van_placed, van_far_sidewalk,
+			Time.get_ticks_msec() - started)
 
 # ----------------------------------------------------------------- planning a day ---
 
@@ -389,6 +392,22 @@ func _tag_new(planned: Array[EventScheduler.Planned], provenance: Dictionary, be
 
 # ------------------------------------------------------------------- the closing test ---
 
+## Whether `position` stands on an on-corridor street's sidewalk band that is *not* the one the
+## tree actually walks — legal ground for a wall (`EventScheduler._copies_of`), and what
+## `docs/DECISIONS.md`'s "walls on a route street's far sidewalk" measures for `cafe_tables` and
+## `construction`. `false` off a street entirely, or on a street the tree does not use at all.
+func _stands_on_a_route_streets_far_sidewalk(map: CityMap, corridor: Corridor,
+		position: Vector2) -> bool:
+	var tile := map.world_to_tile(position)
+	var segment := StreetNetwork.segment_containing(tile)
+	if not segment or corridor.depth(segment.tile_rect().position) != 0:
+		return false
+	for band: Rect2i in EventScheduler._sidewalk_bands(segment.tile_rect(), segment.horizontal):
+		if not band.has_point(tile):
+			continue
+		return not EventScheduler._a_route_walks(corridor, band)
+	return false
+
 ## Every body whose physical reach could plausibly cover part of this band — the cheap filter
 ## before the tile work, the same shape as `EventScheduler._reach_touches`.
 func _bodies_touching(world: Rect2, bodies: Array) -> Array:
@@ -398,50 +417,13 @@ func _bodies_touching(world: Rect2, bodies: Array) -> Array:
 			found.append(body)
 	return found
 
-const _NEIGHBOUR_STEPS: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]
-
-## Whether these bodies, together with the day's closures, leave no walk from one end of the band
-## to the other — the physical reading of `EventScheduler._closes_the_run`, substituting each
-## body's own `obstructs_radius + PLAYER_BODY_RADIUS` for the rule's cost-based `_line_reach_of()`.
-func _band_is_closed(map: CityMap, band: Rect2i, horizontal: bool, bodies: Array,
-		closed_tiles: Dictionary) -> bool:
-	var free := {}
-	for y in range(band.position.y, band.end.y):
-		for x in range(band.position.x, band.end.x):
-			var tile := Vector2i(x, y)
-			if not map.is_open(tile) or closed_tiles.has(tile):
-				continue
-			if EventScheduler._is_a_carriageway_tile(map, tile, horizontal):
-				continue
-			var at := map.tile_to_world(tile)
-			var taken := false
-			for body: Body in bodies:
-				if at.distance_to(body.position) <= body.radius + Tuning.PLAYER_BODY_RADIUS:
-					taken = true
-					break
-			if not taken:
-				free[tile] = true
-
-	var last := (band.end.x - 1) if horizontal else (band.end.y - 1)
-	var queue: Array[Vector2i] = []
-	var seen := {}
-	for tile: Vector2i in free:
-		var at_start := tile.x == band.position.x if horizontal else tile.y == band.position.y
-		if at_start:
-			seen[tile] = true
-			queue.append(tile)
-	var head := 0
-	while head < queue.size():
-		var at: Vector2i = queue[head]
-		head += 1
-		if (at.x if horizontal else at.y) == last:
-			return false
-		for step in _NEIGHBOUR_STEPS:
-			var next: Vector2i = at + step
-			if free.has(next) and not seen.has(next):
-				seen[next] = true
-				queue.append(next)
-	return true
+## `Body` instances as `[position.x, position.y, radius]`, the shape
+## `EventScheduler.closes_a_walked_sidewalk_band()` asks for.
+func _as_vectors(bodies: Array) -> Array:
+	var found: Array = []
+	for body: Body in bodies:
+		found.append(Vector3(body.position.x, body.position.y, body.radius))
+	return found
 
 ## The fewest of `candidates` that close this band on their own — one body first, then a pair, then
 ## the whole touching set. The same order `tests/probes/m129_zero_cost_line.gd`'s `_barrier_of`
@@ -450,14 +432,17 @@ func _band_is_closed(map: CityMap, band: Rect2i, horizontal: bool, bodies: Array
 func _culprits_of(map: CityMap, band: Rect2i, horizontal: bool, candidates: Array,
 		closed_tiles: Dictionary) -> Array:
 	for body: Body in candidates:
-		if _band_is_closed(map, band, horizontal, [body], closed_tiles):
+		if EventScheduler.closes_a_walked_sidewalk_band(
+				map, band, horizontal, _as_vectors([body]), closed_tiles):
 			return [body]
 	for i in candidates.size():
 		for j in range(i + 1, candidates.size()):
 			var pair: Array = [candidates[i], candidates[j]]
-			if _band_is_closed(map, band, horizontal, pair, closed_tiles):
+			if EventScheduler.closes_a_walked_sidewalk_band(
+					map, band, horizontal, _as_vectors(pair), closed_tiles):
 				return pair
-	if candidates.size() > 2 and _band_is_closed(map, band, horizontal, candidates, closed_tiles):
+	if candidates.size() > 2 and EventScheduler.closes_a_walked_sidewalk_band(
+			map, band, horizontal, _as_vectors(candidates), closed_tiles):
 		return candidates
 	return []
 
@@ -465,7 +450,7 @@ func _culprits_of(map: CityMap, band: Rect2i, horizontal: bool, candidates: Arra
 
 func _report(tally: Dictionary, by_row: Dictionary, closed_examples: Array, days: int,
 		ground_only_bands: int, single_culprit_bands: int, rule_scope_singles: int,
-		elapsed: int) -> void:
+		van_placed: int, van_far_sidewalk: int, elapsed: int) -> void:
 	print("\n-- walked-sidewalk bands with a lane she fits through --")
 	var closed_total := 0
 	var measured_total := 0
@@ -499,17 +484,25 @@ func _report(tally: Dictionary, by_row: Dictionary, closed_examples: Array, days
 		for source in per_source:
 			parts.append("%s: %d" % [_SOURCE_NAMES[source], int(per_source[source])])
 		print("   %6d  %-20s  %s" % [total, id, ", ".join(parts)])
+	if ranked.is_empty():
+		print("   none: no row closed a walked sidewalk in the sample")
 
-	print("\n-- the existing four-row rule's own scope --")
+	print("\n-- the physical clause's own scope --")
 	print("   single-culprit closures: %d" % single_culprit_bands)
-	print("   of those, closed by one of the four rows (%s), placed by the candidate loop: %d"
-			% [", ".join(_RULE_COVERS), rule_scope_singles])
+	print("   of those, a row the candidate loop's own rule (cost or physical) already reads as a")
+	print("   wall: %d" % rule_scope_singles)
 	if rule_scope_singles > 0:
 		print("   -- a bug in the rule, not a gap in what it covers: the rule is asked of exactly")
 		print("      this row's own numbers and should have refused this placement by itself")
 	else:
-		print("   -- none: every closure the rule's own four rows cause is one the rule already")
-		print("      refuses; what remains is ground the rule was never asked about")
+		print("   -- none: every closure a wall-by-the-rule's-own-reading row causes is one the")
+		print("      rule already refuses; what remains, if anything, is ground the rule was never")
+		print("      asked about at all")
+
+	print("\n-- delivery_van, density and where it stands --")
+	print("   placed: %d over %d days (%.1f/day)"
+			% [van_placed, days, float(van_placed) / maxf(1.0, float(days))])
+	print("   on a route street's far sidewalk (legal ground for a wall): %d" % van_far_sidewalk)
 
 	print("\n-- the ten worst concrete cases --")
 	closed_examples.sort_custom(func(a: ClosedBand, b: ClosedBand) -> bool:
@@ -518,8 +511,6 @@ func _report(tally: Dictionary, by_row: Dictionary, closed_examples: Array, days
 		return a_key < b_key)
 	for i in mini(10, closed_examples.size()):
 		var record: ClosedBand = closed_examples[i]
-		var world := Rect2(Vector2(record.band.position) * float(Tuning.TILE_SIZE),
-				Vector2(record.band.size) * float(Tuning.TILE_SIZE))
 		if record.ground_only:
 			print("   seed %d day %d: street %s, band %s -- closed by the ground/a closure alone"
 					% [record.seed_used, record.day, record.segment_key, record.band])
