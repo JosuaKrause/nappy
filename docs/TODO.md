@@ -361,6 +361,19 @@ settles which edges those words mean. Keep the vertical rectangle side segments 
 Remove the diagonal segments marked red as well as the already specified upper-bottom and
 lower-top borders; apply the same edge rule to every corresponding segment and to the west mirror.
 
+> "here is a fully clean reference with the same 6 tiles from your reference. I replaced the
+> background with a pink color. the top left tile starts at an offset. just fyi"
+
+> "use this to add the missing border segments or remove superfluous ones. it doesn't have to be a
+> bit by bit match because svg won't allow it but we want to get close to this"
+
+Use the [clean six-tile side reference](evidence/m158-stair-tile-prototype-2026-09-19/reference-sideview.png)
+as the edge and placement authority for the next SVG revision. Pink is contrast only. Preserve the
+upper-left starting offset shown in the reference, add missing border segments and remove
+superfluous ones so the assembled vector side reads as close to the reference as SVG geometry
+allows. Keep the six prepared tiles unbound and retain east/west mirrors, native/3× source
+renders and an assembled review for player steering.
+
 ---
 
 ## M143 — The readout's `process` and `physics` lines say what they measure · asked for 2026-09-14
