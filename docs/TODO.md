@@ -348,6 +348,69 @@ alike.
 
 ---
 
+## M161 — The game pauses when it loses focus, and a rig can say not to · asked for 2026-09-19
+
+> "can we make the game pause on focus loss? and also an override to *not* stop the game or
+> pause for agents trying to take a screenshot"
+
+[PLAYTEST-80](playtests/PLAYTEST-80.md). The **godot**, **cli-tools** and **verify** rules
+govern. Nothing reads a focus notification today, so a day runs on behind another window.
+
+- [ ] **Losing focus opens the pause screen.** On `NOTIFICATION_APPLICATION_FOCUS_OUT` (the
+      window losing focus, a browser tab going to the background) and
+      `NOTIFICATION_APPLICATION_PAUSED` (a phone sending the app away), a day that is being
+      played pauses exactly as the `pause` action does — the same screen, the same continue
+      button. It does nothing on the title, the day summary, the ending or an open pause
+      screen, and getting focus back does not resume: the player continues when they are
+      back. Both choices are recorded in the playtest file as open to overturn. `main.gd`'s
+      node keeps processing while the tree is paused, so it is the one that hears it.
+- [ ] **`--no-focus-pause` turns it off, and a screenshot run implies it.** A dev flag in
+      `DevFlags`, listed wherever the flags are listed (`README.md`'s "Dev flags", the flag's
+      own help text, `docs/TELEMETRY.md` where a rig's flags are described) and rejected like
+      any other when misspelled. `--screenshot` implies it, since a rig's window opens without
+      focus and would otherwise capture the pause screen — so `tools/shot.sh` and every
+      existing capture command keep working unchanged — and the flag by itself covers
+      `tools/run.sh` runs an agent drives without a screenshot. `?nofocuspause=1` on a debug
+      web build if the other flags have URL forms there. The **verify** skill says, where it
+      describes windowed runs, that a rig never pauses on focus and why.
+
+---
+
+## M162 — A game can be resumed · asked for 2026-09-19
+
+> "we need to be able to resume a previous game. saving should be implicit (on focus loss or
+> game quit) and it should bring you back to that exact state but paused. in the browser it
+> should be handled via local storage so refreshing or opening again the page doesn't lose
+> progress" — "there is no need for manual save state management since you can just hold
+> restart to clear the game"
+
+[PLAYTEST-80](playtests/PLAYTEST-80.md), which lists what a run holds in memory today and what
+inside a day is not a function of the seed. It shares its trigger with M161, the game pauses
+when it loses focus, so M161 is built first or with it.
+
+- [ ] **Ask what *exact* has to cover before building.** The run (`GameState`) and the day's
+      plan (seed and day) come back exactly for free. The moment inside a day is her, the two
+      meters, the clock, every event instance's phase and position, pursuits, the errand and
+      the crowd. Put to the player, with the cost of each: everything including each walker
+      and car; everything but the crowd, which is re-seeded around her as at dawn; or the run
+      and the day only, resuming at that day's dawn. The player's words are *"that exact
+      state"*, so anything less is theirs to agree to.
+- [ ] **Saving is implicit: on focus loss and on quit**, never by a button. One save, no
+      slots. A save names the build that wrote it, and a save a newer build cannot read is
+      dropped for a fresh title screen rather than half-loaded.
+- [ ] **Opening the game resumes it, paused.** With a save present the game comes up on the
+      saved moment behind the pause screen; continue goes on, and the held restart — already
+      on the pause screen and the day summary — clears the save and starts over. A finished
+      run (either ending) leaves no save.
+- [ ] **The browser keeps it across a refresh and a reopened page.** `user://` on a web build
+      is the browser's IndexedDB, which persists; confirm on the deployed page that a refresh
+      and a closed tab both come back, and that a new release (files under a directory named
+      for the tag) still finds the save of the one before.
+- [ ] **A rig never resumes and never saves**, the way it never pauses on focus: a dev-flagged
+      run (`--screenshot`, `--seed`, `--day` and the rest) starts what it was told to start.
+
+---
+
 ## M129 — A path through the city never has to cost · two routes in five still break
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable

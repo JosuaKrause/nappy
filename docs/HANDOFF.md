@@ -292,6 +292,12 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 - **One milestone is in flight, in its own worktree on its own draft pull request**: M129's
   wall reading — a row nobody can walk past is a wall and stands across the street from the
   route. Its entry in `TODO.md` is the brief.
+- **Two requests from [PLAYTEST-80](playtests/PLAYTEST-80.md) are filed and deliberately
+  unstarted**, because the player asked for them to wait for a session of their own: M161, the
+  game pauses when it loses focus and a rig can say not to, and M162, a game can be resumed.
+  M161 is specified and ready for an agent. M162 opens with a question for the player — what
+  *that exact state* has to cover inside a day, the crowd above all — and nothing of it goes
+  to an agent before that is answered.
 - **The phone's frame is the open measurement, and the crowd's drawing is ruled out of
   it.** With the crowd atlas released, the phone reads the same with the crowd drawn and with
   `skip=crowd` (`DECISIONS.md`, M139, the phone reading), so by the numbers neither the draw
