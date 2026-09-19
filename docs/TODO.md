@@ -295,6 +295,31 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
+## M160 — The father's B contact puts the other leg forward · asked for 2026-09-19
+
+> "actually now that I look again the B frames going north, east, south east, south, south west,
+> and west show the wrong leg in front. the other two directions are correct"
+
+[PLAYTEST-79](playtests/PLAYTEST-79.md). M157's father presentation is built and its identity, blue
+overshirt and illustration style are accepted. This item corrects only the pushing cycle's B
+contact on a new pull request. Runtime north uses `father_back_b`; east and west share
+`father_side_b` through mirroring; southeast and southwest share `father_front_diagonal_b`; and
+south uses `father_front_b`. Northeast and northwest share `father_back_diagonal_b`, which the
+player identified as correct and which stays untouched.
+
+- [ ] **Put the intended leg in front in the four authored B sources.** Redraw each whole affected
+      pose coherently rather than swapping isolated leg pixels: pelvis, coat hem, trouser overlap,
+      shoes and ground contact must all agree about depth. Preserve the accepted face, stature,
+      clothing, canvas registration, hand-to-handle contact and stroller relationship. Update the
+      runtime SVGs, their graphics-creation copies and the corresponding native PNG replacements;
+      regenerate the source, registered, contact and comparison evidence plus manifest hashes.
+      Pair verification must prove each runtime SVG matches its creation copy and each shipped PNG
+      matches its registered source. The eight-direction pushing review sheet must make the six
+      corrected B contacts and the two unchanged back-diagonal contacts readable at native size and
+      3×. Do not touch carrying frames or A/C pushing frames.
+
+---
+
 ## M143 — The readout's `process` and `physics` lines say what they measure · asked for 2026-09-14
 
 [PLAYTEST-75](playtests/PLAYTEST-75.md), the desktop stutter, and `DECISIONS.md`, M138, what
