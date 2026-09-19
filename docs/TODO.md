@@ -411,56 +411,6 @@ when it loses focus, so M161 is built first or with it.
 
 ---
 
-## M156 — The crowd only turns at what physically stops it · asked for 2026-09-19
-
-> "cars shouldn't avoid it. I noticed cars turning around even though the obstacle is on the
-> sidewalk. only things like a fallen tree (which blocks the whole street) should prevent cars
-> from entering … pedestrians should only avoid the area if they cannot reach it physically.
-> right now they give up if there is an event at all when they should only give up if they
-> touch an impassable wall. that leads to two changes: 1) they should still walk through a car
-> accident since the sidewalk is free there 2) they should be able to spawn inside a closed
-> off section but shouldn't stand in one place but instead walk until they are forced to turn
-> around (by the environment)"
-
-[PLAYTEST-78](playtests/PLAYTEST-78.md), which also says what `CrowdAgent._cannot_go_on`
-treats as shut for each kind today. The **crowd-traffic** and **city** rules govern. It is the
-cause under M155's complaint: a street the crowd has given up on is a free calm area, and a
-street only a whole-width obstacle shuts is one the player cannot exploit either.
-
-- [ ] **Find where a car turns for an obstacle on the sidewalk.** A car's own rule is a body
-      on its own lane tile (`CityMap.is_obstructed`), a held segment, a closed tile or a
-      precinct. Say which of those a sidewalk obstacle reaches — a body whose recorded tiles
-      spill onto the lane, a seal held across the whole segment for a row that takes only a
-      sidewalk, or something else — with the seed, day and tile, before changing anything.
-- [ ] **A car is turned only by what blocks its roadway.** Whatever the first item finds
-      is fixed where it happens, so a row standing on a sidewalk leaves both lanes driving and
-      a row across the whole street (the fallen tree) still turns cars at the last junction.
-- [ ] **A walker turns where it meets what it cannot pass, and not before.** Today a walker
-      turns off at the last junction ahead of a soft seal, a held segment or a fully taken
-      sidewalk. It walks up to the impassable thing and turns round there instead, and a row
-      that leaves a walkable line on its sidewalk — the car accident is the named one — is
-      walked past. The turn is an about-face a walker can make anywhere; say what keeps two
-      walkers turning at one barrier from stacking, since the 2026-09-12 complaint was walkers
-      *"accumulating in one place and move back and forth or worth flicker"*.
-- [ ] **A walker goes into a street that is closed further along, from either side.**
-      *(2026-09-19: "they saw that a road section was closed of and never entered it. this
-      shouldn't happen. they should still go into the section until they cannot continue.
-      this should also happen from inside the path since right now we have offshoots that are
-      clear because nobody attempts to go in".)* A walker choosing an arm at a junction gives
-      a street with a barrier somewhere along it the same weight as an open one, so a side
-      street off the day's route fills as far as its barrier and a walker arriving at the
-      barrier turns round and walks back out.
-- [ ] **Closed-off ground has walkers in it, and they keep walking.** Placement and recycling
-      put walkers on sealed-in ground the way they do on any street, and nobody stands still
-      there. The walker half of `CrowdPockets` — never placing a walker on ground no street
-      leads out of, and standing one still that is caught there — answered walkers pacing a
-      junction whose every arm they refused to enter; with the two items above a walker there
-      has each stub to walk to its end, so say whether any walker pocket is still needed and
-      remove what is not. A car's pocket stays: a car is kept out by what blocks the whole
-      roadway, which it cannot turn round against in a stub.
-
----
-
 ## M129 — A path through the city never has to cost · two routes in five still break
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable
