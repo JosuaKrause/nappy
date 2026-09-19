@@ -57,5 +57,10 @@ Add development-only tooling with `uv add --group dev <package>`, then commit bo
 to import Python at runtime. **A dependency nothing imports is removed**, since the lockfile is the
 list a fresh checkout installs and every unused package there is a download nobody asked for.
 
+**PyYAML is the deliberate exception.** Nothing in the repository imports it; Codex's external
+`skill-creator/scripts/quick_validate.py` imports it when validating `.claude/skills/`. Keep it in
+the development group so that validator runs through the locked Python 3.14 environment rather
+than depending on whichever packages the host Python happens to have.
+
 If an external tool needs a requirements-format export, generate it from the lockfile for that
 consumer instead of making it the hand-maintained source of truth.
