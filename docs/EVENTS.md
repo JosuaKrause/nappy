@@ -321,11 +321,13 @@ the crash — at the placement and along the axis the instance itself would draw
 into the other lane of its footway to get past a café and a car turns at the last junction rather
 than driving through a stall. It is taken from the day's **plan** rather than from the live
 instances, since the crowd is steered across the whole map while an instance only exists within
-`Tuning.EVENT_STREAM_RADIUS` of the player. The three exemptions below are exactly the rows the
-record leaves out, plus two the crowd has its own answer for already: a body standing on a segment
-`CityMap.held_segments` holds — a hard seal, a region wall — has shut the whole street to everybody,
-and a door body holds walkers at the hut and cars at the boom. See docs/MECHANICS.md, "The crowd
-goes round a seal".
+`Tuning.EVENT_STREAM_RADIUS` of the player. A piece stands on the tiles whose **middle** it covers
+(`GroundShape.tiles_under()`), since every lane is travelled down its own centre line: a van
+pinned to the kerb overhangs the roadway by a few pixels and takes none of it. The exemptions
+below are the rows the record leaves out, plus one the crowd has its own answer for already: a
+door body holds walkers at the hut and cars at the boom. A hard seal's and a region wall's bodies
+are in the record like any other, because they are what a walker walks up to; a car is turned a
+junction earlier by the segment being held. See docs/MECHANICS.md, "The crowd goes round a seal".
 
 **The catalogue is not the only thing carrying this datum.** A building's collision is a rectangle
 built from `shape.collision_shape()` on `GroundShape.rect(footprint * 0.5)` — `src/city/building.gd`

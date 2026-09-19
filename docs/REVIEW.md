@@ -154,26 +154,23 @@ item below for as long as looking takes.
   she can reach. Does the mark ever appear behind a band anywhere else — a closure, a soft seal?
   Record is `DECISIONS.md`, M100, a blocked-off alley has no chalk mark.
 - **Stand by a single sealed street and watch the crowd turn back** (any day; seals are the
-  bodies on the streets the day's route does not use). Walkers and cars turn back from a hard
-  seal, a wall and a closure; a soft seal takes both pavements from walkers and leaves the road
-  to cars; a door lets cars through one at a time. Does a street the crowd refuses read as
-  *shut*? The other half of this, whether the crowd looks stuck, was answered by
+  bodies on the streets the day's route does not use). Cars turn back at the last junction before
+  a hard seal, a wall and a closure; walkers walk the street up to the bodies and turn there; a
+  soft seal takes both pavements from walkers and leaves the road to cars; a door lets cars through
+  one at a time. Does a street the crowd refuses read as *shut* when it has people walking half of
+  it? The other half of this, whether the crowd looks stuck, was answered by
   [PLAYTEST-66](playtests/PLAYTEST-66.md) for a junction sealed on every side and built as
   `DECISIONS.md`, M119; this asks about one seal on an open street. Record is `DECISIONS.md`, M110.
-- **Stand at a junction sealed on every side, then walk the open streets around it.** Nobody is
-  placed inside such a pocket any more, and whoever a seal goes up around leaves once they are
-  off screen, so the sealed crossing is empty. What that costs is density elsewhere: the day's
-  crowd is the same size and now lands on about a quarter less pavement (48 of 144 junctions were
-  pocketed for walkers on seed 4242 day 1, none for cars), so the open streets are that much
-  busier. Two questions. Does an empty sealed-off crossing read as *shut*, the way an empty
-  sealed street does, or as a hole in the city? And do the open streets now read as crowded in a
-  way that changes the route decision, which is a density question for `Tuning` rather than for
-  this rule? Also: whoever a seal goes up around now stands where it caught them until the view
-  moves off — does a sealed crossing with a few people standing in it read as people who gave
-  up, or as frozen? And a walker or car that turns back from a single seal on open ground keeps
-  its new heading for one stride before it may turn again — does that turn-back read as a
-  decision rather than a twitch? Records are `DECISIONS.md`, M119 and M146; the bursts are
-  `evidence/m119-crowd-pockets-2026-09-13/`.
+- **Stand at a junction sealed on every side, then walk the open streets around it.** No car is
+  placed inside such a pocket, and a car a seal goes up around leaves once it is off screen, so the
+  sealed crossing carries no traffic — but it does carry people, who walk each stub to the barrier
+  on the end of it and back. Two questions. Does a crossing with no cars and walking people read as
+  *shut*, or as a hole in the city? And whoever a seal goes up around now stands where it caught
+  them until the view moves off, which is cars only: does a stopped car in a sealed crossing read
+  as stuck traffic or as a frozen body? And a walker or car that turns back from a single seal on
+  open ground keeps its new heading for one stride before it may turn again — does that turn-back
+  read as a decision rather than a twitch? Records are `DECISIONS.md`, M119, M146 and M156; the
+  bursts are `evidence/m119-crowd-pockets-2026-09-13/`.
 - **Walk the map's east and west edges facing outward, then stand at a plain edge and watch the
   traffic arrive.** The camera now stops short by the length of its glance, so no black column
   should show at any corner whichever way she faces. Two questions. Is the border whole in every
@@ -365,6 +362,20 @@ item below for as long as looking takes.
   place. **Does pacing a quiet route sidewalk now read as recovery, closer to how an empty street
   already did, and do walkers stepping out of her way read as polite rather than as a crowd
   fleeing her?** Record is `DECISIONS.md`, M155, the crowd's reach comes in.
+- **Walk a day's sealed streets, its side streets and a street with something parked on the
+  pavement** — any seed, any day; `--spawn closure` puts the camera at the mouth of one of the
+  day's own closed streets, and the streets off the day's route are the sealed ones. The crowd now
+  turns only at what physically stops it: a walker walks a sealed street up to the bodies and
+  about-faces there, turns into a side street that is sealed further along, is placed on sealed-off
+  ground like any street, and a car is turned only by something across its roadway. Three questions
+  only a person answers. **Do closed-off streets and the offshoots of the route now have people in
+  them, and does that make the shut street stop reading as shut?** — the whole point of the empty
+  street was that *the street with nobody on it is the street that is shut*, and half a street of
+  walkers is a different picture. **Does a walker turning round at a barrier read as a person
+  changing their mind, or as a body bouncing off a wall?** — watch one seal for a minute and count
+  how many walkers pile up at it. **And do cars flow past a van or a café on the pavement without
+  hesitating?** Record is `DECISIONS.md`, M156; the burst is
+  `evidence/m156-crowd-turns-2026-09-19/`.
 
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
