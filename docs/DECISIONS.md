@@ -2,7 +2,7 @@
 
 ## M159 — Cheaper crowd contribution sweeps · measured and optimized 2026-09-19
 
-The player clarified in [PLAYTEST-85](playtests/PLAYTEST-85.md): "well the point was to actually
+The player clarified in [PLAYTEST-86](playtests/PLAYTEST-86.md): "well the point was to actually
 do some optimizations. measurement is nice and make sure it's fully recorded but the core is to
 make things faster". Instrumentation alone was not the deliverable. The raw callback recorder,
 bounded atlas spans and original inconclusive toggle experiments remain preserved in

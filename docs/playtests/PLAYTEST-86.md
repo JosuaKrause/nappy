@@ -1,4 +1,4 @@
-# Playtest 85 — Performance work delivers an optimization
+# Playtest 86 — Performance work delivers an optimization
 
 2026-09-19. The player clarifies the acceptance criterion for M159, a slow frame names the frame
 that was slow, after reviewing its measurement-only draft.

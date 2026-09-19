@@ -301,7 +301,7 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 > numbers and the codebase and think about how we could improve performance and reduce stutter"
 
 **The deliverable is an optimization, with measurement retained as evidence.**
-[PLAYTEST-85](playtests/PLAYTEST-85.md) clarifies: "well the point was to actually do some
+[PLAYTEST-86](playtests/PLAYTEST-86.md) clarifies: "well the point was to actually do some
 optimizations. measurement is nice and make sure it's fully recorded but the core is to make
 things faster". Instrumentation alone does not complete this item. Reduce a demonstrated cost
 without changing gameplay, retain controlled repeated before/after distributions over equal
