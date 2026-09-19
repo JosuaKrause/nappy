@@ -607,6 +607,16 @@ streets came to stand empty. So a walker walks a held street up to the seal's ow
 recorded tile by tile like every other solid body, and turns where it meets them. A car is turned
 by the hold; a walker is turned by the thing.
 
+**And a walker picking an arm at a junction weights a sealed street like an open one.** *(2026-09-19:
+"they should still go into the section until they cannot continue. this should also happen from
+inside the path since right now we have offshoots that are clear because nobody attempts to go
+in".)* The only thing a walker refuses to turn into is ground nothing travels — a T-junction on the
+edge of a calm zone has one arm that is park, and a walker that turns into it is standing on grass
+before anything notices. A street with a barrier somewhere along it is a street to walk into as far
+as the barrier, from either end, so a side street off the day's route fills as far as its seal and
+the people who reach the seal turn round and walk back out. A car still asks the whole question at
+an arm, because an arm it cannot get out of is a car parked there for the rest of the day.
+
 A region door is carved out for whoever it means to let through: a car brakes and queues for the
 gate the way it already does at a red light or a zebra, and so does a walker — unless the answer it
 drew when it was placed is to turn back, which one in four do, and the door then reads to that

@@ -25,6 +25,7 @@ func run(t) -> void:
 	_test_a_hard_seal_shuts_its_street_to_the_crowd(t)
 	_test_nobody_is_placed_in_a_sealed_junction(t)
 	_test_a_pocket_empties_once_it_is_out_of_view(t)
+	_test_a_walker_turns_into_a_street_sealed_further_along(t)
 	_test_a_turn_around_commits_to_its_new_heading(t)
 	_test_no_car_in_sight_ever_moves_further_than_it_drove(t)
 	_test_a_region_wall_is_shut_and_a_door_is_carved_out(t)
@@ -295,6 +296,58 @@ func _test_a_pocket_empties_once_it_is_out_of_view(t) -> void:
 			% _inside(rect, CrowdAgent.Kind.CAR))
 
 	_city.map.clear_day_holds()
+
+## M156: a walker turns into a street that is sealed further along, rather than reading it as shut
+## from the junction. *(2026-09-19: "they should still go into the section until they cannot
+## continue. this should also happen from inside the path since right now we have offshoots that are
+## clear because nobody attempts to go in".)*
+##
+## **One arm, not four**, so the junction itself stays open and the crowd walks through it the way
+## it walks through any junction — what is being asked is whether anybody turns *into* the sealed
+## arm, which a pocketed crossing would not answer.
+##
+## **Counted as an entry rather than as presence**, because placement also puts walkers on sealed-in
+## ground now (the test above) and a count of who is standing there cannot tell the two apart. A
+## walker counts once it has been seen outside the arm and is then seen inside it.
+func _test_a_walker_turns_into_a_street_sealed_further_along(t) -> void:
+	var sealed := _a_junction_to_seal(t)
+	if sealed.is_empty():
+		return
+	var arms: Array = sealed["arms"]
+	var arm: StreetNetwork.Segment = arms[0]
+	var at: Vector2 = sealed["at"]
+	_city.map.clear_day_holds()
+	_city.map.clear_day_obstructions()
+	_city.map.hold_segment(arm.key())
+	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("fallen_tree"), true)
+	var owner := 1
+	for at_body: Vector2 in SealPlanner._hard_positions(_city.map, arm, def):
+		_city.map.obstruct_tiles(owner, EventManager.obstructed_footprint(_city.map, def, at_body,
+				Vector2.RIGHT))
+		owner += 1
+	_city.crowd.start_day(1, _rng(4), at)
+
+	var arm_rect := arm.tile_rect()
+	var seen_outside := {}
+	var entered := 0
+	for frame in int(round(20.0 / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		for agent: CrowdAgent in _city.crowd.agents():
+			if agent.kind != CrowdAgent.Kind.WALKER:
+				continue
+			var id := agent.get_instance_id()
+			if not arm_rect.has_point(_city.map.world_to_tile(agent.position)):
+				seen_outside[id] = true
+			elif seen_outside.has(id):
+				entered += 1
+				seen_outside.erase(id)
+	t.check(entered > 0,
+			"walkers turn into a street that is sealed further along (%d of them walked in)"
+			% entered)
+
+	_city.map.clear_day_holds()
+	_city.map.clear_day_obstructions()
 
 ## M119, item 3: an about-face commits to its new heading for a stride, so a body with a seal at
 ## each end of it paces rather than facing two ways at sixty frames a second — still true wherever
