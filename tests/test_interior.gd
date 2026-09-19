@@ -22,6 +22,7 @@ func run(t) -> void:
 	_test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t)
 	_test_a_door_release_latch_keeps_a_door_from_retaking_her(t)
 	_test_the_fire_closes_one_stairwell_and_leaves_the_other(t)
+	_test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t)
 	_test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t)
 	_test_an_explosion_flashes_every_hallway_window(t)
 
@@ -737,6 +738,88 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 ## Every painted grammar cell in one stairwell, including its non-walkable sides.
 func _shaft_tiles(scene: InteriorScene, part_id: String) -> Array[Vector2i]:
 	return scene.stairwell_tiles(part_id)
+
+## *"The masked man is floating in the stairwell."* His path is the shaft's own walk, so what this
+## asks is the two properties that make it one: every step joins two cells she could stand on, and
+## a diagonal step has a walkable orthogonal corner — the same pinch rule
+## `InteriorMap._mark_diagonal_clearances()` keeps for her, so his line is ground and not the
+## background and the solid `c`/`C`/`b` sides between the flights.
+##
+## **Asked as the tile steps it is made of rather than by sampling the line.** A diagonal step's
+## segment passes through the single corner point four cells meet at, where a floored sample is a
+## coin toss between two of them — so a sampling test would answer a question about floating-point
+## rounding instead of about the staircase. A step between two walkable 8-adjacent cells covers no
+## other ground than those two.
+##
+## And the counterplay the brief gives him — *"going into a corridor and letting them pass"* — is
+## measured rather than assumed: every door in his shaft has to sit further from every point of his
+## line than `inner_radius`, the radius that takes the baby, or stepping onto a door is not an
+## answer to him at all.
+func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> void:
+	var f := InteriorMap.build()
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+
+	var man: EventInstance = null
+	for instance in events.instances():
+		if instance.def.id == "masked_pursuer":
+			man = instance
+	t.check(man != null, "a masked man is on the stairs")
+	if man:
+		var side := "right" if events.burning_side() == "left" else "left"
+		var part := "stairwell_%s" % side
+		var steps := man.path
+		t.check(steps.size() > 8,
+				"his line is the whole shaft rather than two points (%d)" % steps.size())
+		t.check(scene.world_to_tile(steps[0]) == f.waypoints["%s:landing_lobby" % part]
+				and scene.world_to_tile(steps[steps.size() - 1]) == f.waypoints[part],
+				"and it runs landing to landing")
+		var off_the_ground := 0
+		var pinched := 0
+		var not_adjacent := 0
+		for i in range(1, steps.size()):
+			var here := scene.world_to_tile(steps[i - 1])
+			var next := scene.world_to_tile(steps[i])
+			if not f.is_walkable(here) or not f.is_walkable(next):
+				off_the_ground += 1
+				continue
+			var step := next - here
+			if absi(step.x) > 1 or absi(step.y) > 1 or step == Vector2i.ZERO:
+				not_adjacent += 1
+				continue
+			if step.x != 0 and step.y != 0 \
+					and not f.is_walkable(Vector2i(next.x, here.y)) \
+					and not f.is_walkable(Vector2i(here.x, next.y)):
+				pinched += 1
+		t.check(off_the_ground == 0,
+				"every cell on his line is walkable (%d were not)" % off_the_ground)
+		t.check(not_adjacent == 0,
+				"and every step is one cell (%d crossed more)" % not_adjacent)
+		t.check(pinched == 0,
+				"and every diagonal step has a walkable orthogonal corner (%d did not)" % pinched)
+
+		var nearest_door := INF
+		var doors := 0
+		for id: String in f.doors:
+			if not id.begins_with("%s:" % part):
+				continue
+			doors += 1
+			var at := scene.tile_to_world(f.doors[id].tile)
+			for point in steps:
+				nearest_door = minf(nearest_door, at.distance_to(point))
+		t.check(doors == 4, "the shaft has its four doors to ask about (%d)" % doors)
+		t.check(nearest_door > man.def.inner_radius,
+				"and the nearest is %.0fpx off his line, clear of the %.0fpx that takes the baby"
+				% [nearest_door, man.def.inner_radius])
+		print("The masked man's line: %d cells, nearest door %.0fpx off it against a %.0fpx reach"
+				% [steps.size(), nearest_door, man.def.inner_radius])
+	events.free()
+	scene.free()
 
 ## *"Maybe some mice. ... Maybe some steam in the basement etc."* Both stand on the basement's own
 ## corridor, which has no branches — so they are things she walks past rather than things she may

@@ -101,18 +101,27 @@ func _place_the_fire(rng: RandomNumberGenerator) -> void:
 	_spawn(_without_its_aftermath(EventCatalogue.by_id(_FIRE_ID)), _interior.tile_to_world(at))
 
 ## The masked man, at the foot of the stairwell the fire did not take, running its whole height.
-## Two points is the whole path: every landing in a shaft sits on one column, so a line up that
-## column is the shaft, and the flights swing either side of it — which is what makes stepping off
-## a landing and onto a flight a way of not being on his line as well as a way of going down.
+##
+## **His path is the staircase itself**, asked of the map rather than drawn between the two
+## landings: the landings alternate between the grammar's two `F` columns, so a straight line from
+## one to the other crosses the background and the solid `c`/`C`/`b` sides and meets each flight
+## wherever it happens to cut it. `InteriorScene.stairwell_walk()` hands back the shaft's own
+## branchless walk — the level `F` columns and the `t/m` and `T/M` diagonals, landing to landing —
+## so every step he takes is ground she could be standing on.
+##
+## **Which is also what leaves her the answer the brief gives him**, *"going into a corridor and
+## letting them pass"*: a shaft's walk never stands on a `D` cell, because each door's only walkable
+## neighbour is the level approach below it, so a door is always further from his line than the
+## radius that takes the baby. `tests/test_interior.gd` measures that gap rather than assuming it.
 func _place_the_masked_man() -> void:
 	var side := "right" if _burning_side == "left" else "left"
-	var bottom: Vector2i = _interior.waypoint("stairwell_%s:landing_lobby" % side)
-	var top: Vector2i = _interior.waypoint("stairwell_%s" % side)
-	if bottom == InteriorScene.NOWHERE or top == InteriorScene.NOWHERE:
+	var walk := _interior.stairwell_walk("stairwell_%s" % side)
+	if walk.size() < 2:
 		return
-	var from := _interior.tile_to_world(bottom)
-	var path := PackedVector2Array([from, _interior.tile_to_world(top)])
-	_spawn(EventCatalogue.by_id(_PURSUER_ID), from, path)
+	var path := PackedVector2Array()
+	for tile in walk:
+		path.append(_interior.tile_to_world(tile))
+	_spawn(EventCatalogue.by_id(_PURSUER_ID), path[0], path)
 
 ## The mouse and the steam, a third and two thirds of the way along the basement's own corridor.
 ##

@@ -427,6 +427,21 @@ func stairwell_tiles(part_id: String) -> Array[Vector2i]:
 			found.append(tile)
 	return found
 
+## One shaft's own walk, its lobby landing to its top landing, tile by tile. A shaft is a corridor
+## with no branches too — the level `F` columns and the `t/m` and `T/M` diagonals are the only
+## ground in the grammar — so its shortest walk *is* the staircase, and anything that has to travel
+## the shaft travels it over cells she could stand on rather than across the solid `c`/`C`/`b`
+## sides and the background between the flights.
+##
+## The doors are dead ends off it: each `D` cell's only walkable neighbours are the level approach
+## below it, so a shortest walk never stands on one.
+func stairwell_walk(part_id: String) -> Array[Vector2i]:
+	var bottom := waypoint("%s:landing_lobby" % part_id)
+	var top := waypoint(part_id)
+	if bottom == NOWHERE or top == NOWHERE:
+		return []
+	return _shortest_walk(bottom, top)
+
 ## The basement's corridor, entry to exit, tile by tile. The corridor has no branches, so its
 ## shortest walk *is* the corridor, and anything sited a fraction of the way along it stands
 ## somewhere she has to pass rather than somewhere she might.
