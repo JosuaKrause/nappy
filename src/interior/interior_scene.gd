@@ -461,6 +461,13 @@ func stairwell_walk(part_id: String) -> Array[Vector2i]:
 		return []
 	return _shortest_walk(bottom, top)
 
+## Where the basement corridor is one tile wide on the way out, in the order she meets them — see
+## `InteriorMapPlan.corridor_narrows`. Passed through rather than recomputed by scanning for cells
+## with two blocked sides, so what a gate stands on is what the layout laid rather than whatever
+## the geometry happens to offer today.
+func basement_narrows() -> Array[Vector2i]:
+	return _plan.corridor_narrows
+
 ## The basement's corridor, entry to exit, tile by tile. The corridor has no branches, so its
 ## shortest walk *is* the corridor, and anything sited a fraction of the way along it stands
 ## somewhere she has to pass rather than somewhere she might.

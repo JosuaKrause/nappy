@@ -56,6 +56,11 @@ var collision_clearance: Dictionary = {}
 ## the lobby's own floor — used both as `--start-escape <part>`'s teleport target and, in
 ## `tests/test_interior.gd`, as the seed a per-part flood fill starts from. `id -> Vector2i`.
 var waypoints: Dictionary = {}
+## Where the basement corridor is one tile wide on the way to the exit, in the order she meets them
+## walking up from the entry — see `InteriorMap.BASEMENT_NARROWS` for which they are and why the
+## entry stair is not among them. A gate stands on each; the layout says where a gate *can* stand
+## and `InteriorEvents` decides what stands there.
+var corridor_narrows: Array[Vector2i] = []
 ## The cells the fallen ceiling fills, as one tile rect — floor that is painted and drawn over but
 ## cannot be stood on. Its own field rather than a tile kind, because what is underneath a heap is
 ## still this hallway's floor and is still drawn as one; a `RUBBLE` kind would have to repaint the

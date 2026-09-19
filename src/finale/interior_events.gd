@@ -198,52 +198,39 @@ func _place_the_basement(rng: RandomNumberGenerator) -> void:
 		vent.until_the_next_blow = vent.period * float(i + 1) / float(sites.size())
 		_vents.append(vent)
 
-## Where each vent stands: one per entry in `Tuning.FINALE_STEAM_PERIODS`, spread evenly along the
-## corridor, each on the **middle of the passage** rather than on the tile centre she walks.
+## Where each vent stands: one on each of the corridor's one-tile-wide cells, at that cell's own
+## centre, in the order she meets them.
 ##
-## A vent closes the corridor because of where it stands, not because of how wide it is (see
-## `EventCatalogue.STEAM_VENT_BODY`), so it has to sit on the seam between a band's two rows — a
-## body centred on one row leaves her the other. That also decides which ground can carry one:
-## only a cell on a two-row east-west band, never one of the corridor's one-tile jogs, where there
-## is no seam to stand on and a body would be off centre in the only direction that matters.
+## *(2026-09-19: "there are only two steams and they are not blocking in any way they should go in
+## the narrow hallways.")* **A vent closes the corridor because of where it stands, not because of
+## how wide it is** (see `EventCatalogue.STEAM_VENT_BODY`), and the one place a 32px cloud is the
+## whole width is a passage one tile across: her centre has 16px of play either side of the middle
+## and a blow holds it 30px out, so no line past one exists. In a two-tile band there is no such
+## place — a body on the seam still leaves her the outside of it at the walls — which is what the
+## player walked past.
+##
+## The cells are the layout's (`InteriorScene.basement_narrows()`) rather than found by scanning,
+## so the gates are in the same three places every attempt: *"multiple fixed locations"*, and a
+## lost section is the same puzzle again rather than a different one. Each is checked against the
+## corridor's own walk here, because a gate she can go round is not a gate and nothing else would
+## notice if the layout and the walk ever stopped agreeing.
 func _vent_sites(walk: Array[Vector2i]) -> Array[Vector2]:
-	var eligible: Array[int] = []
-	for i in walk.size():
-		if _band_seam(walk[i]) != 0:
-			eligible.append(i)
 	var found: Array[Vector2] = []
+	var on_the_walk := {}
+	for tile in walk:
+		on_the_walk[tile] = true
 	var count: int = Tuning.FINALE_STEAM_PERIODS.size()
-	if eligible.size() < count:
-		push_error("the basement corridor offers %d places for %d steam vents"
-				% [eligible.size(), count])
+	var narrows := _interior.basement_narrows()
+	if narrows.size() != count:
+		push_error("the basement corridor offers %d one-tile gates for %d steam vents"
+				% [narrows.size(), count])
 		return found
-	var taken := {}
-	for n in count:
-		var wanted := int(round(float(walk.size()) * float(n + 1) / float(count + 1)))
-		var best := -1
-		for i in eligible:
-			if taken.has(i):
-				continue
-			if best < 0 or absi(i - wanted) < absi(best - wanted):
-				best = i
-		taken[best] = true
-		var tile: Vector2i = walk[best]
-		found.append(_interior.tile_to_world(tile)
-				+ Vector2(0.0, float(_band_seam(tile)) * InteriorScene.TILE * 0.5))
+	for tile in narrows:
+		if not on_the_walk.has(tile):
+			push_error("the steam vent at %s is not on the basement's own walk" % tile)
+			return []
+		found.append(_interior.tile_to_world(tile))
 	return found
-
-## `+1` when the other row of this cell's east-west band is below it, `-1` when it is above, `0`
-## when the cell is not on a two-row east-west band at all. Half a tile in that direction is the
-## seam down the middle of the passage.
-func _band_seam(tile: Vector2i) -> int:
-	if not (_interior.is_walkable(tile + Vector2i.LEFT)
-			and _interior.is_walkable(tile + Vector2i.RIGHT)):
-		return 0
-	var north := _interior.is_walkable(tile + Vector2i.UP)
-	var south := _interior.is_walkable(tile + Vector2i.DOWN)
-	if north == south:
-		return 0
-	return 1 if south else -1
 
 ## Every vent's own clock, one blow at a time. A blow is an ordinary `EventInstance` of the steam
 ## row: it gives its notice with no body, closes the corridor for `Tuning.FINALE_STEAM_BLOWS_FOR`,

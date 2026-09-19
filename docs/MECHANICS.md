@@ -1143,6 +1143,15 @@ line a door is well under the three and a half seconds he spends standing still 
 So the side she switched to is not a side she can settle on, which is the whole point of him: the
 way down is a sequence of crossings rather than one.
 
+**And the basement is three gates on three clocks.** The corridor jogs between three brick-walled
+bands and is one tile wide at three places on the way to the service exit
+(`InteriorMap.BASEMENT_NARROWS`), each of them a cell the walk cannot go round. A steam vent
+stands on each, in the same place every attempt, blowing on its own period out of
+`Tuning.FINALE_STEAM_PERIODS` — 4, 4.5 and 5.5 seconds, pairwise coprime in half-seconds, so the
+three of them never fall into a rhythm. A blow shuts its cell outright for
+`Tuning.FINALE_STEAM_BLOWS_FOR` after a notice, and the shortest period still leaves twice as long
+open as walking through the vent's reach costs. Waiting is the answer; there is no line past one.
+
 **Two hint lines, said once each**, the way day 1 teaches tapping and then never again:
 *"Escape the apartment"* at the start of the first section and *"Exit the city"* at the service
 exit. A retry is not told either of them a second time.

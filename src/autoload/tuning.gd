@@ -2211,21 +2211,31 @@ const FINALE_PURSUER_RESPAWN_SECONDS := 6.0
 ## can be written down.
 ##
 ## **Three, and no two periods share a factor with each other**, which is the whole of what makes
-## the corridor a puzzle instead of a rhythm: 13, 16 and 19 half-seconds are pairwise coprime, so
-## the pattern the three of them make together only repeats after their product — 1976s, ten times
-## the whole sequence's own clock — and she never walks the same corridor twice. Three rather than more
-## because the basement's corridor is about forty tiles end to end and a vent closes it outright:
-## a fourth would make the walk a queue of gates rather than a route with waits in it.
-const FINALE_STEAM_PERIODS: Array[float] = [6.5, 8.0, 9.5]
+## the corridor a puzzle instead of a rhythm: 8, 9 and 11 half-seconds are pairwise coprime, so the
+## pattern the three of them make together only repeats after their product — 396s, more than twice
+## the whole sequence's own clock — and she never walks the same corridor twice. Three rather than
+## more because the basement's corridor is about forty tiles end to end and a vent closes it
+## outright: a fourth would make the walk a queue of gates rather than a route with waits in it.
+##
+## **The floor under all three is what one crossing costs, not taste.** *(2026-09-19: "the steam
+## frequencies are too slow.")* A vent stands on a one-tile cell and holds her centre
+## `EventCatalogue.STEAM_VENT_BODY` + `PLAYER_BODY_RADIUS` (16 + 14 = 30px) out, so clearing it
+## means covering 60px — 0.65s at `WALK_SPEED` (92px/s). A vent's corridor is shut for
+## `FINALE_STEAM_BLOWS_FOR` and open for the rest of its period, so the shortest period leaves
+## `4.0 − 2.0 = 2.0s` of open corridor against that 0.65s: a second and a third of margin, which is
+## the "at least a second" a gate owes somebody who started walking a moment too late. Anything
+## under 3.7s would stop owing it.
+const FINALE_STEAM_PERIODS: Array[float] = [4.0, 4.5, 5.5]
 
 ## How long one vent blows, in seconds, once its notice is over — the *on* half of the on/off
 ## split, against the periods above.
 ##
-## **Short against every period**, so every vent is off far more than it is on: with the row's own
-## notice ahead of it a cycle is 3.2s of something and 3.3–6.3s of nothing, and a gap she can walk
-## through is the thing she is waiting for. And short in its own right, because a vent closes a
-## corridor with no way round it: the pocket between two of them is only ever shut for as long as
-## the shorter of the two is blowing, which is this.
+## **Short against every period**, so a vent's corridor is open for longer than it is shut: this is
+## the whole of the shut half, and the shortest period leaves twice as long open again. A gap she
+## can walk through is the thing she is waiting for, and `FINALE_STEAM_PERIODS` states the floor
+## under that gap. Short in its own right too, because a vent closes a corridor with no way round
+## it: the pocket between two of them is only ever shut at both ends for as long as the shorter of
+## the two overlaps, which is bounded by this.
 const FINALE_STEAM_BLOWS_FOR := 2.0
 
 ## How many of each kind of danger the finale's own plan puts on one open chain street. *"Lots of

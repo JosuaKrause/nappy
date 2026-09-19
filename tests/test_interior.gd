@@ -1179,11 +1179,16 @@ func _walk_distance_to_nearest(f: InteriorMapPlan, targets: Array[Vector2i]) -> 
 ## the basement's own corridor, which has no branches — so they are things she walks past rather
 ## than things she may happen not to find.
 ##
-## A vent stands on the **seam** between the corridor's two rows rather than on either of them, and
-## that is what makes it a gate: her centre is held `obstructs_radius + PLAYER_BODY_RADIUS` from
-## the middle of the passage, and the walls leave it only `TILE - PLAYER_BODY_RADIUS` either side
-## of that middle, so there is no line past a vent that is blowing. Stated as those two reaches
-## rather than as the numbers they come out at today.
+## A vent stands on a cell where the corridor is **one tile wide**, and that is what makes it a
+## gate: her centre is held `obstructs_radius + PLAYER_BODY_RADIUS` from the middle of the
+## passage, and a one-tile passage leaves it only half a tile of play either side of that middle,
+## so there is no line past a vent that is blowing. Stated as those two reaches rather than as the
+## numbers they come out at today — and asked of each vent's own four neighbours, so a layout that
+## widened one of the three would fail here rather than in a playtest.
+##
+## **And each gate is one she cannot go round**, checked by taking that one cell out of the
+## walkable set and asking whether the exit is still reachable from the entry. A gate on a cell
+## with a way past it is scenery.
 func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
@@ -1208,34 +1213,66 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) ->
 	var vents := events.vents()
 	t.check(vents.size() == Tuning.FINALE_STEAM_PERIODS.size(),
 			"the corridor has one vent per period in `Tuning` (%d)" % vents.size())
-	t.check(steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
-			> InteriorScene.TILE - Tuning.PLAYER_BODY_RADIUS,
-			"a blowing vent is held %.0fpx wide against the %.0fpx the walls leave her centre, "
-			% [steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS,
-			InteriorScene.TILE - Tuning.PLAYER_BODY_RADIUS] + "so there is no line past one")
+	t.check(steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS > InteriorScene.TILE * 0.5,
+			"a blowing vent holds her centre %.0fpx out against the %.0fpx half-width of a one-tile "
+			% [steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS, InteriorScene.TILE * 0.5]
+			+ "passage, so there is no line past one")
 	var periods := {}
 	var spacing := INF
 	for i in vents.size():
 		var vent: InteriorEvents.Vent = vents[i]
 		periods[vent.period] = true
-		var north := scene.world_to_tile(vent.at + Vector2(0.0, -InteriorScene.TILE * 0.5))
-		var south := scene.world_to_tile(vent.at + Vector2(0.0, InteriorScene.TILE * 0.5))
-		t.check(scene.is_walkable(north) and scene.is_walkable(south),
-				"vent %d straddles two walkable rows of the corridor" % i)
-		t.check(walk.has(north) or walk.has(south),
-				"vent %d stands on the walk she has to take" % i)
-		t.check(is_zero_approx(fmod(vent.at.y, InteriorScene.TILE)),
-				"vent %d sits on the seam between them rather than on a row" % i)
+		var tile := scene.world_to_tile(vent.at)
+		t.check(walk.has(tile), "vent %d stands on the walk she has to take (%s)" % [i, tile])
+		t.check(vent.at.is_equal_approx(scene.tile_to_world(tile)),
+				"vent %d stands on its cell's own centre, where a one-tile passage is symmetric" % i)
+		var sideways := scene.is_walkable(tile + Vector2i.LEFT) \
+				or scene.is_walkable(tile + Vector2i.RIGHT)
+		var lengthways := scene.is_walkable(tile + Vector2i.UP) \
+				or scene.is_walkable(tile + Vector2i.DOWN)
+		t.check(not (sideways and lengthways),
+				"vent %d stands where the corridor is one tile wide, not on a two-row band" % i)
+		t.check(not _basement_reaches_the_exit_without(tile),
+				"vent %d stands on a cell the walk to the exit cannot go round" % i)
 		if i > 0:
 			spacing = minf(spacing, vent.at.distance_to((vents[i - 1] as InteriorEvents.Vent).at))
 	t.check(periods.size() == vents.size(),
 			"and no two vents share a period, so their gaps do not line up by themselves")
 	t.check(spacing > (steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) * 2.0,
 			"consecutive vents leave a pocket she fits in (%.0fpx apart)" % spacing)
-	print("Basement vents: %d, %.0fpx apart at the closest, periods %s"
-			% [vents.size(), spacing, Tuning.FINALE_STEAM_PERIODS])
+	# The gap a vent leaves has to be long enough to cross its own reach with time over — the floor
+	# `Tuning.FINALE_STEAM_PERIODS`' own doc derives, asked of the numbers rather than restated.
+	var crossing := (steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) * 2.0 / Tuning.WALK_SPEED
+	for period: float in Tuning.FINALE_STEAM_PERIODS:
+		t.check(period - Tuning.FINALE_STEAM_BLOWS_FOR >= crossing + 1.0,
+				("a %.1fs vent leaves %.2fs of open corridor against the %.2fs it takes to walk "
+				% [period, period - Tuning.FINALE_STEAM_BLOWS_FOR, crossing])
+				+ "through its reach, a margin of %.2fs"
+				% (period - Tuning.FINALE_STEAM_BLOWS_FOR - crossing))
+	print("Basement vents: %d, %.0fpx apart at the closest, periods %s; a crossing costs %.2fs"
+			% [vents.size(), spacing, Tuning.FINALE_STEAM_PERIODS, crossing])
 	events.free()
 	scene.free()
+
+## Whether the basement's exit is still reachable from its entry with `without` taken out of the
+## walkable set — the question that separates a gate from scenery.
+func _basement_reaches_the_exit_without(without: Vector2i) -> bool:
+	var f := InteriorMap.build()
+	var entry: InteriorMapPlan.Door = f.door("basement:entry")
+	var seen := {entry.tile: true}
+	var queue: Array[Vector2i] = [entry.tile]
+	while not queue.is_empty():
+		var here: Vector2i = queue.pop_back()
+		for dx in range(-1, 2):
+			for dy in range(-1, 2):
+				if dx == 0 and dy == 0:
+					continue
+				var next := here + Vector2i(dx, dy)
+				if next == without or seen.has(next) or not f.is_walkable(next):
+					continue
+				seen[next] = true
+				queue.append(next)
+	return seen.has(f.exit_tile)
 
 ## The corridor as a timing puzzle: *"have them turn off an on in different intervals"*. Driven
 ## through `InteriorEvents._physics_process()` and each instance's own `_process()`, the two calls
