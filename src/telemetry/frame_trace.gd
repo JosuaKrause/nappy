@@ -6,6 +6,13 @@ extends Node
 ## Counters are sampled here with the raw clock, never on a later reporting frame.
 
 const WARMUP_USEC := 5000000
+
+## The fields of `main.gd` that `_sample()` reads by name. `Object.get()` answers `null` for a name
+## that does not exist, which `_sample()`'s pause test reads as false — a renamed field would have
+## the trace sample the title screen as play and say nothing. `setup()` refuses one that is
+## missing, and `tests/test_frame_trace.gd` checks the list against `main.gd` itself.
+const MAIN_FIELDS: Array[String] = ["_in_the_title", "_layer_readout_on", "_layer_graph_on"]
+
 var buffer := FrameTraceBuffer.new()
 var _main: Node
 var _city: City
@@ -15,6 +22,8 @@ var _started_usec := -1
 var _metadata: Dictionary = {}
 
 func setup(main: Node, city: City, player: Stroller, day: DayController) -> void:
+	for field in MAIN_FIELDS:
+		assert(field in main, "FrameTrace reads main.%s, which main.gd no longer has" % field)
 	_main = main
 	_city = city
 	_player = player

@@ -379,7 +379,8 @@ loaded` line in play means the warm pass missed one rather than that late loadin
 ## Raw frame traces
 
 `--frame-trace` adds an independent debug observer, including under `--no-telemetry`. It observes
-the ordinary city day, after five seconds of initial active-play wall-clock warmup, with no RNG,
+the ordinary city day and nothing else — an escape run (`--start-escape`) attaches no recorder and
+writes no trace — after five seconds of initial active-play wall-clock warmup, with no RNG,
 gameplay changes, per-frame printing or file writes. On scene exit (quit or restart), it exports
 one JSON file under `user://frame-traces/` and prints its absolute path. A forced kill or crash
 loses the in-memory capture. The ordered log's flush-on-entry policy does not apply to this

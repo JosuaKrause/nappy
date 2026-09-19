@@ -45,6 +45,12 @@ func run(t) -> void:
 	var empty := FrameTraceBuffer.new(1).report(60.0)
 	t.check(empty.samples.is_empty() and empty.summary.max_ms == 0.0,
 		"a run with no rendered samples explicitly exports an empty report")
+	var main_fields: Array[String] = []
+	for property in (load("res://src/main.gd") as Script).get_script_property_list():
+		main_fields.append(String(property.name))
+	for field in FrameTrace.MAIN_FIELDS:
+		t.check(field in main_fields,
+			"main.gd still has %s, which the frame trace reads by name" % field)
 	var decoded: Dictionary = JSON.parse_string(JSON.stringify(report))
 	t.check(decoded.samples[1][3] == 40000 and decoded.samples[1][5] == 900,
 		"export round trip retains frame attribution")
