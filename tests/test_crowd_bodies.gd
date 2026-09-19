@@ -24,10 +24,11 @@ func run(t) -> void:
 	city.build(map)
 
 	_test_a_walker_steps_round_a_one_lane_body(t, city, map)
-	_test_a_body_across_a_footway_turns_a_walker_at_the_junction(t, city, map)
+	_test_a_body_across_a_footway_turns_a_walker_where_it_meets_it(t, city, map)
 	_test_a_body_in_a_lane_turns_a_car_and_leaves_the_oncoming_lane_alone(t, city, map)
 	_test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t, map)
 	_test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t, map)
+	_test_a_walker_passes_a_crash_on_its_pavement(t, city, map)
 	_test_a_row_at_the_kerb_leaves_both_lanes_driving(t, city, map)
 	_test_a_row_across_the_whole_street_still_turns_a_car(t, city, map)
 
@@ -118,6 +119,13 @@ func _walk(city: City, map: CityMap, watched: CrowdAgent, at: Vector2,
 	return {"inside": inside, "stepped_round": stepped_round, "deepest": deepest,
 			"shallowest": shallowest}
 
+## Whether any along tile in `[from, to)` is inside a junction band.
+func _a_junction_below(from: int, to: int) -> bool:
+	for along in range(from, to):
+		if CityMap.corridor_offset(along) >= 0:
+			return true
+	return false
+
 ## The cross-axis span of one footway of a vertical corridor, in world px — the ground a walker on
 ## that pavement stands on, kerb to frontage.
 func _footway_span(corridor: int, near: bool) -> Vector2:
@@ -163,22 +171,42 @@ func _test_a_walker_steps_round_a_one_lane_body(t, city: City, map: CityMap) -> 
 
 # ---------------------------------------------------------- a whole footway ---
 
-## A body across **both** lanes of one footway shuts that footway to a walker the way a soft seal
-## does, so it turns at the last junction instead of walking into it — and the other footway and the
-## carriageway are untouched, which is the whole difference between a body and a seal.
+## A body across **both** lanes of one footway shuts that footway to a walker — and it shuts it
+## *where it stands*, so the walker walks the pavement past the last junction, right up to the body,
+## and turns round there. *(2026-09-19: "they should only give up if they touch an impassable
+## wall".)* The other footway and the carriageway are untouched, which is the whole difference
+## between a body and a seal.
 ##
 ## The predicate is asked directly as well as walked, for the reason the region-door test asks its
 ## own directly: whether `_cannot_go_on` refuses the ground is the question, and whether a randomly
 ## placed crowd happens to visit one exact tile inside a short window is not.
-func _test_a_body_across_a_footway_turns_a_walker_at_the_junction(t, city: City,
+##
+## **The junction before the body is what the walk is measured against**, rather than a distance in
+## tiles: giving up at the last junction is exactly the behaviour this replaces, so the pavement
+## between that junction and the body is the ground that used to be empty and now is not.
+func _test_a_body_across_a_footway_turns_a_walker_where_it_meets_it(t, city: City,
 		map: CityMap) -> void:
 	var run := _a_straight_run(map, CityMap.period() + Tuning.BLOCK_SIZE)
 	t.check(run.x >= 0, "this city has a long enough stretch for a walker to turn in")
 	if run.x < 0:
 		return
 	var corridor := run.x
-	# Far enough down the run that a junction band lies between the walker and the body.
-	var body_at := run.y + CityMap.period() + 2
+	# Far enough down the run that a junction band lies between the walker and the body, **and**
+	# that two tiles of plain pavement lie between that junction and the body — the ground a walker
+	# that gave the street up at the junction never set foot on, which is what the walk below
+	# counts. Landing the body against the junction's own last row leaves that window empty and the
+	# count says nothing.
+	var body_at := -1
+	for along in range(run.y + 2, run.y + CityMap.period() + Tuning.BLOCK_SIZE - 1):
+		if CityMap.corridor_offset(along - 1) >= 0 or CityMap.corridor_offset(along - 2) >= 0:
+			continue
+		if not _a_junction_below(run.y, along - 2):
+			continue
+		body_at = along
+		break
+	t.check(body_at > 0, "the run has a junction with pavement past it to stand a body on")
+	if body_at < 0:
+		return
 	_stand_a_body(map, corridor, [0, 1], body_at, body_at + 1)
 	city.crowd.start_day(1, _rng(1), Vector2.ZERO)
 	city.crowd.clear()
@@ -197,6 +225,15 @@ func _test_a_body_across_a_footway_turns_a_walker_at_the_junction(t, city: City,
 	city.crowd._agents.erase(car)
 	car.queue_free()
 
+	# The last junction band before the body, which is where this walker used to give the street up.
+	var last_junction := -1
+	for along in range(body_at - 1, run.y - 1, -1):
+		if CityMap.corridor_offset(along) >= 0:
+			last_junction = along
+			break
+	t.check(last_junction > run.y,
+			"there is a junction between the walker and the body to not turn at (%d)" % last_junction)
+
 	# Walked by hand rather than through `_walk`, because the property is about the walker's own
 	# footway rather than about the street: the **other** pavement is deliberately still open, so a
 	# walker that turns at the junction, takes the crossing street and comes back onto this one on
@@ -204,7 +241,7 @@ func _test_a_body_across_a_footway_turns_a_walker_at_the_junction(t, city: City,
 	var at := map.tile_to_world(Vector2i(base + 1, body_at))
 	var near := _footway_span(corridor, true)
 	var inside := 0
-	var reached_on_its_own_footway := false
+	var past_the_junction := 0
 	for frame in int(round(12.0 / STEP)):
 		city.crowd.set_focus(at)
 		city.crowd.step(STEP)
@@ -212,15 +249,15 @@ func _test_a_body_across_a_footway_turns_a_walker_at_the_junction(t, city: City,
 			if map.is_obstructed(map.world_to_tile(agent.position)):
 				inside += 1
 			if agent.position.x >= near.x and agent.position.x <= near.y \
-					and agent.position.y >= float(body_at) * Tuning.TILE_SIZE \
-					and agent.position.y < float(body_at + 2) * Tuning.TILE_SIZE:
-				reached_on_its_own_footway = true
+					and agent.position.y > float(last_junction + 1) * Tuning.TILE_SIZE \
+					and agent.position.y < float(body_at) * Tuning.TILE_SIZE:
+				past_the_junction += 1
 	t.check(inside == 0,
 			"nobody walks into a body that takes their whole footway (%d frames somebody did)"
 			% inside)
-	t.check(not reached_on_its_own_footway,
-			"and nobody gets as far as it on that footway at all — the shut pavement carries no "
-			+ "traffic, the way a soft-sealed one does not")
+	t.check(past_the_junction > 0,
+			("and the pavement between that junction and the body carries people right up to it "
+			+ "(%d walker-frames on it)") % past_the_junction)
 	map.clear_day_obstructions()
 
 # ----------------------------------------------------------------- a car lane ---
@@ -351,6 +388,58 @@ func _test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t, map: Ci
 				"the pavement at offset %d beside the crash carries no body" % offset)
 		t.check(whole_band.has(pavement),
 				"and the whole-street band it replaces did carry one, so this is a real difference")
+
+## A walker walks past a car accident on the pavement beside it. *(2026-09-19: "they should still
+## walk through a car accident since the sidewalk is free there".)* The crash's two cars stand on
+## the two carriageway lanes and nothing else, so the road is shut to a car and both footways are
+## open — which is the same pair of sentences `_test_a_crash_records_its_cars_and_not_the_pavements_
+## beside_them` above asks of the record, asked here of what the crowd does with it.
+##
+## **The street is deliberately not held here.** On a real day a crash is a hard seal and its
+## segment is held as well, which is what turns a car a junction early rather than at the cars
+## themselves; what this test is about is the half a walker reads, and the hold has nothing to say
+## to a walker.
+func _test_a_walker_passes_a_crash_on_its_pavement(t, city: City, map: CityMap) -> void:
+	var run := _a_straight_run(map, Tuning.BLOCK_SIZE)
+	t.check(run.x >= 0, "this city has a straight stretch to stand a crash in")
+	if run.x < 0:
+		return
+	var corridor := run.x
+	var base := corridor * CityMap.period()
+	var body_at := run.y + 5
+	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("car_accident"), true)
+	var covered := _stand_a_row(map, def,
+			Vector2(float(base) * Tuning.TILE_SIZE + float(Tuning.STREET_WIDTH) * 16.0,
+			(float(body_at) + 0.5) * Tuning.TILE_SIZE))
+	var offsets := _offsets_of(covered, base)
+	t.check(offsets.size() == CrowdLanes.ROAD_OFFSETS.size()
+			and offsets.has(CrowdLanes.ROAD_OFFSETS[0])
+			and offsets.has(CrowdLanes.ROAD_OFFSETS[1]),
+			"a crash's two cars stand on the carriageway and nowhere else (offsets %s)" % [offsets])
+
+	city.crowd.start_day(1, _rng(1), Vector2.ZERO)
+	city.crowd.clear()
+	var walker := _agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, 0,
+			float(run.y) * Tuning.TILE_SIZE + 4.0, 1.0)
+	for offset: int in CrowdLanes.SIDEWALK_OFFSETS:
+		t.check(not walker._cannot_go_on(true, Vector2i(base + offset, body_at)),
+				"the pavement beside it stays open to a walker at offset %d" % offset)
+	var driver := _agent_on(city, map, CrowdAgent.Kind.CAR, corridor,
+			CrowdLanes.road_lane(true, 1.0), float(run.y) * Tuning.TILE_SIZE, 1.0)
+	for offset: int in CrowdLanes.ROAD_OFFSETS:
+		t.check(driver._cannot_go_on(true, Vector2i(base + offset, body_at)),
+				"and the carriageway under it is shut to a car at offset %d" % offset)
+	city.crowd._agents.erase(driver)
+	driver.queue_free()
+
+	var at := map.tile_to_world(Vector2i(base + 1, body_at))
+	var walked := _walk(city, map, walker, at, 6.0)
+	t.check(walked["inside"] == 0,
+			"nobody stands inside one of the cars (%d frames somebody did)" % walked["inside"])
+	t.check(walked["deepest"] > float(body_at + 1) * Tuning.TILE_SIZE,
+			"and the walker gets past the crash on its own pavement (reached %.0f, the cars end "
+			% walked["deepest"] + "%.0f)" % (float(body_at + 1) * Tuning.TILE_SIZE))
+	map.clear_day_obstructions()
 
 # ------------------------------------------------- what a body takes of a street ---
 # "cars shouldn't avoid it. I noticed cars turning around even though the obstacle is on the

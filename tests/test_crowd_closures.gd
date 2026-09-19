@@ -72,11 +72,20 @@ func _advance(seconds: float) -> void:
 # the day's own placed seals instead — see `docs/DECISIONS.md`, M100, "Events spawn inside a fully
 # blocked street", for `CityMap.held_segments` itself, which these read rather than duplicate.
 
-## M110, item 2: a hard seal shuts its street to the crowd the way a closure does.
-## `CityMap.held_segments` is filled directly with `hold_segment()` here rather than through the
-## whole day's pipeline, since `CrowdAgent._cannot_go_on` is what is being asked about — the wiring
-## that actually fills it from a placed hard seal is `EventManager.start_day`'s own job, covered by
-## `tests/test_events.gd`.
+## M110, item 2, as M156 leaves it: a hard seal shuts its street to the **traffic**, and a walker
+## walks up to the seal's own bodies and no further.
+##
+## **The two halves are read off two different records and that is the finding.** The hold on the
+## segment is what turns a car, a junction early, because a car cannot turn round against a barrier;
+## the seal's bodies in `CityMap.obstructed_tiles` are what stops a walker, where they stand.
+## *(2026-09-19: "pedestrians should only avoid the area if they cannot reach it physically … they
+## should only give up if they touch an impassable wall".)* So a car is asked about the whole
+## segment and a walker only about the tiles the bodies are on — and the street is asked to carry
+## walkers at all, since a sealed street with nobody on it was the complaint.
+##
+## The seal is stood here the way `SealPlanner` stands one — the same `sealed_variant` and the same
+## `_hard_positions` across the street — rather than by planning a day, so the segment under test is
+## this one and not whatever the seed rolled.
 func _test_a_hard_seal_shuts_its_street_to_the_crowd(t) -> void:
 	var segment: StreetNetwork.Segment = null
 	for candidate in StreetNetwork.segments():
@@ -88,23 +97,51 @@ func _test_a_hard_seal_shuts_its_street_to_the_crowd(t) -> void:
 		return
 
 	_city.map.clear_day_holds()
+	_city.map.clear_day_obstructions()
 	_city.map.hold_segment(segment.key())
+	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("fallen_tree"), true)
+	var body_tiles := {}
+	var owner := 1
+	for at_body: Vector2 in SealPlanner._hard_positions(_city.map, segment, def):
+		var covered := EventManager.obstructed_footprint(_city.map, def, at_body, Vector2.RIGHT)
+		_city.map.obstruct_tiles(owner, covered)
+		owner += 1
+		for tile: Vector2i in covered:
+			body_tiles[tile] = true
+	t.check(body_tiles.size() >= Tuning.STREET_WIDTH,
+			"the seal's bodies stand across the whole street (%d tiles)" % body_tiles.size())
+
 	var rect := segment.tile_rect()
 	var at := _city.map.tile_rect_to_world(rect).get_center()
 	_city.crowd.start_day(1, _rng(1), at)
 
-	var frames_inside := 0
+	var in_the_bodies := 0
+	var cars_on_the_street := 0
+	var walkers_on_the_street := 0
 	for frame in int(round(20.0 / STEP)):
 		_city.crowd.set_focus(at)
 		_city.crowd.step(STEP)
-		for agent in _city.crowd.agents():
-			if rect.has_point(_city.map.world_to_tile(agent.position)):
-				frames_inside += 1
-	t.check(frames_inside == 0,
-			"nobody ever stands on a hard-sealed segment's own ground, and it carries no through "
-			+ "traffic (%d frames it did)" % frames_inside)
+		for agent: CrowdAgent in _city.crowd.agents():
+			var tile := _city.map.world_to_tile(agent.position)
+			if body_tiles.has(tile):
+				in_the_bodies += 1
+			if not rect.has_point(tile):
+				continue
+			if agent.kind == CrowdAgent.Kind.CAR:
+				cars_on_the_street += 1
+			else:
+				walkers_on_the_street += 1
+	t.check(in_the_bodies == 0,
+			"nobody ever stands inside the seal's own bodies (%d frames somebody did)"
+			% in_the_bodies)
+	t.check(cars_on_the_street == 0,
+			"and the sealed street carries no traffic at all (%d car-frames it did)"
+			% cars_on_the_street)
+	t.check(walkers_on_the_street > 0,
+			"while people still walk it up to the seal (%d walker-frames)" % walkers_on_the_street)
 
 	_city.map.clear_day_holds()
+	_city.map.clear_day_obstructions()
 
 # ------------------------------------------------------------- M119: pockets ---
 # "pedestrians with nowhere to go (all four sides of the intersection are blocked off) should just
@@ -548,14 +585,25 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 	city.crowd.set_gates(city.region_plan().gates)
 
 	var frames_inside := 0
+	var walkers_on_the_segment := 0
 	for frame in int(round(20.0 / STEP)):
 		city.crowd.set_focus(at)
 		city.crowd.step(STEP)
-		for agent in city.crowd.agents():
-			if wall_rect.has_point(map.world_to_tile(agent.position)):
+		for agent: CrowdAgent in city.crowd.agents():
+			var tile := map.world_to_tile(agent.position)
+			if mouth.has_point(tile):
 				frames_inside += 1
+			elif agent.kind == CrowdAgent.Kind.WALKER and wall_rect.has_point(tile):
+				walkers_on_the_segment += 1
+	# The **mouth** rather than the whole segment: the wall's bodies stand one tile deep across the
+	# street there, and the rest of the segment is ordinary pavement a walker may now walk right up
+	# to the wall along. What stops it is the bodies, which is the same sentence the hard-seal test
+	# above holds.
 	t.check(frames_inside == 0,
-			"nobody ever stands on today's region wall (%d frames it did)" % frames_inside)
+			"nobody ever stands on today's region wall itself (%d frames it did)" % frames_inside)
+	t.check(walkers_on_the_segment > 0,
+			"and the street it stands in still carries people up to it (%d walker-frames)"
+			% walkers_on_the_segment)
 
 	# The door carve-out, checked directly against the predicate rather than by waiting for a
 	# random walker or car to wander onto the exact tile inside a short simulated window — the

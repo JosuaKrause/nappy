@@ -605,24 +605,35 @@ func _out_of_view() -> bool:
 ## a rig with no city, or before the wall itself stands), which is a harmless no-op: nothing is held
 ## then either.
 ##
+## **A hold shuts a street to a car and not to a walker, and the asymmetry is the manoeuvre rather
+## than a policy.** *(2026-09-19: "pedestrians should only avoid the area if they cannot reach it
+## physically … they should only give up if they touch an impassable wall".)* Every held segment has
+## something standing across the whole of it somewhere along its length — a hard seal, a region
+## wall, a closure's barriers — and a car has to be turned away *before* it reaches that, because it
+## cannot turn round against a barrier and one stopped nose to a wall holds the junction behind it.
+## A walker turns in a stride wherever it is standing, so it needs no warning at all: it walks the
+## street until it meets the body, which `CityMap.obstructed_tiles` records like any other, and
+## turns there. The hold is what a car reads and the body is what a walker reads.
+##
 ## **The door's carve-out is per walker**, which is the one thing here that is not a fact about the
 ## day: a walker whose own answer is `TURNS_BACK` gets no carve-out at all, so a door reads to it
-## exactly like the wall either side of it and it turns away at the last junction with the machinery
-## that already does that. Nothing else about turning back needs writing — and a walker that has
-## decided against one particular door's queue (`_refuse_the_door`) is the same sentence for one
-## segment rather than for all of them.
+## exactly like a wall and it turns away at the last junction with the machinery that already does
+## that — the one thing a walker still turns early for, because turning back at a door is a decision
+## about the door rather than about the ground. And a walker that has decided against one particular
+## door's queue (`_refuse_the_door`) is the same sentence for one segment rather than for all of
+## them.
 func _segment_is_shut(tile: Vector2i) -> bool:
 	if not _map.is_held_at(tile):
 		return false
 	var segment := StreetNetwork.segment_containing(tile)
 	if segment == null:
-		return true
+		return kind == Kind.CAR
 	var key := segment.key()
 	if home_segments.has(key):
 		return false
 	if door_segments.has(key):
 		return _door_answer == DoorAnswer.TURNS_BACK or key == _refused_door_key
-	return true
+	return kind == Kind.CAR
 
 # -------------------------------------------------------- checkpoint doors ---
 # A walker crossing a region door is held at the hut on its own sidewalk the way she is, in the
@@ -858,7 +869,7 @@ func _process(delta: float) -> void:
 		_consider_turning()
 		_advance_walker_gait(delta)
 	_look_ahead()
-	if _blocked_in <= LOOKAHEAD_TILES:
+	if _blocked_in <= _acts_on_a_barrier_within():
 		_divert(delta)
 	# A car with no road either way goes when nobody is looking, which is the rule a body a pocket
 	# has caught already follows a few lines above. It is the same situation read off the lane
@@ -896,12 +907,12 @@ func _keep_out_of_a_body(stood_on: Vector2i) -> void:
 ## predicate its lookahead and its turns use; a walker's is the per-lane one, because a walker's
 ## `_cannot_go_on` is about a whole footway being taken and this is about a body under its feet.
 ##
-## **A shut segment is added to the walker's half rather than left to the turn.** A walker normally
-## never reaches one — it turns at the last junction, or at the tile before a wall — but a walker
-## committed to the heading it has just turned into (`_turn_round()`) cannot turn again for a
-## stride, and the one thing that must not buy is a person standing in a hard seal. Nothing else
-## changes: the carve-outs `_segment_is_shut()` makes for a door and for the home block's own
-## streets are the same ones every other reader gets.
+## **A shut segment is added to the walker's half rather than left to the turn.** For a walker that
+## is a door it has decided to turn back from and nothing else, since a held street is a car's
+## warning rather than a walker's — but a walker committed to the heading it has just turned into
+## (`_turn_round()`) cannot turn again for a stride, and the one thing that must not buy is a
+## person standing in a doorway it refused. What keeps a walker out of a hard seal or a region wall
+## is the first half: their bodies are in `CityMap.obstructed_tiles` like any other body.
 func _may_stand_on(tile: Vector2i) -> bool:
 	if kind == Kind.CAR:
 		return not _cannot_go_on(_vertical, tile)
@@ -1697,12 +1708,13 @@ func _blocked_ahead(vertical: bool, direction: float, distance: float,
 func _cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	if _map.is_closed(tile):
 		return true
-	# A hard seal and a region wall stand bodies across the whole carriageway, kerb to kerb, the
-	# same way a dead end's own wall does — `_segment_is_shut` is the fact `_look_ahead` sees from
-	# `LOOKAHEAD_TILES` off, so both walkers and cars turn away at the last junction rather than
-	# walking or driving through what they cannot see through. A region door is carved out of the
-	# same check for everybody but a walker that turns back at doors: it is a crossing the day means
-	# to keep open, not a wall with a picture on it.
+	# A street held for today has a hard seal, a region wall or a closure's barriers standing across
+	# the whole of it somewhere along its length. **That is a car's warning and not a walker's** —
+	# see `_segment_is_shut`: a car has to turn at the last junction because it cannot turn round
+	# against a barrier, and a walker walks up to the body itself, which the obstruction record
+	# below knows exactly where to find. A region door is carved out for everybody but a walker
+	# that turns back at doors: it is a crossing the day means to keep open, not a wall with a
+	# picture on it.
 	if _segment_is_shut(tile):
 		return true
 	# A soft seal takes both pavements and leaves the carriageway to the cars — walkers only.
@@ -1972,6 +1984,27 @@ func _look_ahead() -> void:
 	_nowhere_to_turn = false
 	_waited_to_turn = 0.0
 
+## How close the thing it cannot pass has to be before an agent does anything about it, in tiles —
+## the whole of the difference between how the two kinds meet a barrier.
+##
+## **A car acts on the whole lookahead because its answer is a junction away.** A turn is an arc
+## that needs a junction box to fit in, and reversing where it stands is the last resort with no
+## path in it, so a car that drove up to a wall would stand there nose-on and take the street behind
+## it with it. It has to decide while the last junction is still in front of it, which is what
+## `LOOKAHEAD_TILES` is measured to reach.
+##
+## **A walker acts only on the next tile, because its answer costs a stride.** *(2026-09-19:
+## "pedestrians should only avoid the area if they cannot reach it physically. right now they give
+## up if there is an event at all when they should only give up if they touch an impassable wall".)*
+## A person turns round on the spot, so nothing is bought by deciding early and a great deal is
+## lost: a street given up from a junction away is a street with nobody on it for the whole of its
+## length, which is how side streets and sealed-off blocks came to stand empty. One tile rather than
+## zero because `_look_ahead()` is cached per tile and the step that would carry a walker into the
+## thing is held (`_keep_out_of_a_body()`), so "the next tile is shut" is the last moment a decision
+## can still be taken with room to take it in.
+func _acts_on_a_barrier_within() -> int:
+	return LOOKAHEAD_TILES if kind == Kind.CAR else 1
+
 ## Traffic goes round a closure, and that is half of what makes one legible: the street with
 ## nobody on it is the street that is shut, which reads from a block away — further than the
 ## barrier itself does.
@@ -1984,18 +2017,21 @@ func _look_ahead() -> void:
 ## function is the walker's own version: a person changes direction in a stride, has no lane to be
 ## on the correct side of and no length to swing round, so there is nothing for a path to be
 ## continuous about.
+##
+## **And that is also why the two are called at different distances** — see
+## `_acts_on_a_barrier_within()`. A walker reaches here with the barrier one tile away, so a walker
+## in a junction turns the corner it has arrived at and a walker in the street about-faces in front
+## of the thing it cannot pass.
 func _divert(delta: float) -> void:
 	if kind == Kind.CAR:
 		_plan_a_turn(delta)
 		return
 	var crossing := CrowdLanes.corridor_at(_along())
 	if crossing < 0:
-		# Still in the street, a junction short of where it can turn. Carry on — unless it is
-		# standing *in* the thing it is avoiding, which is a day that started behind a barrier,
-		# or the thing is the very next tile, which is a **cul-de-sac**. Both have nowhere to go
-		# but back.
-		if not _stands_on_a_street() or _blocked_in <= 1:
-			_turn_round()
+		# In the street with the thing in the very next tile and no junction to turn at: a
+		# cul-de-sac's plug, a seal standing across the road, a café taking the whole footway. It
+		# turns round in front of it, which is the whole of what a walker does about a barrier.
+		_turn_round()
 		return
 	if not _can_turn_here():
 		# Inside a junction on the wrong band to turn from — a walker on the carriageway strip, a

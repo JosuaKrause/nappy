@@ -591,15 +591,29 @@ rather than parking a car inside it.
 
 **A hard seal, a region wall, and the closed streets a car cannot see through, all read the same
 way to the traffic.** `CrowdAgent._cannot_go_on` treats a tile on a held segment (a hard seal's own
-ground, or a region wall's) exactly like a closed one: both walkers and cars turn off at the last
-junction rather than driving into a barrier they have no physics against. A soft seal takes only
-the pavements, so a car still crosses it while a walker turns away — the street reads quiet on
-foot and ordinary on the road. A region door is carved out of the same check for whoever it means
-to let through: a car brakes and queues for the gate the way it already does at a red light or a
-zebra, and so does a walker — unless the answer it drew when it was placed is to turn back, which
-one in four do, and the door then reads to that walker exactly like the wall either side of it. A
-walker that crosses is held at the hut on its own sidewalk, one at a time; see "A checkpoint"
-above.
+ground, or a region wall's) exactly like a closed one: a car turns off at the last junction rather
+than driving into a barrier it has no physics against. A soft seal takes only the pavements, so a
+car still crosses it — the street reads quiet on foot and ordinary on the road.
+
+**The same street is not shut to a walker, and the asymmetry is the manoeuvre rather than a
+policy.** *(2026-09-19: "pedestrians should only avoid the area if they cannot reach it physically.
+right now they give up if there is an event at all when they should only give up if they touch an
+impassable wall".)* A car has to decide while the last junction is still in front of it: a turn is
+an arc that needs a junction box to fit, it has no reverse gear, and one stopped nose to a wall
+holds the street behind it. A walker turns round in a stride wherever it happens to be standing, so
+deciding early buys it nothing and costs the city a great deal — a street given up from a junction
+away is a street with nobody on it for the whole of its length, which is how sealed blocks and side
+streets came to stand empty. So a walker walks a held street up to the seal's own bodies, which are
+recorded tile by tile like every other solid body, and turns where it meets them. A car is turned
+by the hold; a walker is turned by the thing.
+
+A region door is carved out for whoever it means to let through: a car brakes and queues for the
+gate the way it already does at a red light or a zebra, and so does a walker — unless the answer it
+drew when it was placed is to turn back, which one in four do, and the door then reads to that
+walker exactly like the wall either side of it. That is the one barrier a walker still gives a
+street up for from a junction away, because turning back at a door is a decision about the door
+rather than about the ground. A walker that crosses is held at the hut on its own sidewalk, one at
+a time; see "A checkpoint" above.
 
 **And every other solid body diverts the crowd too, as far as avoiding it.** *(2026-09-12: "yes
 every solid body should do that -- not necessarily force a turn around but at least avoid the
@@ -624,11 +638,18 @@ another lane.** A footway is two lanes wide, so a walker whose own lane is taken
 other one `Tuning.WALKER_BODY_SIDESTEP_TILES` (4 tiles, 128px) before it gets there and steers back
 once it is past — the same sidestep a bump gives it, aimed at a lane rather than away from a person.
 Only a body that takes **every** lane of one footway at the same point along the street shuts that
-footway, and then the walker turns at the last junction exactly as it does for a soft seal — with
-the other footway and the carriageway still open, which is the whole difference between a body and
-a seal. A car has one lane per direction and the oncoming one is not an option, so a body on its own
-lane tile shuts that direction to it and it turns at the last junction; a car already past the last
-junction stops behind the body the way it stops behind a queue, and the oncoming lane keeps flowing.
+footway, and then the walker walks up to it and about-faces in front of it — with the other footway
+and the carriageway still open, which is the whole difference between a body and a seal. A car has
+one lane per direction and the oncoming one is not an option, so a body on its own lane tile shuts
+that direction to it and it turns at the last junction; a car already past the last junction stops
+behind the body the way it stops behind a queue, and the oncoming lane keeps flowing.
+
+**An about-face costs a stride before the next one may be taken, and that is what keeps a barrier
+from collecting a crowd that shakes its head at it.** A walker that turns is committed to its new
+heading for the time one stride takes, so nothing reverses on consecutive frames however it is
+boxed in; and because it turns round rather than stopping, it walks back out the way it came
+instead of standing at the barrier — two walkers meeting one wall leave in opposite lanes of the
+same footway and the ordinary separation keeps them off each other.
 
 **Neither the brake nor the sidestep is what makes this true, and that is worth knowing.** Both are
 *approaches* — they aim at a point and arrive late by whatever the last frame's speed bought — so
