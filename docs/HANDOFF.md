@@ -298,9 +298,10 @@ checks and worktrees can move independently of this file.
   remains the clean eight-direction A/C/B/C sheet and native/6× animation loops from
   [PLAYTEST-87](playtests/PLAYTEST-87.md). Nothing is installed. Complete-image approval remains
   the gate for installation and adding the successful method to the shared graphics procedure.
-- **PR #230 — M166, save at day start and reopen on the day brief** owns the save-timing
-  implementation. Fetch its live head, description and checks before review; its work is
-  independent of the father and performance corrections.
+- **PR #232 — share visual attempts early through the PR** carries the player's collaboration
+  preference from [PLAYTEST-89](playtests/PLAYTEST-89.md). Push a plausible attempt in the
+  requested format and point to its PR images before asking for feedback; the CLI cannot
+  display local image links. Repeated feedback is welcome, and preview is not installation approval.
 
 Number ownership remains distinct: PLAYTEST-84 and PLAYTEST-85 are the escape/save records
 on main, PLAYTEST-86 belongs to the performance work, and PLAYTEST-87 belongs to the father
