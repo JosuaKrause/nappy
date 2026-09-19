@@ -1,0 +1,55 @@
+{
+  "purpose": "Attempt chronology; player-approved method remains provisional until image review.",
+  "time_basis": "Generated-output timestamps are filesystem modification times converted from America/New_York to UTC. Conversation events retain order; no exact timestamp is inferred.",
+  "events": [
+    {
+      "at_utc": "2026-09-19T12:38:15Z",
+      "action": "Existing isolated SVG-led father side transfer is generated.",
+      "sha256": "1b6c5651766899c7e6ae84ed93b58b794cf1b2f065ce63cf546b0e969683a667",
+      "provenance": "../raster-attempts.json, method SVG-led side transfer",
+      "verdict": "Near leg trails correctly; whole figure is rejected for changed head/hand proportions.",
+      "retained_for_splice_as": "father-side-leg-donor.png"
+    },
+    {
+      "at_utc": "2026-09-19T18:24:12Z",
+      "action": "Woman P2 targeted-atlas workflow is applied to father side and front-diagonal B.",
+      "prompt": "attempts/prompt-01.txt",
+      "references_in_order": [
+        "../../raw/pushing.png",
+        "../inputs/svg-targets-8x.png",
+        "../../../graphics-reference-urban-01.jpeg",
+        "../../../graphics-reference-cardinal.jpeg"
+      ],
+      "output_sha256": "dadcac23bf205d7fdcc697d3014e457822d18916d921b6fe9c1b4f653659a5e9",
+      "external_output": "/Users/krause/.codex/generated_images/01a0bad5-a6d5-7803-b7b8-3dd1c9d6a065/exec-6e3f93dc-bba4-4a26-95d1-7ac0c39dd112.png",
+      "verdict": "Internally rejected: foreground leg still advances in side/front diagonal. Not used in final assembly."
+    },
+    {
+      "at_utc": "2026-09-19T18:26:26Z",
+      "action": "One targeted atlas retry adds the accepted woman pose sheet as a reference.",
+      "prompt": "attempts/prompt-02.txt",
+      "references_in_order": [
+        "../../raw/pushing.png",
+        "../../../comic-pushing-strides-2026-09-12/registered/p2-selected-generation.png",
+        "../inputs/svg-targets-8x.png",
+        "../../../graphics-reference-urban-01.jpeg",
+        "../../../graphics-reference-cardinal.jpeg"
+      ],
+      "output_sha256": "cbb440ecf4333085bf79a4bd03062bd8edd515fe99506814f815a6f4fec4c222",
+      "external_output": "/Users/krause/.codex/generated_images/01a0bad5-a6d5-7803-b7b8-3dd1c9d6a065/exec-6b3c8920-007d-4895-9a44-b0c57607fb71.png",
+      "verdict": "Internally rejected: same ownership failure. No woman image is edited or generated. This reference strategy stops and its output is not used."
+    },
+    {
+      "conversation_order": "After the two failed atlas attempts, before deterministic splicing",
+      "action": "Player authorizes father-only splicing: you can try splicing -- I will judge.",
+      "source": "../../../../playtests/PLAYTEST-85.md",
+      "constraints": "Father-only image inputs; fixed accepted upper body, native canvases and anchors; review artifacts only, no runtime install."
+    },
+    {
+      "at_utc": "2026-09-19T18:29:26Z",
+      "action": "The existing correct-ownership father side drawing is retained as the splice donor. Front/back use their existing A lower-body mirror.",
+      "method": "assemble.py and generated/manifest.json retain exact crops, transforms, compositing order, source hashes and output hashes.",
+      "approval": "Splice trial authorized; final image and promotion into shared procedure await the player."
+    }
+  ]
+}

@@ -1,5 +1,9 @@
 # Father B-contact comparison
 
+This comparison is superseded as the review deliverable by the
+[clean eight-direction sheet and animation loops](../loops-2026-09-19/README.md).
+It remains preserved as rejected evidence; PLAYTEST-85 records the player's replacement brief.
+
 [Open the comparison sheet](sheet/comparison.png). It answers whether the four affected
 illustrated B poses have reviewable anatomy. The fresh candidate fails the side and front-diagonal
 ownership checks and is not installed. The image is diagnostic evidence for human inspection,

@@ -307,24 +307,35 @@ contact on a new pull request. Runtime north uses `father_back_b`; east and west
 south uses `father_front_b`. Northeast and northwest share `father_back_diagonal_b`, which the
 player identified as correct and which stays untouched.
 
-- [ ] **Put the intended leg in front in the four authored B sources.** Redraw each whole affected
-      pose coherently rather than swapping isolated leg pixels: pelvis, coat hem, trouser overlap,
-      shoes and ground contact must all agree about depth. Preserve the accepted face, stature,
-      clothing, canvas registration, hand-to-handle contact and stroller relationship. Update the
-      runtime SVGs, their graphics-creation copies and the corresponding native PNG replacements;
-      regenerate the source, registered, contact and comparison evidence plus manifest hashes.
-      Pair verification must prove each runtime SVG matches its creation copy and each shipped PNG
-      matches its registered source. The eight-direction pushing review sheet must make the six
-      corrected B contacts and the two unchanged back-diagonal contacts readable at native size and
-      3×. Do not touch carrying frames or A/C pushing frames.
+- [ ] **Show the intended leg in front in the woman's established review format, then install only
+      what the player approves.** [PLAYTEST-85](playtests/PLAYTEST-85.md) rejects a before/after
+      comparison because the failed frame is not a useful review target. Reuse the accepted woman
+      pushing pipeline without inventing another strategy: one clean sprite sheet contains the
+      father's A/C/B/C loop in all eight runtime directions, and native/6× GIFs animate the same
+      four 190ms phases in N, NE, E, SE, S, SW, W, NW order. Front and back B preserve the accepted
+      upper body and use the correctly sized A lower body mirrored into the opposite contact. Side
+      and front-diagonal B correct the continuous hip-to-shoe ownership; the player authorizes a
+      deterministic splice of correct father legs beneath the preserved father upper body for
+      review, and west and southwest are their runtime mirrors. The accepted back-diagonal source
+      supplies northeast and northwest unchanged. Every candidate keeps the A/C canvas,
+      bottom-center anchor, scale and alpha bounds,
+      with no overflow. Do not show another comparison, touch carrying frames, alter A/C, or install
+      a runtime replacement before the complete sheet and loops are approved. After approval,
+      update the four affected runtime SVGs, their graphics-creation copies and corresponding native
+      PNG replacements; regenerate source and registered evidence plus manifest hashes, and prove
+      each runtime SVG matches its creation copy and each shipped PNG matches its registered source.
 
 > "for the leg corrections write down the procedure for fixing because you mess it up *every*
 > time. so let's be proactive about it. still waiting on reviewable results btw"
 
-Add the reusable correction procedure to the SVG and illustrated-PNG workflow before installing
-the replacements. A corrected source or generated candidate is not a reviewable result until its
-continuous hip-to-shoe ownership, occlusion order, ground contacts and preserved proportions are
-shown together across A/B and all eight runtime directions at native size and 3×.
+The reusable correction procedure keeps its existing rules until the player approves a final
+image. This pass records exact source hashes, crop boundaries, transforms, compositing order,
+commands and output hashes beside the evidence; after approval, only the successful method is
+promoted into the SVG and illustrated-PNG workflows. A corrected source or generated candidate is
+not a reviewable result until the clean eight-direction sheet and both animation loops show
+continuous hip-to-shoe ownership, occlusion order, ground contacts and preserved proportions
+through A/C/B/C. The woman pipeline's native and 6× outputs are the authority; there is no separate
+evidence design for the father.
 
 ---
 

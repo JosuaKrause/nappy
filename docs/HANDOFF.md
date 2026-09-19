@@ -300,11 +300,14 @@ checks and worktrees can move independently of this file.
   separate. Its branch also carries the fix-ready M163 ground-atlas reference-fixture report and
   M164 engine-errors-make-the-gate-red report; neither fix is implemented.
 - **PR #221 — M160, the father's B contact puts the other leg forward** is a green draft. Corrected
-  SVG ownership proof is complete, but the bounded initial
-  raster and one targeted retry both failed leg ownership or proportions, so no replacement PNG is
-  reviewable or installed. The next deliverable remains four genuinely reviewable complete PNG
-  figures, using a changed raster strategy and the corrected SVG as pose authority; do not reuse the
-  rejected lower body or repeat the exhausted prompt.
+  SVG ownership proof is complete, but no replacement PNG is approved or installed. The player
+  rejected the before/after comparison itself and specified the established woman-pushing review
+  deliverable instead: one clean eight-direction A/C/B/C sprite sheet and native/6× animation-loop
+  GIFs. Front and back use their correctly sized A lower body mirrored into the opposite contact;
+  side and front diagonal use the player-authorized trial splice of correct father legs beneath the
+  preserved father upper body; the other runtime directions use the existing mirror rules. Reuse
+  the woman pipeline exactly, retain the splice recipe beside the evidence, and install nothing or
+  update the shared procedure before player review.
 - **M162, a game can be resumed, is specified and ready for an agent.** Its question is
   answered ([PLAYTEST-82](playtests/PLAYTEST-82.md)): a save holds the run and the day, a game
   left in the middle of a day comes back at dawn one nerve down, and an agent's run never reads

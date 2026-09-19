@@ -1,0 +1,13 @@
+{
+  "purpose": "Frozen source and exact prompt hashes for the two pre-splice rejected atlas attempts; these images are not read by the final father-only splice pipeline.",
+  "files": {
+    "docs/evidence/male-player-2026-09-19/raw/pushing.png": "9dbf608ce0a61a15335f4c5766c015d4598274c515b97edf7e6f18d962c63e90",
+    "docs/evidence/comic-pushing-strides-2026-09-12/registered/p2-selected-generation.png": "993fc177fc303bfb491f79bd2146924a4b28e527fa078bcea044d99ddf9ae578",
+    "docs/evidence/male-player-2026-09-19/b-contact/inputs/svg-targets-8x.png": "8c4a0379bea3d8d9f1cc3b55be412b3cddd898d36c90e6e794406b2d28eb19ed",
+    "docs/evidence/graphics-reference-urban-01.jpeg": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d",
+    "docs/evidence/graphics-reference-cardinal.jpeg": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7",
+    "docs/evidence/male-player-2026-09-19/b-contact/loops-2026-09-19/attempts/prompt-01.txt": "f06b79353f651b0baafdec174977403bb28234e4715d0afb813da74f5d3dcc4d",
+    "docs/evidence/male-player-2026-09-19/b-contact/loops-2026-09-19/attempts/prompt-02.txt": "cf9b7f4192fb380982bb353a8bd2a6cebe01871e15ddc427cb98753ba3b1b01c",
+    "docs/evidence/male-player-2026-09-19/b-contact/loops-2026-09-19/donor-prompt.txt": "8521e77da079a25e4b98fa22bbea6632d3d201582a061d2f8cd185991df32163"
+  }
+}

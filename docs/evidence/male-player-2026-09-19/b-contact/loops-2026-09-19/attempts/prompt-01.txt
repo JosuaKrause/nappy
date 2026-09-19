@@ -1,0 +1,37 @@
+Edit the first input image, the 5-column by 3-row father pushing atlas. Its accepted upper
+body is the binding identity, clothing, proportions, rendering, direction, canvas and layout
+reference. Its existing side and front-diagonal B lower-body poses are wrong and must change.
+The second input is the reviewed corrected B SVG pose sheet, ordered front/back/side/front
+diagonal; use it only to understand which anatomical leg owns the opposite B contact. The
+third and fourth inputs are approved comic style references only, excluding scenery and UI.
+
+Use the same targeted complete-figure correction as the woman's P2 pushing family. Change
+exactly two complete figures in the BOTTOM ROW (Contact B):
+
+1. Column 3, strict right-facing SIDE profile: redraw both complete legs continuously from
+pelvis through thigh, knee, shin, heel and shoe. In the existing top-row A pose, the near/outboard
+leg owns the forward screen-right contact. Make B anatomically opposite: the near/outboard thigh
+must clearly emerge from the visible near hip and sweep backward toward screen-left, ending in
+the trailing screen-left foot with lifted heel. The far leg must begin behind the pelvis, partly
+occluded at the upper thigh, then step forward screen-right to the planted leading shoe.
+Preserve right-facing toe direction and walking direction. Do not merely change a shoe, knee
+mark, color or outline; exchange the complete hip-to-shoe leg ownership and its overlap order.
+
+2. Column 4, southeast-facing FRONT DIAGONAL: redraw both complete legs continuously from
+pelvis through thigh, knee, shin, heel and shoe while preserving the southeast travel axis.
+Make the near/outboard thigh emerge from the image-right hip and trail toward the UPPER LEFT,
+ending in the trailing upper-left shoe. Make the far thigh begin behind the image-left side of
+the pelvis and advance toward the LOWER RIGHT, ending in the planted lower-right shoe. The
+near thigh crosses in front of the far thigh and its continuous contour slopes down-left from
+the image-right hip. This must be the anatomical opposite of the top-row A pose. Do not
+exchange hip positions, reverse the travel axis or make another near-leg-leading pose.
+
+Keep every figure a complete, uncut adult with true alpha transparency. Keep the same five
+columns and three rows. Keep all other thirteen figures unchanged. In the two edited figures
+preserve the same man, 45-pixel target stature proportions, short brown hair, head size, blue
+overshirt length and width, cream undershirt, blue-gray trousers, dark shoes, upper-body angle,
+hands, grip height, hand X position and clean silhouette. Preserve the compact width of the
+original figures so each fits its existing 26x46 game canvas at full height. Do not enlarge the
+head or hands, lengthen the torso or widen the stance. Do not edit arms, hands, head, torso,
+shirt, background, spacing or any stroller. Redraw the requested complete figures coherently
+while retaining their identity and landmarks. No text, labels, shadows or checkerboard.

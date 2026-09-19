@@ -4,10 +4,11 @@ This record contains the four editable pushing B-pose corrections and their sour
 The illustrated runtime PNGs retain the original registration; source and raster leg poses
 therefore differ in these four assets. This is source evidence, not a completed raster transfer.
 
-The [four-pose comparison](review-2026-09-19/README.md) places a fresh, uninstalled raster
-candidate beside installed A/C/B and the intended SVG B poses at native scale and 3×. Its side
-and front-diagonal ownership fail; the larger raw-detail panels expose those contours directly.
-It is diagnostic evidence for inspection, not a replacement family.
+The [father-only splice trial](loops-2026-09-19/README.md) provides the requested clean
+eight-direction A/C/B/C sprite sheet and native/6× animation loops. It preserves A's upper pixels
+and native registration, mirrors A's front/back lower body, and uses a retained father leg drawing
+for the side/front-diagonal B trial. The player judges these uninstalled review candidates.
+The [four-pose comparison](review-2026-09-19/README.md) remains superseded evidence.
 
 ## Source contract
 

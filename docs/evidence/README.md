@@ -49,7 +49,7 @@ can produce different pixels on another call; extraction and assembly use the re
 | Composed streets and varied grass in generated layouts | [In-engine composition and repeatable layout review](layered-ground-layout-2026-09-12/GENERATION.md) |
 | Forest and park ground in the actual Main scene | [Runtime texture and cell probe](grass-runtime-2026-09-12/GENERATION.md) |
 | Player generation-reference SVG family | [Authoring sources, runtime pairings and frame roles](../graphics-creation/player/README.md) |
-| Blue-overshirt male player, pushing and carrying | [SVG-first sources, generated atlases, native registration and full-family comparison](male-player-2026-09-19/GENERATION.md); [four-pose B-contact diagnostic](male-player-2026-09-19/b-contact/review-2026-09-19/README.md) |
+| Blue-overshirt male player, pushing and carrying | [SVG-first sources, generated atlases, native registration and full-family comparison](male-player-2026-09-19/GENERATION.md); [clean eight-direction splice-trial sheet and animation loops](male-player-2026-09-19/b-contact/loops-2026-09-19/README.md) |
 | Logo, social card and exported icons | [Identity generation and registration](comic-identity-2026-09-12/GENERATION.md) |
 
 ## What is here
