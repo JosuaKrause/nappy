@@ -365,7 +365,8 @@ through `tools/run.sh --start-escape --seed 4242`.
       explosion, every 22 seconds (`Tuning.FINALE_EXPLOSION_INTERVAL`), and an explosion costs
       excitement. Built as light without noise, open to overturn: distant flashes light the
       windows between the loud ones, on an irregular interval of their own a few seconds long,
-      and cost nothing; the loud explosions stay at 22 seconds and still flash. The alternative
+      and cost nothing; the loud explosions stay at 22 seconds and still flash. **Every window
+      flashes together, always** *("a single window cannot flash by itself")*. The alternative
       the player may prefer is simply more explosions, which is one constant and makes the
       building louder.
 - [ ] **The escape's run log stamps every line `0.0`.** The log of the played run cannot say when

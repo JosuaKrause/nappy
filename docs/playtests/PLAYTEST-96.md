@@ -32,6 +32,19 @@ open:
 3. **The rubble's drawing is liked as it is.** Said of the picture; whether it reads as *this way
    is shut* in a walked escape is not spoken to.
 
+## Every window flashes together
+
+On seeing a capture in which the distant flashes lit some of the hallway's windows and not others
+— which is what the orchestrator had asked the building agent for, *"a random subset so it reads
+as something far off in one direction"*:
+
+> "all windows always need to flash together. a single window cannot flash by itself"
+
+4. **A flash lights every window at once, always.** Loud or distant, a flash is one event in the
+   sky outside and every window shows it in the same frame. No window ever lights alone and none
+   is ever left dark during a flash. *The random subset was the orchestrator's idea and was never
+   the player's; it goes.*
+
 ## What was not spoken to
 
 How often is right, whether every flash should be heard, and the length of a flash.
