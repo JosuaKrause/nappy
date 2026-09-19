@@ -21,6 +21,7 @@ func run(t) -> void:
 	_test_uses_save_is_false_under_the_headless_runner(t)
 	_test_debug_run_uses_save_policy(t)
 	_test_no_save_query_parsing(t)
+	_test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t)
 
 	_test_round_trip_field_list_matches_the_property_list(t)
 	_test_round_trip_preserves_every_field(t)
@@ -71,6 +72,19 @@ func _test_no_save_query_parsing(t) -> void:
 	t.check(DevFlags._no_save_from_query("?nosave=1"), "?nosave=1 turns it off")
 	t.check(DevFlags._no_save_from_query("?seed=1&nosave=1&day=2"),
 			"the parameter is found among other URL parameters")
+
+## The gated entry points `main.gd` actually calls (`write()`/`try_resume()`, as opposed to the
+## `_write_now()`/`_read_now()` this whole suite otherwise uses to reach past the gate) refuse
+## outright under the headless runner, and touch no file at all in doing so — the property every
+## other suite, and `tools/check.sh`'s own boot, are safe *because* of.
+func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t) -> void:
+	GameSave.clear()
+	t.check(not GameSave.write(true), "the gated write refuses under the headless runner")
+	t.check(not GameSave.has_save(), "and leaves no file behind")
+	t.check(GameSave._write_now(true), "the ungated mechanics still write, for this suite's own use")
+	t.check(GameSave.try_resume().is_empty(),
+			"the gated resume also refuses, even with a real file sitting at the scratch path")
+	GameSave.clear()
 
 # ------------------------------------------------------------------- round trip ---
 
