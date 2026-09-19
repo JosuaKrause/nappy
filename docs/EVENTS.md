@@ -533,11 +533,20 @@ answer; see `docs/CITY.md`, "A route's junctions stay clear", for the rule and f
 row that are outside it.
 
 **The stretch between two junctions is asked the same way, of the sidewalk the route is walked
-along.** `EventScheduler._leaves_the_routes_sidewalk_open` refuses a counted row whose reach,
-together with everything already down, would leave no walk from one of that street's junctions to
-the other along that band. The far side of a street is the answer to a van; nothing answers a van
-on the side the route is drawn down. See `docs/CITY.md`, "Nothing takes the sidewalk a route is
-walked along".
+along.** `EventScheduler._leaves_the_routes_sidewalk_open` refuses a counted **standing** row whose
+reach, together with everything already down, would leave no walk from one of that street's
+junctions to the other along that band. The far side of a street is the answer to a van; nothing
+answers a van on the side the route is drawn down. See `docs/CITY.md`, "Nothing takes the sidewalk a
+route is walked along".
+
+**A pacing row is answered in time rather than in width, and twice.** It is out of the rule above —
+a beat takes its ground for part of a loop, so what a walk past one needs is a phase rather than a
+lane. What it is asked instead is whether its beat reaches a junction box, the ground every
+crosswalk in the city is painted on: a beat that does is one she can leave at the zebra while he is
+at the far end of it, and a beat that stays between two junctions leaves her nothing but walking
+through him. `EventScheduler._a_pacing_beat_walls_a_sidewalk` is that question, asked of the
+candidate in the placement loop, and a beat that fails it is a wall and may not stand on the
+sidewalk a route walks.
 
 **And a pacing row's opening is ground.** `EventDef.paces` means a beat rather than a journey, so
 what it denies is the ground the loop never leaves free and the rest is passed by waiting — which
@@ -545,7 +554,7 @@ makes the one end it is away from worth protecting. `EventScheduler._leaves_a_pa
 asks the rows reaching a route street that carries a pacing row whether a walk along that street
 survives all of them together, and refuses the placement that would close it, in both directions:
 the pacing row that would land in a closed street and the standing row that would close an opening.
-See `docs/CITY.md`, "A pacing row leaves the line open for part of its beat".
+See `docs/CITY.md`, "A pacing row is passed by waiting, or left at a crossing".
 
 **A seal is checked the same way in a different place.** `SealPlanner` puts a body on every
 off-tree street whether or not the scheduler would have offered that tile, so it never asks
@@ -566,7 +575,9 @@ from the doorstep to the calm areas still worth reaching.
 | kind of row | role | where it may go |
 | --- | --- | --- |
 | lethal (`hard_fail`), or a walk-through cost of `WALL_WORTH_OF_COST` or more | **wall** | never on ground a route runs along; `EVENT_WALL_RIM_WEIGHT` toward a turning off the corridor |
-| a row that leaves no line past it along a sidewalk it may stand on (`cafe_tables`, `construction`, `market_stall`, `homeless_yeller`, `ice_cream_van`, and every wide row that was already one) | **wall** | the same, which includes the far sidewalk of a route's own street |
+| a standing row that leaves no line past it along a sidewalk it may stand on (`cafe_tables`, `construction`, `market_stall`, `ice_cream_van`, and every wide row that was already one) | **wall** | the same, which includes the far sidewalk of a route's own street |
+| a **pacing** row that leaves no line past it and whose beat reaches no crossing (`homeless_yeller`, where its beat is truncated short of a junction) | **wall** | the same, decided per placement rather than per row |
+| a **pacing** row whose beat reaches a junction's crosswalk (`homeless_yeller`, almost everywhere) | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor, the route's own sidewalk included |
 | everything else placed on a tile | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor |
 | a `ONE_SHOT` | **set piece** | one placement at *each* site of a covering set; one of them happens |
 | `AMBIENT`, `AHEAD_OF_PLAYER`, a scar, a park spoiler, `EventDef.scenery` (`pigeon_flock`) | **none** | wherever its own rule says |
@@ -581,9 +592,24 @@ reach that far leaves no line at all. A market stall costs 8.5 points to walk th
 friction is the role aimed *at* the route, so a row aimed there has to be one she can get past
 there. It is read off the row's own numbers exactly as the cost clause is, and asked of *a*
 sidewalk rather than of the tile — the role is decided before a tile is chosen, so a row that may
-stand on a sidewalk is judged on the narrowest ground it may be rolled onto. A **pacing** row is
-judged the same way: a beat runs along a sidewalk and moves the row nowhere across it, so waiting
-for a yeller does not widen one.
+stand on a sidewalk is judged on the narrowest ground it may be rolled onto.
+
+**A pacing row is the one whose role is a fact about its placement.** *(PLAYTEST-77, 2026-09-19:
+"yeller is something you can time. it stays on the route"; "if the yeller paces across a crosswalk
+then there is a way to avoid them. if they stay on the segment for the whole time with no side
+route then there is no way to avoid them. distinguish those cases when deciding whether the yeller
+is a wall".)* A beat runs *along* a sidewalk and moves the row nowhere across it, so the width of
+the line past a man walking one is the same at every phase of his loop — but the way past him is
+not a wider sidewalk, it is a **crossing**: a beat that reaches a junction box is one she can step
+off at the zebra there while he is at the far end of it. So the same numbers are friction where the
+beat reaches a junction and a wall where it stays between two of them, and
+`EventScheduler._a_pacing_beat_walls_a_sidewalk` asks it of the candidate inside the placement loop,
+where the beat exists. A junction box is where every crosswalk in the city is painted, so *crosses
+a crosswalk* and *reaches a junction* are one question — and it is the crossing this whole design
+counts on, since a mid-block crossing exists in play and is never planned around. `homeless_yeller`
+paces eight tiles against a block of eight, so its beat runs into a junction unless a closure, a
+calm zone's absorbed corridor or the map's own margin cuts it short: friction almost everywhere, a
+wall where the street gave it no way out.
 
 Two things about the mechanism rather than the table. It is **the same weighting the precinct
 uses** — a tile is offered to the roll several times over — so every spacing rule downstream keeps
@@ -597,10 +623,16 @@ place the corridor's two grains differ on purpose. A price is stated over a stre
 may be anywhere across it; where a thing may *stand* is narrower, and a branch runs along one
 sidewalk of a street rather than down the middle of it — so the far side of a route's own street is
 ground no route walks, and a wall may stand there. *(PLAYTEST-77: "the market stall should appear on
-the other side of the street where for some reason no event was chosen".)* It is not where a wall is
-*aimed*: `EVENT_WALL_RIM_WEIGHT` and `WALL_DEEP_WEIGHT` are still read off the street's own depth,
-so the far sidewalk carries the weight of ordinary far ground and the rim is still the preference.
+the other side of the street where for some reason no event was chosen".)*
 `Corridor.carries_a_route` is the question, the same one the kerb tint asks.
+
+**It is also where a very costly wall wants to be.** The **rim** — the ground `EVENT_WALL_RIM_WEIGHT`
+pulls a costly wall toward — has two members: a turning off the corridor, one street out, and the
+far side of the street the route is already on. The second is the nearer of the two and the one she
+can read without leaving her own line, so a street with a route down one side of it is a street
+with the day's cafés and stalls down the other. The **lethal** half of the band keeps its own
+gradient and is pulled past the rim by `WALL_DEEP_WEIGHT`, so nothing that ends the day is drawn to
+the other side of her street in particular.
 
 The role weighting moves *where* the budget is spent and never how much of it there is: the density
 placed per day is unaffected by whether the weight is live, and so is the count of lethal rows —
@@ -785,7 +817,7 @@ All implemented.
 | `alley_mouse` | RECURRING | 1 | The cat's shape, `MAP`-placed on `ALLEY` tiles instead of director-sited — an alley she is routed through is already ground she is about to walk, unlike a `ROAD` tile that could be anywhere in the city. Intensity 21 on a 60/15px field (the cat's 4:1 ratio) and half its cap (4), on top of the alley's own `Tuning.EXCITEMENT_FROM_ALLEY` (+3.0/s) ambient dread. **Priced above the cat on each row's own ground**, which is not the same ground — *(2026-09-12: "alley mouse is a bit above charging cat"; "consider that the mouse is in the alley but the cat is usually not")*. A cat is met on a street that gives back 6.0/s; a mouse only ever in an alley, which gives back 3.5/s and is charging the dread as well, so the alley hands this row most of the gap before its intensity is touched. It walks to **+19.9 in an alley** against the cat's **+17.6 on a street**. The field is only 60px across, so the crossing is a second and a third and the spike has to be bought in intensity — there is no `impulse` field. No body, nothing lethal. Waits unclocked (`pursues_within` 150px, without `pursues`) until she is close, so a `MAP` placement streamed in from `EVENT_STREAM_RADIUS` does not telegraph and finish off screen before she arrives — see `EventDef.pursues_within` and `EventInstance._check_for_notice()`. Its two-point dash is read off `CityMap.alley_rects` and laid across whichever side of the alley is narrower — always the width, since she can only be walking the length — so it crosses her path rather than running down it (`EventInstance._alley_crossing_path()`). `EventScheduler._refuses_required_alleys`, stated over `def.placement == [ALLEY]` and shared with `alley_robbery`, keeps it off alleys she has no way around. |
 | `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Intensity 26 on a tight radius, barking on a 3.5s pulse: it owns the pavement it is on, so walking straight through it is never the cheap option. Deliberately given no `obstructs_radius` — a moving wall on a two-tile pavement pins the player against a building. |
 | `cafe_tables` | RECURRING | 1 | A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and a **wall** by passability rather than by price: 24px of tables billing anybody within 56px of them leaves no line along the 64px sidewalk it stands on, so it is what the far side of a day-one street carries and never what the route's own sidewalk does. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. The people at the tables are drawn as well as the tables, because the tables are what obstructs and the conversation is what it emits — a real source, derived from the body itself: `inner_radius` 38px (touching the tables), `outer_radius` 64px (the pavement band's own centre to the carriageway's), so it bills somebody at the tables and not somebody across the street. |
-| `homeless_yeller` | RECURRING | 1 | Intensity 14 over a 210px field, yelling on a 5s **pulse**, and **pacing** eight tiles of pavement (`EventDef.paces`). A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. Mobile, so he has no body — and a **wall** by passability all the same, because the 170px he charges over covers a 64px sidewalk from either lane and his beat runs along it rather than across it, so no phase of the walk opens a line. His silhouette is his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. |
+| `homeless_yeller` | RECURRING | 1 | Intensity 14 over a 210px field, yelling on a 5s **pulse**, and **pacing** eight tiles of pavement (`EventDef.paces`). A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. Mobile, so he has no body. **Friction or a wall depending on where his beat runs**: the 170px he charges over covers a 64px sidewalk from either lane, so the way past him is never a lane and always a crossing — a beat that reaches a junction box is one she can leave at the zebra there while he is at the far end of it, and he stays on the route like any other timing problem; a beat truncated short of a junction by a closure or a calm zone leaves no way off his sidewalk, and that placement is a wall. His silhouette is his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. |
 | `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Silent: standing in the way is its entire price, and `obstructs_radius` already charges it — see "Solid things are solid". At the kerb rather than on the carriageway, and solid at `VEHICLE_BODY`: 44px of van across a 64px footway is a street that costs the other side. |
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
 | `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it — which is what makes it a **wall** by passability although it is silent and cheap, since a band with no lane left is a band with no line along it. Since a street is sidewalk\|road\|sidewalk the road is always still there, so it costs time, never the day. Silent, like `delivery_van`: a hoarding is not a source. |

@@ -73,6 +73,7 @@ func run(t) -> void:
 	_test_every_look_carries_its_own_silhouette(t)
 	_test_the_day_is_placed_by_role(t)
 	_test_friction_on_a_sidewalk_can_be_walked_past(t)
+	_test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t)
 	_test_a_routes_junctions_stay_clear(t)
 	_test_nothing_takes_the_routes_own_sidewalk(t)
 	_test_a_pacing_rows_opening_stays_open(t)
@@ -2958,9 +2959,11 @@ func _test_the_day_is_placed_by_role(t) -> void:
 				walls += 1
 				t.check(plan.def.hard_fail
 						or plan.def.walk_through_cost() >= Tuning.WALL_WORTH_OF_COST
-						or EventScheduler._takes_a_whole_sidewalk(plan.def),
-						"day %d: '%s' is a wall because it is lethal, very costly, or leaves no"
-						% [day, plan.def.id] + " line past it on a sidewalk")
+						or EventScheduler._takes_a_whole_sidewalk(plan.def)
+						or EventScheduler._a_pacing_beat_walls_a_sidewalk(plan, map),
+						"day %d: '%s' is a wall because it is lethal, very costly, leaves no line"
+						% [day, plan.def.id] + " past it on a sidewalk, or paces one with no"
+						+ " crossing in its beat")
 				t.check(not corridor.carries_a_route(tile),
 						"day %d: the wall '%s' at %s stands on no ground a route runs along"
 						% [day, plan.def.id, TelemetryLog.tile(tile)])
@@ -3051,11 +3054,16 @@ func _test_the_day_is_placed_by_role(t) -> void:
 ##
 ## Asked on two days because a role can move with the day: `charging_dog` is director-sited on
 ## `Tuning.RUN_TAUGHT_DAY` and map-placed after it.
+##
+## **A pacing row is not one of the rows this is about**, and the exclusion is the design rather
+## than a hole: a beat takes its ground in time, so what a walk needs past one is a phase rather
+## than a lane. `_test_a_pacing_row_on_the_routes_sidewalk_can_be_left` is its half of the same
+## question, and this count would be the wrong instrument for it.
 func _test_friction_on_a_sidewalk_can_be_walked_past(t) -> void:
 	var checked := 0
 	for day in [1, 8]:
 		for def in EventCatalogue.all():
-			if not def.placement.has(GameEnums.TileType.SIDEWALK):
+			if not def.placement.has(GameEnums.TileType.SIDEWALK) or def.paces:
 				continue
 			if EventScheduler._role_for(def, day) != GameEnums.BlockerRole.FRICTION:
 				continue
@@ -3068,6 +3076,86 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t) -> void:
 					+ " lane (%.0fpx out) is still a line" % EventScheduler._THE_FAR_LANE)
 	t.check(checked >= 4,
 			"and the catalogue has rows on a sidewalk to ask it of (%d)" % checked)
+
+## **A man pacing the route's own sidewalk can always be left at a crossing, and one who cannot be
+## left is never on it.** *(PLAYTEST-77, 2026-09-19: "if the yeller paces across a crosswalk then
+## there is a way to avoid them. if they stay on the segment for the whole time with no side route
+## then there is no way to avoid them. distinguish those cases when deciding whether the yeller is a
+## wall".)*
+##
+## Both halves of that sentence are asserted over the finished day, because it is one rule read from
+## its two sides: a pacing row whose field leaves no line along a sidewalk may stand on the route's
+## own side **only** where its beat reaches a junction box — the ground every crosswalk in the city
+## is painted on — and where it does not, it is a wall and stands anywhere but there.
+##
+## The beat's own geometry is written out here rather than borrowed from the scheduler, for the
+## reason the junction check gives: only the reading of which rows the question is about
+## (`_counts_against_the_line`) and what the corridor walks (`Corridor.carries_a_route`) is shared.
+##
+## **Its non-vacuity is two counts**, one per half: a sample with no pacing row on a route sidewalk
+## proves nothing about the first, and one where every beat happened to reach a junction proves
+## nothing about the second.
+##
+## **The second count is small, and the arithmetic says it has to be.** `homeless_yeller` paces
+## `path_length_tiles` (8) against a block of `Tuning.BLOCK_SIZE` (8), so a beat laid anywhere on a
+## street runs into the junction box at one end of it unless `_along_street_path` truncates it —
+## at a closure, at a calm zone's absorbed corridor, or against the map's own margin. The walled
+## case is that truncation, which is why the floor under it is *one* rather than a share: what it
+## guards is that the sweep can still produce the case at all.
+func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
+	var map := CityGenerator.generate(4242)
+	var on_the_route := 0
+	var walled := 0
+	var unavoidable_on_the_route := 0
+	var first := ""
+	for day in [1, 5, 8, 11, 14]:
+		var state := CityState.new()
+		state.begin_day(map.block_plans, day)
+		map.repaint(state)
+		var tree := RouteTree.for_day(map, day)
+		var corridor := Corridor.of(tree)
+		var consumed: Array[String] = []
+		for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
+			if not plan.def.paces or not EventScheduler._counts_against_the_line(plan):
+				continue
+			if EventScheduler._line_reach_of(plan.def) < EventScheduler._THE_FAR_LANE:
+				continue
+			var crossed := _a_beat_touches_a_junction(map, plan)
+			if not crossed:
+				walled += 1
+			if not corridor.carries_a_route(map.world_to_tile(plan.position)):
+				continue
+			on_the_route += 1
+			if crossed:
+				continue
+			unavoidable_on_the_route += 1
+			if first == "":
+				first = "day %d, '%s' at %s" \
+						% [day, plan.def.id, TelemetryLog.tile(map.world_to_tile(plan.position))]
+	t.check(on_the_route > 5,
+			"the days sampled pace a row along the route's own sidewalk (%d)" % on_the_route)
+	t.check(walled >= 1,
+			"and pace one where no crossing can be reached from its beat (%d)" % walled)
+	t.check(unavoidable_on_the_route == 0,
+			"and every one on the route's own sidewalk has a crossing inside its beat (%d does not%s)"
+			% [unavoidable_on_the_route, "" if first == "" else ": " + first])
+
+## Whether a beat's straight run touches a junction box, which is the only ground in the city a
+## crosswalk is painted on (`CityGenerator._street_tile`).
+func _a_beat_touches_a_junction(map: CityMap, plan: EventScheduler.Planned) -> bool:
+	if plan.path.size() < 2:
+		return false
+	var from := map.world_to_tile(plan.path[0])
+	var to := map.world_to_tile(plan.path[plan.path.size() - 1])
+	var step := Vector2i(signi(to.x - from.x), signi(to.y - from.y))
+	var at := from
+	while true:
+		if CityMap.junction_at(at) != Vector2i(-1, -1):
+			return true
+		if at == to or step == Vector2i.ZERO:
+			return false
+		at += step
+	return false
 
 ## **A route's junctions stay clear.** *(PLAYTEST-69: "a path through the city must never hit
 ## excitement — so all obstacles should be routable around by eg crossing to the other side of the
@@ -3245,7 +3333,9 @@ func _test_nothing_takes_the_routes_own_sidewalk(t) -> void:
 		var consumed: Array[String] = []
 		var counted: Array[EventScheduler.Planned] = []
 		for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
-			if EventScheduler._counts_against_the_line(plan):
+			# A pacing row is left out for the reason the rule leaves it out: a beat is passed by
+			# waiting rather than by a lane, and its own two rules are what govern it.
+			if EventScheduler._counts_against_the_line(plan) and not plan.def.paces:
 				counted.append(plan)
 		for segment in StreetNetwork.segments():
 			var rect := segment.tile_rect()

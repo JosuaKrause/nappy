@@ -1467,13 +1467,18 @@ const EVENT_PLACEMENT_TRIES := 24
 ## nothing in the design asks for that.
 const EVENT_CORRIDOR_WEIGHT := 4
 
-## How many times over a turning off the corridor is offered to a **wall** placement, against a
-## street further out.
+## How many times over the **rim** is offered to a **wall** placement, against ground further out.
 ##
 ## A wall bounds the corridor, so it has to be somewhere the corridor can see; a lethal thing four
 ## streets away bounds nothing. That is the preference. What is not a preference is the exclusion
 ## beside it — the same reasoning as `CLOSURE_WALL_BIAS`, which is this number's twin one system
 ## over and deliberately the same value.
+##
+## **The rim is two kinds of ground, not one.** A turning off the corridor is the first: one street
+## out, seen from the junction where the wrong choice is made. The **far side of a route's own
+## street** is the second, and it is the nearer of the two — she reads it without leaving her line,
+## and a café or a stall standing there is what a street with a route down one side looks like.
+## *(2026-09-19: asked whether a wall across the street should be rare or common, "often".)*
 ##
 ## **It applies to the *costly* half of the wall band only.** A very costly row is what the rim is
 ## for — she has strayed one turning and it is expensive — and a lethal row wants the ground beyond

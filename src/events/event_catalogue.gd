@@ -369,10 +369,15 @@ static func _alley_mouse() -> EventDef:
 ## rows on day 1 that a player is most likely to walk *into* rather than around, and a quiet one
 ## reads as a man who does nothing.
 ##
-## **And a field that wide makes him a wall by passability**, on 19.8 points of walk-through cost:
-## he charges over 170px, a sidewalk is 64, and his beat runs along the sidewalk rather than across
-## it, so no phase of the loop opens a lane. `EventScheduler._takes_a_whole_sidewalk` is where that
-## is decided; what it changes is where he is placed and not what he does.
+## **Whether he is a wall is a fact about where his beat runs, not about his field.** He charges
+## over 170px against a 64px sidewalk, so the way past him is never a lane — it is a **crossing**.
+## A beat that reaches a junction box is one she can step off at the zebra there while he is at the
+## far end of his loop, so he is friction and stays on the route, which is what pacing is for. A
+## beat with no junction in it leaves her nothing but walking through him, and that placement is a
+## wall. `path_length_tiles` (8) against a block of `Tuning.BLOCK_SIZE` (8) is why the first is the
+## ordinary case: a beat runs into a junction unless a closure, a calm zone's absorbed corridor or
+## the map's own margin cuts it short. `EventScheduler._a_pacing_beat_walls_a_sidewalk` decides it,
+## per placement.
 static func _homeless_yeller() -> EventDef:
 	var def := EventDef.new()
 	def.id = "homeless_yeller"

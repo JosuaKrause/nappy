@@ -821,6 +821,17 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 		if not candidate:
 			continue
 		candidate.role = role
+		# **A pacing row's role is decided here rather than in `_role_for`**, because what makes a
+		# man walking a beat passable is where the beat runs and not what he emits: one that reaches
+		# a junction can be left at the crossing there while he is at the far end of his loop, and
+		# one that stays between two junctions cannot be left at all. The first is friction and
+		# belongs on the route like any other timing problem; the second is a wall and takes a
+		# wall's one rule with it — never on ground a route runs along. See
+		# `_a_pacing_beat_walls_a_sidewalk`.
+		if _a_pacing_beat_walls_a_sidewalk(candidate, map):
+			candidate.role = GameEnums.BlockerRole.WALL
+			if corridor and corridor.carries_a_route(tile):
+				continue
 		# Before the spacing, because this one is about the *ground* rather than about what is
 		# already on it, and because it can never bend.
 		if _reaches_any(candidate, leave_alone):
@@ -1047,20 +1058,29 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary) ->
 ## street, because what a *price* is stated over is ground the player may be anywhere across; where
 ## a thing may **stand** is the narrower question, and a branch runs along one sidewalk of a street
 ## rather than down the middle of it. So `carries_a_route()` is what closes the ground, and the
-## sidewalk **across the street from a route** is legal ground for a wall at the weight of ordinary
-## far ground — *"the market stall should appear on the other side of the street where for some
-## reason no event was chosen"* (PLAYTEST-77). It is not the *preferred* ground: the rim weight and
-## the deep weight below are still read off the street's own depth, so a wall is pulled to a turning
-## off the corridor and a lethal one further still, and the far sidewalk is simply no longer
-## refused. What keeps a wide row off it is the width rule — a wall across the street whose reach
-## covers the route's own sidewalk is refused that ground by `_leaves_the_routes_sidewalk_open`.
+## sidewalk **across the street from a route** is where a very costly wall **wants** to be —
+## *"the market stall should appear on the other side of the street where for some reason no event
+## was chosen"* (PLAYTEST-77). What keeps a wide row off it is the width rule: a wall across the
+## street whose reach covers the route's own sidewalk is refused that ground by
+## `_leaves_the_routes_sidewalk_open`.
 ##
 ## **The wall band has a gradient in it, and the gradient is the instruction**: the ground off the
 ## paths ranges from *very costly* to *deadly*. Stray one turning and it is expensive; stray further
-## and it ends the day. So a **very costly** wall is pulled to the rim,
-## which is the turning she can see from the junction she is standing at, and a **lethal** one is
+## and it ends the day. So a **very costly** wall is pulled to the rim and a **lethal** one is
 ## pulled past it. Both keep the whole off-corridor city as a weight rather than a filter, so
 ## neither can be starved of ground on a day whose corridor happens to be most of the map.
+##
+## **The rim has two members and they are the same thing seen from the two grains.** One is a
+## turning she might wrongly take, one street out (`depth() == 1`); the other is the far side of the
+## street she is already on (`depth() == 0` with no route along it), which is the nearest ground to
+## the route there is and the one she can read without leaving her own line. A wall is what bounds
+## the corridor, and both of those bound it from somewhere she can see. That is why the costly
+## weight is `away <= 1` rather than a turning exactly: the far sidewalk carries
+## `EVENT_WALL_RIM_WEIGHT` like a turning does.
+##
+## The **lethal** half keeps its own gradient rather than joining that: it is pulled past the rim by
+## `WALL_DEEP_WEIGHT`, and the far sidewalk is inside the rim, so a lethal row is no likelier there
+## than at any other single turning.
 ##
 ## **And one street inside the rim is worth more than the rest of it.** A gap is the single street
 ## two adjacent strands of today's corridor are joined by, so it is the one piece of rim that is
@@ -1088,7 +1108,7 @@ static func _copies_of(tile: Vector2i, corridor: Corridor, role: GameEnums.Block
 				return 0
 			if lethal:
 				return Tuning.WALL_DEEP_WEIGHT if away >= 2 else 1
-			if away != 1:
+			if away > 1:
 				return 1
 			return Tuning.EVENT_WALL_RIM_WEIGHT \
 					* (Tuning.EVENT_WALL_GAP_WEIGHT if corridor.is_in_a_gap(tile) else 1)
@@ -1354,20 +1374,67 @@ const _THE_FAR_LANE := float((Tuning.SIDEWALK_WIDTH - 1) * Tuning.TILE_SIZE)
 ## a park instead is still the same row with the same field, and being a wall costs it nothing
 ## there: the role only ever decides which ground it is offered.
 ##
-## **A pacing row is judged the same way and that is not the beat reading being forgotten.** A beat
-## runs *along* the sidewalk (`EventDef.paces` with `PathMode.ALONG_STREET`), so it moves the row
-## nowhere across it: the width of the line past a yeller is the same at every phase of his loop,
-## and waiting for him does not widen a sidewalk.
-##
 ## The five rows outside the line reading entirely — a pursuer, a door, a city-wide row, scenery, a
 ## mobile row that does not pace — are outside this too, by asking `_a_line_has_to_avoid` rather
 ## than repeating the list.
-static func _takes_a_whole_sidewalk(def: EventDef) -> bool:
+static func _leaves_no_line_along_a_sidewalk(def: EventDef) -> bool:
 	if not def.placement.has(GameEnums.TileType.SIDEWALK):
 		return false
 	if not _a_line_has_to_avoid(def):
 		return false
 	return _line_reach_of(def) >= _THE_FAR_LANE
+
+## The clause as the **role** asks it, which is of a def with no tile yet — so a pacing row is not
+## answered here at all.
+##
+## *(PLAYTEST-77, 2026-09-19: "yeller is something you can time. it stays on the route"; "if the
+## yeller paces across a crosswalk then there is a way to avoid them. if they stay on the segment
+## for the whole time with no side route then there is no way to avoid them. distinguish those
+## cases when deciding whether the yeller is a wall".)* Whether a man walking a beat can be got
+## past is a fact about **where his beat runs**, not about his field: the same numbers are a wall in
+## the middle of a segment and a thing to time at a junction. `_a_pacing_beat_walls_a_sidewalk`
+## asks it of the candidate, inside `_place_one`'s loop, where the beat actually exists.
+static func _takes_a_whole_sidewalk(def: EventDef) -> bool:
+	return not def.paces and _leaves_no_line_along_a_sidewalk(def)
+
+## **Whether *this* pacing placement is a wall**: its field leaves no line along a sidewalk, and its
+## beat reaches nowhere she can leave that sidewalk.
+##
+## The arithmetic of the first half is the plain clause above — a beat runs *along* a sidewalk and
+## moves the row nowhere across it, so the width of the line past a yeller is the same at every
+## phase of his loop and waiting does not widen a sidewalk. What the second half adds is the way out
+## that is not a wider sidewalk: **a crossing**. A beat that reaches a junction box is a beat she
+## can step off, on the zebra there, while he is at the other end of it; a beat that stays between
+## two junctions with nothing to cross leaves her the choice of walking through him or turning
+## round.
+##
+## **A junction box is where every crosswalk in the city is**, so *his beat crosses a crosswalk* and
+## *his beat reaches a junction* are one question — `CityGenerator._street_tile` paints `CROSSING`
+## only where both corridor offsets are inside a street and exactly one of them is a carriageway
+## offset, which is a junction box by definition. It is also the crossing this whole milestone
+## counts on: a mid-block crossing exists in play and is not planned around.
+static func _a_pacing_beat_walls_a_sidewalk(plan: Planned, map: CityMap) -> bool:
+	if not plan.def.paces or not _leaves_no_line_along_a_sidewalk(plan.def):
+		return false
+	return not _a_beat_reaches_a_crossing(plan, map)
+
+## Whether a beat's own run touches a junction box. Two waypoints and a straight run between them
+## (`_along_street_path`), so the tiles are a step along one axis; a row with no beat laid at all
+## answers no, which is the conservative side of a rule that only ever refuses ground.
+static func _a_beat_reaches_a_crossing(plan: Planned, map: CityMap) -> bool:
+	if plan.path.size() < 2:
+		return false
+	var from := map.world_to_tile(plan.path[0])
+	var to := map.world_to_tile(plan.path[plan.path.size() - 1])
+	var step := Vector2i(signi(to.x - from.x), signi(to.y - from.y))
+	var at := from
+	while true:
+		if CityMap.junction_at(at) != Vector2i(-1, -1):
+			return true
+		if at == to or step == Vector2i.ZERO:
+			return false
+		at += step
+	return false
 
 ## `checkpoint_hut` and `checkpoint_gate`, the two rows that **are** a region's door. Matched on the
 ## id the way `tests/probes/m129_zero_cost_line.gd` matches them, since what makes a door a door is
@@ -1651,9 +1718,19 @@ static func _a_route_walks(corridor: Corridor, band: Rect2i) -> bool:
 ## four-connected to each other (the carriageway between them is out), so *some pavement is open*
 ## was already *one band is open* — and this asks it of the band that matters, of every row rather
 ## than of one, which is strictly the stronger claim.
+##
+## **A pacing row is not one of the rows it asks about**, and that is the line between this rule and
+## the two that govern a beat. This one is about a **width**: ground a standing body takes and
+## leaves taken. A beat takes its ground in **time** — *"yeller is something you can time. it stays
+## on the route"* — so what governs it is whether the loop leaves an opening
+## (`_leaves_a_pacing_beats_opening`) and whether it reaches a crossing she can leave by
+## (`_a_pacing_beat_walls_a_sidewalk`, in `_place_one`'s loop). Counting his lens here as a width
+## would refuse a man on the route's own sidewalk for the one reason the player has ruled out, and
+## counting it against *another* row's placement would refuse a café a band a walk can already pass
+## by waiting.
 static func _leaves_the_routes_sidewalk_open(candidate: Planned, map: CityMap, corridor: Corridor,
 		ground: Dictionary, already: Array[Planned]) -> bool:
-	if not corridor or not _counts_against_the_line(candidate):
+	if not corridor or candidate.def.paces or not _counts_against_the_line(candidate):
 		return true
 	var reach := _line_reach_of(candidate.def)
 	for entry: Array in _route_sidewalks(map, ground, corridor):
@@ -1662,7 +1739,7 @@ static func _leaves_the_routes_sidewalk_open(candidate: Planned, map: CityMap, c
 			continue
 		var standing: Array[Planned] = [candidate]
 		for plan in already:
-			if plan == candidate or not _counts_against_the_line(plan):
+			if plan == candidate or plan.def.paces or not _counts_against_the_line(plan):
 				continue
 			if _reach_touches(plan, world, _line_reach_of(plan.def)):
 				standing.append(plan)
