@@ -534,11 +534,22 @@ is the only place a line may change pavement, so this is the one refusal a stree
 answer; see `docs/CITY.md`, "A route's junctions stay clear", for the rule and for the four kinds of
 row that are outside it.
 
-**The stretch between two junctions is asked the same way.**
-`EventScheduler._leaves_a_line_past_it` refuses a counted row standing on a route street where its
-own reach alone would leave no walk from one of that street's junctions to the other — the far
-pavement is the answer to a van, and a row that spans the width has taken it. See `docs/CITY.md`,
-"No single standing row takes a route street's whole width".
+**The stretch between two junctions is asked the same way, of the sidewalk the route is walked
+along.** `EventScheduler._leaves_the_routes_sidewalk_open` refuses a counted **standing** row whose
+reach, together with everything already down, would leave no walk from one of that street's
+junctions to the other along that band. The far side of a street is the answer to a van; nothing
+answers a van on the side the route is drawn down. See `docs/CITY.md`, "Nothing takes the sidewalk a
+route is walked along".
+
+**A pacing row is answered in time rather than in width, and twice.** It is out of the rule above —
+a beat takes its ground for part of a loop, so what a walk past one needs is a phase rather than a
+lane. What it is asked instead is whether its beat passes a **way out**, of which there are two
+kinds: a **junction box**, the ground every crosswalk in the city is painted on, which she leaves by
+the zebra while he is at the far end of his loop; or a **side route** — ground off the street
+opening off the sidewalk's own side, an alley mouth, a park or square edge, a courtyard — which she
+leaves by without crossing anything. A beat with neither leaves her nothing but walking through him.
+`EventScheduler._a_pacing_beat_walls_a_sidewalk` is that question, asked of the candidate in the
+placement loop, and a beat that fails it is a wall and may not stand on the sidewalk a route walks.
 
 **And a pacing row's opening is ground.** `EventDef.paces` means a beat rather than a journey, so
 what it denies is the ground the loop never leaves free and the rest is passed by waiting — which
@@ -546,7 +557,7 @@ makes the one end it is away from worth protecting. `EventScheduler._leaves_a_pa
 asks the rows reaching a route street that carries a pacing row whether a walk along that street
 survives all of them together, and refuses the placement that would close it, in both directions:
 the pacing row that would land in a closed street and the standing row that would close an opening.
-See `docs/CITY.md`, "A pacing row leaves the line open for part of its beat".
+See `docs/CITY.md`, "A pacing row is passed by waiting, or left at a crossing".
 
 **A seal is checked the same way in a different place.** `SealPlanner` puts a body on every
 off-tree street whether or not the scheduler would have offered that tile, so it never asks
@@ -566,17 +577,72 @@ from the doorstep to the calm areas still worth reaching.
 
 | kind of row | role | where it may go |
 | --- | --- | --- |
-| lethal (`hard_fail`) | **wall** | never inside the corridor; `EVENT_WALL_RIM_WEIGHT` toward a turning off it |
+| lethal (`hard_fail`), or a walk-through cost of `WALL_WORTH_OF_COST` or more | **wall** | never on ground a route runs along; `EVENT_WALL_RIM_WEIGHT` toward a turning off the corridor |
+| a standing row that leaves no line past it along a sidewalk it may stand on (`cafe_tables`, `construction`, `market_stall`, `ice_cream_van`, and every wide row that was already one) | **wall** | the same, which includes the far sidewalk of a route's own street |
+| a **pacing** row that leaves no line past it and whose beat passes no way off its sidewalk (`homeless_yeller`, where its beat is truncated short of one) | **wall** | the same, decided per placement rather than per row |
+| a **pacing** row whose beat passes a junction's crosswalk or a side route (`homeless_yeller`, almost everywhere) | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor, the route's own sidewalk included |
 | everything else placed on a tile | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor |
 | a `ONE_SHOT` | **set piece** | one placement at *each* site of a covering set; one of them happens |
 | `AMBIENT`, `AHEAD_OF_PLAYER`, a scar, a park spoiler, `EventDef.scenery` (`pigeon_flock`) | **none** | wherever its own rule says |
 
+**The second row is a question about the ground, not about the price.** *(PLAYTEST-77: "how is
+market stall a friction? you can't walk through it"; "a wall is also when you physically cannot walk
+through".)* A sidewalk is `Tuning.SIDEWALK_WIDTH` tiles — two lanes, 64px — so the only line past a
+row standing in one of them is the other lane, a tile away; a row whose body and charging disc
+(`EventScheduler._line_reach_of`, "What a row denies is what it charges for" in `docs/CITY.md`)
+reach that far leaves no line at all. A market stall costs 8.5 points to walk through, well under
+`WALL_WORTH_OF_COST`, and denies 58px of the 64: cheap and impassable are not the same question, and
+friction is the role aimed *at* the route, so a row aimed there has to be one she can get past
+there. It is read off the row's own numbers exactly as the cost clause is, and asked of *a*
+sidewalk rather than of the tile — the role is decided before a tile is chosen, so a row that may
+stand on a sidewalk is judged on the narrowest ground it may be rolled onto.
+
+**A pacing row is the one whose role is a fact about its placement.** *(PLAYTEST-77, 2026-09-19:
+"yeller is something you can time. it stays on the route"; "if the yeller paces across a crosswalk
+then there is a way to avoid them. if they stay on the segment for the whole time with no side
+route then there is no way to avoid them. distinguish those cases when deciding whether the yeller
+is a wall".)* A beat runs *along* a sidewalk and moves the row nowhere across it, so the width of
+the line past a man walking one is the same at every phase of his loop — but the way past him was
+never a wider sidewalk. It is somewhere his beat passes that she can **leave** by: a junction box,
+where she takes the zebra while he is at the far end of his loop, or a side route off the sidewalk's
+own side. So the same numbers are friction where the beat passes one and a wall where it passes
+neither, and `EventScheduler._a_pacing_beat_walls_a_sidewalk` asks it of the candidate inside the
+placement loop, where the beat exists. A junction box is where every crosswalk in the city is
+painted, so *crosses a crosswalk* and *reaches a junction* are one question — and it is the crossing
+this whole design counts on, since a mid-block crossing exists in play and is never planned around.
+`homeless_yeller` paces eight tiles against a block of eight, so its beat runs into a junction unless
+a closure, a calm zone's absorbed corridor or the map's own margin cuts it short: friction almost
+everywhere, a wall where the street gave it no way out.
+
+**A pacing wall is offered its ground at friction's weights and takes only the wall's refusal**, and
+that is the one place the two halves of a role come apart: `_ground_for` builds a pool per role
+before any tile is rolled, and a beat does not exist until one is — so the tile it lands on was
+offered as friction's and the corridor's own sidewalk is then refused it. What it lands on in
+practice is the far side of a route street, which is where the rim weight would have sent it
+anyway.
+
 Two things about the mechanism rather than the table. It is **the same weighting the precinct
 uses** — a tile is offered to the roll several times over — so every spacing rule downstream keeps
 working unchanged and nothing can refuse a placement. And **exactly one of these is a rule rather
-than a weight**: a wall is never inside the corridor. That one can be absolute because the rest of
-the city stays available to it, so it cannot starve a row of ground; everything else is a weight for
-exactly the reason it could.
+than a weight**: a wall never stands on ground a route runs along. That one can be absolute because
+the rest of the city stays available to it, so it cannot starve a row of ground; everything else is
+a weight for exactly the reason it could.
+
+**And that rule is asked per sidewalk while the weights are asked per street**, which is the one
+place the corridor's two grains differ on purpose. A price is stated over a street because a player
+may be anywhere across it; where a thing may *stand* is narrower, and a branch runs along one
+sidewalk of a street rather than down the middle of it — so the far side of a route's own street is
+ground no route walks, and a wall may stand there. *(PLAYTEST-77: "the market stall should appear on
+the other side of the street where for some reason no event was chosen".)*
+`Corridor.carries_a_route` is the question, the same one the kerb tint asks.
+
+**It is also where a very costly wall wants to be.** The **rim** — the ground `EVENT_WALL_RIM_WEIGHT`
+pulls a costly wall toward — has two members: a turning off the corridor, one street out, and the
+far side of the street the route is already on. The second is the nearer of the two and the one she
+can read without leaving her own line, so a street with a route down one side of it is a street
+with the day's cafés and stalls down the other. The **lethal** half of the band keeps its own
+gradient and is pulled past the rim by `WALL_DEEP_WEIGHT`, so nothing that ends the day is drawn to
+the other side of her street in particular.
 
 The role weighting moves *where* the budget is spent and never how much of it there is: the density
 placed per day is unaffected by whether the weight is live, and so is the count of lethal rows —
@@ -760,11 +826,11 @@ All implemented.
 | `cat_dash` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | Crouches (telegraph), then bolts across the traffic. Intensity 17, tiny radius, 1.8s duration — long enough to carry it the whole way across the street it starts at the edge of, and raised from 15 for a sharper startle spike once the barrier fields it used to be judged against went quiet. Its dash, driven straight at a standing player, still projects under `Tuning.EXPECTED_IMPACT_POINTS`, so the crouch's own silhouette carries the warning rather than a caret. Sited at `EventDef.ahead_of_player_lead()` rather than the flat `AHEAD_LEAD_DISTANCE`, which prices in the ground she covers while it holds its crouch, so it crosses where she actually is by the time it moves rather than behind her. The tutorial obstacle. |
 | `alley_mouse` | RECURRING | 1 | The cat's shape, `MAP`-placed on `ALLEY` tiles instead of director-sited — an alley she is routed through is already ground she is about to walk, unlike a `ROAD` tile that could be anywhere in the city. Intensity 21 on a 60/15px field (the cat's 4:1 ratio) and half its cap (4), on top of the alley's own `Tuning.EXCITEMENT_FROM_ALLEY` (+3.0/s) ambient dread. **Priced above the cat on each row's own ground**, which is not the same ground — *(2026-09-12: "alley mouse is a bit above charging cat"; "consider that the mouse is in the alley but the cat is usually not")*. A cat is met on a street that gives back 6.0/s; a mouse only ever in an alley, which gives back 3.5/s and is charging the dread as well, so the alley hands this row most of the gap before its intensity is touched. It walks to **+19.9 in an alley** against the cat's **+17.6 on a street**. The field is only 60px across, so the crossing is a second and a third and the spike has to be bought in intensity — there is no `impulse` field. No body, nothing lethal. Waits unclocked (`pursues_within` 150px, without `pursues`) until she is close, so a `MAP` placement streamed in from `EVENT_STREAM_RADIUS` does not telegraph and finish off screen before she arrives — see `EventDef.pursues_within` and `EventInstance._check_for_notice()`. Its two-point dash is read off `CityMap.alley_rects` and laid across whichever side of the alley is narrower — always the width, since she can only be walking the length — so it crosses her path rather than running down it (`EventInstance._alley_crossing_path()`). `EventScheduler._refuses_required_alleys`, stated over `def.placement == [ALLEY]` and shared with `alley_robbery`, keeps it off alleys she has no way around. |
 | `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Intensity 26 on a tight radius, barking on a 3.5s pulse: it owns the pavement it is on, so walking straight through it is never the cheap option. Deliberately given no `obstructs_radius` — a moving wall on a two-tile pavement pins the player against a building. |
-| `cafe_tables` | RECURRING | 1 | A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and the thing that forces a crossing. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. The people at the tables are drawn as well as the tables, because the tables are what obstructs and the conversation is what it emits — a real source, derived from the body itself: `inner_radius` 38px (touching the tables), `outer_radius` 64px (the pavement band's own centre to the carriageway's), so it bills somebody at the tables and not somebody across the street. |
-| `homeless_yeller` | RECURRING | 1 | Intensity 14 over a 210px field, yelling on a 5s **pulse**, and **pacing** eight tiles of pavement (`EventDef.paces`). A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. Mobile, so he has no body. His silhouette is his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. |
+| `cafe_tables` | RECURRING | 1 | A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and a **wall** by passability rather than by price: 24px of tables billing anybody within 56px of them leaves no line along the 64px sidewalk it stands on, so it is what the far side of a day-one street carries and never what the route's own sidewalk does. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. The people at the tables are drawn as well as the tables, because the tables are what obstructs and the conversation is what it emits — a real source, derived from the body itself: `inner_radius` 38px (touching the tables), `outer_radius` 64px (the pavement band's own centre to the carriageway's), so it bills somebody at the tables and not somebody across the street. |
+| `homeless_yeller` | RECURRING | 1 | Intensity 14 over a 210px field, yelling on a 5s **pulse**, and **pacing** eight tiles of pavement (`EventDef.paces`). A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. Mobile, so he has no body. **Friction or a wall depending on where his beat runs**: the 170px he charges over covers a 64px sidewalk from either lane, so the way past him is never a lane and always a crossing — a beat that reaches a junction box is one she can leave at the zebra there while he is at the far end of it, and he stays on the route like any other timing problem; a beat truncated short of a junction by a closure or a calm zone leaves no way off his sidewalk, and that placement is a wall. His silhouette is his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. |
 | `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Silent: standing in the way is its entire price, and `obstructs_radius` already charges it — see "Solid things are solid". At the kerb rather than on the carriageway, and solid at `VEHICLE_BODY`: 44px of van across a 64px footway is a street that costs the other side. |
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
-| `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it and forces a reroute rather than inviting one — and since a street is sidewalk\|road\|sidewalk, the road is always still there, so it costs time, never the day. Silent, like `delivery_van`: a hoarding is not a source. |
+| `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it — which is what makes it a **wall** by passability although it is silent and cheap, since a band with no lane left is a band with no line along it. Since a street is sidewalk\|road\|sidewalk the road is always still there, so it costs time, never the day. Silent, like `delivery_van`: a hoarding is not a source. |
 | `burning_building` | ONE_SHOT | 3 | Placed in a building, `AGAINST_THE_BUILDING`, the way `reversing_lorry` is. `spawns_on_sight` calls `fire_truck` in the moment she first sees it. Burns for the rest of the day, and you cannot walk through the fire. |
 | `fire_truck` | — | — | Never scheduled: a SCRIPTED def with no day, created only once `burning_building` has been seen. Drives an arterial at 190px/s with a 340px radius and a 6.27s telegraph (the fast-mover rule over its own forward reach — see docs/MECHANICS.md), entering along the fire's own street from off screen and ending there. |
 
@@ -774,11 +840,11 @@ neighbourhood's own rather than a patrol's.
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `loose_dog` | RECURRING (`TOWARD_PLAYER`) | 1 | A dog whose owner has dropped the leash, sited on her own pavement when she gets close and running straight down it toward her. The counterpart to `dog_walker` and the reason both exist — that one is a **span** you decide whether to cross the street to avoid, this one is a **thing coming at you** that you cannot out-walk. 132px/s, so it earns a badge at the screen edge and pays the whole-radius telegraph. Not lethal, which is what separates it from `charging_dog`: this one is answered by getting out of the way, not by running. Intensity 32, raised from 24 for a bigger impact once a real meeting is priced against the fixed baseline rather than the barrier fields that used to pin it near the top of the meter regardless. |
-| `market_stall` | RECURRING | 1 | The second thing on day 1 that forces a crossing, and it exists because one obstacle repeated eighteen times is a rule rather than a decision. Wider, louder, and on the other side of pleasant than `cafe_tables`: a café you squeeze past is a nuisance, a market is a crowd. A real source too, derived from the body the same way `cafe_tables` is — 38px/64px, the same pair, since both bodies share the same 24px rounding. |
+| `market_stall` | RECURRING | 1 | The second thing on day 1 she has to walk round, and it exists because one obstacle repeated eighteen times is a rule rather than a decision. A **wall** by passability, like `cafe_tables`: 28px of stall denying 58px of a 64px sidewalk is the row the reading was written from. Wider, louder, and on the other side of pleasant than `cafe_tables`: a café you squeeze past is a nuisance, a market is a crowd. A real source too, derived from the body the same way `cafe_tables` is — 38px/64px, the same pair, since both bodies share the same 24px rounding. |
 | `leaf_blower` | RECURRING | 1 | A man tidying a park, and a field with two parts: away from him it is the busker's exactly, so a park with a few of them spaced across it stays awake; inside `core_radius` — a pavement's own width — it is a wall. One of them closes one side of a street and never the street. |
 | `pigeon_flock` | RECURRING | 1 | **A patch of pavement that goes up when she walks into it.** `MAP`-placed, so the birds are pecking about from the moment the day streams them in at `EVENT_STREAM_RADIUS` — a flock she can see from down the street is one she can price and route around, which is the whole difference between a place and a moment. `pursues_within` 150px, inside its own 168px field and more than twice the 62px wheel, is the wait: unclocked and `quiet_until_noticed` (a fraction of 42/s while they peck), then 1.7s of a flock on the ground about to go, then up, then *away*. It is **eleven birds**, each with its own heading, height and wingbeat, and each an emitter, so the middle of a flock stacks four or five fields and the rim stacks one — the only row in the game that is more than one source, and the one row exempt from a body for it. `EventDef.scenery` is set, so `EventScheduler._role_for` answers `NONE` for it rather than the `WALL` its cost would otherwise earn — a flock is scenery, not a block, and it lands on a route corridor exactly as it lands anywhere else. |
 | `cyclist` **`hard_fail`** | RECURRING (`TOWARD_PLAYER`) | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement she is walking, bell going, coming toward her, down her own side of the road — sited when she gets close rather than on a street the day chose at dawn, so she answers it with a route decision (cross, or turn) instead of finding out too late it was never on her way. Everything about it is ordinary, which is the point: act I does not become sinister, it becomes a real street. The bell rings for 2.97s, what the doubled margin costs at a 90px field grown forward by its own speed — smaller than the fairness contract alone would allow, so the wait before it arrives stays a real reaction window rather than several seconds of watching it close from off screen. Its lethal `inner_radius` is 33px, widened from 26 so the far lane of her own pavement no longer clears it by construction — the same overturn `chatting_mother`'s `detain_radius` went through first. |
-| `ice_cream_van` | RECURRING | 2 | The `busker` argument one size up: nothing about it is threatening, it is simply interesting. The widest ordinary radius in act I. At the kerb, and solid at 24px: a thing children cross a road to reach rather than a thing standing in one. |
+| `ice_cream_van` | RECURRING | 2 | The `busker` argument one size up: nothing about it is threatening, it is simply interesting. The widest ordinary radius in act I. At the kerb, and solid at 24px: a thing children cross a road to reach rather than a thing standing in one. A **wall** by passability — 189px of charging disc leaves no lane of a sidewalk free — so the street it is on is one she walks the far side of. |
 | `reversing_lorry` **`hard_fail`** | RECURRING | 3 | Act I's second lethal thing, teaching the opposite lesson to the cyclist. That one comes *at* you and the answer is to get off the pavement; this one is **stationary and the danger is behind it**, so the answer is not to walk into the gap it is backing into — which you have to look at the world to know. The beeper is the telegraph. It stands `AGAINST_THE_BUILDING`, turned to face out of the frontage, solid at 28px inside the 46 that ends the day. |
 | `charging_dog` **`hard_fail`** | RECURRING (`AHEAD_OF_PLAYER` on `RUN_TAUGHT_DAY`, `MAP` after) | `RUN_TAUGHT_DAY` | **The one thing running is the answer to**, and the day the run is taught. Sited 0.5s of closing outside the view (`offscreen_notice`), it spends `telegraph_time` 4.5s visibly closing at the stand-off, then chases at 130px/s for `Tuning.PURSUIT_TIME` — the further siting needs the longer telegraph so walking away still loses inside the row's own budget. Its 150px field is **wider than the stand-off** — a narrower one is a field the pursuer is never inside, so the warning would emit nothing at her and the `!` over her head would never go up; `validate_pursuit` refuses that. `max_per_day` 3, because a street with three of them turns the run button from an answer into a second walk speed. It trots off at 110px/s rather than blinking out: a dog that gives up in front of her and is then not there says the chase was never real. No `last_day`: it recurs after `RUN_TAUGHT_DAY`, but only that one day sites it on her exact heading — past it, `spawn_mode_on()` answers `MAP` and the row is placed on a tile and met by routing into it, the way `alley_robbery` is, rather than sited by the director — see "Where an event happens" above. **It does not stop being director-sited, either.** Past `RUN_TAUGHT_DAY` a `MAP` placement waits for her — `pursues_within_after_first_day` 130px, inside its own 150px `outer_radius` — rather than announcing itself the moment it streams in, and `EventDirector` now and then still sends the day-3 shape itself — off her heading, already noticing her, no tip, `Tuning.CHARGING_DOG_SPRINKLE_CHANCE` of the days it is eligible — so the lesson's dog and the later dogs are one animal, and the guarantee plus the tip are the whole of the difference. See "Where an event happens" and `EventDef.pursues_within_on()`. |
 | `chatting_mother` | RECURRING | 1 | Another mother with a pram, paced along eight tiles of pavement like `homeless_yeller`. Her ambient field is person-scale (intensity 4.5, near a passer-by's 4.2) and tight (56/70px — the inner radius sits just outside her capture, which the catalogue's own check requires), so a normal pass costs a normal close pass. Entering `detain_radius` (48px, three quarters of the pavement band, so neither lane of her own pavement walks past her while the far pavement still does) of an instance that has not chatted yet locks the player's movement input for `detain_seconds` (5s) — the one mechanic in the catalogue that takes the controls away rather than costing a meter; the existing idle rules price the stop, so nothing new prices the time. While the conversation runs and the baby is **awake** it adds a flat `Tuning.CHAT_EXCITEMENT` (25) over the whole capture; **asleep** it adds nothing, gated on the baby's own state read from `EventInstance.baby_awake` rather than scaled through `SLEEPING_SENSITIVITY` — a *pure* time loss means exactly zero, not a smaller number. One conversation per instance: she is then spent as a detainer and departs like a `dog_walker`. |

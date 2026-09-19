@@ -376,6 +376,17 @@ item below for as long as looking takes.
   how many walkers pile up at it. **And do cars flow past a van or a café on the pavement without
   hesitating?** Record is `DECISIONS.md`, M156; the burst is
   `evidence/m156-crowd-turns-2026-09-19/`.
+- **Walk day 1 along the tinted kerbs and look at both sides of every street.** Four rows are
+  walls by passability now — the café tables, the market stall, the roadworks and the ice cream
+  van — so none of them stands on the sidewalk the route is drawn down, and they are drawn to the
+  far side of that same street. Day 1's own side carries the dog walker, the parked van, the
+  shouting man and a playground. Three questions a rig cannot answer. **Does the walked side read
+  as a street** with the things she cannot pass taken off it? **Is the far side visible enough to
+  be the answer** — a wall across the road is only a route decision if she can see it before she
+  commits to the side she is on. And **does the shouting man read as something to time** rather
+  than as a thing in the way: he stays on the route because his beat reaches the crossing at the
+  junction, so the answer to him is to walk on while he paces away, or to cross where his beat
+  ends. `tools/run.sh --seed 4242 --day 1`, layer 5 for the routes and layer 4 for the readout.
 
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 

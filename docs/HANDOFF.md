@@ -289,9 +289,6 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
   M136's build stamp, M124's skip flag and M129's flock and probe re-run; each has its record
   in `DECISIONS.md` and its played questions in `REVIEW.md`. `git tag --list 'v*'` says what
   the site serves.
-- **One milestone is in flight, in its own worktree on its own draft pull request**: M129's
-  wall reading — a row nobody can walk past is a wall and stands across the street from the
-  route. Its entry in `TODO.md` is the brief.
 - **Two requests from [PLAYTEST-80](playtests/PLAYTEST-80.md) are filed and deliberately
   unstarted**, because the player asked for them to wait for a session of their own: M161, the
   game pauses when it loses focus and a rig can say not to, and M162, a game can be resumed.
@@ -311,14 +308,14 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
   `REVIEW.md` items; the felt half of playtest 73, whether the lag still *feels* the same, is
   still the player's. `?debug=1&seed=N` answers on the live page and the readout's columns fit
   a phone (`DECISIONS.md`, M138).
-- **M129, a path through the city never has to cost, has its four rules and the leaf blower's
-  two-part field built** (`DECISIONS.md`, M129, the four rules; M129, the leaf blower is a wall
-  to walk past and a busker to stay near). The probe finds a zero-cost line on three routes in
-  five; what still breaks the rest, and which placement paths the rules never see, is the
-  unstarted item under M129 in `TODO.md`, to brief once the wall reading has merged since both
-  edit the scheduler. The busker's street-side spill (`DECISIONS.md`, M128) is
-  read against these rules: with a line on the far pavement, a spill onto one side is a price,
-  not a wall.
+- **M129, a path through the city never has to cost, has its four rules, the leaf blower's
+  two-part field and the wall reading built** (`DECISIONS.md`, M129, the four rules; M129, the
+  leaf blower is a wall to walk past and a busker to stay near; M129, a wall is also what
+  cannot be walked past). The probe finds a zero-cost line on nearly nine routes in ten; what
+  still breaks the rest, and which placement paths the rules never see, is the unstarted item
+  under M129 in `TODO.md`. The busker's street-side spill (`DECISIONS.md`, M128) is read
+  against these rules: with a line on the far pavement, a spill onto one side is a price, not
+  a wall.
 - **M137, the contact is whoever she hands the note to and the trap comes to her**, is
   specified and unbuilt: the robber spawns off screen, already pursuing, at the handoff instead
   of standing beside one seeded yeller from dawn.
