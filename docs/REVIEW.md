@@ -113,9 +113,10 @@ item below for as long as looking takes.
   (`Tuning.ROUTE_KERB_TINT_ALPHA`): **is it invisible, too obvious and on the nose, or somewhere
   between that guides without being read as a hint?** And where a costly thing stands on the
   route with its amber caret up, does the yellow curbstone read as part of the warning? Record
-  is `DECISIONS.md`, M145, the route's curbs. Since M150 the tint follows the tree's own pavement rather than the whole street: **is
-  the tint on one pavement only where the route walks one, and is it the one the purple
-  route line (`5`) runs along?** Record is `DECISIONS.md`, M150.
+  is `DECISIONS.md`, M145, the route's curbs. The tint marks the whole street, both curb
+  lines from intersection to intersection: **is any street tinted on one side only or for part of
+  its length, and does a street the route merely crosses stay plain?** The purple route line (`5`)
+  still runs along the one sidewalk the route walks. Record is `DECISIONS.md`, M170.
 - **Turn on `5` on seed 2128084176, day 1, and follow every purple line with your eyes.** The
   tree grows on a graph with no carriageway cell but the junctions' and none of the main
   road's, and the doorstep connector is drawn along the street now rather than as a straight
