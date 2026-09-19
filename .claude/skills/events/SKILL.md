@@ -80,8 +80,10 @@ was not merely hard, it was arithmetic: six lethal rows capped at three to five,
 145–380px, cannot tile anything.
 
 The exemption is exactly the `WALL` role, by construction: `_copies_of` offers a wall zero copies of
-any tile inside the corridor, so a lethal placement carrying that role is off the routes or it does
-not exist. `EventScheduler._keeps_its_field_clear` is the one place that decides. **The telegraph
+any tile a route actually runs along (`Corridor.carries_a_route`, the cell grain rather than the
+street's), so a lethal placement carrying that role is off the routes or it does not exist. The far
+sidewalk of a route's own street is not ground a route runs along and is legal for a wall; what
+keeps a wide one off it is the width rule, not this. `EventScheduler._keeps_its_field_clear` is the one place that decides. **The telegraph
 contract is untouched by this** — that one is about a single event's own geometry.
 
 **A pursuer is the third exemption, for the same reason as a wall: it has no place to be kept

@@ -564,8 +564,8 @@ from the doorstep to the calm areas still worth reaching.
 
 | kind of row | role | where it may go |
 | --- | --- | --- |
-| lethal (`hard_fail`), or a walk-through cost of `WALL_WORTH_OF_COST` or more | **wall** | never inside the corridor; `EVENT_WALL_RIM_WEIGHT` toward a turning off it |
-| a row that leaves no line past it along a sidewalk it may stand on (`cafe_tables`, `construction`, `market_stall`, `homeless_yeller`, `ice_cream_van`, and every wide row that was already one) | **wall** | the same |
+| lethal (`hard_fail`), or a walk-through cost of `WALL_WORTH_OF_COST` or more | **wall** | never on ground a route runs along; `EVENT_WALL_RIM_WEIGHT` toward a turning off the corridor |
+| a row that leaves no line past it along a sidewalk it may stand on (`cafe_tables`, `construction`, `market_stall`, `homeless_yeller`, `ice_cream_van`, and every wide row that was already one) | **wall** | the same, which includes the far sidewalk of a route's own street |
 | everything else placed on a tile | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor |
 | a `ONE_SHOT` | **set piece** | one placement at *each* site of a covering set; one of them happens |
 | `AMBIENT`, `AHEAD_OF_PLAYER`, a scar, a park spoiler, `EventDef.scenery` (`pigeon_flock`) | **none** | wherever its own rule says |
@@ -587,9 +587,19 @@ for a yeller does not widen one.
 Two things about the mechanism rather than the table. It is **the same weighting the precinct
 uses** — a tile is offered to the roll several times over — so every spacing rule downstream keeps
 working unchanged and nothing can refuse a placement. And **exactly one of these is a rule rather
-than a weight**: a wall is never inside the corridor. That one can be absolute because the rest of
-the city stays available to it, so it cannot starve a row of ground; everything else is a weight for
-exactly the reason it could.
+than a weight**: a wall never stands on ground a route runs along. That one can be absolute because
+the rest of the city stays available to it, so it cannot starve a row of ground; everything else is
+a weight for exactly the reason it could.
+
+**And that rule is asked per sidewalk while the weights are asked per street**, which is the one
+place the corridor's two grains differ on purpose. A price is stated over a street because a player
+may be anywhere across it; where a thing may *stand* is narrower, and a branch runs along one
+sidewalk of a street rather than down the middle of it — so the far side of a route's own street is
+ground no route walks, and a wall may stand there. *(PLAYTEST-77: "the market stall should appear on
+the other side of the street where for some reason no event was chosen".)* It is not where a wall is
+*aimed*: `EVENT_WALL_RIM_WEIGHT` and `WALL_DEEP_WEIGHT` are still read off the street's own depth,
+so the far sidewalk carries the weight of ordinary far ground and the rim is still the preference.
+`Corridor.carries_a_route` is the question, the same one the kerb tint asks.
 
 The role weighting moves *where* the budget is spent and never how much of it there is: the density
 placed per day is unaffected by whether the weight is live, and so is the count of lethal rows —

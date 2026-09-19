@@ -2871,11 +2871,17 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 ## The two halves of `EventScheduler._role_for`, checked in one pass over the days because each of
 ## them costs a whole `build_day` and the suite is already the slowest thing in this project.
 ##
-## **A lethal event is a wall, and a wall is never inside the corridor.** *(`docs/CITY.md`: "hard
-## and lethal blockers form the paths — they are the walls… the route is what is left between
-## them.")* This is the one absolute in `_copies_of` and it is what the milestone can most easily
-## get wrong: a lethal row on the route she is being guided down is not a wall in the wrong place,
-## it is the guidance pointing at the thing it exists to point away from.
+## **A lethal event is a wall, and a wall never stands on ground a route runs along.**
+## *(`docs/CITY.md`: "hard and lethal blockers form the paths — they are the walls… the route is
+## what is left between them.")* This is the one absolute in `_copies_of` and it is what the
+## milestone can most easily get wrong: a lethal row on the route she is being guided down is not a
+## wall in the wrong place, it is the guidance pointing at the thing it exists to point away from.
+##
+## **Asked per sidewalk, which is why the far side of a route's own street is counted separately
+## below rather than treated as a failure.** A branch runs along one sidewalk of a street, so the
+## other one is ground no route walks and is where a wall belongs — *"the market stall should appear
+## on the other side of the street"*. `corridor.depth()` cannot tell those two apart, so the
+## assertion asks `carries_a_route()` and the count is what shows the distinction is live.
 ##
 ## **Friction is aimed at the route**, which is the other half of the same sentence: *"benign
 ## blockers go on the route… to make it more challenging."* That one is a **weight** and is
@@ -2919,6 +2925,7 @@ const _A_JUNCTION_BOXES_HALF_WIDTH := Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0
 func _test_the_day_is_placed_by_role(t) -> void:
 	var map := CityGenerator.generate(4242)
 	var walls := 0
+	var walls_across_the_street := 0
 	var friction_on_the_route := 0
 	var friction := 0
 	var narrow_on_the_route := 0
@@ -2954,8 +2961,11 @@ func _test_the_day_is_placed_by_role(t) -> void:
 						or EventScheduler._takes_a_whole_sidewalk(plan.def),
 						"day %d: '%s' is a wall because it is lethal, very costly, or leaves no"
 						% [day, plan.def.id] + " line past it on a sidewalk")
-				t.check(away > 0, "day %d: the wall '%s' at %s is off the corridor"
+				t.check(not corridor.carries_a_route(tile),
+						"day %d: the wall '%s' at %s stands on no ground a route runs along"
 						% [day, plan.def.id, TelemetryLog.tile(tile)])
+				if away == 0:
+					walls_across_the_street += 1
 				placed[plan.def.hard_fail] += 1
 				if away >= 2:
 					deep[plan.def.hard_fail] += 1
@@ -2972,6 +2982,13 @@ func _test_the_day_is_placed_by_role(t) -> void:
 						narrow_on_the_route += 1
 	# A sample with no walls in it would pass every assertion above and mean nothing.
 	t.check(walls > 20, "the days sampled place walls at all (%d)" % walls)
+	# And a sample where no wall ever landed across the street from a route would satisfy the
+	# per-sidewalk assertion above with nothing but ordinary off-corridor ground under it — the
+	# refusal would read the same whether it was stated per street or per sidewalk. *"The market
+	# stall should appear on the other side of the street where for some reason no event was
+	# chosen"* is the placement that had to become possible, so it is counted.
+	t.check(walls_across_the_street > 0,
+			"and some of them stand on a route street's far sidewalk (%d)" % walls_across_the_street)
 	t.check(friction > 0, "and friction at all (%d)" % friction)
 	t.check(narrow > 50, "and enough of it narrow enough to stand beside a crossing (%d)" % narrow)
 	var share := float(friction_on_the_route) / maxf(1.0, float(friction))

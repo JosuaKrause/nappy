@@ -1035,11 +1035,24 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary) ->
 
 ## How many more times a tile is offered to the roll because of what the day is placing there.
 ##
-## Zero means the tile is not offered at all, and there is exactly one case of it — **a wall is
-## never inside the corridor.** Every other preference here is a weight, because a weight cannot
-## starve a row of ground and a filter can. What makes this one safe to state absolutely is that
-## the rest of the city stays available to it: a wall wants its own band, it settles for anywhere
-## else off the routes, and only the routes themselves are refused.
+## Zero means the tile is not offered at all, and there is exactly one case of it — **a wall never
+## stands on ground a route runs along.** Every other preference here is a weight, because a weight
+## cannot starve a row of ground and a filter can. What makes this one safe to state absolutely is
+## that the rest of the city stays available to it: a wall wants its own band, it settles for
+## anywhere else off the routes, and only the routes themselves are refused.
+##
+## **The refusal is per sidewalk and the rest of the band is per street**, which is the one place
+## those two grains differ on purpose. `corridor.depth()` answers a street tile for its whole
+## street, because what a *price* is stated over is ground the player may be anywhere across; where
+## a thing may **stand** is the narrower question, and a branch runs along one sidewalk of a street
+## rather than down the middle of it. So `carries_a_route()` is what closes the ground, and the
+## sidewalk **across the street from a route** is legal ground for a wall at the weight of ordinary
+## far ground — *"the market stall should appear on the other side of the street where for some
+## reason no event was chosen"* (PLAYTEST-77). It is not the *preferred* ground: the rim weight and
+## the deep weight below are still read off the street's own depth, so a wall is pulled to a turning
+## off the corridor and a lethal one further still, and the far sidewalk is simply no longer
+## refused. What keeps a wide row off it is the width rule — a wall across the street whose reach
+## spans the whole width is refused that ground by `_leaves_a_line_past_it` like anything else.
 ##
 ## **The wall band has a gradient in it, and the gradient is the instruction**: the ground off the
 ## paths ranges from *very costly* to *deadly*. Stray one turning and it is expensive; stray further
@@ -1070,7 +1083,7 @@ static func _copies_of(tile: Vector2i, corridor: Corridor, role: GameEnums.Block
 	var away := corridor.depth(tile)
 	match role:
 		GameEnums.BlockerRole.WALL:
-			if away == 0:
+			if corridor.carries_a_route(tile):
 				return 0
 			if lethal:
 				return Tuning.WALL_DEEP_WEIGHT if away >= 2 else 1
@@ -1220,9 +1233,10 @@ static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
 ## achieve — it is arithmetically impossible: six lethal rows capped in single figures, at radii of
 ## 145 to 380px, cannot tile anything.
 ##
-## **A `WALL` is exactly the off-corridor set and that is by construction, not by coincidence.**
-## `_copies_of` offers a wall zero copies of any tile inside the corridor, so a placement carrying
-## this role is off the routes or it does not exist. What keeps its clearance is everything else: a
+## **A `WALL` is exactly the off-route set and that is by construction, not by coincidence.**
+## `_copies_of` offers a wall zero copies of any tile a route actually runs along, so a placement
+## carrying this role is off the routes or it does not exist — including the far sidewalk of a
+## route's own street, which is ground no route walks. What keeps its clearance is everything else: a
 ## set piece, which is sited where every route passes, and anything the day placed for a reason that
 ## is not about the corridor at all.
 ##
@@ -1292,8 +1306,8 @@ static func _gap_between(a: Planned, b: Planned) -> float:
 ## **A wall is not outside it**, and that is the player's own decision on the one thing the four
 ## rules left open: *"option 2 is valid only if the influence at a junction is low enough that it
 ## can be taken without having to worry or plan around it."* A wall bounds the corridor — `_copies_of`
-## offers it zero copies of corridor ground, so it never stands on a route — but its field reaches
-## in from one street out, and being told to walk a corridor whose crossings are covered by what is
+## offers it zero copies of any ground a route runs along, so it never stands on a route — but its
+## field reaches in from the far sidewalk or one street out, and being told to walk a corridor whose crossings are covered by what is
 ## bounding it is being told to pay for the guidance. So a wall's own charging disc is asked the
 ## same three questions every other row's is, and the condition the player set on that is exactly
 ## `_line_reach_of()`: what a wall may still put over a junction is the part of its field under the

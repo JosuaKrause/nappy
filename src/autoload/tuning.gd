@@ -1451,9 +1451,12 @@ const EVENT_PLACEMENT_TRIES := 24
 # tile in a precinct is offered sixteen times.
 #
 # Neither is a filter, and the one filter there is lives in `EventScheduler._copies_of`: **a wall
-# is never inside the corridor.** That one can be absolute because the whole off-corridor city
-# remains available to it, so it cannot starve a row of ground — which is what a weight buys
-# everywhere else here and is why these are weights.
+# never stands on ground a route runs along.** That one can be absolute because the whole
+# off-corridor city remains available to it, so it cannot starve a row of ground — which is what a
+# weight buys everywhere else here and is why these are weights. It is stated per **sidewalk**, so
+# the far side of a route's own street is legal ground for a wall at the weight of ordinary far
+# ground; the weights below are still read off the street's depth, so the rim is still where a wall
+# is pulled.
 
 ## How many times over a tile on the day's routes is offered to a **friction** placement.
 ##

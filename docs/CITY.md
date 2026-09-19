@@ -660,9 +660,11 @@ of her.
 - **wall** — placed to *bound* the corridor. Hard blockers are always walls; lethal soft ones are
   walls for a day; so is anything very costly, **and so is anything that cannot be walked past
   where it stands** — a row whose body and charging disc leave no lane of a sidewalk free is a wall
-  at any price, because *"a wall is also when you physically cannot walk through"*. **Never inside
-  the corridor**, preferentially on the rim — the turnings off it, which is where a wall can be
-  seen from and therefore where it bounds anything (`EVENT_WALL_RIM_WEIGHT`).
+  at any price, because *"a wall is also when you physically cannot walk through"*. **Never on
+  ground a route runs along**, which is asked per sidewalk rather than per street, so the far side
+  of a route's own street is legal for one and the side the tree walks never is. Preferentially on
+  the rim — the turnings off the corridor, which is where a wall can be seen from and therefore
+  where it bounds anything (`EVENT_WALL_RIM_WEIGHT`).
 - **friction** — placed *inside* the corridor, on the route she is meant to take, to make the route
   worth thinking about. Costly blockers. A weight (`EVENT_CORRIDOR_WEIGHT`) rather than a rule,
   because a city whose off-route streets are empty reads as a set.
