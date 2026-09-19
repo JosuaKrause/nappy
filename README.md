@@ -66,17 +66,19 @@ back does not carry on for you; press continue when you are back. See `--no-focu
 the override a rig needs.
 
 The game opens on a title screen with the street outside your own front door running behind
-it, and a finished run goes back to it.
+it, and a finished run goes back to it. With a save on disk, pressing start brings up the day
+brief instead of starting the day outright.
 
 ## Saving
 
-The run is saved automatically — at dawn, when a day ends, when the window loses focus, and on
-quit — so closing the game and opening it again picks the run back up, paused, rather than losing
-it. There is no save button, no slot and no menu; a small symbol in the corner marks each write. A
-game closed in the middle of a day comes back at that day's dawn and costs a nerve, the same as
-losing the day outright; a game closed between days comes back at the next day's dawn for free.
-Holding restart, on the pause screen or the day summary, clears the save and starts over. See
-`docs/MECHANICS.md`, "Saving and resuming".
+The run is saved automatically — when a day starts being played, and when the day brief or the
+end-of-day message comes up — so closing the game and opening it again picks the run back up at
+the title, ready to continue rather than losing anything. There is no save button, no slot and no
+menu; a small symbol in the corner marks each write. A game closed in the middle of a day comes
+back at that day's dawn and costs a nerve, the same as losing the day outright; a game closed
+between days, or at the day brief before continuing past it, comes back at the same screen for
+free. Holding restart, on the pause screen or the day summary, clears the save and starts over.
+See `docs/MECHANICS.md`, "Saving and resuming".
 
 ## Dev flags
 
