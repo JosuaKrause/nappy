@@ -29,7 +29,12 @@ three seconds of cat is not a place — and it may not obstruct.
 
 **The role is not a decision.** `EventScheduler._role_for` reads it off the def — lethal is a
 **wall** and goes off the day's corridor, a one-shot is a **set piece** and goes where every route
-touches it, anything else placed on a tile is **friction** and is weighted onto the corridor. A new
+touches it, anything else placed on a tile is **friction** and is weighted onto the corridor. One
+row's role is read off its **placement** instead and for a reason worth copying: what makes a
+**pacing** row passable is where its beat runs — one that passes a junction's crosswalk or a side
+route off the sidewalk can be left there, one that passes neither cannot — so `_a_pacing_beat_walls_a_sidewalk`
+answers it in the candidate loop, where the beat exists. A role that depends on geometry the def
+does not carry belongs there rather than in `_role_for`. A new
 row is placed against the day's routes without anybody writing a rule for it. If a new row wants a
 role its effect does not imply, that is a design conversation and a change to `_role_for`, not a
 field on the def.
@@ -80,8 +85,10 @@ was not merely hard, it was arithmetic: six lethal rows capped at three to five,
 145–380px, cannot tile anything.
 
 The exemption is exactly the `WALL` role, by construction: `_copies_of` offers a wall zero copies of
-any tile inside the corridor, so a lethal placement carrying that role is off the routes or it does
-not exist. `EventScheduler._keeps_its_field_clear` is the one place that decides. **The telegraph
+any tile a route actually runs along (`Corridor.carries_a_route`, the cell grain rather than the
+street's), so a lethal placement carrying that role is off the routes or it does not exist. The far
+sidewalk of a route's own street is not ground a route runs along and is legal for a wall; what
+keeps a wide one off it is the width rule, not this. `EventScheduler._keeps_its_field_clear` is the one place that decides. **The telegraph
 contract is untouched by this** — that one is about a single event's own geometry.
 
 **A pursuer is the third exemption, for the same reason as a wall: it has no place to be kept

@@ -333,10 +333,12 @@ open**, and the player walks over it. A zone is a shortcut as well as a destinat
 The crowd asks a different question. An agent travels the lattice, so it checks `is_street()`
 and diverts at the T-junction rather than strolling across the grass — the same move a
 barricade already produces, with the same good side effect: the street with nobody on it is the
-street that does not go through. The same predicate carries every other thing standing in a street:
-a held segment, a soft seal's pavements, and the tiles under any stationary solid body
-(`CityMap.obstructed_tiles`), so the crowd goes round a café the way it goes round a seal — see
-docs/MECHANICS.md, "The crowd goes round a seal".
+street that does not go through. What stands *in* a street for the day is a second question, and the
+two kinds are asked it at different distances: a car reads a held segment and any body on its own
+lane from the last junction, because its turn needs a junction box, while a walker walks into a
+street that is shut further along and turns where it meets the body itself — a soft seal's
+sidewalks, or the tiles whose middle a stationary solid body covers (`CityMap.obstructed_tiles`).
+See docs/MECHANICS.md, "The crowd goes round a seal".
 
 The zebras on a zone's edge are the case that looks obvious and is not. A crossing sits where a
 *pavement* lane meets a *carriageway*, so most of them still make sense — the pavement is there
@@ -658,9 +660,18 @@ a wall on a day it is rolled onto a street and nothing at all when the director 
 of her.
 
 - **wall** — placed to *bound* the corridor. Hard blockers are always walls; lethal soft ones are
-  walls for a day. **Never inside the corridor**, preferentially on the rim — the turnings off it,
-  which is where a wall can be seen from and therefore where it bounds anything
-  (`EVENT_WALL_RIM_WEIGHT`).
+  walls for a day; so is anything very costly, **and so is anything that cannot be walked past
+  where it stands** — a row whose body and charging disc leave no lane of a sidewalk free is a wall
+  at any price, because *"a wall is also when you physically cannot walk through"*. For a row that
+  **paces**, "where it stands" is its beat, so that last question is asked of the placement rather
+  than of the row: a beat she can leave, at a crossing or by a side route, is friction and a beat she
+  cannot is a wall. **Never on
+  ground a route runs along**, which is asked per sidewalk rather than per street, so the far side
+  of a route's own street is legal for one and the side the tree walks never is. Preferentially on
+  the **rim**, which is where a wall can be seen from and therefore where it bounds anything
+  (`EVENT_WALL_RIM_WEIGHT`), and which is two kinds of ground: a turning off the corridor, and the
+  far side of the street the route is already on. A lethal wall is pulled past both
+  (`WALL_DEEP_WEIGHT`).
 - **friction** — placed *inside* the corridor, on the route she is meant to take, to make the route
   worth thinking about. Costly blockers. A weight (`EVENT_CORRIDOR_WEIGHT`) rather than a rule,
   because a city whose off-route streets are empty reads as a set.
@@ -803,7 +814,7 @@ covers a whole crossing loses most of the corridor; a row narrower than a juncti
 width loses none of it. `tests/test_events.gd` asserts both halves — the corridor's overall share of
 the friction and, separately, the undiminished share of the rows no crossing rule can refuse.
 
-### No single standing row takes a route street's whole width
+### Nothing takes the sidewalk a route is walked along
 
 **A street is walkable frontage to frontage, so the answer to a van is the other side of it** — and
 a row whose reach spans the whole width has taken the answer away with the question. That is the
@@ -811,34 +822,66 @@ player's own framing: *"all obstacles should be routable around by eg crossing t
 the street, which in turn means the other side of the street must be open enough so we can walk on
 it unimpeded."*
 
+**And the side that has to stay open is the one the route is drawn down**, which is the same
+sentence one grain finer: *"on the side of the street where the path was chosen only obstacles that
+can be bypassed should be possible."* A branch runs along one sidewalk of a street — the growth
+graph has no mid-block carriageway in it — and the kerb tint marks that sidewalk, so a row closing
+it has taken the line the day is pointing at even where the street as a whole is still walkable.
+The far side staying open is not an answer to that; it is the ground she would have to have been
+sent down instead.
+
 **The numbers make this shape rather than an unlucky roll.** An ordinary street is 192px kerb to
-kerb, and the loudest rows deny most of that from either pavement, so a wide row standing
-anywhere across one closes it.
-So a counted row standing on a route street is accepted only if it leaves a four-connected walk from
-one of that street's junctions to the other, over the street's own ground — both pavements, the
-carriageway between the kerbs left out, since a line may not cross there anyway. A row that cannot
-is refused that ground and rolls again, landing on a street it fits or off the corridor entirely.
+kerb and a sidewalk 64px of it, and the loudest rows deny more than either from wherever they
+stand. So a counted row is accepted only if a four-connected walk survives from one of the street's
+junctions to the other **along each sidewalk the tree runs down**, over that band's own tiles, with
+everything the morning has already put down standing too. A row that cannot is refused that ground
+and rolls again, landing where it fits or off the corridor entirely.
 
-**One row, by itself**, which is what separates this from the crossing rule above: two rows closing
-a street between them are a different shape and are answered where a pacing row's beat is.
+**Cumulative, like the crossing rule and for the same reason**: the band that breaks most often is
+closed by a pair rather than by one row, and a rule that only asked *does this row alone take it*
+would accept both of them. Checked before the row is accepted, never repaired after.
 
-**Only a street has a far side.** Where a route's cells stand on an alley, a park cut or a square
-there is no second pavement to cross to and no two ends to walk between, so the rule says nothing
-about that ground rather than inventing an answer for it. A **precinct** needs no special case: it
-is paved frontage to frontage with no carriageway in it, so its whole width is the walk this asks
-about.
+**Only a street has sidewalks.** Where a route's cells stand on an alley, a park cut or a square
+there is no band to walk along and no two ends to walk between, so the rule says nothing about that
+ground rather than inventing an answer for it. A **precinct** needs no special case: it is paved
+frontage to frontage with no carriageway in it, so a band of it is walked like any other.
 
-### A pacing row leaves the line open for part of its beat
+**And a pacing row is not a width.** A beat takes its ground for part of a loop, so what a walk past
+one needs is a phase rather than a lane, and its two rules are the next two sections. Counting a
+man's field here as though he stood still would refuse him the route's own sidewalk for the one
+reason a beat answers by itself.
+
+### A pacing row is passed by waiting, or left at a crossing
 
 **A man walking a footway and back is a timing problem rather than a routing one.** *"Time pass —
 don't route around them."* So the ground a pacing row denies is the ground its beat **never** leaves
 free — the intersection over the loop rather than the union — and a line that is clear at some phase
 of it can simply wait. That reading is the player's and it is what the whole cost rule is stated in.
 
-Which makes the beat's **open end** ground in its own right, and it is the only thing about a pacing
-row that can break a route: the intersection over a walk is far smaller than the disc, so a beat
-rarely closes a street by itself. What closes it is something else standing in the one end the
-yeller is away from.
+Which makes the beat's **open end** ground in its own right: the intersection over a walk is far
+smaller than the disc, so a beat rarely closes a street by itself. What closes it is something else
+standing in the one end the yeller is away from.
+
+**And a beat is left at a way out, which is the other half of being able to get past one.**
+*"If the yeller paces across a crosswalk then there is a way to avoid them. If they stay on the
+segment for the whole time with no side route then there is no way to avoid them."* A man whose
+field is wider than a sidewalk takes both of its lanes at every phase of his loop, so the way past
+him is never a lane. It is somewhere his beat passes that she can leave by, and the player named
+both kinds:
+
+- a **junction box**, where she steps onto the zebra while he is at the far end of his beat. It is
+  the only ground in the city a crosswalk is painted on, so *crosses a crosswalk* and *reaches a
+  junction* are the same question, and it is the crossing this design counts on anywhere else.
+- a **side route** — ground off the street opening off the sidewalk's own side: an alley mouth, a
+  park or square edge, a courtyard, a precinct opening. She leaves by it without crossing anything.
+  It is read off the tiles, two deep past the sidewalk band, so that a doorway notch is not a way
+  out and no flood fill runs inside the placement loop.
+
+So whether a pacing row is a wall is a fact about its **placement** — friction where the beat
+passes a way out, a wall where it passes neither, and the wall takes a wall's one rule with it and
+never stands on the sidewalk a route walks. The ordinary case is friction: the one pacing row in
+the catalogue paces a block's length, so its beat runs into a junction unless a closure, a calm
+zone's absorbed corridor or the map's own margin cuts it short.
 
 So **on a route street carrying a pacing row, the rows reaching that street are asked together**
 whether a walk from one of its junctions to the other survives. Both directions of the collision are
@@ -1497,25 +1540,23 @@ is loud, and the reason a park is quiet.
   the way it turned, and the step that would carry it into the seal is refused the way any illegal
   step is.
 
-- **And nobody is put somewhere they could never leave.** A junction whose every arm is shut —
-  held for the day, or soft-sealed a few tiles in — is a **pocket**: legal ground with no street out
-  of it. `CrowdPockets` floods the lanes each kind actually travels once per day, from the same
-  `held_segments` and `soft_sealed_tiles` the crowd already reads, and labels every connected piece
-  that reaches at most one junction. A placement — the morning's and every recycle after it —
-  refuses a spot inside one the way it refuses a spot with no room, because somebody put there walks
-  to one seal, turns, walks to the next, and does that until the day ends. **The two kinds get
-  different answers**, because a soft seal takes both pavement lanes and leaves the carriageway: a
-  junction soft-sealed all round is a pocket to a walker and open road to a car, and a precinct is
-  the same sentence the other way up. A sealed-off junction is therefore a junction with nobody on
-  it, which is the same thing an empty street already says about a closure: *the street with nobody
-  on it is the street that is shut*.
+- **And no car is put somewhere it could never leave.** A junction whose every arm is held for
+  the day is a **pocket**: carriageway with no street out of it. `CrowdPockets` floods the
+  carriageway once per day from the same `held_segments` the crowd already reads, and labels every
+  connected piece that reaches at most one junction. A car's placement — the morning's and every
+  recycle after it — refuses a spot inside one the way it refuses a spot with no room, because a
+  car cannot turn round against a barrier and one stopped nose-on holds its queue. **A walker has
+  no pocket.** It turns in a stride wherever it meets a barrier, so closed-off ground carries
+  walkers like any street: they walk each stub to the barrier on its end and come back, and a
+  closed street reads as closed by its barriers and its missing traffic, not by missing people.
 
 - **And whoever is sealed in leaves, at the first moment nobody is watching.** A seal that goes up
   under somebody already standing there is the one case a placement cannot prevent, so an agent in a
-  pocket is recycled like anybody who has left the field — but only once it is more than
+  pocket, which is only ever a car, is recycled like anybody who has left the field — but only
+  once it is more than
   `OUT_OF_SIGHT` from the camera, which is *nothing vanishes while you are looking at it* again. In
   view it stands exactly where the seal caught it — no step, no steering, no turn — so a sealed
-  crossing holds a few people standing rather than pacing between its seals. The distance
+  crossing holds a car or two standing rather than shunting between its seals. The distance
   is measured from `CrowdField.centre`, which is the player, and the field's own edge is twice as
   far out — so this is the only recycle that ever happens somewhere she could have been standing.
 

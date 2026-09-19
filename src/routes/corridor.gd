@@ -52,6 +52,14 @@ extends RefCounted
 ##
 ## `INSIDE` wins over `RIM` wherever a tile could be both, because the corridor is a *place she is
 ## meant to walk* and the rim is defined as what is beside it.
+##
+## **And one question is asked at the cell grain about a street tile after all**, which is not a
+## contradiction of the paragraph above but the other half of it: `carries_a_route()` answers
+## whether the tree runs along *this* sidewalk. A **price** is stated over a whole street because a
+## player may be anywhere across it; **where a thing may stand** is narrower, since a branch runs
+## along one sidewalk rather than down the middle. `depth()` is the first question and
+## `carries_a_route()` the second, and a caller that confuses them either prices two thirds of every
+## on-tree street wrong or refuses a wall the far side of the street it belongs on.
 
 ## The grid the tree this corridor answers for was grown on. `null` for an empty tree, which
 ## answers `AWAY` everywhere without needing a special case anywhere below.
@@ -132,6 +140,26 @@ func depth(tile: Vector2i) -> int:
 	if node < 0:
 		return DEEP
 	return _node_depth[node]
+
+## Whether the tree itself runs along this tile's **own cell** — the question `depth()` deliberately
+## does not answer for a street tile.
+##
+## `depth()` answers a street tile at the grain of its whole street, because a price is a fact about
+## ground a player may be anywhere across. **Where a thing may *stand* is a different question**: a
+## street's six tiles are a sidewalk cell, a road cell and a sidewalk cell, the growth graph refuses
+## the road cells between two junctions, and a branch therefore runs along *one* sidewalk of a
+## street rather than down the middle of it. So the sidewalk across the street from a route is
+## ground the route never touches, although the street it belongs to is the route's own — which is
+## exactly where a wall belongs and where the tint is not (`City._tint_the_route_kerbs`, which asks
+## `RouteTree.branches_on` for the same reason).
+##
+## It is the depth map read at the cell grain rather than a second structure: a node the tree
+## carries is a node at depth zero, by construction in `RouteTree.node_depths()`.
+func carries_a_route(tile: Vector2i) -> bool:
+	if not _grid:
+		return false
+	var node := _grid.node_at(tile)
+	return node >= 0 and _node_depth[node] == 0
 
 ## Whether a tile is on one of the streets that run **between two adjacent strands of the
 ## corridor** — the single street a player switches routes through.

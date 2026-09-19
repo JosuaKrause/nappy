@@ -1,5 +1,286 @@
 # Decisions
 
+## M161 — The game pauses when it loses focus, and a rig can say not to · built 2026-09-19
+
+*(2026-09-19, [PLAYTEST-80](playtests/PLAYTEST-80.md): "can we make the game pause on focus
+loss? and also an override to *not* stop the game or pause for agents trying to take a
+screenshot".)* Built by an agent on `feature/m161-focus-pause`.
+
+**What was built.** `main.gd`'s `_notification()` answers `NOTIFICATION_APPLICATION_FOCUS_OUT`
+(another application, window or browser tab takes focus) and `NOTIFICATION_APPLICATION_PAUSED`
+(a phone sends the app away) by calling `_pause_on_focus_lost()`, which opens the pause screen
+through the same `_pause.open()` the `pause` action uses — one pause, not a second kind. It
+does nothing on the title, on the day summary or the ending (one `DaySummary` node), while the
+pause screen is already open, or under `--start-escape`, where no pause screen is built.
+Getting focus back is not answered at all, so the player continues when they are back.
+
+**The override.** `DevFlags.no_focus_pause()` is true for `--no-focus-pause`, for `--screenshot`
+— a rig's window opens without focus and would otherwise capture the pause screen, so
+`tools/shot.sh` and every existing capture command work unchanged — and for `?nofocuspause=1`
+on a debug web build. It is gated behind `DevFlags.enabled()` like `--invincible`, so a release
+build's address bar cannot turn the pause off.
+
+**Choices made where the design was silent, open to overturn.**
+
+- **Unlike `Esc`, focus loss does not open over the day summary.** `Esc` there is the player
+  asking for a second screen; focus loss is not a choice, and the summary is already waiting
+  on the player. Playtest 80 decided this; the code comment carries the reasoning.
+- **`NOTIFICATION_WM_WINDOW_FOCUS_OUT` is not read.** It is the per-`Window` notification a
+  game with several windows of its own needs, and this one has a single window. **This rests
+  on the engine's documentation, not on a captured run**: the agent's sandbox never gave its
+  window focus, scripted or otherwise, so a real desktop focus change was not observed. The
+  tests drive `main.notification(...)` directly. The played check is in `REVIEW.md`.
+- **The flag's commit precedes the behaviour's**, the reverse of the entry's order, because
+  `main.gd`'s member initializer calls `DevFlags.no_focus_pause()` and the other order leaves a
+  commit that does not parse.
+
+**Verified with** `tools/check.sh`, `tools/test.sh main pause invincible`, `tools/lint.sh`,
+`tools/test_cli_help.sh`, and one `tools/shot.sh` still showing the day rather than the pause
+screen from an unfocused window.
+
+## M129 — A wall is also what cannot be walked past, and it stands across the street from the route · built 2026-09-19
+
+*(2026-09-15, [PLAYTEST-77](playtests/PLAYTEST-77.md): "on the side of the street where the path
+was chosen only obstacles that can be bypassed should be possible" — "the market stall should
+appear on the other side of the street" — "a wall is also when you physically cannot walk
+through". Offered a placement-only rule instead, the player chose the role reading: "that seems
+to be more thorough".)* Built by an agent on `feature/m129-wall-passability`; the probe at three
+states is `evidence/m129-wall-passability-2026-09-15/`, with a README saying which commit each
+was taken on.
+
+**What was wrong.** `EventScheduler._role_for` answered `WALL` only for a lethal row or one whose
+walk-through cost reaches `Tuning.WALL_WORTH_OF_COST` (35 of the meter). A market stall — a 28 px
+body denying 58 px of a 64 px sidewalk — was therefore *friction*, weighted onto the corridor four
+to one by `Tuning.EVENT_CORRIDOR_WEIGHT`, and the width rule only asked that *either* sidewalk of
+the street stayed walkable. So a stall could close the very sidewalk M150's kerb tint marks as
+the route.
+
+**The three changes.**
+
+1. **`_role_for` gains a passability clause.** A standing row is also a wall when its body plus
+   the ground it charges for (`_line_reach_of`) leave no line past it along a sidewalk it may
+   stand on — the far lane of a two-lane sidewalk, one tile out, the tile grain every other rule
+   here is measured in. The rows it catches, with what each denies of the 64 px and its
+   walk-through cost: `cafe_tables` 56 px, +6.1; `market_stall` 58 px, +8.5; `construction`
+   32 px of body alone, −26.1; `ice_cream_van` 189 px, +18.4. `delivery_van` (22 px) stays
+   friction, since a lane of its sidewalk is still free.
+2. **`_copies_of` reads the corridor per sidewalk.** `Corridor.carries_a_route(tile)` answers
+   whether the tree runs along *this* sidewalk, at the grain of M150's tint. A wall gets zero
+   copies there, so the far side of a route's own street is legal ground for one.
+3. **The width rule reads the sidewalk the route is walked along**, cumulatively with
+   everything already down. A street's two sidewalks are not four-connected to each other, so
+   the question was already *one band is open*, and the band it accepted could be the one no
+   route walks.
+
+**The two forks the player answered on the pull request (2026-09-19).**
+
+- **A wall across the street is common, not rare.** Asked whether the far sidewalk of a route's
+  own street should carry the baseline one copy, as first built, or the rim's four, the player
+  chose often. The costly half of the wall band takes `EVENT_WALL_RIM_WEIGHT` (4) at one street
+  out *or nearer*, so the rim has two members: a turning she might wrongly take, and the far
+  side of the street she is already on. The lethal half keeps `WALL_DEEP_WEIGHT` past the rim,
+  so nothing that ends the day is drawn to the other side of her street in particular. Seed
+  4242 over days 1/5/8/11/14, walls on a route street's far sidewalk: 7, then 31 with the
+  shouting man still a wall, then 21 once the second fork gave him back to the corridor.
+- **A pacing row is a wall only where its beat has no way out.** *"Yeller is something you can
+  time. It stays on the route"*, and: *"if the yeller paces across a crosswalk then there is a
+  way to avoid them. if they stay on the segment for the whole time with no side route then
+  there is no way to avoid them. distinguish those cases when deciding whether the yeller is a
+  wall."* So the clause splits. `_takes_a_whole_sidewalk`, the role's question, answers no for
+  a pacing row: `homeless_yeller` is friction and corridor-weighted.
+  `_a_pacing_beat_walls_a_sidewalk` is asked per candidate, where the beat exists, and a beat is
+  not a wall when its run passes a **junction box** — the only ground a crosswalk is painted
+  on — or a **side route**, ground off the street opening off the sidewalk's own side. A beat
+  that passes neither records `WALL` and is refused any tile a route runs along. Its pool was
+  built at friction's weights, because a role that depends on the beat cannot be known before
+  the tile is rolled; it takes the wall's refusal and friction's weighting, and `EVENTS.md` says
+  so. The width rule skips pacing rows entirely: counting his lens as a width would have
+  refused him the route's sidewalk for the one reason the player ruled out.
+
+**Rejected.**
+
+- *A placement-only rule*, leaving the role alone: offered, and the player chose the role
+  reading as the more thorough.
+- *The yeller as a wall by arithmetic.* A beat runs along a sidewalk and moves the row nowhere
+  across it, 170 px of charged ground over 64 px, and the discs at the beat's two ends still
+  overlap 112 px across, so no phase opens a lane. True, and beside the point the player made:
+  the way past a man walking a beat was never a lane.
+- *A flood fill for "does this side route lead anywhere".* It is the exact question, per
+  candidate inside the placement loop, hundreds of times a day. The side route is read two
+  tiles deep instead: one tile of walkable ground against a frontage is a doorway notch, and
+  everything that leads somewhere is a lot deep. It errs toward refusing, the conservative
+  side of a rule that only ever refuses ground.
+
+**Measured.** `tests/probes/m129_zero_cost_line.gd`, six seeds by one day per act, routes with
+a zero-cost line under the primary reading:
+
+| | before | the three changes | with the forks |
+| --- | ---: | ---: | ---: |
+| act I | 83.7% | 100.0% | 95.3% |
+| act II | 67.0% | 95.5% | 93.2% |
+| act III | 54.1% | 93.2% | 86.5% |
+| act IV | 25.0% | 75.0% | 70.8% |
+| all | 183 of 296 (61.8%) | 275 of 296 (92.9%) | 262 of 296 (88.5%) |
+
+Density does not move: 431 placed rows a day at every state. The 4.4 points between the last
+two columns are the shouting man back on the route, the price the player accepted with "it
+stays on the route": the probe prices a beat at the ground it never leaves free, which for a
+170 px field over a 64 px sidewalk is both lanes at the middle of the beat. He never breaks a
+route by himself — the shape named for a beat is no routes and one cut — but he stands in the
+blocked stretches of 25 of the 34 broken routes, behind `leaf_blower`'s 27 and ahead of
+`roadblock`'s 23. The side route changed no placement the primary reading can see: of 52 pacing
+placements in the suite's sample, 7 pass a side route and all 7 pass a junction as well.
+
+What still breaks a line is almost all one shape, the junction itself taken (32 routes, 40
+cuts), by rows no sidewalk rule reaches: `roadblock` on a carriageway and a wall's wide field
+reaching over a crossing from one street out. That is the item left under M129 in `TODO.md`,
+which placements the three rules never see.
+
+**The suite**, seed 4242 over days 1/5/8/11/14: friction on the corridor 42% to 37% against an
+untouched floor of 35%; paced route streets 19 to 23 against an untouched floor of 3; walls on
+a route street's far sidewalk 0 to 21; every one of 15 pacing placements on a walked sidewalk
+has a way out in its beat. **One floor moved and is open to overturn**: the narrow-friction
+share went 50% to 44% and its floor 0.45 to 0.40. Its docstring named the junction rule as the
+one rule that takes corridor ground from a row; there are three now, all biting on the corridor
+and nowhere else, so what the floor defends is that the four-to-one weight shows *through* all
+three. With the route-sidewalk rule switched off the same sample reads 47%.
+
+The look a rig cannot take — whether the walked side still reads as a street, whether the far
+side is visible early enough to be the answer, whether the shouting man reads as something to
+time — is an entry in `REVIEW.md`.
+
+## M156 — The crowd only turns at what physically stops it · built 2026-09-19
+
+*(2026-09-19, [PLAYTEST-78](playtests/PLAYTEST-78.md): "cars shouldn't avoid it. I noticed cars
+turning around even though the obstacle is on the sidewalk. only things like a fallen tree (which
+blocks the whole street) should prevent cars from entering … pedestrians should only avoid the area
+if they cannot reach it physically. right now they give up if there is an event at all when they
+should only give up if they touch an impassable wall"; and, on the 2026-09-12 complaint it
+explains, "the pacing back and forth I complained about was because walkers never actually tried
+walking to the edge. they saw that a road section was closed of and never entered it. this
+shouldn't happen. they should still go into the section until they cannot continue. this should
+also happen from inside the path since right now we have offshoots that are clear because nobody
+attempts to go in".)* Agent commits on `feature/m156-crowd-turns`, one per queue item; the burst
+is `evidence/m156-crowd-turns-2026-09-19/`, seed 4242 day 1 at a fallen tree's closure.
+
+**The measurement came first, and it named the cause.** `tests/probes/m156_car_turns.gd` re-asks
+`CrowdAgent._cannot_go_on`'s clauses at the tile each car's lookahead stopped on and charges the
+answer to one of the day's placements; three seeds by three days, twenty seconds each.
+
+| car-frames turned by | before | after |
+|---|---:|---:|
+| a solid body | 24369 | 670 |
+| of which a body standing on a sidewalk | 24369 | 0 |
+| a held segment | 17220 | 15675 |
+
+Every car a body turned was turned by a body on a *sidewalk*, and none by one on its own lane.
+Seed 4242, day 1: a car in lane tile (101, 94) stopped by a `delivery_van` on (102, 94), the kerb
+lane of the sidewalk; `skip`, `moving_van` and `construction` the same way. The 670 left are a
+region wall's `roadblock` standing on the carriageway.
+
+**A body stands on the tiles whose middle it covers.** `GroundShape.tiles_under()` took every tile
+a body touched, so a van pinned to the kerb — 22px around a lane centre 16px from the kerb —
+overhung the road by six pixels and was handed a whole 32px lane. The middle is the rule because
+every lane is travelled down its own centre line, so a tile whose centre is clear still has a line
+down it; the change only ever removes tiles from the record, which is the safe direction. A
+fallen tree still takes all six lanes and the crash exactly its two carriageway lanes. Two guards
+came with it: the body's own centre tile is always in, or a small disc near a tile corner stands
+on nothing, and the rasteriser is exact for a diagonal axis. Rejected: filtering in
+`EventManager.obstructed_footprint()` with the rasteriser left alone — two answers to where a
+body stands — and "more than half the tile", the same number with no sentence behind it.
+
+**A hold is a car's warning and a body is a walker's, and the asymmetry is the manoeuvre.** A
+car's answer to a wall is an arc that needs a junction box, so it decides while the last junction
+is still ahead. A walker turns in a stride anywhere, so deciding early buys nothing and costs the
+city a street's length of sidewalk. `CrowdAgent._segment_is_shut()` answers for a car, and for a
+walker only at a region door it turns back from; hard-seal and region-wall bodies are recorded in
+`CityMap.obstructed_tiles` like any other; `_acts_on_a_barrier_within()` gives a car the whole
+lookahead and a walker the next tile. A walker that turns leaves, and `_turn_round()` commits the
+new heading for a stride, which is what keeps two walkers at one barrier from stacking or
+flickering. Rejected: keeping the hold for walkers and turning them later — a hold is a fact
+about a segment and can never say that a crash leaves its sidewalks open.
+
+**A walker picking an arm asks the city, not the day.** `_cannot_go_on` split into
+`_never_a_street_here()` — the map edge, the lattice, a precinct's paving to a car — and today's
+barriers; a walker's arm probe asks only the first, so a street sealed further along weighs like
+an open one from either end, offshoots of the route included, while a calm zone's park arm is
+still refused. A car keeps the whole predicate. Rejected: a weight instead of a gate, a number
+nobody can set from anything observable.
+
+**The walker pocket is gone and the car's stays.** `CrowdPockets` emptied a junction sealed on
+every side for both kinds, which answered the 2026-09-12 pacing; the player has since named the
+cause as the lookahead, and a walker there now walks each stub to its barrier and turns. Emptying
+the ground cost 48 of 144 junctions' worth of sidewalk on seed 4242 day 1. A car cannot turn
+round against a barrier, so its pocket stays.
+
+**Open to overturn, the agent's choices where the entry was silent.** A walker acts on a barrier
+when it is the next tile, the last moment the cached lookahead leaves room for. A soft seal still
+marks both lanes of its sidewalk where its body covers one, so it is the one place a walker is
+turned by slightly more than the body. `docs/ARCHITECTURE.md`'s line on `crowd_pockets.gd` was
+corrected outside the agent's fence because it would otherwise have shipped false.
+
+Whether closed-off streets and offshoots read as peopled, whether a turn at a barrier reads as a
+decision, and whether cars flow past a sidewalk obstacle are in `REVIEW.md`.
+## M155 — The crowd's reach comes in, and walkers step aside more politely · built 2026-09-19
+
+*(2026-09-19, [PLAYTEST-78](playtests/PLAYTEST-78.md): "it is easier to go to a completely closed
+off area (eg walking via the roadway) to calm the baby down than it is to just walk back and
+forth on the regular sidewalk on a path … the noise from the crowd itself is too high. we need
+to nerf the crowd influence a little bit." Offered a shorter reach, a lower intensity, a wider
+step-aside or fewer walkers: "I like the shorter reach idea. main road can stay as expensive as
+before. we can also let the walkers step aside more politely".)* Three agent commits on
+`feature/m155-crowd-reach`; the probe at three states is
+`evidence/m155-crowd-reach-2026-09-19/`, with a README saying which tree each was taken on.
+
+**The probe.** `tests/probes/m117_decay.gd`, three seeds, net points per second while walking
+(negative is given back):
+
+| Leg | before | louder cars, rejected | built |
+|---|---:|---:|---:|
+| Quiet sidewalk, day 1 | −3.95 | −4.20 | **−4.73** |
+| Quiet sidewalk, day 9 | −5.77 | −5.73 | −5.88 |
+| Main road, day 1 | +5.71 | +5.70 | **+5.69** |
+| Main road, day 9 | −0.13 | −0.12 | **+1.36** |
+| Precinct, day 1 | −6.53 | −8.13 | −8.13 |
+| Alley, day 1 | −0.10 | −0.45 | −0.45 |
+| Calm | −10.60 | −10.60 | −10.60 |
+
+**The reach.** `PEDESTRIAN_OUTER_RADIUS` 55 → **30**, with `PEDESTRIAN_INTENSITY` (4.2) and
+`PEDESTRIAN_INNER_RADIUS` (22) untouched, so a close pass keeps its price and the middle of a
+sidewalk between walkers is nearly free. 40 and 35 were tried and gave back less (−4.62, −4.68);
+28 moved nothing further. The aim was four fifths of the empty street's 6.0; it reaches 79%.
+The precinct and the alley move with the radius and were not held: nobody asked for them to be.
+
+**The main road's price is held by the main road's own ground.** The shorter reach takes the
+walkers on the spine's sidewalks out of what the spine costs, and the player's instruction was
+that it stays as expensive. The agent's first lever was `CAR_INTENSITY` 5.4 → 7.7, which held
+day 1 exactly and was rejected in review: a car is on every street, so it took back half of
+what the radius had bought the quiet sidewalk and made every ordinary crossing dearer.
+`EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` 0.35 → **0.02** replaced it, the one number that is
+only true of main-road tiles. Day 1 is the day held, because `tests/test_crowd.gd`'s arterial
+floor, ceiling and crossing cost are stated against it; the worst-of-eight crossing reads 27.8
+of the meter against 26.2 before, under the half-meter line, since the shorter reach lightens
+what a crossing walks through by about what the ground stops giving back.
+**The orchestrator's choice, shown to the player with the table above and accepted** *(2026-09-19: "numbers look good")*: one multiplier
+serves the whole run, so day 9's main road goes from giving a sliver back to costing 1.36 a
+second — the spine in the emptied acts is dearer than it was, which *"as expensive as before"*
+does not ask for. A multiplier per act, or more walkers on the spine's own sidewalks, would hold
+both days; neither was built.
+
+**The step-aside.** `CROWD_YIELD_LATERAL` 22 → **30**. At 22 it equalled the walker's
+full-intensity core, so it only fired for a pass already inside it, and the ordinary pass — her
+on the midline of a two-lane sidewalk, a walker holding a lane 24 px away — never made anyone
+move. 30 catches that pass and stays short of the 48 px between a sidewalk's two lanes, so the
+far lane is left alone and a sidewalk does not part in front of her. `BUMP_STEP_ASIDE` (32 px,
+how far a walker steps) already clears it. On a throwaway rig driving `Crowd._make_way` on a
+generated city, three seeds: closest approach on a head-on midline pass 24 → 32 px, walker
+noise over the approach 0.73 → 0.00 points, contacts none either way.
+
+Whether pacing a quiet sidewalk now reads as recovery, and whether walkers stepping aside read
+as polite rather than as fleeing, are in `REVIEW.md`.
+
+---
+
 ## M157 — Peregrine may be the father · built 2026-09-19
 
 *(2026-09-19: "we need to create a second set of player graphics for a male protagonist ... he
