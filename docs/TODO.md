@@ -348,34 +348,6 @@ alike.
 
 ---
 
-## M161 — The game pauses when it loses focus, and a rig can say not to · asked for 2026-09-19
-
-> "can we make the game pause on focus loss? and also an override to *not* stop the game or
-> pause for agents trying to take a screenshot"
-
-[PLAYTEST-80](playtests/PLAYTEST-80.md). The **godot**, **cli-tools** and **verify** rules
-govern. Nothing reads a focus notification today, so a day runs on behind another window.
-
-- [ ] **Losing focus opens the pause screen.** On `NOTIFICATION_APPLICATION_FOCUS_OUT` (the
-      window losing focus, a browser tab going to the background) and
-      `NOTIFICATION_APPLICATION_PAUSED` (a phone sending the app away), a day that is being
-      played pauses exactly as the `pause` action does — the same screen, the same continue
-      button. It does nothing on the title, the day summary, the ending or an open pause
-      screen, and getting focus back does not resume: the player continues when they are
-      back. Both choices are recorded in the playtest file as open to overturn. `main.gd`'s
-      node keeps processing while the tree is paused, so it is the one that hears it.
-- [ ] **`--no-focus-pause` turns it off, and a screenshot run implies it.** A dev flag in
-      `DevFlags`, listed wherever the flags are listed (`README.md`'s "Dev flags", the flag's
-      own help text, `docs/TELEMETRY.md` where a rig's flags are described) and rejected like
-      any other when misspelled. `--screenshot` implies it, since a rig's window opens without
-      focus and would otherwise capture the pause screen — so `tools/shot.sh` and every
-      existing capture command keep working unchanged — and the flag by itself covers
-      `tools/run.sh` runs an agent drives without a screenshot. `?nofocuspause=1` on a debug
-      web build if the other flags have URL forms there. The **verify** skill says, where it
-      describes windowed runs, that a rig never pauses on focus and why.
-
----
-
 ## M162 — A game can be resumed · asked for 2026-09-19
 
 > "we need to be able to resume a previous game. saving should be implicit (on focus loss or
@@ -385,7 +357,7 @@ govern. Nothing reads a focus notification today, so a day runs on behind anothe
 > restart to clear the game"
 
 [PLAYTEST-80](playtests/PLAYTEST-80.md) and [PLAYTEST-82](playtests/PLAYTEST-82.md). It shares
-its trigger with M161, the game pauses when it loses focus, so it is built on top of M161. The
+its trigger with the focus-loss pause (`DECISIONS.md`, M161), so it is built on top of it. The
 **godot**, **cli-tools**, **cues**, **svg-art** and **verify** rules govern.
 
 **A save holds the run and the day, never the moment inside a day.** *Asked for "that exact

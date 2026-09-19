@@ -305,12 +305,11 @@ checks and worktrees can move independently of this file.
   reviewable or installed. The next deliverable remains four genuinely reviewable complete PNG
   figures, using a changed raster strategy and the corrected SVG as pose authority; do not reuse the
   rejected lower body or repeat the exhausted prompt.
-- **[PLAYTEST-80](playtests/PLAYTEST-80.md)'s two requests are a pair, built in order**: M161,
-  the game pauses when it loses focus and a rig can say not to, and on top of it M162, a game
-  can be resumed. M162's question is answered ([PLAYTEST-82](playtests/PLAYTEST-82.md)): a save
-  holds the run and the day, a game left in the middle of a day comes back at dawn one nerve
-  down, and an agent's run never reads or writes the save. Its `TODO.md` entry is the brief,
-  and it waits for M161 to merge since both edit `main.gd` and the dev flags.
+- **M162, a game can be resumed, is specified and ready for an agent.** Its question is
+  answered ([PLAYTEST-82](playtests/PLAYTEST-82.md)): a save holds the run and the day, a game
+  left in the middle of a day comes back at dawn one nerve down, and an agent's run never reads
+  or writes the save. Its `TODO.md` entry is the brief; it builds on the focus-loss pause
+  (`DECISIONS.md`, M161), whose one played question is in `REVIEW.md`.
 
 No PR is merged or put on auto-merge without explicit permission in the current session. New
 implementation or investigation uses fresh agents with self-contained briefs; do not resume the

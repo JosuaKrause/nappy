@@ -21,6 +21,12 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Click away from the game in the middle of a day**, on the desktop build, in the browser
+  (another tab, another window) and on the phone (the home button). Does the pause screen come
+  up every time, and never on the title, a day summary or an ending? The desktop case rests on
+  the engine's documentation rather than a captured run, since no rig's window ever holds
+  focus (`DECISIONS.md`, M161). And does staying paused after coming back read right, or
+  should returning resume the day?
 - **Compare both presentations at normal scale**, using seed 3 for the blue-overshirt father
   and seed 1 for the red-coat mother, then the same seeds with `--start-escape` for carrying.
   Walk and stop in all eight directions. Does each parent keep the same face, stature and

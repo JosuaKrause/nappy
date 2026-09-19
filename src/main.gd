@@ -1431,6 +1431,11 @@ func _unhandled_input(event: InputEvent) -> void:
 ## read as the game answering a question nobody asked. The title screen and an already-open pause
 ## are excluded for the same reason `_unhandled_input()` excludes them.
 ##
+## **Getting focus back does not resume the day.** The pause screen stays up until the player
+## continues, the way it does after Esc: somebody coming back to the window has not yet looked at
+## the street, and a day that restarts the instant the window is clicked spends their first second
+## for them.
+##
 ## `_no_focus_pause` is the override — see `DevFlags.no_focus_pause()` — so a rig's window, which
 ## usually opens with no focus to lose in the first place, is never handed a picture of this screen
 ## instead of the day it was sent to look at.
