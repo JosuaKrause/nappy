@@ -2807,6 +2807,96 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 			"and every one of those bodies was asked whether it stands in a tree (%d)"
 			% checked_trees)
 
+## **No solid body, alone or together, closes a walked sidewalk.** *(PLAYTEST-94, 2026-09-19: "I
+## still get hard walls on the side of the sidewalk that is on the path -- how can this be so hard
+## to do correctly?")* `tests/probes/m129_walked_sidewalk_walls.gd` measures the same question at
+## zero over a wider sample; this asks it of `EventScheduler.closes_a_walked_sidewalk_band`
+## directly, the one function both the probe and this test call, so neither can drift from what
+## the other means by *closed*. Every solid body that day stands — the candidate loop's own rows,
+## the seals, and the region wall's and doors' bodies, gathered the way
+## `_test_nothing_the_catalogue_places_stands_on_held_ground` already assembles a full day — is
+## checked cumulatively against every walked-sidewalk band, the way the width rule itself asks it.
+##
+## **Two seeds and three days, a quarter of the probe's own 24.** A (seed, day) here assembles the
+## same expensive unit that test already prices at the suite's own budget — a tree, a region plan,
+## closures, a seal plan and a `build_day` — so this asks one more question of it rather than
+## building a second assembly; the probe is where the wider sample already lives if this suite's
+## own finding ever needs a closer look.
+func _test_no_body_closes_a_walked_sidewalk(t) -> void:
+	const SEEDS := 2
+	const BASE_SEED := 271828
+	const DAYS := [1, 8, 13]
+	var bands_checked := 0
+	for i in SEEDS:
+		var map := CityGenerator.generate(BASE_SEED + i * 173)
+		for day in DAYS:
+			var state := CityState.new()
+			state.begin_day(map.block_plans, day)
+			map.repaint(state)
+			var tree := RouteTree.for_day(map, day)
+			var region_plan := RegionPlanner.plan_day(map, day, tree)
+			var closure_rng := RandomNumberGenerator.new()
+			closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
+			var closures := ClosurePlanner.plan_day(map, day, closure_rng, tree, region_plan)
+			map.close_streets(closures)
+
+			map.clear_day_holds()
+			for closure in closures:
+				map.hold_segment(closure.segment.key())
+			for segment in region_plan.walls:
+				map.hold_segment(segment.key())
+			for segment in region_plan.doors:
+				map.hold_segment(segment.key())
+			for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+				map.hold_segment(segment.key())
+
+			var boundary := {}
+			for segment in region_plan.walls:
+				boundary[segment.key()] = true
+			for segment in region_plan.doors:
+				boundary[segment.key()] = true
+			for rect in region_plan.alley_walls:
+				boundary[rect.position] = true
+			for rect in region_plan.alley_doors:
+				boundary[rect.position] = true
+			var seal_rng := RandomNumberGenerator.new()
+			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
+			var seals := SealPlanner.plan_day(map, day, tree, seal_rng, boundary, map.held_segments)
+
+			var consumed: Array[String] = []
+			var bodies: Array = []
+			for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
+				_add_a_physical_body(bodies, plan)
+			for plan in seals:
+				_add_a_physical_body(bodies, plan)
+			for plan in region_plan.wall_bodies:
+				_add_a_physical_body(bodies, plan)
+			for plan in region_plan.door_bodies:
+				_add_a_physical_body(bodies, plan)
+
+			var corridor := Corridor.of(tree)
+			var ground := {}
+			for entry: Array in EventScheduler._route_sidewalks(map, ground, corridor):
+				var segment: StreetNetwork.Segment = entry[0]
+				var band: Rect2i = entry[1]
+				bands_checked += 1
+				t.check(not EventScheduler.closes_a_walked_sidewalk_band(
+						map, band, segment.horizontal, bodies, map.closed_tiles),
+						"seed %d day %d: street %s's walked sidewalk keeps a lane she fits through"
+						% [map.seed_used, day, segment.key()])
+	t.check(bands_checked > 50,
+			"and the days sampled have walked-sidewalk bands to ask it of (%d)" % bands_checked)
+
+## `plan` as `[position.x, position.y, obstructs_radius]`, appended to `bodies` — or not, for the
+## same three exemptions the rule and its own probe make: a `checkpoint_hut`/`checkpoint_gate`
+## door body costs by design, `city_wide` and `scenery` rows have no ground to keep clear of.
+func _add_a_physical_body(bodies: Array, plan: EventScheduler.Planned) -> void:
+	if not plan.is_placed() or plan.def.obstructs_radius <= 0.0:
+		return
+	if plan.def.city_wide or plan.def.scenery or plan.def.id.begins_with("checkpoint"):
+		return
+	bodies.append(Vector3(plan.position.x, plan.position.y, plan.def.obstructs_radius))
+
 # ------------------------------------------------------- one picture per row ---
 # *(M37, playtest 07 finding 2: "not sure what that person was supposed to be".)* The vocabulary's
 # first row is that **the entity itself carries most of it**, and the catalogue had been quietly
@@ -2906,10 +2996,16 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 ## still the one to state a floor over, because it is the part the junction rule cannot touch and
 ## the part a reader would expect to be unaffected. What the floor defends is that the four-to-one
 ## corridor weight still shows through all three rules; it is not a claim that nothing diminishes
-## it. Measured over the days sampled here it stands at 44% with the three rules live and 47% with
-## the route-sidewalk rule switched off, which is where the floor is set from. The whole share keeps
-## its own floor as well, with room for the wide rows to be pushed further off as their reaches
-## move.
+## it. Measured over the days sampled here it stands at 40% with the three rules live, which is
+## where the floor is set from. The whole share keeps its own floor as well, with room for the wide
+## rows to be pushed further off as their reaches move.
+##
+## **Both floors moved once, and are open to overturn again.** `delivery_van` (and, once caught the
+## same way, `poster_crew`) left the friction pool entirely once `_closes_the_band_by_its_own_placement`
+## made them walls by physical fit rather than by cost — two silent, narrow rows that used to sit on
+## the corridor and no longer do, so both the whole share (35% to 32%) and the narrow one (44% to
+## 40%) lost the ground those two used to hold. Re-measure rather than trust either number if the
+## catalogue's `pavement_side`/`obstructs_radius` pairing moves again.
 ##
 ## An `AHEAD_OF_PLAYER` row is exempt from the first half and the exemption is the design rather
 ## than a hole: the charging dog is sited by `EventDirector` in front of wherever she turns out to
@@ -3002,10 +3098,10 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	t.check(friction > 0, "and friction at all (%d)" % friction)
 	t.check(narrow > 50, "and enough of it narrow enough to stand beside a crossing (%d)" % narrow)
 	var share := float(friction_on_the_route) / maxf(1.0, float(friction))
-	t.check(share > 0.35, "%d of %d costly rows are on the corridor" % [friction_on_the_route, friction])
+	t.check(share > 0.32, "%d of %d costly rows are on the corridor" % [friction_on_the_route, friction])
 	t.check(share < 0.9, "and the streets off it are not empty (%.0f%% on it)" % (share * 100.0))
 	var narrow_share := float(narrow_on_the_route) / maxf(1.0, float(narrow))
-	t.check(narrow_share > 0.40,
+	t.check(narrow_share > 0.38,
 			"and the corridor weight still shows through the three rules that can refuse a narrow "
 			+ "row (%d of %d narrow rows on the corridor)" % [narrow_on_the_route, narrow])
 
@@ -3066,6 +3162,19 @@ func _test_the_day_is_placed_by_role(t) -> void:
 ## than a hole: a beat takes its ground in time, so what a walk needs past one is a phase rather
 ## than a lane. `_test_a_pacing_row_on_the_routes_sidewalk_can_be_left` is its half of the same
 ## question, and this count would be the wrong instrument for it.
+##
+## **The catalogue currently has none left to check the cost clause against, and that is itself
+## the fact to assert rather than a vacuous sweep.** `_closes_the_band_by_its_own_placement`
+## (`src/events/event_scheduler.gd`) reads a solid, non-pacing sidewalk row's own numbers against
+## where it actually ends up standing — the kerb or the frontage lane's own tile centre for
+## `AT_THE_KERB`/`AGAINST_THE_BUILDING`, the exact middle of the 64px band for `ANY`
+## (`EventInstance._centred_on_the_pavement_band()`) — and every one of those three positions
+## leaves so little edge-to-edge gap that a body over 8px wide already denies the 28px she needs
+## (`delivery_van`'s own kerbed 22px leaves 26px; a centred `ANY` body needs only 4px of radius to
+## do the same). Nothing the catalogue draws is narrower than that, so every solid, non-pacing
+## sidewalk row is already a wall by this reading before the cost clause is ever asked — checked
+## below independently of `_role_for`, so a future row narrow enough to stay friction is caught
+## the moment one exists rather than assumed impossible.
 func _test_friction_on_a_sidewalk_can_be_walked_past(t) -> void:
 	var checked := 0
 	for day in [1, 8]:
@@ -3081,8 +3190,40 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t) -> void:
 					"day %d: '%s' is friction on a sidewalk and denies %.1fpx of it, so the far"
 					% [day, def.id, EventScheduler._line_reach_of(def)]
 					+ " lane (%.0fpx out) is still a line" % EventScheduler._THE_FAR_LANE)
-	t.check(checked >= 4,
-			"and the catalogue has rows on a sidewalk to ask it of (%d)" % checked)
+
+	var solid_on_a_sidewalk := 0
+	var band := float(Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE
+	for def in EventCatalogue.all():
+		if not def.placement.has(GameEnums.TileType.SIDEWALK) or def.paces or def.mobile:
+			continue
+		if def.obstructs_radius <= 0.0:
+			continue
+		# A `ONE_SHOT` is a set piece, not asked the friction-or-wall question at all
+		# (`EventScheduler._role_for` answers it before the cost or physical clause ever runs) —
+		# `burning_building` is `AGAINST_THE_BUILDING` and physically closes its own band exactly
+		# like a wall would, and is still placed at every site of its covering set on purpose.
+		if def.kind == GameEnums.EventKind.ONE_SHOT:
+			continue
+		solid_on_a_sidewalk += 1
+		var pos: float
+		match def.pavement_side:
+			EventDef.Pavement.AT_THE_KERB:
+				pos = Tuning.TILE_SIZE * 0.5
+			EventDef.Pavement.AGAINST_THE_BUILDING:
+				pos = band - Tuning.TILE_SIZE * 0.5
+			_:
+				pos = band * 0.5
+		var gap := maxf(pos - def.obstructs_radius, band - (pos + def.obstructs_radius))
+		var her_clearance := 2.0 * Tuning.PLAYER_BODY_RADIUS
+		if gap < her_clearance:
+			t.check(EventScheduler._role_for(def, 8) == GameEnums.BlockerRole.WALL,
+					"'%s' leaves %.1fpx where she needs %.0f (obstructs %.1fpx, %s), so it has to"
+					% [def.id, gap, her_clearance, def.obstructs_radius,
+					EventDef.Pavement.keys()[def.pavement_side]]
+					+ " be a wall rather than friction")
+	t.check(solid_on_a_sidewalk >= 4,
+			"and the catalogue has solid, non-pacing sidewalk rows to ask this of (%d)"
+			% solid_on_a_sidewalk)
 
 ## **A man pacing the route's own sidewalk can always be left at a crossing, and one who cannot be
 ## left is never on it.** *(PLAYTEST-77, 2026-09-19: "if the yeller paces across a crosswalk then
