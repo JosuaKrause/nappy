@@ -376,6 +376,41 @@ govern. Nothing reads a focus notification today, so a day runs on behind anothe
 
 ---
 
+## M161 — A game can be resumed · asked for 2026-09-19
+
+> "we need to be able to resume a previous game. saving should be implicit (on focus loss or
+> game quit) and it should bring you back to that exact state but paused. in the browser it
+> should be handled via local storage so refreshing or opening again the page doesn't lose
+> progress" — "there is no need for manual save state management since you can just hold
+> restart to clear the game"
+
+[PLAYTEST-79](playtests/PLAYTEST-79.md), which lists what a run holds in memory today and what
+inside a day is not a function of the seed. It shares its trigger with M160, the game pauses
+when it loses focus, so M160 is built first or with it.
+
+- [ ] **Ask what *exact* has to cover before building.** The run (`GameState`) and the day's
+      plan (seed and day) come back exactly for free. The moment inside a day is her, the two
+      meters, the clock, every event instance's phase and position, pursuits, the errand and
+      the crowd. Put to the player, with the cost of each: everything including each walker
+      and car; everything but the crowd, which is re-seeded around her as at dawn; or the run
+      and the day only, resuming at that day's dawn. The player's words are *"that exact
+      state"*, so anything less is theirs to agree to.
+- [ ] **Saving is implicit: on focus loss and on quit**, never by a button. One save, no
+      slots. A save names the build that wrote it, and a save a newer build cannot read is
+      dropped for a fresh title screen rather than half-loaded.
+- [ ] **Opening the game resumes it, paused.** With a save present the game comes up on the
+      saved moment behind the pause screen; continue goes on, and the held restart — already
+      on the pause screen and the day summary — clears the save and starts over. A finished
+      run (either ending) leaves no save.
+- [ ] **The browser keeps it across a refresh and a reopened page.** `user://` on a web build
+      is the browser's IndexedDB, which persists; confirm on the deployed page that a refresh
+      and a closed tab both come back, and that a new release (files under a directory named
+      for the tag) still finds the save of the one before.
+- [ ] **A rig never resumes and never saves**, the way it never pauses on focus: a dev-flagged
+      run (`--screenshot`, `--seed`, `--day` and the rest) starts what it was told to start.
+
+---
+
 ## M155 — The crowd's reach comes in, and walkers step aside more politely · asked for 2026-09-19
 
 > "it is easier to go to a completely closed off area (eg walking via the roadway) to calm the
