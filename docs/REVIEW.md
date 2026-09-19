@@ -566,13 +566,3 @@ item below for as long as looking takes.
   became a wall: a walker or a car that reaches the boundary pavement turns or is clamped onto the
   map's last row, and the one body allowed out is a car on the spine by the tunnel or the bridge.
   Whether that reads as a city edge or as bodies bunching against glass is a played question.
-
-## Father leg-drawing preview
-
-**M167, the father's legs read as legs, has an uninstalled woman's-leg trial in
-[PR #234](https://github.com/JosuaKrause/nappy/pull/234).** Open the clean eight-direction
-sheet and native/6× A/C/B/C animation in its description. Do E/W and SE/SW now look like
-natural legs, with a convincing jacket-to-pants join and a consistent step rhythm?
-The woman's accepted side and diagonal B frames supply the legs and shoes; the father's
-upper body, N/S, NE/NW and all A/C frames are preserved. This is a visual review, not a
-request to install it. The first refinement is rejected in PLAYTEST-92.
