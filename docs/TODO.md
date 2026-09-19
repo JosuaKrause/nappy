@@ -297,59 +297,32 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ## M167 — The father's legs read as legs · asked for 2026-09-19
 
-[PLAYTEST-90](playtests/PLAYTEST-90.md) accepts the straight-contact candidate for provisional
-use. Prepare an early
-review attempt that makes the legs read more naturally, retaining the accepted positions and
-protected frames. The contact baseline is installed on main; this drawing refinement requires
-separate visual approval. The contact history is recorded under M160 in `DECISIONS.md`.
+The provisional contact baseline is installed on main. This separate drawing refinement
+remains uninstalled; its source choices and rejected attempts are recorded under M160 and
+M167 in `DECISIONS.md`. Both pushing and carrying require clean PNG sheets and GIFs, per
+[PLAYTEST-97](playtests/PLAYTEST-97.md).
 
-[PLAYTEST-93](playtests/PLAYTEST-93.md) identifies the donors: "take the ones from the corresponding
-final image". [PLAYTEST-95](playtests/PLAYTEST-95.md) specifies the correction: "it's the wrong
-part but maybe do the crop in the larger version and then let the image generation normalize
-it?". Crop the correct E/W and SE/SW B leg artwork from those larger final woman images,
-assemble at high resolution and use image generation to normalize the join and proportions
-before native registration. Preserve the father identity, accepted contact ownership, N/S,
-NE/NW and every A/C frame. Publish the clean sheet and native/6× GIFs in PR #234; leave the
-new result uninstalled for visual judgment. The rejected literal-copy crop and the reason for
-generated normalization are recorded under M167, final-woman-leg crop rejected, in `DECISIONS.md`.
+[PLAYTEST-98](playtests/PLAYTEST-98.md) accepts the left/right result in
+`color-match-2026-09-19/final/`: preserve those pixels exactly, along with N/S, NE/NW and
+every A/C frame. The uncrossed diagonal source is `uncrossed-southeast-2026-09-19/`.
 
-[PLAYTEST-96](playtests/PLAYTEST-96.md) identifies the source-selection error: "you took the
-wrong leg picture for the cropping -_- it's the one where the wrong leg is in front".
-Select the actual opposite contact from the final woman artwork before another crop or
-normalization. Trace the foreground thigh through its knee to the trailing shoe; the current
-normalized candidate is rejected, and its B filename is not evidence of the correct pose.
-The final carrying family's side B supplies the visible foreground trailing thigh. Its
-front-diagonal A is too frontal for the southeast correction. Establish the diagonal's
-projection from the torso and original A hips, with the uncrossed constraint below.
-Preserve the father's pushing upper-body identity and landmarks.
-Crop father identity references
-above the pelvis so his wrong original contact cannot steer normalization back to itself.
+[PLAYTEST-100](playtests/PLAYTEST-100.md) accepts the uncrossed diagonal legs and pose:
+"but the legs and pose is good now". Preserve the leg geometry, alpha and registration
+below the extended jacket hem exactly.
+The only geometry exception is the player's explicit jacket-hem edit: move its edge pixels
+down to match A/C, keeping the edge from the new frame and using the existing frame's body
+texture. Use the corresponding diagonal C body with the approved new B hem and legs; do not
+move the legs or pose. Remaining color work is a deterministic material-aware match.
+The player clarifies: "the pants are too dark and the jacket is too bright". Lighten the
+trousers and darken the jacket separately; uniform whole-picture darkening is wrong.
 
-[PLAYTEST-97](playtests/PLAYTEST-97.md) requests a deterministic color transformation of the
-correct-contact candidate to match the other images, with geometry retained. Embed the PNG
-sheet as well as the GIF in the PR. The carrying clarification is "you didn't update the legs
-at all": apply the corresponding leg corrections to carrying too, preserving the father,
-baby and carrying upper-body pose. Publish both corrected states as PNG sheets and GIFs.
-The pushing southeast legs also read south-facing in PLAYTEST-97. Correct their actual
-three-quarter stride before reusing them for carrying; a front-diagonal filename alone
-does not establish the projection. Preserve the accepted trailing/advancing leg ownership.
-
-[PLAYTEST-98](playtests/PLAYTEST-98.md) accepts the current left/right result: "left right is
-correct now at least". Preserve the color-matched E/W pixels exactly. The same review rejects
-restoring the old thin diagonal legs as this PR's solution. Remaining drawing work is SE/SW
-for pushing and carrying, with genuine three-quarter projection and natural trouser anatomy.
-
-[PLAYTEST-99](playtests/PLAYTEST-99.md) rejects the new diagonal's crossed legs. Draw an
-uncrossed stride with each thigh descending on its own side of the pelvis. Foreground overlap
-must not become an X-shaped crossing or exchange the legs' lateral tracks. The earlier
-screen-right-hip-to-screen-left-shoe construction is not a valid pose target. Keep the
-accepted E/W result and all unaffected frames unchanged; do not restore the old thin diagonal.
-
-- [ ] **Match the diagonal legs to the rest of the family.** Preserve the accepted E/W artwork.
-      Keep the near leg trailing and far leg advancing, with a continuous hip–knee–shoe chain
-      and natural knees. SE/SW uses its own
-      three-quarter donor rather than a projected profile stride. Compare the complete loop
-      for consistent step length, not only the B pose.
+- [ ] **Match the diagonal colors and hem to the rest of the family.** Use the existing
+      matching-state C body texture, with the new B hem edge moved down to A/C height.
+      Carrying must copy the complete existing upper body and full-size baby: the generated
+      baby is too short. Preserve its original native scale instead of resizing it separately.
+      Fill with the existing jacket texture and match the edge's jacket colors. Retain
+      the new legs and lighten their trousers separately. Preserve every leg pixel's
+      geometry below the extended hem. Keep E/W and every other frame byte-identical.
 - [ ] **Publish an early attempt and ask for feedback.** Use the clean eight-direction
       A/C/B/C sheet and native/6× GIFs at 190ms per phase from [PLAYTEST-87](playtests/PLAYTEST-87.md).
       Push and embed commit-pinned links before asking: the CLI cannot show local images.

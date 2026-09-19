@@ -1,5 +1,11 @@
 # Uncrossed southeast contact review
 
+[PLAYTEST-100](../../../../playtests/PLAYTEST-100.md) accepts these legs and this pose.
+The remaining correction uses the existing matching frame's body texture, restoring the
+full-size carrying baby, with this B frame's hem edge moved down to match A/C. Lighten the
+too-dark trousers and match the hem's jacket colors independently. Preserve the new leg
+geometry and alpha below the extended hem exactly.
+
 This uninstalled candidate addresses [PLAYTEST-99](../../../../playtests/PLAYTEST-99.md).
 Only southeast B and its southwest mirror change in pushing and carrying. Every other frame,
 including the accepted E/W pixels and color correction, is byte-identical to the

@@ -39,6 +39,10 @@ table in the B-contact evidence is not a valid anatomical guide.
 The [uncrossed southeast recipe](b-contact/uncrossed-southeast-2026-09-19/README.md) keeps
 those hips fixed, with the near leg trailing on the left and the far leg advancing down-right.
 Its review sheets and GIFs cover pushing and carrying while preserving the accepted side frames.
+PLAYTEST-100 accepts those legs and the pose. The
+[body texture, hem and color recipe](b-contact/whole-figure-color-2026-09-19/README.md) restores
+the existing upper body and full-size baby, lowers the new frame's hem edge, and lightens its
+trousers. The accepted leg geometry below the extended hem and all other frames stay unchanged.
 
 `source/` preserves Godot's 1×, 3× and 8× rasterization of every SVG.
 `inputs/*_source-{1,3,8}x.png` assembles them in columns front, back, side, front diagonal,

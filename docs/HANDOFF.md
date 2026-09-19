@@ -291,31 +291,26 @@ checks and worktrees can move independently of this file.
   paired measurements show an 84.7–87.1% reduction in query medians, while whole-frame tails remain.
   Phone measurements and CPU attribution remain open. PLAYTEST-86 is its performance clarification.
   Fetch the live PR and inspect its evidence before continuing.
-- **PR #234 — M167, the father's legs read as legs** prepares an uninstalled E/W and SE/SW B
-  refinement using the corresponding final woman images. [PLAYTEST-95](playtests/PLAYTEST-95.md)
-  calls for the correct crop at high resolution followed by image-generation normalization.
-  [PLAYTEST-97](playtests/PLAYTEST-97.md) requires a deterministic color match to the existing
-  frames, a genuine southeast stride, and the corresponding leg corrections applied to
-  carrying too. Embed clean PNG sheets and GIFs for both states directly in the PR. Preserve
-  the father's identity, baby and carrying upper-body pose, and all unaffected frames.
-  [PLAYTEST-98](playtests/PLAYTEST-98.md) accepts the E/W result in
-  `color-match-2026-09-19/final/`: preserve those pixels exactly. SE/SW remains unresolved;
-  restoring the old thin legs is rejected as a solution. Replace only the diagonal B artwork
-  with a natural three-quarter stride in both states, preserving all other frames.
-  [PLAYTEST-99](playtests/PLAYTEST-99.md) rejects the crossed legs in
-  `natural-southeast-2026-09-19/`. Correct the diagonal to an uncrossed natural stride:
-  each leg stays on its own side of the pelvis. The old screen-right-hip-to-left-shoe
-  X diagram is not valid pose guidance. Preserve E/W and all other frames.
-  `uncrossed-southeast-2026-09-19/` contains the replacement candidate: the near screen-left
-  leg trails on its own track and the far screen-right leg advances down-right. Review its
-  pushing/carrying PNGs and GIFs for natural diagonal motion and upper-body stability.
+- **PR #234 — M167, the father's legs read as legs** prepares an uninstalled pushing and
+  carrying refinement. [PLAYTEST-98](playtests/PLAYTEST-98.md) accepts the E/W result in
+  `color-match-2026-09-19/final/`: preserve those pixels exactly.
+  [PLAYTEST-100](playtests/PLAYTEST-100.md) accepts the legs and pose in
+  `uncrossed-southeast-2026-09-19/`. Preserve the new leg geometry, registration and alpha
+  below the extended jacket hem. The pants are too dark and the jacket too bright. Match
+  those materials separately to A/C. The specified construction uses the matching existing
+  C frame's body texture and the new B frame's hem edge, moved down to A/C height. Fill with
+  existing jacket texture; retain the new legs and lighten their trousers. Carrying copies
+  the full existing upper body and baby at its original scale, correcting the too-short baby.
+  `whole-figure-color-2026-09-19/` contains that construction, its comparison sheets and
+  reproducible recipe. Review the PNGs and GIFs for both states; approved E/W and all other
+  frames are unchanged.
   The provisional contact baseline
   on main remains in use. Push plausible attempts early and welcome repeated feedback;
   the CLI cannot display local images. The next branch synchronization requires explicit permission.
 
 Number ownership remains distinct: PLAYTEST-84 and PLAYTEST-85 are the escape/save records
 on main, PLAYTEST-86 belongs to the performance work, and PLAYTEST-87 belongs to the father
-sheet instructions. PLAYTEST-88 through PLAYTEST-93 and PLAYTEST-95 through PLAYTEST-99 are
+sheet instructions. PLAYTEST-88 through PLAYTEST-93 and PLAYTEST-95 through PLAYTEST-100 are
 separate father follow-ups. PLAYTEST-94 belongs to the independent escape/save feedback.
 
 No merge, auto-merge, rebase, merge from main or branch deletion is authorized without explicit permission in the current

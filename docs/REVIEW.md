@@ -566,9 +566,10 @@ item below for as long as looking takes.
   became a wall: a walker or a car that reaches the boundary pavement turns or is clamped onto the
   map's last row, and the one body allowed out is a car on the spine by the tunnel or the bridge.
   Whether that reads as a city edge or as bodies bunching against glass is a played question.
-- **M167, uncrossed southeast walking legs.** PR #234 embeds the
-  [pushing sheet](evidence/male-player-2026-09-19/b-contact/uncrossed-southeast-2026-09-19/generated/pushing/pushing-spritesheet-6x.png)
-  and [carrying sheet](evidence/male-player-2026-09-19/b-contact/uncrossed-southeast-2026-09-19/generated/carrying/carrying-spritesheet-6x.png)
-  with their GIFs. Check SE/SW B for a natural stride on separate leg tracks, a consistent
-  diagonal angle, and stable upper-body proportions through A/C/B/C. Approved E/W and all
-  other frames remain unchanged. These are uninstalled whole-figure diagonal candidates.
+- **M167, matching body texture, jacket hem and trouser colors.** PR #234 embeds the
+  [pushing sheet](evidence/male-player-2026-09-19/b-contact/whole-figure-color-2026-09-19/generated/pushing/pushing-spritesheet-6x.png)
+  and [carrying sheet](evidence/male-player-2026-09-19/b-contact/whole-figure-color-2026-09-19/generated/carrying/carrying-spritesheet-6x.png)
+  with their GIFs. Check the restored existing upper-body texture and full-size carrying baby,
+  the new hem edge at the other frames' jacket height, and the lighter trousers through the
+  loop. Legs and pose are already approved; their geometry below the hem is unchanged.
+  Approved E/W and all other frames are unchanged. The candidate remains uninstalled.
