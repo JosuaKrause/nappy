@@ -78,10 +78,22 @@ One overlap with an earlier instruction, put to the player the same day. On 2026
 asked that pedestrians and cars with nowhere to go — *"all four sides of the intersection are
 blocked off"* — *"should just despawn (or never spawn in the first place) right now they're
 accumulating in one place and move back and forth or worth flicker"*, which is what
-`CrowdPockets` builds. The fourth statement is unambiguous for a closed-off *section*, two
-junctions of street or more, which `CrowdPockets` leaves populated by design. For the single
-shut-in junction of the 2026-09-12 instruction the two sentences pull apart — a walker there
-has one stub to pace, which is the flicker the earlier sentence is about — and the recommended
-reading, that it stays empty, waits on the player's answer. Filed as M156 in `TODO.md`.
+`CrowdPockets` builds: a junction with all four arms held, and the stubs of street sealed in
+with it, holds nobody. Asked whether that ground stays empty, the player named the cause of the
+2026-09-12 complaint instead, and the cause is the same one as everything above:
+
+> "what single shut in junction are you referring to? the pacing back and forth I complained
+> about was because walkers never actually tried walking to the edge. they saw that a road
+> section was closed of and never entered it. this shouldn't happen. they should still go into
+> the section until they cannot continue. this should also happen from inside the path since
+> right now we have offshoots that are clear because nobody attempts to go in"
+
+So the flicker was walkers turning at the junction's mouth on every arm because each arm read
+as shut from `LOOKAHEAD_TILES` off, not walkers with too little ground. A walker that enters
+an arm and walks to the barrier has the whole of each stub to walk, and the emptying of a
+walker's pocket answered a symptom of the lookahead. And the same holds from the route's side:
+a side street off the day's route that is sealed further along stands empty today because no
+walker on the route turns into it, and it is to have walkers walking in as far as they can go.
+Filed as M156 in `TODO.md`.
 
 ---

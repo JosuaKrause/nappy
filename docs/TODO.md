@@ -416,11 +416,22 @@ street only a whole-width obstacle shuts is one the player cannot exploit either
       walked past. The turn is an about-face a walker can make anywhere; say what keeps two
       walkers turning at one barrier from stacking, since the 2026-09-12 complaint was walkers
       *"accumulating in one place and move back and forth or worth flicker"*.
-- [ ] **A closed-off section has walkers in it, and they keep walking.** Placement and
-      recycling put walkers on sealed-in ground of two junctions or more the way they do on
-      any street, and nobody stands still there. Whether the single shut-in junction
-      `CrowdPockets` empties stays empty is put to the player in PLAYTEST-78 and is not built
-      either way until answered.
+- [ ] **A walker goes into a street that is closed further along, from either side.**
+      *(2026-09-19: "they saw that a road section was closed of and never entered it. this
+      shouldn't happen. they should still go into the section until they cannot continue.
+      this should also happen from inside the path since right now we have offshoots that are
+      clear because nobody attempts to go in".)* A walker choosing an arm at a junction gives
+      a street with a barrier somewhere along it the same weight as an open one, so a side
+      street off the day's route fills as far as its barrier and a walker arriving at the
+      barrier turns round and walks back out.
+- [ ] **Closed-off ground has walkers in it, and they keep walking.** Placement and recycling
+      put walkers on sealed-in ground the way they do on any street, and nobody stands still
+      there. The walker half of `CrowdPockets` — never placing a walker on ground no street
+      leads out of, and standing one still that is caught there — answered walkers pacing a
+      junction whose every arm they refused to enter; with the two items above a walker there
+      has each stub to walk to its end, so say whether any walker pocket is still needed and
+      remove what is not. A car's pocket stays: a car is kept out by what blocks the whole
+      roadway, which it cannot turn round against in a stub.
 
 ---
 
