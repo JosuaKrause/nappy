@@ -92,7 +92,8 @@ duration, so the editor's rewrite never survives an export either.
 
 **The game is published, and a push is a check while a tag is a release.**
 `https://nappy.josuakrause.com/` serves it. `.github/workflows/ci.yml` runs lint, check and the full
-suite as eight shards on every push to `main` and every pull request; `.github/workflows/deploy.yml`
+suite as eight shards on every push to `main` and every pull request, a new push to a pull
+request cancelling that pull request's older runs while a run on `main` is never cancelled; `.github/workflows/deploy.yml`
 fires on a `v*` tag and nothing else — verify, boot check, export, upload, publish, in that order.
 **The deploy does not run the suite again.** The `version tags` ruleset requires the `test` check
 on the commit a tag points at, so a tag on a red or untested commit cannot be pushed, and the
