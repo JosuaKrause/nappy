@@ -68,6 +68,16 @@ the override a rig needs.
 The game opens on a title screen with the street outside your own front door running behind
 it, and a finished run goes back to it.
 
+## Saving
+
+The run is saved automatically — at dawn, when a day ends, when the window loses focus, and on
+quit — so closing the game and opening it again picks the run back up, paused, rather than losing
+it. There is no save button, no slot and no menu; a small symbol in the corner marks each write. A
+game closed in the middle of a day comes back at that day's dawn and costs a nerve, the same as
+losing the day outright; a game closed between days comes back at the next day's dawn for free.
+Holding restart, on the pause screen or the day summary, clears the save and starts over. See
+`docs/MECHANICS.md`, "Saving and resuming".
+
 ## Dev flags
 
 Everything after `--` is passed to the game, gated behind a debug build so none of it does

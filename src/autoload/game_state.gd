@@ -224,6 +224,13 @@ func _end_run(which: GameEnums.Ending) -> void:
 		resistance_progress, Tuning.RESISTANCE_GOAL,
 		"done" if sabotage_done else "not done", format_clock(play_seconds)])
 	EventBus.run_ended.emit(which)
+	# A finished run leaves no save: there is nothing left to resume, and a
+	# save that named an ended run would have to be specially refused on load rather than simply
+	# not existing. Cleared here, at the one place a run ever actually ends, rather than only where
+	# a player presses on past the ending screen (`main._restart_run()` also clears it, for the
+	# held restart that abandons a run before it ends on its own) — a save must not survive between
+	# the two, however the process happens to close in that window.
+	GameSave.clear()
 
 ## Records a permanent mark, ignoring duplicates from the same spot.
 func add_scar(id: String, position: Vector2) -> void:

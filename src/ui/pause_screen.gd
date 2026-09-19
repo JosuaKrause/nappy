@@ -21,6 +21,10 @@ signal quit_requested()
 @onready var _root: Control = $Root
 @onready var _dim: ColorRect = $Root/Dim
 @onready var _standing: Label = $Root/Center/Lines/Standing
+## Empty and hidden except when `open()` is given a note — the one line this screen ever shows
+## that is not always the same words, see that function's own doc. Its own label rather than
+## folded into `_body`'s tutorial text, since the two have to hide independently of each other.
+@onready var _note: Label = $Root/Center/Lines/Note
 @onready var _body: Label = $Root/Center/Lines/Body
 ## Always empty. *(2026-09-06: "never should it be mentioned to the user".)* `space`/`esc`/`r`/`q`
 ## keep working, and the continue/restart pair already says what a tap does — there is nothing
@@ -120,8 +124,15 @@ func _show_where_the_run_stands() -> void:
 	_standing.text = "Day %d of %d     ·     %s" % [GameState.day, Tuning.RUN_LENGTH_DAYS,
 			"last nerve" if nerves == 1 else "%d nerves left" % nerves]
 
-func open() -> void:
+## `note` is shown above the body when non-empty — `main._ready()`'s own line for a game resumed
+## from a save whose day was under way, saying the day was lost to leaving it (see `GameSave` and
+## docs/MECHANICS.md, "Saving and resuming"). Empty (the default) for an ordinary `Esc` pause and
+## for a resumed run whose save cost nothing, so the note never appears unless there is something
+## to say about *why* this screen is the first thing seen rather than the day itself.
+func open(note: String = "") -> void:
 	visible = true
+	_note.text = note
+	_note.visible = note != ""
 	_show_where_the_run_stands()
 	_restart_button.cancel_hold()
 	# Before anything else touches the tree's own `paused` flag: `TouchControls._process()`'s own
@@ -289,9 +300,10 @@ func _acknowledge_and_resume() -> void:
 ## ended — a day gone wrong on a city you do not want to walk any more is exactly when somebody
 ## reaches for the pause — so the key belongs here and not only on the ending.
 ##
-## It is deliberately not confirmed. Everything a run holds is a fourteen-day walk with no save in
-## it, `R` is not next to `Esc`, and a confirmation on the one key that gets you out of a stuck game
-## is a second way to be stuck.
+## It is deliberately not confirmed. `R` clears the save the same way the held restart button does
+## (`GameSave.clear()`, wired through `main._restart_run()`) and starts the run over; `R` is not
+## next to `Esc`, and a confirmation on the one key that gets you out of a stuck game is a second
+## way to be stuck.
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
