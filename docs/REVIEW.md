@@ -325,16 +325,30 @@ item below for as long as looking takes.
 - **Walk the whole escape end to end** (`tools/run.sh --start-escape --seed 4242`; debug only).
   She starts at her own door with the baby asleep, goes down past the barricaded lobby to the
   service exit, and the same run continues into the city and ends at the tunnel or the bridge.
-  Inside: a mouse and a paced steam vent in the basement, a masked man on one stairwell and a
-  fire on the other, and the hallway windows flashing every 22 seconds
-  (`Tuning.FINALE_EXPLOSION_INTERVAL`) for `FINALE_WINDOW_FLASH_SECONDS` (0.12s). The question
-  only a walk answers: does the fire actually force the other shaft, or is walking back up the
-  obvious answer anyway? Record is `DECISIONS.md`, M102, the finale built behind the flag.
-  [PLAYTEST-84](playtests/PLAYTEST-84.md) walked it without answering that, and
-  [PLAYTEST-85](playtests/PLAYTEST-85.md) settles the steam: it does not move. What the walk
-  found instead — the masked man off the stairs, the basement's entry flight, steam that walks,
-  a spawn inside an obstacle — is M165, the escape after the corrected stairs, in `TODO.md`.
-  **Walk it again once M165 is built, not before.**
+
+  **What is in there now.** A masked man runs the whole height of one shaft over its own ground —
+  the level `F` columns and the `t/m` and `T/M` diagonals — and a fire stands on the inner cell of
+  a level approach in the other, closing one flight and leaving every door reachable. The basement
+  is entered down a one-tile front-facing stair (`stair_down.svg`) and holds a mouse and three
+  steam vents at fixed places on the corridor. A vent blows for `Tuning.FINALE_STEAM_BLOWS_FOR`
+  after its own notice and is gone until its period comes round, one period each out of
+  `FINALE_STEAM_PERIODS`, and while it blows it shuts the corridor outright. The hallway windows
+  flash every 22 seconds (`FINALE_EXPLOSION_INTERVAL`) for `FINALE_WINDOW_FLASH_SECONDS` (0.12s).
+
+  **Four questions only a walk answers.** Does the fire actually force the other shaft, or is
+  walking back up the obvious answer anyway? Is stepping through a door a *usable* answer to the
+  masked man — the shaft is one or two cells wide everywhere, so a door tile is 32px off his line
+  against the 28px that takes the baby, and whether that is enough time to reach one is a question
+  about hands rather than about geometry. Does the basement read as a timing puzzle — a gap worth
+  waiting for — or as a queue of gates? And does the one-tile stair read as a stair at the scale it
+  is played at, given the player's *"at the very least"*?
+
+  Records are `DECISIONS.md`, M165, the escape after the corrected stairs, and M102, the finale
+  built behind the flag. A blowing vent is drawn as one 32px cloud in a corridor 64px wide: does
+  it read as shutting the whole passage, or as something to squeeze past?
+  [PLAYTEST-84](playtests/PLAYTEST-84.md) is the last walk of it, and
+  [PLAYTEST-85](playtests/PLAYTEST-85.md) is where the steam, the basement stair and the spawn
+  were settled in the player's own words.
 
 - **Stand at the service exit and choose** (`tools/run.sh --start-escape city --seed 4242` boots
   section two on its own). Two chains leave the door, one north to the tunnel and one south to

@@ -2190,6 +2190,31 @@ const FINALE_EXPLOSION_INTERVAL := 22.0
 ## frames"* at 60fps, taken as a span in seconds so it does not depend on the frame rate.
 const FINALE_WINDOW_FLASH_SECONDS := 0.12
 
+## The basement's steam vents, one entry per vent: how often each one blows, in seconds.
+##
+## *"Have multiple fixed locations with steam that fully block the path and have them turn off an
+## on in different intervals so it becomes a timing puzzle."* **The count is the length of this
+## list rather than a second constant**, so a vent without a period of its own is not a thing that
+## can be written down.
+##
+## **Three, and no two periods share a factor with each other**, which is the whole of what makes
+## the corridor a puzzle instead of a rhythm: 13, 16 and 19 half-seconds are pairwise coprime, so
+## the pattern the three of them make together only repeats after their product — 1976s, ten times
+## the whole sequence's own clock — and she never walks the same corridor twice. Three rather than more
+## because the basement's corridor is about forty tiles end to end and a vent closes it outright:
+## a fourth would make the walk a queue of gates rather than a route with waits in it.
+const FINALE_STEAM_PERIODS: Array[float] = [6.5, 8.0, 9.5]
+
+## How long one vent blows, in seconds, once its notice is over — the *on* half of the on/off
+## split, against the periods above.
+##
+## **Short against every period**, so every vent is off far more than it is on: with the row's own
+## notice ahead of it a cycle is 3.2s of something and 3.3–6.3s of nothing, and a gap she can walk
+## through is the thing she is waiting for. And short in its own right, because a vent closes a
+## corridor with no way round it: the pocket between two of them is only ever shut for as long as
+## the shorter of the two is blowing, which is this.
+const FINALE_STEAM_BLOWS_FOR := 2.0
+
 ## How many of each kind of danger the finale's own plan puts on one open chain street. *"Lots of
 ## lethal and dangerous events"*: a street is `BLOCK_SIZE` (8) tiles long, so one truck, one van
 ## and one pair of masked men on a street is roughly one lethal thing every two tiles of walking

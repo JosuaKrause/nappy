@@ -61,7 +61,6 @@ var _tile_set: TileSet
 var _ground: TileMapLayer
 var _backdrops: Node2D
 var _walls: Node2D
-var _structure: Node2D
 var _entities: Node2D
 ## Plain `StaticBody2D` blockers, one per non-walkable cell in a margin around the building's own
 ## footprint — the physical half of `InteriorMapPlan.is_walkable()`. A `TileMapLayer` only gives
@@ -106,10 +105,6 @@ func build() -> void:
 	_walls.name = "Walls"
 	_walls.z_index = 1
 	add_child(_walls)
-	_structure = Node2D.new()
-	_structure.name = "StairStructure"
-	_structure.z_index = 1
-	add_child(_structure)
 	_entities = Node2D.new()
 	_entities.name = "Entities"
 	_entities.z_index = 2
@@ -398,10 +393,16 @@ const NOWHERE := Vector2i(-999999, -999999)
 func waypoint(id: String) -> Vector2i:
 	return _plan.waypoints.get(id, NOWHERE)
 
-## The fire-safe interior landings of one shaft. Each intermediate door has two `F` cells below
-## it; the second is two tiles from the door, so the fire's body closes the connecting flight
-## without covering the corridor transition itself. The top and lobby landings are excluded.
-func turn_landings(part_id: String) -> Array[Vector2i]:
+## The inner cell of each intermediate floor's level approach, in one shaft — the second of the two
+## level `F` cells below a `D`, two tiles from the door. Named for what it is: **the grammar has no
+## half-landing between floors and no cell of kind `LANDING` in a shaft at all**, so anything
+## sited here is on a floor's own approach, one cell further in than the door.
+##
+## Which is exactly what the fire wants: two tiles from the door, its body closes the flight the
+## approach leads onto without covering the corridor transition itself, so the way past it is
+## through that floor's door rather than back up the stairs. The top and lobby approaches are
+## excluded, since neither has a flight above it to close.
+func inner_floor_approaches(part_id: String) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
 	for landing_id in ["landing_second", "landing_first"]:
 		var first: Vector2i = waypoint("%s:%s" % [part_id, landing_id])
@@ -427,6 +428,21 @@ func stairwell_tiles(part_id: String) -> Array[Vector2i]:
 			found.append(tile)
 	return found
 
+## One shaft's own walk, its lobby landing to its top landing, tile by tile. A shaft is a corridor
+## with no branches too — the level `F` columns and the `t/m` and `T/M` diagonals are the only
+## ground in the grammar — so its shortest walk *is* the staircase, and anything that has to travel
+## the shaft travels it over cells she could stand on rather than across the solid `c`/`C`/`b`
+## sides and the background between the flights.
+##
+## The doors are dead ends off it: each `D` cell's only walkable neighbours are the level approach
+## below it, so a shortest walk never stands on one.
+func stairwell_walk(part_id: String) -> Array[Vector2i]:
+	var bottom := waypoint("%s:landing_lobby" % part_id)
+	var top := waypoint(part_id)
+	if bottom == NOWHERE or top == NOWHERE:
+		return []
+	return _shortest_walk(bottom, top)
+
 ## The basement's corridor, entry to exit, tile by tile. The corridor has no branches, so its
 ## shortest walk *is* the corridor, and anything sited a fraction of the way along it stands
 ## somewhere she has to pass rather than somewhere she might.
@@ -439,11 +455,10 @@ func basement_walk() -> Array[Vector2i]:
 ## Breadth-first over walkable tiles, unwound into the path itself — `from` first, `to` last, or
 ## empty when there is no walk between them.
 ##
-## **Eight-connected, not four.** A flight is a run of diagonal steps — the kit's tile drops one
-## tile height over one tile width — so the basement's own entry flight touches the floor above it
-## only at a corner, and a four-connected walk finds no route out of the door at all. She walks
-## those corners (`InteriorMap._mark_diagonal_clearances()` is what frees them physically), so a
-## walk that could not is not the walk she takes.
+## **Eight-connected, not four.** A shaft's flights are runs of diagonal steps — the reviewed
+## `t/m` and `T/M` roles drop one tile height over one tile width — so a four-connected walk finds
+## no way down a staircase at all. She walks those corners, so a walk that could not is not the
+## walk she takes.
 func _shortest_walk(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	var previous := {from: from}
 	var queue: Array[Vector2i] = [from]

@@ -40,6 +40,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `pursues_within_after_first_day` | What `pursues_within_on(day)` answers past `spawn_mode_switches_after_day` — the same day-keyed switch, read for the trigger rather than the siting. `0` (the default) is unread while that switch is `0`. `charging_dog` is the one row that sets it: `0` through `RUN_TAUGHT_DAY`, 130px past it (inside its own 150px `outer_radius`, an "on sight" band before it decides, `alley_robbery`'s shape) so a `MAP` placement waits for her instead of announcing itself the moment it streams in — see "Where an event happens" |
 | `paces` | Walks its route and turns round at the ends, for ever. The difference between a journey and a **beat** — see `homeless_yeller` |
 | `obstructs_radius` | The reach (px) of the row's own `shape` — a `GroundShape`, and the body is that shape, not a second number. **A thing that stands still is solid at the width it is drawn** — see "Solid things are solid" |
+| `solid_once_it_starts` | Whether the body arrives at the end of the row's own notice rather than with the instance, and is withheld while she stands in the footprint. For a row that turns on where she may already be — `basement_steam` is the only one — see "Solid things are solid" |
 | `pavement_side` | Which lane of a two-tile pavement it wants: `ANY`, `AT_THE_KERB`, `AGAINST_THE_BUILDING` |
 | `hard_fail` | Whether contact ends the day immediately |
 | `redetains` | Whether a `detain_seconds` row is armed again once she is released and outside `detain_distance()`, rather than spent after one conversation. `false` for everything but the three region-door rows — see "Checkpoints" |
@@ -348,6 +349,22 @@ player's own *"lethal != noise"*.
   between it and the next — and being walked into is the whole event, which a body would stop at
   the rim. `solid_parts` is how a row declares several bodies, and a flock's are neither still nor
   in one place.
+
+**And one row whose body arrives late rather than never.** `EventDef.solid_once_it_starts` is not a
+fifth exemption — the thing is solid, at exactly the width it is drawn — it is a statement about
+*when*. Every other solid row is a **place**: it is on its tile before she is anywhere near it, so a
+body from the instance's first frame is the honest picture and she can never be inside one. A vent
+on a timer is the opposite, and the ground it closes is ground she may be walking down when it
+fires; a body that appears around her is not something a telegraph can be an answer to, however long
+the telegraph is. So the notice runs with no body and the body goes down at the end of it, and
+`EventInstance._become_solid_once_it_starts()` withholds it for as long as she is inside the
+footprint — **a vent never turns on with her in it**. It is a precondition rather than a repair,
+nothing is placed and then moved, and it fails in the safe direction, since withholding obstruction
+can only leave more ground reachable. She pays the field the whole time, so standing in a vent to
+hold it open is the most expensive way through it rather than a way past it. **A planner's own
+per-tile record does not know about this and cannot**: the record is rasterised from the *plan*,
+before any instance exists, so such a row reads as solid to the crowd and to route-clearing for the
+whole of its life. `basement_steam` is placed indoors, where there is no lattice to clear.
 
 **And one constraint that is not an exemption: a lethal radius and a solid body are the same
 mechanism.** She is stopped with her centre `solid_reach() + PLAYER_BODY_RADIUS` from the
@@ -924,7 +941,7 @@ tree's ground is refused here exactly as it is on a day** (`docs/CITY.md`, "Stre
 | `finale_explosion` | SCRIPTED | the chains' carriageways, and once a beat indoors | The bang she hears and does not see. **Draws nothing** — the fourth row in the catalogue with no picture — because there is no burst on the street, only the noise and the hole afterwards. Off screen is bought with the streaming radius rather than with a rule: a `MAP` placement enters the world at `Tuning.EVENT_STREAM_RADIUS` (900px) against a 640×360 view, and its telegraph plus duration (3.7s, about 340px of walking) are over before she can reach it. `intensity` 24 over a 300–520px band, so a burst just past the screen edge still lands close to full strength. Not lethal: *the danger is always noise*. `spawns_on_finish` names the crater. |
 | `impact_crater` | SCRIPTED | wherever a burst went off | What is left in the road, for the rest of the sequence (`duration` 0). Silent and solid, with `barricade`'s own radii; `obstructs_radius` 32 against a 64px picture, so the ground she cannot walk on is exactly the hole she can see. Also one of the escape's four seal pictures, where `SealPlanner._hard_positions` spaces three of them across a street. No `scar_id`: the escape is the last thing in a run, so there is nothing for a scar to persist into. |
 | `masked_pursuer` | SCRIPTED | the stairwell the fire did not close | A masked man running up the shaft. **Mobile, not `pursues`**, and that is the counterplay: he runs a line — bottom landing to top — and the answer is not being on it, which in a building whose stairwell doors are a fade and a teleport means stepping through the nearest one and letting him go past. Faster than a walk (`Tuning.HEAT_HUNTS_SPEED`, 130px/s) so he cannot be out-walked, `hard_fail` on contact, and no body, like everything mobile. He waits at the foot of the shaft until she is in it (`pursues_within` 900, the shaft's own height with room over it) and spends his 3.6s telegraph standing. Drawn `guard_standing.svg` then `guard_lunging.svg`, the same two postures a heated roadblock's guards take. |
-| `basement_steam` | SCRIPTED | a stretch of the basement corridor | A vent letting go. **It paces**, and that is what buys it out of *solid things are solid* rather than a number: `steam.svg` is 32px across, so a standing vent would be a 16px body in a corridor two tiles wide, leaving her 28px of pram and body a four-pixel lane to aim at — "no line to walk", in the one place in the building with no second route. Pacing takes the body away by the rule `EventDef.paces` states and pays it back in intensity: 14 over a 24–90px band, pulsing every 4s, so the counterplay is timing a pass rather than a fixed toll. |
+| `basement_steam` | SCRIPTED | a fixed vent on the basement corridor | One blow of a vent that stands on a timer. **It is a gate, not a lane to thread**: the body is half of `steam.svg` like any other, but it stands on the seam down the middle of a corridor two tiles deep, so her centre is held 30px out where the walls leave it only 18px of play — there is no way past a vent that is blowing, and the answer is waiting rather than aiming. **The notice is what makes that fair, and `solid_once_it_starts` is what makes the notice worth anything**: the body goes down at the end of the telegraph rather than with the instance, and is withheld for as long as she is standing in the footprint, so a vent never closes around her. 14 over a 24–90px band, pulsing every 4s, for `Tuning.FINALE_STEAM_BLOWS_FOR`. `InteriorEvents` owns the vents themselves — where they stand, and a period each out of `Tuning.FINALE_STEAM_PERIODS` — and spawns one of these per blow; between blows there is no instance at all, so a vent that is off costs nothing. |
 
 ## Permanent marks
 

@@ -148,6 +148,16 @@ A vague prompt returns work that cannot be merged. Every agent prompt contains, 
   `GameSave.uses_save()` already refuses a headless run and any run carrying a dev flag;
   `--no-save` is what a flagless `tools/run.sh` session needs to say the same thing.
 - **Forks come back, never guessed.** If the design is ambiguous, or two recorded instructions
+- **Visual attempts come back early.** The player welcomes repeated feedback and prefers seeing
+  an attempt to waiting through a long internal revision loop. Ask the agent for a prompt preview
+  in the player's requested format, naming the visual point that remains uncertain. Keep cheap
+  integrity checks and provenance, but do not hold a useful attempt for polish or repeated
+  generation. Let the player's response steer the next visual pass while independent work
+  continues. The player's CLI cannot display images: push review artifacts first, then embed
+  them in the PR description using commit-pinned links or say exactly where to find them there.
+  A local file link is not a delivered visual review. Showing an attempt does not authorize
+  runtime installation.
+- **Forks come back, never guessed.** If the design is ambiguous, or two recorded instructions
   conflict, the agent implements the unambiguous part and states the fork precisely in its report.
   Where the design is merely silent on a small detail, it chooses the smallest implementation
   consistent with the contracts **and says so in the commit message**, so the choice is visible

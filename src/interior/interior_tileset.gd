@@ -20,6 +20,7 @@ const _SOURCES := {
 	InteriorTile.Kind.STAIRWELL_FLOOR: "res://assets/interior/stairwell_floor.svg",
 	InteriorTile.Kind.STAIR_FLIGHT_E: "res://assets/interior/stair_flight_e.svg",
 	InteriorTile.Kind.STAIR_FLIGHT_W: "res://assets/interior/stair_flight_w.svg",
+	InteriorTile.Kind.STAIR_DOWN: "res://assets/interior/stair_down.svg",
 	InteriorTile.Kind.LANDING: "res://assets/interior/stair_landing.svg",
 	InteriorTile.Kind.STAIR_TOP_E: "res://assets/interior/m158_stair_side_upper_e.svg",
 	InteriorTile.Kind.STAIR_MIDDLE_E: "res://assets/interior/m158_stair_side_lower_e.svg",

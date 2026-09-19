@@ -577,6 +577,28 @@ enum HeatResponse {
 ## event's body has to fit *inside* its lethal radius with her own body to spare.
 @export var obstructs_radius := 0.0
 
+## Whether the body arrives when the notice ends rather than with the instance.
+##
+## **For a row that turns on where she is already standing.** Every other solid row is a *place*:
+## it is on its tile before she gets near it, so a body from the first frame is the honest picture
+## and she can never be inside one. A vent on a timer is the opposite — the ground it closes is
+## ground she may be walking down at the moment it fires — and a body that appears around her is
+## not something a telegraph can be an answer to, however long the telegraph is.
+##
+## So the notice runs with no body at all and the body goes down at the end of it, and
+## `EventInstance` withholds it for as long as she is still inside the footprint: **a vent never
+## turns on with her in it.** That is a precondition rather than a repair — nothing is placed and
+## then moved — and it fails in the safe direction, since withholding obstruction can only leave
+## more ground reachable. It costs her the full field meanwhile, so standing in a vent to keep it
+## open is the most expensive way through it rather than a way past it.
+##
+## **A planner's own record does not know about this**, and cannot: `EventManager` rasterises a
+## row's body into `CityMap.obstructed_tiles` from the *plan*, before any instance exists, so a
+## row carrying this flag reads as solid to the crowd and to route-clearing for the whole of its
+## life. Set it on something placed where there is no lattice to clear, or accept that the ground
+## is reserved the whole time.
+@export var solid_once_it_starts := false
+
 ## Which lane of a two-tile pavement an event wants.
 ##
 ## Almost nothing cares, and `ANY` is the honest default: a café spills out of whichever frontage
@@ -871,6 +893,15 @@ func validate() -> bool:
 	# no waiting state for `quiet_until_noticed` to quieten.
 	if quiet_until_noticed and pursues_within <= 0.0:
 		push_error("event '%s' is quiet until noticed but has no trigger to be noticed at" % id)
+		return false
+	# The same shape again, both ways round. Holding a body back through the notice means nothing
+	# on a row that has no body, and a row with no notice has nothing to hold it back through — its
+	# body would go down on the first frame anyway, which is what the flag exists to stop.
+	if solid_once_it_starts and obstructs_radius <= 0.0:
+		push_error("event '%s' waits for its own notice to become solid and has no body" % id)
+		return false
+	if solid_once_it_starts and telegraph_time <= 0.0:
+		push_error("event '%s' waits for a notice it does not have before it becomes solid" % id)
 		return false
 	# `EventDirector` sites a `TOWARD_PLAYER` row at least `Tuning.offscreen_lead(heading,
 	# closing_speed, offscreen_notice)` in front of her, which is never less than

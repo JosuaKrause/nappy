@@ -1262,8 +1262,21 @@ open cells where `plan_day` takes a tree. Three differences, each for a reason t
 seals are all **hard**, since a soft one leaves the carriageway open and the brief is a single path;
 the **main road is sealed like anything else**, because the chains *end* on the spine and leaving
 the rest of it open would join them at the one street that touches both exits; and **every alley
-mouth off the chains** is walled rather than a fraction of the qualifying ones. The doorstep stays
-exempt for the reason it always is.
+mouth off the chains** is walled rather than a fraction of the qualifying ones. And **the exempt
+street is the one she is standing in rather than the doorstep's**: a day's exemption is the front
+door, because the home is a notch with one exit; the escape comes out of the service exit on the
+side of the block and never uses that door, so sealing *that* street is the same mistake one door
+along, and the home street is sealed here like any other.
+
+**Nothing the escape places can be standing on her, by construction.** *(2026-09-19: "the spawning
+shouldn't be a check. the pathing should start from the position. then obstacles can never
+happen".)* Every pass that puts something in the city is handed the tile she is put down on: the
+chains enter the grid at her own cell, the sealing spares her street, and
+`EventScheduler.build_finale()` is never offered ground a body of its own would reach her from — a
+tile within `obstructs_radius + PLAYER_BODY_RADIUS` of her, plus the half tile a stationary body
+may be moved by when it is centred on its pavement band. It is refused rather than cleared up
+afterwards, and the spawn itself is never checked or moved: a check that rejected a bad spawn is
+the option the player named and rejected.
 
 **A street is spared only where a chain walks it**, measured at the street's own midpoint, which is
 where a hard seal stands. Asking the looser question — does a chain touch this street at all —

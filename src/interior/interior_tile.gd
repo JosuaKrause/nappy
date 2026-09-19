@@ -19,8 +19,12 @@ enum Kind {
 	                        ## the view.
 	HALLWAY_FLOOR_EDGE_W,   ## Unused for the same reason as the east edge above.
 	STAIRWELL_FLOOR,        ## The mechanical floor a `DOOR` tile's own threshold stands on.
-	STAIR_FLIGHT_E,         ## The basement entry's walkable tread, descending south-east.
+	STAIR_FLIGHT_E,         ## A retained diagonal tread descending south-east, available to the
+	                        ## tileset but currently unused.
 	STAIR_FLIGHT_W,         ## Its retained mirror, available to the tileset but currently unused.
+	STAIR_DOWN,             ## The basement entry's own stair: one level walkable cell seen from
+	                        ## the front, its treads narrowing away from her. No slope, so a
+	                        ## sideways press on it is a sideways step — see `flight_direction()`.
 	LANDING,                ## The retained old flat stair platform kind, currently unused.
 	STAIR_TOP_E,            ## `t`: the reviewed upper stair-side role, walkable toward east.
 	STAIR_MIDDLE_E,         ## `m`: the reviewed lower stair-side role, walkable toward east.
@@ -70,6 +74,7 @@ const _WALKABLE := {
 	Kind.STAIRWELL_FLOOR: true,
 	Kind.STAIR_FLIGHT_E: true,
 	Kind.STAIR_FLIGHT_W: true,
+	Kind.STAIR_DOWN: true,
 	Kind.LANDING: true,
 	Kind.STAIR_TOP_E: true,
 	Kind.STAIR_MIDDLE_E: true,
@@ -89,9 +94,10 @@ static func is_walkable(kind: Kind) -> bool:
 	return _WALKABLE.get(kind, false)
 
 ## `+1` if `kind` is a flight surface descending toward east, `-1` toward west, `0` for every
-## other kind. The basement keeps the original `STAIR_FLIGHT_E` entry tiles; the main shafts use
-## both reviewed walkable roles in each direction. This is the one number `Stroller`'s own slope
-## redirection needs; see `InteriorScene.slope_dir_at()`.
+## other kind. The main shafts use both reviewed walkable roles in each direction; the basement's
+## own entry stair answers `0`, because it is a level cell seen from the front rather than a
+## diagonal tread and a sideways press on it has no slope to be redirected along. This is the one
+## number `Stroller`'s own slope redirection needs; see `InteriorScene.slope_dir_at()`.
 static func flight_direction(kind: Kind) -> int:
 	if kind in [Kind.STAIR_FLIGHT_E, Kind.STAIR_TOP_E, Kind.STAIR_MIDDLE_E]:
 		return 1

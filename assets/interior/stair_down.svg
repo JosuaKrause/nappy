@@ -1,0 +1,9 @@
+<!-- A down stair occupies one tile. The treads narrow away from the viewer and the arrow points
+     the same way, so a run of these cells reads as a flight descending into the basement. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" fill="#62656a"/>
+  <path d="M3 28H29 M5 23H27 M7 18H25 M9 13H23 M11 8H21 M13 3H19" stroke="#a3a09a" stroke-width="2"/>
+  <path d="M3 28V23H5V18H7V13H9V8H11V3H13" fill="none" stroke="#3b3034" stroke-width="1"/>
+  <path d="M29 28V23H27V18H25V13H23V8H21V3H19" fill="none" stroke="#3b3034" stroke-width="1"/>
+  <path d="M16 25V7 M12 11L16 6L20 11" fill="none" stroke="#d5bc79" stroke-width="1.4"/>
+</svg>

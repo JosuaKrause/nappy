@@ -36,10 +36,15 @@ const _MOUSE_ID := "alley_mouse"
 const _PURSUER_ID := "masked_pursuer"
 const _STEAM_ID := "basement_steam"
 const _FIRE_ID := "burning_building"
-## How far either side of where it is placed the steam drifts, in tiles. Two, so its beat stays
-## inside one straight band of the basement rather than turning one of the corridor's corners —
-## a paced route is a line and the corridor is not one for its whole length.
-const _STEAM_DRIFT_TILES := 2
+
+## One steam vent: where it stands, how often it blows, and how long until it does again. A vent
+## is not an event — what is an event is one blow, which this spawns and the instance owns to its
+## end. While a vent is between blows there is nothing in the world at all, which is the whole of
+## *"while it is off it has no body and costs nothing"*.
+class Vent extends RefCounted:
+	var at := Vector2.ZERO
+	var period := 0.0
+	var until_the_next_blow := 0.0
 
 var _interior: InteriorScene
 var _instances: Array[EventInstance] = []
@@ -47,6 +52,8 @@ var _player: Node2D
 var _hard_failed := false
 var _seed := 0
 var _until_the_next_explosion := 0.0
+## The basement's vents, in the order she meets them walking the corridor. Rebuilt by `restart()`.
+var _vents: Array[Vent] = []
 ## Which stairwell the fire closes — "left" or "right". Drawn from the run seed, so a run is the
 ## same run twice; the masked man takes the other one, which is the whole of why the fire is worth
 ## having: the way past a fire is the other egress, and the other egress has somebody on it.
@@ -85,66 +92,148 @@ func instances() -> Array[EventInstance]:
 
 # ----------------------------------------------------------------- placement ---
 
-## The fire, on a **turn** landing rather than a floor landing.
+## The fire, on the **inner** cell of an intermediate floor's level approach.
 ##
-## A floor landing has that floor's own door one tile beside it, and the fire's body is wider than
-## that — so a fire there would close the way out of the stairwell as well as the way down it, and
-## the answer to it would be walking back up rather than stepping through a door. On the
-## half-landing between two floors it closes exactly one flight: both floor landings above and
-## below it keep their doors, so the way past is into the hallway and along to the other shaft,
-## which is the reason the two stairwells are at opposite ends of the hallway in the first place.
+## A level approach is two cells of `F` below its door. Standing on the outer one — the door's own
+## cell — the fire's body would close the way out of the stairwell as well as the way down it, and
+## the answer to it would be walking back up rather than stepping through a door. One cell further
+## in it closes exactly the flight that approach leads onto, and every door in the shaft stays
+## reachable: the way past is into the hallway and along to the other shaft, which is the reason
+## the two stairwells are at opposite ends of the hallway in the first place.
+##
+## Its blocking reach is its own 30px body plus her 14px, and the door tile is 64px from the cell
+## it stands on, so a door arrival lands clear of it.
 func _place_the_fire(rng: RandomNumberGenerator) -> void:
-	var landings := _turn_landings(_burning_side)
-	if landings.is_empty():
+	var approaches := _inner_floor_approaches(_burning_side)
+	if approaches.is_empty():
 		return
-	var at: Vector2i = landings[rng.randi_range(0, landings.size() - 1)]
+	var at: Vector2i = approaches[rng.randi_range(0, approaches.size() - 1)]
 	_spawn(_without_its_aftermath(EventCatalogue.by_id(_FIRE_ID)), _interior.tile_to_world(at))
 
 ## The masked man, at the foot of the stairwell the fire did not take, running its whole height.
-## Two points is the whole path: every landing in a shaft sits on one column, so a line up that
-## column is the shaft, and the flights swing either side of it — which is what makes stepping off
-## a landing and onto a flight a way of not being on his line as well as a way of going down.
+##
+## **His path is the staircase itself**, asked of the map rather than drawn between the two
+## landings: the landings alternate between the grammar's two `F` columns, so a straight line from
+## one to the other crosses the background and the solid `c`/`C`/`b` sides and meets each flight
+## wherever it happens to cut it. `InteriorScene.stairwell_walk()` hands back the shaft's own
+## branchless walk — the level `F` columns and the `t/m` and `T/M` diagonals, landing to landing —
+## so every step he takes is ground she could be standing on.
+##
+## **Which is also what leaves her the answer the brief gives him**, *"going into a corridor and
+## letting them pass"*: a shaft's walk never stands on a `D` cell, because each door's only walkable
+## neighbour is the level approach below it, so a door is always further from his line than the
+## radius that takes the baby. `tests/test_interior.gd` measures that gap rather than assuming it.
 func _place_the_masked_man() -> void:
 	var side := "right" if _burning_side == "left" else "left"
-	var bottom: Vector2i = _interior.waypoint("stairwell_%s:landing_lobby" % side)
-	var top: Vector2i = _interior.waypoint("stairwell_%s" % side)
-	if bottom == InteriorScene.NOWHERE or top == InteriorScene.NOWHERE:
+	var walk := _interior.stairwell_walk("stairwell_%s" % side)
+	if walk.size() < 2:
 		return
-	var from := _interior.tile_to_world(bottom)
-	var path := PackedVector2Array([from, _interior.tile_to_world(top)])
-	_spawn(EventCatalogue.by_id(_PURSUER_ID), from, path)
+	var path := PackedVector2Array()
+	for tile in walk:
+		path.append(_interior.tile_to_world(tile))
+	_spawn(EventCatalogue.by_id(_PURSUER_ID), path[0], path)
 
-## The mouse and the steam, a third and two thirds of the way along the basement's own corridor.
+## The mouse a third of the way along the basement's own corridor, and the vents spread down the
+## rest of it.
 ##
-## Measured as a walk from the entry rather than written as tile offsets, so neither depends on the
-## basement's three bands staying where they are: the corridor is one route with no branches, so
-## "a third of the way along it" is a well-defined place however it is laid out, and both stand
-## somewhere she has to pass rather than somewhere she might.
+## Measured as a walk from the entry rather than written as tile offsets, so nothing here depends
+## on the basement's three bands staying where they are: the corridor is one route with no
+## branches, so "a third of the way along it" is a well-defined place however it is laid out, and
+## everything sited this way stands somewhere she has to pass rather than somewhere she might.
 func _place_the_basement(rng: RandomNumberGenerator) -> void:
 	var walk := _interior.basement_walk()
 	if walk.size() < 4:
 		return
 	var mouse_at: Vector2i = walk[walk.size() / 3]
-	var steam_at: int = walk.size() * 2 / 3
 	_spawn(EventCatalogue.by_id(_MOUSE_ID), _interior.tile_to_world(mouse_at))
-	# The steam paces a stretch of the corridor rather than standing in it — see the row's own
-	# docstring for why a vent with a body would leave no line to walk down here. Its beat is a
-	# couple of tiles either side of where it is placed, which is inside one band of the basement
-	# rather than round one of its corners, so it drifts along the passage rather than across it.
-	var from: Vector2i = walk[maxi(0, steam_at - _STEAM_DRIFT_TILES)]
-	var to: Vector2i = walk[mini(walk.size() - 1, steam_at + _STEAM_DRIFT_TILES)]
-	_spawn(EventCatalogue.by_id(_STEAM_ID), _interior.tile_to_world(walk[steam_at]),
-			PackedVector2Array([_interior.tile_to_world(from), _interior.tile_to_world(to)]))
 	# The mouse's dash is built from the alley it stands in when there is a map to ask; indoors
 	# there is none, so `EventInstance` gives it its own short crossing and the roll is spent here
 	# only to keep this function's own stream advancing with the rest of the section.
 	rng.randf()
 
-## Every half-landing in one shaft: a `LANDING` tile that is not one of the four named floor
-## landings. Asked of the plan rather than recomputed from the switchback's own arithmetic, so a
-## change to the flight length moves the fire with it.
-func _turn_landings(side: String) -> Array[Vector2i]:
-	return _interior.turn_landings("stairwell_%s" % side)
+	# **The vents are not rolled.** *"Multiple fixed locations"* — a corridor she has to time is a
+	# corridor whose gates are in the same places every attempt, so a lost section is the same
+	# puzzle again rather than a different one. The clocks are staggered so the three of them do
+	# not open the whole corridor at once on the first pass; after that their own periods do it.
+	_vents.clear()
+	var sites := _vent_sites(walk)
+	for i in sites.size():
+		var vent := Vent.new()
+		vent.at = sites[i]
+		vent.period = Tuning.FINALE_STEAM_PERIODS[i]
+		vent.until_the_next_blow = vent.period * float(i + 1) / float(sites.size())
+		_vents.append(vent)
+
+## Where each vent stands: one per entry in `Tuning.FINALE_STEAM_PERIODS`, spread evenly along the
+## corridor, each on the **middle of the passage** rather than on the tile centre she walks.
+##
+## A vent closes the corridor because of where it stands, not because of how wide it is (see
+## `EventCatalogue.STEAM_VENT_BODY`), so it has to sit on the seam between a band's two rows — a
+## body centred on one row leaves her the other. That also decides which ground can carry one:
+## only a cell on a two-row east-west band, never one of the corridor's one-tile jogs, where there
+## is no seam to stand on and a body would be off centre in the only direction that matters.
+func _vent_sites(walk: Array[Vector2i]) -> Array[Vector2]:
+	var eligible: Array[int] = []
+	for i in walk.size():
+		if _band_seam(walk[i]) != 0:
+			eligible.append(i)
+	var found: Array[Vector2] = []
+	var count: int = Tuning.FINALE_STEAM_PERIODS.size()
+	if eligible.size() < count:
+		push_error("the basement corridor offers %d places for %d steam vents"
+				% [eligible.size(), count])
+		return found
+	var taken := {}
+	for n in count:
+		var wanted := int(round(float(walk.size()) * float(n + 1) / float(count + 1)))
+		var best := -1
+		for i in eligible:
+			if taken.has(i):
+				continue
+			if best < 0 or absi(i - wanted) < absi(best - wanted):
+				best = i
+		taken[best] = true
+		var tile: Vector2i = walk[best]
+		found.append(_interior.tile_to_world(tile)
+				+ Vector2(0.0, float(_band_seam(tile)) * InteriorScene.TILE * 0.5))
+	return found
+
+## `+1` when the other row of this cell's east-west band is below it, `-1` when it is above, `0`
+## when the cell is not on a two-row east-west band at all. Half a tile in that direction is the
+## seam down the middle of the passage.
+func _band_seam(tile: Vector2i) -> int:
+	if not (_interior.is_walkable(tile + Vector2i.LEFT)
+			and _interior.is_walkable(tile + Vector2i.RIGHT)):
+		return 0
+	var north := _interior.is_walkable(tile + Vector2i.UP)
+	var south := _interior.is_walkable(tile + Vector2i.DOWN)
+	if north == south:
+		return 0
+	return 1 if south else -1
+
+## Every vent's own clock, one blow at a time. A blow is an ordinary `EventInstance` of the steam
+## row: it gives its notice with no body, closes the corridor for `Tuning.FINALE_STEAM_BLOWS_FOR`,
+## and is over — `_retire_finished()` takes it away like anything else that has run its course.
+## Nothing stands between blows, so a vent that is off is not an event that is quiet, it is an
+## event that does not exist.
+func _blow_the_vents(delta: float) -> void:
+	for vent in _vents:
+		vent.until_the_next_blow -= delta
+		if vent.until_the_next_blow > 0.0:
+			continue
+		vent.until_the_next_blow += vent.period
+		_spawn(EventCatalogue.by_id(_STEAM_ID), vent.at)
+
+## Where the vents stand, for `tests/test_interior.gd` — the contracts they owe are about the
+## distance between them and about their clocks, and neither is answerable from outside.
+func vents() -> Array[Vent]:
+	return _vents
+
+## The inner cell of each intermediate floor's level approach in one shaft. Asked of the plan
+## rather than recomputed from the grammar's own arithmetic here, so a change to a flight's length
+## moves the fire with it.
+func _inner_floor_approaches(side: String) -> Array[Vector2i]:
+	return _interior.inner_floor_approaches("stairwell_%s" % side)
 
 # -------------------------------------------------------------- the instances ---
 
@@ -176,6 +265,7 @@ static func _without_its_aftermath(def: EventDef) -> EventDef:
 func _physics_process(delta: float) -> void:
 	_retire_finished()
 	_explode_every_so_often(delta)
+	_blow_the_vents(delta)
 	if not _find_player():
 		return
 	_tell_them_where_she_is()
