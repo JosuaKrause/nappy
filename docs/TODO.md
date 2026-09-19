@@ -293,6 +293,26 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
+## M170 — The route's tint is on both sides of the street · asked for 2026-09-19
+
+> "let's do the mark for the correct path on the full segment (both sides) again -- that way those
+> obvious problems now (with obstacles on the path side but no obstacle on the other side) are not
+> obvious anymore -- I can still confirm whether you actually fixed those issues via the path
+> debug view."
+
+[PLAYTEST-97](playtests/PLAYTEST-97.md). *Asked for one side on 2026-09-15
+([PLAYTEST-76](playtests/PLAYTEST-76.md)) · overturned by the player on 2026-09-19.*
+
+- [ ] **`City._tint_the_route_kerbs()` tints both kerb lines of every street the day's route tree
+      uses**, where today it tints a kerb tile only when the tree carries that sidewalk's own
+      cell (`_tree.branches_on(tile)`). **A segment is tinted whole, from intersection to
+      intersection, or not at all** *("no signle street tiles")*: a tree that uses part of a
+      segment tints all of it. The route lines of debug layer `5` and every placement
+      rule keep reading the tree's own sidewalk. The routes suite's tint check, `docs/CITY.md`
+      and the two tint entries in `REVIEW.md` say one-sided and move with it.
+
+---
+
 ## M168 — The escape after playtest 94 · asked for 2026-09-19
 
 > "the escape is okay but there should be a fire on the left like it is right now but the top
@@ -340,6 +360,16 @@ through `tools/run.sh --start-escape --seed 4242`.
       same row hunts from day 7 on ordinary days, so this changes there too. Whether the street
       behind a roadblock whose guard has left stays shut is the consequence to state in the
       record: the barrier staying means it does.
+- [ ] **The hallway windows flash more often.** *(2026-09-19: "the flashing lights in the window
+      are too rare", [PLAYTEST-96](playtests/PLAYTEST-96.md).)* A window lights only with an
+      explosion, every 22 seconds (`Tuning.FINALE_EXPLOSION_INTERVAL`), and an explosion costs
+      excitement. Built as light without noise, open to overturn: distant flashes light the
+      windows between the loud ones, the time between two flashes random between 0.1 and 5 seconds with a mean of 1.3
+      seconds on a smooth curve *("a biased random distribution … the rest of the curve is smooth")*,
+      and cost nothing; the loud explosions stay at 22 seconds and still flash. **Every window
+      flashes together, always** *("a single window cannot flash by itself")*. The alternative
+      the player may prefer is simply more explosions, which is one constant and makes the
+      building louder.
 - [ ] **The escape's run log stamps every line `0.0`.** The log of the played run cannot say when
       anything happened (`docs/evidence/playtest-94-2026-09-19/`).
 
