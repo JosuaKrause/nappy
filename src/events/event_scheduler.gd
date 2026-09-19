@@ -201,7 +201,7 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## nothing here bypasses `_keeps_its_field_clear` — the two lethal rows in the list are a pursuer
 ## and a `WALL`, which is how they were already exempt on an ordinary day.
 static func build_finale(map: CityMap, rng: RandomNumberGenerator,
-		streets: Array[StreetNetwork.Segment]) -> Array[Planned]:
+		streets: Array[StreetNetwork.Segment], standing_at: Vector2) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	var trucks := _without_its_aftermath(EventCatalogue.by_id("military_convoy"))
 	var vans := EventCatalogue.by_id("abduction")
@@ -213,13 +213,13 @@ static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 	var trees := StreetTrees.footprint_tiles(map)
 	for segment in streets:
 		_fill_a_finale_street(map, rng, segment, trucks, Tuning.FINALE_TRUCKS_PER_STREET, trees,
-				planned)
+				standing_at, planned)
 		_fill_a_finale_street(map, rng, segment, vans, Tuning.FINALE_VANS_PER_STREET, trees,
-				planned)
+				standing_at, planned)
 		_fill_a_finale_street(map, rng, segment, masked, Tuning.FINALE_GUARDS_PER_STREET, trees,
-				planned)
+				standing_at, planned)
 		_fill_a_finale_street(map, rng, segment, bursts, Tuning.FINALE_EXPLOSIONS_PER_STREET,
-				trees, planned)
+				trees, standing_at, planned)
 	return planned
 
 ## `count` copies of one row on one street, sited the same way `_place_one` sites a day's: roll a
@@ -228,8 +228,8 @@ static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 ## gets none of that row, which is the same failure direction a day's own placement has.
 static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 		segment: StreetNetwork.Segment, def: EventDef, count: int, trees: Dictionary,
-		planned: Array[Planned]) -> void:
-	var candidates := _finale_ground(map, segment, def, trees)
+		standing_at: Vector2, planned: Array[Planned]) -> void:
+	var candidates := _finale_ground(map, segment, def, trees, standing_at)
 	if candidates.is_empty():
 		return
 	for _copy in count:
@@ -261,18 +261,44 @@ static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 ## (they add noise) so it makes detecting actual obstacles harder")*, and the climax is the one
 ## walk where telling an obstacle from scenery matters most. The footprint rather than the trunk
 ## tile, because the ground the canopy reaches over is ground a van would be standing in.
+##
+## `standing_at` is where she comes out of the building, and ground within a body's reach of it is
+## refused the same way a tree's is. *(2026-09-19: "the spawning shouldn't be a check. the pathing
+## should start from the position. then obstacles can never happen".)* **Refused here rather than
+## cleared up afterwards**, which is the whole difference the player is drawing: a pass that placed
+## a van on her and a later one that moved it would leave the guarantee resting on the repair, and
+## a check that moved *her* instead is the option they named and rejected. Ground she is standing
+## on is not ground this is ever offered.
 static func _finale_ground(map: CityMap, segment: StreetNetwork.Segment, def: EventDef,
-		trees: Dictionary) -> Array[Vector2i]:
+		trees: Dictionary, standing_at: Vector2) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
 	var rect := segment.tile_rect()
+	var clear_of_her := _clearance_around_her(def)
 	for y in range(rect.position.y, rect.end.y):
 		for x in range(rect.position.x, rect.end.x):
 			var tile := Vector2i(x, y)
 			if trees.has(tile):
 				continue
+			if map.tile_to_world(tile).distance_to(standing_at) <= clear_of_her:
+				continue
 			if def.placement.has(map.tile_at(tile)) and map.is_open(tile):
 				found.append(tile)
 	return found
+
+## How far from the tile she is put down on a row of this kind may not be offered ground.
+##
+## **Her body plus its body, and half a tile on top.** The half tile is not a margin of taste: a
+## stationary, unpinned body is moved from the lane tile the scheduler chose to the middle of the
+## pavement band by `EventInstance._centred_on_the_pavement_band()` when the instance is built, and
+## the two lane centres sit `TILE_SIZE * 0.5` either side of that middle — so the ground a
+## placement finally stands on is up to half a tile from the tile this loop is looking at, and the
+## exclusion has to cover where it *ends up* rather than where it is rolled.
+##
+## A row with no body needs none of this: nothing about it can be stood inside.
+static func _clearance_around_her(def: EventDef) -> float:
+	if def.obstructs_radius <= 0.0:
+		return 0.0
+	return def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS + Tuning.TILE_SIZE * 0.5
 
 ## A row with whatever it ordinarily leaves behind taken off it — the scar it records against the
 ## run and the successor it spawns when it finishes. The convoy is the only caller: what it leaves

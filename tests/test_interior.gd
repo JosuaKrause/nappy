@@ -1,7 +1,8 @@
 extends RefCounted
 ## `InteriorMap` and `InteriorMapPlan` — the escape scene's one building-wide map, walkability, the
-## diagonal switchback stairwells and the doors that teleport between its seven parts, all headless:
-## nothing here needs a scene tree except the two suites that build `InteriorScene` itself.
+## alternating stairwells of the ten-column grammar, and the doors that teleport between its seven
+## parts, all headless: nothing here needs a scene tree except the suites that build
+## `InteriorScene` itself.
 
 func run(t) -> void:
 	_test_the_map_builds(t)
@@ -15,14 +16,19 @@ func run(t) -> void:
 	_test_the_tileset_carries_every_walkable_ground_kind(t)
 	_test_the_scene_paints_the_whole_map(t)
 	_test_collision_blocks_exactly_the_non_walkable_ground(t)
-	_test_stair_roles_are_live_tiles_and_old_overlays_are_unbound(t)
+	_test_the_grammar_tiles_are_the_whole_staircase(t)
 	_test_a_sideways_press_on_a_flight_walks_its_slope(t)
 	_test_a_real_stroller_physically_crosses_both_flight_directions(t)
 	_test_every_diagonal_step_has_both_its_pinch_corners_cleared(t)
+	_test_the_basement_entry_is_a_straight_level_stair(t)
 	_test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t)
 	_test_a_door_release_latch_keeps_a_door_from_retaking_her(t)
 	_test_the_fire_closes_one_stairwell_and_leaves_the_other(t)
+	_test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t)
 	_test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t)
+	_test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t)
+	_test_a_vent_never_closes_around_her(t)
+	_test_no_pocket_between_two_vents_outlasts_the_noise(t)
 	_test_an_explosion_flashes_every_hallway_window(t)
 
 func _test_the_map_builds(t: Node) -> void:
@@ -278,10 +284,18 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: Node) -> void:
 	t.check(paired_steps > 0, "both-row diagonal continuity has real steps to check")
 	scene.free()
 
-## The reviewed sources are the TileSet pictures selected by the grammar. No structural overlay —
-## including the rejected vertical landing — or broad deck/rail is allowed to recreate the old
-## sparse map on top of them.
-func _test_stair_roles_are_live_tiles_and_old_overlays_are_unbound(t: Node) -> void:
+## **The reviewed grammar tiles are the whole of a staircase**, and this asks it as a closed list
+## rather than as a list of absentees. The deck, rail and landing sources a shaft used to be
+## assembled from live in `docs/evidence/archive/rejected-graphics/` now, and the archive is behind
+## a `.gdignore`, so a test naming them by path would fail to *load* rather than fail its check —
+## which is the wrong answer to "is it bound", and would have to be rewritten every time one more
+## picture left the tree.
+##
+## So: every stair source the TileSet carries is one of the kit, the kit is all of them, and
+## nothing standing in the scene draws a stair picture at all. All three halves are needed. The
+## first two alone would let a `Sprite2D` overlay rebuild the old assembly over the top; the last
+## alone would let a source nothing paints sit in the atlas unnoticed.
+func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
 	var expected_sources := {
 		InteriorTile.Kind.STAIR_TOP_E: load("res://assets/interior/m158_stair_side_upper_e.svg"),
 		InteriorTile.Kind.STAIR_MIDDLE_E: load("res://assets/interior/m158_stair_side_lower_e.svg"),
@@ -297,32 +311,48 @@ func _test_stair_roles_are_live_tiles_and_old_overlays_are_unbound(t: Node) -> v
 		var source := tile_set.get_source(source_id) as TileSetAtlasSource
 		t.check(source != null and source.texture == expected_sources[kind],
 				"stair role %d binds its reviewed tile source" % kind)
+
+	# Every shaft picture the whole TileSet carries, by the file it was built from. `stairwell_
+	# floor.svg` is the level `F` ground and the tread under each `D`; the basement's own
+	# front-facing stair and the retained diagonal treads and landing are the rest of the stair
+	# vocabulary. Anything else showing up here is an assembly source coming back.
+	var kit := {
+		"m158_stair_side_upper_e.svg": true, "m158_stair_side_lower_e.svg": true,
+		"m158_stair_side_upper_w.svg": true, "m158_stair_side_lower_w.svg": true,
+		"m158_stair_side_continue_e.svg": true, "m158_stair_side_continue_w.svg": true,
+		"m158_stair_side_block.svg": true, "stair_down.svg": true,
+		"stair_flight_e.svg": true, "stair_flight_w.svg": true, "stair_landing.svg": true,
+		"stairwell_floor.svg": true,
+	}
+	var stair_sources := {}
+	for kind: InteriorTile.Kind in InteriorTile.Kind.values():
+		var id := InteriorTileSet.source_id_for(kind)
+		if id < 0:
+			continue
+		var atlas := tile_set.get_source(id) as TileSetAtlasSource
+		var file: String = atlas.texture.resource_path.get_file()
+		if not file.begins_with("stair") and not file.begins_with("m158_stair"):
+			continue
+		stair_sources[file] = true
+		t.check(kit.has(file), "the TileSet's stair source '%s' is one of the kit" % file)
+	t.check(stair_sources.size() == kit.size(),
+			"and the kit is all of them (%d sources against %d named)"
+			% [stair_sources.size(), kit.size()])
+
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	scene.build()
-	var removed_textures: Array[Texture2D] = [
-		load("res://assets/interior/stair_landing_vertical.svg"),
-		load("res://assets/interior/stair_flight_run_e.svg"),
-		load("res://assets/interior/stair_flight_run_w.svg"),
-		load("res://assets/interior/stair_landing_floor.svg"),
-		load("res://assets/interior/stair_landing_turn.svg"),
-		load("res://assets/interior/stair_rail_run_e.svg"),
-		load("res://assets/interior/stair_rail_run_w.svg"),
-		load("res://assets/interior/stair_rail_run_e_rear.svg"),
-		load("res://assets/interior/stair_rail_run_w_rear.svg"),
-		load("res://assets/interior/stair_rail_short_e.svg"),
-		load("res://assets/interior/stair_rail_short_e_rear.svg"),
-	]
-	var removed_bound := 0
-	for layer_name in ["StairStructure", "Entities"]:
-		for child in scene.get_node(layer_name).get_children():
-			var sprite := child as Sprite2D
-			if sprite != null and removed_textures.has(sprite.texture):
-				removed_bound += 1
-	t.check(removed_bound == 0,
-			"no vertical landing, broad deck, platform, foreground rail or rear rail is bound")
-	t.check(scene.get_node("StairStructure").get_child_count() == 0,
-			"the corrected grammar needs no presentation-only stair structure")
+	var drawn_stairs := 0
+	for child in scene.get_node("Entities").get_children():
+		var sprite := child as Sprite2D
+		if sprite == null or sprite.texture == null:
+			continue
+		var file: String = sprite.texture.resource_path.get_file()
+		if file.begins_with("stair") and file != "stairwell_door.svg":
+			drawn_stairs += 1
+	t.check(drawn_stairs == 0,
+			"nothing standing in the scene draws a stair: the ground cells are the staircase (%d)"
+			% drawn_stairs)
 	scene.free()
 
 ## The switchback's own redirection: a sideways press on a diagonal flight walks its slope rather
@@ -510,6 +540,35 @@ func _test_every_diagonal_step_has_both_its_pinch_corners_cleared(t: Node) -> vo
 	# A guard that the sweep found real diagonal adjacencies to check — every flight in both
 	# shafts plus the basement's own entry flight.
 	t.check(checked > 0, "the map has at least one diagonal adjacency to check (got %d)" % checked)
+
+## *"Basement stairs are just not stairs."* What replaced the two diagonal treads is a stair seen
+## from the front, and the three things that makes it: the cell between the entry door and the
+## corridor is the one-tile `STAIR_DOWN` picture, the walk out of the door is a straight column
+## with no diagonal step in it, and the cell is level — `flight_direction()` answers zero, so a
+## sideways press on it is a sideways step rather than a slide along a slope.
+func _test_the_basement_entry_is_a_straight_level_stair(t: Node) -> void:
+	var f := InteriorMap.build()
+	var entry := f.door("basement:entry")
+	t.check(entry != null, "the basement keeps its entry door")
+	if entry == null:
+		return
+	var stair := entry.tile + Vector2i.UP
+	t.check(f.tiles.get(stair) == InteriorTile.Kind.STAIR_DOWN,
+			"the cell north of the door is the one-tile front-facing stair")
+	t.check(InteriorTile.is_walkable(InteriorTile.Kind.STAIR_DOWN)
+			and InteriorTile.flight_direction(InteriorTile.Kind.STAIR_DOWN) == 0,
+			"which is walkable and level, so nothing redirects a press along it")
+	t.check(InteriorTileSet.source_id_for(InteriorTile.Kind.STAIR_DOWN) >= 0,
+			"and it is painted")
+	t.check(f.is_walkable(stair + Vector2i.UP),
+			"and the corridor is the next cell straight on")
+	# And the consequence for the whole building: with the entry straight, no diagonal step
+	# anywhere is pinched between two absent corners, so the clearance pass has nothing left to
+	# free. `_test_every_diagonal_step_has_both_its_pinch_corners_cleared` is the other half — it
+	# checks that a pinch which did appear would be freed; this checks that none does.
+	t.check(f.collision_clearance.is_empty(),
+			"no cell in the building needs its collision cleared to be crossable (%d do)"
+			% f.collision_clearance.size())
 
 ## **Steps `InteriorScene`'s own transition functions directly rather than driving `Stroller` by
 ## input.** `transition_at()` and `teleport_to_door()` are the exact functions `process_player()`
@@ -705,9 +764,9 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 	if fire:
 		var burning := events.burning_side()
 		var other := "right" if burning == "left" else "left"
-		t.check(scene.turn_landings("stairwell_%s" % burning).has(
+		t.check(scene.inner_floor_approaches("stairwell_%s" % burning).has(
 				scene.world_to_tile(fire.global_position)),
-				"the fire stands on an interior level approach of the %s shaft" % burning)
+				"the fire stands on the inner cell of a level approach in the %s shaft" % burning)
 		var reach := fire.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
 		t.check(reach > 0.0, "and it is solid at all (%.0fpx)" % reach)
 		var shut := 0
@@ -738,9 +797,97 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 func _shaft_tiles(scene: InteriorScene, part_id: String) -> Array[Vector2i]:
 	return scene.stairwell_tiles(part_id)
 
-## *"Maybe some mice. ... Maybe some steam in the basement etc."* Both stand on the basement's own
-## corridor, which has no branches — so they are things she walks past rather than things she may
-## happen not to find.
+## *"The masked man is floating in the stairwell."* His path is the shaft's own walk, so what this
+## asks is the two properties that make it one: every step joins two cells she could stand on, and
+## a diagonal step has a walkable orthogonal corner — the same pinch rule
+## `InteriorMap._mark_diagonal_clearances()` keeps for her, so his line is ground and not the
+## background and the solid `c`/`C`/`b` sides between the flights.
+##
+## **Asked as the tile steps it is made of rather than by sampling the line.** A diagonal step's
+## segment passes through the single corner point four cells meet at, where a floored sample is a
+## coin toss between two of them — so a sampling test would answer a question about floating-point
+## rounding instead of about the staircase. A step between two walkable 8-adjacent cells covers no
+## other ground than those two.
+##
+## And the counterplay the brief gives him — *"going into a corridor and letting them pass"* — is
+## measured rather than assumed: every door in his shaft has to sit further from every point of his
+## line than `inner_radius`, the radius that takes the baby, or stepping onto a door is not an
+## answer to him at all.
+func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> void:
+	var f := InteriorMap.build()
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+
+	var man: EventInstance = null
+	for instance in events.instances():
+		if instance.def.id == "masked_pursuer":
+			man = instance
+	t.check(man != null, "a masked man is on the stairs")
+	if man:
+		var side := "right" if events.burning_side() == "left" else "left"
+		var part := "stairwell_%s" % side
+		var steps := man.path
+		t.check(steps.size() > 8,
+				"his line is the whole shaft rather than two points (%d)" % steps.size())
+		t.check(scene.world_to_tile(steps[0]) == f.waypoints["%s:landing_lobby" % part]
+				and scene.world_to_tile(steps[steps.size() - 1]) == f.waypoints[part],
+				"and it runs landing to landing")
+		var off_the_ground := 0
+		var pinched := 0
+		var not_adjacent := 0
+		for i in range(1, steps.size()):
+			var here := scene.world_to_tile(steps[i - 1])
+			var next := scene.world_to_tile(steps[i])
+			if not f.is_walkable(here) or not f.is_walkable(next):
+				off_the_ground += 1
+				continue
+			var step := next - here
+			if absi(step.x) > 1 or absi(step.y) > 1 or step == Vector2i.ZERO:
+				not_adjacent += 1
+				continue
+			if step.x != 0 and step.y != 0 \
+					and not f.is_walkable(Vector2i(next.x, here.y)) \
+					and not f.is_walkable(Vector2i(here.x, next.y)):
+				pinched += 1
+		t.check(off_the_ground == 0,
+				"every cell on his line is walkable (%d were not)" % off_the_ground)
+		t.check(not_adjacent == 0,
+				"and every step is one cell (%d crossed more)" % not_adjacent)
+		t.check(pinched == 0,
+				"and every diagonal step has a walkable orthogonal corner (%d did not)" % pinched)
+
+		var nearest_door := INF
+		var doors := 0
+		for id: String in f.doors:
+			if not id.begins_with("%s:" % part):
+				continue
+			doors += 1
+			var at := scene.tile_to_world(f.doors[id].tile)
+			for point in steps:
+				nearest_door = minf(nearest_door, at.distance_to(point))
+		t.check(doors == 4, "the shaft has its four doors to ask about (%d)" % doors)
+		t.check(nearest_door > man.def.inner_radius,
+				"and the nearest is %.0fpx off his line, clear of the %.0fpx that takes the baby"
+				% [nearest_door, man.def.inner_radius])
+		print("The masked man's line: %d cells, nearest door %.0fpx off it against a %.0fpx reach"
+				% [steps.size(), nearest_door, man.def.inner_radius])
+	events.free()
+	scene.free()
+
+## *"Maybe some mice. ... Maybe some steam in the basement etc."* The mouse and every vent stand on
+## the basement's own corridor, which has no branches — so they are things she walks past rather
+## than things she may happen not to find.
+##
+## A vent stands on the **seam** between the corridor's two rows rather than on either of them, and
+## that is what makes it a gate: her centre is held `obstructs_radius + PLAYER_BODY_RADIUS` from
+## the middle of the passage, and the walls leave it only `TILE - PLAYER_BODY_RADIUS` either side
+## of that middle, so there is no line past a vent that is blowing. Stated as those two reaches
+## rather than as the numbers they come out at today.
 func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
@@ -752,17 +899,247 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) ->
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
 	events.setup(scene, rng)
-	for id in ["alley_mouse", "basement_steam"]:
-		var found: EventInstance = null
-		for instance in events.instances():
-			if instance.def.id == id:
-				found = instance
-		t.check(found != null, "'%s' is in the building" % id)
-		if found:
-			t.check(walk.has(scene.world_to_tile(found.global_position)),
-					"'%s' stands on the basement's own corridor" % id)
+	var mouse: EventInstance = null
+	for instance in events.instances():
+		if instance.def.id == "alley_mouse":
+			mouse = instance
+	t.check(mouse != null, "the mouse is in the building")
+	if mouse:
+		t.check(walk.has(scene.world_to_tile(mouse.global_position)),
+				"and stands on the basement's own corridor")
+
+	var steam := EventCatalogue.by_id("basement_steam")
+	var vents := events.vents()
+	t.check(vents.size() == Tuning.FINALE_STEAM_PERIODS.size(),
+			"the corridor has one vent per period in `Tuning` (%d)" % vents.size())
+	t.check(steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
+			> InteriorScene.TILE - Tuning.PLAYER_BODY_RADIUS,
+			"a blowing vent is held %.0fpx wide against the %.0fpx the walls leave her centre, "
+			% [steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS,
+			InteriorScene.TILE - Tuning.PLAYER_BODY_RADIUS] + "so there is no line past one")
+	var periods := {}
+	var spacing := INF
+	for i in vents.size():
+		var vent: InteriorEvents.Vent = vents[i]
+		periods[vent.period] = true
+		var north := scene.world_to_tile(vent.at + Vector2(0.0, -InteriorScene.TILE * 0.5))
+		var south := scene.world_to_tile(vent.at + Vector2(0.0, InteriorScene.TILE * 0.5))
+		t.check(scene.is_walkable(north) and scene.is_walkable(south),
+				"vent %d straddles two walkable rows of the corridor" % i)
+		t.check(walk.has(north) or walk.has(south),
+				"vent %d stands on the walk she has to take" % i)
+		t.check(is_zero_approx(fmod(vent.at.y, InteriorScene.TILE)),
+				"vent %d sits on the seam between them rather than on a row" % i)
+		if i > 0:
+			spacing = minf(spacing, vent.at.distance_to((vents[i - 1] as InteriorEvents.Vent).at))
+	t.check(periods.size() == vents.size(),
+			"and no two vents share a period, so their gaps do not line up by themselves")
+	t.check(spacing > (steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) * 2.0,
+			"consecutive vents leave a pocket she fits in (%.0fpx apart)" % spacing)
+	print("Basement vents: %d, %.0fpx apart at the closest, periods %s"
+			% [vents.size(), spacing, Tuning.FINALE_STEAM_PERIODS])
 	events.free()
 	scene.free()
+
+## The corridor as a timing puzzle: *"have them turn off an on in different intervals"*. Driven
+## through `InteriorEvents._physics_process()` and each instance's own `_process()`, the two calls
+## the running game makes every frame, since a synchronous suite advances no clock of its own.
+##
+## Three contracts, and none of them is a number this test chose:
+##
+## - **A blow gives its notice before it closes anything.** `solid_once_it_starts` means the body
+##   goes down at the end of the telegraph, and the telegraph has to be longer than walking out
+##   from under the body takes.
+## - **A vent's own gaps are its own period.** Measured between successive blows rather than read
+##   off `Tuning`, so a stagger or a retire that quietly dropped a beat would show.
+## - **A vent that is off is not there at all** — no instance, so no body and nothing charged.
+func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: Node) -> void:
+	const STEP := 1.0 / 60.0
+	const WINDOW := 24.0
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	var steam := EventCatalogue.by_id("basement_steam")
+	t.check(steam.telegraph_time
+			>= (steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) / Tuning.WALK_SPEED,
+			"the notice (%.2fs) covers walking out from under the body (%.2fs)"
+			% [steam.telegraph_time,
+			(steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) / Tuning.WALK_SPEED])
+
+	# Far enough away that nothing is ever withheld for her sake — that half is the next test.
+	var far := Vector2(-10000.0, -10000.0)
+	var blows := {}
+	var solid_before_the_notice := 0
+	var seen := {}
+	var live := 0.0
+	while live < WINDOW:
+		events._physics_process(STEP)
+		for instance in events.instances():
+			if instance.def.id != "basement_steam":
+				continue
+			instance.player_at = far
+			var id := instance.get_instance_id()
+			if not seen.has(id):
+				seen[id] = true
+				if not blows.has(instance.global_position):
+					blows[instance.global_position] = [] as Array[float]
+				(blows[instance.global_position] as Array[float]).append(live)
+				if instance.is_solid():
+					solid_before_the_notice += 1
+			if instance.is_solid() and instance.age < steam.telegraph_time:
+				solid_before_the_notice += 1
+			instance._process(STEP)
+		live += STEP
+	t.check(solid_before_the_notice == 0,
+			"no blow was ever solid before its notice was over (%d were)" % solid_before_the_notice)
+	t.check(blows.size() == events.vents().size(),
+			"every vent blew inside %.0fs and nothing blew anywhere else (%d places)"
+			% [WINDOW, blows.size()])
+	var off_period := 0
+	var beats := 0
+	for vent: InteriorEvents.Vent in events.vents():
+		var times: Array = blows.get(vent.at, [])
+		t.check(times.size() >= 2, "vent at %s blew more than once (%d)" % [vent.at, times.size()])
+		for i in range(1, times.size()):
+			beats += 1
+			if absf((times[i] - times[i - 1]) - vent.period) > STEP * 2.0:
+				off_period += 1
+	t.check(beats > 0, "there were gaps between blows to measure (%d)" % beats)
+	t.check(off_period == 0, "and every one of them is that vent's own period (%d were not)"
+			% off_period)
+	events.free()
+	scene.free()
+
+## *"A vent never turns on with her inside its body."* The one thing a notice, however long, cannot
+## be an answer to is walking **into** the thing that is about to close: a body built around her is
+## a wall she is inside, and the only ways out of one are teleporting her or deleting it again.
+##
+## So the body is withheld for as long as she stands in the footprint and goes down the moment she
+## is clear — a precondition rather than a repair, and the steam charges her the whole time, so
+## standing in a vent is the most expensive way through it rather than a way past it.
+func _test_a_vent_never_closes_around_her(t: Node) -> void:
+	const STEP := 1.0 / 60.0
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	var steam := EventCatalogue.by_id("basement_steam")
+	var vents := events.vents()
+	t.check(not vents.is_empty(), "there are vents to stand in")
+	if vents.is_empty():
+		events.free()
+		scene.free()
+		return
+	var inside: Vector2 = (vents[0] as InteriorEvents.Vent).at
+
+	# Driven only as far as the first blow at that vent getting past its own notice, which is the
+	# frame the contract is about: any longer and the instance under test would be a later cycle
+	# still telegraphing, and "not solid" would pass for the wrong reason.
+	var blow: EventInstance = null
+	var live := 0.0
+	var charged := 0.0
+	var solid_while_she_was_in_it := 0
+	var blowing := false
+	while live < Tuning.FINALE_LENGTH_SECONDS and not blowing:
+		events._physics_process(STEP)
+		for instance in events.instances():
+			if instance.def.id != "basement_steam" or instance.global_position != inside:
+				continue
+			blow = instance
+			instance.player_at = inside
+			instance._process(STEP)
+			if instance.is_solid():
+				solid_while_she_was_in_it += 1
+			charged += instance.contribution_at(inside) * STEP
+			blowing = instance.age > steam.telegraph_time and not instance.is_finished
+		live += STEP
+	t.check(blow != null and blowing, "the vent she is standing in blew, and is past its notice")
+	t.check(solid_while_she_was_in_it == 0,
+			"and never became solid while she was inside it (%d frames)" % solid_while_she_was_in_it)
+	t.check(charged > 0.0,
+			"while charging her for standing there (%.0f points of meter)" % charged)
+	if blow and blowing:
+		# One frame with her clear of the footprint is all it takes.
+		blow.player_at = inside + Vector2(1000.0, 0.0)
+		blow._process(STEP)
+		t.check(blow.is_solid(), "and it closes the corridor the moment she steps out of it")
+	events.free()
+	scene.free()
+
+## *"No pair of adjacent vents can hold her in a pocket whose both ends are shut for longer than
+## she can stand the noise."*
+##
+## Both halves are asked of the things they are made of rather than of a number written here. The
+## pocket's length is the worst overlap of two adjacent vents' solid windows, simulated over the
+## whole sequence's own clock; what she can stand is the meter — `Tuning.METER_MAX` — against the
+## rate the two fields charge her at the quietest point she can reach, which is the middle of the
+## pocket, standing still, where the ground gives nothing back (`EXCITEMENT_DECAY_IDLE` is zero
+## recovery). If the vents are far enough apart that the middle is outside both fields, the pocket
+## costs nothing and can hold her all day, which is why the rate is measured rather than assumed.
+func _test_no_pocket_between_two_vents_outlasts_the_noise(t: Node) -> void:
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	var steam := EventCatalogue.by_id("basement_steam")
+	var vents := events.vents()
+	var pairs := 0
+	for i in range(1, vents.size()):
+		var a: InteriorEvents.Vent = vents[i - 1]
+		var b: InteriorEvents.Vent = vents[i]
+		pairs += 1
+		var shut := _longest_both_shut(a, b, steam)
+		var half := a.at.distance_to(b.at) * 0.5
+		var rate := 2.0 * Tuning.falloff(half, steam.intensity, steam.inner_radius,
+				steam.outer_radius, steam.falloff_power)
+		t.check(shut * rate < Tuning.METER_MAX,
+				("a pocket %.0fpx wide is shut at both ends for at most %.2fs at %.1f/s, "
+				% [half * 2.0, shut, rate])
+				+ "which is %.0f of the %.0f the meter holds"
+				% [shut * rate, Tuning.METER_MAX])
+		print("Steam pocket %d: %.0fpx wide, shut at both ends for %.2fs at %.1f/s (%.0f of %.0f)"
+				% [pairs, half * 2.0, shut, rate, shut * rate, Tuning.METER_MAX])
+	t.check(pairs > 0, "there were adjacent vents to make a pocket (%d pairs)" % pairs)
+	events.free()
+	scene.free()
+
+## The longest run of seconds during which both vents are solid at once, over the whole sequence's
+## own clock. Sampled rather than solved: the two windows are periodic with different periods and
+## the overlap pattern does not repeat inside the clock, so the honest answer is to walk it.
+func _longest_both_shut(a: InteriorEvents.Vent, b: InteriorEvents.Vent, steam: EventDef) -> float:
+	const STEP := 1.0 / 60.0
+	var longest := 0.0
+	var run := 0.0
+	var at := 0.0
+	while at < Tuning.FINALE_LENGTH_SECONDS:
+		if _is_shut(a, at, steam) and _is_shut(b, at, steam):
+			run += STEP
+			longest = maxf(longest, run)
+		else:
+			run = 0.0
+		at += STEP
+	return longest
+
+## Whether one vent's body is down at `at` seconds into the section. A vent's cycle is its notice,
+## then `Tuning.FINALE_STEAM_BLOWS_FOR` of blowing, then nothing until its own period comes round;
+## `until_the_next_blow` is how far into the first cycle it starts.
+func _is_shut(vent: InteriorEvents.Vent, at: float, steam: EventDef) -> bool:
+	var since := at - (vent.until_the_next_blow - vent.period)
+	if since < 0.0:
+		return false
+	var phase := fmod(since, vent.period)
+	return phase >= steam.telegraph_time \
+			and phase < steam.telegraph_time + Tuning.FINALE_STEAM_BLOWS_FOR
 
 ## *"The hallway windows that flash when an explosion goes off."* There is no burst on the street
 ## to see and no arc drawn for the noise, so the flash is the whole of the cue — driven here

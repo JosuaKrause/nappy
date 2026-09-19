@@ -15,6 +15,13 @@ extends RefCounted
 const PERSON_BODY := 11.0
 ## `vehicle.svg` is 48px across.
 const VEHICLE_BODY := 22.0
+## `steam.svg` is 32px across. Half the silhouette like every other body here, and what makes a
+## vent a **gate** rather than a lane to thread is where it stands rather than how wide it is: on
+## the middle of a basement corridor two tiles (64px) deep, her centre is held 30px out, and the
+## walls leave her centre only 18px either side of that middle. So there is no line past a vent
+## that is blowing, which is the whole of the timing puzzle — and nothing about the picture had to
+## be exaggerated to get it.
+const STEAM_VENT_BODY := 16.0
 ## The widest a `_draw_spread`-style body (`EventInstance._draw_spread`, `_draw_cafe`) may be on a
 ## `SIDEWALK` tile before it draws past the pavement it stands on.
 ##
@@ -2186,20 +2193,26 @@ static func _masked_pursuer() -> EventDef:
 	def.hard_fail = true
 	return def
 
-## Steam in the basement: *"maybe some steam in the basement etc."* A field on a corridor she has
-## to walk down, which is the one kind of pressure a passage with no branches can carry.
+## Steam in the basement: *"maybe some steam in the basement etc."* A vent that blows on a timer,
+## which is the one kind of pressure a passage with no branches can carry.
 ##
-## **It drifts, and that is what buys it out of the solidity rule rather than a number.** *Anything
-## that stands still is solid at the width it is drawn* — and `steam.svg` is 32px across, so a
-## standing vent would be a 16px body in a basement corridor two tiles (64px) wide, which leaves
-## her 28px of pram and body a four-pixel lane to aim at. That is the "no line to walk" failure
-## exactly, in the one place in the building where there is no second route to take instead. So it
-## **paces** its own stretch of corridor, which takes the body away by the rule
-## `EventDef.paces` states — *the price of pacing is the body* — and pays it back in intensity.
+## **It stands still and it closes the corridor, and both halves are the point.** *(2026-09-19:
+## "how would steam move? it doesn't make sense. have multiple fixed locations with steam that
+## fully block the path and have them turn off an on in different intervals so it becomes a timing
+## puzzle.")* So this row is a place rather than a beat, and *anything that stands still is solid
+## at the width it is drawn* applies to it like anything else — `STEAM_VENT_BODY` is half of
+## `steam.svg`, and standing in the middle of a two-tile corridor that is already a gate with no
+## lane beside it.
 ##
-## **And it pulses on top of that**, so the counterplay is timing a pass between two vents rather
-## than a fixed toll for the passage: the same thing `homeless_yeller`'s beat asks for, at the
-## scale of a corridor rather than a street.
+## **What makes that fair is the notice, and `solid_once_it_starts` is what makes the notice
+## worth anything.** A body from the instance's first frame would close ground she might be
+## standing on, so the body goes down at the end of the telegraph and never around her —
+## see that field, and `EventInstance._become_solid_once_it_starts()`.
+##
+## **One vent is a gate; the corridor is several of them on their own clocks.** The count, the
+## periods and how long a blow lasts are `Tuning.FINALE_STEAM_PERIODS` and
+## `Tuning.FINALE_STEAM_BLOWS_FOR`; `InteriorEvents` sites them along the basement's own walk and
+## runs their clocks. What this row owns is one blow: notice, body, field, over.
 static func _basement_steam() -> EventDef:
 	var def := EventDef.new()
 	def.id = "basement_steam"
@@ -2207,18 +2220,17 @@ static func _basement_steam() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.STEAM
-	def.shape = GroundShape.point(10.0)
+	def.solid(GroundShape.point(STEAM_VENT_BODY))
+	def.solid_once_it_starts = true
 	def.act_tag = 4
 	def.intensity = 14.0
 	def.inner_radius = 24.0
 	def.outer_radius = 90.0
 	# Well under a walk, so the escape distance is the falloff band: `(90 − 24) / WALK_SPEED` is
-	# 0.72s, and this carries the same kind of margin every other slow row in the catalogue does.
+	# 0.72s. The body asks for far less than the field does — a step of `STEAM_VENT_BODY` plus her
+	# own 14px is a third of a second — so the notice she is owed for the ground is paid several
+	# times over by the notice she is owed for the noise.
 	def.telegraph_time = 1.2
 	def.pulse_period = 4.0
-	def.mobile = true
-	def.paces = true
-	# A drift rather than a walk — slower than anything else that moves in the game, because what
-	# it is is air and not somebody going somewhere.
-	def.speed = 18.0
+	def.duration = Tuning.FINALE_STEAM_BLOWS_FOR
 	return def

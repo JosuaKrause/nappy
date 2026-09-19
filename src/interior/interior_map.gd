@@ -23,8 +23,8 @@ extends RefCounted
 ## entrance and doors to both stairwells and the basement. Each stairwell is the corrected
 ## ten-column symbol grammar:
 ## its reviewed stair-side pictures are the walkable `t/m/T/M` cells themselves, while `c/C/b`
-## and background stay solid. The basement is the winding corridor with its own short entry flight
-## and the exit at the top.
+## and background stay solid. The basement is the winding corridor with its own one-tile entry
+## stair and the exit at the top.
 
 const _SLOT_STRIDE := 64
 const _HALLWAY_THIRD_ORIGIN := Vector2i(0 * _SLOT_STRIDE, 0)
@@ -55,10 +55,14 @@ static func build() -> InteriorMapPlan:
 	_mark_diagonal_clearances(f)
 	return f
 
-## A diagonal step pinches only when neither orthogonal neighbor is walkable. The basement's narrow
-## entry has that shape, so both absent flanks are cleared. The main shafts deliberately do not:
-## their `t/m` and `T/M` pairs make a two-row surface, leaving every `.` background cell and every
-## painted `c/C/b` side blocked exactly as the grammar says.
+## A diagonal step pinches only when neither orthogonal neighbor is walkable, and **nothing in the
+## building has that shape today**: the main shafts' `t/m` and `T/M` pairs make a two-row surface
+## whose every diagonal step has the other role in one corner, and the basement's entry is a
+## straight column from its door. The pass stays because the shape is one tile away — a flight
+## narrowed to one row, or a jog cut to a corner — and a 14px body cannot cross a corner point
+## between two full-cell blockers at all, which is a map that looks connected and is not. It only
+## ever *frees* an absent corner: every `.` background cell and every painted `c/C/b` side stays
+## blocked exactly as the grammar says.
 static func _mark_diagonal_clearances(f: InteriorMapPlan) -> void:
 	var diagonals: Array[Vector2i] = [Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]
 	for t: Vector2i in f.tiles.keys():
@@ -234,7 +238,12 @@ static func _build_lobby(f: InteriorMapPlan, origin: Vector2i) -> void:
 	_add_door(f, "lobby:right", origin + Vector2i(LOBBY_RIGHT_DOOR_COLUMN, 1), "stairwell_right:landing_lobby")
 	_add_door(f, "lobby:basement", origin + Vector2i(LOBBY_BASEMENT_COLUMN, 1), "basement:entry")
 
-	f.waypoints["lobby"] = origin + Vector2i(LOBBY_ENTRANCE_COLUMN, 1)
+	# **A part's waypoint is never a door's own tile.** `--start-escape <part>` puts her down at
+	# this position with nothing armed, and `InteriorScene.process_player()` fires a transition on
+	# the frame she is standing on a door — so a waypoint that *is* the basement notch sends her
+	# straight down to the basement instead of showing her the lobby. One column east of the
+	# entrance, which is still in front of the barricade and is nobody's threshold.
+	f.waypoints["lobby"] = origin + Vector2i(LOBBY_ENTRANCE_COLUMN + 1, 1)
 
 # -------------------------------------------------------------------------------- basement ---
 
@@ -261,10 +270,14 @@ static func _build_basement(f: InteriorMapPlan, origin: Vector2i) -> void:
 	# Band C, back under band A's own columns — the sketch's leftward jog, and the exit's band.
 	_lay_basement_band(f, origin, 0, 0, 4)
 
-	# The entry: a short diagonal flight up from the lobby's own door into band A's floor.
+	# The entry: the lobby's own door, the stair she came down, and band A's floor — one straight
+	# column, north from the door, seen from the front. *(Playtest 55, sketching the basement:
+	# "basement starts at the bottom (horizontal lines indicate a small stair leading down)".)*
+	# One cell rather than a run of them, because `stair_down.svg` draws a complete flight inside
+	# its own tile — widest tread at the near edge, narrowest at the far one — so two of them
+	# stacked read as two stairs rather than as one longer flight.
 	_add_door(f, "basement:entry", origin + Vector2i(2, 13), "lobby:basement")
-	f.tiles[origin + Vector2i(1, 12)] = InteriorTile.Kind.STAIR_FLIGHT_E
-	f.tiles[origin + Vector2i(0, 11)] = InteriorTile.Kind.STAIR_FLIGHT_E
+	f.tiles[origin + Vector2i(2, 12)] = InteriorTile.Kind.STAIR_DOWN
 
 	f.exit_tile = origin + Vector2i(1, 0)
 	f.tiles[f.exit_tile] = InteriorTile.Kind.EMERGENCY_EXIT
@@ -273,7 +286,9 @@ static func _build_basement(f: InteriorMapPlan, origin: Vector2i) -> void:
 	f.decals[origin + Vector2i(5, 7)] = InteriorTile.Kind.DEBRIS
 	f.decals[origin + Vector2i(2, 3)] = InteriorTile.Kind.RAT
 
-	f.waypoints["basement"] = f.doors["basement:entry"].tile
+	# The corridor cell the entry stair arrives at, for the same reason the lobby's is not its own
+	# notch: the entry door's tile would teleport her back up to the lobby on the first frame.
+	f.waypoints["basement"] = origin + Vector2i(2, 11)
 
 ## One two-row band of basement floor, brick-walled along its own north edge (`wall_row`), from
 ## `x_min` to `x_max` inclusive, all local to `origin`.

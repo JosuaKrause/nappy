@@ -182,9 +182,7 @@ with the code's constraints in hand. It is not queued and it is not rejected.
 last scene — out of the apartment, out of the city — and its section holds the brief, the four
 answered collisions, and the one item still open: the entry from day 14's own summary, which is
 what would make it a run's ending rather than a flag's. The record of what was built is in
-`DECISIONS.md`. M165, the escape after the corrected stairs, sits directly before it and holds
-what [PLAYTEST-84](playtests/PLAYTEST-84.md) found walking the sequence: the masked man off the
-stairs, the basement's entry flight, the steam, and the spawn at the service exit.
+`DECISIONS.md`.
 
 **[PLAYTEST-50.md](playtests/PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
@@ -766,91 +764,6 @@ re-pitched:
       the agents onto it would draw the whole crowd at thirty frames a second, not merely decide
       for it at that rate, which is a larger piece of the trade than it was. Docs/evidence/
       audit-2026-09-13/AUDIT.md, finding 3.1, has the full reasoning.
-
----
-
-## M165 — The escape after the corrected stairs · found 2026-09-19
-
-Found reviewing PR #217 — M158, the staircase follows the corrected tile grammar — and kept out of
-it *(2026-09-19: "add the other items to the todos they're not the focus of this pr")*. Each
-stairwell's landings alternate between column 1 and column 8 of `InteriorMap.STAIRWELL_ROWS`, the
-ten-column symbol grammar that is the map; `src/finale/interior_events.gd` still places and
-describes its events for a shaft whose landings stack on one column.
-[PLAYTEST-84](playtests/PLAYTEST-84.md) walked the sequence on that build, accepted the stairwell
-graphics a second time, and found the rest: *"the basement stairs are bad. the steam walks for
-some reason. the masked man is floating in the stairwell … the spawn in the city from the
-basement can end up inside an obstacle. pathing is not done from the spawn but from the original
-door which is incorrect"*.
-
-- [ ] **The masked man runs the stairs rather than a line through the walls.** *(PLAYTEST-84:
-      "the masked man is floating in the stairwell")*
-      `InteriorEvents._place_the_masked_man()` gives him a two-point path from the
-      `stairwell_<side>:landing_lobby` waypoint to the `stairwell_<side>` waypoint, on the reasoning
-      its docstring gives: *"every landing in a shaft sits on one column, so a line up that column
-      is the shaft"*. Those two waypoints are local `(8, 24)` and `(1, 2)`, so the line crosses `.`
-      background and the solid `c`/`C`/`b` cells and meets each flight at an arbitrary point. Give
-      him a path that follows the grammar — the level `F` columns and the `t/m` and `T/M`
-      diagonals, landing to landing — and add a check that every segment stays over walkable cells;
-      the existing test only checks the tile he starts on. The brief's own answer to him, *"going
-      into a corridor and letting them pass"*, has to survive: a door's approach must leave her
-      somewhere off his line
-- [ ] **The basement's entry is a stair.** *([PLAYTEST-85](playtests/PLAYTEST-85.md): "basement
-      stairs are just not stairs. at the very least use the one tile upward facing stairs we had
-      earlier")* `InteriorMap._build_basement()` lays two diagonal `STAIR_FLIGHT_E` cells painted
-      with `stair_flight_e.svg`, and `_mark_diagonal_clearances()` frees their flanks so a 14px
-      body can cross the pinch. Replace them with a straight run seen from the front: the
-      one-tile stair the kit had before the diagonal treads, `assets/interior/stair_down.svg` —
-      recoverable with `git show 60071de3:assets/interior/stair_down.svg`, a 32×32 tile whose
-      treads are horizontal lines narrowing away from her, the shape of the player's own sketch
-      in [PLAYTEST-55](playtests/PLAYTEST-55.md), *"horizontal lines indicate a small stair
-      leading down"*. It is a level walkable cell with no slope redirection, stacked vertically
-      between the entry door and the corridor, so the clearance pass has no diagonal left to
-      clear. That tile is the floor of what is acceptable, not the ceiling
-- [ ] **The steam is fixed vents on timers, and the corridor is a timing puzzle.**
-      *([PLAYTEST-85](playtests/PLAYTEST-85.md): "how would steam move? it doesn't make sense.
-      have multiple fixed locations with steam that fully block the path and have them turn off
-      an on in different intervals so it becomes a timing puzzle")* `basement_steam` stops being
-      `mobile` and `paces`. Several vents stand at fixed places along `InteriorScene
-      .basement_walk()`, the basement's one branchless route; while a vent is on, its solid body
-      spans the corridor's whole two-tile width, and while it is off it has no body and costs
-      nothing. Each vent has its own period, the periods differing so that the gaps do not line
-      up by themselves. What the fairness contracts owe it: the change from off to on is
-      telegraphed for at least the time it takes to walk out from under it, a vent never turns
-      on with her inside its body, and no pair of adjacent vents can hold her in a pocket whose
-      both ends are shut for longer than she can stand the noise. The count, the periods and the
-      on/off split are `Tuning` numbers under the **balance** skill
-- [ ] **The finale's routes start where she stands.** *([PLAYTEST-84](playtests/PLAYTEST-84.md):
-      "the spawn in the city from the basement can end up inside an obstacle. pathing is not done
-      from the spawn but from the original door which is incorrect" ·
-      [PLAYTEST-85](playtests/PLAYTEST-85.md): "the spawning shouldn't be a check. the pathing
-      should start from the position. then obstacles can never happen")* One fix for both
-      findings, and the rejected option is a check that refuses or moves a bad spawn. Whatever
-      the section plans — the two chains of `FinalePlanner.plan()`, the seals off them, and the
-      placements handed to `EventScheduler.start_finale()` — is planned from her position at the
-      service exit, so the ground she stands on is route by construction and nothing the finale
-      places can be on it. First find what starts elsewhere today: the chains are grown from
-      `service_exit_tile()` but enter the grid at `grid.node_at(start)`, the nearest junction,
-      and the city underneath still carries whatever the day's own planner rooted at the home's
-      doorstep. A test walks seeds and asserts that a 14px body at the spawn overlaps no static
-      body, as a consequence to confirm rather than as the mechanism
-- [ ] **The fire's words match where it stands.** `InteriorScene.turn_landings()` returns the inner
-      level `F` cell below the second- and first-floor doors, two tiles from the door; the grammar
-      has no turn landing and no main-shaft cell of kind `LANDING`. `_place_the_fire()` and
-      `_turn_landings()` in `interior_events.gd` still say *"on a **turn** landing rather than a
-      floor landing"*, *"the half-landing between two floors"* and *"a `LANDING` tile that is not
-      one of the four named floor landings"*, and `docs/ARCHITECTURE.md` still calls
-      `interior_map.gd` *"the switchback layout"*. Rename the query for what it returns and rewrite
-      the three docstrings and the line. The placement itself holds: the fire's blocking reach is
-      its 30px body plus her 14px, the door tile is 64px from its centre, and a door arrival lands
-      on the door tile
-- [ ] **The discarded stair art leaves `assets/interior/`.** `stair_landing_vertical.svg`,
-      `stairwell_shaft_cap_bottom.svg`, `stair_flight_run_{e,w}.svg`,
-      `stair_landing_{floor,turn}.svg`, the four `stair_rail_run_*` sources and the three
-      `stair_*_short_e*` sources are bound nowhere; their one reference is the `removed_textures`
-      list in `tests/test_interior.gd`, and `InteriorScene._structure`, the `StairStructure` node,
-      is built only so that test can count its children at zero. Move what a person reviewed or
-      rejected under the **rejected-graphics** skill, delete the node, and make the test assert
-      what is bound rather than load what is not
 
 ---
 
