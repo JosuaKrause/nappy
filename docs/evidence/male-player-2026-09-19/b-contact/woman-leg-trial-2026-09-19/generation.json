@@ -1,0 +1,56 @@
+{
+  "purpose": "One early M167 preview using the woman's accepted matching-pants legs for the father's remaining side and southern-diagonal B contacts after PLAYTEST-92 rejected the first refinement.",
+  "strategy": "Build exact native direct composites first, then use one built-in edit only to heal the six-row blue-jacket/pelvis seam. Keep father rows 0..27 exact and restore the accepted mother lower legs and shoes below the seam.",
+  "attempt_budget": "One successful built-in imagegen edit, exhausted. The initial over-limit request was rejected before generation and produced no image. No visual retry.",
+  "attempts": [
+    {
+      "tool": "image_gen.imagegen",
+      "intent": "compositing",
+      "output_file_mtime_utc": "2026-09-19T16:11:33Z",
+      "prompt_file": "prompt.txt",
+      "prompt_sha256": "aab275766c1b64626c0fa10eabc5ca5e1b2e5aa5a794f9e4c1010875ceb5348b",
+      "references_in_order": [
+        {
+          "path": "edit-target.png",
+          "role": "edit target; two exact native direct composites enlarged 12x and placed on a 1024x1024 transparent canvas",
+          "sha256": "33150a13d91da9fc1929d36b4e0c43212bfacea90daf97ab095a4bb8950f1674"
+        },
+        {
+          "path": "assets/illustrated/svg-transfer/rig/mother_side_b.png",
+          "role": "accepted side B leg, trouser and shoe donor",
+          "sha256": "8908a6a3e2c2f0e96c7bf3fdeacc722cfe5ccbc7d2cfe7c89474133dcd835b23"
+        },
+        {
+          "path": "assets/illustrated/svg-transfer/rig/mother_front_diagonal_b.png",
+          "role": "accepted independently drawn narrow front-diagonal B leg, trouser and shoe donor",
+          "sha256": "d6250434544ef0df74d032f9728129af2c5ad488f1ee4592c0a8458349f347a1"
+        },
+        {
+          "path": "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generated/rig/father_side_b.png",
+          "role": "provisionally accepted father side B identity, upper body and attachment target",
+          "sha256": "4b9470cbfa65bdef7c88a9f20f9dd5d36055c556d98b5429627f86baf08a5722"
+        },
+        {
+          "path": "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generated/rig/father_front_diagonal_b.png",
+          "role": "provisionally accepted father front-diagonal B identity, upper body and attachment target",
+          "sha256": "7912eeef1d3ca134b8acc32b8375ec3627576038e40c39f548eee14b6f1b833c"
+        }
+      ],
+      "original_output_path": "/Users/krause/.codex/generated_images/01a0bb45-0e74-7072-bfd9-6fb5b302770b/exec-ece91e09-0071-4fd7-939d-0f30b6efaa45.png",
+      "output_sha256": "d71f0bcf0631a60e6d621b073036086d73d459a2d415332394d5c96e4fe1ce38",
+      "retained_output": "woman-leg-composite-raw.png",
+      "verdict": "Retained as the one-pass seam source. The final preview restores the accepted mother donor below row 33 because the generated edit changed those legs; only rows 28..33 come from the generated registration. The seam and loop remain for player judgment."
+    }
+  ],
+  "inspected_not_sent": [
+    "assets/illustrated/svg-transfer/rig/mother_side_a.png",
+    "assets/illustrated/svg-transfer/rig/mother_side_c.png",
+    "assets/illustrated/svg-transfer/rig/mother_front_diagonal_a.png",
+    "assets/illustrated/svg-transfer/rig/mother_front_diagonal_c.png",
+    "docs/graphics-creation/player/mother_side_b.svg",
+    "docs/graphics-creation/player/mother_front_diagonal_b.svg",
+    "assets/rig/father_side_b.svg",
+    "assets/rig/father_front_diagonal_b.svg"
+  ],
+  "deterministic_selection": "Change only father side/front-diagonal B. Restore exact father rows 0..27 and direct mother-donor rows 34..45; all A/C and N/S/NE/NW B files remain byte-identical to the accepted baseline."
+}
