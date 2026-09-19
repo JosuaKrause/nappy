@@ -14,12 +14,6 @@ for goes to `TODO.md`. Nothing here is a task; a task is `TODO.md`'s.
 
 ## Next run, in one sitting
 
-**M167, the father's legs read as legs, has an early image-only attempt in
-[PR #234](https://github.com/JosuaKrause/nappy/pull/234).** Its description embeds the clean
-sheet and native/6× loops. Do the E/W and SE/SW knees and trouser shapes look more natural?
-The shoe style, far-leg shading and diagonal stride width remain explicit follow-up findings,
-not claims of this attempt. N/S, NE/NW and all A/C frames are protected; the attempt is uninstalled.
-
 Each line is a thing to try or look at and the question it settles. `tools/run.sh` plays the
 desktop build; `--seed <n> --day <n>` puts a run where an item says; `1` to `5` in a debug build
 toggle the field, shadow, bounding-box, readout and route-line layers (`docs/TELEMETRY.md`, "The

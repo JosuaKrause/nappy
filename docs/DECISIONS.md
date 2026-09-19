@@ -19317,3 +19317,14 @@ The resolver, atlas, stroller and sprite callers are unchanged by incoming main;
 canvases and existing paths bind the four PNGs without runtime scale or offset changes. Import
 sidecars remain unchanged. Main's save/stair docs and review questions, no-save guard and
 model-independent delegation guidance survive intact; performance measurements stay on PR #216.
+
+### M167, first drawing refinement rejected; woman's legs proposed — 2026-09-19
+
+The first one-call lower-body refinement in PR #234 added knee and trouser definition without
+changing the accepted contact endpoints. It preserved all protected frames and reproduced
+exactly, but [PLAYTEST-92](playtests/PLAYTEST-92.md) still rejected its drawing: "still bad legs --
+maybe use the legs of the woman in those cases?" — "they have the same pants". The first preview
+remains retained, not used as a style reference. The next attempt may borrow the woman's accepted
+pushing legs for E/W and SE/SW B while retaining the father's upper body and opposite-contact
+ownership. This expands the earlier father-only donor permission for this trial; it does not
+authorize runtime installation or change the other protected frames.

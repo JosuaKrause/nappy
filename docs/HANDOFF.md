@@ -293,16 +293,10 @@ checks and worktrees can move independently of this file.
 - **PR #234 — M167, the father's legs read as legs** is the separate drawing follow-up in `TODO.md`.
   [PLAYTEST-90](playtests/PLAYTEST-90.md) and [PLAYTEST-91](playtests/PLAYTEST-91.md) require
   more natural legs, A/C-consistent shading and shoes, and a narrower three-quarter stride.
-  Keep the accepted contact ownership, N/S, NE/NW and every A/C frame fixed. Review the
-  early attempt's clean sheet and native/6× animation loops in its draft PR description;
+  [PLAYTEST-92](playtests/PLAYTEST-92.md) asks for the woman's legs as the next donor because
+  the pants match. Keep the accepted contact ownership, father upper body, N/S, NE/NW and
+  every A/C frame fixed. Show the clean sheet and native/6× loops in its draft PR description;
   nothing in this follow-up replaces the provisionally accepted runtime baseline without review.
-- **PR #232 — share visual attempts early through the PR** carries the player's collaboration
-  preference from [PLAYTEST-89](playtests/PLAYTEST-89.md). Push a plausible attempt in the
-  requested format and point to its PR images before asking for feedback; the CLI cannot
-  display local image links. Repeated feedback is welcome, and preview is not installation approval.
-- **PR #233 — M165, the escape after the corrected stairs** is independently owned. Fetch its
-  live description, checks and queue reconciliation before acting; do not fold father-art work
-  into its escape findings.
 
 Number ownership remains distinct: PLAYTEST-84 and PLAYTEST-85 are the escape/save records
 on main, PLAYTEST-86 belongs to the performance work, and PLAYTEST-87 belongs to the father

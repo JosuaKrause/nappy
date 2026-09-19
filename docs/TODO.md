@@ -306,6 +306,12 @@ The provisionally accepted contact baseline and its narrow father-only splice ex
 recorded in `DECISIONS.md` under M160, provisional contact acceptance. This separate drawing
 follow-up does not replace that baseline without visual approval.
 
+[PLAYTEST-92](playtests/PLAYTEST-92.md) rejects the first refinement: "still bad legs -- maybe
+use the legs of the woman in those cases?" — "they have the same pants". The next preview may
+reuse the woman's accepted pushing-leg artwork in E/W and SE/SW B, with the father's upper
+body and the accepted contact ownership preserved. This is a specific donor exception, not
+permission to replace the father's identity or change protected frames.
+
 - [ ] **Match the legs to the rest of the family.** E/W B needs A/C's clear dark far-leg cue,
       folded and shaded trousers, and chunky brown highlighted shoes instead of thin dark slivers.
       Keep the accepted near leg trailing and the far leg advancing, with a continuous
