@@ -23,9 +23,10 @@ extends Node
 ## the meter takes a hit, wherever in the building she is standing. That is the same row's field
 ## reduced to the only part of it that reaches through a wall.
 ##
-## **And between them, light with no noise behind it.** A distant flash every three to seven
-## seconds lights one side of every hallway and does nothing else at all — see
-## `_light_the_far_windows()`. It is the night outside; the bangs are what she is charged for.
+## **And between them, light with no noise behind it.** A distant flash — on average about one a
+## second and a third, never closer than a tenth of a second or further than five — lights every
+## window exactly as a bang does and costs nothing at all, see `_light_the_far_windows()`. It is
+## the night outside; the bangs are what she is charged for.
 
 ## How much an explosion outside costs her, as points on the meter, one bang at a time. Taken from
 ## the row's own field rather than invented: `finale_explosion` emits its `intensity` for its
@@ -298,13 +299,10 @@ static func _without_its_aftermath(def: EventDef) -> EventDef:
 
 func _physics_process(delta: float) -> void:
 	_retire_finished()
-	# **The far windows before the near bang**, so that on a frame carrying both, the bang's own
-	# flash — every window at once — is the one left on screen. A distant flash is the quieter
-	# statement and must never overwrite the loud one.
-	_light_the_far_windows(delta)
 	_explode_every_so_often(delta)
 	_blow_the_vents(delta)
 	_send_the_masked_man_again(delta)
+	_light_the_far_windows(delta)
 	if not _find_player():
 		return
 	_tell_them_where_she_is()
@@ -337,6 +335,11 @@ func _explode_every_so_often(delta: float) -> void:
 ## the light and said nothing about the noise, and an explosion is loud by definition. A bang close
 ## enough to shake the building still costs her exactly what it did.
 ##
+## **The same call a near bang makes**, so every window in the building lights together and goes
+## dark together — *(2026-09-19: "all windows always need to flash together. a single window cannot
+## flash by itself.")* What separates the far flashes from the near ones is how often they happen
+## and what they cost, never which windows they reach.
+##
 ## Nothing is logged for one either. The run log records what the code cannot recompute and what
 ## answers an open question; a line every few seconds saying the windows lit would be neither, and
 ## the loud bangs are already visible in the log through what they charge.
@@ -345,11 +348,20 @@ func _light_the_far_windows(delta: float) -> void:
 	if _until_the_next_distant_flash > 0.0:
 		return
 	_until_the_next_distant_flash = _wait_for_the_next_distant_flash()
-	_interior.flash_windows_on_one_side(_flashes.randf() < 0.5)
+	_interior.flash_windows()
 
+## How long until the next one: a scaled Kumaraswamy draw, short-biased and smooth, bounded by
+## `Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS` and `_MAX_SECONDS` with its mean set by the shape
+## constant — see that constant's own doc for the formula and for why `B` is not a number to edit
+## by feel. **Its inverse CDF is closed form**, which is why this is one expression and not a
+## rejection loop: a loop would draw a variable number of values from the stream and make how many
+## times the windows flash depend on how many times the dice were rolled, so a seed would stop
+## replaying the same night.
 func _wait_for_the_next_distant_flash() -> float:
-	return _flashes.randf_range(Tuning.FINALE_DISTANT_FLASH_INTERVAL_MIN,
-			Tuning.FINALE_DISTANT_FLASH_INTERVAL_MAX)
+	var u := _flashes.randf()
+	var span := Tuning.FINALE_DISTANT_FLASH_MAX_SECONDS - Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS
+	return Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS \
+			+ span * sqrt(1.0 - pow(1.0 - u, 1.0 / Tuning.FINALE_DISTANT_FLASH_SHAPE_B))
 
 func _retire_finished() -> void:
 	var survivors: Array[EventInstance] = []

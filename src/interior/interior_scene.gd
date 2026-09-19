@@ -180,7 +180,6 @@ func _rebuild_walls() -> void:
 	# Wide doors are drawn after the repeating 32px wall strips. Their own centre registration keeps
 	# both leaves visible instead of letting a neighbouring wall crop one side.
 	_window_sprites.clear()
-	_window_is_west.clear()
 	for at: Vector2i in _plan.walls:
 		var kind: InteriorTile.Kind = _plan.walls[at]
 		if kind == InteriorTile.Kind.LIFT_DOOR or kind == InteriorTile.Kind.ENTRANCE_DOOR:
@@ -189,7 +188,6 @@ func _rebuild_walls() -> void:
 		var sprite := _add_wall_sprite(at, texture)
 		if sprite and kind == InteriorTile.Kind.WINDOW:
 			_window_sprites.append(sprite)
-			_window_is_west.append(_is_west_of_its_hallway(at))
 	for at: Vector2i in _plan.walls:
 		var kind: InteriorTile.Kind = _plan.walls[at]
 		if kind != InteriorTile.Kind.LIFT_DOOR and kind != InteriorTile.Kind.ENTRANCE_DOOR:
@@ -234,70 +232,38 @@ func _add_wall_sprite(at: Vector2i, texture: Texture2D) -> Sprite2D:
 
 # ------------------------------------------------------------------ the flash ---
 
-## Every hallway window in the building, kept so an explosion can light all of them at once.
+## Every hallway window in the building, kept so a flash can light all of them at once.
 var _window_sprites: Array[Sprite2D] = []
-## For each of those, whether it is on the west half of its own hallway — what lets a distant
-## flash light one side of the corridor and not the other. Parallel to `_window_sprites` and built
-## with it, rather than asked of the tile at flash time, since a window never moves.
-var _window_is_west: Array[bool] = []
 ## Seconds of lit window left, or 0 for none. Counted down in `_process()` rather than handed to a
 ## `SceneTreeTimer`, so the flash freezes with the rest of the game behind a pause screen instead
 ## of burning down while nothing is being played.
 var _window_flash_left := 0.0
 
-## **The explosion's own cue indoors.** *"The hallway windows that flash when an explosion goes
-## off"* — there is no burst on the street to see and no arc drawn for the noise yet, so what says
-## a bomb has gone off somewhere out there is every window in the building going white at once for
-## a frame or two.
+## **The cue for something going off outside, near or far.** *"The hallway windows that flash when
+## an explosion goes off"* — there is no burst on the street to see and no arc drawn for the noise
+## yet, so what says a bomb has gone off somewhere out there is every window in the building going
+## white at once for a frame or two.
 ##
-## All of them, not the ones she can see: the building is one map with three hallways 64 tiles
-## apart, and which hallway she is standing in is not something this has to know. The two she is
-## not in are off screen and cost two texture assignments.
+## **Every one of them, together, always.** *(2026-09-19: "all windows always need to flash
+## together. a single window cannot flash by itself.")* There is one call for a near bang and a far
+## flash alike and no way to light a subset, which is the point: a window lighting while the one
+## beside it stays dark does not read as a city being shelled, it reads as a broken sprite. That
+## also makes "which hallway she is standing in" a question this never has to ask — the building is
+## one map with three hallways 64 tiles apart, and the two she is not in are off screen and cost
+## two texture assignments.
 func flash_windows() -> void:
 	_window_flash_left = Tuning.FINALE_WINDOW_FLASH_SECONDS
 	for sprite in _window_sprites:
 		sprite.texture = HALLWAY_WINDOW_FLASH
-
-## Something going off **far away**: the windows on one side of every hallway light, and nothing
-## else happens at all. *(2026-09-19: "the flashing lights in the window are too rare.")*
-##
-## **One side, not a scatter.** A random subset of all the windows in the building can light none
-## at all in the hallway she is standing in, which is a flash she does not see — and the ask was
-## for more flashes she does see. Half a corridor lighting says *over there* and always leaves
-## something lit in whichever hallway she is in. Which half is the caller's roll, so consecutive
-## flashes are not all from the same direction.
-##
-## No instance, no field, nothing on the meter: this is light without noise, which is the whole
-## reason it is not simply more explosions — see `Tuning.FINALE_DISTANT_FLASH_INTERVAL_MIN`.
-func flash_windows_on_one_side(west: bool) -> void:
-	_window_flash_left = Tuning.FINALE_WINDOW_FLASH_SECONDS
-	for i in _window_sprites.size():
-		if _window_is_west[i] == west:
-			_window_sprites[i].texture = HALLWAY_WINDOW_FLASH
-
-## Whether a window at `at` is on the west half of the hallway it belongs to, decided against that
-## hallway's own midpoint waypoint rather than against any arithmetic about where the parts are
-## laid out — so moving a part, or widening a hallway, moves this with it.
-func _is_west_of_its_hallway(at: Vector2i) -> bool:
-	var middle := at.x
-	var nearest := 1 << 30
-	for id in ["hallway_third", "hallway_second", "hallway_first"]:
-		if not _plan.waypoints.has(id):
-			continue
-		var here: Vector2i = _plan.waypoints[id]
-		var gap := absi(at.x - here.x)
-		if gap < nearest:
-			nearest = gap
-			middle = here.x
-	return at.x < middle
 
 ## Whether a flash is on screen right now — what `tests/test_interior.gd` asks, since a texture
 ## swap is not something a headless run can see.
 func windows_are_flashing() -> bool:
 	return _window_flash_left > 0.0
 
-## How many windows are showing their lit picture — the other half of the same question, since a
-## near bang lights every one of them and a distant flash lights one side of each hallway.
+## How many windows are showing their lit picture — the question `windows_are_flashing()` cannot
+## answer, and the one that holds *all of them or none*: a count that is neither is a window
+## flashing on its own.
 func windows_lit() -> int:
 	var lit := 0
 	for sprite in _window_sprites:

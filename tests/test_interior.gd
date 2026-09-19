@@ -1489,34 +1489,40 @@ func _test_an_explosion_flashes_every_hallway_window(t: Node) -> void:
 	t.check(not scene.windows_are_flashing(), "the windows are dark to begin with")
 	events._physics_process(Tuning.FINALE_EXPLOSION_INTERVAL)
 	t.check(scene.windows_are_flashing(), "an explosion lights the hallway windows")
-	# **Every one of them**, which is what tells a bang from the distant flashes that light one
-	# side of a corridor — and the reason the far flash is stepped before the near one, so a frame
-	# carrying both leaves the loud statement on screen.
+	# *"All windows always need to flash together. A single window cannot flash by itself."*
 	t.check(scene.windows_lit() == scene.window_count(),
-			"all %d of them, not one side (%d lit)" % [scene.window_count(), scene.windows_lit()])
+			"every one of the %d, together (%d lit)" % [scene.window_count(), scene.windows_lit()])
 	scene._process(Tuning.FINALE_WINDOW_FLASH_SECONDS + 0.01)
 	t.check(not scene.windows_are_flashing(), "and they go dark again a frame or two later")
+	t.check(scene.windows_lit() == 0, "all of them, with none left lit (%d)" % scene.windows_lit())
 	events.free()
 	scene.free()
 
-## *"The flashing lights in the window are too rare."*
+## *"The flashing lights in the window are too rare"*, and *"do a biased random distribution
+## between 100ms and 5s between flashes where the mean is 1.3s and the rest of the curve is
+## smooth."*
 ##
-## The answer is light without noise, so this asks three things that together say exactly that.
+## Four things, and each is a separate way the answer could be wrong.
 ##
-## - **The rate.** Counted over a minute of the section, telling a distant flash from a bang by
-##   how many windows lit: a bang lights every one, a distant flash lights one side of each
-##   hallway. The bound is `Tuning.FINALE_DISTANT_FLASH_INTERVAL_MIN`/`_MAX` rather than a number
-##   written here, and the thing the player actually asked for is the last check: far more flashes
-##   than the explosions alone ever gave.
+## - **The draw itself.** A few thousand values off the real function: all inside the stated
+##   bounds, a mean on the stated mean, and a median under it — which is what "biased" means and
+##   is the one property a symmetric mistake would still pass the mean check with.
+## - **The rate on screen.** Over a minute of the section, far more flashes than the explosions
+##   alone ever gave, which is what the player actually asked for. Stated against
+##   `Tuning.FINALE_EXPLOSION_INTERVAL` rather than as a count written here.
+## - **All of them or none of them.** *(2026-09-19: "all windows always need to flash together. a
+##   single window cannot flash by itself.")* Checked on every frame of the minute, so an overlap
+##   between two flashes 0.1s apart cannot leave one lit or blink the corridor dark for a frame.
 ## - **The cost, which is none.** Excitement in this building is a pure query over
 ##   `InteriorEvents.instances()` — nothing writes at the baby — so "adds nothing to the meter" is
 ##   exactly "creates no instance", and that is asked directly rather than through an integral
 ##   that a stray source elsewhere in the building could muddy.
-## - **The same night twice.** The waits come off the section's own seeded stream, so two
-##   `InteriorEvents` built from one seed flash at the same instants.
+##
+## And the same seed twice, since the waits come off the section's own seeded stream.
 func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> void:
 	const STEP := 1.0 / 60.0
 	const SPAN := 60.0
+	const DRAWS := 4000
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	var events := InteriorEvents.new()
@@ -1526,42 +1532,70 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 	events.setup(scene, rng)
 	t.check(scene.window_count() > 0, "the building has hallway windows (%d)" % scene.window_count())
 
-	var far := 0
-	var near := 0
+	# The distribution, asked of the function the running game draws from.
+	var waits: Array[float] = []
+	var outside := 0
+	var total := 0.0
+	for _draw in DRAWS:
+		var wait := events._wait_for_the_next_distant_flash()
+		if wait < Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS \
+				or wait > Tuning.FINALE_DISTANT_FLASH_MAX_SECONDS:
+			outside += 1
+		waits.append(wait)
+		total += wait
+	waits.sort()
+	var mean := total / float(DRAWS)
+	var median: float = waits[DRAWS / 2]
+	t.check(outside == 0,
+			"every wait is inside [%.1fs, %.1fs] (%d of %d were not)"
+			% [Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS, Tuning.FINALE_DISTANT_FLASH_MAX_SECONDS,
+			outside, DRAWS])
+	t.check(absf(mean - Tuning.FINALE_DISTANT_FLASH_MEAN_SECONDS) <= 0.05,
+			"the mean wait is %.3fs against the %.2fs the shape constant is solved for"
+			% [mean, Tuning.FINALE_DISTANT_FLASH_MEAN_SECONDS])
+	t.check(median < mean,
+			"and the median (%.3fs) is under it, which is the bias toward short gaps" % median)
+	print("Distant flash waits over %d draws: mean %.3fs, median %.3fs, longest %.2fs"
+			% [DRAWS, mean, median, waits[DRAWS - 1]])
+	events.restart()
+
+	var flashes := 0
 	var when: Array[float] = []
 	var was := false
+	var half_lit := 0
+	var lit_while_dark := 0
 	var at := 0.0
 	while at < SPAN:
 		events._physics_process(STEP)
 		var now := scene.windows_are_flashing()
 		if now and not was:
 			when.append(at)
-			if scene.windows_lit() == scene.window_count():
-				near += 1
-			else:
-				far += 1
+			flashes += 1
 		was = now
+		if now and scene.windows_lit() != scene.window_count():
+			half_lit += 1
+		if not now and scene.windows_lit() != 0:
+			lit_while_dark += 1
 		scene._process(STEP)
 		at += STEP
-	# A flash cannot be missed by this loop: the shortest wait between two of them is far longer
-	# than one flash lasts, so every start is a dark frame followed by a lit one.
-	t.check(far >= int(SPAN / Tuning.FINALE_DISTANT_FLASH_INTERVAL_MAX) - 1,
-			"at least one distant flash per %.0fs of the section (%d in %.0fs)"
-			% [Tuning.FINALE_DISTANT_FLASH_INTERVAL_MAX, far, SPAN])
-	t.check(far <= int(SPAN / Tuning.FINALE_DISTANT_FLASH_INTERVAL_MIN) + 1,
-			"and never more than one per %.0fs (%d in %.0fs)"
-			% [Tuning.FINALE_DISTANT_FLASH_INTERVAL_MIN, far, SPAN])
-	t.check(far > near * 3,
-			"far more flashes than the bangs alone gave (%d distant against %d loud)" % [far, near])
-	print("Window flashes over %.0fs: %d distant, %d loud" % [SPAN, far, near])
+	var bangs := int(SPAN / Tuning.FINALE_EXPLOSION_INTERVAL)
+	t.check(flashes > bangs * 5,
+			"far more flashes than the bangs alone gave (%d in %.0fs against %d explosions)"
+			% [flashes, SPAN, bangs])
+	t.check(half_lit == 0,
+			"every window lights on every flash, none on its own (%d frames with some dark)"
+			% half_lit)
+	t.check(lit_while_dark == 0,
+			"and none is left lit once a flash is over (%d frames)" % lit_while_dark)
+	print("Window flashes over %.0fs: %d, against %d explosions" % [SPAN, flashes, bangs])
 
 	var instances := events.instances().size()
-	events._light_the_far_windows(Tuning.FINALE_DISTANT_FLASH_INTERVAL_MAX + 0.01)
+	events._light_the_far_windows(Tuning.FINALE_DISTANT_FLASH_MAX_SECONDS + 0.01)
 	t.check(events.instances().size() == instances,
 			"a distant flash creates nothing, so it can charge nothing (%d instances either side)"
 			% instances)
-	t.check(scene.windows_lit() > 0 and scene.windows_lit() < scene.window_count(),
-			"and lights one side of the corridor rather than all of it (%d of %d)"
+	t.check(scene.windows_lit() == scene.window_count(),
+			"and lights the whole corridor, exactly as a bang does (%d of %d)"
 			% [scene.windows_lit(), scene.window_count()])
 
 	# The same seed, the same night: a second building flashes at the same instants.
@@ -1572,6 +1606,8 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 	var twin_rng := RandomNumberGenerator.new()
 	twin_rng.seed = 4242
 	twin.setup(twin_scene, twin_rng)
+	twin._wait_for_the_next_distant_flash()
+	twin.restart()
 	var twin_when: Array[float] = []
 	var twin_was := false
 	at = 0.0

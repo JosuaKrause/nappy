@@ -1153,11 +1153,18 @@ way down is a sequence of crossings rather than one.
 **The night outside is light and noise, and they are separate things.** Every
 `Tuning.FINALE_EXPLOSION_INTERVAL` a bomb goes off close enough to shake the building: every
 hallway window in it goes white for `Tuning.FINALE_WINDOW_FLASH_SECONDS`, and the meter takes the
-hit, wherever she is standing. Between those, every three to seven seconds
-(`Tuning.FINALE_DISTANT_FLASH_INTERVAL_MIN`/`_MAX`, drawn from the section's own seeded stream so
-a seed replays the same night), the windows on **one side** of each hallway light and nothing else
-happens at all — no event, no field, nothing on the meter. A shelled city is what she can see out
-of the window; what she is charged for is only what is close enough to hear.
+hit, wherever she is standing. Between those, far more often, a distant flash lights the same
+windows the same way and does nothing else at all — no event, no field, nothing on the meter. A
+shelled city is what she can see out of the window; what she is charged for is only what is close
+enough to hear.
+
+**Every window flashes together, always** — near bang or far flash, one call and no way to light a
+subset, because a window lighting while the one beside it stays dark reads as a broken sprite
+rather than as a city under fire. The waits between distant flashes are a short-biased smooth
+draw on `[Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS, _MAX_SECONDS]` (0.1s to 5s) with its mean at
+`_MEAN_SECONDS` (1.3s), taken from the section's own seeded stream so a seed replays the same
+night: mostly quick double-taps, with the occasional long dark gap. Two flashes close enough to
+overlap run together as one longer one rather than blinking.
 
 **And the basement is three gates on three clocks.** The corridor jogs between three brick-walled
 bands and is one tile wide at three places on the way to the service exit
