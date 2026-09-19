@@ -1179,6 +1179,13 @@ open as walking through the vent's reach costs. Waiting is the answer; there is 
 *"Escape the apartment"* at the start of the first section and *"Exit the city"* at the service
 exit. A retry is not told either of them a second time.
 
+**Section two is the city she knows with the men in it.** Army trucks, unmarked vans and
+roadblocks at full resistance progress stand on every street either chain walks. A roadblock is a
+barrier with a guard standing at it from the moment it is placed; when he notices her **he** comes
+for her, on foot, and the barrier he leaves stays drawn and stays shut across the road behind him.
+What takes the baby is his own reach (`EventCatalogue.MASKED_MAN_REACH`, 28px, the same as the man
+on the stairs) — nothing about the barricade catches her. See `docs/EVENTS.md`, "The heat".
+
 **It ends on the tunnel or the bridge**, within `Tuning.FINALE_EXIT_REACH` of the exit `CityEdge`
 draws, on a summary screen with the way out behind her and nothing triumphant on it — and the clock
 she took, to the millisecond, which is the only number that screen carries.
