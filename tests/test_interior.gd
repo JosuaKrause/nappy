@@ -1,7 +1,8 @@
 extends RefCounted
 ## `InteriorMap` and `InteriorMapPlan` — the escape scene's one building-wide map, walkability, the
-## diagonal switchback stairwells and the doors that teleport between its seven parts, all headless:
-## nothing here needs a scene tree except the two suites that build `InteriorScene` itself.
+## alternating stairwells of the ten-column grammar, and the doors that teleport between its seven
+## parts, all headless: nothing here needs a scene tree except the suites that build
+## `InteriorScene` itself.
 
 func run(t) -> void:
 	_test_the_map_builds(t)
@@ -739,9 +740,9 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 	if fire:
 		var burning := events.burning_side()
 		var other := "right" if burning == "left" else "left"
-		t.check(scene.turn_landings("stairwell_%s" % burning).has(
+		t.check(scene.inner_floor_approaches("stairwell_%s" % burning).has(
 				scene.world_to_tile(fire.global_position)),
-				"the fire stands on an interior level approach of the %s shaft" % burning)
+				"the fire stands on the inner cell of a level approach in the %s shaft" % burning)
 		var reach := fire.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
 		t.check(reach > 0.0, "and it is solid at all (%.0fpx)" % reach)
 		var shut := 0

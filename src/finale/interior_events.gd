@@ -92,19 +92,22 @@ func instances() -> Array[EventInstance]:
 
 # ----------------------------------------------------------------- placement ---
 
-## The fire, on a **turn** landing rather than a floor landing.
+## The fire, on the **inner** cell of an intermediate floor's level approach.
 ##
-## A floor landing has that floor's own door one tile beside it, and the fire's body is wider than
-## that — so a fire there would close the way out of the stairwell as well as the way down it, and
-## the answer to it would be walking back up rather than stepping through a door. On the
-## half-landing between two floors it closes exactly one flight: both floor landings above and
-## below it keep their doors, so the way past is into the hallway and along to the other shaft,
-## which is the reason the two stairwells are at opposite ends of the hallway in the first place.
+## A level approach is two cells of `F` below its door. Standing on the outer one — the door's own
+## cell — the fire's body would close the way out of the stairwell as well as the way down it, and
+## the answer to it would be walking back up rather than stepping through a door. One cell further
+## in it closes exactly the flight that approach leads onto, and every door in the shaft stays
+## reachable: the way past is into the hallway and along to the other shaft, which is the reason
+## the two stairwells are at opposite ends of the hallway in the first place.
+##
+## Its blocking reach is its own 30px body plus her 14px, and the door tile is 64px from the cell
+## it stands on, so a door arrival lands clear of it.
 func _place_the_fire(rng: RandomNumberGenerator) -> void:
-	var landings := _turn_landings(_burning_side)
-	if landings.is_empty():
+	var approaches := _inner_floor_approaches(_burning_side)
+	if approaches.is_empty():
 		return
-	var at: Vector2i = landings[rng.randi_range(0, landings.size() - 1)]
+	var at: Vector2i = approaches[rng.randi_range(0, approaches.size() - 1)]
 	_spawn(_without_its_aftermath(EventCatalogue.by_id(_FIRE_ID)), _interior.tile_to_world(at))
 
 ## The masked man, at the foot of the stairwell the fire did not take, running its whole height.
@@ -226,11 +229,11 @@ func _blow_the_vents(delta: float) -> void:
 func vents() -> Array[Vent]:
 	return _vents
 
-## Every half-landing in one shaft: a `LANDING` tile that is not one of the four named floor
-## landings. Asked of the plan rather than recomputed from the switchback's own arithmetic, so a
-## change to the flight length moves the fire with it.
-func _turn_landings(side: String) -> Array[Vector2i]:
-	return _interior.turn_landings("stairwell_%s" % side)
+## The inner cell of each intermediate floor's level approach in one shaft. Asked of the plan
+## rather than recomputed from the grammar's own arithmetic here, so a change to a flight's length
+## moves the fire with it.
+func _inner_floor_approaches(side: String) -> Array[Vector2i]:
+	return _interior.inner_floor_approaches("stairwell_%s" % side)
 
 # -------------------------------------------------------------- the instances ---
 

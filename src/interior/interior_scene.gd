@@ -398,10 +398,16 @@ const NOWHERE := Vector2i(-999999, -999999)
 func waypoint(id: String) -> Vector2i:
 	return _plan.waypoints.get(id, NOWHERE)
 
-## The fire-safe interior landings of one shaft. Each intermediate door has two `F` cells below
-## it; the second is two tiles from the door, so the fire's body closes the connecting flight
-## without covering the corridor transition itself. The top and lobby landings are excluded.
-func turn_landings(part_id: String) -> Array[Vector2i]:
+## The inner cell of each intermediate floor's level approach, in one shaft — the second of the two
+## level `F` cells below a `D`, two tiles from the door. Named for what it is: **the grammar has no
+## half-landing between floors and no cell of kind `LANDING` in a shaft at all**, so anything
+## sited here is on a floor's own approach, one cell further in than the door.
+##
+## Which is exactly what the fire wants: two tiles from the door, its body closes the flight the
+## approach leads onto without covering the corridor transition itself, so the way past it is
+## through that floor's door rather than back up the stairs. The top and lobby approaches are
+## excluded, since neither has a flight above it to close.
+func inner_floor_approaches(part_id: String) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
 	for landing_id in ["landing_second", "landing_first"]:
 		var first: Vector2i = waypoint("%s:%s" % [part_id, landing_id])
