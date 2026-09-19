@@ -1,6 +1,6 @@
-<!-- Prepared, unbound M158 lower tile. Four 8px columns descend east: 8, 16, 24, 32px.
+<!-- Lower tile for the live stair-side assembly. Four 8px columns descend east: 8, 16, 24, 32px.
      Their top join and the gray side's tile-edge contacts are borderless; its diagonal below the
-     rectangle sides is borderless too. The live TileMap does not load this source. -->
+     rectangle sides is borderless too. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges" stroke-linejoin="miter">
   <path d="M0 8H8V16H16V24H24V32H16L0 16Z" fill="#62656a"/>
   <path d="M0 0H32V32H24V24H16V16H8V8H0Z" fill="#767a7d"/>

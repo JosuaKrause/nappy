@@ -1,6 +1,5 @@
-<!-- Prepared, unbound M158 lower tile, horizontally mirrored for westward descent. Its borderless
-     top join, gray-side tile-edge contacts and diagonal mirror the eastward source. The live
-     TileMap does not load this source. -->
+<!-- Lower tile for the live stair-side assembly, horizontally mirrored for westward descent.
+     Its borderless top join, gray-side tile-edge contacts and diagonal mirror the eastward source. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges" stroke-linejoin="miter">
   <g transform="translate(32 0) scale(-1 1)">
     <path d="M0 8H8V16H16V24H24V32H16L0 16Z" fill="#62656a"/>

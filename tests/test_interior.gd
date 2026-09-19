@@ -15,6 +15,7 @@ func run(t) -> void:
 	_test_the_tileset_carries_every_walkable_ground_kind(t)
 	_test_the_scene_paints_the_whole_map(t)
 	_test_collision_blocks_exactly_the_non_walkable_ground(t)
+	_test_full_flight_side_modules_select_and_place_the_reviewed_tiles(t)
 	_test_a_sideways_press_on_a_flight_walks_its_slope(t)
 	_test_every_diagonal_step_has_both_its_pinch_corners_cleared(t)
 	_test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t)
@@ -188,6 +189,79 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: Node) -> void:
 	t.check(blocked.has(Vector2i(30, 0)), "a gap tile between two parts is blocked")
 	scene.free()
 
+## The full-flight side uses the six reviewed 32px sources as three complete modules, rather than
+## turning its visual assembly into map cells. This checks the runtime placement function itself:
+## selection follows the descent direction, and each following module moves diagonally by one tile.
+## The existing walkability and slope suites continue to own the map and input contracts.
+func _test_full_flight_side_modules_select_and_place_the_reviewed_tiles(t: Node) -> void:
+	var origin := Vector2(320.0, 448.0)
+	var east := InteriorScene.stair_side_placements(origin, true)
+	var west := InteriorScene.stair_side_placements(origin, false)
+	t.check(east.size() == InteriorScene.STAIR_SIDE_MODULES * 3,
+			"an east full flight contains complete upper/lower/continuation modules")
+	t.check(west.size() == east.size(), "a west full flight uses the same complete module count")
+	var east_textures: Array[Texture2D] = [
+		InteriorScene.STAIR_SIDE_UPPER_E,
+		InteriorScene.STAIR_SIDE_LOWER_E,
+		InteriorScene.STAIR_SIDE_CONTINUE_E,
+	]
+	var west_textures: Array[Texture2D] = [
+		InteriorScene.STAIR_SIDE_UPPER_W,
+		InteriorScene.STAIR_SIDE_LOWER_W,
+		InteriorScene.STAIR_SIDE_CONTINUE_W,
+	]
+	for index in east.size():
+		var east_tile: InteriorScene.StairSidePlacement = east[index]
+		var west_tile: InteriorScene.StairSidePlacement = west[index]
+		var role: int = index % 3
+		t.check(east_tile.texture == east_textures[role],
+				"east module %d selects its %s source" % [east_tile.module, east_tile.role])
+		t.check(west_tile.texture == west_textures[role],
+				"west module %d selects its mirrored %s source" % [west_tile.module, west_tile.role])
+		t.check(east_tile.position.y == origin.y + InteriorScene.TILE * (east_tile.module + role),
+				"east roles remain vertically stackable at their native tile registration")
+		t.check(west_tile.position.y == origin.y + InteriorScene.TILE * (west_tile.module + role),
+				"west roles remain vertically stackable at their native tile registration")
+	for module in range(1, InteriorScene.STAIR_SIDE_MODULES):
+		var east_step: InteriorScene.StairSidePlacement = east[module * 3]
+		var east_previous: InteriorScene.StairSidePlacement = east[(module - 1) * 3]
+		var west_step: InteriorScene.StairSidePlacement = west[module * 3]
+		var west_previous: InteriorScene.StairSidePlacement = west[(module - 1) * 3]
+		t.check(east_step.position - east_previous.position == Vector2(InteriorScene.TILE, InteriorScene.TILE),
+				"each east module shifts one tile right and down")
+		t.check(west_step.position - west_previous.position == Vector2(-InteriorScene.TILE, InteriorScene.TILE),
+				"each west module mirrors the shift one tile left and down")
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	scene.build()
+	var full_flights := 0
+	var f := InteriorMap.build()
+	for landing: Vector2i in f.tiles:
+		if f.tiles[landing] != InteriorTile.Kind.LANDING:
+			continue
+		var east_kind: int = f.tiles.get(landing + Vector2i(1, 1), InteriorTile.Kind.NONE)
+		var west_kind: int = f.tiles.get(landing + Vector2i(-1, 1), InteriorTile.Kind.NONE)
+		if east_kind == InteriorTile.Kind.STAIR_FLIGHT_E or west_kind == InteriorTile.Kind.STAIR_FLIGHT_W:
+			full_flights += 1
+	var bound_side_tiles := 0
+	var side_textures: Array[Texture2D] = [
+		InteriorScene.STAIR_SIDE_UPPER_E,
+		InteriorScene.STAIR_SIDE_LOWER_E,
+		InteriorScene.STAIR_SIDE_CONTINUE_E,
+		InteriorScene.STAIR_SIDE_UPPER_W,
+		InteriorScene.STAIR_SIDE_LOWER_W,
+		InteriorScene.STAIR_SIDE_CONTINUE_W,
+	]
+	for child in scene.get_node("StairStructure").get_children():
+		var sprite := child as Sprite2D
+		if sprite != null and side_textures.has(sprite.texture):
+			bound_side_tiles += 1
+	var expected_side_tiles := full_flights * east.size()
+	t.check(bound_side_tiles == expected_side_tiles,
+			"every full flight binds the reviewed side while the map remains its source of truth (%d of %d)"
+					% [bound_side_tiles, expected_side_tiles])
+	scene.free()
+
 ## The switchback's own redirection: a sideways press on a diagonal flight walks its slope rather
 ## than the screen axis it was pressed on — *(2026-09-10, playtest 55: "holding right or left on
 ## the switchback stairs moves the player diagonally")*. Steps `Stroller._redirect_along_a_flight()`
@@ -209,6 +283,7 @@ func _test_a_sideways_press_on_a_flight_walks_its_slope(t: Node) -> void:
 
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	var player := Stroller.new()
 	player.add_child(camera)
 	t.add_child(player)
@@ -297,6 +372,7 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: Node) -> voi
 		scene.build()
 		var camera := Camera2D.new()
 		camera.name = "Camera2D"
+		camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 		var player := Stroller.new()
 		player.add_child(camera)
 		t.add_child(player)

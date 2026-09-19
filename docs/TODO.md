@@ -374,6 +374,16 @@ superfluous ones so the assembled vector side reads as close to the reference as
 allows. Keep the six prepared tiles unbound and retain east/west mirrors, native/3× source
 renders and an assembled review for player steering.
 
+> "okay hook the stairs up in the escape sequence so I can take a look there"
+
+- [ ] **Bind the reviewed six-tile side in the escape stairwell.** Replace only the current visual
+      treatment of each full stair flight's side with the matching east/west upper, lower and
+      continuation roles, repeated with the reviewed one-tile-right-and-down module shift. Keep the
+      escape map, walkable stair tiles, slope redirection, landings, rails, collision and route
+      unchanged. Update the graphics inventory from prepared to live, cover the selection and
+      placement with a focused interior test, and provide one normal-scale still in the escape
+      stairwell for player review. This is a review binding, not approval of the final stair art.
+
 ---
 
 ## M143 — The readout's `process` and `physics` lines say what they measure · asked for 2026-09-14

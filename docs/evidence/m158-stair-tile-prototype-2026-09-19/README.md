@@ -1,9 +1,9 @@
 # M158 stair-side tile prototype
 
-This review keeps the proposed stair side as six prepared SVG sources, not as a TileSet source or
-an `InteriorScene` binding. Each canvas is 32×32. The east-facing upper tile contains four 8px-wide
-rectangles of heights 32, 24, 16 and 8px, anchored to its bottom edge; the lower tile reverses
-that sequence from its top edge. The west-facing files mirror the complete east-facing geometry.
+This review preserves the six 32×32 SVG sources now bound by `InteriorScene._add_flight_side()` as
+structural sprites, not TileSet sources. The east-facing upper tile contains four 8px-wide rectangles
+of heights 32, 24, 16 and 8px, anchored to its bottom edge; the lower tile reverses that sequence
+from its top edge. The west-facing files mirror the complete east-facing geometry.
 
 The upper tile is rectangles alone: every side and step edge stays inked except their common bottom
 join. The lower gray side remains beneath its top-anchored stepped rectangles: every side and step

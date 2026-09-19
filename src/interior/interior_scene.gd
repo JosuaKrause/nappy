@@ -52,6 +52,12 @@ const STAIRWELL_SHAFT_CAP_TOP := preload("res://assets/interior/stairwell_shaft_
 const STAIRWELL_SHAFT_CAP_BOTTOM := preload("res://assets/interior/stairwell_shaft_cap_bottom.svg")
 const STAIR_FLIGHT_RUN_E := preload("res://assets/interior/stair_flight_run_e.svg")
 const STAIR_FLIGHT_RUN_W := preload("res://assets/interior/stair_flight_run_w.svg")
+const STAIR_SIDE_UPPER_E := preload("res://assets/interior/m158_stair_side_upper_e.svg")
+const STAIR_SIDE_LOWER_E := preload("res://assets/interior/m158_stair_side_lower_e.svg")
+const STAIR_SIDE_CONTINUE_E := preload("res://assets/interior/m158_stair_side_continue_e.svg")
+const STAIR_SIDE_UPPER_W := preload("res://assets/interior/m158_stair_side_upper_w.svg")
+const STAIR_SIDE_LOWER_W := preload("res://assets/interior/m158_stair_side_lower_w.svg")
+const STAIR_SIDE_CONTINUE_W := preload("res://assets/interior/m158_stair_side_continue_w.svg")
 const STAIR_LANDING_FLOOR := preload("res://assets/interior/stair_landing_floor.svg")
 const STAIR_LANDING_TURN := preload("res://assets/interior/stair_landing_turn.svg")
 const STAIR_RAIL_RUN_E := preload("res://assets/interior/stair_rail_run_e.svg")
@@ -63,6 +69,10 @@ const STAIR_RAIL_SHORT_E := preload("res://assets/interior/stair_rail_short_e.sv
 const STAIR_RAIL_SHORT_E_REAR := preload("res://assets/interior/stair_rail_short_e_rear.svg")
 
 const TILE := float(Tuning.TILE_SIZE)
+## Three complete three-tile modules occupy a full flight's five-tile visual height: every next
+## module moves one tile down as well as toward the descending side, so the continuation tile ends
+## on the deck's lower boundary without an invented cap role.
+const STAIR_SIDE_MODULES := 3
 ## How long the fade to black takes, each way — brisk, since it stands in for a flight of stairs
 ## rather than for a whole day changing.
 const FADE_SECONDS := 0.35
@@ -382,6 +392,7 @@ func _rebuild_stairwell_structure() -> void:
 		var deck: Texture2D = STAIR_FLIGHT_RUN_E if descends_east else STAIR_FLIGHT_RUN_W
 		var origin := _flight_origin(landing, descends_east)
 		_add_flight_deck(origin, deck)
+		_add_flight_side(origin, descends_east)
 		if _is_floor_landing(landing):
 			var rear_rail: Texture2D = STAIR_RAIL_RUN_E_REAR if descends_east else STAIR_RAIL_RUN_W_REAR
 			_add_flight_rear_rail(origin, rear_rail)
@@ -442,6 +453,53 @@ func _add_flight_deck(origin: Vector2, texture: Texture2D) -> void:
 	sprite.centered = false
 	sprite.position = origin
 	_structure.add_child(sprite)
+
+## One source tile in the reviewed stair-side assembly. Kept as a value instead of deriving
+## positions separately in drawing and tests, so a placement correction cannot select the right
+## art while moving a different copy of it.
+class StairSidePlacement:
+	var position := Vector2.ZERO
+	var texture: Texture2D
+	var role := ""
+	var module := 0
+
+	func _init(at: Vector2, picture: Texture2D, tile_role: String, module_index: int) -> void:
+		position = at
+		texture = picture
+		role = tile_role
+		module = module_index
+
+## The reviewed assembly for one full 160px flight. East starts at the deck's west edge and advances
+## east; west begins at its east edge and advances west, making the two complete assemblies mirror
+## one another while all six sources retain their native 32px registration.
+static func stair_side_placements(origin: Vector2, descends_east: bool) -> Array[StairSidePlacement]:
+	var pictures: Array[Texture2D] = [
+		STAIR_SIDE_UPPER_E if descends_east else STAIR_SIDE_UPPER_W,
+		STAIR_SIDE_LOWER_E if descends_east else STAIR_SIDE_LOWER_W,
+		STAIR_SIDE_CONTINUE_E if descends_east else STAIR_SIDE_CONTINUE_W,
+	]
+	var roles: Array[String] = ["upper", "lower", "continue"]
+	var direction := 1.0 if descends_east else -1.0
+	var first_column := 0.0 if descends_east else TILE * 4.0
+	var placements: Array[StairSidePlacement] = []
+	for module in STAIR_SIDE_MODULES:
+		var module_origin := origin + Vector2(first_column + direction * TILE * module, TILE * module)
+		for role in pictures.size():
+			placements.append(StairSidePlacement.new(module_origin + Vector2(0.0, TILE * role),
+					pictures[role], roles[role], module))
+	return placements
+
+## Places the reviewed side after its deck but before either rail, preserving the rail's existing
+## structural and foreground order. The deck keeps its tread surface; these tiles replace only the
+## broad flight's side reading.
+func _add_flight_side(origin: Vector2, descends_east: bool) -> void:
+	for placement: StairSidePlacement in stair_side_placements(origin, descends_east):
+		var sprite := Sprite2D.new()
+		sprite.name = "StairSide_%s_%d" % [placement.role, placement.module]
+		sprite.texture = placement.texture
+		sprite.centered = false
+		sprite.position = placement.position
+		_structure.add_child(sprite)
 
 func _add_flight_rear_rail(origin: Vector2, texture: Texture2D) -> void:
 	var sprite := Sprite2D.new()
