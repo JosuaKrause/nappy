@@ -74,7 +74,7 @@ func run(t) -> void:
 	_test_the_day_is_placed_by_role(t)
 	_test_friction_on_a_sidewalk_can_be_walked_past(t)
 	_test_a_routes_junctions_stay_clear(t)
-	_test_no_row_takes_a_route_streets_whole_width(t)
+	_test_nothing_takes_the_routes_own_sidewalk(t)
 	_test_a_pacing_rows_opening_stays_open(t)
 	_test_a_flock_is_scenery(t)
 	_test_a_conversation_locks_her_and_releases(t)
@@ -3207,25 +3207,34 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 			return false
 	return true
 
-## **No single standing row takes a route street's whole width.** *(PLAYTEST-69: "all obstacles
-## should be routable around by eg crossing to the other side of the street, which in turn means the
-## other side of the street must be open enough so we can walk on it unimpeded".)* A street is
-## walkable frontage to frontage, so the answer to a van is the far pavement — and a row whose reach
-## spans the whole width has taken the answer away with the question.
+## **Nothing takes the sidewalk a route is walked along.** *(PLAYTEST-69: "all obstacles should be
+## routable around by eg crossing to the other side of the street, which in turn means the other
+## side of the street must be open enough so we can walk on it unimpeded"; PLAYTEST-77: "on the side
+## of the street where the path was chosen only obstacles that can be bypassed should be
+## possible".)* A branch runs down one sidewalk of a street and the kerb tint marks that one, so the
+## far side staying open answers a van and does not answer a row standing on the route's own side.
 ##
 ## **It is a shape the numbers make rather than a rare accident**, which is why it is worth a check
-## of its own: the street is 192px kerb to kerb and the catalogue reaches to 240px, so a wide row
-## standing anywhere across an ordinary street closes it. The probe measured it breaking 39 routes
-## in 97 cuts before the rule existed.
+## of its own: a sidewalk is 64px and most of the catalogue denies more than that from wherever it
+## stands. The probe measured a row spanning a whole street breaking 39 routes in 97 cuts before any
+## of these rules existed.
 ##
-## Asserted over the finished day and over **one row at a time**, which is the rule's own wording:
-## two rows closing a street between them are a different shape with a different answer. The walk is
-## written out here rather than borrowed from the scheduler, for the reason the junction check gives
-## — only the reading of what a row denies is shared, since there is one place that is written down.
-func _test_no_row_takes_a_route_streets_whole_width(t) -> void:
+## Asserted over the finished day and over **every row reaching the band at once**, which is the
+## rule's own wording — a band closed by a pair is the shape the measurement found. What that
+## catches beyond the refusal itself is anything the morning does outside `_place_one`'s candidate
+## loop: a scar prepended, an ambient placed, a park spoiled.
+##
+## **Its non-vacuity has two halves**, because a sweep that found no walked sidewalks, or found them
+## and had no row standing anywhere near one, would pass having checked nothing. Both are counted.
+##
+## The walk is written out here rather than borrowed from the scheduler, for the reason the junction
+## check gives — only the reading of what a row denies is shared, since there is one place that is
+## written down.
+func _test_nothing_takes_the_routes_own_sidewalk(t) -> void:
 	var map := CityGenerator.generate(4242)
-	var on_route_streets := 0
-	var spanned := 0
+	var bands := 0
+	var bands_with_a_row := 0
+	var closed := 0
 	var first := ""
 	for day in [1, 5, 9, 14]:
 		var state := CityState.new()
@@ -3234,40 +3243,76 @@ func _test_no_row_takes_a_route_streets_whole_width(t) -> void:
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
 		var consumed: Array[String] = []
+		var counted: Array[EventScheduler.Planned] = []
 		for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
-			if not EventScheduler._counts_against_the_line(plan):
+			if EventScheduler._counts_against_the_line(plan):
+				counted.append(plan)
+		for segment in StreetNetwork.segments():
+			var rect := segment.tile_rect()
+			if corridor.depth(rect.position) != 0:
 				continue
-			var tile := map.world_to_tile(plan.position)
-			if corridor.depth(tile) != 0:
-				continue
-			var segment := StreetNetwork.segment_containing(tile)
-			if not segment:
-				continue
-			on_route_streets += 1
-			var alone: Array[EventScheduler.Planned] = [plan]
-			if _a_walk_along_the_street(map, segment, alone):
-				continue
-			spanned += 1
-			if first == "":
-				first = "day %d, '%s' on street %s" % [day, plan.def.id, segment.key()]
-	t.check(on_route_streets > 50,
-			"the days sampled stand rows on the route's own streets (%d)" % on_route_streets)
-	t.check(spanned == 0, "and none of them takes a street's whole width on its own (%d does%s)"
-			% [spanned, "" if first == "" else ": " + first])
+			for band in _sidewalk_bands_of(rect, segment.horizontal):
+				if not _a_route_is_walked_along(corridor, band):
+					continue
+				bands += 1
+				var world := map.tile_rect_to_world(band)
+				var standing: Array[EventScheduler.Planned] = []
+				for plan in counted:
+					if EventScheduler._reach_touches(plan, world,
+							EventScheduler._line_reach_of(plan.def)):
+						standing.append(plan)
+				if standing.is_empty():
+					continue
+				bands_with_a_row += 1
+				if _a_walk_along(map, band, segment.horizontal, standing):
+					continue
+				closed += 1
+				if first == "":
+					var ids := {}
+					for plan in standing:
+						ids[plan.def.id] = true
+					first = "day %d, street %s, held by [%s]" \
+							% [day, segment.key(), ", ".join(PackedStringArray(ids.keys()))]
+	t.check(bands > 50, "the days sampled walk routes along sidewalks (%d)" % bands)
+	t.check(bands_with_a_row > 20,
+			"and rows stand within reach of them (%d of %d)" % [bands_with_a_row, bands])
+	t.check(closed == 0, "and a line survives along every one of them (%d closed%s)"
+			% [closed, "" if first == "" else ": " + first])
+
+## The two sidewalk bands of a street's tile rect, written out here rather than borrowed for the
+## reason the walk below is.
+func _sidewalk_bands_of(rect: Rect2i, horizontal: bool) -> Array[Rect2i]:
+	var across := Vector2i.DOWN if horizontal else Vector2i.RIGHT
+	var size := Vector2i(rect.size.x, Tuning.SIDEWALK_WIDTH) if horizontal \
+			else Vector2i(Tuning.SIDEWALK_WIDTH, rect.size.y)
+	var far := across * (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH)
+	return [Rect2i(rect.position, size), Rect2i(rect.position + far, size)]
+
+func _a_route_is_walked_along(corridor: Corridor, band: Rect2i) -> bool:
+	for y in range(band.position.y, band.end.y):
+		for x in range(band.position.x, band.end.x):
+			if corridor.carries_a_route(Vector2i(x, y)):
+				return true
+	return false
 
 ## Whether a walk exists from one end of a street to the other with these rows standing on it: the
 ## street's own ground, both pavements, the carriageway between the kerbs left out because a line
 ## may not cross there anyway, four-connected so a barrier laid diagonally counts as closing it.
 func _a_walk_along_the_street(map: CityMap, segment: StreetNetwork.Segment,
 		rows: Array[EventScheduler.Planned]) -> bool:
-	var rect := segment.tile_rect()
+	return _a_walk_along(map, segment.tile_rect(), segment.horizontal, rows)
+
+## The same walk over an arbitrary run of a street's ground — one sidewalk band of it, or the whole
+## street — from one end of `rect` to the other along `horizontal`.
+func _a_walk_along(map: CityMap, rect: Rect2i, horizontal: bool,
+		rows: Array[EventScheduler.Planned]) -> bool:
 	var free := {}
 	for y in range(rect.position.y, rect.end.y):
 		for x in range(rect.position.x, rect.end.x):
 			var tile := Vector2i(x, y)
 			if not map.is_open(tile):
 				continue
-			var across := CityMap.corridor_offset(tile.y if segment.horizontal else tile.x)
+			var across := CityMap.corridor_offset(tile.y if horizontal else tile.x)
 			var type := map.tile_at(tile)
 			if CityMap.is_road_offset(across) and (type == GameEnums.TileType.ROAD
 					or type == GameEnums.TileType.CROSSING):
@@ -3280,11 +3325,11 @@ func _a_walk_along_the_street(map: CityMap, segment: StreetNetwork.Segment,
 					break
 			if not taken:
 				free[tile] = true
-	var last := (rect.end.x - 1) if segment.horizontal else (rect.end.y - 1)
+	var last := (rect.end.x - 1) if horizontal else (rect.end.y - 1)
 	var seen := {}
 	var queue: Array[Vector2i] = []
 	for tile: Vector2i in free:
-		var at_the_start := tile.x == rect.position.x if segment.horizontal \
+		var at_the_start := tile.x == rect.position.x if horizontal \
 				else tile.y == rect.position.y
 		if at_the_start:
 			seen[tile] = true
@@ -3293,7 +3338,7 @@ func _a_walk_along_the_street(map: CityMap, segment: StreetNetwork.Segment,
 	while head < queue.size():
 		var at: Vector2i = queue[head]
 		head += 1
-		if (at.x if segment.horizontal else at.y) == last:
+		if (at.x if horizontal else at.y) == last:
 			return true
 		for step in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
 			var next: Vector2i = at + step

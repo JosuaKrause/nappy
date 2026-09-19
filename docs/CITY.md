@@ -807,7 +807,7 @@ covers a whole crossing loses most of the corridor; a row narrower than a juncti
 width loses none of it. `tests/test_events.gd` asserts both halves — the corridor's overall share of
 the friction and, separately, the undiminished share of the rows no crossing rule can refuse.
 
-### No single standing row takes a route street's whole width
+### Nothing takes the sidewalk a route is walked along
 
 **A street is walkable frontage to frontage, so the answer to a van is the other side of it** — and
 a row whose reach spans the whole width has taken the answer away with the question. That is the
@@ -815,22 +815,29 @@ player's own framing: *"all obstacles should be routable around by eg crossing t
 the street, which in turn means the other side of the street must be open enough so we can walk on
 it unimpeded."*
 
+**And the side that has to stay open is the one the route is drawn down**, which is the same
+sentence one grain finer: *"on the side of the street where the path was chosen only obstacles that
+can be bypassed should be possible."* A branch runs along one sidewalk of a street — the growth
+graph has no mid-block carriageway in it — and the kerb tint marks that sidewalk, so a row closing
+it has taken the line the day is pointing at even where the street as a whole is still walkable.
+The far side staying open is not an answer to that; it is the ground she would have to have been
+sent down instead.
+
 **The numbers make this shape rather than an unlucky roll.** An ordinary street is 192px kerb to
-kerb, and the loudest rows deny most of that from either pavement, so a wide row standing
-anywhere across one closes it.
-So a counted row standing on a route street is accepted only if it leaves a four-connected walk from
-one of that street's junctions to the other, over the street's own ground — both pavements, the
-carriageway between the kerbs left out, since a line may not cross there anyway. A row that cannot
-is refused that ground and rolls again, landing on a street it fits or off the corridor entirely.
+kerb and a sidewalk 64px of it, and the loudest rows deny more than either from wherever they
+stand. So a counted row is accepted only if a four-connected walk survives from one of the street's
+junctions to the other **along each sidewalk the tree runs down**, over that band's own tiles, with
+everything the morning has already put down standing too. A row that cannot is refused that ground
+and rolls again, landing where it fits or off the corridor entirely.
 
-**One row, by itself**, which is what separates this from the crossing rule above: two rows closing
-a street between them are a different shape and are answered where a pacing row's beat is.
+**Cumulative, like the crossing rule and for the same reason**: the band that breaks most often is
+closed by a pair rather than by one row, and a rule that only asked *does this row alone take it*
+would accept both of them. Checked before the row is accepted, never repaired after.
 
-**Only a street has a far side.** Where a route's cells stand on an alley, a park cut or a square
-there is no second pavement to cross to and no two ends to walk between, so the rule says nothing
-about that ground rather than inventing an answer for it. A **precinct** needs no special case: it
-is paved frontage to frontage with no carriageway in it, so its whole width is the walk this asks
-about.
+**Only a street has sidewalks.** Where a route's cells stand on an alley, a park cut or a square
+there is no band to walk along and no two ends to walk between, so the rule says nothing about that
+ground rather than inventing an answer for it. A **precinct** needs no special case: it is paved
+frontage to frontage with no carriageway in it, so a band of it is walked like any other.
 
 ### A pacing row leaves the line open for part of its beat
 

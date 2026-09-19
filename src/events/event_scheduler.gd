@@ -830,10 +830,11 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 		# `_leaves_the_route_junctions_open`.
 		if not _leaves_the_route_junctions_open(candidate, map, corridor, ground, already):
 			continue
-		# And the same for the stretch between two junctions: a row that spans a route street
-		# frontage to frontage has taken the far pavement away as well as the near one. See
-		# `_leaves_a_line_past_it`.
-		if not _leaves_a_line_past_it(candidate, map, corridor):
+		# And the same for the stretch between two junctions, asked of the sidewalk the tree is
+		# actually walked along rather than of the street: the far side of a street answers a van,
+		# and nothing answers a van on the side the route is drawn down. See
+		# `_leaves_the_routes_sidewalk_open`.
+		if not _leaves_the_routes_sidewalk_open(candidate, map, corridor, ground, already):
 			continue
 		# And the opening a pacing row's beat leaves is ground in its own right: the rows reaching
 		# one route street are asked together whether a walk along it survives, so nothing stands in
@@ -1052,7 +1053,7 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary) ->
 ## the deep weight below are still read off the street's own depth, so a wall is pulled to a turning
 ## off the corridor and a lethal one further still, and the far sidewalk is simply no longer
 ## refused. What keeps a wide row off it is the width rule — a wall across the street whose reach
-## spans the whole width is refused that ground by `_leaves_a_line_past_it` like anything else.
+## covers the route's own sidewalk is refused that ground by `_leaves_the_routes_sidewalk_open`.
 ##
 ## **The wall band has a gradient in it, and the gradient is the instruction**: the ground off the
 ## paths ranges from *very costly* to *deadly*. Stray one turning and it is expensive; stray further
@@ -1578,38 +1579,97 @@ static func _arm_tiles(origin: Vector2i, junction: Vector2i,
 
 const _NEIGHBOUR_STEPS: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]
 
-## **No single standing row takes a route street's whole width.** *"All obstacles should be routable
-## around by eg crossing to the other side of the street, which in turn means the other side of the
-## street must be open enough so we can walk on it unimpeded"* (PLAYTEST-69).
+## The sidewalks the day's routes are actually walked along, with the geometry the width rule asks
+## about: `[segment, the band's tile rect, the same rect in world space]`. Worked out once per day
+## and kept in the `ground` dictionary every other day-lifetime answer in this file lives in.
+const _ROUTE_SIDEWALKS_KEY := "route sidewalks"
+
+static func _route_sidewalks(map: CityMap, ground: Dictionary, corridor: Corridor) -> Array:
+	if not ground.has(_ROUTE_SIDEWALKS_KEY):
+		var found: Array = []
+		for segment in StreetNetwork.segments():
+			var rect := segment.tile_rect()
+			if corridor.depth(rect.position) != 0:
+				continue
+			var walked := 0
+			for band in _sidewalk_bands(rect, segment.horizontal):
+				if not _a_route_walks(corridor, band):
+					continue
+				walked += 1
+				found.append([segment, band, map.tile_rect_to_world(band)])
+			# A street on the corridor whose tree cells are neither of its sidewalks: the whole
+			# street is the honest question there, and it is the question the rule asked before.
+			# The growth graph has no mid-block carriageway cell in it, so this is unreachable
+			# today rather than merely rare — it is here so the guarantee cannot quietly lapse if
+			# that ever changes.
+			if walked == 0:
+				found.append([segment, rect, map.tile_rect_to_world(rect)])
+		ground[_ROUTE_SIDEWALKS_KEY] = found
+	return ground[_ROUTE_SIDEWALKS_KEY]
+
+## The two sidewalk bands of a street's own tile rect, in the order the corridor runs across it.
+static func _sidewalk_bands(rect: Rect2i, horizontal: bool) -> Array[Rect2i]:
+	var across := Vector2i.DOWN if horizontal else Vector2i.RIGHT
+	var size := Vector2i(rect.size.x, Tuning.SIDEWALK_WIDTH) if horizontal \
+			else Vector2i(Tuning.SIDEWALK_WIDTH, rect.size.y)
+	var far := across * (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH)
+	return [Rect2i(rect.position, size), Rect2i(rect.position + far, size)]
+
+static func _a_route_walks(corridor: Corridor, band: Rect2i) -> bool:
+	for y in range(band.position.y, band.end.y):
+		for x in range(band.position.x, band.end.x):
+			if corridor.carries_a_route(Vector2i(x, y)):
+				return true
+	return false
+
+## **Nothing takes the sidewalk a route is walked along.** *"All obstacles should be routable around
+## by eg crossing to the other side of the street, which in turn means the other side of the street
+## must be open enough so we can walk on it unimpeded"* (PLAYTEST-69), and *"on the side of the
+## street where the path was chosen only obstacles that can be bypassed should be possible"*
+## (PLAYTEST-77).
 ##
-## A street is walkable frontage to frontage, so the answer to a van is the far pavement — and a row
-## whose reach spans the whole width has taken the answer away with the question. The street is
-## 192px kerb to kerb and the catalogue's reaches run to 240px, so this is a shape the numbers make
-## rather than a rare accident: the probe measured it breaking 39 routes in 97 cuts, `leaf_blower`,
-## `busker` and `ice_cream_van` most often.
+## **It reads the route's own sidewalk rather than the street.** A street is walkable frontage to
+## frontage, so *some* pavement staying open is what a walk needs in general — but the route is
+## drawn along one of the two, the kerb tint marks that one, and a row that closes it has taken the
+## line the day was pointing at even though the street as a whole is still walkable. So the walk
+## this asks for is from one junction to the other **along the band the tree runs down**, over that
+## band's own tiles and no others.
 ##
-## **One row, by itself** — that is the item's own wording and it is what separates this from the
-## junction rule above, which is about a pair closing a crossing between them. A row that cannot
-## leave a line past it is refused that ground and `_place_one` rolls again, so it lands on a street
-## it fits or off the corridor entirely.
+## **Cumulatively with everything already down**, the way the junction rule reads and for the same
+## reason: the street the probe names most often is closed by a pair rather than by one row, and a
+## rule that only asked *does this row alone take the band* would accept both of them. Checked
+## before the row is accepted and never repaired after — each row in turn is asked whether the day
+## it is joining still has a line along every walked sidewalk.
 ##
-## **Only a street has a far side.** Where a route's cells stand on an alley, a park cut or a square
-## there is no second pavement to cross to and no two ends to walk between, so the rule says nothing
-## about that ground rather than inventing an answer for it — a row there is answered by the
-## junction rule and by the walkability guarantee, the way it was before. A **precinct** needs no
-## special case: it is paved frontage to frontage with no carriageway in it, so its whole width is
-## the walk this asks about.
-static func _leaves_a_line_past_it(candidate: Planned, map: CityMap, corridor: Corridor) -> bool:
+## **Only a street has sidewalks.** Where a route's cells stand on an alley, a park cut or a square
+## there is no band to walk along and no two ends to walk between, so the rule says nothing about
+## that ground rather than inventing an answer for it — a row there is answered by the junction rule
+## and by the walkability guarantee. A **precinct** is paved frontage to frontage with no
+## carriageway, so a band of it is walkable like any other and the arithmetic is unchanged.
+##
+## **It subsumes the whole-street question it replaces**: the two bands of a street are not
+## four-connected to each other (the carriageway between them is out), so *some pavement is open*
+## was already *one band is open* — and this asks it of the band that matters, of every row rather
+## than of one, which is strictly the stronger claim.
+static func _leaves_the_routes_sidewalk_open(candidate: Planned, map: CityMap, corridor: Corridor,
+		ground: Dictionary, already: Array[Planned]) -> bool:
 	if not corridor or not _counts_against_the_line(candidate):
 		return true
-	var tile := map.world_to_tile(candidate.position)
-	if corridor.depth(tile) != 0:
-		return true
-	var segment := StreetNetwork.segment_containing(tile)
-	if not segment:
-		return true
-	var alone: Array[Planned] = [candidate]
-	return not _closes_the_street(map, segment, alone)
+	var reach := _line_reach_of(candidate.def)
+	for entry: Array in _route_sidewalks(map, ground, corridor):
+		var world: Rect2 = entry[2]
+		if not _reach_touches(candidate, world, reach):
+			continue
+		var standing: Array[Planned] = [candidate]
+		for plan in already:
+			if plan == candidate or not _counts_against_the_line(plan):
+				continue
+			if _reach_touches(plan, world, _line_reach_of(plan.def)):
+				standing.append(plan)
+		var segment: StreetNetwork.Segment = entry[0]
+		if _closes_the_run(map, entry[1], segment.horizontal, standing):
+			return false
+	return true
 
 ## Whether these rows between them leave no walk from one end of a street to the other.
 ##
@@ -1622,12 +1682,18 @@ static func _leaves_a_line_past_it(candidate: Planned, map: CityMap, corridor: C
 ## second opinion about it.
 static func _closes_the_street(map: CityMap, segment: StreetNetwork.Segment,
 		rows: Array[Planned]) -> bool:
-	var rect := segment.tile_rect()
+	return _closes_the_run(map, segment.tile_rect(), segment.horizontal, rows)
+
+## The same question over an arbitrary run of a street's ground, which is what lets the width rule
+## ask it of one sidewalk band and the pacing rule of the whole street. `horizontal` is the
+## direction the walk has to get from one end of `rect` to the other along.
+static func _closes_the_run(map: CityMap, rect: Rect2i, horizontal: bool,
+		rows: Array[Planned]) -> bool:
 	var free := {}
 	for y in range(rect.position.y, rect.end.y):
 		for x in range(rect.position.x, rect.end.x):
 			var tile := Vector2i(x, y)
-			if not map.is_open(tile) or _is_a_carriageway_tile(map, tile, segment.horizontal):
+			if not map.is_open(tile) or _is_a_carriageway_tile(map, tile, horizontal):
 				continue
 			var at := map.tile_to_world(tile)
 			var taken := false
@@ -1638,11 +1704,11 @@ static func _closes_the_street(map: CityMap, segment: StreetNetwork.Segment,
 			if not taken:
 				free[tile] = true
 
-	var last := (rect.end.x - 1) if segment.horizontal else (rect.end.y - 1)
+	var last := (rect.end.x - 1) if horizontal else (rect.end.y - 1)
 	var queue: Array[Vector2i] = []
 	var seen := {}
 	for tile: Vector2i in free:
-		var at_the_start := tile.x == rect.position.x if segment.horizontal \
+		var at_the_start := tile.x == rect.position.x if horizontal \
 				else tile.y == rect.position.y
 		if at_the_start:
 			seen[tile] = true
@@ -1651,7 +1717,7 @@ static func _closes_the_street(map: CityMap, segment: StreetNetwork.Segment,
 	while head < queue.size():
 		var at: Vector2i = queue[head]
 		head += 1
-		if (at.x if segment.horizontal else at.y) == last:
+		if (at.x if horizontal else at.y) == last:
 			return false
 		for step in _NEIGHBOUR_STEPS:
 			var next: Vector2i = at + step

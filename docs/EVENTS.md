@@ -532,11 +532,12 @@ is the only place a line may change pavement, so this is the one refusal a stree
 answer; see `docs/CITY.md`, "A route's junctions stay clear", for the rule and for the four kinds of
 row that are outside it.
 
-**The stretch between two junctions is asked the same way.**
-`EventScheduler._leaves_a_line_past_it` refuses a counted row standing on a route street where its
-own reach alone would leave no walk from one of that street's junctions to the other — the far
-pavement is the answer to a van, and a row that spans the width has taken it. See `docs/CITY.md`,
-"No single standing row takes a route street's whole width".
+**The stretch between two junctions is asked the same way, of the sidewalk the route is walked
+along.** `EventScheduler._leaves_the_routes_sidewalk_open` refuses a counted row whose reach,
+together with everything already down, would leave no walk from one of that street's junctions to
+the other along that band. The far side of a street is the answer to a van; nothing answers a van
+on the side the route is drawn down. See `docs/CITY.md`, "Nothing takes the sidewalk a route is
+walked along".
 
 **And a pacing row's opening is ground.** `EventDef.paces` means a beat rather than a journey, so
 what it denies is the ground the loop never leaves free and the rest is passed by waiting — which
