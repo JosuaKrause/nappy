@@ -295,7 +295,6 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
-
 ## M143 — The readout's `process` and `physics` lines say what they measure · asked for 2026-09-14
 
 [PLAYTEST-75](playtests/PLAYTEST-75.md), the desktop stutter, and `DECISIONS.md`, M138, what
