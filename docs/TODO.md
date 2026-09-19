@@ -182,7 +182,8 @@ with the code's constraints in hand. It is not queued and it is not rejected.
 last scene — out of the apartment, out of the city — and its section holds the brief, the four
 answered collisions, and the one item still open: the entry from day 14's own summary, which is
 what would make it a run's ending rather than a flag's. The record of what was built is in
-`DECISIONS.md`.
+`DECISIONS.md`. M165, the escape's events follow the corrected staircase, sits directly before it:
+the masked man's path and the fire's docstrings still describe a shaft with one landing column.
 
 **[PLAYTEST-50.md](playtests/PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
@@ -764,6 +765,46 @@ re-pitched:
       the agents onto it would draw the whole crowd at thirty frames a second, not merely decide
       for it at that rate, which is a larger piece of the trade than it was. Docs/evidence/
       audit-2026-09-13/AUDIT.md, finding 3.1, has the full reasoning.
+
+---
+
+## M165 — The escape's events follow the corrected staircase · found 2026-09-19
+
+Found reviewing PR #217 — M158, the staircase follows the corrected tile grammar — and kept out of
+it *(2026-09-19: "add the other items to the todos they're not the focus of this pr")*. Each
+stairwell's landings alternate between column 1 and column 8 of `InteriorMap.STAIRWELL_ROWS`, the
+ten-column symbol grammar that is the map; `src/finale/interior_events.gd` still places and
+describes its events for a shaft whose landings stack on one column.
+
+- [ ] **The masked man runs the stairs rather than a line through the walls.**
+      `InteriorEvents._place_the_masked_man()` gives him a two-point path from the
+      `stairwell_<side>:landing_lobby` waypoint to the `stairwell_<side>` waypoint, on the reasoning
+      its docstring gives: *"every landing in a shaft sits on one column, so a line up that column
+      is the shaft"*. Those two waypoints are local `(8, 24)` and `(1, 2)`, so the line crosses `.`
+      background and the solid `c`/`C`/`b` cells and meets each flight at an arbitrary point. Give
+      him a path that follows the grammar — the level `F` columns and the `t/m` and `T/M`
+      diagonals, landing to landing — and add a check that every segment stays over walkable cells;
+      the existing test only checks the tile he starts on. The brief's own answer to him, *"going
+      into a corridor and letting them pass"*, has to survive: a door's approach must leave her
+      somewhere off his line
+- [ ] **The fire's words match where it stands.** `InteriorScene.turn_landings()` returns the inner
+      level `F` cell below the second- and first-floor doors, two tiles from the door; the grammar
+      has no turn landing and no main-shaft cell of kind `LANDING`. `_place_the_fire()` and
+      `_turn_landings()` in `interior_events.gd` still say *"on a **turn** landing rather than a
+      floor landing"*, *"the half-landing between two floors"* and *"a `LANDING` tile that is not
+      one of the four named floor landings"*, and `docs/ARCHITECTURE.md` still calls
+      `interior_map.gd` *"the switchback layout"*. Rename the query for what it returns and rewrite
+      the three docstrings and the line. The placement itself holds: the fire's blocking reach is
+      its 30px body plus her 14px, the door tile is 64px from its centre, and a door arrival lands
+      on the door tile
+- [ ] **The discarded stair art leaves `assets/interior/`.** `stair_landing_vertical.svg`,
+      `stairwell_shaft_cap_bottom.svg`, `stair_flight_run_{e,w}.svg`,
+      `stair_landing_{floor,turn}.svg`, the four `stair_rail_run_*` sources and the three
+      `stair_*_short_e*` sources are bound nowhere; their one reference is the `removed_textures`
+      list in `tests/test_interior.gd`, and `InteriorScene._structure`, the `StairStructure` node,
+      is built only so that test can count its children at zero. Move what a person reviewed or
+      rejected under the **rejected-graphics** skill, delete the node, and make the test assert
+      what is bound rather than load what is not
 
 ---
 
