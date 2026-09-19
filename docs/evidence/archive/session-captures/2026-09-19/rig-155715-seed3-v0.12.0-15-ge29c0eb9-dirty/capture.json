@@ -1,0 +1,24 @@
+{
+  "purpose": "Motion evidence for the provisionally accepted father B-frame leg contact",
+  "command": "./tools/shot.sh /private/tmp/m160-father-burst.png 7 --seed 3 --spawn arterial --walk 2e2s2w --press snapshot_burst 2 --invincible --no-save",
+  "clip_command": "./tools/clip.sh docs/evidence/archive/session-captures/2026-09-19/rig-155715-seed3-v0.12.0-15-ge29c0eb9-dirty/asked/burst-5068233-001",
+  "resolution": [1280, 720],
+  "seed": 3,
+  "day": 1,
+  "presentation": "default illustrated PNG presentation, father",
+  "capture_after_seconds": 7,
+  "build": "v0.12.0-15-ge29c0eb9-dirty",
+  "build_note": "The capture source tree included the reviewed pending merge of main 0afb8c67. That merge is committed as 9caa782a; no runtime edits occurred after this capture.",
+  "original_output": "/private/tmp/m160-father-burst.png",
+  "telemetry": "The complete original run folder is retained here, including run.log, maps, burst frames, burst.json timing record, and the generated viewing MP4.",
+  "burst": {
+    "directory": "asked/burst-5068233-001",
+    "video": "asked/burst-5068233-001.mp4",
+    "status": "complete",
+    "frames": 36,
+    "duration_seconds": 3.005818,
+    "target_fps": 12
+  },
+  "coverage": "Seed 3 selects the father presentation. The run begins at (71,80); the burst begins at (75,80), reaches corridor (75,84), then road (75,86), so the ordered frames establish travel as well as the blue-overshirt father and stroller relationship.",
+  "limitations": "Invincibility and no-save make this appearance and motion evidence only, not route-cost, loss, or save-state evidence. The MP4 is a viewing convenience; the numbered PNG frames and burst.json retain the timing provenance."
+}

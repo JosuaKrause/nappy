@@ -53,6 +53,14 @@ These are static pose and offline-loop checks, not a live stroller-contact or ga
 capture. Player acceptance covers provisional runtime use; a motion burst remains separate
 runtime evidence.
 
+## Runtime motion evidence
+
+The [dated full run](../../../archive/session-captures/2026-09-19/rig-155715-seed3-v0.12.0-15-ge29c0eb9-dirty/run.log)
+selects the father presentation with seed 3, walks `2e2s2w`, and records an invincible,
+no-save burst after two seconds. Its `asked/burst-5068233-001/` folder retains 36 PNG frames and
+`burst.json`'s actual timing. The capture checks this installed presentation's motion; its
+invincibility means it is not evidence of cost or loss.
+
 ## Generation provenance
 
 The built-in `image_gen.imagegen` tool generates waist-to-sole donors from existing corrected
