@@ -289,12 +289,12 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
   M136's build stamp, M124's skip flag and M129's flock and probe re-run; each has its record
   in `DECISIONS.md` and its played questions in `REVIEW.md`. `git tag --list 'v*'` says what
   the site serves.
-- **Two requests from [PLAYTEST-80](playtests/PLAYTEST-80.md) are filed and deliberately
-  unstarted**, because the player asked for them to wait for a session of their own: M161, the
-  game pauses when it loses focus and a rig can say not to, and M162, a game can be resumed.
-  M161 is specified and ready for an agent. M162 opens with a question for the player — what
-  *that exact state* has to cover inside a day, the crowd above all — and nothing of it goes
-  to an agent before that is answered.
+- **[PLAYTEST-80](playtests/PLAYTEST-80.md)'s two requests are a pair, built in order**: M161,
+  the game pauses when it loses focus and a rig can say not to, and on top of it M162, a game
+  can be resumed. M162's question is answered ([PLAYTEST-82](playtests/PLAYTEST-82.md)): a save
+  holds the run and the day, a game left in the middle of a day comes back at dawn one nerve
+  down, and an agent's run never reads or writes the save. Its `TODO.md` entry is the brief,
+  and it waits for M161 to merge since both edit `main.gd` and the dev flags.
 - **The phone's frame is the open measurement, and the crowd's drawing is ruled out of
   it.** With the crowd atlas released, the phone reads the same with the crowd drawn and with
   `skip=crowd` (`DECISIONS.md`, M139, the phone reading), so by the numbers neither the draw
