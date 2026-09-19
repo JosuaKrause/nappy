@@ -297,6 +297,11 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ## M160 — The father's B contact puts the other leg forward · asked for 2026-09-19
 
+[PLAYTEST-90](playtests/PLAYTEST-90.md) accepts the straight-contact candidate for provisional
+use and authorizes merging after installation and verification. In parallel, prepare an early
+review attempt that makes the legs read more naturally, retaining the accepted positions and
+protected frames. That drawing refinement does not delay use of the accepted contact correction.
+
 > "actually now that I look again the B frames going north, east, south east, south, south west,
 > and west show the wrong leg in front. the other two directions are correct"
 
