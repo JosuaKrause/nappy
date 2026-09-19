@@ -295,102 +295,56 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
-## M158 — The stair side is three stackable tiles · asked for 2026-09-19
+## M158 — The staircase follows the corrected tile grammar · asked for 2026-09-19
 
-> "the stair tiles should be two tiles. the top part is rectangles of a fixed width assuming the
-> stair goes down from the left to right has the full length of the tile on the left side then the
-> next rectangle gets shorter by its width from the top and the next rectangle one width shorter
-> still. the last rectangle on the tile must be exactly as high as its width. the bottom tile is
-> the opposite. it starts with a rectangle whose width is the same as the height from the top the
-> each next rectangle grows by the width from the top the rightmost rectangle is as high as the
-> tile. below those rectangles there is a diagonal gray band bounded by the zig zag of the
-> rectangles at the top and diagonal at the bottom. this is the side of the stairs. this requires a
-> third tile with just a small gray triangle at the top right so this band can seemlessly continue.
-> stack all three on top of each other for the stair layout and the next section of the stairs has
-> all three move one tile over and down. for right to left mirror the tiles. try this with svg first
-> and show me when you have it so I can give feedback and steer."
+[PLAYTEST-81](playtests/PLAYTEST-81.md) rejects the first in-game assembly and supplies the exact
+cell grammar that replaces it. The six reviewed SVG stair-side sources remain the drawing
+authority: their edges follow the
+[clean side reference](evidence/m158-stair-tile-prototype-2026-09-19/reference-sideview.png), and
+the old broad decks and every rear or foreground railing stay absent while the assembly is open.
 
-- [ ] **Prepare the SVG-only checkpoint, without binding it.** Draw a 32×32 left-to-right upper
-      stair tile from fixed-width rectangles whose heights descend by that width, beginning at the
-      full tile height and ending at one width, all anchored to the tile's bottom edge. This upper
-      tile has no gray diagonal section and no stroke along the rectangles' bottom join. Draw the
-      lower tile as the converse, beginning at one width and ending at full tile height. Its
-      rectangles have no stroke along their top join; below them, their zigzag bounds the top of a
-      continuous gray diagonal side band whose lower boundary is straight. A third 32×32 tile
-      carries only a gray top-right continuation triangle with 16px sides. Stack upper, lower and
-      triangle vertically; the next three-tile module shifts one tile right and one tile down.
-      Mirror the complete tiles for right-to-left travel. Match the live interior palette and
-      outline weight, but do not revise or bind the current stair kit until the player has steered
-      this preview. Validate XML, render every source at native size and 3×, and provide an assembled
-      review image showing at least two shifted modules in both directions on the live stairwell
-      background.
+The symbols are `.` background, `D` a door to the corresponding corridor, `F` level floor, `t`
+and `m` the top and middle stair cells of a flight descending to the right, `T` and `M` their
+left-descending mirrors, `c` and `C` the matching diagonal side corners, and `b` the tile whose
+gray top-edge rectangle is as high as the adjacent diagonal. The corrected layout authority is:
 
-> "the top tile needs change -- it doesn't include a diagonal section and the rectangles are
-> anchored at the *bottom* not at the top as they are now. the third small triangle tile needs a
-> bigger triangle so it connects to the adjacent tiles. triangle side is two widths"
+```text
+..........
+.D........
+.Ft.......
+.Fmt......
+.bcmt.....
+...cmt....
+....cmt...
+.....cmtD.
+......cmF.
+.......cF.
+.......TF.
+......TMF.
+.....TMCb.
+....TMC...
+...TMC....
+.DTMC.....
+.FMC......
+.FC.......
+.Ft.......
+.Fmt......
+.bcmt.....
+...cmt....
+```
 
-The first SVG checkpoint made the upper tile's rectangles hang from its top edge. Revise that tile
-so every rectangle is anchored to the bottom edge. With the chosen 8px rectangle width, the
-continuation tile's triangle has 16px sides — two widths — and its joins to both adjacent tile roles
-must be visible in the next assembled review.
-
-> "the top tile doesn't need a diagonal section at all. the bottom of the rectangles in the top
-> tile shouldn't have a border. the top of the rectangles in the bottom tile shouldn't have a
-> border. let's fix that and let me know when it's updated."
-
-This overturns only the earlier instruction to keep a gray section in the upper tile: the upper
-tile is now rectangles alone, still anchored to its bottom edge, and the rectangles have no stroke
-along that bottom join. The lower tile keeps the gray diagonal side band below its growing
-rectangles, but their top join has no stroke. Preserve the remaining outer and step outlines, the
-16px continuation triangle, both mirrored directions, and the native-size, 3× and assembled review
-renders.
-
-> "in 217 the rectangles don't have borders on their sides anymore -- only remove the borders I
-> specified!"
-
-Restore every rectangle's side borders. Remove only the borders named above: the bottom borders of
-the upper tile's rectangles and the top borders of the lower tile's rectangles. Every other edge
-stays inked in both directions.
-
-> "also remove the borders of the diagonal section where it touches the side of the tile"
-
-> "I marked places in green where the border should be there and in red where it shouldn't"
-
-The [annotated edge mask](evidence/m158-stair-tile-prototype-2026-09-19/stair-border-annotation-2026-09-19.jpeg)
-settles which edges those words mean. Keep the vertical rectangle side segments marked green.
-Remove the diagonal segments marked red as well as the already specified upper-bottom and
-lower-top borders; apply the same edge rule to every corresponding segment and to the west mirror.
-
-> "here is a fully clean reference with the same 6 tiles from your reference. I replaced the
-> background with a pink color. the top left tile starts at an offset. just fyi"
-
-> "use this to add the missing border segments or remove superfluous ones. it doesn't have to be a
-> bit by bit match because svg won't allow it but we want to get close to this"
-
-Use the [clean six-tile side reference](evidence/m158-stair-tile-prototype-2026-09-19/reference-sideview.png)
-as the edge and placement authority for the next SVG revision. Pink is contrast only. Preserve the
-upper-left starting offset shown in the reference, add missing border segments and remove
-superfluous ones so the assembled vector side reads as close to the reference as SVG geometry
-allows. Keep the six prepared tiles unbound and retain east/west mirrors, native/3× source
-renders and an assembled review for player steering.
-
-> "okay hook the stairs up in the escape sequence so I can take a look there"
-
-> "for the assembly. the landing platform is vertical and the height of the two stair tiles.
-> remove the old tiles and the railing tiles -- no railing before we get the rest working"
-
-> "landing platform should be vertical it is horizontal now"
-
-- [ ] **Bind the reviewed six-tile side in the escape stairwell.** Replace only the current visual
-      treatment of each full stair flight's side with the matching east/west upper, lower and
-      continuation roles, repeated with the reviewed one-tile-right-and-down module shift. For this
-      assembly review, remove the old full-flight and landing visual tiles and remove both rear and
-      foreground railing tiles; no railing returns until the rest of the assembly works. Draw the
-      landing platform vertically at two stair tiles high. Keep the escape map, walkable stair
-      tiles, slope redirection, collision, waypoints, doors and route unchanged. Update the graphics
-      inventory, cover the selection, placement and deliberate old-visual omissions with a focused
-      interior test, and provide one normal-scale still in the escape stairwell for player review.
-      This is a review binding, not approval of the final stair art.
+- [ ] **Rebuild the escape stairwell from that grammar.** Continue the shown repetition through
+      the existing stairwell floors. `F`, `t`, `m`, `T`, `M` and the door approach are
+      walkable; `b`, `c`, `C` and `.` are not. On `t` or `m`, rightward travel goes
+      equally right and down and leftward travel goes equally left and up. On `T` or `M`,
+      leftward travel goes equally left and down and rightward travel goes equally right and up.
+      Preserve normal movement speed while making those horizontal and vertical displacements
+      equal. Every `D` keeps its corresponding corridor fade-and-teleport destination, and the
+      wider escape route remains the same even though the stairwell cells, collision and slope
+      redirection now change. Bind the reviewed right/left SVG roles to the matching symbols, cover
+      the exact layout, walkability, both traversal directions and door pairings with the focused
+      interior suite, and provide one normal-scale still of the corrected left stairwell for player
+      review. This is still a review binding, not approval of final stair art; add no railing.
 
 ---
 
