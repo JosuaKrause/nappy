@@ -298,8 +298,10 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 ## M158 — The staircase follows the corrected tile grammar · asked for 2026-09-19
 
 [PLAYTEST-81](playtests/PLAYTEST-81.md) rejects the first in-game assembly and supplies the exact
-cell grammar that replaces it. The six reviewed SVG stair-side sources remain the drawing
-authority: their edges follow the
+cell grammar that replaces it. The live binding parses that grammar into the stair map, so its
+symbols own the art, walkability, collision and slope direction rather than decorating the old
+switchback. The six reviewed SVG stair-side sources remain the drawing authority: their edges
+follow the
 [clean side reference](evidence/m158-stair-tile-prototype-2026-09-19/reference-sideview.png), and
 the old broad decks and every rear or foreground railing stay absent while the assembly is open.
 
@@ -333,18 +335,15 @@ gray top-edge rectangle is as high as the adjacent diagonal. The corrected layou
 ...cmt....
 ```
 
-- [ ] **Rebuild the escape stairwell from that grammar.** Continue the shown repetition through
-      the existing stairwell floors. `F`, `t`, `m`, `T`, `M` and the door approach are
-      walkable; `b`, `c`, `C` and `.` are not. On `t` or `m`, rightward travel goes
-      equally right and down and leftward travel goes equally left and up. On `T` or `M`,
-      leftward travel goes equally left and down and rightward travel goes equally right and up.
-      Preserve normal movement speed while making those horizontal and vertical displacements
-      equal. Every `D` keeps its corresponding corridor fade-and-teleport destination, and the
-      wider escape route remains the same even though the stairwell cells, collision and slope
-      redirection now change. Bind the reviewed right/left SVG roles to the matching symbols, cover
-      the exact layout, walkability, both traversal directions and door pairings with the focused
-      interior suite, and provide one normal-scale still of the corrected left stairwell for player
-      review. This is still a review binding, not approval of final stair art; add no railing.
+- [ ] **Review the corrected live binding.** Run
+      `./tools/run.sh --start-escape stairwell:left` and walk the east- and west-descending flights
+      into their corridor doors. The exact grammar, both normalized traversal directions, blocked
+      `b`/`c`/`C`/background cells and every existing door pairing are held by the focused interior
+      suite; the
+      [normal-scale left-shaft still](evidence/archive/session-captures/2026-09-19/rig-110853-seed3349946719-v0.11.1-38-g2663c361-dirty/m158-corrected-left.png)
+      shows the rail-free binding. The remaining question is the player's verdict in motion: does
+      the diagram read as the intended staircase and does each `b` close the diagonal side at the
+      landing? This is still a review binding, not approval of final stair art; add no railing.
 
 ---
 
