@@ -566,22 +566,11 @@ item below for as long as looking takes.
   became a wall: a walker or a car that reaches the boundary pavement turns or is clamped onto the
   map's last row, and the one body allowed out is a car on the spine by the tunnel or the bridge.
   Whether that reads as a city edge or as bodies bunching against glass is a played question.
-
-## Father opposite-contact donor and normalization
-
-**M167, the father's legs read as legs:** [PR #234](https://github.com/JosuaKrause/nappy/pull/234)
-shows the selected final woman leg crops with their anatomical chains, the large normalized
-father figures, and the clean native/6× eight-direction sheet and A/C/B/C loops. The profile
-foreground thigh continues down-left to the trailing shoe; the advancing thigh emerges behind
-it. The diagonal uses the near screen-left trailing and far screen-right advancing contact.
-Does the selected donor and resulting gait now show the intended opposite contact? Compare
-the changed B frames against A/C for head, hand, jacket and stature consistency. These are
-uninstalled review artifacts; generation can change details and proportions within the figures.
-The candidate's B trousers are brighter than A/C, and the diagonal stride reads more front-facing.
-
-## Father carrying animation
-
-[PR #234](https://github.com/JosuaKrause/nappy/pull/234) includes a separately labeled native/6×
-GIF of the current father carrying the baby. It uses the installed sprites, independent of
-M167, the father's legs read as legs, and its pushing corrections. Does carrying hold the
-father and baby's identity and proportions through all directions and A/C/B/C phases?
+- **M167, the father's leg drawing — early pushing and carrying contact previews.**
+  PR #234 embeds both states as clean PNG sheets and GIFs. The
+  [color-matched pushing sheet](evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/final/pushing/pushing-spritesheet-6x.png)
+  and [carrying sheet](evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/final/carrying/carrying-spritesheet-6x.png)
+  show the corrected profile overlap and actual carrying B changes. Compare the trouser colors
+  through A/C/B/C and the carrying leg contacts. Southeast uses the accepted provisional
+  diagonal; its natural drawing refinement remains open. Side B has a wider stride and heavier
+  shoes than A. These uninstalled previews do not establish runtime hand contact or final approval.

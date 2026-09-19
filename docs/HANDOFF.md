@@ -294,19 +294,22 @@ checks and worktrees can move independently of this file.
 - **PR #234 — M167, the father's legs read as legs** prepares an uninstalled E/W and SE/SW B
   refinement using the corresponding final woman images. [PLAYTEST-95](playtests/PLAYTEST-95.md)
   calls for the correct crop at high resolution followed by image-generation normalization.
-  The opposite-contact donor, large assembly and normalization recipe are in
-  `docs/evidence/male-player-2026-09-19/b-contact/correct-contact-2026-09-19/`.
-  The source legs come from final carrying F side B and front-diagonal A; only the father's
-  pushing E/W and SE/SW B preview changes. Review the source contact sheet and native/6×
-  animation before installation. The neighboring `normalized-crop-2026-09-19/carrying-generated/`
-  folder supplies the current baby-carrying GIFs. Preserve N/S, NE/NW and all A/C.
+  [PLAYTEST-97](playtests/PLAYTEST-97.md) requires a deterministic color match to the existing
+  frames, a genuine southeast stride, and the corresponding leg corrections applied to
+  carrying too. Embed clean PNG sheets and GIFs for both states directly in the PR. Preserve
+  the father's identity, baby and carrying upper-body pose, and all unaffected frames.
+  `color-match-2026-09-19/` supplies the deterministic trouser transformation;
+  `diagonal-carrying-2026-09-19/` supplies actual carrying B changes and restores the accepted
+  southeast contact. Natural southeast drawing remains open after generated attempts failed
+  the leg-ownership check. The side B stride and shoes remain heavier than A. These are early
+  uninstalled previews, not an approved full-figure carrying normalization.
   The provisional contact baseline
   on main remains in use. Push plausible attempts early and welcome repeated feedback;
   the CLI cannot display local images. The next branch synchronization requires explicit permission.
 
 Number ownership remains distinct: PLAYTEST-84 and PLAYTEST-85 are the escape/save records
 on main, PLAYTEST-86 belongs to the performance work, and PLAYTEST-87 belongs to the father
-sheet instructions. PLAYTEST-88 through PLAYTEST-93 and PLAYTEST-95 through PLAYTEST-96 are
+sheet instructions. PLAYTEST-88 through PLAYTEST-93 and PLAYTEST-95 through PLAYTEST-97 are
 separate father follow-ups. PLAYTEST-94 belongs to the independent escape/save feedback.
 
 No merge, auto-merge, rebase, merge from main or branch deletion is authorized without explicit permission in the current

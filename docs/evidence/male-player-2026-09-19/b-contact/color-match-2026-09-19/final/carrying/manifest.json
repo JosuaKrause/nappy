@@ -1,0 +1,83 @@
+{
+  "status": "uninstalled deterministic B-trouser color match for player review",
+  "candidate_rig": "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig",
+  "reference_rig": "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig",
+  "pillow": "12.3.0",
+  "input_sha256": {
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_front_a.png": "5b3b2094df0627158a2982a787858556e121aecea5844b2cbf3e9eb13f447a37",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_front_b.png": "d477d78d37441ebdba96db32628702381519d006c57a600f05dcba8ec2b9deae",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_front_c.png": "2e45e1d7ab07e5fd5bd46a2402da5dff7c72e5662440bc5e956c8d0fff3c204c",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_back_a.png": "86c5dcc6cf0e0e63de85986caf209a09954aa559f30a8eac86aa048f40e3e13e",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_back_b.png": "192ea71c2af3dc1ad443e39f6c57e58159a2caf9aac751ff969910a17fbfb888",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_back_c.png": "282768f8a545db7bf6fe841a83127635c78bdce920d81ccdf85ac2442fbdb8cc",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_side_a.png": "acb36e5aee89698a266ad000d3be70563cbfaf21714b0105041bce95e6966bec",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_side_b.png": "177f9d8793c51483ee7d36d7f8268c15a09b442117300503e99abed4cbf04055",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_side_c.png": "488b4ab07f85678378aa497b7b0e1e1bb1dc172953fe091de0dc27146a863d44",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_front_diagonal_a.png": "be9f1a049c2b29f89e803a88f1fff08fb4c6ec9f80084404316c003e9988bbb7",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_front_diagonal_b.png": "4c8a4a0b31dea2bc367e5a410d133329650d91211cc2c26eb82d29000f5bbbb5",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_front_diagonal_c.png": "93166bc4c89e77c65414deaa7995bfb7f5f2fe3eeb465b8c6a0f68fd1e9abf80",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_back_diagonal_a.png": "584185510f738423a654734c5b537380fbc44bc9cf1e013bef41a10fe4848acb",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_back_diagonal_b.png": "4a62f16c79af673794a8b7d0652d28b9f761202655627ad6d1348f3ccefefae8",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_back_diagonal_c.png": "5fcc8b0629fb8a42187348b57ea7673f6e5155bed5ff21275a8c1761c412d99e"
+  },
+  "method": "native-pixel RGB matrix applied only to the material selector below the coat hem",
+  "records": {
+    "side": {
+      "candidate": "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_side_b.png",
+      "reference_frames": [
+        "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_side_a.png",
+        "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-carrying-rig/father_carrying_side_c.png"
+      ],
+      "sample_bounds": [
+        0,
+        28,
+        26,
+        46
+      ],
+      "selector": "alpha > 0; y >= 28; blue >= green + 11; blue >= red + 18",
+      "palette_samples": {
+        "candidate_luma_quantiles": {
+          "10%": 41.3,
+          "50%": 79.8,
+          "90%": 111.0
+        },
+        "reference_ac_luma_quantiles": {
+          "10%": 61.5,
+          "50%": 90.3,
+          "90%": 118.2
+        },
+        "reference_ac_rgb_at_50%": [
+          77,
+          92,
+          113
+        ]
+      },
+      "transform": "reference_luma = round(0.86 * source_luma + 27); RGB = reference_luma * (0.86, 1.02, 1.25)",
+      "changed_pixels": 143,
+      "alpha_preserved": true,
+      "outside_mask_preserved": true
+    }
+  },
+  "outputs": {
+    "carrying-animation-6x.gif": "01f1248db7bac5e6e397f3019c49fc377159c5265977a569ad7818e4266227bf",
+    "carrying-animation-native.gif": "7ab90077cc3d95399249e5eed7d86d1139eaec00835c897334846c957f4e4481",
+    "carrying-spritesheet-6x.png": "f4a0a6e95a081898fab615a0c47c61acde7e5c0171b34d61241c15746ccdb5f7",
+    "carrying-spritesheet-native.png": "db1db81be5e48cd58d2ecc52da38e150c70b9b87985b1ba5596f30b72573bccc",
+    "masks/father_carrying_side_b-pants-mask.png": "336b47049248ebe785c9edaf26d5c848f2395d9119178f23f5604eb0f7320b6a",
+    "rig/father_carrying_back_a.png": "86c5dcc6cf0e0e63de85986caf209a09954aa559f30a8eac86aa048f40e3e13e",
+    "rig/father_carrying_back_b.png": "192ea71c2af3dc1ad443e39f6c57e58159a2caf9aac751ff969910a17fbfb888",
+    "rig/father_carrying_back_c.png": "282768f8a545db7bf6fe841a83127635c78bdce920d81ccdf85ac2442fbdb8cc",
+    "rig/father_carrying_back_diagonal_a.png": "584185510f738423a654734c5b537380fbc44bc9cf1e013bef41a10fe4848acb",
+    "rig/father_carrying_back_diagonal_b.png": "4a62f16c79af673794a8b7d0652d28b9f761202655627ad6d1348f3ccefefae8",
+    "rig/father_carrying_back_diagonal_c.png": "5fcc8b0629fb8a42187348b57ea7673f6e5155bed5ff21275a8c1761c412d99e",
+    "rig/father_carrying_front_a.png": "5b3b2094df0627158a2982a787858556e121aecea5844b2cbf3e9eb13f447a37",
+    "rig/father_carrying_front_b.png": "d477d78d37441ebdba96db32628702381519d006c57a600f05dcba8ec2b9deae",
+    "rig/father_carrying_front_c.png": "2e45e1d7ab07e5fd5bd46a2402da5dff7c72e5662440bc5e956c8d0fff3c204c",
+    "rig/father_carrying_front_diagonal_a.png": "be9f1a049c2b29f89e803a88f1fff08fb4c6ec9f80084404316c003e9988bbb7",
+    "rig/father_carrying_front_diagonal_b.png": "4c8a4a0b31dea2bc367e5a410d133329650d91211cc2c26eb82d29000f5bbbb5",
+    "rig/father_carrying_front_diagonal_c.png": "93166bc4c89e77c65414deaa7995bfb7f5f2fe3eeb465b8c6a0f68fd1e9abf80",
+    "rig/father_carrying_side_a.png": "acb36e5aee89698a266ad000d3be70563cbfaf21714b0105041bce95e6966bec",
+    "rig/father_carrying_side_b.png": "8a8df0912f46641a6c5706ce3b4a45db04d679c2f7b5bc49416c687dad7981cd",
+    "rig/father_carrying_side_c.png": "488b4ab07f85678378aa497b7b0e1e1bb1dc172953fe091de0dc27146a863d44"
+  }
+}

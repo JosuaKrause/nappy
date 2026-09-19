@@ -23,7 +23,12 @@ labeled carrying GIFs show the current installed carrying family. These review a
 do not alter this registered family.
 The [correct-contact donor recipe](b-contact/correct-contact-2026-09-19/README.md) uses the
 final carrying family's actual opposite leg overlap and above-pelvis father identity inputs
-for a new uninstalled normalization preview.
+for an uninstalled normalization preview. Its profile has the requested opposite overlap;
+its southeast legs are too frontal. The [color-match recipe](b-contact/color-match-2026-09-19/README.md)
+transforms trouser colors without changing geometry or pixels outside the material mask.
+The [diagonal and carrying contact recipe](b-contact/diagonal-carrying-2026-09-19/README.md)
+restores the accepted southeast contact and applies actual carrying B leg changes. These are
+uninstalled review candidates; natural southeast drawing remains unresolved.
 
 `source/` preserves Godot's 1×, 3× and 8× rasterization of every SVG.
 `inputs/*_source-{1,3,8}x.png` assembles them in columns front, back, side, front diagonal,

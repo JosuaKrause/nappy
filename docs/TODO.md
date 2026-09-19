@@ -318,10 +318,20 @@ wrong leg picture for the cropping -_- it's the one where the wrong leg is in fr
 Select the actual opposite contact from the final woman artwork before another crop or
 normalization. Trace the foreground thigh through its knee to the trailing shoe; the current
 normalized candidate is rejected, and its B filename is not evidence of the correct pose.
-The final carrying family's side B supplies the visible foreground trailing thigh; its
-front-diagonal A supplies the corresponding near-trailing/far-advancing contact. Use those
-large leg crops, preserving the father's pushing upper body. Crop father identity references
+The final carrying family's side B supplies the visible foreground trailing thigh. Its
+front-diagonal A is too frontal for the southeast correction; use the accepted southeast
+contact target to establish that projection. Preserve the father's pushing upper body.
+Crop father identity references
 above the pelvis so his wrong original contact cannot steer normalization back to itself.
+
+[PLAYTEST-97](playtests/PLAYTEST-97.md) requests a deterministic color transformation of the
+correct-contact candidate to match the other images, with geometry retained. Embed the PNG
+sheet as well as the GIF in the PR. The carrying clarification is "you didn't update the legs
+at all": apply the corresponding leg corrections to carrying too, preserving the father,
+baby and carrying upper-body pose. Publish both corrected states as PNG sheets and GIFs.
+The pushing southeast legs also read south-facing in PLAYTEST-97. Correct their actual
+three-quarter stride before reusing them for carrying; a front-diagonal filename alone
+does not establish the projection. Preserve the accepted trailing/advancing leg ownership.
 
 - [ ] **Match the legs to the rest of the family.** E/W B needs clear far-leg shading, folded
       trousers and substantial shoes. Preserve the accepted near leg trailing and far leg
@@ -331,11 +341,12 @@ above the pelvis so his wrong original contact cannot steer normalization back t
 - [ ] **Publish an early attempt and ask for feedback.** Use the clean eight-direction
       A/C/B/C sheet and native/6× GIFs at 190ms per phase from [PLAYTEST-87](playtests/PLAYTEST-87.md).
       Push and embed commit-pinned links before asking: the CLI cannot show local images.
-      Include the father's current baby-carrying GIF beside the pushing candidate, as requested
-      in [PLAYTEST-95](playtests/PLAYTEST-95.md), clearly labeling the two animation states.
+      Embed PNG sheets and GIFs for corrected pushing and carrying candidates, as requested
+      in [PLAYTEST-97](playtests/PLAYTEST-97.md), clearly labeling the two animation states.
       Repeated feedback is welcome, per [PLAYTEST-89](playtests/PLAYTEST-89.md).
-      Preserve native canvases, scale, anchors and upper-body landmarks. Do not change carrying
-      poses, stroller art or gameplay. Retain source crops, transforms, commands and hashes.
+      Preserve native canvases, scale, anchors and upper-body landmarks. Carrying corrections
+      belong to the PLAYTEST-97 request above; keep stroller art and gameplay unchanged.
+      Retain source crops, transforms, commands and hashes.
 - [ ] **Install only the visually accepted refinement.** Keep corresponding reviewed SVGs,
       creation copies, registered PNGs and manifest hashes in agreement, preserve import sidecars,
       and verify runtime bindings. The provisional splice is not a general successful procedure;
