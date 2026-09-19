@@ -303,12 +303,15 @@ review attempt that makes the legs read more naturally, retaining the accepted p
 protected frames. The contact baseline is installed on main; this drawing refinement requires
 separate visual approval. The contact history is recorded under M160 in `DECISIONS.md`.
 
-[PLAYTEST-93](playtests/PLAYTEST-93.md) rejects the woman-leg trial: "those are not are the woman
-legs. take the ones from the corresponding final image". Copy the corresponding final woman
-E/W and SE/SW B leg artwork directly, preserving its complete visible pants and shoes rather
-than regenerating their upper portion. The source must be traceable to the final woman sheet.
-Retain N/S, NE/NW, all A/C frames and the father's upper body. Publish the clean sheet and
-native/6× GIFs in PR #234; leave the new result uninstalled for visual judgment.
+[PLAYTEST-93](playtests/PLAYTEST-93.md) identifies the donors: "take the ones from the corresponding
+final image". [PLAYTEST-94](playtests/PLAYTEST-94.md) specifies the correction: "it's the wrong
+part but maybe do the crop in the larger version and then let the image generation normalize
+it?". Crop the correct E/W and SE/SW B leg artwork from those larger final woman images,
+assemble at high resolution and use image generation to normalize the join and proportions
+before native registration. Preserve the father identity, accepted contact ownership, N/S,
+NE/NW and every A/C frame. Publish the clean sheet and native/6× GIFs in PR #234; leave the
+new result uninstalled for visual judgment. The rejected literal-copy crop and the reason for
+generated normalization are recorded under M167, final-woman-leg crop rejected, in `DECISIONS.md`.
 
 - [ ] **Match the legs to the rest of the family.** E/W B needs clear far-leg shading, folded
       trousers and substantial shoes. Preserve the accepted near leg trailing and far leg
@@ -318,6 +321,8 @@ native/6× GIFs in PR #234; leave the new result uninstalled for visual judgment
 - [ ] **Publish an early attempt and ask for feedback.** Use the clean eight-direction
       A/C/B/C sheet and native/6× GIFs at 190ms per phase from [PLAYTEST-87](playtests/PLAYTEST-87.md).
       Push and embed commit-pinned links before asking: the CLI cannot show local images.
+      Include the father's current baby-carrying GIF beside the pushing candidate, as requested
+      in [PLAYTEST-94](playtests/PLAYTEST-94.md), clearly labeling the two animation states.
       Repeated feedback is welcome, per [PLAYTEST-89](playtests/PLAYTEST-89.md).
       Preserve native canvases, scale, anchors and upper-body landmarks. Do not change carrying
       poses, stroller art or gameplay. Retain source crops, transforms, commands and hashes.

@@ -1,0 +1,15 @@
+{
+  "tool": "built-in image_gen",
+  "attempts": 1,
+  "prompt": "docs/evidence/male-player-2026-09-19/b-contact/normalized-crop-2026-09-19/prompt.txt",
+  "input_order": [
+    "docs/evidence/male-player-2026-09-19/b-contact/normalized-crop-2026-09-19/inputs/normalization-targets.png",
+    "docs/evidence/male-player-2026-09-19/b-contact/normalized-crop-2026-09-19/inputs/father-high-resolution-reference.png",
+    "docs/evidence/male-player-2026-09-19/b-contact/normalized-crop-2026-09-19/inputs/mother-final-leg-reference.png"
+  ],
+  "original_output_path": "/Users/krause/.codex/generated_images/01a0bb8e-4ffb-7022-980d-105a4c491a25/exec-22fe13b8-7645-4f3e-a5ad-2a287e40af18.png",
+  "preserved_output": "docs/evidence/male-player-2026-09-19/b-contact/normalized-crop-2026-09-19/raw/normalized.png",
+  "output_dimensions": [1376, 1143],
+  "output_mode": "RGBA",
+  "output_sha256": "626a7bf64aff8ac35f73b0e079f31c256d463c976b95a2e371ceafb6e97f6dc9"
+}

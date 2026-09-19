@@ -567,12 +567,15 @@ item below for as long as looking takes.
   map's last row, and the one body allowed out is a car on the spine by the tunnel or the bridge.
   Whether that reads as a city edge or as bodies bunching against glass is a played question.
 
-## Father final-image leg preview
+## Father high-resolution crop and normalization
 
-**M167, the father's legs read as legs, has an uninstalled final-image donor preview in
-[PR #234](https://github.com/JosuaKrause/nappy/pull/234).** Open its clean eight-direction
-sheet and native/6× A/C/B/C animation. E/W and SE/SW B use crops from the woman's final
-full-resolution side and front-diagonal images; the PR also shows those source figures.
-Do these preserve the intended legs and look right beneath the father's jacket through the
-whole loop? The join and proportions remain visual questions. N/S, NE/NW and all A/C frames
-are preserved. This asks for visual judgment, not installation of the preview.
+**M167, the father's legs read as legs:** [PR #234](https://github.com/JosuaKrause/nappy/pull/234)
+shows the large father/mother-leg input assembly, its generated normalization and the complete
+eight-direction sheet with native/6× A/C/B/C loops. Does the new crop use the intended portion
+of the final woman's legs, and does the normalized connection read naturally beneath the
+father's jacket? The generator changes trouser/shoe detail and the side pose appears to put
+the advancing leg in front, so accepted contact ownership is not established. Compare B against
+A/C for head, hand and stature stability too. This is early visual feedback on an uninstalled
+candidate, not a request to accept those known limitations for runtime use.
+The same PR includes a separately labeled native/6× GIF of the current father carrying the
+baby, made from the installed sprites without applying the pushing candidate to that family.

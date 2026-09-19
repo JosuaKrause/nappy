@@ -1,6 +1,10 @@
 # Father's final-woman-leg literal-copy preview
 
-Review the [clean eight-direction sheet](generated/father-spritesheet-6x.png), its
+This is rejected crop evidence, retained with its exact recipe. The player's verdict is in
+[PLAYTEST-94](../../../../playtests/PLAYTEST-94.md); the correction is open under M167,
+the father's legs read as legs, in `docs/TODO.md`.
+
+Inspect the [clean eight-direction sheet](generated/father-spritesheet-6x.png), its
 [native version](generated/father-spritesheet-native.png), and the
 [native](generated/father-animation-native.gif) or
 [6×](generated/father-animation-6x.gif) A/C/B/C loop. The separate
