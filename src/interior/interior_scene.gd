@@ -39,6 +39,7 @@ const WALL_LAMP_TEXTURE := preload("res://assets/interior/wall_lamp.svg")
 const LIFT_DOOR_TEXTURE := preload("res://assets/interior/lift_door_dead.svg")
 const ENTRANCE_DOOR_TEXTURE := preload("res://assets/interior/entrance_door.svg")
 const ENTRANCE_BARRICADE_TEXTURE := preload("res://assets/interior/entrance_barricade.svg")
+const HALLWAY_RUBBLE_TEXTURE := preload("res://assets/interior/hallway_rubble.svg")
 const BRICK_WALL := preload("res://assets/interior/basement_wall_brick.svg")
 const DOOR_TEXTURE := preload("res://assets/interior/stairwell_door.svg")
 const APARTMENT_THRESHOLD_TEXTURE := preload("res://assets/interior/apartment_threshold.svg")
@@ -192,6 +193,7 @@ func _rebuild_walls() -> void:
 		if kind != InteriorTile.Kind.LIFT_DOOR and kind != InteriorTile.Kind.ENTRANCE_DOOR:
 			continue
 		_add_wall_sprite(at, _wall_texture(kind))
+	_add_rubble()
 	for at: Vector2i in _plan.entrance_tiles:
 		var barricade := Sprite2D.new()
 		barricade.texture = ENTRANCE_BARRICADE_TEXTURE
@@ -200,6 +202,22 @@ func _rebuild_walls() -> void:
 				-ENTRANCE_BARRICADE_TEXTURE.get_height())
 		barricade.position = Vector2((at.x + 0.5) * TILE, at.y * TILE + TILE * 0.5)
 		_walls.add_child(barricade)
+
+## The fallen ceiling on the top floor, drawn over exactly the cells `InteriorMapPlan.rubble`
+## closes. One picture registered at the patch's own top-left corner rather than one sprite per
+## cell: a heap is a single mass, and four copies of the same tile would read as four crates.
+##
+## **In the wall layer, with the barricade and the plaster**, for the reason this class's own doc
+## gives for putting elevation there — nothing can legitimately stand behind a thing that closes a
+## corridor, so there is nothing for it to sort against.
+func _add_rubble() -> void:
+	if _plan.rubble.size == Vector2i.ZERO:
+		return
+	var heap := Sprite2D.new()
+	heap.texture = HALLWAY_RUBBLE_TEXTURE
+	heap.centered = false
+	heap.position = Vector2(_plan.rubble.position) * TILE
+	_walls.add_child(heap)
 
 func _add_wall_sprite(at: Vector2i, texture: Texture2D) -> Sprite2D:
 	if not texture:

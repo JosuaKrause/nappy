@@ -54,10 +54,16 @@ var _seed := 0
 var _until_the_next_explosion := 0.0
 ## The basement's vents, in the order she meets them walking the corridor. Rebuilt by `restart()`.
 var _vents: Array[Vent] = []
-## Which stairwell the fire closes — "left" or "right". Drawn from the run seed, so a run is the
-## same run twice; the masked man takes the other one, which is the whole of why the fire is worth
-## having: the way past a fire is the other egress, and the other egress has somebody on it.
-var _burning_side := "left"
+## Which stairwell the fire closes, and it is **always the left one**. *(2026-09-19: "there should
+## be a fire on the left like it is right now but the top floor right side should be completely
+## blocked off with rubble.")* The two have to agree: the rubble shuts the right stairwell off the
+## top floor, so a fire that rolled onto the right as well would leave her nothing at all to walk
+## down from her own door. The masked man takes the other shaft — which is the whole of why the
+## fire is worth having: the way past a fire is the other egress, and the other egress has
+## somebody on it.
+const _BURNING_SIDE := "left"
+## The shaft the masked man runs, which is the one the fire did not take.
+const _PURSUED_SIDE := "right"
 
 func setup(interior: InteriorScene, rng: RandomNumberGenerator) -> void:
 	_interior = interior
@@ -76,7 +82,6 @@ func restart() -> void:
 	_until_the_next_explosion = Tuning.FINALE_EXPLOSION_INTERVAL
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _seed
-	_burning_side = "left" if rng.randf() < 0.5 else "right"
 	_place_the_fire(rng)
 	_place_the_masked_man()
 	_place_the_basement(rng)
@@ -85,7 +90,7 @@ func restart() -> void:
 ## walkable — *"there might be a fire on one staircase forcing us to use the other staircase (all
 ## buildings have two egresses)"* is a statement about both of them, not only the burning one.
 func burning_side() -> String:
-	return _burning_side
+	return _BURNING_SIDE
 
 func instances() -> Array[EventInstance]:
 	return _instances
@@ -104,7 +109,7 @@ func instances() -> Array[EventInstance]:
 ## Its blocking reach is its own 30px body plus her 14px, and the door tile is 64px from the cell
 ## it stands on, so a door arrival lands clear of it.
 func _place_the_fire(rng: RandomNumberGenerator) -> void:
-	var approaches := _inner_floor_approaches(_burning_side)
+	var approaches := _inner_floor_approaches(_BURNING_SIDE)
 	if approaches.is_empty():
 		return
 	var at: Vector2i = approaches[rng.randi_range(0, approaches.size() - 1)]
@@ -124,8 +129,7 @@ func _place_the_fire(rng: RandomNumberGenerator) -> void:
 ## neighbour is the level approach below it, so a door is always further from his line than the
 ## radius that takes the baby. `tests/test_interior.gd` measures that gap rather than assuming it.
 func _place_the_masked_man() -> void:
-	var side := "right" if _burning_side == "left" else "left"
-	var walk := _interior.stairwell_walk("stairwell_%s" % side)
+	var walk := _interior.stairwell_walk("stairwell_%s" % _PURSUED_SIDE)
 	if walk.size() < 2:
 		return
 	var path := PackedVector2Array()

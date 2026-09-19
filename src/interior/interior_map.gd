@@ -17,7 +17,9 @@ extends RefCounted
 ## Three hallways share one layout: a 14-tile east-west hallway, two rows deep, with a stair door
 ## at each end — opposite ends, not the two the sketch drew both at the right, a player decision
 ## (playtest 55: "that way having a fire on the stairs forces you to enter a floor hallway and walk
-## to the other end"). Two independent stairwells each alternate one lateral flight per floor, with
+## to the other end"). **The top floor's right half is shut by a fallen ceiling** — see
+## `TOP_FLOOR_RUBBLE` — so the first flight out of her own door is always the left one.
+## Two independent stairwells each alternate one lateral flight per floor, with
 ## corridor doors beside the level approaches at opposite flight ends and no map load mid-shaft,
 ## since there is only the one map. The lobby is the hallway's own width with the barricaded
 ## entrance and doors to both stairwells and the basement. Each stairwell is the corrected
@@ -97,6 +99,21 @@ const HALLWAY_START_COLUMN := HALLWAY_LENGTH / 2
 ## floor trim. The starting recess is included so her home has the same visual language.
 const LOCKED_APARTMENT_COLUMNS: Array[int] = [2, 5, HALLWAY_START_COLUMN, 10]
 
+## The ceiling down across the top floor, local to that hallway's own origin: two columns, **both
+## rows**, between her own door at column 7 and the right stair door at column 13.
+##
+## **Both rows, or it is not a wall.** A hallway is two tiles deep and a heap on one row is
+## something to walk round; this closes the corridor outright, so from her own door the right
+## stairwell cannot be entered on the top floor at all and the first flight she takes is the left
+## one — the side the fire is on. Two columns rather than one because 32px of debris across a
+## 64px-deep corridor reads as a strip of decoration; 64px reads as a collapse.
+##
+## **Columns 8 and 9 rather than any other pair.** Anywhere strictly between the two doors closes
+## the same ground, and these are the pair that sits under a window (column 9) and clear of every
+## apartment recess (`LOCKED_APARTMENT_COLUMNS`), so nothing it covers is a threshold somebody
+## could mistake for a way through.
+const TOP_FLOOR_RUBBLE := Rect2i(8, 0, 2, 2)
+
 ## `id` is "hallway_third"/"hallway_second"/"hallway_first" — the part name every door and
 ## waypoint on this hallway is prefixed with, and the name `_build_stairwell()` reads back to wire
 ## up the counterpart on each landing door.
@@ -121,6 +138,10 @@ static func _build_hallway(f: InteriorMapPlan, id: String, origin: Vector2i, is_
 	f.waypoints[id] = start
 	if is_start:
 		f.start_tile = start
+		# The collapse is laid down here, with the floor, rather than checked for afterwards: the
+		# top floor is built with the right half already shut, so nothing ever places anything on
+		# ground the rubble then has to be reconciled with.
+		f.rubble = Rect2i(origin + TOP_FLOOR_RUBBLE.position, TOP_FLOOR_RUBBLE.size)
 
 # ------------------------------------------------------------------------------ stairwell ---
 

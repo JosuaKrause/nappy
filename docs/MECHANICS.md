@@ -1126,6 +1126,15 @@ back at the start of the section she was in — the hallway outside her own door
 untouched. A fourteen-day run is never thrown by one wrong turn in the last minutes; at zero the
 way out is gone, and what she does about it is walk it again.
 
+**Section one is a route with the first turn already taken.** A fallen ceiling fills the top
+floor's hallway between her own door and the right stair door, both rows of it
+(`InteriorMap.TOP_FLOOR_RUBBLE`), so the right stairwell cannot be entered on that floor at all and
+the only flight down is the left one — which is the shaft the fire is in
+(`InteriorEvents._BURNING_SIDE`, fixed rather than rolled, since a fire on the shut side would
+leave her nothing). Getting past the fire means stepping through the nearest corridor door and
+walking to the other end of that hallway, which is why the two stair doors are at opposite ends;
+the right shaft it leads to is where the masked man is.
+
 **Two hint lines, said once each**, the way day 1 teaches tapping and then never again:
 *"Escape the apartment"* at the start of the first section and *"Exit the city"* at the service
 exit. A retry is not told either of them a second time.

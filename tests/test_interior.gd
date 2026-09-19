@@ -23,6 +23,7 @@ func run(t) -> void:
 	_test_the_basement_entry_is_a_straight_level_stair(t)
 	_test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t)
 	_test_a_door_release_latch_keeps_a_door_from_retaking_her(t)
+	_test_the_rubble_shuts_the_top_floor_off_its_right_stairwell(t)
 	_test_the_fire_closes_one_stairwell_and_leaves_the_other(t)
 	_test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t)
 	_test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t)
@@ -735,6 +736,46 @@ func _shortest_path_length(f: InteriorMapPlan, start: Vector2i, goal: Vector2i) 
 					queue.append(next)
 	return -1
 
+## *"The top floor right side should be completely blocked off with rubble."*
+##
+## Three separate claims, and the third is the one the milestone is about. The heap stands on
+## painted hallway floor, so what closes those cells is the collapse rather than a hole in the
+## map; it fills the corridor's whole depth, so there is no lane past it; and **from her own door,
+## walking alone, the right stair door cannot be reached while the left one can** — which is what
+## makes the first flight she takes the one the fire is on.
+##
+## The second and third floors are asked the opposite question in the same breath, because the
+## answer to the fire is crossing a hallway to the other shaft: a collapse that closed those too
+## would close the section.
+func _test_the_rubble_shuts_the_top_floor_off_its_right_stairwell(t: Node) -> void:
+	var f := InteriorMap.build()
+	t.check(f.rubble.size.x > 0 and f.rubble.size.y > 0,
+			"the top floor carries a collapse (%s)" % f.rubble)
+	t.check(f.rubble.size.y == 2,
+			"it fills both rows of a two-row corridor, so nothing walks round it (%d)"
+			% f.rubble.size.y)
+	var cells := 0
+	for y in range(f.rubble.position.y, f.rubble.end.y):
+		for x in range(f.rubble.position.x, f.rubble.end.x):
+			var tile := Vector2i(x, y)
+			cells += 1
+			t.check(f.tiles.has(tile), "the heap at %s stands on painted hallway floor" % tile)
+			t.check(not f.is_walkable(tile), "and %s cannot be stood on" % tile)
+	t.check(cells == f.rubble.size.x * f.rubble.size.y,
+			"every cell of the heap was asked about (%d)" % cells)
+
+	var reached := _flood_fill(f, f.start_tile)
+	var right_door: Vector2i = f.door("hallway_third:right").tile
+	var left_door: Vector2i = f.door("hallway_third:left").tile
+	t.check(not reached.has(right_door),
+			"from her own door the right stairwell cannot be entered on the top floor at all")
+	t.check(reached.has(left_door),
+			"and the left one still can, so the way down starts on the fire's own side")
+	for id in ["hallway_second", "hallway_first"]:
+		var seen := _flood_fill(f, f.waypoints[id])
+		t.check(seen.has(f.door("%s:right" % id).tile) and seen.has(f.door("%s:left" % id).tile),
+				"%s still walks between both of its stair doors, so crossing over is possible" % id)
+
 # ------------------------------------------------------------ the escape's own events ---
 # `InteriorEvents` is the escape's first section: a mouse, a masked man on one stairwell, a fire on
 # the other, steam in the basement and the explosions outside. What these check is the placement's
@@ -764,6 +805,16 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 	if fire:
 		var burning := events.burning_side()
 		var other := "right" if burning == "left" else "left"
+		# **The fire and the rubble may never take the same shaft.** The collapse shuts one
+		# stairwell off the top floor outright, so a fire on that same side would leave her
+		# nothing to walk down from her own door. Asked as the two together rather than as the
+		# word "left": the side she can still walk to is the side that burns.
+		var f := InteriorMap.build()
+		var reached := _flood_fill(f, f.start_tile)
+		t.check(reached.has(f.door("hallway_third:%s" % burning).tile),
+				"the shaft the fire is in (%s) is the one her own door can still walk to" % burning)
+		t.check(not reached.has(f.door("hallway_third:%s" % other).tile),
+				"and the shaft the rubble shut (%s) is the one it is not in" % other)
 		t.check(scene.inner_floor_approaches("stairwell_%s" % burning).has(
 				scene.world_to_tile(fire.global_position)),
 				"the fire stands on the inner cell of a level approach in the %s shaft" % burning)
