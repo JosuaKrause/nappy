@@ -300,8 +300,8 @@ checks and worktrees can move independently of this file.
   nothing in this follow-up replaces the provisionally accepted runtime baseline without review.
 
 - **[PLAYTEST-94](playtests/PLAYTEST-94.md) is filed and unbuilt.** It opened M168, the escape
-  after playtest 94, and M169, the save symbol reads as a floppy disk, and added the walked-side
-  wall measurement under M129, a path through the city never has to cost. All three are in
+  after playtest 94, and added the walked-side
+  wall measurement under M129, a path through the city never has to cost. Both are in
   `TODO.md` and each is one agent's brief.
 
 Number ownership remains distinct: PLAYTEST-84 and PLAYTEST-85 are the escape/save records
