@@ -327,12 +327,19 @@ through `tools/run.sh --start-escape --seed 4242`.
       4242 first.
 - [ ] **A section restart shows the brief screen**, for the building and for the city alike, with
       the nerves unchanged. The restart still costs nothing.
-- [ ] **A masked man on foot in the city does not appear out of a barrier, and catches her at a
-      man's reach.** The finale's masked men are `roadblock` at full resistance progress: the
-      barrier picture is swapped for a guard the moment one notices her, and its lethal
-      `inner_radius` of 86px, sized so a kill can fire from outside a 60px barrier, is then
-      measured from a man. Both readings failed in play. The same row hunts in acts III and IV,
-      so what changes here changes there.
+- [ ] **A guard stands at the roadblock from the beginning, and catches her at a man's reach.**
+      *(2026-09-19: "the guard needs to be at the barrier from the beginning, standing. only then
+      does it make sense for it to start pursuing. 86px is huge".)* The finale's masked men on
+      foot are `roadblock` at full resistance progress; today the barrier picture is swapped for
+      a guard the moment one notices her, and the row's lethal `inner_radius` is 86px because
+      `EventDef.validate()` refuses a lethal radius inside the row's own body (60px barrier plus
+      her 14px). So: a standing guard is drawn at every roadblock from placement, hunting or not;
+      when a hunting one notices her, that guard telegraphs and sets off while the barrier stays
+      drawn and solid where it is; the catch is measured from the guard at a man's reach (the
+      building's masked man takes the baby at 28px), and the barrier itself catches nobody. The
+      same row hunts from day 7 on ordinary days, so this changes there too. Whether the street
+      behind a roadblock whose guard has left stays shut is the consequence to state in the
+      record: the barrier staying means it does.
 - [ ] **The escape's run log stamps every line `0.0`.** The log of the played run cannot say when
       anything happened (`docs/evidence/playtest-94-2026-09-19/`).
 
