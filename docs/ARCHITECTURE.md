@@ -115,6 +115,8 @@ src/
 	title_screen.gd       the screen a run opens on and goes back to; asks which control scheme
 	day_summary.gd        the screen between days, and the one at the end of a run
 	pause_screen.gd       the pause
+	save_indicator.gd     the small corner symbol that fades in and out after a write GameSave
+	                      actually makes
 	mode_button.gd        a circular icon-only button, drawn from a StyleBox and an icon
 	touch_controls.gd     the pointer scheme in its two modes, and the pause button
 	controls_mode.gd      which aiming origin a press is measured from
