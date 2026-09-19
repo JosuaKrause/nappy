@@ -182,8 +182,9 @@ with the code's constraints in hand. It is not queued and it is not rejected.
 last scene — out of the apartment, out of the city — and its section holds the brief, the four
 answered collisions, and the one item still open: the entry from day 14's own summary, which is
 what would make it a run's ending rather than a flag's. The record of what was built is in
-`DECISIONS.md`. M165, the escape's events follow the corrected staircase, sits directly before it:
-the masked man's path and the fire's docstrings still describe a shaft with one landing column.
+`DECISIONS.md`. M165, the escape after the corrected stairs, sits directly before it and holds
+what [PLAYTEST-84](playtests/PLAYTEST-84.md) found walking the sequence: the masked man off the
+stairs, the basement's entry flight, the steam, and the spawn at the service exit.
 
 **[PLAYTEST-50.md](playtests/PLAYTEST-50.md) carries the seal-picture review and the new-caret walk.**
 Its open findings are filed under M100: the guard robber standing inside a building, and a chalk
@@ -768,15 +769,21 @@ re-pitched:
 
 ---
 
-## M165 — The escape's events follow the corrected staircase · found 2026-09-19
+## M165 — The escape after the corrected stairs · found 2026-09-19
 
 Found reviewing PR #217 — M158, the staircase follows the corrected tile grammar — and kept out of
 it *(2026-09-19: "add the other items to the todos they're not the focus of this pr")*. Each
 stairwell's landings alternate between column 1 and column 8 of `InteriorMap.STAIRWELL_ROWS`, the
 ten-column symbol grammar that is the map; `src/finale/interior_events.gd` still places and
 describes its events for a shaft whose landings stack on one column.
+[PLAYTEST-84](playtests/PLAYTEST-84.md) walked the sequence on that build, accepted the stairwell
+graphics a second time, and found the rest: *"the basement stairs are bad. the steam walks for
+some reason. the masked man is floating in the stairwell … the spawn in the city from the
+basement can end up inside an obstacle. pathing is not done from the spawn but from the original
+door which is incorrect"*.
 
-- [ ] **The masked man runs the stairs rather than a line through the walls.**
+- [ ] **The masked man runs the stairs rather than a line through the walls.** *(PLAYTEST-84:
+      "the masked man is floating in the stairwell")*
       `InteriorEvents._place_the_masked_man()` gives him a two-point path from the
       `stairwell_<side>:landing_lobby` waypoint to the `stairwell_<side>` waypoint, on the reasoning
       its docstring gives: *"every landing in a shaft sits on one column, so a line up that column
@@ -787,6 +794,37 @@ describes its events for a shaft whose landings stack on one column.
       the existing test only checks the tile he starts on. The brief's own answer to him, *"going
       into a corridor and letting them pass"*, has to survive: a door's approach must leave her
       somewhere off his line
+- [ ] **The basement's entry flight.** *(PLAYTEST-84: "the basement stairs are bad")* The one
+      stair the corrected grammar did not reach: `InteriorMap._build_basement()` lays two
+      `STAIR_FLIGHT_E` cells painted with the old `stair_flight_e.svg` tread, and
+      `_mark_diagonal_clearances()` frees both flanks of each step so a 14px body can cross the
+      pinch. The player has not said whether it is the picture, the walk or both. **Proposed, not
+      agreed:** lay the entry as a short run of the same grammar the shafts use — level `F`
+      approaches, `t`/`m` walkable slope cells, solid `c` and `b` sides — so it draws and walks
+      like every other stair in the building and the clearance pass has nothing left to clear
+- [ ] **The steam stands still.** *(PLAYTEST-84: "the steam walks for some reason")* The brief
+      says *"maybe some steam in the basement"*; `basement_steam` is `mobile` and `paces` at
+      18px/s along the corridor, which was this side's answer to a standing vent leaving a
+      four-pixel lane in a corridor two tiles wide (`DECISIONS.md`, M102, the finale built behind
+      the flag). **Proposed, not agreed:** a vent fixed at the wall that vents on a timer — loud
+      for a few seconds, quiet for a few — with no solid body, so what she routes around is the
+      moment rather than a thing in the way, and the lane problem does not arise
+- [ ] **She comes out of the service exit onto clear ground.** *(PLAYTEST-84: "the spawn in the
+      city from the basement can end up inside an obstacle")* `FinalePlanner.service_exit_tile()`
+      takes the pavement tile beside the home lot's middle row and checks only
+      `CityMap.is_walkable()`, which answers for the tile type and knows nothing of what stands on
+      it — street furniture, a burnt car, a seal body, a crater. Check before accepting, both
+      ways: the exit tile is chosen among tiles with no static body within her own reach, and the
+      finale's placements (`FinalePlanner.plan()`'s `placements`, handed to
+      `EventScheduler.start_finale()`) refuse a spot whose body would cover it. A test walks
+      seeds and asserts a 14px body at the exit overlaps nothing
+- [ ] **Pathing starts where she is put.** *(PLAYTEST-84: "pathing is not done from the spawn but
+      from the original door which is incorrect")* The finale's two chains are grown from
+      `service_exit_tile()`, the tile she is put on, so first find what still starts at the home's
+      own doorstep — the debug route overlay `RouteLines`, the city's own route tree and closures
+      planned for the day underneath the finale, or the chain snapping to `grid.node_at(start)`,
+      the nearest junction rather than the tile — and ask the player which they saw if more than
+      one does. Then every route the section owns starts at the service exit
 - [ ] **The fire's words match where it stands.** `InteriorScene.turn_landings()` returns the inner
       level `F` cell below the second- and first-floor doors, two tiles from the door; the grammar
       has no turn landing and no main-shaft cell of kind `LANDING`. `_place_the_fire()` and

@@ -335,6 +335,10 @@ item below for as long as looking takes.
   only a walk answers: does the fire actually force the other shaft, or is walking back up the
   obvious answer anyway; and does the paced steam leave a line to walk in a corridor two tiles
   wide? Record is `DECISIONS.md`, M102, the finale built behind the flag.
+  [PLAYTEST-84](playtests/PLAYTEST-84.md) walked it and answered neither question; what it
+  found instead — the masked man off the stairs, the basement's entry flight, steam that walks,
+  a spawn inside an obstacle — is M165, the escape after the corrected stairs, in `TODO.md`.
+  **Walk it again once M165 is built, not before.**
 
 - **Stand at the service exit and choose** (`tools/run.sh --start-escape city --seed 4242` boots
   section two on its own). Two chains leave the door, one north to the tunnel and one south to
