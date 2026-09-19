@@ -345,8 +345,8 @@ item below for as long as looking takes.
   walk against his 3.6 second warning. Does the steam now read as a gate worth timing, and is the
   worst pocket fair — shut at both ends for two seconds, it costs about half the meter. Are some
   forty-five flashes a minute atmosphere or strobing? Does the brief on a restart land as a beat or
-  as a screen in the way? Does the one-tile stair read as a stair, given the player's *"at the
-  very least"*?
+  as a screen in the way? Does the basement stair, a gray tile with a dark line every four
+  pixels, read as a stair at the scale it is played at?
 
   **And in the city:** she comes out with no danger mark over her head, though a screen-edge
   badge for something not lethal may still show: does that read as the same complaint? Walk south
