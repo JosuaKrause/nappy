@@ -1,0 +1,26 @@
+{
+  "purpose": "One early lower-body drawing refinement after PLAYTEST-90 accepted the straight-contact leg positions provisionally.",
+  "strategy": "Edit the accepted father-only side donor once. Preserve its contact, endpoints, overlap and travel axis while asking only for clearer pelvis, thigh, knee, calf and trouser anatomy. Reuse the accepted deterministic splice and side-to-diagonal projection.",
+  "attempt_budget": "One built-in imagegen edit, exhausted. No internal retry.",
+  "attempts": [
+    {
+      "tool": "image_gen.imagegen",
+      "intent": "precise-object-edit",
+      "output_file_mtime_utc": "2026-09-19T15:42:46Z",
+      "prompt_file": "prompt-side-refinement-01.txt",
+      "prompt_sha256": "8528d21cc2be9a6711be612a905c5a5caece486b91c65aa672fdfa99e0c55095",
+      "references_in_order": [
+        {
+          "path": "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/side-donor-raw.png",
+          "role": "edit target and sole visual input; accepted father-only contact, pose, endpoints, overlap, canvas and existing rendering",
+          "sha256": "62a5680553d51fcb709e1a8edeefa534f2bf0ed1094a602821c74adef956b939"
+        }
+      ],
+      "original_output_path": "/Users/krause/.codex/generated_images/01a0bb2f-abea-7cb0-98ff-4cc901cbd788/exec-762f752b-fb39-4982-ade9-1174dc097a0f.png",
+      "output_sha256": "5ad5ba4e6ba6971edc06c135caabed9534282d1162d253a85eefe54228df7aaf",
+      "retained_output": "side-donor-refined-raw.png",
+      "verdict": "Retained as the required early player-review attempt. It adds a clearer pelvis join, thigh volume, knee articulation, calf taper and directional fabric folds while retaining the accepted contact. Native-scale readability, the projected diagonal and the hip-to-shirt splice remain for player judgment."
+    }
+  ],
+  "deterministic_selection": "Use the only refined side donor for E/W and for SE/SW through the already accepted provisional 3px side-to-diagonal projection. Protect every other frame and the upper 28 rows of both replaced B frames."
+}
