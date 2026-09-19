@@ -289,16 +289,11 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
   M136's build stamp, M124's skip flag and M129's flock and probe re-run; each has its record
   in `DECISIONS.md` and its played questions in `REVIEW.md`. `git tag --list 'v*'` says what
   the site serves.
-- **Three milestones are in flight, each in its own worktree on its own draft pull request**:
-  M129's wall reading (a row nobody can walk past is a wall and stands across the street from
-  the route), M155, the crowd's reach comes in and walkers step aside more politely, and M156,
-  the crowd only turns at what physically stops it. The last two are
-  [PLAYTEST-78](playtests/PLAYTEST-78.md): a closed-off street calms the baby better than the
-  route's own sidewalk, because the crowd's noise eats two fifths of the walking decay and
-  because walkers and cars give a street up at the junction before an obstacle. Their entries
-  in `TODO.md` are the briefs. M155 and M156 share `src/crowd/crowd_agent.gd` by function —
-  the noise field and the step-aside are M155's, turning and placement are M156's — so the
-  second to merge takes `main` first under the **merging-main** rules.
+- **Milestones are in flight in their own worktrees, each on its own pull request**: M129's
+  wall reading (a row nobody can walk past is a wall and stands across the street from the
+  route), and M155, the crowd's reach comes in and walkers step aside more politely, from
+  [PLAYTEST-78](playtests/PLAYTEST-78.md). `gh pr list` says which are still open; each one's
+  entry in `TODO.md` is its brief, and a merged one has neither an entry nor a line here.
 - **The phone's frame is the open measurement, and the crowd's drawing is ruled out of
   it.** With the crowd atlas released, the phone reads the same with the crowd drawn and with
   `skip=crowd` (`DECISIONS.md`, M139, the phone reading), so by the numbers neither the draw

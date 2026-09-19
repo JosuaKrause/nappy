@@ -333,10 +333,12 @@ open**, and the player walks over it. A zone is a shortcut as well as a destinat
 The crowd asks a different question. An agent travels the lattice, so it checks `is_street()`
 and diverts at the T-junction rather than strolling across the grass — the same move a
 barricade already produces, with the same good side effect: the street with nobody on it is the
-street that does not go through. The same predicate carries every other thing standing in a street:
-a held segment, a soft seal's pavements, and the tiles under any stationary solid body
-(`CityMap.obstructed_tiles`), so the crowd goes round a café the way it goes round a seal — see
-docs/MECHANICS.md, "The crowd goes round a seal".
+street that does not go through. What stands *in* a street for the day is a second question, and the
+two kinds are asked it at different distances: a car reads a held segment and any body on its own
+lane from the last junction, because its turn needs a junction box, while a walker walks into a
+street that is shut further along and turns where it meets the body itself — a soft seal's
+sidewalks, or the tiles whose middle a stationary solid body covers (`CityMap.obstructed_tiles`).
+See docs/MECHANICS.md, "The crowd goes round a seal".
 
 The zebras on a zone's edge are the case that looks obvious and is not. A crossing sits where a
 *pavement* lane meets a *carriageway*, so most of them still make sense — the pavement is there
@@ -1497,25 +1499,23 @@ is loud, and the reason a park is quiet.
   the way it turned, and the step that would carry it into the seal is refused the way any illegal
   step is.
 
-- **And nobody is put somewhere they could never leave.** A junction whose every arm is shut —
-  held for the day, or soft-sealed a few tiles in — is a **pocket**: legal ground with no street out
-  of it. `CrowdPockets` floods the lanes each kind actually travels once per day, from the same
-  `held_segments` and `soft_sealed_tiles` the crowd already reads, and labels every connected piece
-  that reaches at most one junction. A placement — the morning's and every recycle after it —
-  refuses a spot inside one the way it refuses a spot with no room, because somebody put there walks
-  to one seal, turns, walks to the next, and does that until the day ends. **The two kinds get
-  different answers**, because a soft seal takes both pavement lanes and leaves the carriageway: a
-  junction soft-sealed all round is a pocket to a walker and open road to a car, and a precinct is
-  the same sentence the other way up. A sealed-off junction is therefore a junction with nobody on
-  it, which is the same thing an empty street already says about a closure: *the street with nobody
-  on it is the street that is shut*.
+- **And no car is put somewhere it could never leave.** A junction whose every arm is held for
+  the day is a **pocket**: carriageway with no street out of it. `CrowdPockets` floods the
+  carriageway once per day from the same `held_segments` the crowd already reads, and labels every
+  connected piece that reaches at most one junction. A car's placement — the morning's and every
+  recycle after it — refuses a spot inside one the way it refuses a spot with no room, because a
+  car cannot turn round against a barrier and one stopped nose-on holds its queue. **A walker has
+  no pocket.** It turns in a stride wherever it meets a barrier, so closed-off ground carries
+  walkers like any street: they walk each stub to the barrier on its end and come back, and a
+  closed street reads as closed by its barriers and its missing traffic, not by missing people.
 
 - **And whoever is sealed in leaves, at the first moment nobody is watching.** A seal that goes up
   under somebody already standing there is the one case a placement cannot prevent, so an agent in a
-  pocket is recycled like anybody who has left the field — but only once it is more than
+  pocket, which is only ever a car, is recycled like anybody who has left the field — but only
+  once it is more than
   `OUT_OF_SIGHT` from the camera, which is *nothing vanishes while you are looking at it* again. In
   view it stands exactly where the seal caught it — no step, no steering, no turn — so a sealed
-  crossing holds a few people standing rather than pacing between its seals. The distance
+  crossing holds a car or two standing rather than shunting between its seals. The distance
   is measured from `CrowdField.centre`, which is the player, and the field's own edge is twice as
   far out — so this is the only recycle that ever happens somewhere she could have been standing.
 
