@@ -28,6 +28,8 @@ func run(t) -> void:
 	_test_a_body_in_a_lane_turns_a_car_and_leaves_the_oncoming_lane_alone(t, city, map)
 	_test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t, map)
 	_test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t, map)
+	_test_a_row_at_the_kerb_leaves_both_lanes_driving(t, city, map)
+	_test_a_row_across_the_whole_street_still_turns_a_car(t, city, map)
 
 	city.free()
 	_test_nobody_ever_stands_in_a_body_on_a_real_day(t)
@@ -349,6 +351,112 @@ func _test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t, map: Ci
 				"the pavement at offset %d beside the crash carries no body" % offset)
 		t.check(whole_band.has(pavement),
 				"and the whole-street band it replaces did carry one, so this is a real difference")
+
+# ------------------------------------------------- what a body takes of a street ---
+# "cars shouldn't avoid it. I noticed cars turning around even though the obstacle is on the
+# sidewalk. only things like a fallen tree (which blocks the whole street) should prevent cars from
+# entering" (playtest 78, 2026-09-19). A body stands on the tiles whose **middle** it covers, so
+# these two are the two ends of that one rule: a van at the kerb, which overhangs the carriageway
+# and takes none of it, and a tree across the street, which takes all of it.
+
+## Stands a real row's own body on the street through the same `EventManager.obstructed_footprint()`
+## a day fills the record with, and gives back the tiles it took. Sited by hand rather than by
+## planning a day, so the placement under test is this one and not whatever the seed rolled.
+func _stand_a_row(map: CityMap, def: EventDef, at: Vector2) -> Array[Vector2i]:
+	var covered := EventManager.obstructed_footprint(map, def, at, Vector2.RIGHT)
+	map.obstruct_tiles(2, covered)
+	return covered
+
+## The offsets across a vertical corridor a footprint covers, as a sorted list — what "which lanes
+## of the street does this body take" reads as in a failure message.
+func _offsets_of(covered: Array[Vector2i], base: int) -> Array:
+	var offsets := []
+	for tile: Vector2i in covered:
+		var offset := tile.x - base
+		if offset >= 0 and offset < Tuning.STREET_WIDTH and not offsets.has(offset):
+			offsets.append(offset)
+	offsets.sort()
+	return offsets
+
+## A van parked at the kerb takes its own lane of pavement and no carriageway at all, so both lanes
+## keep driving and a car goes past it.
+##
+## The van is `GroundShape.band(22.0)` and the kerb lane centre is 16px from the kerb, so its body
+## genuinely overhangs the road by six pixels — the tile the overhang lands in is the whole
+## question, and the record answers it by asking whether the middle of that tile is covered.
+func _test_a_row_at_the_kerb_leaves_both_lanes_driving(t, city: City, map: CityMap) -> void:
+	var run := _a_straight_run(map, CityMap.period() + Tuning.BLOCK_SIZE)
+	t.check(run.x >= 0, "this city has a long enough stretch to park a van on")
+	if run.x < 0:
+		return
+	var corridor := run.x
+	var base := corridor * CityMap.period()
+	var body_at := run.y + CityMap.period() + 2
+	var def := EventCatalogue.by_id("delivery_van")
+	t.check(def != null and def.pavement_side == EventDef.Pavement.AT_THE_KERB,
+			"'delivery_van' is the kerb-pinned row this test is about")
+	var kerb_lane: int = CrowdLanes.SIDEWALK_OFFSETS[1]
+	var covered := _stand_a_row(map, def, Vector2(CrowdLanes.lane_centre(corridor, kerb_lane),
+			(float(body_at) + 0.5) * Tuning.TILE_SIZE))
+	var offsets := _offsets_of(covered, base)
+	t.check(offsets == [kerb_lane],
+			"a van at the kerb stands on its own lane of pavement and nothing else (offsets %s)"
+			% [offsets])
+
+	city.crowd.start_day(1, _rng(1), Vector2.ZERO)
+	city.crowd.clear()
+	var lane: int = CrowdLanes.road_lane(true, 1.0)
+	var driver := _agent_on(city, map, CrowdAgent.Kind.CAR, corridor, lane,
+			float(run.y) * Tuning.TILE_SIZE, 1.0)
+	t.check(not driver._cannot_go_on(true, Vector2i(base + lane, body_at)),
+			"and the carriageway beside it is not shut to a car")
+	var at := map.tile_to_world(Vector2i(base + lane, body_at))
+	var walked := _walk(city, map, driver, at, 5.0)
+	t.check(walked["deepest"] > float(body_at + 1) * Tuning.TILE_SIZE,
+			"so the car drives straight past it (reached %.0f, the van's tile ends %.0f)"
+			% [walked["deepest"], float(body_at + 1) * Tuning.TILE_SIZE])
+	t.check(driver._corridor == corridor and driver._vertical and driver._direction > 0.0,
+			"without turning off the street it was on")
+	map.clear_day_obstructions()
+
+## A fallen tree lies across the whole street — both pavements and both lanes — so a car still turns
+## away from it at the last junction. The turn-at-the-junction is a car's only answer: it cannot
+## turn round against a barrier, and a car stopped nose to one holds the junction behind it.
+func _test_a_row_across_the_whole_street_still_turns_a_car(t, city: City, map: CityMap) -> void:
+	var run := _a_straight_run(map, CityMap.period() + Tuning.BLOCK_SIZE)
+	if run.x < 0:
+		return
+	var corridor := run.x
+	var base := corridor * CityMap.period()
+	var body_at := run.y + CityMap.period() + 2
+	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("fallen_tree"), true)
+	# The middle of the street, which is where `SealPlanner._hard_positions` stands the one copy a
+	# 96px reach takes to span a 6-tile street.
+	var covered := _stand_a_row(map, def,
+			Vector2(float(base) * Tuning.TILE_SIZE + float(Tuning.STREET_WIDTH) * 16.0,
+			(float(body_at) + 0.5) * Tuning.TILE_SIZE))
+	var offsets := _offsets_of(covered, base)
+	t.check(offsets.size() == Tuning.STREET_WIDTH,
+			"a fallen tree takes every lane of the street, kerb to kerb (offsets %s)" % [offsets])
+
+	city.crowd.start_day(1, _rng(1), Vector2.ZERO)
+	city.crowd.clear()
+	var lane: int = CrowdLanes.road_lane(true, 1.0)
+	var driver := _agent_on(city, map, CrowdAgent.Kind.CAR, corridor, lane,
+			float(run.y) * Tuning.TILE_SIZE, 1.0)
+	t.check(driver._cannot_go_on(true, Vector2i(base + lane, body_at)),
+			"and it is a wall to a car on the lane under it")
+	var at := map.tile_to_world(Vector2i(base + lane, body_at))
+	var walked := _walk(city, map, driver, at, 10.0)
+	t.check(walked["inside"] == 0,
+			"no car ever stands on the tree's own tile (%d frames one did)" % walked["inside"])
+	# Turned off this street, or still on it and stopped short — the same two answers a body in a
+	# lane already has, and which one a seed's geometry produces is not worth pinning.
+	var turned_away: bool = driver._corridor != corridor or not driver._vertical \
+			or driver._direction < 0.0
+	t.check(turned_away or walked["deepest"] < float(body_at) * Tuning.TILE_SIZE,
+			"and it turns off the street or comes to rest short of the tree")
+	map.clear_day_obstructions()
 
 # ------------------------------------------------------------------ the sweep ---
 

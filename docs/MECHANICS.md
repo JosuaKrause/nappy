@@ -611,6 +611,14 @@ across the whole map while an event only exists within reach of her. Mobile rows
 catalogue's own solidity rule exempts them; so is a body on a segment that is held anyway, and so
 is a door, because a hard seal and a hut each already have an answer.
 
+**A body stands on the tiles whose middle it covers, and that is what keeps a row on the pavement
+out of the road.** Every lane in the city is travelled down its own centre line — a car sits on its
+lane centre, which is a tile centre, and a walker eight pixels either side of one — so a tile whose
+centre a body leaves clear still has a line down it to walk or drive. A delivery van pinned to the
+kerb is a 22px body around a lane centre 16px from the kerb: it overhangs the carriageway by six
+pixels, and counting every tile it touches handed the crowd a whole 32px lane of road as taken,
+which turned every car on that street for something parked on the pavement.
+
 **A walker steps round it and a car turns at the junction, and the difference is that a walker has
 another lane.** A footway is two lanes wide, so a walker whose own lane is taken steers into the
 other one `Tuning.WALKER_BODY_SIDESTEP_TILES` (4 tiles, 128px) before it gets there and steers back
