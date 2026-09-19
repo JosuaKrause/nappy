@@ -87,6 +87,7 @@ func _exit_tree() -> void:
 	var report := buffer.report(float(_metadata.get("refresh_hz", -1.0)))
 	report["environment_start"] = _metadata
 	report["environment_end"] = environment()
+	report["atlas_phases"] = AtlasPhaseTrace.report()
 	var directory := "user://frame-traces"
 	if DirAccess.make_dir_recursive_absolute(directory) != OK:
 		push_error("Cannot create frame trace directory")

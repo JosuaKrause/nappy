@@ -141,6 +141,7 @@ var _touch_available := TouchInput.available()
 ## alone is not enough.
 var _rotated := false
 func _ready() -> void:
+	AtlasPhaseTrace.reset(DevFlags.frame_trace_requested())
 	# Esc has to work even while the summary has the tree paused, so this node keeps running
 	# through a pause. Everything under it that *is* the game is put back to pausable as it is
 	# created — see `_pauses_with_the_game()`. A child left on the default INHERIT inherits

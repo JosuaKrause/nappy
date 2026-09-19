@@ -150,3 +150,54 @@ the repeatability needed to rank modest toggle costs. No new toggle trials are i
 The long-interval tail recurs, but the evidence does not identify its cause or establish perceived
 smoothness. Neither a globally quiet host nor exact replay of frame-dependent crowd interactions
 is established.
+
+## Atlas CPU phase validation
+
+`atlas_phases.json` and its stdout use the same twelve-second recipe and six-second analysis
+window, with the opt-in phase recorder in this change. The source files' measured hashes are in
+`atlas_source.sha256`. Other agents' Godot work is held for this one serial run. It is a host
+validation, not a paired performance comparison or a phone result.
+
+The recorder retains 112 spans for 16 atlases, with none omitted. All blits report a worker thread;
+all other phases report the main thread. These are CPU wall-clock durations, including any
+descheduling inside a call, not CPU utilization or GPU completion times.
+
+| Phase | Calls | Sum ms | Longest ms |
+| --- | ---: | ---: | ---: |
+| Source resolve, readback and copy | 16 | 5.780 | 2.404 |
+| Layout and target allocation | 16 | 0.223 | 0.058 |
+| Task submission | 16 | 0.046 | 0.009 |
+| Blit | 16 | 0.154 | 0.037 |
+| Collection wait | 16 | 0.043 | 0.030 |
+| Texture creation/submission | 16 | 0.604 | 0.115 |
+| Regions and CPU-image release | 16 | 0.231 | 0.075 |
+| Release wait | 0 | — | — |
+
+The largest source span is the decoration group. Every measured atlas phase ends before the
+retained active window begins. That window still has 520 positive intervals, p50 10.123 ms,
+p95 23.870 ms, p99 24.093 ms, maximum 24.584 ms, and 53 intervals over 16⅔ ms. Those particular
+long intervals do not overlap the measured CPU atlas spans. This does not exclude deferred GPU
+work or uninstrumented work, and no release occurs to measure. Headless tests exercise release
+both before and after collection and check the actual-thread label for a caller-thread blit.
+
+This does not supply a phone atlas cost, a release-wait bound, a memory-residency comparison, or
+permission to change atlas policy. Recorder overhead is not isolated by this single run; disabled
+recording is checked to retain no spans. The phone category map and connection/measurement gates
+are in [PHONE-PROFILE.md](PHONE-PROFILE.md).
+
+## Verification context
+
+`tools/check.sh`, the focused `texture_atlas frame_trace main` suites, `texture_atlas --svg`,
+the `crowd_atlas` and `telemetry` suites, CLI help checks, doc lint and whitespace checks pass.
+The ground compositor is not instrumented, but a broader `ground_layers` check exposes an
+unrelated test-reference defect: `test_ground_layers.gd:271` requests source IDs 58 through 65
+from a reference TileSet that does not contain the generated route-curb sources. The runner emits
+engine errors while reporting zero assertion failures and exiting 0; that is not a clean pass.
+
+`verification-ground-layers-baseline.log` preserves the same errors from an isolated source
+snapshot of 71db375929b1db9a0177104edd94b0d070cb25bc, before the atlas instrumentation. The snapshot
+contains `project.godot`, `src`, `scenes`, `tests` and `tools` from `git archive`, with the
+unchanged assets linked from this checkout. After a headless import, the reproducing command is
+`/tmp/nappy-m159-base-check.I0oIZO/tools/test.sh ground_layers`. Running
+`./tools/test.sh ground_layers` in this worktree reports the same errors. The ground suite,
+ground compositor and TileSet are unchanged here. Full-suite CI remains separate verification.

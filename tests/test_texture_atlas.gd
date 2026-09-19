@@ -17,6 +17,7 @@ const NAME := "test_decoration"
 
 func run(t) -> void:
 	_check_plan(t)
+	_check_phase_trace(t)
 
 	TextureResolver.reset_for_tests(false)
 	TextureAtlas.reset_for_tests()
@@ -29,6 +30,60 @@ func run(t) -> void:
 	TextureResolver.reset_for_tests(DevFlags.svg_requested())
 	TextureAtlas.reset_for_tests()
 	_test_the_streets_decoration_is_one_group(t)
+	TextureAtlas.reset_for_tests()
+
+## Both join paths publish the task's own timing once; disabled recording leaves no payload.
+func _check_phase_trace(t) -> void:
+	TextureAtlas.reset_for_tests()
+	var image := Image.create(8, 8, false, Image.FORMAT_RGBA8)
+	image.fill(Color.RED)
+	var source := ImageTexture.create_from_image(image)
+	AtlasPhaseTrace.reset(false)
+	TextureAtlas.request(NAME, {"picture": source})
+	TextureAtlas.collect(NAME, true)
+	TextureAtlas.release(NAME)
+	t.check(AtlasPhaseTrace.report().spans.is_empty(), "disabled atlas tracing retains no spans")
+	AtlasPhaseTrace.reset(true)
+	TextureAtlas.request(NAME, {"picture": source})
+	TextureAtlas.collect(NAME, true)
+	TextureAtlas.collect(NAME, true)
+	TextureAtlas.release(NAME)
+	var report := AtlasPhaseTrace.report()
+	var phases: Array = []
+	for row: Array in report.spans:
+		phases.append(row[1])
+		t.check(row[2] <= row[3], "%s has ordered raw clock endpoints" % row[1])
+		if not row[4]:
+			t.check(row[5] == -1, "worker work does not borrow the collection frame's ID")
+	t.check(phases.count("blit") == 1 and phases.has("source_resolve_readback_copy")
+		and phases.has("texture_create_submit") and phases.has("regions_and_cpu_image_release")
+		and phases.has("collect_wait") and phases.has("release_wait"),
+		"a collected and released atlas exports distinct CPU phases without duplicate blits")
+	AtlasPhaseTrace.reset(true)
+	TextureAtlas.request(NAME, {"picture": source})
+	TextureAtlas.release(NAME)
+	var release_phases: Array = []
+	for row: Array in AtlasPhaseTrace.report().spans:
+		release_phases.append(row[1])
+	t.check(release_phases.count("blit") == 1 and release_phases.has("release_wait")
+		and not release_phases.has("texture_create_submit"),
+		"release before collection retains task timing without inventing GPU collection")
+	# A caller-thread execution is how a threadless build runs the same pool callable.
+	var pack := TextureAtlas.Pack.new()
+	pack.target = Image.create(8, 8, false, Image.FORMAT_RGBA8)
+	pack.images.append(image)
+	pack.regions.append(Rect2i(0, 0, 8, 8))
+	TextureAtlas._blit(pack)
+	t.check(pack.blit_on_main_thread and pack.blit_process_frame >= 0,
+		"a caller-thread blit is identified from its actual thread, not the platform")
+	AtlasPhaseTrace.reset(true)
+	for i in AtlasPhaseTrace.CAPACITY + 1:
+		AtlasPhaseTrace.record("bounded", "test", i, i + 1)
+	var bounded := AtlasPhaseTrace.report()
+	t.check(bounded.spans.size() == AtlasPhaseTrace.CAPACITY
+		and bounded.dropped_after_capacity == 1 and bounded.spans[0][2] == 0,
+		"a full phase buffer preserves its beginning and counts its omitted tail")
+	AtlasPhaseTrace.reset(false)
 	TextureAtlas.reset_for_tests()
 
 ## Every picture `CityDecals` and `Prop` draw comes off one texture once the street's decoration

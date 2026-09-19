@@ -112,7 +112,7 @@ going quietly stale.
 | `--no-title` | Skip the title screen |
 | `--ending bad\|neutral\|good` | Put the given ending screen up at boot, to screenshot one without playing a run out to reach it |
 | `--no-telemetry` | Do not write a run log |
-| `--frame-trace` | Buffer raw post-draw callback timestamps and same-callback counters after five seconds of warmup; export JSON on scene exit, including percentiles and missed-budget counts. Add `--after N` for a timed walking/input rig that quits without a screenshot. Independent of the log and debug layers; see `docs/TELEMETRY.md`, "Raw frame traces" |
+| `--frame-trace` | Buffer raw post-draw callback timestamps and same-callback counters after five seconds of warmup, plus bounded atlas CPU phase spans from startup; export JSON on scene exit, including percentiles and missed-budget counts. Add `--after N` for a timed walking/input rig that quits without a screenshot. Independent of the log and debug layers; see `docs/TELEMETRY.md`, "Raw frame traces" |
 | `--web` | Preview the web export's hidden-quit shape (`QuitOption`) from a desktop debug build |
 
 ## Run logs

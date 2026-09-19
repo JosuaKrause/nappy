@@ -237,7 +237,7 @@ name the question it answers, or it is a metric and does not belong.
 | `cue` | observer | **What was she warned about, and for how long** — the mark over her head and the screen-edge badges, each written when the span ends so the duration is on the line. A cue is a claim about a moment, and a complaint about a cue's *timing* is invisible to a trace that writes only what was marked |
 | `frame` | observer | **What the frames cost on the device this was played on** — once a second, the frame rate, the worst single frame in that second, the draw calls, renderable objects and primitives the renderer was handed, and the milliseconds spent in `_process` and `_physics_process`. The one entry that is about the machine rather than about the day, and the only way a session played on a phone or on the web page can be read back at all. See "What a frame cost" below |
 | `spike` | observer | **Under `--spikes` only: which frame in the second ran past twice the mean of the frames before it, and what the game did in it.** The frame's own length and that mean, in milliseconds, followed by what changed since the previous frame — her tile, the count of live event instances, how many transfer PNGs `TextureResolver` loaded, or how many atlases `TextureAtlas` collected — or "nothing else changed that frame" when none did. At most one line a second, the worst of that second if more than one frame qualified. See "What a frame cost" below |
-| `texture` | `TextureResolver`, `TextureAtlas`, `GroundLayers` | **When a picture was loaded or dropped, and what it cost** — a transfer PNG read from disk with the path and the milliseconds the read took, an atlas becoming ready with its group, how many pictures it holds, its pixel size, the milliseconds from the request and how much of that the worker thread took, an atlas being released with how long it was drawn from, and the ground's own shared texture being packed with how many sources it covers and what that cost. It is what says whether a picture arrived before it was drawn rather than during the frame that wanted it |
+| `texture` | `TextureResolver`, `TextureAtlas`, `GroundLayers` | **When a picture was loaded or dropped, and what it cost** — a transfer PNG read from disk with the path and the milliseconds the read took, an atlas becoming ready with its group, how many pictures it holds, its pixel size, the milliseconds from the request and the blit duration with its actual main/worker thread, an atlas being released with how long it was drawn from, and the ground's own shared texture being packed with how many sources it covers and what that cost. It is what says whether a picture arrived before it was drawn rather than during the frame that wanted it |
 | `freeze` / `thaw` | observer | Was the day lost to noise or to the clock? Freezing is the invisible failure |
 | `asleep` / `woke` | observer | How long the walk actually took, and what woke her |
 | `quiet` | observer | The sabotage landed and the masts went off |
@@ -402,6 +402,23 @@ off/on separately. Then compare normal VSync, engine `--disable-vsync`, and engi
 as separate diagnostic trials, keeping the other controls fixed. Inspect the recorded positions
 to verify the route moved, and reject a run with automatic telemetry captures during its measured
 interval. Use a normal exit so the export runs. A pacing trial does not choose shipping settings.
+
+The optional `atlas_phases` member records up to 4,096 CPU spans, including startup before the
+frame warmup, with its own omitted-tail count. Its columns name the group, phase, monotonic start
+and end, actual main-thread status and process frame (`-1` for worker work). Source resolution,
+renderer readback, copy and format conversion form one span; layout/allocation, task submission,
+blit, collection wait, texture creation/submission, region creation/CPU-image release, and release
+wait are separate spans. A threadless export can execute the blit inside task submission, so those
+spans can overlap and must not be summed as exclusive costs. Blit fields are read only after the
+task is joined; an unjoined task has no exported blit span. Report order is collection order, not
+timestamp order. Sort by the endpoints when matching spans to callback intervals.
+
+Texture creation measures the CPU call returning, not GPU upload completion. Release wait covers
+joining an outstanding task, not eventual GPU destruction. The recorder does not cover
+`GroundLayers`' separate ground compositor. A route with no atlas releases measures no release
+cost, and an unchanged collected count cannot exclude a readback or pending task. Normal runs
+retain no phase spans. The ordered log's atlas-ready entry reports the blit's observed thread,
+so a threadless web export does not claim that work ran off the main thread.
 
 ---
 
