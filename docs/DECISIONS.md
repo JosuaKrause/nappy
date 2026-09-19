@@ -19703,3 +19703,25 @@ pose only if its hips and walking tracks are correct. Material masks solve brigh
 changing accepted geometry. Native body reuse and a bounded hem move solve stable proportions
 without regenerating accepted legs. All retain source hashes, protected pixels and whole-family
 PNG/GIF review; none turns a rejected intermediate into an approved source.
+
+## M171, build-time atlases and single GPU texture residency — 2026-09-19
+
+[PLAYTEST-105](playtests/PLAYTEST-105.md) requests an implementation TODO: atlases must be
+created at build time for cheap runtime loading, related items must share an atlas to avoid
+wasted residency, and an atlas's constituent textures must never also load individually.
+This extends the grouping and advance-loading intent of PLAYTEST-75 and PLAYTEST-76.
+
+Inspection found runtime packing in `TextureAtlas.request()`/`collect()`: source images are
+read on the main thread, blitted on a worker, then uploaded on the main thread. Crowd's first
+pack waits synchronously; ground packs during TileSet construction and day repaint. The
+preloaded originals stay resident, and `TextureResolver.warm()` also loads individual transfers.
+Dropping temporary CPU image buffers therefore does not remove the original GPU textures.
+The atlas plus retained originals duplicates image storage; no measured exact memory ratio
+was claimed. Merely moving the existing blit earlier would leave that ownership problem.
+
+The queued contract generates deterministic images and region metadata in the build, groups
+related consumers and lifetimes, and makes runtime references resolve to atlas regions only.
+PNG and SVG comparison modes remain available through separately built, exclusively selected
+resources. Source files remain editable authoring inputs without becoming runtime constituent
+textures. Validation must cover exports, indirect preloads, group release, GPU residency and
+the existing visual/animation contracts. No atlas implementation changes accompany this design.
