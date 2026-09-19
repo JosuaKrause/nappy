@@ -10,6 +10,9 @@ dev = [
     "mypy>=1.19",
     "pillow>=12.3,<13",
     "pillow-heif>=0.18",
+    # Repository code does not import PyYAML; Codex's external skill validator does. Keep it so a
+    # fresh uv environment can validate .claude/skills without relying on the host Python.
+    "pyyaml>=6.0.3",
     "ruff>=0.15",
 ]
 
