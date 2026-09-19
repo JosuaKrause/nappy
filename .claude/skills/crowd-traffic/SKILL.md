@@ -172,6 +172,40 @@ it lands on has to be **chosen at the turn**, and an arm whose landing is taken 
 cross is an arm the walker does not turn into. A sidestep cannot rescue a decision that left it
 nowhere to sidestep in.
 
+## A barrier is met at the distance the manoeuvre needs
+
+**The two kinds do not get the same warning, and the reason is what each can do about one.** A car's
+answer to a wall is an arc that needs a junction box to fit in, and there is no reverse gear — so it
+has to decide while the last junction is still in front of it, which is what `LOOKAHEAD_TILES` is
+measured to reach, and a car that drove up to the wall would stand there nose-on with its street
+queued behind it. A walker's answer costs a stride and can be taken anywhere, so it acts only when
+the barrier is the **next tile** (`CrowdAgent._acts_on_a_barrier_within()`).
+
+**Deciding early is not free, and what it costs is the whole city's ground.** A street a walker
+gives up from a junction away is a street with nobody on it for its whole length — which emptied
+every sealed block and every offshoot of the day's route, and left the walkers who were already in
+one pacing the junction they had left. *(2026-09-19: "they should only give up if they touch an
+impassable wall"; "they should still go into the section until they cannot continue".)* So a walker
+picking an arm asks only whether the arm is street **at all** (`_no_street_ahead()`), never what is
+standing down it; and the record a walker is stopped by is the bodies themselves, while the
+segment-wide hold is a car's warning and nobody else's.
+
+**If you find yourself unifying the two, this is the entry.** The symmetric version is the one that
+reads as correct and is the defect.
+
+## A body's ground is the tiles whose middle it covers
+
+**Every lane here is travelled down its own centre line** — a car on its lane centre, which is a
+tile centre, a walker eight pixels either side of one — so a tile whose centre a body leaves clear
+still has a line down it and a tile whose centre it covers has none. That is the only question
+`CityMap.obstructed_tiles` is ever asked, so it is the rule `GroundShape.tiles_under()` rasterises
+by.
+
+**Counting every tile a body touches instead is not conservative, it is wrong at the kerb.** A van
+pinned to the kerb is a 22px body around a lane centre 16px from it: six pixels of overhang, one
+whole 32px lane tile of carriageway in the record, and every car on that street turning for
+something parked on the pavement.
+
 ## The heading is the datum, and it is continuous
 
 `CrowdAgent.heading()` is a unit vector along the car's actual line of travel — cardinal in a lane,

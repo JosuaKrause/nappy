@@ -232,14 +232,19 @@ func is_soft_sealed(tile: Vector2i) -> bool:
 ## `EventManager._create` for anything placed later, and read by `CrowdAgent` so the crowd goes
 ## round a body instead of through it.
 ##
-## **Three kinds of body are deliberately not in here**, each because something else already
-## answers for it and two answers to one question is one too many. A **mobile** row is exempt by
-## the catalogue's own *solid things are solid* rule and moves out of the way by walking. A body
-## standing on a segment `held_segments` already holds — a hard seal, a region wall — has shut the
-## whole segment to everybody, so recording its tiles again would change nothing and would make
-## the two records disagree the moment one of them moved. And a **door** body (`detain_seconds >
-## 0`: a hut, the boom, an alley guard) is a crossing the day means to keep open, held by
-## `WalkerDoorHold` for a walker and by `Crowd._stop_for_gates()` for a car.
+## **Two kinds of body are deliberately not in here**, each because something else already answers
+## for it and two answers to one question is one too many. A **mobile** row is exempt by the
+## catalogue's own *solid things are solid* rule and moves out of the way by walking. And a
+## **door** body (`detain_seconds > 0`: a hut, the boom, an alley guard) is a crossing the day
+## means to keep open, held by `WalkerDoorHold` for a walker and by `Crowd._stop_for_gates()` for a
+## car.
+##
+## **A hard seal's own body and a region wall's are in here like anything else**, and the hold on
+## their segment is not a second answer to the same question: the hold is what turns a *car* at the
+## last junction, because a car cannot turn round against a barrier and has to decide before it can
+## see one, while a walker walks up to the body and turns where it stands. So the hold says *this
+## street is shut to the traffic* and this record says *where the thing standing in it is*, and
+## only the second of those can tell a walker that a crash leaves its pavements open.
 ##
 ## **Counted rather than flagged**, because two bodies can overlap a tile — a café beside a stall
 ## on the same pavement — and the first of them to finish must not open ground the second is still
@@ -248,6 +253,12 @@ func is_soft_sealed(tile: Vector2i) -> bool:
 ## Keyed on the tile the way `soft_sealed_tiles` is and for the same reason: a body takes one lane
 ## of a pavement or one lane of a carriageway, never a whole segment, and which lane is the whole
 ## of what the crowd does about it.
+##
+## **A body stands on a tile when it covers the middle of it** — `GroundShape.tiles_under()` is the
+## rule and says why it is the middle: every lane here is travelled down its own centre line, so a
+## tile whose centre is clear still has a line down it and a tile whose centre is covered has none.
+## A van parked at the kerb therefore takes its own lane of pavement and no carriageway, where
+## counting every tile its body overhangs took a lane of road for six pixels of overhang.
 var obstructed_tiles := {}
 ## Which tiles each body put there, by the owner id it was recorded under. Kept so a body can give
 ## its own tiles back without a sweep of the whole record.

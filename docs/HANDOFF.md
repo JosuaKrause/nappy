@@ -282,59 +282,33 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 
 ## Where the last session stopped, 2026-09-19
 
-**This section is the pick-up for the next session and is removed by it.** `gh pr list` and
-`git worktree list` are the truth; this is the map.
+**This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
+checks and worktrees can move independently of this file.
 
-- **Everything playtests 69 to 72 asked for is built, merged and released**, and so are
-  M136's build stamp, M124's skip flag and M129's flock and probe re-run; each has its record
-  in `DECISIONS.md` and its played questions in `REVIEW.md`. `git tag --list 'v*'` says what
-  the site serves.
-- **Two milestones are in flight, each in its own worktree on its own draft pull request**:
-  M129's wall reading (a row nobody can walk past is a wall and stands across the street from
-  the route), and M156, the crowd only turns at what physically stops it, which is
-  [PLAYTEST-78](playtests/PLAYTEST-78.md)'s second finding: walkers and cars give a street up
-  at the junction before an obstacle, so a closed-off street stands empty and calms the baby
-  better than the route's own sidewalk. Its entry in `TODO.md` is the brief.
-- **The phone's frame is the open measurement, and the crowd's drawing is ruled out of
-  it.** With the crowd atlas released, the phone reads the same with the crowd drawn and with
-  `skip=crowd` (`DECISIONS.md`, M139, the phone reading), so by the numbers neither the draw
-  calls (`DECISIONS.md`, M124, the phone's process time split) nor the crowd's drawing is the
-  cost. Parking the crowd's scripts moved the frame by five to ten fps and the physics line
-  did not move with it (`DECISIONS.md`, M140, the phone reading), so the physics tick — the
-  event manager, the baby's scan of every event and agent, her own move and the engine's step
-  — is the larger half of what is left, and it now runs thirty times a second instead of sixty
-  (`DECISIONS.md`, M141, the physics tick at thirty), with her drawn between ticks. Whether
-  that moved the phone's frame, and whether her walk reads smooth on the desktop, are the
-  `REVIEW.md` items; the felt half of playtest 73, whether the lag still *feels* the same, is
-  still the player's. `?debug=1&seed=N` answers on the live page and the readout's columns fit
-  a phone (`DECISIONS.md`, M138).
-- **M129, a path through the city never has to cost, has its four rules and the leaf blower's
-  two-part field built** (`DECISIONS.md`, M129, the four rules; M129, the leaf blower is a wall
-  to walk past and a busker to stay near). The probe finds a zero-cost line on three routes in
-  five; what still breaks the rest, and which placement paths the rules never see, is the
-  unstarted item under M129 in `TODO.md`, to brief once the wall reading has merged since both
-  edit the scheduler. The busker's street-side spill (`DECISIONS.md`, M128) is
-  read against these rules: with a line on the far pavement, a spill onto one side is a price,
-  not a wall.
-- **M137, the contact is whoever she hands the note to and the trap comes to her**, is
-  specified and unbuilt: the robber spawns off screen, already pursuing, at the handoff instead
-  of standing beside one seeded yeller from dawn.
-- **One consequence of the last session's work is still the player's to accept or overturn**,
-  in `REVIEW.md` with its record: the route lines' first segment hops from the door to wherever
-  a route joins the home street, and their interior is cell centres rather than tile centres
-  (`DECISIONS.md`, M135). The flock and the trap were answered by playtest 71.
-- **M125 has two suites left over the budget**, the events and routes suites, both ready for an
-  agent as a split by subject; `tools/test.sh --record-costs` on a quiet machine comes first,
-  since the recorded costs were taken under local contention and two new suites have no row.
-- **The review questions continue where playtest 68 stopped.** The rule for them is in
-  [PLAYTEST-68.md](playtests/PLAYTEST-68.md): one item at a time with its context and a
-  recommendation; an answered item closes on the answer even though later play may overturn it;
-  an unasked item stays. The player has reached day 5 on the desktop and several days of act I
-  on the phone, so the act I items in `REVIEW.md` are askable; day 7 and later, act III, the
-  endings and the escape are not yet.
-- **One question waits under M100's open design questions**, from the audit: whether the crowd
-  moves to the physics tick so its right-of-way rules run at the cadence of the motion they
-  govern, at the cost of re-measuring the crowd's numbers.
+- **PR #217 — M158, the stair side is three stackable tiles** is a draft. The player-test checkout
+  carries the six reviewed side
+  sources, a narrow 32×64 vertical landing at each full-flight start, and no broad flight deck,
+  horizontal landing overlay or rail. The map, slope, collision, doors and route are unchanged.
+  Focused import, interior, document and SVG gates pass, and CI is green. The remaining gate is
+  player review in the escape sequence. Do not revise the geometry, restore old tiles or add rails
+  without that feedback.
+- **PR #216 — M159, a slow frame names the frame that was slow** is a green draft. Four
+  equal-window desktop repetitions still drift enough
+  that no toggle causality is claimed. Atlas phase timing is recorded outside the retained walking
+  window; GPU completion, deferred rendering and release wait remain unresolved. The next action is
+  quiet-host/player-laptop repetition and phone CPU attribution, keeping M143's readout-label work
+  separate. Its branch also carries the fix-ready M163 ground-atlas reference-fixture report and
+  M164 engine-errors-make-the-gate-red report; neither fix is implemented.
+- **PR #221 — M160, the father's B contact puts the other leg forward** is a green draft. Corrected
+  SVG ownership proof is complete, but the bounded initial
+  raster and one targeted retry both failed leg ownership or proportions, so no replacement PNG is
+  reviewable or installed. The next deliverable remains four genuinely reviewable complete PNG
+  figures, using a changed raster strategy and the corrected SVG as pose authority; do not reuse the
+  rejected lower body or repeat the exhausted prompt.
+
+No PR is merged or put on auto-merge without explicit permission in the current session. New
+implementation or investigation uses fresh agents with self-contained briefs; do not resume the
+agents from this handoff.
 
 ## The queue, as prioritised on 2026-09-09
 

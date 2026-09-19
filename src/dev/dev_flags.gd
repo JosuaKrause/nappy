@@ -51,6 +51,8 @@ extends RefCounted
 ##   --debug         0
 ##   --skip          1
 ##   --invincible    0
+##   --no-focus-pause 0
+##   --no-save       0
 ##   --spikes        0
 ##   --no-telemetry  0
 ##   --screenshot    1
@@ -494,6 +496,54 @@ static func _invincible_from_query(query: String) -> bool:
 	for parameter in query.trim_prefix("?").split("&"):
 		var pair := parameter.split("=", true, 1)
 		if pair.size() == 2 and pair[0] == "invincible" and pair[1] == "1":
+			return true
+	return false
+
+## `--no-focus-pause` (or the page's own `?nofocuspause=1`, a debug web build only) turns off the
+## pause `main._notification()` opens when the window loses focus — see that function's own doc.
+## **`--screenshot` implies it without being told to**: a screenshot rig's window usually opens
+## behind whatever the operator is doing, so it never has focus to lose, or loses it the instant it
+## opens — either way a game that pauses on that would hand the rig a picture of the pause screen
+## rather than the day it was asked to capture. The flag by itself is what a `tools/run.sh` session
+## with no screenshot needs, since that rig has the same unfocused window and nothing else here
+## would cover it.
+##
+## Gated behind `enabled()` explicitly, the same as `invincible()` gates its own query read: this
+## reaches whether the game can be walked away from behind another window, which stays a developer
+## question rather than one an exported release answers to a visitor's address bar.
+static func no_focus_pause() -> bool:
+	if not enabled():
+		return false
+	return _no_focus_pause_from_args(_args()) or _no_focus_pause_from_query(_web_query())
+
+static func _no_focus_pause_from_args(args: PackedStringArray) -> bool:
+	return "--no-focus-pause" in args or "--screenshot" in args
+
+static func _no_focus_pause_from_query(query: String) -> bool:
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() == 2 and pair[0] == "nofocuspause" and pair[1] == "1":
+			return true
+	return false
+
+## `--no-save` (or the page's own `?nosave=1`, a debug web build only) says the same thing a
+## flagless `tools/run.sh` session cannot say on its own — see `GameSave.uses_save()`, the one
+## function every read and write of the player's save goes through. Every *other* dev flag already
+## keeps a run off the save by being a dev flag at all (`GameSave.uses_save()` refuses the moment
+## `active_args()` is not empty); this is the one flag whose entire job is to be *a* flag when no
+## other one is wanted, so a plain playtest session run from a shared checkout never touches
+## `user://`'s real save file by accident.
+##
+## Gated behind `enabled()` explicitly, the same as `no_focus_pause()` gates its own query read.
+static func no_save() -> bool:
+	if not enabled():
+		return false
+	return "--no-save" in _args() or _no_save_from_query(_web_query())
+
+static func _no_save_from_query(query: String) -> bool:
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() == 2 and pair[0] == "nosave" and pair[1] == "1":
 			return true
 	return false
 

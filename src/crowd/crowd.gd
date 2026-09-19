@@ -69,11 +69,12 @@ var _door_segments := {}
 ## `main.gd` has or has not called yet.
 var _home_segments := {}
 
-## Where today's seals have left ground the crowd can get into and not out of, for each kind — a
-## junction with all four arms held, and whatever stub of lane is shut in with it. Built here
-## because both carve-outs above are part of the question (a street the crowd may still cross is not
-## a wall of a pocket) and kept as one object for the day, handed to every agent the way the two
-## carve-outs are. See `CrowdPockets`.
+## Where today's seals have left carriageway a car can drive into and not out of — a junction with
+## all four arms held, and whatever stub of lane is shut in with it. Built here because both
+## carve-outs above are part of the question (a street the traffic may still cross is not a wall of
+## a pocket) and kept as one object for the day, handed to every agent the way the two carve-outs
+## are. Walkers have no pocket: sealed-in ground is ground a person walks the whole of. See
+## `CrowdPockets`.
 var _pockets := CrowdPockets.new()
 ## The two carve-outs above as one set, built once a day beside them and handed to `_pockets` on
 ## every frame. A field rather than a function call, because the refresh runs in the physics frame
@@ -184,8 +185,8 @@ func field() -> CrowdField:
 func traffic() -> TrafficIndex:
 	return _traffic
 
-## Where the crowd cannot get out of today. Public so a suite can ask whether the pocket it has just
-## sealed is actually a pocket before asserting anything about who is standing in it.
+## Where the traffic cannot get out of today. Public so a suite can ask whether the pocket it has
+## just sealed is actually a pocket before asserting anything about who is standing in it.
 func pockets() -> CrowdPockets:
 	return _pockets
 

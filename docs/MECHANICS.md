@@ -592,15 +592,39 @@ rather than parking a car inside it.
 
 **A hard seal, a region wall, and the closed streets a car cannot see through, all read the same
 way to the traffic.** `CrowdAgent._cannot_go_on` treats a tile on a held segment (a hard seal's own
-ground, or a region wall's) exactly like a closed one: both walkers and cars turn off at the last
-junction rather than driving into a barrier they have no physics against. A soft seal takes only
-the pavements, so a car still crosses it while a walker turns away — the street reads quiet on
-foot and ordinary on the road. A region door is carved out of the same check for whoever it means
-to let through: a car brakes and queues for the gate the way it already does at a red light or a
-zebra, and so does a walker — unless the answer it drew when it was placed is to turn back, which
-one in four do, and the door then reads to that walker exactly like the wall either side of it. A
-walker that crosses is held at the hut on its own sidewalk, one at a time; see "A checkpoint"
-above.
+ground, or a region wall's) exactly like a closed one: a car turns off at the last junction rather
+than driving into a barrier it has no physics against. A soft seal takes only the pavements, so a
+car still crosses it — the street reads quiet on foot and ordinary on the road.
+
+**The same street is not shut to a walker, and the asymmetry is the manoeuvre rather than a
+policy.** *(2026-09-19: "pedestrians should only avoid the area if they cannot reach it physically.
+right now they give up if there is an event at all when they should only give up if they touch an
+impassable wall".)* A car has to decide while the last junction is still in front of it: a turn is
+an arc that needs a junction box to fit, it has no reverse gear, and one stopped nose to a wall
+holds the street behind it. A walker turns round in a stride wherever it happens to be standing, so
+deciding early buys it nothing and costs the city a great deal — a street given up from a junction
+away is a street with nobody on it for the whole of its length, which is how sealed blocks and side
+streets came to stand empty. So a walker walks a held street up to the seal's own bodies, which are
+recorded tile by tile like every other solid body, and turns where it meets them. A car is turned
+by the hold; a walker is turned by the thing.
+
+**And a walker picking an arm at a junction weights a sealed street like an open one.** *(2026-09-19:
+"they should still go into the section until they cannot continue. this should also happen from
+inside the path since right now we have offshoots that are clear because nobody attempts to go
+in".)* The only thing a walker refuses to turn into is ground nothing travels — a T-junction on the
+edge of a calm zone has one arm that is park, and a walker that turns into it is standing on grass
+before anything notices. A street with a barrier somewhere along it is a street to walk into as far
+as the barrier, from either end, so a side street off the day's route fills as far as its seal and
+the people who reach the seal turn round and walk back out. A car still asks the whole question at
+an arm, because an arm it cannot get out of is a car parked there for the rest of the day.
+
+A region door is carved out for whoever it means to let through: a car brakes and queues for the
+gate the way it already does at a red light or a zebra, and so does a walker — unless the answer it
+drew when it was placed is to turn back, which one in four do, and the door then reads to that
+walker exactly like the wall either side of it. That is the one barrier a walker still gives a
+street up for from a junction away, because turning back at a door is a decision about the door
+rather than about the ground. A walker that crosses is held at the hut on its own sidewalk, one at
+a time; see "A checkpoint" above.
 
 **And every other solid body diverts the crowd too, as far as avoiding it.** *(2026-09-12: "yes
 every solid body should do that -- not necessarily force a turn around but at least avoid the
@@ -612,16 +636,31 @@ across the whole map while an event only exists within reach of her. Mobile rows
 catalogue's own solidity rule exempts them; so is a body on a segment that is held anyway, and so
 is a door, because a hard seal and a hut each already have an answer.
 
+**A body stands on the tiles whose middle it covers, and that is what keeps a row on the pavement
+out of the road.** Every lane in the city is travelled down its own centre line — a car sits on its
+lane centre, which is a tile centre, and a walker eight pixels either side of one — so a tile whose
+centre a body leaves clear still has a line down it to walk or drive. A delivery van pinned to the
+kerb is a 22px body around a lane centre 16px from the kerb: it overhangs the carriageway by six
+pixels, and counting every tile it touches handed the crowd a whole 32px lane of road as taken,
+which turned every car on that street for something parked on the pavement.
+
 **A walker steps round it and a car turns at the junction, and the difference is that a walker has
 another lane.** A footway is two lanes wide, so a walker whose own lane is taken steers into the
 other one `Tuning.WALKER_BODY_SIDESTEP_TILES` (4 tiles, 128px) before it gets there and steers back
 once it is past — the same sidestep a bump gives it, aimed at a lane rather than away from a person.
 Only a body that takes **every** lane of one footway at the same point along the street shuts that
-footway, and then the walker turns at the last junction exactly as it does for a soft seal — with
-the other footway and the carriageway still open, which is the whole difference between a body and
-a seal. A car has one lane per direction and the oncoming one is not an option, so a body on its own
-lane tile shuts that direction to it and it turns at the last junction; a car already past the last
-junction stops behind the body the way it stops behind a queue, and the oncoming lane keeps flowing.
+footway, and then the walker walks up to it and about-faces in front of it — with the other footway
+and the carriageway still open, which is the whole difference between a body and a seal. A car has
+one lane per direction and the oncoming one is not an option, so a body on its own lane tile shuts
+that direction to it and it turns at the last junction; a car already past the last junction stops
+behind the body the way it stops behind a queue, and the oncoming lane keeps flowing.
+
+**An about-face costs a stride before the next one may be taken, and that is what keeps a barrier
+from collecting a crowd that shakes its head at it.** A walker that turns is committed to its new
+heading for the time one stride takes, so nothing reverses on consecutive frames however it is
+boxed in; and because it turns round rather than stopping, it walks back out the way it came
+instead of standing at the barrier — two walkers meeting one wall leave in opposite lanes of the
+same footway and the ordinary separation keeps them off each other.
 
 **Neither the brake nor the sidestep is what makes this true, and that is worth knowing.** Both are
 *approaches* — they aim at a point and arrive late by whatever the last frame's speed bought — so
@@ -656,16 +695,27 @@ The radius has one floor and it is the screen: half the viewport diagonal is the
 anything visible can be from the camera, so an agent recycled outside that is always off-camera
 when it appears, whichever way she is facing.
 
-**And a recycle never lands somewhere with no way out.** A junction with every arm shut is a
-*pocket* — see docs/CITY.md, "Life on the streets" — and both the morning's placement and every
-recycle refuse a spot inside one, so a sealed-off crossing fills with nobody. Anybody a seal goes
-up around while already standing there stands exactly where it caught them — no step, no steering,
-no turn — until they are recycled out of it, at the first frame they are further from the camera
-than `OUT_OF_SIGHT`: the field's own edge is off camera by hundreds of pixels, and this is the one
-recycle that has to check. **A car can be caught one scale below a pocket** — on a stub of
-carriageway too short to turn round in, between a precinct's paving and a van parked on its lane,
-which is not a junction and so is invisible to the pocket record. It does the same thing for the
-same reason: it stands, and it goes when nobody is looking.
+**And a recycle never lands a car somewhere with no way out.** A junction with every arm shut is a
+*pocket* — carriageway with no street out of it — and both the morning's placement and every
+recycle refuse a car a spot inside one, because a car cannot turn round against a barrier and one
+stopped nose-on holds the queue behind it. A car a seal goes up around while it is already standing
+there stands exactly where it caught it — no step, no steering, no turn — until it is recycled out,
+at the first frame it is further from the camera than `OUT_OF_SIGHT`: the field's own edge is off
+camera by hundreds of pixels, and this is the one recycle that has to check. **A car can be caught
+one scale below a pocket** — on a stub of carriageway too short to turn round in, between a
+precinct's paving and a van parked on its lane, which is not a junction and so is invisible to the
+pocket record. It does the same thing for the same reason: it stands, and it goes when nobody is
+looking.
+
+**Sealed-off ground has walkers in it, and they keep walking.** *(2026-09-19: "they should be able
+to spawn inside a closed off section but shouldn't stand in one place but instead walk until they
+are forced to turn around (by the environment)".)* There is no walker pocket: a person turns round
+in a stride, so a crossing sealed on all four sides is ground to walk the whole of — down each stub
+to the barrier on the end of it, about-face, and back out into the next one. The morning places
+walkers there like any street and a recycle lands them there like any street. What used to make
+that ground look like a trap was walkers giving a street up from a junction away and pacing the
+one junction they had left, which is fixed where it was caused — see "The crowd goes round a seal"
+above — rather than by emptying the ground of people.
 
 **The morning's own placement is unpacked before the first frame is drawn.** Every car is placed
 without consulting the ones already placed, so some of them start inside each other, and the
@@ -1119,3 +1169,59 @@ the retry, so the retry is offered the same mark or the same contact, in the sam
 same seed. A won day commits the photograph.
 - **The run cannot end by running out of days while nerves remain.** The bad ending is the only
   way to lose, and the run length becomes a promise rather than a budget.
+
+## Saving and resuming
+
+The run is saved implicitly — there is no save button, no slot and no menu — at dawn, when a day
+ends, when the window loses focus, and on quit. `GameSave` is the one place every read and write
+of it happens, gated behind `GameSave.uses_save()` so a dev flag, a headless run, the test runner
+and `tools/check.sh`'s own boot never touch it: every checkout and worktree of this repository
+shares one `user://`, and none of those runs may land in or overwrite what may be the player's own
+day 9. A run carrying any dev flag already falls outside the gate by being one; `--no-save` is
+what a flagless `tools/run.sh` session asks for the same thing with.
+
+**A day sitting behind a screen she has not yet dismissed — day 1's title, or the pause a resumed
+run opens behind — is saved as not under way, and the moment she dismisses that screen is a fifth
+write, immediate rather than waiting on the next of the four above.** The dawn write already on
+disk for such a day says *not under way*, correctly, since nothing has happened in it yet; the
+instant the gate opens that stops being true, and none of a crash, a force-kill or a backgrounded
+tab whose page is simply discarded — the ordinary way a phone reclaims memory — can be counted on
+to ever send a focus-loss or quit notification that would otherwise be the next chance to say so.
+Dismissing an ordinary mid-day pause reaches the same function and writes nothing a second time,
+since the day was already under way before it could be opened.
+
+**A save holds the run, never the moment inside a day.** `GameState.save_snapshot()` — the seed,
+the day, nerves, resistance progress, scars, consumed one-shot events, the block arcs the run's own
+history has moved, where she settled each day and the run's clock — plus one fact the run does not
+know about itself: whether a day was under way when the file was written. Her position and heading,
+the meter and the sleepiness, the day's own clock, every event instance and the crowd are not
+saved; the city and each day's plan need none of this either, since both are functions of the seed
+and the day. Recording the moment itself would have to carry the crowd, every event instance and
+the random state, with every later change to any of them owing the save format its compatibility —
+the largest option, for a requirement (quitting is never an escape) a lost-day penalty already
+satisfies at dawn instead.
+
+**Opening a game whose save says a day was under way loses that day**, through the same code path
+an ordinary lost day takes: one nerve, the resistance given back, the same day again, the last
+nerve ending the run exactly as it does there. She comes up at that day's dawn behind the pause
+screen, with a line saying the day was lost to leaving it. The penalty is charged on *load*, never
+on a focus loss by itself — a browser tab backgrounded and returned to in the same session costs
+nothing, since nothing was ever closed. A save written once a day has already ended at its own
+summary costs nothing either, and lands at that day's (or the next day's) dawn paused for free —
+until she presses on past that pause, at which point the day is under way again and closing costs
+what it always does. A finished run, either ending, leaves no save at all: there is nothing left
+to resume, and a save naming an ended run would only have to be specially refused on the next load
+rather than simply not existing.
+
+**A save a newer build cannot read is dropped for a fresh title screen, never half-loaded.**
+`GameSave.FORMAT_VERSION` is what a build compares — an ordinary release never bumps it, so a
+newer build still finds an older one's save, and only a change to the shape a save carries drops
+one. The build that wrote a save is recorded alongside it for a person to read, never compared
+against; releasing a newer build must not by itself throw an old save away.
+
+**The held restart clears the save.** Both the pause screen and the day summary offer it, and
+starting over is what it has always meant — nothing new is drawn for clearing it.
+
+A small symbol appears in a corner for a few seconds after each write and fades out, on whatever
+screen is up. It names no key and is not a danger cue; it is the only thing that ever tells the
+player a write happened at all, since saving itself is otherwise silent.

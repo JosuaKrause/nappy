@@ -34,6 +34,14 @@ theme_override_colors/font_color = Color(0.94, 0.9, 0.83, 1)
 theme_override_font_sizes/font_size = 36
 text = "Stopped on the pavement."
 
+[node name="Note" type="Label" parent="Root/Center/Lines"]
+visible = false
+horizontal_alignment = 1
+autowrap_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.88, 0.72, 1)
+theme_override_font_sizes/font_size = 22
+text = ""
+
 [node name="Body" type="Label" parent="Root/Center/Lines"]
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
