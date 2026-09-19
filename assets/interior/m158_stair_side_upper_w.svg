@@ -1,14 +1,15 @@
-<!-- Prepared, unbound M158 upper tile, horizontally mirrored for westward descent. The live
-     TileMap does not load this source. -->
+<!-- Prepared, unbound M158 upper tile, horizontally mirrored for westward descent. Bottom-anchored
+     rectangles and the exposed diagonal gray side mirror the eastward source. The live TileMap
+     does not load this source. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges" stroke-linejoin="miter">
   <g transform="translate(32 0) scale(-1 1)">
-    <path d="M0 32H8V24H16V16H24V8H32L8 32Z" fill="#62656a" stroke="#3b3034" stroke-width="1"/>
+    <path d="M16 0L32 16V32H24V24H16Z" fill="#62656a" stroke="#3b3034" stroke-width="1"/>
     <g fill="#767a7d" stroke="#3b3034" stroke-width="1">
       <rect x="0" y="0" width="8" height="32"/>
-      <rect x="8" y="0" width="8" height="24"/>
-      <rect x="16" y="0" width="8" height="16"/>
-      <rect x="24" y="0" width="8" height="8"/>
+      <rect x="8" y="8" width="8" height="24"/>
+      <rect x="16" y="16" width="8" height="16"/>
+      <rect x="24" y="24" width="8" height="8"/>
     </g>
-    <path d="M1 1H31 M9 1H15 M17 1H23 M25 1H31" fill="none" stroke="#a3988a" stroke-width="1"/>
+    <path d="M1 1H7 M9 9H15 M17 17H23 M25 25H31" fill="none" stroke="#a3988a" stroke-width="1"/>
   </g>
 </svg>
