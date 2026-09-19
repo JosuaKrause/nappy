@@ -302,17 +302,17 @@ checks and worktrees can move independently of this file.
   `color-match-2026-09-19/final/`: preserve those pixels exactly. SE/SW remains unresolved;
   restoring the old thin legs is rejected as a solution. Replace only the diagonal B artwork
   with a natural three-quarter stride in both states, preserving all other frames.
-  `natural-southeast-2026-09-19/` contains a new generated diagonal candidate and its
-  reproducible recoloring/registration. Review its PNG sheets and GIFs for both states;
-  the E/W result and all other frames remain protected. Diagonal upper-body proportions
-  require visual judgment because the candidate redraws the complete figures.
+  [PLAYTEST-99](playtests/PLAYTEST-99.md) rejects the crossed legs in
+  `natural-southeast-2026-09-19/`. Correct the diagonal to an uncrossed natural stride:
+  each leg stays on its own side of the pelvis. The old screen-right-hip-to-left-shoe
+  X diagram is not valid pose guidance. Preserve E/W and all other frames.
   The provisional contact baseline
   on main remains in use. Push plausible attempts early and welcome repeated feedback;
   the CLI cannot display local images. The next branch synchronization requires explicit permission.
 
 Number ownership remains distinct: PLAYTEST-84 and PLAYTEST-85 are the escape/save records
 on main, PLAYTEST-86 belongs to the performance work, and PLAYTEST-87 belongs to the father
-sheet instructions. PLAYTEST-88 through PLAYTEST-93 and PLAYTEST-95 through PLAYTEST-98 are
+sheet instructions. PLAYTEST-88 through PLAYTEST-93 and PLAYTEST-95 through PLAYTEST-99 are
 separate father follow-ups. PLAYTEST-94 belongs to the independent escape/save feedback.
 
 No merge, auto-merge, rebase, merge from main or branch deletion is authorized without explicit permission in the current

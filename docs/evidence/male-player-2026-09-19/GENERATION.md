@@ -30,8 +30,9 @@ The [diagonal and carrying contact recipe](b-contact/diagonal-carrying-2026-09-1
 restores the accepted southeast contact and applies actual carrying B leg changes. These are
 retained review artifacts: PLAYTEST-98 accepts their color-matched E/W result and rejects the
 restored diagonal drawing. The [natural southeast recipe](b-contact/natural-southeast-2026-09-19/README.md)
-uses colored leg chains to establish the crossing during generation, then restores the clothing
-palette deterministically. Its pushing and carrying sheets preserve the accepted E/W pixels.
+preserves the crossed-leg candidate rejected in PLAYTEST-99 and its deterministic clothing
+palette restoration. Its X-shaped pose guide is not a valid target for a natural walking stride.
+The accepted E/W pixels remain protected.
 
 `source/` preserves Godot's 1×, 3× and 8× rasterization of every SVG.
 `inputs/*_source-{1,3,8}x.png` assembles them in columns front, back, side, front diagonal,

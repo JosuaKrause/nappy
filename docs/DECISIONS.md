@@ -19260,3 +19260,14 @@ are recorded with the new source and remain visible-review limitations, not clai
 upper-body preservation. Fresh preparation and assembly reproduced every saved artifact;
 protected-frame hashes, native canvases, alpha-preserving recoloring, PNG scaling and GIF
 timing passed. Documentation lint and whitespace checks passed; runtime content is unchanged.
+
+## M167, projected overlap is not crossed legs — 2026-09-19
+
+[PLAYTEST-99](playtests/PLAYTEST-99.md) rejects the generated diagonal: "the legs are now
+crossed". The source diagram forced the screen-right hip into the screen-left trailing shoe,
+creating an X-shaped stance. Proving that a generator obeyed that diagram did not establish a
+natural stride. The correction keeps each leg on its own side of the projected pelvis, with
+separate lateral walking tracks and forward/backward depth along the southeast travel axis.
+The illustrated-leg guidance now explicitly distinguishes foreground overlap from crossing
+the legs. Accepted E/W and every unaffected frame remain protected; the crossed candidate
+is retained as rejected evidence and never installed.

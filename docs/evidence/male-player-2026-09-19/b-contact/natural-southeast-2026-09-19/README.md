@@ -1,5 +1,9 @@
 # Natural southeast contact review
 
+**Rejected in [PLAYTEST-99](../../../../playtests/PLAYTEST-99.md): "the legs are now crossed".**
+The imposed X-shaped hip-to-shoe chains are the defect. This folder preserves that reviewed
+candidate and its recipe; it is not a valid pose reference for the uncrossed correction.
+
 This uninstalled candidate changes only southeast B and its southwest mirror in both states.
 The accepted east/west artwork and every other frame remain byte-identical to the
 `color-match-2026-09-19/final` rigs.

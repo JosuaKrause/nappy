@@ -338,6 +338,12 @@ correct now at least". Preserve the color-matched E/W pixels exactly. The same r
 restoring the old thin diagonal legs as this PR's solution. Remaining drawing work is SE/SW
 for pushing and carrying, with genuine three-quarter projection and natural trouser anatomy.
 
+[PLAYTEST-99](playtests/PLAYTEST-99.md) rejects the new diagonal's crossed legs. Draw an
+uncrossed stride with each thigh descending on its own side of the pelvis. Foreground overlap
+must not become an X-shaped crossing or exchange the legs' lateral tracks. The earlier
+screen-right-hip-to-screen-left-shoe construction is not a valid pose target. Keep the
+accepted E/W result and all unaffected frames unchanged; do not restore the old thin diagonal.
+
 - [ ] **Match the diagonal legs to the rest of the family.** Preserve the accepted E/W artwork.
       Keep the near leg trailing and far leg advancing, with a continuous hip–knee–shoe chain
       and natural knees. SE/SW uses its own

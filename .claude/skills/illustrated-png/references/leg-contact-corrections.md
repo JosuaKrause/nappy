@@ -20,6 +20,11 @@ from which leg advances: a far advancing leg is behind the near trailing thigh.
 Include western runtime mirrors; they reverse screen sides, not authored ownership.
 Pin hashes for every direction/frame explicitly outside the correction.
 
+Foreground overlap is a depth relationship, not a command to cross the legs. Establish each
+projected hip from the torso and pelvis before assigning screen coordinates. A natural stride
+keeps separate lateral walking tracks; do not force an X-shaped hip-to-opposite-shoe diagram
+merely to make a foreground contour continuous.
+
 ## Prove the SVG contact first
 
 Draw the continuous pose, including pelvis, hem, thigh joins, knees and shoes.
