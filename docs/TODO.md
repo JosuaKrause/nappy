@@ -345,6 +345,18 @@ rectangles, but their top join has no stroke. Preserve the remaining outer and s
 16px continuation triangle, both mirrored directions, and the native-size, 3× and assembled review
 renders.
 
+> "in 217 the rectangles don't have borders on their sides anymore -- only remove the borders I
+> specified!"
+
+Restore every rectangle's side borders. Remove only the borders named above: the bottom borders of
+the upper tile's rectangles and the top borders of the lower tile's rectangles. Every other edge
+stays inked in both directions.
+
+> "also remove the borders of the diagonal section where it touches the side of the tile"
+
+The gray diagonal section has no outline along any tile boundary it meets. Its internal diagonal
+edge stays inked; only the tile-edge contacts are borderless so adjacent roles join without a seam.
+
 ---
 
 ## M143 — The readout's `process` and `physics` lines say what they measure · asked for 2026-09-14
