@@ -23,6 +23,29 @@ func reset() -> void:
 	_stage.clear()
 	_changed_on.clear()
 
+## A block's arc position depends on run history — a fire only advances a block if something
+## burned there — so `GameState`'s save has to carry it rather than recompute it from the seed and
+## the day. `Vector2i` keys cannot survive `JSON.stringify()`, so each entry becomes its own small
+## dictionary rather than a `Dictionary` keyed by one; see `restore()` for the other half.
+func snapshot() -> Dictionary:
+	var stage_data: Array = []
+	for block: Vector2i in _stage:
+		stage_data.append({"x": block.x, "y": block.y, "v": _stage[block]})
+	var changed_data: Array = []
+	for block: Vector2i in _changed_on:
+		changed_data.append({"x": block.x, "y": block.y, "v": _changed_on[block]})
+	return {"stage": stage_data, "changed_on": changed_data}
+
+## The other half of `snapshot()`. JSON has no integer type, so every number in `data` is a
+## `float` regardless of what was written, and is cast explicitly rather than assigned.
+func restore(data: Dictionary) -> void:
+	_stage.clear()
+	_changed_on.clear()
+	for raw: Dictionary in data.get("stage", []):
+		_stage[Vector2i(int(raw["x"]), int(raw["y"]))] = int(raw["v"])
+	for raw: Dictionary in data.get("changed_on", []):
+		_changed_on[Vector2i(int(raw["x"]), int(raw["y"]))] = int(raw["v"])
+
 func purpose_of(plans: Dictionary, block: Vector2i) -> GameEnums.BlockPurpose:
 	var plan: BlockPlan = plans.get(block)
 	if not plan:

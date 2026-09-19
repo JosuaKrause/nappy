@@ -21,6 +21,19 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **Close the game in the middle of a day and open it again**, on the desktop build, and on
+  the released page in a laptop browser and on the phone (refresh, close the tab, swipe the
+  browser away). Does it come back at that day's dawn behind the pause screen, one nerve down,
+  with the line *"Left before the day ended. That cost a nerve — it starts over from dawn."*
+  — and is that wording right? Does closing at a day summary come back to the next dawn at no
+  cost, and does a new release still find the save of the one before? No rig can look at any
+  of this, since a dev-flagged run never reads or writes the save (`DECISIONS.md`, M162).
+- **Does a nerve lost to an accidental close or a browser crash read as fair?** It is the price
+  of quitting never being an escape ([PLAYTEST-82](playtests/PLAYTEST-82.md)); the exact
+  snapshot is what was given up for it.
+- **Is the save symbol noticed without distracting?** A floppy disk, bottom right, a second and
+  a half held and the same fading, at dawn, at a day's end, when a day is first stepped into
+  and on focus loss.
 - **Click away from the game in the middle of a day**, on the desktop build, in the browser
   (another tab, another window) and on the phone (the home button). Does the pause screen come
   up every time, and never on the title, a day summary or an ending? The desktop case rests on

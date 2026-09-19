@@ -1169,3 +1169,59 @@ the retry, so the retry is offered the same mark or the same contact, in the sam
 same seed. A won day commits the photograph.
 - **The run cannot end by running out of days while nerves remain.** The bad ending is the only
   way to lose, and the run length becomes a promise rather than a budget.
+
+## Saving and resuming
+
+The run is saved implicitly — there is no save button, no slot and no menu — at dawn, when a day
+ends, when the window loses focus, and on quit. `GameSave` is the one place every read and write
+of it happens, gated behind `GameSave.uses_save()` so a dev flag, a headless run, the test runner
+and `tools/check.sh`'s own boot never touch it: every checkout and worktree of this repository
+shares one `user://`, and none of those runs may land in or overwrite what may be the player's own
+day 9. A run carrying any dev flag already falls outside the gate by being one; `--no-save` is
+what a flagless `tools/run.sh` session asks for the same thing with.
+
+**A day sitting behind a screen she has not yet dismissed — day 1's title, or the pause a resumed
+run opens behind — is saved as not under way, and the moment she dismisses that screen is a fifth
+write, immediate rather than waiting on the next of the four above.** The dawn write already on
+disk for such a day says *not under way*, correctly, since nothing has happened in it yet; the
+instant the gate opens that stops being true, and none of a crash, a force-kill or a backgrounded
+tab whose page is simply discarded — the ordinary way a phone reclaims memory — can be counted on
+to ever send a focus-loss or quit notification that would otherwise be the next chance to say so.
+Dismissing an ordinary mid-day pause reaches the same function and writes nothing a second time,
+since the day was already under way before it could be opened.
+
+**A save holds the run, never the moment inside a day.** `GameState.save_snapshot()` — the seed,
+the day, nerves, resistance progress, scars, consumed one-shot events, the block arcs the run's own
+history has moved, where she settled each day and the run's clock — plus one fact the run does not
+know about itself: whether a day was under way when the file was written. Her position and heading,
+the meter and the sleepiness, the day's own clock, every event instance and the crowd are not
+saved; the city and each day's plan need none of this either, since both are functions of the seed
+and the day. Recording the moment itself would have to carry the crowd, every event instance and
+the random state, with every later change to any of them owing the save format its compatibility —
+the largest option, for a requirement (quitting is never an escape) a lost-day penalty already
+satisfies at dawn instead.
+
+**Opening a game whose save says a day was under way loses that day**, through the same code path
+an ordinary lost day takes: one nerve, the resistance given back, the same day again, the last
+nerve ending the run exactly as it does there. She comes up at that day's dawn behind the pause
+screen, with a line saying the day was lost to leaving it. The penalty is charged on *load*, never
+on a focus loss by itself — a browser tab backgrounded and returned to in the same session costs
+nothing, since nothing was ever closed. A save written once a day has already ended at its own
+summary costs nothing either, and lands at that day's (or the next day's) dawn paused for free —
+until she presses on past that pause, at which point the day is under way again and closing costs
+what it always does. A finished run, either ending, leaves no save at all: there is nothing left
+to resume, and a save naming an ended run would only have to be specially refused on the next load
+rather than simply not existing.
+
+**A save a newer build cannot read is dropped for a fresh title screen, never half-loaded.**
+`GameSave.FORMAT_VERSION` is what a build compares — an ordinary release never bumps it, so a
+newer build still finds an older one's save, and only a change to the shape a save carries drops
+one. The build that wrote a save is recorded alongside it for a person to read, never compared
+against; releasing a newer build must not by itself throw an old save away.
+
+**The held restart clears the save.** Both the pause screen and the day summary offer it, and
+starting over is what it has always meant — nothing new is drawn for clearing it.
+
+A small symbol appears in a corner for a few seconds after each write and fades out, on whatever
+screen is up. It names no key and is not a danger cue; it is the only thing that ever tells the
+player a write happened at all, since saving itself is otherwise silent.
