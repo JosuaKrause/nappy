@@ -566,3 +566,13 @@ item below for as long as looking takes.
   became a wall: a walker or a car that reaches the boundary pavement turns or is clamped onto the
   map's last row, and the one body allowed out is a car on the spine by the tunnel or the bridge.
   Whether that reads as a city edge or as bodies bunching against glass is a played question.
+
+## Father final-image leg preview
+
+**M167, the father's legs read as legs, has an uninstalled final-image donor preview in
+[PR #234](https://github.com/JosuaKrause/nappy/pull/234).** Open its clean eight-direction
+sheet and native/6× A/C/B/C animation. E/W and SE/SW B use crops from the woman's final
+full-resolution side and front-diagonal images; the PR also shows those source figures.
+Do these preserve the intended legs and look right beneath the father's jacket through the
+whole loop? The join and proportions remain visual questions. N/S, NE/NW and all A/C frames
+are preserved. This asks for visual judgment, not installation of the preview.

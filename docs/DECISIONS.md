@@ -19135,3 +19135,12 @@ The corresponding full-resolution final P2 images are the donor for the next pre
 no newly generated replacement legs or pelvis are authorized by this correction.
 The rejected trial and its exact recipe remain in
 `docs/evidence/male-player-2026-09-19/b-contact/woman-leg-trial-2026-09-19/` as provenance.
+
+The next one-pass preview reads the transparent full-resolution final P2 selection: side B
+from pass4, front-diagonal B from pass2. It crops the complete visible pants and shoes, fits
+them uniformly beneath the father's retained upper rows, and mirrors the eastern results for
+west and southwest. No generator, recoloring or invented leg anatomy is used. The exact
+sources, bounds, seam mask, scaling, placement, preserved rows and reproduction recipe live in
+`docs/evidence/male-player-2026-09-19/b-contact/final-woman-legs-2026-09-19/`.
+The clean sheet, native/6× loops and source-figure sheet are review evidence only; the jacket
+join, proportions and overall appearance remain unaccepted. The runtime assets stay unchanged.
