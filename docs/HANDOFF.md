@@ -289,12 +289,9 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
   M136's build stamp, M124's skip flag and M129's flock and probe re-run; each has its record
   in `DECISIONS.md` and its played questions in `REVIEW.md`. `git tag --list 'v*'` says what
   the site serves.
-- **Two milestones are in flight, each in its own worktree on its own draft pull request**:
-  M129's wall reading (a row nobody can walk past is a wall and stands across the street from
-  the route), and M156, the crowd only turns at what physically stops it, which is
-  [PLAYTEST-78](playtests/PLAYTEST-78.md)'s second finding: walkers and cars give a street up
-  at the junction before an obstacle, so a closed-off street stands empty and calms the baby
-  better than the route's own sidewalk. Its entry in `TODO.md` is the brief.
+- **One milestone is in flight, in its own worktree on its own draft pull request**: M129's
+  wall reading — a row nobody can walk past is a wall and stands across the street from the
+  route. Its entry in `TODO.md` is the brief.
 - **The phone's frame is the open measurement, and the crowd's drawing is ruled out of
   it.** With the crowd atlas released, the phone reads the same with the crowd drawn and with
   `skip=crowd` (`DECISIONS.md`, M139, the phone reading), so by the numbers neither the draw
