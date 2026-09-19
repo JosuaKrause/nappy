@@ -651,7 +651,8 @@ may be anywhere across it; where a thing may *stand* is narrower, and a branch r
 sidewalk of a street rather than down the middle of it — so the far side of a route's own street is
 ground no route walks, and a wall may stand there. *(PLAYTEST-77: "the market stall should appear on
 the other side of the street where for some reason no event was chosen".)*
-`Corridor.carries_a_route` is the question, the same one the kerb tint asks.
+`Corridor.carries_a_route` is the question — the kerb tint asks the wider, street-grained one
+(`Corridor.depth() == 0`) instead, since the mark says *this street*, not *this sidewalk*.
 
 **It is also where a very costly wall wants to be.** The **rim** — the ground `EVENT_WALL_RIM_WEIGHT`
 pulls a costly wall toward — has two members: a turning off the corridor, one street out, and the

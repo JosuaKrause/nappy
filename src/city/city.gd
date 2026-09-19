@@ -546,19 +546,34 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 ## leaves the tile on its plain source, the same graceful fallback `GroundLayers` gives everywhere
 ## else. Alpha zero is the trial's off switch, with nothing else to change.
 ##
-## **A kerb tile qualifies when `_tree` carries it, not when its street does.** `Corridor.depth()`
-## answers at the grain of the whole street on purpose (see `Corridor`'s own doc — that grain is
-## what every placement rule is stated in), so asking it here tinted both pavements of every street
-## on the tree, although a route walks one of them and never crosses the carriageway between them
-## mid-block. The tree itself knows the side: it grows on `ReachabilityGrid`'s two-tile cells, a
-## street's six tiles are a pavement cell, a road cell and a pavement cell, the mid-block road cells
-## are off its graph entirely, so `RouteTree.branches_on(tile)` is non-empty exactly on the pavement
-## a route actually walks and empty on the far one and on every junction cell, which has no kerb
-## (`GroundTiles._sidewalk_variant`).
+## **A kerb tile qualifies when its street's `Corridor.depth()` is zero — the mark says *this
+## street*, not *this sidewalk*.** `depth()` answers at the grain of the whole street on purpose
+## (see `Corridor`'s own doc — that grain is what every placement rule is stated in), so both
+## pavements of every street the tree runs along are tinted, from intersection to intersection: a
+## street tile resolves to its segment's key regardless of which of the segment's own cells the
+## tree actually walked, so a tree that only uses part of a segment — leaving it through an alley
+## or a park, or ending at a calm area partway along — still tints the whole segment rather than a
+## stretch of it, with nothing here having to special-case a partial run.
+##
+## **Never a street the tree only crosses at a junction, and never an unwalked stretch of the main
+## road.** A junction cell resolves to no segment at all (`StreetNetwork.segment_containing`), so
+## crossing one — a route switching pavements, or cutting through from a park or an alley — marks
+## no street's `depth()` down to zero; `RouteTree.junctions()`'s own doc says the same thing from
+## the other side, that such a crossing "contributes a junction no on-tree street names". And the
+## main road's own cells, anywhere but at a junction, are off the growth graph entirely
+## (`RouteTree._is_off_the_growths_graph`), so they carry no colour and no segment of the spine
+## reaches zero unless the tree's trunk genuinely had to walk it — which is a street the tree does
+## run along, not one it merely passes near.
+##
+## **The placement rules keep the narrower question.** `Corridor.carries_a_route(tile)` — whether
+## the tree runs along *this cell*, non-empty `RouteTree.branches_on(tile)` — is what a wall, a
+## piece of friction or a set piece still asks; only the paint here asks the wider one, so nothing
+## about where a body may stand moves with the mark.
 ##
 ## Called from `_close_streets`, right after `_tree` is grown and before the region plan or the
 ## closures, so a tree a closure has not yet touched is what the tint answers for.
 func _tint_the_route_kerbs() -> void:
+	var corridor := Corridor.of(_tree)
 	var tile_set := _ground.tile_set
 	for y in map.size.y:
 		for x in map.size.x:
@@ -566,7 +581,7 @@ func _tint_the_route_kerbs() -> void:
 			var source := GroundTiles.source_for(map, tile, _day)
 			if not (source in GroundTiles.ROUTE_KERB_SOURCES):
 				continue
-			if _tree.branches_on(tile).is_empty():
+			if corridor.depth(tile) != 0:
 				continue
 			var twin := GroundTiles.route_twin_of(source)
 			if twin < 0 or not tile_set.has_source(twin):
