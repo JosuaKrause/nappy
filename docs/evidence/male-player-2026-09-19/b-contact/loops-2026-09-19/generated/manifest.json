@@ -176,7 +176,7 @@
       ]
     }
   },
-  "input_manifest_sha256": "6cf5abfa04d8c1e3abcb9f96483863b839a62664e512b1c665f82bfb2852f969",
+  "input_manifest_sha256": "929c2fad2e1c368c106412714854ae550ec9d92697626f87c4f81057b7ecf5ef",
   "outputs": {
     "father-animation-6x.gif": "77378d2c22433dd0dfa390f1392cd3dd192d6de82ac60fdb77f60095d26fc7ba",
     "father-animation-native.gif": "1968a23c31fb58369104142251abc74f3d99862a9d7836e0f5e4ec0667395b2f",

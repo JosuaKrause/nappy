@@ -19058,7 +19058,7 @@ or ask the player to rediscover known defects just because the endpoint assertio
 
 ## M160, the father's opposite-contact review uses the woman pipeline — 2026-09-19
 
-[PLAYTEST-86](playtests/PLAYTEST-86.md) rejects the four-row before/after comparison as the review
+[PLAYTEST-87](playtests/PLAYTEST-87.md) rejects the four-row before/after comparison as the review
 deliverable: *"I know that the before looks bad. there is nothing to compare against."* It asks for
 exactly what reviewed the woman's pushing family, with the same tricks and no new strategy: one
 clean sprite sheet showing A/C/B/C in all eight runtime directions, plus native and 6× GIFs of the
