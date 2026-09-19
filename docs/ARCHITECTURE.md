@@ -100,8 +100,8 @@ src/
 	                      fade-teleport-fade transition, the service exit, and the hallway
 	                      windows that flash when an explosion goes off
   finale/                 the escape sequence itself, behind --start-escape
-	finale_controller.gd  the two sections and the one clock they share; a lost section starts
-	                      again where it began, at no Nerve cost
+	finale_controller.gd  the two sections and the one clock they share; a lost section comes up
+	                      on the brief screen and starts again where it began, at no Nerve cost
 	finale_planner.gd     the two chains — service exit, three calm areas, tunnel or bridge —
 	                      and the whole plan built off them
 	interior_events.gd    section one's events: the mouse, the masked man who keeps coming back,

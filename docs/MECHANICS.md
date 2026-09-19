@@ -1126,6 +1126,13 @@ back at the start of the section she was in — the hallway outside her own door
 untouched. A fourteen-day run is never thrown by one wrong turn in the last minutes; at zero the
 way out is gone, and what she does about it is walk it again.
 
+**And it comes up on the brief screen first**, for the building and for the city alike — the same
+screen between days that a resumed run opens on (`DaySummary.show_finale_brief()`), titled with
+the section's own line, *"Escape the apartment"* or *"Exit the city"*, and carrying the Nerve count
+unchanged, because a lost section spends none. Continuing from it is the moment the section
+actually begins: the clock stays stopped where the loss left it until then. A retry that dropped
+her straight back on the hallway floor gave her no moment to see what had happened.
+
 **Section one is a route with the first turn already taken.** A fallen ceiling fills the top
 floor's hallway between her own door and the right stair door, both rows of it
 (`InteriorMap.TOP_FLOOR_RUBBLE`), so the right stairwell cannot be entered on that floor at all and

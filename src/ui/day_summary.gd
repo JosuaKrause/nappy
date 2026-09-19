@@ -1,5 +1,6 @@
 extends CanvasLayer
-## The screen between days, and the one at the end of a run.
+## The screen between days, the one at the end of a run, and the two the escape uses — the brief
+## before a lost section starts again, and the last screen of the sequence.
 ##
 ## Also the pause: the tree is paused while this is up, so the city keeps its state and the
 ## day can simply be restarted rather than rebuilt.
@@ -286,6 +287,32 @@ func show_finale(exit_kind: int, seconds: float) -> void:
 		GameState.format_clock(seconds)]
 	_hint.text = ""
 	_brief.visible = false
+	_present()
+
+## The screen a lost section of the escape comes up on, before it starts again. *(2026-09-19:
+## "restarting should still have the day brief for both the apartment escape and the city escape
+## even if the nerves don't go down.")*
+##
+## **The same screen a resumed day opens on** (`show_day_brief()`), with the two lines that are
+## about a day replaced by the two that are true here. A lost section costs no Nerve, so the nerve
+## count is exactly what it was and the line says so, unchanged; and the escape has no day number,
+## so what stands where "Day N of 14" stands is **the section's own hint line** — *"Escape the
+## apartment"* or *"Exit the city"*, the same words `HUD.say_once()` says on a first entry and the
+## same words `main` passes in. No new fiction, and nothing triumphant or melodramatic
+## (`docs/NARRATIVE.md`, "No triumphalism"): a retry is not a moment, it is the thing she is doing
+## again.
+##
+## There is no reason line and no lost note. The screen before a section is about what she is about
+## to do, not about what just happened — `show_day()` is the screen that reports an outcome, and a
+## section has no outcome worth a sentence when nothing was spent on it.
+func show_finale_brief(hint: String, nerves: int) -> void:
+	_heading.hide()
+	_showing_ending = false
+	_note.visible = false
+	_title.text = hint
+	_body.text = "last nerve" if nerves == 1 else "%d nerves left" % nerves
+	_brief.visible = false
+	_hint.text = ""
 	_present()
 
 ## What is behind her, and it is the same sentence either way: she is out, nobody is following,

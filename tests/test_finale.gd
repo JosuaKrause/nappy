@@ -10,6 +10,7 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
+const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 
 ## Four cities rather than one. A chain is a search over a generated lattice and the thing most
@@ -30,6 +31,7 @@ func run(t) -> void:
 	_test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t)
 	_test_the_clock_reads_milliseconds_only_in_the_finale(t)
 	_test_a_lost_section_starts_again_and_costs_no_nerve(t)
+	_test_a_lost_section_comes_up_on_the_brief_before_it_starts_again(t)
 	_test_the_city_word_boots_the_second_section(t)
 	_test_every_part_word_reaches_its_own_walkable_position(t)
 	_test_the_escape_owes_no_return_leg(t)
@@ -413,17 +415,31 @@ func _test_a_lost_section_starts_again_and_costs_no_nerve(t) -> void:
 	var finale := FinaleController.new()
 	t.add_child(finale)
 	var started: Array = []
+	var lost: Array = []
 	finale.section_started.connect(func(section: int, restarted: bool) -> void:
 		started.append([section, restarted]))
+	finale.section_lost.connect(func(section: int) -> void: lost.append(section))
 
 	finale.begin(FinaleController.Section.BUILDING)
 	t.check(started.size() == 1 and not started[0][1], "the first section starts fresh")
 	var nerves := GameState.nerves
 	# Half a minute off the clock, so a restart putting it back is visible.
 	finale._clock.time_remaining -= 30.0
+	var spent := finale.time_remaining()
 
 	EventBus.hard_fail_triggered.emit("abduction")
-	t.check(started.size() == 2, "being taken starts the section again")
+	# **The loss is not the restart.** A lost section comes up on the brief screen first, and the
+	# clock stays where the loss left it until the continue on that screen reaches the controller —
+	# so a section that restarted itself here would give the retry away before she had read
+	# anything.
+	t.check(lost.size() == 1 and lost[0] == FinaleController.Section.BUILDING,
+			"being taken loses the section she was in")
+	t.check(started.size() == 1, "and nothing has started again yet")
+	t.check(is_equal_approx(finale.time_remaining(), spent),
+			"with the clock still where the loss left it")
+
+	finale.restart_section()
+	t.check(started.size() == 2, "the brief's own continue starts the section again")
 	t.check(started[1][0] == FinaleController.Section.BUILDING and started[1][1],
 			"and it is the same section, marked as a retry")
 	t.check(is_equal_approx(finale.time_remaining(), FinaleController.length()),
@@ -441,6 +457,68 @@ func _test_a_lost_section_starts_again_and_costs_no_nerve(t) -> void:
 	# And the controller, whose `DayController` child listens on `EventBus` for the hard fail this
 	# test emits: one left in the tree restarts a section on the next suite's fail as well.
 	finale.free()
+	DevFlags._invincible_override = null
+
+## *"Restarting should still have the day brief for both the apartment escape and the city escape
+## even if the nerves don't go down."*
+##
+## Driven through `main`'s own handlers against a real `DaySummary` and a real `FinaleController`,
+## so what is checked is the wiring a capture would go through rather than a call this test
+## invented: the loss raises the screen, the screen names the section she is about to walk again,
+## the Nerve count on it is the one she still has, and **continuing from it is what starts the
+## section** — not the loss.
+##
+## Both sections, because the player asked for both by name and the building and the city reach
+## this through different branches of `_on_finale_section_started()`.
+func _test_a_lost_section_comes_up_on_the_brief_before_it_starts_again(t) -> void:
+	DevFlags._invincible_override = false
+	for section: int in [FinaleController.Section.BUILDING, FinaleController.Section.CITY]:
+		var main: Node2D = MAIN_SCRIPT.new()
+		main._summary = SUMMARY_SCENE.instantiate()
+		t.add_child(main._summary)
+		main._hud = HUD_SCENE.instantiate()
+		t.add_child(main._hud)
+		var finale := FinaleController.new()
+		t.add_child(finale)
+		main._finale = finale
+		finale.section_lost.connect(main._on_finale_section_lost)
+		main._summary.continued.connect(main._on_finale_summary_continued)
+		var started: Array = []
+		finale.section_started.connect(func(which: int, restarted: bool) -> void:
+			started.append([which, restarted]))
+		finale.begin(section)
+		started.clear()
+		finale._clock.time_remaining -= 30.0
+
+		var nerves := GameState.nerves
+		EventBus.hard_fail_triggered.emit("abduction")
+		t.check(main._summary.is_showing(),
+				"section %d: a loss comes up on the brief screen" % section)
+		t.check(started.is_empty(),
+				"section %d: and the section has not started again behind it" % section)
+		var title: Label = main._summary.get_node("Root/Center/Lines/Title")
+		var body: Label = main._summary.get_node("Root/Center/Lines/Body")
+		t.check(title.text == MAIN_SCRIPT.finale_hint_for(section),
+				"section %d: the screen is titled with the section's own hint line ('%s')"
+				% [section, title.text])
+		t.check(body.text.contains("nerve"),
+				"section %d: and carries the nerve line ('%s')" % [section, body.text])
+		t.check(GameState.nerves == nerves,
+				"section %d: with the nerves unchanged, since a lost section spends none" % section)
+
+		main._summary.continued.emit()
+		t.check(started.size() == 1 and started[0][0] == section and started[0][1],
+				"section %d: continuing from it starts the same section again" % section)
+		t.check(is_equal_approx(finale.time_remaining(), FinaleController.length()),
+				"section %d: with the clock back at full length" % section)
+		t.check(not main._summary.is_showing(),
+				"section %d: and the screen gone" % section)
+
+		main._summary.free()
+		main._hud.free()
+		finale.free()
+		main.free()
+	t.get_tree().paused = false
 	DevFlags._invincible_override = null
 
 ## `--start-escape city` is the one word that is not a part of the building: it boots the second
