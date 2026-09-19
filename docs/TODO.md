@@ -322,6 +322,16 @@ Everything below is in the order the gameplay queue above gives it, and was reas
       Validate XML, render every source at native size and 3×, and provide an assembled review image
       showing at least two shifted modules in both directions on the live stairwell background.
 
+> "the top tile needs change -- it doesn't include a diagonal section and the rectangles are
+> anchored at the *bottom* not at the top as they are now. the third small triangle tile needs a
+> bigger triangle so it connects to the adjacent tiles. triangle side is two widths"
+
+The first SVG checkpoint made the upper tile's rectangles hang from its top edge, which consumed
+the area where its side band needed to read. Revise that tile so every rectangle is anchored to the
+bottom edge and its diagonal gray section is visibly present. With the chosen 8px rectangle width,
+the continuation tile's triangle has 16px sides — two widths — and its joins to both adjacent tile
+roles must be visible in the next assembled review.
+
 ---
 
 
