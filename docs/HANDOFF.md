@@ -305,20 +305,12 @@ checks and worktrees can move independently of this file.
   reviewable or installed. The next deliverable remains four genuinely reviewable complete PNG
   figures, using a changed raster strategy and the corrected SVG as pose authority; do not reuse the
   rejected lower body or repeat the exhausted prompt.
-- **PR #215 — M156, the crowd only turns at what physically stops it** is green and open. Its
-  implementation and evidence are present. Before it can merge,
-  the orchestrator must put its current queue/archive record and its corrections to the stale
-  `CITY.md` and `EVENTS.md` claims on that same branch, then re-run the focused gates.
-- **PR #218 — M129, a wall is also what cannot be walked past and stands across the street from the
-  route** is a draft. Its branch reports focused headless gates
-  and the route-line measurement, but GitHub currently shows no status checks. The other M129
-  placement-blind-spot item is outside this PR. The next action is to inspect the branch against
-  current `main`, restore a live CI result, and keep the human street-reading question in
-  `REVIEW.md`.
-- **PR #222 — Playtest 80, pause on focus loss and resuming a game, filed for the next session** is
-  a green documentation-only PR. It records M161 and M162 as deliberately
-  unstarted. Its next action is review and merge only with explicit permission; implementation
-  starts in later, separate work.
+- **Two requests from [PLAYTEST-80](playtests/PLAYTEST-80.md) are filed and deliberately
+  unstarted**, because the player asked for them to wait for a session of their own: M161, the
+  game pauses when it loses focus and a rig can say not to, and M162, a game can be resumed.
+  M161 is specified and ready for an agent. M162 opens with a question for the player — what
+  *that exact state* has to cover inside a day, the crowd above all — and nothing of it goes
+  to an agent before that is answered.
 
 No PR is merged or put on auto-merge without explicit permission in the current session. New
 implementation or investigation uses fresh agents with self-contained briefs; do not resume the

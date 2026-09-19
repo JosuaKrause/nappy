@@ -358,7 +358,7 @@ func _record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) -
 
 ## The tiles a row's own solid body stands on when it is sited at `at` looking `facing`, or an
 ## empty list for anything `CityMap.obstructed_tiles` deliberately leaves out — a mobile row, a
-## door body, a body on a segment that is held for the day anyway, or a row with no body at all.
+## door body, or a row with no body at all.
 ##
 ## **The placement and the axis are read back out of `EventInstance`'s own statics rather than
 ## worked out again here.** Where a body actually stands is not `Planned.position`: a stationary,
@@ -388,18 +388,12 @@ static func obstructed_footprint(map: CityMap, def: EventDef, at: Vector2,
 	var placed := at
 	if def.pavement_side == EventDef.Pavement.ANY:
 		placed = EventInstance._centred_on_the_pavement_band(map, at)
-	# A hard seal's own body and a region wall's stand in the mouth of a segment that is already
-	# held, which shuts the whole street to walkers and cars alike — recording their tiles as well
-	# would be a second answer to a question that has one. Asked of the body's own placement tile,
-	# which is the tile that decided the segment it belongs to.
-	#
-	# **A row solid in parts is no exception, and that is deliberate.** A crash's street is still
-	# held for the crowd — the seal still seals (`docs/CITY.md`, "A closure is silent") — so its
-	# cars are ground no walker and no car can reach in the first place. What M118 opened is the
-	# *player's* way through, and she is stopped by the pieces' own collision shapes rather than by
-	# this record.
-	if map.is_held_at(map.world_to_tile(placed)):
-		return nothing
+	# A hard seal's own body and a region wall's are recorded like any other, and that is what a
+	# walker actually meets. The hold on their segment is a car's answer — a car cannot turn round
+	# against a barrier, so it has to turn at the last junction, before it can see one — and it is
+	# nobody else's: a walker walks the street up to the body and turns where it stands, so the
+	# record has to say where the body is. It is also what keeps a crash walkable on its pavements,
+	# since a row solid in parts records its pieces and the two cars are the only pieces there are.
 	var axis := _body_axis(map, def, placed, facing)
 	# Which way round a piece's own offset is laid is `EventInstance._spread_at()`'s question, and
 	# it is asked of the placed position for the same reason the axis is: a piece offset the wrong

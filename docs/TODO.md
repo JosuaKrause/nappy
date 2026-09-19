@@ -348,71 +348,87 @@ alike.
 
 ---
 
-## M156 — The crowd only turns at what physically stops it · asked for 2026-09-19
+## M161 — The game pauses when it loses focus, and a rig can say not to · asked for 2026-09-19
 
-> "cars shouldn't avoid it. I noticed cars turning around even though the obstacle is on the
-> sidewalk. only things like a fallen tree (which blocks the whole street) should prevent cars
-> from entering … pedestrians should only avoid the area if they cannot reach it physically.
-> right now they give up if there is an event at all when they should only give up if they
-> touch an impassable wall. that leads to two changes: 1) they should still walk through a car
-> accident since the sidewalk is free there 2) they should be able to spawn inside a closed
-> off section but shouldn't stand in one place but instead walk until they are forced to turn
-> around (by the environment)"
+> "can we make the game pause on focus loss? and also an override to *not* stop the game or
+> pause for agents trying to take a screenshot"
 
-[PLAYTEST-78](playtests/PLAYTEST-78.md), which also says what `CrowdAgent._cannot_go_on`
-treats as shut for each kind today. The **crowd-traffic** and **city** rules govern. It is the
-cause under M155's complaint: a street the crowd has given up on is a free calm area, and a
-street only a whole-width obstacle shuts is one the player cannot exploit either.
+[PLAYTEST-80](playtests/PLAYTEST-80.md). The **godot**, **cli-tools** and **verify** rules
+govern. Nothing reads a focus notification today, so a day runs on behind another window.
 
-- [ ] **Find where a car turns for an obstacle on the sidewalk.** A car's own rule is a body
-      on its own lane tile (`CityMap.is_obstructed`), a held segment, a closed tile or a
-      precinct. Say which of those a sidewalk obstacle reaches — a body whose recorded tiles
-      spill onto the lane, a seal held across the whole segment for a row that takes only a
-      sidewalk, or something else — with the seed, day and tile, before changing anything.
-- [ ] **A car is turned only by what blocks its roadway.** Whatever the first item finds
-      is fixed where it happens, so a row standing on a sidewalk leaves both lanes driving and
-      a row across the whole street (the fallen tree) still turns cars at the last junction.
-- [ ] **A walker turns where it meets what it cannot pass, and not before.** Today a walker
-      turns off at the last junction ahead of a soft seal, a held segment or a fully taken
-      sidewalk. It walks up to the impassable thing and turns round there instead, and a row
-      that leaves a walkable line on its sidewalk — the car accident is the named one — is
-      walked past. The turn is an about-face a walker can make anywhere; say what keeps two
-      walkers turning at one barrier from stacking, since the 2026-09-12 complaint was walkers
-      *"accumulating in one place and move back and forth or worth flicker"*.
-- [ ] **A walker goes into a street that is closed further along, from either side.**
-      *(2026-09-19: "they saw that a road section was closed of and never entered it. this
-      shouldn't happen. they should still go into the section until they cannot continue.
-      this should also happen from inside the path since right now we have offshoots that are
-      clear because nobody attempts to go in".)* A walker choosing an arm at a junction gives
-      a street with a barrier somewhere along it the same weight as an open one, so a side
-      street off the day's route fills as far as its barrier and a walker arriving at the
-      barrier turns round and walks back out.
-- [ ] **Closed-off ground has walkers in it, and they keep walking.** Placement and recycling
-      put walkers on sealed-in ground the way they do on any street, and nobody stands still
-      there. The walker half of `CrowdPockets` — never placing a walker on ground no street
-      leads out of, and standing one still that is caught there — answered walkers pacing a
-      junction whose every arm they refused to enter; with the two items above a walker there
-      has each stub to walk to its end, so say whether any walker pocket is still needed and
-      remove what is not. A car's pocket stays: a car is kept out by what blocks the whole
-      roadway, which it cannot turn round against in a stub.
+- [ ] **Losing focus opens the pause screen.** On `NOTIFICATION_APPLICATION_FOCUS_OUT` (the
+      window losing focus, a browser tab going to the background) and
+      `NOTIFICATION_APPLICATION_PAUSED` (a phone sending the app away), a day that is being
+      played pauses exactly as the `pause` action does — the same screen, the same continue
+      button. It does nothing on the title, the day summary, the ending or an open pause
+      screen, and getting focus back does not resume: the player continues when they are
+      back. Both choices are recorded in the playtest file as open to overturn. `main.gd`'s
+      node keeps processing while the tree is paused, so it is the one that hears it.
+- [ ] **`--no-focus-pause` turns it off, and a screenshot run implies it.** A dev flag in
+      `DevFlags`, listed wherever the flags are listed (`README.md`'s "Dev flags", the flag's
+      own help text, `docs/TELEMETRY.md` where a rig's flags are described) and rejected like
+      any other when misspelled. `--screenshot` implies it, since a rig's window opens without
+      focus and would otherwise capture the pause screen — so `tools/shot.sh` and every
+      existing capture command keep working unchanged — and the flag by itself covers
+      `tools/run.sh` runs an agent drives without a screenshot. `?nofocuspause=1` on a debug
+      web build if the other flags have URL forms there. The **verify** skill says, where it
+      describes windowed runs, that a rig never pauses on focus and why.
 
 ---
 
-## M129 — A path through the city never has to cost · two routes in five still break
+## M162 — A game can be resumed · asked for 2026-09-19
+
+> "we need to be able to resume a previous game. saving should be implicit (on focus loss or
+> game quit) and it should bring you back to that exact state but paused. in the browser it
+> should be handled via local storage so refreshing or opening again the page doesn't lose
+> progress" — "there is no need for manual save state management since you can just hold
+> restart to clear the game"
+
+[PLAYTEST-80](playtests/PLAYTEST-80.md), which lists what a run holds in memory today and what
+inside a day is not a function of the seed. It shares its trigger with M161, the game pauses
+when it loses focus, so M161 is built first or with it.
+
+- [ ] **Ask what *exact* has to cover before building.** The run (`GameState`) and the day's
+      plan (seed and day) come back exactly for free. The moment inside a day is her, the two
+      meters, the clock, every event instance's phase and position, pursuits, the errand and
+      the crowd. Put to the player, with the cost of each: everything including each walker
+      and car; everything but the crowd, which is re-seeded around her as at dawn; or the run
+      and the day only, resuming at that day's dawn. The player's words are *"that exact
+      state"*, so anything less is theirs to agree to.
+- [ ] **Saving is implicit: on focus loss and on quit**, never by a button. One save, no
+      slots. A save names the build that wrote it, and a save a newer build cannot read is
+      dropped for a fresh title screen rather than half-loaded.
+- [ ] **Opening the game resumes it, paused.** With a save present the game comes up on the
+      saved moment behind the pause screen; continue goes on, and the held restart — already
+      on the pause screen and the day summary — clears the save and starts over. A finished
+      run (either ending) leaves no save.
+- [ ] **The browser keeps it across a refresh and a reopened page.** `user://` on a web build
+      is the browser's IndexedDB, which persists; confirm on the deployed page that a refresh
+      and a closed tab both come back, and that a new release (files under a directory named
+      for the tag) still finds the save of the one before.
+- [ ] **A rig never resumes and never saves**, the way it never pauses on focus: a dev-flagged
+      run (`--screenshot`, `--seed`, `--day` and the rest) starts what it was told to start.
+
+---
+
+## M129 — A path through the city never has to cost · one route in nine still breaks
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable
 > around … the routing should only cross the street at intersections"
 
 [PLAYTEST-69](playtests/PLAYTEST-69.md), [PLAYTEST-71](playtests/PLAYTEST-71.md),
-[PLAYTEST-75](playtests/PLAYTEST-75.md), [PLAYTEST-76](playtests/PLAYTEST-76.md). The four rules
-and the leaf blower's two-part field are built and recorded (`DECISIONS.md`, M129, the four
-rules; M129, the leaf blower is a wall to walk past and a busker to stay near). The probe,
-`tests/probes/m129_zero_cost_line.gd`, finds a zero-cost line along 183 of 296 routes. The
-guarantee is not true for the rest, and what stands in them is a route junction covered by
-several rows together (69 routes), with the leaf blower in the cut on 74 of the 113. The three
-placement rules refuse a candidate whose reach *together with everything already down* would
-close a junction, so a crossing the probe finds under four to six rows is one that either
-reached the day past the rules or is read as covered differently by the probe and the rule:
+[PLAYTEST-75](playtests/PLAYTEST-75.md), [PLAYTEST-76](playtests/PLAYTEST-76.md),
+[PLAYTEST-77](playtests/PLAYTEST-77.md). The four rules, the leaf blower's two-part field and
+the wall reading are built and recorded (`DECISIONS.md`, M129, the four rules; M129, the leaf
+blower is a wall to walk past and a busker to stay near; M129, a wall is also what cannot be
+walked past). The probe, `tests/probes/m129_zero_cost_line.gd`, finds a zero-cost line along
+262 of 296 routes. The guarantee is not true for the rest, and what stands in them is almost
+all one shape: a route junction taken by several rows together (32 of the 34 broken routes),
+with `leaf_blower`, `homeless_yeller` and `roadblock` each in the cut on 23 to 27 of the 34. No sidewalk rule reaches a `roadblock` on a carriageway or a wall's wide field reaching
+over a crossing from one street out. The three placement rules refuse a candidate whose reach
+*together with everything already down* would close a junction, so a crossing the probe finds
+covered is one that either reached the day past the rules or is read as covered differently by
+the probe and the rule:
 
 - [ ] **Which placements the three rules never see.** `_place_one`'s candidate loop is where
       the rules run. Find every other path a row reaches the day by — the calm-ground pass
@@ -421,39 +437,9 @@ reached the day past the rules or is read as covered differently by the probe an
       probe, which path placed the rows in its cut and whether the probe's *covered* and the
       rule's *open* agree on it. Then either those paths ask the same three questions, or the
       record says why a route may pay there. The probe's "what broke the line" table is the
-      measurement; the seals alone cost about five points (66.9% on the day's own rows against
-      61.8% with them).
-- [ ] **A wall is also what cannot physically be walked past, and it never stands on the
-      route's own pavement.** *(2026-09-15: "on the side of the street where the path was
-      chosen only obstacles that can be bypassed should be possible" — "the market stall should
-      appear on the other side of the street" — "a wall is also when you physically cannot walk
-      through"; offered a placement-only rule instead, the player chose this: "that seems to
-      be more thorough".)* Today `EventScheduler._role_for` answers `WALL` only for a lethal
-      row or one whose walk-through cost reaches `Tuning.WALL_WORTH_OF_COST` (35), so a market
-      stall — a 28 px body denying 58 px of a 64 px pavement, no 28 px line past it — is
-      *friction* and is weighted onto the corridor four to one (`Tuning.EVENT_CORRIDOR_WEIGHT`).
-      The width rule (`_leaves_a_line_past_it`, via `_closes_the_street`) then only asks that
-      *either* pavement stays walkable end to end, so the stall may close the pavement the
-      tree walks while the tint (`DECISIONS.md`, M150) marks exactly that pavement. Three
-      changes, the **balance** rule governing every number: (1) `_role_for` also answers `WALL`
-      for a row whose body and charging disc (`_line_reach_of`) leave no four-connected line
-      the stroller's width (the 28 px the probe uses) along a pavement it may be placed on —
-      a passability reading beside the cost reading, decided from the row's own numbers, so
-      `docs/EVENTS.md`'s role column moves for every row it catches (`cafe_tables` and
-      `market_stall` at least; list them all in the record). (2) `_copies_of` reads the
-      corridor per pavement, the way M150's tint does (`Corridor.depth` answers at the grain of
-      a whole street today; `docs/CITY.md` where that grain is described): a wall gets its zero
-      copies on the pavement the tree walks and its ordinary off-corridor copies on the *other*
-      pavement of the same street, which is where the player put the stall. (3) The width rule
-      reads the route's pavement, not the street: a counted row reaching onto the tree's
-      pavement between two junctions is refused unless a stroller-wide line survives along that
-      pavement, cumulatively with what is already down, the way the junction rule reads.
-      Measure with `tests/probes/m129_zero_cost_line.gd` before and after, and with
-      `_test_the_day_is_placed_by_role`'s corridor floors and the wall caps, which will move:
-      the two act I rows built to force a crossing become walls across the street from the
-      route, so say what day 1's corridor now carries and what forced crossings are left,
-      rather than retuning floors or caps to pass. `docs/EVENTS.md` where it describes the
-      roles and the three rules.
+      measurement; the seals and the region wall cost about four points (92.2% on the day's
+      own rows against 88.5% with them).
+
 ---
 
 ## M137 — The contact is whoever she hands the note to, and the trap comes to her · asked for 2026-09-13
