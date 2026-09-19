@@ -15,9 +15,8 @@ signal restart_requested()
 @onready var _heading: Label = $Root/Center/Lines/Heading
 @onready var _title: Label = $Root/Center/Lines/Title
 ## Empty and hidden except when `show_day_brief()` is given a lost-day note — the one line the day
-## brief shows that is not always the same words, see that function's own doc. The same shape
-## `PauseScreen._note` was before this milestone moved the resumed run's own gate to this screen —
-## its own label, not folded into `_body`, since the two hide independently of each other.
+## brief shows that is not always the same words, see that function's own doc. Its own label, not
+## folded into `_body`, since the two hide independently of each other.
 @onready var _note: Label = $Root/Center/Lines/Note
 @onready var _body: Label = $Root/Center/Lines/Body
 ## The chalk mark's own words, once a pickup has just been touched — its own label, not a line
