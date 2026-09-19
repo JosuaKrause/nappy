@@ -60,6 +60,11 @@ Or open the project folder in Godot 4.7 directly.
 | P (or F9) | Write a screenshot and a line of trace into the telemetry folder. A debug key, not a game feature — see `docs/TELEMETRY.md` |
 | B | Capture a three-second animation burst targeting 12 fps into the telemetry folder (debug only) |
 
+The game also pauses itself, the same way Esc does, the moment the window loses focus — Alt-Tabbing
+away, a browser tab going to the background, or a phone sending the app away — and getting focus
+back does not carry on for you; press continue when you are back. See `--no-focus-pause` below for
+the override a rig needs.
+
 The game opens on a title screen with the street outside your own front door running behind
 it, and a finished run goes back to it.
 
@@ -106,6 +111,7 @@ going quietly stale.
 | `--debug` | Turn the developer readout on, and only the readout, in an exported release build (also reachable as a release web build's own `?debug=1`); no other dev flag or debug layer is reachable this way. A fixed "DEBUG MODE ON" note stays on screen for the whole session, and nothing removes it |
 | `--skip events\|crowd\|shadows\|motion` (comma-separated, any order) | Turn off one or more of the desktop's own per-frame probes — `events` empties every `EventInstance._draw`, `crowd` every `CrowdAgent._draw`, `shadows` empties `BuildingShadows._draw_chunk`, and `motion` parks the crowd's simulation (every `CrowdAgent._process` and `Crowd._physics_process` return at once, so the day's population stands where it was placed, drawn as normal) — so their frame cost can be read on a device that has no probes of its own. Honoured only while the readout is on (`--debug` or a release web build's own `?debug=1&skip=events,crowd`); nothing else about the frame moves, and the readout's own `skip` line names what is off |
 | `--invincible` | Nothing ends the day — crying and a hard fail leave it running, the clock never moves and the excitement meter never rises; a won day still ends normally. Marked on the HUD and in the run log so no capture from it reads as a real run (also reachable on a debug web build as `?invincible=1`) |
+| `--no-focus-pause` | Turn off the pause the game otherwise opens when the window loses focus. `--screenshot` implies it on its own, since a rig's window usually opens with no focus to lose in the first place (also reachable on a debug web build as `?nofocuspause=1`) |
 | `--spikes` | Turn on the run log's `spike` line — the one frame in a second that ran past twice the mean of the frames before it, its length and that mean in milliseconds, and what changed since the previous frame. Off by default, since it can be noisy on a slow machine; honoured only while a run is being traced. Also starts the `6` debug layer on at boot — the rolling bar graph of the last 240 frames' own lengths (`docs/TELEMETRY.md`, "The debug view") — independent of `4`, the readout's own key |
 | `--start-escape [stairwell:left\|stairwell:right\|lobby\|basement\|floor:N\|city]` | Start straight in the escape sequence instead of the title and a day: the building, optionally at one of its seven parts, or `city` for the second section on its own |
 | `--title` | Open on the title screen even under a screenshot rig, which otherwise skips it |

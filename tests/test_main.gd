@@ -33,6 +33,8 @@ func run(t) -> void:
 	_test_no_interior_exists_outside_a_debug_build(t)
 	_test_play_seconds_only_advances_while_the_world_moves(t)
 	_test_the_border_reaches_the_window_from_every_corner(t)
+	_test_no_focus_pause_from_args(t)
+	_test_no_focus_pause_from_query(t)
 
 ## `main._debug` is read once from `DevFlags.enabled()` rather than asked of the OS inside
 ## `_process()`, precisely so this can set it directly and check the release shape — the same
@@ -616,3 +618,28 @@ func _test_the_border_reaches_the_window_from_every_corner(t) -> void:
 
 	city.free()
 	GameState.play_seconds = 0.0
+
+# ------------------------------------------------------------- focus pause ---
+
+## `DevFlags.no_focus_pause()` reads the real command line, so a test drives the two private
+## parsing helpers directly instead — the same seam `tests/test_invincible.gd` uses for
+## `_invincible_from_args()`/`_invincible_from_query()`.
+func _test_no_focus_pause_from_args(t) -> void:
+	t.check(not DevFlags._no_focus_pause_from_args(PackedStringArray()),
+			"no command-line modifier leaves focus loss pausing the game")
+	t.check(DevFlags._no_focus_pause_from_args(PackedStringArray(["--no-focus-pause"])),
+			"--no-focus-pause turns it off directly")
+	t.check(DevFlags._no_focus_pause_from_args(PackedStringArray(["--screenshot", "out.png"])),
+			"--screenshot implies it without being told to, since a rig's window opens unfocused")
+	t.check(not DevFlags._no_focus_pause_from_args(PackedStringArray(["--seed", "1"])),
+			"an unrelated flag does not imply it")
+
+func _test_no_focus_pause_from_query(t) -> void:
+	t.check(not DevFlags._no_focus_pause_from_query(""),
+			"an absent URL parameter leaves focus loss pausing the game")
+	t.check(not DevFlags._no_focus_pause_from_query("?nofocuspause=0"),
+			"nofocuspause=0 leaves it pausing")
+	t.check(DevFlags._no_focus_pause_from_query("?nofocuspause=1"),
+			"?nofocuspause=1 turns it off")
+	t.check(DevFlags._no_focus_pause_from_query("?seed=1&nofocuspause=1&day=2"),
+			"the parameter is found among other URL parameters")
