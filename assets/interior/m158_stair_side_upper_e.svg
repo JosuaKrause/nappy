@@ -1,13 +1,8 @@
 <!-- Prepared, unbound M158 upper tile. Four 8px columns descend east: 32, 24, 16, 8px, each
-     anchored to the bottom edge. The exposed 16px-wide gray side has a straight upper diagonal
-     and the rectangles' stepped top edge below it. The live TileMap does not load this source. -->
+     anchored to the bottom edge. The rectangles alone have no outline along their bottom join.
+     The live TileMap does not load this source. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges" stroke-linejoin="miter">
-  <path d="M16 0L32 16V32H24V24H16Z" fill="#62656a" stroke="#3b3034" stroke-width="1"/>
-  <g fill="#767a7d" stroke="#3b3034" stroke-width="1">
-    <rect x="0" y="0" width="8" height="32"/>
-    <rect x="8" y="8" width="8" height="24"/>
-    <rect x="16" y="16" width="8" height="16"/>
-    <rect x="24" y="24" width="8" height="8"/>
-  </g>
+  <path d="M0 0H8V8H16V16H24V24H32V32H0Z" fill="#767a7d"/>
+  <path d="M0 32V0H8V8H16V16H24V24H32V32" fill="none" stroke="#3b3034" stroke-width="1"/>
   <path d="M1 1H7 M9 9H15 M17 17H23 M25 25H31" fill="none" stroke="#a3988a" stroke-width="1"/>
 </svg>
