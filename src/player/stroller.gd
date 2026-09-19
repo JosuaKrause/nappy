@@ -1,13 +1,13 @@
 class_name Stroller
 extends CharacterBody2D
-## The mother-and-pram rig the player drives.
+## The parent-and-pram rig the player drives, with one presentation for the whole run.
 ##
-## `position` is the mother's feet on the ground plane; everything is drawn upward from
-## there so that y-sorting against buildings and props matches where she actually stands.
+## `position` is the parent's feet on the ground plane; everything is drawn upward from
+## there so that y-sorting against buildings and props matches where the player actually stands.
 ## The pram is drawn ahead in the facing direction, with authored screen-axis distances and Y
 ## foreshortening that preserve ground depth and the authored hand-contact placement.
 ##
-## The SVG mother and pram below are the logical body and the complete drawing in every mode.
+## The parent/pram sources below select the complete drawing in either presentation mode.
 
 ## The illustrated family keeps different amounts of empty canvas around each projection, so its
 ## functional hand-to-handle placement uses three screen-axis distances. Scaling `facing` by these
@@ -85,6 +85,50 @@ const MOTHER_CARRYING_BACK_DIAGONAL: Array[Texture2D] = [
 	preload("res://assets/rig/mother_carrying_back_diagonal_c.svg"),
 	preload("res://assets/rig/mother_carrying_back_diagonal_b.svg")]
 
+const FATHER_FRONT: Array[Texture2D] = [
+	preload("res://assets/rig/father_front_a.svg"),
+	preload("res://assets/rig/father_front_c.svg"),
+	preload("res://assets/rig/father_front_b.svg")]
+const FATHER_BACK: Array[Texture2D] = [
+	preload("res://assets/rig/father_back_a.svg"),
+	preload("res://assets/rig/father_back_c.svg"),
+	preload("res://assets/rig/father_back_b.svg")]
+const FATHER_SIDE: Array[Texture2D] = [
+	preload("res://assets/rig/father_side_a.svg"),
+	preload("res://assets/rig/father_side_c.svg"),
+	preload("res://assets/rig/father_side_b.svg")]
+const FATHER_FRONT_DIAGONAL: Array[Texture2D] = [
+	preload("res://assets/rig/father_front_diagonal_a.svg"),
+	preload("res://assets/rig/father_front_diagonal_c.svg"),
+	preload("res://assets/rig/father_front_diagonal_b.svg")]
+const FATHER_BACK_DIAGONAL: Array[Texture2D] = [
+	preload("res://assets/rig/father_back_diagonal_a.svg"),
+	preload("res://assets/rig/father_back_diagonal_c.svg"),
+	preload("res://assets/rig/father_back_diagonal_b.svg")]
+
+## The escape scene's rig — the baby in his arms, no pram. Selected in place of the sets above
+## whenever `carrying` is set; see `_mother_texture()`, the shared parent selector.
+const FATHER_CARRYING_FRONT: Array[Texture2D] = [
+	preload("res://assets/rig/father_carrying_front_a.svg"),
+	preload("res://assets/rig/father_carrying_front_c.svg"),
+	preload("res://assets/rig/father_carrying_front_b.svg")]
+const FATHER_CARRYING_BACK: Array[Texture2D] = [
+	preload("res://assets/rig/father_carrying_back_a.svg"),
+	preload("res://assets/rig/father_carrying_back_c.svg"),
+	preload("res://assets/rig/father_carrying_back_b.svg")]
+const FATHER_CARRYING_SIDE: Array[Texture2D] = [
+	preload("res://assets/rig/father_carrying_side_a.svg"),
+	preload("res://assets/rig/father_carrying_side_c.svg"),
+	preload("res://assets/rig/father_carrying_side_b.svg")]
+const FATHER_CARRYING_FRONT_DIAGONAL: Array[Texture2D] = [
+	preload("res://assets/rig/father_carrying_front_diagonal_a.svg"),
+	preload("res://assets/rig/father_carrying_front_diagonal_c.svg"),
+	preload("res://assets/rig/father_carrying_front_diagonal_b.svg")]
+const FATHER_CARRYING_BACK_DIAGONAL: Array[Texture2D] = [
+	preload("res://assets/rig/father_carrying_back_diagonal_a.svg"),
+	preload("res://assets/rig/father_carrying_back_diagonal_c.svg"),
+	preload("res://assets/rig/father_carrying_back_diagonal_b.svg")]
+
 ## One distance-driven turn visits both open contacts with the shared passing pose between them.
 const MOTHER_GAIT_LOOP: Array[int] = [0, 1, 2, 1]
 
@@ -112,8 +156,8 @@ const BABY_CRY := preload("res://assets/props/baby_cry.svg")
 const FAMILY_ATLAS := "stroller"
 const INDICATOR_ATLAS := "head_indicators"
 
-## Everything `FAMILY_ATLAS` packs: both rigs' five view sets across all three gait frames, and
-## the pram's five views. Keyed by the source texture itself, which is what `_mother_source()` and
+## Everything `FAMILY_ATLAS` packs: both parents' pushing/carrying views and three gait frames,
+## plus the shared pram's five views. Keyed by the source texture, which `_mother_source()` and
 ## `_pram_source()` have in hand at draw time, so the lookup at the draw is a dictionary hit on
 ## the constant the selector already picked.
 static func family_sources() -> Dictionary:
@@ -122,6 +166,9 @@ static func family_sources() -> Dictionary:
 		MOTHER_FRONT, MOTHER_BACK, MOTHER_SIDE, MOTHER_FRONT_DIAGONAL, MOTHER_BACK_DIAGONAL,
 		MOTHER_CARRYING_FRONT, MOTHER_CARRYING_BACK, MOTHER_CARRYING_SIDE,
 		MOTHER_CARRYING_FRONT_DIAGONAL, MOTHER_CARRYING_BACK_DIAGONAL,
+		FATHER_FRONT, FATHER_BACK, FATHER_SIDE, FATHER_FRONT_DIAGONAL, FATHER_BACK_DIAGONAL,
+		FATHER_CARRYING_FRONT, FATHER_CARRYING_BACK, FATHER_CARRYING_SIDE,
+		FATHER_CARRYING_FRONT_DIAGONAL, FATHER_CARRYING_BACK_DIAGONAL,
 	]
 	for views: Array in view_sets:
 		for texture: Texture2D in views:
@@ -190,7 +237,10 @@ enum Alert {
 
 var facing := Vector2.DOWN
 
-## The escape scene's carrying rig: the baby in her arms instead of ahead of her in the pram.
+## Bound by Main before the first drawing; reset, pause and carrying never choose it again.
+var is_male := false
+
+## The escape scene's carrying rig: the baby in the parent's arms instead of ahead in the pram.
 ## Set once by `main._ready_escape()` before she is ever drawn; nothing else in the game ever
 ## flips it, so there is no case of switching mid-walk to account for. Her collision circle is
 ## unchanged either way — see `shape`'s own doc.
@@ -824,9 +874,9 @@ func _draw_pram(at: Vector2) -> void:
 func _pram_draw_size() -> Vector2:
 	return _pram_texture().get_size() * PRAM_VISUAL_SCALE
 
-## The mother texture selected by the live drawing path for a gait frame — the region of her
-## family's atlas once it is collected, and the source picture itself before that and after a
-## release. Which picture is selected, and everything done with it, is unchanged.
+## The selected parent's texture for a gait frame — its atlas region once collected, and its
+## resolved source picture before collection and after release. Atlas availability never changes
+## the run's presentation or the pose selector.
 func _mother_texture(frame: int) -> Texture2D:
 	return TextureAtlas.texture_for(FAMILY_ATLAS, _mother_source(frame), _mother_source(frame))
 
@@ -834,23 +884,25 @@ func _mother_texture(frame: int) -> Texture2D:
 func _mother_source(frame: int) -> Texture2D:
 	if carrying:
 		if _view_direction == 0 or _view_direction == 4:
-			return MOTHER_CARRYING_SIDE[frame]
+			return FATHER_CARRYING_SIDE[frame] if is_male else MOTHER_CARRYING_SIDE[frame]
 		if _view_direction == 1 or _view_direction == 3:
-			return MOTHER_CARRYING_FRONT_DIAGONAL[frame]
+			return (FATHER_CARRYING_FRONT_DIAGONAL[frame] if is_male
+					else MOTHER_CARRYING_FRONT_DIAGONAL[frame])
 		if _view_direction == 2:
-			return MOTHER_CARRYING_FRONT[frame]
+			return FATHER_CARRYING_FRONT[frame] if is_male else MOTHER_CARRYING_FRONT[frame]
 		if _view_direction == 5 or _view_direction == 7:
-			return MOTHER_CARRYING_BACK_DIAGONAL[frame]
-		return MOTHER_CARRYING_BACK[frame]
+			return (FATHER_CARRYING_BACK_DIAGONAL[frame] if is_male
+					else MOTHER_CARRYING_BACK_DIAGONAL[frame])
+		return FATHER_CARRYING_BACK[frame] if is_male else MOTHER_CARRYING_BACK[frame]
 	if _view_direction == 0 or _view_direction == 4:
-		return MOTHER_SIDE[frame]
+		return FATHER_SIDE[frame] if is_male else MOTHER_SIDE[frame]
 	if _view_direction == 1 or _view_direction == 3:
-		return MOTHER_FRONT_DIAGONAL[frame]
+		return FATHER_FRONT_DIAGONAL[frame] if is_male else MOTHER_FRONT_DIAGONAL[frame]
 	if _view_direction == 2:
-		return MOTHER_FRONT[frame]
+		return FATHER_FRONT[frame] if is_male else MOTHER_FRONT[frame]
 	if _view_direction == 5 or _view_direction == 7:
-		return MOTHER_BACK_DIAGONAL[frame]
-	return MOTHER_BACK[frame]
+		return FATHER_BACK_DIAGONAL[frame] if is_male else MOTHER_BACK_DIAGONAL[frame]
+	return FATHER_BACK[frame] if is_male else MOTHER_BACK[frame]
 
 ## West-facing projections mirror their corresponding east-authored SVGs about the feet anchor.
 func _mother_is_mirrored() -> bool:

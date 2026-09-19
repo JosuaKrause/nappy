@@ -1,0 +1,1034 @@
+{
+  "measurements": {
+    "father_front_a": {
+      "cell": [
+        0,
+        0,
+        260,
+        420
+      ],
+      "visible_bounds": [
+        52,
+        25,
+        195,
+        407
+      ],
+      "generated_dimensions": [
+        260,
+        420
+      ],
+      "extraction": "original alpha",
+      "scale": 0.11780104712041885,
+      "x_at_12x": 40,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        24,
+        46
+      ],
+      "native_alpha_bounds": [
+        1,
+        0,
+        22,
+        46
+      ]
+    },
+    "father_back_a": {
+      "cell": [
+        260,
+        0,
+        519,
+        420
+      ],
+      "visible_bounds": [
+        47,
+        24,
+        187,
+        407
+      ],
+      "generated_dimensions": [
+        259,
+        420
+      ],
+      "extraction": "original alpha",
+      "scale": 0.1174934725848564,
+      "x_at_12x": 41,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        24,
+        46
+      ],
+      "native_alpha_bounds": [
+        1,
+        0,
+        22,
+        46
+      ]
+    },
+    "father_side_a": {
+      "cell": [
+        519,
+        0,
+        779,
+        420
+      ],
+      "visible_bounds": [
+        13,
+        25,
+        200,
+        407
+      ],
+      "generated_dimensions": [
+        260,
+        420
+      ],
+      "extraction": "original alpha",
+      "scale": 0.11780104712041885,
+      "x_at_12x": 9,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        0,
+        0,
+        25,
+        46
+      ]
+    },
+    "father_front_diagonal_a": {
+      "cell": [
+        779,
+        0,
+        1038,
+        420
+      ],
+      "visible_bounds": [
+        41,
+        24,
+        188,
+        407
+      ],
+      "generated_dimensions": [
+        259,
+        420
+      ],
+      "extraction": "original alpha",
+      "scale": 0.1174934725848564,
+      "x_at_12x": 53,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        2,
+        0,
+        24,
+        46
+      ]
+    },
+    "father_back_diagonal_a": {
+      "cell": [
+        1038,
+        0,
+        1298,
+        420
+      ],
+      "visible_bounds": [
+        51,
+        25,
+        215,
+        407
+      ],
+      "generated_dimensions": [
+        260,
+        420
+      ],
+      "extraction": "original alpha",
+      "scale": 0.11780104712041885,
+      "x_at_12x": 42,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        1,
+        0,
+        25,
+        46
+      ]
+    },
+    "father_front_c": {
+      "cell": [
+        0,
+        420,
+        260,
+        824
+      ],
+      "visible_bounds": [
+        51,
+        11,
+        194,
+        394
+      ],
+      "generated_dimensions": [
+        260,
+        404
+      ],
+      "extraction": "original alpha",
+      "scale": 0.1174934725848564,
+      "x_at_12x": 38,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        24,
+        46
+      ],
+      "native_alpha_bounds": [
+        1,
+        0,
+        22,
+        46
+      ]
+    },
+    "father_back_c": {
+      "cell": [
+        260,
+        420,
+        519,
+        824
+      ],
+      "visible_bounds": [
+        48,
+        11,
+        185,
+        392
+      ],
+      "generated_dimensions": [
+        259,
+        404
+      ],
+      "extraction": "original alpha",
+      "scale": 0.11811023622047244,
+      "x_at_12x": 43,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        24,
+        46
+      ],
+      "native_alpha_bounds": [
+        1,
+        0,
+        22,
+        46
+      ]
+    },
+    "father_side_c": {
+      "cell": [
+        519,
+        420,
+        779,
+        824
+      ],
+      "visible_bounds": [
+        58,
+        13,
+        199,
+        393
+      ],
+      "generated_dimensions": [
+        260,
+        404
+      ],
+      "extraction": "original alpha",
+      "scale": 0.11842105263157894,
+      "x_at_12x": 69,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        3,
+        0,
+        25,
+        46
+      ]
+    },
+    "father_front_diagonal_c": {
+      "cell": [
+        779,
+        420,
+        1038,
+        824
+      ],
+      "visible_bounds": [
+        40,
+        12,
+        188,
+        394
+      ],
+      "generated_dimensions": [
+        259,
+        404
+      ],
+      "extraction": "original alpha",
+      "scale": 0.11780104712041885,
+      "x_at_12x": 49,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        2,
+        0,
+        24,
+        46
+      ]
+    },
+    "father_back_diagonal_c": {
+      "cell": [
+        1038,
+        420,
+        1298,
+        824
+      ],
+      "visible_bounds": [
+        51,
+        12,
+        215,
+        394
+      ],
+      "generated_dimensions": [
+        260,
+        404
+      ],
+      "extraction": "original alpha",
+      "scale": 0.11780104712041885,
+      "x_at_12x": 41,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        1,
+        0,
+        25,
+        46
+      ]
+    },
+    "father_front_b": {
+      "cell": [
+        0,
+        824,
+        260,
+        1212
+      ],
+      "visible_bounds": [
+        52,
+        10,
+        194,
+        363
+      ],
+      "generated_dimensions": [
+        260,
+        388
+      ],
+      "extraction": "original alpha",
+      "scale": 0.1274787535410765,
+      "x_at_12x": 32,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        24,
+        46
+      ],
+      "native_alpha_bounds": [
+        0,
+        0,
+        23,
+        46
+      ]
+    },
+    "father_back_b": {
+      "cell": [
+        260,
+        824,
+        519,
+        1212
+      ],
+      "visible_bounds": [
+        47,
+        11,
+        186,
+        368
+      ],
+      "generated_dimensions": [
+        259,
+        388
+      ],
+      "extraction": "original alpha",
+      "scale": 0.12605042016806722,
+      "x_at_12x": 34,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        24,
+        46
+      ],
+      "native_alpha_bounds": [
+        1,
+        0,
+        23,
+        46
+      ]
+    },
+    "father_side_b": {
+      "cell": [
+        519,
+        824,
+        779,
+        1212
+      ],
+      "visible_bounds": [
+        15,
+        11,
+        200,
+        365
+      ],
+      "generated_dimensions": [
+        260,
+        388
+      ],
+      "extraction": "original alpha",
+      "scale": 0.1271186440677966,
+      "x_at_12x": 11,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        0,
+        0,
+        26,
+        46
+      ]
+    },
+    "father_front_diagonal_b": {
+      "cell": [
+        779,
+        824,
+        1038,
+        1212
+      ],
+      "visible_bounds": [
+        41,
+        11,
+        186,
+        368
+      ],
+      "generated_dimensions": [
+        259,
+        388
+      ],
+      "extraction": "original alpha",
+      "scale": 0.12605042016806722,
+      "x_at_12x": 45,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        1,
+        0,
+        24,
+        46
+      ]
+    },
+    "father_back_diagonal_b": {
+      "cell": [
+        1038,
+        824,
+        1298,
+        1212
+      ],
+      "visible_bounds": [
+        38,
+        11,
+        215,
+        364
+      ],
+      "generated_dimensions": [
+        260,
+        388
+      ],
+      "extraction": "original alpha",
+      "scale": 0.1274787535410765,
+      "x_at_12x": 14,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        0,
+        0,
+        26,
+        46
+      ]
+    },
+    "father_carrying_front_a": {
+      "cell": [
+        0,
+        0,
+        260,
+        430
+      ],
+      "visible_bounds": [
+        50,
+        28,
+        202,
+        420
+      ],
+      "generated_dimensions": [
+        260,
+        430
+      ],
+      "extraction": "original alpha",
+      "scale": 0.11479591836734694,
+      "x_at_12x": 39,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        24,
+        46
+      ],
+      "native_alpha_bounds": [
+        1,
+        0,
+        23,
+        46
+      ]
+    },
+    "father_carrying_back_a": {
+      "cell": [
+        260,
+        0,
+        519,
+        430
+      ],
+      "visible_bounds": [
+        38,
+        24,
+        192,
+        422
+      ],
+      "generated_dimensions": [
+        259,
+        430
+      ],
+      "extraction": "original alpha",
+      "scale": 0.11306532663316583,
+      "x_at_12x": 40,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        24,
+        46
+      ],
+      "native_alpha_bounds": [
+        1,
+        0,
+        23,
+        46
+      ]
+    },
+    "father_carrying_side_a": {
+      "cell": [
+        519,
+        0,
+        779,
+        430
+      ],
+      "visible_bounds": [
+        14,
+        28,
+        210,
+        420
+      ],
+      "generated_dimensions": [
+        260,
+        430
+      ],
+      "extraction": "original alpha",
+      "scale": 0.11479591836734694,
+      "x_at_12x": 18,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        0,
+        0,
+        26,
+        46
+      ]
+    },
+    "father_carrying_front_diagonal_a": {
+      "cell": [
+        779,
+        0,
+        1038,
+        430
+      ],
+      "visible_bounds": [
+        39,
+        27,
+        189,
+        421
+      ],
+      "generated_dimensions": [
+        259,
+        430
+      ],
+      "extraction": "original alpha",
+      "scale": 0.11421319796954314,
+      "x_at_12x": 52,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        2,
+        0,
+        24,
+        46
+      ]
+    },
+    "father_carrying_back_diagonal_a": {
+      "cell": [
+        1038,
+        0,
+        1298,
+        430
+      ],
+      "visible_bounds": [
+        49,
+        28,
+        201,
+        423
+      ],
+      "generated_dimensions": [
+        260,
+        430
+      ],
+      "extraction": "original alpha",
+      "scale": 0.11392405063291139,
+      "x_at_12x": 50,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        2,
+        0,
+        24,
+        46
+      ]
+    },
+    "father_carrying_front_c": {
+      "cell": [
+        0,
+        430,
+        260,
+        832
+      ],
+      "visible_bounds": [
+        48,
+        7,
+        198,
+        395
+      ],
+      "generated_dimensions": [
+        260,
+        402
+      ],
+      "extraction": "original alpha",
+      "scale": 0.11597938144329897,
+      "x_at_12x": 32,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        24,
+        46
+      ],
+      "native_alpha_bounds": [
+        0,
+        0,
+        22,
+        46
+      ]
+    },
+    "father_carrying_back_c": {
+      "cell": [
+        260,
+        430,
+        519,
+        832
+      ],
+      "visible_bounds": [
+        42,
+        7,
+        192,
+        395
+      ],
+      "generated_dimensions": [
+        259,
+        402
+      ],
+      "extraction": "original alpha",
+      "scale": 0.11597938144329897,
+      "x_at_12x": 36,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        24,
+        46
+      ],
+      "native_alpha_bounds": [
+        1,
+        0,
+        23,
+        46
+      ]
+    },
+    "father_carrying_side_c": {
+      "cell": [
+        519,
+        430,
+        779,
+        832
+      ],
+      "visible_bounds": [
+        61,
+        7,
+        183,
+        396
+      ],
+      "generated_dimensions": [
+        260,
+        402
+      ],
+      "extraction": "original alpha",
+      "scale": 0.11568123393316196,
+      "x_at_12x": 80,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        4,
+        0,
+        23,
+        46
+      ]
+    },
+    "father_carrying_front_diagonal_c": {
+      "cell": [
+        779,
+        430,
+        1038,
+        832
+      ],
+      "visible_bounds": [
+        39,
+        8,
+        186,
+        395
+      ],
+      "generated_dimensions": [
+        259,
+        402
+      ],
+      "extraction": "original alpha",
+      "scale": 0.11627906976744186,
+      "x_at_12x": 58,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        3,
+        0,
+        24,
+        46
+      ]
+    },
+    "father_carrying_back_diagonal_c": {
+      "cell": [
+        1038,
+        430,
+        1298,
+        832
+      ],
+      "visible_bounds": [
+        52,
+        8,
+        203,
+        395
+      ],
+      "generated_dimensions": [
+        260,
+        402
+      ],
+      "extraction": "original alpha",
+      "scale": 0.11627906976744186,
+      "x_at_12x": 56,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        2,
+        0,
+        25,
+        46
+      ]
+    },
+    "father_carrying_front_b": {
+      "cell": [
+        0,
+        832,
+        260,
+        1212
+      ],
+      "visible_bounds": [
+        48,
+        7,
+        202,
+        368
+      ],
+      "generated_dimensions": [
+        260,
+        380
+      ],
+      "extraction": "original alpha",
+      "scale": 0.12465373961218837,
+      "x_at_12x": 33,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        24,
+        46
+      ],
+      "native_alpha_bounds": [
+        0,
+        0,
+        24,
+        46
+      ]
+    },
+    "father_carrying_back_b": {
+      "cell": [
+        260,
+        832,
+        519,
+        1212
+      ],
+      "visible_bounds": [
+        42,
+        6,
+        192,
+        368
+      ],
+      "generated_dimensions": [
+        259,
+        380
+      ],
+      "extraction": "original alpha",
+      "scale": 0.12430939226519337,
+      "x_at_12x": 34,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        24,
+        46
+      ],
+      "native_alpha_bounds": [
+        1,
+        0,
+        24,
+        46
+      ]
+    },
+    "father_carrying_side_b": {
+      "cell": [
+        519,
+        832,
+        779,
+        1212
+      ],
+      "visible_bounds": [
+        16,
+        6,
+        212,
+        368
+      ],
+      "generated_dimensions": [
+        260,
+        380
+      ],
+      "extraction": "original alpha",
+      "scale": 0.12430939226519337,
+      "x_at_12x": 4,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        0,
+        0,
+        26,
+        46
+      ]
+    },
+    "father_carrying_front_diagonal_b": {
+      "cell": [
+        779,
+        832,
+        1038,
+        1212
+      ],
+      "visible_bounds": [
+        40,
+        7,
+        188,
+        368
+      ],
+      "generated_dimensions": [
+        259,
+        380
+      ],
+      "extraction": "original alpha",
+      "scale": 0.12465373961218837,
+      "x_at_12x": 46,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        2,
+        0,
+        25,
+        46
+      ]
+    },
+    "father_carrying_back_diagonal_b": {
+      "cell": [
+        1038,
+        832,
+        1298,
+        1212
+      ],
+      "visible_bounds": [
+        36,
+        8,
+        218,
+        368
+      ],
+      "generated_dimensions": [
+        260,
+        380
+      ],
+      "extraction": "original alpha",
+      "scale": 0.125,
+      "x_at_12x": 18,
+      "y_at_12x": 12,
+      "native_dimensions": [
+        26,
+        46
+      ],
+      "native_alpha_bounds": [
+        0,
+        0,
+        26,
+        46
+      ]
+    }
+  },
+  "outputs": {
+    "rig/father_front_a.png": "3466cddf142ea505e48d4f78670a99bd7964d3c9b5dfb87093821798e8beeece",
+    "extracted/father_front_a.png": "d7e330bfc8f3cd52d48ce7dc8954c759c0befd4c9ce140bd4c8ffb2f4b38b10f",
+    "rig/father_back_a.png": "ce72244b2ae09c2986767dd5fb6b2326cb662fcee65a6d611349ae1c97433aec",
+    "extracted/father_back_a.png": "5d02e2831df4ca39a1cb936e80feeef11280c24854ccec7457e1bb96c5843098",
+    "rig/father_side_a.png": "bcc6a84f943aacc2522fa18b5a5a96c6e7e3e96e9e271c8e354938910f2587af",
+    "extracted/father_side_a.png": "9683df3aec5b9de1778f049fade3d9795df1a33073c87a3eebbd1615fa67f0ba",
+    "rig/father_front_diagonal_a.png": "3ddb32d5c7e0fe2488940b27c42d29f3f4d80a6b173e04218d0c009782d4821b",
+    "extracted/father_front_diagonal_a.png": "15f1e6ac31537106b8e254997a5883585cba7c120b22a70c8f8ada3ed004a0b6",
+    "rig/father_back_diagonal_a.png": "68dc4b1a4a11ee36e2ce5e8abb682e88723d8d59b6b6ed4042a6a82d49a17384",
+    "extracted/father_back_diagonal_a.png": "26035a79f6b9d5a1e19bd192f3ac3a3858d8d9e61480fc5c63f72e9eb286dbda",
+    "rig/father_front_c.png": "964d42efbabe022492fc63acda0e7b74db045b97ef6aa08d8d72815fc726ebd7",
+    "extracted/father_front_c.png": "21cf0b374fe1dac050c195e8112b97c85e2ee6468c7b75bd6e9ce9bfb2e64f2b",
+    "rig/father_back_c.png": "132533ac4e979eeccf769b2e347706b542797142d6de338cbe2ad1cc649be9f1",
+    "extracted/father_back_c.png": "2a04937cf5868ba7316e9839f099d51a15506d008781f111536fbfab60d9db2c",
+    "rig/father_side_c.png": "f7e312a8d594a375a69d82ded150b4c638329c0ab060aa6dff09fcf45d11140b",
+    "extracted/father_side_c.png": "7cedefa05ef9a9938e25a9673c7f9566d6bf8446e8c100a35d2f54698b5ebeb1",
+    "rig/father_front_diagonal_c.png": "e6595ac94a46dfa9d11ffd2e1249ff0fc66f570ddfdc2ebfe3fca4feec82009f",
+    "extracted/father_front_diagonal_c.png": "e32b8174ad10ed4b4f2df6ff5f50903c7a73a63681500626fc1e18c45d8ced3b",
+    "rig/father_back_diagonal_c.png": "e45da614f86a08f4ae7af9a450bcacddc643f41818aa3e4b11f339c346d615d4",
+    "extracted/father_back_diagonal_c.png": "ebbc24bfe9e988ab6c57d7e1da645a3200daa40948f37dd454f6c2fe577d03b8",
+    "rig/father_front_b.png": "98d4350dfb4c607e6be948ae2c7e5f16cf9ebb15df8b30b793de7e63a26b99a1",
+    "extracted/father_front_b.png": "9a1e8fd92fa8a07929a2e55138ca93faa22c3be39d96fa40e6de3f75f95c8a9a",
+    "rig/father_back_b.png": "d60396305d944a1608ae3323348cefee63ccb0f514933347725beffbed557fd7",
+    "extracted/father_back_b.png": "0d8ad470366e62abe676cefc6b272395edfe023616648cc78f3f66dbdf159316",
+    "rig/father_side_b.png": "419109d827c2bfee9eb992f448d86e9b22f437ed0f46ce28b49de1896f03b956",
+    "extracted/father_side_b.png": "3fe82dc8e3e2c23578742ce35fb1dd34869081cdde3b8b5632457b84490bb7ae",
+    "rig/father_front_diagonal_b.png": "8bac9da0e38e48fe2f87924789fe20296aeeb8aba3959724fe150d8d10d8024d",
+    "extracted/father_front_diagonal_b.png": "3c2b3219bb71158a57078dcd782eaacb172f17f55bce09e43518e352488b323a",
+    "rig/father_back_diagonal_b.png": "6d737538aa63cb48334a84f2f3ef2547fe8f75d11b1d0d2ca4cb3538f997afe5",
+    "extracted/father_back_diagonal_b.png": "8dae8901739e44f3568e5a4c674eaa83d7d5fcf29cd22f2679d870a26a64e0fe",
+    "rig/father_carrying_front_a.png": "5b3b2094df0627158a2982a787858556e121aecea5844b2cbf3e9eb13f447a37",
+    "extracted/father_carrying_front_a.png": "8f9f23b9551dbad5a3606051c20948221b233639e7d2ca81081fb9b640a70654",
+    "rig/father_carrying_back_a.png": "86c5dcc6cf0e0e63de85986caf209a09954aa559f30a8eac86aa048f40e3e13e",
+    "extracted/father_carrying_back_a.png": "04b3fed03c2a7884d0b7a7024544c06657cc33f639f780267e3a6664c6eb8392",
+    "rig/father_carrying_side_a.png": "acb36e5aee89698a266ad000d3be70563cbfaf21714b0105041bce95e6966bec",
+    "extracted/father_carrying_side_a.png": "aa58d2da11771d8e48f6e872cffde89ac0a2372e10198a6fd588eb452d2acd59",
+    "rig/father_carrying_front_diagonal_a.png": "be9f1a049c2b29f89e803a88f1fff08fb4c6ec9f80084404316c003e9988bbb7",
+    "extracted/father_carrying_front_diagonal_a.png": "168564b6574dd6a8af8b479c6ab310732dcc3004461e93765055832ea5caa981",
+    "rig/father_carrying_back_diagonal_a.png": "584185510f738423a654734c5b537380fbc44bc9cf1e013bef41a10fe4848acb",
+    "extracted/father_carrying_back_diagonal_a.png": "4377a61acb86e574d66309505cdc96b69e15e44132007fd13b7a77f6ce6f8f02",
+    "rig/father_carrying_front_c.png": "2e45e1d7ab07e5fd5bd46a2402da5dff7c72e5662440bc5e956c8d0fff3c204c",
+    "extracted/father_carrying_front_c.png": "23d68fbf6a87029c0e79969a96b12041f64f83f74e294b3000d760c137c19479",
+    "rig/father_carrying_back_c.png": "282768f8a545db7bf6fe841a83127635c78bdce920d81ccdf85ac2442fbdb8cc",
+    "extracted/father_carrying_back_c.png": "46ee37b104616eac39cff8191210ff3fd9137dbc46435cad0e8e26b60f16286e",
+    "rig/father_carrying_side_c.png": "488b4ab07f85678378aa497b7b0e1e1bb1dc172953fe091de0dc27146a863d44",
+    "extracted/father_carrying_side_c.png": "dd1d70c2381c1572bc295745b47cda9725c2654082fbc6a042c81eb2c5b600c0",
+    "rig/father_carrying_front_diagonal_c.png": "93166bc4c89e77c65414deaa7995bfb7f5f2fe3eeb465b8c6a0f68fd1e9abf80",
+    "extracted/father_carrying_front_diagonal_c.png": "bab74cebf4894cf162ba7183dd9ac33cd58c94499d928afb40b9163fdd9f4676",
+    "rig/father_carrying_back_diagonal_c.png": "5fcc8b0629fb8a42187348b57ea7673f6e5155bed5ff21275a8c1761c412d99e",
+    "extracted/father_carrying_back_diagonal_c.png": "15f313a5178ec787044e034fc33617cdba8acb7df51410ab9432b3647dd4cc36",
+    "rig/father_carrying_front_b.png": "0ffa21748ba257164efebc1700345c9c2fb1accc5f0d88ab6415abb831c6f1a3",
+    "extracted/father_carrying_front_b.png": "e920851f50c7a1b747cdc1c986ec842c87e966b86064bbd3362571719c9856f4",
+    "rig/father_carrying_back_b.png": "5960b39208e83350cb0fa38eff0e17120a7812244d4fbdb5ff0341b125b5a32d",
+    "extracted/father_carrying_back_b.png": "3d1a8676eb8d57f6c7088188f77eab1f7bc1b59cd029352e987b0a1cb85ad7ea",
+    "rig/father_carrying_side_b.png": "220cf508d1889efb27aa509edfd44a56ac120cb73a961c935dabdbf275745afd",
+    "extracted/father_carrying_side_b.png": "c1f7e6b8b3333832a48a99ca802ddc014ad8b054e0957da1603482dfdddb67fb",
+    "rig/father_carrying_front_diagonal_b.png": "7fedf10de2222ea1a136e9162693423ba1d661958ce55bf7228d3787f8964f24",
+    "extracted/father_carrying_front_diagonal_b.png": "7a8d022f55aed3136ec733e199876bd377a87936f55ba716dab602928f89afcd",
+    "rig/father_carrying_back_diagonal_b.png": "4a62f16c79af673794a8b7d0652d28b9f761202655627ad6d1348f3ccefefae8",
+    "extracted/father_carrying_back_diagonal_b.png": "d2b4dd2f4e391576ea92f58dec367c3e2a83d4ff732de01d9e03ef9345c65516",
+    "pushing-male-native.png": "9d752df7b43fb80a2a8ce8c379ace016ad8299671ba22dfc8cff75fe1f4bae4d",
+    "pushing-male-3x.png": "5e3dc8f18442091469c338870d175fbc2632af4e5bf04ac51bdbd6eb195e74eb",
+    "pushing-female-male-native.png": "1dd50fed073c4c7fa441e55014d0b858439a592ff69c1f55755a58336cc704fc",
+    "pushing-female-male-3x.png": "2ea982b5b0db9d31edcd8ad1035c697f568e37a98ca348a7998a92675e116137",
+    "carrying-male-native.png": "3f3830fbfeaab16e236470d332f282d693b1de5426b2a46aed96aaa12a07c258",
+    "carrying-male-3x.png": "e93d289d0bae54389cecf82ba702d2b7bcc39e9ff168e36f967008181045b87a",
+    "carrying-female-male-native.png": "ba173abad786140520850db43c47cc560c0d78df019d19409be8b5b9adae33ac",
+    "carrying-female-male-3x.png": "e607475ca10bbccf4f3ebf7168e5e4846e31c8effba1ebed36ad65cc06b48583"
+  }
+}

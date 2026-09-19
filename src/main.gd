@@ -190,7 +190,7 @@ func _ready() -> void:
 	var boot_camera := _new_boot_camera(_city.map.doorstep_world_position())
 	await _warm_the_pictures(boot_camera.global_position)
 
-	_player = STROLLER.instantiate()
+	_player = _make_player()
 	_city.add_entity(_player)
 	_player.set_camera_limits(_city.camera_bounds())
 	_baby = _player.get_node("Baby")
@@ -363,6 +363,12 @@ func _ready_escape() -> void:
 	if screenshot:
 		add_child(screenshot)
 
+## All entry points bind the run's existing choice before the rig enters the tree or draws.
+func _make_player() -> Stroller:
+	var player: Stroller = STROLLER.instantiate()
+	player.is_male = GameState.player_is_male
+	return player
+
 ## Section one's world: the building, her in it, and the events inside it.
 func _build_the_escape_building() -> void:
 	_interior = InteriorScene.new()
@@ -372,7 +378,7 @@ func _build_the_escape_building() -> void:
 	_interior.build()
 	_interior.exit_requested.connect(_on_escape_exit_requested)
 
-	_player = STROLLER.instantiate()
+	_player = _make_player()
 	_player.carrying = true
 	_player.slope_dir_at = _interior.slope_dir_at
 	_interior.add_entity(_player)
@@ -409,7 +415,7 @@ func _build_the_finale_city() -> void:
 	_city.crowd.clear()
 
 	if not _player:
-		_player = STROLLER.instantiate()
+		_player = _make_player()
 		_player.carrying = true
 		_city.add_entity(_player)
 		_baby = _player.get_node("Baby")
