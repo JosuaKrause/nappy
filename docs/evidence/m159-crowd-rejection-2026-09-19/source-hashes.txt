@@ -1,0 +1,14 @@
+Baseline production source: 7035fc6aa7da21ed2f8354fa07ce1a74d779c9ab.
+Only production change for the after runs: conservative rejection in CrowdAgent.contribution_at.
+The working tree additionally contains the same new tests/probe and documentation in both runs.
+
+Before crowd_agent.gd SHA-256:
+6608216d21caf16854aedc94453f927945273ed9c3b8b7731a47e78cfa8390aa
+After crowd_agent.gd SHA-256:
+0b76061b4b19692cd707819d9c05648e628bf02e4bbdb23541329ca5e74ddb31
+Unchanged tests/probes/m159_contribution_cost.gd SHA-256:
+c50e317270d84e3ad55a2c232e821c6430d9b006d9dbcd9afd4735167b493ce1
+Unchanged tests/test_crowd_contributions.gd SHA-256:
+8206b58ca3947fbae71bd570539f67c007b630f90983bba63a5d6b03d82e1a3c
+Unchanged src/telemetry/frame_trace.gd SHA-256:
+30d59854e8090d0ae622d0940544aea08b4524adc1d8a58c3d5a27d87a27e85e

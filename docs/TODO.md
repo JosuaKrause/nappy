@@ -300,44 +300,44 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
 > numbers and the codebase and think about how we could improve performance and reduce stutter"
 
-The preserved laptop evidence establishes visible intermittent stalls, not their cause. The warmed
-run holds 85–91 fps outside captures, yet six of seven usable reporting intervals contain a 24.5–
-26.1ms observer delta; disabling telemetry did not remove comparable 24.0–24.4ms process maxima.
-Grouped atlases leave the same cadence: after the initial packs, long intervals occur without an
-atlas becoming ready, while their one comparison changes draws only from 566 to 560 and fps from
-112 to 108. Screenshot bursts are not measurement evidence: the capture itself drops the run to
-34 fps and 60.9–64.4ms intervals.
+**The deliverable is an optimization, with measurement retained as evidence.**
+[PLAYTEST-84](playtests/PLAYTEST-84.md) clarifies: "well the point was to actually do some
+optimizations. measurement is nice and make sure it's fully recorded but the core is to make
+things faster". Instrumentation alone does not complete this item. Reduce a demonstrated cost
+without changing gameplay, retain controlled repeated before/after distributions over equal
+active-play windows, and verify identical behavior. A measured reduction in a named work metric
+must be distinguished from whole-frame improvement and perceived smoothness. The existing noisy
+toggle trials establish neither a causal toggle cost nor a shipping pacing choice.
 
-The current probe cannot attribute a stall. Both the graph and observer consume `_process(delta)`,
-which is simulation time the engine may smooth or clamp rather than a raw stopwatch; the observer
-reports the slow delta one second later beside counters read from the reporting frame, and its
-"nothing else changed" context covers only player tile, live event count, texture-resolver loads
-and collected atlases. Equal retire/spawn counts and every other kind of main-thread work are
-invisible to it. M143 separately remains responsible for labelling the engine's `process` and
-`physics` values as worst intervals of their second rather than averaging those maxima as if they
-were per-frame samples.
+`CrowdAgent.contribution_at()` skips velocity and ellipse work outside a conservative bound
+that includes the current jolt and the maximum forward stretch. The exact-parity checks and
+repeated before/after measurement are in [DECISIONS.md](DECISIONS.md), M159, cheaper crowd
+contribution sweeps; the raw evidence is
+[the contribution measurement record](evidence/m159-crowd-rejection-2026-09-19/README.md).
+This establishes a reduction in query cost, while the remaining long-frame cause and phone
+behavior still require the work below. `--frame-trace` supplies bounded raw callback intervals
+and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md#raw-frame-traces).
 
-- [ ] **Identify the actual slow frame before optimizing it.** Add a bounded, opt-in buffer of raw
-      monotonic presentation timestamps and frame IDs, pairing each slow interval with counters
-      sampled for that same frame and exporting after play rather than logging synchronously through
-      it. Report percentile and missed-budget counts as well as the maximum. Run one warmed route
-      without screenshots or bursts and record display refresh, actual VSync state, renderer,
-      viewport size, engine version and flags. Compare readout layer 4 off/on, graph layer 6 off/on,
-      telemetry off/on, then normal VSync, disabled VSync and a sustainable 60 fps cap as separate
-      controlled trials. A pacing switch is diagnostic, not a shipping decision.
+- [ ] **Attribute the remaining slow intervals before another optimization.** Use the raw traces
+      to select a reproducible expensive call or span, reduce that work, and retain controlled
+      before/after evidence with identical-behavior checks. Establish repeatable full active-play
+      windows before ranking modest readout, graph, telemetry or pacing costs. Keep rejected short
+      trials visible. CPU callbacks do not measure physical display presentation, and unchanged
+      counters do not rule out unobserved script work. M143, readout labels and windows, separately
+      owns the engine's previous-second `process` and `physics` maxima. A pacing switch remains
+      diagnostic, not a shipping decision.
 - [ ] **Profile the current phone build only after that baseline.** Divide CPU time between the
       baby's every-physics-tick crowd contribution sweep, the halo's rendered-frame contribution
       sweep, event streaming/director work, crowd movement/traffic and debug presentation. Do not
       use `--invincible`: it skips the baby's source sweep and suppresses the meter behavior being
-      measured. If contribution queries are material, try a conservative squared-distance rejection
-      before velocity and eccentric falloff, bounded for horn/startle reach and maximum forward
-      stretch; verify identical meter attribution before considering caching or lower tick rates.
-- [ ] **Measure atlas phases before changing atlas policy.** Time source image readback/copy, blit,
-      GPU texture/region collection and release wait separately. The shipped web export has thread
-      support disabled, so Godot executes WorkerThreadPool tasks on the caller and the current
-      unconditional "packed off the main thread" log is false there. If those spans coincide with
-      stalls, compare day-long residency or imported/prebuilt atlases with memory measured; do not
-      add more worker jobs or larger atlases on the present evidence. The older laptop hitch predates
+      measured. Measure the conservative contribution rejection on that device, including its
+      effect on the baby and halo callers, before considering caching or lower tick rates.
+- [ ] **Complete atlas measurements before changing atlas policy.** The CPU spans distinguish
+      source readback/copy, blit, texture submission, regions and release joins, with actual thread
+      labels. Measure the threadless web export, observe real release events, and distinguish CPU
+      submission from GPU completion. Only if relevant spans coincide with stalls should day-long
+      residency or imported/prebuilt atlases be compared, with memory measured. Do not add more
+      worker jobs or larger atlases on the native host evidence. The older laptop hitch predates
       the atlas path, so no atlas result can be assumed to explain both platforms.
 
 ---

@@ -15,6 +15,10 @@ guarded [`archive/rejected-graphics/`](archive/rejected-graphics/) archive.
 Keep the original filename. It carries the run's timestamp, seed and commit, which is most of what
 makes the file worth having.
 
+Performance measurements, raw frame traces and reproduction commands live in
+[the frame-trace record](m159-frame-traces-2026-09-19/README.md) and
+[the crowd contribution optimization](m159-crowd-rejection-2026-09-19/README.md).
+
 ## Graphics recipes
 
 The scripts, retained inputs and regeneration commands for illustrated graphics and reviews are
