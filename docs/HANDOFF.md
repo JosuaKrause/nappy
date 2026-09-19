@@ -299,10 +299,10 @@ checks and worktrees can move independently of this file.
   every A/C frame fixed. Show the clean sheet and native/6× loops in its draft PR description;
   nothing in this follow-up replaces the provisionally accepted runtime baseline without review.
 
-- **[PLAYTEST-94](playtests/PLAYTEST-94.md) is filed and unbuilt.** It opened M168, the escape
-  after playtest 94, and added the walked-side
-  wall measurement under M129, a path through the city never has to cost. Both are in
-  `TODO.md` and each is one agent's brief.
+- **PR #239 — M129, no body closes the walked sidewalk** is a draft carrying the measurement and
+  the rule by physical fit ([PLAYTEST-94](playtests/PLAYTEST-94.md)). Open on it: the poster crew
+  standing against the building, the two friction floors it lowered, and the zero-cost-line
+  share. Its queue docs are not filed.
 
 Number ownership remains distinct: PLAYTEST-84 and PLAYTEST-85 are the escape/save records
 on main, PLAYTEST-86 belongs to the performance work, and PLAYTEST-87 belongs to the father
