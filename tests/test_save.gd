@@ -40,6 +40,9 @@ func run(t) -> void:
 
 	_test_focus_loss_never_charges_a_nerve(t)
 	_test_focus_loss_and_window_close_write_nothing(t)
+	_test_fresh_boot_writes_nothing_until_the_title_is_dismissed(t)
+	_test_a_restart_writes_nothing_until_the_next_titles_dismissed(t)
+	_test_resumed_boot_with_a_charged_nerve_writes_the_reduced_nerve_count(t)
 	_test_dismissing_a_fresh_titles_start_writes_the_save_under_way(t)
 	_test_title_leads_to_the_day_brief_with_nothing_charged(t)
 	_test_title_leads_to_the_day_brief_with_a_charged_nerve(t)
@@ -316,9 +319,9 @@ func _test_double_load_does_not_charge_twice(t) -> void:
 	t.check(first.get("day_under_way") == true, "the first load finds a day under way")
 	GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 	t.check(GameState.nerves == 4, "the first load costs its one nerve")
-	# `main._start_day(false)`'s own dawn write for the fresh, unplayed attempt — a title, and then
-	# a day brief, both stand between this and the player actually taking control, so this is what
-	# it writes before either is ever shown.
+	# `main._ready()`'s own write for the resumed, unplayed retry — a title, and then a day brief,
+	# both stand between this and the player actually taking control, so this is what it writes
+	# before either is ever shown.
 	t.check(GameSave._write_now(false), "the fresh dawn is saved before the title is shown")
 
 	var second := GameSave._read_now()
@@ -465,6 +468,79 @@ func _free_gate_main(t, main: Node2D) -> void:
 	main._summary.queue_free()
 	main.free()
 	stroller.free()
+
+## **The review finding this test exists for.** `_start_day()` used to write its own dawn
+## unconditionally, so merely opening the game — before the title was ever dismissed — created a
+## save for a fresh day 1 nobody had touched, with the symbol flashing behind the title on every
+## launch and the *next* launch showing a day brief for a day nobody played. `_resume` is empty for
+## a fresh run, so `_write_dawn_for_a_resumed_run()`'s own guard means the call does nothing at
+## all — asserted directly, against the function itself, rather than the whole world `_start_day()`
+## needs to run for real.
+func _test_fresh_boot_writes_nothing_until_the_title_is_dismissed(t) -> void:
+	GameState.start_run(345)
+	_with_forced_save(func() -> void:
+		var main: Node2D = _MAIN_SCRIPT.new()
+		t.check(main._resume.is_empty(), "a fresh run's own default — nothing to resume")
+
+		main._write_dawn_for_a_resumed_run()
+		t.check(not GameSave.has_save(), "a fresh boot writes nothing at all")
+
+		main.free()
+	)
+
+## The held restart reaches the same case as a fresh boot: `main._restart_run()`'s own
+## `GameSave.clear()` leaves `GameSave.try_resume()` nothing to find on the reload that follows, so
+## the reloaded boot's own `_resume` is empty and its dawn write does nothing either — asserted by
+## driving `try_resume()` for real against a save that was just cleared, the same shape the reload
+## itself reaches.
+func _test_a_restart_writes_nothing_until_the_next_titles_dismissed(t) -> void:
+	GameState.start_run(346)
+	_with_forced_save(func() -> void:
+		t.check(GameSave._write_now(true), "a save exists before the restart")
+		GameSave.clear()
+		t.check(not GameSave.has_save(), "the held restart clears it")
+
+		var resume := GameSave.try_resume()
+		t.check(resume.is_empty(), "the reloaded boot's own try_resume() finds nothing to resume")
+
+		var main: Node2D = _MAIN_SCRIPT.new()
+		main._resume = resume
+		main._write_dawn_for_a_resumed_run()
+		t.check(not GameSave.has_save(), "and its own dawn write does nothing either")
+
+		main.free()
+	)
+
+## A resumed boot with a charged nerve: `main._ready()` calls `GameState.finish_day()` (driven here
+## directly, the same as `_test_day_under_way_load_costs_one_nerve()` above) before `_start_day()`
+## and this write ever run, so the reduced nerve count is already the live `GameState`'s own by the
+## time this lands — and it is what the write carries to disk, with `day_under_way: false`, before
+## the title or the day brief behind it is ever shown.
+func _test_resumed_boot_with_a_charged_nerve_writes_the_reduced_nerve_count(t) -> void:
+	GameState.start_run(347)
+	GameState.day = 4
+	GameState.nerves = 5
+	GameState.begin_day()
+	t.check(GameSave._write_now(true), "the original mid-day save")
+
+	var resume := GameSave._read_now()
+	t.check(resume.get("day_under_way") == true, "the load finds a day under way")
+	GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+	t.check(GameState.nerves == 4, "main._ready() charges its one nerve before _start_day() runs")
+
+	_with_forced_save(func() -> void:
+		var main: Node2D = _MAIN_SCRIPT.new()
+		main._resume = resume
+		main._write_dawn_for_a_resumed_run()
+
+		var after := GameSave._read_now()
+		t.check(after.get("day_under_way") == false,
+				"the boot write says nothing has been played in the retry yet")
+		t.check(GameState.nerves == 4,
+				"and the reduced nerve count the load already charged is what landed on disk")
+
+		main.free()
+	)
 
 ## **The regression this whole commit exists for.** A day engaged with no write beside it would
 ## leave the save on disk saying `day_under_way: false` — correctly written at dawn, for a day

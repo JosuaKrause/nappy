@@ -302,12 +302,10 @@ func _ready() -> void:
 		_pauses_with_the_game(_observer)
 		_observer.setup(_city, _player, _baby, _day, _resistance, _edge)
 
-	# `false`: a title always sits over this day before it is played, whether it is a fresh day 1
-	# or a resumed one on its way to the day brief — see this function's own doc for the write it
-	# makes and `_engage_the_day()`'s for the one that follows it.
-	_start_day(false)
-	# `_player.reset_at()` inside the call above has just put her own camera exactly where the
-	# boot camera was standing in for it, so freeing it now hands the viewport's current camera
+	_start_day()
+	_write_dawn_for_a_resumed_run()
+	# `_player.reset_at()` inside `_start_day()` above has just put her own camera exactly where
+	# the boot camera was standing in for it, so freeing it now hands the viewport's current camera
 	# straight to hers — see `_new_boot_camera()`'s own doc for why freeing is what does that.
 	boot_camera.free()
 
@@ -753,8 +751,8 @@ func _on_title_start(mode: ControlsMode.Mode) -> void:
 ## Split out of `_on_title_start()` so a test can drive the outcome directly against a bare
 ## `_summary`, without paying for the whole boot this is normally reached from.
 ##
-## Writes nothing itself: `_start_day(false)`'s own dawn write, made in `_ready()` before the title
-## was ever shown, already has the load's own charge on disk — see that function's own doc — so a
+## Writes nothing itself: `_ready()`'s own write right after `_start_day()` — `false`, made before
+## the title was ever shown — already has the load's own charge on disk, for a resumed run, so a
 ## kill at any instant between here and the day brief's own continue finds exactly what this
 ## screen is showing, never a second charge and never a free one.
 func _show_the_resume_gate() -> void:
@@ -773,8 +771,8 @@ func _show_the_resume_gate() -> void:
 ## the load left with nothing charged, or the day brief the load put on top of it — over to the
 ## player: the moment she is actually playing it, which is also the moment the save has to say so,
 ## immediately rather than leaving the next write to whichever of the day's own two other moments
-## (its own dawn, folded into `_start_day()`, or its end) happens to come next. Called from
-## `_on_title_start()` directly (no resume) and from `_on_summary_continued()`'s own
+## (a resumed run's own dawn write in `_ready()`, or the day's own end) happens to come next.
+## Called from `_on_title_start()` directly (no resume) and from `_on_summary_continued()`'s own
 ## `_resume_gate_open` branch (the day brief's continue) — the two, and the only two, places a gate
 ## she has not yet dismissed stands between a built day and the day she is actually walking.
 func _engage_the_day() -> void:
@@ -1085,13 +1083,11 @@ func _pauses_with_the_game(node: Node) -> void:
 
 # --------------------------------------------------------------- the day loop ---
 
-## `now_playing` is what the dawn write at the bottom of this function saves as `day_under_way`:
-## `false` from `_ready()`'s own call, where a title (and, on a resumed run, the day brief after
-## it) always stands between this and the player actually taking control; `true` from
-## `_on_summary_continued()`'s own ordinary call, where no gate stands between one day's own
-## end-of-day message and the next day's dawn at all, so the moment this call starts is already the
-## moment she is playing it.
-func _start_day(now_playing: bool) -> void:
+## Builds and starts the day; writes nothing itself. Each caller decides what, if anything, the
+## save should say about the day this just built — see `_ready()`'s own call (nothing for a fresh
+## run, `false` for a resumed one) and `_on_summary_continued()`'s (`true`, since nothing gates an
+## ordinary continue into the next day at all).
+func _start_day() -> void:
 	# Timed for the same reason `_ready()` times `CityGenerator.generate()`: playtest 27 named
 	# this path — planning the day's closures, placing every event, streaming the world around
 	# the doorstep — as one of the candidates for the wait after a summary's continue button,
@@ -1176,12 +1172,26 @@ func _start_day(now_playing: bool) -> void:
 	if _observer:
 		_observer.start_day()
 
-	# The dawn write — one of the two moments a run is saved (see docs/MECHANICS.md, "Saving and
-	# resuming"). `now_playing` is exactly what the save should carry: closing behind a title or a
-	# day brief nobody has dismissed must not cost anything more than a load already has, and
-	# continuing straight from one day's own end-of-day message into the next has nothing left to
-	# gate it at all.
-	_save_now(now_playing)
+## Whatever `_start_day()`'s own dawn should say about the day it just built, said right after
+## that call returns — pulled out of `_ready()` on its own so a test can drive the decision
+## directly without paying for the world `_start_day()` builds around it.
+##
+## **A resumed run writes `false` here**, before the title — and, on the way to the day brief,
+## that screen too — is ever shown, so whatever `GameState.finish_day()` already charged earlier
+## in `_ready()` is on disk the instant either gate appears rather than only once she presses past
+## one. This is what the kill-at-any-instant argument in docs/MECHANICS.md, "Saving and resuming",
+## rests on: nothing between this write and `_engage_the_day()`'s own `true` ever depends on a
+## notification catching anything.
+##
+## **A fresh run (`_resume.is_empty()`) writes nothing at all.** Merely opening the game to look at
+## the title is not playing it, and there is no earlier save to protect a charge on — the first
+## write for a fresh run is `_engage_the_day()`'s own `true`, the instant she actually starts. The
+## held restart reaches the same case: `GameSave.clear()` (`_restart_run()`) leaves
+## `GameSave.try_resume()` nothing to find on the reload that follows, so `_resume` is empty there
+## too and the reloaded boot writes nothing until its own title is dismissed.
+func _write_dawn_for_a_resumed_run() -> void:
+	if not _resume.is_empty():
+		_save_now(false)
 
 ## What calm ground today has, by kind. Cheap, and the thing most worth knowing about a day
 ## now that a day can only be won on calm ground.
@@ -1281,10 +1291,11 @@ func _on_summary_continued() -> void:
 		return
 	if not _run_over:
 		_summary.dismiss()
-		# No gate stands between one day's summary and the next day's dawn, unlike the title (and,
-		# on a resumed run, the day brief behind it) a fresh day 1 opens behind — see
-		# `_start_day()`'s own doc for what its `true` here says on disk.
-		_start_day(true)
+		_start_day()
+		# No gate stands between one day's own end-of-day message and the next day's dawn, unlike
+		# the title (and, on a resumed run, the day brief behind it) a fresh day 1 opens behind —
+		# so this is already the moment she is playing the next day, and the write says so at once.
+		_save_now(true)
 		return
 	if not _ending_shown:
 		_ending_shown = true

@@ -1180,20 +1180,25 @@ one `user://`, and none of those runs may land in or overwrite what may be the p
 A run carrying any dev flag already falls outside the gate by being one; `--no-save` is what a
 flagless `tools/run.sh` session asks for the same thing with.
 
-**Written `day_under_way: false` the instant a day exists but has not yet been handed to the
-player** — `main._start_day()`'s own dawn, made before any of the title, or the title and then the
-day brief, is ever shown — **and written `day_under_way: true` the instant she actually starts
-playing it**: continuing from the title on a fresh run, from the day brief a resumed one opens on,
-or from the previous day's own end-of-day message straight into the next day, which has no gate at
-all between the two. Because the `false` write always lands before the day brief a resumed run
-shows itself, whatever the load just charged is already on disk by the time she is looking at that
+**Written `day_under_way: false` the instant a resumed run's own retry exists but has not yet been
+handed to the player** — `main._write_dawn_for_a_resumed_run()`, called right after
+`main._start_day()` builds it, before the title, or the title and then the day brief, is ever
+shown — **and written `day_under_way: true` the instant she actually starts playing a day**:
+continuing from the title on a fresh run, from the day brief a resumed one opens on, or from the
+previous day's own end-of-day message straight into the next day, which has no gate at all between
+the two. Because the `false` write above always lands before the day brief a resumed run shows
+itself, whatever the load just charged is already on disk by the time she is looking at that
 screen — so a kill at any instant finds exactly what is on screen, never a free retry of a day
-that was started and never a second charge for one abandoned day. The end-of-day message writes
-the same `false`, at the moment it comes up rather than at a dawn nothing yet stands behind. Nothing
-else writes: losing focus, a phone sending the game to the background, closing the window and
-quitting all still do what they always have — the game still pauses on focus loss (M161), the run
-log still closes — but none of them changes what a save holds, since a save is the run and the
-day, never the moment inside one (PLAYTEST-82).
+that was started and never a second charge for one abandoned day. **A fresh run writes nothing at
+boot at all** — merely opening the game to look at the title is not playing it, and there is no
+earlier charge on disk to protect — so the first write a fresh run or a held restart's next run
+ever makes is the `true` one, the instant its own title is actually dismissed; a save never
+appears just from looking at the title screen. The end-of-day message writes the same `false`
+that a resumed run's boot does, at the moment it comes up rather than at a dawn nothing stands
+behind. Nothing else writes: losing focus, a phone sending the game to the background, closing the
+window and quitting all still do what they always have — the game still pauses on focus loss
+(M161), the run log still closes — but none of them changes what a save holds, since a save is the
+run and the day, never the moment inside one (PLAYTEST-82).
 
 **A save holds the run, never the moment inside a day.** `GameState.save_snapshot()` — the seed,
 the day, nerves, resistance progress, scars, consumed one-shot events, the block arcs the run's own
