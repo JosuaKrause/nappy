@@ -466,7 +466,7 @@ alike.
 
 ---
 
-## M129 — A path through the city never has to cost · one route in nine still breaks
+## M129 — A path through the city never has to cost · one route in eight still breaks
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable
 > around … the routing should only cross the street at intersections"
@@ -477,23 +477,22 @@ alike.
 the wall reading are built and recorded (`DECISIONS.md`, M129, the four rules; M129, the leaf
 blower is a wall to walk past and a busker to stay near; M129, a wall is also what cannot be
 walked past). The probe, `tests/probes/m129_zero_cost_line.gd`, finds a zero-cost line along
-262 of 296 routes. The guarantee is not true for the rest, and what stands in them is almost
-all one shape: a route junction taken by several rows together (32 of the 34 broken routes),
-with `leaf_blower`, `homeless_yeller` and `roadblock` each in the cut on 23 to 27 of the 34. No sidewalk rule reaches a `roadblock` on a carriageway or a wall's wide field reaching
+258 of 296 routes. No body closes a walked sidewalk any more (`DECISIONS.md`, M129, no body
+closes the walked sidewalk), and keeping the parked van off it cost four act III routes their
+line: a van that is a wall by fit competes for the ground by a junction. The guarantee is not true
+for the rest, and what stands in them is almost all one shape: a route junction taken by several
+rows together, with `leaf_blower`, `homeless_yeller`, `roadblock` and now `delivery_van` in the
+cuts; the probe's own table names them per run. No sidewalk rule reaches a `roadblock` on a carriageway or a wall's wide field reaching
 over a crossing from one street out. The three placement rules refuse a candidate whose reach
 *together with everything already down* would close a junction, so a crossing the probe finds
 covered is one that either reached the day past the rules or is read as covered differently by
 the probe and the rule:
 
-- [ ] **A hard wall still stands on the route's own sidewalk in play.** *(2026-09-19: "I still
-      get hard walls on the side of the sidewalk that is on the path -- how can this be so hard to
-      do correctly?", [PLAYTEST-94](playtests/PLAYTEST-94.md).)* The player did not name the body,
-      the seed or the day. The route-sidewalk rule names four rows — the café tables, the market
-      stall, the roadworks and the ice cream van — and runs in the scheduler's candidate loop
-      only. Measure it rather than guess: over the probe's seeds, every solid body on a walked
-      sidewalk that leaves her no lane on that sidewalk (she needs 46px), by row and by the path
-      that placed it. The answer is a rule about *any* body that closes the walked sidewalk,
-      whichever row and whichever path, asserted in the suite at zero.
+- [ ] **The parked van at a junction's rim.** Since `delivery_van` is a wall by fit it is weighed
+      toward junction rims with the other walls (`Tuning.EVENT_WALL_RIM_WEIGHT`), and the
+      zero-cost-line share fell from 262 to 258 of 296, all four in act III. Whether a van
+      belongs at a rim at all, or the rim weight is for the rows that were walls by cost, is a
+      number in `src/autoload/tuning.gd` and the player's call on what a junction may carry.
 - [ ] **Which placements the three rules never see.** `_place_one`'s candidate loop is where
       the rules run. Find every other path a row reaches the day by — the calm-ground pass
       that covers a park by area, `_ensure_one_usable_park`, the seals a `SealPlanner` places

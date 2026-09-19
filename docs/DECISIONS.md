@@ -1,5 +1,58 @@
 # Decisions
 
+## M129 — No body closes the walked sidewalk · built 2026-09-19
+
+> "I still get hard walls on the side of the sidewalk that is on the path -- how can this be so
+> hard to do correctly?" ([PLAYTEST-94](playtests/PLAYTEST-94.md))
+
+The player named no body, seed or day, so it was measured before it was fixed. Agent commits on
+`feature/m129-walked-sidewalk-walls`; the probe is `tests/probes/m129_walked_sidewalk_walls.gd`
+and its outputs, before and after, are `evidence/m129-walked-sidewalk-walls-2026-09-19/`.
+
+**What was closing it.** Over six seeds by one day per act, 89 of 1869 walked-sidewalk bands had
+no lane she fits through: 86 were one `delivery_van` each, placed by the scheduler's own candidate
+loop, and 3 were a measuring artifact. None came from the four rows the wall rule named, from
+seals, closures, region walls or the park passes. The van was simply never in the rule: parked at
+the curb it leaves 48 − 22 = 26px to the frontage, and she needs 28px, twice
+`Tuning.PLAYER_BODY_RADIUS` — the pram rides ahead of her circle, not beside it, so it adds
+nothing sideways. (The 46px first written into the queue entry is one door's detain reach and
+was wrong.)
+
+**Built: a rule by fit, beside the rule by cost.** `_closes_the_band_by_its_own_placement` reads
+a row's own `obstructs_radius` against where its `pavement_side` stands it and calls it a wall
+when the gap left is under 28px; a wall gets zero copies on any cell that carries a route, as
+before. A second hole closed with it: a van could land on a cell of the walked sidewalk that the
+route does not itself step on, where the zero-copies rule does not look, so the cumulative check
+in the candidate loop asks the same physical question (`closes_a_walked_sidewalk_band`, shared by
+the probe and the suite). With the first alone the probe still found 2; with both, 0 of 1869.
+The three artifact bands were streets built over at one end, where the check demanded a lane to
+the band's raw corner; it now walks between the outermost real sidewalk tiles.
+
+**Every other placing path, by reading:** `SealPlanner`, `ClosurePlanner` and `RegionPlanner`
+each refuse a street the tree is on; the park pass places inside a calm block's own rect, which
+holds no sidewalk tile; the two `_ensure_*` passes only remove. None needed a change.
+
+**The poster crew stands against the building.** The rule by fit also caught `poster_crew`, an
+11px body centered on the band (21px each side). Rather than send it across the street it is
+sited `AGAINST_THE_BUILDING`, where it leaves 37px on the curb side and is friction again, which
+is also where a crew pasting posters works. **Open to overturn:** it can no longer appear on a
+square, since a row that stands against a building needs one beside it.
+
+**What it cost, measured.** `delivery_van` still plans 43.2 a day; 46 of about 1036 in the sample
+stand on a route street's far sidewalk where none did. The zero-cost-line share went 262 to 258
+of 296, all four in act III and all explained by the van, which as a wall is weighed toward
+junction rims; that is an open item under M129 in `TODO.md`. Two floors in `tests/test_events.gd`
+moved with the van leaving the friction pool, each keeping the margin it measured: the corridor's
+friction share 0.35 to 0.34 (measured 36.13%) and the narrow-friction share 0.40 to 0.39
+(42.55%). **Both are open to overturn.** The friction test's sampling guard asks for two samples
+where it asked for four, since the poster crew is now the whole of the population it samples.
+A suite test, two seeds by three days, asserts that no body and no set of bodies closes a walked
+sidewalk.
+
+**Left alone:** `_closes_the_run`, the pacing rule's street-wide check, makes the same raw-corner
+assumption the artifact exposed; nothing measured exercises it.
+
+
 ## M169 — The save symbol reads as a floppy disk · built 2026-09-19
 
 > "the save icon is basically a white square" ([PLAYTEST-94](playtests/PLAYTEST-94.md), on a phone)
