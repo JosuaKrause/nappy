@@ -345,20 +345,6 @@ through `tools/run.sh --start-escape --seed 4242`.
 
 ---
 
-## M169 — The save symbol reads as a floppy disk · asked for 2026-09-19
-
-> "the save icon is basically a white square"
-
-[PLAYTEST-94](playtests/PLAYTEST-94.md). `assets/ui/save.svg` tells its shutter and its label from
-the body by opacity alone (1.0 and 0.35 against 0.85, all white), and `SaveIndicator` tints and
-fades the whole texture with one modulate, so on a phone the three merge.
-
-- [ ] **The shutter and the label are told from the body by shape** — cut out as holes, or the
-      body drawn as an outline — so the silhouette survives one flat tint at the size it is shown.
-      Look at it at the phone's scale before proposing it.
-
----
-
 ## M167 — The father's legs read as legs · asked for 2026-09-19
 
 > "the leg positions are correct now. we can use it for now (and merge) but in parallel do another fix attempt to just make the legs look like legs"
