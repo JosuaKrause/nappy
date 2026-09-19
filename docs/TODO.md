@@ -315,6 +315,8 @@ player identified as correct and which stays untouched.
       position of the shoe. The [straight-contact candidate](evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/README.md)
       awaits judgment of those contacts before installation. [PLAYTEST-87](playtests/PLAYTEST-87.md) rejects a before/after
       comparison because the failed frame is not a useful review target. Reuse the accepted woman
+      review format and show attempts early: [PLAYTEST-89](playtests/PLAYTEST-89.md) welcomes
+      repeated player feedback before further internal visual revisions. Reuse the woman
       pushing pipeline without inventing another strategy: one clean sprite sheet contains the
       father's A/C/B/C loop in all eight runtime directions, and native/6× GIFs animate the same
       four 190ms phases in N, NE, E, SE, S, SW, W, NW order. Front and back B preserve the accepted

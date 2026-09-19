@@ -19118,3 +19118,9 @@ projection and assembly command. N/S, NE/NW and all A/C files remain byte-identi
 accepted portions of the prior sheet, and the upper pixels stay exact. The complete clean sheet
 and native/6× A/C/B/C GIFs are a new review candidate. Hip joins, the projected diagonal and the
 overall animation still await the player's judgment; no runtime image or shared procedure changed.
+
+[PLAYTEST-89](playtests/PLAYTEST-89.md) changes the collaboration cadence: show attempts early
+and welcome repeated visual feedback instead of spending a long time on internal revisions.
+The player's CLI cannot display images, so a review is delivered by pushing the artifacts and
+embedding them in the PR description or naming their exact location there. The complete candidate
+sheet and loops were pushed and embedded in PR #221 before the visual question was reissued.
