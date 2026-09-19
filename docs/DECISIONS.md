@@ -40,7 +40,7 @@ only true of main-road tiles. Day 1 is the day held, because `tests/test_crowd.g
 floor, ceiling and crossing cost are stated against it; the worst-of-eight crossing reads 27.8
 of the meter against 26.2 before, under the half-meter line, since the shorter reach lightens
 what a crossing walks through by about what the ground stops giving back.
-**Open to overturn, and the orchestrator's choice rather than the player's:** one multiplier
+**The orchestrator's choice, shown to the player with the table above and accepted** *(2026-09-19: "numbers look good")*: one multiplier
 serves the whole run, so day 9's main road goes from giving a sliver back to costing 1.36 a
 second — the spine in the emptied acts is dearer than it was, which *"as expensive as before"*
 does not ask for. A multiplier per act, or more walkers on the spine's own sidewalks, would hold
