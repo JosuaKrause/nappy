@@ -350,6 +350,18 @@ item below for as long as looking takes.
   `physics` line is per tick and the `process` line is the worst frame of the last second, so
   `fps` is the number that says whether the frame moved. **Does it?** Same record, M141.
 
+- **Walk day 1 along the tinted kerbs and look at both sides of every street.** Five rows are
+  walls by passability now — the café tables, the market stall, the roadworks, the ice cream van
+  and the shouting man — so none of them stands on the sidewalk the route is drawn down, and day
+  1's own side carries the dog walker, the parked van, the chatting mother and a playground and
+  nothing else. Two questions a rig cannot answer. **Does the walked side read as empty**, or does
+  the far side's café and stall carry the street on their own? And **is the far side visible
+  enough to be the answer** — a wall across the street is only a route decision if she can see it
+  is there before she commits to the side she is on. `tools/run.sh --seed 4242 --day 1`, layer 5
+  for the routes and layer 4 for the readout. The other half of the same look: a wall on a route
+  street's far sidewalk is rare on purpose (0 to 8 a day against 52 to 86 further out), so if the
+  street opposite reads as empty too, the weight is the number to argue about.
+
 ## What is untested by a human, listed so nobody mistakes arithmetic for a verdict
 
 
