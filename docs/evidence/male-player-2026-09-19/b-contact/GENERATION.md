@@ -4,7 +4,13 @@ This record contains the four editable pushing B-pose corrections and their sour
 The illustrated runtime PNGs retain the original registration; source and raster leg poses
 therefore differ in these four assets. This is source evidence, not a completed raster transfer.
 
-The [father-only splice trial](loops-2026-09-19/README.md) provides the requested clean
+The [straight-contact trial](straight-contact-2026-09-19/README.md) is the current review
+candidate: a new father-only donor keeps the near hip, knee and shoe on a continuous backward
+chain. Side and front diagonal use the authorized splice construction, with the diagonal's
+trailing foot raised by the recorded projection. Accepted N/S, NE/NW and every A/C frame
+remain byte-identical to the previous sheet. Complete-image approval is still required.
+
+The [retained father-only splice trial](loops-2026-09-19/README.md) preserves the rejected
 eight-direction A/C/B/C sprite sheet and native/6× animation loops. It preserves A's upper pixels
 and native registration, mirrors A's front/back lower body, and uses a retained father leg drawing
 for the side/front-diagonal B trial. [PLAYTEST-88](../../../playtests/PLAYTEST-88.md) accepts

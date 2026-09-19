@@ -19102,3 +19102,19 @@ thigh drawn over the far advancing leg. Preserve the accepted N/S and NE/NW fram
 A/C frame, the native canvases and fixed upper-body landmarks. The player-authorized
 father-only splice remains available, but approval of the complete sheet and loops still
 precedes installation and promotion of a successful method into the shared procedure.
+
+The next trial generated lower-body-only donors to remove the full-figure proportion conflict.
+The side's first result failed overlap; its one targeted retry produced the backward near
+hip–knee–shoe chain. Both separately generated front-diagonal attempts failed: the first kept
+the forward-knee fold, and its retry restored the foreground advancing thigh. Generation stopped
+for that approach. The existing authorized side-donor splice and diagonal projection were then
+applied to the corrected side donor. At native and enlarged sizes, the resulting E/W and SE/SW
+contacts showed the continuous trailing foreground leg without the old kink; the diagonal is
+explicitly a projected splice, not a separately drawn three-quarter lower body.
+
+The [straight-contact recipe](evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/README.md)
+retains the new donor, exact prompts, failed-attempt records, input hashes, crop, fit, placement,
+projection and assembly command. N/S, NE/NW and all A/C files remain byte-identical to the
+accepted portions of the prior sheet, and the upper pixels stay exact. The complete clean sheet
+and native/6× A/C/B/C GIFs are a new review candidate. Hip joins, the projected diagonal and the
+overall animation still await the player's judgment; no runtime image or shared procedure changed.

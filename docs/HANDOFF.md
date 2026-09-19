@@ -290,8 +290,9 @@ checks and worktrees can move independently of this file.
   paired measurements show an 84.7–87.1% reduction in query medians, while whole-frame tails remain.
   Phone measurements and CPU attribution remain open. PLAYTEST-86 is its performance clarification.
   Fetch the live PR and inspect its evidence before continuing.
-- **PR #221 — M160, the father's B contact puts the other leg forward** requires corrected E/W
-  and SE/SW contacts. [PLAYTEST-88](playtests/PLAYTEST-88.md) accepts N/S and NE/NW after
+- **PR #221 — M160, the father's B contact puts the other leg forward** awaits judgment of the
+  [straight-contact sheet and loops](evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/README.md)
+  for E/W and SE/SW. [PLAYTEST-88](playtests/PLAYTEST-88.md) accepts N/S and NE/NW after
   clarifying the mirrored pairs; keep those and every A/C frame fixed. The near knee must
   trail its hip, rather than folding a forward leg backward at the shin. The review format
   remains the clean eight-direction A/C/B/C sheet and native/6× animation loops from
