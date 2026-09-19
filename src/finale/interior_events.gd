@@ -22,6 +22,10 @@ extends Node
 ## explosion *is* in here is a beat: every `Tuning.FINALE_EXPLOSION_INTERVAL` the windows flash and
 ## the meter takes a hit, wherever in the building she is standing. That is the same row's field
 ## reduced to the only part of it that reaches through a wall.
+##
+## **And between them, light with no noise behind it.** A distant flash every three to seven
+## seconds lights one side of every hallway and does nothing else at all — see
+## `_light_the_far_windows()`. It is the night outside; the bangs are what she is charged for.
 
 ## How much an explosion outside costs her, as points on the meter, one bang at a time. Taken from
 ## the row's own field rather than invented: `finale_explosion` emits its `intensity` for its
@@ -55,6 +59,13 @@ var _seed := 0
 var _until_the_next_explosion := 0.0
 ## The basement's vents, in the order she meets them walking the corridor. Rebuilt by `restart()`.
 var _vents: Array[Vent] = []
+## Seconds until the next distant flash in the hallway windows, and the stream the waits are drawn
+## from. **Its own stream, seeded from the same run seed**, so a seed replays the same night and no
+## draw here can ever move a placement: the placement rolls happen on a local generator inside
+## `restart()`, and a shared one would make how often the windows flash a thing that decides where
+## the fire is.
+var _until_the_next_distant_flash := 0.0
+var _flashes := RandomNumberGenerator.new()
 ## The masked man currently on the stairs, or null between his runs. Held so this can tell *his*
 ## instance retiring from any other row's — see `_send_the_masked_man_again()`.
 var _pursuer: EventInstance = null
@@ -89,6 +100,8 @@ func restart() -> void:
 	_until_the_next_explosion = Tuning.FINALE_EXPLOSION_INTERVAL
 	_pursuer = null
 	_until_the_next_pursuer = Tuning.FINALE_PURSUER_RESPAWN_SECONDS
+	_flashes.seed = _seed
+	_until_the_next_distant_flash = _wait_for_the_next_distant_flash()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _seed
 	_place_the_fire(rng)
@@ -285,6 +298,10 @@ static func _without_its_aftermath(def: EventDef) -> EventDef:
 
 func _physics_process(delta: float) -> void:
 	_retire_finished()
+	# **The far windows before the near bang**, so that on a frame carrying both, the bang's own
+	# flash — every window at once — is the one left on screen. A distant flash is the quieter
+	# statement and must never overwrite the loud one.
+	_light_the_far_windows(delta)
 	_explode_every_so_often(delta)
 	_blow_the_vents(delta)
 	_send_the_masked_man_again(delta)
@@ -311,6 +328,28 @@ func _explode_every_so_often(delta: float) -> void:
 	var burst := _spawn(EventCatalogue.by_id(_EXPLOSION_ID), _player.global_position)
 	if burst:
 		burst.resume(burst.def.telegraph_time, 0.0, INF)
+
+## The rest of the night: something going off far enough away that only the light reaches her.
+## *(2026-09-19: "the flashing lights in the window are too rare.")*
+##
+## **A picture and nothing else.** No `EventInstance`, no field, nothing on the meter — which is
+## the whole reason this is not simply a shorter `FINALE_EXPLOSION_INTERVAL`: the player asked for
+## the light and said nothing about the noise, and an explosion is loud by definition. A bang close
+## enough to shake the building still costs her exactly what it did.
+##
+## Nothing is logged for one either. The run log records what the code cannot recompute and what
+## answers an open question; a line every few seconds saying the windows lit would be neither, and
+## the loud bangs are already visible in the log through what they charge.
+func _light_the_far_windows(delta: float) -> void:
+	_until_the_next_distant_flash -= delta
+	if _until_the_next_distant_flash > 0.0:
+		return
+	_until_the_next_distant_flash = _wait_for_the_next_distant_flash()
+	_interior.flash_windows_on_one_side(_flashes.randf() < 0.5)
+
+func _wait_for_the_next_distant_flash() -> float:
+	return _flashes.randf_range(Tuning.FINALE_DISTANT_FLASH_INTERVAL_MIN,
+			Tuning.FINALE_DISTANT_FLASH_INTERVAL_MAX)
 
 func _retire_finished() -> void:
 	var survivors: Array[EventInstance] = []

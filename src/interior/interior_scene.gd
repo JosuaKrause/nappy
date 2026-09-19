@@ -180,6 +180,7 @@ func _rebuild_walls() -> void:
 	# Wide doors are drawn after the repeating 32px wall strips. Their own centre registration keeps
 	# both leaves visible instead of letting a neighbouring wall crop one side.
 	_window_sprites.clear()
+	_window_is_west.clear()
 	for at: Vector2i in _plan.walls:
 		var kind: InteriorTile.Kind = _plan.walls[at]
 		if kind == InteriorTile.Kind.LIFT_DOOR or kind == InteriorTile.Kind.ENTRANCE_DOOR:
@@ -188,6 +189,7 @@ func _rebuild_walls() -> void:
 		var sprite := _add_wall_sprite(at, texture)
 		if sprite and kind == InteriorTile.Kind.WINDOW:
 			_window_sprites.append(sprite)
+			_window_is_west.append(_is_west_of_its_hallway(at))
 	for at: Vector2i in _plan.walls:
 		var kind: InteriorTile.Kind = _plan.walls[at]
 		if kind != InteriorTile.Kind.LIFT_DOOR and kind != InteriorTile.Kind.ENTRANCE_DOOR:
@@ -234,6 +236,10 @@ func _add_wall_sprite(at: Vector2i, texture: Texture2D) -> Sprite2D:
 
 ## Every hallway window in the building, kept so an explosion can light all of them at once.
 var _window_sprites: Array[Sprite2D] = []
+## For each of those, whether it is on the west half of its own hallway — what lets a distant
+## flash light one side of the corridor and not the other. Parallel to `_window_sprites` and built
+## with it, rather than asked of the tile at flash time, since a window never moves.
+var _window_is_west: Array[bool] = []
 ## Seconds of lit window left, or 0 for none. Counted down in `_process()` rather than handed to a
 ## `SceneTreeTimer`, so the flash freezes with the rest of the game behind a pause screen instead
 ## of burning down while nothing is being played.
@@ -252,10 +258,57 @@ func flash_windows() -> void:
 	for sprite in _window_sprites:
 		sprite.texture = HALLWAY_WINDOW_FLASH
 
+## Something going off **far away**: the windows on one side of every hallway light, and nothing
+## else happens at all. *(2026-09-19: "the flashing lights in the window are too rare.")*
+##
+## **One side, not a scatter.** A random subset of all the windows in the building can light none
+## at all in the hallway she is standing in, which is a flash she does not see — and the ask was
+## for more flashes she does see. Half a corridor lighting says *over there* and always leaves
+## something lit in whichever hallway she is in. Which half is the caller's roll, so consecutive
+## flashes are not all from the same direction.
+##
+## No instance, no field, nothing on the meter: this is light without noise, which is the whole
+## reason it is not simply more explosions — see `Tuning.FINALE_DISTANT_FLASH_INTERVAL_MIN`.
+func flash_windows_on_one_side(west: bool) -> void:
+	_window_flash_left = Tuning.FINALE_WINDOW_FLASH_SECONDS
+	for i in _window_sprites.size():
+		if _window_is_west[i] == west:
+			_window_sprites[i].texture = HALLWAY_WINDOW_FLASH
+
+## Whether a window at `at` is on the west half of the hallway it belongs to, decided against that
+## hallway's own midpoint waypoint rather than against any arithmetic about where the parts are
+## laid out — so moving a part, or widening a hallway, moves this with it.
+func _is_west_of_its_hallway(at: Vector2i) -> bool:
+	var middle := at.x
+	var nearest := 1 << 30
+	for id in ["hallway_third", "hallway_second", "hallway_first"]:
+		if not _plan.waypoints.has(id):
+			continue
+		var here: Vector2i = _plan.waypoints[id]
+		var gap := absi(at.x - here.x)
+		if gap < nearest:
+			nearest = gap
+			middle = here.x
+	return at.x < middle
+
 ## Whether a flash is on screen right now — what `tests/test_interior.gd` asks, since a texture
 ## swap is not something a headless run can see.
 func windows_are_flashing() -> bool:
 	return _window_flash_left > 0.0
+
+## How many windows are showing their lit picture — the other half of the same question, since a
+## near bang lights every one of them and a distant flash lights one side of each hallway.
+func windows_lit() -> int:
+	var lit := 0
+	for sprite in _window_sprites:
+		if sprite.texture == HALLWAY_WINDOW_FLASH:
+			lit += 1
+	return lit
+
+## How many hallway windows there are at all, so a test counting lit ones has something to compare
+## against rather than a number of its own.
+func window_count() -> int:
+	return _window_sprites.size()
 
 func _process(delta: float) -> void:
 	if _window_flash_left <= 0.0:

@@ -2186,9 +2186,30 @@ const FINALE_EXIT_REACH := TILE_SIZE * 1.5
 ## hallway windows to flash more than once without the basement becoming a drum.
 const FINALE_EXPLOSION_INTERVAL := 22.0
 
-## How long a hallway window holds its lit picture when an explosion goes off — *"one or two
-## frames"* at 60fps, taken as a span in seconds so it does not depend on the frame rate.
+## How long a hallway window holds its lit picture when something goes off outside — *"one or two
+## frames"* at 60fps, taken as a span in seconds so it does not depend on the frame rate. The same
+## length for the near bang and the far ones: a flash is the same event seen through the same
+## window, and what says *far* is that only one side of the corridor lights.
 const FINALE_WINDOW_FLASH_SECONDS := 0.12
+
+## The shortest and longest wait between two **distant** flashes in the hallway windows, in
+## seconds. *(2026-09-19: "the flashing lights in the window are too rare.")*
+##
+## **Light without noise, and that is the whole of why these exist.** A flash was only ever the
+## near bang's own cue, one every `FINALE_EXPLOSION_INTERVAL` (22s), which is about four over the
+## whole clock — and an explosion is loud: shortening that interval would have made the windows
+## flash more often and made the building cost more in the same stroke, which the player did not
+## ask for. A distant flash is a picture and nothing else: no instance, no field, nothing on the
+## meter. So the night outside reads as a city being shelled, while what she is *charged* for is
+## still only the bangs close enough to shake the building.
+##
+## **A band rather than a period**, drawn from the section's own seeded stream so a seed replays
+## the same night: shelling on a metronome reads as a machine, and the one thing a flash must not
+## become is a beat she can count. Three to seven seconds is roughly five times as many flashes as
+## the explosions alone give — often enough to be weather, far enough apart that a bang still
+## arrives as its own event.
+const FINALE_DISTANT_FLASH_INTERVAL_MIN := 3.0
+const FINALE_DISTANT_FLASH_INTERVAL_MAX := 7.0
 
 ## How long after the masked man has finished his run before another one comes up the same shaft,
 ## in seconds. *(2026-09-19: "then the pursuing guy should respawn forcing to switch the side

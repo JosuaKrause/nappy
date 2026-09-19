@@ -98,7 +98,7 @@ src/
 	interior_tileset.gd   the interior's own TileSet, built in code from the SVGs it binds
 	interior_scene.gd     the WorldContext node: paints the building once, every door's
 	                      fade-teleport-fade transition, the service exit, and the hallway
-	                      windows that flash when an explosion goes off
+	                      windows that flash for a bang outside and for the far ones between them
   finale/                 the escape sequence itself, behind --start-escape
 	finale_controller.gd  the two sections and the one clock they share; a lost section comes up
 	                      on the brief screen and starts again where it began, at no Nerve cost
