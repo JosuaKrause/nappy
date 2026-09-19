@@ -364,7 +364,8 @@ through `tools/run.sh --start-escape --seed 4242`.
       are too rare", [PLAYTEST-96](playtests/PLAYTEST-96.md).)* A window lights only with an
       explosion, every 22 seconds (`Tuning.FINALE_EXPLOSION_INTERVAL`), and an explosion costs
       excitement. Built as light without noise, open to overturn: distant flashes light the
-      windows between the loud ones, on an irregular interval of their own a few seconds long,
+      windows between the loud ones, the time between two flashes random between 0.1 and 5 seconds with a mean of 1.3
+      seconds on a smooth curve *("a biased random distribution … the rest of the curve is smooth")*,
       and cost nothing; the loud explosions stay at 22 seconds and still flash. **Every window
       flashes together, always** *("a single window cannot flash by itself")*. The alternative
       the player may prefer is simply more explosions, which is one constant and makes the

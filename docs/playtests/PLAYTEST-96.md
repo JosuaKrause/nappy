@@ -45,6 +45,16 @@ as something far off in one direction"*:
    is ever left dark during a flash. *The random subset was the orchestrator's idea and was never
    the player's; it goes.*
 
+## How often, in the player's numbers
+
+> "do a biased random distribution between 100ms and 5s between flashes where the mean is 1.3s and
+> the rest of the curve is smooth"
+
+5. **The time between two flashes is random, between 0.1 and 5 seconds, with a mean of 1.3
+   seconds, on a smooth curve** — biased toward the short end, no steps and no spike, and never
+   outside the two bounds. This answers *how often is right* and replaces the orchestrator's
+   first figure of 3 to 7 seconds.
+
 ## What was not spoken to
 
-How often is right, whether every flash should be heard, and the length of a flash.
+Whether every flash should be heard, and the length of a flash.
