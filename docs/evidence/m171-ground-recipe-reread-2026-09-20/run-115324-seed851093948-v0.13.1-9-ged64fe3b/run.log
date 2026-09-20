@@ -1,0 +1,430 @@
+nappy run log  2026-09-20T11:53:24  version v0.13.1-9-ged64fe3b
+   0.0  texture  atlas page 'ui' loaded in the startup: 0.6 ms, 262 x 420
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.2 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 0.9 ms, 240 x 338
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 0.4 ms, 454 x 358
+   0.0  texture  atlas page 'ground' loaded in the startup: 2.0 ms, 308 x 342
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.5 ms, 144 x 162
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.5 ms, 190 x 218
+   0.0  texture  atlas page 'events' loaded in the startup: 7.3 ms, 582 x 936
+   0.0  texture  atlas page 'father' loaded in the startup: 1.0 ms, 168 x 242
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 24.6 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/garbage_sacks_pile.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/roof_duct_corner.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/litter_newspaper.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/roof_hvac_unit.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/litter_cup.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/litter_apple.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/garbage_sack.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/litter_bag.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/tree_pit.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/roof_water_tank.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/roof_hvac_unit_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/roof_duct_straight.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/roof_skylight.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/tree_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/tree_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/bollard.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/roof_vent_stack.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/litter_can.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/props/roof_skylight_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_main.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/mountain.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/plaza.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/scree.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/fence.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_main_line_n.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_main_line_w.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_s.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_line_n.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_e.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_n.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/forest.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/alley_draft.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/crossing_v.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_w.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_w.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/water.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/crossing_h.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/main_crosswalk.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/alley_base.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/main_edge_red.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_base.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_hairline_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/yellow_main_line.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/crosswalk.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_cracked_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/yellow_half_line.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_broken_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/grass_base.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_hairline_a.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_cracked_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/asphalt_base.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_hairline_a.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_cracked_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_hairline_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_broken_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/grass_feature_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_hairline_a.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_cracked_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_broken_a.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_hairline_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_broken_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_cracked_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/road_cracked_broken_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/sidewalk_cracked_cracked_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/grass_feature_a.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/grass_feature_c.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/alley_cracked_broken_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/layers/curbstone.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/alley.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/crossing_main_e.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/crossing_main_n.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/crossing_main_s.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/bulkhead.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_line_w.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/precinct.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sand.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_main_line_s.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/grass.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/spoiled.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/stoop.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_e.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/quiet_square.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_main_line_e.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_line_s.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/crossing_main_w.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_main_s.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/road_line_e.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/courtyard.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/tiles/sidewalk_kerb_n.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_front_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_front_diagonal_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_front_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_front_a.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_side_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_front_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_back_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_front_diagonal_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_side_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_carrying_front_diagonal_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_back_c.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_front_diagonal_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_back_diagonal_c.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_back_diagonal_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_back_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_carrying_back_diagonal_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_front_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_back_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_carrying_front_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_carrying_back_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_back_diagonal_a.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_back_diagonal_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_back_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_carrying_back_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/pram_back.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_back_diagonal_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_side_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_back_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_back_diagonal_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_carrying_back_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_back_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_back_diagonal_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_front_c.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_side_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_back_a.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/pram_back_diagonal.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_carrying_side_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_side_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_front_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_carrying_front_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_carrying_back_diagonal_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_front_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_side_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_side_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_back_diagonal_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_carrying_back_diagonal_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_front_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_back_b.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_carrying_front_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_front_diagonal_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_front_diagonal_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_side_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_carrying_front_diagonal_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_front_diagonal_c.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_side_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/pram_side.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_carrying_front_diagonal_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_carrying_side_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_front_diagonal_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/father_carrying_side_c.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/pram_front_diagonal.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_front_diagonal_a.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_carrying_back_diagonal_b.png read from disk in 0.2 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/pram_front.png read from disk in 0.1 ms
+   0.0  texture  transfer res://assets/illustrated/svg-transfer/rig/mother_front_diagonal_a.png read from disk in 0.2 ms
+
+day 1  act 1  run seed 851093948  city seed 851093948  length 180.0s
+   0.0  texture  ground composed: 66 sources over 65 pictures into 424x444 in 23.3 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  plan     closed: roadworks v(1,2)
+   0.0  plan     calm: 1 quiet_square, 2 park, 3 courtyard, 4 forest
+   0.0  plan     events: alley_mouse x4, burst_water_main x28, cafe_tables x62, car_accident x20, cat_dash x8, chatting_mother x2, delivery_van x46, dog_walker x22, fallen_tree, homeless_yeller x13, leaf_blower x13, loose_dog x15, market_stall x47, moving_van x60, pigeon_flock x5, playground x2, scaffolding x13, skip x14
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  save     wrote the save (day under way)
+   0.0  crowd    walked into somebody at (80,84) | exc 0, in 8.6/s (crowd 26.6, events 0.0), sleep 0
+   1.0  frame    fps 89, worst frame 133.3ms, draws 301, objects 1832, primitives 4445, process 110.07ms, physics 9.82ms
+   1.6  crowd    walked into somebody at (78,85) | exc 3, in 4.2/s (crowd 22.2, events 0.0), sleep 0
+   1.7  cross    stepped into the road at (78,86), mid-block
+   2.0  frame    fps 117, worst frame 15.8ms, draws 288, objects 1866, primitives 4345, process 14.42ms, physics 1.53ms
+   3.0  frame    fps 119, worst frame 15.5ms, draws 608, objects 2638, primitives 5664, process 14.22ms, physics 1.52ms
+   3.4  cross    stepped into the road at (73,85), at a zebra
+   4.0  frame    fps 120, worst frame 14.4ms, draws 610, objects 2618, primitives 5645, process 10.72ms, physics 1.46ms
+   4.8  path     onto the corridor at (69,85), after 4.8s off it
+   5.0  frame    fps 119, worst frame 10.7ms, draws 424, objects 2172, primitives 4661, process 14.40ms, physics 1.53ms
+   5.4  near     homeless_yeller at (61,84), 210px, exc 0, in 0.2/s (crowd 0.0, events 0.2), sleep 2
+   6.0  frame    fps 119, worst frame 14.0ms, draws 431, objects 2146, primitives 4705, process 13.97ms, physics 1.49ms
+   6.5  near     homeless_yeller at (61,85), 113px, exc 2, in 10.9/s (crowd 0.0, events 10.9), sleep 2
+   7.0  frame    fps 120, worst frame 13.9ms, draws 434, objects 2150, primitives 4740, process 10.84ms, physics 1.64ms
+   7.2  near     homeless_yeller at (61,86), 61px, exc 5, in 9.7/s (crowd 0.0, events 9.6), sleep 3
+   7.6  path     off the corridor at (61,84), after 2.8s on it
+   8.0  path     onto the corridor at (61,83), after 0.4s off it
+   8.0  frame    fps 119, worst frame 10.6ms, draws 431, objects 1998, primitives 4359, process 13.92ms, physics 1.70ms
+   9.0  frame    fps 119, worst frame 14.3ms, draws 434, objects 2011, primitives 4412, process 14.25ms, physics 1.57ms
+  10.0  frame    fps 119, worst frame 14.9ms, draws 432, objects 1988, primitives 4372, process 14.90ms, physics 1.64ms
+  10.6  near     homeless_yeller at (61,83), 210px, exc 5, in 3.0/s (crowd 1.4, events 2.0), sleep 4
+  11.0  frame    fps 120, worst frame 14.4ms, draws 451, objects 2229, primitives 5116, process 10.47ms, physics 1.51ms
+  11.5  cross    stepped into the road at (61,73), at a zebra
+  12.0  frame    fps 119, worst frame 10.9ms, draws 291, objects 1818, primitives 4305, process 14.38ms, physics 1.53ms
+  13.0  frame    fps 119, worst frame 16.7ms, draws 374, objects 2008, primitives 4729, process 14.44ms, physics 1.52ms
+  14.1  frame    fps 119, worst frame 16.7ms, draws 287, objects 1726, primitives 4222, process 12.69ms, physics 1.46ms
+  15.1  frame    fps 119, worst frame 16.7ms, draws 301, objects 1876, primitives 4669, process 13.76ms, physics 1.50ms
+  16.1  frame    fps 117, worst frame 16.7ms, draws 302, objects 1901, primitives 4711, process 16.68ms, physics 1.53ms
+  16.8  ahead    loose_dog comes at her from 0px in front of her at (47,71)
+  17.1  frame    fps 118, worst frame 16.7ms, draws 299, objects 1895, primitives 4649, process 14.73ms, physics 1.60ms
+  17.3  path     off the corridor at (45,71), after 9.2s on it
+  17.3  cross    stepped into the road at (45,71), at a signalled crossing
+  17.9  near     loose_dog (telegraph) at (39,71), 140px, exc 5, in 6.9/s (crowd 4.3, events 2.7), sleep 7
+  18.1  frame    fps 120, worst frame 16.7ms, draws 312, objects 1888, primitives 4491, process 10.71ms, physics 1.68ms
+  18.1  near     loose_dog (telegraph) at (41,71), 77px, exc 7, in 6.6/s (crowd 2.1, events 4.3), sleep 7
+  18.3  near     loose_dog (telegraph) at (41,71), 42px, exc 8, in 4.0/s (crowd 0.0, events 4.0), sleep 7
+  18.4  near     loose_dog (telegraph) at (42,71), 20px, exc 8, in 3.8/s (crowd 0.2, events 3.5), sleep 7
+  18.6  path     onto the corridor at (41,71), after 1.4s off it
+  19.1  frame    fps 118, worst frame 25.0ms, draws 413, objects 2101, primitives 5037, process 14.65ms, physics 1.53ms
+  20.1  frame    fps 116, worst frame 16.7ms, draws 299, objects 1875, primitives 4485, process 23.96ms, physics 1.78ms
+  21.1  frame    fps 120, worst frame 16.7ms, draws 299, objects 1847, primitives 4456, process 10.73ms, physics 1.64ms
+  22.1  frame    fps 118, worst frame 16.7ms, draws 294, objects 1706, primitives 4104, process 15.58ms, physics 1.74ms
+  22.9  cross    stepped into the road at (31,68), mid-block
+  23.1  frame    fps 118, worst frame 16.7ms, draws 424, objects 2008, primitives 4406, process 14.37ms, physics 1.53ms
+  24.1  frame    fps 120, worst frame 16.7ms, draws 433, objects 2030, primitives 4544, process 14.01ms, physics 1.69ms
+  25.1  path     off the corridor at (32,61), after 6.5s on it
+  25.1  frame    fps 119, worst frame 16.7ms, draws 433, objects 2233, primitives 4955, process 11.25ms, physics 1.65ms
+  25.7  cross    stepped into the road at (31,60), at a zebra
+  26.2  frame    fps 119, worst frame 8.3ms, draws 422, objects 2214, primitives 4803, process 13.53ms, physics 1.55ms
+  27.2  frame    fps 119, worst frame 16.7ms, draws 253, objects 1803, primitives 4030, process 21.11ms, physics 1.55ms
+  27.5  near     moving_van at (29,52), 118px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 11
+  28.2  frame    fps 118, worst frame 16.7ms, draws 251, objects 1800, primitives 4000, process 11.53ms, physics 1.53ms
+  28.2  turn     doubled back 180°
+  28.5  cross    stepped into the road at (29,58), at a zebra
+  29.2  frame    fps 119, worst frame 8.3ms, draws 426, objects 2230, primitives 4875, process 13.51ms, physics 1.57ms
+  30.2  path     onto the corridor at (29,62), after 5.1s off it
+  30.2  frame    fps 119, worst frame 16.7ms, draws 426, objects 2027, primitives 4469, process 14.14ms, physics 1.48ms
+  31.2  frame    fps 120, worst frame 16.7ms, draws 440, objects 2048, primitives 4677, process 11.06ms, physics 1.54ms
+  32.2  frame    fps 119, worst frame 16.7ms, draws 429, objects 2027, primitives 4518, process 13.64ms, physics 1.52ms
+  33.2  frame    fps 118, worst frame 16.7ms, draws 574, objects 2390, primitives 5220, process 14.84ms, physics 1.57ms
+  34.2  frame    fps 118, worst frame 16.7ms, draws 409, objects 2007, primitives 4312, process 14.73ms, physics 1.63ms
+  35.2  frame    fps 117, worst frame 25.0ms, draws 408, objects 1987, primitives 4269, process 23.06ms, physics 1.59ms
+  36.2  frame    fps 118, worst frame 16.7ms, draws 405, objects 2010, primitives 4293, process 14.01ms, physics 1.63ms
+  36.5  ahead    loose_dog comes at her from 0px in front of her at (19,62)
+  36.9  near     loose_dog (telegraph) at (19,57), 139px, exc 0, in 1.1/s (crowd 0.0, events 1.2), sleep 15
+  37.2  near     loose_dog (telegraph) at (19,58), 75px, exc 0, in 3.4/s (crowd 0.0, events 3.4), sleep 15
+  37.3  frame    fps 118, worst frame 8.3ms, draws 440, objects 2179, primitives 4725, process 14.12ms, physics 1.64ms
+  37.4  near     loose_dog (telegraph) at (19,59), 41px, exc 0, in 6.4/s (crowd 2.3, events 4.4), sleep 15
+  37.5  near     loose_dog (telegraph) at (19,59), 20px, exc 0, in 8.0/s (crowd 3.3, events 4.7), sleep 15
+  37.6  cross    stepped into the road at (19,59), at a zebra
+  38.3  frame    fps 115, worst frame 25.0ms, draws 281, objects 1829, primitives 4103, process 24.25ms, physics 1.95ms
+  39.3  frame    fps 119, worst frame 8.3ms, draws 246, objects 1590, primitives 3528, process 14.53ms, physics 1.58ms
+  39.5  near     delivery_van at (15,51), 149px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 16
+  40.3  frame    fps 119, worst frame 8.3ms, draws 424, objects 1998, primitives 4419, process 13.83ms, physics 1.59ms
+  41.3  frame    fps 119, worst frame 16.7ms, draws 428, objects 2055, primitives 4503, process 13.97ms, physics 1.59ms
+  42.0  closure  saw the roadworks on v(1,2) from (19,47)
+  42.3  frame    fps 119, worst frame 16.7ms, draws 443, objects 2280, primitives 5121, process 12.87ms, physics 1.60ms
+  42.5  path     off the corridor at (19,45), after 12.3s on it
+  42.5  cross    stepped into the road at (19,45), at a zebra
+  43.1  path     onto the corridor at (20,44), after 0.6s off it
+  43.3  frame    fps 118, worst frame 16.7ms, draws 440, objects 2183, primitives 4909, process 14.40ms, physics 1.65ms
+  44.3  frame    fps 119, worst frame 8.3ms, draws 610, objects 2692, primitives 5947, process 15.07ms, physics 1.66ms
+  44.7  near     leaf_blower at (29,48), 188px, exc 0, in 0.2/s (crowd 0.0, events 0.2), sleep 18
+  45.3  frame    fps 120, worst frame 16.7ms, draws 443, objects 2287, primitives 5062, process 10.63ms, physics 1.61ms
+  45.8  road     3.4s on the road (2.8s of it carriageway), (19,45) -> (27,43)
+  46.3  frame    fps 119, worst frame 8.3ms, draws 446, objects 2262, primitives 5086, process 14.77ms, physics 1.58ms
+  47.3  frame    fps 119, worst frame 16.7ms, draws 288, objects 1636, primitives 3767, process 14.35ms, physics 1.51ms
+  48.3  frame    fps 118, worst frame 25.0ms, draws 502, objects 2114, primitives 4849, process 13.91ms, physics 1.80ms
+  49.3  frame    fps 110, worst frame 21.0ms, draws 495, objects 2115, primitives 4756, process 24.44ms, physics 2.44ms
+  50.3  path     off the corridor at (28,31), after 7.2s on it
+  50.3  cross    stepped into the road at (28,31), at a zebra
+  50.3  frame    fps 117, worst frame 25.0ms, draws 509, objects 2185, primitives 5022, process 20.99ms, physics 1.84ms
+  50.5  crowd    a car sounded its horn at her in the road at (28,31) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 20
+  51.0  cue      the mark over her head: soon for 0.5s (0.5s of it on the road) | a car, and she is in the road
+  51.1  crowd    walked into somebody at (28,29) | exc 0, in 9.7/s (crowd 27.7, events 0.0), sleep 20
+  51.3  frame    fps 112, worst frame 33.3ms, draws 506, objects 2274, primitives 5214, process 24.80ms, physics 1.82ms
+  51.4  path     onto the corridor at (27,29), after 1.1s off it
+  52.0  path     away from the corridor at (26,27), after 0.5s on it
+  52.0  calm     entered quiet_square (1,1), sleep 21
+  52.3  frame    fps 114, worst frame 15.9ms, draws 316, objects 1591, primitives 3749, process 33.84ms, physics 1.83ms
+  53.4  frame    fps 118, worst frame 16.7ms, draws 304, objects 1573, primitives 3560, process 14.53ms, physics 1.69ms
+  54.4  frame    fps 119, worst frame 8.3ms, draws 384, objects 1789, primitives 3943, process 13.91ms, physics 1.74ms
+  55.4  frame    fps 119, worst frame 16.7ms, draws 275, objects 1550, primitives 3395, process 15.29ms, physics 1.74ms
+  56.4  frame    fps 117, worst frame 16.7ms, draws 637, objects 2347, primitives 4971, process 21.76ms, physics 1.78ms
+  56.4  calm     settled in the calm block (1,1); tomorrow will know
+  56.4  asleep   asleep after 56.4s, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  57.4  frame    fps 119, worst frame 16.7ms, draws 487, objects 1986, primitives 4395, process 13.72ms, physics 1.71ms
+  58.0  path     onto the corridor at (26,28), after 6.0s away it
+  58.0  left     left quiet_square (1,1), sleep 100
+  58.4  frame    fps 119, worst frame 8.3ms, draws 498, objects 2236, primitives 5024, process 15.29ms, physics 1.70ms
+  58.8  path     off the corridor at (28,29), after 0.8s on it
+  59.0  cross    stepped into the road at (28,30), at a zebra
+  59.4  frame    fps 120, worst frame 16.7ms, draws 504, objects 2227, primitives 5031, process 11.14ms, physics 1.48ms
+  59.7  path     onto the corridor at (28,32), after 0.9s off it
+  60.4  frame    fps 119, worst frame 16.7ms, draws 496, objects 2159, primitives 4796, process 14.68ms, physics 1.77ms
+  61.4  frame    fps 119, worst frame 33.3ms, draws 496, objects 2121, primitives 4743, process 13.99ms, physics 1.65ms
+  62.0  ahead    loose_dog comes at her from 0px in front of her at (29,38)
+  62.4  near     loose_dog (telegraph) at (29,43), 139px, exc 0, in 0.6/s (crowd 0.0, events 1.2), sleep 100
+  62.4  frame    fps 115, worst frame 16.7ms, draws 312, objects 1690, primitives 3804, process 34.02ms, physics 1.69ms
+  62.7  near     loose_dog (telegraph) at (29,42), 73px, exc 0, in 1.9/s (crowd 0.0, events 3.5), sleep 100
+  62.9  near     loose_dog (telegraph) at (29,41), 39px, exc 0, in 2.4/s (crowd 0.0, events 4.4), sleep 100
+  63.0  near     loose_dog (telegraph) at (29,41), 21px, exc 0, in 2.5/s (crowd 0.0, events 4.7), sleep 100
+  63.4  frame    fps 117, worst frame 16.7ms, draws 484, objects 2327, primitives 5318, process 13.68ms, physics 1.68ms
+  63.6  near     leaf_blower at (29,48), 189px, exc 0, in 0.1/s (crowd 0.0, events 0.2), sleep 100
+  64.2  cross    stepped into the road at (27,44), mid-block
+  64.4  frame    fps 119, worst frame 16.7ms, draws 467, objects 2347, primitives 5427, process 15.80ms, physics 1.60ms
+  65.5  frame    fps 119, worst frame 16.7ms, draws 631, objects 2757, primitives 6274, process 14.59ms, physics 1.57ms
+  66.5  frame    fps 119, worst frame 16.7ms, draws 450, objects 2266, primitives 5144, process 16.22ms, physics 1.64ms
+  67.5  frame    fps 119, worst frame 16.7ms, draws 453, objects 2328, primitives 5313, process 14.23ms, physics 1.54ms
+  67.6  crowd    walked into somebody at (19,47) | exc 0, in 2.3/s (crowd 22.2, events 0.0), sleep 100
+  68.2  near     delivery_van at (15,51), 149px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  68.5  frame    fps 119, worst frame 8.3ms, draws 429, objects 2027, primitives 4477, process 13.39ms, physics 1.55ms
+  69.5  frame    fps 120, worst frame 16.7ms, draws 410, objects 2000, primitives 4210, process 11.15ms, physics 1.58ms
+  70.5  frame    fps 119, worst frame 16.7ms, draws 248, objects 1851, primitives 4011, process 14.55ms, physics 1.57ms
+  71.3  cross    stepped into the road at (19,58), at a zebra
+  71.5  frame    fps 119, worst frame 16.7ms, draws 408, objects 2157, primitives 4566, process 13.68ms, physics 1.64ms
+  72.5  frame    fps 119, worst frame 8.3ms, draws 406, objects 1981, primitives 4190, process 13.21ms, physics 1.68ms
+  73.5  frame    fps 120, worst frame 16.7ms, draws 406, objects 2034, primitives 4299, process 11.25ms, physics 1.70ms
+  73.7  crowd    walked into somebody at (19,64) | exc 0, in 2.3/s (crowd 22.2, events 0.0), sleep 100
+  74.5  frame    fps 119, worst frame 16.7ms, draws 401, objects 2026, primitives 4238, process 13.70ms, physics 1.59ms
+  75.5  frame    fps 119, worst frame 8.3ms, draws 561, objects 2423, primitives 5054, process 15.12ms, physics 1.66ms
+  76.5  frame    fps 120, worst frame 16.7ms, draws 413, objects 2018, primitives 4267, process 11.28ms, physics 1.52ms
+  77.6  frame    fps 116, worst frame 16.7ms, draws 421, objects 2030, primitives 4387, process 23.40ms, physics 1.98ms
+  78.5  cross    stepped into the road at (30,68), mid-block
+  78.6  frame    fps 118, worst frame 16.7ms, draws 433, objects 2044, primitives 4565, process 14.04ms, physics 1.64ms
+  79.0  crowd    walked into somebody at (31,69) | exc 0, in 2.8/s (crowd 23.0, events 0.0), sleep 100
+  79.6  frame    fps 119, worst frame 16.7ms, draws 298, objects 1895, primitives 4485, process 16.73ms, physics 1.56ms
+  80.6  frame    fps 118, worst frame 16.7ms, draws 305, objects 1846, primitives 4459, process 15.24ms, physics 1.72ms
+  80.6  crowd    walked into somebody at (34,71) | exc 0, in 4.5/s (crowd 26.3, events 0.0), sleep 100
+  81.6  frame    fps 117, worst frame 16.7ms, draws 403, objects 2129, primitives 5244, process 14.29ms, physics 1.66ms
+  82.6  frame    fps 117, worst frame 16.7ms, draws 392, objects 2088, primitives 5045, process 22.99ms, physics 1.67ms
+  83.1  path     off the corridor at (42,71), after 23.4s on it
+  83.6  frame    fps 119, worst frame 16.7ms, draws 291, objects 1879, primitives 4507, process 13.99ms, physics 1.53ms
+  83.9  cross    stepped into the road at (44,71), at a signalled crossing
+  84.1  ahead    cat_dash crosses 332px in front of her at (44,71)
+  84.5  path     onto the corridor at (46,71), after 1.4s off it
+  84.6  frame    fps 119, worst frame 8.3ms, draws 293, objects 1884, primitives 4544, process 16.26ms, physics 1.70ms
+  85.6  frame    fps 119, worst frame 16.7ms, draws 293, objects 1885, primitives 4552, process 15.05ms, physics 1.53ms
+  86.6  frame    fps 114, worst frame 16.7ms, draws 279, objects 1777, primitives 4165, process 22.65ms, physics 1.71ms
+  87.2  near     cat_dash at (55,75), 118px, exc 2, in 10.2/s (crowd 4.6, events 14.3), sleep 100
+  87.4  near     cat_dash at (55,73), 63px, exc 3, in 10.9/s (crowd 3.1, events 16.9), sleep 100
+  87.6  near     cat_dash at (55,72), 35px, exc 4, in 10.3/s (crowd 1.6, events 17.0), sleep 100
+  87.6  near     cat_dash at (55,72), 17px, exc 4, in 9.8/s (crowd 0.8, events 17.0), sleep 100
+  87.6  frame    fps 118, worst frame 16.7ms, draws 367, objects 2036, primitives 4626, process 13.96ms, physics 2.01ms
+  88.6  frame    fps 118, worst frame 16.7ms, draws 271, objects 1808, primitives 4003, process 14.18ms, physics 1.75ms
+  88.7  path     off the corridor at (57,72), after 4.2s on it
+  88.7  cross    stepped into the road at (57,72), at a zebra
+  88.8  path     onto the corridor at (58,72), after 0.1s off it
+  89.3  crowd    a car sounded its horn at her in the road at (59,73) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+  89.6  frame    fps 120, worst frame 8.3ms, draws 428, objects 2229, primitives 4786, process 11.36ms, physics 1.75ms
+  89.8  cue      the mark over her head: soon for 0.4s (0.4s of it on the road) | a car, and she is in the road
+  90.2  near     homeless_yeller at (61,81), 208px, exc 0, in 0.2/s (crowd 0.3, events 0.0), sleep 100
+  90.7  frame    fps 119, worst frame 16.7ms, draws 426, objects 1989, primitives 4257, process 14.23ms, physics 1.54ms
+  91.7  frame    fps 119, worst frame 16.7ms, draws 425, objects 1995, primitives 4236, process 15.23ms, physics 1.46ms
+  91.9  cross    stepped into the road at (59,79), mid-block
+  92.7  frame    fps 118, worst frame 16.7ms, draws 611, objects 2436, primitives 5358, process 15.03ms, physics 1.65ms
+  93.5  near     homeless_yeller at (61,84), 114px, exc 0, in 5.5/s (crowd 5.3, events 4.7), sleep 100
+  93.7  frame    fps 119, worst frame 16.7ms, draws 451, objects 2219, primitives 5025, process 12.97ms, physics 1.53ms
+  94.7  frame    fps 119, worst frame 16.7ms, draws 258, objects 1782, primitives 3872, process 16.67ms, physics 1.74ms
+  95.7  frame    fps 119, worst frame 16.7ms, draws 260, objects 1593, primitives 3521, process 14.09ms, physics 1.76ms
+  95.9  road     4.0s on the road (2.4s of it carriageway), (59,79) -> (60,89)
+  96.7  frame    fps 120, worst frame 8.3ms, draws 257, objects 1588, primitives 3529, process 11.11ms, physics 1.69ms
+  97.7  frame    fps 114, worst frame 33.3ms, draws 269, objects 1607, primitives 3717, process 31.50ms, physics 1.96ms
+  98.7  frame    fps 119, worst frame 16.7ms, draws 258, objects 1662, primitives 3704, process 13.81ms, physics 1.66ms
+  99.5  cross    stepped into the road at (69,87), mid-block
+  99.7  path     off the corridor at (70,87), after 10.9s on it
+  99.7  frame    fps 120, worst frame 16.7ms, draws 346, objects 2013, primitives 4422, process 10.95ms, physics 1.72ms
+ 100.6  cross    stepped into the road at (72,85), at a zebra
+ 100.7  frame    fps 119, worst frame 16.7ms, draws 602, objects 2607, primitives 5506, process 14.18ms, physics 1.51ms
+ 101.1  crowd    a car sounded its horn at her in the road at (73,85) | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+ 101.3  cue      the mark over her head: soon for 0.2s (0.2s of it on the road) | a car, and she is in the road
+ 101.7  frame    fps 117, worst frame 16.7ms, draws 271, objects 1831, primitives 4062, process 13.53ms, physics 1.57ms
+ 102.7  frame    fps 117, worst frame 16.7ms, draws 266, objects 1793, primitives 3938, process 15.46ms, physics 1.59ms
+ 103.7  path     80% of her street time on the corridor (77.8s on, 19.7s off, 6.0s off the streets)
+ 103.7  home     WON, 76.3s to spare
+ 103.7  save     wrote the save (between days)
+
+day 2  act 1  run seed 851093948  city seed 851093948  length 180.0s
+   0.0  texture  ground composed: 66 sources over 66 pictures into 240x342 in 21.6 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  roll     leaf_blower in the park she used yesterday, (1,1)
+   0.0  plan     closed: roadworks v(0,0)
+   0.0  plan     calm: 1 quiet_square, 2 park, 3 courtyard, 4 forest
+   0.0  plan     events: alley_mouse x2, burst_water_main x15, busker x7, cafe_tables x53, car_accident x18, cat_dash x8, chatting_mother x2, construction x34, cyclist x4, delivery_van x32, dog_walker x23, fallen_tree, homeless_yeller x6, ice_cream_van x4, leaf_blower x16, loose_dog x11, market_stall x35, moving_van x43, pigeon_flock x5, playground x2, scaffolding x24, skip x25
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  save     wrote the save (day under way)
+   1.0  frame    fps 31, worst frame 258.8ms, draws 462, objects 2192, primitives 4902, process 24.16ms, physics 1.12ms
+   2.0  frame    fps 120, worst frame 16.7ms, draws 476, objects 2337, primitives 5369, process 10.20ms, physics 1.62ms
+   2.6  crowd    a car sounded its horn at her in the road at (84,86) | exc 0, in 3.1/s (crowd 3.1, events 0.0), sleep 1
+   2.6  cross    stepped into the road at (84,86), at a zebra
+   2.8  crowd    a car sounded its horn at her in the road at (84,86) | exc 2, in 16.3/s (crowd 16.3, events 0.0), sleep 1
+   3.0  frame    fps 119, worst frame 8.3ms, draws 280, objects 1800, primitives 4099, process 15.70ms, physics 1.72ms
+   3.4  path     onto the corridor at (85,88), after 3.4s off it
+   3.4  cue      the mark over her head: soon for 0.8s (0.8s of it on the road) | a car, and she is in the road
+   3.6  near     homeless_yeller at (85,95), 209px, exc 20, in 12.2/s (crowd 10.5, events 1.5), sleep 1
+   4.0  frame    fps 119, worst frame 16.7ms, draws 441, objects 2033, primitives 4574, process 15.04ms, physics 1.67ms
+   4.1  path     off the corridor at (85,90), after 0.7s on it
+   4.4  near     homeless_yeller at (85,94), 115px, exc 20, in 7.0/s (crowd 2.8, events 4.1), sleep 2
+   4.4  near     moving_van at (85,94), 119px, exc 20, in 7.0/s (crowd 2.8, events 4.1), sleep 2
+   5.0  frame    fps 119, worst frame 16.7ms, draws 443, objects 1976, primitives 4487, process 15.62ms, physics 1.54ms
+   5.2  path     onto the corridor at (84,89), after 1.1s off it
+   5.4  turn     doubled back 0°
+   5.5  crowd    walked into somebody at (84,89) | exc 20, in 9.9/s (crowd 24.5, events 3.4), sleep 2
+   5.8  path     off the corridor at (83,89), after 0.5s on it
+   6.0  frame    fps 120, worst frame 16.7ms, draws 274, objects 1701, primitives 3886, process 10.83ms, physics 1.67ms
+   6.6  freeze   sleep stopped filling | exc 35, in 12.5/s (crowd 4.3, events 8.2), sleep 2 | near: homeless_yeller 134px
+   7.1  frame    fps 119, worst frame 8.3ms, draws 268, objects 1630, primitives 3666, process 14.50ms, physics 1.81ms
+   7.7  crowd    walked into somebody at (82,89) | exc 54, in 21.3/s (crowd 27.8, events 11.4), sleep 2
+   8.1  frame    fps 119, worst frame 16.7ms, draws 281, objects 1759, primitives 4071, process 14.62ms, physics 1.40ms
+   8.1  shot     asked for a picture at (82,89) | exc 65, sleep 2 | playing
+   8.8  turn     doubled back 90°
+   9.1  frame    fps 109, worst frame 66.7ms, draws 284, objects 1874, primitives 4353, process 61.35ms, physics 1.53ms
+   9.1  path     onto the corridor at (84,89), after 3.4s off it
+   9.7  path     off the corridor at (85,87), after 0.6s on it
+   9.7  cross    stepped into the road at (85,87), at a zebra
+  10.0  crowd    a car sounded its horn at her in the road at (85,87) | exc 81, in 5.3/s (crowd 3.3, events 2.0), sleep 2
+  10.1  frame    fps 119, worst frame 8.3ms, draws 289, objects 1980, primitives 4607, process 15.03ms, physics 1.61ms
+  10.4  cue      the mark over her head: soon for 0.5s (0.5s of it on the road) | a car, and she is in the road
+  11.1  frame    fps 115, worst frame 16.7ms, draws 472, objects 2190, primitives 4996, process 23.52ms, physics 1.78ms
+  11.1  path     onto the corridor at (85,83), after 1.4s off it
+  12.1  frame    fps 115, worst frame 25.0ms, draws 484, objects 2185, primitives 5150, process 23.94ms, physics 1.56ms
+  13.1  frame    fps 114, worst frame 25.0ms, draws 485, objects 2171, primitives 5146, process 23.75ms, physics 1.60ms
+  13.9  path     off the corridor at (85,75), after 2.8s on it
+  14.1  frame    fps 119, worst frame 10.1ms, draws 486, objects 2286, primitives 5402, process 15.05ms, physics 1.65ms
+  14.6  cross    stepped into the road at (85,73), at a zebra
+  14.8  crowd    a car sounded its horn at her in the road at (85,73) | exc 86, in 0.0/s (crowd 0.0, events 0.0), sleep 2
+  15.1  frame    fps 119, worst frame 8.3ms, draws 321, objects 1885, primitives 4613, process 14.53ms, physics 1.79ms
+  15.3  cue      the mark over her head: soon for 0.5s (0.5s of it on the road) | a car, and she is in the road
+  15.3  near     busker at (81,67), 188px, exc 88, in 15.8/s (crowd 15.5, events 0.2), sleep 2
+  16.1  frame    fps 120, worst frame 16.7ms, draws 467, objects 2092, primitives 4824, process 10.81ms, physics 1.65ms
+  16.6  path     28% of her street time on the corridor (4.6s on, 12.0s off, 0.0s off the streets)
+  16.6  lost     lost_crying after 16.6s — She started crying. There is no settling her now. | exc 100, in 9.8/s (crowd 2.2, events 7.7), sleep 2 | near: moving_van 120px (out of range)
+  16.6  nerve    spent a nerve on day 2 (act 1); 4 left — day 2 again
+  16.6  save     wrote the save (between days)

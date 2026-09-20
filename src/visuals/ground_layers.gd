@@ -267,7 +267,23 @@ static func rotate_clockwise(image: Image, degrees: int) -> Image:
 			return null
 	return result
 
+## The recipe, read from disk once and held for the life of the process, like the `ground` page
+## it composes from. The ground is repainted at the start of every day, and a repaint that went
+## back to the disk would make each day's ground depend on what the file system holds at that
+## moment — a file moved under a running game would leave that day with no recipe and no ground.
+## The first build is the city's own, before the first day is drawn.
+static var _manifest: Dictionary = {}
+static var _manifest_read := false
+static var _manifest_reads := 0
+
 static func _load_manifest() -> Dictionary:
+	if not _manifest_read:
+		_manifest_read = true
+		_manifest = _read_manifest()
+	return _manifest
+
+static func _read_manifest() -> Dictionary:
+	_manifest_reads += 1
 	if not FileAccess.file_exists(MANIFEST_PATH):
 		return {}
 	var parser := JSON.new()
@@ -276,6 +292,16 @@ static func _load_manifest() -> Dictionary:
 		return {}
 	var data: Variant = parser.data
 	return data if data is Dictionary and int(data.get("version", 0)) == 1 else {}
+
+## How many times the recipe has been read from disk. A suite asks that it stays at one.
+static func manifest_reads() -> int:
+	return _manifest_reads
+
+## Forgets the held recipe, so a suite can watch the one read happen.
+static func reset_for_tests() -> void:
+	_manifest = {}
+	_manifest_read = false
+	_manifest_reads = 0
 
 ## Composes `source_id`'s base and rotated components, tinting the `curbstone` component first
 ## when `tint_curbstone` asks for it — which is the route's own cast (M145's trial): the paving,
