@@ -90,8 +90,10 @@ draw the previous import of.
 drops it on the last reference, `region(name)` hands out an `AtlasTexture` over the page, and
 `native_size(name)` answers a picture's own size from the region table with nothing loaded at
 all. **The player, the head indicators and the crowd draw from it directly**: `Stroller` acquires
-`stroller` and `head_indicators` for the whole run, `Crowd` acquires `crowd` for the day and every
-`CrowdAgent` reads its region off the page the owner is already holding. Every other family still
+`stroller` and `head_indicators` for the whole run, `Crowd` acquires `crowd` on its first day and
+holds it for the rest of its own life — a page every day's crowd draws is never released between
+two days — and every `CrowdAgent` reads its region off the page the owner is already holding.
+Every other family still
 reaches its pictures through `TextureResolver` and `TextureAtlas` as described above, until its own
 consumer moves; `tests/test_atlas_library.gd` compares every baked region against the picture its
 consumer draws today, pixel for pixel, for as long as that comparison is possible.

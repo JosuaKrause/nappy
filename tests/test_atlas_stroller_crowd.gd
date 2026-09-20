@@ -21,8 +21,7 @@ const SEED := 4242
 func run(t) -> void:
 	AtlasLibrary.reset_for_tests()
 	_test_stroller_acquires_for_the_whole_run_and_releases_on_exit(t)
-	_test_crowd_acquires_for_the_day_and_releases_on_clear(t)
-	_test_a_second_day_does_not_leak_a_reference(t)
+	_test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t)
 	_test_a_direct_clear_with_no_day_started_is_a_safe_no_op(t)
 	_test_a_crowd_freed_without_clear_still_releases_its_page(t)
 	_test_walker_body_and_trim_are_separate_regions_on_every_view(t)
@@ -74,11 +73,14 @@ func _city(t) -> City:
 	city.build(CityGenerator.generate(SEED))
 	return city
 
-## The day's own lifetime: "the crowd is built at the start of a day and freed at its end"
-## (`assets/atlases/membership.json`). `Crowd.start_day()` acquires `ATLAS_GROUP` once for the
-## whole population it builds — see `crowd.gd`'s own doc for why the owner holds one reference
-## rather than every agent acquiring for itself — and `clear()` is the only thing that releases it.
-func _test_crowd_acquires_for_the_day_and_releases_on_clear(t) -> void:
+## The crowd's own lifetime, per `assets/atlases/membership.json`'s `crowd` entry: "the crowd
+## node's own life: taken by the first day's crowd and held until the node itself is freed, since a
+## page two days both draw is never released between them" — PLAYTEST-109, "don't unload anything
+## that might be needed in one day and in the next". `Crowd.start_day()` acquires `ATLAS_GROUP` once,
+## on the first day a crowd is ever built, and `clear()` — called at the start of every `start_day()`
+## as well as directly — never releases it; only freeing the node does, which
+## `_test_a_crowd_freed_without_clear_still_releases_its_page()` below covers.
+func _test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t) -> void:
 	var city := _city(t)
 	t.check(not AtlasLibrary.is_acquired(Crowd.ATLAS_GROUP),
 			"nothing has asked for the crowd's page before the first day")
@@ -87,38 +89,35 @@ func _test_crowd_acquires_for_the_day_and_releases_on_clear(t) -> void:
 			and AtlasLibrary.reference_count(Crowd.ATLAS_GROUP) == 1,
 			"a day's crowd holds exactly one reference on its own page")
 	city.crowd.clear()
-	t.check(not AtlasLibrary.is_acquired(Crowd.ATLAS_GROUP),
-			"clearing the crowd releases the page — nothing left over for a consumer to draw from")
-	city.free()
-
-## The regression this exists to catch: a page acquired again for a second day without its first
-## reference ever being let go would leave the count climbing by one every day of a run, which
-## costs nothing wrong-looking in a short suite and everything wrong on day fourteen.
-func _test_a_second_day_does_not_leak_a_reference(t) -> void:
-	var city := _city(t)
-	city.crowd.start_day(1, _rng("leak1"))
-	city.crowd.start_day(2, _rng("leak2"))
+	t.check(AtlasLibrary.is_acquired(Crowd.ATLAS_GROUP)
+			and AtlasLibrary.reference_count(Crowd.ATLAS_GROUP) == 1,
+			"clearing the crowd keeps the page held, not released and reloaded between two days")
+	city.crowd.start_day(2, _rng("day2"))
 	t.check(AtlasLibrary.reference_count(Crowd.ATLAS_GROUP) == 1,
-			"a second day's start_day() releases yesterday's reference before taking today's")
+			"a second day's start_day() does not take a second reference on top of the one it "
+			+ "already holds")
 	city.crowd.clear()
 	city.free()
+	t.check(not AtlasLibrary.is_acquired(Crowd.ATLAS_GROUP),
+			"freeing the crowd node is what finally gives the page back")
 
 ## `main._build_the_finale_city()`'s own shape — "never `Crowd.start_day()`: a cleared crowd is the
 ## whole of 'nobody in it', and clearing is the one call this file makes into `src/crowd/`" — calls
-## `clear()` with no day ever started. Nothing was acquired, so nothing may be released either, or
-## `AtlasLibrary.release()` would push_error over a reference this crowd never took.
+## `clear()` with no day ever started. `clear()` never touches `ATLAS_GROUP` at all, so this holds
+## independently of whether a day ever ran; pinned anyway as the shape the finale actually
+## exercises.
 func _test_a_direct_clear_with_no_day_started_is_a_safe_no_op(t) -> void:
 	var city := _city(t)
 	city.crowd.clear()
 	t.check(not AtlasLibrary.is_acquired(Crowd.ATLAS_GROUP),
-			"a direct clear with no day started holds nothing and releases nothing")
+			"a direct clear with no day started holds nothing")
 	city.free()
 
-## The leak `clear()` alone cannot catch: a `Crowd` freed mid-day — the city torn down on quitting
-## to the title screen while a day is still running, or exactly this test freeing its city without
-## ever calling `clear()` first. `AtlasLibrary`'s counts are static and outlive the freed node, so
-## `Crowd._exit_tree()` is the only thing standing between this and a reference held for the rest
-## of the process.
+## The leak `clear()` cannot catch, since it never releases at all: a `Crowd` freed mid-day
+## — the city torn down on quitting to the title screen while a day is still running, or exactly
+## this test freeing its city without ever calling `clear()` first. `AtlasLibrary`'s counts are
+## static and outlive the freed node, so `Crowd._exit_tree()` is the only thing standing between
+## this and a reference held for the rest of the process.
 func _test_a_crowd_freed_without_clear_still_releases_its_page(t) -> void:
 	var city := _city(t)
 	city.crowd.start_day(1, _rng("freed-without-clear"))
