@@ -296,8 +296,8 @@ checks and worktrees can move independently of this file.
   contribution sweeps; [PLAYTEST-86](playtests/PLAYTEST-86.md) is the player's demand for an
   optimization rather than a measurement). Whole-frame tails remain: attributing the remaining
   slow intervals, profiling the phone, and completing the atlas measurements are the open items,
-  and no toggle causality is claimed. M163, the ground atlas test builds the same reference it
-  compares, and M164, engine errors make the test gate red, are separate fix-ready briefs there.
+  and no toggle causality is claimed. M164, engine errors make the test gate red, is a separate
+  fix-ready brief there.
 
 - **Inspect the live PR before taking gameplay work:** PR #239, M129, no body closes the
   walked sidewalk. Its owner maintains the implementation and review state. The queue on main
