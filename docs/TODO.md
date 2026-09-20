@@ -333,19 +333,9 @@ nothing acquired.
 Each item is one pull request. The ground and the events follow their own gates; the last
 closes the contract.
 
-- [ ] **The pages are packed square, and what is always on screen is always loaded**
-      ([PLAYTEST-109](playtests/PLAYTEST-109.md)). *"it would be better to arrange
-      things in a more squarish image (take the total number of cells and use the square root
-      of it to define the width)"*: the page's target width comes from the square root of the
-      group's padded area, never less than the widest member. *"if you don't use a proper full
-      rectangle packer you will always get dead space even if you start with big textures … a
-      greedy approach is fine but don't let obvious empty space go wasted"*: the shelf packer is
-      replaced by a greedy rectangle packer that keeps the list of free rectangles each
-      placement leaves and places members, largest first, into the free rectangle that fits
-      best, so the room beside and under a tall picture is filled by smaller ones; it stays
-      deterministic, since a bake run twice is byte-identical. Rows sorted by height were
-      offered and refused. The suite asserts a floor on each page's fill and a ceiling on its
-      aspect ratio, and the PR records the fill of every page before and after. *"putting both genders in the player atlas is a bit
+- [ ] **What is always on screen is always loaded, and a page loads at startup or in the day
+      brief** ([PLAYTEST-109](playtests/PLAYTEST-109.md)). The pages' own shape is built
+      (`DECISIONS.md`, M171, the rectangle packer). *"putting both genders in the player atlas is a bit
       wasteful since it's guaranteed to not use half of it"*: the `stroller` group becomes
       three — the mother's views, the father's views, and the pram with the baby — and
       `Stroller` acquires the shared one and the run's parent. *"the UI and head indicators
