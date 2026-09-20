@@ -286,10 +286,12 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
 checks and worktrees can move independently of this file.
 
-- **M171 — Build-time atlases replace individual textures** is specified in `TODO.md` and
-  [PLAYTEST-105](playtests/PLAYTEST-105.md). The atlas generator and runtime loading changes
-  remain unimplemented. Baked constituent images must be absent from shipped packages and
-  from individual CPU/GPU allocations; source artwork stays in the authoring repository.
+- **M171 — Build-time atlases replace individual textures is next, and M159 follows it**
+  ([PLAYTEST-108](playtests/PLAYTEST-108.md)). Its `TODO.md` section is the design and its
+  staging, one pull request per item: the bake, the loader and the staleness check first; the
+  leaf consumers, the stroller with the crowd, and the decoration together; the ground; the
+  events after the square poster crew has merged; then the sources move out of the imported
+  tree and the package audit turns fatal.
 - **M159, a slow frame names the frame that was slow, has its first optimization in and three
   items open in `TODO.md`.** `CrowdAgent.contribution_at()` rejects distant sources before the
   velocity and ellipse work, with exact result parity (`DECISIONS.md`, M159, cheaper crowd

@@ -295,47 +295,76 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ## M171 — Build-time atlases replace individual textures · asked for 2026-09-19
 
-[PLAYTEST-105](playtests/PLAYTEST-105.md) requires atlases to be created at build time so the
-game can load them cheaply. Related items belong together to avoid loading an atlas mostly
-occupied by unrelated pictures. Any image loaded through an atlas must not also be loaded
-as an individual texture in CPU or GPU memory. Baked constituents must be absent from the
-shipped build entirely, including their imported resource copies. This extends PLAYTEST-75 and PLAYTEST-76's grouped-atlas
-contract; see `DECISIONS.md`, M171, build-time atlases, for the design and current cost.
+> "make a todo that atlases must be created at build time. so they can be cheaply loaded at
+> runtime. this enforces that related items must be put in the same atlas so the atlas does not
+> get wasted. all textures that are loaded in an atlas must not be loaded individually"
+> · "they should cease existing in the build once they get baked into an atlas"
+> · "the implementation we currently have is not great"
 
-- [ ] **Generate atlas images and region metadata during the build.** Replace runtime packing
-      for sprite families, crowd, indicators, decoration/events and ground composition. The
-      runtime loads prepared resources; it does not read back individual GPU textures, blit
-      atlas images or repack them at startup, first draw or day repaint. Use a reproducible
-      build step that runs before desktop/web export and supports development checkouts;
-      detect missing or stale outputs before shipping. Keep editable SVGs and original PNGs
-      as repository authoring inputs only, with source hashes and deterministic region mappings.
-      Exclude their individual images and imported resources from export once baked; the shipped
-      representation consists only of atlas textures and region metadata.
-- [ ] **Group pictures by related use and lifetime.** Keep an entity's directions, animation
-      frames and related state variants together; group shared head indicators, ground
-      components and other families by their actual consumers. Document membership and loading
-      boundaries so unrelated rarely used pictures do not force wasteful residency. Preserve
-      the texture-size limit, padding and filtering contract; use explicit related pages where
-      a family exceeds a page, not one indiscriminate atlas for the whole catalogue.
-- [ ] **Load the atlas once; baked constituents do not exist in the build.** Route all covered
-      consumers to regions of a shared atlas resource. Remove eager source `preload()` tables,
-      resolver warm scans/caches and fallback paths that load the same pictures separately.
-      Audit scripts, scenes, resources, TileSets and export dependencies for indirect source
-      inclusion as well as loads. Runtime may not reconstruct or cache individual image copies
-      in CPU memory, nor upload them as separate GPU textures. Releasing the group must release
-      its CPU image storage and GPU texture when their last consumers let go. Preserve
-      PNG and forced-SVG presentation through separately built resources selected before load;
-      neither mode may load the other mode's atlas or retain any constituent textures.
-- [ ] **Prove memory ownership, loading cost and appearance.** Verify every covered image maps
-      to the intended atlas region and consumers share its texture. Inspect exported package
-      contents and dependencies to prove no baked constituent image or imported copy is present;
-      prove no individual CPU image or GPU texture is loaded or reconstructed at runtime.
-      Check group release/reload, presentation modes and the exported
-      web build, including startup, first appearance and day transitions. Record atlas
-      load/release timings and CPU/GPU texture memory with clear measurement limits. Preserve
-      native dimensions, alpha, tinting, placement, mirroring, animation and ground seams;
-      use focused tests and bounded motion evidence. Update the architecture, graphics and
-      telemetry docs with the implementation. The full suite remains CI's gate.
+[PLAYTEST-105](playtests/PLAYTEST-105.md) is the contract and
+[PLAYTEST-108](playtests/PLAYTEST-108.md) the design decisions; `DECISIONS.md`, M171, the atlas
+design, has the inventory the design was read from, the rejected bakers and the player's answers.
+
+**The design.** A headless run of the engine itself bakes every picture family into one PNG page
+plus a region table, using the engine's own SVG rasterizer so a baked pixel is the pixel the
+import pass produces today. One runtime loader hands out regions by name and owns group
+lifetime by reference count. **The presentation mode is the bake's**: a build is PNG mode — the
+illustrated PNG where one exists, the SVG's raster where none does — and SVG mode is a custom
+local bake command, absent from the release; `--svg` and `?svg=1` stop existing at runtime.
+**Atlases are baked on demand and never committed**: `tools/check.sh`, `tools/test.sh`,
+`tools/run.sh` and `tools/export-web.sh` compare a manifest of source hashes and the bake tool's
+version against the tree and bake when they differ. **The events are one page** *("for now")*.
+**The ground's individual pictures are baked and its compositing stays at runtime** — bases,
+overlays, damage strips, grass variants and the route-curb tint are composed from regions of
+the ground page as they are composed from single textures today, because the player refused
+baked composites: *"this is not a bottleneck and it allows for variety"*. The web export is the
+only export; the identity images (logo, icon, social card) leave the game package, and the
+deploy keeps copying the social card beside the page. Both are assumptions the player was told
+and did not speak to.
+
+Each item is one pull request. The first is alone; the next three touch disjoint files and run
+together; the ground and the events follow their own gates; the last closes the contract.
+
+- [ ] **The bake, the loader and the staleness check.** `tools/bake_atlases.gd`, run with
+      `--headless --script`, reads a checked-in membership file (group, members, lifetime,
+      padding kind), rasterizes SVGs with `Image.load_svg_from_buffer()` at scale 1, loads the
+      illustrated PNGs, applies `fix_alpha_edges()` to match the importer's
+      `fix_alpha_border`, shelf-packs within 2048px, and writes one PNG and one region table
+      (name, page, rect, native size) per group, with the source hashes, into a gitignored
+      output folder the engine imports. Opaque tile families get extruded edge padding, sprites
+      a transparent pixel. A wrapper, `tools/bake-atlases.sh`, follows the **cli-tools** rule
+      and carries the SVG-mode switch. The loader answers `acquire(group)`, `release(group)`
+      and `region(name)` as a cached `AtlasTexture`, and the native size of a region without
+      loading anything else. A parity test compares every baked region against today's imported
+      texture while both still exist. The package audit lists the exported `.pck` and reports
+      every constituent it finds; it reports only, until the last item makes it fatal. No
+      consumer moves in this item.
+- [ ] **The unatlased leaf consumers**: buildings, the city edge, closure markers, traffic
+      lights, checkpoints, the UI buttons and indicators, the interior scene and the interior
+      TileSet. `preload` constants become region names; a tinted draw keeps its `modulate`.
+- [ ] **The stroller, the head indicators and the crowd.** The crowd's synchronous first pack
+      inside a draw call goes; `crowd_atlas.gd` and its suite go with it. Body and trim layers
+      stay separate regions so tinting is unchanged; the halo's shader reads alpha only and is
+      region-safe.
+- [ ] **The decoration**: props, litter and city decals. A prop's shadow reads its size from
+      the region table where it reads `get_size()` off a preloaded source today.
+- [ ] **The ground.** The authored TileSet stops referencing SVGs; the compositor reads each
+      base and layer as a region of the ground page's image, composes at runtime as now, and
+      the second runtime packer, `pack_into_one_texture()`, is replaced by one upload of the
+      composed sheet. The per-day repaint keeps its variety and loses the GPU readbacks.
+- [ ] **The events**, one page, after the square poster crew's pull request has merged, since
+      both rewrite `event_instance.gd`'s picture tables. `EventManager` acquires and releases
+      the one group; the screen-edge badge reads the same regions.
+- [ ] **Close the contract.** The runtime packer, the resolver, their phase-trace telemetry and
+      the `--svg` and `?svg=1` flags are deleted; the run log says when a group loaded and was
+      released, in how long and at what size. **The authoring sources move out of the imported
+      tree** into a folder the engine ignores, and every reference to an old path moves with
+      them — skills, docs, tool help, comments — *"so we don't have stale instructions or
+      comments (code will fail but documentation will not)"*; grep for each family's old path
+      before and after, the count after is zero. The package audit becomes fatal in the export.
+      M159's atlas-measurement item is rewritten against the new spans before the old ones go.
+      `ARCHITECTURE.md`, `GRAPHICS.md`, `VISUALS.md`, `TELEMETRY.md`, the **illustrated-png**
+      and **svg-art** skills and `CLAUDE.md`'s path table describe what is then true.
 
 ---
 
