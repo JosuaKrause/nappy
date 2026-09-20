@@ -77,7 +77,8 @@ remain outside the repository at the recorded paths. The selected original outpu
 both here and at the generator's original path.
 
 [inputs.json](inputs.json) pins the raw donor, all prompts, protected source PNGs, generation
-references, corrected SVGs and assembly scripts. The
+references, and the original B SVG bytes in [`../inputs/`](../inputs/), beside their frozen 8×
+renders, so later active-art revisions cannot alter this historical recipe. The
 [output manifest](generated/manifest.json) records crop, transforms, compositing order,
 native alpha bounds, frame order, timing and every generated derivative's hash.
 

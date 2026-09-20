@@ -1,0 +1,16 @@
+{
+  "purpose": "Motion evidence for the installed final father pushing B family.",
+  "command": "./tools/shot.sh /private/tmp/father-final-pushing.png 7 --seed 3 --spawn arterial --walk 2e2s2w --press snapshot_burst 2 --invincible --no-save",
+  "capture_after_seconds": 7,
+  "seed": 3,
+  "build": "v0.13.0-62-g4b9b21cb-dirty",
+  "burst": {
+    "directory": "asked/burst-5197852-001",
+    "frames": 36,
+    "duration_seconds": 2.994471,
+    "target_fps": 12,
+    "reason": "duration"
+  },
+  "coverage": "The ordered frames show the father pushing during the bounded arterial walk in the default illustrated PNG presentation.",
+  "limitations": "This run uses invincibility and no save, and it does not demonstrate every facing or carrying presentation."
+}

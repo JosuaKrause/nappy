@@ -1,0 +1,83 @@
+{
+  "status": "uninstalled deterministic B-trouser color match for player review",
+  "candidate_rig": "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig",
+  "reference_rig": "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig",
+  "pillow": "12.3.0",
+  "input_sha256": {
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_front_a.png": "3466cddf142ea505e48d4f78670a99bd7964d3c9b5dfb87093821798e8beeece",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_front_b.png": "6bd88f5fe27cabfc1f8684922315f1f33a16e3462031a14e1eee0dea4456cccc",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_front_c.png": "964d42efbabe022492fc63acda0e7b74db045b97ef6aa08d8d72815fc726ebd7",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_back_a.png": "ce72244b2ae09c2986767dd5fb6b2326cb662fcee65a6d611349ae1c97433aec",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_back_b.png": "3bc4297fef285d64578f7051f91eba3ce1962519a63d3cf4e40c5105bb1d9b7b",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_back_c.png": "132533ac4e979eeccf769b2e347706b542797142d6de338cbe2ad1cc649be9f1",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_side_a.png": "bcc6a84f943aacc2522fa18b5a5a96c6e7e3e96e9e271c8e354938910f2587af",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_side_b.png": "33d67d5d1a1176e637398d3a827d2fff8992579bd8104721f7ee18d6d6b49dc5",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_side_c.png": "f7e312a8d594a375a69d82ded150b4c638329c0ab060aa6dff09fcf45d11140b",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_front_diagonal_a.png": "3ddb32d5c7e0fe2488940b27c42d29f3f4d80a6b173e04218d0c009782d4821b",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_front_diagonal_b.png": "7912eeef1d3ca134b8acc32b8375ec3627576038e40c39f548eee14b6f1b833c",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_front_diagonal_c.png": "e6595ac94a46dfa9d11ffd2e1249ff0fc66f570ddfdc2ebfe3fca4feec82009f",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_back_diagonal_a.png": "68dc4b1a4a11ee36e2ce5e8abb682e88723d8d59b6b6ed4042a6a82d49a17384",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_back_diagonal_b.png": "6d737538aa63cb48334a84f2f3ef2547fe8f75d11b1d0d2ca4cb3538f997afe5",
+    "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_back_diagonal_c.png": "e45da614f86a08f4ae7af9a450bcacddc643f41818aa3e4b11f339c346d615d4"
+  },
+  "method": "native-pixel RGB matrix applied only to the material selector below the coat hem",
+  "records": {
+    "side": {
+      "candidate": "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_side_b.png",
+      "reference_frames": [
+        "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_side_a.png",
+        "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/final-pushing-rig/father_side_c.png"
+      ],
+      "sample_bounds": [
+        0,
+        28,
+        26,
+        46
+      ],
+      "selector": "alpha > 0; y >= 28; blue >= green + 11; blue >= red + 18",
+      "palette_samples": {
+        "candidate_luma_quantiles": {
+          "10%": 41.3,
+          "50%": 79.8,
+          "90%": 111.0
+        },
+        "reference_ac_luma_quantiles": {
+          "10%": 61.5,
+          "50%": 90.3,
+          "90%": 118.2
+        },
+        "reference_ac_rgb_at_50%": [
+          77,
+          92,
+          113
+        ]
+      },
+      "transform": "reference_luma = round(0.86 * source_luma + 27); RGB = reference_luma * (0.86, 1.02, 1.25)",
+      "changed_pixels": 140,
+      "alpha_preserved": true,
+      "outside_mask_preserved": true
+    }
+  },
+  "outputs": {
+    "masks/father_side_b-pants-mask.png": "d2d6e797d3bcce000f2a65f92049213f8c29314c9e36d0600f538316e859fb0a",
+    "pushing-animation-6x.gif": "fadb62bfcad59f24137cd0b953ffba2ad551f592640eb86118ac9f5fc4f0d4c5",
+    "pushing-animation-native.gif": "b992057f843d0fe16c245c17680e7c309dc64b125bf4a5117a1eb9e6e997287b",
+    "pushing-spritesheet-6x.png": "68e3960916895b3906c4e0923fe4b76f0f863d17cdeb86399c2e34d334560692",
+    "pushing-spritesheet-native.png": "fed1a9b63eb533955361bcb1771805a8c07247352b0a80c8adc81ce8df76c124",
+    "rig/father_back_a.png": "ce72244b2ae09c2986767dd5fb6b2326cb662fcee65a6d611349ae1c97433aec",
+    "rig/father_back_b.png": "3bc4297fef285d64578f7051f91eba3ce1962519a63d3cf4e40c5105bb1d9b7b",
+    "rig/father_back_c.png": "132533ac4e979eeccf769b2e347706b542797142d6de338cbe2ad1cc649be9f1",
+    "rig/father_back_diagonal_a.png": "68dc4b1a4a11ee36e2ce5e8abb682e88723d8d59b6b6ed4042a6a82d49a17384",
+    "rig/father_back_diagonal_b.png": "6d737538aa63cb48334a84f2f3ef2547fe8f75d11b1d0d2ca4cb3538f997afe5",
+    "rig/father_back_diagonal_c.png": "e45da614f86a08f4ae7af9a450bcacddc643f41818aa3e4b11f339c346d615d4",
+    "rig/father_front_a.png": "3466cddf142ea505e48d4f78670a99bd7964d3c9b5dfb87093821798e8beeece",
+    "rig/father_front_b.png": "6bd88f5fe27cabfc1f8684922315f1f33a16e3462031a14e1eee0dea4456cccc",
+    "rig/father_front_c.png": "964d42efbabe022492fc63acda0e7b74db045b97ef6aa08d8d72815fc726ebd7",
+    "rig/father_front_diagonal_a.png": "3ddb32d5c7e0fe2488940b27c42d29f3f4d80a6b173e04218d0c009782d4821b",
+    "rig/father_front_diagonal_b.png": "7912eeef1d3ca134b8acc32b8375ec3627576038e40c39f548eee14b6f1b833c",
+    "rig/father_front_diagonal_c.png": "e6595ac94a46dfa9d11ffd2e1249ff0fc66f570ddfdc2ebfe3fca4feec82009f",
+    "rig/father_side_a.png": "bcc6a84f943aacc2522fa18b5a5a96c6e7e3e96e9e271c8e354938910f2587af",
+    "rig/father_side_b.png": "9bcd63d4af8bc79744e3722d73832e4e19a7f2211aa95f9c881a13983c865eeb",
+    "rig/father_side_c.png": "f7e312a8d594a375a69d82ded150b4c638329c0ab060aa6dff09fcf45d11140b"
+  }
+}

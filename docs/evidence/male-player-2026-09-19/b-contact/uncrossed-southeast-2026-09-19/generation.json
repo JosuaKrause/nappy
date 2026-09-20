@@ -1,0 +1,14 @@
+{
+  "tool": "built-in image_gen.imagegen",
+  "prompt": "retry-prompt.txt",
+  "input": "inputs/uncrossed-contact-edit-target.png",
+  "original_generated_path": "/Users/krause/.codex/generated_images/01a0bbbb-586c-7462-b438-bd35270e4697/exec-58018938-b311-4eb9-9c45-67f0d32f84a7.png",
+  "saved_generated_source": "generated-colored.png",
+  "dimensions": [1391, 1131],
+  "mode": "RGBA",
+  "reference_roles": {
+    "upper": "Cropped father upper bodies, preserving identity, pushing hands and carrying baby pose",
+    "lower": "Uncrossed guide: red screen-left near leg stays left and trails; cyan screen-right far leg stays right and advances"
+  },
+  "postprocess": "Deterministic color-only mapping, uniform whole-figure registration and protected-family sheet/GIF assembly"
+}

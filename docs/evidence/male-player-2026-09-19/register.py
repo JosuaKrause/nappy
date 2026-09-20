@@ -66,12 +66,14 @@ def config():
     }
 
 
-def build(data):
+def build(data, input_paths=None):
     if data["pillow_version"] != PILLOW_VERSION:
         raise ValueError("Pillow version differs from the registration record")
+    input_paths = input_paths or {}
     for path, expected in data["inputs"].items():
-        if digest(ROOT / path) != expected:
-            raise ValueError(f"changed input: {path}")
+        source = ROOT / input_paths.get(path, path)
+        if digest(source) != expected:
+            raise ValueError(f"changed input: {path} ({source.relative_to(ROOT)})")
     module_spec = importlib.util.spec_from_file_location("neutral", ROOT / "tools/remove-checkerboard.py")
     neutral = importlib.util.module_from_spec(module_spec)
     module_spec.loader.exec_module(neutral)
@@ -174,6 +176,11 @@ def main():
     for command in ("register", "verify"):
         child = sub.add_parser(command)
         child.add_argument("--config", type=Path, required=True)
+        child.add_argument(
+            "--historical-inputs",
+            type=Path,
+            help="explicit overlay that preserves changed historical input paths",
+        )
         child.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     if args.command == "freeze":
@@ -181,7 +188,27 @@ def main():
             parser.error("config must be fresh")
         args.config.write_text(json.dumps(config(), indent=2) + "\n")
         return
-    outputs, measurements = build(json.loads(args.config.read_text()))
+    data = json.loads(args.config.read_text())
+    input_paths = {}
+    if args.historical_inputs:
+        historical = json.loads(args.historical_inputs.read_text())
+        expected_config = historical.get("config_sha256")
+        if not isinstance(expected_config, str) or digest(args.config) != expected_config:
+            raise ValueError("registration config differs from the historical input record")
+        expected_hashes = historical.get("updated_input_hashes")
+        if not isinstance(expected_hashes, dict):
+            raise ValueError("historical input record omits updated input hashes")
+        for path, expected in expected_hashes.items():
+            if path not in data["inputs"]:
+                raise ValueError(f"historical hash names unknown input: {path}")
+            data["inputs"][path] = expected
+        input_paths = historical.get("input_paths")
+        if not isinstance(input_paths, dict):
+            raise ValueError("historical input record omits input paths")
+        unknown_paths = set(input_paths) - set(data["inputs"])
+        if unknown_paths:
+            raise ValueError(f"historical input paths name unknown inputs: {sorted(unknown_paths)}")
+    outputs, measurements = build(data, input_paths)
     if args.command == "register":
         if args.output_dir.exists():
             parser.error("output directory must be fresh")

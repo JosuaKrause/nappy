@@ -1012,7 +1012,18 @@ func _drawn_heading_key() -> Vector2i:
 ## `contribution_at()` again immediately after a bump with `_clock` unmoved and expects the fresh
 ## jolt, which is exactly the case a clock-keyed cache would have answered stale.
 func contribution_at(world_position: Vector2) -> float:
-	var distance := GroundShape.eccentric_distance(global_position, velocity(), world_position)
+	# d_eff = r * (1 - e * cos(theta)) is at least r * (1 - e_max), at every speed
+	# and heading. Outside this bound both falloffs are zero, so the common distant-body
+	# case needs no velocity/turn/pocket lookup or elliptical distance calculation. Read the
+	# current jolt each time: a horn or an external bump can extend its reach between queries.
+	var outer := Tuning.CAR_OUTER_RADIUS if kind == Kind.CAR else Tuning.PEDESTRIAN_OUTER_RADIUS
+	if _jolt > 0.0:
+		outer = maxf(outer, _jolt_outer)
+	var reach := outer / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
+	var origin := global_position
+	if origin.distance_squared_to(world_position) > reach * reach:
+		return 0.0
+	var distance := GroundShape.eccentric_distance(origin, velocity(), world_position)
 	var total := 0.0
 	if kind == Kind.CAR:
 		total = Tuning.falloff(distance, Tuning.CAR_INTENSITY,

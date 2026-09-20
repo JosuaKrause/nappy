@@ -293,6 +293,52 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
+## M171 — Build-time atlases replace individual textures · asked for 2026-09-19
+
+[PLAYTEST-105](playtests/PLAYTEST-105.md) requires atlases to be created at build time so the
+game can load them cheaply. Related items belong together to avoid loading an atlas mostly
+occupied by unrelated pictures. Any image loaded through an atlas must not also be loaded
+as an individual texture in CPU or GPU memory. Baked constituents must be absent from the
+shipped build entirely, including their imported resource copies. This extends PLAYTEST-75 and PLAYTEST-76's grouped-atlas
+contract; see `DECISIONS.md`, M171, build-time atlases, for the design and current cost.
+
+- [ ] **Generate atlas images and region metadata during the build.** Replace runtime packing
+      for sprite families, crowd, indicators, decoration/events and ground composition. The
+      runtime loads prepared resources; it does not read back individual GPU textures, blit
+      atlas images or repack them at startup, first draw or day repaint. Use a reproducible
+      build step that runs before desktop/web export and supports development checkouts;
+      detect missing or stale outputs before shipping. Keep editable SVGs and original PNGs
+      as repository authoring inputs only, with source hashes and deterministic region mappings.
+      Exclude their individual images and imported resources from export once baked; the shipped
+      representation consists only of atlas textures and region metadata.
+- [ ] **Group pictures by related use and lifetime.** Keep an entity's directions, animation
+      frames and related state variants together; group shared head indicators, ground
+      components and other families by their actual consumers. Document membership and loading
+      boundaries so unrelated rarely used pictures do not force wasteful residency. Preserve
+      the texture-size limit, padding and filtering contract; use explicit related pages where
+      a family exceeds a page, not one indiscriminate atlas for the whole catalogue.
+- [ ] **Load the atlas once; baked constituents do not exist in the build.** Route all covered
+      consumers to regions of a shared atlas resource. Remove eager source `preload()` tables,
+      resolver warm scans/caches and fallback paths that load the same pictures separately.
+      Audit scripts, scenes, resources, TileSets and export dependencies for indirect source
+      inclusion as well as loads. Runtime may not reconstruct or cache individual image copies
+      in CPU memory, nor upload them as separate GPU textures. Releasing the group must release
+      its CPU image storage and GPU texture when their last consumers let go. Preserve
+      PNG and forced-SVG presentation through separately built resources selected before load;
+      neither mode may load the other mode's atlas or retain any constituent textures.
+- [ ] **Prove memory ownership, loading cost and appearance.** Verify every covered image maps
+      to the intended atlas region and consumers share its texture. Inspect exported package
+      contents and dependencies to prove no baked constituent image or imported copy is present;
+      prove no individual CPU image or GPU texture is loaded or reconstructed at runtime.
+      Check group release/reload, presentation modes and the exported
+      web build, including startup, first appearance and day transitions. Record atlas
+      load/release timings and CPU/GPU texture memory with clear measurement limits. Preserve
+      native dimensions, alpha, tinting, placement, mirroring, animation and ground seams;
+      use focused tests and bounded motion evidence. Update the architecture, graphics and
+      telemetry docs with the implementation. The full suite remains CI's gate.
+
+---
+
 ## M168 — The escape after playtest 94 · asked for 2026-09-19
 
 > "the escape is okay but there should be a fire on the left like it is right now but the top
@@ -355,41 +401,137 @@ through `tools/run.sh --start-escape --seed 4242`.
 
 ---
 
-## M167 — The father's legs read as legs · asked for 2026-09-19
 
-> "the leg positions are correct now. we can use it for now (and merge) but in parallel do another fix attempt to just make the legs look like legs"
+## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
-> "I approved the graphics for now but also noted that we need to fix the leg's appearance in the next pr"
+> "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
+> numbers and the codebase and think about how we could improve performance and reduce stutter"
 
-[PLAYTEST-90](playtests/PLAYTEST-90.md) and [PLAYTEST-91](playtests/PLAYTEST-91.md).
-The provisionally accepted contact baseline and its narrow father-only splice exception are
-recorded in `DECISIONS.md` under M160, provisional contact acceptance. This separate drawing
-follow-up does not replace that baseline without visual approval.
+**The deliverable is an optimization, with measurement retained as evidence.**
+[PLAYTEST-86](playtests/PLAYTEST-86.md) clarifies: "well the point was to actually do some
+optimizations. measurement is nice and make sure it's fully recorded but the core is to make
+things faster". Instrumentation alone does not complete this item. Reduce a demonstrated cost
+without changing gameplay, retain controlled repeated before/after distributions over equal
+active-play windows, and verify identical behavior. A measured reduction in a named work metric
+must be distinguished from whole-frame improvement and perceived smoothness. The existing noisy
+toggle trials establish neither a causal toggle cost nor a shipping pacing choice.
 
-[PLAYTEST-92](playtests/PLAYTEST-92.md) rejects the first refinement: "still bad legs -- maybe
-use the legs of the woman in those cases?" — "they have the same pants". The next preview may
-reuse the woman's accepted pushing-leg artwork in E/W and SE/SW B, with the father's upper
-body and the accepted contact ownership preserved. This is a specific donor exception, not
-permission to replace the father's identity or change protected frames.
+`CrowdAgent.contribution_at()` skips velocity and ellipse work outside a conservative bound
+that includes the current jolt and the maximum forward stretch. The exact-parity checks and
+repeated before/after measurement are in [DECISIONS.md](DECISIONS.md), M159, cheaper crowd
+contribution sweeps; the raw evidence is
+[the contribution measurement record](evidence/m159-crowd-rejection-2026-09-19/README.md).
+This establishes a reduction in query cost, while the remaining long-frame cause and phone
+behavior still require the work below. `--frame-trace` supplies bounded raw callback intervals
+and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md#raw-frame-traces).
 
-- [ ] **Match the legs to the rest of the family.** E/W B needs A/C's clear dark far-leg cue,
-      folded and shaded trousers, and chunky brown highlighted shoes instead of thin dark slivers.
-      Keep the accepted near leg trailing and the far leg advancing, with a continuous
-      hip–knee–shoe chain and natural knees. SE/SW must read as a three-quarter stride under
-      its torso, not a full-width profile stride: narrow it toward A and the accepted NE/NW
-      contacts so A/C/B/C does not alternate short and long steps like a limp.
-- [ ] **Publish an early attempt and ask for feedback.** Use the established clean eight-direction
-      A/C/B/C sheet and native/6× four-phase GIFs at 190ms per phase. Push and embed them in
-      the next PR description with commit-pinned links before asking; the CLI cannot show local
-      images. Repeated feedback is welcome, per [PLAYTEST-89](playtests/PLAYTEST-89.md).
-      Preserve N/S, NE/NW, all A/C frames, upper-body landmarks, native canvases, scale and anchors.
-      Do not change carrying poses, stroller art or gameplay. Keep exact prompts, raw inputs,
-      crops, transforms, commands and hashes with the evidence. The first attempt may expose
-      remaining defects; do not spend another internal revision loop hiding them from review.
-- [ ] **Install only the visually accepted refinement.** Keep corresponding reviewed SVGs,
-      creation copies, registered PNGs and manifest hashes in agreement, preserve import sidecars,
-      and verify actual runtime bindings. The provisional splice is not a general successful
-      procedure; update shared graphics guidance only with a method accepted for final appearance.
+- [ ] **Attribute the remaining slow intervals before another optimization.** Use the raw traces
+      to select a reproducible expensive call or span, reduce that work, and retain controlled
+      before/after evidence with identical-behavior checks. Establish repeatable full active-play
+      windows before ranking modest readout, graph, telemetry or pacing costs. Keep rejected short
+      trials visible. CPU callbacks do not measure physical display presentation, and unchanged
+      counters do not rule out unobserved script work. M143, readout labels and windows, separately
+      owns the engine's previous-second `process` and `physics` maxima. A pacing switch remains
+      diagnostic, not a shipping decision.
+- [ ] **Profile the current phone build only after that baseline.** Divide CPU time between the
+      baby's every-physics-tick crowd contribution sweep, the halo's rendered-frame contribution
+      sweep, event streaming/director work, crowd movement/traffic and debug presentation. Do not
+      use `--invincible`: it skips the baby's source sweep and suppresses the meter behavior being
+      measured. Measure the conservative contribution rejection on that device, including its
+      effect on the baby and halo callers, before considering caching or lower tick rates.
+- [ ] **Complete atlas measurements alongside M171, build-time atlases.** The CPU spans distinguish
+      source readback/copy, blit, texture submission, regions and release joins, with actual thread
+      labels. Measure the threadless web export, observe real release events, and distinguish CPU
+      submission from GPU completion. Retain a baseline and compare the prepared atlas path's
+      loading and memory costs under M171's explicit build-time contract; that design does not
+      depend on proving atlases cause stutter. M171 owns atlas implementation and excludes baked
+      constituent textures from the build and individual CPU/GPU allocations. Do not add worker
+      jobs or larger runtime atlases on the native host evidence. The older laptop hitch predates
+      the atlas path, so no atlas result can be assumed to explain both platforms.
+
+---
+
+## M163 — The ground atlas test builds the same reference it compares · asked for 2026-09-19
+
+> "create a todo for the bug report with enough detail to pick it up without additional
+> investigative work"
+
+M159, a slow frame names the frame that was slow, retains
+`docs/evidence/m159-frame-traces-2026-09-19/verification-ground-layers-baseline.log`.
+`./tools/test.sh ground_layers` emits one Godot error for each source ID 58 through 65 at
+`tests/test_ground_layers.gd:271`, then reports no assertion failure and exits 0. The retained log
+reproduces on an isolated clean checkpoint before M159's instrumentation; the ground suite,
+ground compositor, authored TileSet and runner are unchanged on current `origin/main`.
+
+The error is in `_test_every_source_shares_one_texture_and_keeps_its_tiles`, not in production.
+`GroundLayers.build_tile_set()` registers the eight route-curb twins in both presentation modes:
+PNG reaches `_register_route_kerb_twins()` through `_compose_layers()`, while SVG calls the
+registrar directly with an empty manifest. The test helper `_unpacked_tile_set(false)` follows the
+PNG path, but `_unpacked_tile_set(true)` only resolves the authored sources and omits the registrar.
+The packed SVG TileSet therefore has the fixed runtime sources declared by
+`GroundTiles.ROUTE_KERB_TWIN`, while its reference stops at the authored resource's last source.
+`TileSet.get_source()` emits the engine error before returning null, and the test then skips the
+missing reference, leaving those generated sources untested.
+
+- [ ] **Build the same pre-pack source set in both paths.** In
+      `tests/test_ground_layers.gd::_unpacked_tile_set`, keep `_compose_layers()` for PNG and call
+      `GroundLayers._register_route_kerb_twins(result, {})` for SVG, matching
+      `GroundLayers.build_tile_set()` before `pack_into_one_texture()` runs. Do not add a second
+      literal list of IDs 58 through 65; those values are intentional fixed IDs, but
+      `GroundTiles.ROUTE_KERB_TWIN` and the production registrar remain their source of truth.
+- [ ] **Make a missing reference source an assertion failure without asking Godot for it.**
+      `_test_every_source_shares_one_texture_and_keeps_its_tiles` first checks that packed and
+      reference source counts agree and that `reference.has_source(id)` is true for every packed
+      ID; only then may it call `get_source(id)`. Preserve the existing tile-count, geometry,
+      shared-texture and pixel comparisons. A missing generated source must fail by name instead
+      of emitting an engine error and continuing.
+- [ ] **Verify the focused contract.** `./tools/test.sh ground_layers` exits 0 and its combined
+      output contains no `ERROR:`, `SCRIPT ERROR`, `Parse Error` or missing-atlas-source message.
+      Both PNG and forced-SVG iterations compare every packed source against a real unpacked
+      source, and `./tools/check.sh` passes. This changes one focused suite, not the global test
+      rig, so CI supplies the full-suite gate; no visual evidence is needed.
+
+---
+
+## M164 — Engine errors make the test gate red · asked for 2026-09-19
+
+> "create a todo for the bug report with enough detail to pick it up without additional
+> investigative work"
+
+This follows M163, the ground atlas test builds the same reference it compares: landing the runner
+repair first correctly makes that known fixture error fail its shard.
+
+`tests/run_tests.gd` counts only `check()` and `close_to()` failures and passes that array's state
+to `SceneTree.quit()`. Godot diagnostics are a separate channel: an engine `ERROR:`, a
+`push_error()` or a completed script error can be printed while the assertion array stays empty
+and the process exits 0. `tools/test.sh` currently trusts that status in filtered, serial and
+single-shard runs. Its local multi-shard reporter also prints only suite timings and `FAIL` lines,
+so a completed shard's engine error can disappear from the combined output.
+
+- [ ] **Make the shell boundary reject engine diagnostics.** In `tools/test.sh`, have
+      `run_one_process()` preserve and print the test process's combined stdout/stderr and return
+      non-zero when either Godot returned non-zero or its output contains `SCRIPT ERROR`,
+      `Parse Error` or `ERROR:` — the same error vocabulary `tools/check.sh` already treats as a
+      failed boot. All callers use that one classification: filtered runs, `--serial`,
+      `--shard I/N`, and each process in a local sharded run. When a shard contains an engine
+      error, retain the assertion summary but surface the offending log and make the aggregate
+      status non-zero. A failed `--record-costs` run does not replace the previous cost table.
+      Warning policy and import-pass failure handling are outside this reproduced defect.
+- [ ] **Keep a real negative fixture outside suite discovery.** Add
+      `tests/runner_fixtures/engine_error.gd`, with a `run(t)` that emits a unique intentional
+      `push_error()` sentinel while otherwise completing normally. `tests/run_tests.gd::_discover`
+      continues to discover only top-level `test_*.gd` suites; document that the negative fixture
+      runs only when named explicitly. Add a CI guard after Godot is available that invokes
+      `./tools/test.sh runner_fixtures/engine_error.gd`, requires the sentinel and normal runner
+      summary to appear, and requires a non-zero exit. This proves a real Godot diagnostic, not
+      merely a failed assertion or crashed process, closes the gate.
+- [ ] **Verify every runner path.** The explicit negative fixture exits non-zero and leaves its
+      diagnostic visible; an ordinary clean focused suite still exits 0; an ordinary failed
+      `t.check()` still exits non-zero. Exercise filtered/serial, `--shard`, and local sharded
+      propagation with the same classifier. Run `./tools/test_cli_help.sh`, `./tools/check.sh`,
+      and the unfiltered `./tools/test.sh`: this milestone changes the rig every suite passes
+      through, so it is the repository rule's exceptional case where a local full run is warranted.
+      No screenshot is needed.
 
 ---
 

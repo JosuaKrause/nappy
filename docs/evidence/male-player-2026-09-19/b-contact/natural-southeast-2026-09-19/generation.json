@@ -1,0 +1,14 @@
+{
+  "tool": "built-in image_gen.imagegen",
+  "prompt": "retry-prompt.txt",
+  "input": "inputs/colored-contact-edit-target.png",
+  "original_generated_path": "/Users/krause/.codex/generated_images/01a0bbbb-586c-7462-b438-bd35270e4697/exec-7f4c12d8-7d07-4caa-ba6e-dee0648a887b.png",
+  "saved_generated_source": "generated-colored.png",
+  "dimensions": [1391, 1131],
+  "mode": "RGBA",
+  "reference_roles": {
+    "upper_body": "Original high-resolution father pushing and carrying identities cropped above pelvis",
+    "colored_lower_body": "Explicit hip-to-shoe chains with foreground trailing thigh crossing over far advancing thigh; colors preserve ownership during normalization"
+  },
+  "postprocess": "Deterministic color-only mask, whole-figure uniform registration, eight-direction PNG/GIF assembly; see assemble.py and inputs.json"
+}

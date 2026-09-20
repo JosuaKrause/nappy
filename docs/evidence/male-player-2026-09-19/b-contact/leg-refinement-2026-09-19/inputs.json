@@ -1,0 +1,28 @@
+{
+  "pillow": "12.3.0",
+  "files": {
+    "docs/evidence/male-player-2026-09-19/b-contact/leg-refinement-2026-09-19/assemble.py": "ab034a0b88c858ce6002c996d2687176f93f0f2927de477e118168fee1429d60",
+    "docs/evidence/male-player-2026-09-19/b-contact/leg-refinement-2026-09-19/side-donor-refined-raw.png": "5ad5ba4e6ba6971edc06c135caabed9534282d1162d253a85eefe54228df7aaf",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/side-donor-raw.png": "62a5680553d51fcb709e1a8edeefa534f2bf0ed1094a602821c74adef956b939",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/assemble.py": "495c95f167a5ef7985dce7a617916a95933aef72bdd5ab8e453328697eb0e2d9",
+    "docs/evidence/male-player-2026-09-19/b-contact/loops-2026-09-19/assemble.py": "e3f44457b581bd1282a13b8b81f0d85f9878981b23f05e222145e38f72ba5d3e",
+    "docs/evidence/comic-pushing-strides-2026-09-12/convert.py": "bec4f0ed524d345e5545129743c99861c7d7ebe94b558a4b8f5983f93f8b7529",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generated/rig/father_back_a.png": "ce72244b2ae09c2986767dd5fb6b2326cb662fcee65a6d611349ae1c97433aec",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generated/rig/father_back_b.png": "3bc4297fef285d64578f7051f91eba3ce1962519a63d3cf4e40c5105bb1d9b7b",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generated/rig/father_back_c.png": "132533ac4e979eeccf769b2e347706b542797142d6de338cbe2ad1cc649be9f1",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generated/rig/father_back_diagonal_a.png": "68dc4b1a4a11ee36e2ce5e8abb682e88723d8d59b6b6ed4042a6a82d49a17384",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generated/rig/father_back_diagonal_b.png": "6d737538aa63cb48334a84f2f3ef2547fe8f75d11b1d0d2ca4cb3538f997afe5",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generated/rig/father_back_diagonal_c.png": "e45da614f86a08f4ae7af9a450bcacddc643f41818aa3e4b11f339c346d615d4",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generated/rig/father_front_a.png": "3466cddf142ea505e48d4f78670a99bd7964d3c9b5dfb87093821798e8beeece",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generated/rig/father_front_b.png": "6bd88f5fe27cabfc1f8684922315f1f33a16e3462031a14e1eee0dea4456cccc",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generated/rig/father_front_c.png": "964d42efbabe022492fc63acda0e7b74db045b97ef6aa08d8d72815fc726ebd7",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generated/rig/father_front_diagonal_a.png": "3ddb32d5c7e0fe2488940b27c42d29f3f4d80a6b173e04218d0c009782d4821b",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generated/rig/father_front_diagonal_b.png": "7912eeef1d3ca134b8acc32b8375ec3627576038e40c39f548eee14b6f1b833c",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generated/rig/father_front_diagonal_c.png": "e6595ac94a46dfa9d11ffd2e1249ff0fc66f570ddfdc2ebfe3fca4feec82009f",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generated/rig/father_side_a.png": "bcc6a84f943aacc2522fa18b5a5a96c6e7e3e96e9e271c8e354938910f2587af",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generated/rig/father_side_b.png": "4b9470cbfa65bdef7c88a9f20f9dd5d36055c556d98b5429627f86baf08a5722",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generated/rig/father_side_c.png": "f7e312a8d594a375a69d82ded150b4c638329c0ab060aa6dff09fcf45d11140b",
+    "docs/evidence/male-player-2026-09-19/b-contact/leg-refinement-2026-09-19/prompt-side-refinement-01.txt": "8528d21cc2be9a6711be612a905c5a5caece486b91c65aa672fdfa99e0c55095",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/generation.json": "cc29ee0f8f169e3a2241a9cb996ff343c497ee55c8ee40750c457bdb8230e7aa"
+  }
+}

@@ -21,6 +21,14 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **In a run that selects the father, watch pushing and carrying through several facings and
+  the A/C/B/C walk cycle, including southeast and southwest.** Do the approved legs read as a
+  continuous stride at gameplay size, with stable upper body, baby, ground contact and stroller
+  placement? The complete PNG/GIF family is accepted in [PLAYTEST-104](playtests/PLAYTEST-104.md).
+  The retained pushing burst shows the father; the attempted carrying burst shows the mother
+  and cannot answer father-carrying appearance. Record is `DECISIONS.md`, M167, resumed delivery
+  and main integration.
+
 - **Close the game in the middle of a day and open it again**, on the desktop build, and on
   the released page in a laptop browser (refresh, close the tab). The phone is answered:
   reloading there brings up the proper day brief ([PLAYTEST-94](playtests/PLAYTEST-94.md)). Does the title come up, and does pressing start bring up the day brief — the
@@ -84,14 +92,12 @@ item below for as long as looking takes.
   title screen shows rather than the map's top-left corner or black. **Is the corner gone,
   with no blank frame in its place, and does the title screen still show what it showed?**
   Record is `DECISIONS.md`, M151, the first frame draws the doorstep.
-- **Walk a minute of day 1 on the laptop with `--debug --spikes` and read the `spike` lines
-  back.** Every picture is loaded before the day starts now and the halo's shader is compiled
-  before play, and the laptop still draws a 24 to 26 ms frame every second at 85 to 91 fps
-  (playtest 75, the stutter branch). **Does the stutter on a new sprite still happen, and what
-  do the spike lines say changed in those frames?** A line saying `pictures loaded` means a
-  picture still loads late; a run of lines saying nothing changed says the frame is not the
-  game's scripts and sends the search to the present path. Record is `DECISIONS.md`, M147,
-  every picture loaded before it is needed.
+- **Walk a minute of day 1 on the laptop with `--debug --frame-trace`, without screenshots or
+  invincibility, then quit normally to export the trace.** Does walking feel smoother, and do
+  intermittent stalls remain? The raw post-draw intervals name their callback-time counters;
+  unchanged counters do not rule out other script or rendering work. The crowd contribution
+  sweep is cheaper, while this trace and the player's perception still answer different
+  questions. Record is `DECISIONS.md`, M159, cheaper crowd contribution sweeps.
 - **Walk a minute of day 1 on the laptop with `--debug` and watch the graph under the
   readout, then the same on the phone with `?debug=1`.** Each bar is one frame's length, newest
   at the right, 240 frames wide; the lines are 60 and 30 fps and the window's mean; amber is a

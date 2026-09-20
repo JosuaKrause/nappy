@@ -1,0 +1,10 @@
+Use case: compositing
+Asset type: uninstalled pixel-art game-sprite edit target
+Primary request: Edit Image 1 in place. It contains two isolated father pushing-B figures already composited with the woman's accepted matching-pants legs: right-facing side on the left, southeast/front-diagonal on the right. Heal only the narrow blue-jacket/pelvis-to-pants junction. The woman's existing legs are the chosen donor artwork, not a prompt to invent new legs.
+Input images: Image 1 is the edit target and fixes the two-figure layout, scale, pose, transparency, and father upper bodies. Images 2 and 3 are the exact accepted mother side-B and front-diagonal-B leg donors. Images 4 and 5 are the father side-B and front-diagonal-B identity/upper-body references. The mother's A/C frames were inspected before this edit to verify anatomy and materials but are not tool inputs.
+Scene/backdrop: genuinely transparent; no floor, shadow, panel, grid, labels, or environment
+Subject: exactly two instances of the same short-brown-haired father in a blue overshirt and gray-blue pants, pushing an off-canvas stroller
+Style/medium: preserve the edit target's native comic pixel-art rendering; crisp authored contours and restrained fabric shading
+Composition/framing: preserve Image 1's 1024×1024 transparent canvas, cell positions, figure scale, bottom baseline, and facing exactly
+Constraints: preserve the accepted mother B legs and shoes as closely as possible, including every leg contour, the side contact's near trailing leg and far advancing leg, and the independently drawn narrower three-quarter diagonal stride; change only the narrow pelvis/hem seam needed to join those legs to the father's blue upper body; keep both complete figures fully visible; no text; no watermark
+Avoid: new leg anatomy, projected side legs in the diagonal, longer stride, thin shoe slivers, red coat pixels, altered father face/hair/hands/upper body, extra figures, stroller, comparison panel, opaque or checkerboard background
