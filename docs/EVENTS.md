@@ -682,10 +682,11 @@ other. The **lethal** half of the band keeps its own gradient and is pulled past
 `WALL_DEEP_WEIGHT`, so nothing that ends the day is drawn to the other side of her street in
 particular.
 
-**A wall by fit alone gets none of that pull.** *(PLAYTEST-99, 2026-09-19, asked whether
-`delivery_van` should also be weighted toward junctions once it became a wall: "A. No … do that.")*
-The rim is for the big, noisy things meant to be seen from a distance before she commits to a
-street; `delivery_van` is silent and a wall only because its own body leaves no lane, which the
+**A wall by fit alone gets none of that pull.** *(2026-09-19, the player, asked whether
+`delivery_van` should also be weighted toward junctions once it became a wall: "A. No (my
+recommendation). -- do that")* The rim is for the big, noisy things meant to be seen from a
+distance before she commits to a street; `delivery_van` is silent and a wall only because its own
+body leaves no lane, which the
 cost clause never sees (`EventScheduler._is_a_wall_by_cost` is the question `_copies_of` asks
 before choosing a `WALL`'s weight). So a wall by fit keeps only the one consequence every wall
 gets — zero copies of a route-carrying cell — and is weighted everywhere else exactly as friction

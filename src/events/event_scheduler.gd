@@ -394,14 +394,14 @@ static func _role_for(def: EventDef, day: int = 0) -> GameEnums.BlockerRole:
 
 ## **Whether a `WALL` earns the pull toward junction rims, as opposed to keeping only the one
 ## consequence every wall gets** (zero copies on a route-carrying cell, `_copies_of` below).
-## *(PLAYTEST-99, 2026-09-19, asked whether `delivery_van` should also be weighted toward
-## junctions: "A. No … do that.")* `Tuning.EVENT_WALL_RIM_WEIGHT` is for the rows meant to be seen
-## from a distance before she commits to a street — lethal, or costly enough to cross
-## `WALL_WORTH_OF_COST` — and `delivery_van` is neither: silent, and a wall only because its own
-## body leaves no lane (`_closes_the_band_by_its_own_placement`), which the cost clause
-## (`_line_reach_of >= _THE_FAR_LANE`) never sees. A row that is a wall by fit alone is spread
-## along streets the way friction is instead: `_copies_of` reads this before deciding which weight
-## a `WALL` gets.
+## *(2026-09-19, the player, asked whether `delivery_van` should also be weighted toward junctions
+## once it became a wall: "A. No (my recommendation). -- do that")* `Tuning.EVENT_WALL_RIM_WEIGHT`
+## is for the rows meant to be seen from a distance before she commits to a street — lethal, or
+## costly enough to cross `WALL_WORTH_OF_COST` — and `delivery_van` is neither: silent, and a wall
+## only because its own body leaves no lane (`_closes_the_band_by_its_own_placement`), which the
+## cost clause (`_line_reach_of >= _THE_FAR_LANE`) never sees. A row that is a wall by fit alone is
+## spread along streets the way friction is instead: `_copies_of` reads this before deciding which
+## weight a `WALL` gets.
 static func _is_a_wall_by_cost(def: EventDef) -> bool:
 	return def.hard_fail or def.walk_through_cost() >= Tuning.WALL_WORTH_OF_COST \
 			or _line_reach_of(def) >= _THE_FAR_LANE
@@ -1145,8 +1145,8 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary) ->
 ## the deadly end stays where it was put.
 ##
 ## **A wall by fit alone skips the gradient entirely and reads like friction beyond the one
-## refusal every wall keeps.** *(PLAYTEST-99, "A. No … do that" — see `_is_a_wall_by_cost`'s own
-## doc.)* `by_cost` is that question, asked once by the caller rather than re-derived per tile: a
+## refusal every wall keeps** — see `_is_a_wall_by_cost`'s own doc for the player's own answer on
+## this. `by_cost` is that question, asked once by the caller rather than re-derived per tile: a
 ## silent, narrow body earns no distance-before-she-commits pull, so it is weighted onto an
 ## on-corridor tile exactly as `FRICTION` is, and left at one copy everywhere else — never pulled
 ## to the rim, never pushed past it. The zero-copies refusal above still applies to it first, since

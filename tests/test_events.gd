@@ -2998,27 +2998,22 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 ## corridor weight still shows through all three rules; it is not a claim that nothing diminishes
 ## it.
 ##
-## **Both floors moved and have not fully recovered, across three changes.** `delivery_van`
-## leaving the friction pool for good (`_closes_the_band_by_its_own_placement` reads it as a wall
-## by physical fit, `AT_THE_KERB`) cost the whole share 35% to 32% and the narrow one 44% to 40%.
-## Standing `poster_crew` `AGAINST_THE_BUILDING` instead of `ANY` put it back on the corridor as
-## friction — its own 11px body leaves 37px to the kerb from the frontage lane's own tile centre,
-## over the 28px she needs — recovering most of that ground (36.13%, 42.55%). Keeping
-## `delivery_van` off `EVENT_WALL_RIM_WEIGHT` once it is a wall by fit rather than by cost
-## (`_is_a_wall_by_cost`, `_copies_of`) moved the whole share again, slightly down (35.84%) since a
-## wall spread across the corridor like friction still is not counted as friction; the narrow share
-## held (42.55%, unaffected — the rows small enough to matter for it were never `delivery_van`'s
-## own). Measured over the days sampled here.
+## **The whole share sits under its own natural ceiling because `delivery_van` counts as a wall in
+## this tally while its own ground is weighted exactly like friction.** `delivery_van` is a wall by
+## fit (`_closes_the_band_by_its_own_placement`) and is refused every route-carrying cell like any
+## other wall, so it never shows up as `friction_on_the_route` even though `_copies_of`'s `by_cost`
+## clause spreads its ground the same way friction's is spread. That gap between what the tally
+## counts as friction and what the corridor weight actually reaches is real and current, not a bug
+## this test papers over.
 ##
-## **Neither floor is restored to its original value, and one is restored to its original margin
-## anyway.** The whole share's own margin over 0.35 (2.31 points, measured against the state before
-## any of these three changes) does not survive any of them — 35.84% clears 0.35 by 0.84 points,
-## too thin to call safe — so its floor stays at 0.34 (1.84-point margin). The narrow share's
-## margin over 0.40 (4.26 points originally) does not survive either at 2.55 points, but 2.55 is
-## itself a comfortable margin on its own terms, larger than the whole share's, so its floor is
-## restored to **0.40** rather than kept at a previous session's more cautious 0.39. Re-measure
-## rather than trust either number if the catalogue's `pavement_side`/`obstructs_radius` pairing,
-## or which walls get `EVENT_WALL_RIM_WEIGHT`, moves again.
+## **A floor is kept at the highest of the share's own ceiling (0.35 whole, 0.40 narrow) or a lower
+## number the measurement clears by at least 1.5 points**, so a small future regression fails loudly
+## rather than drifting under a floor nobody re-measured. Measured over the days sampled here: the
+## whole share stands at 35.84%, clearing 0.35 by only 0.84 points — too thin to trust — so its
+## floor sits at 0.34 (a 1.84-point margin). The narrow share stands at 42.55%, clearing 0.40 by
+## 2.55 points, comfortably past the 1.5-point bar, so its floor stays at its own ceiling, 0.40.
+## Re-measure rather than trust either number if the catalogue's `pavement_side`/`obstructs_radius`
+## pairing, or which walls get `EVENT_WALL_RIM_WEIGHT`, moves again.
 ##
 ## An `AHEAD_OF_PLAYER` row is exempt from the first half and the exemption is the design rather
 ## than a hole: the charging dog is sited by `EventDirector` in front of wherever she turns out to

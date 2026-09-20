@@ -676,9 +676,10 @@ of her.
   and therefore where it bounds anything (`EVENT_WALL_RIM_WEIGHT`), and which is two kinds of
   ground: a turning off the corridor, and the far side of the street the route is already on. A
   lethal wall is pulled past both (`WALL_DEEP_WEIGHT`). **A wall by fit alone gets none of that
-  pull** *(PLAYTEST-99: asked whether `delivery_van` should be too, "A. No … do that")* — nothing
-  about it is the big, noisy, seen-from-a-distance thing the rim exists for, so beyond the one rule
-  above it is weighted exactly as friction is, landing on the far side of a route street through
+  pull** *(2026-09-19, the player, asked whether `delivery_van` should also be weighted toward
+  junction rims: "A. No (my recommendation). -- do that")* — nothing about it is the big, noisy,
+  seen-from-a-distance thing the rim exists for, so beyond the one rule above it is weighted
+  exactly as friction is, landing on the far side of a route street through
   `EVENT_CORRIDOR_WEIGHT` rather than through the rim.
 - **friction** — placed *inside* the corridor, on the route she is meant to take, to make the route
   worth thinking about. Costly blockers. A weight (`EVENT_CORRIDOR_WEIGHT`) rather than a rule,
