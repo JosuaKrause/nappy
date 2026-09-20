@@ -81,6 +81,26 @@ var resistance_carrying_package := false
 ## next day brief. "" once read, or when there is nothing to say.
 var pending_resistance_brief := ""
 
+## Alley tiles a completed pickup step's chalk mark stood at, this run — read by
+## `ResistanceDirector._pick_reachable()` and `_nearest_alley_within()` so a later mark never
+## relocates onto, or starts on, the same alley while another eligible one is still in reach
+## (M177). Not in `_SAVE_FIELDS`: rides beside `escape_section` as its own top-level save key, the
+## same pattern (see `GameSave`'s own class doc), so a save written before this field existed
+## still loads and reads as "nothing recorded" by absence.
+##
+## **Not given back by `_give_the_resistance_back()`.** A lost day's own placement never reads
+## this list at all — the mark it is about was placed at dawn, before any tile could have been
+## recorded against it today — so leaving an undone attempt's tile in here only ever costs the
+## next placement one more alley to avoid, never a placement the guarantee needs.
+var completed_resistance_alley_tiles: Array[Vector2i] = []
+
+## Records a tile a pickup's mark stood at when its step completed, ignoring one already
+## recorded. `ResistanceDirector._on_contact_completed()` is the one caller — see its own doc for
+## why only a pickup's tile is ever worth recording here.
+func record_completed_alley_tile(tile: Vector2i) -> void:
+	if tile not in completed_resistance_alley_tiles:
+		completed_resistance_alley_tiles.append(tile)
+
 ## What the resistance had done when today's attempt began — the six run-scoped facts a lost day
 ## gives back. `begin_day()` photographs them, `finish_day()` restores them on a loss and commits
 ## them on a win, and nothing else writes them.
@@ -156,6 +176,7 @@ func start_run(seed_value: int = 0) -> void:
 	sabotage_done = false
 	resistance_carrying_package = false
 	pending_resistance_brief = ""
+	completed_resistance_alley_tiles.clear()
 	_snapshot_the_resistance()
 	print("[GameState] run started, seed=%d" % run_seed)
 

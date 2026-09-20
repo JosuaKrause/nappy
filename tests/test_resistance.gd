@@ -25,7 +25,10 @@ func run(t) -> void:
 	_test_the_guard_is_seeded(t)
 	_test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t)
 	_test_a_mark_within_notice_radius_does_not_move(t)
-	_test_a_seen_mark_never_moves_again(t)
+	_test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t)
+	_test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t)
+	_test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t)
+	_test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t)
 	_test_the_guard_moves_with_the_mark_and_faces_away_from_her(t)
 	_test_the_guard_never_lands_inside_a_building(t)
 	_test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t)
@@ -432,7 +435,14 @@ func _test_a_mark_within_notice_radius_does_not_move(t) -> void:
 		player.free()
 		director.free())
 
-func _test_a_seen_mark_never_moves_again(t) -> void:
+## M177, playtest 116's own day-6 shape: a mark on offer at (24,149), on screen from the doorstep
+## at (80,84) — fifteen tiles away — moved to (65,83) two seconds in and was marked *seen* 0.4s
+## later, so a fifteen-tile-distant alley froze it for the rest of the day. Forcing `_sight` to
+## always answer true reproduces "on screen" without a viewport; standing at `far_alley` (beyond
+## `NOTICE_RADIUS`, so certainly beyond the far narrower `SEEN_DISTANCE`) reproduces the distance.
+## A single frame is enough to show the old bug is gone: the old rule pinned the mark on this exact
+## frame, and the new one still relocates it.
+func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
 		var director := _director(t)
@@ -441,17 +451,128 @@ func _test_a_seen_mark_never_moves_again(t) -> void:
 		director.set_sight(func(_p: Vector2) -> bool: return true)
 
 		var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, mark_at)
+		t.check(far_alley != Vector2.INF, "the test city has an alley far from the mark")
 		var player := _rig_player(t, far_alley)
 
 		director._process(STEP)
-		t.check(director.contact_position().distance_to(mark_at) < 0.5,
-				"seen on the very first frame, so it does not move even though she is far from it")
-		director._process(STEP)
-		t.check(director.contact_position().distance_to(mark_at) < 0.5,
-				"and it stays put on every later frame too, however far she walks")
+		t.check(director.contact_position().distance_to(far_alley) < 0.5,
+				"on screen but far outlasts nothing: it still relocates to the alley she has come near")
 
 		player.free()
 		director.free())
+
+## The other half of the same rule: near enough, for long enough, that walking away is a choice.
+func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var director := _director(t)
+		director.start_day(4, _rng(4, "resistance"), 300.0)
+		var mark_at := director.contact_position()
+		director.set_sight(func(_p: Vector2) -> bool: return true)
+
+		# Within SEEN_DISTANCE the whole time, never merely "on screen".
+		var near_at := mark_at + Vector2(ResistanceDirector.SEEN_DISTANCE - 20.0, 0.0)
+		var player := _rig_player(t, near_at)
+
+		# One frame short of the dwell window: not seen yet.
+		director._process(ResistanceDirector.SEEN_DWELL_SECONDS - STEP)
+		t.check(director.contact_position().distance_to(mark_at) < 0.5,
+				"within SEEN_DISTANCE the whole time, so it has not moved regardless of being seen yet")
+
+		# The dwell completes on this frame.
+		director._process(STEP)
+
+		# Walk her far away — seen does not chase, but it also does not relocate any more.
+		var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, mark_at)
+		t.check(far_alley != Vector2.INF, "the test city has an alley far from the mark")
+		player.global_position = far_alley
+		director._process(STEP)
+		t.check(director.contact_position().distance_to(mark_at) < 0.5,
+				"seen after the dwell window completes, so it stays put however far she walks after")
+
+		player.free()
+		director.free())
+
+# ----------------------------------------------------------- alley avoidance ---
+# M177: "a mark does not return to an alley a step was already taken from while another is
+# within reach." Day 6 of playtest 116's own run put step 3's mark back on the exact alley step 1
+# had been completed at on day 4.
+
+## The dawn placement (`_place()` -> `_pick_reachable()`) skips an alley `GameState.
+## completed_resistance_alley_tiles` already names, as long as some other alley is reachable —
+## which a full generated city always has plenty of for a pickup's placement.
+func _test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
+		GameState.completed_resistance_alley_tiles.clear()
+
+		var first := _director(t)
+		first.start_day(4, _rng(4, "resistance"), 300.0)
+		var used_tile := _city.map.world_to_tile(first.contact_position())
+		first.free()
+
+		GameState.completed_resistance_alley_tiles.append(used_tile)
+		GameState.completed_resistance_steps = _completed_through(2)
+		var second := _director(t)
+		second.start_day(6, _rng(6, "resistance"), 300.0)
+		t.check(second.current_step() != null and second.current_step().index == 3,
+				"day 6 offers the second mark")
+		var second_tile := _city.map.world_to_tile(second.contact_position())
+		t.check(second_tile != used_tile,
+				"a fresh mark avoids the alley a completed step used, another being in reach")
+		second.free()
+
+		GameState.completed_resistance_alley_tiles = saved_tiles)
+
+## The two ALLEY tiles closest together in the built test city — `[player_at, nearer, other]`,
+## `player_at` sitting exactly on `nearer` so it is always the globally nearest one to itself, and
+## `other` confirmed within `ResistanceDirector.NOTICE_RADIUS` of it. Empty if the city has no pair
+## that close, which the relocation test below skips on rather than asserting through.
+func _two_nearby_alleys() -> Array:
+	var alleys := _city.map.tiles_of_type(GameEnums.TileType.ALLEY)
+	for tile in alleys:
+		var at := _city.map.tile_to_world(tile)
+		for other in alleys:
+			if other == tile:
+				continue
+			if at.distance_to(_city.map.tile_to_world(other)) <= ResistanceDirector.NOTICE_RADIUS:
+				return [at, tile, other]
+	return []
+
+## The relocation rule (`_nearest_alley_within()`) applies the same avoidance, with the same
+## fallback: marking the nearest alley to a chosen spot as "used" sends an unseen, far-relocating
+## mark to some other alley still in reach instead, rather than to `Vector2.INF`.
+func _test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var pair := _two_nearby_alleys()
+		if pair.is_empty():
+			t.check(true, "skipped: the test city has no two alleys close enough to test this")
+			return
+		var player_at: Vector2 = pair[0]
+		var nearer_tile: Vector2i = pair[1]
+
+		var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
+		GameState.completed_resistance_alley_tiles.clear()
+		GameState.completed_resistance_alley_tiles.append(nearer_tile)
+
+		var director := _director(t)
+		director.start_day(4, _rng(4, "resistance"), 300.0)
+		# Force the mark far from the chosen pair, regardless of where day 4's own roll put it —
+		# this test is about the avoidance, not about replaying a particular placement.
+		director._contact.global_position = \
+				player_at + Vector2(ResistanceDirector.NOTICE_RADIUS + 200.0, 0.0)
+
+		var player := _rig_player(t, player_at)
+		director._process(STEP)
+		var new_tile := _city.map.world_to_tile(director.contact_position())
+		t.check(new_tile != nearer_tile,
+				"a relocated mark avoids the alley a completed step used, another being in reach")
+
+		player.free()
+		director.free()
+		GameState.completed_resistance_alley_tiles = saved_tiles)
 
 func _test_the_guard_moves_with_the_mark_and_faces_away_from_her(t) -> void:
 	_build_city(t)

@@ -389,37 +389,6 @@ unless an item says otherwise.
 
 ---
 
-## M177 — The second mark is any alley she comes across, and a step says it was done · asked for 2026-09-20
-
-> "I did the first mark then the yeller (there should be an indication that I did it
-> correctly) but then there was no second mark I checked multiple alleys. it should follow the
-> same rules as the first mark in that it can basically be any alley you come across"
-
-[PLAYTEST-116](playtests/PLAYTEST-116.md): on day 6 the mark moved to the alley nearest her
-doorstep two seconds into the day, was on screen from where she stood, and was marked *seen*
-0.4 seconds later — and a seen mark never moves again, so every other alley she checked was
-empty. It was also the alley step 1 had been taken from.
-
-- [ ] **A mark is seen when she could have noticed it, not when its tile was on screen.**
-      `ResistanceDirector._track_sight_and_reposition()` pins the mark the first frame its
-      position is inside the view. *Playtest 19's "a mark that was never on screen was never
-      placed" stands*: a mark she has noticed does not jump away. What changes is what counts
-      as noticing — near enough, for long enough, that walking away from it is a choice — so
-      that until then it keeps moving to the alley she comes across. The distance and the
-      time are the orchestrator's and open to overturn. A mark does not return to an alley a
-      step was already taken from while another is within reach.
-- [ ] **The first mark's note is one sentence.** *"remove the \"anyone of them could be it\" this
-      is unnecessary information that sounds odd"*: the note keeps "Give it to the one who
-      won't stop shouting." and loses what follows. Whichever man shouting she reaches first
-      still counts.
-- [ ] **A completed step is acknowledged where she is looking.** Touching a mark and reaching
-      the man shouting each say so at the moment it counts: the touched state of the chalk
-      mark (`chalk_mark_touched.svg` is prepared, M100, small, real and nobody's) and a line
-      from the resistance, in the HUD's own voice. *No quest log or marker for the resistance*
-      still holds: this confirms what she has just done and points at nothing.
-
----
-
 ## M178 — A gate lets her out alive, and where she comes out · asked for 2026-09-20
 
 > "the gate checks were placed in a way that I would basically immediately die after crossing
@@ -524,9 +493,9 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
 > "9-11 need some extra memorable content in addition to the tasks"
 
 [PLAYTEST-117](playtests/PLAYTEST-117.md) has the whole message. **This entry is a design the
-player asked an opinion on; nothing here is built until they have answered.** M177, the second
-mark is any alley she comes across, carries the mark's noticing rule and the acknowledgement,
-which every version of this needs.
+player asked an opinion on; nothing here is built until they have answered.** The mark's noticing
+rule and the acknowledgement of a finished step are built (`DECISIONS.md`, M177, the second mark
+is any alley she comes across), and every version of this uses them.
 
 **The orchestrator's opinion: one day per task, yes.** A mark one day and its errand the next
 asks her to remember an instruction across a night and a day brief, makes half the resistance
@@ -557,7 +526,7 @@ with the mark on the way, and the robber's band around a mark is a larger share 
   task will be immediately announced when touching the mark there is no need to mention tasks in
   the day brief ata ll". Touching the mark says the task, in the HUD's voice, where she is
   looking; the day brief carries no task, no mark's words from yesterday and no reminder.
-- **A task done is unmistakable**: M177's acknowledgement, the arrow going out, and the day
+- **A task done is unmistakable**: the HUD's acknowledgement line, the arrow going out, and the day
   summary saying so.
 - **Days 9 to 11 each get one thing that happens once**, the way day 3 has the fire: candidates
   are the park she has used most being requisitioned in front of her, a night raid on her own
@@ -981,6 +950,10 @@ is still true.
 
 **Defects, each a few lines once found:**
 
+- [ ] **`--spawn contact` asks for the contact before one exists.** On a dev-flagged boot
+      `DevRig.spawn_position()` runs before `ResistanceDirector.start_day()` has placed the
+      day's contact, so the flag cannot put a rig beside a chalk mark and no capture of one is
+      cheap. Found in M177; the order of the two calls in `main`'s first-day boot is the fix.
 - [ ] **The gate detains but draws no guard.** Found while capturing the inspection: the boom's
       own body takes her in, and nobody on screen is the one doing it — the guards stand at the
       huts. A gap in the fiction rather than in the mechanic: either the boom's hold draws a guard

@@ -155,6 +155,13 @@ words back on the following day's screen — and the HUD carries one terse line,
 rather than during one. **That line is silent until the first mark has been touched** —
 the first encounter comes with no hint at all, and only later ones are named.
 
+**The moment a step counts, it is acknowledged where she is looking.** A touched mark turns
+to its own small tick on the ground and the resistance says one plain word in the HUD's own
+voice — *Taken* for a mark, *Done* for a perform — and nothing else: no counter, no objective
+marker, no log. It confirms what she just did rather than hinting at what comes next, so it
+never touches the first-encounter rule above; the day brief still carries what tomorrow wants,
+read on a different screen a day later.
+
 **A lost day repeats its own instruction rather than moving on.** *"the words shown on the lost
 day are the words that show at the beginning of that day not the nexts."* The summary of a day
 they lost reads out the words of the mark that unlocked the task they were out to perform — the
@@ -163,11 +170,12 @@ on a lost day has its touch given back with the attempt, and the retry needs tel
 is for. A lost day 4 says nothing at all: its whole content is finding the mark, so there is
 nothing yet to repeat.
 
-A pickup mark that has never been on screen has never really been placed, so it follows
+A pickup mark the player has not actually noticed — stood near, on screen, long enough that
+walking past it rather than to it was a choice — has never really been placed, so it follows
 the player rather than sitting where the dawn plan first put it: once they are far enough from it
-to have missed it, it moves to the alley they have just come near instead, guard and all —
-so a mark the player can actually walk up to is what makes the silent first encounter fair
-rather than a dead end.
+to have missed it, it moves to the alley they have just come near instead, guard and all, skipping
+an alley an earlier task's mark already used while another is in reach — so a mark the player can
+actually walk up to is what makes the silent first encounter fair rather than a dead end.
 
 ## Endings
 

@@ -132,8 +132,7 @@ static func _build() -> Array[Step]:
 		# A · give a note to a yeller. The cost is the approach and it is paid whether or
 		# not this is the right man — several homeless_yeller rows are already live, and
 		# the one carrying the contact looks exactly like the rest of them.
-		_mark(1, "A chalk mark", 4, "Give it to the one who won't stop shouting. Any of "
-				+ "them might be him."),
+		_mark(1, "A chalk mark", 4, "Give it to the one who won't stop shouting."),
 		_perform(2, "A note for a stranger", 5, "homeless_yeller",
 				[GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE], 0.0, false,
 				"the one who won't stop shouting"),

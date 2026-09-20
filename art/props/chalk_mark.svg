@@ -1,6 +1,6 @@
-<!-- Prepared ground counterpart of ContactPoint._draw_chalk; centre anchor is (16,16). -->
+<!-- A resistance pickup's own mark. Drawn by ContactPoint._draw(), centre anchor (16,16), scaled up at draw time (see _MARK_SCALE). -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
-  <g fill="none" stroke="#eaeae0" stroke-opacity="0.78" stroke-width="2" stroke-linecap="round">
+  <g fill="none" stroke="#eaeae0" stroke-opacity="0.92" stroke-width="2.4" stroke-linecap="round">
     <circle cx="16" cy="16" r="11"/>
     <path d="M9 20L23 11 M10 11L18 22"/>
   </g>
