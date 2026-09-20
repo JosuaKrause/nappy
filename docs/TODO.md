@@ -358,7 +358,7 @@ the bake and the ground's membership, which the first is moving.
       **The release that follows is a minor version, and it waits for every item in this
       section** — *"only release once all those new items are completed, too"*. *"after atlas we cut a new minor version"*: `tools/release.sh minor`
       ([PLAYTEST-109](playtests/PLAYTEST-109.md)).
-- [ ] **The ground page holds what its bake mode draws, and a bake touches only what changed**
+- [ ] **The ground page holds what its bake mode draws, and a bake leaves no page behind**
       ([PLAYTEST-110](playtests/PLAYTEST-110.md)): *"they should not exist anymore since we
       composite on the fly now. I certainly don't want to see those svgs in the game. we can
       keep the prebake for svg mode only. then we don't need those fallbacks."* A default bake
@@ -372,11 +372,9 @@ the bake and the ground's membership, which the first is moving.
       fallback from an incomplete recipe to the whole authored tile: a recipe that cannot be
       composed is a `push_error`, as a missing region is. **Assumed, not spoken to:** an
       `--svg` bake drops the layers in return, since it composes nothing.
-      **The bake is incremental** — *"we don't want to regenerate things that haven't
-      changed -- just deleting doesn't cut it though"*: the manifest records its hashes per
-      group, a bake writes the pages of the groups whose inputs, membership or mode changed
-      and leaves every other page and its import sidecar untouched, and it removes a page no
-      group names. `--check` names the stale groups.
+      **A bake leaves exactly the pages the membership names** — it stays all or nothing, so
+      it clears `assets/atlases/baked/` of any page and import sidecar no group names, and
+      `--check` calls a tree holding one stale and names it.
 
 ---
 

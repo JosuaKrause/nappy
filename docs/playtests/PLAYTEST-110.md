@@ -44,6 +44,17 @@ As built, the bake is all or nothing: `tools/bake-atlases.sh` compares one manif
 hashes, and when anything differs `tools/bake_atlases.gd` writes every page again, which hands
 the engine every page to import again.
 
+Told that, and that emptying the folder is therefore free for as long as the bake stays all or
+nothing, and only an incremental bake would rule it out:
+
+> "so emptying the folder beforehand is possible"
+
+Offered the two: keep the bake all or nothing, or keep hashes per group and rewrite only the
+changed groups' pages, with the recommendation to stay all or nothing, since a changed
+picture costs a few seconds of re-bake and an unchanged tree costs nothing:
+
+> "whichever you think works best here"
+
 On `assets/atlases/baked/head_indicators.png`, a page left on disk from before the
 `head_indicators` group was folded into `ui`:
 
@@ -77,10 +88,13 @@ route-kerb tint by matching the curbstone's fill colour on the whole kerb tiles.
 2. **The fallback from an incomplete recipe to the whole authored tile is removed.** A recipe
    that cannot be composed is loud, as the missing region already is (`push_error`, which the
    test gate is red for).
-3. **The bake does not leave a page behind, and does not rewrite a page whose inputs did not
-   change.** Emptying `assets/atlases/baked/` before a bake was the player's first thought and
-   the player's own correction: it would regenerate everything. So a bake removes exactly the
-   pages no group names, and bakes exactly the groups whose inputs changed.
+3. **The bake does not leave a page behind.** The bake stays all or nothing — *left to the
+   orchestrator, "whichever you think works best here"* — so every bake ends with exactly the
+   pages the membership names in `assets/atlases/baked/`, and a tree holding any other page is
+   stale. An incremental bake, which rewrites only the groups whose inputs changed, was
+   offered and not taken: it saves a few seconds per art change and adds per-group state to
+   the manifest and to `--check`. It is worth raising again if a bake grows slow enough to
+   be felt.
 4. **The minor release waits for "close the contract"**, as PLAYTEST-109 already said.
 
 **Not spoken to, and the orchestrator's assumption:** an `--svg` bake drops the 31 layers in
