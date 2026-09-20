@@ -392,6 +392,20 @@ static func _role_for(def: EventDef, day: int = 0) -> GameEnums.BlockerRole:
 		return GameEnums.BlockerRole.WALL
 	return GameEnums.BlockerRole.FRICTION
 
+## **Whether a `WALL` earns the pull toward junction rims, as opposed to keeping only the one
+## consequence every wall gets** (zero copies on a route-carrying cell, `_copies_of` below).
+## *(PLAYTEST-99, 2026-09-19, asked whether `delivery_van` should also be weighted toward
+## junctions: "A. No … do that.")* `Tuning.EVENT_WALL_RIM_WEIGHT` is for the rows meant to be seen
+## from a distance before she commits to a street — lethal, or costly enough to cross
+## `WALL_WORTH_OF_COST` — and `delivery_van` is neither: silent, and a wall only because its own
+## body leaves no lane (`_closes_the_band_by_its_own_placement`), which the cost clause
+## (`_line_reach_of >= _THE_FAR_LANE`) never sees. A row that is a wall by fit alone is spread
+## along streets the way friction is instead: `_copies_of` reads this before deciding which weight
+## a `WALL` gets.
+static func _is_a_wall_by_cost(def: EventDef) -> bool:
+	return def.hard_fail or def.walk_through_cost() >= Tuning.WALL_WORTH_OF_COST \
+			or _line_reach_of(def) >= _THE_FAR_LANE
+
 ## A private RNG for one phase of the day, derived from the day's seed and a salt.
 ##
 ## **A retried day has to be the same day, and one shared stream cannot deliver that.** Run the
@@ -924,9 +938,13 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 	# corner is off the question for two rows sharing every other answer only when one of them
 	# actually has an orientation to be wrong about on it. Without this a plain silhouette processed
 	# first quietly hands its unfiltered `base` to a spread row asking the identical other four
-	# questions, and the corner refusal never runs at all.
-	var key := "%s|%d|%d|%s|%s|%s" % [def.placement, def.pavement_side, role, site, def.hard_fail,
-			EventInstance.has_a_spread(def)]
+	# questions, and the corner refusal never runs at all. `_is_a_wall_by_cost` joined for the same
+	# reason: two rows sharing every other answer can still disagree about the rim pull, and a
+	# cached list keyed without it would hand a fit-only wall's ground to a cost wall sharing its
+	# placement, pavement side and spread shape, or the reverse.
+	var by_cost := _is_a_wall_by_cost(def)
+	var key := "%s|%d|%d|%s|%s|%s|%s" % [def.placement, def.pavement_side, role, site,
+			def.hard_fail, EventInstance.has_a_spread(def), by_cost]
 	if ground.has(key):
 		return ground[key]
 	var aimed: Array[Vector2i] = []
@@ -950,7 +968,7 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 		# walk down."
 		if refuses_required_alleys and corridor.depth(tile) == 0:
 			continue
-		for _copy in _copies_of(tile, corridor, role, def.hard_fail):
+		for _copy in _copies_of(tile, corridor, role, def.hard_fail, by_cost):
 			aimed.append(tile)
 	ground[key] = aimed
 	return aimed
@@ -1125,13 +1143,23 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary) ->
 ## level with the corridor. The gradient's own sentence is the fix — *stray one turning and it is
 ## expensive, stray further and it ends the day* — so what stands in a gap is very expensive, and
 ## the deadly end stays where it was put.
+##
+## **A wall by fit alone skips the gradient entirely and reads like friction beyond the one
+## refusal every wall keeps.** *(PLAYTEST-99, "A. No … do that" — see `_is_a_wall_by_cost`'s own
+## doc.)* `by_cost` is that question, asked once by the caller rather than re-derived per tile: a
+## silent, narrow body earns no distance-before-she-commits pull, so it is weighted onto an
+## on-corridor tile exactly as `FRICTION` is, and left at one copy everywhere else — never pulled
+## to the rim, never pushed past it. The zero-copies refusal above still applies to it first, since
+## that is the one consequence of being a wall this decision does not touch.
 static func _copies_of(tile: Vector2i, corridor: Corridor, role: GameEnums.BlockerRole,
-		lethal := false) -> int:
+		lethal := false, by_cost := true) -> int:
 	var away := corridor.depth(tile)
 	match role:
 		GameEnums.BlockerRole.WALL:
 			if corridor.carries_a_route(tile):
 				return 0
+			if not by_cost:
+				return Tuning.EVENT_CORRIDOR_WEIGHT if away == 0 else 1
 			if lethal:
 				return Tuning.WALL_DEEP_WEIGHT if away >= 2 else 1
 			if away > 1:

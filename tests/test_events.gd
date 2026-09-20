@@ -2998,19 +2998,27 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 ## corridor weight still shows through all three rules; it is not a claim that nothing diminishes
 ## it.
 ##
-## **Both floors moved once and did not fully recover.** `delivery_van` leaving the friction pool
-## for good (`_closes_the_band_by_its_own_placement` reads it as a wall by physical fit,
-## `AT_THE_KERB`) cost the whole share 35% to 32% and the narrow one 44% to 40%. Standing
-## `poster_crew` `AGAINST_THE_BUILDING` instead of `ANY` put it back on the corridor as friction —
-## its own 11px body leaves 37px to the kerb from the frontage lane's own tile centre, over the
-## 28px she needs, where centred it left only 21px each side — which recovered most but not all of
-## that ground: measured over the days sampled here, the whole share now stands at 36.13% (was
-## 37.31% with neither row ever a wall) and the narrow one at 42.55% (was 44.26%). Both floors are
-## set just under those figures rather than restored to their pre-`delivery_van` values, since
-## neither measurement clears the old floor by the margin it originally had — the whole share's own
-## margin over 0.35 more than halved (2.31 points to 1.13) and the narrow share's did too (4.26 to
-## 2.55). Re-measure rather than trust either number if the catalogue's `pavement_side`/
-## `obstructs_radius` pairing moves again.
+## **Both floors moved and have not fully recovered, across three changes.** `delivery_van`
+## leaving the friction pool for good (`_closes_the_band_by_its_own_placement` reads it as a wall
+## by physical fit, `AT_THE_KERB`) cost the whole share 35% to 32% and the narrow one 44% to 40%.
+## Standing `poster_crew` `AGAINST_THE_BUILDING` instead of `ANY` put it back on the corridor as
+## friction — its own 11px body leaves 37px to the kerb from the frontage lane's own tile centre,
+## over the 28px she needs — recovering most of that ground (36.13%, 42.55%). Keeping
+## `delivery_van` off `EVENT_WALL_RIM_WEIGHT` once it is a wall by fit rather than by cost
+## (`_is_a_wall_by_cost`, `_copies_of`) moved the whole share again, slightly down (35.84%) since a
+## wall spread across the corridor like friction still is not counted as friction; the narrow share
+## held (42.55%, unaffected — the rows small enough to matter for it were never `delivery_van`'s
+## own). Measured over the days sampled here.
+##
+## **Neither floor is restored to its original value, and one is restored to its original margin
+## anyway.** The whole share's own margin over 0.35 (2.31 points, measured against the state before
+## any of these three changes) does not survive any of them — 35.84% clears 0.35 by 0.84 points,
+## too thin to call safe — so its floor stays at 0.34 (1.84-point margin). The narrow share's
+## margin over 0.40 (4.26 points originally) does not survive either at 2.55 points, but 2.55 is
+## itself a comfortable margin on its own terms, larger than the whole share's, so its floor is
+## restored to **0.40** rather than kept at a previous session's more cautious 0.39. Re-measure
+## rather than trust either number if the catalogue's `pavement_side`/`obstructs_radius` pairing,
+## or which walls get `EVENT_WALL_RIM_WEIGHT`, moves again.
 ##
 ## An `AHEAD_OF_PLAYER` row is exempt from the first half and the exemption is the design rather
 ## than a hole: the charging dog is sited by `EventDirector` in front of wherever she turns out to
@@ -3106,7 +3114,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	t.check(share > 0.34, "%d of %d costly rows are on the corridor" % [friction_on_the_route, friction])
 	t.check(share < 0.9, "and the streets off it are not empty (%.0f%% on it)" % (share * 100.0))
 	var narrow_share := float(narrow_on_the_route) / maxf(1.0, float(narrow))
-	t.check(narrow_share > 0.39,
+	t.check(narrow_share > 0.40,
 			"and the corridor weight still shows through the three rules that can refuse a narrow "
 			+ "row (%d of %d narrow rows on the corridor)" % [narrow_on_the_route, narrow])
 

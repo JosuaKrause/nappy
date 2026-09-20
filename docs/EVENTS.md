@@ -594,8 +594,9 @@ from the doorstep to the calm areas still worth reaching.
 
 | kind of row | role | where it may go |
 | --- | --- | --- |
-| lethal (`hard_fail`), or a walk-through cost of `WALL_WORTH_OF_COST` or more | **wall** | never on ground a route runs along; `EVENT_WALL_RIM_WEIGHT` toward a turning off the corridor |
-| a standing row that leaves no line past it along a sidewalk it may stand on, by cost (`cafe_tables`, `construction`, `market_stall`, `ice_cream_van`) or by physical fit alone (`delivery_van`, and any future row this narrow) | **wall** | the same, which includes the far sidewalk of a route's own street |
+| lethal (`hard_fail`), or a walk-through cost of `WALL_WORTH_OF_COST` or more | **wall by cost** | never on ground a route runs along; `EVENT_WALL_RIM_WEIGHT` toward a turning off the corridor |
+| a standing row that leaves no line past it along a sidewalk it may stand on, by cost (`cafe_tables`, `construction`, `market_stall`, `ice_cream_van`) | **wall by cost** | the same, which includes the far sidewalk of a route's own street |
+| a standing row that leaves no line past it along a sidewalk it may stand on, by physical fit alone (`delivery_van`, and any future row this narrow) | **wall by fit** | never on ground a route runs along; otherwise weighted like friction — no pull toward a rim, since nothing about it is the noisy, seen-from-a-distance thing the rim exists for |
 | a **pacing** row that leaves no line past it and whose beat passes no way off its sidewalk (`homeless_yeller`, where its beat is truncated short of one) | **wall** | the same, decided per placement rather than per row |
 | a **pacing** row whose beat passes a junction's crosswalk or a side route (`homeless_yeller`, almost everywhere) | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor, the route's own sidewalk included |
 | everything else placed on a tile | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor |
@@ -672,13 +673,25 @@ ground no route walks, and a wall may stand there. *(PLAYTEST-77: "the market st
 the other side of the street where for some reason no event was chosen".)*
 `Corridor.carries_a_route` is the question, the same one the kerb tint asks.
 
-**It is also where a very costly wall wants to be.** The **rim** — the ground `EVENT_WALL_RIM_WEIGHT`
-pulls a costly wall toward — has two members: a turning off the corridor, one street out, and the
-far side of the street the route is already on. The second is the nearer of the two and the one she
-can read without leaving her own line, so a street with a route down one side of it is a street
-with the day's cafés and stalls down the other. The **lethal** half of the band keeps its own
-gradient and is pulled past the rim by `WALL_DEEP_WEIGHT`, so nothing that ends the day is drawn to
-the other side of her street in particular.
+**It is also where a very costly wall wants to be — a wall by cost, not a wall by fit.** The
+**rim** — the ground `EVENT_WALL_RIM_WEIGHT` pulls a costly wall toward — has two members: a
+turning off the corridor, one street out, and the far side of the street the route is already on.
+The second is the nearer of the two and the one she can read without leaving her own line, so a
+street with a route down one side of it is a street with the day's cafés and stalls down the
+other. The **lethal** half of the band keeps its own gradient and is pulled past the rim by
+`WALL_DEEP_WEIGHT`, so nothing that ends the day is drawn to the other side of her street in
+particular.
+
+**A wall by fit alone gets none of that pull.** *(PLAYTEST-99, 2026-09-19, asked whether
+`delivery_van` should also be weighted toward junctions once it became a wall: "A. No … do that.")*
+The rim is for the big, noisy things meant to be seen from a distance before she commits to a
+street; `delivery_van` is silent and a wall only because its own body leaves no lane, which the
+cost clause never sees (`EventScheduler._is_a_wall_by_cost` is the question `_copies_of` asks
+before choosing a `WALL`'s weight). So a wall by fit keeps only the one consequence every wall
+gets — zero copies of a route-carrying cell — and is weighted everywhere else exactly as friction
+is, landing on the far side of a route street through `EVENT_CORRIDOR_WEIGHT` rather than through
+the rim. A pacing wall's own reach is wide enough that it answers the cost question too, so its own
+landing on the far side (above) is unchanged.
 
 The role weighting moves *where* the budget is spent and never how much of it there is: the density
 placed per day is unaffected by whether the weight is live, and so is the count of lethal rows —
