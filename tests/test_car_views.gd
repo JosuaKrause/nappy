@@ -28,7 +28,6 @@ func run(t) -> void:
 	_test_the_rim_is_re_traced_under_a_steady_glow(t)
 	_test_the_rim_and_the_picture_share_one_footprint(t)
 	_test_the_redraw_gate_carries_the_live_anchor(t)
-	_test_unpaired_car_views_still_fall_back_to_svg(t)
 
 func _car(t) -> CrowdAgent:
 	var agent := CrowdAgent.new()
@@ -47,7 +46,9 @@ func _test_car_view_by_sector_matches_the_walker_convention(t) -> void:
 
 ## `_draw_body()` looks the view up once and indexes both dictionaries with it, but this pins the
 ## invariant structurally too: nothing can add a body without its trim, or the two could draw two
-## different cars' worth of paint and glass.
+## different cars' worth of paint and glass. And it pins the tint split: body and trim have to be
+## two distinct baked regions, or tinting the body (`_draw_body()`'s own `colour` argument) would
+## tint the trim drawn over it as well.
 func _test_body_and_trim_can_never_disagree(t) -> void:
 	var body_views := CrowdAgent.CAR_BODY_BY_VIEW.keys()
 	var trim_views := CrowdAgent.CAR_TRIM_BY_VIEW.keys()
@@ -56,8 +57,12 @@ func _test_body_and_trim_can_never_disagree(t) -> void:
 	for view in body_views:
 		t.check(CrowdAgent.CAR_TRIM_BY_VIEW.has(view),
 				"every body view %s has a matching trim view" % view)
-		t.check(CrowdAgent.CAR_BODY_BY_VIEW[view] != null and CrowdAgent.CAR_TRIM_BY_VIEW[view] != null,
-				"both textures for %s actually resolve" % view)
+		var body_region := AtlasLibrary.region_name_for(CrowdAgent.CAR_BODY_BY_VIEW[view])
+		var trim_region := AtlasLibrary.region_name_for(CrowdAgent.CAR_TRIM_BY_VIEW[view])
+		t.check(AtlasLibrary.has_region(body_region) and AtlasLibrary.has_region(trim_region),
+				"both regions for %s are actually baked" % view)
+		t.check(body_region != trim_region,
+				"body and trim for %s are two separate regions, so tinting one leaves the other" % view)
 	for sector in range(8):
 		t.check(body_views.has(CrowdAgent.CAR_VIEW_BY_SECTOR[sector]),
 				"sector %d names a view the tables actually carry" % sector)
@@ -181,7 +186,8 @@ func _test_every_sector_picture_agrees_with_the_strike_box(t) -> void:
 		var view: String = CrowdAgent.CAR_VIEW_BY_SECTOR[sector]
 		var heading := Vector2.from_angle(deg_to_rad(sector * 45.0))
 		var anchor := agent._car_body_anchor(view, heading)
-		var extent: Vector2 = CrowdAgent.CAR_BODY_BY_VIEW[view].get_size()
+		var extent := Vector2(AtlasLibrary.native_size(
+				AtlasLibrary.region_name_for(CrowdAgent.CAR_BODY_BY_VIEW[view])))
 		var drawn := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent)
 		# The node always falls inside the drawn footprint rather than sitting at its own edge —
 		# `Sprites.draw_standing` builds a rect that runs from `anchor.y - extent.y` to `anchor.y`.
@@ -296,15 +302,15 @@ func _test_the_halo_redraws_the_same_body(t) -> void:
 	agent.free()
 
 ## The picture `_draw_body()` would actually put on the canvas for one view and heading: the body's
-## rect merged with the trim's, each built the way `Sprites.draw_standing()` builds it — the
-## **resolved** texture's own size, which is a registered PNG transfer wherever one exists and the
-## authored SVG otherwise, bottom-centred on `_car_body_anchor()`'s answer.
+## rect merged with the trim's, each built the way `Sprites.draw_standing()` builds it — the baked
+## region's own native size, which is the authored SVG's size in every bake, bottom-centred on
+## `_car_body_anchor()`'s answer.
 func _drawn_picture(agent: CrowdAgent, view: String, heading: Vector2) -> Rect2:
 	var anchor := agent._car_body_anchor(view, heading)
 	var drawn := Rect2()
 	var merged := false
-	for texture in [CrowdAgent.CAR_BODY_BY_VIEW[view], CrowdAgent.CAR_TRIM_BY_VIEW[view]]:
-		var extent: Vector2 = TextureResolver.resolve(texture).get_size()
+	for path in [CrowdAgent.CAR_BODY_BY_VIEW[view], CrowdAgent.CAR_TRIM_BY_VIEW[view]]:
+		var extent := Vector2(AtlasLibrary.native_size(AtlasLibrary.region_name_for(path)))
 		var layer := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent)
 		drawn = drawn.merge(layer) if merged else layer
 		merged = true
@@ -326,15 +332,14 @@ func _traced_rim(agent: CrowdAgent, view: String, heading: Vector2) -> Rect2:
 ## **The rim is the picture and nothing else, so the two can only ever be concentric.** The defect
 ## this is the pin for was reported as a car sitting south of its own halo, and the first thing that
 ## had to be ruled out was a rim with a registration of its own — so this asserts the relationship
-## rather than either position: whatever `_car_body_anchor()` answers and whichever texture the
-## resolver hands over, the traced rim is the drawn picture grown by `EntityHalo.HALO_MARGIN` on
+## rather than either position: whatever `_car_body_anchor()` answers and whichever native size the
+## baked region reports, the traced rim is the drawn picture grown by `EntityHalo.HALO_MARGIN` on
 ## every side, at every sector.
 ##
-## **Both presentation modes, and they have to agree with each other too.** `TextureResolver` only
-## accepts a transfer whose size matches the authored SVG's, so a PNG can never move this footprint
-## — asserting it here is what makes that contract a test rather than a sentence, since a transfer
-## accepted at some other size would land the car's ground registration somewhere else on a phone
-## and nowhere else.
+## **One presentation mode**, unlike before this milestone: the bake fixes SVG or PNG once for the
+## whole tree, so there is no longer a second mode to agree with at runtime — `--svg` now bakes a
+## different `crowd.png`, which `tests/test_atlas_library.gd`'s parity check compares pixel for
+## pixel against today's picture in whichever mode the tree was baked in.
 ##
 ## Mirroring is deliberately not a variable here: `Sprites.mirrored_transform()` reflects about the
 ## anchor, which a rect centred on that anchor's own x is symmetric under, so the *bounds* are the
@@ -342,28 +347,17 @@ func _traced_rim(agent: CrowdAgent, view: String, heading: Vector2) -> Rect2:
 func _test_the_rim_and_the_picture_share_one_footprint(t) -> void:
 	var agent := _car(t)
 	var margin := EntityHalo.HALO_MARGIN
-	for svg_forced in [true, false]:
-		TextureResolver.reset_for_tests(svg_forced)
-		var mode := "--svg" if svg_forced else "the registered transfer"
-		for sector in range(8):
-			var view: String = CrowdAgent.CAR_VIEW_BY_SECTOR[sector]
-			var heading := Vector2.from_angle(deg_to_rad(sector * 45.0))
-			var picture := _drawn_picture(agent, view, heading)
-			var rim := _traced_rim(agent, view, heading)
-			t.check(rim.get_center().is_equal_approx(picture.get_center()),
-					("sector %d's rim is centred on its own picture under %s (%s against %s)"
-					% [sector, mode, rim.get_center(), picture.get_center()]))
-			t.check(rim.size.is_equal_approx(picture.size + Vector2.ONE * margin * 2.0),
-					("sector %d's rim stands %.0fpx out from the picture on every side under %s "
-					+ "(%s against %s)") % [sector, margin, mode, rim.size, picture.size])
-			TextureResolver.reset_for_tests(not svg_forced)
-			var other := _drawn_picture(agent, view, heading)
-			TextureResolver.reset_for_tests(svg_forced)
-			t.check(other.is_equal_approx(picture),
-					("sector %d's picture is the same footprint in both presentation modes (%s "
-					+ "against %s), which is what a same-sized transfer buys")
-					% [sector, other, picture])
-	TextureResolver.reset_for_tests(DevFlags.svg_requested())
+	for sector in range(8):
+		var view: String = CrowdAgent.CAR_VIEW_BY_SECTOR[sector]
+		var heading := Vector2.from_angle(deg_to_rad(sector * 45.0))
+		var picture := _drawn_picture(agent, view, heading)
+		var rim := _traced_rim(agent, view, heading)
+		t.check(rim.get_center().is_equal_approx(picture.get_center()),
+				("sector %d's rim is centred on its own picture (%s against %s)"
+				% [sector, rim.get_center(), picture.get_center()]))
+		t.check(rim.size.is_equal_approx(picture.size + Vector2.ONE * margin * 2.0),
+				("sector %d's rim stands %.0fpx out from the picture on every side (%s against %s)"
+				% [sector, margin, rim.size, picture.size]))
 	agent.free()
 
 ## A synthetic `CarTurn` whose tangent at zero travelled is exactly `degrees` clockwise from east,
@@ -453,13 +447,3 @@ func _test_the_redraw_gate_carries_the_live_anchor(t) -> void:
 	t.check([agent._picture, agent._drawn_heading] != mid_turn,
 			"so the gate asked for the redraw that puts the picture back under its own rim")
 	agent.free()
-
-func _test_unpaired_car_views_still_fall_back_to_svg(t) -> void:
-	var diagonal: Texture2D = CrowdAgent.CAR_BODY_BY_VIEW["front_diagonal"]
-	TextureResolver.reset_for_tests(true)
-	t.check(TextureResolver.resolve(diagonal) == diagonal,
-			"explicit SVG mode keeps the authored car diagonal SVG")
-	TextureResolver.reset_for_tests(false)
-	t.check(TextureResolver.resolve(diagonal) == diagonal,
-			"no PNG transfer exists yet, so default mode falls back to the same car SVG")
-	TextureResolver.reset_for_tests(DevFlags.svg_requested())

@@ -39,129 +39,134 @@ const CAMERA_LOOK_AHEAD := 46.0
 ## physical facing remains continuous — `EightDirection.SECTOR_DEGREES` and
 ## `EightDirection.HYSTERESIS_DEGREES`, the same selector `CrowdAgent`'s walkers now share.
 
-## SVG source textures; `TextureResolver` supplies their matching illustrated PNGs by default.
-## Each direction has contact A, feet together C, then the opposite contact B.
-const MOTHER_FRONT: Array[Texture2D] = [
-	preload("res://assets/rig/mother_front_a.svg"),
-	preload("res://assets/rig/mother_front_c.svg"),
-	preload("res://assets/rig/mother_front_b.svg")]
-const MOTHER_BACK: Array[Texture2D] = [
-	preload("res://assets/rig/mother_back_a.svg"),
-	preload("res://assets/rig/mother_back_c.svg"),
-	preload("res://assets/rig/mother_back_b.svg")]
-const MOTHER_SIDE: Array[Texture2D] = [
-	preload("res://assets/rig/mother_side_a.svg"),
-	preload("res://assets/rig/mother_side_c.svg"),
-	preload("res://assets/rig/mother_side_b.svg")]
-const MOTHER_FRONT_DIAGONAL: Array[Texture2D] = [
-	preload("res://assets/rig/mother_front_diagonal_a.svg"),
-	preload("res://assets/rig/mother_front_diagonal_c.svg"),
-	preload("res://assets/rig/mother_front_diagonal_b.svg")]
-const MOTHER_BACK_DIAGONAL: Array[Texture2D] = [
-	preload("res://assets/rig/mother_back_diagonal_a.svg"),
-	preload("res://assets/rig/mother_back_diagonal_c.svg"),
-	preload("res://assets/rig/mother_back_diagonal_b.svg")]
+## Repository paths rather than `preload()`d textures: what a picture is baked under is
+## `AtlasLibrary.region_name_for()` of exactly this string, so keeping the path is what lets the
+## draw side ask for a region instead of holding a second resident copy of the picture the `stroller`
+## page already has. Each direction has contact A, feet together C, then the opposite contact B.
+const MOTHER_FRONT: Array[String] = [
+	"res://assets/rig/mother_front_a.svg",
+	"res://assets/rig/mother_front_c.svg",
+	"res://assets/rig/mother_front_b.svg"]
+const MOTHER_BACK: Array[String] = [
+	"res://assets/rig/mother_back_a.svg",
+	"res://assets/rig/mother_back_c.svg",
+	"res://assets/rig/mother_back_b.svg"]
+const MOTHER_SIDE: Array[String] = [
+	"res://assets/rig/mother_side_a.svg",
+	"res://assets/rig/mother_side_c.svg",
+	"res://assets/rig/mother_side_b.svg"]
+const MOTHER_FRONT_DIAGONAL: Array[String] = [
+	"res://assets/rig/mother_front_diagonal_a.svg",
+	"res://assets/rig/mother_front_diagonal_c.svg",
+	"res://assets/rig/mother_front_diagonal_b.svg"]
+const MOTHER_BACK_DIAGONAL: Array[String] = [
+	"res://assets/rig/mother_back_diagonal_a.svg",
+	"res://assets/rig/mother_back_diagonal_c.svg",
+	"res://assets/rig/mother_back_diagonal_b.svg"]
 
 ## The escape scene's rig — the baby in her arms, no pram. Selected in place of the sets above
 ## whenever `carrying` is set; see `_mother_texture()`.
-const MOTHER_CARRYING_FRONT: Array[Texture2D] = [
-	preload("res://assets/rig/mother_carrying_front_a.svg"),
-	preload("res://assets/rig/mother_carrying_front_c.svg"),
-	preload("res://assets/rig/mother_carrying_front_b.svg")]
-const MOTHER_CARRYING_BACK: Array[Texture2D] = [
-	preload("res://assets/rig/mother_carrying_back_a.svg"),
-	preload("res://assets/rig/mother_carrying_back_c.svg"),
-	preload("res://assets/rig/mother_carrying_back_b.svg")]
-const MOTHER_CARRYING_SIDE: Array[Texture2D] = [
-	preload("res://assets/rig/mother_carrying_side_a.svg"),
-	preload("res://assets/rig/mother_carrying_side_c.svg"),
-	preload("res://assets/rig/mother_carrying_side_b.svg")]
-const MOTHER_CARRYING_FRONT_DIAGONAL: Array[Texture2D] = [
-	preload("res://assets/rig/mother_carrying_front_diagonal_a.svg"),
-	preload("res://assets/rig/mother_carrying_front_diagonal_c.svg"),
-	preload("res://assets/rig/mother_carrying_front_diagonal_b.svg")]
-const MOTHER_CARRYING_BACK_DIAGONAL: Array[Texture2D] = [
-	preload("res://assets/rig/mother_carrying_back_diagonal_a.svg"),
-	preload("res://assets/rig/mother_carrying_back_diagonal_c.svg"),
-	preload("res://assets/rig/mother_carrying_back_diagonal_b.svg")]
+const MOTHER_CARRYING_FRONT: Array[String] = [
+	"res://assets/rig/mother_carrying_front_a.svg",
+	"res://assets/rig/mother_carrying_front_c.svg",
+	"res://assets/rig/mother_carrying_front_b.svg"]
+const MOTHER_CARRYING_BACK: Array[String] = [
+	"res://assets/rig/mother_carrying_back_a.svg",
+	"res://assets/rig/mother_carrying_back_c.svg",
+	"res://assets/rig/mother_carrying_back_b.svg"]
+const MOTHER_CARRYING_SIDE: Array[String] = [
+	"res://assets/rig/mother_carrying_side_a.svg",
+	"res://assets/rig/mother_carrying_side_c.svg",
+	"res://assets/rig/mother_carrying_side_b.svg"]
+const MOTHER_CARRYING_FRONT_DIAGONAL: Array[String] = [
+	"res://assets/rig/mother_carrying_front_diagonal_a.svg",
+	"res://assets/rig/mother_carrying_front_diagonal_c.svg",
+	"res://assets/rig/mother_carrying_front_diagonal_b.svg"]
+const MOTHER_CARRYING_BACK_DIAGONAL: Array[String] = [
+	"res://assets/rig/mother_carrying_back_diagonal_a.svg",
+	"res://assets/rig/mother_carrying_back_diagonal_c.svg",
+	"res://assets/rig/mother_carrying_back_diagonal_b.svg"]
 
-const FATHER_FRONT: Array[Texture2D] = [
-	preload("res://assets/rig/father_front_a.svg"),
-	preload("res://assets/rig/father_front_c.svg"),
-	preload("res://assets/rig/father_front_b.svg")]
-const FATHER_BACK: Array[Texture2D] = [
-	preload("res://assets/rig/father_back_a.svg"),
-	preload("res://assets/rig/father_back_c.svg"),
-	preload("res://assets/rig/father_back_b.svg")]
-const FATHER_SIDE: Array[Texture2D] = [
-	preload("res://assets/rig/father_side_a.svg"),
-	preload("res://assets/rig/father_side_c.svg"),
-	preload("res://assets/rig/father_side_b.svg")]
-const FATHER_FRONT_DIAGONAL: Array[Texture2D] = [
-	preload("res://assets/rig/father_front_diagonal_a.svg"),
-	preload("res://assets/rig/father_front_diagonal_c.svg"),
-	preload("res://assets/rig/father_front_diagonal_b.svg")]
-const FATHER_BACK_DIAGONAL: Array[Texture2D] = [
-	preload("res://assets/rig/father_back_diagonal_a.svg"),
-	preload("res://assets/rig/father_back_diagonal_c.svg"),
-	preload("res://assets/rig/father_back_diagonal_b.svg")]
+const FATHER_FRONT: Array[String] = [
+	"res://assets/rig/father_front_a.svg",
+	"res://assets/rig/father_front_c.svg",
+	"res://assets/rig/father_front_b.svg"]
+const FATHER_BACK: Array[String] = [
+	"res://assets/rig/father_back_a.svg",
+	"res://assets/rig/father_back_c.svg",
+	"res://assets/rig/father_back_b.svg"]
+const FATHER_SIDE: Array[String] = [
+	"res://assets/rig/father_side_a.svg",
+	"res://assets/rig/father_side_c.svg",
+	"res://assets/rig/father_side_b.svg"]
+const FATHER_FRONT_DIAGONAL: Array[String] = [
+	"res://assets/rig/father_front_diagonal_a.svg",
+	"res://assets/rig/father_front_diagonal_c.svg",
+	"res://assets/rig/father_front_diagonal_b.svg"]
+const FATHER_BACK_DIAGONAL: Array[String] = [
+	"res://assets/rig/father_back_diagonal_a.svg",
+	"res://assets/rig/father_back_diagonal_c.svg",
+	"res://assets/rig/father_back_diagonal_b.svg"]
 
 ## The escape scene's rig — the baby in his arms, no pram. Selected in place of the sets above
 ## whenever `carrying` is set; see `_mother_texture()`, the shared parent selector.
-const FATHER_CARRYING_FRONT: Array[Texture2D] = [
-	preload("res://assets/rig/father_carrying_front_a.svg"),
-	preload("res://assets/rig/father_carrying_front_c.svg"),
-	preload("res://assets/rig/father_carrying_front_b.svg")]
-const FATHER_CARRYING_BACK: Array[Texture2D] = [
-	preload("res://assets/rig/father_carrying_back_a.svg"),
-	preload("res://assets/rig/father_carrying_back_c.svg"),
-	preload("res://assets/rig/father_carrying_back_b.svg")]
-const FATHER_CARRYING_SIDE: Array[Texture2D] = [
-	preload("res://assets/rig/father_carrying_side_a.svg"),
-	preload("res://assets/rig/father_carrying_side_c.svg"),
-	preload("res://assets/rig/father_carrying_side_b.svg")]
-const FATHER_CARRYING_FRONT_DIAGONAL: Array[Texture2D] = [
-	preload("res://assets/rig/father_carrying_front_diagonal_a.svg"),
-	preload("res://assets/rig/father_carrying_front_diagonal_c.svg"),
-	preload("res://assets/rig/father_carrying_front_diagonal_b.svg")]
-const FATHER_CARRYING_BACK_DIAGONAL: Array[Texture2D] = [
-	preload("res://assets/rig/father_carrying_back_diagonal_a.svg"),
-	preload("res://assets/rig/father_carrying_back_diagonal_c.svg"),
-	preload("res://assets/rig/father_carrying_back_diagonal_b.svg")]
+const FATHER_CARRYING_FRONT: Array[String] = [
+	"res://assets/rig/father_carrying_front_a.svg",
+	"res://assets/rig/father_carrying_front_c.svg",
+	"res://assets/rig/father_carrying_front_b.svg"]
+const FATHER_CARRYING_BACK: Array[String] = [
+	"res://assets/rig/father_carrying_back_a.svg",
+	"res://assets/rig/father_carrying_back_c.svg",
+	"res://assets/rig/father_carrying_back_b.svg"]
+const FATHER_CARRYING_SIDE: Array[String] = [
+	"res://assets/rig/father_carrying_side_a.svg",
+	"res://assets/rig/father_carrying_side_c.svg",
+	"res://assets/rig/father_carrying_side_b.svg"]
+const FATHER_CARRYING_FRONT_DIAGONAL: Array[String] = [
+	"res://assets/rig/father_carrying_front_diagonal_a.svg",
+	"res://assets/rig/father_carrying_front_diagonal_c.svg",
+	"res://assets/rig/father_carrying_front_diagonal_b.svg"]
+const FATHER_CARRYING_BACK_DIAGONAL: Array[String] = [
+	"res://assets/rig/father_carrying_back_diagonal_a.svg",
+	"res://assets/rig/father_carrying_back_diagonal_c.svg",
+	"res://assets/rig/father_carrying_back_diagonal_b.svg"]
 
 ## One distance-driven turn visits both open contacts with the shared passing pose between them.
 const MOTHER_GAIT_LOOP: Array[int] = [0, 1, 2, 1]
 
-const PRAM_SIDE := preload("res://assets/rig/pram_side.svg")
-const PRAM_FRONT := preload("res://assets/rig/pram_front.svg")
-const PRAM_BACK := preload("res://assets/rig/pram_back.svg")
-const PRAM_FRONT_DIAGONAL := preload("res://assets/rig/pram_front_diagonal.svg")
-const PRAM_BACK_DIAGONAL := preload("res://assets/rig/pram_back_diagonal.svg")
+const PRAM_SIDE := "res://assets/rig/pram_side.svg"
+const PRAM_FRONT := "res://assets/rig/pram_front.svg"
+const PRAM_BACK := "res://assets/rig/pram_back.svg"
+const PRAM_FRONT_DIAGONAL := "res://assets/rig/pram_front_diagonal.svg"
+const PRAM_BACK_DIAGONAL := "res://assets/rig/pram_back_diagonal.svg"
 
-const ALERT := preload("res://assets/props/alert.svg")
-const ALERT_CLOSE := preload("res://assets/props/alert_close.svg")
+const ALERT := "res://assets/props/alert.svg"
+const ALERT_CLOSE := "res://assets/props/alert_close.svg"
 ## The baby's own three, which ride over the pram rather than over her. See `Baby.Cue`.
-const BABY_ZZZ := preload("res://assets/props/baby_zzz.svg")
-const BABY_FUSS := preload("res://assets/props/baby_fuss.svg")
-const BABY_CRY := preload("res://assets/props/baby_cry.svg")
+const BABY_ZZZ := "res://assets/props/baby_zzz.svg"
+const BABY_FUSS := "res://assets/props/baby_fuss.svg"
+const BABY_CRY := "res://assets/props/baby_cry.svg"
 
-## The two `TextureAtlas` groups everything she draws comes from. **Her family and the marks over
-## her head are two groups rather than one** because they are drawn for different reasons and go
-## away at different times: the body and the pram are on screen for every frame of every day, and
-## a mark is up for a second or two when something is about to happen. Keeping them apart is what
-## lets the indicators be released one day without the body's atlas being repacked.
+## The two baked `AtlasLibrary` groups everything she draws comes from. **Her family and the marks
+## over her head are two groups rather than one** because they are drawn for different reasons and
+## go away at different times: the body and the pram are on screen for the whole run, and a mark
+## is up for a second or two when something is about to happen. `assets/atlases/membership.json`
+## states the split the same way: `stroller` for the whole run, `head_indicators` "the whole run,
+## beside the stroller, but its own group because the marks above her head are drawn by a separate
+## pass and tinted on their own".
 ##
 ## The caret and the tildes are `Sprites.draw_caret()` primitives with no texture behind them, so
-## there is nothing of them to pack.
-const FAMILY_ATLAS := "stroller"
-const INDICATOR_ATLAS := "head_indicators"
+## neither group bakes them.
+const FAMILY_ATLAS := &"stroller"
+const INDICATOR_ATLAS := &"head_indicators"
 
-## Everything `FAMILY_ATLAS` packs: both parents' pushing/carrying views and three gait frames,
-## plus the shared pram's five views. Keyed by the source texture, which `_mother_source()` and
-## `_pram_source()` have in hand at draw time, so the lookup at the draw is a dictionary hit on
-## the constant the selector already picked.
-static func family_sources() -> Dictionary:
-	var sources: Dictionary = {}
+## Every path `FAMILY_ATLAS` bakes: both parents' pushing/carrying views and three gait frames,
+## plus the shared pram's five views. Not read by the live draw path — `_mother_texture()` and
+## `_pram_texture()` turn the picture already in hand into a region name directly — but kept as
+## the one place "everything the rig can draw" is enumerable, which is what a completeness check
+## against the membership file wants.
+static func family_sources() -> Array[String]:
+	var sources: Array[String] = []
 	var view_sets: Array = [
 		MOTHER_FRONT, MOTHER_BACK, MOTHER_SIDE, MOTHER_FRONT_DIAGONAL, MOTHER_BACK_DIAGONAL,
 		MOTHER_CARRYING_FRONT, MOTHER_CARRYING_BACK, MOTHER_CARRYING_SIDE,
@@ -171,23 +176,18 @@ static func family_sources() -> Dictionary:
 		FATHER_CARRYING_FRONT_DIAGONAL, FATHER_CARRYING_BACK_DIAGONAL,
 	]
 	for views: Array in view_sets:
-		for texture: Texture2D in views:
-			sources[texture] = texture
-	var prams: Array[Texture2D] = [
+		for path: String in views:
+			sources.append(path)
+	var prams: Array[String] = [
 		PRAM_SIDE, PRAM_FRONT, PRAM_BACK, PRAM_FRONT_DIAGONAL, PRAM_BACK_DIAGONAL,
 	]
-	for texture in prams:
-		sources[texture] = texture
+	sources.append_array(prams)
 	return sources
 
-## Everything `INDICATOR_ATLAS` packs: the two warning marks that ride over her head and the
+## Every path `INDICATOR_ATLAS` bakes: the two warning marks that ride over her head and the
 ## baby's own three, which ride over the pram.
-static func indicator_sources() -> Dictionary:
-	var sources: Dictionary = {}
-	var marks: Array[Texture2D] = [ALERT, ALERT_CLOSE, BABY_ZZZ, BABY_FUSS, BABY_CRY]
-	for texture in marks:
-		sources[texture] = texture
-	return sources
+static func indicator_sources() -> Array[String]:
+	return [ALERT, ALERT_CLOSE, BABY_ZZZ, BABY_FUSS, BABY_CRY]
 
 ## How far above her head the warning mark floats, and how fast it flashes. She is 46px tall,
 ## so this clears her head by a few pixels and no more: at 68 the mark drifted far enough up
@@ -329,27 +329,27 @@ var _camera_smoothing_when_free := true
 
 func _ready() -> void:
 	add_to_group("player")
-	# Asked for here rather than at parse time: the atlas has to be packed **after** the
-	# presentation mode is known, and `TextureResolver`'s own first call is what fixes that mode.
-	# Until the pack is collected every call below answers the source texture it answers today, so
-	# nothing waits on it and the first frame is drawn either way.
-	TextureAtlas.request(FAMILY_ATLAS, family_sources())
-	TextureAtlas.request(INDICATOR_ATLAS, indicator_sources())
+	# The whole run's own lifetime (`assets/atlases/membership.json`, "the player is on screen from
+	# the first frame of a day"): acquired here rather than waited for, since the bake already sits
+	# on disk before the game boots and `acquire()` is a synchronous page load rather than a task to
+	# collect. Two acquires rather than one because the body and the head marks are two groups —
+	# see `FAMILY_ATLAS`/`INDICATOR_ATLAS`'s own doc for why.
+	AtlasLibrary.acquire(FAMILY_ATLAS)
+	AtlasLibrary.acquire(INDICATOR_ATLAS)
 	if _pram_collision:
 		_pram_collision.disabled = carrying
 	# Read off the scene rather than written down here, so the camera's own smoothing stays a
 	# property of the camera and a focus can switch it off without owning the default.
 	_camera_smoothing_when_free = _camera.position_smoothing_enabled
 
-## Hands both of her groups back. **A group whose packing task is never waited for is a task the
-## pool still holds at shutdown**, so the request in `_ready()` owes a release here rather than
-## leaving the static registry holding it — `TextureAtlas.release()` is what waits for an
-## outstanding blit. A second rig alive at the same time would lose the atlas and fall back to
-## drawing its source pictures, which is the same thing it does before the first collect; there is
+## Hands both of her groups back — the other half of `_ready()`'s own acquire. **A reference taken
+## and never released is a page held at shutdown**, so nothing here waits for it to be asked for
+## again. A second rig alive at the same time would simply hold a second reference on the same
+## page rather than lose it, since `AtlasLibrary` counts references rather than owners; there is
 ## never more than one of her in a running game.
 func _exit_tree() -> void:
-	TextureAtlas.release(FAMILY_ATLAS)
-	TextureAtlas.release(INDICATOR_ATLAS)
+	AtlasLibrary.release(FAMILY_ATLAS)
+	AtlasLibrary.release(INDICATOR_ATLAS)
 
 ## Takes her out of the world without taking her out of the tree, for the title screen's attract
 ## mode: the home and the street in front of it, with nobody in it.
@@ -874,14 +874,13 @@ func _draw_pram(at: Vector2) -> void:
 func _pram_draw_size() -> Vector2:
 	return _pram_texture().get_size() * PRAM_VISUAL_SCALE
 
-## The selected parent's texture for a gait frame — its atlas region once collected, and its
-## resolved source picture before collection and after release. Atlas availability never changes
-## the run's presentation or the pose selector.
+## The selected parent's region for a gait frame — `FAMILY_ATLAS` is acquired for the whole run in
+## `_ready()`, so this is always the baked region and never the raw source.
 func _mother_texture(frame: int) -> Texture2D:
-	return TextureAtlas.texture_for(FAMILY_ATLAS, _mother_source(frame), _mother_source(frame))
+	return AtlasLibrary.region(AtlasLibrary.region_name_for(_mother_source(frame)))
 
-## The authored view this frame draws, before the atlas has anything to say about it.
-func _mother_source(frame: int) -> Texture2D:
+## The authored view this frame draws, as the path it is baked under.
+func _mother_source(frame: int) -> String:
 	if carrying:
 		if _view_direction == 0 or _view_direction == 4:
 			return FATHER_CARRYING_SIDE[frame] if is_male else MOTHER_CARRYING_SIDE[frame]
@@ -908,14 +907,14 @@ func _mother_source(frame: int) -> Texture2D:
 func _mother_is_mirrored() -> bool:
 	return EightDirection.is_mirrored(_view_direction)
 
-## The pram texture selected by the live drawing path, through the same atlas her body comes
-## from — its size is the region's, which is the source's, so `_pram_draw_size()`'s seven-sixths
-## lands on exactly the same rectangle it always did.
+## The pram region selected by the live drawing path, off the same `FAMILY_ATLAS` page her body
+## comes from — its size is the region's, which is the picture's own native size, so
+## `_pram_draw_size()`'s seven-sixths lands on exactly the same rectangle it always did.
 func _pram_texture() -> Texture2D:
-	return TextureAtlas.texture_for(FAMILY_ATLAS, _pram_source(), _pram_source())
+	return AtlasLibrary.region(AtlasLibrary.region_name_for(_pram_source()))
 
-## The authored pram view for the direction she is facing.
-func _pram_source() -> Texture2D:
+## The authored pram view for the direction she is facing, as the path it is baked under.
+func _pram_source() -> String:
 	if _view_direction == 0 or _view_direction == 4:
 		return PRAM_SIDE
 	if _view_direction == 1 or _view_direction == 3:
@@ -959,13 +958,13 @@ func _draw_baby_cue(pram_offset: Vector2) -> void:
 	var cue := _baby.cue()
 	if cue == Baby.Cue.NONE:
 		return
-	var texture := BABY_ZZZ
+	var path := BABY_ZZZ
 	var flashing := false
 	match cue:
 		Baby.Cue.UNSETTLED:
-			texture = BABY_FUSS
+			path = BABY_FUSS
 		Baby.Cue.NEARLY_CRYING:
-			texture = BABY_CRY
+			path = BABY_CRY
 			flashing = true
 		Baby.Cue.STIRRING:
 			flashing = true
@@ -976,7 +975,7 @@ func _draw_baby_cue(pram_offset: Vector2) -> void:
 	# The steady ones breathe rather than sit still, or a mark that is up for the whole walk
 	# home stops being read. The urgent two flash instead.
 	var breath := 0.0 if flashing else sin(_alert_phase * TAU) * BABY_CUE_BREATH
-	Sprites.draw_standing(self, TextureAtlas.texture_for(INDICATOR_ATLAS, texture, texture),
+	Sprites.draw_standing(self, AtlasLibrary.region(AtlasLibrary.region_name_for(path)),
 			pram_offset + Vector2(aside, -baby_cue_lift() + breath))
 
 ## *This spot is about to be bad; move* — or, doubled and red, *it is bad now.* Drawn over the
@@ -998,5 +997,5 @@ func _draw_alert() -> void:
 	if fmod(_alert_phase * rate, 1.0) > 0.55:
 		return
 	var mark := ALERT_CLOSE if _alert == Alert.NOW else ALERT
-	Sprites.draw_standing(self, TextureAtlas.texture_for(INDICATOR_ATLAS, mark, mark),
+	Sprites.draw_standing(self, AtlasLibrary.region(AtlasLibrary.region_name_for(mark)),
 			Vector2(0.0, -ALERT_HEIGHT))

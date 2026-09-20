@@ -36,7 +36,7 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------- selection ---
 
-func _entry(body: Texture2D, trim: Texture2D) -> Dictionary:
+func _entry(body: String, trim: String) -> Dictionary:
 	return {"body": body, "trim": trim}
 
 func _row(label: String, entries: Array) -> Dictionary:
@@ -50,13 +50,13 @@ func _row(label: String, entries: Array) -> Dictionary:
 ## order, reproduced on stills instead of a canvas transform.
 func _cell_image(entry: Dictionary, scale: float) -> Image:
 	var body := Image.new()
-	body.load_svg_from_string(FileAccess.get_file_as_string(entry["body"].resource_path), scale)
+	body.load_svg_from_string(FileAccess.get_file_as_string(entry["body"]), scale)
 	for y in body.get_height():
 		for x in body.get_width():
 			var c := body.get_pixel(x, y)
 			body.set_pixel(x, y, Color(c.r * TINT.r, c.g * TINT.g, c.b * TINT.b, c.a))
 	var trim := Image.new()
-	trim.load_svg_from_string(FileAccess.get_file_as_string(entry["trim"].resource_path), scale)
+	trim.load_svg_from_string(FileAccess.get_file_as_string(entry["trim"]), scale)
 	body.blend_rect(trim, Rect2i(Vector2i.ZERO, trim.get_size()), Vector2i.ZERO)
 	return body
 

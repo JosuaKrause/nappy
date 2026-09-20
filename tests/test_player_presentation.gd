@@ -10,7 +10,7 @@ const POSES: Array[String] = ["a", "c", "b"]
 func run(t) -> void:
 	_test_seeded_equal_choice_and_lifetime(t)
 	_test_main_binds_both_complete_families_before_drawing(t)
-	_test_warming_and_atlas_cover_both_presentations(t)
+	_test_every_family_source_is_a_baked_region(t)
 
 func _test_seeded_equal_choice_and_lifetime(t) -> void:
 	var state := STATE_SCRIPT.new()
@@ -57,7 +57,7 @@ func _test_main_binds_both_complete_families_before_drawing(t) -> void:
 							"father" if male else "mother", "carrying_" if carrying else "",
 							VIEWS[direction], POSES[frame]]
 					var source := rig._mother_source(frame)
-					t.check(source.resource_path == path, "every pose/state/facing stays in its selected family")
+					t.check(source == path, "every pose/state/facing stays in its selected family")
 					t.check(rig._mother_is_mirrored() == EightDirection.is_mirrored(direction),
 							"both presentations retain the same west-facing mirrors")
 					rig._mother_texture(frame)
@@ -66,33 +66,28 @@ func _test_main_binds_both_complete_families_before_drawing(t) -> void:
 		rig.free()
 	main.free()
 	GameState.player_is_male = saved
-	TextureAtlas.reset_for_tests()
 
-func _test_warming_and_atlas_cover_both_presentations(t) -> void:
+## Every path the rig can draw is a name the bake actually knows, on the group the rig itself
+## acquires — the completeness check `assets/atlases/membership.json` wants, now that the rig
+## reaches its pictures through `AtlasLibrary` rather than through `TextureAtlas`/`TextureResolver`.
+## The pixel-for-pixel claim that a baked region is today's picture is
+## `tests/test_atlas_library.gd`'s own job, not this suite's.
+func _test_every_family_source_is_a_baked_region(t) -> void:
 	var sources := Stroller.family_sources()
-	for svg in [false, true]:
-		TextureAtlas.reset_for_tests()
-		TextureResolver.reset_for_tests(svg)
-		TextureResolver.warm()
-		var loaded := TextureResolver.load_count()
-		TextureAtlas.request(Stroller.FAMILY_ATLAS, sources)
-		TextureAtlas.collect(Stroller.FAMILY_ATLAS, true)
-		var atlas: Texture2D = null
-		var families: Dictionary = {}
-		for source: Texture2D in sources:
-			var resolved := TextureResolver.resolve(source)
-			t.check((resolved == source) if svg else (resolved != source),
-					"every family source honors PNG/default and exact SVG fallback")
-			var packed := TextureAtlas.texture_for(Stroller.FAMILY_ATLAS, source, source)
-			t.check(packed is AtlasTexture and packed.get_size() == source.get_size(),
-					"every registered source retains native size inside the atlas")
-			if packed is AtlasTexture:
-				if atlas == null:
-					atlas = (packed as AtlasTexture).atlas
-				t.check((packed as AtlasTexture).atlas == atlas, "both complete families share one atlas")
-			families[source.resource_path.get_file().split("_")[0]] = true
-		t.check(families.has("father") and families.has("mother") and families.has("pram"),
-				"the atlas covers both parents and the shared stroller")
-		t.check(TextureResolver.load_count() == loaded, "packing every family after warm loads nothing late")
-	TextureAtlas.reset_for_tests()
-	TextureResolver.reset_for_tests(DevFlags.svg_requested())
+	t.check(not sources.is_empty(), "the family exports at least one source")
+	var families: Dictionary = {}
+	for path: String in sources:
+		var name := AtlasLibrary.region_name_for(path)
+		t.check(AtlasLibrary.has_region(name), "%s is baked" % path)
+		t.check(AtlasLibrary.group_of(name) == Stroller.FAMILY_ATLAS,
+				"%s is on the stroller's own page" % path)
+		families[path.get_file().split("_")[0]] = true
+	t.check(families.has("father") and families.has("mother") and families.has("pram"),
+			"the family covers both parents and the shared stroller")
+	var indicators := Stroller.indicator_sources()
+	t.check(not indicators.is_empty(), "the indicators export at least one source")
+	for path: String in indicators:
+		var name := AtlasLibrary.region_name_for(path)
+		t.check(AtlasLibrary.has_region(name), "%s is baked" % path)
+		t.check(AtlasLibrary.group_of(name) == Stroller.INDICATOR_ATLAS,
+				"%s is on the head indicators' own page" % path)

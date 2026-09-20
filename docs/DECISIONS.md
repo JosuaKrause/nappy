@@ -1,5 +1,115 @@
 # Decisions
 
+## M171, the leaf consumers — built 2026-09-20
+
+A consumer move of the milestone, pull request #248.
+
+**Built.** `Building`'s forty pictures are region names on the `buildings` page; `CityEdge`,
+`ClosureMarker` and `TrafficLight` draw from `street_kit`, and `CityEdge` also holds `ground`
+for the mountain; `ModeButton`, `TouchControls` and `SaveIndicator` draw from `ui`;
+`InteriorScene` and `InteriorTileSet` from `interior`. Each consumer acquires its group in
+`_enter_tree()` and releases it in `_exit_tree()` — the pair rather than `_ready()`, which
+fires once, so a node that re-enters the tree keeps the count right — and an empty
+`StringName` is "nothing to draw" where a function returned `null`. `City`'s count of fence
+panels across a closed street reads `AtlasLibrary.native_size()` for the panel's width.
+`tests/test_atlas_leaf_consumers.gd` checks what a headless run cannot, since it never calls
+`_draw()`: every region name a consumer holds resolves on the group it acquires, and every
+group's count returns to nought when its consumers are freed.
+
+**The interior TileSet shares the page.** The first version cropped each tile out of the page's
+image into its own `ImageTexture`, on the reasoning that a `TileSetAtlasSource` needs a uniform
+grid. That is true of a source holding many tiles; each source here holds one. A source whose
+texture is the shared page, whose `margins` are the region's corner and whose
+`texture_region_size` is the region's size puts tile (0,0) exactly on the region — proved
+against this engine with a throwaway script before it was written, including two sources at
+different offsets on one page. Cropping was refused in review because it rebuilt one texture
+per tile at runtime, which the milestone exists to remove, and made the group's extruded
+padding pointless. The TileSet therefore needs `interior` acquired for as long as it is used;
+`InteriorScene` acquires before it builds and releases after its `TileMapLayer` has gone.
+
+**The brief's fence was wrong here too.** It kept the agent out of `city.gd`, where the fence
+panel count read `get_width()` off a `ClosureMarker` constant that this change turns into a
+region name, so the first version could not parse on its own.
+
+**Open to overturn.** Per-node acquisition — every `Building` takes its own reference — where
+an owner could hold one; PLAYTEST-109's loading rule replaces these lifetimes with startup and
+the day brief in any case.
+
+## M171, the stroller, the head indicators and the crowd — built 2026-09-20
+
+The second consumer move of the milestone, pull request #249.
+
+**Built.** `Stroller` acquires the `stroller` and `head_indicators` groups in `_ready()` and
+releases them in `_exit_tree()`; every mother, father, pram, alert and baby constant is a source
+path and the draw reads `AtlasLibrary.region()`. `CrowdAgent`'s six view tables are paths with
+a small `StringName` cache, the body layer alone takes the tint, and the entry clearance reads
+`AtlasLibrary.native_size()`, which answers before anything is acquired — it has to, since the
+placement roll in `setup()` runs ahead of the first acquire. `Crowd` owns the `crowd` group for
+its own life: the first `start_day()` takes the one reference, `clear()` keeps it, and
+`_exit_tree()` gives it back, so the finale's crowd that never starts a day takes nothing.
+`crowd_atlas.gd` and its suite are deleted, and with them the synchronous first pack inside a
+draw call. `tests/test_atlas_stroller_crowd.gd` holds the lifetimes, the separate body and trim
+regions and the page split between the rig and the indicators.
+
+**Found in review.** The first version released only in `clear()`, so a `Crowd` freed mid-day —
+the city torn down on quitting to the title — kept its reference for the life of the process,
+`AtlasLibrary`'s counts being static. The suite's case for it was seen failing before the fix.
+
+**Overturned by the player before it merged.** The second version released the page in
+`clear()` and loaded it again at each day's start, as the membership's "the day" lifetime read.
+[PLAYTEST-109](playtests/PLAYTEST-109.md): *"don't unload anything that might be needed in one
+day and in the next."* A release is a reload, and `AtlasLibrary.acquire()`'s `load()` blocks the
+moment that calls it; the membership's lifetime for `crowd` now says the node's own life.
+
+**The halo.** `assets/shaders/excitement_halo.gdshader` declares only `fragment()` and reads
+alpha at `UV`; the engine's default canvas vertex stage remaps `UV` to an `AtlasTexture`'s
+region first, so the shader is region-safe. A shader with its own `vertex()` UV math would not
+be.
+
+**Removed with the runtime toggle's last readers.** `test_walker_views.gd` and
+`test_car_views.gd`'s checks that an unpaired view falls back to its SVG, and
+`test_player_presentation.gd`'s check that warming and the atlas cover both presentations,
+pinned `TextureResolver` behaviour against constants that are no longer textures; the parity
+they protected is `test_atlas_library.gd`'s bake-parity check.
+
+**Open to overturn.** The owner holds the crowd's one reference rather than each of a couple of
+hundred agents holding their own; `CrowdAgent` caches region names.
+
+**Not captured.** No still shows a head indicator over her head: three `shot.sh` windows never
+produced one.
+
+## M171, the decoration — built 2026-09-20
+
+A consumer move of the milestone, pull request #247.
+
+**Built.** `Prop`'s swing frame, bollard, sacks and both trees, `Litter`'s five decals,
+`CityDecals`' tree pit and `City`'s door are region names on the `decoration` page. `City`
+acquires the group in `build()`, where it asked the runtime packer for it, and releases it in
+`_exit_tree()`. Every shadow shape and the door's offset read `AtlasLibrary.native_size()` where
+they read `get_size()` off a preloaded source, and `StreetTrees.footprint_radius()` — the tree
+clearance the closure and event planners use ahead of any city existing — reads the same table,
+which answers with nothing acquired. The "draw the source picture until the pack is collected"
+path in `Prop` and `CityDecals`, `CityDecals.decoration_sources()` and the group's trip through
+`TextureAtlas` are gone: a baked page is there as soon as it is acquired.
+`tests/test_atlas_decoration.gd` pins each shadow and the tree footprint to the region table,
+and the group's count to one while a city stands and none after it is freed.
+
+**The brief's fence was wrong three times, and the first version was red for it.** It kept the
+agent out of `street_trees.gd`, which left the two trees as the only decoration pictures still
+loaded individually, and out of `tests/test_texture_atlas.gd` and `tests/test_telemetry.gd`,
+which the change breaks: one read `decoration_sources()`, the other used two prop textures as
+convenient inputs to the runtime packer. A pull request carries what its own change breaks; the
+fence was lifted and the three were fixed on the branch. The runtime packer's suites take their
+real group from the café event family and the mouse pictures, since the events are the last
+family that packer serves.
+
+**Found on the way.** A suite that fails to parse hangs the test run instead of failing it:
+the runner never reaches `quit()`, so the shard that owned the broken suite ran until another
+shard's failure cancelled it.
+
+**Open to overturn.** The door's constant keeps its name, `DOOR_TEXTURE`, while holding a
+region name.
+
 ## M171, the bake and the loader — built 2026-09-20
 
 The first of the milestone's pull requests: the machinery, with no consumer moved.
@@ -79,6 +189,97 @@ with a planted error flags the right shards; a failed `--record-costs` leaves
 `tests/suite_costs.txt` byte-identical; the unfiltered suite exits 0 with no engine error in
 the combined log. `WARNING:` lines are outside the vocabulary and do not trip it; warning
 policy and import-pass failures were out of scope.
+
+## M129 — No body closes the walked sidewalk · built 2026-09-19
+
+> "I still get hard walls on the side of the sidewalk that is on the path -- how can this be so
+> hard to do correctly?" ([PLAYTEST-94](playtests/PLAYTEST-94.md))
+
+The player named no body, seed or day, so it was measured before it was fixed. Agent commits on
+`feature/m129-walked-sidewalk-walls`; the probe is `tests/probes/m129_walked_sidewalk_walls.gd`
+and its outputs, before and after, are `evidence/m129-walked-sidewalk-walls-2026-09-19/`.
+
+**What was closing it.** Over six seeds by one day per act, 89 of 1869 walked-sidewalk bands had
+no lane she fits through: 86 were one `delivery_van` each, placed by the scheduler's own candidate
+loop, and 3 were a measuring artifact. None came from the four rows the wall rule named, from
+seals, closures, region walls or the park passes. The van was simply never in the rule: parked at
+the curb it leaves 48 − 22 = 26px to the frontage, and she needs 28px, twice
+`Tuning.PLAYER_BODY_RADIUS` — the pram rides ahead of her circle, not beside it, so it adds
+nothing sideways. (The 46px first written into the queue entry is one door's detain reach and
+was wrong.)
+
+**Built: a rule by fit, beside the rule by cost.** `_closes_the_band_by_its_own_placement` reads
+a row's own `obstructs_radius` against where its `pavement_side` stands it and calls it a wall
+when the gap left is under 28px; a wall gets zero copies on any cell that carries a route, as
+before. A second hole closed with it: a van could land on a cell of the walked sidewalk that the
+route does not itself step on, where the zero-copies rule does not look, so the cumulative check
+in the candidate loop asks the same physical question (`closes_a_walked_sidewalk_band`, shared by
+the probe and the suite). With the first alone the probe still found 2; with both, 0 of 1869.
+The three artifact bands were streets built over at one end, where the check demanded a lane to
+the band's raw corner; it now walks between the outermost real sidewalk tiles.
+
+**Every other placing path, by reading:** `SealPlanner`, `ClosurePlanner` and `RegionPlanner`
+each refuse a street the tree is on; the park pass places inside a calm block's own rect, which
+holds no sidewalk tile; the two `_ensure_*` passes only remove. None needed a change.
+
+**The poster crew stands against the building.** The rule by fit also caught `poster_crew`, an
+11px body centered on the band (21px each side). Rather than send it across the street it is
+sited `AGAINST_THE_BUILDING`, where it leaves 37px on the curb side and is friction again, which
+is also where a crew pasting posters works. It can no longer appear on a square, since a
+row that stands against a building needs one beside it; the player asked for a separate square
+crew ([PLAYTEST-107](playtests/PLAYTEST-107.md)), built below.
+
+**What it cost, measured.** `delivery_van` still plans 43.2 a day; 46 of about 1036 in the sample
+stand on a route street's far sidewalk where none did. The zero-cost-line share went 262 to 258
+of 296, all four in act III and all explained by the van, which as a wall is weighed toward
+junction rims; the rim decision below took that back. Two floors in `tests/test_events.gd`
+moved with the van leaving the friction pool, each keeping the margin it measured: the corridor's
+friction share 0.35 to 0.34 (measured 36.13%) and the narrow-friction share 0.40 to 0.39
+(42.55%). **Both are open to overturn.** The friction test's sampling guard asks for two samples
+where it asked for four, since the poster crew is now the whole of the population it samples.
+A suite test, two seeds by three days, asserts that no body and no set of bodies closes a walked
+sidewalk.
+
+**Left alone:** `_closes_the_run`, the pacing rule's street-wide check, makes the same raw-corner
+assumption the artifact exposed; nothing measured exercises it.
+
+**A wall by fit gets no pull toward junction rims.** Asked whether the van, now a wall, should
+also get the weighting that draws walls to the ground beside junctions
+(`Tuning.EVENT_WALL_RIM_WEIGHT`), the player chose "A. No (my recommendation). -- do that"
+([PLAYTEST-107](playtests/PLAYTEST-107.md)). `_is_a_wall_by_cost` keeps the rim pull for rows
+whose field alone clears the far lane — the pacing `homeless_yeller` among them — and a row
+that is a wall only by fit keeps its zero copies on route cells and is otherwise weighed as
+friction. Measured: closures 0 of 1869; the zero-cost line 264 of 296, against 258 with the rim
+pull and 262 before the branch; vans 43.2 a day, with far-sidewalk landings 46 to 101, which is
+the corridor weight landing on the one legal corridor cell a fit wall has. The narrow-friction
+floor went back to 0.40 (measured 42.55%); the whole share's stays 0.34 (35.84%).
+
+**The square's poster crew is its own row.** *"we need a separate square poster crew entity for
+this"* ([PLAYTEST-107](playtests/PLAYTEST-107.md)). `poster_crew_square` places on `SQUARE`
+only, with no pavement side, and copies the sidewalk crew's field, point body, first day, act
+and cost; `poster_crew` lists `SIDEWALK` alone. It has its own `EventDef.Look`, five views and
+a badge. **Density is split, not added:** the pre-branch row put 3 of 512 crews on a square
+over 48 planned days (0.6%), and squares are 1.1% of its candidate ground, so the square row
+has weight 0.03 and a cap of 1 and the sidewalk row keeps 2.5 and 12 — 10.83 crews a day
+together against the one row's 10.67 on the same seeds, a square crew about one day in eight.
+
+**Open to overturn, chosen where the player said nothing:** what the crew pastes onto — a
+free-standing advertising column, the orchestrator's idea; the display name "Poster crew", the
+sidewalk row's own; the rounding of the split; the worker being the sidewalk family's figure
+unmoved on a 44px canvas with a contact shadow baked under the column only. With no pavement
+side the row always faces east, so four of its five views are authored and never drawn, as
+`reversing_lorry`'s are. **The column is not solid:** the body is the worker's 11px point and
+the column's axis is 15px east of it, so her circle can overlap the drawn column by about
+10px; a second `SolidPart`, as the car crash has, is the fix if it shows, and `REVIEW.md` asks.
+
+**The zero-cost line reads 261 of 296 with the square row in, and the row is not in it.** With
+the row present at weight 0 the scheduler's weighted pick rolls against the same sum, the days
+are bit-identical to the branch without it, and the probe reads 264. Any weight re-dices every
+day: over 18 other cities the difference is −0.6 points from one base seed and +0.9 from
+another, and `poster_crew_square` is in no cut and no blame row of any run. The weight was not
+moved to buy the number back. After main's roadblock changes came in the merged tree reads
+the same: 0 closures of 1869, 261 of 296, vans 43.3 a day with 102 on a far sidewalk. Outputs,
+the control and the still are in `evidence/m129-walked-sidewalk-walls-2026-09-19/`.
 
 ## Pull requests are squash-merged — 2026-09-19
 

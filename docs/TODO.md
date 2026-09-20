@@ -302,7 +302,8 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 > · "the implementation we currently have is not great"
 
 [PLAYTEST-105](playtests/PLAYTEST-105.md) is the contract and
-[PLAYTEST-108](playtests/PLAYTEST-108.md) the design decisions; `DECISIONS.md`, M171, the atlas
+[PLAYTEST-108](playtests/PLAYTEST-108.md) the design decisions and
+[PLAYTEST-109](playtests/PLAYTEST-109.md) the player's notes on the baked pages; `DECISIONS.md`, M171, the atlas
 design, has the inventory the design was read from, the rejected bakers and the player's answers.
 
 **The design.** A headless run of the engine itself bakes every picture family into one PNG page
@@ -323,43 +324,111 @@ deploy keeps copying the social card beside the page. Both are assumptions the p
 and did not speak to.
 
 The bake, the loader `AtlasLibrary`, the staleness check and the report-only package audit are
-built and nothing draws from them yet (`DECISIONS.md`, M171, the bake and the loader).
-`assets/atlases/membership.json` says which page a picture is on, and a consumer move edits it
+built (`DECISIONS.md`, M171, the bake and the loader), and the items below are the families
+that still draw individual pictures. `assets/atlases/membership.json` says which page a picture is on, and a consumer move edits it
 only to add a picture. A consumer acquires its group before drawing and releases it when its
 last user goes; `region()` never loads a page on its own, and `native_size()` answers with
 nothing acquired.
 
-Each item is one pull request. The first three touch disjoint files and run together; the
-ground and the events follow their own gates; the last closes the contract.
+Each item is one pull request. The ground and the events follow their own gates; the last
+closes the contract.
 
-- [ ] **The unatlased leaf consumers**: buildings, the city edge, closure markers, traffic
-      lights, the UI buttons and indicators, the interior scene and the interior TileSet. The
-      checkpoint pictures are `event_instance.gd`'s and move with the events; the city edge's
-      mountain is on the ground page, which the city always holds. `preload` constants become region names; a tinted draw keeps its `modulate`.
-- [ ] **The stroller, the head indicators and the crowd.** The crowd's synchronous first pack
-      inside a draw call goes; `crowd_atlas.gd` and its suite go with it. Body and trim layers
-      stay separate regions so tinting is unchanged; the halo's shader reads alpha only and is
-      region-safe.
-- [ ] **The decoration**: props, litter and city decals. A prop's shadow reads its size from
-      the region table where it reads `get_size()` off a preloaded source today.
+- [ ] **The pages are packed square, and what is always on screen is always loaded**
+      ([PLAYTEST-109](playtests/PLAYTEST-109.md)). *"it would be better to arrange
+      things in a more squarish image (take the total number of cells and use the square root
+      of it to define the width)"*: the page's target width comes from the square root of the
+      group's padded area, never less than the widest member. *"if you don't use a proper full
+      rectangle packer you will always get dead space even if you start with big textures … a
+      greedy approach is fine but don't let obvious empty space go wasted"*: the shelf packer is
+      replaced by a greedy rectangle packer that keeps the list of free rectangles each
+      placement leaves and places members, largest first, into the free rectangle that fits
+      best, so the room beside and under a tall picture is filled by smaller ones; it stays
+      deterministic, since a bake run twice is byte-identical. Rows sorted by height were
+      offered and refused. The suite asserts a floor on each page's fill and a ceiling on its
+      aspect ratio, and the PR records the fill of every page before and after. *"putting both genders in the player atlas is a bit
+      wasteful since it's guaranteed to not use half of it"*: the `stroller` group becomes
+      three — the mother's views, the father's views, and the pram with the baby — and
+      `Stroller` acquires the shared one and the run's parent. *"the UI and head indicators
+      could be combined. also, those are textures that should always be loaded"*: one group,
+      acquired at boot and held for the life of the process. *"we cannot start loading
+      something in the frame we need it"* · *"we probably could preload everything. or at least
+      load everything needed for a day during the day brief. and everything that might always
+      be needed at startup"*: a page loads at startup or during the day brief and at no other
+      moment. Startup holds what is always needed — the UI with the head indicators, the pram
+      and the run's parent once the parent is known; the day brief loads what the day needs and
+      does not already hold — the city's groups, the crowd, the events — before the brief can
+      be dismissed. *"don't unload anything that might be needed in one day and in the next"*:
+      no group is released between two days that both draw it, which `Crowd` already holds to.
+      The interior is the escape's
+      alone: it loads in the escape's own brief when M102, the finale, has one, and until then
+      where the `--start-escape` sequence starts. Holding every group from startup is the simpler build and is allowed; take it
+      unless the measured startup cost says otherwise, and say which in the PR. A consumer's
+      own `acquire()` stays as the reference count that proves the page is there, and the suite
+      fails on an `acquire()` that has to load outside those two moments; the run log's
+      group-loaded line carries the moment it happened in.
 - [ ] **The ground.** The authored TileSet stops referencing SVGs; the compositor reads each
       base and layer as a region of the ground page's image, composes at runtime as now, and
       the second runtime packer, `pack_into_one_texture()`, is replaced by one upload of the
       composed sheet. The per-day repaint keeps its variety and loses the GPU readbacks.
-- [ ] **The events**, one page, checkpoints included, after the square poster crew's pull
-      request has merged, since both rewrite `event_instance.gd`'s picture tables; its six
-      `poster_crew_square` pictures join the `events` membership here. `EventManager` acquires and releases
-      the one group; the screen-edge badge reads the same regions.
+- [ ] **The events**, one page, checkpoints included. The six `poster_crew_square` pictures
+      join the `events` membership here. `EventManager` acquires and releases the one group;
+      the screen-edge badge reads the same regions.
 - [ ] **Close the contract.** The runtime packer, the resolver, their phase-trace telemetry and
       the `--svg` and `?svg=1` flags are deleted; the run log says when a group loaded and was
       released, in how long and at what size. **The authoring sources move out of the imported
       tree** into a folder the engine ignores, and every reference to an old path moves with
       them — skills, docs, tool help, comments — *"so we don't have stale instructions or
       comments (code will fail but documentation will not)"*; grep for each family's old path
-      before and after, the count after is zero. The package audit becomes fatal in the export.
+      before and after, the count after is zero. **The moved sources' `.import` sidecars are
+      deleted with the move** ([PLAYTEST-109](playtests/PLAYTEST-109.md): *"does that mean we
+      also don't need .import files anymore?"*): the bake reads a source itself and never through the import cache, so a
+      source the engine ignores needs none; a sidecar stays only beside what the engine still
+      imports — fonts, audio, and the baked pages' own, which the bake writes and git ignores.
+      The package audit becomes fatal in the export.
       M159's atlas-measurement item is rewritten against the new spans before the old ones go.
       `ARCHITECTURE.md`, `GRAPHICS.md`, `VISUALS.md`, `TELEMETRY.md`, the **illustrated-png**
       and **svg-art** skills and `CLAUDE.md`'s path table describe what is then true.
+      **The release that follows is a minor version, and it waits for every item in this
+      section** — *"only release once all those new items are completed, too"* — **and for
+      M172, a suite that fails to parse hangs the test run, and M173, the standalone bake
+      speaks for a stale import cache, where they can be had** — *"include the bug fixes, too,
+      if possible"*. *"after atlas we cut a new minor version"*: `tools/release.sh minor`
+      ([PLAYTEST-109](playtests/PLAYTEST-109.md)).
+
+---
+
+## M172 — A suite that fails to parse hangs the test run · found 2026-09-20
+
+`tests/run_tests.gd`'s `_ready()` loads every suite before it runs any, and a suite with a parse
+error aborts `_ready()` before it reaches `quit()`. The engine prints the `SCRIPT ERROR` and
+then idles forever: `tools/test.sh <that suite>` never exits, and in CI the shard that owns the
+suite runs until the job's timeout or until another shard's failure cancels it, so the pull
+request shows a cancelled shard where it should show a red one with the parse error beside it.
+`tools/test.sh`'s engine-error check reads the output after the process ends, so it never gets
+to speak.
+
+- [ ] **A suite that cannot load is a failure the runner reports and exits on.** The runner
+      records the load failure by suite name, runs the suites that did load, and quits non-zero.
+      A negative fixture beside `tests/runner_fixtures/engine_error.gd` — a script that does not
+      parse, outside suite discovery, run only when named — holds it, and CI's `gates` job
+      requires the non-zero exit, the fixture's name in the output and an exit within seconds.
+
+---
+
+## M173 — The standalone bake speaks for a stale import cache · found 2026-09-20
+
+`tools/bake-atlases.sh` starts the engine with `--script`, which still loads the autoloads, and
+their dependency chain reaches `event_instance.gd`'s `preload`s. On a checkout whose import
+cache has not seen a picture — a fresh clone, or a pull that added one — the engine prints an
+`ERROR:` and a `SCRIPT ERROR` for every such picture and for every script that depends on them,
+after a bake that succeeded, and the wrapper exits zero. `tools/check.sh` bakes and then
+imports, so it repairs the state; nothing tells the person who ran the bake alone. The cause
+ends with M171's last item, when no source is preloaded.
+
+- [ ] **The wrapper names the stale cache.** When the bake succeeds and the engine's output
+      carries the error vocabulary, `tools/bake-atlases.sh` says the import cache is stale and
+      that `tools/check.sh` repairs it, and keeps the engine's lines visible rather than hiding
+      them. If M171 closes first, this item is deleted unbuilt.
 
 ---
 
@@ -465,7 +534,7 @@ alike.
 
 ---
 
-## M129 — A path through the city never has to cost · one route in nine still breaks
+## M129 — A path through the city never has to cost · one route in eight still breaks
 
 > "a path through the city must never hit excitement -- so all obstacles should be routable
 > around … the routing should only cross the street at intersections"
@@ -476,23 +545,17 @@ alike.
 the wall reading are built and recorded (`DECISIONS.md`, M129, the four rules; M129, the leaf
 blower is a wall to walk past and a busker to stay near; M129, a wall is also what cannot be
 walked past). The probe, `tests/probes/m129_zero_cost_line.gd`, finds a zero-cost line along
-262 of 296 routes. The guarantee is not true for the rest, and what stands in them is almost
-all one shape: a route junction taken by several rows together (32 of the 34 broken routes),
-with `leaf_blower`, `homeless_yeller` and `roadblock` each in the cut on 23 to 27 of the 34. No sidewalk rule reaches a `roadblock` on a carriageway or a wall's wide field reaching
+261 of 296 routes. No body closes a walked sidewalk (`DECISIONS.md`, M129, no body closes the
+walked sidewalk, which also holds the rim decision and the square's poster crew). The guarantee
+is not true
+for the rest, and what stands in them is almost all one shape: a route junction taken by several
+rows together, with `leaf_blower`, `homeless_yeller`, `roadblock` and `delivery_van` in the
+cuts; the probe's own table names them per run. No sidewalk rule reaches a `roadblock` on a carriageway or a wall's wide field reaching
 over a crossing from one street out. The three placement rules refuse a candidate whose reach
 *together with everything already down* would close a junction, so a crossing the probe finds
 covered is one that either reached the day past the rules or is read as covered differently by
 the probe and the rule:
 
-- [ ] **A hard wall still stands on the route's own sidewalk in play.** *(2026-09-19: "I still
-      get hard walls on the side of the sidewalk that is on the path -- how can this be so hard to
-      do correctly?", [PLAYTEST-94](playtests/PLAYTEST-94.md).)* The player did not name the body,
-      the seed or the day. The route-sidewalk rule names four rows — the café tables, the market
-      stall, the roadworks and the ice cream van — and runs in the scheduler's candidate loop
-      only. Measure it rather than guess: over the probe's seeds, every solid body on a walked
-      sidewalk that leaves her no lane on that sidewalk (she needs 46px), by row and by the path
-      that placed it. The answer is a rule about *any* body that closes the walked sidewalk,
-      whichever row and whichever path, asserted in the suite at zero.
 - [ ] **Which placements the three rules never see.** `_place_one`'s candidate loop is where
       the rules run. Find every other path a row reaches the day by — the calm-ground pass
       that covers a park by area, `_ensure_one_usable_park`, the seals a `SealPlanner` places

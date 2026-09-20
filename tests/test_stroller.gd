@@ -13,7 +13,7 @@ func run(t) -> void:
 	_test_pram_offset_stays_continuous_through_side_facings(t)
 	_test_north_diagonal_contact_adjustment(t)
 	_test_the_pram_has_its_own_trailing_body(t)
-	_test_her_family_comes_from_one_atlas_once_it_is_collected(t)
+	_test_her_family_comes_from_one_atlas(t)
 
 func _rig(t) -> Stroller:
 	var rig := Stroller.new()
@@ -26,18 +26,16 @@ func _rig(t) -> Stroller:
 	return rig
 
 ## The authored picture as the live drawing path actually hands it over — the region of her
-## family's atlas when that group is collected, the source picture when it is not.
-func _through_the_atlas(authored: Texture2D) -> Texture2D:
-	return TextureAtlas.texture_for(Stroller.FAMILY_ATLAS, authored, authored)
+## family's baked page, which `_ready()` has already acquired by the time `_rig(t)` returns.
+func _through_the_atlas(path: String) -> Texture2D:
+	return AtlasLibrary.region(AtlasLibrary.region_name_for(path))
 
-## Every picture she draws comes from one texture once her family's group is packed, which is the
+## Every picture she draws comes from one page once her family's group is acquired, which is the
 ## whole of what the atlas buys: her body, her pram and the mark over her head stop being three
-## textures for the batcher to break between. Collected by hand here, since nothing in a headless
-## suite runs `Main._process()`, which is what pumps the collect in a real run.
-func _test_her_family_comes_from_one_atlas_once_it_is_collected(t) -> void:
+## textures for the batcher to break between. Nothing has to be collected by hand here any more —
+## `_ready()`'s `AtlasLibrary.acquire()` is a synchronous page load rather than a task to pump.
+func _test_her_family_comes_from_one_atlas(t) -> void:
 	var rig := _rig(t)
-	TextureAtlas.collect(Stroller.FAMILY_ATLAS, true)
-	TextureAtlas.collect(Stroller.INDICATOR_ATLAS, true)
 	var atlas: Texture2D = null
 	for carrying in [false, true]:
 		rig.carrying = carrying
@@ -54,7 +52,9 @@ func _test_her_family_comes_from_one_atlas_once_it_is_collected(t) -> void:
 					atlas = (texture as AtlasTexture).atlas
 				t.check((texture as AtlasTexture).atlas == atlas,
 						"and from the same one every other view of her is on")
-				t.check(texture.get_size() == rig._mother_source(frame).get_size(),
+				var native := AtlasLibrary.native_size(
+						AtlasLibrary.region_name_for(rig._mother_source(frame)))
+				t.check(texture.get_size() == Vector2(native),
 						"and it is exactly the size of the picture it stands in for")
 	rig.carrying = false
 	for direction in range(8):
@@ -62,15 +62,13 @@ func _test_her_family_comes_from_one_atlas_once_it_is_collected(t) -> void:
 		var pram := rig._pram_texture()
 		t.check(pram is AtlasTexture and (pram as AtlasTexture).atlas == atlas,
 				"the pram's direction %d view is on her family's own atlas" % direction)
-	for mark: Texture2D in Stroller.indicator_sources().keys():
-		var packed: Texture2D = TextureAtlas.texture_for(Stroller.INDICATOR_ATLAS, mark, mark)
+	for mark: String in Stroller.indicator_sources():
+		var packed := AtlasLibrary.region(AtlasLibrary.region_name_for(mark))
 		t.check(packed is AtlasTexture,
-				"the head indicator %s is drawn from the indicators' atlas"
-				% mark.resource_path.get_file())
+				"the head indicator %s is drawn from the indicators' atlas" % mark.get_file())
 		t.check(not (packed is AtlasTexture) or (packed as AtlasTexture).atlas != atlas,
 				"which is its own texture, not the one her body is on")
 	rig.free()
-	TextureAtlas.reset_for_tests()
 
 func _face(rig: Stroller, degrees: float) -> void:
 	rig.facing = Vector2.from_angle(deg_to_rad(degrees))
@@ -85,19 +83,19 @@ func _test_all_eight_facings(t) -> void:
 
 func _test_live_draw_selection(t) -> void:
 	var rig := _rig(t)
-	var mother_first_frames: Array[Texture2D] = [
+	var mother_first_frames: Array[String] = [
 		Stroller.MOTHER_SIDE[0], Stroller.MOTHER_FRONT_DIAGONAL[0], Stroller.MOTHER_FRONT[0],
 		Stroller.MOTHER_FRONT_DIAGONAL[0], Stroller.MOTHER_SIDE[0],
 		Stroller.MOTHER_BACK_DIAGONAL[0], Stroller.MOTHER_BACK[0],
 		Stroller.MOTHER_BACK_DIAGONAL[0],
 	]
-	var mother_second_frames: Array[Texture2D] = [
+	var mother_second_frames: Array[String] = [
 		Stroller.MOTHER_SIDE[1], Stroller.MOTHER_FRONT_DIAGONAL[1], Stroller.MOTHER_FRONT[1],
 		Stroller.MOTHER_FRONT_DIAGONAL[1], Stroller.MOTHER_SIDE[1],
 		Stroller.MOTHER_BACK_DIAGONAL[1], Stroller.MOTHER_BACK[1],
 		Stroller.MOTHER_BACK_DIAGONAL[1],
 	]
-	var pram_textures: Array[Texture2D] = [
+	var pram_textures: Array[String] = [
 		Stroller.PRAM_SIDE, Stroller.PRAM_FRONT_DIAGONAL, Stroller.PRAM_FRONT,
 		Stroller.PRAM_FRONT_DIAGONAL, Stroller.PRAM_SIDE, Stroller.PRAM_BACK_DIAGONAL,
 		Stroller.PRAM_BACK, Stroller.PRAM_BACK_DIAGONAL,

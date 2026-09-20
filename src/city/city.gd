@@ -119,16 +119,17 @@ var _street_trees: Array[Prop] = []
 ## the planners hand back, and a float position is not a key.
 var _street_tree_pits := {}
 
-const DOOR_TEXTURE := preload("res://assets/props/door.svg")
+## Region name of the door's own picture in the "decoration" `AtlasLibrary` group.
+const DOOR_TEXTURE := &"props/door"
 
 ## Everything that is fixed for the whole run. What a block *is* changes day to day, and
 ## that lives in `start_day()`.
 func build(city_map: CityMap) -> void:
 	map = city_map
-	# The street's decoration, asked for before the first day is drawn. Until the pack is
-	# collected `CityDecals` and `Prop` draw the source pictures they draw today, so nothing here
-	# waits on it — see `TextureAtlas`.
-	TextureAtlas.request(CityDecals.DECORATION_ATLAS, CityDecals.decoration_sources())
+	# The street's decoration, acquired before the first day is drawn. The baked "decoration" page
+	# loads synchronously on `acquire()`, so every draw below already has a region to ask for —
+	# see `AtlasLibrary`.
+	AtlasLibrary.acquire(CityDecals.DECORATION_ATLAS)
 	_paint_ground()
 	# Buildings first: the door sits in the wall of the building above the notch, at exactly
 	# the same y. A y-sort tie is broken by tree order, so the door has to be added second
@@ -157,12 +158,12 @@ func build(city_map: CityMap) -> void:
 	set_daylight(1.0)
 	queue_redraw()
 
-## Hands the decoration atlas back. **A group whose packing task is never waited for is a task
-## the pool still holds at shutdown**, so the request in `build()` owes a release here —
-## `TextureAtlas.release()` is what waits for an outstanding blit. The event families are
-## `EventManager`'s own and are released by its own `_exit_tree()`.
+## Hands the decoration atlas back. `build()`'s `acquire()` is the city's one reference on the
+## group, so a city freed without the matching `release()` here would leave the page counted, and
+## resident, for a city that no longer exists. The event families are `EventManager`'s own and are
+## released by its own `_exit_tree()`.
 func _exit_tree() -> void:
-	TextureAtlas.release(CityDecals.DECORATION_ATLAS)
+	AtlasLibrary.release(CityDecals.DECORATION_ATLAS)
 
 ## Which act's cast the city is under. See Palette.act_tint.
 func set_act(act: int) -> void:
@@ -283,14 +284,15 @@ func total_excitement_at(world_position: Vector2) -> float:
 func _spawn_home() -> void:
 	var stoop := map.tile_rect_to_world(map.home_rect)
 	var door := Sprite2D.new()
-	door.texture = DOOR_TEXTURE
+	door.texture = AtlasLibrary.region(DOOR_TEXTURE)
 	# Feet-anchored like everything else: the NODE sits on the ground plane at the back of
 	# the notch and the art is offset upward from there. Putting the node at the sprite's
 	# top instead makes y-sort compare the wrong edge, and the player walks in front of a
 	# door she is standing north of. (Buildings cannot occlude it: they are a layer of their own,
 	# underneath the entities.)
 	door.centered = false
-	door.offset = Vector2(-DOOR_TEXTURE.get_width() * 0.5, -DOOR_TEXTURE.get_height())
+	var door_size := AtlasLibrary.native_size(DOOR_TEXTURE)
+	door.offset = Vector2(-door_size.x * 0.5, -door_size.y)
 	door.position = Vector2(stoop.get_center().x, stoop.position.y)
 	_entities.add_child(door)
 

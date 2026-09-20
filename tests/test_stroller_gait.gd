@@ -8,7 +8,12 @@ func run(t) -> void:
 	_test_displacement_crosses_a_passing_boundary_in_both_states(t)
 	_test_idle_holds_the_passing_pose_from_every_phase(t)
 	_test_each_state_has_three_distinct_poses_per_view(t)
+	# None of the rigs above are added to the tree, so `Stroller._ready()` never runs and
+	# `FAMILY_ATLAS` is never acquired through it — only the one test below reads a region, so it
+	# takes its own reference rather than growing every `_rig()` call a camera and a tree entry.
+	AtlasLibrary.acquire(Stroller.FAMILY_ATLAS)
 	_test_every_view_resolves_every_pose_in_both_states(t)
+	AtlasLibrary.release(Stroller.FAMILY_ATLAS)
 
 func _rig(carrying: bool) -> Stroller:
 	var rig := Stroller.new()
@@ -77,7 +82,7 @@ func _test_each_state_has_three_distinct_poses_per_view(t) -> void:
 					and family[0] != family[2],
 					"each %s view resolves three distinct texture resources" % _state_name(carrying))
 
-func _direction_textures(carrying: bool, frame: int) -> Array[Texture2D]:
+func _direction_textures(carrying: bool, frame: int) -> Array[String]:
 	var families := _pose_families(carrying)
 	var side: Array = families[0]
 	var front_diagonal: Array = families[1]
@@ -103,11 +108,10 @@ func _test_every_view_resolves_every_pose_in_both_states(t) -> void:
 			for direction in range(8):
 				rig._view_direction = direction
 				# Pinned through her family's atlas rather than against the authored constant
-				# directly: `_mother_texture()` answers the region once the group is collected
-				# and the source before that, and the assertion is about *which* view is
-				# selected either way.
-				t.check(rig._mother_texture(frame) == TextureAtlas.texture_for(
-						Stroller.FAMILY_ATLAS, expected[direction], expected[direction]),
+				# directly: `_mother_texture()` answers the baked region, and the assertion is
+				# about *which* view is selected either way.
+				t.check(rig._mother_texture(frame)
+						== AtlasLibrary.region(AtlasLibrary.region_name_for(expected[direction])),
 						"direction %d resolves %s pose %d"
 						% [direction, _state_name(carrying), frame])
 		rig.free()

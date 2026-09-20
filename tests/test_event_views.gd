@@ -34,6 +34,7 @@ const FAMILY_DICTS := {
 	"yeller": EventInstance.YELLER_BY_VIEW,
 	"busker": EventInstance.BUSKER_BY_VIEW,
 	"poster_crew": EventInstance.POSTER_CREW_BY_VIEW,
+	"poster_crew_square": EventInstance.POSTER_CREW_SQUARE_BY_VIEW,
 	"cafe_sitter": EventInstance.CAFE_SITTER_BY_VIEW,
 	"van_victim": EventInstance.VAN_VICTIM_BY_VIEW,
 	"protester": EventInstance.PROTESTER_BY_VIEW,
