@@ -124,7 +124,6 @@ func run(t) -> void:
 	_test_robber_lunging_faces_her_through_the_chase(t)
 	_test_cat_state_predicate_selects_the_telegraph_posture(t)
 	_test_chatting_mother_state_predicate_selects_the_conversation_posture(t)
-	_test_unpaired_event_views_still_fall_back_to_svg(t)
 	_test_vehicle_views_match_facings_csv_per_sector(t)
 	_test_riot_van_reproduces_its_octant_table_with_the_corrected_side_mirror(t)
 	_test_kerb_parked_vans_keep_their_axis_chosen_view(t)
@@ -211,9 +210,15 @@ func _test_roadwork_barrier_has_an_upright_vertical_source(t) -> void:
 			"north-south roadworks uses the broad panel source")
 	t.check(EventInstance._roadwork_segment_texture(true) == vertical,
 			"east-west roadworks uses the upright panel source")
-	t.check(horizontal.get_size().x >= horizontal.get_size().y - 1.0,
+	# The sizes come from the baked region table (`AtlasLibrary.native_size()`, which answers with
+	# nothing acquired and no texture loaded), since the panels are region names now rather than
+	# textures. A region's size is the source picture's own size, so this is the same projection
+	# question it always was.
+	var across := EventInstance._native_size(horizontal)
+	var upright := EventInstance._native_size(vertical)
+	t.check(across.x >= across.y - 1.0,
 			"the across panel is the broad projection")
-	t.check(vertical.get_size().y > vertical.get_size().x,
+	t.check(upright.y > upright.x,
 			"the vertical panel is the upright projection")
 
 ## Alley mouths have no corridor band for `_spread_is_vertical()` to read. Their own rectangle
@@ -380,21 +385,6 @@ func _test_chatting_mother_state_predicate_selects_the_conversation_posture(t) -
 	t.check(instance.is_chatting(), "and talking for the length of the conversation")
 	instance.free()
 
-# ------------------------------------------------------------------- texture fallback ---
-
-## `docs/GRAPHICS.md`: PNG generation for these families stays with M109, so every one of them must
-## still resolve in both selection modes today — the same fallback `tests/test_walker_views.gd`
-## pins for the crowd walker's own diagonal.
-func _test_unpaired_event_views_still_fall_back_to_svg(t) -> void:
-	var diagonal: Texture2D = EventInstance.PERSON_BY_VIEW["front_diagonal"]
-	TextureResolver.reset_for_tests(true)
-	t.check(TextureResolver.resolve(diagonal) == diagonal,
-			"explicit SVG mode keeps the authored event diagonal SVG")
-	TextureResolver.reset_for_tests(false)
-	t.check(TextureResolver.resolve(diagonal) == diagonal,
-			"no PNG transfer exists yet, so default mode falls back to the same event SVG")
-	TextureResolver.reset_for_tests(DevFlags.svg_requested())
-
 # --------------------------------------------------------------- M108's vehicle item ---
 # `EventInstance._draw_eight_view()`'s `side_faces_west` parameter, and the per-family binding in
 # `_draw_body()` that decides it — see that function's own doc comment and
@@ -532,8 +522,8 @@ func _test_vehicle_views_are_grounded_at_the_canvas_bottom(t) -> void:
 	for name in VEHICLE_SIDE_REUSE:
 		var by_view: Dictionary = FAMILY_DICTS[name]
 		for view in ["front", "back", "front_diagonal", "back_diagonal"]:
-			var texture: Texture2D = by_view[view]
-			var text := FileAccess.get_file_as_string(texture.resource_path)
+			var picture: String = by_view[view]
+			var text := FileAccess.get_file_as_string(picture)
 			var image := Image.new()
 			image.load_svg_from_string(text, 1.0)
 			var bounds := image.get_used_rect()

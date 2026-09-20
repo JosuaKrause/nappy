@@ -105,7 +105,8 @@ the day's route graph; they are separate from the event pictures with similar no
 
 ### Events and seal pictures
 
-`src/events/event_instance.gd` preloads every asset in this table, selects it from
+`src/events/event_instance.gd` holds every asset in this table as a repository path, draws it as a
+region of the baked `events` page (`AtlasLibrary.region()`), selects it from
 `EventDef.Look`, and also supplies the same row-specific silhouette to the screen-edge danger badge.
 Every unqualified filename in this table is relative to `assets/events/`.
 Most families with a front, back, side and two diagonal views share `EventInstance._draw_eight_view()`:

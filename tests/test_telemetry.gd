@@ -1377,14 +1377,25 @@ func _test_a_late_picture_load_names_itself_in_the_spike_line(t) -> void:
 ## with timing information".)* Without a line each way, a run where a group arrived a second late
 ## reads exactly like one where it was ready before the first draw.
 ##
-## Filtered to the lines naming this group rather than counting every `texture` line: resolving
-## the two sources may itself read a transfer from disk, which is a `texture` line of its own and
-## is the other half of what the kind is for.
+## Filtered to the lines naming this group rather than counting every `texture` line: any other
+## picture the process resolves is a `texture` line of its own and is the other half of what the
+## kind is for.
+##
+## **Two `ImageTexture`s built here rather than two event pictures.** The pair used to be
+## `EventInstance.MOUSE` and `MOUSE_B`, which are repository paths now that the events draw from
+## the baked `events` page. What this test asks is whether a group's arrival and departure each
+## write one line, and a group of two solid squares answers it exactly as a group of two mice did
+## — with nothing to go stale the next time a family moves off this packer.
 func _test_an_atlas_says_when_it_arrived_and_when_it_went(t) -> void:
 	Telemetry.begin_memory_log()
 	TextureAtlas.reset_for_tests()
-	TextureAtlas.request("test_group",
-			{EventInstance.MOUSE: EventInstance.MOUSE, EventInstance.MOUSE_B: EventInstance.MOUSE_B})
+	var first_image := Image.create(12, 10, false, Image.FORMAT_RGBA8)
+	first_image.fill(Color.RED)
+	var first := ImageTexture.create_from_image(first_image)
+	var second_image := Image.create(7, 14, false, Image.FORMAT_RGBA8)
+	second_image.fill(Color.BLUE)
+	var second := ImageTexture.create_from_image(second_image)
+	TextureAtlas.request("test_group", {first: first, second: second})
 	TextureAtlas.collect("test_group", true)
 	TextureAtlas.release("test_group")
 	var ready_lines: Array[String] = []

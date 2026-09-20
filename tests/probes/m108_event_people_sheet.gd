@@ -67,8 +67,11 @@ func run(t) -> void:
 func _sector_heading(sector: int) -> Vector2:
 	return Vector2.from_angle(deg_to_rad(sector * 45.0))
 
-func _entry(texture: Texture2D, mirror: bool) -> Dictionary:
-	return {"texture": texture, "mirror": mirror}
+## `picture` is the repository path of the source SVG, which is what every `_BY_VIEW` table holds
+## now that the events draw from the baked `events` page. This probe re-rasterises the authored
+## SVG itself rather than drawing the picture, so a path is all it ever needed.
+func _entry(picture: String, mirror: bool) -> Dictionary:
+	return {"picture": picture, "mirror": mirror}
 
 func _row(label: String, entries: Array) -> Dictionary:
 	return {"label": label, "entries": entries}
@@ -118,12 +121,11 @@ func _bird_row(by_view: Dictionary) -> Array:
 
 # ------------------------------------------------------------------- rendering ---
 
-## Rasterises `entry`'s own texture from its SVG source text at `scale`, mirrored if the sector
+## Rasterises `entry`'s own picture from its SVG source text at `scale`, mirrored if the sector
 ## says so — `Image.flip_x()`, the same horizontal mirror `Sprites.draw_standing()` gives every
 ## west-facing sector, applied to a still image instead of a canvas transform.
 func _cell_image(entry: Dictionary, scale: float) -> Image:
-	var texture: Texture2D = entry["texture"]
-	var text := FileAccess.get_file_as_string(texture.resource_path)
+	var text := FileAccess.get_file_as_string(entry["picture"])
 	var image := Image.new()
 	image.load_svg_from_string(text, scale)
 	if entry["mirror"]:

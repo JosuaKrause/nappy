@@ -23,8 +23,6 @@ func run(t) -> void:
 	_test_a_set_piece_happens_at_exactly_one_of_its_sites(t)
 	_test_a_day_started_through_the_manager_alone_still_carries_seals(t)
 	_test_a_streamed_pursuer_resumes_the_chase(t)
-	_test_a_family_atlas_is_asked_for_and_handed_back(t)
-	_test_every_look_a_row_can_carry_has_a_family(t)
 	_teardown()
 
 func _build_city(t) -> void:
@@ -37,59 +35,12 @@ func _build_city(t) -> void:
 	# streaming itself is checked in `_test_an_event_waits_until_she_is_near_it`.
 	_city.events.stream_radius = INF
 
-## A family's atlas exists for exactly as long as an instance of that family is standing in the
-## street: asked for when the first one is placed, drawn from once it is collected, handed back
-## when the last one retires.
-##
-## Collected by hand, because nothing in a headless suite runs `Main._process()`, which is what
-## pumps `TextureAtlas.collect_ready()` in a real run. The picture checked is `_packed()`'s own
-## answer for a source the family holds — the same call every `_draw_*` branch makes — since
-## `_draw()` itself never runs headless.
-func _test_a_family_atlas_is_asked_for_and_handed_back(t) -> void:
-	_city.events.clear()
-	TextureAtlas.reset_for_tests()
-	var def := EventCatalogue.by_id("busker")
-	var family := EventInstance.family_name(def.look)
-	t.check(not TextureAtlas.is_ready(family),
-			"no busker is standing anywhere, so nothing has asked for its atlas")
-
-	var instance := _city.events.spawn_extra(def, _city.map.tile_to_world(Vector2i(8, 8)))
-	t.check(TextureAtlas.collect(family, true),
-			"placing the first busker asks for the busker family's atlas")
-	var source: Texture2D = EventInstance.family_sources(def.look).keys()[0]
-	var drawn: Texture2D = instance._packed(source)
-	t.check(drawn is AtlasTexture, "and its drawing path reads the picture out of that atlas")
-	t.check(drawn.get_size() == TextureResolver.resolve(source).get_size(),
-			"at exactly the size of the picture it stands in for (%s against %s)"
-			% [drawn.get_size(), TextureResolver.resolve(source).get_size()])
-
-	_city.events.retire(instance)
-	_city.events._retire_finished()
-	t.check(not TextureAtlas.is_ready(family),
-			"and the atlas goes when the last busker retires")
-	t.check(not (instance._packed(source) is AtlasTexture) if is_instance_valid(instance) else true,
-			"a picture asked for after the release is the source texture again")
-	TextureAtlas.reset_for_tests()
-
-## Every look a catalogue row can carry has pictures in its own family, and no two looks share a
-## group name. The first half is what stops a new `Look` being added with nothing packed for it;
-## the second is what makes "one `EventDef` never draws from two families" hold, since a row's
-## family is its look and nothing else.
-func _test_every_look_a_row_can_carry_has_a_family(t) -> void:
-	var names: Dictionary = {}
-	var looks: Dictionary = {}
-	for def in EventCatalogue.all():
-		looks[def.look] = def.id
-	for look: EventDef.Look in looks.keys():
-		var family := EventInstance.family_name(look)
-		t.check(not names.has(family),
-				"the family name %s belongs to one look only (also %s)"
-				% [family, names.get(family, "")])
-		names[family] = looks[look]
-		if look == EventDef.Look.NONE:
-			continue
-		t.check(not EventInstance.family_sources(look).is_empty(),
-				"%s, drawn by %s, has pictures in its own family" % [family, looks[look]])
+## The page's own lifetime, and that every look a row can carry has pictures on it, are
+## `tests/test_atlas_events.gd`: with one baked page for the whole catalogue there is no
+## per-family group left for a rig like this one to watch come and go, and the questions that
+## replace it — the manager's reference count across days and teardown, and every picture a look
+## can draw resolving on the `events` page — are about `AtlasLibrary` rather than about this
+## suite's city.
 
 func _teardown() -> void:
 	_city.free()

@@ -324,8 +324,8 @@ deploy keeps copying the social card beside the page. Both are assumptions the p
 and did not speak to.
 
 The bake, the loader `AtlasLibrary`, the staleness check and the report-only package audit are
-built (`DECISIONS.md`, M171, the bake and the loader), and the items below are the families
-that still draw individual pictures. `assets/atlases/membership.json` says which page a picture is on, and a consumer move edits it
+built (`DECISIONS.md`, M171, the bake and the loader), and every family draws from its baked
+page (`DECISIONS.md`, the M171 consumer moves). `assets/atlases/membership.json` says which page a picture is on, and a consumer move edits it
 only to add a picture. **A page loads at startup or in the day brief and at no other moment**
 ([PLAYTEST-109](playtests/PLAYTEST-109.md)): `main.gd`'s `RESIDENT_GROUPS` lists the pages
 every boot holds for the life of the process, the run's parent is held beside them, and the
@@ -335,14 +335,11 @@ escape's boot adds `interior`; a consumer move adds its group to that list. A co
 gate is red for. `region()` never loads a page on its own, and `native_size()` answers with
 nothing acquired.
 
-Each item is one pull request. The events follow their own gate; the last closes the
-contract.
+One item is open, and it closes the contract.
 
-- [ ] **The events**, one page, checkpoints included. The six `poster_crew_square` pictures
-      join the `events` membership here, and `events` joins `RESIDENT_GROUPS`. `EventManager`
-      acquires and releases the one group;
-      the screen-edge badge reads the same regions.
-- [ ] **Close the contract.** The runtime packer, the resolver, their phase-trace telemetry and
+- [ ] **Close the contract.** The runtime packer, the resolver — `TextureResolver.warm()`
+      still loads the `props`, `rig` and `tiles` transfers one picture at a time at boot, for
+      families that draw from baked pages — their phase-trace telemetry and
       the `--svg` and `?svg=1` flags are deleted; the run log says when a group loaded and was
       released, in how long and at what size. **The authoring sources move out of the imported
       tree** into a folder the engine ignores, and every reference to an old path moves with

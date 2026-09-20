@@ -6,137 +6,141 @@ extends Node2D
 ## The excitement model is entirely a *query* — `contribution_at()`. Nothing pushes a value
 ## at the baby, so there is no ordering to get wrong, events compose by simple addition, and
 ## the whole thing is testable without a scene.
+##
+## **Every picture below is a repository path, never a loaded texture.** What a picture is baked
+## under is `AtlasLibrary.region_name_for()` of exactly this string, so keeping the path is what
+## lets `_drawn()` hand the draw call a region of the one `events` page instead of a second
+## resident copy of a picture that page already holds. Everything the drawing asks of a picture
+## goes through the two helpers beside `_drawn()`: `_native_size()` for a size read outside a draw,
+## and nothing else — a `Texture2D` never appears in this file again.
 
-const CAT_CROUCHED := preload("res://assets/events/cat_crouched.svg")
-const CAT_RUNNING := preload("res://assets/events/cat_running.svg")
+const CAT_CROUCHED := "res://assets/events/cat_crouched.svg"
+const CAT_RUNNING := "res://assets/events/cat_running.svg"
 ## The single east-facing picture, mirrored west — see `EventCatalogue._alley_mouse()` for why the
 ## prepared directional family (`mouse_{front,back}[_diagonal].svg`) stays unbound here.
-const MOUSE := preload("res://assets/events/mouse.svg")
+const MOUSE := "res://assets/events/mouse.svg"
 ## The dash's own second frame — the mouse's only picture is the side one this row actually draws;
 ## its tail curls a little differently rather than crossing legs it does not have room to draw at
 ## this scale, read by `_draw_simple()`'s own `texture_b` off `_gait_stepping()`.
-const MOUSE_B := preload("res://assets/events/mouse_b.svg")
+const MOUSE_B := "res://assets/events/mouse_b.svg"
 ## The only generic here, and it is not a look: it is the *walker* half of a dog walker, which is a
 ## picture of somebody holding a lead rather than a picture of nobody in particular. Every row draws
 ## something of its own.
-const PERSON := preload("res://assets/events/person.svg")
-const YELLER := preload("res://assets/events/yeller.svg")
-const BUSKER := preload("res://assets/events/busker.svg")
-const POSTER_CREW := preload("res://assets/events/poster_crew.svg")
+const PERSON := "res://assets/events/person.svg"
+const YELLER := "res://assets/events/yeller.svg"
+const BUSKER := "res://assets/events/busker.svg"
+const POSTER_CREW := "res://assets/events/poster_crew.svg"
 ## The square crew's own badge silhouette: the same man at the advertising column he pastes on,
 ## which is what tells the two crews apart at badge size.
-const POSTER_CREW_SQUARE := preload("res://assets/events/poster_crew_square.svg")
-const ROBBER_WAITING := preload("res://assets/events/robber_waiting.svg")
-const ROBBER_LUNGING := preload("res://assets/events/robber_lunging.svg")
-const PROTESTER := preload("res://assets/events/protester.svg")
+const POSTER_CREW_SQUARE := "res://assets/events/poster_crew_square.svg"
+const ROBBER_WAITING := "res://assets/events/robber_waiting.svg"
+const ROBBER_LUNGING := "res://assets/events/robber_lunging.svg"
+const PROTESTER := "res://assets/events/protester.svg"
 ## The eight pointing poses, one per 45° bearing sector — see `_protester_texture()`. Ordered
 ## clockwise from north to match `TelemetryLog.compass()`'s own bearing convention.
-const PROTESTER_POINT_N := preload("res://assets/events/protester_point_n.svg")
-const PROTESTER_POINT_NE := preload("res://assets/events/protester_point_ne.svg")
-const PROTESTER_POINT_E := preload("res://assets/events/protester_point_e.svg")
-const PROTESTER_POINT_SE := preload("res://assets/events/protester_point_se.svg")
-const PROTESTER_POINT_S := preload("res://assets/events/protester_point_s.svg")
-const PROTESTER_POINT_SW := preload("res://assets/events/protester_point_sw.svg")
-const PROTESTER_POINT_W := preload("res://assets/events/protester_point_w.svg")
-const PROTESTER_POINT_NW := preload("res://assets/events/protester_point_nw.svg")
-const GUNMAN := preload("res://assets/events/gunman.svg")
+const PROTESTER_POINT_N := "res://assets/events/protester_point_n.svg"
+const PROTESTER_POINT_NE := "res://assets/events/protester_point_ne.svg"
+const PROTESTER_POINT_E := "res://assets/events/protester_point_e.svg"
+const PROTESTER_POINT_SE := "res://assets/events/protester_point_se.svg"
+const PROTESTER_POINT_S := "res://assets/events/protester_point_s.svg"
+const PROTESTER_POINT_SW := "res://assets/events/protester_point_sw.svg"
+const PROTESTER_POINT_W := "res://assets/events/protester_point_w.svg"
+const PROTESTER_POINT_NW := "res://assets/events/protester_point_nw.svg"
+const GUNMAN := "res://assets/events/gunman.svg"
 ## The unsuffixed source is every family's own side view — see `docs/GRAPHICS.md`'s side-facing
 ## convention, `docs/evidence/svg-vehicles-2026-09-10/facings.csv`. The four-way suffixed sets below
 ## it are each family's front, back and two diagonals, bound through `_draw_eight_view()`; the old
 ## `_end.svg` single foreshortened picture each of these four rows drew for *both* north and south
 ## headings is superseded by the two-way `_front`/`_back` split and stays on disk unbound (see
 ## `docs/GRAPHICS.md`, the events table).
-const DELIVERY_VAN := preload("res://assets/events/delivery_van.svg")
-const DELIVERY_VAN_FRONT := preload("res://assets/events/delivery_van_front.svg")
-const DELIVERY_VAN_BACK := preload("res://assets/events/delivery_van_back.svg")
-const DELIVERY_VAN_FRONT_DIAGONAL := preload("res://assets/events/delivery_van_front_diagonal.svg")
-const DELIVERY_VAN_BACK_DIAGONAL := preload("res://assets/events/delivery_van_back_diagonal.svg")
-const FIRE_ENGINE := preload("res://assets/events/fire_engine.svg")
-const FIRE_ENGINE_FRONT := preload("res://assets/events/fire_engine_front.svg")
-const FIRE_ENGINE_BACK := preload("res://assets/events/fire_engine_back.svg")
-const FIRE_ENGINE_FRONT_DIAGONAL := preload("res://assets/events/fire_engine_front_diagonal.svg")
-const FIRE_ENGINE_BACK_DIAGONAL := preload("res://assets/events/fire_engine_back_diagonal.svg")
-const POLICE_CAR := preload("res://assets/events/police_car.svg")
-const POLICE_CAR_FRONT := preload("res://assets/events/police_car_front.svg")
-const POLICE_CAR_BACK := preload("res://assets/events/police_car_back.svg")
-const POLICE_CAR_FRONT_DIAGONAL := preload("res://assets/events/police_car_front_diagonal.svg")
-const POLICE_CAR_BACK_DIAGONAL := preload("res://assets/events/police_car_back_diagonal.svg")
-const UNMARKED_VAN := preload("res://assets/events/unmarked_van.svg")
-const UNMARKED_VAN_FRONT := preload("res://assets/events/unmarked_van_front.svg")
-const UNMARKED_VAN_BACK := preload("res://assets/events/unmarked_van_back.svg")
-const UNMARKED_VAN_FRONT_DIAGONAL := preload("res://assets/events/unmarked_van_front_diagonal.svg")
-const UNMARKED_VAN_BACK_DIAGONAL := preload("res://assets/events/unmarked_van_back_diagonal.svg")
-const VAN_VICTIM := preload("res://assets/events/van_victim.svg")
+const DELIVERY_VAN := "res://assets/events/delivery_van.svg"
+const DELIVERY_VAN_FRONT := "res://assets/events/delivery_van_front.svg"
+const DELIVERY_VAN_BACK := "res://assets/events/delivery_van_back.svg"
+const DELIVERY_VAN_FRONT_DIAGONAL := "res://assets/events/delivery_van_front_diagonal.svg"
+const DELIVERY_VAN_BACK_DIAGONAL := "res://assets/events/delivery_van_back_diagonal.svg"
+const FIRE_ENGINE := "res://assets/events/fire_engine.svg"
+const FIRE_ENGINE_FRONT := "res://assets/events/fire_engine_front.svg"
+const FIRE_ENGINE_BACK := "res://assets/events/fire_engine_back.svg"
+const FIRE_ENGINE_FRONT_DIAGONAL := "res://assets/events/fire_engine_front_diagonal.svg"
+const FIRE_ENGINE_BACK_DIAGONAL := "res://assets/events/fire_engine_back_diagonal.svg"
+const POLICE_CAR := "res://assets/events/police_car.svg"
+const POLICE_CAR_FRONT := "res://assets/events/police_car_front.svg"
+const POLICE_CAR_BACK := "res://assets/events/police_car_back.svg"
+const POLICE_CAR_FRONT_DIAGONAL := "res://assets/events/police_car_front_diagonal.svg"
+const POLICE_CAR_BACK_DIAGONAL := "res://assets/events/police_car_back_diagonal.svg"
+const UNMARKED_VAN := "res://assets/events/unmarked_van.svg"
+const UNMARKED_VAN_FRONT := "res://assets/events/unmarked_van_front.svg"
+const UNMARKED_VAN_BACK := "res://assets/events/unmarked_van_back.svg"
+const UNMARKED_VAN_FRONT_DIAGONAL := "res://assets/events/unmarked_van_front_diagonal.svg"
+const UNMARKED_VAN_BACK_DIAGONAL := "res://assets/events/unmarked_van_back_diagonal.svg"
+const VAN_VICTIM := "res://assets/events/van_victim.svg"
 ## The night raid's van: `_draw_eight_view()` reads `RIOT_VAN_BY_VIEW` below through the same
 ## octant/mirror convention `EightDirection` gives every other family. Its side picture is
 ## authored facing west, the same as `unmarked_van` and `army_truck` below
 ## (`docs/evidence/svg-vehicles-2026-09-10/facings.csv`), so it takes the same `side_faces_west`
 ## override those two do.
-const RIOT_VAN := preload("res://assets/events/riot_van.svg")
-const RIOT_VAN_FRONT := preload("res://assets/events/riot_van_front.svg")
-const RIOT_VAN_BACK := preload("res://assets/events/riot_van_back.svg")
-const RIOT_VAN_FRONT_DIAGONAL := preload("res://assets/events/riot_van_front_diagonal.svg")
-const RIOT_VAN_BACK_DIAGONAL := preload("res://assets/events/riot_van_back_diagonal.svg")
-const ARMY_TRUCK := preload("res://assets/events/army_truck.svg")
-const ARMY_TRUCK_FRONT := preload("res://assets/events/army_truck_front.svg")
-const ARMY_TRUCK_BACK := preload("res://assets/events/army_truck_back.svg")
-const ARMY_TRUCK_FRONT_DIAGONAL := preload("res://assets/events/army_truck_front_diagonal.svg")
-const ARMY_TRUCK_BACK_DIAGONAL := preload("res://assets/events/army_truck_back_diagonal.svg")
-const FLAME := preload("res://assets/events/flame.svg")
-const BARRIER_SEGMENT := preload("res://assets/events/barrier_segment.svg")
-const BARRIER_SEGMENT_VERTICAL := preload("res://assets/events/barrier_segment_vertical.svg")
-const BARRIER_END := preload("res://assets/events/barrier_end.svg")
-const RUBBLE := preload("res://assets/events/rubble.svg")
-const CHECKPOINT_BLOCK := preload("res://assets/events/checkpoint_block.svg")
-const ROADBLOCK_SEGMENT := preload("res://assets/events/roadblock_segment.svg")
-const ROADBLOCK_END := preload("res://assets/events/roadblock_end.svg")
+const RIOT_VAN := "res://assets/events/riot_van.svg"
+const RIOT_VAN_FRONT := "res://assets/events/riot_van_front.svg"
+const RIOT_VAN_BACK := "res://assets/events/riot_van_back.svg"
+const RIOT_VAN_FRONT_DIAGONAL := "res://assets/events/riot_van_front_diagonal.svg"
+const RIOT_VAN_BACK_DIAGONAL := "res://assets/events/riot_van_back_diagonal.svg"
+const ARMY_TRUCK := "res://assets/events/army_truck.svg"
+const ARMY_TRUCK_FRONT := "res://assets/events/army_truck_front.svg"
+const ARMY_TRUCK_BACK := "res://assets/events/army_truck_back.svg"
+const ARMY_TRUCK_FRONT_DIAGONAL := "res://assets/events/army_truck_front_diagonal.svg"
+const ARMY_TRUCK_BACK_DIAGONAL := "res://assets/events/army_truck_back_diagonal.svg"
+const FLAME := "res://assets/events/flame.svg"
+const BARRIER_SEGMENT := "res://assets/events/barrier_segment.svg"
+const BARRIER_SEGMENT_VERTICAL := "res://assets/events/barrier_segment_vertical.svg"
+const BARRIER_END := "res://assets/events/barrier_end.svg"
+const RUBBLE := "res://assets/events/rubble.svg"
+const CHECKPOINT_BLOCK := "res://assets/events/checkpoint_block.svg"
+const ROADBLOCK_SEGMENT := "res://assets/events/roadblock_segment.svg"
+const ROADBLOCK_END := "res://assets/events/roadblock_end.svg"
 ## A hunting roadblock's own shadow once it draws as a guard rather than as the band: person-scale,
 ## matching `alley_robbery`'s own `GroundShape.point(9.0)` rather than `def.shape` — the band's 60px
 ## capsule, which is still what the collision body and the cold picture are built from.
 const _GUARD_SHADOW_RADIUS := 9.0
-const BARRICADE_PILE := preload("res://assets/events/barricade_pile.svg")
-const CAFE_TABLE := preload("res://assets/events/cafe_table.svg")
-const CAFE_SITTER := preload("res://assets/events/cafe_sitter.svg")
-const DOG := preload("res://assets/events/dog.svg")
-const CYCLIST := preload("res://assets/events/cyclist.svg")
-const STALL := preload("res://assets/events/stall.svg")
-const LEAF_BLOWER := preload("res://assets/events/leaf_blower.svg")
-const PIGEON := preload("res://assets/events/pigeon.svg")
-const PIGEON_DOWN := preload("res://assets/events/pigeon_down.svg")
-const ICE_CREAM_VAN := preload("res://assets/events/ice_cream_van.svg")
-const ICE_CREAM_VAN_FRONT := preload("res://assets/events/ice_cream_van_front.svg")
-const ICE_CREAM_VAN_BACK := preload("res://assets/events/ice_cream_van_back.svg")
-const ICE_CREAM_VAN_FRONT_DIAGONAL := preload(
-		"res://assets/events/ice_cream_van_front_diagonal.svg")
-const ICE_CREAM_VAN_BACK_DIAGONAL := preload(
-		"res://assets/events/ice_cream_van_back_diagonal.svg")
-const LORRY := preload("res://assets/events/lorry.svg")
-const LORRY_FRONT := preload("res://assets/events/lorry_front.svg")
-const LORRY_BACK := preload("res://assets/events/lorry_back.svg")
-const LORRY_FRONT_DIAGONAL := preload("res://assets/events/lorry_front_diagonal.svg")
-const LORRY_BACK_DIAGONAL := preload("res://assets/events/lorry_back_diagonal.svg")
-const CHARGING_DOG := preload("res://assets/events/charging_dog.svg")
-const CHATTING_MOTHER_WALKING := preload("res://assets/events/chatting_mother_walking.svg")
-const CHATTING_MOTHER_TALKING := preload("res://assets/events/chatting_mother_talking.svg")
+const BARRICADE_PILE := "res://assets/events/barricade_pile.svg"
+const CAFE_TABLE := "res://assets/events/cafe_table.svg"
+const CAFE_SITTER := "res://assets/events/cafe_sitter.svg"
+const DOG := "res://assets/events/dog.svg"
+const CYCLIST := "res://assets/events/cyclist.svg"
+const STALL := "res://assets/events/stall.svg"
+const LEAF_BLOWER := "res://assets/events/leaf_blower.svg"
+const PIGEON := "res://assets/events/pigeon.svg"
+const PIGEON_DOWN := "res://assets/events/pigeon_down.svg"
+const ICE_CREAM_VAN := "res://assets/events/ice_cream_van.svg"
+const ICE_CREAM_VAN_FRONT := "res://assets/events/ice_cream_van_front.svg"
+const ICE_CREAM_VAN_BACK := "res://assets/events/ice_cream_van_back.svg"
+const ICE_CREAM_VAN_FRONT_DIAGONAL := "res://assets/events/ice_cream_van_front_diagonal.svg"
+const ICE_CREAM_VAN_BACK_DIAGONAL := "res://assets/events/ice_cream_van_back_diagonal.svg"
+const LORRY := "res://assets/events/lorry.svg"
+const LORRY_FRONT := "res://assets/events/lorry_front.svg"
+const LORRY_BACK := "res://assets/events/lorry_back.svg"
+const LORRY_FRONT_DIAGONAL := "res://assets/events/lorry_front_diagonal.svg"
+const LORRY_BACK_DIAGONAL := "res://assets/events/lorry_back_diagonal.svg"
+const CHARGING_DOG := "res://assets/events/charging_dog.svg"
+const CHATTING_MOTHER_WALKING := "res://assets/events/chatting_mother_walking.svg"
+const CHATTING_MOTHER_TALKING := "res://assets/events/chatting_mother_talking.svg"
 ## Seal pictures — see `SealPlanner` and `docs/DECISIONS.md`, "Eight seal pictures".
-const FALLEN_TREE := preload("res://assets/events/fallen_tree.svg")
-const CAR_ACCIDENT := preload("res://assets/events/car_accident.svg")
-const CAR_ACCIDENT_SHADOW := preload("res://assets/events/car_accident_shadow.svg")
-const SKIP := preload("res://assets/events/skip.svg")
-const SCAFFOLDING := preload("res://assets/events/scaffolding.svg")
-const BURST_MAIN := preload("res://assets/events/burst_water_main.svg")
-const MOVING_VAN := preload("res://assets/events/moving_van.svg")
-const MOVING_VAN_VERTICAL := preload("res://assets/events/moving_van_vertical.svg")
-const BURNT_OUT_CAR := preload("res://assets/events/burnt_out_car.svg")
-const BURNT_OUT_CAR_VERTICAL := preload("res://assets/events/burnt_out_car_vertical.svg")
-const COLLAPSED_FRONTAGE := preload("res://assets/events/collapsed_frontage.svg")
+const FALLEN_TREE := "res://assets/events/fallen_tree.svg"
+const CAR_ACCIDENT := "res://assets/events/car_accident.svg"
+const CAR_ACCIDENT_SHADOW := "res://assets/events/car_accident_shadow.svg"
+const SKIP := "res://assets/events/skip.svg"
+const SCAFFOLDING := "res://assets/events/scaffolding.svg"
+const BURST_MAIN := "res://assets/events/burst_water_main.svg"
+const MOVING_VAN := "res://assets/events/moving_van.svg"
+const MOVING_VAN_VERTICAL := "res://assets/events/moving_van_vertical.svg"
+const BURNT_OUT_CAR := "res://assets/events/burnt_out_car.svg"
+const BURNT_OUT_CAR_VERTICAL := "res://assets/events/burnt_out_car_vertical.svg"
+const COLLAPSED_FRONTAGE := "res://assets/events/collapsed_frontage.svg"
 ## Directional siblings for the three whole-street scenes. Vehicles and upright props are authored
 ## in the street's projection rather than rotating every pixel of the horizontal composition.
-const FALLEN_TREE_VERTICAL := preload("res://assets/events/fallen_tree_vertical.svg")
-const CAR_ACCIDENT_VERTICAL := preload("res://assets/events/car_accident_vertical.svg")
-const CAR_ACCIDENT_VERTICAL_SHADOW := preload(
-		"res://assets/events/car_accident_vertical_shadow.svg")
-const BURST_MAIN_VERTICAL := preload("res://assets/events/burst_water_main_vertical.svg")
+const FALLEN_TREE_VERTICAL := "res://assets/events/fallen_tree_vertical.svg"
+const CAR_ACCIDENT_VERTICAL := "res://assets/events/car_accident_vertical.svg"
+const CAR_ACCIDENT_VERTICAL_SHADOW := "res://assets/events/car_accident_vertical_shadow.svg"
+const BURST_MAIN_VERTICAL := "res://assets/events/burst_water_main_vertical.svg"
 
 # ---------------------------------------------------------- eight-view families ---
 # Every family below shares the crowd walker's own convention (`docs/GRAPHICS.md`, "the crowd
@@ -152,186 +156,185 @@ const EIGHT_VIEW_BY_SECTOR: Array[String] = [
 ]
 
 const PERSON_BY_VIEW := {
-	"front": preload("res://assets/events/person_front.svg"),
-	"back": preload("res://assets/events/person_back.svg"),
-	"side": preload("res://assets/events/person_side.svg"),
-	"front_diagonal": preload("res://assets/events/person_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/person_back_diagonal.svg"),
+	"front": "res://assets/events/person_front.svg",
+	"back": "res://assets/events/person_back.svg",
+	"side": "res://assets/events/person_side.svg",
+	"front_diagonal": "res://assets/events/person_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/person_back_diagonal.svg",
 }
 ## Feet-passing companion to `PERSON_BY_VIEW`, the walker frame-authoring rule applied to the dog
 ## walker's own body: cardinal and side views lift the coat and head one pixel and cross the legs
 ## and shoes, the two diagonals leave everything but the legs untouched. See `_gait_stepping()`.
 const PERSON_BY_VIEW_B := {
-	"front": preload("res://assets/events/person_front_b.svg"),
-	"back": preload("res://assets/events/person_back_b.svg"),
-	"side": preload("res://assets/events/person_side_b.svg"),
-	"front_diagonal": preload("res://assets/events/person_front_diagonal_b.svg"),
-	"back_diagonal": preload("res://assets/events/person_back_diagonal_b.svg"),
+	"front": "res://assets/events/person_front_b.svg",
+	"back": "res://assets/events/person_back_b.svg",
+	"side": "res://assets/events/person_side_b.svg",
+	"front_diagonal": "res://assets/events/person_front_diagonal_b.svg",
+	"back_diagonal": "res://assets/events/person_back_diagonal_b.svg",
 }
 const YELLER_BY_VIEW := {
-	"front": preload("res://assets/events/yeller_front.svg"),
-	"back": preload("res://assets/events/yeller_back.svg"),
-	"side": preload("res://assets/events/yeller_side.svg"),
-	"front_diagonal": preload("res://assets/events/yeller_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/yeller_back_diagonal.svg"),
+	"front": "res://assets/events/yeller_front.svg",
+	"back": "res://assets/events/yeller_back.svg",
+	"side": "res://assets/events/yeller_side.svg",
+	"front_diagonal": "res://assets/events/yeller_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/yeller_back_diagonal.svg",
 }
 ## See `PERSON_BY_VIEW_B` above for the frame-authoring rule.
 const YELLER_BY_VIEW_B := {
-	"front": preload("res://assets/events/yeller_front_b.svg"),
-	"back": preload("res://assets/events/yeller_back_b.svg"),
-	"side": preload("res://assets/events/yeller_side_b.svg"),
-	"front_diagonal": preload("res://assets/events/yeller_front_diagonal_b.svg"),
-	"back_diagonal": preload("res://assets/events/yeller_back_diagonal_b.svg"),
+	"front": "res://assets/events/yeller_front_b.svg",
+	"back": "res://assets/events/yeller_back_b.svg",
+	"side": "res://assets/events/yeller_side_b.svg",
+	"front_diagonal": "res://assets/events/yeller_front_diagonal_b.svg",
+	"back_diagonal": "res://assets/events/yeller_back_diagonal_b.svg",
 }
 const BUSKER_BY_VIEW := {
-	"front": preload("res://assets/events/busker_front.svg"),
-	"back": preload("res://assets/events/busker_back.svg"),
-	"side": preload("res://assets/events/busker_side.svg"),
-	"front_diagonal": preload("res://assets/events/busker_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/busker_back_diagonal.svg"),
+	"front": "res://assets/events/busker_front.svg",
+	"back": "res://assets/events/busker_back.svg",
+	"side": "res://assets/events/busker_side.svg",
+	"front_diagonal": "res://assets/events/busker_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/busker_back_diagonal.svg",
 }
 ## The strumming hand raised — read by `_draw_busker()` off `_idle_stepping()`'s own timer rather
 ## than `_gait_stepping()`'s distance, since he never moves. Everything but the hand/arm draped
 ## over the guitar is byte-identical to frame a.
 const BUSKER_BY_VIEW_B := {
-	"front": preload("res://assets/events/busker_front_b.svg"),
-	"back": preload("res://assets/events/busker_back_b.svg"),
-	"side": preload("res://assets/events/busker_side_b.svg"),
-	"front_diagonal": preload("res://assets/events/busker_front_diagonal_b.svg"),
-	"back_diagonal": preload("res://assets/events/busker_back_diagonal_b.svg"),
+	"front": "res://assets/events/busker_front_b.svg",
+	"back": "res://assets/events/busker_back_b.svg",
+	"side": "res://assets/events/busker_side_b.svg",
+	"front_diagonal": "res://assets/events/busker_front_diagonal_b.svg",
+	"back_diagonal": "res://assets/events/busker_back_diagonal_b.svg",
 }
 const POSTER_CREW_BY_VIEW := {
-	"front": preload("res://assets/events/poster_crew_front.svg"),
-	"back": preload("res://assets/events/poster_crew_back.svg"),
-	"side": preload("res://assets/events/poster_crew_side.svg"),
-	"front_diagonal": preload("res://assets/events/poster_crew_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/poster_crew_back_diagonal.svg"),
+	"front": "res://assets/events/poster_crew_front.svg",
+	"back": "res://assets/events/poster_crew_back.svg",
+	"side": "res://assets/events/poster_crew_side.svg",
+	"front_diagonal": "res://assets/events/poster_crew_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/poster_crew_back_diagonal.svg",
 }
 ## The square crew's five views. A 44x44 canvas where the sidewalk crew's is 30x44: the worker is
 ## that family's own figure, unmoved on the anchor, and the extra width is the advertising column
 ## he stands at. The column is a cylinder, so it is the same picture in all five and only the
 ## worker turns.
 const POSTER_CREW_SQUARE_BY_VIEW := {
-	"front": preload("res://assets/events/poster_crew_square_front.svg"),
-	"back": preload("res://assets/events/poster_crew_square_back.svg"),
-	"side": preload("res://assets/events/poster_crew_square_side.svg"),
-	"front_diagonal": preload("res://assets/events/poster_crew_square_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/poster_crew_square_back_diagonal.svg"),
+	"front": "res://assets/events/poster_crew_square_front.svg",
+	"back": "res://assets/events/poster_crew_square_back.svg",
+	"side": "res://assets/events/poster_crew_square_side.svg",
+	"front_diagonal": "res://assets/events/poster_crew_square_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/poster_crew_square_back_diagonal.svg",
 }
 const CAFE_SITTER_BY_VIEW := {
-	"front": preload("res://assets/events/cafe_sitter_front.svg"),
-	"back": preload("res://assets/events/cafe_sitter_back.svg"),
-	"side": preload("res://assets/events/cafe_sitter_side.svg"),
-	"front_diagonal": preload("res://assets/events/cafe_sitter_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/cafe_sitter_back_diagonal.svg"),
+	"front": "res://assets/events/cafe_sitter_front.svg",
+	"back": "res://assets/events/cafe_sitter_back.svg",
+	"side": "res://assets/events/cafe_sitter_side.svg",
+	"front_diagonal": "res://assets/events/cafe_sitter_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/cafe_sitter_back_diagonal.svg",
 }
 ## A lean, not a stride: the sitters never move, so this alternates on `_idle_stepping()`'s own
 ## timer rather than on `_gait_stepping()`'s distance. Everything but the lap/table-contact stays
 ## put; the seated body above it leans a couple of pixels — see the SVG's own comment.
 const CAFE_SITTER_BY_VIEW_B := {
-	"front": preload("res://assets/events/cafe_sitter_front_b.svg"),
-	"back": preload("res://assets/events/cafe_sitter_back_b.svg"),
-	"side": preload("res://assets/events/cafe_sitter_side_b.svg"),
-	"front_diagonal": preload("res://assets/events/cafe_sitter_front_diagonal_b.svg"),
-	"back_diagonal": preload("res://assets/events/cafe_sitter_back_diagonal_b.svg"),
+	"front": "res://assets/events/cafe_sitter_front_b.svg",
+	"back": "res://assets/events/cafe_sitter_back_b.svg",
+	"side": "res://assets/events/cafe_sitter_side_b.svg",
+	"front_diagonal": "res://assets/events/cafe_sitter_front_diagonal_b.svg",
+	"back_diagonal": "res://assets/events/cafe_sitter_back_diagonal_b.svg",
 }
 const VAN_VICTIM_BY_VIEW := {
-	"front": preload("res://assets/events/van_victim_front.svg"),
-	"back": preload("res://assets/events/van_victim_back.svg"),
-	"side": preload("res://assets/events/van_victim_side.svg"),
-	"front_diagonal": preload("res://assets/events/van_victim_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/van_victim_back_diagonal.svg"),
+	"front": "res://assets/events/van_victim_front.svg",
+	"back": "res://assets/events/van_victim_back.svg",
+	"side": "res://assets/events/van_victim_side.svg",
+	"front_diagonal": "res://assets/events/van_victim_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/van_victim_back_diagonal.svg",
 }
 ## See `PERSON_BY_VIEW_B` for the frame-authoring rule. Read by `_draw_abduction()` off
 ## `_victim_gait_stepping()`, her own short scripted walk to the van rather than the ordinary
 ## distance-driven gait — see that function's doc.
 const VAN_VICTIM_BY_VIEW_B := {
-	"front": preload("res://assets/events/van_victim_front_b.svg"),
-	"back": preload("res://assets/events/van_victim_back_b.svg"),
-	"side": preload("res://assets/events/van_victim_side_b.svg"),
-	"front_diagonal": preload("res://assets/events/van_victim_front_diagonal_b.svg"),
-	"back_diagonal": preload("res://assets/events/van_victim_back_diagonal_b.svg"),
+	"front": "res://assets/events/van_victim_front_b.svg",
+	"back": "res://assets/events/van_victim_back_b.svg",
+	"side": "res://assets/events/van_victim_side_b.svg",
+	"front_diagonal": "res://assets/events/van_victim_front_diagonal_b.svg",
+	"back_diagonal": "res://assets/events/van_victim_back_diagonal_b.svg",
 }
 const PROTESTER_BY_VIEW := {
-	"front": preload("res://assets/events/protester_front.svg"),
-	"back": preload("res://assets/events/protester_back.svg"),
-	"side": preload("res://assets/events/protester_side.svg"),
-	"front_diagonal": preload("res://assets/events/protester_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/protester_back_diagonal.svg"),
+	"front": "res://assets/events/protester_front.svg",
+	"back": "res://assets/events/protester_back.svg",
+	"side": "res://assets/events/protester_side.svg",
+	"front_diagonal": "res://assets/events/protester_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/protester_back_diagonal.svg",
 }
 ## The plain rank's own stride — see `PERSON_BY_VIEW_B` for the rule. The eight
 ## `protester_point_*` poses stay single; `_draw_protest()` only reaches this table when
 ## `_protester_texture()` answers its own `PROTESTER` sentinel.
 const PROTESTER_BY_VIEW_B := {
-	"front": preload("res://assets/events/protester_front_b.svg"),
-	"back": preload("res://assets/events/protester_back_b.svg"),
-	"side": preload("res://assets/events/protester_side_b.svg"),
-	"front_diagonal": preload("res://assets/events/protester_front_diagonal_b.svg"),
-	"back_diagonal": preload("res://assets/events/protester_back_diagonal_b.svg"),
+	"front": "res://assets/events/protester_front_b.svg",
+	"back": "res://assets/events/protester_back_b.svg",
+	"side": "res://assets/events/protester_side_b.svg",
+	"front_diagonal": "res://assets/events/protester_front_diagonal_b.svg",
+	"back_diagonal": "res://assets/events/protester_back_diagonal_b.svg",
 }
 const LEAF_BLOWER_BY_VIEW := {
-	"front": preload("res://assets/events/leaf_blower_front.svg"),
-	"back": preload("res://assets/events/leaf_blower_back.svg"),
-	"side": preload("res://assets/events/leaf_blower_side.svg"),
-	"front_diagonal": preload("res://assets/events/leaf_blower_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/leaf_blower_back_diagonal.svg"),
+	"front": "res://assets/events/leaf_blower_front.svg",
+	"back": "res://assets/events/leaf_blower_back.svg",
+	"side": "res://assets/events/leaf_blower_side.svg",
+	"front_diagonal": "res://assets/events/leaf_blower_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/leaf_blower_back_diagonal.svg",
 }
 ## See `PERSON_BY_VIEW_B` for the frame-authoring rule. `leaf_blower` never moves today, so this
 ## is never actually reached in play — wired for uniformity the way `lorry`'s own diagonal views
 ## are, in case a future site ever turns him.
 const LEAF_BLOWER_BY_VIEW_B := {
-	"front": preload("res://assets/events/leaf_blower_front_b.svg"),
-	"back": preload("res://assets/events/leaf_blower_back_b.svg"),
-	"side": preload("res://assets/events/leaf_blower_side_b.svg"),
-	"front_diagonal": preload("res://assets/events/leaf_blower_front_diagonal_b.svg"),
-	"back_diagonal": preload("res://assets/events/leaf_blower_back_diagonal_b.svg"),
+	"front": "res://assets/events/leaf_blower_front_b.svg",
+	"back": "res://assets/events/leaf_blower_back_b.svg",
+	"side": "res://assets/events/leaf_blower_side_b.svg",
+	"front_diagonal": "res://assets/events/leaf_blower_front_diagonal_b.svg",
+	"back_diagonal": "res://assets/events/leaf_blower_back_diagonal_b.svg",
 }
 const ROBBER_WAITING_BY_VIEW := {
-	"front": preload("res://assets/events/robber_waiting_front.svg"),
-	"back": preload("res://assets/events/robber_waiting_back.svg"),
-	"side": preload("res://assets/events/robber_waiting_side.svg"),
-	"front_diagonal": preload("res://assets/events/robber_waiting_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/robber_waiting_back_diagonal.svg"),
+	"front": "res://assets/events/robber_waiting_front.svg",
+	"back": "res://assets/events/robber_waiting_back.svg",
+	"side": "res://assets/events/robber_waiting_side.svg",
+	"front_diagonal": "res://assets/events/robber_waiting_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/robber_waiting_back_diagonal.svg",
 }
 const ROBBER_LUNGING_BY_VIEW := {
-	"front": preload("res://assets/events/robber_lunging_front.svg"),
-	"back": preload("res://assets/events/robber_lunging_back.svg"),
-	"side": preload("res://assets/events/robber_lunging_side.svg"),
-	"front_diagonal": preload("res://assets/events/robber_lunging_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/robber_lunging_back_diagonal.svg"),
+	"front": "res://assets/events/robber_lunging_front.svg",
+	"back": "res://assets/events/robber_lunging_back.svg",
+	"side": "res://assets/events/robber_lunging_side.svg",
+	"front_diagonal": "res://assets/events/robber_lunging_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/robber_lunging_back_diagonal.svg",
 }
 ## The lunge's own stride — see `PERSON_BY_VIEW_B`. The waiting posture stays single: a man only
 ## watching the street is not moving yet.
 const ROBBER_LUNGING_BY_VIEW_B := {
-	"front": preload("res://assets/events/robber_lunging_front_b.svg"),
-	"back": preload("res://assets/events/robber_lunging_back_b.svg"),
-	"side": preload("res://assets/events/robber_lunging_side_b.svg"),
-	"front_diagonal": preload("res://assets/events/robber_lunging_front_diagonal_b.svg"),
-	"back_diagonal": preload("res://assets/events/robber_lunging_back_diagonal_b.svg"),
+	"front": "res://assets/events/robber_lunging_front_b.svg",
+	"back": "res://assets/events/robber_lunging_back_b.svg",
+	"side": "res://assets/events/robber_lunging_side_b.svg",
+	"front_diagonal": "res://assets/events/robber_lunging_front_diagonal_b.svg",
+	"back_diagonal": "res://assets/events/robber_lunging_back_diagonal_b.svg",
 }
 const CHATTING_MOTHER_WALKING_BY_VIEW := {
-	"front": preload("res://assets/events/chatting_mother_walking_front.svg"),
-	"back": preload("res://assets/events/chatting_mother_walking_back.svg"),
-	"side": preload("res://assets/events/chatting_mother_walking_side.svg"),
-	"front_diagonal": preload("res://assets/events/chatting_mother_walking_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/chatting_mother_walking_back_diagonal.svg"),
+	"front": "res://assets/events/chatting_mother_walking_front.svg",
+	"back": "res://assets/events/chatting_mother_walking_back.svg",
+	"side": "res://assets/events/chatting_mother_walking_side.svg",
+	"front_diagonal": "res://assets/events/chatting_mother_walking_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/chatting_mother_walking_back_diagonal.svg",
 }
 ## The pacing walk's own stride — see `PERSON_BY_VIEW_B`. The talking posture stays single: she is
 ## frozen for the whole of a conversation, `is_chatting()`'s own meaning.
 const CHATTING_MOTHER_WALKING_BY_VIEW_B := {
-	"front": preload("res://assets/events/chatting_mother_walking_front_b.svg"),
-	"back": preload("res://assets/events/chatting_mother_walking_back_b.svg"),
-	"side": preload("res://assets/events/chatting_mother_walking_side_b.svg"),
-	"front_diagonal":
-			preload("res://assets/events/chatting_mother_walking_front_diagonal_b.svg"),
-	"back_diagonal": preload("res://assets/events/chatting_mother_walking_back_diagonal_b.svg"),
+	"front": "res://assets/events/chatting_mother_walking_front_b.svg",
+	"back": "res://assets/events/chatting_mother_walking_back_b.svg",
+	"side": "res://assets/events/chatting_mother_walking_side_b.svg",
+	"front_diagonal": "res://assets/events/chatting_mother_walking_front_diagonal_b.svg",
+	"back_diagonal": "res://assets/events/chatting_mother_walking_back_diagonal_b.svg",
 }
 const CHATTING_MOTHER_TALKING_BY_VIEW := {
-	"front": preload("res://assets/events/chatting_mother_talking_front.svg"),
-	"back": preload("res://assets/events/chatting_mother_talking_back.svg"),
-	"side": preload("res://assets/events/chatting_mother_talking_side.svg"),
-	"front_diagonal": preload("res://assets/events/chatting_mother_talking_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/chatting_mother_talking_back_diagonal.svg"),
+	"front": "res://assets/events/chatting_mother_talking_front.svg",
+	"back": "res://assets/events/chatting_mother_talking_back.svg",
+	"side": "res://assets/events/chatting_mother_talking_side.svg",
+	"front_diagonal": "res://assets/events/chatting_mother_talking_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/chatting_mother_talking_back_diagonal.svg",
 }
 
 ## The animal/rider families below reuse the existing unsuffixed constant as `"side"` rather than
@@ -342,90 +345,90 @@ const CHATTING_MOTHER_TALKING_BY_VIEW := {
 ## `EventCatalogue._alley_mouse()`'s own docstring documents, with its own reasoning, that the row
 ## stays on `_draw_simple(MOUSE, ...)` rather than joining this table.
 const CAT_CROUCHED_BY_VIEW := {
-	"front": preload("res://assets/events/cat_crouched_front.svg"),
-	"back": preload("res://assets/events/cat_crouched_back.svg"),
+	"front": "res://assets/events/cat_crouched_front.svg",
+	"back": "res://assets/events/cat_crouched_back.svg",
 	"side": CAT_CROUCHED,
-	"front_diagonal": preload("res://assets/events/cat_crouched_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/cat_crouched_back_diagonal.svg"),
+	"front_diagonal": "res://assets/events/cat_crouched_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/cat_crouched_back_diagonal.svg",
 }
 const CAT_RUNNING_BY_VIEW := {
-	"front": preload("res://assets/events/cat_running_front.svg"),
-	"back": preload("res://assets/events/cat_running_back.svg"),
+	"front": "res://assets/events/cat_running_front.svg",
+	"back": "res://assets/events/cat_running_back.svg",
 	"side": CAT_RUNNING,
-	"front_diagonal": preload("res://assets/events/cat_running_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/cat_running_back_diagonal.svg"),
+	"front_diagonal": "res://assets/events/cat_running_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/cat_running_back_diagonal.svg",
 }
 ## The dash's own stride. Unlike the humanoid families (`PERSON_BY_VIEW_B`), a quadruped's low
 ## silhouette has no coat or head to lift, so every view here only shifts the leg marks — the
 ## distance-driven bob (`_current_bob()`) still supplies the vertical motion cue. The crouched
 ## posture stays single: it is the telegraph, held still.
 const CAT_RUNNING_BY_VIEW_B := {
-	"front": preload("res://assets/events/cat_running_front_b.svg"),
-	"back": preload("res://assets/events/cat_running_back_b.svg"),
-	"side": preload("res://assets/events/cat_running_b.svg"),
-	"front_diagonal": preload("res://assets/events/cat_running_front_diagonal_b.svg"),
-	"back_diagonal": preload("res://assets/events/cat_running_back_diagonal_b.svg"),
+	"front": "res://assets/events/cat_running_front_b.svg",
+	"back": "res://assets/events/cat_running_back_b.svg",
+	"side": "res://assets/events/cat_running_b.svg",
+	"front_diagonal": "res://assets/events/cat_running_front_diagonal_b.svg",
+	"back_diagonal": "res://assets/events/cat_running_back_diagonal_b.svg",
 }
 const DOG_BY_VIEW := {
-	"front": preload("res://assets/events/dog_front.svg"),
-	"back": preload("res://assets/events/dog_back.svg"),
+	"front": "res://assets/events/dog_front.svg",
+	"back": "res://assets/events/dog_back.svg",
 	"side": DOG,
-	"front_diagonal": preload("res://assets/events/dog_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/dog_back_diagonal.svg"),
+	"front_diagonal": "res://assets/events/dog_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/dog_back_diagonal.svg",
 }
 ## Shared by the dog walker's own dog and the loose dog — see `CAT_RUNNING_BY_VIEW_B` for why a
 ## quadruped's b frame only shifts the legs.
 const DOG_BY_VIEW_B := {
-	"front": preload("res://assets/events/dog_front_b.svg"),
-	"back": preload("res://assets/events/dog_back_b.svg"),
-	"side": preload("res://assets/events/dog_b.svg"),
-	"front_diagonal": preload("res://assets/events/dog_front_diagonal_b.svg"),
-	"back_diagonal": preload("res://assets/events/dog_back_diagonal_b.svg"),
+	"front": "res://assets/events/dog_front_b.svg",
+	"back": "res://assets/events/dog_back_b.svg",
+	"side": "res://assets/events/dog_b.svg",
+	"front_diagonal": "res://assets/events/dog_front_diagonal_b.svg",
+	"back_diagonal": "res://assets/events/dog_back_diagonal_b.svg",
 }
 const CHARGING_DOG_BY_VIEW := {
-	"front": preload("res://assets/events/charging_dog_front.svg"),
-	"back": preload("res://assets/events/charging_dog_back.svg"),
+	"front": "res://assets/events/charging_dog_front.svg",
+	"back": "res://assets/events/charging_dog_back.svg",
 	"side": CHARGING_DOG,
-	"front_diagonal": preload("res://assets/events/charging_dog_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/charging_dog_back_diagonal.svg"),
+	"front_diagonal": "res://assets/events/charging_dog_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/charging_dog_back_diagonal.svg",
 }
 ## See `CAT_RUNNING_BY_VIEW_B`.
 const CHARGING_DOG_BY_VIEW_B := {
-	"front": preload("res://assets/events/charging_dog_front_b.svg"),
-	"back": preload("res://assets/events/charging_dog_back_b.svg"),
-	"side": preload("res://assets/events/charging_dog_b.svg"),
-	"front_diagonal": preload("res://assets/events/charging_dog_front_diagonal_b.svg"),
-	"back_diagonal": preload("res://assets/events/charging_dog_back_diagonal_b.svg"),
+	"front": "res://assets/events/charging_dog_front_b.svg",
+	"back": "res://assets/events/charging_dog_back_b.svg",
+	"side": "res://assets/events/charging_dog_b.svg",
+	"front_diagonal": "res://assets/events/charging_dog_front_diagonal_b.svg",
+	"back_diagonal": "res://assets/events/charging_dog_back_diagonal_b.svg",
 }
 const CYCLIST_BY_VIEW := {
-	"front": preload("res://assets/events/cyclist_front.svg"),
-	"back": preload("res://assets/events/cyclist_back.svg"),
+	"front": "res://assets/events/cyclist_front.svg",
+	"back": "res://assets/events/cyclist_back.svg",
 	"side": CYCLIST,
-	"front_diagonal": preload("res://assets/events/cyclist_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/cyclist_back_diagonal.svg"),
+	"front_diagonal": "res://assets/events/cyclist_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/cyclist_back_diagonal.svg",
 }
 ## The pedal's own two positions — rider and bike are one picture, so one phase swaps both without
 ## anything here needing to know they are drawn together.
 const CYCLIST_BY_VIEW_B := {
-	"front": preload("res://assets/events/cyclist_front_b.svg"),
-	"back": preload("res://assets/events/cyclist_back_b.svg"),
-	"side": preload("res://assets/events/cyclist_b.svg"),
-	"front_diagonal": preload("res://assets/events/cyclist_front_diagonal_b.svg"),
-	"back_diagonal": preload("res://assets/events/cyclist_back_diagonal_b.svg"),
+	"front": "res://assets/events/cyclist_front_b.svg",
+	"back": "res://assets/events/cyclist_back_b.svg",
+	"side": "res://assets/events/cyclist_b.svg",
+	"front_diagonal": "res://assets/events/cyclist_front_diagonal_b.svg",
+	"back_diagonal": "res://assets/events/cyclist_back_diagonal_b.svg",
 }
 const PIGEON_BY_VIEW := {
-	"front": preload("res://assets/events/pigeon_front.svg"),
-	"back": preload("res://assets/events/pigeon_back.svg"),
+	"front": "res://assets/events/pigeon_front.svg",
+	"back": "res://assets/events/pigeon_back.svg",
 	"side": PIGEON,
-	"front_diagonal": preload("res://assets/events/pigeon_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/pigeon_back_diagonal.svg"),
+	"front_diagonal": "res://assets/events/pigeon_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/pigeon_back_diagonal.svg",
 }
 const PIGEON_DOWN_BY_VIEW := {
-	"front": preload("res://assets/events/pigeon_down_front.svg"),
-	"back": preload("res://assets/events/pigeon_down_back.svg"),
+	"front": "res://assets/events/pigeon_down_front.svg",
+	"back": "res://assets/events/pigeon_down_back.svg",
 	"side": PIGEON_DOWN,
-	"front_diagonal": preload("res://assets/events/pigeon_down_front_diagonal.svg"),
-	"back_diagonal": preload("res://assets/events/pigeon_down_back_diagonal.svg"),
+	"front_diagonal": "res://assets/events/pigeon_down_front_diagonal.svg",
+	"back_diagonal": "res://assets/events/pigeon_down_back_diagonal.svg",
 }
 ## The vehicle-scale families below share the same five-view shape as every family above, but not
 ## all of them share its mirror convention: `docs/evidence/svg-vehicles-2026-09-10/README.md` — "the
@@ -500,25 +503,25 @@ const RIOT_VAN_BY_VIEW := {
 }
 
 ## The region door's own kit — see `RegionPlanner` and `docs/CITY.md`, "Regions and the wall".
-const HUT_NORTH := preload("res://assets/checkpoints/hut_north.svg")
-const HUT_SOUTH := preload("res://assets/checkpoints/hut_south.svg")
-const HUT_EAST := preload("res://assets/checkpoints/hut_east.svg")
-const HUT_WEST := preload("res://assets/checkpoints/hut_west.svg")
-const GUARD_STANDING := preload("res://assets/checkpoints/guard_standing.svg")
-const GUARD_LUNGING := preload("res://assets/checkpoints/guard_lunging.svg")
-const BOOM_GATE_NS_LOWERED := preload("res://assets/checkpoints/boom_gate_ns_lowered.svg")
-const BOOM_GATE_NS_RAISED := preload("res://assets/checkpoints/boom_gate_ns_raised.svg")
-const BOOM_GATE_EW_LOWERED := preload("res://assets/checkpoints/boom_gate_ew_lowered.svg")
-const BOOM_GATE_EW_RAISED := preload("res://assets/checkpoints/boom_gate_ew_raised.svg")
+const HUT_NORTH := "res://assets/checkpoints/hut_north.svg"
+const HUT_SOUTH := "res://assets/checkpoints/hut_south.svg"
+const HUT_EAST := "res://assets/checkpoints/hut_east.svg"
+const HUT_WEST := "res://assets/checkpoints/hut_west.svg"
+const GUARD_STANDING := "res://assets/checkpoints/guard_standing.svg"
+const GUARD_LUNGING := "res://assets/checkpoints/guard_lunging.svg"
+const BOOM_GATE_NS_LOWERED := "res://assets/checkpoints/boom_gate_ns_lowered.svg"
+const BOOM_GATE_NS_RAISED := "res://assets/checkpoints/boom_gate_ns_raised.svg"
+const BOOM_GATE_EW_LOWERED := "res://assets/checkpoints/boom_gate_ew_lowered.svg"
+const BOOM_GATE_EW_RAISED := "res://assets/checkpoints/boom_gate_ew_raised.svg"
 
 ## The basement's own vent, and the one picture in the catalogue that is a *volume* of air rather
 ## than a body: `steam.svg` is 32×48 and stands on the ground it rises from.
-const STEAM := preload("res://assets/events/steam.svg")
+const STEAM := "res://assets/events/steam.svg"
 
 ## The finale's crater, the mark an off-screen explosion leaves on the street. One of the three
 ## prepared sizes; the row obstructs at exactly half this picture's width, so the hole and the
 ## ground she cannot walk on are the same circle — see `EventCatalogue._impact_crater()`.
-const IMPACT_CRATER := preload("res://assets/props/impact_crater_2x2.svg")
+const IMPACT_CRATER := "res://assets/props/impact_crater_2x2.svg"
 ## Its centre, which is also its ground point: the picture is a hole in the road rather than a
 ## thing standing on it, so it is registered on its middle and not on its base. The source's own
 ## comment names the same point — *"Ground anchor is the canvas centre (32,32)"* — on a 64×64
@@ -553,15 +556,18 @@ const _BOOM_EW_ANCHOR := (_BOOM_EW_NEAR_POST + _BOOM_EW_FAR_POST) * 0.5
 const _BOOM_NS_ARM := Rect2(4.0, 43.0, 79.0, 7.0)
 const _BOOM_EW_ARM := Rect2(15.0, 7.0, 9.0, 76.0)
 
-## The one silhouette that stands for a look, at any size.
+## The one silhouette that stands for a look, at any size, as the picture's own path — `""` for a
+## look with nothing to put in a badge. The badge turns it into a region of the `events` page the
+## same way everything in this file does; a path is what makes the table comparable, which is the
+## rule below.
 ##
 ## It lives here rather than in `DangerEdge` for the same reason the caret lives in `Sprites`: a
 ## cue that belongs to the vocabulary does not belong to a class, and the screen-edge badge's whole
 ## job is to draw *the thing's own picture* — a second table of which picture that is, kept in the
 ## UI, is how a badge ends up showing a generic van for a fire engine. `tests/test_events.gd`
-## asserts every visible row has one and that no two looks return the same texture, which is the
+## asserts every visible row has one and that no two looks return the same picture, which is the
 ## half of the one-picture-per-row rule that a `look` field cannot enforce by itself.
-static func icon_for(look: EventDef.Look) -> Texture2D:
+static func icon_for(look: EventDef.Look) -> String:
 	match look:
 		EventDef.Look.CAT: return CAT_RUNNING
 		EventDef.Look.MOUSE: return MOUSE
@@ -608,7 +614,7 @@ static func icon_for(look: EventDef.Look) -> Texture2D:
 		EventDef.Look.IMPACT_CRATER: return IMPACT_CRATER
 		EventDef.Look.MASKED_PURSUER: return GUARD_LUNGING
 		EventDef.Look.STEAM: return STEAM
-		_: return null
+		_: return ""
 
 ## Whether a def's instance draws itself as a **spread** — segments or a whole scene fitted
 ## across `def.obstructs_radius`, laid along whichever axis `_spread_is_vertical` picks for the
@@ -648,39 +654,40 @@ static func has_a_spread(def: EventDef) -> bool:
 ## axis, so cars keep the right projection and people and barriers remain upright. Repeatable
 ## segments are close enough to square for the dimension swap itself. `EventDef.look` and
 ## `_spread_vertical` together pick the texture, with no field on the def.
-static func _wide_scene_texture(look: EventDef.Look, vertical: bool) -> Texture2D:
+static func _wide_scene_texture(look: EventDef.Look, vertical: bool) -> String:
 	match look:
 		EventDef.Look.FALLEN_TREE: return FALLEN_TREE_VERTICAL if vertical else FALLEN_TREE
 		EventDef.Look.CAR_ACCIDENT: return CAR_ACCIDENT_VERTICAL if vertical else CAR_ACCIDENT
 		EventDef.Look.BURST_MAIN: return BURST_MAIN_VERTICAL if vertical else BURST_MAIN
-		_: return null
+		_: return ""
 
 ## A crash scene has several separate contacts with the ground, so it carries a matching shadow
-## picture rather than painting one ellipse across the entire closed street.
-static func _wide_scene_shadow(texture: Texture2D) -> Texture2D:
-	if texture == CAR_ACCIDENT:
+## picture rather than painting one ellipse across the entire closed street. `""` for a scene with
+## no authored contact art, which is every one but the crash.
+static func _wide_scene_shadow(picture: String) -> String:
+	if picture == CAR_ACCIDENT:
 		return CAR_ACCIDENT_SHADOW
-	if texture == CAR_ACCIDENT_VERTICAL:
+	if picture == CAR_ACCIDENT_VERTICAL:
 		return CAR_ACCIDENT_VERTICAL_SHADOW
-	return null
+	return ""
 
 ## The selected picture for a stationary vehicle. The row keeps one look because both files
 ## depict the same vehicle rather than two catalogue entries.
-static func _stationary_vehicle_texture(look: EventDef.Look, side_view: bool) -> Texture2D:
+static func _stationary_vehicle_texture(look: EventDef.Look, side_view: bool) -> String:
 	match look:
 		EventDef.Look.MOVING_VAN:
 			return MOVING_VAN if side_view else MOVING_VAN_VERTICAL
 		EventDef.Look.BURNT_OUT_CAR:
 			return BURNT_OUT_CAR if side_view else BURNT_OUT_CAR_VERTICAL
 		_:
-			return null
+			return ""
 
 ## Preserves the authored end-on projection instead of stretching it to the circular collision
 ## diameter. Side views are fitted to that diameter because their long silhouette is the width the
 ## solid row claims on the axis where that picture is used.
-static func _stationary_vehicle_extent(texture: Texture2D, side_view: bool,
+static func _stationary_vehicle_extent(picture: String, side_view: bool,
 		side_width: float) -> Vector2:
-	var size := texture.get_size()
+	var size := _native_size(picture)
 	if not side_view:
 		return size
 	return Vector2(side_width, size.y * side_width / size.x)
@@ -746,10 +753,6 @@ var _heading := Vector2.RIGHT
 ## hold on a fresh placement" rule `EightDirection.nearest()`'s own doc names.
 var _view_sector := 2
 
-## This instance's `TextureAtlas` group, `family_name(def.look)`, cached in `_ready()`. Empty for
-## an instance that never entered the tree, which `TextureAtlas.texture_for()` answers the source
-## picture for — see `_packed()`.
-var _atlas_name := ""
 var _path_travelled := 0.0
 var _telegraph_announced := false
 var _activation_announced := false
@@ -903,7 +906,7 @@ static func _spread_is_vertical(map: CityMap, at: Vector2) -> bool:
 ## The roadworks panel source follows the spread's authored projection. The vertical source is
 ## selected for an east-west street or horizontal alley; the ordinary source remains the broad
 ## panel for a north-south street or vertical alley.
-static func _roadwork_segment_texture(spread_vertical: bool) -> Texture2D:
+static func _roadwork_segment_texture(spread_vertical: bool) -> String:
 	return BARRIER_SEGMENT_VERTICAL if spread_vertical else BARRIER_SEGMENT
 
 ## The `Rect2i` (from `CityMap.alley_rects`) that `at` falls inside, in **world** space, or an
@@ -965,10 +968,6 @@ func _ready() -> void:
 	# `City`'s shared, y-sorted `Entities` node (`City.add_entity()`), beside the player, who does
 	# want her own physics-tick motion interpolated.
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-	# Held rather than rebuilt at every `_packed()` call: `_draw_body()` runs once for the body and
-	# once per ring offset for the halo, and a formatted string per picture per ring is work for an
-	# answer that cannot change while this instance exists.
-	_atlas_name = family_name(def.look)
 	EventBus.event_telegraphed.emit(self)
 	_telegraph_announced = true
 	# `solid_once_it_starts` is the one row shape that does not put its body down here — see that
@@ -2651,32 +2650,63 @@ func _draw_mark() -> void:
 ## `_draw()`. Drawing nothing is instant either way; the fade timer keeps running underneath, so
 ## the ring reappears at whatever brightness it already had rather than fading back in. A hut or a
 ## gate keeps both its picture and its ring, because it never left.
-# ------------------------------------------------------------- the atlases ---
-# One `TextureAtlas` group per family, the family being **one `EventDef.Look`** — the set of
-# pictures one row can draw. The grouping is the `Look` and not something finer, because `Look` is
-# already the switch `_draw_body()` turns on: a row's `look` decides which branch runs and so
-# decides, exactly, which pictures it can reach, which makes "one `EventDef` never draws from two
-# families" true by construction rather than by a table somebody keeps in step.
+# ------------------------------------------------------------- the atlas ---
+# **One page for the whole catalogue, held from boot.** *(PLAYTEST-108: "we can do one events page
+# for now".)* Every picture in this file — the checkpoint kit and the finale's crater included — is
+# a region of `ATLAS_GROUP`, and `EventManager` is what holds a reference on it while a day's
+# events exist; `main.RESIDENT_GROUPS` is what keeps it there for the life of the process, so no
+# event ever costs a read from disk in a played frame.
 #
-# A picture shared between two looks — the guard, the dog, the boom kit — is packed into both, so
-# a family's atlas is self-contained and a released family cannot take a picture another live one
-# is still drawing. The cost of that is a few duplicated canvases across groups that are rarely
-# live at the same time, which is a cheaper thing to be wrong about than a shared group nobody
-# owns.
+# **This replaces one runtime-packed group per `EventDef.Look`.** A picture two looks both draw —
+# the guard, the dog, the boom kit — was packed into each of their groups, because a family that
+# could be released had to be self-contained; on one page each picture is one region and the
+# duplicates are gone. A single group also means nothing here has to decide *when* a family
+# arrives: a baked page is there the moment it is acquired, so an instance never draws a source
+# picture "until its pack is collected".
 
-## The `TextureAtlas` group name for a look. Named off the enum rather than hand-spelled, so a new
-## `Look` cannot be given a name that collides with an existing family's.
-static func family_name(look: EventDef.Look) -> String:
-	return "event/%s" % str(EventDef.Look.find_key(look)).to_lower()
+## The one baked page everything in this file draws from.
+const ATLAS_GROUP := &"events"
 
-## Every picture a row with this look can draw, keyed by the source texture itself — which is what
-## the drawing path has in hand when it asks `_packed()` for the region standing in for it.
+## The baked region name for a picture path, cached — `AtlasLibrary.region_name_for()` is a pure
+## string transform with no I/O, and the cache only stops the same few hundred names being rebuilt
+## every frame for a street full of events. Static, since the answer is a property of the path and
+## not of any one instance.
+static var _region_names: Dictionary = {}
+
+static func _region_name_of(picture: String) -> StringName:
+	var cached: Variant = _region_names.get(picture)
+	if cached != null:
+		return cached
+	var name := AtlasLibrary.region_name_for(picture)
+	_region_names[picture] = name
+	return name
+
+## The picture to draw: a region of the `events` page, whose own `get_size()` is the source
+## picture's size, so every offset, extent, anchor and mirror below reads exactly the number it
+## read from a preloaded texture.
 ##
-## Read straight off `_draw_body()`'s own arms: if a branch there can reach a texture, it is here.
-## A picture missing from this table is not a broken drawing — `texture_for()` answers the source
-## for a key it does not know — it is only a picture that stayed out of its family's atlas, which
-## is why the events suite checks the two lists against each other rather than trusting this one.
-static func family_sources(look: EventDef.Look) -> Dictionary:
+## **Null, with an engine error naming the region, if nothing holds the page** — `AtlasLibrary`'s
+## own rule, and the reason `EventManager` acquires the group rather than trusting the boot's
+## residency. Nothing here defends against that: a drawing that quietly fell back to loading the
+## picture itself is the second resident copy the milestone exists to remove.
+static func _drawn(picture: String) -> AtlasTexture:
+	return AtlasLibrary.region(_region_name_of(picture))
+
+## A picture's own size, answered from the region table with nothing acquired and no texture
+## loaded — what the layout arithmetic around a spread, a café rank, a protest rank or a badge
+## needs. `Vector2` rather than `Vector2i` so it is a drop-in for the `get_size()` these call sites
+## used to ask a texture for.
+static func _native_size(picture: String) -> Vector2:
+	return Vector2(AtlasLibrary.native_size(_region_name_of(picture)))
+
+## Every picture a row with this look can draw, as repository paths.
+##
+## Read straight off `_draw_body()`'s own arms: if a branch there can reach a picture, it is here.
+## Not read by the live draw path, which has the path already in hand — this is the one place
+## "everything a look can draw" is enumerable, which is what a completeness check against
+## `assets/atlases/membership.json` wants (`tests/test_atlas_events.gd`), the same role
+## `Stroller.sources_by_group()` plays for the rig.
+static func family_sources(look: EventDef.Look) -> Array[String]:
 	var sources: Dictionary = {}
 	match look:
 		EventDef.Look.CAT:
@@ -2778,23 +2808,23 @@ static func family_sources(look: EventDef.Look) -> Dictionary:
 			_collect(sources, [GUARD_STANDING, GUARD_LUNGING])
 		EventDef.Look.STEAM:
 			_collect(sources, [STEAM])
-	return sources
+	# A `Dictionary` while it is being built, because several arms reach the same picture twice —
+	# the dog walker's own dog is the loose dog's, and the guard stands at three different rows —
+	# and a look's pictures are a set rather than a list.
+	var paths: Array[String] = []
+	for picture: String in sources.keys():
+		paths.append(picture)
+	paths.sort()
+	return paths
 
-static func _collect(sources: Dictionary, textures: Array) -> void:
-	for texture: Texture2D in textures:
-		sources[texture] = texture
+static func _collect(sources: Dictionary, pictures: Array) -> void:
+	for picture: String in pictures:
+		sources[picture] = true
 
 static func _collect_views(sources: Dictionary, tables: Array) -> void:
 	for table: Dictionary in tables:
 		for view in table.keys():
-			var texture: Texture2D = table[view]
-			sources[texture] = texture
-
-## The region of this instance's family atlas standing in for `texture`, or `texture` itself while
-## the family has not been collected, has already been released, or was never asked for at all —
-## which is every instance a data-level rig builds without an `EventManager` behind it.
-func _packed(texture: Texture2D) -> Texture2D:
-	return TextureAtlas.texture_for(_atlas_name, texture, texture)
+			sources[str(table[view])] = true
 
 func _draw_body(canvas: CanvasItem = self) -> void:
 	if is_suppressed_by_its_own_hold():
@@ -2828,11 +2858,11 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.BURNING_BUILDING:
 			_draw_fire(canvas)
 		EventDef.Look.BURNT_SHELL:
-			_draw_spread(RUBBLE, null, canvas)
+			_draw_spread(RUBBLE, "", canvas)
 		EventDef.Look.LOOSE_DOG:
 			_draw_loose_dog(canvas)
 		EventDef.Look.STALL:
-			_draw_spread(STALL, null, canvas)
+			_draw_spread(STALL, "", canvas)
 		EventDef.Look.LEAF_BLOWER:
 			_draw_eight_view(LEAF_BLOWER_BY_VIEW, _heading, canvas, false, LEAF_BLOWER_BY_VIEW_B)
 		EventDef.Look.BIRDS:
@@ -2881,7 +2911,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.ARMY_TRUCK:
 			_draw_eight_view(ARMY_TRUCK_BY_VIEW, _heading, canvas, true)
 		EventDef.Look.BARRICADE:
-			_draw_spread(BARRICADE_PILE, null, canvas)
+			_draw_spread(BARRICADE_PILE, "", canvas)
 		EventDef.Look.PROTEST:
 			_draw_protest(canvas)
 		EventDef.Look.FIREFIGHT:
@@ -2893,9 +2923,9 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.BURST_MAIN:
 			_draw_wide_scene(_wide_scene_texture(EventDef.Look.BURST_MAIN, _spread_vertical), canvas)
 		EventDef.Look.COLLAPSED_FRONTAGE:
-			_draw_spread(COLLAPSED_FRONTAGE, null, canvas)
+			_draw_spread(COLLAPSED_FRONTAGE, "", canvas)
 		EventDef.Look.SCAFFOLDING:
-			_draw_spread(SCAFFOLDING, null, canvas)
+			_draw_spread(SCAFFOLDING, "", canvas)
 		EventDef.Look.SKIP:
 			_draw_simple(SKIP, canvas)
 		EventDef.Look.MOVING_VAN:
@@ -2924,14 +2954,14 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 ## A shadow and a sprite, facing the way it is going. What most looks are, and having it once is
 ## what keeps a dozen near-identical three-line functions from existing.
 ##
-## `texture_b` is `mouse`'s own second frame, read off `_gait_stepping()` when given; `null` for
+## `picture_b` is `mouse`'s own second frame, read off `_gait_stepping()` when given; `""` for
 ## everything else this draws (`skip`, and `mouse` before its own dash starts), which keeps every
 ## other caller exactly as it was.
-func _draw_simple(texture: Texture2D, canvas: CanvasItem = self,
-		texture_b: Texture2D = null) -> void:
+func _draw_simple(picture: String, canvas: CanvasItem = self,
+		picture_b: String = "") -> void:
 	_draw_body_shadow(canvas)
-	var drawn := texture_b if texture_b and _gait_stepping() else texture
-	Sprites.draw_standing(canvas, _packed(drawn), Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	var drawn := picture_b if not picture_b.is_empty() and _gait_stepping() else picture
+	Sprites.draw_standing(canvas, _drawn(drawn), Vector2.ZERO, Vector2.ZERO, _heading_is_west())
 
 ## The five-view generalisation of `_draw_simple`, for a family that has the full
 ## front/back/side/diagonal set — `_select_view()` picks the view from `heading` and
@@ -2964,10 +2994,10 @@ func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem 
 	var mirror := EightDirection.is_mirrored(_view_sector)
 	if view == "side" and side_faces_west:
 		mirror = not mirror
-	var texture: Texture2D = by_view[view]
+	var picture: String = by_view[view]
 	if not by_view_b.is_empty() and _gait_stepping():
-		texture = by_view_b[view]
-	Sprites.draw_standing(canvas, _packed(texture), Vector2.ZERO, Vector2.ZERO, mirror)
+		picture = by_view_b[view]
+	Sprites.draw_standing(canvas, _drawn(picture), Vector2.ZERO, Vector2.ZERO, mirror)
 
 ## A stationary vehicle projected along the axis of the street it occupies. Its side silhouette
 ## may mirror with its facing; an end-on silhouette keeps its authored proportions and orientation.
@@ -2976,10 +3006,10 @@ func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem 
 ## hand-picked radius of its own.
 func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 		canvas: CanvasItem = self) -> void:
-	var texture := _stationary_vehicle_texture(look, _stationary_vehicle_side)
-	var extent := _stationary_vehicle_extent(texture, _stationary_vehicle_side, side_width)
+	var picture := _stationary_vehicle_texture(look, _stationary_vehicle_side)
+	var extent := _stationary_vehicle_extent(picture, _stationary_vehicle_side, side_width)
 	_draw_body_shadow(canvas)
-	Sprites.draw_standing(canvas, _packed(texture), Vector2.ZERO, extent,
+	Sprites.draw_standing(canvas, _drawn(picture), Vector2.ZERO, extent,
 			_stationary_vehicle_side and _heading_is_west())
 
 ## The dog, and the lead it is no longer on.
@@ -2996,7 +3026,7 @@ func _draw_loose_dog(canvas: CanvasItem = self) -> void:
 	canvas.draw_line(Vector2(0.0, -8.0), behind + Vector2(0.0, -2.0), Palette.OUTLINE, 2.0)
 	var view := _select_view(_heading)
 	var by_view := DOG_BY_VIEW_B if _gait_stepping() else DOG_BY_VIEW
-	Sprites.draw_standing(canvas, _packed(by_view[view]), Vector2.ZERO, Vector2.ZERO,
+	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
 
 ## Every bird, drawn where it actually is.
@@ -3024,13 +3054,14 @@ func _draw_birds(canvas: CanvasItem = self) -> void:
 		bird.view_sector = EightDirection.update(bird.view_sector, bird.heading)
 		var view: String = EIGHT_VIEW_BY_SECTOR[bird.view_sector]
 		var mirror := EightDirection.is_mirrored(bird.view_sector)
-		var wings: Texture2D = PIGEON_BY_VIEW[view] if sin(bird.phase) >= 0.0 else PIGEON_DOWN_BY_VIEW[view]
+		var wings: String = PIGEON_BY_VIEW[view] if sin(bird.phase) >= 0.0 \
+				else PIGEON_DOWN_BY_VIEW[view]
 		if bird.lift <= 0.0:
 			# Standing. The upstroke is a bird in flight, and a pavement full of them is a flock
 			# that has already gone — which is the thing the wait and the telegraph before it exist
 			# to show her instead.
 			wings = PIGEON_DOWN_BY_VIEW[view]
-		Sprites.draw_standing(canvas, _packed(wings), bird.at - Vector2(0.0, bird.lift),
+		Sprites.draw_standing(canvas, _drawn(wings), bird.at - Vector2(0.0, bird.lift),
 				Vector2.ZERO, mirror)
 
 ## How high a bird's shadow survives to. Roughly first-floor height: above it, there is nothing on
@@ -3048,7 +3079,7 @@ func _draw_cat(canvas: CanvasItem = self) -> void:
 		by_view = CAT_RUNNING_BY_VIEW_B
 	_draw_body_shadow(canvas)
 	var view := _select_view(_heading)
-	Sprites.draw_standing(canvas, _packed(by_view[view]), Vector2.ZERO, Vector2.ZERO,
+	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
 
 ## Hood up and hands in the coat while he is only somewhere; leaning out over a forward leg once
@@ -3073,7 +3104,7 @@ func _draw_robber(canvas: CanvasItem = self) -> void:
 	# the street is worth nothing next to a man watching *her* — see `_robber_waiting_heading()`.
 	var heading := _robber_waiting_heading() if waiting else _heading
 	var view := _select_view(heading)
-	Sprites.draw_standing(canvas, _packed(by_view[view]), Vector2.ZERO, Vector2.ZERO,
+	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
 
 ## Which way the waiting posture faces: her, from the moment a caller has told this instance where
@@ -3110,8 +3141,8 @@ func _draw_roadblock(canvas: CanvasItem = self) -> void:
 	_draw_spread(ROADBLOCK_SEGMENT, ROADBLOCK_END, canvas, band_at)
 	var chasing := def.pursues and not is_waiting()
 	_draw_shadow(canvas, Vector2.ZERO, _GUARD_SHADOW_RADIUS)
-	var texture := GUARD_LUNGING if chasing and not is_telegraphing() else GUARD_STANDING
-	Sprites.draw_standing(canvas, _packed(texture), Vector2.ZERO, Vector2.ZERO,
+	var picture := GUARD_LUNGING if chasing and not is_telegraphing() else GUARD_STANDING
+	Sprites.draw_standing(canvas, _drawn(picture), Vector2.ZERO, Vector2.ZERO,
 			_heading_is_west())
 
 ## Flames scaled by what the event is currently emitting, so a fire visibly roars.
@@ -3124,7 +3155,7 @@ func _draw_fire(canvas: CanvasItem = self) -> void:
 		var offset := (i - 2.0) * 11.0
 		var flicker := 1.0 + 0.25 * sin(age * 9.0 + i * 1.7)
 		var height := (34.0 + i % 2 * 14.0) * strength * flicker
-		Sprites.draw_standing(canvas, _packed(FLAME), Vector2(offset, 0.0), Vector2(18.0, height))
+		Sprites.draw_standing(canvas, _drawn(FLAME), Vector2(offset, 0.0), Vector2(18.0, height))
 
 ## A point `offset` along whichever axis `_spread_vertical` says this instance spreads on — local X
 ## by default, local Y on an east-west street. See `_spread_is_vertical`.
@@ -3150,25 +3181,25 @@ func _spread_extent(along: float, thickness: float) -> Vector2:
 ## own — which is what a body left standing while its owner walks away needs (`_draw_roadblock()`,
 ## `EventDef.body_stays_behind`). Zero, the default, is every other caller: the spread is drawn
 ## where the instance is.
-func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null, canvas: CanvasItem = self,
+func _draw_spread(segment_picture: String, cap: String = "", canvas: CanvasItem = self,
 		origin := Vector2.ZERO) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
 	_draw_body_shadow(canvas, origin)
-	var segment := segment_texture.get_size()
+	var segment := _native_size(segment_picture)
 	var along_natural := segment.y if _spread_vertical else segment.x
 	var thickness := segment.x if _spread_vertical else segment.y
 	var segments := maxi(1, ceili(half * 2.0 / along_natural))
 	var width := half * 2.0 / segments
 	for i in segments:
-		Sprites.draw_standing(canvas, _packed(segment_texture),
+		Sprites.draw_standing(canvas, _drawn(segment_picture),
 				origin + _spread_at(-half + width * (i + 0.5)), _spread_extent(width, thickness))
-	if not cap:
+	if cap.is_empty():
 		return
-	var cap_size := cap.get_size()
+	var cap_size := _native_size(cap)
 	var cap_along := cap_size.y if _spread_vertical else cap_size.x
 	var cap_thickness := cap_size.x if _spread_vertical else cap_size.y
 	for side in [-1.0, 1.0]:
-		Sprites.draw_standing(canvas, _packed(cap),
+		Sprites.draw_standing(canvas, _drawn(cap),
 				origin + _spread_at(_cap_offset(half, cap_along, side)),
 				_spread_extent(cap_along, cap_thickness))
 
@@ -3177,15 +3208,15 @@ func _draw_spread(segment_texture: Texture2D, cap: Texture2D = null, canvas: Can
 ## obstruction: `Sprites.draw_standing` anchors the bottom edge, while this scene must span both
 ## sides of the ground point. Only the three wide scenes use this path; segmented looks keep the
 ## repeated standing anchors above unchanged.
-func _draw_wide_scene(texture: Texture2D, canvas: CanvasItem = self) -> void:
+func _draw_wide_scene(picture: String, canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
-	var size := texture.get_size()
+	var size := _native_size(picture)
 	var thickness := size.x if _spread_vertical else size.y
 	var extent := _spread_extent(half * 2.0, thickness)
 	var anchor := _wide_scene_anchor(_spread_vertical, half)
-	var shadow := _wide_scene_shadow(texture)
-	if shadow and canvas != _halo:
-		canvas.draw_texture_rect(_packed(shadow),
+	var shadow := _wide_scene_shadow(picture)
+	if not shadow.is_empty() and canvas != _halo:
+		canvas.draw_texture_rect(_drawn(shadow),
 				Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent),
 				false, Palette.SHADOW)
 	else:
@@ -3193,7 +3224,7 @@ func _draw_wide_scene(texture: Texture2D, canvas: CanvasItem = self) -> void:
 		# the shape's own capsule shadow follows the same span as the body, `-half` to `half`
 		# along the spread axis.
 		_draw_body_shadow(canvas)
-	Sprites.draw_standing(canvas, _packed(texture), anchor, extent)
+	Sprites.draw_standing(canvas, _drawn(picture), anchor, extent)
 
 static func _wide_scene_anchor(vertical: bool, half: float) -> Vector2:
 	return Vector2(0.0, half) if vertical else Vector2.ZERO
@@ -3224,8 +3255,8 @@ func _draw_crater(canvas: CanvasItem = self) -> void:
 ## sources face east and he is drawn walking whichever way his path runs.
 func _draw_masked_pursuer(canvas: CanvasItem = self) -> void:
 	_draw_shape_shadow(canvas, def.shape)
-	var texture := GUARD_STANDING if is_telegraphing() else GUARD_LUNGING
-	Sprites.draw_standing(canvas, _packed(texture), Vector2.ZERO, Vector2.ZERO,
+	var picture := GUARD_STANDING if is_telegraphing() else GUARD_LUNGING
+	Sprites.draw_standing(canvas, _drawn(picture), Vector2.ZERO, Vector2.ZERO,
 			_heading_is_west())
 
 ## **Both halves have to be drawn**: the tables are what obstructs and the conversation is what it
@@ -3247,7 +3278,7 @@ func _draw_cafe(canvas: CanvasItem = self) -> void:
 	# leans together; the view and the mirror are picked per seat inside the loop below, because a
 	# party at one table faces the table rather than sharing the frontage's own bearing.
 	var by_view := CAFE_SITTER_BY_VIEW_B if _idle_stepping(SITTER_IDLE_PERIOD) else CAFE_SITTER_BY_VIEW
-	var segment := CAFE_TABLE.get_size()
+	var segment := _native_size(CAFE_TABLE)
 	var along_natural := segment.y if _spread_vertical else segment.x
 	var thickness := segment.x if _spread_vertical else segment.y
 	var segments := maxi(1, ceili(half * 2.0 / along_natural))
@@ -3262,13 +3293,13 @@ func _draw_cafe(canvas: CanvasItem = self) -> void:
 		var sitter_heading := _cafe_seat_heading(_spread_vertical, alternate)
 		var sitter_sector := EightDirection.nearest(sitter_heading)
 		var view: String = EIGHT_VIEW_BY_SECTOR[sitter_sector]
-		var sitter: Texture2D = by_view[view]
+		var sitter: String = by_view[view]
 		var mirror := EightDirection.is_mirrored(sitter_sector)
-		Sprites.draw_standing(canvas, _packed(sitter), _spread_at(chair_along) + Vector2(0.0, -7.0),
+		Sprites.draw_standing(canvas, _drawn(sitter), _spread_at(chair_along) + Vector2(0.0, -7.0),
 				Vector2.ZERO, mirror)
 	for i in segments:
 		var along := -half + width * (i + 0.5)
-		Sprites.draw_standing(canvas, _packed(CAFE_TABLE),
+		Sprites.draw_standing(canvas, _drawn(CAFE_TABLE),
 				_spread_at(along), _spread_extent(width, thickness), i % 2 == 1)
 
 ## The bearing from an alternating café chair to its own table. This follows the chair anchor's
@@ -3288,12 +3319,12 @@ func _draw_busker(canvas: CanvasItem = self) -> void:
 	var view := _select_view(_heading)
 	var mirror := EightDirection.is_mirrored(_view_sector)
 	var by_view := BUSKER_BY_VIEW_B if _idle_stepping(BUSKER_STRUM_PERIOD) else BUSKER_BY_VIEW
-	Sprites.draw_standing(canvas, _packed(by_view[view]), Vector2.ZERO, Vector2.ZERO, mirror)
+	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO, mirror)
 
 ## The eight pointing poses, in the bearing order `_protester_texture()` indexes into: north
 ## first, then clockwise. Kept beside the poses themselves rather than built in the function, so
 ## the table is one thing to read rather than eight `match` arms.
-const _POINTING_POSES: Array[Texture2D] = [
+const _POINTING_POSES: Array[String] = [
 	PROTESTER_POINT_N, PROTESTER_POINT_NE, PROTESTER_POINT_E, PROTESTER_POINT_SE,
 	PROTESTER_POINT_S, PROTESTER_POINT_SW, PROTESTER_POINT_W, PROTESTER_POINT_NW,
 ]
@@ -3306,7 +3337,7 @@ const _POINTING_POSES: Array[Texture2D] = [
 ##
 ## The bearing is `TelemetryLog.compass()`'s own arithmetic — clockwise from north (`-y`), through
 ## east (`+x`) at 90° — rounded to the nearest of the eight 45° sectors the poses were drawn for.
-static func _protester_texture(from: Vector2, objective: Vector2) -> Texture2D:
+static func _protester_texture(from: Vector2, objective: Vector2) -> String:
 	if objective == Vector2.INF:
 		return PROTESTER
 	var toward := objective - from
@@ -3354,7 +3385,7 @@ func _protest_objective() -> Vector2:
 func _draw_protest(canvas: CanvasItem = self) -> void:
 	var half := maxf(11.0, def.obstructs_radius)
 	_draw_body_shadow(canvas)
-	var texture := _protester_texture(global_position, _protest_objective())
+	var picture := _protester_texture(global_position, _protest_objective())
 	var mirror := false
 	# `PROTESTER` is `_protester_texture()`'s own sentinel for "nothing to point at" — a mark step
 	# or no step at all — which is exactly a stationary actor with no target: the rank's own site
@@ -3363,16 +3394,16 @@ func _draw_protest(canvas: CanvasItem = self) -> void:
 	# contract (a plain pose is exactly `EventInstance.PROTESTER`) keeps holding: the eight
 	# `protester_point_*` poses stay exactly as M65 bound them, unmirrored, since each is its own
 	# authored direction rather than a member of the mirrored five-view family.
-	if texture == PROTESTER:
+	if picture == PROTESTER:
 		var view := _select_view(_heading)
 		var by_view := PROTESTER_BY_VIEW_B if _gait_stepping() else PROTESTER_BY_VIEW
-		texture = by_view[view]
+		picture = by_view[view]
 		mirror = EightDirection.is_mirrored(_view_sector)
 	# Spaced off the body rather than off the sprite, so the rank ends where the ground it takes
 	# ends. A crowd drawn at its own natural spacing overhangs its own body by most of a person,
-	# which is the lie `_draw_spread` exists to avoid in the other direction. Off `texture`'s own
-	# width rather than the plain pose's, because a pointing pose's placard arm doubles it.
-	var across := maxi(2, roundi(half * 2.0 / (texture.get_size().x * 0.8)))
+	# which is the lie `_draw_spread` exists to avoid in the other direction. Off the drawn pose's
+	# own width rather than the plain one's, because a pointing pose's placard arm doubles it.
+	var across := maxi(2, roundi(half * 2.0 / (_native_size(picture).x * 0.8)))
 	var step := half * 2.0 / across
 	for rank in 2:
 		var back := rank == 0
@@ -3380,7 +3411,7 @@ func _draw_protest(canvas: CanvasItem = self) -> void:
 		var shift := step * 0.5 if back else 0.0
 		for i in across - (1 if back else 0):
 			var x := -half + step * (i + 0.5) + shift
-			Sprites.draw_standing(canvas, _packed(texture), Vector2(x, lift), Vector2.ZERO, mirror)
+			Sprites.draw_standing(canvas, _drawn(picture), Vector2(x, lift), Vector2.ZERO, mirror)
 
 ## People behind cover, shooting at each other. Not a building on fire, which is what it drew for
 ## fourteen milestones — the same five flames as `burning_building`, on the one event in the
@@ -3398,7 +3429,7 @@ func _draw_firefight(canvas: CanvasItem = self) -> void:
 		strength = clampf(current_intensity() / def.intensity, 0.0, 1.0)
 	for side in [-1.0, 1.0]:
 		var at := Vector2(side * half * 0.62, 0.0)
-		Sprites.draw_standing(canvas, _packed(GUNMAN), at, Vector2.ZERO, side > 0.0)
+		Sprites.draw_standing(canvas, _drawn(GUNMAN), at, Vector2.ZERO, side > 0.0)
 		# Sized off the current emission and jittered per side, so the two are never in step.
 		var flare := strength * (0.6 + 0.4 * sin(age * 17.0 + side * 2.1))
 		if flare <= 0.25:
@@ -3437,8 +3468,8 @@ func _draw_dog_walker(canvas: CanvasItem = self) -> void:
 	var stepping := _gait_stepping()
 	var person_by_view := PERSON_BY_VIEW_B if stepping else PERSON_BY_VIEW
 	var dog_by_view := DOG_BY_VIEW_B if stepping else DOG_BY_VIEW
-	Sprites.draw_standing(canvas, _packed(person_by_view[view]), Vector2.ZERO, Vector2.ZERO, mirror)
-	Sprites.draw_standing(canvas, _packed(dog_by_view[view]), to_the_dog, Vector2.ZERO, mirror)
+	Sprites.draw_standing(canvas, _drawn(person_by_view[view]), Vector2.ZERO, Vector2.ZERO, mirror)
+	Sprites.draw_standing(canvas, _drawn(dog_by_view[view]), to_the_dog, Vector2.ZERO, mirror)
 
 ## The van, and the bystander it is taking while there is one to draw.
 ##
@@ -3472,7 +3503,7 @@ func _draw_abduction(canvas: CanvasItem = self) -> void:
 		# side view `_heading_is_west()` picked before, now read off the shared table.
 		var view := _select_view(-standing)
 		var by_view := VAN_VICTIM_BY_VIEW_B if _victim_gait_stepping() else VAN_VICTIM_BY_VIEW
-		Sprites.draw_standing(canvas, _packed(by_view[view]), at, Vector2.ZERO,
+		Sprites.draw_standing(canvas, _drawn(by_view[view]), at, Vector2.ZERO,
 				EightDirection.is_mirrored(_view_sector))
 	# West-authored, like `delivery_van` and `fire_engine` above — see `_draw_eight_view()`'s own
 	# doc comment on `side_faces_west`.
@@ -3492,7 +3523,7 @@ func _draw_chatting_mother(canvas: CanvasItem = self) -> void:
 	if not chatting and _gait_stepping():
 		by_view = CHATTING_MOTHER_WALKING_BY_VIEW_B
 	var view := _select_view(_heading)
-	Sprites.draw_standing(canvas, _packed(by_view[view]), Vector2.ZERO, Vector2.ZERO,
+	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
 
 ## Which way a mobile event is travelling, for art that has a front and a back. A
@@ -3522,10 +3553,9 @@ func _select_view(heading: Vector2) -> String:
 ## gate's anchor sits between its two posts rather than under the middle of the canvas, and the
 ## hut's doorway is a few pixels short of the canvas's own bottom edge. No mirroring, unlike
 ## `Sprites.draw_standing` — nothing in the kit that draws this way ever needs to flip.
-func _draw_at_anchor(canvas: CanvasItem, texture: Texture2D, anchor: Vector2,
+func _draw_at_anchor(canvas: CanvasItem, picture: String, anchor: Vector2,
 		at: Vector2 = Vector2.ZERO) -> void:
-	texture = _packed(texture)
-	canvas.draw_texture_rect(texture, Rect2(at - anchor, texture.get_size()), false)
+	canvas.draw_texture_rect(_drawn(picture), Rect2(at - anchor, _native_size(picture)), false)
 
 ## The hut's own doorway direction, read off `CityMap.pavement_inward()` at the tile it actually
 ## stands on rather than stored: the placement never turns, so there is nothing to cache, and this
@@ -3541,7 +3571,7 @@ func _hut_doorway() -> Vector2i:
 			return -inward
 	return Vector2i.DOWN
 
-func _hut_texture(doorway: Vector2i) -> Texture2D:
+func _hut_texture(doorway: Vector2i) -> String:
 	if doorway == Vector2i.UP:
 		return HUT_NORTH
 	if doorway == Vector2i.LEFT:
@@ -3576,16 +3606,16 @@ func _draw_checkpoint_hut(canvas: CanvasItem = self) -> void:
 func _draw_checkpoint_gate(canvas: CanvasItem = self) -> void:
 	var raised: bool = gate_state != null and gate_state.raised
 	var runs_north_south := gate_runs_north_south(_heading)
-	var texture: Texture2D
+	var picture: String
 	var anchor: Vector2
 	if runs_north_south:
-		texture = BOOM_GATE_NS_RAISED if raised else BOOM_GATE_NS_LOWERED
+		picture = BOOM_GATE_NS_RAISED if raised else BOOM_GATE_NS_LOWERED
 		anchor = _BOOM_NS_ANCHOR
 	else:
-		texture = BOOM_GATE_EW_RAISED if raised else BOOM_GATE_EW_LOWERED
+		picture = BOOM_GATE_EW_RAISED if raised else BOOM_GATE_EW_LOWERED
 		anchor = _BOOM_EW_ANCHOR
 	_draw_body_shadow(canvas)
-	_draw_at_anchor(canvas, texture, anchor)
+	_draw_at_anchor(canvas, picture, anchor)
 
 ## Whether a gate sited with `along_axis` bars a road running north-south, and so draws the boom
 ## whose arm spans east-west. `along_axis` is the street's own along-axis, which
