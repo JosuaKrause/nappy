@@ -631,7 +631,7 @@ func _spawn_closure(closure: RoadClosure) -> void:
 func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 	var across := closure.barrier_runs_across()
 	var width := Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
-	var panels := maxi(1, roundi(width / ClosureMarker.FENCE_ACROSS.get_width()))
+	var panels := maxi(1, roundi(width / AtlasLibrary.native_size(ClosureMarker.FENCE_ACROSS).x))
 	var span := width / panels
 	for i in panels:
 		var panel := ClosureMarker.new()
