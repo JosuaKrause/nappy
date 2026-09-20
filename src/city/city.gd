@@ -540,7 +540,7 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 ##
 ## No second layer: `GroundLayers.build_tile_set()` already gave every kerb source
 ## (`GroundTiles.ROUTE_KERB_SOURCES`) a tinted twin (`GroundTiles.route_twin_of`), composed with the
-## `curbstone` component (or, in SVG mode, the stone's own fill) blended toward
+## `curbstone` component (or, where the bake carries whole authored tiles, the stone's own fill) blended toward
 ## `Palette.ROUTE_KERB_TINT` by `Tuning.ROUTE_KERB_TINT_ALPHA` — so the paving around the stone is
 ## untouched. This only ever decides *which* cells qualify and re-sets each straight onto `_ground`
 ## at its twin, same atlas coordinates: the two can never disagree about a cell's coordinates,
@@ -861,7 +861,7 @@ func add_entity(node: Node) -> void:
 ## can be edited in a drawing program instead of by changing arithmetic, and it is one
 ## place rather than four.
 func _paint_ground() -> void:
-	_ground.tile_set = _ground_tile_set_with_transfers()
+	_ground.tile_set = _composed_ground_tile_set()
 	_ground.clear()
 	for y in map.size.y:
 		for x in map.size.x:
@@ -872,9 +872,10 @@ func _paint_ground() -> void:
 						GroundLayers.atlas_coords_for(source, map.seed_used, tile, _ground.tile_set))
 	_paint_outside_the_map()
 
-## Starts each repaint from the scene's authored TileSet, so transfer fallback and ground composition
-## remain stable when a new day chooses different damage or grass cells.
-func _ground_tile_set_with_transfers() -> TileSet:
+## Starts each repaint from the scene's authored TileSet, so the composition stays stable when a
+## new day chooses different damage or grass cells — the authored resource names each source's
+## baked region and holds no picture, so composing it twice can never accumulate layers.
+func _composed_ground_tile_set() -> TileSet:
 	if _authored_ground_tile_set == null:
 		_authored_ground_tile_set = _ground.tile_set
 	return GroundLayers.build_tile_set(_authored_ground_tile_set)

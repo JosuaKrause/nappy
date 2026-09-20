@@ -1710,8 +1710,11 @@ Top-down camera with a fake vertical extrusion:
   zebra crossings are authored tiles chosen per cell by `GroundTiles`, not geometry
   recomputed on every redraw.
   `GroundLayers` builds their illustrated textures from shared bases and transparent details
-  when the TileSet is prepared. Grass clump arrangements vary by city seed and cell coordinates;
-  the source IDs, tile types and walkable geometry stay fixed. `--svg` selects the vector art.
+  when the TileSet is prepared, taking every one of them out of the baked `ground` page's image
+  and uploading one composed sheet. Grass clump arrangements vary by city seed and cell
+  coordinates; the source IDs, tile types and walkable geometry stay fixed. Which art the tiles
+  are drawn from is the bake's: a default bake composes the illustrated components, and a
+  `tools/bake-atlases.sh --svg` bake carries the authored vector tiles whole.
 - Buildings fill exactly their lot: the front wall takes the southern `height` px and the
   roof takes the rest. Fitting the mass inside the lot is what keeps extrusions off the
   street. (It does *not* by itself keep an extrusion off the player: the mass is inside the lot and

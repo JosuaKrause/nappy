@@ -317,7 +317,7 @@ local bake command, absent from the release; `--svg` and `?svg=1` stop existing 
 version against the tree and bake when they differ. **The events are one page** *("for now")*.
 **The ground's individual pictures are baked and its compositing stays at runtime** — bases,
 overlays, damage strips, grass variants and the route-curb tint are composed from regions of
-the ground page as they are composed from single textures today, because the player refused
+the ground page on every repaint (`DECISIONS.md`, M171, the ground), because the player refused
 baked composites: *"this is not a bottleneck and it allows for variety"*. The web export is the
 only export; the identity images (logo, icon, social card) leave the game package, and the
 deploy keeps copying the social card beside the page. Both are assumptions the player was told
@@ -335,13 +335,9 @@ escape's boot adds `interior`; a consumer move adds its group to that list. A co
 gate is red for. `region()` never loads a page on its own, and `native_size()` answers with
 nothing acquired.
 
-Each item is one pull request. The ground and the events follow their own gates; the last
-closes the contract.
+Each item is one pull request. The events follow their own gate; the last closes the
+contract.
 
-- [ ] **The ground.** The authored TileSet stops referencing SVGs; the compositor reads each
-      base and layer as a region of the ground page's image, composes at runtime as now, and
-      the second runtime packer, `pack_into_one_texture()`, is replaced by one upload of the
-      composed sheet. The per-day repaint keeps its variety and loses the GPU readbacks.
 - [ ] **The events**, one page, checkpoints included. The six `poster_crew_square` pictures
       join the `events` membership here, and `events` joins `RESIDENT_GROUPS`. `EventManager`
       acquires and releases the one group;
