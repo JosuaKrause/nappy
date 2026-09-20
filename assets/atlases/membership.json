@@ -2,7 +2,7 @@
   "version": 1,
   "groups": {
     "buildings": {
-      "lifetime": "the city: acquired when a city is built, released when it is torn down",
+      "lifetime": "held from startup for the life of the process, so nothing ever starts loading in the frame that needs it: every day has a city",
       "padding": "extrude",
       "consumers": [
         "src/city/building.gd"
@@ -51,7 +51,7 @@
       ]
     },
     "crowd": {
-      "lifetime": "the crowd node's own life: taken by the first day's crowd and held until the node itself is freed, since a page two days both draw is never released between them",
+      "lifetime": "held from startup for the life of the process, so nothing ever starts loading in the frame that needs it: every day has a crowd",
       "padding": "transparent",
       "consumers": [
         "src/crowd/crowd_agent.gd"
@@ -90,7 +90,7 @@
       ]
     },
     "decoration": {
-      "lifetime": "the city: props, litter and decals are placed once per city",
+      "lifetime": "held from startup for the life of the process, so nothing ever starts loading in the frame that needs it: every city is decorated",
       "padding": "transparent",
       "consumers": [
         "src/city/prop.gd",
@@ -115,7 +115,7 @@
       ]
     },
     "events": {
-      "lifetime": "the day, as one page: every event family and the checkpoint fixtures the catalogue's checkpoint looks draw",
+      "lifetime": "the day's events, on one page, and the one group nothing loads yet: the events still draw through the runtime packer, so this page has no reader. EventManager is what acquires it, and the startup list in src/main.gd is where it joins the groups held from boot",
       "padding": "transparent",
       "consumers": [
         "src/events/event_instance.gd"
@@ -384,8 +384,47 @@
         "assets/props/impact_crater_2x2.svg"
       ]
     },
+    "father": {
+      "lifetime": "one of the two parents, and only ever the run's own: held from startup for the life of the process when the run draws this parent, and never loaded at all when it draws the other",
+      "padding": "transparent",
+      "consumers": [
+        "src/player/stroller.gd"
+      ],
+      "members": [
+        "assets/rig/father_back_a.svg",
+        "assets/rig/father_back_b.svg",
+        "assets/rig/father_back_c.svg",
+        "assets/rig/father_back_diagonal_a.svg",
+        "assets/rig/father_back_diagonal_b.svg",
+        "assets/rig/father_back_diagonal_c.svg",
+        "assets/rig/father_carrying_back_a.svg",
+        "assets/rig/father_carrying_back_b.svg",
+        "assets/rig/father_carrying_back_c.svg",
+        "assets/rig/father_carrying_back_diagonal_a.svg",
+        "assets/rig/father_carrying_back_diagonal_b.svg",
+        "assets/rig/father_carrying_back_diagonal_c.svg",
+        "assets/rig/father_carrying_front_a.svg",
+        "assets/rig/father_carrying_front_b.svg",
+        "assets/rig/father_carrying_front_c.svg",
+        "assets/rig/father_carrying_front_diagonal_a.svg",
+        "assets/rig/father_carrying_front_diagonal_b.svg",
+        "assets/rig/father_carrying_front_diagonal_c.svg",
+        "assets/rig/father_carrying_side_a.svg",
+        "assets/rig/father_carrying_side_b.svg",
+        "assets/rig/father_carrying_side_c.svg",
+        "assets/rig/father_front_a.svg",
+        "assets/rig/father_front_b.svg",
+        "assets/rig/father_front_c.svg",
+        "assets/rig/father_front_diagonal_a.svg",
+        "assets/rig/father_front_diagonal_b.svg",
+        "assets/rig/father_front_diagonal_c.svg",
+        "assets/rig/father_side_a.svg",
+        "assets/rig/father_side_b.svg",
+        "assets/rig/father_side_c.svg"
+      ]
+    },
     "ground": {
-      "lifetime": "the city, and read as an image rather than drawn: the compositor takes each base and layer out of this page and composes the TileSet at runtime",
+      "lifetime": "held from startup for the life of the process, so nothing ever starts loading in the frame that needs it, and read as an image rather than drawn: the compositor takes each base and layer out of this page and composes the TileSet at runtime",
       "padding": "extrude",
       "consumers": [
         "assets/ground_tileset.tres",
@@ -483,22 +522,8 @@
         "assets/tiles/water.svg"
       ]
     },
-    "head_indicators": {
-      "lifetime": "the whole run, beside the stroller, but its own group because the marks above her head are drawn by a separate pass and tinted on their own",
-      "padding": "transparent",
-      "consumers": [
-        "src/player/stroller.gd"
-      ],
-      "members": [
-        "assets/props/alert.svg",
-        "assets/props/alert_close.svg",
-        "assets/props/baby_cry.svg",
-        "assets/props/baby_fuss.svg",
-        "assets/props/baby_zzz.svg"
-      ]
-    },
     "interior": {
-      "lifetime": "the interior scene alone, which is the only place any of it is drawn",
+      "lifetime": "the escape's alone, since no ordinary day enters a building: held from the --start-escape boot, which is that mode's own startup, and by nothing else",
       "padding": "extrude",
       "consumers": [
         "src/interior/interior_scene.gd",
@@ -548,67 +573,13 @@
         "assets/interior/wall_lamp.svg"
       ]
     },
-    "street_kit": {
-      "lifetime": "the city: the fixtures of a street live exactly as long as the streets do",
-      "padding": "transparent",
-      "consumers": [
-        "src/routes/closure_marker.gd",
-        "src/city/traffic_light.gd",
-        "src/city/city_edge.gd"
-      ],
-      "members": [
-        "assets/closures/barrier_across.svg",
-        "assets/closures/barrier_along.svg",
-        "assets/closures/crashed_car.svg",
-        "assets/closures/fallen_tree.svg",
-        "assets/closures/roadworks.svg",
-        "assets/closures/rubble.svg",
-        "assets/closures/sign_closed.svg",
-        "assets/props/bridge_deck.svg",
-        "assets/props/road_on.svg",
-        "assets/props/signal_head.svg",
-        "assets/props/signal_head_back.svg",
-        "assets/props/signal_head_side.svg",
-        "assets/props/tunnel_mouth.svg"
-      ]
-    },
-    "stroller": {
-      "lifetime": "the whole run: the player is on screen from the first frame of a day",
+    "mother": {
+      "lifetime": "one of the two parents, and only ever the run's own: held from startup for the life of the process when the run draws this parent, and never loaded at all when it draws the other",
       "padding": "transparent",
       "consumers": [
         "src/player/stroller.gd"
       ],
       "members": [
-        "assets/rig/father_back_a.svg",
-        "assets/rig/father_back_b.svg",
-        "assets/rig/father_back_c.svg",
-        "assets/rig/father_back_diagonal_a.svg",
-        "assets/rig/father_back_diagonal_b.svg",
-        "assets/rig/father_back_diagonal_c.svg",
-        "assets/rig/father_carrying_back_a.svg",
-        "assets/rig/father_carrying_back_b.svg",
-        "assets/rig/father_carrying_back_c.svg",
-        "assets/rig/father_carrying_back_diagonal_a.svg",
-        "assets/rig/father_carrying_back_diagonal_b.svg",
-        "assets/rig/father_carrying_back_diagonal_c.svg",
-        "assets/rig/father_carrying_front_a.svg",
-        "assets/rig/father_carrying_front_b.svg",
-        "assets/rig/father_carrying_front_c.svg",
-        "assets/rig/father_carrying_front_diagonal_a.svg",
-        "assets/rig/father_carrying_front_diagonal_b.svg",
-        "assets/rig/father_carrying_front_diagonal_c.svg",
-        "assets/rig/father_carrying_side_a.svg",
-        "assets/rig/father_carrying_side_b.svg",
-        "assets/rig/father_carrying_side_c.svg",
-        "assets/rig/father_front_a.svg",
-        "assets/rig/father_front_b.svg",
-        "assets/rig/father_front_c.svg",
-        "assets/rig/father_front_diagonal_a.svg",
-        "assets/rig/father_front_diagonal_b.svg",
-        "assets/rig/father_front_diagonal_c.svg",
-        "assets/rig/father_side_a.svg",
-        "assets/rig/father_side_b.svg",
-        "assets/rig/father_side_c.svg",
         "assets/rig/mother_back_a.svg",
         "assets/rig/mother_back_b.svg",
         "assets/rig/mother_back_c.svg",
@@ -638,7 +609,40 @@
         "assets/rig/mother_front_diagonal_c.svg",
         "assets/rig/mother_side_a.svg",
         "assets/rig/mother_side_b.svg",
-        "assets/rig/mother_side_c.svg",
+        "assets/rig/mother_side_c.svg"
+      ]
+    },
+    "street_kit": {
+      "lifetime": "held from startup for the life of the process, so nothing ever starts loading in the frame that needs it: every day has streets, signals and closures",
+      "padding": "transparent",
+      "consumers": [
+        "src/routes/closure_marker.gd",
+        "src/city/traffic_light.gd",
+        "src/city/city_edge.gd"
+      ],
+      "members": [
+        "assets/closures/barrier_across.svg",
+        "assets/closures/barrier_along.svg",
+        "assets/closures/crashed_car.svg",
+        "assets/closures/fallen_tree.svg",
+        "assets/closures/roadworks.svg",
+        "assets/closures/rubble.svg",
+        "assets/closures/sign_closed.svg",
+        "assets/props/bridge_deck.svg",
+        "assets/props/road_on.svg",
+        "assets/props/signal_head.svg",
+        "assets/props/signal_head_back.svg",
+        "assets/props/signal_head_side.svg",
+        "assets/props/tunnel_mouth.svg"
+      ]
+    },
+    "stroller": {
+      "lifetime": "held from startup for the life of the process, so nothing ever starts loading in the frame that needs it: the pram itself, which both parents push, so it is the one page the run holds whichever parent it draws",
+      "padding": "transparent",
+      "consumers": [
+        "src/player/stroller.gd"
+      ],
+      "members": [
         "assets/rig/pram_back.svg",
         "assets/rig/pram_back_diagonal.svg",
         "assets/rig/pram_front.svg",
@@ -647,14 +651,20 @@
       ]
     },
     "ui": {
-      "lifetime": "the whole run, including the title screen, where no city exists",
+      "lifetime": "held from startup for the life of the process, so nothing ever starts loading in the frame that needs it: the screen furniture, and the marks that ride over her head and over the pram, which are on screen before any city exists and on every day after. One group rather than two because a page is not a pass: the marks are still drawn by their own pass and still tinted on their own",
       "padding": "transparent",
       "consumers": [
         "src/ui/mode_button.gd",
         "src/ui/touch_controls.gd",
-        "src/ui/save_indicator.gd"
+        "src/ui/save_indicator.gd",
+        "src/player/stroller.gd"
       ],
       "members": [
+        "assets/props/alert.svg",
+        "assets/props/alert_close.svg",
+        "assets/props/baby_cry.svg",
+        "assets/props/baby_fuss.svg",
+        "assets/props/baby_zzz.svg",
         "assets/ui/continue.svg",
         "assets/ui/joystick.svg",
         "assets/ui/pause.svg",

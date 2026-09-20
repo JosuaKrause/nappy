@@ -8,6 +8,11 @@ extends RefCounted
 ## leave its page held once it is gone, and the body/trim tint split survives being two baked
 ## regions instead of two loaded textures.
 ##
+## **Which page each of her pictures is on is `tests/test_atlas_loading.gd`'s**, together with the
+## rule about when a page may be read from disk at all. The references counted here are what that
+## rule rests on: with the boot holding every group resident, a consumer's acquire and release is
+## only ever a count.
+##
 ## **What a released group answers `region()` — null, with a `push_error` naming the region — is
 ## deliberately not exercised here**, the same restraint `tests/test_atlas_library.gd` states for
 ## itself: the error would be a real engine error in the run's own output, and an engine error in
@@ -26,7 +31,6 @@ func run(t) -> void:
 	_test_a_crowd_freed_without_clear_still_releases_its_page(t)
 	_test_walker_body_and_trim_are_separate_regions_on_every_view(t)
 	_test_car_body_and_trim_are_separate_regions_on_every_view(t)
-	_test_the_strollers_body_and_pram_share_a_page_the_indicators_do_not(t)
 	AtlasLibrary.reset_for_tests()
 
 # ------------------------------------------------------------------ stroller ---
@@ -41,24 +45,28 @@ func _rig(t) -> Stroller:
 	rig.set_physics_process(false)
 	return rig
 
-## The whole run's own lifetime, from `assets/atlases/membership.json`'s own words: "the player is
-## on screen from the first frame of a day". `Stroller._ready()` acquires both of her groups and
-## `_exit_tree()` is the only thing that ever releases them.
+## Her three groups — the run's own parent, the pram they share, and the UI page the marks over
+## her head are on — are acquired the moment she is ready, and `_exit_tree()` is the only thing
+## that ever releases them. In a booted game each of these is a count on a page the boot already
+## holds; with no boot behind this rig they are the references that load and drop the pages,
+## which is what makes the pairing visible at all.
 func _test_stroller_acquires_for_the_whole_run_and_releases_on_exit(t) -> void:
-	t.check(not AtlasLibrary.is_acquired(Stroller.FAMILY_ATLAS),
-			"nothing holds the stroller's own page before she exists")
-	t.check(not AtlasLibrary.is_acquired(Stroller.INDICATOR_ATLAS),
-			"nor the head indicators' page")
+	var groups: Array[StringName] = [Stroller.parent_atlas(false), Stroller.STROLLER_ATLAS,
+			Stroller.INDICATOR_ATLAS]
+	for group in groups:
+		t.check(not AtlasLibrary.is_acquired(group),
+				"nothing holds '%s' before she exists" % group)
 	var rig := _rig(t)
-	t.check(AtlasLibrary.is_acquired(Stroller.FAMILY_ATLAS),
-			"the stroller's own group is acquired the moment she is ready")
-	t.check(AtlasLibrary.is_acquired(Stroller.INDICATOR_ATLAS),
-			"and so is the head indicators' group")
+	t.check(not rig.is_male, "the rig this file builds draws the mother's page")
+	for group in groups:
+		t.check(AtlasLibrary.is_acquired(group),
+				"'%s' is acquired the moment she is ready" % group)
+	t.check(not AtlasLibrary.is_acquired(Stroller.parent_atlas(true)),
+			"and the parent she is not holds nothing at all")
 	rig.free()
-	t.check(not AtlasLibrary.is_acquired(Stroller.FAMILY_ATLAS),
-			"leaving the tree releases the stroller's own group")
-	t.check(not AtlasLibrary.is_acquired(Stroller.INDICATOR_ATLAS),
-			"and the head indicators' group with it")
+	for group in groups:
+		t.check(not AtlasLibrary.is_acquired(group),
+				"leaving the tree releases '%s'" % group)
 
 # ---------------------------------------------------------------------- crowd ---
 
@@ -147,18 +155,3 @@ func _test_car_body_and_trim_are_separate_regions_on_every_view(t) -> void:
 		var body := AtlasLibrary.region_name_for(CrowdAgent.CAR_BODY_BY_VIEW[view])
 		var trim := AtlasLibrary.region_name_for(CrowdAgent.CAR_TRIM_BY_VIEW[view])
 		t.check(body != trim, "car %s: body and trim are separate regions" % view)
-
-## The stroller has no per-agent tint (her family is drawn at native colour), but the same
-## principle applies one level up: the body/pram family and the head indicators are drawn by two
-## separate passes tinted on their own (`Stroller.FAMILY_ATLAS`'s own doc), which only holds if a
-## family picture and an indicator picture are never the same baked region.
-func _test_the_strollers_body_and_pram_share_a_page_the_indicators_do_not(t) -> void:
-	var family_regions: Dictionary = {}
-	for path: String in Stroller.family_sources():
-		family_regions[AtlasLibrary.region_name_for(path)] = true
-	for path: String in Stroller.indicator_sources():
-		var name := AtlasLibrary.region_name_for(path)
-		t.check(not family_regions.has(name),
-				"indicator %s is not also one of the family's own regions" % path)
-		t.check(AtlasLibrary.group_of(name) == Stroller.INDICATOR_ATLAS,
-				"%s is baked on the indicators' own page, not the family's" % path)

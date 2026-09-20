@@ -308,8 +308,8 @@ design, has the inventory the design was read from, the rejected bakers and the 
 
 **The design.** A headless run of the engine itself bakes every picture family into one PNG page
 plus a region table, using the engine's own SVG rasterizer so a baked pixel is the pixel the
-import pass produces today. One runtime loader hands out regions by name and owns group
-lifetime by reference count. **The presentation mode is the bake's**: a build is PNG mode — the
+import pass produces today. One runtime loader hands out regions by name and counts
+references; the pages themselves are held from startup. **The presentation mode is the bake's**: a build is PNG mode — the
 illustrated PNG where one exists, the SVG's raster where none does — and SVG mode is a custom
 local bake command, absent from the release; `--svg` and `?svg=1` stop existing at runtime.
 **Atlases are baked on demand and never committed**: `tools/check.sh`, `tools/test.sh`,
@@ -326,42 +326,25 @@ and did not speak to.
 The bake, the loader `AtlasLibrary`, the staleness check and the report-only package audit are
 built (`DECISIONS.md`, M171, the bake and the loader), and the items below are the families
 that still draw individual pictures. `assets/atlases/membership.json` says which page a picture is on, and a consumer move edits it
-only to add a picture. A consumer acquires its group before drawing and releases it when its
-last user goes; `region()` never loads a page on its own, and `native_size()` answers with
+only to add a picture. **A page loads at startup or in the day brief and at no other moment**
+([PLAYTEST-109](playtests/PLAYTEST-109.md)): `main.gd`'s `RESIDENT_GROUPS` lists the pages
+every boot holds for the life of the process, the run's parent is held beside them, and the
+escape's boot adds `interior`; a consumer move adds its group to that list. A consumer's own
+`acquire()` and `release()` are a reference count on a page that is already there, and an
+`acquire()` that has to read from disk outside the two moments is an engine error the test
+gate is red for. `region()` never loads a page on its own, and `native_size()` answers with
 nothing acquired.
 
 Each item is one pull request. The ground and the events follow their own gates; the last
 closes the contract.
 
-- [ ] **What is always on screen is always loaded, and a page loads at startup or in the day
-      brief** ([PLAYTEST-109](playtests/PLAYTEST-109.md)). The pages' own shape is built
-      (`DECISIONS.md`, M171, the rectangle packer). *"putting both genders in the player atlas is a bit
-      wasteful since it's guaranteed to not use half of it"*: the `stroller` group becomes
-      three — the mother's views, the father's views, and the pram with the baby — and
-      `Stroller` acquires the shared one and the run's parent. *"the UI and head indicators
-      could be combined. also, those are textures that should always be loaded"*: one group,
-      acquired at boot and held for the life of the process. *"we cannot start loading
-      something in the frame we need it"* · *"we probably could preload everything. or at least
-      load everything needed for a day during the day brief. and everything that might always
-      be needed at startup"*: a page loads at startup or during the day brief and at no other
-      moment. Startup holds what is always needed — the UI with the head indicators, the pram
-      and the run's parent once the parent is known; the day brief loads what the day needs and
-      does not already hold — the city's groups, the crowd, the events — before the brief can
-      be dismissed. *"don't unload anything that might be needed in one day and in the next"*:
-      no group is released between two days that both draw it, which `Crowd` already holds to.
-      The interior is the escape's
-      alone: it loads in the escape's own brief when M102, the finale, has one, and until then
-      where the `--start-escape` sequence starts. Holding every group from startup is the simpler build and is allowed; take it
-      unless the measured startup cost says otherwise, and say which in the PR. A consumer's
-      own `acquire()` stays as the reference count that proves the page is there, and the suite
-      fails on an `acquire()` that has to load outside those two moments; the run log's
-      group-loaded line carries the moment it happened in.
 - [ ] **The ground.** The authored TileSet stops referencing SVGs; the compositor reads each
       base and layer as a region of the ground page's image, composes at runtime as now, and
       the second runtime packer, `pack_into_one_texture()`, is replaced by one upload of the
       composed sheet. The per-day repaint keeps its variety and loses the GPU readbacks.
 - [ ] **The events**, one page, checkpoints included. The six `poster_crew_square` pictures
-      join the `events` membership here. `EventManager` acquires and releases the one group;
+      join the `events` membership here, and `events` joins `RESIDENT_GROUPS`. `EventManager`
+      acquires and releases the one group;
       the screen-edge badge reads the same regions.
 - [ ] **Close the contract.** The runtime packer, the resolver, their phase-trace telemetry and
       the `--svg` and `?svg=1` flags are deleted; the run log says when a group loaded and was
@@ -379,27 +362,8 @@ closes the contract.
       `ARCHITECTURE.md`, `GRAPHICS.md`, `VISUALS.md`, `TELEMETRY.md`, the **illustrated-png**
       and **svg-art** skills and `CLAUDE.md`'s path table describe what is then true.
       **The release that follows is a minor version, and it waits for every item in this
-      section** — *"only release once all those new items are completed, too"* — **and for
-      M173, the standalone bake speaks for a stale import cache, where it can be had** —
-      *"include the bug fixes, too, if possible"*. *"after atlas we cut a new minor version"*: `tools/release.sh minor`
+      section** — *"only release once all those new items are completed, too"*. *"after atlas we cut a new minor version"*: `tools/release.sh minor`
       ([PLAYTEST-109](playtests/PLAYTEST-109.md)).
-
----
-
-## M173 — The standalone bake speaks for a stale import cache · found 2026-09-20
-
-`tools/bake-atlases.sh` starts the engine with `--script`, which still loads the autoloads, and
-their dependency chain reaches `event_instance.gd`'s `preload`s. On a checkout whose import
-cache has not seen a picture — a fresh clone, or a pull that added one — the engine prints an
-`ERROR:` and a `SCRIPT ERROR` for every such picture and for every script that depends on them,
-after a bake that succeeded, and the wrapper exits zero. `tools/check.sh` bakes and then
-imports, so it repairs the state; nothing tells the person who ran the bake alone. The cause
-ends with M171's last item, when no source is preloaded.
-
-- [ ] **The wrapper names the stale cache.** When the bake succeeds and the engine's output
-      carries the error vocabulary, `tools/bake-atlases.sh` says the import cache is stale and
-      that `tools/check.sh` repairs it, and keeps the engine's lines visible rather than hiding
-      them. If M171 closes first, this item is deleted unbuilt.
 
 ---
 

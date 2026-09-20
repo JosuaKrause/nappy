@@ -13,7 +13,7 @@ func run(t) -> void:
 	_test_pram_offset_stays_continuous_through_side_facings(t)
 	_test_north_diagonal_contact_adjustment(t)
 	_test_the_pram_has_its_own_trailing_body(t)
-	_test_her_family_comes_from_one_atlas(t)
+	_test_her_family_comes_from_its_baked_pages(t)
 
 func _rig(t) -> Stroller:
 	var rig := Stroller.new()
@@ -30,11 +30,17 @@ func _rig(t) -> Stroller:
 func _through_the_atlas(path: String) -> Texture2D:
 	return AtlasLibrary.region(AtlasLibrary.region_name_for(path))
 
-## Every picture she draws comes from one page once her family's group is acquired, which is the
-## whole of what the atlas buys: her body, her pram and the mark over her head stop being three
-## textures for the batcher to break between. Nothing has to be collected by hand here any more —
-## `_ready()`'s `AtlasLibrary.acquire()` is a synchronous page load rather than a task to pump.
-func _test_her_family_comes_from_one_atlas(t) -> void:
+## Every picture she draws comes from a baked region rather than a texture of its own, and every
+## one of her sixty body views comes from the *same* page — which is the whole of what the atlas
+## buys for the thing that is on screen every frame of every day. Nothing has to be collected by
+## hand here any more: `_ready()`'s `AtlasLibrary.acquire()` is a synchronous page load rather
+## than a task to pump.
+##
+## **Her body, the pram and the marks over her head are three pages, on purpose.** The two
+## parents are a page each so a run never loads the one it cannot draw, the pram is the page they
+## share, and the marks ride on the UI's, which is loaded before any city exists — see
+## `Stroller.MOTHER_ATLAS`'s own doc and `tests/test_atlas_loading.gd`.
+func _test_her_family_comes_from_its_baked_pages(t) -> void:
 	var rig := _rig(t)
 	var atlas: Texture2D = null
 	for carrying in [false, true]:
@@ -57,15 +63,23 @@ func _test_her_family_comes_from_one_atlas(t) -> void:
 				t.check(texture.get_size() == Vector2(native),
 						"and it is exactly the size of the picture it stands in for")
 	rig.carrying = false
+	var pram_atlas: Texture2D = null
 	for direction in range(8):
 		rig._view_direction = direction
 		var pram := rig._pram_texture()
-		t.check(pram is AtlasTexture and (pram as AtlasTexture).atlas == atlas,
-				"the pram's direction %d view is on her family's own atlas" % direction)
+		t.check(pram is AtlasTexture, "the pram's direction %d view is a baked region" % direction)
+		if not pram is AtlasTexture:
+			continue
+		if pram_atlas == null:
+			pram_atlas = (pram as AtlasTexture).atlas
+		t.check((pram as AtlasTexture).atlas == pram_atlas,
+				"and direction %d is on the same page every other pram view is on" % direction)
+		t.check((pram as AtlasTexture).atlas != atlas,
+				"which is the page the two parents share, not the one her body is on")
 	for mark: String in Stroller.indicator_sources():
 		var packed := AtlasLibrary.region(AtlasLibrary.region_name_for(mark))
 		t.check(packed is AtlasTexture,
-				"the head indicator %s is drawn from the indicators' atlas" % mark.get_file())
+				"the head indicator %s is drawn from the UI's page" % mark.get_file())
 		t.check(not (packed is AtlasTexture) or (packed as AtlasTexture).atlas != atlas,
 				"which is its own texture, not the one her body is on")
 	rig.free()

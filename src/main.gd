@@ -16,6 +16,35 @@ const PAUSE_SCREEN := preload("res://scenes/ui/pause_screen.tscn")
 const TITLE_SCREEN := preload("res://scenes/ui/title_screen.tscn")
 const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
 
+## Every baked atlas page any day can draw, taken at boot and held for the life of the process.
+##
+## *(PLAYTEST-109: "we probably could preload everything. or at least load everything needed for a
+## day during the day brief. and everything that might always be needed at startup" · "don't
+## unload anything that might be needed in one day and in the next".)* Holding all of them from
+## startup is the simpler of the two shapes the player allowed and it makes the second sentence
+## true by construction: a consumer's own `release()` can only ever drop the count back to the
+## residency underneath it, so a city torn down between two runs or a node re-entering the tree
+## never costs a reload in a played frame.
+##
+## **The run's own parent is not in this list** — it is not the same page on every run — and is
+## taken beside it in `_hold_every_page_a_day_draws()`. **Nor is `interior`**, which no ordinary
+## day enters a building to draw; the escape's own boot takes that one.
+##
+## **`events` is the one absence that is not a decision about lifetime.** The events still draw
+## through the runtime packer `TextureAtlas`, so nothing would read that page and loading it would
+## be two megapixels nobody looks at. The pull request that moves `EventManager` onto the baked
+## page adds `&"events"` to this list, and that is the whole of the change here.
+const RESIDENT_GROUPS: Array[StringName] = [
+	&"ui", &"stroller", &"buildings", &"street_kit", &"ground", &"decoration", &"crowd",
+]
+## What an ordinary day's boot holds on top of `RESIDENT_GROUPS`: nothing. Declared rather than
+## written as a literal at the call site, because an untyped `[]` passed into an
+## `Array[StringName]` parameter is coerced at the boundary and retains its arguments — see the
+## **godot** skill, "Passing an untyped Array into an Array[T] parameter leaks at shutdown".
+const NO_FURTHER_GROUPS: Array[StringName] = []
+## And what the `--start-escape` boot holds on top of them — see `_ready_escape()`.
+const ESCAPE_ONLY_GROUPS: Array[StringName] = [&"interior"]
+
 @onready var _status: Label = $CanvasLayer/Status
 @onready var _status_layer: CanvasLayer = $CanvasLayer
 
@@ -212,6 +241,10 @@ func _ready() -> void:
 	# player-facing opt-out rather than developer furniture, so it is not gated by `DevFlags`.
 	if not "--no-telemetry" in OS.get_cmdline_user_args():
 		Telemetry.begin_run(GameState.run_seed, _somebody_is_playing())
+	# Before the city, before the player, before the title: every page a day can draw is on disk
+	# already and this is the last moment nobody is watching a frame. After the log is open, so
+	# the run log carries a line per page with the moment it loaded in — see `AtlasLibrary`.
+	_hold_every_page_a_day_draws(AtlasLibrary.MOMENT_STARTUP, NO_FURTHER_GROUPS)
 	# A save whose day was under way when it was written loses that day, through the same code
 	# path an ordinary lost day takes — one nerve, the resistance given back, the same day again,
 	# the last nerve ending the run exactly as it does there. Applied before anything downstream
@@ -373,6 +406,15 @@ func _ready_escape() -> void:
 		# and nothing on this boot reaches it. Immediately after the run is opened, so the plan
 		# line `_plan_the_finale_city()` writes already falls inside it.
 		Telemetry.begin_finale(GameState.run_seed, FinaleController.length())
+	# This boot's own startup, and the one place `interior` is ever loaded: the escape is the only
+	# thing that goes inside a building, so no ordinary day pays for those forty-one pictures.
+	#
+	# **When M102, the finale, grows a brief of its own, that brief is where this moves.**
+	# PLAYTEST-109: "this is only needed in the escape day brief (which is still not implemented I
+	# gather?)" — a brief is a screen a load can hide behind, and this boot is not one; until there
+	# is one, the sequence's own startup is the moment that satisfies the rule. Nothing else here
+	# has to change when it arrives: the call becomes `MOMENT_DAY_BRIEF` from that screen.
+	_hold_every_page_a_day_draws(AtlasLibrary.MOMENT_ESCAPE, ESCAPE_ONLY_GROUPS)
 	# The second boot entry point `TextureResolver.warm()` has to reach — see `_warm_the_pictures()`
 	# — since the epilogue draws its own pictures (the building's props, the city's events) and is
 	# reached without ever passing through `_ready()`'s own call above. This path awaits the same
@@ -836,6 +878,12 @@ func _show_the_resume_gate() -> void:
 		_summary.show_ending(GameState.ending)
 		return
 	_resume_gate_open = true
+	# The second of the two moments a page may load in, open for as long as the brief is up and
+	# shut again by the continue that dismisses it (`_on_summary_continued()`). **Nothing loads
+	# here today** — the boot above already holds every group a day draws — and it is opened
+	# anyway because this is the screen a page the boot could not have known about belongs behind:
+	# a group whose membership depends on the day would be acquired between these two lines.
+	AtlasLibrary.open_loading_window(AtlasLibrary.MOMENT_DAY_BRIEF)
 	_summary.show_day_brief(GameState.day, GameState.nerves,
 			_RESUMED_DAY_LOST_NOTE if _resume["day_under_way"] else "")
 
@@ -932,6 +980,45 @@ func _new_boot_camera(ground: Vector2) -> Camera2D:
 	_pauses_with_the_game(camera)
 	camera.make_current()
 	return camera
+
+## Takes every baked page this boot will ever need, inside a named loading window, and holds it
+## for the life of the process. *(PLAYTEST-109: "we cannot start loading something in the frame we
+## need it. UI elements should always be there.")*
+##
+## **A page loads here or in a day brief and nowhere else.** `AtlasLibrary.acquire()` is a
+## blocking `load()` in whatever frame calls it, so the window is what turns "before the player
+## can see a frame" from a convention into a rule: everything the consumers do afterwards is a
+## reference count on a page that is already resident, and an `acquire()` that still has to read
+## from disk names itself `OUTSIDE` in the run log and raises an engine error the test gate is red
+## for.
+##
+## **The parent is known by now on every path**, which is why it is taken here rather than in a
+## first day brief: `GameState.start_run()` rolls it (`_ready()`, a few lines above the call) and
+## a resumed run reads it off the save in the same place, both before the city is built. The other
+## parent's page is dropped rather than left held, because the held restart (`_restart_run()`)
+## reloads the scene into the same process and rerolls the choice — without this, one process that
+## restarted once would be holding both.
+func _hold_every_page_a_day_draws(moment: StringName, also: Array[StringName]) -> void:
+	var elapsed := Time.get_ticks_msec()
+	AtlasLibrary.claim_the_loading_moments(moment)
+	for group in RESIDENT_GROUPS:
+		AtlasLibrary.hold_for_the_process(group)
+	for group in also:
+		AtlasLibrary.hold_for_the_process(group)
+	AtlasLibrary.stop_holding(Stroller.parent_atlas(not GameState.player_is_male))
+	AtlasLibrary.hold_for_the_process(Stroller.parent_atlas(GameState.player_is_male))
+	AtlasLibrary.close_loading_window()
+	# Beside "city generated in N ms" and "N pictures warmed in N ms" for the same reason those
+	# two are printed: a reader working out where a boot went belongs next to the other numbers.
+	print("[Main] %d atlas pages held from %s in %d ms"
+			% [RESIDENT_GROUPS.size() + also.size() + 1, moment, Time.get_ticks_msec() - elapsed])
+
+## Hands the loading moments back, so a scene reload — the held restart — boots into a fresh
+## claim rather than into this instance's closed window. The residency itself is deliberately not
+## given back: the reloaded boot wants exactly the same pages and giving them up here would be a
+## reload of every one of them, which is the thing the residency exists to prevent.
+func _exit_tree() -> void:
+	AtlasLibrary.release_the_loading_moments()
 
 ## M147, "every picture loaded before it is needed": loads every transfer PNG and gets the halo's
 ## shared shader compiled before either boot path's own `_start_day()`/`_finale.begin()`, so the
@@ -1358,6 +1445,9 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 func _on_summary_continued() -> void:
 	if _resume_gate_open:
 		_resume_gate_open = false
+		# The brief's own loading window shuts with the brief: from here she is walking, and a
+		# page read from disk in a walked frame is the stutter the window exists to refuse.
+		AtlasLibrary.close_loading_window()
 		_summary.dismiss()
 		_engage_the_day()
 		return

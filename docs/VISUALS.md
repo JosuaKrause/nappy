@@ -89,19 +89,47 @@ draw the previous import of.
 drops it on the last reference, `region(name)` hands out an `AtlasTexture` over the page, and
 `native_size(name)` answers a picture's own size from the region table with nothing loaded at
 all. **Every family but the ground and the events draws from it directly.** `Stroller` acquires
-`stroller` and `head_indicators` for the whole run. `Crowd` acquires `crowd` on its first day
-and holds it for the rest of its own life — a page every day's crowd draws is never released
-between two days — and every `CrowdAgent` reads its region off the page the owner is already
-holding. `src/city/prop.gd`, `src/city/litter.gd` and `src/city/city_decals.gd` ask `region()`
-and `native_size()` on region names rather than on loaded textures, and the `decoration`
-group's lifetime is `City`'s own — acquired in `build()`, released in `_exit_tree()`. Buildings,
-the street kit (the city edge, closure markers, traffic lights), the UI (`ModeButton`,
+the run's own parent (`mother` or `father`), `stroller` — the pram, which either parent pushes —
+and `ui`, where the marks over her head sit beside the screen furniture. `Crowd` acquires
+`crowd` on its first day and every `CrowdAgent` reads its region off the page the owner is
+already holding. `src/city/prop.gd`, `src/city/litter.gd` and `src/city/city_decals.gd` ask
+`region()` and `native_size()` on region names rather than on loaded textures. Buildings, the
+street kit (the city edge, closure markers, traffic lights), the UI (`ModeButton`,
 `TouchControls`, `SaveIndicator`) and the interior (`InteriorScene`, `InteriorTileSet`) each
 acquire their own group as they enter the tree and release it as they leave. The ground and the
 events still reach their pictures through `TextureResolver` and `TextureAtlas` as described
 above, until their own consumers move; `tests/test_atlas_library.gd` compares every baked
 region against the picture its consumer draws today, pixel for pixel, for as long as that
 comparison is possible.
+
+## When a page loads
+
+**A page is read from disk at startup or during a day brief and at no other moment.**
+`acquire()` is a blocking `load()` in whatever frame calls it, so a page that arrives on the
+frame it is first drawn in is a stutter the player sees. `AtlasLibrary` is told which moment is
+open — `startup`, `day brief`, or `escape` for the `--start-escape` boot, which is that mode's
+own startup — and an `acquire()` that still has to read from disk with no window open loads it
+anyway, writes `OUTSIDE` in the run log and raises an engine error, which makes the test gate
+red. A process where no boot has claimed the moments at all is `unmanaged` and loads freely:
+that is a suite building a `City` or a `Stroller` by hand, where no frame is being watched.
+
+**`main`'s boot holds every group a day can draw for the life of the process** —
+`main.RESIDENT_GROUPS`, plus the run's own parent — so nothing is ever unloaded between one day
+and the next, and a consumer's own `acquire()`/`release()` pair is only ever a count on a page
+that is already there. The residency is what makes that true by construction: a consumer's
+release can drop the count to the residency underneath it and no further, so a city torn down
+between two runs or a node re-entering the tree costs no reload.
+
+**Three groups are not in that list.** The **other parent's** page — the choice is fixed for a
+run, so the run that draws the mother never loads the father's sixty views, and a held restart
+that rerolls the choice gives the previous one back. The **interior**, which only the escape
+sequence draws; it is held from the `--start-escape` boot, and moves to that sequence's own
+brief when M102, the finale, has one. And the **events**, whose page nothing reads yet: the
+events still draw through `TextureAtlas`, and moving `EventManager` onto the baked page is what
+adds `&"events"` to the residency.
+
+The run log carries one `texture` line per page actually read, with the moment, the milliseconds
+the read took and the page's size.
 
 `tools/audit-pck.sh` reads an exported `.pck`'s own file table and reports how many baked
 constituents it still carries — a member's source, its `.import` sidecar or its imported

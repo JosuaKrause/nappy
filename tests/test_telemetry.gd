@@ -56,6 +56,7 @@ func run(t) -> void:
 	_test_no_spike_line_with_the_flag_off(t)
 	_test_a_late_picture_load_names_itself_in_the_spike_line(t)
 	_test_an_atlas_says_when_it_arrived_and_when_it_went(t)
+	_test_a_baked_page_says_which_moment_loaded_it(t)
 
 # ------------------------------------------------------------------ dormancy ---
 
@@ -1409,6 +1410,45 @@ func _test_an_atlas_says_when_it_arrived_and_when_it_went(t) -> void:
 	for line in ready_lines:
 		t.check(line.contains("2 pictures"),
 				"the ready line says how many pictures the group holds (got '%s')" % line)
+
+## A baked page says which of the two sanctioned moments it was read from disk in, how long the
+## read took and how big the page is — the line a reader scans to answer "did anything load in a
+## frame somebody was walking in". `OUTSIDE` is the fourth value it can carry and is deliberately
+## not produced here: `AtlasLibrary.acquire()` raises a real engine error on it, and an engine
+## error in a suite makes the gate red whether or not a test expected it. What that value means
+## is `tests/test_atlas_loading.gd`'s, asked through `moment_for_a_load()` with nothing loaded.
+## `events` rather than a page anything here draws: it is the one group with no consumer yet, so
+## this can load and drop it without disturbing a page another suite's live node is holding.
+## **Nothing calls `AtlasLibrary.reset_for_tests()` here for the same reason** — it zeroes every
+## group's count, and a `ModeButton` still in the tree from an earlier suite would then report a
+## release of a group that was not acquired when the run tears down.
+func _test_a_baked_page_says_which_moment_loaded_it(t) -> void:
+	t.check(not AtlasLibrary.is_acquired(&"events"),
+			"the page this asks about is not one something else is already holding")
+	Telemetry.begin_memory_log()
+	AtlasLibrary.claim_the_loading_moments(AtlasLibrary.MOMENT_STARTUP)
+	AtlasLibrary.hold_for_the_process(&"events")
+	AtlasLibrary.close_loading_window()
+	# The second acquire is a consumer's, on a page already resident: it reads nothing, so it
+	# must not write a second line about a load that did not happen.
+	AtlasLibrary.acquire(&"events")
+	AtlasLibrary.release(&"events")
+	var lines: Array[String] = []
+	for line: String in Telemetry.current_log().lines:
+		if line.contains("atlas page 'events'"):
+			lines.append(line)
+	Telemetry.end_run()
+	AtlasLibrary.stop_holding(&"events")
+	AtlasLibrary.release_the_loading_moments()
+
+	t.check(lines.size() == 1, "one line per page actually read from disk (got %d)" % lines.size())
+	for line in lines:
+		t.check(line.substr(6, 2) == "  " and line.contains("texture"),
+				"the page line is an ordinary texture entry (got '%s')" % line)
+		t.check(line.contains("in the startup"),
+				"and names the moment it loaded in (got '%s')" % line)
+		t.check(line.contains(" ms") and line.contains(" x "),
+				"with what the read cost and how big the page is (got '%s')" % line)
 
 # ------------------------------------------------------------------ helpers ---
 
