@@ -347,7 +347,7 @@ it); what is open is the half that stops the move from happening.
 
 ---
 
-## M176 — The loose dog is past her before it is loud, and two more rows by feel · asked for 2026-09-20
+## M176 — The loose dog is past her before it is loud, and three more rows by feel · asked for 2026-09-20
 
 > "unleashed dog still has too little influence -- needs to be more intense" · "but keep things
 > in relation to each other" · "also protesters have very little excitement?" · "should be a
@@ -366,6 +366,13 @@ unless an item says otherwise.
       encounter on the warning. The fairness contract for a telegraph (the **events** skill)
       still holds. 39 is also the ceiling above which running past it is cheaper than walking,
       which only `car_accident` may be, so more intensity needs that answered too.
+- [ ] **The pigeons go up when she touches them.** *"they shouldn't prematurely start but they
+      should basically start fluttering when I touch them not after"*: the flock notices her
+      at 150px and then sits through a 1.7 second telegraph, which is 156px of walking, so it
+      goes up behind her. It goes up when she reaches the birds themselves — the flock's own
+      spread, not a radius around it — with no wait between the touch and the flutter. It is
+      scenery and cannot end a day, so the warning a telegraph owes is not owed here; what the
+      **events** skill says of that contract is read before the telegraph is shortened.
 - [ ] **The pass in `docs/COSTS.md` is the pass as it is met.** `M174Pass` starts its clock
       after the telegraph; for a `TOWARD_PLAYER` row the telegraph is most of the meeting, so
       the table says +15.0 for a pass that lands about a point. The simulation spawns the row

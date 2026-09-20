@@ -36,6 +36,9 @@ Then, one message each, while the above was being read:
 
 (*corder*: corner.)
 
+> "birds are also very late to start. they shouldn't prematurely start but they should
+> basically start fluttering when I touch them not after"
+
 ## What the run says
 
 **1. The second mark was placed, pinned beside the home before she moved, and never found.**
@@ -75,6 +78,10 @@ the pass simulation starts its clock after the telegraph, which is not how this 
 nets +3.4 a second awake and nothing asleep (`docs/COSTS.md`), and it lost 2.5 a second to the
 walking decay like every row tuned before 2026-09-12.
 
+**6. The pigeons** are `quiet_until_noticed` with `pursues_within` 150px, then sit through a
+1.7 second telegraph at 15% before a 0.4 second ramp to 42 a second. She walks 156px in those
+1.7 seconds, so the flock goes up as she leaves it or after.
+
 ## What is asked for, as statements
 
 1. **Completing a resistance step is acknowledged**, so that she knows she did it correctly.
@@ -87,3 +94,5 @@ walking decay like every row tuned before 2026-09-12.
 8. **Events keep a gap around a gate**: nothing is placed immediately around one.
 9. **Two gates next to each other do not add up**: what a door's parts put on the meter is
    one door's worth, however many of them stand together.
+10. **The pigeons go up when she touches them**: not before she reaches them, and not after
+    she has walked through.
