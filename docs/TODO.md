@@ -560,9 +560,34 @@ with the mark on the way, and the robber's band around a mark is a larger share 
   street with a neighbor's door boarded the next morning, and the market not being there. Which,
   and whether these are the right kind of thing, is the player's.
 
+**The day brief says what happened, a draft for the player to rewrite.** *"use the freed up day
+brief text to further the narrative. write about what happened that day -- curfew announced
+etc"*. One or two plain sentences a morning, under `docs/NARRATIVE.md`'s tone rules — nobody
+explains the politics, the danger is noise, nothing triumphant — each naming the thing that day
+introduces, so the brief is also where a new obstacle is first heard of. Written against the
+proposed shape above, so the days move if the shape does:
+
+| Day | Draft |
+| --- | --- |
+| 1 | She won't settle indoors. The street is warm and busy. Walk until she sleeps, then bring her home. |
+| 2 | Someone is playing music by the square. There are bicycles on the sidewalk again. |
+| 3 | The streets smell of smoke this morning, and nobody knows from where. |
+| 4 | The building on the corner is still cordoned off. Men are pasting posters over the old ones. There are police on the street who were not there last week. |
+| 5 | They put masts up overnight, at the junctions. At noon they all played the same tone. |
+| 6 | A curfew was announced from the masts. The days are shorter now. There is chalk on a wall in an alley that was not there yesterday. |
+| 7 | The posters have been changed again. People read them without stopping. |
+| 8 | A van took someone from the next street before it was light. Nobody came out to look. The park gates are chained. |
+| 9 | They have closed the districts off from each other. There are huts at the crossings, and a wait. |
+| 10 | The shops on the square are boarded. The street is quiet enough to hear her breathing. |
+| 11 | A door on your landing was sealed in the night. The name is still on the bell. |
+| 12 | There is smoke over the rooftops and trucks on the main road. People are out in the streets, and they are not going home. |
+| 13 | Whole districts are shut. The crowds are larger. Nobody is reading the posters now. |
+| 14 | The last night. |
+
 **Questions for the player:** the start day; how many tasks and how many may be missed; the door
 day; which new one-place tasks; which set pieces for days 9 to 11; and whether the walk home
-after a task should still be an ordinary return or owe something.
+after a task should still be an ordinary return or owe something; and the brief lines above,
+which are a draft in the orchestrator's words and the player's to rewrite.
 
 ---
 

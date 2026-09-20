@@ -88,3 +88,9 @@ answer:
 12. **A task is announced when she touches the mark, and the day brief does not mention tasks
     at all.** It also reads as the one-day structure being taken; the six questions are still
     open.
+
+> "use the freed up day brief text to further the narrative. write about what happened that
+> day -- curfew announced etc"
+
+13. **The day brief tells the story**: the line the task used to take says what has happened
+    in the city by that morning — the curfew announced, and so on.
