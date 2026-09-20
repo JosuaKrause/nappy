@@ -1,6 +1,7 @@
 # The same gates a local commit rests on, plus the full suite split across parallel runners:
-#   gates    lint.sh, test_cli_help.sh, pycheck.sh, then check.sh's boot check -- everything
-#            that needs no more than one process and does not touch the test suite itself.
+#   gates    lint.sh, test_cli_help.sh, pycheck.sh, check.sh's boot check, then the one negative
+#            fixture the classifier in tools/test.sh must fail on -- everything that needs no more
+#            than one process, run before the sharded suite rather than inside it.
 #   shards   the headless suite, one matrix job per shard, each running tools/test.sh --shard
 #            I/8 -- planned from tests/suite_costs.txt exactly as a local sharded run is.
 #   test     what main's ruleset actually requires (a check named exactly `test`): it needs both
@@ -85,6 +86,32 @@ jobs:
 
       - name: Boot check
         run: GODOT="$HOME/godot/godot-bin" ./tools/check.sh
+
+      # tests/runner_fixtures/engine_error.gd emits one push_error() sentinel while its own
+      # check() still passes -- proof that tools/test.sh's classifier refuses a Godot engine
+      # diagnostic even when the runner's own checks/failures count says the run was clean. A
+      # regression back to trusting Godot's exit code alone would pass this suite green.
+      - name: Engine-error fixture must fail the gate
+        run: |
+          set +e
+          GODOT="$HOME/godot/godot-bin" ./tools/test.sh runner_fixtures/engine_error.gd \
+            > engine_error_fixture.log 2>&1
+          status=$?
+          set -e
+          cat engine_error_fixture.log
+          if [[ $status -eq 0 ]]; then
+            echo "FAILED: runner_fixtures/engine_error.gd exited 0 -- the classifier let an engine error through" >&2
+            exit 1
+          fi
+          if ! grep -qF "M164 sentinel" engine_error_fixture.log; then
+            echo "FAILED: the sentinel never printed -- the fixture did not actually run" >&2
+            exit 1
+          fi
+          if ! grep -qE '^[0-9]+ checks, [0-9]+ failures$' engine_error_fixture.log; then
+            echo "FAILED: the normal runner summary line never printed" >&2
+            exit 1
+          fi
+          echo "OK: the fixture failed the gate as required"
 
   shards:
     runs-on: ubuntu-latest
