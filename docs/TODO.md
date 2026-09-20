@@ -433,6 +433,9 @@ later at 72 beside three roadblocks and a patrol, crying 0.4 seconds after that;
       each other their influence shouldn't add up"*: the structures of a door, and of doors
       standing together, charge the meter as one source — the strongest of them where their
       fields overlap, not their sum. Three roadblocks at 13 a second each read 39 to her today.
+      The case the player names: *"going into a hut at a corder with two huts double counts
+      the influence"* — at a corner where two doors meet, being held in one hut is charged
+      by both.
 - [ ] **The ground she is let out onto is checked before the door is accepted.** A door whose
       far side puts her inside fields that fill the meter from the toll's level before she can
       walk out of them is not placed, or the things that make it so are not placed beside it

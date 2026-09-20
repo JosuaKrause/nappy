@@ -32,6 +32,10 @@ Then, one message each, while the above was being read:
 
 > "also since two gates can be adjacent to each other their influence shouldn't add up"
 
+> "otherwise going into a hut at a corder with two huts double counts the influence"
+
+(*corder*: corner.)
+
 ## What the run says
 
 **1. The second mark was placed, pinned beside the home before she moved, and never found.**
