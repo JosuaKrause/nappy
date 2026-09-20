@@ -300,46 +300,56 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: Node) -> void:
 ## nothing standing in the scene draws a stair picture at all. All three halves are needed. The
 ## first two alone would let a `Sprite2D` overlay rebuild the old assembly over the top; the last
 ## alone would let a source nothing paints sit in the atlas unnoticed.
+## Region names rather than loaded textures, now that `InteriorTileSet.build()` crops each source
+## out of the shared `interior` atlas page into its own standalone `ImageTexture` — see that
+## file's own doc for why a `TileSetAtlasSource` cannot address a nested `AtlasTexture` region
+## directly. `InteriorTileSet.region_name_for()` and each drawn sprite's own `atlas_region`
+## metadata (set by `InteriorScene`, since a cropped texture carries no `resource_path` a test
+## could read a filename back off) are what this asks instead.
 func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
-	var expected_sources := {
-		InteriorTile.Kind.STAIR_TOP_E: load("res://assets/interior/m158_stair_side_upper_e.svg"),
-		InteriorTile.Kind.STAIR_MIDDLE_E: load("res://assets/interior/m158_stair_side_lower_e.svg"),
-		InteriorTile.Kind.STAIR_CORNER_E: load("res://assets/interior/m158_stair_side_continue_e.svg"),
-		InteriorTile.Kind.STAIR_TOP_W: load("res://assets/interior/m158_stair_side_upper_w.svg"),
-		InteriorTile.Kind.STAIR_MIDDLE_W: load("res://assets/interior/m158_stair_side_lower_w.svg"),
-		InteriorTile.Kind.STAIR_CORNER_W: load("res://assets/interior/m158_stair_side_continue_w.svg"),
-		InteriorTile.Kind.STAIR_BLOCK: load("res://assets/interior/m158_stair_side_block.svg"),
+	var expected_names := {
+		InteriorTile.Kind.STAIR_TOP_E: &"interior/m158_stair_side_upper_e",
+		InteriorTile.Kind.STAIR_MIDDLE_E: &"interior/m158_stair_side_lower_e",
+		InteriorTile.Kind.STAIR_CORNER_E: &"interior/m158_stair_side_continue_e",
+		InteriorTile.Kind.STAIR_TOP_W: &"interior/m158_stair_side_upper_w",
+		InteriorTile.Kind.STAIR_MIDDLE_W: &"interior/m158_stair_side_lower_w",
+		InteriorTile.Kind.STAIR_CORNER_W: &"interior/m158_stair_side_continue_w",
+		InteriorTile.Kind.STAIR_BLOCK: &"interior/m158_stair_side_block",
 	}
 	var tile_set := InteriorTileSet.build()
-	for kind: InteriorTile.Kind in expected_sources:
+	for kind: InteriorTile.Kind in expected_names:
+		var name: StringName = expected_names[kind]
+		t.check(InteriorTileSet.region_name_for(kind) == name,
+				"stair role %d binds its reviewed tile region" % kind)
 		var source_id := InteriorTileSet.source_id_for(kind)
 		var source := tile_set.get_source(source_id) as TileSetAtlasSource
-		t.check(source != null and source.texture == expected_sources[kind],
-				"stair role %d binds its reviewed tile source" % kind)
+		t.check(source != null and source.texture != null
+				and source.texture.get_size() == AtlasLibrary.native_size(name),
+				"stair role %d's cropped source matches its region's own baked size" % kind)
 
-	# Every shaft picture the whole TileSet carries, by the file it was built from. `stairwell_
-	# floor.svg` is the level `F` ground and the tread under each `D`; the basement's own
+	# Every shaft picture the whole TileSet carries, by its own region name. `interior/stairwell_
+	# floor` is the level `F` ground and the tread under each `D`; the basement's own
 	# front-facing stair and the retained diagonal treads and landing are the rest of the stair
 	# vocabulary. Anything else showing up here is an assembly source coming back.
 	var kit := {
-		"m158_stair_side_upper_e.svg": true, "m158_stair_side_lower_e.svg": true,
-		"m158_stair_side_upper_w.svg": true, "m158_stair_side_lower_w.svg": true,
-		"m158_stair_side_continue_e.svg": true, "m158_stair_side_continue_w.svg": true,
-		"m158_stair_side_block.svg": true, "stair_down.svg": true,
-		"stair_flight_e.svg": true, "stair_flight_w.svg": true, "stair_landing.svg": true,
-		"stairwell_floor.svg": true,
+		&"interior/m158_stair_side_upper_e": true, &"interior/m158_stair_side_lower_e": true,
+		&"interior/m158_stair_side_upper_w": true, &"interior/m158_stair_side_lower_w": true,
+		&"interior/m158_stair_side_continue_e": true, &"interior/m158_stair_side_continue_w": true,
+		&"interior/m158_stair_side_block": true, &"interior/stair_down": true,
+		&"interior/stair_flight_e": true, &"interior/stair_flight_w": true,
+		&"interior/stair_landing": true, &"interior/stairwell_floor": true,
 	}
 	var stair_sources := {}
 	for kind: InteriorTile.Kind in InteriorTile.Kind.values():
 		var id := InteriorTileSet.source_id_for(kind)
 		if id < 0:
 			continue
-		var atlas := tile_set.get_source(id) as TileSetAtlasSource
-		var file: String = atlas.texture.resource_path.get_file()
-		if not file.begins_with("stair") and not file.begins_with("m158_stair"):
+		var name := InteriorTileSet.region_name_for(kind)
+		var short := String(name).trim_prefix("interior/")
+		if not short.begins_with("stair") and not short.begins_with("m158_stair"):
 			continue
-		stair_sources[file] = true
-		t.check(kit.has(file), "the TileSet's stair source '%s' is one of the kit" % file)
+		stair_sources[name] = true
+		t.check(kit.has(name), "the TileSet's stair source '%s' is one of the kit" % name)
 	t.check(stair_sources.size() == kit.size(),
 			"and the kit is all of them (%d sources against %d named)"
 			% [stair_sources.size(), kit.size()])
@@ -350,10 +360,11 @@ func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
 	var drawn_stairs := 0
 	for child in scene.get_node("Entities").get_children():
 		var sprite := child as Sprite2D
-		if sprite == null or sprite.texture == null:
+		if sprite == null or not sprite.has_meta(&"atlas_region"):
 			continue
-		var file: String = sprite.texture.resource_path.get_file()
-		if file.begins_with("stair") and file != "stairwell_door.svg":
+		var name: StringName = sprite.get_meta(&"atlas_region")
+		var short := String(name).trim_prefix("interior/")
+		if short.begins_with("stair") and name != InteriorScene.DOOR_TEXTURE:
 			drawn_stairs += 1
 	t.check(drawn_stairs == 0,
 			"nothing standing in the scene draws a stair: the ground cells are the staircase (%d)"

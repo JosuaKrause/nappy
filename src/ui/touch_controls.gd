@@ -102,8 +102,9 @@ const PAUSE_CATCH_RADIUS := 46.0
 ## this margin further moves the arrow again; the two numbers are one decision.
 const PAUSE_CENTRE := Vector2(1218.0, 62.0)
 
-## The disc, the rim and the two bars, baked into one asset — see `_draw_pause_button()`.
-const _PAUSE_ICON: Texture2D = preload("res://assets/ui/pause.svg")
+## The disc, the rim and the two bars, baked into one asset — see `_draw_pause_button()`. A region
+## name on the `ui` atlas group; `_enter_tree()`/`_exit_tree()` acquire and release it.
+const _PAUSE_ICON := &"ui/pause"
 
 ## How soon a second press has to land to read as a double, in seconds.
 const DOUBLE_TAP_SECONDS := 0.35
@@ -291,6 +292,12 @@ var _drag_in_band := false
 var _drag_run := false
 
 var _was_paused := false
+
+func _enter_tree() -> void:
+	AtlasLibrary.acquire(&"ui")
+
+func _exit_tree() -> void:
+	AtlasLibrary.release(&"ui")
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -853,8 +860,8 @@ func _draw() -> void:
 	if _mode == ControlsMode.Mode.JOYSTICK:
 		_draw_focus_circles()
 
-## The disc, its rim and the two bars — a preloaded SVG asset (`assets/ui/pause.svg`), not painted
-## in code. *(Playtest 29 finding 3: "neither should the buttons use draw commands -- I explicitly
+## The disc, its rim and the two bars — a region of the baked `ui` atlas page, sourced from
+## `assets/ui/pause.svg`, not painted in code. *(Playtest 29 finding 3: "neither should the buttons use draw commands -- I explicitly
 ## said that icons/symbols do not count as graphics".)* This is not a `ModeButton`, so there is no
 ## `Button` icon or `icon_normal_color` to tint through here; the held/idle contrast the old
 ## `draw_circle()`/`draw_arc()`/`draw_rect()` calls carried as two different alpha values on the
@@ -874,7 +881,7 @@ func _draw_pause_button() -> void:
 	if held:
 		draw_circle(PAUSE_CENTRE, PAUSE_RADIUS, Palette.BUTTON_PRESSED)
 	var size := Vector2(PAUSE_RADIUS, PAUSE_RADIUS) * 2.0
-	draw_texture_rect(TextureResolver.resolve(_PAUSE_ICON), Rect2(PAUSE_CENTRE - size * 0.5, size), false,
+	draw_texture_rect(AtlasLibrary.region(_PAUSE_ICON), Rect2(PAUSE_CENTRE - size * 0.5, size), false,
 			Color(1.0, 1.0, 1.0, 1.0 if held else 0.7))
 
 ## Both focal points, always, in `Mode.JOYSTICK` — M83 drew nothing for them and left *whether they
