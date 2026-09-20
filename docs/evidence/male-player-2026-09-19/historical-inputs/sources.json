@@ -1,0 +1,22 @@
+{
+  "assets/rig/father_back_b.svg": {
+    "file": "father_back_b.svg",
+    "sha256": "695a93ad2169843a717c8ff222dc3c645045ae3d23f5ef25119cb762ff019ceb"
+  },
+  "assets/rig/father_front_diagonal_b.svg": {
+    "file": "father_front_diagonal_b.svg",
+    "sha256": "6accf757d3fcb24f84cb061f0622697b86419bbb189206c0a1595620ce2f607f"
+  },
+  "assets/rig/father_carrying_front_diagonal_b.svg": {
+    "file": "father_carrying_front_diagonal_b.svg",
+    "sha256": "1784f7101060a83642cda51056b295ff975f6c1ca7dbb6d5bcd109dd8aa7a18c"
+  },
+  "assets/rig/father_front_b.svg": {
+    "file": "father_front_b.svg",
+    "sha256": "6aa041d54d85f07e606049c7fc7b72f26f50329833412024216f5b02484fe70c"
+  },
+  "assets/rig/father_side_b.svg": {
+    "file": "father_side_b.svg",
+    "sha256": "19549786b4d7b1633b988508325bcacc6b25792918c5ef473574b49e866b67f8"
+  }
+}

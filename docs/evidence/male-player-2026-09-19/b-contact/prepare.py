@@ -32,7 +32,7 @@ def main():
             (args.output_dir / path.name).write_bytes(pixels)
         picture = Image.open(args.source_dir / f"{name}-8x.png").convert("RGBA")
         source.alpha_composite(picture, (col * 288 + (288 - picture.width) // 2, 40))
-        path = ROOT / f"assets/rig/{name}.svg"
+        path = HERE / f"inputs/{name}.svg"
         inputs[str(path.relative_to(ROOT))] = hashlib.sha256(path.read_bytes()).hexdigest()
     target.save(args.output_dir / "edit-target.png")
     for col, view in enumerate(VIEWS):

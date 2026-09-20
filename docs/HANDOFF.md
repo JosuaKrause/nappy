@@ -286,6 +286,10 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
 checks and worktrees can move independently of this file.
 
+- **M171 — Build-time atlases replace individual textures** is specified in `TODO.md` and
+  [PLAYTEST-105](playtests/PLAYTEST-105.md). The atlas generator and runtime loading changes
+  remain unimplemented. Baked constituent images must be absent from shipped packages and
+  from individual CPU/GPU allocations; source artwork stays in the authoring repository.
 - **M159, a slow frame names the frame that was slow, has its first optimization in and three
   items open in `TODO.md`.** `CrowdAgent.contribution_at()` rejects distant sources before the
   velocity and ellipse work, with exact result parity (`DECISIONS.md`, M159, cheaper crowd
@@ -294,27 +298,14 @@ checks and worktrees can move independently of this file.
   slow intervals, profiling the phone, and completing the atlas measurements are the open items,
   and no toggle causality is claimed. M163, the ground atlas test builds the same reference it
   compares, and M164, engine errors make the test gate red, are separate fix-ready briefs there.
-- **PR #234 — M167, the father's legs read as legs** is the separate drawing follow-up in `TODO.md`.
-  [PLAYTEST-90](playtests/PLAYTEST-90.md) and [PLAYTEST-91](playtests/PLAYTEST-91.md) require
-  more natural legs, A/C-consistent shading and shoes, and a narrower three-quarter stride.
-  [PLAYTEST-92](playtests/PLAYTEST-92.md) asks for the woman's legs as the next donor because
-  the pants match. Keep the accepted contact ownership, father upper body, N/S, NE/NW and
-  every A/C frame fixed. Show the clean sheet and native/6× loops in its draft PR description;
-  nothing in this follow-up replaces the provisionally accepted runtime baseline without review.
 
-- **[PLAYTEST-94](playtests/PLAYTEST-94.md) is filed and unbuilt.** It opened M168, the escape
-  after playtest 94, and added the walked-side
-  wall measurement under M129, a path through the city never has to cost. Both are in
-  `TODO.md` and each is one agent's brief.
+- **Inspect the live PRs before taking gameplay work:** PR #239, M129, no body closes the
+  walked sidewalk; PR #240, M168, the escape after playtest 94; and PR #241, M170, whole-street
+  route tint. Their owners maintain the implementation and review state. The queue on main
+  alone does not show work pending in those branches.
 
-Number ownership remains distinct: PLAYTEST-84 and PLAYTEST-85 are the escape/save records
-on main, PLAYTEST-86 belongs to the performance work, and PLAYTEST-87 belongs to the father
-sheet instructions. PLAYTEST-88 is the father's subsequent visual verdict. PLAYTEST-93 is on PR #234's branch, and
-PLAYTEST-94 is the save, escape and route-wall record.
-
-No merge, auto-merge, rebase, merge from main or branch deletion is authorized without explicit permission in the current
-session. New implementation or investigation uses fresh agents with self-contained briefs; do not
-resume the agents from this handoff.
+PR merges and auto-merge require explicit permission in the current session. Use fresh agents
+with self-contained briefs for new implementation or investigation.
 
 ## The queue, as prioritised on 2026-09-09
 

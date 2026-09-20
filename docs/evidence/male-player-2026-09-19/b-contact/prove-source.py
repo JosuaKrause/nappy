@@ -11,7 +11,10 @@ from PIL import __version__ as PILLOW_VERSION
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[3]
+FROZEN_INPUTS = HERE / "inputs"
+FROZEN_SOURCE = FROZEN_INPUTS / "source-render"
 VIEWS = ("front", "back", "side", "front_diagonal")
+SOURCE_VIEWS = ("front", "back", "side", "front_diagonal", "back_diagonal")
 DIRECTIONS = ("back", "back_diagonal", "side", "front_diagonal", "front", "front_diagonal", "side", "back_diagonal")
 LABELS = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
 # Source-space centerlines, hidden hip, visible knee, shoe. These annotate the
@@ -68,26 +71,27 @@ def image(path):
     return Image.open(path).convert("RGBA")
 
 
+def source_path(view, pose, scale):
+    return FROZEN_SOURCE / f"father_{view}_{pose}-{scale}x.png"
+
+
+def pram_path(view):
+    return FROZEN_INPUTS / f"pram_{view}.png"
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--verify", type=Path, help="Require these frozen input and output hashes")
     args = parser.parse_args()
     if args.output_dir.exists():
         parser.error("output directory must be fresh")
-    inputs = {}
-    for pattern in (
-        "assets/rig/father_*",
-        "assets/rig/pram_*",
-        "assets/illustrated/svg-transfer/rig/father_*",
-        "assets/illustrated/svg-transfer/rig/pram_*",
-    ):
-        for path in sorted(ROOT.glob(pattern)):
-            inputs[str(path.relative_to(ROOT))] = digest(path)
-    for path in [Path(__file__), HERE.parent / "raw/pushing.png", *sorted(args.source_dir.glob("*.png"))]:
-        key = "source-render/" + path.name if path.parent == args.source_dir else str(path.relative_to(ROOT))
-        inputs[key] = digest(path)
+    source_paths = [source_path(view, pose, scale) for view in SOURCE_VIEWS for pose in ("a", "b", "c") for scale in (1, 3, 8)]
+    pram_paths = [pram_path(view) for view in ("front", "back", "side", "front_diagonal", "back_diagonal")]
+    inputs = {
+        str(path.relative_to(ROOT)): digest(path)
+        for path in [Path(__file__), HERE.parent / "raw/pushing.png", *source_paths, *pram_paths]
+    }
     if args.verify and json.loads(args.verify.read_text())["inputs"] != inputs:
         raise ValueError("frozen source/protected input hashes differ")
     args.output_dir.mkdir(parents=True)
@@ -104,7 +108,7 @@ def main():
     for row, view in enumerate(VIEWS):
         y = 70 + row * 470
         for pose_col, pose in enumerate(("a", "b")):
-            source = image(args.source_dir / f"father_{view}_{pose}-8x.png")
+            source = image(source_path(view, pose, 8))
             for annotated in (False, True):
                 x = pose_col * 560 + int(annotated) * 280 + 22
                 sheet.alpha_composite(source, (x, y + 28))
@@ -146,8 +150,8 @@ def main():
                 angle = col * math.pi / 4
                 fx, fy = math.sin(angle), -math.cos(angle)
                 offset = (fx * 24, fy * (9 if fy > 0 else 17) * 0.7 + (8 * fx * fx * fy * fy if fy < 0 else 0))
-                figure = image(args.source_dir / f"father_{view}_{pose}-{scale}x.png")
-                stroller = image(ROOT / f"assets/illustrated/svg-transfer/rig/pram_{view}.png")
+                figure = image(source_path(view, pose, scale))
+                stroller = image(pram_path(view))
                 stroller = stroller.resize(
                     (round(stroller.width * 7 / 6) * scale, 35 * scale), Image.Resampling.BILINEAR
                 )

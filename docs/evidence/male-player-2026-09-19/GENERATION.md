@@ -12,9 +12,38 @@ pairs every runtime source, creation reference and native illustrated PNG. The S
 the short brown hair, blue overshirt, cream undershirt, canvas, pose and functional placement.
 Their three-pose pushing/carrying geometry follows the current female creation family.
 The SVGs are authored and inspected before the corresponding raster generation.
-The [B-contact source review](b-contact/GENERATION.md) documents the four revised pushing
-sources, native/3× sheets and provisionally accepted runtime derivatives. The raw atlases,
-registered PNGs and original generation-input hashes below remain unchanged.
+The [B-contact source review](b-contact/GENERATION.md) documents the original pushing source
+review and the approved six-frame pushing/carrying runtime family. The raw atlases, registered
+PNGs and original generation-input hashes below remain unchanged.
+The [final-woman-leg crop evidence](b-contact/final-woman-legs-2026-09-19/README.md)
+preserves the rejected literal-copy preview. The
+[high-resolution normalization recipe](b-contact/normalized-crop-2026-09-19/README.md)
+preserves the rejected P2 donor selection and its generated normalization. Its separately
+labeled carrying GIFs show the frozen original registered carrying family. These review artifacts
+do not alter this registered family.
+The [correct-contact donor recipe](b-contact/correct-contact-2026-09-19/README.md) uses the
+final carrying family's actual opposite leg overlap and above-pelvis father identity inputs
+for an uninstalled normalization preview. Its profile has the requested opposite overlap;
+its southeast legs are too frontal. The [color-match recipe](b-contact/color-match-2026-09-19/README.md)
+transforms trouser colors without changing geometry or pixels outside the material mask.
+The [diagonal and carrying contact recipe](b-contact/diagonal-carrying-2026-09-19/README.md)
+restores the accepted southeast contact and applies actual carrying B leg changes. These are
+retained review artifacts: PLAYTEST-98 accepts their color-matched E/W result and rejects the
+restored diagonal drawing. The [natural southeast recipe](b-contact/natural-southeast-2026-09-19/README.md)
+preserves the crossed-leg candidate rejected in PLAYTEST-99 and its deterministic clothing
+palette restoration. Its X-shaped pose guide is not a valid target for a natural walking stride.
+The accepted E/W pixels remain protected.
+For the uncrossed correction, the source A picture places the near thigh at the screen-left
+hip. Keep that hip fixed while exchanging lead and trail; the old front-diagonal ownership
+table in the B-contact evidence is not a valid anatomical guide.
+The [uncrossed southeast recipe](b-contact/uncrossed-southeast-2026-09-19/README.md) keeps
+those hips fixed, with the near leg trailing on the left and the far leg advancing down-right.
+Its review sheets and GIFs cover pushing and carrying while preserving the accepted side frames.
+PLAYTEST-100 accepts those legs and the pose. The
+[body texture, hem and color recipe](b-contact/whole-figure-color-2026-09-19/README.md) restores
+the existing upper body and full-size baby, lowers the new frame's hem edge, and lightens its
+trousers. Its approved generated outputs provide the installed two pushing and four carrying B
+frames; all other father runtime PNGs stay unchanged.
 
 `source/` preserves Godot's 1×, 3× and 8× rasterization of every SVG.
 `inputs/*_source-{1,3,8}x.png` assembles them in columns front, back, side, front diagonal,
@@ -65,19 +94,25 @@ shadows, camera and shared stroller artwork are unchanged.
 
 The reproducibility environment is Godot 4.7.2, Python 3.14 and Pillow 12.3.0 from the locked
 project environment. Review text uses Pillow's bundled default font. All commands run from
-the repository root; choose fresh output directories:
+the repository root; choose fresh output directories. The
+[historical input mapping](historical-inputs/README.md) preserves the original SVG bytes
+separately from the editable runtime fallbacks. Its registration overlay pins the unchanged
+original config and the current support-script hashes; all artwork hashes remain the original ones.
 
 ```sh
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . \
   --script docs/evidence/male-player-2026-09-19/render-sources.gd -- \
+  --source-map res://docs/evidence/male-player-2026-09-19/historical-inputs/sources.json \
   --output-dir /tmp/male-player-source-review
 uv run python docs/evidence/male-player-2026-09-19/prepare.py \
   --render-dir /tmp/male-player-source-review --output-dir /tmp/male-player-source-grids
 uv run python docs/evidence/male-player-2026-09-19/register.py register \
   --config docs/evidence/male-player-2026-09-19/registration.json \
+  --historical-inputs docs/evidence/male-player-2026-09-19/historical-registration.json \
   --output-dir /tmp/male-player-registration
 uv run python docs/evidence/male-player-2026-09-19/register.py verify \
   --config docs/evidence/male-player-2026-09-19/registration.json \
+  --historical-inputs docs/evidence/male-player-2026-09-19/historical-registration.json \
   --output-dir docs/evidence/male-player-2026-09-19/registered
 uv run python docs/evidence/male-player-2026-09-19/contact.py \
   --registered-dir docs/evidence/male-player-2026-09-19/registered \
@@ -86,10 +121,10 @@ uv run python docs/evidence/male-player-2026-09-19/verify-pairs.py
 ```
 
 `freeze --config FRESH_FILE` is the registration script's authoring command for a deliberately
-new input set, not a way to bypass the retained record's hash checks. The original source
-render and grid commands use the same arguments with `source/` and `inputs/` here as their
-fresh outputs. Runtime PNGs are exact copies of `registered/rig/*.png`; Godot creates each
-new resource's own import sidecar.
+new input set, not a way to bypass the retained record's hash checks. The mapped source-render
+and grid commands reproduce `source/` and `inputs/`. `registered/rig/*.png` preserves the original
+registration. The player manifest identifies exact runtime copies and explicit approved B-frame
+overrides separately; Godot owns each resource's import sidecar.
 
 ## Static review
 

@@ -1,0 +1,102 @@
+{
+  "status": "uninstalled deterministic B-trouser color match for player review",
+  "candidate_rig": "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/candidate-rig",
+  "reference_rig": "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/reference-rig",
+  "pillow": "12.3.0",
+  "method": "native-pixel RGB matrix applied only to the material selector below the coat hem",
+  "records": {
+    "side": {
+      "candidate": "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/candidate-rig/father_side_b.png",
+      "reference_frames": [
+        "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/reference-rig/father_side_a.png",
+        "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/reference-rig/father_side_c.png"
+      ],
+      "sample_bounds": [
+        0,
+        28,
+        26,
+        46
+      ],
+      "selector": "alpha > 0; y >= 28; blue >= green + 11; blue >= red + 18",
+      "palette_samples": {
+        "candidate_luma_quantiles": {
+          "10%": 41.3,
+          "50%": 79.8,
+          "90%": 111.0
+        },
+        "reference_ac_luma_quantiles": {
+          "10%": 61.5,
+          "50%": 90.3,
+          "90%": 118.2
+        },
+        "reference_ac_rgb_at_50%": [
+          77,
+          92,
+          113
+        ]
+      },
+      "transform": "reference_luma = round(0.86 * source_luma + 27); RGB = reference_luma * (0.86, 1.02, 1.25)",
+      "changed_pixels": 140,
+      "alpha_preserved": true,
+      "outside_mask_preserved": true
+    },
+    "front_diagonal": {
+      "candidate": "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/candidate-rig/father_front_diagonal_b.png",
+      "reference_frames": [
+        "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/reference-rig/father_front_diagonal_a.png",
+        "docs/evidence/male-player-2026-09-19/b-contact/color-match-2026-09-19/inputs/reference-rig/father_front_diagonal_c.png"
+      ],
+      "sample_bounds": [
+        0,
+        28,
+        26,
+        46
+      ],
+      "selector": "alpha > 0; y >= 28; blue >= green + 11; blue >= red + 18",
+      "palette_samples": {
+        "candidate_luma_quantiles": {
+          "10%": 41.3,
+          "50%": 79.8,
+          "90%": 111.0
+        },
+        "reference_ac_luma_quantiles": {
+          "10%": 61.5,
+          "50%": 90.3,
+          "90%": 118.2
+        },
+        "reference_ac_rgb_at_50%": [
+          77,
+          92,
+          113
+        ]
+      },
+      "transform": "reference_luma = round(0.86 * source_luma + 27); RGB = reference_luma * (0.86, 1.02, 1.25)",
+      "changed_pixels": 108,
+      "alpha_preserved": true,
+      "outside_mask_preserved": true
+    }
+  },
+  "outputs": {
+    "father-animation-6x.gif": "81b25b414c3d223c934b1638dc977d127f6c3a3cd6240183d46c839d0107c78e",
+    "father-animation-native.gif": "c3ff12fd7fe907fbc9ff283db8e4f3e6d4e31d27fd3867073cfc69b697e57543",
+    "father-spritesheet-6x.png": "b1117e511995da551ab13510c2128149dad64b47e7d8b8a424ebb5549b1caccb",
+    "father-spritesheet-native.png": "e45485a162bdee9f6561b19d6a31dc719c0cdaf218fb3f1de42218cb33c77614",
+    "masks/father_front_diagonal_b-pants-mask.png": "175b5f4cbdd4003c752f0d4edf96fd458506b8bce162d1afc6fcfd8d21c097f5",
+    "masks/father_side_b-pants-mask.png": "d2d6e797d3bcce000f2a65f92049213f8c29314c9e36d0600f538316e859fb0a",
+    "rig/father_back_a.png": "ce72244b2ae09c2986767dd5fb6b2326cb662fcee65a6d611349ae1c97433aec",
+    "rig/father_back_b.png": "3bc4297fef285d64578f7051f91eba3ce1962519a63d3cf4e40c5105bb1d9b7b",
+    "rig/father_back_c.png": "132533ac4e979eeccf769b2e347706b542797142d6de338cbe2ad1cc649be9f1",
+    "rig/father_back_diagonal_a.png": "68dc4b1a4a11ee36e2ce5e8abb682e88723d8d59b6b6ed4042a6a82d49a17384",
+    "rig/father_back_diagonal_b.png": "6d737538aa63cb48334a84f2f3ef2547fe8f75d11b1d0d2ca4cb3538f997afe5",
+    "rig/father_back_diagonal_c.png": "e45da614f86a08f4ae7af9a450bcacddc643f41818aa3e4b11f339c346d615d4",
+    "rig/father_front_a.png": "3466cddf142ea505e48d4f78670a99bd7964d3c9b5dfb87093821798e8beeece",
+    "rig/father_front_b.png": "6bd88f5fe27cabfc1f8684922315f1f33a16e3462031a14e1eee0dea4456cccc",
+    "rig/father_front_c.png": "964d42efbabe022492fc63acda0e7b74db045b97ef6aa08d8d72815fc726ebd7",
+    "rig/father_front_diagonal_a.png": "3ddb32d5c7e0fe2488940b27c42d29f3f4d80a6b173e04218d0c009782d4821b",
+    "rig/father_front_diagonal_b.png": "743040914e93119d8fa9b99bf0a83f751b1325512a503c097adfe58d8d208247",
+    "rig/father_front_diagonal_c.png": "e6595ac94a46dfa9d11ffd2e1249ff0fc66f570ddfdc2ebfe3fca4feec82009f",
+    "rig/father_side_a.png": "bcc6a84f943aacc2522fa18b5a5a96c6e7e3e96e9e271c8e354938910f2587af",
+    "rig/father_side_b.png": "9bcd63d4af8bc79744e3722d73832e4e19a7f2211aa95f9c881a13983c865eeb",
+    "rig/father_side_c.png": "f7e312a8d594a375a69d82ded150b4c638329c0ab060aa6dff09fcf45d11140b"
+  }
+}

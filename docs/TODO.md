@@ -293,6 +293,52 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
+## M171 — Build-time atlases replace individual textures · asked for 2026-09-19
+
+[PLAYTEST-105](playtests/PLAYTEST-105.md) requires atlases to be created at build time so the
+game can load them cheaply. Related items belong together to avoid loading an atlas mostly
+occupied by unrelated pictures. Any image loaded through an atlas must not also be loaded
+as an individual texture in CPU or GPU memory. Baked constituents must be absent from the
+shipped build entirely, including their imported resource copies. This extends PLAYTEST-75 and PLAYTEST-76's grouped-atlas
+contract; see `DECISIONS.md`, M171, build-time atlases, for the design and current cost.
+
+- [ ] **Generate atlas images and region metadata during the build.** Replace runtime packing
+      for sprite families, crowd, indicators, decoration/events and ground composition. The
+      runtime loads prepared resources; it does not read back individual GPU textures, blit
+      atlas images or repack them at startup, first draw or day repaint. Use a reproducible
+      build step that runs before desktop/web export and supports development checkouts;
+      detect missing or stale outputs before shipping. Keep editable SVGs and original PNGs
+      as repository authoring inputs only, with source hashes and deterministic region mappings.
+      Exclude their individual images and imported resources from export once baked; the shipped
+      representation consists only of atlas textures and region metadata.
+- [ ] **Group pictures by related use and lifetime.** Keep an entity's directions, animation
+      frames and related state variants together; group shared head indicators, ground
+      components and other families by their actual consumers. Document membership and loading
+      boundaries so unrelated rarely used pictures do not force wasteful residency. Preserve
+      the texture-size limit, padding and filtering contract; use explicit related pages where
+      a family exceeds a page, not one indiscriminate atlas for the whole catalogue.
+- [ ] **Load the atlas once; baked constituents do not exist in the build.** Route all covered
+      consumers to regions of a shared atlas resource. Remove eager source `preload()` tables,
+      resolver warm scans/caches and fallback paths that load the same pictures separately.
+      Audit scripts, scenes, resources, TileSets and export dependencies for indirect source
+      inclusion as well as loads. Runtime may not reconstruct or cache individual image copies
+      in CPU memory, nor upload them as separate GPU textures. Releasing the group must release
+      its CPU image storage and GPU texture when their last consumers let go. Preserve
+      PNG and forced-SVG presentation through separately built resources selected before load;
+      neither mode may load the other mode's atlas or retain any constituent textures.
+- [ ] **Prove memory ownership, loading cost and appearance.** Verify every covered image maps
+      to the intended atlas region and consumers share its texture. Inspect exported package
+      contents and dependencies to prove no baked constituent image or imported copy is present;
+      prove no individual CPU image or GPU texture is loaded or reconstructed at runtime.
+      Check group release/reload, presentation modes and the exported
+      web build, including startup, first appearance and day transitions. Record atlas
+      load/release timings and CPU/GPU texture memory with clear measurement limits. Preserve
+      native dimensions, alpha, tinting, placement, mirroring, animation and ground seams;
+      use focused tests and bounded motion evidence. Update the architecture, graphics and
+      telemetry docs with the implementation. The full suite remains CI's gate.
+
+---
+
 ## M170 — The route's tint is on both sides of the street · asked for 2026-09-19
 
 > "let's do the mark for the correct path on the full segment (both sides) again -- that way those
@@ -375,43 +421,6 @@ through `tools/run.sh --start-escape --seed 4242`.
 
 ---
 
-## M167 — The father's legs read as legs · asked for 2026-09-19
-
-> "the leg positions are correct now. we can use it for now (and merge) but in parallel do another fix attempt to just make the legs look like legs"
-
-> "I approved the graphics for now but also noted that we need to fix the leg's appearance in the next pr"
-
-[PLAYTEST-90](playtests/PLAYTEST-90.md) and [PLAYTEST-91](playtests/PLAYTEST-91.md).
-The provisionally accepted contact baseline and its narrow father-only splice exception are
-recorded in `DECISIONS.md` under M160, provisional contact acceptance. This separate drawing
-follow-up does not replace that baseline without visual approval.
-
-[PLAYTEST-92](playtests/PLAYTEST-92.md) rejects the first refinement: "still bad legs -- maybe
-use the legs of the woman in those cases?" — "they have the same pants". The next preview may
-reuse the woman's accepted pushing-leg artwork in E/W and SE/SW B, with the father's upper
-body and the accepted contact ownership preserved. This is a specific donor exception, not
-permission to replace the father's identity or change protected frames.
-
-- [ ] **Match the legs to the rest of the family.** E/W B needs A/C's clear dark far-leg cue,
-      folded and shaded trousers, and chunky brown highlighted shoes instead of thin dark slivers.
-      Keep the accepted near leg trailing and the far leg advancing, with a continuous
-      hip–knee–shoe chain and natural knees. SE/SW must read as a three-quarter stride under
-      its torso, not a full-width profile stride: narrow it toward A and the accepted NE/NW
-      contacts so A/C/B/C does not alternate short and long steps like a limp.
-- [ ] **Publish an early attempt and ask for feedback.** Use the established clean eight-direction
-      A/C/B/C sheet and native/6× four-phase GIFs at 190ms per phase. Push and embed them in
-      the next PR description with commit-pinned links before asking; the CLI cannot show local
-      images. Repeated feedback is welcome, per [PLAYTEST-89](playtests/PLAYTEST-89.md).
-      Preserve N/S, NE/NW, all A/C frames, upper-body landmarks, native canvases, scale and anchors.
-      Do not change carrying poses, stroller art or gameplay. Keep exact prompts, raw inputs,
-      crops, transforms, commands and hashes with the evidence. The first attempt may expose
-      remaining defects; do not spend another internal revision loop hiding them from review.
-- [ ] **Install only the visually accepted refinement.** Keep corresponding reviewed SVGs,
-      creation copies, registered PNGs and manifest hashes in agreement, preserve import sidecars,
-      and verify actual runtime bindings. The provisional splice is not a general successful
-      procedure; update shared graphics guidance only with a method accepted for final appearance.
-
----
 
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
@@ -450,12 +459,14 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
       use `--invincible`: it skips the baby's source sweep and suppresses the meter behavior being
       measured. Measure the conservative contribution rejection on that device, including its
       effect on the baby and halo callers, before considering caching or lower tick rates.
-- [ ] **Complete atlas measurements before changing atlas policy.** The CPU spans distinguish
+- [ ] **Complete atlas measurements alongside M171, build-time atlases.** The CPU spans distinguish
       source readback/copy, blit, texture submission, regions and release joins, with actual thread
       labels. Measure the threadless web export, observe real release events, and distinguish CPU
-      submission from GPU completion. Only if relevant spans coincide with stalls should day-long
-      residency or imported/prebuilt atlases be compared, with memory measured. Do not add more
-      worker jobs or larger atlases on the native host evidence. The older laptop hitch predates
+      submission from GPU completion. Retain a baseline and compare the prepared atlas path's
+      loading and memory costs under M171's explicit build-time contract; that design does not
+      depend on proving atlases cause stutter. M171 owns atlas implementation and excludes baked
+      constituent textures from the build and individual CPU/GPU allocations. Do not add worker
+      jobs or larger runtime atlases on the native host evidence. The older laptop hitch predates
       the atlas path, so no atlas result can be assumed to explain both platforms.
 
 ---

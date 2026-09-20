@@ -21,6 +21,14 @@ debug view"). `--invincible` is the way to walk this whole list in one sitting: 
 the clock stands still and the excitement meter never rises, so one run can stand next to every
 item below for as long as looking takes.
 
+- **In a run that selects the father, watch pushing and carrying through several facings and
+  the A/C/B/C walk cycle, including southeast and southwest.** Do the approved legs read as a
+  continuous stride at gameplay size, with stable upper body, baby, ground contact and stroller
+  placement? The complete PNG/GIF family is accepted in [PLAYTEST-104](playtests/PLAYTEST-104.md).
+  The retained pushing burst shows the father; the attempted carrying burst shows the mother
+  and cannot answer father-carrying appearance. Record is `DECISIONS.md`, M167, resumed delivery
+  and main integration.
+
 - **Close the game in the middle of a day and open it again**, on the desktop build, and on
   the released page in a laptop browser (refresh, close the tab). The phone is answered:
   reloading there brings up the proper day brief ([PLAYTEST-94](playtests/PLAYTEST-94.md)). Does the title come up, and does pressing start bring up the day brief — the
