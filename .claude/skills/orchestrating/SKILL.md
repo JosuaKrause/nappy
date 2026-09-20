@@ -166,7 +166,7 @@ A vague prompt returns work that cannot be merged. Every agent prompt contains, 
   choice made where the design was silent; every fork left open. The report is the merge review's
   input — an outcome it does not mention is an outcome that did not happen.
 - **Do not merge, do not delete the branch.** Only with explicit permission in the current session,
-  the orchestrator merges `--no-ff`, reruns the gate on
+  the orchestrator squash-merges the pull request, reruns the gate on
   the merged tree, removes the worktree, deletes the branch, and moves the finished entry to
   `DECISIONS.md` — with the agent's silent choices recorded as open to overturn, not narrated as
   settled.
@@ -198,8 +198,8 @@ merging is what collides — so parallelism is planned at the file level, before
   worktree (`git worktree unlock` first if the harness locked it) and delete the branch.
 - **Sweep the harness's own branches at the end.** Each spawn also leaves a `worktree-agent-*`
   branch pointing at the worktree's base; after the feature branches are merged, `git worktree
-  prune` and delete them with `git branch -d` (never `-D` — a refusal is a branch worth looking
-  at).
+  prune` and delete them with `git branch -d`, which still answers for a branch that has no
+  pull request; a feature branch goes by the **committing** skill's PR-state check.
 - **Tell each agent who else is alive** and which files those agents own, so a scope fence is a
   sentence in the prompt rather than a discovery in the diff.
 
