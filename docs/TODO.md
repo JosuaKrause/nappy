@@ -408,6 +408,10 @@ empty. It was also the alley step 1 had been taken from.
       that until then it keeps moving to the alley she comes across. The distance and the
       time are the orchestrator's and open to overturn. A mark does not return to an alley a
       step was already taken from while another is within reach.
+- [ ] **The first mark's note is one sentence.** *"remove the \"anyone of them could be it\" this
+      is unnecessary information that sounds odd"*: the note keeps "Give it to the one who
+      won't stop shouting." and loses what follows. Whichever man shouting she reaches first
+      still counts.
 - [ ] **A completed step is acknowledged where she is looking.** Touching a mark and reaching
       the man shouting each say so at the moment it counts: the touched state of the chalk
       mark (`chalk_mark_touched.svg` is prepared, M100, small, real and nobody's) and a line
