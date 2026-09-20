@@ -23,7 +23,8 @@ extends RefCounted
 ##
 ## **Three phases, because only the middle one may leave the main thread.** `request()` reads the
 ## source images — `Texture2D.get_image()` talks to the renderer, so it is a main-thread call —
-## and hands the blitting to a `WorkerThreadPool` task; `collect()` runs on the main thread and
+## and hands the blitting to a `WorkerThreadPool` task (on the caller in threadless exports);
+## `collect()` runs on the main thread and
 ## creates the `ImageTexture`, which is a renderer resource and may not be made anywhere else.
 ## `Main._process()` pumps `collect_ready()` once a frame, which is the only place in the running
 ## game that finishes a request.
@@ -66,6 +67,10 @@ class Pack extends RefCounted:
 	var requested_usec := 0
 	var ready_usec := 0
 	var blit_usec := 0
+	var blit_started_usec := 0
+	var blit_on_main_thread := false
+	var blit_process_frame := -1
+	var trace_phases := false
 	var atlas_size := Vector2i.ZERO
 
 static var _packs: Dictionary = {}
@@ -81,7 +86,7 @@ static func collected_count() -> int:
 
 # ---------------------------------------------------------------- requesting ---
 
-## Asks for `name`'s atlas, reading every source image now and packing it on a worker thread.
+## Asks for `name`'s atlas, reading every source image now and submitting a pool task to pack it.
 ##
 ## `sources` maps whatever the caller indexes its pictures by — a view name, a frame index, the
 ## source `Texture2D` itself — to the `Texture2D` to pack. **A second request for a name already
@@ -95,6 +100,7 @@ static func request(name: String, sources: Dictionary) -> bool:
 	if _packs.has(name):
 		return false
 	var pack := Pack.new()
+	pack.trace_phases = AtlasPhaseTrace.enabled
 	pack.requested_usec = Time.get_ticks_usec()
 	_packs[name] = pack
 	var sizes: Array[Vector2i] = []
@@ -117,6 +123,11 @@ static func request(name: String, sources: Dictionary) -> bool:
 		pack.keys.append(key)
 		pack.images.append(image)
 		sizes.append(image.get_size())
+	var readback_end := Time.get_ticks_usec() if pack.trace_phases else 0
+	if pack.trace_phases:
+		AtlasPhaseTrace.record(name, "source_resolve_readback_copy", pack.requested_usec,
+			readback_end)
+	var layout_start := Time.get_ticks_usec() if pack.trace_phases else 0
 	var layout := plan(sizes)
 	assert(layout["fits"], "atlas '%s' is %s, over the %dpx phone-safe canvas side"
 			% [name, layout["size"], MAX_ATLAS_SIDE])
@@ -126,8 +137,13 @@ static func request(name: String, sources: Dictionary) -> bool:
 	var atlas_size: Vector2i = layout["size"]
 	pack.atlas_size = atlas_size
 	pack.target = Image.create(atlas_size.x, atlas_size.y, false, Image.FORMAT_RGBA8)
+	if pack.trace_phases:
+		AtlasPhaseTrace.record(name, "layout_target_allocate", layout_start, Time.get_ticks_usec())
+	var submit_start := Time.get_ticks_usec() if pack.trace_phases else 0
 	pack.task_id = WorkerThreadPool.add_task(func() -> void: _blit(pack),
 			false, "TextureAtlas: " + name)
+	if pack.trace_phases:
+		AtlasPhaseTrace.record(name, "task_submit", submit_start, Time.get_ticks_usec())
 	return true
 
 ## The shelf layout, as a pure function of the sizes it is asked to place: tallest first, so a
@@ -173,6 +189,10 @@ static func plan(sizes: Array[Vector2i]) -> Dictionary:
 ## `collect()` has waited for it.
 static func _blit(pack: Pack) -> void:
 	var started := Time.get_ticks_usec()
+	pack.blit_started_usec = started
+	pack.blit_on_main_thread = OS.get_thread_caller_id() == OS.get_main_thread_id()
+	if pack.blit_on_main_thread:
+		pack.blit_process_frame = Engine.get_process_frames()
 	for index in pack.images.size():
 		var image: Image = pack.images[index]
 		pack.target.blit_rect(image, Rect2i(Vector2i.ZERO, image.get_size()),
@@ -200,9 +220,17 @@ static func collect(name: String, wait := false) -> bool:
 		return false
 	# Always reaped, never merely tested: a task id that is dropped without this call leaks its
 	# slot in the pool for the rest of the run.
+	var wait_start := Time.get_ticks_usec() if pack.trace_phases else 0
 	WorkerThreadPool.wait_for_task_completion(pack.task_id)
 	pack.task_id = -1
+	if pack.trace_phases:
+		AtlasPhaseTrace.record(name, "collect_wait", wait_start, Time.get_ticks_usec())
+		_record_blit(name, pack)
+	var texture_start := Time.get_ticks_usec() if pack.trace_phases else 0
 	pack.atlas = ImageTexture.create_from_image(pack.target)
+	if pack.trace_phases:
+		AtlasPhaseTrace.record(name, "texture_create_submit", texture_start, Time.get_ticks_usec())
+	var regions_start := Time.get_ticks_usec() if pack.trace_phases else 0
 	pack.packed = {}
 	for index in pack.keys.size():
 		var region := AtlasTexture.new()
@@ -216,11 +244,19 @@ static func collect(name: String, wait := false) -> bool:
 	pack.images.clear()
 	pack.target = null
 	pack.ready_usec = Time.get_ticks_usec()
+	if pack.trace_phases:
+		AtlasPhaseTrace.record(name, "regions_and_cpu_image_release", regions_start, pack.ready_usec)
 	_collected_count += 1
-	Telemetry.note("texture", "atlas %s ready: %d pictures in %dx%d, %.1f ms from request (%.1f ms packed off the main thread)"
+	Telemetry.note("texture", "atlas %s ready: %d pictures in %dx%d, %.1f ms from request (%.1f ms blit on %s)"
 			% [name, pack.keys.size(), pack.atlas_size.x, pack.atlas_size.y,
-			(pack.ready_usec - pack.requested_usec) / 1000.0, pack.blit_usec / 1000.0])
+			(pack.ready_usec - pack.requested_usec) / 1000.0, pack.blit_usec / 1000.0,
+			"main thread" if pack.blit_on_main_thread else "worker thread"])
 	return true
+
+## Task-owned fields are read only after the join; the worker never appends to the shared buffer.
+static func _record_blit(name: String, pack: Pack) -> void:
+	AtlasPhaseTrace.record(name, "blit", pack.blit_started_usec,
+		pack.blit_started_usec + pack.blit_usec, pack.blit_on_main_thread, pack.blit_process_frame)
 
 ## Collects every request whose worker task has finished. `Main._process()` calls this once a
 ## frame; it is the only thing in the running game that does.
@@ -263,10 +299,16 @@ static func release(name: String) -> void:
 	var pack: Pack = _packs.get(name)
 	if pack == null:
 		return
-	if pack.task_id != -1:
+	var wait_start := Time.get_ticks_usec() if pack.trace_phases else 0
+	var had_task := pack.task_id != -1
+	if had_task:
 		WorkerThreadPool.wait_for_task_completion(pack.task_id)
 		pack.task_id = -1
 	var now := Time.get_ticks_usec()
+	if pack.trace_phases:
+		AtlasPhaseTrace.record(name, "release_wait", wait_start, now)
+		if had_task:
+			_record_blit(name, pack)
 	if pack.ready_usec > 0:
 		Telemetry.note("texture", "atlas %s released after %.1f ms drawn from"
 				% [name, (now - pack.ready_usec) / 1000.0])

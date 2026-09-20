@@ -286,11 +286,14 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
 checks and worktrees can move independently of this file.
 
-- **PR #216 — M159, reduce crowd contribution cost and retain stutter measurements** is a draft with merge conflicts
-  and no CI result for its current head. The crowd-rejection optimization is locally verified;
-  its retained paired measurements show cheaper queries, while whole-frame tails remain.
-  Phone measurements and CPU attribution remain open. PLAYTEST-86 is its performance clarification.
-  Fetch the live PR and inspect its evidence before continuing.
+- **M159, a slow frame names the frame that was slow, has its first optimization in and three
+  items open in `TODO.md`.** `CrowdAgent.contribution_at()` rejects distant sources before the
+  velocity and ellipse work, with exact result parity (`DECISIONS.md`, M159, cheaper crowd
+  contribution sweeps; [PLAYTEST-86](playtests/PLAYTEST-86.md) is the player's demand for an
+  optimization rather than a measurement). Whole-frame tails remain: attributing the remaining
+  slow intervals, profiling the phone, and completing the atlas measurements are the open items,
+  and no toggle causality is claimed. M163, the ground atlas test builds the same reference it
+  compares, and M164, engine errors make the test gate red, are separate fix-ready briefs there.
 - **PR #234 — M167, the father's legs read as legs** is the separate drawing follow-up in `TODO.md`.
   [PLAYTEST-90](playtests/PLAYTEST-90.md) and [PLAYTEST-91](playtests/PLAYTEST-91.md) require
   more natural legs, A/C-consistent shading and shoes, and a narrower three-quarter stride.
