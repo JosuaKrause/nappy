@@ -170,8 +170,16 @@ func _test_manifest_covers_the_authored_ground_sources(t) -> void:
 		var feature_name: String = str(feature_value).trim_suffix(".png")
 		t.check(components.has(feature_name),
 			"grass feature %s names a declared transparent component" % feature_value)
-	# Every picture the recipe names has to be on the page now, or the source it belongs to falls
-	# back to its whole authored tile without a word. A headless run cannot see that happen.
+	# Every picture the recipe names has to be on the page, or the source it belongs to composes
+	# to nothing: a default bake carries no whole authored tile for a composed source to fall back
+	# to. `GroundLayers` says so with a `push_error`, which the test gate is red for — this is the
+	# check that keeps that error unreachable rather than the one that provokes it.
+	#
+	# **Asked of a default bake alone**, because the layers are its own members: an `--svg` bake
+	# composes nothing and its page carries no layer at all, which
+	# `tests/test_atlas_ground.gd` asserts from the other side.
+	if _svg_bake():
+		return
 	var filenames: Array[String] = []
 	for value in bases.values():
 		filenames.append(str(value))

@@ -165,7 +165,9 @@ art/                      the authoring pictures, behind a .gdignore: the engine
 assets/                   what the engine still reads at runtime, and only that
   shaders/                the excitement halo's silhouette rim
   atlases/membership.json which picture belongs on which atlas page, with each group's
-                          lifetime, its padding kind and the consumers that read it
+                          lifetime, its padding kind and the consumers that read it. "members"
+                          is what both bake modes carry, "members_png" and "members_svg" what
+                          only that mode draws, reads and hashes
   atlases/baked/          the pages themselves, gitignored: one PNG per group, regions.json
                           and bake_manifest.json, written by tools/bake-atlases.sh
   ground_tileset.tres     one TileSetAtlasSource per ground tile, each naming its picture's
@@ -430,9 +432,12 @@ kept strictly out of anything that touches the meters.
   `ground_tiles.gd` mirrors them by hand — adding a tile means appending to both, in order.
   Each source names its picture's region on the baked `ground` page instead of holding a texture,
   and `GroundLayers` composites shared bases and transparent components out of that page's image
-  into one sheet the `TileSet` holds, while retaining those IDs. Grass atlas coordinates vary
-  deterministically by seed and cell; the selected source and gameplay geometry remain the map's
-  own.
+  into one sheet the `TileSet` holds, while retaining those IDs. The page holds what its own bake
+  mode draws: a default bake's carries the layers and only the twelve whole tiles the recipe
+  composes nothing for, so a composed source's picture is its composition or a `push_error`
+  naming what was missing; an `--svg` bake's carries the 58 whole tiles and no layer. Grass atlas
+  coordinates vary deterministically by seed and cell; the selected source and gameplay geometry
+  remain the map's own.
 - Buildings: `StaticBody2D` whose collision is the whole lot, plus a `_draw()` that
   assembles that same lot out of 32px tiles — a front wall (the southern `height` px) and a
   roof (the remainder). Fitting the mass inside the lot keeps extrusions off the *ground* she

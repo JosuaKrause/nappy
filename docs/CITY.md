@@ -1713,8 +1713,10 @@ Top-down camera with a fake vertical extrusion:
   when the TileSet is prepared, taking every one of them out of the baked `ground` page's image
   and uploading one composed sheet. Grass clump arrangements vary by city seed and cell
   coordinates; the source IDs, tile types and walkable geometry stay fixed. Which art the tiles
-  are drawn from is the bake's: a default bake composes the illustrated components, and a
-  `tools/bake-atlases.sh --svg` bake carries the authored vector tiles whole.
+  are drawn from is the bake's, and so is what the page holds: a default bake composes the
+  illustrated components and carries whole tiles only for the twelve sources it composes nothing
+  for, and a `tools/bake-atlases.sh --svg` bake carries the authored vector tiles whole and no
+  components at all.
 - Buildings fill exactly their lot: the front wall takes the southern `height` px and the
   roof takes the rest. Fitting the mass inside the lot is what keeps extrusions off the
   street. (It does *not* by itself keep an extrusion off the player: the mass is inside the lot and

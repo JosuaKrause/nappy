@@ -298,8 +298,14 @@ and selects them deterministically from the city seed and cell coordinates.
 The [component recipe](evidence/layered-ground-2026-09-12/GENERATION.md) preserves the source
 artwork, stencils and base preparation. The
 [engine layout recipe](evidence/layered-ground-layout-2026-09-12/GENERATION.md) reviews composed
-tiles in generated streets, junctions and parks. A `tools/bake-atlases.sh --svg` bake gives the
-authored vector tiles whole and composes nothing but the route-kerb tint.
+tiles in generated streets, junctions and parks.
+
+Each bake's `ground` page holds what that bake draws. A default one carries the 31 layers and
+the twelve whole tiles the recipe composes nothing for, and no whole picture of a composed
+source — so the cracked tiles, `tiles/grass` and `tiles/forest` are not in a default build at
+all, and a source whose composition fails is a `push_error` rather than a quiet fall back to its
+whole authored tile. A `tools/bake-atlases.sh --svg` bake gives the authored vector tiles whole,
+carries no layer, and composes nothing but the route-kerb tint.
 Baked damage-and-floor PNGs are excluded from runtime assets; the accepted source artwork lives
 in the component recipe's frozen inputs. Runtime damage uses transparent stencils over the base.
 Hairline, cracked and broken damage each share a variation pool across all three surfaces,

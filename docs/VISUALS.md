@@ -81,6 +81,15 @@ That is a custom local build, and `tools/export-web.sh` refuses to export one. A
 for the other mode, because the pixels on the page are the ones the build chose;
 `AtlasLibrary.bake_mode()` is how the ground compositor finds out which it got.
 
+**And a page holds what its own mode draws.** A group in `membership.json` lists the pictures
+both bakes carry under `members` and the ones only one of them draws under `members_png` and
+`members_svg`; a bake reads, hashes and packs its own mode's two lists and never looks at the
+other's, so changing a picture only the other mode draws leaves this tree up to date. The
+`ground` group is the one that needs it: a default bake composes 46 of the 58 TileSet sources
+out of layers, so the whole authored pictures of those 46 are members of an `--svg` bake alone,
+and the layers they are composed from are members of a default bake alone. Any other key in a
+group record, or a picture listed twice in the mode being baked, fails the bake by name.
+
 **The pages are baked on demand and never committed.** Every tool that starts the engine calls
 the wrapper first — `tools/check.sh`, `tools/test.sh`, `tools/run.sh`, `tools/shot.sh` and
 `tools/export-web.sh`, and `tools/serve-web.sh` through the export — so nothing has to be
@@ -148,17 +157,25 @@ names no group for, which is what a group folded into another leaves behind.
 
 `GroundLayers` builds a presentation TileSet from the authored source resource, which names each
 source's baked region and holds no texture of its own. Every base, overlay, damage stencil, grass
-feature and whole authored tile is a region of `AtlasLibrary.page_image(&"ground")`, read once per
-build, and the composed pictures go to the GPU as one sheet. Its component
+feature and whole authored tile it draws is a region of `AtlasLibrary.page_image(&"ground")`, read
+once per build, and the composed pictures go to the GPU as one sheet. Its component
 manifest, `assets/ground_layers.json`, assigns a shared base and transparent
 overlays to each supported source ID; it stays under `assets/` because the game reads it at
 runtime, and the Web preset's `include_filter` names it so the export keeps it. Curbstones, street paint, crosswalks and damage blend in
 the engine; pixels outside their alpha remain the base's own pixels. Parks and forests have sparse clump
 arrangements selected by city seed and tile coordinates. Daily repaints start from the authored
-resource, keeping composition stable. A component the bake does not carry leaves its source on
-its own whole authored tile. The presentation is the bake's: a `tools/bake-atlases.sh --svg` page
-carries the authored vector tiles already drawn and composes nothing but the route-kerb tint.
-Source IDs and gameplay geometry stay fixed.
+resource, keeping composition stable.
+
+**A default bake's page carries what it composes from and nothing it composes.** The layers are
+on it, and the twelve whole tiles whose source the recipe composes nothing for — `bulkhead`,
+`courtyard`, `fence`, `mountain`, `plaza`, `precinct`, `quiet_square`, `sand`, `scree`,
+`spoiled`, `stoop`, `water` — and no whole picture of the 46 sources it does compose, so no SVG
+raster of a ground tile reaches the game. **A composed source's picture is therefore its
+composition or nothing**: a recipe that cannot be carried out — a missing base, component,
+damage pool or grass feature — is a `push_error` naming the source and what was missing, and the
+test gate is red for it. A `tools/bake-atlases.sh --svg` page is the reverse: all 58 whole tiles,
+no layer, and nothing composed but the route-kerb tint, which it finds by matching the
+curbstone's own fill colour. Source IDs and gameplay geometry stay fixed in both.
 
 Each runtime replacement matches the SVG's native dimensions and functional anchors.
 Identity/export variants retain their documented source-derived canvas sizes. Registration preserves

@@ -8,6 +8,12 @@ extends RefCounted
 ## region name `assets/ground_tileset.tres` carries on each source. Nothing here loads a picture
 ## from disk and nothing reads a texture back from the GPU per picture.
 ##
+## **The page holds what its own bake mode draws.** A default bake's page carries the layers and
+## the twelve whole tiles whose source the recipe composes nothing for; the 46 whole tiles of
+## composed sources are on an `--svg` bake's page alone, which carries no layer in return
+## (`assets/atlases/membership.json`, the `ground` group's `members`, `members_png` and
+## `members_svg`). So a picture this asks for is always one its own bake wrote.
+##
 ## **The composition stays at runtime, and that is a decision rather than an accident.**
 ## *(PLAYTEST-108, on baking the grass variants and the route-curb tint as pages of their own:
 ## "no, we bake each individual item and the composite at runtime. this is not a bottleneck and it
@@ -57,12 +63,16 @@ const _COLOR_MATCH_TOLERANCE := 0.03
 
 ## Duplicates `authored` and gives every source its picture, composed out of the baked page.
 ##
-## An incomplete recipe — a missing manifest, a component the bake does not carry — leaves that
-## source on its own authored picture rather than half-composed, so an unfinished art drop cannot
-## erase a marking or change the TileSet's geometry. A source whose picture cannot be found at all
-## is left out of the sheet and keeps no tiles, which is the same graceful fallback one level down:
-## `GroundTiles` still names it and `TileMapLayer` draws nothing for it — and it is an engine error,
-## since every authored name is a member of the group and the test gate is red for one.
+## **In a default bake a composed source's picture is its composition or nothing.** The page of a
+## default bake carries the layers and only those whole tiles the recipe composes nothing for
+## (`assets/atlases/membership.json`'s `members` and `members_png` for this group), so there is no
+## whole authored tile left to fall back to for the 46 sources the recipe does compose — a missing
+## base, component, damage pool or grass feature is a `push_error` naming the source and what was
+## missing, and that source keeps no tiles. The test gate is red for an engine error, where a tile
+## quietly drawn from a stale whole picture passed unseen.
+##
+## A source the recipe composes nothing for draws its whole tile off the page, in either bake, and
+## a name the bake does not carry is the same kind of error one level down.
 static func build_tile_set(authored: TileSet) -> TileSet:
 	if authored == null:
 		return null
@@ -72,11 +82,23 @@ static func build_tile_set(authored: TileSet) -> TileSet:
 		push_error("The baked '%s' page did not read back; the ground cannot be composed"
 				% ATLAS_GROUP)
 		return null
-	var result := authored.duplicate(true) as TileSet
 	var manifest := _layer_recipe()
+	if manifest.is_empty() and AtlasLibrary.bake_mode() != "svg":
+		# The recipe said what a default bake's page holds, so without it nothing can be composed
+		# and nothing whole is on the page to draw instead. Stopping here says that once;
+		# continuing would say it again for each of the 46 sources and bury the reason.
+		push_error("The ground composition recipe %s did not load; a default bake's page carries "
+				% MANIFEST_PATH + "no whole tile to draw instead, so the ground cannot be composed")
+		return null
+	var result := authored.duplicate(true) as TileSet
+	var source_bases: Dictionary = manifest.get("source_bases", {})
 	# Built once and shared by both grass sources, exactly as the authored TileSet shares one
-	# picture between two source ids — `_upload_one_sheet` places a shared image once.
-	var grass: Image = _grass_atlas(manifest, page) if not manifest.is_empty() else null
+	# picture between two source ids — `_upload_one_sheet` places a shared image once. An `--svg`
+	# bake composes nothing, so there is no grass atlas to build there.
+	var grass_missing: Array[String] = []
+	var grass: Image = null
+	if not manifest.is_empty():
+		grass = _grass_atlas(manifest, page, grass_missing)
 	var pictures: Dictionary = {}
 	for source_index in result.get_source_count():
 		var source_id := result.get_source_id(source_index)
@@ -84,36 +106,46 @@ static func build_tile_set(authored: TileSet) -> TileSet:
 		if source == null:
 			continue
 		var picture: Image = null
-		if not manifest.is_empty():
+		if source_bases.has(str(source_id)):
+			var missing: Array[String] = []
 			if source_id in DAMAGE_SOURCE_IDS:
-				picture = _damage_atlas(source_id, manifest, page)
+				picture = _damage_atlas(source_id, manifest, page, missing)
 			elif source_id in [GRASS_SOURCE_ID, FOREST_SOURCE_ID]:
 				picture = grass
+				missing = grass_missing
 			else:
-				picture = _layered_image(source_id, manifest, page, false)
-		if picture == null:
-			picture = _source_image(page, source)
-		if picture != null:
-			pictures[source_id] = picture
+				picture = _layered_image(source_id, manifest, page, false, missing)
+			if picture == null:
+				push_error("Ground source %d ('%s') cannot be composed: the baked '%s' page is "
+						% [source_id, source.resource_name, ATLAS_GROUP]
+						+ "missing %s" % ", ".join(missing))
+				continue
 		else:
-			# Every authored name is a member of the `ground` group, so this is a membership
-			# mistake rather than an unfinished art drop, and the test gate is red for an engine
-			# error where a tile that draws nothing would pass unseen.
-			push_error("Ground source %d names '%s', which is not a region of the baked '%s' page"
-					% [source_id, source.resource_name, ATLAS_GROUP])
+			picture = _source_image(page, source)
+			if picture == null:
+				# A source the recipe composes nothing for is a member of the group in either bake,
+				# so this is a membership mistake rather than an unfinished art drop.
+				push_error("Ground source %d names '%s', which is not a region of the baked "
+						% [source_id, source.resource_name] + "'%s' page" % ATLAS_GROUP)
+				continue
+		pictures[source_id] = picture
 	_register_route_kerb_twins(result, manifest, page, pictures)
 	_upload_one_sheet(result, pictures, started)
 	return result
 
 ## The composition recipe, or `{}` for "compose nothing and draw the authored tiles".
 ##
-## An SVG bake is the second case: its page carries each tile as its author drew it, markings
-## included, so composing a kerb over a paving base there would draw the kerb twice.
+## An SVG bake is the second case, and the only one: its page carries each tile as its author drew
+## it, markings included, so composing a kerb over a paving base there would draw the kerb twice.
+## In a default bake the recipe is what the page was baked around, so a missing or unusable one is
+## an error rather than a quiet `{}` — the whole tiles it composes are not on that page.
 static func _layer_recipe() -> Dictionary:
 	if AtlasLibrary.bake_mode() == "svg":
 		return {}
 	var manifest := _load_manifest()
 	if manifest.is_empty() or int(manifest.get("tile_size", 0)) != TILE_SIZE.x:
+		push_error("The ground composition recipe %s is missing, unreadable or not a version 1 "
+				% MANIFEST_PATH + "recipe at %dpx tiles" % TILE_SIZE.x)
 		return {}
 	return manifest
 
@@ -238,8 +270,8 @@ static func rotate_clockwise(image: Image, degrees: int) -> Image:
 ## The recipe, read from disk once and held for the life of the process, like the `ground` page
 ## it composes from. The ground is repainted at the start of every day, and a repaint that went
 ## back to the disk would make each day's ground depend on what the file system holds at that
-## moment — a file moved under a running game composes nothing and draws whole authored tiles,
-## with no error. The first build is the city's own, before the first day is drawn.
+## moment — a file moved under a running game would leave that day with no recipe and no ground.
+## The first build is the city's own, before the first day is drawn.
 static var _manifest: Dictionary = {}
 static var _manifest_read := false
 static var _manifest_reads := 0
@@ -275,48 +307,62 @@ static func reset_for_tests() -> void:
 ## when `tint_curbstone` asks for it — which is the route's own cast (M145's trial): the paving,
 ## and on a main-road kerb the `main_edge_red` clearway line, are untouched and only the stone
 ## carries it.
+##
+## Null where the recipe cannot be carried out, with what was missing appended to `missing` so the
+## caller's error can name it: there is no whole authored tile on a default bake's page to fall
+## back to.
 static func _layered_image(source_id: int, manifest: Dictionary, page: Image,
-		tint_curbstone: bool) -> Image:
+		tint_curbstone: bool, missing: Array[String]) -> Image:
 	if source_id in [GRASS_SOURCE_ID, FOREST_SOURCE_ID]:
 		return null
 	var source_bases: Dictionary = manifest.get("source_bases", {})
 	var base_name: String = source_bases.get(str(source_id), "")
 	if base_name.is_empty():
+		missing.append("a base for source %d in the recipe" % source_id)
 		return null
 	var base := _base_image(base_name, manifest, page)
 	if base == null:
+		missing.append("the base '%s'" % base_name)
 		return null
 	var source_layers: Dictionary = manifest.get("source_layers", {})
 	var records: Array = source_layers.get(str(source_id), [])
 	var overlays: Array[Image] = []
 	for record_value in records:
 		if not record_value is Dictionary:
+			missing.append("a readable layer record for source %d" % source_id)
 			return null
 		var record: Dictionary = record_value
 		var component_name: String = record.get("component", "")
 		var overlay := _component_image(component_name, manifest, page)
 		if overlay == null:
+			missing.append("the component '%s'" % component_name)
 			return null
-		var rotated := rotate_clockwise(overlay, int(record.get("rotation_degrees", 0)))
+		var degrees := int(record.get("rotation_degrees", 0))
+		var rotated := rotate_clockwise(overlay, degrees)
 		if rotated == null:
+			missing.append("a %d degree turn of the component '%s'" % [degrees, component_name])
 			return null
 		if tint_curbstone and component_name == "curbstone":
 			rotated = _tint_opaque(rotated)
 		overlays.append(rotated)
-	return compose_image(base, overlays)
+	var composed := compose_image(base, overlays)
+	if composed == null:
+		missing.append("a component of source %d the size of its own base" % source_id)
+	return composed
 
 ## Registers each of `GroundTiles.ROUTE_KERB_SOURCES`' tinted twins on `tile_set`, at the id
 ## `GroundTiles.route_twin_of` gives its source, and hands its picture to the sheet — one
 ## single-cell source per twin, matching the plain kerb sources' own shape.
 ##
-## Where the page carries composed layers the twin is the same composition with the `curbstone`
-## component tinted; where it carries whole authored tiles (an SVG bake) there is no separate
-## stone to tint, so the stone is found by its own fill colour instead. A source with no
-## registered twin id, or whose twin cannot be built, is left without one:
-## `City._tint_the_route_kerbs()` already skips a tile whose twin does not exist, the same
-## graceful fallback the rest of this file gives an incomplete art drop.
+## Where the recipe composes the kerb the twin is that same composition with the `curbstone`
+## component tinted; where the page carries the whole authored tile (an SVG bake) there is no
+## separate stone to tint, so the stone is found by its own fill colour instead. A source with no
+## registered twin id is left without one — that is `GroundTiles`' own decision about which kerbs
+## the route casts on, and `City._tint_the_route_kerbs()` walks the same list. A twin that
+## **cannot be built** is an error naming what was missing, like the plain source's own.
 static func _register_route_kerb_twins(tile_set: TileSet, manifest: Dictionary, page: Image,
 		pictures: Dictionary) -> void:
+	var source_bases: Dictionary = manifest.get("source_bases", {})
 	for source_id in GroundTiles.ROUTE_KERB_SOURCES:
 		var twin_id := GroundTiles.route_twin_of(source_id)
 		if twin_id < 0 or tile_set.has_source(twin_id):
@@ -325,17 +371,25 @@ static func _register_route_kerb_twins(tile_set: TileSet, manifest: Dictionary, 
 		if source == null:
 			continue
 		var twin: Image = null
-		if manifest.is_empty():
+		var missing: Array[String] = []
+		if source_bases.has(str(source_id)):
+			twin = _layered_image(source_id, manifest, page, true, missing)
+		else:
 			# Its size is asked before the tint, because a twin that is not one whole tile would be
 			# given `picture.get_width() / TILE_SIZE.x` cells by `_upload_one_sheet()` — a kerb with
-			# two cells or none rather than a source left without a twin, which is the fallback
-			# `City._tint_the_route_kerbs()` is written against.
+			# two cells or none rather than one tinted tile.
 			var plain := _source_image(page, source)
-			if plain != null and plain.get_size() == TILE_SIZE:
+			if plain == null:
+				missing.append("the whole tile '%s'" % source.resource_name)
+			elif plain.get_size() != TILE_SIZE:
+				missing.append("a whole-tile '%s', which is %s rather than %s"
+						% [source.resource_name, plain.get_size(), TILE_SIZE])
+			else:
 				twin = _tint_matching(plain, SVG_KERB_STONE_COLOR)
-		else:
-			twin = _layered_image(source_id, manifest, page, true)
 		if twin == null:
+			push_error("The route-kerb twin %d of ground source %d cannot be built: the baked "
+					% [twin_id, source_id]
+					+ "'%s' page is missing %s" % [ATLAS_GROUP, ", ".join(missing)])
 			continue
 		var twin_source := TileSetAtlasSource.new()
 		twin_source.texture_region_size = TILE_SIZE
@@ -344,37 +398,54 @@ static func _register_route_kerb_twins(tile_set: TileSet, manifest: Dictionary, 
 
 ## Composes every accepted stencil in the source's severity pool over its own semantic base, six
 ## cells in a row. The source ID still tells `GroundTiles` which material and severity it placed;
-## only the atlas cell is visual variation, so an unavailable pool leaves the authored picture
-## untouched.
-static func _damage_atlas(source_id: int, manifest: Dictionary, page: Image) -> Image:
+## only the atlas cell is visual variation. An unavailable pool is null, with what was missing
+## appended to `missing` for the caller's error — a default bake's page carries no whole damage
+## tile to draw instead.
+static func _damage_atlas(source_id: int, manifest: Dictionary, page: Image,
+		missing: Array[String]) -> Image:
 	var source_bases: Dictionary = manifest.get("source_bases", {})
-	var base := _base_image(str(source_bases.get(str(source_id), "")), manifest, page)
+	var base_name := str(source_bases.get(str(source_id), ""))
+	var base := _base_image(base_name, manifest, page)
 	var damage_types: Dictionary = manifest.get("source_damage_types", {})
 	var damage_type: String = str(damage_types.get(str(source_id), ""))
 	var pools: Dictionary = manifest.get("damage_pools", {})
 	var pool: Array = pools.get(damage_type, [])
+	if base == null:
+		missing.append("the base '%s'" % base_name)
+	if pool.size() != DAMAGE_VARIANTS:
+		missing.append("a '%s' damage pool of %d stencils (it has %d)"
+				% [damage_type, DAMAGE_VARIANTS, pool.size()])
 	if base == null or pool.size() != DAMAGE_VARIANTS:
 		return null
 	var atlas := Image.create(TILE_SIZE.x * DAMAGE_VARIANTS, TILE_SIZE.y, false, Image.FORMAT_RGBA8)
 	for variant in DAMAGE_VARIANTS:
 		var overlay := _component_image(str(pool[variant]), manifest, page)
-		var composed := compose_image(base, [overlay]) if overlay != null else null
+		if overlay == null:
+			missing.append("the damage stencil '%s'" % pool[variant])
+			return null
+		var composed := compose_image(base, [overlay])
 		if composed == null:
+			missing.append("a damage stencil '%s' the size of its own base" % pool[variant])
 			return null
 		atlas.blit_rect(composed, Rect2i(Vector2i.ZERO, TILE_SIZE), Vector2i(variant * TILE_SIZE.x, 0))
 	return atlas
 
-static func _grass_atlas(manifest: Dictionary, page: Image) -> Image:
+## The eight sparse grass variants over the shared soft base, or null with what was missing
+## appended to `missing` — the grass and forest sources have no whole tile on a default bake's page.
+static func _grass_atlas(manifest: Dictionary, page: Image, missing: Array[String]) -> Image:
 	var base := _base_image("grass", manifest, page)
 	if base == null:
+		missing.append("the base 'grass'")
 		return null
 	var feature_names: Array = manifest.get("grass_features", [])
 	if feature_names.is_empty():
+		missing.append("the recipe's list of grass features")
 		return null
 	var features: Array[Image] = []
 	for feature_name_value in feature_names:
 		var feature := _component_image(str(feature_name_value).trim_suffix(".png"), manifest, page)
 		if feature == null:
+			missing.append("the grass feature '%s'" % feature_name_value)
 			return null
 		features.append(feature)
 	var atlas := Image.create(TILE_SIZE.x * GRASS_VARIANTS, TILE_SIZE.y, false, Image.FORMAT_RGBA8)
@@ -403,11 +474,15 @@ static func _grass_variant(base: Image, features: Array[Image], variant: int) ->
 
 ## The picture `source` was authored with, read off the page.
 ##
-## **`resource_name` on each `TileSetAtlasSource` in `assets/ground_tileset.tres` is its region
-## name**, which is how that file names a picture now that it references no texture at all: a
-## `.tres` can only carry tiles for a source that already has a texture, and the texture is the
-## composed sheet, which does not exist until `_upload_one_sheet()`. So the authored file carries
-## the id, the cell size and the name, and everything else follows from the page.
+## **`resource_name` on each `TileSetAtlasSource` in `assets/ground_tileset.tres` is its picture's
+## region name**, which is how that file names a picture at all now that it references no texture:
+## a `.tres` can only carry tiles for a source that already has a texture, and the texture is the
+## composed sheet, which does not exist until `_upload_one_sheet()`.
+##
+## **A name is a region of the page its own bake mode wrote, not of every page.** An `--svg` bake
+## carries all 58 whole tiles, so every name is one there; a default bake carries only the twelve
+## whose source the recipe composes nothing for, so the other 46 names are regions of no page and
+## this is never asked about them.
 static func _source_image(page: Image, source: TileSetAtlasSource) -> Image:
 	return _region_image(page, StringName(source.resource_name))
 
@@ -430,8 +505,8 @@ static func _component_image(name: String, manifest: Dictionary, page: Image) ->
 
 ## A manifest filename (`curbstone.png`) is the leaf of the SVG it was drawn from
 ## (`art/tiles/layers/curbstone.svg`), and the region is that path's own name. A component the
-## bake does not carry, or one that is not a whole tile, answers null and leaves its source on the
-## authored picture.
+## bake does not carry, or one that is not a whole tile, answers null, and its caller names it in
+## the error that source fails with.
 static func _layer_image(filename: String, page: Image) -> Image:
 	if filename.is_empty():
 		return null

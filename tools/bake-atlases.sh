@@ -27,6 +27,12 @@
 # A mode mismatch is staleness like any other: a tree baked with --svg is stale for a default
 # bake and the other way round, so the release build can never pick up a local SVG bake.
 #
+# **A mode only hashes what it bakes.** A group in membership.json lists the pictures both modes
+# carry under "members" and the ones only one mode draws under "members_png" / "members_svg"; the
+# bake reads and hashes its own mode's list alone, so editing a picture only the other mode draws
+# leaves this tree up to date. The ground is the group that needs it: a default bake composes 46
+# of its tiles out of layers, so those tiles' whole pictures are on an --svg page only.
+#
 # **A bake that succeeds can still make the engine complain.** This runs Godot with --script,
 # which loads every autoload first whatever the script references. On a checkout with no .godot/
 # at all -- every fresh clone and every new worktree -- there is no global class-name cache, so
@@ -55,7 +61,9 @@ flags it compares the recorded source hashes and prints one line saying whether 
 
   --svg     bake the authored SVG rasters alone, ignoring the illustrated PNGs. The custom
             local build; the release is always the default PNG bake, and a tree baked this way
-            counts as stale for every tool that wants a release build.
+            counts as stale for every tool that wants a release build. A group's page also
+            holds what its mode draws: "members" is what both bake, "members_png" and
+            "members_svg" what only that one does, and only that one's are read and hashed.
   --check   report whether a bake is needed and exit non-zero if it is; bake nothing. A page
             left behind by a group that no longer exists counts as needing one, and the bake
             is what removes it.

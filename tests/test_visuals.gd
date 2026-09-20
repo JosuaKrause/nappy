@@ -31,6 +31,16 @@ const ANCHOR_TOLERANCE := 1.5
 ## the compositor's own arithmetic wrong in a way reading its constant back could not catch.
 const LAYER_CANVAS := Vector2i(32, 32)
 
+## **How many whole ground tiles there are to ask about is the bake's.** An `--svg` bake carries
+## all 58; a default bake carries the twelve whose source the compositor composes nothing for, and
+## the other 46 are composed from layers rather than drawn. This is the smaller of the two, so the
+## sweep below stays a guard against having found nothing rather than a second copy of the
+## per-mode membership `tests/test_atlas_ground.gd` already pins exactly.
+const FEWEST_WHOLE_GROUND_TILES := 12
+## And how many layer components there are: 31 in a default bake, none at all in an `--svg` one,
+## which composes nothing and carries no layer in return.
+const FEWEST_GROUND_COMPONENTS := 25
+
 ## The props whose placement is a contract their caller relies on, by region name. Each is drawn
 ## by `Prop`, `Litter` or `CityDecals` on a point — a ground decal on its own centre, a standing
 ## object on its feet — so a picture that drifts inside its canvas moves in the world without
@@ -93,6 +103,9 @@ func _test_the_rig_stands_on_its_canvas_bottom(t) -> void:
 ## per cell with nothing behind it, and a hole shows the void. The layer components below are the
 ## exception and are excluded here by name — those are drawn *over* a base and are supposed to be
 ## mostly transparent.
+##
+## **How many whole tiles there are to ask about is the bake's** — see
+## `FEWEST_WHOLE_GROUND_TILES`.
 func _test_ground_tiles_cover_their_cell(t) -> void:
 	var checked := 0
 	var holed: Array[String] = []
@@ -109,7 +122,8 @@ func _test_ground_tiles_cover_their_cell(t) -> void:
 			holed.append(text)
 	t.check(holed.is_empty(), "every ground tile covers its full opaque canvas (%s)"
 			% ", ".join(holed.slice(0, 5)))
-	t.check(checked >= 40, "there were ground tiles to ask about (%d)" % checked)
+	t.check(checked >= FEWEST_WHOLE_GROUND_TILES,
+			"there were whole ground tiles to ask about (%d)" % checked)
 
 ## A curb, a marking, a crack or a grass clump is blended over a shared base at build time
 ## (`GroundLayers._layered_image()`), so each component owes the tile's own canvas — the blend
@@ -119,7 +133,11 @@ func _test_ground_tiles_cover_their_cell(t) -> void:
 ## **The four `*_base` components are the bases themselves, not overlays**, and owe the opposite:
 ## the paving, asphalt, alley and grass materials every other component is blended *onto* are what
 ## the composed tile's opacity comes from, so a transparent pixel in one of those is a hole in
-## every tile built on it. That one holds in either bake.
+## every tile built on it.
+##
+## **An `--svg` bake has no components at all to ask about**, since it composes nothing and its
+## page carries no layer: there the sweep asserts that absence rather than a count, which is the
+## same claim from the other side.
 func _test_ground_components_keep_their_canvas(t) -> void:
 	var checked := 0
 	var bases := 0
@@ -143,7 +161,13 @@ func _test_ground_components_keep_their_canvas(t) -> void:
 		if _transfer_rules:
 			t.check(_has_opaque_and_clear(image),
 					"%s has visible detail and genuine transparency" % name)
-	t.check(checked >= 25, "there were ground components to ask about (%d)" % checked)
+	if AtlasLibrary.bake_mode() == "svg":
+		t.check(checked == 0,
+				"an svg bake's page carries no ground component, since it composes nothing (%d)"
+				% checked)
+		return
+	t.check(checked >= FEWEST_GROUND_COMPONENTS,
+			"there were ground components to ask about (%d)" % checked)
 	t.check(bases >= 4, "and the shared bases were among them (%d)" % bases)
 
 # ----------------------------------------------------------------- the props ---

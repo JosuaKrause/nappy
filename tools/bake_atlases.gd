@@ -12,6 +12,12 @@ extends SceneTree
 ## in the running game chooses between them — the pixels on the page are the ones the build
 ## chose.
 ##
+## **And a mode bakes what it draws.** A group's `members` are the pictures both modes carry;
+## `members_png` and `members_svg` are the ones only that mode draws, and only that mode reads or
+## hashes them. The `ground` group is why: a default bake composes 46 of its 58 TileSet sources
+## out of layers, so the whole authored tiles of those 46 are on an `--svg` bake's page alone,
+## which composes nothing and carries no layer in return.
+##
 ## **Every picture goes through `Image.load_svg_from_buffer()` at scale 1.0 and
 ## `fix_alpha_edges()`**, which is what the import pass does to the same file — `svg/scale=1.0`
 ## and `process/fix_alpha_border=true` in every `.svg.import` sidecar in the tree. That is what
@@ -40,6 +46,11 @@ const Library := preload("res://src/visuals/atlas_library.gd")
 const TOOL_VERSION := 2
 
 const MEMBERSHIP_PATH := "res://assets/atlases/membership.json"
+## Every key a group record may carry. Checked rather than ignored, because a typo in one of the
+## two mode lists — `members_svgs`, `members_png2` — would otherwise bake a group silently short
+## of what a mode draws, and the missing region only shows up as a tile drawing nothing.
+const MEMBERSHIP_KEYS := ["lifetime", "padding", "consumers", "members", "members_png",
+		"members_svg"]
 const BAKED_DIR := "res://assets/atlases/baked"
 const REGIONS_PATH := BAKED_DIR + "/regions.json"
 const MANIFEST_PATH := BAKED_DIR + "/bake_manifest.json"
@@ -178,6 +189,32 @@ func _read_membership() -> Dictionary:
 		printerr("bake_atlases: %s lists no groups" % MEMBERSHIP_PATH)
 	return groups
 
+## What this bake's mode draws from `group`: the members both modes carry plus the ones only this
+## mode does. Empty — with a failure recorded — for a group that would bake nothing, or one that
+## lists a picture twice in the mode being baked, which would be two members claiming one region
+## name and is a mistake in the file rather than a duplicate to drop.
+##
+## **The other mode's list is not read and not hashed**, which is what makes a change to a
+## picture only an `--svg` bake draws leave a default tree up to date: `_rasterize()` is the only
+## thing that hashes an input, and it is never called on a member this does not return.
+func _members_for_this_mode(group: String, record: Dictionary) -> Array[String]:
+	var members: Array[String] = []
+	var seen: Dictionary = {}
+	var lists: Array = [record.get("members", []),
+			record.get("members_svg" if _svg_mode else "members_png", [])]
+	for list: Array in lists:
+		for member: String in list:
+			if seen.has(member):
+				_failures.append("group %s lists %s twice in the %s bake"
+						% [group, member, "svg" if _svg_mode else "png"])
+				return []
+			seen[member] = true
+			members.append(member)
+	if members.is_empty():
+		_failures.append("group %s has no members in the %s bake"
+				% [group, "svg" if _svg_mode else "png"])
+	return members
+
 ## The picture a member is baked from: its illustrated PNG in the default mode where one exists
 ## and agrees on size, its SVG's raster otherwise. Returns null and records a failure for
 ## anything unreadable or mis-sized, because either is a defect in the tree rather than a
@@ -252,11 +289,13 @@ func _bake_group(group: String, record: Dictionary, regions: Dictionary,
 	if padding != "transparent" and padding != "extrude":
 		_failures.append("group %s asks for unknown padding '%s'" % [group, padding])
 		return Vector2i.ZERO
-	var members: Array = record.get("members", [])
+	for key: String in record.keys():
+		if not (key in MEMBERSHIP_KEYS):
+			_failures.append("group %s carries the unknown key '%s'" % [group, key])
+			return Vector2i.ZERO
+	var members := _members_for_this_mode(group, record)
 	if members.is_empty():
-		_failures.append("group %s has no members" % group)
 		return Vector2i.ZERO
-	members = members.duplicate()
 	members.sort()
 	var images: Array[Image] = []
 	var names: Array[StringName] = []
