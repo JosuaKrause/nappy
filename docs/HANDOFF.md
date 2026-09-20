@@ -288,7 +288,7 @@ checks and worktrees can move independently of this file.
 
 - **M171 — Build-time atlases replace individual textures is next, and M159 follows it**
   ([PLAYTEST-108](playtests/PLAYTEST-108.md)). Its `TODO.md` section is the design and its
-  staging, one pull request per item: the bake, the loader and the staleness check first; the
+  staging, one pull request per item, on top of the bake and the loader that are in: the
   leaf consumers, the stroller with the crowd, and the decoration together; the ground; the
   events after the square poster crew has merged; then the sources move out of the imported
   tree and the package audit turns fatal.
