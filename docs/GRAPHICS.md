@@ -56,7 +56,7 @@ Some visible graphics are code rather than image files:
 | `art/props/{tunnel_mouth,bridge_deck,road_on}.svg` | `src/city/city_edge.gd` draws the tunnel, bridge and road continuation where a street meets the map boundary. |
 | `art/props/door.svg` | `src/city/city.gd` places the home door as a `Sprite2D`. |
 | `art/props/signal_head{,_back,_side}.svg` | `src/city/traffic_light.gd` chooses face-on, rear or edge-on traffic-light hardware by the arm's direction; code adds the lit lamp. |
-| `art/props/chalk_mark.svg`, `chalk_mark_touched.svg` | `src/resistance/contact_point.gd` draws a pickup's own mark, switching to the touched picture the instant its step completes; both are 32×32, centre-anchored, in the "decoration" atlas group, drawn at 1.35× native size with a raised opacity floor on the untouched mark's flicker (`ContactPoint._MARK_SCALE`) so it reads at walking distance. A perform's contact still draws nothing of its own — see the class doc. |
+| `art/props/chalk_mark.svg`, `chalk_mark_touched.svg` | `src/resistance/contact_point.gd` draws a pickup's own mark, switching to the touched picture the instant its step completes; both are 32×32, centre-anchored, in the "decoration" atlas group, drawn at 1.35× native size with a raised opacity floor on the untouched mark's flicker (`ContactPoint._MARK_SCALE`), and `chalk_mark.svg`'s own stroke is opacity 0.92/width 2.4 (was 0.78/2) for contrast against a wall — all three read-at-a-distance changes for the player's own "a little bit more obviously visible" follow-up. A perform's contact still draws nothing of its own — see the class doc. |
 
 ### Player, crowd and interface
 
