@@ -307,7 +307,14 @@ checks and worktrees can move independently of this file.
 
 - **M171 — Build-time atlases replace individual textures is built and released** as the minor
   version that followed it (`DECISIONS.md`, the sections starting "M171,"). What only a person
-  can judge about it is in `REVIEW.md`. **M159 is next.**
+  can judge about it is in `REVIEW.md`.
+- **Next, decided by the player and not started** ([PLAYTEST-113](playtests/PLAYTEST-113.md)):
+  **M174, the man shouting costs nothing to walk beside** — `homeless_yeller`, `loose_dog` and
+  `dog_walker` cost more to be near, and the halo shows what the bar does — and **M102, the
+  finale**'s one open item: a won day 14 with every task complete goes on to the building, and
+  the building and the city are each a day with a brief and a restart checkpoint. The two touch
+  disjoint files and can run as two agents. One question is with the player: one clock through
+  both finale sections or a day's clock for each; the item is written to build one for each.
 - **M159, a slow frame names the frame that was slow, has its first optimization in and three
   items open in `TODO.md`.** `CrowdAgent.contribution_at()` rejects distant sources before the
   velocity and ellipse work, with exact result parity (`DECISIONS.md`, M159, cheaper crowd
