@@ -293,10 +293,39 @@ Everything below is in the order the gameplay queue above gives it, and was reas
 
 ---
 
+## M174 — The man shouting costs nothing to walk beside · asked for 2026-09-20
+
+> "I can easily walk next to him for an extended amount of time without any real penalty. or
+> maybe the halo calculation changed? he gets deep red but my bar doesn't move up much. it was
+> supposed to indicate the actual amount I receive over a time window"
+
+[PLAYTEST-112](playtests/PLAYTEST-112.md) has the arithmetic and the run. Nothing changed in
+v0.14.0: the halo is the gross excitement landed from a source over five seconds, full red at
+40 points, and the bar is that less the 6.0 a second walking gives back. `homeless_yeller`
+lands about 44 points in five seconds at arm's length and walking returns 30, so the halo is
+deep red while the bar gains under 3 a second, and nothing at all with the baby asleep.
+
+**The design is the player's to choose, and nothing is built until it is chosen.**
+
+- [ ] **Decide what moves.** His numbers (intensity 14, a pulse whose trough is a quarter of
+      it, `inner_radius` 45px) under the **balance** skill's rules, so that walking beside him
+      costs what a player can feel; or what the halo counts, so that red means the bar is
+      rising — each source's landed points less its share of the decay; or both. The halo's
+      present meaning is the player's own instruction of 2026-09-08, so changing it is an
+      overturn to be agreed, not inferred. Every pulsing row shares the trough, so a change to
+      the pulse is a change to all of them.
+
+---
+
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
 > numbers and the codebase and think about how we could improve performance and reduce stutter"
+
+**On the desktop the player feels the stutter gone with v0.14.0's baked atlases**
+([PLAYTEST-112](playtests/PLAYTEST-112.md): "I feel like the stuttering is gone (so it was
+always what I predicted -- a proper atlas implementation solved it)"). The open items below are
+reassessed against that: what remains is confirming it in the recorded numbers, and the phone.
 
 **The deliverable is an optimization, with measurement retained as evidence.**
 [PLAYTEST-86](playtests/PLAYTEST-86.md) clarifies: "well the point was to actually do some
