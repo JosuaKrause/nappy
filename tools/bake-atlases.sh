@@ -18,6 +18,12 @@
 # milliseconds, cheap enough to pay on every run of every tool. Launching Godot to ask would cost
 # a second and a half and defeat the point.
 #
+# A page no current group names counts as staleness too. Folding one group into another leaves
+# its page on disk, where every input hash still agrees and nothing says otherwise -- and because
+# assets/atlases/baked/ is an imported folder, the engine imports that page and exports it into
+# the pack. Reporting it here is what makes every tool that calls this rebake, and the bake is
+# what deletes it.
+#
 # A mode mismatch is staleness like any other: a tree baked with --svg is stale for a default
 # bake and the other way round, so the release build can never pick up a local SVG bake.
 #
@@ -49,7 +55,9 @@ flags it compares the recorded source hashes and prints one line saying whether 
   --svg     bake the authored SVG rasters alone, ignoring the illustrated PNGs. The custom
             local build; the release is always the default PNG bake, and a tree baked this way
             counts as stale for every tool that wants a release build.
-  --check   report whether a bake is needed and exit non-zero if it is; bake nothing.
+  --check   report whether a bake is needed and exit non-zero if it is; bake nothing. A page
+            left behind by a group that no longer exists counts as needing one, and the bake
+            is what removes it.
   --force   bake whether or not anything changed.
 
   tools/bake-atlases.sh
@@ -115,10 +123,25 @@ if manifest.get("version") != 1:
 if manifest.get("mode") != wanted_mode:
     print("baked in %s mode, %s mode wanted" % (manifest.get("mode"), wanted_mode))
     sys.exit(1)
-for output in manifest.get("outputs", []):
+baked = os.path.dirname(manifest_path)
+outputs = manifest.get("outputs", [])
+for output in outputs:
     if not os.path.exists(os.path.join(root, output)):
         print("missing output: %s" % output)
         sys.exit(1)
+
+# A page whose group is gone. `outputs` is exactly what the last bake wrote, so anything else
+# under the baked folder is a leftover -- and the bake is what deletes it, which is why this is
+# reported as staleness rather than as its own kind of failure.
+pages = set(os.path.basename(o) for o in outputs if o.endswith(".png"))
+orphans = sorted(
+    name for name in os.listdir(baked)
+    if (name.endswith(".png") or name.endswith(".png.import"))
+    and name[:-len(".import")] not in pages and name not in pages
+)
+if orphans:
+    print("pages no group names: %s" % ", ".join(orphans))
+    sys.exit(1)
 
 changed, missing = [], []
 for relative, digest in sorted(manifest.get("inputs", {}).items()):

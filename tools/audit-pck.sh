@@ -11,10 +11,15 @@
 # atlas group must not also travel as its own texture, or the build carries it twice and the
 # memory the atlases were for is spent anyway.
 #
-# **It reports and exits 0 unless --fatal is given.** Every consumer still draws from its own
-# preloaded textures, so every constituent is legitimately in the pack today; the count is the
-# number this milestone drives to nought, and the last item of M171 -- close the contract -- is
-# what turns the flag on inside tools/export-web.sh.
+# It asks two questions of a pack. **Is a baked constituent in it** -- a member picture, its
+# .import sidecar or the imported .ctex that sidecar names. And **is a page in it that the pack's
+# own regions.json names no group for** -- a page left behind by a group that was folded into
+# another, which nothing loads and which the engine exports anyway because
+# assets/atlases/baked/ is an imported folder. Neither can be answered from the repository
+# alone, which is why this reads the shipped pack rather than the tree.
+#
+# **It reports and exits 0 unless --fatal is given**, so it can be run on any pack to see what is
+# in one. tools/export-web.sh passes --fatal: an export that carries either is a failed export.
 #
 # **The pack is read directly rather than through the engine.** A .pck is a small binary header
 # followed by a path table, so python's standard library can list one in milliseconds with no
@@ -28,12 +33,13 @@ usage() {
     cat <<'EOF'
 usage: tools/audit-pck.sh [--help|-h] [--fatal] [--list] [pack]
 
-Lists an exported .pck and reports every picture that is a member of an atlas group and is
-still in the pack -- as its own source, its .import sidecar or its imported .ctex copy.
+Lists an exported .pck and reports what should not be in it: every picture that is a member of
+an atlas group and is still there -- as its own source, its .import sidecar or its imported
+.ctex copy -- and every baked page the pack's own regions.json names no group for.
 Reports only and exits 0 unless --fatal is given.
 
   pack      the .pck to read; defaults to the newest build/web/*/index.pck
-  --fatal   exit non-zero when any constituent is found
+  --fatal   exit non-zero when a constituent or an unnamed page is found
   --list    also print every path in the pack, sorted
 
   tools/audit-pck.sh
@@ -100,7 +106,7 @@ MAGIC = 0x43504447  # "GDPC"
 
 
 def paths_in(path):
-    """Every path in a Godot pack, read from the pack's own file table.
+    """Every path in a Godot pack and its own bytes, read from the pack's own file table.
 
     Format 2 and 3 put the table straight after the header; format 4 -- what 4.7 writes --
     puts the file data first and the table at the offset the header names, and drops the
@@ -117,9 +123,13 @@ def paths_in(path):
     if version not in (2, 3, 4):
         sys.exit("FAILED: pack format version %d is not one this script has been taught" % version)
     at = 8 + 12  # the format version, then the engine's major/minor/patch
+    base = 0
     if version >= 3:
         at += 4   # pack flags
-        at += 8   # the base every file offset is relative to
+        # Every file offset below is relative to this, which is what lets a file's own bytes be
+        # read back out of the pack -- regions.json's, here.
+        base, = struct.unpack_from("<Q", blob, at)
+        at += 8
     if version >= 4:
         directory, = struct.unpack_from("<Q", blob, at)
         at = directory
@@ -127,15 +137,17 @@ def paths_in(path):
         at += 16 * 4  # reserved
     count, = struct.unpack_from("<I", blob, at)
     at += 4
-    found = []
+    found = {}
     for _ in range(count):
         length, = struct.unpack_from("<I", blob, at)
         at += 4
         name = blob[at:at + length].split(b"\0")[0].decode("utf-8")
         at += length
+        offset, size = struct.unpack_from("<QQ", blob, at)
         at += 8 + 8 + 16   # offset, size, md5
         at += 4            # per-file flags
-        found.append(name[len("res://"):] if name.startswith("res://") else name)
+        bare = name[len("res://"):] if name.startswith("res://") else name
+        found[bare] = blob[base + offset:base + offset + size]
     return found
 
 
@@ -170,9 +182,52 @@ for name in inside:
         group, member = wanted[name]
         hits.setdefault(member, (group, []))[1].append(name)
 
-print("pack: %s" % os.path.relpath(pack_path, root))
+# The pages the pack itself says exist, read out of the pack's own regions.json rather than out
+# of the tree: what is being audited is the artefact, and a tree rebaked since the export would
+# answer for a different one.
+BAKED = "assets/atlases/baked/"
+groups = None
+if BAKED + "regions.json" in inside:
+    try:
+        groups = set(json.loads(inside[BAKED + "regions.json"].decode("utf-8"))["pages"])
+    except (ValueError, KeyError, UnicodeDecodeError) as error:
+        sys.exit("FAILED: the pack's %sregions.json does not parse (%s)" % (BAKED, error))
+
+# A page in the pack that regions.json names no group for. Both shapes one takes: the sidecar
+# under the baked folder -- the only listing an exported source keeps -- and the imported .ctex
+# that sidecar names, which is where the pixels actually are. A .ctex is only read as a page when
+# its own sidecar is in the pack beside it, so an imported PNG from somewhere else could never be
+# mistaken for one.
+pages_in_pack = set()
+for name in inside:
+    if name.startswith(BAKED) and name.endswith((".png", ".png.import")):
+        pages_in_pack.add(name[len(BAKED):].split(".png")[0])
+
+unnamed = []
+if groups is not None:
+    for name in sorted(inside):
+        page = None
+        if name.startswith(BAKED) and name.endswith((".png", ".png.import")):
+            page = name[len(BAKED):].split(".png")[0]
+        else:
+            match = re.match(r"^\.godot/imported/(.+)\.png-[0-9a-f]+\.[a-z0-9]+$", name)
+            if match and match.group(1) in pages_in_pack:
+                page = match.group(1)
+        if page is not None and page not in groups:
+            unnamed.append(name)
+
+# Relative to the repository when it is inside one, and as given when it is not: a pack under
+# /tmp printed relative to the project root is seven `..` segments nobody can read.
+shown = os.path.relpath(pack_path, root)
+print("pack: %s" % (pack_path if shown.startswith("..") else shown))
 print("      %d files, %d atlas members, %d of them still in the pack"
       % (len(inside), len(members), len(hits)))
+if groups is None:
+    print("      no regions.json in the pack, so no page could be checked against its groups")
+else:
+    print("      %d baked pages, %d of them named by no group" % (len(groups), len(unnamed)))
+for name in unnamed:
+    print("      orphan page: %s" % name)
 by_group = {}
 for member, (group, names) in hits.items():
     by_group.setdefault(group, []).append(member)
@@ -183,6 +238,8 @@ if hits:
         print("      e.g. %s as %s" % (member, ", ".join(sorted(hits[member][1]))))
 if hits and fatal:
     sys.exit("FAILED: %d baked constituents are still in the pack" % len(hits))
+if unnamed and fatal:
+    sys.exit("FAILED: %d baked page files in the pack belong to no group" % len(unnamed))
 PY
 status=$?
 exit $status
