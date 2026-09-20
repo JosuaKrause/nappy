@@ -74,8 +74,8 @@ static var _regions: Dictionary = {}
 static var _pages: Dictionary = {}
 static var _mode := ""
 static var _table_loaded := false
-## Whether a boot sequence owns the loading moments. False until `open_loading_window()` is
-## first called and again after `release_the_loading_moments()`.
+## Whether a boot sequence owns the loading moments. False until `claim_the_loading_moments()`
+## is called and again after `release_the_loading_moments()`.
 static var _moments_claimed := false
 ## The open window's own moment, or `&""` when it is shut.
 static var _window: StringName = &""

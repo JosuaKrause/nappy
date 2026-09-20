@@ -981,16 +981,6 @@ func _new_boot_camera(ground: Vector2) -> Camera2D:
 	camera.make_current()
 	return camera
 
-## M147, "every picture loaded before it is needed": loads every transfer PNG and gets the halo's
-## shared shader compiled before either boot path's own `_start_day()`/`_finale.begin()`, so the
-## first frame that actually needs a picture or a halo never pays for either. Printed beside
-## "city generated in N ms" — the same shape `_plan_the_finale_city()` prints its own line beside
-## — because a phone's longer first load belongs next to the other number that already tells a
-## reader how long the boot took.
-##
-## `ground` is where the boot camera made current just before this call is standing — see
-## `_new_boot_camera()` — and is handed straight through to `_warm_the_halo_shader()`, which needs
-## a point it can be sure is on screen.
 ## Takes every baked page this boot will ever need, inside a named loading window, and holds it
 ## for the life of the process. *(PLAYTEST-109: "we cannot start loading something in the frame we
 ## need it. UI elements should always be there.")*
@@ -1030,6 +1020,16 @@ func _hold_every_page_a_day_draws(moment: StringName, also: Array[StringName]) -
 func _exit_tree() -> void:
 	AtlasLibrary.release_the_loading_moments()
 
+## M147, "every picture loaded before it is needed": loads every transfer PNG and gets the halo's
+## shared shader compiled before either boot path's own `_start_day()`/`_finale.begin()`, so the
+## first frame that actually needs a picture or a halo never pays for either. Printed beside
+## "city generated in N ms" — the same shape `_plan_the_finale_city()` prints its own line beside
+## — because a phone's longer first load belongs next to the other number that already tells a
+## reader how long the boot took.
+##
+## `ground` is where the boot camera made current just before this call is standing — see
+## `_new_boot_camera()` — and is handed straight through to `_warm_the_halo_shader()`, which needs
+## a point it can be sure is on screen.
 func _warm_the_pictures(ground: Vector2) -> void:
 	var elapsed := Time.get_ticks_msec()
 	var loaded := TextureResolver.warm()
