@@ -354,14 +354,24 @@ shouting costs nothing to walk beside, since both rewrite the same rows.**
       tier names and values go to the player with M174's measurements beside them, before
       this is built.**
 - [ ] **A generated table of what every row costs, at several distances, is checked in.** One
-      file under `docs/`, one line per row and distance: the net rise walking past at the
-      center, at `inner_radius`, and at even steps out to `outer_radius`, awake and asleep, on
-      quiet sidewalk, computed from the same functions the game charges with. A tool under
+      file under `docs/`, one line per row: the net rise walking at **fixed distances that are
+      the same for every row** — each column is one distance in pixels, the same for every
+      object, so a column compares the real impact of one row against another and no column
+      goes stale when a radius moves ([PLAYTEST-114](playtests/PLAYTEST-114.md): "each column
+      represents the same distance for every object -- that way we can get the real impact and
+      not the relative impact dependent on the object"). The row's own `inner_radius`,
+      `outer_radius` and `falloff_power` are columns of the same line, so a radius change shows
+      as itself beside the costs it moved. Awake and asleep, on quiet sidewalk, computed from
+      the same functions the game charges with. The distances start at the center, are dense
+      inside the first hundred pixels where the inner radii sit, and reach past the widest
+      `outer_radius` in the catalogue, so the last column reads nothing for every row and a row
+      that grows past it is a visible change. A tool under
       `tools/` rewrites it, and CI fails when the checked-in file differs from what the tool
       prints, naming the rows that moved — so any change to a row, the decay, the falloff or
       the sleeping factor shows in the diff as the lines of the table it moved, and a change
-      that moved the balance without touching the table cannot merge. The distances, the file's
-      format and whether other grounds get columns are the orchestrator's and open to overturn.
+      that moved the balance without touching the table cannot merge. The exact list of
+      distances, the file's format and whether other grounds get columns are the orchestrator's
+      and open to overturn.
 - [ ] **The balance skill says so**: the table is how a balance change is read, a row's cost is
       declared rather than derived by hand, and `docs/EVENTS.md` points at the table rather
       than repeating its numbers.
