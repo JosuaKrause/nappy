@@ -906,9 +906,10 @@ is open**, and it is the switch that makes the sequence a run's ending rather th
       building opens on a day brief titled "Escape the building" and the city on one titled
       "Escape the city", in the day brief's own form. Each brief is a checkpoint: a loss in a
       section returns to that section's brief at no nerve, and closing the game in a section
-      comes back to its brief, as closing mid-day does for a day. **Asked back and not yet
-      answered:** one clock through both sections, as answer 3 below has it, or a full day's
-      clock for each; built as a clock for each.
+      comes back to its brief, as closing mid-day does for a day. **Each section has its own
+      clock**: a brief starts a full `DAY_LENGTH_SECONDS` (180s) with milliseconds on it, and a
+      loss or a reopened game returns to that brief with a fresh one — the player's "180s per
+      section", which overturns answer 3 below on that one point.
 
 **Four things the brief collided with in the finale as `docs/NARRATIVE.md` writes it today, each
 asked and each answered by the player on 2026-09-09:**
@@ -930,8 +931,11 @@ asked and each answered by the player on 2026-09-09:**
    sequence is the same length and running out loses (the bridge/tunnel collapses or something
    like that). the only change is that in addition to minutes and seconds the timer also shows
    milliseconds. this makes the timer appear faster than just the seconds alone which adds
-   additional tension.")* So: one clock for the whole sequence, `DAY_LENGTH_SECONDS` (180s) long
-   like any day, counting down through both sections; at zero the way out is gone — the bridge or
+   additional tension.")* *Asked for one clock counting down through both sections · overturned
+   by the player on 2026-09-20 to "180s per section"
+   ([PLAYTEST-113](playtests/PLAYTEST-113.md)), because each section is its own day and a shared
+   clock could leave the city's checkpoint unwinnable.* So: each section's clock is
+   `DAY_LENGTH_SECONDS` (180s) long like any day; at zero the way out is gone — the bridge or
    the tunnel collapses, or something of that shape — and the section restarts as in 2. The only
    change to the clock itself is the format, `%d:%02d.%03d` in place of `%d:%02d`, because
    milliseconds ticking make the same countdown read as faster.

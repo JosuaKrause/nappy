@@ -36,3 +36,13 @@ M102's third answer of 2026-09-09 gives the whole sequence **one** clock, a day'
 "counting down through both sections". Two sections that are each their own day read as two
 clocks. The orchestrator builds a full day's clock per section, since that is what a day is,
 and asks the player to confirm it.
+
+## The answer, the same day
+
+Asked with three options — a full 180 seconds per section, one 180-second clock through both
+with the city checkpoint restoring the time left on arrival, or one clock with a floor on what
+the city checkpoint restores — the player chose the first as it was put to them: **"180s per
+section"**. Each brief starts a full `DAY_LENGTH_SECONDS` clock with milliseconds on it, and a
+loss or a reopened game returns to that brief with a fresh one. *Asked on 2026-09-09 for one
+clock "the same length" for the sequence · overturned by the player on 2026-09-20, because
+each section is its own day and a shared clock could leave the city's checkpoint unwinnable.*
