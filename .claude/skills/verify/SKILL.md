@@ -234,14 +234,23 @@ Test what a screenshot cannot see, and screenshot what a test cannot judge.
 
 ## When the suite prints nothing
 
-**A test run with no output at all means an error in a suite, not a slow suite.** `run_tests.gd`
-calls each suite's `run()` synchronously and then `get_tree().quit()`; an error aborts `_ready()`
-before the quit, so the headless process sits there forever printing nothing.
+**A test run with no output at all still means an error, but not from a suite that fails to
+load.** `run_tests.gd` calls each suite's `run()` synchronously and then `get_tree().quit()`; an
+error *inside* a suite's own `run()` — a runtime bug in the suite's own test logic, not a parse
+error — aborts `_ready()` before the quit, so the headless process sits there forever printing
+nothing. That path is still open and still worth knowing about; the loader guard below closes
+only the one below it.
 
-**A parse error does the same thing and is easier to cause**, since `_discover` loads every suite
-before running any: a bad indent in one file takes the whole run down with `Failed to load script`
-and then hangs.
+**A suite that fails to parse is a named `FAIL` line and a normal exit, not a hang.** `_discover`
+still loads every suite before running any, but `load()` on a broken suite returns a `GDScript`
+that `can_instantiate()` refuses, and `_ready()` checks that before calling `.new()` — the call
+that used to fail with nothing to catch it and take the whole run down with it. A suite that
+cannot load is recorded as a failure by name, the suites that did load still run, and the runner
+reaches `quit()` non-zero either way. `tests/runner_fixtures/unparseable_suite.gd.src` is the
+fixture that proves it — kept off its real `.gd` name because an unparseable `.gd` anywhere in
+the tree can break the atlas bake's own engine boot when `.godot/`'s class-name cache is cold; see
+that file's own header and M172 in `docs/DECISIONS.md`.
 
-**The way to see either is to stop piping the run into `tail`** — `tail` prints nothing until EOF,
-so a hung run and a silent one look identical. Redirect to a file and read it; the message is
-usually on line four.
+**The way to see a genuine hang is to stop piping the run into `tail`** — `tail` prints nothing
+until EOF, so a hung run and a silent one look identical. Redirect to a file and read it; the
+message is usually on line four.
