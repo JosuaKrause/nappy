@@ -40,8 +40,8 @@ def input_record():
     paths += sorted((PREVIOUS / "generated/rig").glob("father_*.png"))
     paths += sorted(HERE.glob("prompt-*.txt"))
     paths += [
-        ROOT / "assets/rig/father_side_b.svg",
-        ROOT / "assets/rig/father_front_diagonal_b.svg",
+        ROOT / "docs/graphics-creation/player/father_side_b.svg",
+        ROOT / "docs/graphics-creation/player/father_front_diagonal_b.svg",
         HERE.parent / "inputs/father_side_b-8x.png",
         HERE.parent / "inputs/father_front_diagonal_b-8x.png",
         HERE.parent / "proof/side-identity-upper.png",

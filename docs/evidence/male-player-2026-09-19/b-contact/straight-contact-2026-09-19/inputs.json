@@ -1,7 +1,7 @@
 {
   "pillow": "12.3.0",
   "files": {
-    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/assemble.py": "495c95f167a5ef7985dce7a617916a95933aef72bdd5ab8e453328697eb0e2d9",
+    "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/assemble.py": "d8932b434100f15acfd7628818a001a5fa0d81f2150f86c70b3abdad70db509e",
     "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/side-donor-raw.png": "62a5680553d51fcb709e1a8edeefa534f2bf0ed1094a602821c74adef956b939",
     "docs/evidence/male-player-2026-09-19/b-contact/loops-2026-09-19/assemble.py": "84158f1cdf10a99a42be67e26c70c7fccc1477a2c2840a626d2c59b758db9961",
     "docs/evidence/comic-pushing-strides-2026-09-12/convert.py": "bec4f0ed524d345e5545129743c99861c7d7ebe94b558a4b8f5983f93f8b7529",
@@ -24,8 +24,8 @@
     "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/prompt-front-diagonal-02.txt": "fd8159e58eb6b4ecf7626f5989f169a3c9920c754b2b6460dd5c326d6dc34613",
     "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/prompt-side-01.txt": "ea8e8d046ab3eb510370aac6ec2dfc630c3af23bc0b89aa87b5ed4d5544920e9",
     "docs/evidence/male-player-2026-09-19/b-contact/straight-contact-2026-09-19/prompt-side-02.txt": "17d137148ac091a6a25c9c33f23ac6109a1334688c59cf8331f9436138926edc",
-    "assets/rig/father_side_b.svg": "81246534d2266f9e9012d99f87ce7f2c1bc073b67bbf335872f3d08a1c61a7af",
-    "assets/rig/father_front_diagonal_b.svg": "e45585b1172a966529b2d789fc7d5779bc507df17d4b2bfa22002095bf801136",
+    "docs/graphics-creation/player/father_side_b.svg": "81246534d2266f9e9012d99f87ce7f2c1bc073b67bbf335872f3d08a1c61a7af",
+    "docs/graphics-creation/player/father_front_diagonal_b.svg": "e45585b1172a966529b2d789fc7d5779bc507df17d4b2bfa22002095bf801136",
     "docs/evidence/male-player-2026-09-19/b-contact/inputs/father_side_b-8x.png": "c9822f0bcc46c314e71f19704c9f013bc301eb27de8f7f41d67d5ae8bed552b7",
     "docs/evidence/male-player-2026-09-19/b-contact/inputs/father_front_diagonal_b-8x.png": "4b88c49f4cf00bfeb87033d4c6fface6f4fb32846627acf4b34580821d308303",
     "docs/evidence/male-player-2026-09-19/b-contact/proof/side-identity-upper.png": "4a7e04e19546840d061c28a90a4f46a76ff6dfb4e116f74d025fd8fa8654d947",

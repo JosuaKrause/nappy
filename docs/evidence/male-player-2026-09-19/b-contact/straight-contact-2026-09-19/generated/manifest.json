@@ -119,7 +119,7 @@
       "composition": "new lower pair first; exact accepted A rows 0..27 last"
     }
   },
-  "input_manifest_sha256": "5e811563b570c4004cd3de34ef8fc6e8a7f6e77fd1957a166625ef3877b5386e",
+  "input_manifest_sha256": "8789d20661fa7c0026290050d5fb47d55b8a2784206c24491d74d2c5bd520bc4",
   "protected": "all prior A/C plus front/back/back-diagonal B byte-identical",
   "outputs": {
     "father-animation-6x.gif": "5ea463add4ac41af680759956789a959ce08f4b4886050a2d46cad5d3c38953c",
