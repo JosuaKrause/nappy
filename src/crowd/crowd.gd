@@ -231,8 +231,24 @@ func clear() -> void:
 	_traffic.rebuild({})
 	# Freed at the day's end — the other half of `start_day()`'s own acquire. `queue_free()` above
 	# is deferred and clears before this frame's own draw pass runs, so nothing is left holding a
-	# picture from a page this drops. Guarded on `_atlas_held` because `clear()` is also `main.gd`'s
-	# own direct call for the finale's empty street, which never acquired anything to begin with.
+	# picture from a page this drops.
+	_release_atlas_if_held()
+
+## The other half of `start_day()`'s own acquire, for the ending `clear()` does not cover: this
+## node freed mid-day with no `clear()` in between — the city torn down on quitting to the title
+## screen while a day is still running, or a test that frees its `City` without ever calling
+## `clear()` on the crowd inside it. `AtlasLibrary`'s counts are static and outlive this node, so a
+## reference this never gives back is held for the rest of the process rather than for the rest of
+## the day.
+func _exit_tree() -> void:
+	_release_atlas_if_held()
+
+## Shared by `clear()` and `_exit_tree()`. Guarded on `_atlas_held` because `clear()` is also
+## `main.gd`'s own direct call for the finale's empty street, which never acquired anything to
+## begin with, and because an ordinary day-end already runs `clear()` before the node is ever
+## freed — the guard is what stops `_exit_tree()`'s own call from releasing a reference this crowd
+## no longer holds.
+func _release_atlas_if_held() -> void:
 	if _atlas_held:
 		AtlasLibrary.release(ATLAS_GROUP)
 		_atlas_held = false

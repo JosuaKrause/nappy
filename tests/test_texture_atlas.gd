@@ -4,9 +4,8 @@ extends RefCounted
 ## atlas is collected, the region after it, and the source again once it is released.
 ##
 ## The street's own decoration is the set packed here, because it is a real group with a real
-## spread of canvas sizes rather than a fixture invented for the suite; `test_crowd_atlas.gd`
-## holds the same contract for the crowd's nested shape, and `test_ground_layers.gd` holds the
-## ground's, which is packed a different way.
+## spread of canvas sizes rather than a fixture invented for the suite; `test_ground_layers.gd`
+## holds the ground's own contract, which is packed a different way.
 ##
 ## Run under both presentation modes, since the atlas packs whichever raster
 ## `TextureResolver.resolve()` currently chooses, and `TextureAtlas.reset_for_tests()` is paired

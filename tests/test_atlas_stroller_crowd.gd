@@ -24,6 +24,7 @@ func run(t) -> void:
 	_test_crowd_acquires_for_the_day_and_releases_on_clear(t)
 	_test_a_second_day_does_not_leak_a_reference(t)
 	_test_a_direct_clear_with_no_day_started_is_a_safe_no_op(t)
+	_test_a_crowd_freed_without_clear_still_releases_its_page(t)
 	_test_walker_body_and_trim_are_separate_regions_on_every_view(t)
 	_test_car_body_and_trim_are_separate_regions_on_every_view(t)
 	_test_the_strollers_body_and_pram_share_a_page_the_indicators_do_not(t)
@@ -112,6 +113,20 @@ func _test_a_direct_clear_with_no_day_started_is_a_safe_no_op(t) -> void:
 	t.check(not AtlasLibrary.is_acquired(Crowd.ATLAS_GROUP),
 			"a direct clear with no day started holds nothing and releases nothing")
 	city.free()
+
+## The leak `clear()` alone cannot catch: a `Crowd` freed mid-day — the city torn down on quitting
+## to the title screen while a day is still running, or exactly this test freeing its city without
+## ever calling `clear()` first. `AtlasLibrary`'s counts are static and outlive the freed node, so
+## `Crowd._exit_tree()` is the only thing standing between this and a reference held for the rest
+## of the process.
+func _test_a_crowd_freed_without_clear_still_releases_its_page(t) -> void:
+	var city := _city(t)
+	city.crowd.start_day(1, _rng("freed-without-clear"))
+	t.check(AtlasLibrary.is_acquired(Crowd.ATLAS_GROUP),
+			"the day's crowd holds its page before the city is torn down")
+	city.free()
+	t.check(not AtlasLibrary.is_acquired(Crowd.ATLAS_GROUP),
+			"freeing the city mid-day releases the crowd's page too, with no clear() in between")
 
 # --------------------------------------------------------------- tint regression ---
 # `_draw_body()` tints the body layer with the agent's own `colour` and draws the trim above it
