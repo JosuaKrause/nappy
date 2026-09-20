@@ -30,13 +30,18 @@ top-level key of the save, absent in an older one. With no other alley in reach 
 old one, so the avoidance never costs the placement. The record is not given back on a lost
 day: it can only make the next mark avoid one more alley.
 
-**The acknowledgement** is the HUD's teaching line on `EventBus.resistance_step_completed`:
-"Taken." for a mark, "Done." for a perform step — the agent's words, the player's to change —
-and the mark switches to `chalk_mark_touched`, now in the baked decoration page and drawn from
-it rather than by hand. It hangs on the step counting, not on which day, so M181's one-day
-tasks need nothing from it. The day brief's reading of a mark's words is a day later and a
-different screen. The mark draws at 1.35 times its picture with a brighter, heavier stroke;
-no ring and no glow, under the **cues** rules.
+**The acknowledgement was built on a misreading, and all of it came out again the same day.**
+PLAYTEST-116's "(there should be an indication that I did it correctly)" follows "then the
+yeller" in parentheses; the orchestrator's entry applied it to the mark as well. Built: "Taken."
+and "Done." on the HUD's teaching line, the prepared `chalk_mark_touched` picture bound in place
+of the hand-drawn mark, and the mark drawn 1.35 times larger with a heavier stroke for "a little
+bit more obviously visible". The player ([PLAYTEST-117](playtests/PLAYTEST-117.md)): "the mark
+doesn't have a problem for recognizing that it was taken!!!! no need to change anythign there",
+"no larger mark!", and "yeller should just start walking offscreen -- no onscreen text for
+acknowledgements like this". So the mark is drawn exactly as it was before this milestone —
+`ContactPoint`'s three strokes and a circle, `Palette.CHALK_DONE` once touched — the two SVGs
+and the atlas membership are as they were, and the HUD says nothing. What a finished perform
+step shows is M182, a finished task is shown by the world, in `TODO.md`.
 
 **The first mark's note is one sentence**: "Give it to the one who won't stop shouting."
 

@@ -155,12 +155,9 @@ words back on the following day's screen — and the HUD carries one terse line,
 rather than during one. **That line is silent until the first mark has been touched** —
 the first encounter comes with no hint at all, and only later ones are named.
 
-**The moment a step counts, it is acknowledged where she is looking.** A touched mark turns
-to its own small tick on the ground and the resistance says one plain word in the HUD's own
-voice — *Taken* for a mark, *Done* for a perform — and nothing else: no counter, no objective
-marker, no log. It confirms what she just did rather than hinting at what comes next, so it
-never touches the first-encounter rule above; the day brief still carries what tomorrow wants,
-read on a different screen a day later.
+**A finished step is shown by the world and never by text.** A touched mark changes to its
+done color, which is all a mark needs; nothing is written on the HUD, and there is no counter,
+no objective marker and no log.
 
 **A lost day repeats its own instruction rather than moving on.** *"the words shown on the lost
 day are the words that show at the beginning of that day not the nexts."* The summary of a day

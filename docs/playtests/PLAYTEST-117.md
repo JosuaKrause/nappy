@@ -118,3 +118,37 @@ On the first draft of the fourteen brief lines (in `TODO.md`, M181):
     not noticed at all.
 18. **American English throughout, in what is said to the player as well as in new names.**
     "Landing" was not understood.
+
+On M177's acknowledgement, which said "Taken." for a touched mark and "Done." for a perform
+step:
+
+> "the mark already visibly shows that it was taken also we show the task so taken wouldn't fit"
+
+19. **A touched mark says nothing**: its touched picture is the acknowledgement, and the line
+    a touch earns is the task.
+
+And a moment later:
+
+> "yeller should just start walking offscreen -- no onscreen text for acknowledgements like this"
+
+20. **No on-screen text acknowledges a task.** A finished task is shown by the world.
+21. **The man shouting, handed the note, walks off screen.**
+
+On hearing what M177 had changed about the mark — a touched picture bound in place of the
+hand-drawn one, and the mark drawn a third larger:
+
+> "the mark already visibly shows that it was taken also we show the task so taken wouldn't fit"
+> (above) and then: "the mark doesn't have a problem for recognizing that it was taken!!!! no
+> need to change anythign there!!!! where did you get that from?"
+
+> "no larger mark!"
+
+**Where it came from, and it was a misreading.** PLAYTEST-116's "(there should be an indication
+that I did it correctly)" stands in parentheses after "then the yeller". The orchestrator read it
+as covering the mark as well and wrote M177's second item that way; the player meant the man
+shouting only. "A little bit more obviously visible" was read as larger and brighter; the player
+rules out larger.
+
+22. **The mark's taken state was never a problem and is not changed.**
+23. **The mark is not drawn larger.** What "a little bit more obviously visible" does mean is
+    asked back.

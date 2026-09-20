@@ -389,6 +389,26 @@ unless an item says otherwise.
 
 ---
 
+## M182 — A finished task is shown by the world, never by text · asked for 2026-09-20
+
+> "yeller should just start walking offscreen -- no onscreen text for acknowledgements like this"
+
+[PLAYTEST-117](playtests/PLAYTEST-117.md). A touched mark already shows that it was taken, and
+the HUD writes nothing for any step (`DECISIONS.md`, M177, the second mark is any alley she
+comes across). What is open is the other half: a perform step shows nothing at all.
+
+- [ ] **The man shouting, handed the note, stops shouting and walks off screen.** The
+      look-alike she reached goes quiet and leaves the way a finished event leaves
+      (`EventInstance`'s own departure: no field while leaving, gone once out of sight), away
+      from her, at a walk. The other men shouting carry on. Built after M178, a gate lets her
+      out alive, which is editing the same event code.
+- [ ] **Every other perform step gets its own visible answer**, decided with M181, the
+      resistance has a reason, and a task is one day, where the list of tasks is settled: the
+      van's drop, the roadblock, the poster wall, the crowd. Each is something that happens
+      where she is looking, and none is text.
+
+---
+
 ## M178 — A gate lets her out alive, and where she comes out · asked for 2026-09-20
 
 > "the gate checks were placed in a way that I would basically immediately die after crossing
@@ -526,8 +546,8 @@ with the mark on the way, and the robber's band around a mark is a larger share 
   task will be immediately announced when touching the mark there is no need to mention tasks in
   the day brief ata ll". Touching the mark says the task, in the HUD's voice, where she is
   looking; the day brief carries no task, no mark's words from yesterday and no reminder.
-- **A task done is unmistakable**: the HUD's acknowledgement line, the arrow going out, and the day
-  summary saying so.
+- **A task done is unmistakable, and never by text** (M182, a finished task is shown by the
+  world): the thing she reached visibly answers, the arrow goes out, and the day summary says so.
 - **Days 9 to 11 each get one thing that happens once**, the way day 3 has the fire: candidates
   are the park she has used most being requisitioned in front of her, a night raid on her own
   street with a neighbor's door boarded the next morning, and the market not being there. Which,
