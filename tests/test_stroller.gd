@@ -28,7 +28,7 @@ func _rig(t) -> Stroller:
 ## The authored picture as the live drawing path actually hands it over — the region of her
 ## family's baked page, which `_ready()` has already acquired by the time `_rig(t)` returns.
 func _through_the_atlas(path: String) -> Texture2D:
-	return AtlasLibrary.region(AtlasLibrary.region_name_for(path))
+	return AtlasLibrary.region(StringName(path))
 
 ## Every picture she draws comes from a baked region rather than a texture of its own, and every
 ## one of her sixty body views comes from the *same* page — which is the whole of what the atlas
@@ -59,7 +59,7 @@ func _test_her_family_comes_from_its_baked_pages(t) -> void:
 				t.check((texture as AtlasTexture).atlas == atlas,
 						"and from the same one every other view of her is on")
 				var native := AtlasLibrary.native_size(
-						AtlasLibrary.region_name_for(rig._mother_source(frame)))
+						StringName(rig._mother_source(frame)))
 				t.check(texture.get_size() == Vector2(native),
 						"and it is exactly the size of the picture it stands in for")
 	rig.carrying = false
@@ -77,7 +77,7 @@ func _test_her_family_comes_from_its_baked_pages(t) -> void:
 		t.check((pram as AtlasTexture).atlas != atlas,
 				"which is the page the two parents share, not the one her body is on")
 	for mark: String in Stroller.indicator_sources():
-		var packed := AtlasLibrary.region(AtlasLibrary.region_name_for(mark))
+		var packed := AtlasLibrary.region(StringName(mark))
 		t.check(packed is AtlasTexture,
 				"the head indicator %s is drawn from the UI's page" % mark.get_file())
 		t.check(not (packed is AtlasTexture) or (packed as AtlasTexture).atlas != atlas,

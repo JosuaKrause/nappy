@@ -29,7 +29,7 @@ gaps; registration alone does not establish faithful interior geometry or suffic
 
 ## Integrate
 
-Place reviewed derivatives at `assets/illustrated/svg-transfer/<family>/<name>.png` for the
+Place reviewed derivatives at `art/illustrated/svg-transfer/<family>/<name>.png` for the
 corresponding `assets/<family>/<name>.svg`. Keep the native canvas dimensions and placement.
 Do not change draw offsets, camera scale or animation to compensate for a misregistered transfer.
 Preserve runtime import sidecars; do not copy a worktree's `.godot/` cache.

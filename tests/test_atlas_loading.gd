@@ -47,7 +47,7 @@ func _test_each_parent_has_a_page_of_their_own(t) -> void:
 		var sources: Array[String] = by_group[group]
 		t.check(not sources.is_empty(), "%s: there were sources to check at all" % group)
 		for path: String in sources:
-			var name := AtlasLibrary.region_name_for(path)
+			var name := StringName(path)
 			t.check(AtlasLibrary.has_region(name), "%s is baked" % path)
 			t.check(AtlasLibrary.group_of(name) == group,
 					"%s is on the '%s' page" % [path, group])
@@ -69,7 +69,7 @@ func _test_the_indicators_share_the_ui_page(t) -> void:
 	t.check(not &"head_indicators" in AtlasLibrary.groups(),
 			"and the head indicators are no longer a group of their own")
 	for path: String in Stroller.indicator_sources():
-		var name := AtlasLibrary.region_name_for(path)
+		var name := StringName(path)
 		t.check(AtlasLibrary.has_region(name), "%s is baked" % path)
 		t.check(AtlasLibrary.group_of(name) == &"ui", "%s is on the UI's page" % path)
 	t.check(AtlasLibrary.group_of(SaveIndicator._ICON) == &"ui",

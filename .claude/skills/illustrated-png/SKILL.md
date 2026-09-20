@@ -1,6 +1,6 @@
 ---
 name: illustrated-png
-description: Add or revise illustrated PNG textures and their reproducible integration workflow. Use before changing assets/illustrated or src/visuals, or preparing an illustrated checkout for testing.
+description: Add or revise illustrated PNG textures and their reproducible integration workflow. Use before changing art/illustrated or src/visuals, or preparing an illustrated checkout for testing.
 ---
 
 # SVG-to-PNG workflow
@@ -93,7 +93,7 @@ from stable body landmarks so changing leg spread does not move the hands sidewa
   review and artwork rejected by a human. Keep drafts rejected only internally by an assistant
   outside the repository. Record extraction commands, tool versions, source dimensions and
   registration measurements for retained derivatives.
-- Runtime PNGs use `assets/illustrated/svg-transfer/<family>/<name>.png`, corresponding to
+- Runtime PNGs use `art/illustrated/svg-transfer/<family>/<name>.png`, corresponding to
   `assets/<family>/<name>.svg`. Match native canvas dimensions, ground anchors and functional
   placement. Preserve the generated artwork's true alpha and expressive silhouette; do not
   reapply the SVG's primitive alpha mask to a redrawn figure or prop. Opaque ground stays fully

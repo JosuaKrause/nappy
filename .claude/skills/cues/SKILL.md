@@ -284,7 +284,7 @@ debugging session, and **the same headless run that proves the code correct prov
 whether it looks like anything at all.**
 
 The second reason follows from the first: an asset is **replaceable without touching code**. A
-`preload()` of `assets/ui/joystick.svg` takes whatever is at that path, so a better drawing — from
+`preload()` of `art/ui/joystick.svg` takes whatever is at that path, so a better drawing — from
 anybody, at any time — is a drop-in.
 
 **What this does not cover.** A rectangle that is a *bar* rather than a picture is layout —

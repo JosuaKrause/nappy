@@ -53,7 +53,7 @@ func _test_main_binds_both_complete_families_before_drawing(t) -> void:
 			for direction in range(8):
 				rig._view_direction = direction
 				for frame in range(3):
-					var path := "res://assets/rig/%s_%s%s_%s.svg" % [
+					var path := "rig/%s_%s%s_%s" % [
 							"father" if male else "mother", "carrying_" if carrying else "",
 							VIEWS[direction], POSES[frame]]
 					var source := rig._mother_source(frame)
@@ -77,7 +77,7 @@ func _test_every_family_source_is_a_baked_region(t) -> void:
 	t.check(not sources.is_empty(), "the family exports at least one source")
 	var families: Dictionary = {}
 	for path: String in sources:
-		var name := AtlasLibrary.region_name_for(path)
+		var name := StringName(path)
 		t.check(AtlasLibrary.has_region(name), "%s is baked" % path)
 		families[path.get_file().split("_")[0]] = true
 	t.check(families.has("father") and families.has("mother") and families.has("pram"),
@@ -85,7 +85,7 @@ func _test_every_family_source_is_a_baked_region(t) -> void:
 	var indicators := Stroller.indicator_sources()
 	t.check(not indicators.is_empty(), "the indicators export at least one source")
 	for path: String in indicators:
-		var name := AtlasLibrary.region_name_for(path)
+		var name := StringName(path)
 		t.check(AtlasLibrary.has_region(name), "%s is baked" % path)
 		t.check(AtlasLibrary.group_of(name) == Stroller.INDICATOR_ATLAS,
 				"%s is on the indicators' own page" % path)

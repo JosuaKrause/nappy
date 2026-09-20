@@ -861,7 +861,7 @@ func _draw() -> void:
 		_draw_focus_circles()
 
 ## The disc, its rim and the two bars — a region of the baked `ui` atlas page, sourced from
-## `assets/ui/pause.svg`, not painted in code. *(Playtest 29 finding 3: "neither should the buttons use draw commands -- I explicitly
+## `art/ui/pause.svg`, not painted in code. *(Playtest 29 finding 3: "neither should the buttons use draw commands -- I explicitly
 ## said that icons/symbols do not count as graphics".)* This is not a `ModeButton`, so there is no
 ## `Button` icon or `icon_normal_color` to tint through here; the held/idle contrast the old
 ## `draw_circle()`/`draw_arc()`/`draw_rect()` calls carried as two different alpha values on the

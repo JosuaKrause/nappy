@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://nappy.josuakrause.com/">
-	<img src="assets/logo.png" alt="Nappy — play it in a browser" width="640">
+	<img src="art/logo.png" alt="Nappy — play it in a browser" width="640">
   </a>
 </p>
 

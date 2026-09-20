@@ -49,18 +49,18 @@ enum DoorState { WALKING, WAITING, INSPECTION, EMERGING }
 ## `_region_of()` is what turns one of these into the name `AtlasLibrary.region()` and
 ## `native_size()` actually take.
 const WALKER_BODY_BY_VIEW := {
-	"front": "res://assets/crowd/walker_front_body.svg",
-	"back": "res://assets/crowd/walker_back_body.svg",
-	"side": "res://assets/crowd/walker_side_body.svg",
-	"front_diagonal": "res://assets/crowd/walker_front_diagonal_body.svg",
-	"back_diagonal": "res://assets/crowd/walker_back_diagonal_body.svg",
+	"front": "crowd/walker_front_body",
+	"back": "crowd/walker_back_body",
+	"side": "crowd/walker_side_body",
+	"front_diagonal": "crowd/walker_front_diagonal_body",
+	"back_diagonal": "crowd/walker_back_diagonal_body",
 }
 const WALKER_TRIM_BY_VIEW := {
-	"front": "res://assets/crowd/walker_front_trim.svg",
-	"back": "res://assets/crowd/walker_back_trim.svg",
-	"side": "res://assets/crowd/walker_side_trim.svg",
-	"front_diagonal": "res://assets/crowd/walker_front_diagonal_trim.svg",
-	"back_diagonal": "res://assets/crowd/walker_back_diagonal_trim.svg",
+	"front": "crowd/walker_front_trim",
+	"back": "crowd/walker_back_trim",
+	"side": "crowd/walker_side_trim",
+	"front_diagonal": "crowd/walker_front_diagonal_trim",
+	"back_diagonal": "crowd/walker_back_diagonal_trim",
 }
 ## The walker's second gait frame, feet passing — the mother's own `_b` pose for each view. Only
 ## the legs and shoes differ from the tables above; the coat stays put in the three-quarter views
@@ -69,18 +69,18 @@ const WALKER_TRIM_BY_VIEW := {
 ## beside the unsuffixed frame-a sources rather than renaming those into `_a`, so nothing that
 ## already points at `walker_front_body.svg` and so on has to change.
 const WALKER_BODY_BY_VIEW_B := {
-	"front": "res://assets/crowd/walker_front_body_b.svg",
-	"back": "res://assets/crowd/walker_back_body_b.svg",
-	"side": "res://assets/crowd/walker_side_body_b.svg",
-	"front_diagonal": "res://assets/crowd/walker_front_diagonal_body_b.svg",
-	"back_diagonal": "res://assets/crowd/walker_back_diagonal_body_b.svg",
+	"front": "crowd/walker_front_body_b",
+	"back": "crowd/walker_back_body_b",
+	"side": "crowd/walker_side_body_b",
+	"front_diagonal": "crowd/walker_front_diagonal_body_b",
+	"back_diagonal": "crowd/walker_back_diagonal_body_b",
 }
 const WALKER_TRIM_BY_VIEW_B := {
-	"front": "res://assets/crowd/walker_front_trim_b.svg",
-	"back": "res://assets/crowd/walker_back_trim_b.svg",
-	"side": "res://assets/crowd/walker_side_trim_b.svg",
-	"front_diagonal": "res://assets/crowd/walker_front_diagonal_trim_b.svg",
-	"back_diagonal": "res://assets/crowd/walker_back_diagonal_trim_b.svg",
+	"front": "crowd/walker_front_trim_b",
+	"back": "crowd/walker_back_trim_b",
+	"side": "crowd/walker_side_trim_b",
+	"front_diagonal": "crowd/walker_front_diagonal_trim_b",
+	"back_diagonal": "crowd/walker_back_diagonal_trim_b",
 }
 ## Which authored view each of `EightDirection`'s eight sectors draws — N back, NE/NW
 ## back_diagonal, E/W side, SE/SW front_diagonal, S front, the same N/NE/E/SE/S coverage the
@@ -103,34 +103,26 @@ const CAR_VIEW_BY_SECTOR: Array[String] = [
 ## 52x42. `car_end_{body,trim}.svg`, the old two-view family's foreshortened top-down picture, is
 ## no longer read by either table — see `docs/GRAPHICS.md` for where it stands now.
 const CAR_BODY_BY_VIEW := {
-	"front": "res://assets/crowd/car_front_body.svg",
-	"back": "res://assets/crowd/car_back_body.svg",
-	"side": "res://assets/crowd/car_side_body.svg",
-	"front_diagonal": "res://assets/crowd/car_front_diagonal_body.svg",
-	"back_diagonal": "res://assets/crowd/car_back_diagonal_body.svg",
+	"front": "crowd/car_front_body",
+	"back": "crowd/car_back_body",
+	"side": "crowd/car_side_body",
+	"front_diagonal": "crowd/car_front_diagonal_body",
+	"back_diagonal": "crowd/car_back_diagonal_body",
 }
 const CAR_TRIM_BY_VIEW := {
-	"front": "res://assets/crowd/car_front_trim.svg",
-	"back": "res://assets/crowd/car_back_trim.svg",
-	"side": "res://assets/crowd/car_side_trim.svg",
-	"front_diagonal": "res://assets/crowd/car_front_diagonal_trim.svg",
-	"back_diagonal": "res://assets/crowd/car_back_diagonal_trim.svg",
+	"front": "crowd/car_front_trim",
+	"back": "crowd/car_back_trim",
+	"side": "crowd/car_side_trim",
+	"front_diagonal": "crowd/car_front_diagonal_trim",
+	"back_diagonal": "crowd/car_back_diagonal_trim",
 }
 
-## `WALKER_BODY_BY_VIEW`'s (and its five sibling tables') own path, turned into the baked region
-## name `AtlasLibrary.region()`/`native_size()` take — `AtlasLibrary.region_name_for()` is a pure
-## string transform with no I/O, so caching it buys nothing but not re-deriving the same six small
-## dictionaries every frame for a crowd of a couple of hundred. Built lazily rather than as a
-## `const`, since GDScript cannot fold a static call into one.
-static var _region_cache: Dictionary = {}
-
-static func _region_of(path: String) -> StringName:
-	var cached: Variant = _region_cache.get(path)
-	if cached != null:
-		return cached
-	var name := AtlasLibrary.region_name_for(path)
-	_region_cache[path] = name
-	return name
+## `WALKER_BODY_BY_VIEW`'s (and its five sibling tables') own entry as the `StringName` that
+## `AtlasLibrary.region()`/`native_size()` take. The tables hold plain `String`s because a `const`
+## `Dictionary` cannot hold a `StringName` literal the type checker will keep, and this is the one
+## conversion between the two.
+static func _region_of(name: String) -> StringName:
+	return StringName(name)
 
 ## How fast an agent closes on its lane centre. Slow enough that a corner reads as a turn.
 const STEER_SPEED := 90.0

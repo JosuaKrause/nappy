@@ -57,8 +57,8 @@ func _test_body_and_trim_can_never_disagree(t) -> void:
 	for view in body_views:
 		t.check(CrowdAgent.CAR_TRIM_BY_VIEW.has(view),
 				"every body view %s has a matching trim view" % view)
-		var body_region := AtlasLibrary.region_name_for(CrowdAgent.CAR_BODY_BY_VIEW[view])
-		var trim_region := AtlasLibrary.region_name_for(CrowdAgent.CAR_TRIM_BY_VIEW[view])
+		var body_region := StringName(CrowdAgent.CAR_BODY_BY_VIEW[view])
+		var trim_region := StringName(CrowdAgent.CAR_TRIM_BY_VIEW[view])
 		t.check(AtlasLibrary.has_region(body_region) and AtlasLibrary.has_region(trim_region),
 				"both regions for %s are actually baked" % view)
 		t.check(body_region != trim_region,
@@ -187,7 +187,7 @@ func _test_every_sector_picture_agrees_with_the_strike_box(t) -> void:
 		var heading := Vector2.from_angle(deg_to_rad(sector * 45.0))
 		var anchor := agent._car_body_anchor(view, heading)
 		var extent := Vector2(AtlasLibrary.native_size(
-				AtlasLibrary.region_name_for(CrowdAgent.CAR_BODY_BY_VIEW[view])))
+				StringName(CrowdAgent.CAR_BODY_BY_VIEW[view])))
 		var drawn := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent)
 		# The node always falls inside the drawn footprint rather than sitting at its own edge —
 		# `Sprites.draw_standing` builds a rect that runs from `anchor.y - extent.y` to `anchor.y`.
@@ -310,7 +310,7 @@ func _drawn_picture(agent: CrowdAgent, view: String, heading: Vector2) -> Rect2:
 	var drawn := Rect2()
 	var merged := false
 	for path in [CrowdAgent.CAR_BODY_BY_VIEW[view], CrowdAgent.CAR_TRIM_BY_VIEW[view]]:
-		var extent := Vector2(AtlasLibrary.native_size(AtlasLibrary.region_name_for(path)))
+		var extent := Vector2(AtlasLibrary.native_size(StringName(path)))
 		var layer := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent)
 		drawn = drawn.merge(layer) if merged else layer
 		merged = true

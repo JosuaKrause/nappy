@@ -14,10 +14,10 @@ extends RefCounted
 ## exists at runtime.
 
 const AUTHORED_GROUND: TileSet = preload("res://assets/ground_tileset.tres")
-const MANIFEST_PATH := "res://assets/illustrated/svg-transfer/tiles/layers/manifest.json"
-## Where a manifest component filename comes from as authored art — see
-## `GroundLayers.LAYER_SOURCE_ROOT`, which applies the same one rule.
-const LAYER_SOURCE_ROOT := "assets/tiles/layers/"
+const MANIFEST_PATH := "res://assets/ground_layers.json"
+## The region prefix a manifest component filename sits under — see
+## `GroundLayers.LAYER_REGION_ROOT`, which applies the same one rule.
+const LAYER_REGION_ROOT := "tiles/layers/"
 
 func run(t) -> void:
 	AtlasLibrary.reset_for_tests()
@@ -386,7 +386,7 @@ func _page(t) -> Image:
 	return page
 
 func _region_name_of(filename: String) -> StringName:
-	return AtlasLibrary.region_name_for(LAYER_SOURCE_ROOT + filename.trim_suffix(".png") + ".svg")
+	return StringName(LAYER_REGION_ROOT + filename.trim_suffix(".png"))
 
 ## A manifest component, as a region of the page: `curbstone.png` is the picture baked under
 ## `tiles/layers/curbstone`, which is where the compositor takes it from too.

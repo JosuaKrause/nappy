@@ -119,7 +119,7 @@ func _test_regions_do_not_overlap(t) -> void:
 ## shadow would hold a megabyte of texture to read two integers.
 func _test_geometry_needs_nothing_acquired(t) -> void:
 	AtlasLibrary.reset_for_tests()
-	var name := AtlasLibrary.region_name_for("assets/ui/pause.svg")
+	var name := &"ui/pause"
 	t.check(AtlasLibrary.has_region(name), "the table knows a region with nothing acquired")
 	t.check(AtlasLibrary.native_size(name) != Vector2i.ZERO,
 			"a native size is answered with nothing acquired")
@@ -134,7 +134,7 @@ func _test_geometry_needs_nothing_acquired(t) -> void:
 ## exists to prevent.
 func _test_a_page_arrives_and_leaves_with_its_references(t) -> void:
 	AtlasLibrary.reset_for_tests()
-	var name := AtlasLibrary.region_name_for("assets/ui/pause.svg")
+	var name := &"ui/pause"
 	AtlasLibrary.acquire(&"ui")
 	t.check(AtlasLibrary.reference_count(&"ui") == 1, "the first acquire counts one")
 	var region := AtlasLibrary.region(name)

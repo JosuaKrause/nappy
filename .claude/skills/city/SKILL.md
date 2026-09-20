@@ -150,7 +150,7 @@ what it actually does, which is how the rates are set rather than guessed.
 ## Adding things
 
 **Add a tile type** — `GameEnums.TileType`, then `src/city/tile.gd` (walkable / calm / alley / road
-/ colour), then an SVG in `assets/tiles/`, then `assets/ground_tileset.tres` **and**
+/ colour), then an SVG in `art/tiles/`, then `assets/ground_tileset.tres` **and**
 `src/city/ground_tiles.gd` in the same order (the source ids are positional and mirrored by hand),
 then wherever the generator should emit it.
 
@@ -162,7 +162,7 @@ will tell you, on every seed, if it does not. **Write it against `map.lot_rect(b
 nobody will notice on the lots that are one block.
 
 **Add a closure kind** — `RoadClosure.Kind`, a row in `RoadClosure.KINDS` (name, first day, weight),
-an SVG in `assets/closures/`, and a line in `ClosureMarker.CAUSES` — unless it has nothing to leave
+an SVG in `art/closures/`, and a line in `ClosureMarker.CAUSES` — unless it has nothing to leave
 in the road, like `CORDON`, in which case the barriers are the whole of it. Nothing else: the kinds
 differ in look and timing only, because a street you cannot walk down is a street you cannot walk
 down.

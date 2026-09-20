@@ -11,7 +11,7 @@ field; resist adding a script per event.
 ## Adding a row
 
 `src/events/event_catalogue.gd` in the act's section, a line in the `docs/EVENTS.md` table, and **a
-drawing**: an `EventDef.Look` of its own, an SVG in `assets/events/`, a `_draw_*` in
+drawing**: an `EventDef.Look` of its own, an SVG in `art/events/`, a `_draw_*` in
 `EventInstance`, and a row in `EventInstance.icon_for()` so the screen-edge badge has a silhouette.
 That last part is not optional and there is no generic to borrow — `tests/test_events.gd` fails the
 build if two rows share a picture.

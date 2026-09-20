@@ -143,15 +143,15 @@ func _test_a_crowd_freed_without_clear_still_releases_its_page(t) -> void:
 
 func _test_walker_body_and_trim_are_separate_regions_on_every_view(t) -> void:
 	for view in CrowdAgent.WALKER_BODY_BY_VIEW.keys():
-		var body := AtlasLibrary.region_name_for(CrowdAgent.WALKER_BODY_BY_VIEW[view])
-		var trim := AtlasLibrary.region_name_for(CrowdAgent.WALKER_TRIM_BY_VIEW[view])
-		var body_b := AtlasLibrary.region_name_for(CrowdAgent.WALKER_BODY_BY_VIEW_B[view])
-		var trim_b := AtlasLibrary.region_name_for(CrowdAgent.WALKER_TRIM_BY_VIEW_B[view])
+		var body := StringName(CrowdAgent.WALKER_BODY_BY_VIEW[view])
+		var trim := StringName(CrowdAgent.WALKER_TRIM_BY_VIEW[view])
+		var body_b := StringName(CrowdAgent.WALKER_BODY_BY_VIEW_B[view])
+		var trim_b := StringName(CrowdAgent.WALKER_TRIM_BY_VIEW_B[view])
 		t.check(body != trim, "walker %s: body and trim (gait a) are separate regions" % view)
 		t.check(body_b != trim_b, "walker %s: body and trim (gait b) are separate regions" % view)
 
 func _test_car_body_and_trim_are_separate_regions_on_every_view(t) -> void:
 	for view in CrowdAgent.CAR_BODY_BY_VIEW.keys():
-		var body := AtlasLibrary.region_name_for(CrowdAgent.CAR_BODY_BY_VIEW[view])
-		var trim := AtlasLibrary.region_name_for(CrowdAgent.CAR_TRIM_BY_VIEW[view])
+		var body := StringName(CrowdAgent.CAR_BODY_BY_VIEW[view])
+		var trim := StringName(CrowdAgent.CAR_TRIM_BY_VIEW[view])
 		t.check(body != trim, "car %s: body and trim are separate regions" % view)

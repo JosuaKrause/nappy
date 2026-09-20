@@ -44,19 +44,26 @@ func _row(label: String, entries: Array) -> Dictionary:
 
 # ------------------------------------------------------------------- rendering ---
 
+## **The authoring SVG behind a region name.** The sources live under `art/`, which carries a
+## `.gdignore`, so the engine imports nothing there and `load()` would answer null; a probe that
+## re-rasterises an authored picture reads its bytes with `FileAccess` instead, which is exactly
+## what `tools/bake_atlases.gd` does.
+func _authored_svg(region_name: String) -> String:
+	return "res://art/%s.svg" % region_name
+
 ## Rasterises `entry`'s own body and trim from their SVG source text at `scale`, tinting the body
 ## the way `CrowdAgent._colour()`'s own comment describes it ("authored near-white and
 ## multiplied") and compositing the untinted trim above it — `Sprites.draw_standing()`'s own layer
 ## order, reproduced on stills instead of a canvas transform.
 func _cell_image(entry: Dictionary, scale: float) -> Image:
 	var body := Image.new()
-	body.load_svg_from_string(FileAccess.get_file_as_string(entry["body"]), scale)
+	body.load_svg_from_string(FileAccess.get_file_as_string(_authored_svg(entry["body"])), scale)
 	for y in body.get_height():
 		for x in body.get_width():
 			var c := body.get_pixel(x, y)
 			body.set_pixel(x, y, Color(c.r * TINT.r, c.g * TINT.g, c.b * TINT.b, c.a))
 	var trim := Image.new()
-	trim.load_svg_from_string(FileAccess.get_file_as_string(entry["trim"]), scale)
+	trim.load_svg_from_string(FileAccess.get_file_as_string(_authored_svg(entry["trim"])), scale)
 	body.blend_rect(trim, Rect2i(Vector2i.ZERO, trim.get_size()), Vector2i.ZERO)
 	return body
 

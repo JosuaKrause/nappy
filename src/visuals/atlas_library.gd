@@ -42,9 +42,12 @@ const REGIONS_PATH := BAKED_ROOT + "regions.json"
 ## Which group every picture belongs to, its lifetime and its padding kind. Checked in, and the
 ## one file a new consumer edits.
 const MEMBERSHIP_PATH := "res://assets/atlases/membership.json"
-## Where a PNG transfer stands in for an authored SVG. Read by the bake alone; the running game
-## never sees a constituent picture.
-const ILLUSTRATED_ROOT := "res://assets/illustrated/svg-transfer/"
+## Where the authoring pictures live. `art/` carries a `.gdignore`, so the engine imports nothing
+## under it and exports nothing from it; these two constants are read by the bake alone, through
+## `FileAccess`, and never by a `load()`. The running game never sees a constituent picture.
+const ART_ROOT := "res://art/"
+## Where a PNG transfer stands in for an authored SVG.
+const ILLUSTRATED_ROOT := ART_ROOT + "illustrated/svg-transfer/"
 
 ## The safe upper bound for one canvas texture's side on a phone.
 const MAX_ATLAS_SIDE := 2048
@@ -100,16 +103,22 @@ class Page extends RefCounted:
 
 # ------------------------------------------------------------------ the names ---
 
-## The region name a source path is baked under: its repository path without the `assets/`
-## prefix and without its extension, so `res://assets/events/cat_running_side.svg` is
+## The region name a source path is baked under: its repository path without the `art/` prefix
+## and without its extension, so `res://art/events/cat_running_side.svg` is
 ## `events/cat_running_side`.
 ##
 ## **The rule is the path and nothing else**, so a name is stable under everything but a rename
 ## of the picture itself, a consumer can write it as a literal, and the bake and the test derive
 ## the same string from the membership file without a table between them. Takes either a
 ## `res://` path or a repository-relative one.
+##
+## **The consumers do not call this.** Every one of them writes the region name as a literal,
+## which is what the source move left them with: an authoring path under `art/` is nothing the
+## engine could load, so a constant holding one would be a lie the type checker cannot catch.
+## This is the bake's own rule, shared so that the name a picture is baked under and the name a
+## test derives from the membership file come from one place.
 static func region_name_for(source_path: String) -> StringName:
-	var path := source_path.trim_prefix("res://").trim_prefix("assets/")
+	var path := source_path.trim_prefix("res://").trim_prefix("art/")
 	var extension := path.get_extension()
 	if not extension.is_empty():
 		path = path.left(path.length() - extension.length() - 1)
@@ -122,9 +131,9 @@ static func illustrated_path_for(source_path: String) -> String:
 	var path := source_path
 	if not path.begins_with("res://"):
 		path = "res://" + path
-	if not path.begins_with("res://assets/") or not path.ends_with(".svg"):
+	if not path.begins_with(ART_ROOT) or not path.ends_with(".svg"):
 		return ""
-	return ILLUSTRATED_ROOT + path.trim_prefix("res://assets/").trim_suffix(".svg") + ".png"
+	return ILLUSTRATED_ROOT + path.trim_prefix(ART_ROOT).trim_suffix(".svg") + ".png"
 
 # ----------------------------------------------------------------- the layout ---
 

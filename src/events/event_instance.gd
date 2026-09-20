@@ -7,140 +7,140 @@ extends Node2D
 ## at the baby, so there is no ordering to get wrong, events compose by simple addition, and
 ## the whole thing is testable without a scene.
 ##
-## **Every picture below is a repository path, never a loaded texture.** What a picture is baked
-## under is `AtlasLibrary.region_name_for()` of exactly this string, so keeping the path is what
-## lets `_drawn()` hand the draw call a region of the one `events` page instead of a second
-## resident copy of a picture that page already holds. Everything the drawing asks of a picture
-## goes through the two helpers beside `_drawn()`: `_native_size()` for a size read outside a draw,
-## and nothing else — a `Texture2D` never appears in this file again.
+## **Every picture below is the name its region is baked under, never a loaded texture and never
+## a file path.** The authoring SVG it came from lives under `art/`, which the engine ignores, so
+## there is nothing here to `load()` even by accident: `_drawn()` hands the draw call a region of
+## the one `events` page. Everything the drawing asks of a picture goes through the two helpers
+## beside `_drawn()`: `_native_size()` for a size read outside a draw, and nothing else — a
+## `Texture2D` never appears in this file again.
 
-const CAT_CROUCHED := "res://assets/events/cat_crouched.svg"
-const CAT_RUNNING := "res://assets/events/cat_running.svg"
+const CAT_CROUCHED := "events/cat_crouched"
+const CAT_RUNNING := "events/cat_running"
 ## The single east-facing picture, mirrored west — see `EventCatalogue._alley_mouse()` for why the
 ## prepared directional family (`mouse_{front,back}[_diagonal].svg`) stays unbound here.
-const MOUSE := "res://assets/events/mouse.svg"
+const MOUSE := "events/mouse"
 ## The dash's own second frame — the mouse's only picture is the side one this row actually draws;
 ## its tail curls a little differently rather than crossing legs it does not have room to draw at
 ## this scale, read by `_draw_simple()`'s own `texture_b` off `_gait_stepping()`.
-const MOUSE_B := "res://assets/events/mouse_b.svg"
+const MOUSE_B := "events/mouse_b"
 ## The only generic here, and it is not a look: it is the *walker* half of a dog walker, which is a
 ## picture of somebody holding a lead rather than a picture of nobody in particular. Every row draws
 ## something of its own.
-const PERSON := "res://assets/events/person.svg"
-const YELLER := "res://assets/events/yeller.svg"
-const BUSKER := "res://assets/events/busker.svg"
-const POSTER_CREW := "res://assets/events/poster_crew.svg"
+const PERSON := "events/person"
+const YELLER := "events/yeller"
+const BUSKER := "events/busker"
+const POSTER_CREW := "events/poster_crew"
 ## The square crew's own badge silhouette: the same man at the advertising column he pastes on,
 ## which is what tells the two crews apart at badge size.
-const POSTER_CREW_SQUARE := "res://assets/events/poster_crew_square.svg"
-const ROBBER_WAITING := "res://assets/events/robber_waiting.svg"
-const ROBBER_LUNGING := "res://assets/events/robber_lunging.svg"
-const PROTESTER := "res://assets/events/protester.svg"
+const POSTER_CREW_SQUARE := "events/poster_crew_square"
+const ROBBER_WAITING := "events/robber_waiting"
+const ROBBER_LUNGING := "events/robber_lunging"
+const PROTESTER := "events/protester"
 ## The eight pointing poses, one per 45° bearing sector — see `_protester_texture()`. Ordered
 ## clockwise from north to match `TelemetryLog.compass()`'s own bearing convention.
-const PROTESTER_POINT_N := "res://assets/events/protester_point_n.svg"
-const PROTESTER_POINT_NE := "res://assets/events/protester_point_ne.svg"
-const PROTESTER_POINT_E := "res://assets/events/protester_point_e.svg"
-const PROTESTER_POINT_SE := "res://assets/events/protester_point_se.svg"
-const PROTESTER_POINT_S := "res://assets/events/protester_point_s.svg"
-const PROTESTER_POINT_SW := "res://assets/events/protester_point_sw.svg"
-const PROTESTER_POINT_W := "res://assets/events/protester_point_w.svg"
-const PROTESTER_POINT_NW := "res://assets/events/protester_point_nw.svg"
-const GUNMAN := "res://assets/events/gunman.svg"
+const PROTESTER_POINT_N := "events/protester_point_n"
+const PROTESTER_POINT_NE := "events/protester_point_ne"
+const PROTESTER_POINT_E := "events/protester_point_e"
+const PROTESTER_POINT_SE := "events/protester_point_se"
+const PROTESTER_POINT_S := "events/protester_point_s"
+const PROTESTER_POINT_SW := "events/protester_point_sw"
+const PROTESTER_POINT_W := "events/protester_point_w"
+const PROTESTER_POINT_NW := "events/protester_point_nw"
+const GUNMAN := "events/gunman"
 ## The unsuffixed source is every family's own side view — see `docs/GRAPHICS.md`'s side-facing
 ## convention, `docs/evidence/svg-vehicles-2026-09-10/facings.csv`. The four-way suffixed sets below
 ## it are each family's front, back and two diagonals, bound through `_draw_eight_view()`; the old
 ## `_end.svg` single foreshortened picture each of these four rows drew for *both* north and south
 ## headings is superseded by the two-way `_front`/`_back` split and stays on disk unbound (see
 ## `docs/GRAPHICS.md`, the events table).
-const DELIVERY_VAN := "res://assets/events/delivery_van.svg"
-const DELIVERY_VAN_FRONT := "res://assets/events/delivery_van_front.svg"
-const DELIVERY_VAN_BACK := "res://assets/events/delivery_van_back.svg"
-const DELIVERY_VAN_FRONT_DIAGONAL := "res://assets/events/delivery_van_front_diagonal.svg"
-const DELIVERY_VAN_BACK_DIAGONAL := "res://assets/events/delivery_van_back_diagonal.svg"
-const FIRE_ENGINE := "res://assets/events/fire_engine.svg"
-const FIRE_ENGINE_FRONT := "res://assets/events/fire_engine_front.svg"
-const FIRE_ENGINE_BACK := "res://assets/events/fire_engine_back.svg"
-const FIRE_ENGINE_FRONT_DIAGONAL := "res://assets/events/fire_engine_front_diagonal.svg"
-const FIRE_ENGINE_BACK_DIAGONAL := "res://assets/events/fire_engine_back_diagonal.svg"
-const POLICE_CAR := "res://assets/events/police_car.svg"
-const POLICE_CAR_FRONT := "res://assets/events/police_car_front.svg"
-const POLICE_CAR_BACK := "res://assets/events/police_car_back.svg"
-const POLICE_CAR_FRONT_DIAGONAL := "res://assets/events/police_car_front_diagonal.svg"
-const POLICE_CAR_BACK_DIAGONAL := "res://assets/events/police_car_back_diagonal.svg"
-const UNMARKED_VAN := "res://assets/events/unmarked_van.svg"
-const UNMARKED_VAN_FRONT := "res://assets/events/unmarked_van_front.svg"
-const UNMARKED_VAN_BACK := "res://assets/events/unmarked_van_back.svg"
-const UNMARKED_VAN_FRONT_DIAGONAL := "res://assets/events/unmarked_van_front_diagonal.svg"
-const UNMARKED_VAN_BACK_DIAGONAL := "res://assets/events/unmarked_van_back_diagonal.svg"
-const VAN_VICTIM := "res://assets/events/van_victim.svg"
+const DELIVERY_VAN := "events/delivery_van"
+const DELIVERY_VAN_FRONT := "events/delivery_van_front"
+const DELIVERY_VAN_BACK := "events/delivery_van_back"
+const DELIVERY_VAN_FRONT_DIAGONAL := "events/delivery_van_front_diagonal"
+const DELIVERY_VAN_BACK_DIAGONAL := "events/delivery_van_back_diagonal"
+const FIRE_ENGINE := "events/fire_engine"
+const FIRE_ENGINE_FRONT := "events/fire_engine_front"
+const FIRE_ENGINE_BACK := "events/fire_engine_back"
+const FIRE_ENGINE_FRONT_DIAGONAL := "events/fire_engine_front_diagonal"
+const FIRE_ENGINE_BACK_DIAGONAL := "events/fire_engine_back_diagonal"
+const POLICE_CAR := "events/police_car"
+const POLICE_CAR_FRONT := "events/police_car_front"
+const POLICE_CAR_BACK := "events/police_car_back"
+const POLICE_CAR_FRONT_DIAGONAL := "events/police_car_front_diagonal"
+const POLICE_CAR_BACK_DIAGONAL := "events/police_car_back_diagonal"
+const UNMARKED_VAN := "events/unmarked_van"
+const UNMARKED_VAN_FRONT := "events/unmarked_van_front"
+const UNMARKED_VAN_BACK := "events/unmarked_van_back"
+const UNMARKED_VAN_FRONT_DIAGONAL := "events/unmarked_van_front_diagonal"
+const UNMARKED_VAN_BACK_DIAGONAL := "events/unmarked_van_back_diagonal"
+const VAN_VICTIM := "events/van_victim"
 ## The night raid's van: `_draw_eight_view()` reads `RIOT_VAN_BY_VIEW` below through the same
 ## octant/mirror convention `EightDirection` gives every other family. Its side picture is
 ## authored facing west, the same as `unmarked_van` and `army_truck` below
 ## (`docs/evidence/svg-vehicles-2026-09-10/facings.csv`), so it takes the same `side_faces_west`
 ## override those two do.
-const RIOT_VAN := "res://assets/events/riot_van.svg"
-const RIOT_VAN_FRONT := "res://assets/events/riot_van_front.svg"
-const RIOT_VAN_BACK := "res://assets/events/riot_van_back.svg"
-const RIOT_VAN_FRONT_DIAGONAL := "res://assets/events/riot_van_front_diagonal.svg"
-const RIOT_VAN_BACK_DIAGONAL := "res://assets/events/riot_van_back_diagonal.svg"
-const ARMY_TRUCK := "res://assets/events/army_truck.svg"
-const ARMY_TRUCK_FRONT := "res://assets/events/army_truck_front.svg"
-const ARMY_TRUCK_BACK := "res://assets/events/army_truck_back.svg"
-const ARMY_TRUCK_FRONT_DIAGONAL := "res://assets/events/army_truck_front_diagonal.svg"
-const ARMY_TRUCK_BACK_DIAGONAL := "res://assets/events/army_truck_back_diagonal.svg"
-const FLAME := "res://assets/events/flame.svg"
-const BARRIER_SEGMENT := "res://assets/events/barrier_segment.svg"
-const BARRIER_SEGMENT_VERTICAL := "res://assets/events/barrier_segment_vertical.svg"
-const BARRIER_END := "res://assets/events/barrier_end.svg"
-const RUBBLE := "res://assets/events/rubble.svg"
-const CHECKPOINT_BLOCK := "res://assets/events/checkpoint_block.svg"
-const ROADBLOCK_SEGMENT := "res://assets/events/roadblock_segment.svg"
-const ROADBLOCK_END := "res://assets/events/roadblock_end.svg"
+const RIOT_VAN := "events/riot_van"
+const RIOT_VAN_FRONT := "events/riot_van_front"
+const RIOT_VAN_BACK := "events/riot_van_back"
+const RIOT_VAN_FRONT_DIAGONAL := "events/riot_van_front_diagonal"
+const RIOT_VAN_BACK_DIAGONAL := "events/riot_van_back_diagonal"
+const ARMY_TRUCK := "events/army_truck"
+const ARMY_TRUCK_FRONT := "events/army_truck_front"
+const ARMY_TRUCK_BACK := "events/army_truck_back"
+const ARMY_TRUCK_FRONT_DIAGONAL := "events/army_truck_front_diagonal"
+const ARMY_TRUCK_BACK_DIAGONAL := "events/army_truck_back_diagonal"
+const FLAME := "events/flame"
+const BARRIER_SEGMENT := "events/barrier_segment"
+const BARRIER_SEGMENT_VERTICAL := "events/barrier_segment_vertical"
+const BARRIER_END := "events/barrier_end"
+const RUBBLE := "events/rubble"
+const CHECKPOINT_BLOCK := "events/checkpoint_block"
+const ROADBLOCK_SEGMENT := "events/roadblock_segment"
+const ROADBLOCK_END := "events/roadblock_end"
 ## A hunting roadblock's own shadow once it draws as a guard rather than as the band: person-scale,
 ## matching `alley_robbery`'s own `GroundShape.point(9.0)` rather than `def.shape` — the band's 60px
 ## capsule, which is still what the collision body and the cold picture are built from.
 const _GUARD_SHADOW_RADIUS := 9.0
-const BARRICADE_PILE := "res://assets/events/barricade_pile.svg"
-const CAFE_TABLE := "res://assets/events/cafe_table.svg"
-const CAFE_SITTER := "res://assets/events/cafe_sitter.svg"
-const DOG := "res://assets/events/dog.svg"
-const CYCLIST := "res://assets/events/cyclist.svg"
-const STALL := "res://assets/events/stall.svg"
-const LEAF_BLOWER := "res://assets/events/leaf_blower.svg"
-const PIGEON := "res://assets/events/pigeon.svg"
-const PIGEON_DOWN := "res://assets/events/pigeon_down.svg"
-const ICE_CREAM_VAN := "res://assets/events/ice_cream_van.svg"
-const ICE_CREAM_VAN_FRONT := "res://assets/events/ice_cream_van_front.svg"
-const ICE_CREAM_VAN_BACK := "res://assets/events/ice_cream_van_back.svg"
-const ICE_CREAM_VAN_FRONT_DIAGONAL := "res://assets/events/ice_cream_van_front_diagonal.svg"
-const ICE_CREAM_VAN_BACK_DIAGONAL := "res://assets/events/ice_cream_van_back_diagonal.svg"
-const LORRY := "res://assets/events/lorry.svg"
-const LORRY_FRONT := "res://assets/events/lorry_front.svg"
-const LORRY_BACK := "res://assets/events/lorry_back.svg"
-const LORRY_FRONT_DIAGONAL := "res://assets/events/lorry_front_diagonal.svg"
-const LORRY_BACK_DIAGONAL := "res://assets/events/lorry_back_diagonal.svg"
-const CHARGING_DOG := "res://assets/events/charging_dog.svg"
-const CHATTING_MOTHER_WALKING := "res://assets/events/chatting_mother_walking.svg"
-const CHATTING_MOTHER_TALKING := "res://assets/events/chatting_mother_talking.svg"
+const BARRICADE_PILE := "events/barricade_pile"
+const CAFE_TABLE := "events/cafe_table"
+const CAFE_SITTER := "events/cafe_sitter"
+const DOG := "events/dog"
+const CYCLIST := "events/cyclist"
+const STALL := "events/stall"
+const LEAF_BLOWER := "events/leaf_blower"
+const PIGEON := "events/pigeon"
+const PIGEON_DOWN := "events/pigeon_down"
+const ICE_CREAM_VAN := "events/ice_cream_van"
+const ICE_CREAM_VAN_FRONT := "events/ice_cream_van_front"
+const ICE_CREAM_VAN_BACK := "events/ice_cream_van_back"
+const ICE_CREAM_VAN_FRONT_DIAGONAL := "events/ice_cream_van_front_diagonal"
+const ICE_CREAM_VAN_BACK_DIAGONAL := "events/ice_cream_van_back_diagonal"
+const LORRY := "events/lorry"
+const LORRY_FRONT := "events/lorry_front"
+const LORRY_BACK := "events/lorry_back"
+const LORRY_FRONT_DIAGONAL := "events/lorry_front_diagonal"
+const LORRY_BACK_DIAGONAL := "events/lorry_back_diagonal"
+const CHARGING_DOG := "events/charging_dog"
+const CHATTING_MOTHER_WALKING := "events/chatting_mother_walking"
+const CHATTING_MOTHER_TALKING := "events/chatting_mother_talking"
 ## Seal pictures — see `SealPlanner` and `docs/DECISIONS.md`, "Eight seal pictures".
-const FALLEN_TREE := "res://assets/events/fallen_tree.svg"
-const CAR_ACCIDENT := "res://assets/events/car_accident.svg"
-const CAR_ACCIDENT_SHADOW := "res://assets/events/car_accident_shadow.svg"
-const SKIP := "res://assets/events/skip.svg"
-const SCAFFOLDING := "res://assets/events/scaffolding.svg"
-const BURST_MAIN := "res://assets/events/burst_water_main.svg"
-const MOVING_VAN := "res://assets/events/moving_van.svg"
-const MOVING_VAN_VERTICAL := "res://assets/events/moving_van_vertical.svg"
-const BURNT_OUT_CAR := "res://assets/events/burnt_out_car.svg"
-const BURNT_OUT_CAR_VERTICAL := "res://assets/events/burnt_out_car_vertical.svg"
-const COLLAPSED_FRONTAGE := "res://assets/events/collapsed_frontage.svg"
+const FALLEN_TREE := "events/fallen_tree"
+const CAR_ACCIDENT := "events/car_accident"
+const CAR_ACCIDENT_SHADOW := "events/car_accident_shadow"
+const SKIP := "events/skip"
+const SCAFFOLDING := "events/scaffolding"
+const BURST_MAIN := "events/burst_water_main"
+const MOVING_VAN := "events/moving_van"
+const MOVING_VAN_VERTICAL := "events/moving_van_vertical"
+const BURNT_OUT_CAR := "events/burnt_out_car"
+const BURNT_OUT_CAR_VERTICAL := "events/burnt_out_car_vertical"
+const COLLAPSED_FRONTAGE := "events/collapsed_frontage"
 ## Directional siblings for the three whole-street scenes. Vehicles and upright props are authored
 ## in the street's projection rather than rotating every pixel of the horizontal composition.
-const FALLEN_TREE_VERTICAL := "res://assets/events/fallen_tree_vertical.svg"
-const CAR_ACCIDENT_VERTICAL := "res://assets/events/car_accident_vertical.svg"
-const CAR_ACCIDENT_VERTICAL_SHADOW := "res://assets/events/car_accident_vertical_shadow.svg"
-const BURST_MAIN_VERTICAL := "res://assets/events/burst_water_main_vertical.svg"
+const FALLEN_TREE_VERTICAL := "events/fallen_tree_vertical"
+const CAR_ACCIDENT_VERTICAL := "events/car_accident_vertical"
+const CAR_ACCIDENT_VERTICAL_SHADOW := "events/car_accident_vertical_shadow"
+const BURST_MAIN_VERTICAL := "events/burst_water_main_vertical"
 
 # ---------------------------------------------------------- eight-view families ---
 # Every family below shares the crowd walker's own convention (`docs/GRAPHICS.md`, "the crowd
@@ -156,185 +156,185 @@ const EIGHT_VIEW_BY_SECTOR: Array[String] = [
 ]
 
 const PERSON_BY_VIEW := {
-	"front": "res://assets/events/person_front.svg",
-	"back": "res://assets/events/person_back.svg",
-	"side": "res://assets/events/person_side.svg",
-	"front_diagonal": "res://assets/events/person_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/person_back_diagonal.svg",
+	"front": "events/person_front",
+	"back": "events/person_back",
+	"side": "events/person_side",
+	"front_diagonal": "events/person_front_diagonal",
+	"back_diagonal": "events/person_back_diagonal",
 }
 ## Feet-passing companion to `PERSON_BY_VIEW`, the walker frame-authoring rule applied to the dog
 ## walker's own body: cardinal and side views lift the coat and head one pixel and cross the legs
 ## and shoes, the two diagonals leave everything but the legs untouched. See `_gait_stepping()`.
 const PERSON_BY_VIEW_B := {
-	"front": "res://assets/events/person_front_b.svg",
-	"back": "res://assets/events/person_back_b.svg",
-	"side": "res://assets/events/person_side_b.svg",
-	"front_diagonal": "res://assets/events/person_front_diagonal_b.svg",
-	"back_diagonal": "res://assets/events/person_back_diagonal_b.svg",
+	"front": "events/person_front_b",
+	"back": "events/person_back_b",
+	"side": "events/person_side_b",
+	"front_diagonal": "events/person_front_diagonal_b",
+	"back_diagonal": "events/person_back_diagonal_b",
 }
 const YELLER_BY_VIEW := {
-	"front": "res://assets/events/yeller_front.svg",
-	"back": "res://assets/events/yeller_back.svg",
-	"side": "res://assets/events/yeller_side.svg",
-	"front_diagonal": "res://assets/events/yeller_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/yeller_back_diagonal.svg",
+	"front": "events/yeller_front",
+	"back": "events/yeller_back",
+	"side": "events/yeller_side",
+	"front_diagonal": "events/yeller_front_diagonal",
+	"back_diagonal": "events/yeller_back_diagonal",
 }
 ## See `PERSON_BY_VIEW_B` above for the frame-authoring rule.
 const YELLER_BY_VIEW_B := {
-	"front": "res://assets/events/yeller_front_b.svg",
-	"back": "res://assets/events/yeller_back_b.svg",
-	"side": "res://assets/events/yeller_side_b.svg",
-	"front_diagonal": "res://assets/events/yeller_front_diagonal_b.svg",
-	"back_diagonal": "res://assets/events/yeller_back_diagonal_b.svg",
+	"front": "events/yeller_front_b",
+	"back": "events/yeller_back_b",
+	"side": "events/yeller_side_b",
+	"front_diagonal": "events/yeller_front_diagonal_b",
+	"back_diagonal": "events/yeller_back_diagonal_b",
 }
 const BUSKER_BY_VIEW := {
-	"front": "res://assets/events/busker_front.svg",
-	"back": "res://assets/events/busker_back.svg",
-	"side": "res://assets/events/busker_side.svg",
-	"front_diagonal": "res://assets/events/busker_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/busker_back_diagonal.svg",
+	"front": "events/busker_front",
+	"back": "events/busker_back",
+	"side": "events/busker_side",
+	"front_diagonal": "events/busker_front_diagonal",
+	"back_diagonal": "events/busker_back_diagonal",
 }
 ## The strumming hand raised — read by `_draw_busker()` off `_idle_stepping()`'s own timer rather
 ## than `_gait_stepping()`'s distance, since he never moves. Everything but the hand/arm draped
 ## over the guitar is byte-identical to frame a.
 const BUSKER_BY_VIEW_B := {
-	"front": "res://assets/events/busker_front_b.svg",
-	"back": "res://assets/events/busker_back_b.svg",
-	"side": "res://assets/events/busker_side_b.svg",
-	"front_diagonal": "res://assets/events/busker_front_diagonal_b.svg",
-	"back_diagonal": "res://assets/events/busker_back_diagonal_b.svg",
+	"front": "events/busker_front_b",
+	"back": "events/busker_back_b",
+	"side": "events/busker_side_b",
+	"front_diagonal": "events/busker_front_diagonal_b",
+	"back_diagonal": "events/busker_back_diagonal_b",
 }
 const POSTER_CREW_BY_VIEW := {
-	"front": "res://assets/events/poster_crew_front.svg",
-	"back": "res://assets/events/poster_crew_back.svg",
-	"side": "res://assets/events/poster_crew_side.svg",
-	"front_diagonal": "res://assets/events/poster_crew_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/poster_crew_back_diagonal.svg",
+	"front": "events/poster_crew_front",
+	"back": "events/poster_crew_back",
+	"side": "events/poster_crew_side",
+	"front_diagonal": "events/poster_crew_front_diagonal",
+	"back_diagonal": "events/poster_crew_back_diagonal",
 }
 ## The square crew's five views. A 44x44 canvas where the sidewalk crew's is 30x44: the worker is
 ## that family's own figure, unmoved on the anchor, and the extra width is the advertising column
 ## he stands at. The column is a cylinder, so it is the same picture in all five and only the
 ## worker turns.
 const POSTER_CREW_SQUARE_BY_VIEW := {
-	"front": "res://assets/events/poster_crew_square_front.svg",
-	"back": "res://assets/events/poster_crew_square_back.svg",
-	"side": "res://assets/events/poster_crew_square_side.svg",
-	"front_diagonal": "res://assets/events/poster_crew_square_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/poster_crew_square_back_diagonal.svg",
+	"front": "events/poster_crew_square_front",
+	"back": "events/poster_crew_square_back",
+	"side": "events/poster_crew_square_side",
+	"front_diagonal": "events/poster_crew_square_front_diagonal",
+	"back_diagonal": "events/poster_crew_square_back_diagonal",
 }
 const CAFE_SITTER_BY_VIEW := {
-	"front": "res://assets/events/cafe_sitter_front.svg",
-	"back": "res://assets/events/cafe_sitter_back.svg",
-	"side": "res://assets/events/cafe_sitter_side.svg",
-	"front_diagonal": "res://assets/events/cafe_sitter_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/cafe_sitter_back_diagonal.svg",
+	"front": "events/cafe_sitter_front",
+	"back": "events/cafe_sitter_back",
+	"side": "events/cafe_sitter_side",
+	"front_diagonal": "events/cafe_sitter_front_diagonal",
+	"back_diagonal": "events/cafe_sitter_back_diagonal",
 }
 ## A lean, not a stride: the sitters never move, so this alternates on `_idle_stepping()`'s own
 ## timer rather than on `_gait_stepping()`'s distance. Everything but the lap/table-contact stays
 ## put; the seated body above it leans a couple of pixels — see the SVG's own comment.
 const CAFE_SITTER_BY_VIEW_B := {
-	"front": "res://assets/events/cafe_sitter_front_b.svg",
-	"back": "res://assets/events/cafe_sitter_back_b.svg",
-	"side": "res://assets/events/cafe_sitter_side_b.svg",
-	"front_diagonal": "res://assets/events/cafe_sitter_front_diagonal_b.svg",
-	"back_diagonal": "res://assets/events/cafe_sitter_back_diagonal_b.svg",
+	"front": "events/cafe_sitter_front_b",
+	"back": "events/cafe_sitter_back_b",
+	"side": "events/cafe_sitter_side_b",
+	"front_diagonal": "events/cafe_sitter_front_diagonal_b",
+	"back_diagonal": "events/cafe_sitter_back_diagonal_b",
 }
 const VAN_VICTIM_BY_VIEW := {
-	"front": "res://assets/events/van_victim_front.svg",
-	"back": "res://assets/events/van_victim_back.svg",
-	"side": "res://assets/events/van_victim_side.svg",
-	"front_diagonal": "res://assets/events/van_victim_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/van_victim_back_diagonal.svg",
+	"front": "events/van_victim_front",
+	"back": "events/van_victim_back",
+	"side": "events/van_victim_side",
+	"front_diagonal": "events/van_victim_front_diagonal",
+	"back_diagonal": "events/van_victim_back_diagonal",
 }
 ## See `PERSON_BY_VIEW_B` for the frame-authoring rule. Read by `_draw_abduction()` off
 ## `_victim_gait_stepping()`, her own short scripted walk to the van rather than the ordinary
 ## distance-driven gait — see that function's doc.
 const VAN_VICTIM_BY_VIEW_B := {
-	"front": "res://assets/events/van_victim_front_b.svg",
-	"back": "res://assets/events/van_victim_back_b.svg",
-	"side": "res://assets/events/van_victim_side_b.svg",
-	"front_diagonal": "res://assets/events/van_victim_front_diagonal_b.svg",
-	"back_diagonal": "res://assets/events/van_victim_back_diagonal_b.svg",
+	"front": "events/van_victim_front_b",
+	"back": "events/van_victim_back_b",
+	"side": "events/van_victim_side_b",
+	"front_diagonal": "events/van_victim_front_diagonal_b",
+	"back_diagonal": "events/van_victim_back_diagonal_b",
 }
 const PROTESTER_BY_VIEW := {
-	"front": "res://assets/events/protester_front.svg",
-	"back": "res://assets/events/protester_back.svg",
-	"side": "res://assets/events/protester_side.svg",
-	"front_diagonal": "res://assets/events/protester_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/protester_back_diagonal.svg",
+	"front": "events/protester_front",
+	"back": "events/protester_back",
+	"side": "events/protester_side",
+	"front_diagonal": "events/protester_front_diagonal",
+	"back_diagonal": "events/protester_back_diagonal",
 }
 ## The plain rank's own stride — see `PERSON_BY_VIEW_B` for the rule. The eight
 ## `protester_point_*` poses stay single; `_draw_protest()` only reaches this table when
 ## `_protester_texture()` answers its own `PROTESTER` sentinel.
 const PROTESTER_BY_VIEW_B := {
-	"front": "res://assets/events/protester_front_b.svg",
-	"back": "res://assets/events/protester_back_b.svg",
-	"side": "res://assets/events/protester_side_b.svg",
-	"front_diagonal": "res://assets/events/protester_front_diagonal_b.svg",
-	"back_diagonal": "res://assets/events/protester_back_diagonal_b.svg",
+	"front": "events/protester_front_b",
+	"back": "events/protester_back_b",
+	"side": "events/protester_side_b",
+	"front_diagonal": "events/protester_front_diagonal_b",
+	"back_diagonal": "events/protester_back_diagonal_b",
 }
 const LEAF_BLOWER_BY_VIEW := {
-	"front": "res://assets/events/leaf_blower_front.svg",
-	"back": "res://assets/events/leaf_blower_back.svg",
-	"side": "res://assets/events/leaf_blower_side.svg",
-	"front_diagonal": "res://assets/events/leaf_blower_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/leaf_blower_back_diagonal.svg",
+	"front": "events/leaf_blower_front",
+	"back": "events/leaf_blower_back",
+	"side": "events/leaf_blower_side",
+	"front_diagonal": "events/leaf_blower_front_diagonal",
+	"back_diagonal": "events/leaf_blower_back_diagonal",
 }
 ## See `PERSON_BY_VIEW_B` for the frame-authoring rule. `leaf_blower` never moves today, so this
 ## is never actually reached in play — wired for uniformity the way `lorry`'s own diagonal views
 ## are, in case a future site ever turns him.
 const LEAF_BLOWER_BY_VIEW_B := {
-	"front": "res://assets/events/leaf_blower_front_b.svg",
-	"back": "res://assets/events/leaf_blower_back_b.svg",
-	"side": "res://assets/events/leaf_blower_side_b.svg",
-	"front_diagonal": "res://assets/events/leaf_blower_front_diagonal_b.svg",
-	"back_diagonal": "res://assets/events/leaf_blower_back_diagonal_b.svg",
+	"front": "events/leaf_blower_front_b",
+	"back": "events/leaf_blower_back_b",
+	"side": "events/leaf_blower_side_b",
+	"front_diagonal": "events/leaf_blower_front_diagonal_b",
+	"back_diagonal": "events/leaf_blower_back_diagonal_b",
 }
 const ROBBER_WAITING_BY_VIEW := {
-	"front": "res://assets/events/robber_waiting_front.svg",
-	"back": "res://assets/events/robber_waiting_back.svg",
-	"side": "res://assets/events/robber_waiting_side.svg",
-	"front_diagonal": "res://assets/events/robber_waiting_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/robber_waiting_back_diagonal.svg",
+	"front": "events/robber_waiting_front",
+	"back": "events/robber_waiting_back",
+	"side": "events/robber_waiting_side",
+	"front_diagonal": "events/robber_waiting_front_diagonal",
+	"back_diagonal": "events/robber_waiting_back_diagonal",
 }
 const ROBBER_LUNGING_BY_VIEW := {
-	"front": "res://assets/events/robber_lunging_front.svg",
-	"back": "res://assets/events/robber_lunging_back.svg",
-	"side": "res://assets/events/robber_lunging_side.svg",
-	"front_diagonal": "res://assets/events/robber_lunging_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/robber_lunging_back_diagonal.svg",
+	"front": "events/robber_lunging_front",
+	"back": "events/robber_lunging_back",
+	"side": "events/robber_lunging_side",
+	"front_diagonal": "events/robber_lunging_front_diagonal",
+	"back_diagonal": "events/robber_lunging_back_diagonal",
 }
 ## The lunge's own stride — see `PERSON_BY_VIEW_B`. The waiting posture stays single: a man only
 ## watching the street is not moving yet.
 const ROBBER_LUNGING_BY_VIEW_B := {
-	"front": "res://assets/events/robber_lunging_front_b.svg",
-	"back": "res://assets/events/robber_lunging_back_b.svg",
-	"side": "res://assets/events/robber_lunging_side_b.svg",
-	"front_diagonal": "res://assets/events/robber_lunging_front_diagonal_b.svg",
-	"back_diagonal": "res://assets/events/robber_lunging_back_diagonal_b.svg",
+	"front": "events/robber_lunging_front_b",
+	"back": "events/robber_lunging_back_b",
+	"side": "events/robber_lunging_side_b",
+	"front_diagonal": "events/robber_lunging_front_diagonal_b",
+	"back_diagonal": "events/robber_lunging_back_diagonal_b",
 }
 const CHATTING_MOTHER_WALKING_BY_VIEW := {
-	"front": "res://assets/events/chatting_mother_walking_front.svg",
-	"back": "res://assets/events/chatting_mother_walking_back.svg",
-	"side": "res://assets/events/chatting_mother_walking_side.svg",
-	"front_diagonal": "res://assets/events/chatting_mother_walking_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/chatting_mother_walking_back_diagonal.svg",
+	"front": "events/chatting_mother_walking_front",
+	"back": "events/chatting_mother_walking_back",
+	"side": "events/chatting_mother_walking_side",
+	"front_diagonal": "events/chatting_mother_walking_front_diagonal",
+	"back_diagonal": "events/chatting_mother_walking_back_diagonal",
 }
 ## The pacing walk's own stride — see `PERSON_BY_VIEW_B`. The talking posture stays single: she is
 ## frozen for the whole of a conversation, `is_chatting()`'s own meaning.
 const CHATTING_MOTHER_WALKING_BY_VIEW_B := {
-	"front": "res://assets/events/chatting_mother_walking_front_b.svg",
-	"back": "res://assets/events/chatting_mother_walking_back_b.svg",
-	"side": "res://assets/events/chatting_mother_walking_side_b.svg",
-	"front_diagonal": "res://assets/events/chatting_mother_walking_front_diagonal_b.svg",
-	"back_diagonal": "res://assets/events/chatting_mother_walking_back_diagonal_b.svg",
+	"front": "events/chatting_mother_walking_front_b",
+	"back": "events/chatting_mother_walking_back_b",
+	"side": "events/chatting_mother_walking_side_b",
+	"front_diagonal": "events/chatting_mother_walking_front_diagonal_b",
+	"back_diagonal": "events/chatting_mother_walking_back_diagonal_b",
 }
 const CHATTING_MOTHER_TALKING_BY_VIEW := {
-	"front": "res://assets/events/chatting_mother_talking_front.svg",
-	"back": "res://assets/events/chatting_mother_talking_back.svg",
-	"side": "res://assets/events/chatting_mother_talking_side.svg",
-	"front_diagonal": "res://assets/events/chatting_mother_talking_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/chatting_mother_talking_back_diagonal.svg",
+	"front": "events/chatting_mother_talking_front",
+	"back": "events/chatting_mother_talking_back",
+	"side": "events/chatting_mother_talking_side",
+	"front_diagonal": "events/chatting_mother_talking_front_diagonal",
+	"back_diagonal": "events/chatting_mother_talking_back_diagonal",
 }
 
 ## The animal/rider families below reuse the existing unsuffixed constant as `"side"` rather than
@@ -345,90 +345,90 @@ const CHATTING_MOTHER_TALKING_BY_VIEW := {
 ## `EventCatalogue._alley_mouse()`'s own docstring documents, with its own reasoning, that the row
 ## stays on `_draw_simple(MOUSE, ...)` rather than joining this table.
 const CAT_CROUCHED_BY_VIEW := {
-	"front": "res://assets/events/cat_crouched_front.svg",
-	"back": "res://assets/events/cat_crouched_back.svg",
+	"front": "events/cat_crouched_front",
+	"back": "events/cat_crouched_back",
 	"side": CAT_CROUCHED,
-	"front_diagonal": "res://assets/events/cat_crouched_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/cat_crouched_back_diagonal.svg",
+	"front_diagonal": "events/cat_crouched_front_diagonal",
+	"back_diagonal": "events/cat_crouched_back_diagonal",
 }
 const CAT_RUNNING_BY_VIEW := {
-	"front": "res://assets/events/cat_running_front.svg",
-	"back": "res://assets/events/cat_running_back.svg",
+	"front": "events/cat_running_front",
+	"back": "events/cat_running_back",
 	"side": CAT_RUNNING,
-	"front_diagonal": "res://assets/events/cat_running_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/cat_running_back_diagonal.svg",
+	"front_diagonal": "events/cat_running_front_diagonal",
+	"back_diagonal": "events/cat_running_back_diagonal",
 }
 ## The dash's own stride. Unlike the humanoid families (`PERSON_BY_VIEW_B`), a quadruped's low
 ## silhouette has no coat or head to lift, so every view here only shifts the leg marks — the
 ## distance-driven bob (`_current_bob()`) still supplies the vertical motion cue. The crouched
 ## posture stays single: it is the telegraph, held still.
 const CAT_RUNNING_BY_VIEW_B := {
-	"front": "res://assets/events/cat_running_front_b.svg",
-	"back": "res://assets/events/cat_running_back_b.svg",
-	"side": "res://assets/events/cat_running_b.svg",
-	"front_diagonal": "res://assets/events/cat_running_front_diagonal_b.svg",
-	"back_diagonal": "res://assets/events/cat_running_back_diagonal_b.svg",
+	"front": "events/cat_running_front_b",
+	"back": "events/cat_running_back_b",
+	"side": "events/cat_running_b",
+	"front_diagonal": "events/cat_running_front_diagonal_b",
+	"back_diagonal": "events/cat_running_back_diagonal_b",
 }
 const DOG_BY_VIEW := {
-	"front": "res://assets/events/dog_front.svg",
-	"back": "res://assets/events/dog_back.svg",
+	"front": "events/dog_front",
+	"back": "events/dog_back",
 	"side": DOG,
-	"front_diagonal": "res://assets/events/dog_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/dog_back_diagonal.svg",
+	"front_diagonal": "events/dog_front_diagonal",
+	"back_diagonal": "events/dog_back_diagonal",
 }
 ## Shared by the dog walker's own dog and the loose dog — see `CAT_RUNNING_BY_VIEW_B` for why a
 ## quadruped's b frame only shifts the legs.
 const DOG_BY_VIEW_B := {
-	"front": "res://assets/events/dog_front_b.svg",
-	"back": "res://assets/events/dog_back_b.svg",
-	"side": "res://assets/events/dog_b.svg",
-	"front_diagonal": "res://assets/events/dog_front_diagonal_b.svg",
-	"back_diagonal": "res://assets/events/dog_back_diagonal_b.svg",
+	"front": "events/dog_front_b",
+	"back": "events/dog_back_b",
+	"side": "events/dog_b",
+	"front_diagonal": "events/dog_front_diagonal_b",
+	"back_diagonal": "events/dog_back_diagonal_b",
 }
 const CHARGING_DOG_BY_VIEW := {
-	"front": "res://assets/events/charging_dog_front.svg",
-	"back": "res://assets/events/charging_dog_back.svg",
+	"front": "events/charging_dog_front",
+	"back": "events/charging_dog_back",
 	"side": CHARGING_DOG,
-	"front_diagonal": "res://assets/events/charging_dog_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/charging_dog_back_diagonal.svg",
+	"front_diagonal": "events/charging_dog_front_diagonal",
+	"back_diagonal": "events/charging_dog_back_diagonal",
 }
 ## See `CAT_RUNNING_BY_VIEW_B`.
 const CHARGING_DOG_BY_VIEW_B := {
-	"front": "res://assets/events/charging_dog_front_b.svg",
-	"back": "res://assets/events/charging_dog_back_b.svg",
-	"side": "res://assets/events/charging_dog_b.svg",
-	"front_diagonal": "res://assets/events/charging_dog_front_diagonal_b.svg",
-	"back_diagonal": "res://assets/events/charging_dog_back_diagonal_b.svg",
+	"front": "events/charging_dog_front_b",
+	"back": "events/charging_dog_back_b",
+	"side": "events/charging_dog_b",
+	"front_diagonal": "events/charging_dog_front_diagonal_b",
+	"back_diagonal": "events/charging_dog_back_diagonal_b",
 }
 const CYCLIST_BY_VIEW := {
-	"front": "res://assets/events/cyclist_front.svg",
-	"back": "res://assets/events/cyclist_back.svg",
+	"front": "events/cyclist_front",
+	"back": "events/cyclist_back",
 	"side": CYCLIST,
-	"front_diagonal": "res://assets/events/cyclist_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/cyclist_back_diagonal.svg",
+	"front_diagonal": "events/cyclist_front_diagonal",
+	"back_diagonal": "events/cyclist_back_diagonal",
 }
 ## The pedal's own two positions — rider and bike are one picture, so one phase swaps both without
 ## anything here needing to know they are drawn together.
 const CYCLIST_BY_VIEW_B := {
-	"front": "res://assets/events/cyclist_front_b.svg",
-	"back": "res://assets/events/cyclist_back_b.svg",
-	"side": "res://assets/events/cyclist_b.svg",
-	"front_diagonal": "res://assets/events/cyclist_front_diagonal_b.svg",
-	"back_diagonal": "res://assets/events/cyclist_back_diagonal_b.svg",
+	"front": "events/cyclist_front_b",
+	"back": "events/cyclist_back_b",
+	"side": "events/cyclist_b",
+	"front_diagonal": "events/cyclist_front_diagonal_b",
+	"back_diagonal": "events/cyclist_back_diagonal_b",
 }
 const PIGEON_BY_VIEW := {
-	"front": "res://assets/events/pigeon_front.svg",
-	"back": "res://assets/events/pigeon_back.svg",
+	"front": "events/pigeon_front",
+	"back": "events/pigeon_back",
 	"side": PIGEON,
-	"front_diagonal": "res://assets/events/pigeon_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/pigeon_back_diagonal.svg",
+	"front_diagonal": "events/pigeon_front_diagonal",
+	"back_diagonal": "events/pigeon_back_diagonal",
 }
 const PIGEON_DOWN_BY_VIEW := {
-	"front": "res://assets/events/pigeon_down_front.svg",
-	"back": "res://assets/events/pigeon_down_back.svg",
+	"front": "events/pigeon_down_front",
+	"back": "events/pigeon_down_back",
 	"side": PIGEON_DOWN,
-	"front_diagonal": "res://assets/events/pigeon_down_front_diagonal.svg",
-	"back_diagonal": "res://assets/events/pigeon_down_back_diagonal.svg",
+	"front_diagonal": "events/pigeon_down_front_diagonal",
+	"back_diagonal": "events/pigeon_down_back_diagonal",
 }
 ## The vehicle-scale families below share the same five-view shape as every family above, but not
 ## all of them share its mirror convention: `docs/evidence/svg-vehicles-2026-09-10/README.md` — "the
@@ -503,25 +503,25 @@ const RIOT_VAN_BY_VIEW := {
 }
 
 ## The region door's own kit — see `RegionPlanner` and `docs/CITY.md`, "Regions and the wall".
-const HUT_NORTH := "res://assets/checkpoints/hut_north.svg"
-const HUT_SOUTH := "res://assets/checkpoints/hut_south.svg"
-const HUT_EAST := "res://assets/checkpoints/hut_east.svg"
-const HUT_WEST := "res://assets/checkpoints/hut_west.svg"
-const GUARD_STANDING := "res://assets/checkpoints/guard_standing.svg"
-const GUARD_LUNGING := "res://assets/checkpoints/guard_lunging.svg"
-const BOOM_GATE_NS_LOWERED := "res://assets/checkpoints/boom_gate_ns_lowered.svg"
-const BOOM_GATE_NS_RAISED := "res://assets/checkpoints/boom_gate_ns_raised.svg"
-const BOOM_GATE_EW_LOWERED := "res://assets/checkpoints/boom_gate_ew_lowered.svg"
-const BOOM_GATE_EW_RAISED := "res://assets/checkpoints/boom_gate_ew_raised.svg"
+const HUT_NORTH := "checkpoints/hut_north"
+const HUT_SOUTH := "checkpoints/hut_south"
+const HUT_EAST := "checkpoints/hut_east"
+const HUT_WEST := "checkpoints/hut_west"
+const GUARD_STANDING := "checkpoints/guard_standing"
+const GUARD_LUNGING := "checkpoints/guard_lunging"
+const BOOM_GATE_NS_LOWERED := "checkpoints/boom_gate_ns_lowered"
+const BOOM_GATE_NS_RAISED := "checkpoints/boom_gate_ns_raised"
+const BOOM_GATE_EW_LOWERED := "checkpoints/boom_gate_ew_lowered"
+const BOOM_GATE_EW_RAISED := "checkpoints/boom_gate_ew_raised"
 
 ## The basement's own vent, and the one picture in the catalogue that is a *volume* of air rather
 ## than a body: `steam.svg` is 32×48 and stands on the ground it rises from.
-const STEAM := "res://assets/events/steam.svg"
+const STEAM := "events/steam"
 
 ## The finale's crater, the mark an off-screen explosion leaves on the street. One of the three
 ## prepared sizes; the row obstructs at exactly half this picture's width, so the hole and the
 ## ground she cannot walk on are the same circle — see `EventCatalogue._impact_crater()`.
-const IMPACT_CRATER := "res://assets/props/impact_crater_2x2.svg"
+const IMPACT_CRATER := "props/impact_crater_2x2"
 ## Its centre, which is also its ground point: the picture is a hole in the road rather than a
 ## thing standing on it, so it is registered on its middle and not on its base. The source's own
 ## comment names the same point — *"Ground anchor is the canvas centre (32,32)"* — on a 64×64
@@ -2667,20 +2667,6 @@ func _draw_mark() -> void:
 ## The one baked page everything in this file draws from.
 const ATLAS_GROUP := &"events"
 
-## The baked region name for a picture path, cached — `AtlasLibrary.region_name_for()` is a pure
-## string transform with no I/O, and the cache only stops the same few hundred names being rebuilt
-## every frame for a street full of events. Static, since the answer is a property of the path and
-## not of any one instance.
-static var _region_names: Dictionary = {}
-
-static func _region_name_of(picture: String) -> StringName:
-	var cached: Variant = _region_names.get(picture)
-	if cached != null:
-		return cached
-	var name := AtlasLibrary.region_name_for(picture)
-	_region_names[picture] = name
-	return name
-
 ## The picture to draw: a region of the `events` page, whose own `get_size()` is the source
 ## picture's size, so every offset, extent, anchor and mirror below reads exactly the number it
 ## read from a preloaded texture.
@@ -2690,14 +2676,14 @@ static func _region_name_of(picture: String) -> StringName:
 ## residency. Nothing here defends against that: a drawing that quietly fell back to loading the
 ## picture itself is the second resident copy the milestone exists to remove.
 static func _drawn(picture: String) -> AtlasTexture:
-	return AtlasLibrary.region(_region_name_of(picture))
+	return AtlasLibrary.region(StringName(picture))
 
 ## A picture's own size, answered from the region table with nothing acquired and no texture
 ## loaded — what the layout arithmetic around a spread, a café rank, a protest rank or a badge
 ## needs. `Vector2` rather than `Vector2i` so it is a drop-in for the `get_size()` these call sites
 ## used to ask a texture for.
 static func _native_size(picture: String) -> Vector2:
-	return Vector2(AtlasLibrary.native_size(_region_name_of(picture)))
+	return Vector2(AtlasLibrary.native_size(StringName(picture)))
 
 ## Every picture a row with this look can draw, as repository paths.
 ##

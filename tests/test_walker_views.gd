@@ -142,8 +142,8 @@ func _test_body_and_trim_can_never_disagree(t) -> void:
 	for view in body_views:
 		t.check(CrowdAgent.WALKER_TRIM_BY_VIEW.has(view),
 				"every body view %s has a matching trim view" % view)
-		var body_region := AtlasLibrary.region_name_for(CrowdAgent.WALKER_BODY_BY_VIEW[view])
-		var trim_region := AtlasLibrary.region_name_for(CrowdAgent.WALKER_TRIM_BY_VIEW[view])
+		var body_region := StringName(CrowdAgent.WALKER_BODY_BY_VIEW[view])
+		var trim_region := StringName(CrowdAgent.WALKER_TRIM_BY_VIEW[view])
 		t.check(AtlasLibrary.has_region(body_region) and AtlasLibrary.has_region(trim_region),
 				"both regions for %s are actually baked" % view)
 		t.check(body_region != trim_region,
@@ -256,8 +256,8 @@ func _test_walker_gait_b_tables_agree_with_a(t) -> void:
 				"view %s has a gait-b body to match its gait-a body" % view)
 		t.check(CrowdAgent.WALKER_TRIM_BY_VIEW_B.has(view),
 				"view %s has a gait-b trim to match its gait-a trim" % view)
-		t.check(AtlasLibrary.has_region(AtlasLibrary.region_name_for(CrowdAgent.WALKER_BODY_BY_VIEW_B[view]))
-				and AtlasLibrary.has_region(AtlasLibrary.region_name_for(CrowdAgent.WALKER_TRIM_BY_VIEW_B[view])),
+		t.check(AtlasLibrary.has_region(StringName(CrowdAgent.WALKER_BODY_BY_VIEW_B[view]))
+				and AtlasLibrary.has_region(StringName(CrowdAgent.WALKER_TRIM_BY_VIEW_B[view])),
 				"both gait-b regions for %s are actually baked" % view)
 
 func _test_walker_gait_b_tables_cover_every_sector(t) -> void:
@@ -268,8 +268,8 @@ func _test_walker_gait_b_tables_cover_every_sector(t) -> void:
 
 func _test_every_walker_gait_b_svg_is_native_18x38(t) -> void:
 	for view in CrowdAgent.WALKER_BODY_BY_VIEW_B.keys():
-		var body := AtlasLibrary.native_size(AtlasLibrary.region_name_for(CrowdAgent.WALKER_BODY_BY_VIEW_B[view]))
+		var body := AtlasLibrary.native_size(StringName(CrowdAgent.WALKER_BODY_BY_VIEW_B[view]))
 		t.check(body == Vector2i(18, 38), "gait-b body %s is native 18x38" % view)
 	for view in CrowdAgent.WALKER_TRIM_BY_VIEW_B.keys():
-		var trim := AtlasLibrary.native_size(AtlasLibrary.region_name_for(CrowdAgent.WALKER_TRIM_BY_VIEW_B[view]))
+		var trim := AtlasLibrary.native_size(StringName(CrowdAgent.WALKER_TRIM_BY_VIEW_B[view]))
 		t.check(trim == Vector2i(18, 38), "gait-b trim %s is native 18x38" % view)

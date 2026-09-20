@@ -9,7 +9,7 @@ forces original SVG graphics. The same drawing code handles both formats.
 The transferred artwork covers both parents' pushing and carrying animation frames and the pram's
 five authored views, supplying eight directions through explicit east/west mirroring. The garbage
 sack, sack pile and five litter decals also use registered PNGs. The outdoor ground catalogue
-under `assets/tiles/` uses registered PNG materials and components. Shared ground bases and transparent damage, markings
+under `art/tiles/` uses registered PNG materials and components. Shared ground bases and transparent damage, markings
 and grass features are composed in the engine through `GroundLayers`.
 Trees, the overhead bollard cap, the ground tree bed and the rooftop water tank, HVAC units,
 skylights, vent stack and ducts also have comic replacements. Other families use SVGs.
@@ -43,7 +43,7 @@ creation-reference family for high-fidelity generation and its linked recipes fo
 ## Replacement contract
 
 `TextureResolver` maps `assets/<family>/<name>.svg` to
-`assets/illustrated/svg-transfer/<family>/<name>.png`. Missing or differently sized PNGs fall
+`art/illustrated/svg-transfer/<family>/<name>.png`. Missing or differently sized PNGs fall
 back to the SVG. Drawing transforms, animation timing, mirroring, ground anchors, sorting,
 collision and camera framing remain the existing game's responsibility.
 
@@ -141,8 +141,9 @@ constituents it still carries — a member's source, its `.import` sidecar or it
 source's baked region and holds no texture of its own. Every base, overlay, damage stencil, grass
 feature and whole authored tile is a region of `AtlasLibrary.page_image(&"ground")`, read once per
 build, and the composed pictures go to the GPU as one sheet. Its component
-manifest in `assets/illustrated/svg-transfer/tiles/layers/` assigns a shared base and transparent
-overlays to each supported source ID. Curbstones, street paint, crosswalks and damage blend in
+manifest, `assets/ground_layers.json`, assigns a shared base and transparent
+overlays to each supported source ID; it stays under `assets/` because the game reads it at
+runtime, and the Web preset's `include_filter` names it so the export keeps it. Curbstones, street paint, crosswalks and damage blend in
 the engine; pixels outside their alpha remain the base's own pixels. Parks and forests have sparse clump
 arrangements selected by city seed and tile coordinates. Daily repaints start from the authored
 resource, keeping composition stable. A component the bake does not carry leaves its source on
