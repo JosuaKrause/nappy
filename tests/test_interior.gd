@@ -324,7 +324,7 @@ func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
 		var source_id := InteriorTileSet.source_id_for(kind)
 		var source := tile_set.get_source(source_id) as TileSetAtlasSource
 		t.check(source != null and source.texture != null
-				and source.texture.get_size() == AtlasLibrary.native_size(name),
+				and Vector2i(source.texture.get_size()) == AtlasLibrary.native_size(name),
 				"stair role %d's cropped source matches its region's own baked size" % kind)
 
 	# Every shaft picture the whole TileSet carries, by its own region name. `interior/stairwell_

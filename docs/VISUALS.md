@@ -88,9 +88,13 @@ draw the previous import of.
 `AtlasLibrary` reads the result: `acquire(group)` loads that group's page, `release(group)`
 drops it on the last reference, `region(name)` hands out an `AtlasTexture` over the page, and
 `native_size(name)` answers a picture's own size from the region table with nothing loaded at
-all. **Nothing in the game draws from it**: every family reaches its pictures through
+all. Buildings, the street kit (the city edge, closure markers, traffic lights), the UI
+(`ModeButton`, `TouchControls`, `SaveIndicator`) and the interior (`InteriorScene`,
+`InteriorTileSet`) draw from it now, each acquiring its own group as it enters the tree and
+releasing it as it leaves. Every family that has not moved yet still reaches its pictures through
 `TextureResolver` and `TextureAtlas` as described above, and `tests/test_atlas_library.gd`
-compares every baked region against the picture its consumer draws today, pixel for pixel.
+compares every baked region against the picture its consumer draws today, pixel for pixel, for
+every family that has not moved.
 
 `tools/audit-pck.sh` reads an exported `.pck`'s own file table and reports how many baked
 constituents it still carries — a member's source, its `.import` sidecar or its imported
