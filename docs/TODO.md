@@ -362,9 +362,13 @@ closes the contract.
       load everything needed for a day during the day brief. and everything that might always
       be needed at startup"*: a page loads at startup or during the day brief and at no other
       moment. Startup holds what is always needed — the UI with the head indicators, the pram
-      and the run's parent once the parent is known; the day brief loads what the day needs —
-      the city's groups, the crowd, the events, the interior — before the brief can be
-      dismissed. Holding every group from startup is the simpler build and is allowed; take it
+      and the run's parent once the parent is known; the day brief loads what the day needs and
+      does not already hold — the city's groups, the crowd, the events — before the brief can
+      be dismissed. *"don't unload anything that might be needed in one day and in the next"*:
+      no group is released between two days that both draw it, so `Crowd` stops releasing its
+      page in `clear()` and re-acquiring it in `start_day()`. The interior is the escape's
+      alone: it loads in the escape's own brief when M102, the finale, has one, and until then
+      where the `--start-escape` sequence starts. Holding every group from startup is the simpler build and is allowed; take it
       unless the measured startup cost says otherwise, and say which in the PR. A consumer's
       own `acquire()` stays as the reference count that proves the page is there, and the suite
       fails on an `acquire()` that has to load outside those two moments; the run log's

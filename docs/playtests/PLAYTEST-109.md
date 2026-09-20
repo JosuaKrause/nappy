@@ -41,6 +41,17 @@ every group resident from boot, against per-group lifetimes with each load prove
 > "yeah, we probably could preload everything. or at least load everything needed for a day
 > during the day brief. and everything that might always be needed at startup"
 
+On the first writing of that answer, which had each day's pages released at the day's end and
+the interior loaded in every day brief "since a building is entered mid-day":
+
+> "don't unload anything that might be needed in one day and in the next. what do you mean
+> interiors need to be loaded? this is only needed in the escape day brief (which is still not
+> implemented I gather?)"
+
+The interior is drawn only by the escape sequence, which is built and reached only through
+`--start-escape` (`TODO.md`, M102, the finale); no day enters a building, and the escape has no
+day brief of its own yet.
+
 ## What the bake printed, which is what the notes are about
 
 | group | members | page |
@@ -82,14 +93,19 @@ members of 16 to 32px, and `events` holds one of 200px.
 4. **The UI and the head indicators are one group.**
 5. **That group is always loaded**, from boot: "UI elements should always be there."
 6. **Loads happen at two moments and no others: startup and the day brief.** Startup loads
-   everything that might always be needed; the day brief loads everything the day needs,
-   the interior included, since a building is entered mid-day. Loading everything at startup is
-   allowed — "we probably could preload everything" — and the two moments are the floor.
-7. **Nothing starts loading in the frame that needs it.** "we cannot start loading something in
+   everything that might always be needed; the day brief loads what the day needs and does not
+   already hold. Loading everything at startup is allowed — "we probably could preload
+   everything" — and the two moments are the floor.
+7. **Nothing is unloaded that the next day might need.** The crowd's page, the events' page and
+   the city's pages stay loaded from one day to the next; a release between two days that both
+   draw the group is the thing refused.
+8. **The interior belongs to the escape alone**, and loads in the escape's own brief when that
+   exists; until then it loads where the escape sequence starts, behind `--start-escape`.
+9. **Nothing starts loading in the frame that needs it.** "we cannot start loading something in
    the frame we need it." A group is acquired ahead of its first draw — at boot, or behind the
    screens that already cover a wait — and never from a draw call or from the frame a thing
    first appears.
-8. **The `.import` sidecars** of sources that leave the imported tree are deleted with the move,
+10. **The `.import` sidecars** of sources that leave the imported tree are deleted with the move,
    in M171's last item; the answer given is recorded there.
-9. **The release after M171 closes is a minor version.** v0.13.1 was cut on 2026-09-20 ahead of
+11. **The release after M171 closes is a minor version.** v0.13.1 was cut on 2026-09-20 ahead of
    the consumer moves, at the player's word.
