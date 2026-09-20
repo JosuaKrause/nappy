@@ -76,7 +76,7 @@ catalogue.
 between the inner and outer radius, not `(1−t)²`. The squared-complement form puts a quarter of the
 intensity at the midpoint and six percent three quarters of the way out, which makes three quarters
 of every radius in the game free and an event a thing to bump into rather than a thing to route
-around. `dog_walker` is +30.8 and `cafe_tables` +6.1.
+around. `dog_walker` is +42.7 and `cafe_tables` +6.1.
 
 **Two short lists hold every row that is allowed to be free, and both are in
 `tests/test_events.gd`.** The **scenery** — `burnt_shell`, `poster_crew` — is there so a street

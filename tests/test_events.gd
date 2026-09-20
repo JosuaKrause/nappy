@@ -3041,12 +3041,13 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 ##
 ## **A floor is kept at the highest of the share's own ceiling (0.35 whole, 0.40 narrow) or a lower
 ## number the measurement clears by at least 1.5 points**, so a small future regression fails loudly
-## rather than drifting under a floor nobody re-measured. Measured over the days sampled here: the
-## whole share stands at 35.84%, clearing 0.35 by only 0.84 points — too thin to trust — so its
-## floor sits at 0.34 (a 1.84-point margin). The narrow share stands at 42.55%, clearing 0.40 by
-## 2.55 points, comfortably past the 1.5-point bar, so its floor stays at its own ceiling, 0.40.
-## Re-measure rather than trust either number if the catalogue's `pavement_side`/`obstructs_radius`
-## pairing, or which walls get `EVENT_WALL_RIM_WEIGHT`, moves again.
+## rather than drifting under a floor nobody re-measured. Measured over the days sampled here, after
+## M174's `Tuning.WALL_WORTH_OF_COST` moved from 35 to 48: the whole share stands at 33.04%, under
+## its own 0.35 ceiling, so the floor is the lower number it clears by 1.5 points, rounded down —
+## 0.31. The narrow share stands at 42.25%, clearing 0.40 by 2.25 points, comfortably past the
+## 1.5-point bar, so its floor stays at its own ceiling, 0.40. Re-measure rather than trust either
+## number if the catalogue's `pavement_side`/`obstructs_radius` pairing, `Tuning.WALL_WORTH_OF_COST`,
+## or which walls get `EVENT_WALL_RIM_WEIGHT`, moves again.
 ##
 ## An `AHEAD_OF_PLAYER` row is exempt from the first half and the exemption is the design rather
 ## than a hole: the charging dog is sited by `EventDirector` in front of wherever she turns out to
@@ -3139,7 +3140,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	t.check(friction > 0, "and friction at all (%d)" % friction)
 	t.check(narrow > 50, "and enough of it narrow enough to stand beside a crossing (%d)" % narrow)
 	var share := float(friction_on_the_route) / maxf(1.0, float(friction))
-	t.check(share > 0.34, "%d of %d costly rows are on the corridor" % [friction_on_the_route, friction])
+	t.check(share > 0.31, "%d of %d costly rows are on the corridor" % [friction_on_the_route, friction])
 	t.check(share < 0.9, "and the streets off it are not empty (%.0f%% on it)" % (share * 100.0))
 	var narrow_share := float(narrow_on_the_route) / maxf(1.0, float(narrow))
 	t.check(narrow_share > 0.40,

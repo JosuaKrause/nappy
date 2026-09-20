@@ -1563,27 +1563,42 @@ const CLOSURE_GAP_BIAS := 4.0
 ## from 69.6 placements to 27.8 of 113. The ground off the paths is what was asked to be closed;
 ## nobody asked for the paths to be cleared.
 ##
-## The line is set by two rows instead, and by the right two. **`dog_walker` costs 30.8 and has to
+## The line is set by two rows instead, and by the right two. **`dog_walker` costs 42.7 and has to
 ## stay friction**: the dog-walker decision arriving twice on day one is the route decision this
 ## game is made of, and a dog walker that is never on her route is that decision deleted. **And
-## `leaf_blower` at 37.7 has to stay a wall**, because without it the non-lethal half of the range
+## `leaf_blower` at 52.9 has to stay a wall**, because without it the non-lethal half of the range
 ## is act III and later rows only, and *"very costly to deadly"* stops being a range anybody meets
-## — `tests/test_events.gd` samples five days and counts both kinds. The line goes between them.
+## — `tests/test_events.gd` samples five days and counts both kinds. The line goes between them,
+## same as it always has — what moved is where the two rows themselves sit.
 ##
-## **It is in points of the meter, so it moves when the meter's own arithmetic does.** Raising the
-## walking decay lowers every row's cost, and not evenly: the decay is netted off over the *time*
-## the crossing takes, so a wide, moderate row loses far more of its price than a narrow, intense
-## one. That is why `protest` (269px of 15/s) fell from 42.3 to 27.6 and crossed under
-## `dog_walker` (105px of 26/s), which no threshold can undo — a protest now genuinely costs less
-## to walk through than a dog walker does, so it is on the routes with the rest of the ordinary
-## expensive city.
+## **It is in points of the meter, so it moves when the meter's own arithmetic does, and it moved
+## again for a different reason than the walking decay this time.** *(2026-09-20: "restore fully
+## now, raising leaf_blower by what the decay took from it and moving the line to sit between the
+## two again".)* `homeless_yeller` and `dog_walker` both lost the net gain a real pass past them
+## used to land once M117 raised the walking decay from 3.5 to 6.0/s, and restoring either of them
+## fully pushes its own `walk_through_cost()` past where the line used to sit — the intensity a
+## full restoration needs costs more than a dog walker used to, on its own numbers, before this
+## row is even touched. Raising the two rows without moving the line would have made one of them a
+## wall; raising the line without also raising `leaf_blower` would have let the non-lethal half of
+## the range go empty again. Both moved together, `leaf_blower`'s own core answering the same
+## walking-decay loss the other two rows answer, at `Tuning.EXCITEMENT_DECAY_WALKING`'s current
+## rate — this reading is not itself a re-derivation for the decay's own sake, only for the two
+## rows either side of it.
+##
+## **Raising the walking decay still lowers every row's cost unevenly**, the netting-off-over-time
+## effect this line's own history already carries: that is why `protest` (269px of 15/s) fell from
+## 42.3 to 27.6 and crossed under `dog_walker`'s **old** number (105px of 26/s), which no threshold
+## can undo — a protest now genuinely costs less to walk through than a dog walker's old field did,
+## so it is on the routes with the rest of the ordinary expensive city regardless of where this
+## line sits.
 ##
 ## What that leaves on the corridor is `cafe_tables`, `market_stall`, `homeless_yeller`,
 ## `delivery_van`, `protest` and the dog walker, and what it puts off it is `leaf_blower`,
 ## `burning_building`, `pigeon_flock`, `loose_dog`, `military_convoy`, `night_raid`, `fire_truck`
-## and every lethal row. Re-measure with `tests/probes/m117_decay.gd` if the cost table moves; do
-## not re-derive it.
-const WALL_WORTH_OF_COST := METER_MAX * 0.35
+## and every lethal row — the same two lists as before this line moved, checked catalogue-wide
+## rather than assumed: nothing else crosses it either way. Re-measure with
+## `tests/probes/m117_decay.gd` if the cost table moves; do not re-derive it.
+const WALL_WORTH_OF_COST := METER_MAX * 0.48
 
 # ----------------------------------------------------- solid things are solid ---
 # The rule is in `EventDef.obstructs_radius`: **anything that stands still is solid at the width it

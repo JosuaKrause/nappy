@@ -441,7 +441,7 @@ static func _homeless_yeller() -> EventDef:
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.intensity = 20.0
 	def.inner_radius = 45.0
-	def.outer_radius = 170.0
+	def.outer_radius = 210.0
 	def.telegraph_time = 2.6
 	def.pulse_period = 5.0
 	def.mobile = true
@@ -501,7 +501,7 @@ static func _dog_walker() -> EventDef:
 	# guard, since a two-body composite has no single shape to be either of its bodies.
 	def.shape = GroundShape.point(8.0)
 	def.placement = [GameEnums.TileType.SIDEWALK]
-	def.intensity = 27.5
+	def.intensity = 33.0
 	def.inner_radius = 26.0
 	def.outer_radius = 105.0
 	def.telegraph_time = 1.4
@@ -901,12 +901,21 @@ static func _market_stall() -> EventDef:
 ## `Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE` (64px) because that is a pavement's own width: it is
 ## the smallest radius that holds the whole footway from anywhere on it, and from the kerb-side
 ## tile — the worst one the row can be placed on — it stops short of the far kerb, so the thing
-## closes one side of a street and never the street. `core_intensity` is the lowest tenth whose
-## line through the middle costs at least what this row has always cost, which is comfortably past
-## `Tuning.WALL_WORTH_OF_COST` (35.0 of a hundred-point meter): the two parts change *where* the
-## row is a wall, never whether it is one, so `_role_for` and the danger caret both read it exactly
-## as they did. A line past the core at `core_radius` costs what the same line past a busker costs,
-## because past `core_radius` it is one.
+## closes one side of a street and never the street. A line past the core at `core_radius` costs
+## what the same line past a busker costs, because past `core_radius` it is one.
+##
+## **`core_intensity` is what anchors `Tuning.WALL_WORTH_OF_COST`'s own line, so it moved when the
+## line did.** *(2026-09-20: "leaf_blower goes up by what the decay took from it" — the same
+## walking-decay rise from 3.5 to 6.0/s that cost every row in M174, measured here by
+## `tests/probes/m174_pass.gd`'s own walk-past simulation, the source held still since this row
+## never paces.)* A pass at 0/20px of lateral offset — the ground a pavement actually offers once
+## the body itself (11px) and her own width are cleared — now nets back to within a few percent of
+## what the same pass netted against the 3.5/s decay; the widest offset tested (40px) recovers most
+## of it rather than all, which is the smaller of two costs weighed against raising a wall row's
+## own number further than the line strictly needs. `walk_through_cost()` is what actually matters
+## for the line itself, and it is the number re-derived against: comfortably past
+## `Tuning.WALL_WORTH_OF_COST`, which that constant's own docstring explains alongside
+## `dog_walker`'s.
 static func _leaf_blower() -> EventDef:
 	var def := EventDef.new()
 	def.id = "leaf_blower"
@@ -919,7 +928,7 @@ static func _leaf_blower() -> EventDef:
 	def.intensity = 19.3
 	def.inner_radius = 45.0
 	def.outer_radius = 190.0
-	def.core_intensity = 22.2
+	def.core_intensity = 35.0
 	def.core_radius = float(Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
 	def.telegraph_time = 1.8
 	# Swept in bursts rather than held, so there is a rhythm to time a pass through — the same
