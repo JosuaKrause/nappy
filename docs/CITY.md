@@ -663,16 +663,25 @@ of her.
 - **wall** — placed to *bound* the corridor. Hard blockers are always walls; lethal soft ones are
   walls for a day; so is anything very costly, **and so is anything that cannot be walked past
   where it stands** — a row whose body and charging disc leave no lane of a sidewalk free is a wall
-  at any price, because *"a wall is also when you physically cannot walk through"*. For a row that
-  **paces**, "where it stands" is its beat, so that last question is asked of the placement rather
-  than of the row: a beat she can leave, at a crossing or by a side route, is friction and a beat she
-  cannot is a wall. **Never on
-  ground a route runs along**, which is asked per sidewalk rather than per street, so the far side
-  of a route's own street is legal for one and the side the tree walks never is. Preferentially on
-  the **rim**, which is where a wall can be seen from and therefore where it bounds anything
-  (`EVENT_WALL_RIM_WEIGHT`), and which is two kinds of ground: a turning off the corridor, and the
-  far side of the street the route is already on. A lethal wall is pulled past both
-  (`WALL_DEEP_WEIGHT`).
+  at any price, because *"a wall is also when you physically cannot walk through"*. That last
+  reading splits into two: a row wide or loud enough to also cost her something (`_line_reach_of`
+  crossing the sidewalk's own far lane) is a wall **by cost**; a silent, narrow body that leaves no
+  lane purely by where it stands (`delivery_van`, pinned `AT_THE_KERB`) is a wall **by fit**, and
+  the two are weighted differently below. For a row that **paces**, "where it stands" is its beat,
+  so that last question is asked of the placement rather than of the row: a beat she can leave, at
+  a crossing or by a side route, is friction and a beat she cannot is a wall — and a beat wide
+  enough to wall a sidewalk is wide enough to be a wall by cost too, so a pacing wall keeps the
+  rim's own pull. **Never on ground a route runs along**, which is asked per sidewalk rather than
+  per street, so the far side of a route's own street is legal for one and the side the tree walks
+  never is. A wall by cost is preferentially on the **rim**, which is where a wall can be seen from
+  and therefore where it bounds anything (`EVENT_WALL_RIM_WEIGHT`), and which is two kinds of
+  ground: a turning off the corridor, and the far side of the street the route is already on. A
+  lethal wall is pulled past both (`WALL_DEEP_WEIGHT`). **A wall by fit alone gets none of that
+  pull** *(2026-09-19, the player, asked whether `delivery_van` should also be weighted toward
+  junction rims: "A. No (my recommendation). -- do that")* — nothing about it is the big, noisy,
+  seen-from-a-distance thing the rim exists for, so beyond the one rule above it is weighted
+  exactly as friction is, landing on the far side of a route street through
+  `EVENT_CORRIDOR_WEIGHT` rather than through the rim.
 - **friction** — placed *inside* the corridor, on the route she is meant to take, to make the route
   worth thinking about. Costly blockers. A weight (`EVENT_CORRIDOR_WEIGHT`) rather than a rule,
   because a city whose off-route streets are empty reads as a set.

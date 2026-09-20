@@ -379,7 +379,8 @@ func _test_a_car_sounding_its_horn_carries_its_own_mark(t) -> void:
 func _test_only_what_she_cannot_outwalk_earns_an_arrow(t) -> void:
 	var edge := DangerEdge.new()
 	var wanted := ["fire_truck", "military_convoy", "abduction", "alley_robbery"]
-	var not_wanted := ["dog_walker", "cafe_tables", "poster_crew", "busker", "construction"]
+	var not_wanted := ["dog_walker", "cafe_tables", "poster_crew", "poster_crew_square", "busker",
+			"construction"]
 
 	for id in wanted:
 		var def := EventCatalogue.by_id(id)

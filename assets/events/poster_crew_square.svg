@@ -1,0 +1,33 @@
+<!-- The square's poster crew, as one silhouette for the screen-edge badge. The column is what tells
+     it apart from the sidewalk crew's own badge at a glance, so it carries the sheet and the man
+     stands at it with his brush; the figure is `poster_crew.svg`'s, unaltered. Compact canvas
+     rather than the family's 44px one, since a badge is drawn small in its own box. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 34 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <ellipse cx="28" cy="42.5" rx="7" ry="2.4" fill="#55504a"/>
+  <rect x="23" y="9" width="10" height="33" fill="#8f897c"/>
+  <rect x="23" y="9" width="2.5" height="33" fill="#7d776c"/>
+  <rect x="30.5" y="9" width="2.5" height="33" fill="#9c9686"/>
+  <path d="M25 28 L31 27 L31 39 L25 39Z" fill="#cfc6b2"/>
+  <path d="M26 31 L30 30.4" fill="none" stroke="#9a8f7e" stroke-width="1"/>
+  <ellipse cx="28" cy="9" rx="6" ry="2.4" fill="#6f6a60"/>
+  <ellipse cx="28" cy="6.6" rx="5" ry="2" fill="#847d71"/>
+  <rect x="27.2" y="2.6" width="1.6" height="4" fill="#5c574e"/>
+  <circle cx="28" cy="2.4" r="1.4" fill="#5c574e"/>
+  <rect x="24" y="12" width="8" height="12" fill="#e0d8c4"/>
+  <rect x="25" y="14" width="6" height="3" fill="#c4503c"/>
+  <rect x="25" y="19" width="6" height="1" fill="#5c5248"/>
+  <rect x="25" y="21" width="4" height="1" fill="#5c5248"/>
+  <rect x="0" y="36" width="9" height="7" fill="#58524d"/>
+  <rect x="0" y="35" width="9" height="2" fill="#7a736c"/>
+  <rect x="11" y="30" width="4" height="12" fill="#5c6b5c"/>
+  <rect x="16" y="30" width="4" height="12" fill="#5c6b5c"/>
+  <rect x="10" y="42" width="5" height="2" fill="#221f28"/>
+  <rect x="16" y="42" width="5" height="2" fill="#221f28"/>
+  <rect x="8" y="13" width="14" height="18" fill="#5c6b5c"/>
+  <rect x="8" y="25" width="14" height="6" fill="#4c5a4c"/>
+  <rect x="6" y="18" width="4" height="12" fill="#4c5a4c"/>
+  <rect x="4" y="28" width="5" height="3" fill="#8a6f52"/>
+  <rect x="20" y="14" width="4" height="4" fill="#4c5a4c"/>
+  <circle cx="15" cy="8" r="6" fill="#d9a878"/>
+  <path d="M9 8 A6 6 0 0 1 21 8 Z" fill="#3a2b26"/>
+</svg>

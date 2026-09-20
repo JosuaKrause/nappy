@@ -52,6 +52,11 @@ enum Look {
 	# ---- acts II-IV ----
 	POLICE_CAR,   ## Low and pale where everything else in act II is a tall dark box.
 	POSTER_CREW,  ## The poster is the event; the man holding it is scenery.
+	POSTER_CREW_SQUARE, ## The same crew at a free-standing advertising column, which is what a
+	                    ## square has instead of a wall. Its own look rather than a second row
+	                    ## sharing `POSTER_CREW`: two rows that draw the same man are one
+	                    ## milestone spent fixing the wrong one, and the column is the whole
+	                    ## difference a player can see between the two.
 	ROADBLOCK,    ## Poured concrete and a hazard stripe. A street being *held*.
 	UNMARKED_VAN, ## No windows, no livery, a door standing open. The one with a hole in it.
 	ROBBER,       ## Two postures — waiting in the hood, and coming.
