@@ -129,9 +129,25 @@ fi
 # `class_name` rather than like a race.
 "$GODOT" --headless --import --path "$PROJECT_DIR" >/dev/null 2>&1
 
+## Runs one Godot test process and classifies it the way tools/check.sh already classifies a
+## boot: Godot can print an engine `ERROR:`, a `push_error()` or a completed `SCRIPT ERROR` /
+## `Parse Error` and still exit 0, because `run_tests.gd` only counts failed `check()` /
+## `close_to()` calls into its own array and that array is all `SceneTree.quit()` looks at. So the
+## combined stdout+stderr is teed to a scratch file and grepped after the process ends, rather
+## than trusting the exit code alone. `tee` rather than plain capture-then-print, so every existing
+## caller keeps seeing output exactly where it already goes -- a live terminal for a filtered run,
+## a redirected file for one shard of a local sharded run -- and only the returned status changes.
 run_one_process() {
+	local scratch status
+	scratch="$(mktemp)"
 	# Everything after `--` reaches the runner as OS.get_cmdline_user_args().
-	"$GODOT" --headless --path "$PROJECT_DIR" res://tests/tests.tscn -- "$@"
+	"$GODOT" --headless --path "$PROJECT_DIR" res://tests/tests.tscn -- "$@" 2>&1 | tee "$scratch"
+	status="${PIPESTATUS[0]}"
+	if grep -qE "SCRIPT ERROR|Parse Error|ERROR:" "$scratch"; then
+		status=1
+	fi
+	rm -f "$scratch"
+	return "$status"
 }
 
 # A filtered run is one process and says so loudly, which is the runner's own rule: a partial pass
@@ -294,6 +310,16 @@ for ((i = 0; i < SHARDS; i++)); do
 	# the union of them is not, so repeating it would say the opposite of what is true.
 	grep -E '^(-- |FAIL )' "$log"
 
+	# A shard can print a clean "N checks, 0 failures" line and still have carried an engine
+	# error: `run_tests.gd` only counts failed check()/close_to() into that line, so Godot's own
+	# ERROR:/SCRIPT ERROR/Parse Error never reaches it. Surface it here explicitly, or it is a line
+	# this loop would otherwise drop on the floor along with every other non-timing, non-FAIL line.
+	if grep -qE "SCRIPT ERROR|Parse Error|ERROR:" "$log"; then
+		echo "shard $i printed an engine error -- its own check count does not see this. Offending lines:" >&2
+		grep -E "SCRIPT ERROR|Parse Error|ERROR:" "$log" | sed 's/^/    /' >&2
+		status=1
+	fi
+
 	counted="$(grep -E '^[0-9]+ checks, [0-9]+ failures$' "$log" | tail -1)"
 	if [[ -z "$counted" ]]; then
 		# A shard that printed no count did not finish. A parse error in any suite aborts the
@@ -316,31 +342,41 @@ done
 # don't match (a crashed shard is missing its rows, and a partial cost table is worse than a
 # stale one).
 if [[ $record_costs -eq 1 ]]; then
-	tmp_costs="$work_dir/suite_costs.new"
-	{
-		printf '%s\n' "# Per-suite wall time in milliseconds, one row per tests/test_*.gd. _cost_of() in tools/test.sh"
-		printf '%s\n' "# reads it to bin-pack the shards, locally and in CI's matrix; it is a planning hint, never a"
-		printf '%s\n' "# gate -- every suite still runs wherever it lands, so a stale row costs some balance between"
-		printf '%s\n' "# shards and no correctness. A suite missing a row here is planned at _cost_of()'s stated"
-		printf '%s\n' "# default, with a warning, rather than silently dropped."
-		printf '%s\n' "#"
-		printf '%s\n' "# Refresh it with \`tools/test.sh --record-costs\`, which runs the full suite and rewrites this"
-		printf '%s\n' "# file from that run's own \"-- suite  N ms\" lines -- never hand-edited, so the numbers come from"
-		printf '%s\n' "# the runner rather than from anybody's memory."
-		grep -hoE -- '-- test_[a-zA-Z_]+\.gd +[0-9]+ ms' "$work_dir"/shard-*.log \
-			| sed -E 's/^-- +//; s/ +ms$//' \
-			| awk '{ printf "%s %s\n", $1, $2 }' \
-			| sort -u
-	} > "$tmp_costs"
-
-	got="$(grep -cE '^test_.*\.gd [0-9]+$' "$tmp_costs")"
-	want="$(find "$PROJECT_DIR/tests" -maxdepth 1 -name 'test_*.gd' | wc -l | tr -d ' ')"
-	if [[ "$got" -ne "$want" ]]; then
-		echo "tools/test.sh --record-costs: got $got suite lines, expected $want — not overwriting $COST_FILE" >&2
-		status=1
+	# A failed run must not replace the previous table -- not from a crashed/hung shard (the
+	# existing row-count check below), and not from an engine error or a genuine check() failure
+	# either, both of which are already folded into $status and $total_failures above by the time
+	# this runs. A stale table costs some shard balance; a table measured from a run that never
+	# finished cleanly could record a suite's cost from a truncated run, or none at all for a
+	# suite that never got to print its own "-- suite  N ms" line.
+	if [[ $status -ne 0 || $total_failures -gt 0 ]]; then
+		echo "tools/test.sh --record-costs: this run did not pass (see above) — not overwriting $COST_FILE" >&2
 	else
-		mv "$tmp_costs" "$COST_FILE"
-		echo "wrote $got suite costs to $COST_FILE"
+		tmp_costs="$work_dir/suite_costs.new"
+		{
+			printf '%s\n' "# Per-suite wall time in milliseconds, one row per tests/test_*.gd. _cost_of() in tools/test.sh"
+			printf '%s\n' "# reads it to bin-pack the shards, locally and in CI's matrix; it is a planning hint, never a"
+			printf '%s\n' "# gate -- every suite still runs wherever it lands, so a stale row costs some balance between"
+			printf '%s\n' "# shards and no correctness. A suite missing a row here is planned at _cost_of()'s stated"
+			printf '%s\n' "# default, with a warning, rather than silently dropped."
+			printf '%s\n' "#"
+			printf '%s\n' "# Refresh it with \`tools/test.sh --record-costs\`, which runs the full suite and rewrites this"
+			printf '%s\n' "# file from that run's own \"-- suite  N ms\" lines -- never hand-edited, so the numbers come from"
+			printf '%s\n' "# the runner rather than from anybody's memory."
+			grep -hoE -- '-- test_[a-zA-Z_]+\.gd +[0-9]+ ms' "$work_dir"/shard-*.log \
+				| sed -E 's/^-- +//; s/ +ms$//' \
+				| awk '{ printf "%s %s\n", $1, $2 }' \
+				| sort -u
+		} > "$tmp_costs"
+
+		got="$(grep -cE '^test_.*\.gd [0-9]+$' "$tmp_costs")"
+		want="$(find "$PROJECT_DIR/tests" -maxdepth 1 -name 'test_*.gd' | wc -l | tr -d ' ')"
+		if [[ "$got" -ne "$want" ]]; then
+			echo "tools/test.sh --record-costs: got $got suite lines, expected $want — not overwriting $COST_FILE" >&2
+			status=1
+		else
+			mv "$tmp_costs" "$COST_FILE"
+			echo "wrote $got suite costs to $COST_FILE"
+		fi
 	fi
 fi
 
