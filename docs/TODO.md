@@ -305,15 +305,24 @@ v0.14.0: the halo is the gross excitement landed from a source over five seconds
 lands about 44 points in five seconds at arm's length and walking returns 30, so the halo is
 deep red while the bar gains under 3 a second, and nothing at all with the baby asleep.
 
-**The design is the player's to choose, and nothing is built until it is chosen.**
+**Decided by the player** ([PLAYTEST-113](playtests/PLAYTEST-113.md)): *"let's increase the
+influence of those obstacles. notably, yeller, unleashed dog, walker with dog. also, let's fix
+what the halo reflects."*
 
-- [ ] **Decide what moves.** His numbers (intensity 14, a pulse whose trough is a quarter of
-      it, `inner_radius` 45px) under the **balance** skill's rules, so that walking beside him
-      costs what a player can feel; or what the halo counts, so that red means the bar is
-      rising — each source's landed points less its share of the decay; or both. The halo's
-      present meaning is the player's own instruction of 2026-09-08, so changing it is an
-      overturn to be agreed, not inferred. Every pulsing row shares the trough, so a change to
-      the pulse is a change to all of them.
+- [ ] **`homeless_yeller`, `loose_dog` and `dog_walker` cost more to be near**, under the
+      **balance** skill's rules. The target, the orchestrator's and open to overturn: walking
+      beside each inside its `inner_radius`, averaged over its own rhythm, the bar rises by at
+      least 8 a second with the baby awake and by at least 2 a second with the baby asleep,
+      where the man shouting gives under 3 and nothing today. Every number that moves is
+      measured before and after, with the route costs the skill asks for, and the rows'
+      fairness contracts still hold. The pulse's shared trough is left alone unless a row
+      cannot meet the target without it.
+- [ ] **The halo shows what the bar does.** *Asked for the gross points landed · overturned on
+      2026-09-20.* A source's glow is its landed points over `ExcitementHalo.WINDOW` less its
+      share of the decay taken in the same window, shared in proportion to what each source
+      landed, never below nothing; so the halos together add up to the bar's own rise, and a
+      source is red only while the bar is climbing because of it. The caret's forward
+      projection keeps the same horizon and says the same thing.
 
 ---
 
@@ -888,11 +897,18 @@ is open**, and it is the switch that makes the sequence a run's ending rather th
 
 **What is still open:**
 
-- [ ] **The entry from day 14's summary rather than from the flag** — the one item held back on
-      2026-09-12 *("make it playable only via flag today")*: the good ending's last won day hands
-      over to the hallway instead of the ending screen. Everything the sequence itself needs is
-      built behind `--start-escape`, so this is the one switch left: it waits on the player saying
-      the finale is a run's ending rather than a flag's
+- [ ] **The finale is the run's ending, and its two sections are days**
+      ([PLAYTEST-113](playtests/PLAYTEST-113.md)): *"the escape the building starts when the
+      player has completed all tasks by the end of day 14"*; *"each the apartment and escape
+      city are treated as their own \"days\" with brief and restart checkpoint. we keep the no
+      nerve costs for now."* A won day 14 with every task complete hands over to the building
+      instead of the ending screen; `--start-escape` stays as the way to reach it directly. The
+      building opens on a day brief titled "Escape the building" and the city on one titled
+      "Escape the city", in the day brief's own form. Each brief is a checkpoint: a loss in a
+      section returns to that section's brief at no nerve, and closing the game in a section
+      comes back to its brief, as closing mid-day does for a day. **Asked back and not yet
+      answered:** one clock through both sections, as answer 3 below has it, or a full day's
+      clock for each; built as a clock for each.
 
 **Four things the brief collided with in the finale as `docs/NARRATIVE.md` writes it today, each
 asked and each answered by the player on 2026-09-09:**
