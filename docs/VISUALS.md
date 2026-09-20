@@ -118,6 +118,11 @@ anyway, writes `OUTSIDE` in the run log and raises an engine error, which makes 
 red. A process where no boot has claimed the moments at all is `unmanaged` and loads freely:
 that is a suite building a `City` or a `Stroller` by hand, where no frame is being watched.
 
+**The ground's composition recipe follows the same rule.** `GroundLayers` reads
+`assets/ground_layers.json` once, in the city's first build, and holds it for the life of the
+process, so a day's repaint composes from the held page and the held recipe and reads nothing
+from disk.
+
 **`main`'s boot holds every group a day can draw for the life of the process** —
 `main.RESIDENT_GROUPS`, plus the run's own parent — so nothing is ever unloaded between one day
 and the next, and a consumer's own `acquire()`/`release()` pair is only ever a count on a page
