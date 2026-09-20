@@ -2158,14 +2158,15 @@ func falloff(d: float, intensity: float, inner_radius: float, outer_radius: floa
 	return intensity * (1.0 - drop)
 
 # ----------------------------------------------------------------- the finale ---
-# The fifteenth walk, which is not a day: out of the building and out of the city, on one clock,
-# with one way through. Every number here is stated against something that already exists rather
-# than chosen — the finale reuses the day's own clock, the catalogue's own rows and the sealing's
-# own placement, so what it needs of its own is a length, a density and two reaches.
+# The fifteenth and sixteenth walks, which are not an ordinary day: escaping the building, then
+# escaping the city, one way through each. Every number here is stated against something that
+# already exists rather than chosen — each section reuses the day's own clock, the catalogue's
+# own rows and the sealing's own placement, so what it needs of its own is a length, a density and
+# two reaches.
 
-## How long the whole sequence is, both sections together — a day's own length, because the
-## player's answer to the collision was *"the timer for the sequence is the same length"*. Not a
-## second number: read through here so the finale and a day can never drift apart.
+## How long one section of the escape runs — a day's own length, because each section is its own
+## day with a brief and a restart checkpoint of its own, and the player's answer was *"180s per
+## section"*. Not a second number: read through here so the finale and a day can never drift apart.
 const FINALE_LENGTH_SECONDS := DAY_LENGTH_SECONDS
 
 ## How many calm blocks each chain runs through between the service exit and its edge — *"a single
