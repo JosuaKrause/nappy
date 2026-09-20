@@ -315,6 +315,8 @@ checks and worktrees can move independently of this file.
   the building and the city are each a day with a brief and a restart checkpoint. The two touch
   disjoint files and can run as two agents. Each finale section has its own 180-second clock,
   the player's answer in the same playtest.
+- **M175, a row states what it costs, and the cost table is checked in, follows M174**
+  ([PLAYTEST-114](playtests/PLAYTEST-114.md)); its tier values go to the player before it is built.
 - **M159, a slow frame names the frame that was slow, has its first optimization in and three
   items open in `TODO.md`.** `CrowdAgent.contribution_at()` rejects distant sources before the
   velocity and ellipse work, with exact result parity (`DECISIONS.md`, M159, cheaper crowd
