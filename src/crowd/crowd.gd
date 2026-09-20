@@ -24,6 +24,17 @@ extends Node
 ## nobody else's. See `Stroller.stand_down()`.
 const WARNING_SOURCE := &"traffic"
 
+## The baked group every `CrowdAgent` draws from — see `assets/atlases/membership.json`'s own
+## `crowd` entry for its lifetime: "the day: the crowd is built at the start of a day and freed at
+## its end". Acquired once here, by the owner, rather than once per agent: a couple of hundred
+## agents acquiring their own reference would still be correct under `AtlasLibrary`'s counting, but
+## it is a couple of hundred redundant calls for a page this class already knows the lifetime of.
+const ATLAS_GROUP := &"crowd"
+## Whether this crowd currently holds `ATLAS_GROUP` — `clear()` is called both by `start_day()`'s
+## own first line and directly, by the finale's "nobody on the street today" (`main.gd`), so it has
+## to know whether there is anything of its own left to release rather than releasing on faith.
+var _atlas_held := false
+
 var _agents: Array[CrowdAgent] = []
 var _city: City
 var _map: CityMap
@@ -113,6 +124,10 @@ func setup(city: City, map: CityMap) -> void:
 ## population on one pixel.
 func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> void:
 	clear()
+	# Built at the start of a day: acquired before the first agent exists to draw from it, and
+	# after `clear()`'s own release, so a second day does not hold two references on the same page.
+	AtlasLibrary.acquire(ATLAS_GROUP)
+	_atlas_held = true
 	_struck = false
 	# The lights go back to the top of their cycle with the traffic. They are a property of the
 	# city rather than of the day, so leaving them running reads as the right thing — and it
@@ -214,6 +229,13 @@ func clear() -> void:
 	# lane, and "the same day and seed rebuild the same crowd in the same places" stops being true.
 	# The index is state about a frame, not about a run.
 	_traffic.rebuild({})
+	# Freed at the day's end — the other half of `start_day()`'s own acquire. `queue_free()` above
+	# is deferred and clears before this frame's own draw pass runs, so nothing is left holding a
+	# picture from a page this drops. Guarded on `_atlas_held` because `clear()` is also `main.gd`'s
+	# own direct call for the finale's empty street, which never acquired anything to begin with.
+	if _atlas_held:
+		AtlasLibrary.release(ATLAS_GROUP)
+		_atlas_held = false
 
 ## Agents alternate axes rather than rolling for one, so a crowd is never accidentally all
 ## north-south on a day when the coin came up that way.
