@@ -133,7 +133,8 @@ missing=$(missing_classes)
 unimported=$(missing_imports)
 if [[ -n "$missing" || -n "$unimported" || -n "$atlases_stale" ]]; then
     if [[ -n "$atlases_stale" ]]; then
-        "$PROJECT_DIR/tools/bake-atlases.sh" --check >&2
+        # `--check` exits non-zero by design; this reprint is the reason, not a failure.
+        "$PROJECT_DIR/tools/bake-atlases.sh" --check >&2 || true
     fi
     if [[ -n "$missing" && -f "$CACHE" ]]; then
         echo "stale class cache: ${missing//$'\n'/, }" >&2
@@ -165,7 +166,8 @@ if [[ -n "$missing" || -n "$unimported" || -n "$atlases_stale" ]]; then
         exit 1
     fi
     if ! "$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1; then
-        "$PROJECT_DIR/tools/bake-atlases.sh" --check >&2
+        # `--check` exits non-zero by design; this reprint is the reason, not a failure.
+        "$PROJECT_DIR/tools/bake-atlases.sh" --check >&2 || true
         echo "the bake ran and the pages are still stale, so this is not a stale checkout" >&2
         exit 1
     fi

@@ -148,17 +148,28 @@ assert_launch() {
     fi
     echo "ok   $label"
 }
-# run.sh's launch path first checks .godot's class cache and rebuilds it through Godot when a
-# class is missing -- with the stub standing in, that rebuild registers nothing and run.sh
-# refuses to launch, which is correct and not what this case is about. So it runs only where a
-# real import has happened (a developer's checkout); on a runner with no cache, shot.sh's
-# identical case below covers the drop and the rejection case covers the rest.
-if [[ -f "$root/.godot/global_script_class_cache.cfg" ]]; then
+# Both launch paths repair before they start the game: run.sh rebuilds .godot's class cache when
+# a class_name is missing from it, and run.sh and shot.sh both rebuild the baked atlas pages
+# through tools/check.sh when a source hash has moved. Neither repair can succeed with the stub
+# standing in for Godot -- it registers no class and bakes no page -- so each script correctly
+# refuses to launch, which is not what these two cases are about.
+#
+# So each runs only where its own precondition is already met, which is a developer's checkout,
+# and says so loudly where it is not. What a skip costs is only the proof that a leading `--` is
+# dropped and the flags still arrive; the --help and rejection cases above cover both scripts
+# everywhere, including on a runner with nothing built.
+atlases_current() { ./tools/bake-atlases.sh --check >/dev/null 2>&1; }
+
+if [[ -f "$root/.godot/global_script_class_cache.cfg" ]] && atlases_current; then
     assert_launch "run.sh -- --overview (separator dropped)" ./tools/run.sh -- --overview
 else
-    echo "skip run.sh -- --overview (no import cache in this checkout; shot.sh's case covers the drop)"
+    echo "skip run.sh -- --overview (no import cache or no current atlases in this checkout)"
 fi
-assert_launch "shot.sh ... -- --overview (separator dropped)" ./tools/shot.sh "$work_dir/shot-sep.png" 1 -- --overview
+if atlases_current; then
+    assert_launch "shot.sh ... -- --overview (separator dropped)" ./tools/shot.sh "$work_dir/shot-sep.png" 1 -- --overview
+else
+    echo "skip shot.sh ... -- --overview (no current atlases in this checkout)"
+fi
 # And only there: a `--` after a flag is not a separator, it is a stray word.
 assert_exit "run.sh --overview -- (late separator)"  nonzero ./tools/run.sh --overview -- --debug
 assert_exit "shot.sh ... --overview -- (late separator)" nonzero ./tools/shot.sh "$work_dir/shot-sep2.png" 1 --overview --

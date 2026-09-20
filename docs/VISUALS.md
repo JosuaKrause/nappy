@@ -76,10 +76,14 @@ picture rather than its neighbour.
 authored rasters alone. That is a custom local build, and `tools/export-web.sh` refuses to
 export one.
 
-**The pages are baked on demand and never committed.** `tools/check.sh`, `tools/test.sh`,
-`tools/run.sh` and `tools/export-web.sh` each call the wrapper before they do their own work; it
-compares the recorded hashes against the tree without starting the engine, and bakes only when
-a source has moved or the mode on disk is not the mode asked for.
+**The pages are baked on demand and never committed.** Every tool that starts the engine calls
+the wrapper first — `tools/check.sh`, `tools/test.sh`, `tools/run.sh`, `tools/shot.sh` and
+`tools/export-web.sh`, and `tools/serve-web.sh` through the export — so nothing has to be
+remembered. It compares the recorded hashes against the tree without starting the engine, and
+bakes only when a source has moved or the mode on disk is not the mode asked for. The two that
+open a window repair the way they already repair a stale import cache: through `tools/check.sh`,
+which bakes *and* imports, since a freshly baked page is a file a windowed run would otherwise
+draw the previous import of.
 
 `AtlasLibrary` reads the result: `acquire(group)` loads that group's page, `release(group)`
 drops it on the last reference, `region(name)` hands out an `AtlasTexture` over the page, and

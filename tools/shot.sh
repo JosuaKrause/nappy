@@ -89,6 +89,34 @@ if [[ ! -x "$GODOT" ]]; then
     exit 127
 fi
 
+# The baked atlas pages, in the same shape tools/run.sh checks its import cache in: a picture
+# that has changed since the last bake leaves the pages standing for the tree before it, and a
+# capture is the one thing that would then be photographing yesterday's artwork with nothing on
+# screen to say so. `--check` compares the recorded source hashes without starting the engine,
+# so the common path pays a fraction of a second and the rare one repairs before the window
+# opens.
+#
+# **The repair is tools/check.sh rather than a bake on its own**, because a freshly baked page
+# is a file the engine has not imported yet, and a windowed run does no import pass of its own —
+# check.sh bakes, imports, and puts back the project.godot and docs/ARCHITECTURE.md rewrites the
+# import pass causes, which a bare `--import` here would leave in the working tree.
+if ! "$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1; then
+    # `--check` exits non-zero by design; this reprint is the reason, not a failure.
+    "$PROJECT_DIR/tools/bake-atlases.sh" --check >&2 || true
+    echo "rebuilding with tools/check.sh -- this takes a few seconds" >&2
+    if ! "$PROJECT_DIR/tools/check.sh" >/dev/null; then
+        echo "tools/check.sh failed; run it directly to see why" >&2
+        exit 1
+    fi
+    if ! "$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1; then
+        # `--check` exits non-zero by design; this reprint is the reason, not a failure.
+        "$PROJECT_DIR/tools/bake-atlases.sh" --check >&2 || true
+        echo "the bake ran and the pages are still stale, so this is not a stale checkout" >&2
+        exit 1
+    fi
+    echo "atlases rebuilt" >&2
+fi
+
 # Relative paths would resolve against the project dir inside Godot, not the caller's cwd.
 case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
 

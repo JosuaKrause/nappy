@@ -164,8 +164,9 @@ assets/
                           header, the social card the deploy publishes, store and social-media
                           headers. The game itself loads none of them
 tools/
-  bake-atlases.sh         bake the atlas pages when a source hash moved; --check asks, --svg
-                          is the custom local SVG build, and check/test/run/export all call it
+  bake-atlases.sh         bake the atlas pages when a source hash moved; --check asks, --svg is
+                          the custom local SVG build, and every tool that starts the engine
+                          (check, test, run, shot, export-web) calls it first
   bake_atlases.gd         the bake itself, run headless with --script; rasterizes every member
                           with the engine's own rasterizer and shelf-packs it into its page
   audit-pck.sh            list an exported .pck and report the baked constituents left in it
