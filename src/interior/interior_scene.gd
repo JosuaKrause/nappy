@@ -30,11 +30,11 @@ extends WorldContext
 
 signal exit_requested
 
-## Every picture below is a region name on the `interior` atlas group, `_enter_tree()`/
+## Every picture below is a region name on the `interior` atlas group; `_enter_tree()`/
 ## `_exit_tree()` acquire and release it, and every draw site fetches its texture through
-## `AtlasLibrary.region()` and tags the sprite with the name in `atlas_region` metadata — the
-## only way left to ask "what is this sprite showing" once its texture is a cropped view of the
-## shared page rather than its own standalone resource with a `resource_path`.
+## `AtlasLibrary.region()` — a live `AtlasTexture` over the group's shared page, whose own
+## `.atlas`/`.region` a test can read directly, unlike a `resource_path` a region-backed texture
+## does not carry.
 const HALLWAY_WALL := &"interior/hallway_wall"
 const HALLWAY_WINDOW := &"interior/hallway_wall_window"
 ## The same window with the street outside it lit. Swapped in for a fraction of a second whenever
@@ -215,7 +215,6 @@ func _rebuild_walls() -> void:
 		barricade.centered = false
 		barricade.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 		barricade.position = Vector2((at.x + 0.5) * TILE, at.y * TILE + TILE * 0.5)
-		barricade.set_meta(&"atlas_region", ENTRANCE_BARRICADE_TEXTURE)
 		_walls.add_child(barricade)
 
 ## The fallen ceiling on the top floor, drawn over exactly the cells `InteriorMapPlan.rubble`
@@ -232,7 +231,6 @@ func _add_rubble() -> void:
 	heap.texture = AtlasLibrary.region(HALLWAY_RUBBLE_TEXTURE)
 	heap.centered = false
 	heap.position = Vector2(_plan.rubble.position) * TILE
-	heap.set_meta(&"atlas_region", HALLWAY_RUBBLE_TEXTURE)
 	_walls.add_child(heap)
 
 func _add_wall_sprite(at: Vector2i, name: StringName) -> Sprite2D:
@@ -246,7 +244,6 @@ func _add_wall_sprite(at: Vector2i, name: StringName) -> Sprite2D:
 	sprite.centered = false
 	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 	sprite.position = Vector2((at.x + 0.5) * TILE, at.y * TILE)
-	sprite.set_meta(&"atlas_region", name)
 	_walls.add_child(sprite)
 	return sprite
 
@@ -276,7 +273,6 @@ func flash_windows() -> void:
 	var texture := AtlasLibrary.region(HALLWAY_WINDOW_FLASH)
 	for sprite in _window_sprites:
 		sprite.texture = texture
-		sprite.set_meta(&"atlas_region", HALLWAY_WINDOW_FLASH)
 
 ## Whether a flash is on screen right now — what `tests/test_interior.gd` asks, since a texture
 ## swap is not something a headless run can see.
@@ -308,7 +304,6 @@ func _process(delta: float) -> void:
 	var texture := AtlasLibrary.region(HALLWAY_WINDOW)
 	for sprite in _window_sprites:
 		sprite.texture = texture
-		sprite.set_meta(&"atlas_region", HALLWAY_WINDOW)
 
 func _wall_texture(kind: InteriorTile.Kind) -> StringName:
 	match kind:
@@ -346,7 +341,6 @@ func _rebuild_overlays() -> void:
 		var sprite := Sprite2D.new()
 		sprite.texture = AtlasLibrary.region(name)
 		sprite.position = tile_to_world(tile)
-		sprite.set_meta(&"atlas_region", name)
 		_entities.add_child(sprite)
 	_add_chandeliers()
 
@@ -366,7 +360,6 @@ func _add_chandeliers() -> void:
 		chandelier.centered = false
 		chandelier.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 		chandelier.position = tile_to_world(_plan.waypoints[id] + Vector2i(0, -1))
-		chandelier.set_meta(&"atlas_region", CHANDELIER_TEXTURE)
 		_entities.add_child(chandelier)
 
 func _decal_texture(kind: InteriorTile.Kind) -> StringName:
@@ -387,7 +380,6 @@ func _add_standing(tile: Vector2i, name: StringName) -> void:
 	sprite.centered = false
 	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 	sprite.position = tile_to_world(tile)
-	sprite.set_meta(&"atlas_region", name)
 	_entities.add_child(sprite)
 
 ## A threshold sits at a floor tile's south boundary. Its origin is intentionally lower than an
@@ -399,7 +391,6 @@ func _add_threshold(tile: Vector2i, name: StringName) -> void:
 	sprite.centered = false
 	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 	sprite.position = Vector2((tile.x + 0.5) * TILE, (tile.y + 1) * TILE)
-	sprite.set_meta(&"atlas_region", name)
 	_entities.add_child(sprite)
 
 ## Repeats the shaft wall behind the ten-column grammar. The four eight-row panels cover the
@@ -416,13 +407,11 @@ func _rebuild_stairwell_backdrops() -> void:
 			backdrop.texture = segment_texture
 			backdrop.centered = false
 			backdrop.position = Vector2(origin + Vector2i(0, panel * 8)) * TILE
-			backdrop.set_meta(&"atlas_region", STAIRWELL_SEGMENT_BACKDROP)
 			_backdrops.add_child(backdrop)
 		var cap := Sprite2D.new()
 		cap.texture = cap_texture
 		cap.centered = false
 		cap.position = Vector2(origin + Vector2i(0, -2)) * TILE
-		cap.set_meta(&"atlas_region", STAIRWELL_SHAFT_CAP_TOP)
 		_backdrops.add_child(cap)
 
 # ------------------------------------------------------------------ placement and queries ---

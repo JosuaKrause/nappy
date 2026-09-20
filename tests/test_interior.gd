@@ -300,12 +300,12 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: Node) -> void:
 ## nothing standing in the scene draws a stair picture at all. All three halves are needed. The
 ## first two alone would let a `Sprite2D` overlay rebuild the old assembly over the top; the last
 ## alone would let a source nothing paints sit in the atlas unnoticed.
-## Region names rather than loaded textures, now that `InteriorTileSet.build()` crops each source
-## out of the shared `interior` atlas page into its own standalone `ImageTexture` — see that
-## file's own doc for why a `TileSetAtlasSource` cannot address a nested `AtlasTexture` region
-## directly. `InteriorTileSet.region_name_for()` and each drawn sprite's own `atlas_region`
-## metadata (set by `InteriorScene`, since a cropped texture carries no `resource_path` a test
-## could read a filename back off) are what this asks instead.
+## Region names, and every `TileSetAtlasSource` sharing the one `interior` page object rather
+## than a texture of its own — see `InteriorTileSet`'s own doc for why one tile per source makes
+## that safe, proved against this engine version with a throwaway script before it was written
+## this way. `InteriorTileSet.region_name_for()` is the lookup; a drawn sprite's own `AtlasTexture`
+## (`.atlas`/`.region`) is what a test reads directly now, since it is a live region rather than a
+## cropped copy with no `resource_path` of its own.
 func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
 	var expected_names := {
 		InteriorTile.Kind.STAIR_TOP_E: &"interior/m158_stair_side_upper_e",
@@ -316,16 +316,23 @@ func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
 		InteriorTile.Kind.STAIR_CORNER_W: &"interior/m158_stair_side_continue_w",
 		InteriorTile.Kind.STAIR_BLOCK: &"interior/m158_stair_side_block",
 	}
+	# `InteriorTileSet.build()` reads the group's own live page, so the group has to be acquired
+	# for as long as this test keeps the `TileSet` it returns — released at the very end, after
+	# the scene built below (which holds its own reference) is freed.
+	AtlasLibrary.acquire(&"interior")
 	var tile_set := InteriorTileSet.build()
+	var page := AtlasLibrary.region(&"interior/stairwell_floor").atlas
 	for kind: InteriorTile.Kind in expected_names:
 		var name: StringName = expected_names[kind]
 		t.check(InteriorTileSet.region_name_for(kind) == name,
 				"stair role %d binds its reviewed tile region" % kind)
 		var source_id := InteriorTileSet.source_id_for(kind)
 		var source := tile_set.get_source(source_id) as TileSetAtlasSource
-		t.check(source != null and source.texture != null
-				and Vector2i(source.texture.get_size()) == AtlasLibrary.native_size(name),
-				"stair role %d's cropped source matches its region's own baked size" % kind)
+		t.check(source != null and source.texture == page,
+				"stair role %d's source shares the interior page, not a texture of its own" % kind)
+		var rect := AtlasLibrary.region_rect(name)
+		t.check(source != null and source.get_tile_texture_region(Vector2i.ZERO) == rect,
+				"stair role %d's tile addresses exactly its own region on the shared page" % kind)
 
 	# Every shaft picture the whole TileSet carries, by its own region name. `interior/stairwell_
 	# floor` is the level `F` ground and the tread under each `D`; the basement's own
@@ -354,22 +361,33 @@ func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
 			"and the kit is all of them (%d sources against %d named)"
 			% [stair_sources.size(), kit.size()])
 
+	# Every region name on the `interior` page that could pass for a stair, other than the
+	# stairwell door itself — asked as textures rather than names, since a drawn `Sprite2D`
+	# no longer carries a name of its own to compare against, only the `AtlasTexture` region
+	# `AtlasLibrary.region()` handed out and cached.
+	var forbidden := {}
+	for name in AtlasLibrary.region_names():
+		if AtlasLibrary.group_of(name) != &"interior" or name == InteriorScene.DOOR_TEXTURE:
+			continue
+		var short := String(name).trim_prefix("interior/")
+		if short.begins_with("stair") or short.begins_with("m158_stair"):
+			forbidden[AtlasLibrary.region(name)] = true
+
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	scene.build()
 	var drawn_stairs := 0
 	for child in scene.get_node("Entities").get_children():
 		var sprite := child as Sprite2D
-		if sprite == null or not sprite.has_meta(&"atlas_region"):
+		if sprite == null or sprite.texture == null:
 			continue
-		var name: StringName = sprite.get_meta(&"atlas_region")
-		var short := String(name).trim_prefix("interior/")
-		if short.begins_with("stair") and name != InteriorScene.DOOR_TEXTURE:
+		if forbidden.has(sprite.texture):
 			drawn_stairs += 1
 	t.check(drawn_stairs == 0,
 			"nothing standing in the scene draws a stair: the ground cells are the staircase (%d)"
 			% drawn_stairs)
 	scene.free()
+	AtlasLibrary.release(&"interior")
 
 ## The switchback's own redirection: a sideways press on a diagonal flight walks its slope rather
 ## than the screen axis it was pressed on — *(2026-09-10, playtest 55: "holding right or left on

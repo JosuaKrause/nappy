@@ -1,11 +1,11 @@
 class_name InteriorTileSet
 extends RefCounted
-## Builds the interior's own `TileSet` from its SVG sources, the way `assets/ground_tileset.tres`
-## does for the outdoor city — in code rather than as a `.tres`. A hand-written resource for a
-## dozen single-tile sources is the same information typed twice, with a source id that can drift
-## from `InteriorTile.Kind`'s own numbering; a static factory is the smaller artifact for a set
-## this size, and unlike a `.tres` it can use the enum's own values as its source ids instead of a
-## second build-order numbering — see `source_id_for()`.
+## Builds the interior's own `TileSet` from regions of the baked `interior` atlas page, the way
+## `assets/ground_tileset.tres` does for the outdoor city — in code rather than as a `.tres`. A
+## hand-written resource for a dozen single-tile sources is the same information typed twice,
+## with a source id that can drift from `InteriorTile.Kind`'s own numbering; a static factory is
+## the smaller artifact for a set this size, and unlike a `.tres` it can use the enum's own
+## values as its source ids instead of a second build-order numbering — see `source_id_for()`.
 
 ## A door threshold's own tread sits on the mechanical stairwell floor beneath it, and the
 ## basement's exit sits on the same edge tile as the wall around it — the door itself is drawn as
@@ -13,12 +13,25 @@ extends RefCounted
 ## `InteriorScene._rebuild_overlays()`.
 ##
 ## Every value here is a region name on the `interior` atlas group's page rather than a source
-## path — `build()` crops each one out of `AtlasLibrary.page_image(&"interior")` into its own
-## standalone `ImageTexture`, the same technique the ground compositor uses for its own TileSet
-## (`docs/TODO.md`, M171's "The ground" item), rather than nesting an `AtlasTexture` inside a
-## `TileSetAtlasSource`: a `TileSetAtlasSource` addresses its texture on a uniform grid of its own
-## `texture_region_size`, which a shelf-packed atlas page does not have, and its runtime rendering
-## does not compose a second region on top of one an assigned `AtlasTexture` already carries.
+## path. **Every source shares the one page texture** — `build()` never loads or composes a
+## second texture of its own. A `TileSetAtlasSource` addresses its assigned texture on a grid of
+## its own `texture_region_size`, offset by `margins`; that grid does need to be uniform *across
+## the one source's own tiles*, but every source here holds exactly one tile, so the grid is the
+## region itself — `margins` is the region's own top-left corner on the shared page and
+## `texture_region_size` is the region's own size, which puts tile `(0, 0)` exactly on the region
+## and needs no second copy of its pixels. Proved against this engine version with a throwaway
+## script before writing it this way: `TileSetAtlasSource.get_tile_texture_region(Vector2i.ZERO)`
+## on a source built this way equals `AtlasLibrary.region_rect(name)` exactly, and two sources
+## sharing the same page texture at different offsets do not collide.
+##
+## **The group has to be acquired for as long as this `TileSet` is used**, not only while
+## `build()` runs: every source's `texture` is the live page `AtlasLibrary.acquire()` loaded, so
+## the picture stays valid exactly as long as the group that page belongs to is held.
+## `InteriorScene._enter_tree()` acquires `interior` before `_ready()` calls `build()`, and
+## releases it in `_exit_tree()` — after the `TileMapLayer` this `TileSet` is bound to has already
+## been freed as `InteriorScene`'s own child, so nothing reads a stale texture. A caller with no
+## such lifecycle of its own (a test calling `build()` directly) has to acquire the group itself
+## for as long as it keeps the returned `TileSet`.
 const _SOURCES := {
 	InteriorTile.Kind.HALLWAY_FLOOR: &"interior/hallway_floor",
 	InteriorTile.Kind.HALLWAY_FLOOR_EDGE_N: &"interior/hallway_floor_edge_n",
@@ -54,27 +67,28 @@ static func source_id_for(kind: InteriorTile.Kind) -> int:
 	return int(kind) if _SOURCES.has(kind) else -1
 
 ## The region name a ground cell of `kind` is baked under, on the `interior` group's page — what
-## a test asks instead of comparing texture identity, now that every source is a cropped view of
-## the shared page with no `resource_path` of its own to read a filename back off.
+## a test asks to check a source's own texture and offset against, since every source shares one
+## page object with no `resource_path` of its own to read a filename back off.
 static func region_name_for(kind: InteriorTile.Kind) -> StringName:
 	return _SOURCES.get(kind, &"")
 
+## Requires the `interior` group already acquired — every source built here reads the group's own
+## live page texture (`AtlasLibrary.region(name).atlas`), so building with nothing acquired asks
+## `AtlasLibrary.region()` a question it answers `null` for, with its own `push_error`. See the
+## class doc for how long the group has to stay acquired after this returns.
 static func build() -> TileSet:
 	var set := TileSet.new()
 	set.tile_size = Vector2i(Tuning.TILE_SIZE, Tuning.TILE_SIZE)
-	var page := AtlasLibrary.page_image(&"interior")
 	for kind in _SOURCES:
+		var name: StringName = _SOURCES[kind]
+		var region: AtlasTexture = AtlasLibrary.region(name)
+		if region == null:
+			continue
+		var rect := AtlasLibrary.region_rect(name)
 		var source := TileSetAtlasSource.new()
-		source.texture = _cropped(page, _SOURCES[kind])
-		source.texture_region_size = Vector2i(Tuning.TILE_SIZE, Tuning.TILE_SIZE)
+		source.texture = region.atlas
+		source.margins = rect.position
+		source.texture_region_size = rect.size
 		source.create_tile(Vector2i.ZERO)
 		set.add_source(source, int(kind))
 	return set
-
-## One region's own pixels, lifted out of the shared page into a standalone texture a
-## `TileSetAtlasSource` can address on its own uniform grid. `null` propagates from a missing page
-## the same way a failed `load()` did before — `AtlasLibrary.page_image()` has already logged why.
-static func _cropped(page: Image, name: StringName) -> ImageTexture:
-	if page == null:
-		return null
-	return ImageTexture.create_from_image(page.get_region(AtlasLibrary.region_rect(name)))
