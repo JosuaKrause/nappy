@@ -16,6 +16,24 @@ shouting costs nothing to walk beside, and M102, the finale's open item:
 
 > "merge all"
 
+After the orchestrator's answer to the first message, on whether the drift can be designed out:
+
+> "is there a better way than having four numbers to control what actually happens? we adjust
+> one thing but then forget to adjust other things in lockstep the balance is off."
+
+Two options were put back. **Option 1**: a row declares the net cost the player feels — what
+the bar does walking beside it, baby awake, net of the walking decay — from a few named tiers,
+and its gross `intensity` is computed from that, the decay and the pulse's mean, with one test
+per row that the measured rise is what it declared; recommended. **Option 2**: keep the gross
+numbers and add a test per row that its net rise stays above a floor, which catches the drift
+and fixes nothing. The player's answer:
+
+> "we can do option 1 and take the radius into account as well. meaning we compute numbers
+> close by and at various distances. those numbers gets automatically computed/updated but
+> also checked in so we can see in the diff where the balance changed"
+
+That is M175, a row states what it costs, and the cost table is checked in, in `TODO.md`.
+
 ## What the repository says
 
 **The player is right, and the record names the change.** `homeless_yeller`'s intensity has
