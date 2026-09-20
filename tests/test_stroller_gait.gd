@@ -8,12 +8,14 @@ func run(t) -> void:
 	_test_displacement_crosses_a_passing_boundary_in_both_states(t)
 	_test_idle_holds_the_passing_pose_from_every_phase(t)
 	_test_each_state_has_three_distinct_poses_per_view(t)
-	# None of the rigs above are added to the tree, so `Stroller._ready()` never runs and
-	# `FAMILY_ATLAS` is never acquired through it — only the one test below reads a region, so it
-	# takes its own reference rather than growing every `_rig()` call a camera and a tree entry.
-	AtlasLibrary.acquire(Stroller.FAMILY_ATLAS)
+	# None of the rigs above are added to the tree, so `Stroller._ready()` never runs and none of
+	# her groups is acquired through it — only the one test below reads a region, so it takes its
+	# own reference rather than growing every `_rig()` call a camera and a tree entry. The
+	# mother's page alone, since every rig here is built with the default presentation and the
+	# two parents are two pages (`Stroller.MOTHER_ATLAS`'s own doc).
+	AtlasLibrary.acquire(Stroller.MOTHER_ATLAS)
 	_test_every_view_resolves_every_pose_in_both_states(t)
-	AtlasLibrary.release(Stroller.FAMILY_ATLAS)
+	AtlasLibrary.release(Stroller.MOTHER_ATLAS)
 
 func _rig(carrying: bool) -> Stroller:
 	var rig := Stroller.new()

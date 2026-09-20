@@ -127,8 +127,10 @@ src/
 	quit_option.gd        whether the game can quit itself, answered once
   visuals/                PNG selection with SVG override; see the illustrated-png skill
 	atlas_library.gd      the baked atlas pages, by region name: a group's page is loaded on
-	                       the first acquire() and dropped on the last release(), and a
-	                       region's native size is answered from the table with nothing loaded
+	                       the first acquire() and dropped on the last release(), a region's
+	                       native size is answered from the table with nothing loaded, and a
+	                       page may only be read from disk in a named loading window — main's
+	                       boot holds every group a day draws for the life of the process
 	texture_resolver.gd   cached same-size PNG selection, with SVG fallback
 	texture_atlas.gd      one shared texture per group of pictures: requested, packed on a
 	                       worker thread, collected on the main thread, released when its last

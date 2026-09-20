@@ -147,42 +147,71 @@ const BABY_ZZZ := "res://assets/props/baby_zzz.svg"
 const BABY_FUSS := "res://assets/props/baby_fuss.svg"
 const BABY_CRY := "res://assets/props/baby_cry.svg"
 
-## The two baked `AtlasLibrary` groups everything she draws comes from. **Her family and the marks
-## over her head are two groups rather than one** because they are drawn for different reasons and
-## go away at different times: the body and the pram are on screen for the whole run, and a mark
-## is up for a second or two when something is about to happen. `assets/atlases/membership.json`
-## states the split the same way: `stroller` for the whole run, `head_indicators` "the whole run,
-## beside the stroller, but its own group because the marks above her head are drawn by a separate
-## pass and tinted on their own".
+## The baked `AtlasLibrary` groups everything she draws comes from.
+##
+## **The two parents are two pages and a run loads one of them.** *(PLAYTEST-109: "putting both
+## genders in the player atlas is a bit wasteful since it's guaranteed to not use half of it.")*
+## The choice is made once per run (`GameState.start_run()`) and `docs/GRAPHICS.md` holds it
+## fixed — carrying and texture resolution never reroll it — so the other parent's sixty views
+## are a page nothing in the run can ever draw. `STROLLER_ATLAS` is what the two share: the pram
+## itself, which either parent pushes.
+##
+## **The marks over her head are on the UI's page.** *(PLAYTEST-109: "the UI and head indicators
+## could be combined. also, those are textures that should always be loaded.")* A page is not a
+## pass: they are still drawn by their own pass, above her body, and still tinted on their own —
+## sharing a page changes neither, because a tint is a colour handed to a draw call and a pass is
+## an order of draw calls, and neither is a property of the texture.
 ##
 ## The caret and the tildes are `Sprites.draw_caret()` primitives with no texture behind them, so
-## neither group bakes them.
-const FAMILY_ATLAS := &"stroller"
-const INDICATOR_ATLAS := &"head_indicators"
+## no group bakes them.
+const MOTHER_ATLAS := &"mother"
+const FATHER_ATLAS := &"father"
+const STROLLER_ATLAS := &"stroller"
+const INDICATOR_ATLAS := &"ui"
 
-## Every path `FAMILY_ATLAS` bakes: both parents' pushing/carrying views and three gait frames,
-## plus the shared pram's five views. Not read by the live draw path — `_mother_texture()` and
-## `_pram_texture()` turn the picture already in hand into a region name directly — but kept as
-## the one place "everything the rig can draw" is enumerable, which is what a completeness check
-## against the membership file wants.
-static func family_sources() -> Array[String]:
+## Which parent's page a run draws from. Asked by `main`'s boot as well as by `_ready()`, so the
+## answer lives here rather than being spelt out at each call site.
+static func parent_atlas(male: bool) -> StringName:
+	return FATHER_ATLAS if male else MOTHER_ATLAS
+
+## Every path the rig can draw, by the group it is baked on: each parent's pushing and carrying
+## views over three gait frames, and the pram's five views on the group they share. Not read by
+## the live draw path — `_mother_texture()` and `_pram_texture()` turn the picture already in
+## hand into a region name directly — but kept as the one place "everything the rig can draw" is
+## enumerable, which is what a completeness check against the membership file wants.
+static func sources_by_group() -> Dictionary:
+	return {
+		MOTHER_ATLAS: _paths_in([
+			MOTHER_FRONT, MOTHER_BACK, MOTHER_SIDE, MOTHER_FRONT_DIAGONAL, MOTHER_BACK_DIAGONAL,
+			MOTHER_CARRYING_FRONT, MOTHER_CARRYING_BACK, MOTHER_CARRYING_SIDE,
+			MOTHER_CARRYING_FRONT_DIAGONAL, MOTHER_CARRYING_BACK_DIAGONAL,
+		]),
+		FATHER_ATLAS: _paths_in([
+			FATHER_FRONT, FATHER_BACK, FATHER_SIDE, FATHER_FRONT_DIAGONAL, FATHER_BACK_DIAGONAL,
+			FATHER_CARRYING_FRONT, FATHER_CARRYING_BACK, FATHER_CARRYING_SIDE,
+			FATHER_CARRYING_FRONT_DIAGONAL, FATHER_CARRYING_BACK_DIAGONAL,
+		]),
+		STROLLER_ATLAS: stroller_sources(),
+	}
+
+static func _paths_in(view_sets: Array) -> Array[String]:
 	var sources: Array[String] = []
-	var view_sets: Array = [
-		MOTHER_FRONT, MOTHER_BACK, MOTHER_SIDE, MOTHER_FRONT_DIAGONAL, MOTHER_BACK_DIAGONAL,
-		MOTHER_CARRYING_FRONT, MOTHER_CARRYING_BACK, MOTHER_CARRYING_SIDE,
-		MOTHER_CARRYING_FRONT_DIAGONAL, MOTHER_CARRYING_BACK_DIAGONAL,
-		FATHER_FRONT, FATHER_BACK, FATHER_SIDE, FATHER_FRONT_DIAGONAL, FATHER_BACK_DIAGONAL,
-		FATHER_CARRYING_FRONT, FATHER_CARRYING_BACK, FATHER_CARRYING_SIDE,
-		FATHER_CARRYING_FRONT_DIAGONAL, FATHER_CARRYING_BACK_DIAGONAL,
-	]
 	for views: Array in view_sets:
 		for path: String in views:
 			sources.append(path)
-	var prams: Array[String] = [
-		PRAM_SIDE, PRAM_FRONT, PRAM_BACK, PRAM_FRONT_DIAGONAL, PRAM_BACK_DIAGONAL,
-	]
-	sources.append_array(prams)
 	return sources
+
+## Everything the rig can draw, flattened — both parents and the pram they share.
+static func family_sources() -> Array[String]:
+	var sources: Array[String] = []
+	var by_group := sources_by_group()
+	for group: StringName in by_group.keys():
+		sources.append_array(by_group[group] as Array[String])
+	return sources
+
+## The pram's own five views, which both parents push and neither owns.
+static func stroller_sources() -> Array[String]:
+	return [PRAM_SIDE, PRAM_FRONT, PRAM_BACK, PRAM_FRONT_DIAGONAL, PRAM_BACK_DIAGONAL]
 
 ## Every path `INDICATOR_ATLAS` bakes: the two warning marks that ride over her head and the
 ## baby's own three, which ride over the pram.
@@ -239,6 +268,11 @@ var facing := Vector2.DOWN
 
 ## Bound by Main before the first drawing; reset, pause and carrying never choose it again.
 var is_male := false
+
+## The parent page `_ready()` took a reference on, so `_exit_tree()` gives back the same one even
+## if `is_male` were ever written afterwards. Empty before she is ready, which is why releasing it
+## is safe only from `_exit_tree()`, which cannot run before `_ready()` has.
+var _parent_atlas: StringName = &""
 
 ## The escape scene's carrying rig: the baby in the parent's arms instead of ahead in the pram.
 ## Set once by `main._ready_escape()` before she is ever drawn; nothing else in the game ever
@@ -329,12 +363,15 @@ var _camera_smoothing_when_free := true
 
 func _ready() -> void:
 	add_to_group("player")
-	# The whole run's own lifetime (`assets/atlases/membership.json`, "the player is on screen from
-	# the first frame of a day"): acquired here rather than waited for, since the bake already sits
-	# on disk before the game boots and `acquire()` is a synchronous page load rather than a task to
-	# collect. Two acquires rather than one because the body and the head marks are two groups —
-	# see `FAMILY_ATLAS`/`INDICATOR_ATLAS`'s own doc for why.
-	AtlasLibrary.acquire(FAMILY_ATLAS)
+	# Three references rather than a load: `main`'s boot has already taken every one of these
+	# pages and holds them for the life of the process, so each of these only bumps a count that
+	# proves the page is there while she draws from it. **The parent is read once, here**, and
+	# `_exit_tree()` gives back the same one — `is_male` is bound before she enters the tree
+	# (`main._make_player()`) and `docs/GRAPHICS.md` holds it fixed for the run, so the two can
+	# never name different pages.
+	_parent_atlas = parent_atlas(is_male)
+	AtlasLibrary.acquire(_parent_atlas)
+	AtlasLibrary.acquire(STROLLER_ATLAS)
 	AtlasLibrary.acquire(INDICATOR_ATLAS)
 	if _pram_collision:
 		_pram_collision.disabled = carrying
@@ -342,13 +379,15 @@ func _ready() -> void:
 	# property of the camera and a focus can switch it off without owning the default.
 	_camera_smoothing_when_free = _camera.position_smoothing_enabled
 
-## Hands both of her groups back — the other half of `_ready()`'s own acquire. **A reference taken
-## and never released is a page held at shutdown**, so nothing here waits for it to be asked for
-## again. A second rig alive at the same time would simply hold a second reference on the same
+## Hands all three of her groups back — the other half of `_ready()`'s own acquire. **A reference
+## taken and never released is a page held at shutdown**, so nothing here waits for it to be asked
+## for again. A second rig alive at the same time would simply hold a second reference on the same
 ## page rather than lose it, since `AtlasLibrary` counts references rather than owners; there is
-## never more than one of her in a running game.
+## never more than one of her in a running game. In the running game none of these three drops a
+## page: the boot's own residency is still holding each of them underneath her.
 func _exit_tree() -> void:
-	AtlasLibrary.release(FAMILY_ATLAS)
+	AtlasLibrary.release(_parent_atlas)
+	AtlasLibrary.release(STROLLER_ATLAS)
 	AtlasLibrary.release(INDICATOR_ATLAS)
 
 ## Takes her out of the world without taking her out of the tree, for the title screen's attract
@@ -874,8 +913,8 @@ func _draw_pram(at: Vector2) -> void:
 func _pram_draw_size() -> Vector2:
 	return _pram_texture().get_size() * PRAM_VISUAL_SCALE
 
-## The selected parent's region for a gait frame — `FAMILY_ATLAS` is acquired for the whole run in
-## `_ready()`, so this is always the baked region and never the raw source.
+## The selected parent's region for a gait frame — the run's own parent page is acquired for the
+## whole run in `_ready()`, so this is always the baked region and never the raw source.
 func _mother_texture(frame: int) -> Texture2D:
 	return AtlasLibrary.region(AtlasLibrary.region_name_for(_mother_source(frame)))
 
@@ -907,9 +946,10 @@ func _mother_source(frame: int) -> String:
 func _mother_is_mirrored() -> bool:
 	return EightDirection.is_mirrored(_view_direction)
 
-## The pram region selected by the live drawing path, off the same `FAMILY_ATLAS` page her body
-## comes from — its size is the region's, which is the picture's own native size, so
-## `_pram_draw_size()`'s seven-sixths lands on exactly the same rectangle it always did.
+## The pram region selected by the live drawing path, off `STROLLER_ATLAS` — the page the two
+## parents share rather than the one her body is on. Its size is the region's, which is the
+## picture's own native size, so `_pram_draw_size()`'s seven-sixths lands on exactly the same
+## rectangle it always did.
 func _pram_texture() -> Texture2D:
 	return AtlasLibrary.region(AtlasLibrary.region_name_for(_pram_source()))
 
