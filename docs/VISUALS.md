@@ -54,9 +54,10 @@ picture: a region reports its source's own size, so scale, offsets, mirroring, a
 and sorting read the same numbers in either presentation mode. A group is requested when its
 first user is placed and released when its last user is gone; until it is collected, and again
 after it is released, every user draws the source texture it would otherwise draw, so nothing
-waits on an atlas and nothing draws a missing picture. `GroundLayers` packs the ground the same
-way but in one texture the `TileSet` holds directly, each source reaching its own pictures
-through `margins` with `texture_region_size` and `separation` unchanged.
+waits on an atlas and nothing draws a missing picture. The ground does not use this path at all:
+`GroundLayers` composes its tiles out of the baked page below and uploads one texture the
+`TileSet` holds directly, each source reaching its own pictures through `margins` with
+`texture_region_size` and `separation` unchanged.
 
 ## Baked atlases
 
@@ -135,13 +136,18 @@ the read took and the page's size.
 constituents it still carries — a member's source, its `.import` sidecar or its imported
 `.ctex`. `tools/export-web.sh` runs it after every export and reports the count.
 
-`GroundLayers` builds a presentation TileSet from the authored source resource. Its component
+`GroundLayers` builds a presentation TileSet from the authored source resource, which names each
+source's baked region and holds no texture of its own. Every base, overlay, damage stencil, grass
+feature and whole authored tile is a region of `AtlasLibrary.page_image(&"ground")`, read once per
+build, and the composed pictures go to the GPU as one sheet. Its component
 manifest in `assets/illustrated/svg-transfer/tiles/layers/` assigns a shared base and transparent
 overlays to each supported source ID. Curbstones, street paint, crosswalks and damage blend in
 the engine; pixels outside their alpha remain the base's own pixels. Parks and forests have sparse clump
 arrangements selected by city seed and tile coordinates. Daily repaints start from the authored
-resource, keeping composition stable. Missing components retain the normal PNG/SVG fallback,
-and `--svg` uses the authored vector textures. Source IDs and gameplay geometry stay fixed.
+resource, keeping composition stable. A component the bake does not carry leaves its source on
+its own whole authored tile. The presentation is the bake's: a `tools/bake-atlases.sh --svg` page
+carries the authored vector tiles already drawn and composes nothing but the route-kerb tint.
+Source IDs and gameplay geometry stay fixed.
 
 Each runtime replacement matches the SVG's native dimensions and functional anchors.
 Identity/export variants retain their documented source-derived canvas sizes. Registration preserves

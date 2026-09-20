@@ -294,8 +294,12 @@ static func _register_route_kerb_twins(tile_set: TileSet, manifest: Dictionary, 
 			continue
 		var twin: Image = null
 		if manifest.is_empty():
+			# Its size is asked before the tint, because a twin that is not one whole tile would be
+			# given `picture.get_width() / TILE_SIZE.x` cells by `_upload_one_sheet()` — a kerb with
+			# two cells or none rather than a source left without a twin, which is the fallback
+			# `City._tint_the_route_kerbs()` is written against.
 			var plain := _source_image(page, source)
-			if plain != null:
+			if plain != null and plain.get_size() == TILE_SIZE:
 				twin = _tint_matching(plain, SVG_KERB_STONE_COLOR)
 		else:
 			twin = _layered_image(source_id, manifest, page, true)

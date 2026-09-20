@@ -1346,9 +1346,9 @@ func _test_no_spike_line_with_the_flag_off(t) -> void:
 ## checks against — rather than adding a test-only setter to production code for a single call.
 func _test_a_late_picture_load_names_itself_in_the_spike_line(t) -> void:
 	Telemetry.begin_memory_log()
-	# After `_spike_rig()`, not before: building the real `City` scene resolves the whole tile set
-	# through `GroundLayers._replace_svg_transfers()`, which would otherwise leave `load_count()`
-	# already above zero before this test's own bump, and the exact-one-load assertion below false.
+	# After `_spike_rig()`, not before, and the reset below rather than trust: building the real
+	# `City` scene is the loudest thing in this suite, and the exact-one-load assertion needs
+	# `load_count()` to start at nought whatever it did.
 	var observer := _spike_rig(t)
 	TextureResolver.reset_for_tests(false)
 	_feed_frames(observer, _steady_frames(10, 0.02))
