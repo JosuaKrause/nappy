@@ -630,6 +630,15 @@ the frontage lane's own tile centre it spans 5-27px of the band from that edge a
 the kerb, over 28 — a body this narrow only needs to move off the exact middle to stay friction,
 where a wider one could not.
 
+**A pinned row is a sidewalk row, because a square has no sides.** `CityMap.pavement_inward`
+answers nothing on a square, so `EventScheduler._wants_this_side` refuses every square tile to a
+row carrying `AT_THE_KERB` or `AGAINST_THE_BUILDING` — which means a `placement` listing that
+ground is listing ground the row can never be offered. `poster_crew_square` is the poster crew's
+answer to it: the same event on the ground the pinned row cannot take, standing at the free-standing
+advertising column a square has instead of a wall. *(2026-09-19: "we need a separate square poster
+crew entity for this".)* `tests/test_events.gd` holds the whole catalogue to it, so the next row
+given a pavement side cannot quietly lose a kind of ground the same way.
+
 Both readings are read off the row's own numbers rather than a list of ids, and asked of *a*
 sidewalk rather than of the tile — the role is decided before a tile is chosen, so a row that may
 stand on a sidewalk is judged on the narrowest ground it may be rolled onto.
@@ -904,7 +913,8 @@ neighbourhood's own rather than a patrol's.
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
 | `police_patrol` | RECURRING | 4 | Mobile, unhurried, along a corridor. Not dangerous yet — the danger is that you start planning around it. In acts III and IV, extra copies of this row are also what the return leg owes — see "The return owes her patrols" above. |
-| `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. `AGAINST_THE_BUILDING`, the way `reversing_lorry` stands — pasting posters at the wall it works on, on a north-south street with a real building on the far side. Centred (`ANY`, the default) it would leave under 28px on each side of the band and be a wall by physical fit; pinned at the frontage, it spans 5-27px of the band and leaves 37px to the kerb, so it stays friction. |
+| `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. `AGAINST_THE_BUILDING`, the way `reversing_lorry` stands — pasting posters at the wall it works on, on a north-south street with a real building on the far side. Centred (`ANY`, the default) it would leave under 28px on each side of the band and be a wall by physical fit; pinned at the frontage, it spans 5-27px of the band and leaves 37px to the kerb, so it stays friction. A sidewalk row only: a square has no frontage lane for a pinned body to stand in, and `poster_crew_square` below is the square's own crew. |
+| `poster_crew_square` | RECURRING | 4 | The same crew on a square, pasting onto a free-standing advertising column — every number is `poster_crew`'s, because it is the same event on the ground a row pinned against a building cannot stand on. It takes no pavement side, so `EventInstance` centres its 11px body on the tile it is given, and its picture carries the column beside the worker. The density is the sidewalk row's own, split rather than added: about one poster crew in a hundred used to land on a square, which is the square share of the ground the roll draws from, so this row carries a hundredth of that row's weight and is a rare sight by measurement. |
 | `loudspeaker` | SCRIPTED | 5 | **City-wide**: no falloff, no edge, nowhere in the city it does not reach. The first event the player cannot walk away from. Pitched under the walking decay, so like a back street it does not raise the meter — it stops you clearing it. |
 | `curfew_announce` | SCRIPTED | 6 | City-wide, brief, and fading (`intensity_ramp` 0.2). The mechanical bite is in `Tuning.day_length`, which shortens every day from 6 onward; this is the moment you are told. |
 | `roadblock` **`heat_response HUNTS`** | RECURRING | 7 | Loud, and **physically closes a street** (`obstructs_radius` 60), drawn as one continuous barrier (`roadblock_segment.svg`/`roadblock_end.svg`) rather than a row of blocks. The first event that takes a route away rather than making it expensive. Named `roadblock` rather than `checkpoint` because the region wall's own door structure — a hut, a gate and guards you can pass at a price — took that word; the two rows mean opposite things about whether a street can be crossed. Below `Tuning.HEAT_HUNTS_LEVEL` that is all it ever does; at or above it its guards leave the post — the band cannot chase, so the hunting posture is a guard on foot, `guard_standing.svg` then `guard_lunging.svg`, coming at 130px/s once she comes within 180px, `hard_fail` inside `inner_radius` 86. |
@@ -1202,6 +1212,7 @@ alone is answering a narrower question than it thinks.
 | `impact_crater` | -15.7 | +19.3 |
 | `burnt_shell` | -6.9 | +14.3 |
 | `poster_crew` | -5.3 | +22.6 |
+| `poster_crew_square` | -5.3 | +22.6 |
 | `chatting_mother` | -2.7 | +14.8 |
 | `checkpoint_post` | -0.6 | +22.4 |
 | `checkpoint_hut` | -0.6 | +22.4 |
@@ -1246,9 +1257,11 @@ costs 35 points from the lunge and less the sooner it is given. See `docs/MECHAN
 that matters", for the measured tables. The city-wide rows have no line through them at all, which
 is why `EventDef.walk_through_cost()` answers zero for them and this table says nothing.
 
-**Two rows are cheap to walk through by taste, three are priced somewhere else, and every
-zero-intensity row is cheap by construction.** `burnt_shell` and `poster_crew` are scenery asked to
-be nearly free on purpose. `chatting_mother`, `checkpoint_hut` and `checkpoint_post` are the
+**Three rows are cheap to walk through by taste, three are priced somewhere else, and every
+zero-intensity row is cheap by construction.** `burnt_shell` and the two poster crews —
+`poster_crew` against a wall, `poster_crew_square` at a column — are scenery asked to be nearly
+free on purpose, and the crews are one decision rather than two: the same field on two kinds of
+ground. `chatting_mother`, `checkpoint_hut` and `checkpoint_post` are the
 **detainers**, whose price is not their field at all: coming close locks her movement and charges
 `Tuning.CHAT_EXCITEMENT` flat over the hold, so a disc sized to clear the walking decay as well
 would be charging the same body twice. `tests/test_events.gd` names both lists, and holds the

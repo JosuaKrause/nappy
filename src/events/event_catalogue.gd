@@ -120,6 +120,7 @@ static func _build() -> Array[EventDef]:
 		# Act II - notices.
 		_police_patrol(),
 		_poster_crew(),
+		_poster_crew_square(),
 		_loudspeaker(),
 		_curfew_announce(),
 		_roadblock(),
@@ -1346,8 +1347,12 @@ static func _police_patrol() -> EventDef:
 ## placement`); pinned to the frontage lane's own tile centre, `TILE_SIZE * 0.5` from the wall, it
 ## spans 5-27px of the band from that edge and leaves 37px to the kerb — over the 28px she needs,
 ## so it stays friction. `_wants_this_side` narrows its `SIDEWALK` ground to north-south streets
-## with a real building on the far side, the same restriction `reversing_lorry` already carries;
-## its `SQUARE` ground answers no `pavement_inward` at all and is no longer offered.
+## with a real building on the far side, the same restriction `reversing_lorry` already carries.
+##
+## **It is a sidewalk row and only a sidewalk row.** A square answers no `pavement_inward`, so
+## there is no frontage lane on one for a crew pinned against a building to stand in;
+## `poster_crew_square` below is the square's own crew, at the column a square has instead of a
+## wall.
 static func _poster_crew() -> EventDef:
 	var def := EventDef.new()
 	def.id = "poster_crew"
@@ -1355,7 +1360,7 @@ static func _poster_crew() -> EventDef:
 	def.look = EventDef.Look.POSTER_CREW
 	def.first_day = 4
 	def.act_tag = 2
-	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
+	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AGAINST_THE_BUILDING
 	def.intensity = 5.0
 	def.inner_radius = 30.0
@@ -1364,6 +1369,42 @@ static func _poster_crew() -> EventDef:
 	def.solid(GroundShape.point(PERSON_BODY))
 	def.weight = 2.5
 	def.max_per_day = 12
+	return def
+
+## The same crew, on a square, at a free-standing advertising column. *(2026-09-19: "we need a
+## separate square poster crew entity for this", PLAYTEST-99.)*
+##
+## **Every number here is `poster_crew`'s on purpose, bar the two that are the split.** The field
+## (5.0 over 30-110px), the telegraph, the 11px point body, the first day and the act tag are the
+## sidewalk row's, because this is the same event happening on different ground — a crew pasting
+## a bill — and a second set of numbers would be a second design decision nobody took. What is
+## *not* copied is the pavement side: a square has no frontage lane, and a body centred on one is
+## nowhere near an edge to be pinned to.
+##
+## **The density is split off the sidewalk row rather than added to the catalogue**, and it was
+## measured rather than derived. Planning twelve seeds by one day per act with the row that owned
+## both grounds put about one poster crew in a hundred on a square — the same share of the
+## candidate pool that *is* square ground, squares being a rare kind of tile — so this row takes
+## one percent of the weight and the sidewalk row keeps the rest, which is a hundredth of 2.5. The
+## cap is 1 because a hundredth of 12 rounds to nothing and a cap of nothing is a deleted row; it
+## never binds, since the roll offers this row well under one placement a day. **A square crew is
+## a rare sight, and it always was** — what changes here is which row draws it, not how often the
+## city does.
+static func _poster_crew_square() -> EventDef:
+	var def := EventDef.new()
+	def.id = "poster_crew_square"
+	def.display_name = "Poster crew"
+	def.look = EventDef.Look.POSTER_CREW_SQUARE
+	def.first_day = 4
+	def.act_tag = 2
+	def.placement = [GameEnums.TileType.SQUARE]
+	def.intensity = 5.0
+	def.inner_radius = 30.0
+	def.outer_radius = 110.0
+	def.telegraph_time = 1.0
+	def.solid(GroundShape.point(PERSON_BODY))
+	def.weight = 0.03
+	def.max_per_day = 1
 	return def
 
 ## The masts switch on and there is nowhere in the city they do not reach. City-wide, so
