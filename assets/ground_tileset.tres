@@ -1,353 +1,236 @@
-[gd_resource type="TileSet" load_steps=117 format=3]
-
-[ext_resource type="Texture2D" path="res://assets/tiles/road.svg" id="0_road"]
-[ext_resource type="Texture2D" path="res://assets/tiles/road_line_e.svg" id="1_road_line_e"]
-[ext_resource type="Texture2D" path="res://assets/tiles/road_line_w.svg" id="2_road_line_w"]
-[ext_resource type="Texture2D" path="res://assets/tiles/road_line_n.svg" id="3_road_line_n"]
-[ext_resource type="Texture2D" path="res://assets/tiles/road_line_s.svg" id="4_road_line_s"]
-[ext_resource type="Texture2D" path="res://assets/tiles/crossing_v.svg" id="5_crossing_v"]
-[ext_resource type="Texture2D" path="res://assets/tiles/crossing_h.svg" id="6_crossing_h"]
-[ext_resource type="Texture2D" path="res://assets/tiles/crossing_main_n.svg" id="36_crossing_main_n"]
-[ext_resource type="Texture2D" path="res://assets/tiles/crossing_main_s.svg" id="37_crossing_main_s"]
-[ext_resource type="Texture2D" path="res://assets/tiles/crossing_main_w.svg" id="38_crossing_main_w"]
-[ext_resource type="Texture2D" path="res://assets/tiles/crossing_main_e.svg" id="39_crossing_main_e"]
-[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk.svg" id="7_sidewalk"]
-[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_n.svg" id="8_sidewalk_kerb_n"]
-[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_s.svg" id="9_sidewalk_kerb_s"]
-[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_e.svg" id="10_sidewalk_kerb_e"]
-[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_w.svg" id="11_sidewalk_kerb_w"]
-[ext_resource type="Texture2D" path="res://assets/tiles/grass.svg" id="12_grass"]
-[ext_resource type="Texture2D" path="res://assets/tiles/sand.svg" id="13_sand"]
-[ext_resource type="Texture2D" path="res://assets/tiles/alley.svg" id="14_alley"]
-[ext_resource type="Texture2D" path="res://assets/tiles/plaza.svg" id="15_plaza"]
-[ext_resource type="Texture2D" path="res://assets/tiles/stoop.svg" id="16_stoop"]
-[ext_resource type="Texture2D" path="res://assets/tiles/forest.svg" id="17_forest"]
-[ext_resource type="Texture2D" path="res://assets/tiles/quiet_square.svg" id="18_quiet_square"]
-[ext_resource type="Texture2D" path="res://assets/tiles/courtyard.svg" id="19_courtyard"]
-[ext_resource type="Texture2D" path="res://assets/tiles/spoiled.svg" id="20_spoiled"]
-[ext_resource type="Texture2D" path="res://assets/tiles/road_main.svg" id="21_road_main"]
-[ext_resource type="Texture2D" path="res://assets/tiles/road_main_line_e.svg" id="22_road_main_line_e"]
-[ext_resource type="Texture2D" path="res://assets/tiles/road_main_line_w.svg" id="23_road_main_line_w"]
-[ext_resource type="Texture2D" path="res://assets/tiles/road_main_line_n.svg" id="24_road_main_line_n"]
-[ext_resource type="Texture2D" path="res://assets/tiles/road_main_line_s.svg" id="25_road_main_line_s"]
-[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_main_n.svg" id="26_sidewalk_kerb_main_n"]
-[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_main_s.svg" id="27_sidewalk_kerb_main_s"]
-[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_main_e.svg" id="28_sidewalk_kerb_main_e"]
-[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_kerb_main_w.svg" id="29_sidewalk_kerb_main_w"]
-[ext_resource type="Texture2D" path="res://assets/tiles/precinct.svg" id="30_precinct"]
-[ext_resource type="Texture2D" path="res://assets/tiles/water.svg" id="31_water"]
-[ext_resource type="Texture2D" path="res://assets/tiles/bulkhead.svg" id="32_bulkhead"]
-[ext_resource type="Texture2D" path="res://assets/tiles/fence.svg" id="33_fence"]
-[ext_resource type="Texture2D" path="res://assets/tiles/mountain.svg" id="34_mountain"]
-[ext_resource type="Texture2D" path="res://assets/tiles/scree.svg" id="35_scree"]
-[ext_resource type="Texture2D" path="res://assets/tiles/road_cracked_hairline_a.svg" id="40_road_cracked_hairline_a"]
-[ext_resource type="Texture2D" path="res://assets/tiles/road_cracked_hairline_b.svg" id="41_road_cracked_hairline_b"]
-[ext_resource type="Texture2D" path="res://assets/tiles/road_cracked_cracked_a.svg" id="42_road_cracked_cracked_a"]
-[ext_resource type="Texture2D" path="res://assets/tiles/road_cracked_cracked_b.svg" id="43_road_cracked_cracked_b"]
-[ext_resource type="Texture2D" path="res://assets/tiles/road_cracked_broken_a.svg" id="44_road_cracked_broken_a"]
-[ext_resource type="Texture2D" path="res://assets/tiles/road_cracked_broken_b.svg" id="45_road_cracked_broken_b"]
-[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_cracked_hairline_a.svg" id="46_sidewalk_cracked_hairline_a"]
-[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_cracked_hairline_b.svg" id="47_sidewalk_cracked_hairline_b"]
-[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_cracked_cracked_a.svg" id="48_sidewalk_cracked_cracked_a"]
-[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_cracked_cracked_b.svg" id="49_sidewalk_cracked_cracked_b"]
-[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_cracked_broken_a.svg" id="50_sidewalk_cracked_broken_a"]
-[ext_resource type="Texture2D" path="res://assets/tiles/sidewalk_cracked_broken_b.svg" id="51_sidewalk_cracked_broken_b"]
-[ext_resource type="Texture2D" path="res://assets/tiles/alley_cracked_hairline_a.svg" id="52_alley_cracked_hairline_a"]
-[ext_resource type="Texture2D" path="res://assets/tiles/alley_cracked_hairline_b.svg" id="53_alley_cracked_hairline_b"]
-[ext_resource type="Texture2D" path="res://assets/tiles/alley_cracked_cracked_a.svg" id="54_alley_cracked_cracked_a"]
-[ext_resource type="Texture2D" path="res://assets/tiles/alley_cracked_cracked_b.svg" id="55_alley_cracked_cracked_b"]
-[ext_resource type="Texture2D" path="res://assets/tiles/alley_cracked_broken_a.svg" id="56_alley_cracked_broken_a"]
-[ext_resource type="Texture2D" path="res://assets/tiles/alley_cracked_broken_b.svg" id="57_alley_cracked_broken_b"]
+[gd_resource type="TileSet" load_steps=59 format=3]
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road"]
-texture = ExtResource("0_road")
+resource_name = "tiles/road"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road_line_e"]
-texture = ExtResource("1_road_line_e")
+resource_name = "tiles/road_line_e"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road_line_w"]
-texture = ExtResource("2_road_line_w")
+resource_name = "tiles/road_line_w"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road_line_n"]
-texture = ExtResource("3_road_line_n")
+resource_name = "tiles/road_line_n"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road_line_s"]
-texture = ExtResource("4_road_line_s")
+resource_name = "tiles/road_line_s"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_crossing_v"]
-texture = ExtResource("5_crossing_v")
+resource_name = "tiles/crossing_v"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_crossing_h"]
-texture = ExtResource("6_crossing_h")
+resource_name = "tiles/crossing_h"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_sidewalk"]
-texture = ExtResource("7_sidewalk")
+resource_name = "tiles/sidewalk"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_kerb_n"]
-texture = ExtResource("8_sidewalk_kerb_n")
+resource_name = "tiles/sidewalk_kerb_n"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_kerb_s"]
-texture = ExtResource("9_sidewalk_kerb_s")
+resource_name = "tiles/sidewalk_kerb_s"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_kerb_e"]
-texture = ExtResource("10_sidewalk_kerb_e")
+resource_name = "tiles/sidewalk_kerb_e"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_kerb_w"]
-texture = ExtResource("11_sidewalk_kerb_w")
+resource_name = "tiles/sidewalk_kerb_w"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_grass"]
-texture = ExtResource("12_grass")
+resource_name = "tiles/grass"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_sand"]
-texture = ExtResource("13_sand")
+resource_name = "tiles/sand"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_alley"]
-texture = ExtResource("14_alley")
+resource_name = "tiles/alley"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_plaza"]
-texture = ExtResource("15_plaza")
+resource_name = "tiles/plaza"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_stoop"]
-texture = ExtResource("16_stoop")
+resource_name = "tiles/stoop"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_forest"]
-texture = ExtResource("17_forest")
+resource_name = "tiles/forest"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_quiet_square"]
-texture = ExtResource("18_quiet_square")
+resource_name = "tiles/quiet_square"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_courtyard"]
-texture = ExtResource("19_courtyard")
+resource_name = "tiles/courtyard"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_spoiled"]
-texture = ExtResource("20_spoiled")
+resource_name = "tiles/spoiled"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road_main"]
-texture = ExtResource("21_road_main")
+resource_name = "tiles/road_main"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road_main_line_e"]
-texture = ExtResource("22_road_main_line_e")
+resource_name = "tiles/road_main_line_e"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road_main_line_w"]
-texture = ExtResource("23_road_main_line_w")
+resource_name = "tiles/road_main_line_w"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road_main_line_n"]
-texture = ExtResource("24_road_main_line_n")
+resource_name = "tiles/road_main_line_n"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road_main_line_s"]
-texture = ExtResource("25_road_main_line_s")
+resource_name = "tiles/road_main_line_s"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_kerb_main_n"]
-texture = ExtResource("26_sidewalk_kerb_main_n")
+resource_name = "tiles/sidewalk_kerb_main_n"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_kerb_main_s"]
-texture = ExtResource("27_sidewalk_kerb_main_s")
+resource_name = "tiles/sidewalk_kerb_main_s"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_kerb_main_e"]
-texture = ExtResource("28_sidewalk_kerb_main_e")
+resource_name = "tiles/sidewalk_kerb_main_e"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_kerb_main_w"]
-texture = ExtResource("29_sidewalk_kerb_main_w")
+resource_name = "tiles/sidewalk_kerb_main_w"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_precinct"]
-texture = ExtResource("30_precinct")
+resource_name = "tiles/precinct"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_water"]
-texture = ExtResource("31_water")
+resource_name = "tiles/water"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_bulkhead"]
-texture = ExtResource("32_bulkhead")
+resource_name = "tiles/bulkhead"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_fence"]
-texture = ExtResource("33_fence")
+resource_name = "tiles/fence"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_mountain"]
-texture = ExtResource("34_mountain")
+resource_name = "tiles/mountain"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_crossing_main_n"]
-texture = ExtResource("36_crossing_main_n")
+resource_name = "tiles/crossing_main_n"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_crossing_main_s"]
-texture = ExtResource("37_crossing_main_s")
+resource_name = "tiles/crossing_main_s"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_crossing_main_w"]
-texture = ExtResource("38_crossing_main_w")
+resource_name = "tiles/crossing_main_w"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_crossing_main_e"]
-texture = ExtResource("39_crossing_main_e")
+resource_name = "tiles/crossing_main_e"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_scree"]
-texture = ExtResource("35_scree")
+resource_name = "tiles/scree"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road_cracked_hairline_a"]
-texture = ExtResource("40_road_cracked_hairline_a")
+resource_name = "tiles/road_cracked_hairline_a"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road_cracked_hairline_b"]
-texture = ExtResource("41_road_cracked_hairline_b")
+resource_name = "tiles/road_cracked_hairline_b"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road_cracked_cracked_a"]
-texture = ExtResource("42_road_cracked_cracked_a")
+resource_name = "tiles/road_cracked_cracked_a"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road_cracked_cracked_b"]
-texture = ExtResource("43_road_cracked_cracked_b")
+resource_name = "tiles/road_cracked_cracked_b"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road_cracked_broken_a"]
-texture = ExtResource("44_road_cracked_broken_a")
+resource_name = "tiles/road_cracked_broken_a"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road_cracked_broken_b"]
-texture = ExtResource("45_road_cracked_broken_b")
+resource_name = "tiles/road_cracked_broken_b"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_cracked_hairline_a"]
-texture = ExtResource("46_sidewalk_cracked_hairline_a")
+resource_name = "tiles/sidewalk_cracked_hairline_a"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_cracked_hairline_b"]
-texture = ExtResource("47_sidewalk_cracked_hairline_b")
+resource_name = "tiles/sidewalk_cracked_hairline_b"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_cracked_cracked_a"]
-texture = ExtResource("48_sidewalk_cracked_cracked_a")
+resource_name = "tiles/sidewalk_cracked_cracked_a"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_cracked_cracked_b"]
-texture = ExtResource("49_sidewalk_cracked_cracked_b")
+resource_name = "tiles/sidewalk_cracked_cracked_b"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_cracked_broken_a"]
-texture = ExtResource("50_sidewalk_cracked_broken_a")
+resource_name = "tiles/sidewalk_cracked_broken_a"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_sidewalk_cracked_broken_b"]
-texture = ExtResource("51_sidewalk_cracked_broken_b")
+resource_name = "tiles/sidewalk_cracked_broken_b"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_alley_cracked_hairline_a"]
-texture = ExtResource("52_alley_cracked_hairline_a")
+resource_name = "tiles/alley_cracked_hairline_a"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_alley_cracked_hairline_b"]
-texture = ExtResource("53_alley_cracked_hairline_b")
+resource_name = "tiles/alley_cracked_hairline_b"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_alley_cracked_cracked_a"]
-texture = ExtResource("54_alley_cracked_cracked_a")
+resource_name = "tiles/alley_cracked_cracked_a"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_alley_cracked_cracked_b"]
-texture = ExtResource("55_alley_cracked_cracked_b")
+resource_name = "tiles/alley_cracked_cracked_b"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_alley_cracked_broken_a"]
-texture = ExtResource("56_alley_cracked_broken_a")
+resource_name = "tiles/alley_cracked_broken_a"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="atlas_alley_cracked_broken_b"]
-texture = ExtResource("57_alley_cracked_broken_b")
+resource_name = "tiles/alley_cracked_broken_b"
 texture_region_size = Vector2i(32, 32)
-0:0/0 = 0
 
 
 [resource]
