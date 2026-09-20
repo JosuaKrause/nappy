@@ -24,7 +24,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `placement` | Which tile types it may spawn on |
 | `intensity` | Peak excitement per second at the centre |
 | `inner_radius` / `outer_radius` | Falloff geometry (px) |
-| `core_intensity` / `core_radius` | A louder inner part of the same field, both `0` for every row but `leaf_blower`. The same curve over the shorter band `inner_radius`..`core_radius`, and the row's price is **the larger** of the core and the field — see "The emission model" |
+| `core_intensity` / `core_radius` | A louder inner part of the same field, `0` for every row but `leaf_blower` and `homeless_yeller`. The same curve over the shorter band `inner_radius`..`core_radius`, and the row's price is **the larger** of the core and the field — see "The emission model" |
 | `falloff_power` | The exponent on the drop between the two radii: `intensity * (1 - t ** falloff_power)`. `2.0` is the curve every number in this document was measured at; under 1 drops fast and tails long, over 2 holds near full and then falls off a cliff. Nothing sets it |
 | `duration` | Seconds active (`0` = whole day) |
 | `telegraph_time` | Seconds of visible warning before full intensity |
@@ -910,7 +910,7 @@ All implemented.
 | `alley_mouse` | RECURRING | 1 | The cat's shape, `MAP`-placed on `ALLEY` tiles instead of director-sited — an alley she is routed through is already ground she is about to walk, unlike a `ROAD` tile that could be anywhere in the city. Intensity 21 on a 60/15px field (the cat's 4:1 ratio) and half its cap (4), on top of the alley's own `Tuning.EXCITEMENT_FROM_ALLEY` (+3.0/s) ambient dread. **Priced above the cat on each row's own ground**, which is not the same ground — *(2026-09-12: "alley mouse is a bit above charging cat"; "consider that the mouse is in the alley but the cat is usually not")*. A cat is met on a street that gives back 6.0/s; a mouse only ever in an alley, which gives back 3.5/s and is charging the dread as well, so the alley hands this row most of the gap before its intensity is touched. It walks to **+19.9 in an alley** against the cat's **+17.6 on a street**. The field is only 60px across, so the crossing is a second and a third and the spike has to be bought in intensity — there is no `impulse` field. No body, nothing lethal. Waits unclocked (`pursues_within` 150px, without `pursues`) until she is close, so a `MAP` placement streamed in from `EVENT_STREAM_RADIUS` does not telegraph and finish off screen before she arrives — see `EventDef.pursues_within` and `EventInstance._check_for_notice()`. Its two-point dash is read off `CityMap.alley_rects` and laid across whichever side of the alley is narrower — always the width, since she can only be walking the length — so it crosses her path rather than running down it (`EventInstance._alley_crossing_path()`). `EventScheduler._refuses_required_alleys`, stated over `def.placement == [ALLEY]` and shared with `alley_robbery`, keeps it off alleys she has no way around. |
 | `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Intensity 26 on a tight radius, barking on a 3.5s pulse: it owns the pavement it is on, so walking straight through it is never the cheap option. Deliberately given no `obstructs_radius` — a moving wall on a two-tile pavement pins the player against a building. |
 | `cafe_tables` | RECURRING | 1 | A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and a **wall** by passability rather than by price: 24px of tables billing anybody within 56px of them leaves no line along the 64px sidewalk it stands on, so it is what the far side of a day-one street carries and never what the route's own sidewalk does. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. The people at the tables are drawn as well as the tables, because the tables are what obstructs and the conversation is what it emits — a real source, derived from the body itself: `inner_radius` 38px (touching the tables), `outer_radius` 64px (the pavement band's own centre to the carriageway's), so it bills somebody at the tables and not somebody across the street. |
-| `homeless_yeller` | RECURRING | 1 | Intensity 14 over a 210px field, yelling on a 5s **pulse**, and **pacing** eight tiles of pavement (`EventDef.paces`). A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. Mobile, so he has no body. **Friction or a wall depending on where his beat runs**: the 170px he charges over covers a 64px sidewalk from either lane, so the way past him is never a lane and always a crossing — a beat that reaches a junction box is one she can leave at the zebra there while he is at the far end of it, and he stays on the route like any other timing problem; a beat truncated short of a junction by a closure or a calm zone leaves no way off his sidewalk, and that placement is a wall. His silhouette is his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. |
+| `homeless_yeller` | RECURRING | 1 | Intensity 14 over a 210px field, yelling on a 5s **pulse**, and **pacing** eight tiles of pavement (`EventDef.paces`). A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. Mobile, so he has no body. **A core carries arm's length**: 25/s out to `core_radius` 50px, both inside `inner_radius`'s own 45px plateau, so standing beside him nets at least the target walking beside any of the three named rows sets — see "What an event actually costs" — without moving the far field's own 14/s or the 210px it still reaches. **Friction or a wall depending on where his beat runs**: the 170px he charges over covers a 64px sidewalk from either lane, so the way past him is never a lane and always a crossing — a beat that reaches a junction box is one she can leave at the zebra there while he is at the far end of it, and he stays on the route like any other timing problem; a beat truncated short of a junction by a closure or a calm zone leaves no way off his sidewalk, and that placement is a wall. His silhouette is his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. |
 | `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Silent: standing in the way is its entire price, and `obstructs_radius` already charges it — see "Solid things are solid". At the kerb rather than on the carriageway, and solid at `VEHICLE_BODY`: 44px of van across a 64px footway leaves 26px to the frontage, narrower than the pram — a **wall** by physical fit, silent or not, so the street it is on is one she walks the far side of. |
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
 | `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it — which is what makes it a **wall** by passability although it is silent and cheap, since a band with no lane left is a band with no line along it. Since a street is sidewalk\|road\|sidewalk the road is always still there, so it costs time, never the day. Silent, like `delivery_van`: a hoarding is not a source. |
@@ -1052,11 +1052,16 @@ func contribution_at(world_position: Vector2, ...) -> float:
 Because it is a pure query there is no ordering to get wrong, events compose by simple
 addition, and an instance can be tested without a scene.
 
-**A row may carry a second, louder part close in, and one does.** `EventDef.core_intensity` and
+**A row may carry a second, louder part close in, and two do.** `EventDef.core_intensity` and
 `core_radius` are a core: the same curve over a shorter band, and the row emits **the larger** of
 the core and the field at every distance, so a core only ever adds and only ever inside itself.
 `leaf_blower` is the row it exists for — past `core_radius` it is a busker, number for number, and
-inside it, it is a wall — and every other row leaves both at zero and is one field as before.
+inside it, it is a wall. `homeless_yeller` is the other: past `core_radius` (50px) it is still the
+plain 14/s field it always was, out to the same 210px; inside it, it is 25/s, which is what raising
+`intensity` itself could not have bought without scaling that whole 210px reach along with it and
+crossing `Tuning.WALL_WORTH_OF_COST` — see the row's own entry above and `Tuning.WALL_WORTH_OF_COST`'s
+docstring, which names him as one of the rows that has to stay friction. Every other row leaves both
+at zero and is one field as before.
 
 **`EventDef.emission_at_distance()` is the one place the two parts are put together**, and
 everything that prices this row goes through it: the cost table below, the placement rules that
@@ -1261,11 +1266,11 @@ alone is answering a narrower question than it thinks.
 | `ice_cream_van` | +18.4 | +65.8 |
 | `roadblock` | +18.5 | +51.7 |
 | `masked_pursuer` * | +19.3 | +38.4 |
-| `homeless_yeller` | +19.8 | +59.6 |
 | `reversing_lorry` * | +23.1 | +53.3 |
 | `alley_robbery` * | +23.8 | — |
 | `protest` | +27.6 | +77.6 |
 | `dog_walker` | +30.8 | +41.2 |
+| `homeless_yeller` | +31.1 | +65.8 |
 | `busker` | +34.7 | +63.1 |
 | `leaf_blower` | +37.8 | +64.8 |
 | `burning_building` | +41.7 | +83.2 |

@@ -5,6 +5,7 @@ extends RefCounted
 const STEP := 1.0 / 60.0
 
 func run(t) -> void:
+	_test_the_three_named_rows_meet_the_walk_beside_target(t)
 	_test_catalogue_is_fair(t)
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
 	_test_a_kerbed_body_still_pins_the_frontage(t)
@@ -1037,6 +1038,32 @@ func _test_a_paced_event_walks_a_beat(t) -> void:
 	_advance(instance, out * 8.0)
 	t.check(not instance.is_finished, "and it is still there a day later")
 	instance.free()
+
+## M174: walking beside `homeless_yeller`, `loose_dog` or `dog_walker` inside its own
+## `inner_radius`, averaged over the row's own pulse, has to net at least 8/s awake and 2/s
+## asleep against `Tuning.EXCITEMENT_DECAY_WALKING` on an ordinary pavement (multiplier 1.0 —
+## `City._ground_decay_multiplier()`'s fallback, where all three are placed). *(PLAYTEST-112:
+## "he gets deep red but my bar doesn't move up much"; PLAYTEST-113: "let's increase the
+## influence of those obstacles. notably, yeller, unleashed dog, walker with dog".)*
+##
+## **A relationship, not a pinned value** — a further rebalance that keeps every row over the
+## target still passes. The mean pulse multiplier (0.625) is arithmetic, not a design choice:
+## `current_intensity()`'s envelope is `0.25 + 0.75·(0.5 − 0.5·cos(phase))`, whose mean over one
+## full period is exactly 0.625 regardless of `pulse_period`, since the cosine term integrates to
+## zero. `tests/probes/m174_walk_beside.gd` runs the identical arithmetic over the rest of the
+## catalogue and prints it, for a row that is added later and turns out to be as quiet as the
+## yeller was.
+func _test_the_three_named_rows_meet_the_walk_beside_target(t) -> void:
+	for id in ["homeless_yeller", "loose_dog", "dog_walker"]:
+		var def := EventCatalogue.by_id(id)
+		var pulse_mean := 0.625 if def.pulse_period > 0.0 else 1.0
+		var beside: float = def.emission_at(Vector2(def.inner_radius, 0.0)) * pulse_mean
+		var awake := beside - Tuning.EXCITEMENT_DECAY_WALKING
+		var asleep := beside * Tuning.SLEEPING_SENSITIVITY - Tuning.EXCITEMENT_DECAY_WALKING
+		t.check(awake >= 8.0,
+				"%s: walking beside it awake nets %.2f/s, at least the 8/s target" % [id, awake])
+		t.check(asleep >= 2.0,
+				"%s: walking beside it asleep nets %.2f/s, at least the 2/s target" % [id, asleep])
 
 ## **A pursuer can be a place before it is a moment.** *(M36, playtest 09: "a robber should increase
 ## excitement on sight and getting close to them should be day ending", and "if you get close they

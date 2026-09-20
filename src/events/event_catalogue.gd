@@ -382,6 +382,22 @@ static func _alley_mouse() -> EventDef:
 ## rows on day 1 that a player is most likely to walk *into* rather than around, and a quiet one
 ## reads as a man who does nothing.
 ##
+## **A core carries arm's length, so the far field does not have to.** *(PLAYTEST-112: "I can
+## easily walk next to him for an extended amount of time without any real penalty ... he gets
+## deep red but my bar doesn't move up much." PLAYTEST-113: "let's increase the influence of
+## those obstacles. notably, yeller, unleashed dog, walker with dog.")* Walking beside him inside
+## `inner_radius`, averaged over his own pulse, the 14/s field nets under 3/s awake against
+## `Tuning.EXCITEMENT_DECAY_WALKING` and nothing asleep — measured in
+## `tests/probes/m174_walk_beside.gd`. Raising `intensity` itself would have raised it by scaling
+## the whole 210px reach together, which crosses `Tuning.WALL_WORTH_OF_COST` and turns him into a
+## wall off the very corridor he is meant to be a decision on — the docstring on that constant
+## names him as one of the rows that has to stay friction. `core_intensity` (25, over `core_radius`
+## 50, both inside `inner_radius`'s own 45px plateau) raises only the ground already flat at full
+## intensity, so the far field she is not standing in keeps its 14/s and the crossing cost moves a
+## few points rather than doubling. Beside him: 15.6/s awake, over `EXCITEMENT_DECAY_WALKING`
+## (6.0) for a net 9.6/s; asleep, `Tuning.SLEEPING_SENSITIVITY` (0.55) times that same rate nets
+## 2.6/s — both over the target the milestone set (8 awake, 2 asleep).
+##
 ## **Whether he is a wall is a fact about where his beat runs, not about his field.** He charges
 ## over 170px against a 64px sidewalk, so the way past him is never a lane — it is somewhere his
 ## beat passes that she can **leave** by. A junction box is one (she takes the zebra while he is at
@@ -401,6 +417,10 @@ static func _homeless_yeller() -> EventDef:
 	def.intensity = 14.0
 	def.inner_radius = 45.0
 	def.outer_radius = 210.0
+	# Arm's length, made to cost what it now has to without moving the far field: see the class
+	# doc above for the measurement and why `intensity` itself is not the lever.
+	def.core_intensity = 25.0
+	def.core_radius = 50.0
 	def.telegraph_time = 2.6
 	def.pulse_period = 5.0
 	def.mobile = true
