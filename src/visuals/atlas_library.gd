@@ -20,8 +20,8 @@ extends RefCounted
 ## make the cheap questions cost a file read.
 ##
 ## The bake shares this file's `region_name_for()`, `illustrated_path_for()` and `plan()`, so
-## the name a picture is baked under, the PNG that stands in for it and the shelf it lands on
-## are decided in one place rather than agreed between two.
+## the name a picture is baked under, the PNG that stands in for it and where it lands on its
+## page are decided in one place rather than agreed between two.
 
 ## Where the bake writes. Gitignored: a page is a build output, rebuilt from the sources on
 ## demand, and never committed.
