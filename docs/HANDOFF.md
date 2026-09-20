@@ -308,10 +308,6 @@ checks and worktrees can move independently of this file.
   slow intervals, profiling the phone, and completing the atlas measurements are the open items,
   and no toggle causality is claimed.
 
-- **Inspect the live PR before taking gameplay work:** PR #239, M129, no body closes the
-  walked sidewalk. Its owner maintains the implementation and review state. The queue on main
-  alone does not show work pending in that branch.
-
 PR merges and auto-merge require explicit permission in the current session. Use fresh agents
 with self-contained briefs for new implementation or investigation.
 

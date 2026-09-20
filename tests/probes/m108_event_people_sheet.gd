@@ -28,6 +28,8 @@ func run(t) -> void:
 		_row("yeller", _heading_row("homeless_yeller", EventInstance.YELLER_BY_VIEW)),
 		_row("busker", _heading_row("busker", EventInstance.BUSKER_BY_VIEW)),
 		_row("poster crew", _heading_row("poster_crew", EventInstance.POSTER_CREW_BY_VIEW)),
+		_row("poster crew, square",
+				_heading_row("poster_crew_square", EventInstance.POSTER_CREW_SQUARE_BY_VIEW)),
 		_row("cafe sitter", _heading_row("cafe_tables", EventInstance.CAFE_SITTER_BY_VIEW)),
 		_row("van victim", _heading_row("abduction", EventInstance.VAN_VICTIM_BY_VIEW)),
 		_row("protester (plain)", _heading_row("protest", EventInstance.PROTESTER_BY_VIEW)),

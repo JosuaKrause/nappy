@@ -23,6 +23,9 @@ const PERSON := preload("res://assets/events/person.svg")
 const YELLER := preload("res://assets/events/yeller.svg")
 const BUSKER := preload("res://assets/events/busker.svg")
 const POSTER_CREW := preload("res://assets/events/poster_crew.svg")
+## The square crew's own badge silhouette: the same man at the advertising column he pastes on,
+## which is what tells the two crews apart at badge size.
+const POSTER_CREW_SQUARE := preload("res://assets/events/poster_crew_square.svg")
 const ROBBER_WAITING := preload("res://assets/events/robber_waiting.svg")
 const ROBBER_LUNGING := preload("res://assets/events/robber_lunging.svg")
 const PROTESTER := preload("res://assets/events/protester.svg")
@@ -203,6 +206,17 @@ const POSTER_CREW_BY_VIEW := {
 	"side": preload("res://assets/events/poster_crew_side.svg"),
 	"front_diagonal": preload("res://assets/events/poster_crew_front_diagonal.svg"),
 	"back_diagonal": preload("res://assets/events/poster_crew_back_diagonal.svg"),
+}
+## The square crew's five views. A 44x44 canvas where the sidewalk crew's is 30x44: the worker is
+## that family's own figure, unmoved on the anchor, and the extra width is the advertising column
+## he stands at. The column is a cylinder, so it is the same picture in all five and only the
+## worker turns.
+const POSTER_CREW_SQUARE_BY_VIEW := {
+	"front": preload("res://assets/events/poster_crew_square_front.svg"),
+	"back": preload("res://assets/events/poster_crew_square_back.svg"),
+	"side": preload("res://assets/events/poster_crew_square_side.svg"),
+	"front_diagonal": preload("res://assets/events/poster_crew_square_front_diagonal.svg"),
+	"back_diagonal": preload("res://assets/events/poster_crew_square_back_diagonal.svg"),
 }
 const CAFE_SITTER_BY_VIEW := {
 	"front": preload("res://assets/events/cafe_sitter_front.svg"),
@@ -571,6 +585,7 @@ static func icon_for(look: EventDef.Look) -> Texture2D:
 		EventDef.Look.CHATTING_MOTHER: return CHATTING_MOTHER_WALKING
 		EventDef.Look.POLICE_CAR: return POLICE_CAR
 		EventDef.Look.POSTER_CREW: return POSTER_CREW
+		EventDef.Look.POSTER_CREW_SQUARE: return POSTER_CREW_SQUARE
 		EventDef.Look.ROADBLOCK: return CHECKPOINT_BLOCK
 		EventDef.Look.UNMARKED_VAN: return UNMARKED_VAN
 		EventDef.Look.ROBBER: return ROBBER_LUNGING
@@ -2711,6 +2726,8 @@ static func family_sources(look: EventDef.Look) -> Dictionary:
 			_collect_views(sources, [POLICE_CAR_BY_VIEW])
 		EventDef.Look.POSTER_CREW:
 			_collect_views(sources, [POSTER_CREW_BY_VIEW])
+		EventDef.Look.POSTER_CREW_SQUARE:
+			_collect_views(sources, [POSTER_CREW_SQUARE_BY_VIEW])
 		EventDef.Look.ROADBLOCK:
 			_collect(sources, [ROADBLOCK_SEGMENT, ROADBLOCK_END, GUARD_STANDING, GUARD_LUNGING])
 		EventDef.Look.UNMARKED_VAN:
@@ -2844,6 +2861,12 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			_draw_eight_view(POLICE_CAR_BY_VIEW, _heading, canvas)
 		EventDef.Look.POSTER_CREW:
 			_draw_eight_view(POSTER_CREW_BY_VIEW, _heading, canvas)
+		EventDef.Look.POSTER_CREW_SQUARE:
+			# Sited with no pavement side to turn it, so `_build_placement` leaves its facing at
+			# due east and the row draws its `side` view unmirrored, every time — the same dead
+			# branch `reversing_lorry` has above. The other four views exist so the family is
+			# whole if anything ever does turn one.
+			_draw_eight_view(POSTER_CREW_SQUARE_BY_VIEW, _heading, canvas)
 		EventDef.Look.ROADBLOCK:
 			_draw_roadblock(canvas)
 		EventDef.Look.UNMARKED_VAN:

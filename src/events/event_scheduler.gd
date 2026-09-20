@@ -413,6 +413,20 @@ static func _role_for(def: EventDef, day: int = 0) -> GameEnums.BlockerRole:
 		return GameEnums.BlockerRole.WALL
 	return GameEnums.BlockerRole.FRICTION
 
+## **Whether a `WALL` earns the pull toward junction rims, as opposed to keeping only the one
+## consequence every wall gets** (zero copies on a route-carrying cell, `_copies_of` below).
+## *(2026-09-19, the player, asked whether `delivery_van` should also be weighted toward junctions
+## once it became a wall: "A. No (my recommendation). -- do that")* `Tuning.EVENT_WALL_RIM_WEIGHT`
+## is for the rows meant to be seen from a distance before she commits to a street — lethal, or
+## costly enough to cross `WALL_WORTH_OF_COST` — and `delivery_van` is neither: silent, and a wall
+## only because its own body leaves no lane (`_closes_the_band_by_its_own_placement`), which the
+## cost clause (`_line_reach_of >= _THE_FAR_LANE`) never sees. A row that is a wall by fit alone is
+## spread along streets the way friction is instead: `_copies_of` reads this before deciding which
+## weight a `WALL` gets.
+static func _is_a_wall_by_cost(def: EventDef) -> bool:
+	return def.hard_fail or def.walk_through_cost() >= Tuning.WALL_WORTH_OF_COST \
+			or _line_reach_of(def) >= _THE_FAR_LANE
+
 ## A private RNG for one phase of the day, derived from the day's seed and a salt.
 ##
 ## **A retried day has to be the same day, and one shared stream cannot deliver that.** Run the
@@ -945,9 +959,13 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 	# corner is off the question for two rows sharing every other answer only when one of them
 	# actually has an orientation to be wrong about on it. Without this a plain silhouette processed
 	# first quietly hands its unfiltered `base` to a spread row asking the identical other four
-	# questions, and the corner refusal never runs at all.
-	var key := "%s|%d|%d|%s|%s|%s" % [def.placement, def.pavement_side, role, site, def.hard_fail,
-			EventInstance.has_a_spread(def)]
+	# questions, and the corner refusal never runs at all. `_is_a_wall_by_cost` joined for the same
+	# reason: two rows sharing every other answer can still disagree about the rim pull, and a
+	# cached list keyed without it would hand a fit-only wall's ground to a cost wall sharing its
+	# placement, pavement side and spread shape, or the reverse.
+	var by_cost := _is_a_wall_by_cost(def)
+	var key := "%s|%d|%d|%s|%s|%s|%s" % [def.placement, def.pavement_side, role, site,
+			def.hard_fail, EventInstance.has_a_spread(def), by_cost]
 	if ground.has(key):
 		return ground[key]
 	var aimed: Array[Vector2i] = []
@@ -971,7 +989,7 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 		# walk down."
 		if refuses_required_alleys and corridor.depth(tile) == 0:
 			continue
-		for _copy in _copies_of(tile, corridor, role, def.hard_fail):
+		for _copy in _copies_of(tile, corridor, role, def.hard_fail, by_cost):
 			aimed.append(tile)
 	ground[key] = aimed
 	return aimed
@@ -1146,13 +1164,23 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary) ->
 ## level with the corridor. The gradient's own sentence is the fix — *stray one turning and it is
 ## expensive, stray further and it ends the day* — so what stands in a gap is very expensive, and
 ## the deadly end stays where it was put.
+##
+## **A wall by fit alone skips the gradient entirely and reads like friction beyond the one
+## refusal every wall keeps** — see `_is_a_wall_by_cost`'s own doc for the player's own answer on
+## this. `by_cost` is that question, asked once by the caller rather than re-derived per tile: a
+## silent, narrow body earns no distance-before-she-commits pull, so it is weighted onto an
+## on-corridor tile exactly as `FRICTION` is, and left at one copy everywhere else — never pulled
+## to the rim, never pushed past it. The zero-copies refusal above still applies to it first, since
+## that is the one consequence of being a wall this decision does not touch.
 static func _copies_of(tile: Vector2i, corridor: Corridor, role: GameEnums.BlockerRole,
-		lethal := false) -> int:
+		lethal := false, by_cost := true) -> int:
 	var away := corridor.depth(tile)
 	match role:
 		GameEnums.BlockerRole.WALL:
 			if corridor.carries_a_route(tile):
 				return 0
+			if not by_cost:
+				return Tuning.EVENT_CORRIDOR_WEIGHT if away == 0 else 1
 			if lethal:
 				return Tuning.WALL_DEEP_WEIGHT if away >= 2 else 1
 			if away > 1:
@@ -1429,7 +1457,55 @@ static func _leaves_no_line_along_a_sidewalk(def: EventDef) -> bool:
 		return false
 	if not _a_line_has_to_avoid(def):
 		return false
-	return _line_reach_of(def) >= _THE_FAR_LANE
+	if _line_reach_of(def) >= _THE_FAR_LANE:
+		return true
+	return _closes_the_band_by_its_own_placement(def)
+
+## The line a stroller needs, stated as a width rather than a reach: an edge-to-edge gap has to be
+## at least this wide for her whole body to fit inside it, once a row's own edge and the sidewalk's
+## true boundary — the kerb, or the frontage wall — are both hard edges neither of them may cross.
+## The same number as `_THE_FAR_LANE`'s tile grain (2 * `PLAYER_BODY_RADIUS`, 28px), read as a
+## width because this clause measures one directly rather than comparing a reach to a fixed tile.
+const _HER_LANE_CLEARANCE := 2.0 * Tuning.PLAYER_BODY_RADIUS
+
+## **Whether the row's own body, stood exactly where `pavement_side` puts it, leaves no edge-to-edge
+## gap of `_HER_LANE_CLEARANCE` anywhere across the sidewalk band** — a second, physical reading of
+## "leaves no way past it" beside `_line_reach_of`'s cost-based one above. *(PLAYTEST-94, 2026-09-19:
+## "I still get hard walls on the side of the sidewalk that is on the path -- how can this be so hard
+## to do correctly?")* The cost clause asks what a row bills a passer-by for being near it; this asks
+## whether a passer-by has anywhere left to stand at all, and the two can disagree: `delivery_van`
+## is silent and its 22px `obstructs_radius` stays under `_THE_FAR_LANE` (32px), so the cost clause
+## reads it as friction — but pinned `AT_THE_KERB`, 16px in from the kerb edge, it leaves only
+## `(SIDEWALK_WIDTH * TILE_SIZE - TILE_SIZE * 0.5) - 22 = 26px` to the frontage, narrower than the
+## 28px she needs, which `tests/test_events.gd`'s `_test_a_kerbed_body_still_pins_the_frontage`
+## already measures by hand for this one row. Read off `obstructs_radius` and `pavement_side` rather
+## than off an id, so the next row this narrow is caught the same way without anybody adding it to a
+## list — and a row that already clears `_THE_FAR_LANE` never reaches this, so nothing already a wall
+## is asked twice.
+static func _closes_the_band_by_its_own_placement(def: EventDef) -> bool:
+	var reach := def.obstructs_radius
+	if reach <= 0.0:
+		return false
+	var band := float(Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE
+	var pos := _band_offset_of(def.pavement_side, band)
+	var near_gap := pos - reach
+	var far_gap := band - (pos + reach)
+	return maxf(near_gap, far_gap) < _HER_LANE_CLEARANCE
+
+## Where `pavement_side` stands a body across a sidewalk band, as an offset from the kerb edge —
+## the same geometry `EventInstance._centred_on_the_pavement_band()` and its kerb/frontage
+## exemptions produce, read here off the def alone because a role is decided before any tile exists
+## to ask the map about. `pavement_side` is typed `int` rather than `EventDef.Pavement`: a
+## cross-script enum parameter does not always match the type Godot infers for a value read off
+## another script's property, so the wider type is the one that always parses.
+static func _band_offset_of(pavement_side: int, band: float) -> float:
+	match pavement_side:
+		EventDef.Pavement.AT_THE_KERB:
+			return Tuning.TILE_SIZE * 0.5
+		EventDef.Pavement.AGAINST_THE_BUILDING:
+			return band - Tuning.TILE_SIZE * 0.5
+		_:
+			return band * 0.5
 
 ## The clause as the **role** asks it, which is of a def with no tile yet — so a pacing row is not
 ## answered here at all.
@@ -1810,11 +1886,20 @@ static func _a_route_walks(corridor: Corridor, band: Rect2i) -> bool:
 ## would refuse a man on the route's own sidewalk for the one reason the player has ruled out, and
 ## counting it against *another* row's placement would refuse a café a band a walk can already pass
 ## by waiting.
+##
+## **Two readings, either enough to refuse the candidate.** `_closes_the_run` is the cost one, over
+## `_cumulative_lane_reach_of` rather than `_line_reach_of` alone —
+## `_closes_the_band_by_its_own_placement`'s own role clause is asked of a row's own numbers before
+## a tile is chosen, but `_copies_of` still offers a `WALL` a cell of the *same* lane that does not
+## itself `carries_a_route` (a route need not use every cell of the block it is walked along), so a
+## body legally rolled onto that cell can still physically close the lane the width rule is
+## checking. `closes_a_walked_sidewalk_band` is the physical reading asked here for exactly that
+## gap, over the same `standing` list.
 static func _leaves_the_routes_sidewalk_open(candidate: Planned, map: CityMap, corridor: Corridor,
 		ground: Dictionary, already: Array[Planned]) -> bool:
 	if not corridor or candidate.def.paces or not _counts_against_the_line(candidate):
 		return true
-	var reach := _line_reach_of(candidate.def)
+	var reach := _cumulative_lane_reach_of(candidate.def)
 	for entry: Array in _route_sidewalks(map, ground, corridor):
 		var world: Rect2 = entry[2]
 		if not _reach_touches(candidate, world, reach):
@@ -1823,12 +1908,36 @@ static func _leaves_the_routes_sidewalk_open(candidate: Planned, map: CityMap, c
 		for plan in already:
 			if plan == candidate or plan.def.paces or not _counts_against_the_line(plan):
 				continue
-			if _reach_touches(plan, world, _line_reach_of(plan.def)):
+			if _reach_touches(plan, world, _cumulative_lane_reach_of(plan.def)):
 				standing.append(plan)
 		var segment: StreetNetwork.Segment = entry[0]
 		if _closes_the_run(map, entry[1], segment.horizontal, standing):
 			return false
+		if closes_a_walked_sidewalk_band(map, entry[1], segment.horizontal,
+				_physical_bodies_of(standing), map.closed_tiles):
+			return false
 	return true
+
+## The reach `_leaves_the_routes_sidewalk_open` filters candidates by: the greater of
+## `_line_reach_of`'s cost-based reach and the physical standoff a solid body needs
+## (`obstructs_radius + PLAYER_BODY_RADIUS`). A silent, cheap body — `delivery_van`'s own numbers —
+## can close a lane by presence alone while charging nothing to walk past, so the filter that
+## decides which rows are even worth asking `closes_a_walked_sidewalk_band` about has to see the
+## wider of the two rather than only the one `_line_reach_of` already answers.
+static func _cumulative_lane_reach_of(def: EventDef) -> float:
+	if def.obstructs_radius <= 0.0:
+		return _line_reach_of(def)
+	return maxf(_line_reach_of(def), def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS)
+
+## `rows` reduced to `[position.x, position.y, obstructs_radius]` triples, the shape
+## `closes_a_walked_sidewalk_band` asks for — a row with no body contributes nothing to a physical
+## reading, however loud it is.
+static func _physical_bodies_of(rows: Array[Planned]) -> Array:
+	var found: Array = []
+	for plan in rows:
+		if plan.def.obstructs_radius > 0.0:
+			found.append(Vector3(plan.position.x, plan.position.y, plan.def.obstructs_radius))
+	return found
 
 ## Whether these rows between them leave no walk from one end of a street to the other.
 ##
@@ -1869,6 +1978,76 @@ static func _closes_the_run(map: CityMap, rect: Rect2i, horizontal: bool,
 	for tile: Vector2i in free:
 		var at_the_start := tile.x == rect.position.x if horizontal \
 				else tile.y == rect.position.y
+		if at_the_start:
+			seen[tile] = true
+			queue.append(tile)
+	var head := 0
+	while head < queue.size():
+		var at: Vector2i = queue[head]
+		head += 1
+		if (at.x if horizontal else at.y) == last:
+			return false
+		for step in _NEIGHBOUR_STEPS:
+			var next: Vector2i = at + step
+			if free.has(next) and not seen.has(next):
+				seen[next] = true
+				queue.append(next)
+	return true
+
+## **Whether a set of physical bodies, ignoring cost, leave no lane of `_HER_LANE_CLEARANCE`
+## anywhere along a walked-sidewalk band** — the shared question
+## `tests/probes/m129_walked_sidewalk_walls.gd` and `tests/test_events.gd`'s
+## `_test_no_body_closes_a_walked_sidewalk` both ask, moved here rather than kept as two copies, so
+## the probe's printed number and the suite's asserted one can never quietly disagree about what
+## *closed* means. `bodies` is `[position.x, position.y, radius]` per body rather than a `Planned`,
+## because a suite sampling seals and region bodies alongside catalogue rows has no single class to
+## hand this that all three already share.
+##
+## Tile-grained like `_closes_the_run`, substituting a body's own physical
+## `radius + PLAYER_BODY_RADIUS` for that rule's cost-based `_line_reach_of()` — see
+## `_closes_the_band_by_its_own_placement`'s doc for why a reach and a gap are the same question
+## read two ways.
+##
+## **The walk only has to connect the band's own genuinely open ends, not its raw tile-rect
+## corners.** A street a big building has built over at one end (`CityMap.built_over`, a fixed,
+## whole-run fact rather than anything a day places) has a shorter *real* sidewalk than its
+## nominal rect — asking the walk to reach a tile that has been a building since generation would
+## read every day of that street as closed by the ground alone, which is not a body and is not a
+## defect in one. So the required span is between the outermost tiles that are still actually
+## `SIDEWALK`, and a band with none at all — every tile built over or absorbed into a calm zone's
+## park — has nothing to close and answers `false`.
+static func closes_a_walked_sidewalk_band(map: CityMap, band: Rect2i, horizontal: bool,
+		bodies: Array, closed_tiles: Dictionary) -> bool:
+	var free := {}
+	var first := -1
+	var last := -1
+	for y in range(band.position.y, band.end.y):
+		for x in range(band.position.x, band.end.x):
+			var tile := Vector2i(x, y)
+			if map.tile_at(tile) != GameEnums.TileType.SIDEWALK:
+				continue
+			var along := x if horizontal else y
+			first = along if first < 0 else mini(first, along)
+			last = maxi(last, along)
+			if closed_tiles.has(tile):
+				continue
+			var at := map.tile_to_world(tile)
+			var taken := false
+			for body: Vector3 in bodies:
+				var reach: float = body.z
+				if reach > 0.0 and at.distance_to(Vector2(body.x, body.y)) \
+						<= reach + Tuning.PLAYER_BODY_RADIUS:
+					taken = true
+					break
+			if not taken:
+				free[tile] = true
+	if first < 0:
+		return false
+
+	var queue: Array[Vector2i] = []
+	var seen := {}
+	for tile: Vector2i in free:
+		var at_the_start := (tile.x if horizontal else tile.y) == first
 		if at_the_start:
 			seen[tile] = true
 			queue.append(tile)
