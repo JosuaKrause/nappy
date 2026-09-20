@@ -23,6 +23,7 @@ func run(t) -> void:
 	_test_the_release_hud_drops_the_status_line_but_keeps_announcements(t)
 	_test_the_first_mark_is_never_named_but_later_ones_are(t)
 	_test_every_perform_steps_header_names_the_instruction_not_the_title(t)
+	_test_a_completed_step_is_acknowledged_once_for_a_mark_and_a_perform(t)
 	_test_a_meter_bar_may_not_read_100_before_the_day_actually_ends(t)
 
 func _hud(t) -> CanvasLayer:
@@ -401,6 +402,26 @@ func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> 
 	hud.free()
 	GameState.completed_resistance_steps = saved_completed
 	GameState.failed_resistance_steps = saved_failed
+
+## Playtest 116: *"I did the first mark then the yeller (there should be an indication that I did
+## it correctly)"*. A pickup and a perform step each say so, once, in the same `Teach` line — the
+## acknowledgement is worded differently only by which kind of step just completed, never by which
+## one of the five it is, so this checks the two kinds rather than all eleven steps.
+func _test_a_completed_step_is_acknowledged_once_for_a_mark_and_a_perform(t) -> void:
+	var hud := _hud(t)
+
+	var mark := ResistanceSteps.by_index(1)
+	t.check(mark != null and mark.is_pickup, "step 1 really is a pickup")
+	hud._on_resistance_step_completed(1)
+	t.check(hud._teach.text == "Taken.", "a completed mark says so in the resistance's own voice")
+
+	hud._teach.text = ""
+	var perform := ResistanceSteps.by_index(2)
+	t.check(perform != null and not perform.is_pickup, "step 2 really is a perform step")
+	hud._on_resistance_step_completed(2)
+	t.check(hud._teach.text == "Done.", "a completed perform step says so too, worded for doing")
+
+	hud.free()
 
 ## *(Playtest 25 finding 1, verified against the engine rather than inferred: `"%3.0f" % value`
 ## rounds to nearest, so 99.5 and everything above it already printed `100` while the day was
