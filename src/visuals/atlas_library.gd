@@ -29,8 +29,8 @@ extends RefCounted
 ## make the cheap questions cost a file read.
 ##
 ## The bake shares this file's `region_name_for()`, `illustrated_path_for()` and `plan()`, so
-## the name a picture is baked under, the PNG that stands in for it and the shelf it lands on
-## are decided in one place rather than agreed between two.
+## the name a picture is baked under, the PNG that stands in for it and where it lands on its
+## page are decided in one place rather than agreed between two.
 
 ## Where the bake writes. Gitignored: a page is a build output, rebuilt from the sources on
 ## demand, and never committed.
@@ -124,39 +124,252 @@ static func illustrated_path_for(source_path: String) -> String:
 
 # ----------------------------------------------------------------- the layout ---
 
-## The shelf layout, as a pure function of the sizes it is asked to place: tallest first, so a
-## shelf's height is set by the first image on it and never grows once shorter images are added
-## beside it. `regions[i]` is where `sizes[i]` goes, in the caller's own order.
+## A greedy free-rectangle packer (MaxRects, best-area fit — Jylänki's algorithm), so the room
+## beside and under a tall member is offered to the next member instead of sitting empty until a
+## shelf packer opens a new row. **Rejected: a shelf packer** — one row filled to `MAX_ATLAS_SIDE`
+## before the next opens, so a group under that width is a single strip and a row is as tall as
+## its own tallest member, which is the dead space PLAYTEST-109 measured beside `street_kit` and
+## `interior`'s one 256px-tall picture. **Rejected: rows sorted by height**, offered to the
+## player and refused, because a row beside a tall picture still leaves room "where you can
+## easily put smaller things" (PLAYTEST-109). **Rejected: a guillotine packer** — a guillotine
+## split commits to one cut line across the whole free rectangle, so the leftover strip beside a
+## tall member is as tall as the member whether or not anything that size ever needs it;
+## MaxRects keeps every leftover rectangle a placement leaves (not just the two a single cut line
+## would draw) and lets a later, smaller member claim exactly the corner it fits, at the cost of
+## checking more candidates per placement — cheap next to the bake's own rasterizing.
+##
+## `regions[i]` is where `sizes[i]` goes, in the caller's own order. **Deterministic**: members
+## are placed largest padded area first, ties broken by the caller's own array order — which the
+## bake already sorts alphabetically — so two bakes of the same tree place every member the same
+## way, and the free-rectangle list a placement leaves is itself a pure function of the placements
+## before it.
+##
+## **The square root is where the search starts, not the answer.** A single width can leave an
+## obvious hole a wider page would not: `street_kit` packed at its own square-root width (366)
+## stacks two same-area road pictures because neither fits beside the other at that width, and
+## widening to where they sit side by side needs a *fifth less* page, not more. `plan()` packs
+## the same members at every width `_candidate_widths()` offers and keeps the smallest result
+## whose aspect ratio clears `aspect_ceiling()`, ties broken by the narrower width (candidates are
+## visited narrowest first and only a strict improvement replaces the kept result, so the same
+## widths in the same order always keep the same one). Every candidate is packed by the same
+## deterministic placement, so this is still one pure function of `sizes`, just evaluated more
+## than once.
 ##
 ## Shared with the bake rather than owned by it, because the test that checks a page for
 ## overlaps and the tool that writes the page have to mean the same thing by "fits".
 static func plan(sizes: Array[Vector2i]) -> Dictionary:
+	if sizes.is_empty():
+		return {"regions": [], "size": Vector2i.ZERO, "fits": true}
+	# The footprint a member reserves while packing: its own size plus the `SEPARATION` gap owed
+	# to whatever lands beside or under it. Two free rectangles' footprints never overlap, so any
+	# two placed members end up at least `SEPARATION` apart in whichever axis separates them —
+	# the same guarantee the old shelf packer gave by construction, proved for this one instead of
+	# assumed.
+	var padded: Array[Vector2i] = []
+	var total_area := 0
+	var widest := 0
+	for size in sizes:
+		var footprint: Vector2i = size + Vector2i(SEPARATION, SEPARATION)
+		padded.append(footprint)
+		total_area += footprint.x * footprint.y
+		widest = maxi(widest, footprint.x)
+	# A member whose own footprint alone would exceed the page limit cannot fit beside anything,
+	# on any page this packer could ever produce — named on its own rather than folded into the
+	# group's "packs to NxN" failure, since that message would stay true of a group of any size.
+	for index in sizes.size():
+		if padded[index].x + SEPARATION > MAX_ATLAS_SIDE or padded[index].y + SEPARATION > MAX_ATLAS_SIDE:
+			return {
+				"regions": [],
+				"size": padded[index] + Vector2i(SEPARATION, SEPARATION),
+				"fits": false,
+				"overflow": index,
+			}
 	var order: Array[int] = []
 	for index in sizes.size():
 		order.append(index)
-	order.sort_custom(func(a: int, b: int) -> bool: return sizes[a].y > sizes[b].y)
+	order.sort_custom(func(a: int, b: int) -> bool:
+		var area_a := padded[a].x * padded[a].y
+		var area_b := padded[b].x * padded[b].y
+		if area_a != area_b:
+			return area_a > area_b
+		return a < b)
+	var ceiling := aspect_ceiling(sizes)
+	var best_regions: Array[Rect2i] = []
+	var best_size := Vector2i.ZERO
+	var best_meets_ceiling := false
+	var best_area := -1
+	for width in _candidate_widths(padded, widest, total_area):
+		var attempt := _pack_at_width(order, padded, sizes, width)
+		if not attempt["fits"]:
+			continue
+		var size: Vector2i = attempt["size"]
+		var aspect := float(maxi(size.x, size.y)) / float(mini(size.x, size.y))
+		var meets := aspect <= ceiling
+		var area := size.x * size.y
+		# Ascending width order plus "only a strict improvement replaces the kept result" is the
+		# whole of the tie-break: the first width tried at the best (meets-ceiling, area) pair is
+		# the one that survives every later candidate that only matches it.
+		var better := best_area == -1 \
+				or (meets and not best_meets_ceiling) \
+				or (meets == best_meets_ceiling and area < best_area)
+		if better:
+			best_regions = attempt["regions"]
+			best_size = size
+			best_meets_ceiling = meets
+			best_area = area
+	if best_area == -1:
+		# Every candidate width still overflows `MAX_ATLAS_SIDE` in height — a group too big for
+		# one page regardless of shape. Report the narrowest attempt, which is what a human
+		# widening the page limit or splitting the group would want to see first.
+		var narrowest := _pack_at_width(order, padded, sizes, widest)
+		return {"regions": narrowest["regions"], "size": narrowest["size"], "fits": false}
+	return {
+		"regions": best_regions,
+		"size": best_size,
+		"fits": best_size.x <= MAX_ATLAS_SIDE and best_size.y <= MAX_ATLAS_SIDE,
+	}
+
+## The widths `plan()` tries, narrowest first, deduplicated: the widest padded member (below this
+## nothing could ever be placed) up to twice the square-root target (capped at the page limit),
+## sweeping `_WIDTH_STEPS` evenly spaced points across that range plus the square-root width
+## itself, **and the running sum of the `_WIDEST_MEMBERS_TRIED` widest-by-width members' own
+## widths** — the specific widths an even sweep can straddle without ever landing on: two
+## same-area members whose combined width is a few pixels past the nearest even step still stack
+## instead of sitting side by side unless one of the tried widths is at least their sum.
+const _WIDTH_STEPS := 16
+const _WIDEST_MEMBERS_TRIED := 8
+
+static func _candidate_widths(padded: Array[Vector2i], widest: int, total_area: int) -> Array[int]:
+	var low := widest
+	var high := clampi(ceili(2.0 * sqrt(float(total_area))), low, MAX_ATLAS_SIDE - SEPARATION)
+	var seen: Dictionary = {}
+	var widths: Array[int] = []
+	var add := func(width: int) -> void:
+		var clamped := clampi(width, low, high)
+		if not seen.has(clamped):
+			seen[clamped] = true
+			widths.append(clamped)
+	add.call(low)
+	add.call(high)
+	add.call(clampi(ceili(sqrt(float(total_area))), low, high))
+	var by_width: Array[int] = []
+	for index in padded.size():
+		by_width.append(index)
+	by_width.sort_custom(func(a: int, b: int) -> bool:
+		if padded[a].x != padded[b].x:
+			return padded[a].x > padded[b].x
+		return a < b)
+	var running := 0
+	for i in mini(by_width.size(), _WIDEST_MEMBERS_TRIED):
+		running += padded[by_width[i]].x
+		add.call(running)
+	for step in range(_WIDTH_STEPS + 1):
+		add.call(low + int(round(float(high - low) * step / float(_WIDTH_STEPS))))
+	widths.sort()
+	return widths
+
+## One MaxRects pack at a fixed page width, best-area fit: the same placement `plan()` used to run
+## at a single square-root width, now called once per candidate. `fits` answers for height alone —
+## `width` is always within `MAX_ATLAS_SIDE` by construction, since every candidate is clamped to
+## it before this is called.
+static func _pack_at_width(order: Array[int], padded: Array[Vector2i], sizes: Array[Vector2i],
+		width: int) -> Dictionary:
 	var regions: Array[Rect2i] = []
 	regions.resize(sizes.size())
-	var shelf_x := SEPARATION
-	var shelf_y := SEPARATION
-	var shelf_height := 0
-	var width := 0
+	var free_rects: Array[Rect2i] = []
+	var floor_y := SEPARATION
 	for index in order:
-		var size: Vector2i = sizes[index]
-		if shelf_x + size.x + SEPARATION > MAX_ATLAS_SIDE:
-			shelf_y += shelf_height + SEPARATION
-			shelf_x = SEPARATION
-			shelf_height = 0
-		regions[index] = Rect2i(shelf_x, shelf_y, size.x, size.y)
-		width = maxi(width, shelf_x + size.x)
-		shelf_x += size.x + SEPARATION
-		shelf_height = maxi(shelf_height, size.y)
-	var page_size := Vector2i(width + SEPARATION, shelf_y + shelf_height + SEPARATION)
-	return {
-		"regions": regions,
-		"size": page_size,
-		"fits": page_size.x <= MAX_ATLAS_SIDE and page_size.y <= MAX_ATLAS_SIDE,
-	}
+		var footprint: Vector2i = padded[index]
+		var found := false
+		var placed_at := Vector2i.ZERO
+		var best_leftover := 0
+		var best_short_side := 0
+		for free in free_rects:
+			if footprint.x > free.size.x or footprint.y > free.size.y:
+				continue
+			var leftover := free.size.x * free.size.y - footprint.x * footprint.y
+			var short_side := mini(free.size.x - footprint.x, free.size.y - footprint.y)
+			if not found or leftover < best_leftover \
+					or (leftover == best_leftover and short_side < best_short_side):
+				found = true
+				placed_at = free.position
+				best_leftover = leftover
+				best_short_side = short_side
+		if not found:
+			# Nothing free is big enough — grow the page downward by exactly this member's own
+			# footprint height, which always fits it since `width` is never less than the widest
+			# member's own footprint width.
+			var grown := Rect2i(Vector2i(SEPARATION, floor_y), Vector2i(width, footprint.y))
+			floor_y += footprint.y
+			free_rects.append(grown)
+			placed_at = grown.position
+		regions[index] = Rect2i(placed_at, sizes[index])
+		_split_free_rects(free_rects, Rect2i(placed_at, footprint))
+	var used := Vector2i.ZERO
+	for rect in regions:
+		used.x = maxi(used.x, rect.position.x + rect.size.x)
+		used.y = maxi(used.y, rect.position.y + rect.size.y)
+	var page_size := used + Vector2i(SEPARATION, SEPARATION)
+	return {"regions": regions, "size": page_size, "fits": page_size.y <= MAX_ATLAS_SIDE}
+
+## The aspect ratio (longer side over shorter) a well-packed page should not exceed, as a function
+## of the sizes being packed rather than of any one arrangement of them: `1.8` when no single
+## member dominates, loosened to `1.0 + dominance` — the largest of a member's own width or height
+## over the square root of the group's own total bordered area — when one member already needs
+## most of one side of an ideally square page, since no packer can make the page more square than
+## that member's own shape forces. `plan()`'s own width search is scored against this, and
+## `tests/test_atlas_library.gd` asserts every baked page against the same function, so the search
+## and the suite agree on what "square enough" means.
+static func aspect_ceiling(sizes: Array[Vector2i]) -> float:
+	if sizes.is_empty():
+		return 1.8
+	var bordered_area := 0
+	var widest := 0
+	var tallest := 0
+	for size in sizes:
+		var bordered: Vector2i = size + Vector2i.ONE * (2 * PADDING)
+		bordered_area += bordered.x * bordered.y
+		widest = maxi(widest, size.x)
+		tallest = maxi(tallest, size.y)
+	var ideal_side := sqrt(float(bordered_area))
+	var dominance := float(maxi(widest, tallest)) / ideal_side if ideal_side > 0.0 else 0.0
+	return maxf(1.8, 1.0 + dominance)
+
+## Removes `placed` from the free space `plan()` can still offer: every free rectangle `placed`
+## overlaps is replaced by the up-to-four slabs of itself `placed` does not cover (left, right,
+## top, bottom, in that order), and a slab another slab already wholly encloses is dropped, since
+## a placement can only ever search it and find the larger one first. Exact duplicates are
+## collapsed before the containment check, or two equal rectangles would each call the other
+## redundant and both would be dropped.
+static func _split_free_rects(free_rects: Array[Rect2i], placed: Rect2i) -> void:
+	var kept: Array[Rect2i] = []
+	for free in free_rects:
+		if not free.intersects(placed):
+			kept.append(free)
+			continue
+		if placed.position.x > free.position.x:
+			kept.append(Rect2i(free.position, Vector2i(placed.position.x - free.position.x, free.size.y)))
+		if placed.end.x < free.end.x:
+			kept.append(Rect2i(Vector2i(placed.end.x, free.position.y),
+					Vector2i(free.end.x - placed.end.x, free.size.y)))
+		if placed.position.y > free.position.y:
+			kept.append(Rect2i(free.position, Vector2i(free.size.x, placed.position.y - free.position.y)))
+		if placed.end.y < free.end.y:
+			kept.append(Rect2i(Vector2i(free.position.x, placed.end.y),
+					Vector2i(free.size.x, free.end.y - placed.end.y)))
+	var deduped: Array[Rect2i] = []
+	for rect in kept:
+		if not deduped.has(rect):
+			deduped.append(rect)
+	free_rects.clear()
+	for i in deduped.size():
+		var redundant := false
+		for j in deduped.size():
+			if i != j and deduped[j] != deduped[i] and deduped[j].encloses(deduped[i]):
+				redundant = true
+				break
+		if not redundant:
+			free_rects.append(deduped[i])
 
 # ------------------------------------------------------------------ the table ---
 

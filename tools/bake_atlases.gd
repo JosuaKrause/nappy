@@ -25,15 +25,18 @@ extends SceneTree
 ##
 ## This script may not use an autoload: `--script` starts no scene tree of the project's own, so
 ## `Telemetry`, `Tuning` and `Palette` do not exist here. It shares `AtlasLibrary`'s naming,
-## illustrated-path and shelf-layout rules instead, which is the whole of what the loader and
-## the bake have to agree on.
+## illustrated-path and packing rules instead, which is the whole of what the loader and the
+## bake have to agree on.
 
 const Library := preload("res://src/visuals/atlas_library.gd")
 
-## Bumped whenever this script changes what it writes for unchanged inputs, so a tree baked by
-## an older tool is stale. Recorded in the bake manifest and compared by the wrapper — as is
-## this file's own hash, which catches the changes somebody forgets to bump for.
-const TOOL_VERSION := 1
+## Bumped whenever this script changes what it writes for unchanged inputs, so a human reading
+## `bake_manifest.json` can tell two bakes of the same tree apart. **The wrapper does not compare
+## it** — `tools/bake-atlases.sh` already hashes this file and `atlas_library.gd` as inputs (see
+## `_hash_input()` below), so any change to either, this bump included, already makes every
+## checkout's recorded hash disagree with the tree and forces a rebake without a second constant
+## kept in step with this one in the wrapper's own Python.
+const TOOL_VERSION := 2
 
 const MEMBERSHIP_PATH := "res://assets/atlases/membership.json"
 const BAKED_DIR := "res://assets/atlases/baked"
@@ -269,12 +272,19 @@ func _bake_group(group: String, record: Dictionary, regions: Dictionary,
 		sizes.append(image.get_size())
 	var layout := Library.plan(sizes)
 	if not layout["fits"]:
-		_failures.append("group %s packs to %s, over the %dpx phone-safe canvas side"
-				% [group, layout["size"], Library.MAX_ATLAS_SIDE])
+		var overflow: int = layout.get("overflow", -1)
+		if overflow >= 0:
+			_failures.append(
+					"member %s is %dx%d including its own border, over the %dpx phone-safe canvas side"
+					% [members[overflow], sizes[overflow].x, sizes[overflow].y, Library.MAX_ATLAS_SIDE])
+		else:
+			_failures.append("group %s packs to %s, over the %dpx phone-safe canvas side"
+					% [group, layout["size"], Library.MAX_ATLAS_SIDE])
 		return Vector2i.ZERO
 	var placements: Array = layout["regions"]
 	var page_size: Vector2i = layout["size"]
 	var page := Image.create(page_size.x, page_size.y, false, Image.FORMAT_RGBA8)
+	var member_area := 0
 	for index in images.size():
 		var image: Image = images[index]
 		var rect: Rect2i = placements[index]
@@ -286,6 +296,8 @@ func _bake_group(group: String, record: Dictionary, regions: Dictionary,
 			"rect": [rect.position.x, rect.position.y, rect.size.x, rect.size.y],
 			"size": [image.get_width(), image.get_height()],
 		}
+		var bordered := image.get_size() + Vector2i.ONE * (2 * Library.PADDING)
+		member_area += bordered.x * bordered.y
 	var png_path := "%s/%s.png" % [BAKED_DIR, group]
 	if page.save_png(png_path) != OK:
 		_failures.append("could not write %s" % png_path)
@@ -296,8 +308,13 @@ func _bake_group(group: String, record: Dictionary, regions: Dictionary,
 		"padding": padding,
 		"members": images.size(),
 	}
-	print("bake_atlases: %-16s %4d members  %dx%d  %s padding"
-			% [group, images.size(), page_size.x, page_size.y, padding])
+	# The fill the player reads off this line, printed for every page rather than measured
+	# separately, is each member's own area including the one-pixel border every region owns
+	# (`Library.PADDING`, not the larger `SEPARATION` gap to a neighbour) over the page's own
+	# area — the same ratio PLAYTEST-109 measured from `regions.json` by hand.
+	var fill := 100.0 * float(member_area) / float(page_size.x * page_size.y)
+	print("bake_atlases: %-16s %4d members  %dx%d  %s padding  %.0f%% fill"
+			% [group, images.size(), page_size.x, page_size.y, padding, fill])
 	return page_size
 
 ## Copies a picture's own edge pixels into the one-pixel border `AtlasLibrary.PADDING` reserves

@@ -1,5 +1,132 @@
 # Decisions
 
+## M171, the groups and the moments a page may load — built 2026-09-20
+
+Pull request #252, the other half of [PLAYTEST-109](playtests/PLAYTEST-109.md)'s notes.
+
+**The groups.** *"putting both genders in the player atlas is a bit wasteful since it's
+guaranteed to not use half of it."* `stroller` became three: `mother` and `father`, thirty
+views each, and `stroller`, the five pram views, which are the only pictures the two share. A
+run holds the pram's page and its own parent's; the other parent's is never loaded. *"the UI
+and head indicators could be combined."* The five head indicators are on `ui`'s page. The
+membership's note that they were apart "because the marks above her head are drawn by a
+separate pass and tinted on their own" described nothing a page decides: the tint is a colour
+at the draw call and the pass is an order of calls.
+
+**The moments.** *"we cannot start loading something in the frame we need it"* · *"we probably
+could preload everything. or at least load everything needed for a day during the day brief.
+and everything that might always be needed at startup"* · *"don't unload anything that might
+be needed in one day and in the next."* `main.gd` holds every page a day draws from boot, for
+the life of the process — `RESIDENT_GROUPS`: `ui`, `stroller`, `buildings`, `street_kit`,
+`ground`, `decoration`, `crowd` — and the run's parent beside them, which is known at boot on
+every path: `GameState.start_run()` rolls it and a resumed run reads it off the save before the
+city is built. A held restart reloads the scene in the same process and rerolls the parent, so
+the boot drops the other parent's page when it takes its own. The day brief opens a second
+window and loads nothing today. `events` is not held, since nothing draws from that page until
+the events move. **Measured:** eight pages in 7 to 12 ms over six headless boots and 9 ms
+windowed, beside a city generated in over 400 ms, so the fallback — the day's pages in the day
+brief — was not needed.
+
+**The interior is the escape's alone.** *"what do you mean interiors need to be loaded? this
+is only needed in the escape day brief (which is still not implemented I gather?)"* The
+`--start-escape` boot holds it, 4 ms; when M102, the finale, has a brief, the call moves there.
+
+**The rule.** `AtlasLibrary` is unmanaged until a boot claims the loading moments; after that a
+page read from disk with no window open is logged as `OUTSIDE` and raises an engine error,
+which the test gate is red for. Only a boot claims, so a suite that builds a `Stroller` or a
+`City` by hand stays unmanaged and `tests/test_full_run.gd`, which boots `main`, runs with the
+rule on. The first version let the day brief's window claim as well, and one suite driving a
+brief on a hand-built `main` turned the rule on for every suite after it. The run log writes
+one `texture` line for each page actually read — `atlas page 'interior' loaded in the escape:
+4.0 ms, 1948 x 260` — before the error, so an offender is recorded either way.
+
+**This overturns part of the design the player approved in PLAYTEST-108**, "one runtime loader
+hands out regions by name and owns group lifetime by reference count", in the player's words
+above: the count stays as the proof a page is there, and lifetime is the process's.
+
+**Open to overturn.** The group names `mother` and `father`; `--start-escape city` holds
+`interior` though that section never draws it; three suites outside the brief's fence were
+edited because the change broke them — `test_stroller_gait.gd`, `test_player_presentation.gd`,
+`test_stroller.gd`.
+
+## M171, the rectangle packer — built 2026-09-20
+
+Pull request #251, the packing half of [PLAYTEST-109](playtests/PLAYTEST-109.md)'s notes on
+the baked pages: *"it would be better to arrange things in a more squarish image"* and *"a
+greedy approach is fine but don't let obvious empty space go wasted"*.
+
+**Built.** `AtlasLibrary.plan()` is a MaxRects packer: it keeps every free rectangle a
+placement leaves, places members largest padded area first, ties in the bake's alphabetical
+order, each into the free rectangle it wastes least of, and grows the page downward when
+nothing free fits. It packs the same members at a deterministic set of widths — the widest
+member, twice the square root of the padded area, the running sums of the eight widest
+members' widths, and seventeen even steps between — and keeps the smallest page inside
+`AtlasLibrary.aspect_ceiling()`, the narrower on a tie. The suite holds every page to a fill
+floor that rises with member count and to that same aspect ceiling, as rules over whatever
+groups exist, and `tests/test_atlas_packer.gd` pins the two refused shapes on synthetic
+input: small members end up beside a tall one inside its height, and two large members that
+fit side by side only above the square-root width come out on one row. Three forced bakes
+are byte-identical. The bake hashes its own script and `atlas_library.gd` as inputs, so a
+checkout baked by the shelf packer re-bakes by itself.
+
+**Measured**, member area with its 1px border over page area, shelf packer to this one:
+buildings 1810×68 56% to 240×338 85%; crowd 854×50 82% to 190×218 85%; decoration 464×56 66%
+to 144×162 74%; events 2042×382 62% to 948×560 91%; ground 2042×70 72% to 308×342 98%;
+head_indicators 134×30 87% to 72×58 84%; interior 1948×260 28% to 466×326 94%; street_kit
+1096×260 48% to 454×358 84%; stroller 1812×50 93% to 366×242 95%; ui 782×132 98% to 262×392
+99%. The bake went from about
+0.3s to about 1.8s, since every group is packed at some thirty widths; it runs only when the
+sources moved.
+
+**Rejected.** Rows sorted by height — offered to the player and refused: *"you will get dead
+space where you can easily put smaller things"*. A guillotine packer: its cut runs the whole
+free rectangle, so the strip beside a tall member is as tall as the member whatever needs it.
+**The square root as the width rather than the start of a search**, which was the first
+version: `street_kit` came out 366×552 with an empty 190×258 block beside the tall road
+picture, because the second road picture and the tunnel were each a few pixels too wide for
+the gap, the three stacked, and every small member found a tighter hole lower down. It was
+found by looking at the page, not by its fill number. A unit test of two transposed
+equal-area rectangles: stacked and side by side have the same bounding area, so either is a
+correct answer; the test uses unequal areas.
+
+**Open to overturn.** The fill floor, `52 + 5·ln(members)` clamped to 35–90, and the aspect
+ceiling, the larger of 1.8 and one plus the biggest member's side over the square root of the
+area. An oversize member is named by index in `plan()`'s result.
+
+## M172 — A suite that fails to parse fails the test run · built 2026-09-20
+
+Pull request #250. Found the same day: the decoration's first push broke
+`tests/test_texture_atlas.gd`'s parse, and the shard that owned it never reported — it ran
+until another shard's failure cancelled it.
+
+**What hung.** `load()` on a script with a parse error does not return null; it returns a
+`GDScript` that `can_instantiate()` answers false for. `run_tests.gd` called `.new()` on it
+unconditionally, the call raised, `_ready()` stopped before `quit()`, and a headless engine
+with nothing to do idles forever. M164's check of the engine's output reads it after the
+process ends, so it never spoke.
+
+**Built.** The runner checks `script == null or not script.can_instantiate()` before
+`.new()`, records the suite by name, prints `LOAD FAIL`, runs the suites that did load and
+quits non-zero. CI's `gates` job runs the fixture under `timeout 30` and requires a non-zero
+exit that is not the timeout's own, the fixture's name and the normal summary line.
+
+**The fixture is not a `.gd` file, and why.** Committed as one, it broke every engine start
+with no import cache — a fresh clone's first `check.sh` or `test.sh`: the global class scan
+met a script that does not parse and every `class_name` lookup in that process failed, the
+autoloads with it, while the bake still finished and its wrapper still exited zero. So the
+source is `tests/runner_fixtures/unparseable_suite.gd.src`, and `tools/test.sh` copies it to
+its `.gd` path only for the process that names it, after the bake and the import pass, and
+removes it and its `.uid` on every exit path; `.gitignore` covers the staged names as well.
+
+**Rejected.** A process-wide time limit in `tools/test.sh`: the modes differ in cost by orders
+of magnitude, and macOS has no `timeout`, so it would be a bash watcher — a larger piece of
+work than the defect.
+
+**Open.** A suite whose own `run()` raises at runtime still stops the runner before `quit()`.
+A staged fixture left behind by a killed process makes the next staging refuse and says so;
+until it is deleted it is an unparseable `.gd` in the tree, with the effect described above.
+One message covers a missing suite and a broken one.
+
 ## M171, the leaf consumers — built 2026-09-20
 
 A consumer move of the milestone, pull request #248.

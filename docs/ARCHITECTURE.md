@@ -171,7 +171,8 @@ tools/
                           the custom local SVG build, and every tool that starts the engine
                           (check, test, run, shot, export-web) calls it first
   bake_atlases.gd         the bake itself, run headless with --script; rasterizes every member
-                          with the engine's own rasterizer and shelf-packs it into its page
+                          with the engine's own rasterizer and packs it into its page with a
+                          greedy free-rectangle packer, roughly square
   audit-pck.sh            list an exported .pck and report the baked constituents left in it
   check.sh                import + headless boot, fails on any script error
   test.sh                 the headless suite, sharded; a filter runs one process and says PARTIAL RUN
