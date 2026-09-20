@@ -289,16 +289,16 @@ func show_finale(exit_kind: int, seconds: float) -> void:
 	_brief.visible = false
 	_present()
 
-## The screen a lost section of the escape comes up on, before it starts again. *(2026-09-19:
-## "restarting should still have the day brief for both the apartment escape and the city escape
-## even if the nerves don't go down.")*
+## The screen a section of the escape opens on — a first walk through it and a retry alike. *"Each
+## the apartment and escape city are treated as their own 'days' with brief and restart
+## checkpoint."*
 ##
 ## **The same screen a resumed day opens on** (`show_day_brief()`), with the two lines that are
-## about a day replaced by the two that are true here. A lost section costs no Nerve, so the nerve
-## count is exactly what it was and the line says so, unchanged; and the escape has no day number,
-## so what stands where "Day N of 14" stands is **the section's own hint line** — *"Escape the
-## apartment"* or *"Exit the city"*, the same words `HUD.say_once()` says on a first entry and the
-## same words `main` passes in. No new fiction, and nothing triumphant or melodramatic
+## about a day replaced by the two that are true here. A section costs no Nerve however it goes, so
+## the nerve count is exactly what it was and the line says so, unchanged; and the escape has no
+## day number, so what stands where "Day N of 14" stands is **the section's own line** — *"Escape
+## the building"* or *"Escape the city"*, the same words `HUD.say_once()` says once she is walking
+## it and the same words `main` passes in. No new fiction, and nothing triumphant or melodramatic
 ## (`docs/NARRATIVE.md`, "No triumphalism"): a retry is not a moment, it is the thing she is doing
 ## again.
 ##

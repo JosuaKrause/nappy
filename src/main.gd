@@ -58,6 +58,15 @@ var _debug := DevFlags.enabled()
 ## `DevFlags.start_escape()` again, the same shape `_add_debug_layers()` reads `_debug`.
 var _escape_scene_requested := DevFlags.start_escape()
 
+## Whether this boot reached the escape as **a run's own ending** rather than through the flag —
+## a won day 14 with every task complete handing over, or a game closed inside a section and opened
+## again. Set in `_ready()` off `GameState.escape_section`, which is the run's own record of it.
+##
+## What it changes in `_ready_escape()`: the run is already there, so no `GameState.start_run()`;
+## the save is live, so the symbol that announces a write is built; and the epilogue ends the run
+## and goes back to the title instead of looping the sequence for whoever is testing it.
+var _escape_from_a_run := false
+
 ## `DevFlags.no_focus_pause()`, read once for the same reason `_debug` is: so a test can set it
 ## directly and check the release shape. `_notification()` reads this member rather than calling
 ## the getter again on every focus change.
@@ -151,8 +160,9 @@ var _summary: CanvasLayer
 var _pause: PauseScreen
 var _title: TitleScreen
 ## The small corner symbol a write flashes — see `SaveIndicator`'s own doc. Built once in
-## `_ready()`, never under `--start-escape` (the finale never saves, being reachable only behind a
-## dev flag today).
+## `_ready()`, and in `_ready_escape()` only for a run's own escape: a dev-flagged boot writes
+## nothing at all (`GameSave.uses_save()` refuses every one of them), so a symbol there could only
+## ever stay dark.
 var _save_indicator: SaveIndicator
 ## Owns the `--follow` camera and the event id it tracks between frames — the one piece of
 ## `DevRig` (`src/dev/dev_rig.gd`) that has to survive across calls, so it is the one piece kept
@@ -230,9 +240,22 @@ func _ready() -> void:
 	# fresh run below — see `GameSave`'s own doc. Kept on the instance, not a local, so
 	# `_on_title_start()` can still read it once the title's own start button is pressed.
 	_resume = GameSave.try_resume()
-	if _resume.is_empty():
+	# **`GameState.escape_section` is asked before a fresh run is started, not after.** It is set
+	# two ways and both of them must survive this line: the save above restores it for a game closed
+	# inside a section, and a handover from day 14 leaves it set on the autoload across the scene
+	# reload that reaches this boot — a reload under a dev flag or in a headless rig, where
+	# `GameSave.uses_save()` refuses every read, would otherwise start a brand new run over the one
+	# that just earned its ending.
+	if _resume.is_empty() and GameState.escape_section == FinaleController.Section.NONE:
 		GameState.start_run(DevFlags.seed_override())
 		GameState.day = DevFlags.day_override()
+	if GameState.escape_section != FinaleController.Section.NONE:
+		# The run's ending, played rather than announced: the escape is this run's last screen, so
+		# the ordinary boot below — a city, a day, a resistance director — is not what follows day
+		# 14 at all. See `_ready_escape()`, which is the one place the sequence is ever built.
+		_escape_from_a_run = true
+		_ready_escape()
+		return
 	# After the run seed is settled and before anything is generated, so the log opens on the
 	# seed it is a trace of. Off with `-- --no-telemetry`; on otherwise, because a trace
 	# behind a flag is a trace the person playtesting has to remember to turn on. This is a
@@ -374,31 +397,44 @@ func _ready() -> void:
 		return
 	_open_the_title()
 
-## `--start-escape`'s own boot: the whole escape sequence, which is the run's ending played behind
-## a flag rather than reached from day 14's summary. Section one is the building — the third
-## floor's hallway, her at the door with the baby asleep in her arms, and the way down past the
-## barricaded entrance into the basement — and the service door hands over to section two, the
-## city with nobody in it and one way out of it. `DevFlags.start_escape_at()`'s optional value
-## teleports straight to any of the building's other six parts, or to `city` for section two on
-## its own, so a rig or a person can look at one without walking there.
+## The escape's own boot, reached two ways and built the same way by both: as **a run's ending**,
+## when a won day 14 with every task complete has set `GameState.escape_section` and the scene has
+## reloaded onto it, and as `--start-escape`, which is the same sequence with no run behind it so a
+## rig or a person can walk it on demand. Section one is the building — the third floor's hallway,
+## her at the door with the baby asleep in her arms, and the way down past the barricaded entrance
+## into the basement — and the service door hands over to section two, the city with nobody in it
+## and one way out of it. `DevFlags.start_escape_at()`'s optional value teleports straight to any
+## of the building's other six parts, or to `city` for section two on its own, so a rig or a person
+## can look at one without walking there.
 ##
-## No title and no `ResistanceDirector`: the run behind this is not played, so there is nothing to
-## resume and no subquest to advance. What *is* built is the clock (`FinaleController`), the HUD
-## it draws on, and the summary the epilogue needs.
+## No title and no `ResistanceDirector`: the escape has no subquest to advance, and what it opens
+## on is its own section brief rather than a front door. What *is* built is the clock
+## (`FinaleController`), the HUD it draws on, and the summary that draws both the briefs and the
+## epilogue.
 func _ready_escape() -> void:
-	# Guarded here too, not only at the call site in `_ready()` — the same shape
+	# Guarded here too, not only at the call sites in `_ready()` — the same shape
 	# `_add_debug_layers()` reads `_debug` in, so a test can call this directly and check the
 	# release shape without also driving the rest of `_ready()`.
-	if not _escape_scene_requested:
+	if not _escape_scene_requested and not _escape_from_a_run:
 		return
 	_set_readout_visible((_debug or _readout_requested) and _layer_readout_on)
-	GameState.start_run(DevFlags.seed_override())
+	# **Only the flag's boot starts a run.** A run that handed over to the escape is already the
+	# one being played — its seed, its day, its nerves and its resistance are what the briefs and
+	# the ending screen read — and starting a fresh one here would throw away the fourteen days
+	# that earned this walk.
+	if not _escape_from_a_run:
+		GameState.start_run(DevFlags.seed_override())
 	# Same opt-out and the same reasoning as the ordinary run: a trace behind a flag nobody
 	# remembers to turn on is a trace nobody gets, and `P`/`B` (`_snapshot_now()`/`_start_burst()`)
 	# both need an active log to write anything at all — see `Telemetry.start_burst()`'s own
 	# "no drawable viewport" refusal, which is really "no active log", not a rendering question.
 	if not "--no-telemetry" in OS.get_cmdline_user_args():
-		Telemetry.begin_run(GameState.run_seed, _somebody_is_playing())
+		# `Telemetry` is an autoload and survives the scene reload a handover comes through, so a
+		# run that walked fourteen days and then reached this keeps writing the log it already has
+		# — `begin_run()` would close it and open a second directory for one run. A cold launch
+		# into a section, and the flag's own boot, have no log yet and open one.
+		if not Telemetry.is_active():
+			Telemetry.begin_run(GameState.run_seed, _somebody_is_playing())
 		# And the escape's own timestamped section, which is what makes every line below carry an
 		# elapsed time — the day's `Telemetry.begin_day()` is the only other thing that opens one
 		# and nothing on this boot reaches it. Immediately after the run is opened, so the plan
@@ -407,11 +443,11 @@ func _ready_escape() -> void:
 	# This boot's own startup, and the one place `interior` is ever loaded: the escape is the only
 	# thing that goes inside a building, so no ordinary day pays for those forty-one pictures.
 	#
-	# **When M102, the finale, grows a brief of its own, that brief is where this moves.**
-	# PLAYTEST-109: "this is only needed in the escape day brief (which is still not implemented I
-	# gather?)" — a brief is a screen a load can hide behind, and this boot is not one; until there
-	# is one, the sequence's own startup is the moment that satisfies the rule. Nothing else here
-	# has to change when it arrives: the call becomes `MOMENT_DAY_BRIEF` from that screen.
+	# **At the boot rather than behind the section brief**, which is the screen PLAYTEST-109 asks
+	# for — "this is only needed in the escape day brief" — because the brief is raised *over* a
+	# section that has already been assembled and she has already been put down in: there is no
+	# frame between the two for a page to arrive in. The rule the moment exists for is satisfied
+	# here instead, at the one point in the sequence where nobody is watching a frame.
 	_hold_every_page_a_day_draws(AtlasLibrary.MOMENT_ESCAPE, ESCAPE_ONLY_GROUPS)
 	# The second boot entry point the halo's shader warm-up has to reach, since the epilogue draws
 	# its own halo and is reached without ever passing through `_ready()`'s own call above. This
@@ -428,6 +464,15 @@ func _ready_escape() -> void:
 	# The one thing the escape changes about the HUD: the clock reads to the millisecond.
 	_hud.set_finale(true)
 	_add_touch_controls()
+	# Built only for a run's own escape, and for the same reason the ordinary boot builds it: a
+	# section's brief writes the save, and a write nobody can see is a write nobody trusts. The
+	# flag's boot writes nothing at all (`GameSave.uses_save()` refuses every dev-flagged run), so
+	# a symbol there would only ever have stayed dark. Above every screen below it — see
+	# `SaveIndicator`.
+	if _escape_from_a_run:
+		_save_indicator = SaveIndicator.new()
+		_save_indicator.name = "SaveIndicator"
+		add_child(_save_indicator)
 	_summary = DAY_SUMMARY.instantiate()
 	add_child(_summary)
 	_summary.continued.connect(_on_finale_summary_continued)
@@ -608,7 +653,7 @@ static func escape_part_for(raw: String) -> String:
 ## — see `InteriorScene._start_exit()`. The service door is the join between the two sections, so
 ## what is behind the black is the street beside the home block rather than a title screen: the
 ## city is built on this frame, the building is left standing on its own map with nobody on it,
-## and `FinaleController.enter_city()` carries the same clock across.
+## and `FinaleController.enter_city()` begins section two on its own brief and its own clock.
 ##
 ## The fade is not reversed here. `InteriorScene` holds the black at full opacity from the moment
 ## it emits, and `_on_finale_section_started()` clears it once she has been put down on the street,
@@ -617,12 +662,22 @@ func _on_escape_exit_requested() -> void:
 	_build_the_finale_city()
 	_finale.enter_city()
 
-## A section has begun — the first time, or again after a loss. Where she goes is this file's
-## answer because only this file holds both worlds; the hint line is said on the first entry only,
-## *"like normal tutorial hints"*, so a retry is not lectured about what it is already doing.
+## A section is about to be walked — the first time, or again after a loss. Where she goes is this
+## file's answer because only this file holds both worlds, and once she is standing there the
+## section's own **brief** goes up over it: each section is a day and a day opens on its brief.
+## Nothing is running behind that screen, which is the point — `DaySummary` pauses the tree and the
+## clock is not started until its continue (`_on_finale_summary_continued()`).
+##
+## The hint line is not said here. It belongs to the walk rather than to the screen in front of it,
+## and the HUD keeps running through a pause, so a line said now would spend its whole life behind
+## the brief; it is said on the continue instead, on a first entry only — *"like normal tutorial
+## hints"*, so a retry is not lectured about what it is already doing.
 func _on_finale_section_started(section: int, restarted: bool) -> void:
+	# The run's own record of where it is, which is what the save carries and what the next boot
+	# reads: written here, the one place both sections and both boots pass through.
+	GameState.escape_section = section
 	_summary.dismiss()
-	_hud.visible = true
+	_hud.visible = false
 	if section == FinaleController.Section.BUILDING:
 		var start_at := _interior.start_world_position()
 		if not restarted:
@@ -630,8 +685,6 @@ func _on_finale_section_started(section: int, restarted: bool) -> void:
 		_player.reset_at(start_at, Vector2.UP)
 		if _interior_events:
 			_interior_events.restart()
-		if not restarted:
-			_hud.say_once(finale_hint_for(section))
 	else:
 		# The building is behind her and nobody is in it, so its own events stop rather than
 		# playing on to an empty map — the vents, the window flashes and the masked man who comes
@@ -645,8 +698,6 @@ func _on_finale_section_started(section: int, restarted: bool) -> void:
 			_plan_the_finale_city()
 		_player.reset_at(_finale_start_position(), Vector2.DOWN)
 		_city.events.stream_around(_player.global_position)
-		if not restarted:
-			_hud.say_once(finale_hint_for(section))
 	# The baby starts every attempt asleep with sleepiness full — *"the player holding the sleeping
 	# baby (sleep bar is full)"* — which is also what makes a restart playable at all: the meter
 	# that just reached a hundred is what lost the section.
@@ -654,45 +705,63 @@ func _on_finale_section_started(section: int, restarted: bool) -> void:
 	_baby.force_sleep()
 	if _interior:
 		_interior.clear_fade()
+	# And the screen the section opens on, over the world she is already standing in. Raised last,
+	# because `DaySummary._present()` pauses the tree and everything above this line is placement.
+	_show_the_finale_brief(section, restarted)
 
-## The one line each section of the escape is named by: *"Escape the apartment"* and *"Exit the
-## city"*. Said once by the HUD when a section is first entered, and shown as the title of the
-## brief screen before a lost one starts again — **the same words in both places**, which is why
-## this is a function rather than two literals: a retry's screen naming the section differently
-## from the line she was given on the way in would read as a different instruction.
+## The one line each section of the escape is named by: *"Escape the building"* and *"Escape the
+## city"*. The title of the brief the section opens on, and the line the HUD says once she is
+## walking it — **the same words in both places**, which is why this is a function rather than two
+## literals: a screen naming the section differently from the line she is given on the way in would
+## read as a different instruction.
 ##
 ## `section` is a `FinaleController.Section` passed as an `int` — a cross-script enum is not the
 ## same type as itself as a parameter, see the **godot** skill.
 ## Static so a test can ask it without building the whole boot, the same split `escape_part_for()`
 ## already makes.
 static func finale_hint_for(section: int) -> String:
-	return "Escape the apartment" if section == FinaleController.Section.BUILDING \
-			else "Exit the city"
+	return "Escape the building" if section == FinaleController.Section.BUILDING \
+			else "Escape the city"
 
-## A section has been lost — taken, the meter at 100, or the clock at zero. **The brief screen
-## comes up and nothing has restarted yet.** *(2026-09-19: "restarting should still have the day
-## brief for both the apartment escape and the city escape even if the nerves don't go down.")*
+## The screen a section opens on — *"each the apartment and escape city are treated as their own
+## 'days' with brief and restart checkpoint"*. The day brief's own form
+## (`DaySummary.show_finale_brief()`) with the section's own line where a day's number stands, and
+## the Nerve count unchanged, because nothing about the escape ever spends one.
 ##
-## `DaySummary.show_finale_brief()` pauses the tree with it, so the clock the loss stopped stays
-## stopped; `_on_finale_summary_continued()`'s own `_finale_restart_pending` branch is what reaches
-## `FinaleController.restart_section()`, the same shape `_resume_gate_open` already gives the day
-## brief a resumed run opens on. The Nerve count shown is whatever it was, because a lost section
-## spends none.
+## **It is also where the save is written.** A section's brief is the escape's only checkpoint, so
+## it is the moment a closed game has to come back to, and the run's own record of which section
+## that is (`GameState.escape_section`) was set a few lines above this in
+## `_on_finale_section_started()`. `false` because no day is under way — the escape is not a day
+## and a resumed one must not be charged a nerve for it.
+func _show_the_finale_brief(section: int, restarted: bool) -> void:
+	_finale_brief_open = true
+	_finale_brief_is_a_retry = restarted
+	_save_now(false)
+	_summary.show_finale_brief(finale_hint_for(section), GameState.nerves)
+
+## Whether `_summary` is currently showing a section's brief rather than the epilogue — the same
+## question `_resume_gate_open` answers for the day brief, and for the same reason: one `continued`
+## signal reaches two screens that mean different things.
+var _finale_brief_open := false
+## Whether the brief now up is a retry's rather than a first entry's, so the continue knows whether
+## the hint line is owed. A property of the screen rather than of the section, which is why it is
+## not read back off `FinaleController`.
+var _finale_brief_is_a_retry := false
+
+## A section has been lost — taken, the meter at 100, or the clock at zero. *(2026-09-19:
+## "restarting should still have the day brief for both the apartment escape and the city escape
+## even if the nerves don't go down.")* The answer is the section again from its own brief, which
+## is exactly what `FinaleController.restart_section()` raises, so this writes the loss down and
+## hands over rather than drawing a second kind of screen. Nothing is spent: no Nerve, no calendar,
+## and `GameState`'s day is untouched.
 func _on_finale_section_lost(section: int) -> void:
-	# Written before the clock goes back to full, so the entry carries the second the section was
-	# lost at rather than the second the retry began. Without it the log shows the timestamps
-	# marching up and then starting again with nothing in between to say why.
+	# Written before the restart, so the entry carries the second the section was lost at rather
+	# than the second the retry began. Without it the log shows the timestamps marching up and then
+	# starting again with nothing in between to say why.
 	Telemetry.note("lost", "escape: %s, %.1fs in" % [
 		"the building" if section == FinaleController.Section.BUILDING else "the city",
 		FinaleController.length() - _finale.time_remaining()])
-	_hud.visible = false
-	_finale_restart_pending = true
-	_summary.show_finale_brief(finale_hint_for(section), GameState.nerves)
-
-## Whether `_summary` is currently showing the brief a lost section comes up on, rather than the
-## epilogue — the same question `_resume_gate_open` answers for the day brief, and for the same
-## reason: one `continued` signal reaches two screens that mean different things.
-var _finale_restart_pending := false
+	_finale.restart_section()
 
 ## Where section two starts and restarts: the service exit, on the street beside the home block.
 func _finale_start_position() -> Vector2:
@@ -700,30 +769,45 @@ func _finale_start_position() -> Vector2:
 
 ## The tunnel mouth or the bridge deck, reached. The sequence ends on a summary screen with the
 ## way out behind her and nothing triumphant on it — see `DaySummary.show_finale()`.
+##
+## **And for a run, this is where the run itself ends.** The escape *is* the good ending, reached
+## by walking it rather than by being told about it, so the outcome is only recorded once she is
+## out: `GameState.finish_day()` on the final day picks the ending, writes the `ending` entry and
+## clears the save — which is also what keeps the save alive for every attempt before this one, so
+## a game closed in a section still has somewhere to come back to.
 func _on_finale_escaped(exit_kind: int) -> void:
 	_hud.visible = false
+	if _escape_from_a_run:
+		_run_over = not GameState.finish_day(GameEnums.DayResult.WON)
 	_summary.show_finale(exit_kind, FinaleController.length() - _finale.time_remaining())
 
 ## `DaySummary.continued` reaches this from the two screens the escape puts up, told apart by
-## `_finale_restart_pending` the same way `_resume_gate_open` tells a resumed run's day brief from
-## an end-of-day message.
+## `_finale_brief_open` the same way `_resume_gate_open` tells a resumed run's day brief from an
+## end-of-day message.
 ##
-## **The brief before a lost section starts again** is the first: continuing from it is the moment
-## the section actually begins, so it reaches `FinaleController.restart_section()` and nothing
-## else — no Nerve, no calendar, no reload.
+## **A section's brief** is the first, and continuing from it is the moment the section actually
+## begins: the clock starts here and nowhere else, the HUD comes back, and a first entry is given
+## its one hint line. No Nerve, no calendar, no reload.
 ##
-## **The epilogue** is the other. Behind the flag there is no run for the escape to be the ending
-## *of*, so continuing goes back to where a run begins — the title screen, which then reloads the
-## scene and walks the whole sequence again. Opening the screen rather than reloading straight away
-## is what this boot needs: a reload reads `--start-escape` off the same command line, so the
-## screen would never be seen.
+## **The epilogue** is the other, and where it leads depends on what the escape was. For a run it
+## is where a finished run always goes, the title screen, reached through `_restart_run()`'s own
+## reload — the run is over, its save is already cleared, and the reload is what throws away the
+## building and the city with it. Behind the flag there is no run for the escape to be the ending
+## *of*, and a reload would read `--start-escape` off the same command line and walk straight past
+## the title, so the screen is opened directly instead.
 func _on_finale_summary_continued() -> void:
-	if _finale_restart_pending:
-		_finale_restart_pending = false
+	if _finale_brief_open:
+		_finale_brief_open = false
 		_summary.dismiss()
-		_finale.restart_section()
+		_hud.visible = true
+		_finale.start_section()
+		if not _finale_brief_is_a_retry:
+			_hud.say_once(finale_hint_for(_finale.section))
 		return
 	_summary.dismiss()
+	if _escape_from_a_run:
+		_restart_run()
+		return
 	get_tree().paused = true
 	_hud.visible = false
 	_title.open(true)
@@ -1412,6 +1496,18 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	Telemetry.write_map(_city.map, finished_day, _city.closures(), _city.route_tree(),
 			_city.events.plans(), true, trail, met)
 	Telemetry.end_day()
+	# **The last night hands over rather than ending.** *(PLAYTEST-113: "the escape the building
+	# starts when the player has completed all tasks by the end of day 14".)* A won day 14 with
+	# every task complete is the good ending, and the good ending is now a walk rather than a
+	# screen — so `GameState.finish_day()` is deliberately *not* called here: it would end the run
+	# on the spot, set `ending`, and clear the save the escape's own checkpoints need. The run ends
+	# when she is out of the city (`_on_finale_escaped()`), and only then.
+	if _hands_over_to_the_escape(result):
+		GameState.escape_section = FinaleController.Section.BUILDING
+		_save_now(false)
+		_summary.show_day(finished_day, result, _day.failure_reason, GameState.nerves,
+				elapsed_seconds)
+		return
 	_run_over = not GameState.finish_day(result)
 	# The end-of-day write — one of the two moments a run is saved. Skipped when the run just
 	# ended: `GameState._end_run()` (called from inside `finish_day()` above) already cleared the
@@ -1420,11 +1516,33 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 		_save_now(false)
 	_summary.show_day(finished_day, result, _day.failure_reason, GameState.nerves, elapsed_seconds)
 
-## The same `DaySummary.continued` signal reaches this from two different screens `_summary` can be
-## showing, told apart by `_resume_gate_open`: the day brief a resumed run's title opened
-## (`_show_the_resume_gate()`), or the ordinary end-of-day message every other day reaches here
-## with. Only the first of those is *engaging* an already-built day rather than starting a new one.
+## Whether the day that just ended is the one the escape follows: **won, the last day, and every
+## task complete**. *"After completing all tasks"*, and what that already means in this game is
+## `GameState.earned_good_ending()` — `Tuning.RESISTANCE_GOAL` errands run *and* the day-14 step
+## performed, the pair that has always decided the good ending — so the escape is reached by
+## exactly the runs the good ending was reached by, and nothing new decides who sees it.
+##
+## A won day 14 without them keeps the ending it has today: the neutral screen, from
+## `_on_summary_continued()`'s own `_run_over` branch.
+func _hands_over_to_the_escape(result: GameEnums.DayResult) -> bool:
+	return result == GameEnums.DayResult.WON and GameState.is_final_day() \
+			and GameState.earned_good_ending()
+
+## The same `DaySummary.continued` signal reaches this from three different screens `_summary` can
+## be showing, told apart by `_resume_gate_open` and by the run's own escape section: the day brief
+## a resumed run's title opened (`_show_the_resume_gate()`), day 14's own summary on a run that has
+## just earned the escape, or the ordinary end-of-day message every other day reaches here with.
+## Only the first of those is *engaging* an already-built day rather than starting a new one.
 func _on_summary_continued() -> void:
+	# The last thing the fourteen days do. A scene reload rather than tearing this boot's city,
+	# day, resistance and observer down by hand and building a building over them — the same
+	# reasoning `_restart_run()` gives for the same call, and the escape's own boot
+	# (`_ready_escape()`) then reads `GameState.escape_section` off the autoload that survived it.
+	if GameState.escape_section != FinaleController.Section.NONE:
+		_summary.dismiss()
+		get_tree().paused = false
+		get_tree().call_deferred("reload_current_scene")
+		return
 	if _resume_gate_open:
 		_resume_gate_open = false
 		# The brief's own loading window shuts with the brief: from here she is walking, and a
@@ -1472,6 +1590,11 @@ func _restart_run() -> void:
 	# reach this one function, so nothing new has to be drawn for it. A no-op when a finished run
 	# already cleared it in `GameState._end_run()`.
 	GameSave.clear()
+	# And with it the run's record of being in the escape, which outlives the scene reload below
+	# because it lives on an autoload. Left set, the fresh boot would skip its own `start_run()` and
+	# open the escape again over a run that was just thrown away. A no-op for a restart from an
+	# ordinary day and for a finished run, which `GameState._end_run()` has already cleared.
+	GameState.escape_section = FinaleController.Section.NONE
 	TitleScreen.note_restart_requested()
 	get_tree().paused = false
 	get_tree().call_deferred("reload_current_scene")
@@ -1604,6 +1727,11 @@ func _process(delta: float) -> void:
 ## to `Telemetry` so a log entry and the screen never disagree. Nothing here decides anything, and
 ## nothing here rolls anything, which is the whole of what the **telemetry** rule asks.
 func _process_the_finale(delta: float) -> void:
+	# Nothing of the walk is asked while its brief is up. This node runs through a pause (it has to,
+	# or Esc would not answer), so without this the door under her feet and the exit she is standing
+	# next to would both keep being tested against a section that has not begun.
+	if _finale_brief_open:
+		return
 	Telemetry.set_clock(FinaleController.length() - _finale.time_remaining())
 	if _finale.section == FinaleController.Section.BUILDING:
 		if _interior:

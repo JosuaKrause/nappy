@@ -81,7 +81,9 @@ Smoke, sirens, barricades. Military convoys re-shape the map as they pass. Prote
 Whole districts close.
 
 **Day 14** is the finale — either the sabotage route (good ending) or simply the last walk
-home (neutral ending).
+home (neutral ending). The sabotage route does not end on a screen: winning day 14 with every
+task complete goes on the same night to the escape, the building and then the city, and the run
+ends when she is out. See `docs/MECHANICS.md`, "The escape, which is the run's ending".
 
 ## The resistance subquest
 
@@ -138,7 +140,9 @@ entirely and still reach the good ending.
 
 Reaching `RESISTANCE_GOAL` earns the *chance* at the good ending; the day-14 sabotage is
 the act. `GameState.earned_good_ending()` requires both, so a player who does all the
-legwork and then walks straight home on the last night gets the neutral ending.
+legwork and then walks straight home on the last night gets the neutral ending — and the same
+pair is what sends a won day 14 on to the escape rather than to an ending screen, so the good
+ending is the one ending nobody is simply told about.
 
 ### Feedback
 

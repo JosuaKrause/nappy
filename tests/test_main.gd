@@ -43,6 +43,7 @@ func run(t) -> void:
 	_test_focus_lost_does_nothing_when_the_pause_is_already_open(t)
 	_test_focus_gained_does_not_resume(t)
 	_test_focus_lost_does_nothing_under_the_override(t)
+	_test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t)
 
 ## `main._debug` is read once from `DevFlags.enabled()` rather than asked of the OS inside
 ## `_process()`, precisely so this can set it directly and check the release shape — the same
@@ -766,3 +767,83 @@ func _test_focus_lost_does_nothing_under_the_override(t) -> void:
 	t.check(not main._pause.is_open(), "--no-focus-pause turns off the notification's own pause")
 	t.check(not t.get_tree().paused, "and the tree keeps running")
 	_teardown_focus_pause_main(t, main)
+
+# ------------------------------------------------------- day 14 hands over ---
+
+## **The last day ends by handing over, not by ending the run.** *(PLAYTEST-113: "the escape the
+## building starts when the player has completed all tasks by the end of day 14".)* The escape is
+## the good ending played rather than announced, so a won day 14 with every task complete must
+## leave `GameState` exactly where it is — no `ending`, no cleared save, day 14 still — and only
+## record which section the run is now in. A run whose ending were set here could write no save at
+## all (`GameSave._write_now()` refuses one), and the section checkpoints would have nothing to
+## come back to.
+##
+## Driven through `main._on_day_finished()` itself against a real city, day and summary, because
+## the thing that has to hold is an *omission* — that `GameState.finish_day()` is not called — and
+## an omission is only visible where the call would have been.
+func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) -> void:
+	var baseline := GameState.save_snapshot()
+	var saved_paused: bool = t.get_tree().paused
+
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+	# The camera and the baby are named by hand for the reason the **verify** skill names: a
+	# hand-built `Stroller` looks them up by node path, and `Camera2D.new()` is not called
+	# `Camera2D`, so a rig without them passes vacuously or throws on the first lookup.
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	var stroller := Stroller.new()
+	stroller.add_child(camera)
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+	var baby := Baby.new()
+	baby.name = "Baby"
+	stroller.add_child(baby)
+	baby.set_physics_process(false)
+	var day := DayController.new()
+	t.add_child(day)
+	day.set_process(false)
+	day.setup(city.map, stroller)
+	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	t.add_child(summary)
+
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._city = city
+	main._player = stroller
+	main._day = day
+	main._summary = summary
+
+	GameState.start_run(SEED)
+	GameState.day = Tuning.RUN_LENGTH_DAYS
+	GameState.resistance_progress = Tuning.RESISTANCE_GOAL
+	GameState.sabotage_done = true
+	main._on_day_finished(GameEnums.DayResult.WON)
+	t.check(GameState.ending == GameEnums.Ending.NONE,
+			"a won day 14 with every task complete does not end the run")
+	t.check(GameState.escape_section == FinaleController.Section.BUILDING,
+			"it puts the run in the building, which is where the escape starts")
+	t.check(GameState.day == Tuning.RUN_LENGTH_DAYS, "and leaves the calendar alone")
+	t.check(not main._run_over, "so nothing downstream thinks the run is over")
+
+	# The other side of the same day: the legwork done and the last night skipped is still the
+	# neutral ending it has always been, and must not reach the escape.
+	GameState.start_run(SEED)
+	GameState.day = Tuning.RUN_LENGTH_DAYS
+	GameState.resistance_progress = Tuning.RESISTANCE_GOAL
+	GameState.sabotage_done = false
+	main._on_day_finished(GameEnums.DayResult.WON)
+	t.check(GameState.ending == GameEnums.Ending.NEUTRAL,
+			"a won day 14 without the last night still ends the run on the neutral ending")
+	t.check(GameState.escape_section == FinaleController.Section.NONE,
+			"and never reaches the escape")
+
+	summary.free()
+	day.free()
+	stroller.free()
+	city.free()
+	main.free()
+	GameState.restore_snapshot(baseline)
+	GameState.escape_section = FinaleController.Section.NONE
+	t.get_tree().paused = saved_paused

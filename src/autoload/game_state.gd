@@ -12,6 +12,19 @@ var nerves: int = Tuning.STARTING_NERVES
 var resistance_progress: int = 0
 var ending: GameEnums.Ending = GameEnums.Ending.NONE
 
+## Which section of the escape this run is in, as a `FinaleController.Section` — `0` (`NONE`) for
+## every one of the fourteen days, `BUILDING` or `CITY` once a won day 14 with every task complete
+## has handed over to it. An `int` rather than the enum because a cross-script enum is not the same
+## type as itself across a script boundary (see the **godot** skill), and a field on the *run*
+## rather than on the scene for two reasons: it survives `reload_current_scene()`, which is how the
+## handover reaches the escape's own boot with the run intact, and it is the one thing the save
+## carries about the escape, so a game closed in a section opens on that section's brief.
+##
+## Deliberately **not** in `_SAVE_FIELDS`: `GameSave` writes it beside `day_under_way` rather than
+## inside the run snapshot, so a save written before the escape existed is still complete and still
+## loads (`snapshot_is_complete()`), answering `NONE` by absence.
+var escape_section: int = 0
+
 ## Seconds the world has actually been moving this run — advanced by exactly one owner,
 ## `main._process()`'s own day-loop branch, while a day is walking or returning home and the tree
 ## is not paused. Never shown during play; the ending screen is the only place it is read, through
@@ -132,6 +145,7 @@ func start_run(seed_value: int = 0) -> void:
 	nerves = Tuning.STARTING_NERVES
 	resistance_progress = 0
 	ending = GameEnums.Ending.NONE
+	escape_section = 0
 	play_seconds = 0.0
 	consumed_one_shots.clear()
 	completed_resistance_steps.clear()
@@ -216,6 +230,10 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 
 func _end_run(which: GameEnums.Ending) -> void:
 	ending = which
+	# A run that has ended is no longer in the escape, whether it reached one or never did. Left
+	# set, the next boot would read a finished run's leftover section and open the escape over a
+	# title screen that has nothing behind it.
+	escape_section = 0
 	# `played` reuses the `ending` kind rather than adding a new one — how the run finished is
 	# exactly the question a run's own length answers alongside, and the telemetry skill's own
 	# "a kind reused from that table, not a synonym for one" does not want a second line for it.
