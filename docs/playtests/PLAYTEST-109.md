@@ -33,6 +33,14 @@ by descending height, and a full rectangle packer only if a fill floor could not
 > we don't need a perfect rectangle packing. a greedy approach is fine but don't let obvious
 > empty space go wasted."
 
+On when a page loads. `AtlasLibrary.acquire()` is a blocking `load()` in the frame that calls
+it, and its call sites — `Stroller._ready()`, the city's `build()`, `Crowd.start_day()`, a leaf
+consumer entering the tree — are not draw calls but are not all behind a screen either. Offered:
+every group resident from boot, against per-group lifetimes with each load proven to be covered:
+
+> "yeah, we probably could preload everything. or at least load everything needed for a day
+> during the day brief. and everything that might always be needed at startup"
+
 ## What the bake printed, which is what the notes are about
 
 | group | members | page |
@@ -73,11 +81,15 @@ members of 16 to 32px, and `events` holds one of 200px.
    acquiring the pram's and the one parent's.
 4. **The UI and the head indicators are one group.**
 5. **That group is always loaded**, from boot: "UI elements should always be there."
-6. **Nothing starts loading in the frame that needs it.** "we cannot start loading something in
+6. **Loads happen at two moments and no others: startup and the day brief.** Startup loads
+   everything that might always be needed; the day brief loads everything the day needs,
+   the interior included, since a building is entered mid-day. Loading everything at startup is
+   allowed — "we probably could preload everything" — and the two moments are the floor.
+7. **Nothing starts loading in the frame that needs it.** "we cannot start loading something in
    the frame we need it." A group is acquired ahead of its first draw — at boot, or behind the
    screens that already cover a wait — and never from a draw call or from the frame a thing
    first appears.
-7. **The `.import` sidecars** of sources that leave the imported tree are deleted with the move,
+8. **The `.import` sidecars** of sources that leave the imported tree are deleted with the move,
    in M171's last item; the answer given is recorded there.
-8. **The release after M171 closes is a minor version.** v0.13.1 was cut on 2026-09-20 ahead of
+9. **The release after M171 closes is a minor version.** v0.13.1 was cut on 2026-09-20 ahead of
    the consumer moves, at the player's word.

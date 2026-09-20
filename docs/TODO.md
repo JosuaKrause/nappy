@@ -358,10 +358,17 @@ closes the contract.
       `Stroller` acquires the shared one and the run's parent. *"the UI and head indicators
       could be combined. also, those are textures that should always be loaded"*: one group,
       acquired at boot and held for the life of the process. *"we cannot start loading
-      something in the frame we need it"*: every `AtlasLibrary.acquire()` call site is listed
-      in the PR with the moment it runs, each is at boot or behind a screen that already
-      covers a wait, and the run log's group-loaded line carries the frame it happened in so a
-      load inside a played frame is visible.
+      something in the frame we need it"* · *"we probably could preload everything. or at least
+      load everything needed for a day during the day brief. and everything that might always
+      be needed at startup"*: a page loads at startup or during the day brief and at no other
+      moment. Startup holds what is always needed — the UI with the head indicators, the pram
+      and the run's parent once the parent is known; the day brief loads what the day needs —
+      the city's groups, the crowd, the events, the interior — before the brief can be
+      dismissed. Holding every group from startup is the simpler build and is allowed; take it
+      unless the measured startup cost says otherwise, and say which in the PR. A consumer's
+      own `acquire()` stays as the reference count that proves the page is there, and the suite
+      fails on an `acquire()` that has to load outside those two moments; the run log's
+      group-loaded line carries the moment it happened in.
 - [ ] **The ground.** The authored TileSet stops referencing SVGs; the compositor reads each
       base and layer as a region of the ground page's image, composes at runtime as now, and
       the second runtime packer, `pack_into_one_texture()`, is replaced by one upload of the
