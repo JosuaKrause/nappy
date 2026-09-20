@@ -3384,10 +3384,13 @@ var _resistance: ResistanceDirector
 
 func _protest_objective() -> Vector2:
 	if not (_resistance and is_instance_valid(_resistance)):
-		var tree := get_tree()
-		if tree == null:
+		# `is_inside_tree()` rather than a null check on `get_tree()`'s own return: `get_tree()`
+		# logs an engine `ERROR:` itself whenever a node has none, which a bare test rig (and now
+		# `tools/cost_table.gd`'s measurement of every row, `protest` among them) hits on every
+		# tick rather than once — `is_inside_tree()` answers the same question with nothing to log.
+		if not is_inside_tree():
 			return Vector2.INF
-		_resistance = tree.get_first_node_in_group("resistance") as ResistanceDirector
+		_resistance = get_tree().get_first_node_in_group("resistance") as ResistanceDirector
 	if not _resistance:
 		return Vector2.INF
 	return _resistance.pointable_objective()
