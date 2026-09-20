@@ -15,6 +15,15 @@ extends RefCounted
 ## question is about geometry: both are answered from the region table with no texture loaded
 ## at all, which is what a layout pass or a shadow's footprint needs.
 ##
+## **A page may only be read from disk in a loading window.** `load()` blocks the frame that
+## calls it, so a page that arrives on the frame it is first drawn in is a stutter the player
+## sees — *"we cannot start loading something in the frame we need it"*. A boot sequence opens a
+## window, names the moment it is (`MOMENT_STARTUP`, `MOMENT_DAY_BRIEF`, `MOMENT_ESCAPE`), takes
+## what it wants and closes it again; an `acquire()` that finds its page unloaded with no window
+## open loads it anyway and reports `MOMENT_OUTSIDE` with a `push_error`, which makes the test
+## gate red. See `moment_for_a_load()` for the third state, before any boot has claimed the
+## moments at all.
+##
 ## **The region table is loaded once and never dropped.** It is a few hundred rectangles, it is
 ## needed to answer `native_size()` with nothing acquired, and re-reading it per group would
 ## make the cheap questions cost a file read.
@@ -48,10 +57,33 @@ const PADDING := 1
 ## would win, which makes "extruded" false for the other one.
 const SEPARATION := 2 * PADDING
 
+## The moments a page is allowed to be read from disk in. `MOMENT_STARTUP` is a boot before its
+## first screen is interactive, `MOMENT_DAY_BRIEF` the screen between two days, `MOMENT_ESCAPE`
+## the `--start-escape` boot, which is that mode's own startup.
+const MOMENT_STARTUP := &"startup"
+const MOMENT_DAY_BRIEF := &"day brief"
+const MOMENT_ESCAPE := &"escape"
+## What a load that happened with no window open is called, in the run log and in the error.
+const MOMENT_OUTSIDE := &"OUTSIDE"
+## Before anything has claimed the loading moments — a process that builds nodes by hand rather
+## than booting the game, which is every suite in `tests/`. Nothing is being played, so there is
+## no frame a load could stutter; `main`'s boot is the only thing that ever claims them.
+const MOMENT_UNMANAGED := &"unmanaged"
+
 static var _regions: Dictionary = {}
 static var _pages: Dictionary = {}
 static var _mode := ""
 static var _table_loaded := false
+## Whether a boot sequence owns the loading moments. False until `claim_the_loading_moments()`
+## is called and again after `release_the_loading_moments()`.
+static var _moments_claimed := false
+## The open window's own moment, or `&""` when it is shut.
+static var _window: StringName = &""
+## Groups held for the life of the process, each holding exactly one reference of its own.
+static var _resident: Dictionary = {}
+## Group -> the moment its page was last read from disk in. What a test reads instead of
+## provoking the error.
+static var _load_moments: Dictionary = {}
 
 ## Group name -> the loaded page `Texture2D`, its reference count and its size.
 class Page extends RefCounted:
@@ -432,9 +464,85 @@ static func region_rect(name: StringName) -> Rect2i:
 	var rect: Array = record["rect"]
 	return Rect2i(int(rect[0]), int(rect[1]), int(rect[2]), int(rect[3]))
 
+# ----------------------------------------------------------- the two moments ---
+
+## A boot takes ownership of the loading moments and opens its first window in one call.
+##
+## **This is what turns the rule on for the rest of the process**: from here until
+## `release_the_loading_moments()`, a page read from disk outside a window is an error. Only a
+## boot may say it — `main._hold_every_page_a_day_draws()` is the one caller — because only a
+## boot knows that this process is a game somebody is about to watch. A process that never boots
+## one, which is every suite that builds a `Stroller`, a `City` or a `Crowd` by hand, stays
+## `MOMENT_UNMANAGED` and loads as it always did.
+static func claim_the_loading_moments(moment: StringName) -> void:
+	_moments_claimed = true
+	_window = moment
+
+## Opens a window inside an existing claim, and names the moment it is. The day brief's own two
+## lines are the caller.
+##
+## **A no-op where no boot has claimed the moments**, rather than a second way to claim them: a
+## test that drives the day brief's screen on a hand-built `main` would otherwise turn the rule
+## on for every suite that ran after it, against nodes no boot ever held a page for.
+static func open_loading_window(moment: StringName) -> void:
+	if not _moments_claimed:
+		return
+	_window = moment
+
+static func close_loading_window() -> void:
+	_window = &""
+
+## Hands the moments back, so the process is `MOMENT_UNMANAGED` again. `main._exit_tree()` calls
+## it, which is what lets the held restart — a whole scene reload — boot into a clean claim
+## rather than into the previous `main`'s closed window.
+static func release_the_loading_moments() -> void:
+	_moments_claimed = false
+	_window = &""
+
+## What a page read from disk *right now* would be called: the open window's own moment,
+## `MOMENT_OUTSIDE` when the moments are claimed and the window is shut, or `MOMENT_UNMANAGED`
+## when no boot has claimed them. Asked without loading anything, which is how a test can state
+## the rule without provoking a real engine error into the gate's output.
+static func moment_for_a_load() -> StringName:
+	if not _moments_claimed:
+		return MOMENT_UNMANAGED
+	return _window if _window != &"" else MOMENT_OUTSIDE
+
+## The moment `group`'s page was last read from disk in, or `&""` if it has never been read.
+static func last_load_moment(group: StringName) -> StringName:
+	return _load_moments.get(group, &"")
+
+## Takes the one reference that keeps `group` resident for the life of the process, and does
+## nothing if it is already held. **This is what makes "nothing is unloaded that the next day
+## might need" true by construction**: a consumer's own `_exit_tree()` release can then only ever
+## drop the count back to this reference, never to nought, so a city torn down between two runs
+## or a node re-entering the tree never costs a reload.
+static func hold_for_the_process(group: StringName) -> void:
+	if _resident.has(group):
+		return
+	_resident[group] = true
+	acquire(group)
+
+## Gives back a residency taken earlier. The one caller is a boot whose run draws the *other*
+## parent than the last one did — a held restart rerolls the choice inside one process — and
+## dropping a page nothing in the new run will draw is the whole point of splitting the two.
+static func stop_holding(group: StringName) -> void:
+	if not _resident.has(group):
+		return
+	_resident.erase(group)
+	release(group)
+
+## Whether `group` is one of the pages held for the life of the process.
+static func is_resident(group: StringName) -> bool:
+	return _resident.has(group)
+
 # --------------------------------------------------------------- the lifetime ---
 
 ## Takes a reference on `group`, loading its page on the first one.
+##
+## **The load is the thing the moments govern**, not the reference: every count after the first
+## is free, which is why a consumer keeps its own `acquire()`/`release()` pair as the proof that
+## the page is there while it draws.
 static func acquire(group: StringName) -> void:
 	_load_table()
 	var page: Page = _pages.get(group)
@@ -444,6 +552,8 @@ static func acquire(group: StringName) -> void:
 	page.count += 1
 	if page.count > 1:
 		return
+	var moment := moment_for_a_load()
+	var started := Time.get_ticks_usec()
 	var path := BAKED_ROOT + String(group) + ".png"
 	var texture: Texture2D = load(path)
 	if texture == null:
@@ -451,6 +561,34 @@ static func acquire(group: StringName) -> void:
 		page.count = 0
 		return
 	page.texture = texture
+	_load_moments[group] = moment
+	# Written before the error below, so an offending load is in the log whichever way the run
+	# ends. `texture` is the kind docs/TELEMETRY.md already gives to "when a picture was loaded
+	# and what it cost".
+	_note("texture", "atlas page '%s' loaded in the %s: %.1f ms, %d x %d"
+			% [group, moment, (Time.get_ticks_usec() - started) / 1000.0,
+			page.size.x, page.size.y])
+	if moment == MOMENT_OUTSIDE:
+		push_error(("Atlas group '%s' was read from disk outside a loading window. A page loads "
+				+ "at startup or in a day brief and nowhere else — see AtlasLibrary's own doc.")
+				% group)
+
+## One line in the run log, reached by node path rather than by naming the `Telemetry` autoload.
+##
+## **`--script` skips autoloads** (the **godot** skill), and `tools/bake_atlases.gd` is a headless
+## `--script` run that compiles this file for `region_name_for()` and `plan()`: a bare
+## `Telemetry.note(...)` here is "Identifier not found: Telemetry" at compile time, which takes
+## the whole bake down. Looked up instead, so it is the autoload in the running game and nothing
+## at all in the bake. `call()` rather than `.note()` because the node is only a `Node` to the
+## type checker.
+static func _note(kind: String, text: String) -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return
+	var telemetry: Node = tree.root.get_node_or_null(^"Telemetry")
+	if telemetry == null:
+		return
+	telemetry.call(&"note", kind, text)
 
 ## Drops a reference on `group`, freeing its page and every region handed out over it on the
 ## last one. A `release()` with nothing acquired is a programming error and says so.
@@ -539,8 +677,13 @@ static func page_image(group: StringName) -> Image:
 	return image
 
 ## Drops every page and re-reads the table, so a suite that bakes or swaps one starts clean.
+## Hands the loading moments back with them: a suite that drove a boot's own claim must not
+## leave the next suite's hand-built nodes acquiring against a window that boot closed.
 static func reset_for_tests() -> void:
 	_regions = {}
 	_pages = {}
 	_mode = ""
 	_table_loaded = false
+	_resident = {}
+	_load_moments = {}
+	release_the_loading_moments()

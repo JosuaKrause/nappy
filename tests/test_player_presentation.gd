@@ -67,11 +67,12 @@ func _test_main_binds_both_complete_families_before_drawing(t) -> void:
 	main.free()
 	GameState.player_is_male = saved
 
-## Every path the rig can draw is a name the bake actually knows, on the group the rig itself
-## acquires — the completeness check `assets/atlases/membership.json` wants, now that the rig
-## reaches its pictures through `AtlasLibrary` rather than through `TextureAtlas`/`TextureResolver`.
-## The pixel-for-pixel claim that a baked region is today's picture is
-## `tests/test_atlas_library.gd`'s own job, not this suite's.
+## Every path the rig can draw is a name the bake actually knows — the completeness check
+## `assets/atlases/membership.json` wants, now that the rig reaches its pictures through
+## `AtlasLibrary` rather than through `TextureAtlas`/`TextureResolver`. **Which page each one is
+## on is `tests/test_atlas_loading.gd`'s**, since that is a claim about what a run loads rather
+## than about the presentation choice this suite is for; the pixel-for-pixel claim that a baked
+## region is today's picture is `tests/test_atlas_library.gd`'s.
 func _test_every_family_source_is_a_baked_region(t) -> void:
 	var sources := Stroller.family_sources()
 	t.check(not sources.is_empty(), "the family exports at least one source")
@@ -79,8 +80,6 @@ func _test_every_family_source_is_a_baked_region(t) -> void:
 	for path: String in sources:
 		var name := AtlasLibrary.region_name_for(path)
 		t.check(AtlasLibrary.has_region(name), "%s is baked" % path)
-		t.check(AtlasLibrary.group_of(name) == Stroller.FAMILY_ATLAS,
-				"%s is on the stroller's own page" % path)
 		families[path.get_file().split("_")[0]] = true
 	t.check(families.has("father") and families.has("mother") and families.has("pram"),
 			"the family covers both parents and the shared stroller")
@@ -90,4 +89,4 @@ func _test_every_family_source_is_a_baked_region(t) -> void:
 		var name := AtlasLibrary.region_name_for(path)
 		t.check(AtlasLibrary.has_region(name), "%s is baked" % path)
 		t.check(AtlasLibrary.group_of(name) == Stroller.INDICATOR_ATLAS,
-				"%s is on the head indicators' own page" % path)
+				"%s is on the indicators' own page" % path)
