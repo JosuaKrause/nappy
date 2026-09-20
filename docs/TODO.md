@@ -504,9 +504,13 @@ position, no picture, 2.4 a second everywhere on a 22 second pulse.
       replaces its pressure is the masts' own fields. `curfew_announce`, the other `city_wide`
       row, is looked at the same way. The day-14 reward, that the sabotage silences the city,
       becomes the masts going quiet. **Confirmed with the player before it is built.**
-- [ ] **Posters are more obvious.** The poster crew's walls and what they leave behind read at
-      walking distance as the city changing: size, contrast and how many, against the act's
-      palette. A visual attempt comes back to the player early rather than polished.
+- [ ] **Posters are seen at all.** *"I have not seen a single poster in any playthrough -- I
+      don't know what you're referring to here -- it needs to be way more obvious"*: the run
+      behind PLAYTEST-116 placed ten poster crews on day 4 and the player noticed none, so the
+      first job is finding out why — where they are placed against where she walks, how large
+      they draw, what a finished wall looks like — before choosing a fix. Then the crew's
+      walls, and what they leave behind, read at walking distance as the city changing: size,
+      contrast and how many, against the act's palette. A visual attempt comes back to the player early rather than polished.
 
 ---
 
@@ -564,24 +568,28 @@ with the mark on the way, and the robber's band around a mark is a larger share 
 brief text to further the narrative. write about what happened that day -- curfew announced
 etc"*. One or two plain sentences a morning, under `docs/NARRATIVE.md`'s tone rules — nobody
 explains the politics, the danger is noise, nothing triumphant — each naming the thing that day
-introduces, so the brief is also where a new obstacle is first heard of. Written against the
-proposed shape above, so the days move if the shape does:
+introduces, so the brief is also where a new obstacle is first heard of. **One thing a morning** (*"focus on one thing only otherwise it becomes too dense"*), in
+American English, which the player asked for in everything said to them. Days 1, 3, 4 and 6 are
+the player's own wording or close to it; day 6 names the rumor of chalk, which overturns *the
+first encounter comes with no hint at all* on the player's word; day 7 waits on M180 making a
+poster something she has ever seen. Written against the proposed shape above, so the days move
+if the shape does:
 
 | Day | Draft |
 | --- | --- |
-| 1 | She won't settle indoors. The street is warm and busy. Walk until she sleeps, then bring her home. |
-| 2 | Someone is playing music by the square. There are bicycles on the sidewalk again. |
-| 3 | The streets smell of smoke this morning, and nobody knows from where. |
-| 4 | The building on the corner is still cordoned off. Men are pasting posters over the old ones. There are police on the street who were not there last week. |
-| 5 | They put masts up overnight, at the junctions. At noon they all played the same tone. |
-| 6 | A curfew was announced from the masts. The days are shorter now. There is chalk on a wall in an alley that was not there yesterday. |
-| 7 | The posters have been changed again. People read them without stopping. |
-| 8 | A van took someone from the next street before it was light. Nobody came out to look. The park gates are chained. |
-| 9 | They have closed the districts off from each other. There are huts at the crossings, and a wait. |
-| 10 | The shops on the square are boarded. The street is quiet enough to hear her breathing. |
-| 11 | A door on your landing was sealed in the night. The name is still on the bell. |
-| 12 | There is smoke over the rooftops and trucks on the main road. People are out in the streets, and they are not going home. |
-| 13 | Whole districts are shut. The crowds are larger. Nobody is reading the posters now. |
+| 1 | She won't settle indoors. It is quiet in the park. Walk until she sleeps, then bring her home. |
+| 2 | There are bicycles on the sidewalk again. |
+| 3 | The streets smell of smoke today. |
+| 4 | It feels like there are more police around now. |
+| 5 | They put up masts at the intersections overnight. |
+| 6 | A curfew was announced today. There is not as much time. There are rumors of chalk messages in alleys. |
+| 7 | There are new posters on every wall. |
+| 8 | A van took someone from the next street before it was light. |
+| 9 | They have closed the districts off from each other. There are huts at the crossings. |
+| 10 | The stores on the square are boarded up. |
+| 11 | A door down the hall was sealed in the night. The name is still on the bell. |
+| 12 | There is smoke over the rooftops, and trucks on the main road. |
+| 13 | The crowds are larger. Nobody is going home. |
 | 14 | The last night. |
 
 **Questions for the player:** the start day; how many tasks and how many may be missed; the door
