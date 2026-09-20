@@ -4,9 +4,10 @@ extends RefCounted
 ## already covers the atlas contract every group shares (every member baked, no two regions
 ## overlap, geometry answered with nothing acquired, a page arriving and leaving with its
 ## references); this suite covers what is specific to this family: a prop's shadow reads its size
-## from the region table rather than from a loaded texture, the "decoration" group has exactly one
-## acquire while a `City` stands, and `City._exit_tree()`'s `release()` actually balances
-## `build()`'s `acquire()`.
+## from the region table rather than from a loaded texture, `StreetTrees.footprint_radius()` plans
+## clearance off the same table its planted trees are drawn from, the "decoration" group has
+## exactly one acquire while a `City` stands, and `City._exit_tree()`'s `release()` actually
+## balances `build()`'s `acquire()`.
 ##
 ## `tests/test_blocks.gd`'s own street-tree footprint check already builds a real `City` off
 ## `CITY_SCENE` and frees it; the acquire/release checks here do the same rather than reaching for
@@ -18,6 +19,7 @@ const SEED := 4242
 
 func run(t) -> void:
 	_test_shadow_sizes_read_the_region_table(t)
+	_test_street_tree_footprint_matches_the_region_table(t)
 	_test_the_city_is_the_groups_only_acquire(t)
 	_test_the_group_is_released_when_the_city_is_freed(t)
 
@@ -50,7 +52,7 @@ func _test_shadow_sizes_read_the_region_table(t) -> void:
 	tree.variant = 0
 	tree.scale_factor = 1.3
 	t.add_child(tree)
-	var tree_name := AtlasLibrary.region_name_for(Prop.TREES[0].resource_path)
+	var tree_name: StringName = Prop.TREES[0]
 	var expected_tree: float = float(AtlasLibrary.native_size(tree_name).x) * 1.3 * 0.28
 	t.check(tree.shape != null and is_equal_approx(tree.shape.radius, expected_tree),
 			"a tree's shadow radius follows scale_factor off the region table's own size (%.2f against %.2f)"
@@ -69,6 +71,20 @@ func _test_shadow_sizes_read_the_region_table(t) -> void:
 			% [frame.shape.radius if frame.shape else -1.0,
 					frame.shape.half_length if frame.shape else -1.0])
 	frame.free()
+
+## `StreetTrees.footprint_radius()` (`src/city/street_trees.gd`) plans tree clearance for the
+## closure and event planners off `AtlasLibrary.native_size()` now, ahead of any `City` existing —
+## the same table `Prop`'s own shadow reads, rather than a second source of the same number.
+## `tests/test_atlas_library.gd`'s `_test_baked_pixels_are_todays_pictures` already establishes
+## that `native_size()` is bit-identical to the SVG import this used to read (see the docstring on
+## `footprint_radius()` itself), so this only pins the planner and the region table together.
+func _test_street_tree_footprint_matches_the_region_table(t) -> void:
+	var widest := 0.0
+	for name: StringName in Prop.TREES:
+		widest = maxf(widest, float(AtlasLibrary.native_size(name).x) * 0.28)
+	t.check(is_equal_approx(StreetTrees.footprint_radius(), widest),
+			"StreetTrees.footprint_radius() (%.2f) is the widest street tree's region size times 0.28 (%.2f)"
+			% [StreetTrees.footprint_radius(), widest])
 
 ## The "decoration" group has exactly one acquire while a `City` is alive — `City.build()`'s own —
 ## so nothing in `Prop` or `CityDecals` could ever be asked to draw a region before the group

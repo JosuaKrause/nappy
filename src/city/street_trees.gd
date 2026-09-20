@@ -172,11 +172,17 @@ static func segment_keys_with_trees(map: CityMap) -> Dictionary:
 ## How far a street tree's own ground shape reaches from its trunk, in px — `Prop`'s street tree
 ## is a `GroundShape.point` of exactly this, and the widest of the sprites it may be drawn as is
 ## what a planner has to keep clear, since which variant a pit gets is decided where the prop is
-## built rather than here.
+## built rather than here. Read from `AtlasLibrary.native_size()`, which answers with nothing
+## acquired — the "ahead of any City existing" case every caller here is in. Bit-identical to the
+## number this answered off a loaded `Texture2D` before the atlas move:
+## `tests/test_atlas_library.gd`'s `_test_baked_pixels_are_todays_pictures` compares every baked
+## region, `props/tree_a` and `props/tree_b` included, against today's imported picture pixel for
+## pixel — size included — so `native_size()` cannot silently disagree with the SVG import this
+## used to read.
 static func footprint_radius() -> float:
 	var widest := 0.0
-	for texture: Texture2D in Prop.TREES:
-		widest = maxf(widest, texture.get_size().x * _FOOTPRINT_FRACTION)
+	for name: StringName in Prop.TREES:
+		widest = maxf(widest, float(AtlasLibrary.native_size(name).x) * _FOOTPRINT_FRACTION)
 	return widest
 
 ## Every tile a standing street tree stands on or reaches over, as a set — the ground

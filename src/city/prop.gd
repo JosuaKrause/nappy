@@ -8,16 +8,9 @@ enum Kind { TREE, PLAYGROUND_FRAME, BOLLARD, STREET_TREE, SACK, SACK_PILE }
 ## `AtlasLibrary` region names in the "decoration" group (`CityDecals.DECORATION_ATLAS`), whose
 ## lifetime is the city's: `City.build()` acquires the group before any prop is spawned and
 ## `City._exit_tree()` releases it, so every region asked for below is always available.
-##
-## `TREES` stays an array of the preloaded pictures themselves rather than of their region names
-## — `StreetTrees.footprint_radius()` reads `Texture2D.get_size()` off it directly to plan tree
-## clearance ahead of any city being built, which a region name cannot answer. Drawing and shadow
-## sizing below still go through `AtlasLibrary.region_name_for()` and never read `get_size()` off
-## these textures themselves.
-const TREES: Array[Texture2D] = [
-	preload("res://assets/props/tree_a.svg"),
-	preload("res://assets/props/tree_b.svg"),
-]
+## `AtlasLibrary.native_size()` answers with nothing acquired, which is what lets
+## `StreetTrees.footprint_radius()` plan tree clearance off `TREES` ahead of any city existing.
+const TREES: Array[StringName] = [&"props/tree_a", &"props/tree_b"]
 const SWING_FRAME := &"props/swing_frame"
 const BOLLARD := &"props/bollard"
 const SACK := &"props/garbage_sack"
@@ -46,7 +39,8 @@ func _ready() -> void:
 func _compute_shape() -> GroundShape:
 	match kind:
 		Kind.TREE, Kind.STREET_TREE:
-			var size := Vector2(AtlasLibrary.native_size(_tree_region())) * scale_factor
+			var size := Vector2(AtlasLibrary.native_size(TREES[absi(variant) % TREES.size()])) \
+					* scale_factor
 			return GroundShape.point(size.x * 0.28)
 		Kind.PLAYGROUND_FRAME:
 			return _playground_frame_shape()
@@ -58,13 +52,6 @@ func _compute_shape() -> GroundShape:
 			return GroundShape.point(AtlasLibrary.native_size(SACK_PILE).x * 0.3)
 		_:
 			return GroundShape.point(0.0)
-
-## This variant's tree, as the region name `AtlasLibrary` baked its picture under — derived from
-## `TREES`' own preloaded path rather than a second table, so the name and the picture it draws
-## can never disagree.
-func _tree_region() -> StringName:
-	var texture: Texture2D = TREES[absi(variant) % TREES.size()]
-	return AtlasLibrary.region_name_for(texture.resource_path)
 
 func _draw() -> void:
 	match kind:
@@ -96,7 +83,7 @@ static func _playground_frame_shape() -> GroundShape:
 
 ## Two tree shapes and a mirror, so ten trees in a park are not one silhouette repeated.
 func _draw_tree() -> void:
-	var name := _tree_region()
+	var name: StringName = TREES[absi(variant) % TREES.size()]
 	# The size is read off the region table rather than off the drawn texture, since `scale_factor`
 	# is applied here and the two answer the same number either way — a region reports its
 	# source's own size.
