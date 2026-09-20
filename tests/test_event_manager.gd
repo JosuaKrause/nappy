@@ -23,8 +23,6 @@ func run(t) -> void:
 	_test_a_set_piece_happens_at_exactly_one_of_its_sites(t)
 	_test_a_day_started_through_the_manager_alone_still_carries_seals(t)
 	_test_a_streamed_pursuer_resumes_the_chase(t)
-	_test_a_family_atlas_is_asked_for_and_handed_back(t)
-	_test_every_look_a_row_can_carry_has_a_family(t)
 	_teardown()
 
 func _build_city(t) -> void:

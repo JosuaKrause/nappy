@@ -230,7 +230,7 @@ func _is_worth_an_arrow(instance: EventInstance) -> bool:
 	# If there is no silhouette to put in the badge there is nothing to *say*, and an arrow that
 	# only says "something" is an anxiety rather than a warning. Nothing lethal or fast is
 	# currently in that position, and this is here so that adding one is a decision.
-	if _icon_for(instance.def.look) == null:
+	if _icon_for(instance.def.look).is_empty():
 		return false
 	# An `AHEAD_OF_PLAYER` crossing is sited across her line by the director, a fixed lead ahead of
 	# her, and its entire content is *the moment it happens to you* — three seconds of cat is not
@@ -281,12 +281,17 @@ func _draw_arrow(instance: EventInstance, distance: float, transform: Transform2
 	# The thing itself, so the arrow says *what* rather than *something*. Scaled to fit the
 	# badge with its aspect kept: these are authored at world scale and a square box squashes a
 	# fire engine into something unrecognisable, which defeats the whole cue.
-	var texture := _icon_for(instance.def.look)
-	if texture:
-		var art := texture.get_size()
+	var picture := _icon_for(instance.def.look)
+	if not picture.is_empty():
+		# The size comes from the region table rather than from the texture, so the badge's own
+		# fit is arithmetic that needs nothing loaded; the region itself is the one thing here
+		# that does, and `EventManager` is holding the page for as long as there is an instance
+		# to draw a badge for.
+		var name := AtlasLibrary.region_name_for(picture)
+		var art := Vector2(AtlasLibrary.native_size(name))
 		var fit := ICON / maxf(art.x, art.y)
 		var drawn := art * fit
-		draw_texture_rect(TextureResolver.resolve(texture), Rect2(at - drawn * 0.5, drawn), false)
+		draw_texture_rect(AtlasLibrary.region(name), Rect2(at - drawn * 0.5, drawn), false)
 
 	var label := "%d m" % roundi(distance / Tuning.TILE_SIZE * 1.5)
 	var font := ThemeDB.fallback_font
@@ -296,14 +301,17 @@ func _draw_arrow(instance: EventInstance, distance: float, transform: Transform2
 			Palette.OUTLINE)
 	draw_string(font, text_at, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, colour)
 
-## The silhouette that stands for a kind of event at icon size.
+## The silhouette that stands for a kind of event at icon size, as the picture's own repository
+## path — `""` for a look with nothing to draw. The badge reads it as a region of the same baked
+## `events` page the entity itself draws from, so the thing at the screen edge and the thing in the
+## street are the same pixels rather than two loads of one file.
 ##
 ## **The table lives on `EventInstance`, not here.** A `match` of its own is one table too many for
 ## a rule that says *the entity carries its own picture*, and it goes wrong the way a second copy
 ## does: a category row returns the generic van, so the badge for a fire engine, an army truck and
 ## the unmarked van that takes the baby is a picture of a delivery van. An arrow that says the wrong
 ## thing is worse than an arrow that can only say "something".
-func _icon_for(look: EventDef.Look) -> Texture2D:
+func _icon_for(look: EventDef.Look) -> String:
 	return EventInstance.icon_for(look)
 
 func _draw_chevron(at: Vector2, angle: float, colour: Color) -> void:

@@ -30,12 +30,11 @@ const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
 ## taken beside it in `_hold_every_page_a_day_draws()`. **Nor is `interior`**, which no ordinary
 ## day enters a building to draw; the escape's own boot takes that one.
 ##
-## **`events` is the one absence that is not a decision about lifetime.** The events still draw
-## through the runtime packer `TextureAtlas`, so nothing would read that page and loading it would
-## be two megapixels nobody looks at. The pull request that moves `EventManager` onto the baked
-## page adds `&"events"` to this list, and that is the whole of the change here.
+## **`events` is the biggest page and is held like every other one.** It carries the whole
+## catalogue, the checkpoint kit and the finale's crater, and a day can stream any row in it into
+## reach at any moment — so there is no smaller set to hold and no later moment to hold it in.
 const RESIDENT_GROUPS: Array[StringName] = [
-	&"ui", &"stroller", &"buildings", &"street_kit", &"ground", &"decoration", &"crowd",
+	&"ui", &"stroller", &"buildings", &"street_kit", &"ground", &"decoration", &"crowd", &"events",
 ]
 ## What an ordinary day's boot holds on top of `RESIDENT_GROUPS`: nothing. Declared rather than
 ## written as a literal at the call site, because an untyped `[]` passed into an

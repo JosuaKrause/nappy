@@ -115,10 +115,11 @@
       ]
     },
     "events": {
-      "lifetime": "the day's events, on one page, and the one group nothing loads yet: the events still draw through the runtime packer, so this page has no reader. EventManager is what acquires it, and the startup list in src/main.gd is where it joins the groups held from boot",
+      "lifetime": "held from startup for the life of the process, so nothing ever starts loading in the frame that needs it: any row in the catalogue can stream into reach at any moment. EventManager takes a reference on it for its own life, and the screen-edge badge draws the same regions",
       "padding": "transparent",
       "consumers": [
-        "src/events/event_instance.gd"
+        "src/events/event_instance.gd",
+        "src/ui/danger_edge.gd"
       ],
       "members": [
         "assets/checkpoints/boom_gate_ew_lowered.svg",
@@ -306,6 +307,12 @@
         "assets/events/poster_crew_front.svg",
         "assets/events/poster_crew_front_diagonal.svg",
         "assets/events/poster_crew_side.svg",
+        "assets/events/poster_crew_square.svg",
+        "assets/events/poster_crew_square_back.svg",
+        "assets/events/poster_crew_square_back_diagonal.svg",
+        "assets/events/poster_crew_square_front.svg",
+        "assets/events/poster_crew_square_front_diagonal.svg",
+        "assets/events/poster_crew_square_side.svg",
         "assets/events/protester.svg",
         "assets/events/protester_back.svg",
         "assets/events/protester_back_b.svg",
