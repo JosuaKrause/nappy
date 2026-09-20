@@ -520,28 +520,17 @@ alike.
 the wall reading are built and recorded (`DECISIONS.md`, M129, the four rules; M129, the leaf
 blower is a wall to walk past and a busker to stay near; M129, a wall is also what cannot be
 walked past). The probe, `tests/probes/m129_zero_cost_line.gd`, finds a zero-cost line along
-258 of 296 routes. No body closes a walked sidewalk any more (`DECISIONS.md`, M129, no body
-closes the walked sidewalk), and keeping the parked van off it cost four act III routes their
-line: a van that is a wall by fit competes for the ground by a junction. The guarantee is not true
+261 of 296 routes. No body closes a walked sidewalk (`DECISIONS.md`, M129, no body closes the
+walked sidewalk, which also holds the rim decision and the square's poster crew). The guarantee
+is not true
 for the rest, and what stands in them is almost all one shape: a route junction taken by several
-rows together, with `leaf_blower`, `homeless_yeller`, `roadblock` and now `delivery_van` in the
+rows together, with `leaf_blower`, `homeless_yeller`, `roadblock` and `delivery_van` in the
 cuts; the probe's own table names them per run. No sidewalk rule reaches a `roadblock` on a carriageway or a wall's wide field reaching
 over a crossing from one street out. The three placement rules refuse a candidate whose reach
 *together with everything already down* would close a junction, so a crossing the probe finds
 covered is one that either reached the day past the rules or is read as covered differently by
 the probe and the rule:
 
-- [ ] **A poster crew for squares, as its own row.** *(2026-09-19: "we need a separate square
-      poster crew entity for this", [PLAYTEST-107](playtests/PLAYTEST-107.md).)* `poster_crew`
-      stands `AGAINST_THE_BUILDING` and so cannot be placed on a `SQUARE` tile, which its
-      `placement` still lists. A second row places on squares only, with a look and a picture of
-      its own, and `poster_crew` stops listing `SQUARE`.
-- [ ] **A wall by fit gets no pull toward junction rims.** *(2026-09-19: "A. No … do that",
-      [PLAYTEST-107](playtests/PLAYTEST-107.md).)* `delivery_van` is a wall because it leaves 26px
-      of lane, and as a wall it is weighed toward junction rims (`Tuning.EVENT_WALL_RIM_WEIGHT`),
-      which took the zero-cost-line share from 262 to 258 of 296. The rim weight is for rows that
-      are walls by cost; a row that is a wall only by fit keeps the zero copies on route cells and
-      is otherwise placed as friction is. Re-measure both probes.
 - [ ] **Which placements the three rules never see.** `_place_one`'s candidate loop is where
       the rules run. Find every other path a row reaches the day by — the calm-ground pass
       that covers a park by area, `_ensure_one_usable_park`, the seals a `SealPlanner` places

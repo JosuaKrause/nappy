@@ -37,12 +37,12 @@ holds no sidewalk tile; the two `_ensure_*` passes only remove. None needed a ch
 sited `AGAINST_THE_BUILDING`, where it leaves 37px on the curb side and is friction again, which
 is also where a crew pasting posters works. It can no longer appear on a square, since a
 row that stands against a building needs one beside it; the player asked for a separate square
-crew ([PLAYTEST-107](playtests/PLAYTEST-107.md)), an open item under M129 in `TODO.md`.
+crew ([PLAYTEST-107](playtests/PLAYTEST-107.md)), built below.
 
 **What it cost, measured.** `delivery_van` still plans 43.2 a day; 46 of about 1036 in the sample
 stand on a route street's far sidewalk where none did. The zero-cost-line share went 262 to 258
 of 296, all four in act III and all explained by the van, which as a wall is weighed toward
-junction rims; that is an open item under M129 in `TODO.md`. Two floors in `tests/test_events.gd`
+junction rims; the rim decision below took that back. Two floors in `tests/test_events.gd`
 moved with the van leaving the friction pool, each keeping the margin it measured: the corridor's
 friction share 0.35 to 0.34 (measured 36.13%) and the narrow-friction share 0.40 to 0.39
 (42.55%). **Both are open to overturn.** The friction test's sampling guard asks for two samples
@@ -52,6 +52,45 @@ sidewalk.
 
 **Left alone:** `_closes_the_run`, the pacing rule's street-wide check, makes the same raw-corner
 assumption the artifact exposed; nothing measured exercises it.
+
+**A wall by fit gets no pull toward junction rims.** Asked whether the van, now a wall, should
+also get the weighting that draws walls to the ground beside junctions
+(`Tuning.EVENT_WALL_RIM_WEIGHT`), the player chose "A. No (my recommendation). -- do that"
+([PLAYTEST-107](playtests/PLAYTEST-107.md)). `_is_a_wall_by_cost` keeps the rim pull for rows
+whose field alone clears the far lane — the pacing `homeless_yeller` among them — and a row
+that is a wall only by fit keeps its zero copies on route cells and is otherwise weighed as
+friction. Measured: closures 0 of 1869; the zero-cost line 264 of 296, against 258 with the rim
+pull and 262 before the branch; vans 43.2 a day, with far-sidewalk landings 46 to 101, which is
+the corridor weight landing on the one legal corridor cell a fit wall has. The narrow-friction
+floor went back to 0.40 (measured 42.55%); the whole share's stays 0.34 (35.84%).
+
+**The square's poster crew is its own row.** *"we need a separate square poster crew entity for
+this"* ([PLAYTEST-107](playtests/PLAYTEST-107.md)). `poster_crew_square` places on `SQUARE`
+only, with no pavement side, and copies the sidewalk crew's field, point body, first day, act
+and cost; `poster_crew` lists `SIDEWALK` alone. It has its own `EventDef.Look`, five views and
+a badge. **Density is split, not added:** the pre-branch row put 3 of 512 crews on a square
+over 48 planned days (0.6%), and squares are 1.1% of its candidate ground, so the square row
+has weight 0.03 and a cap of 1 and the sidewalk row keeps 2.5 and 12 — 10.83 crews a day
+together against the one row's 10.67 on the same seeds, a square crew about one day in eight.
+
+**Open to overturn, chosen where the player said nothing:** what the crew pastes onto — a
+free-standing advertising column, the orchestrator's idea; the display name "Poster crew", the
+sidewalk row's own; the rounding of the split; the worker being the sidewalk family's figure
+unmoved on a 44px canvas with a contact shadow baked under the column only. With no pavement
+side the row always faces east, so four of its five views are authored and never drawn, as
+`reversing_lorry`'s are. **The column is not solid:** the body is the worker's 11px point and
+the column's axis is 15px east of it, so her circle can overlap the drawn column by about
+10px; a second `SolidPart`, as the car crash has, is the fix if it shows, and `REVIEW.md` asks.
+
+**The zero-cost line reads 261 of 296 with the square row in, and the row is not in it.** With
+the row present at weight 0 the scheduler's weighted pick rolls against the same sum, the days
+are bit-identical to the branch without it, and the probe reads 264. Any weight re-dices every
+day: over 18 other cities the difference is −0.6 points from one base seed and +0.9 from
+another, and `poster_crew_square` is in no cut and no blame row of any run. The weight was not
+moved to buy the number back. After main's roadblock changes came in the merged tree reads
+the same: 0 closures of 1869, 261 of 296, vans 43.3 a day with 102 on a far sidewalk. Outputs,
+the control and the still are in `evidence/m129-walked-sidewalk-walls-2026-09-19/`.
+
 ## Pull requests are squash-merged — 2026-09-19
 
 The player, looking at a commit view that listed every branch commit: "I'm pondering whether we
