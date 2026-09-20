@@ -921,7 +921,8 @@ the two chains through three calm areas each to the tunnel and the bridge, the e
 craters, the two hint lines, the millisecond clock, the section restart and the epilogue. What it
 does, what was measured and what was chosen where the design was silent is in `DECISIONS.md` under
 M102, the finale built behind the flag, and M102, the finale is the run's ending; what only a
-play can settle is in `REVIEW.md`. **One item is open**, found while the ending was wired up.
+play can settle is in `REVIEW.md`. **One item is open**, what the audit of a day against a
+section found and could not wire.
 
 **The brief, in the player's words:**
 
@@ -948,17 +949,14 @@ play can settle is in `REVIEW.md`. **One item is open**, found while the ending 
 
 **What is still open:**
 
-- [ ] **The escape has what a day has around it, built the same way**
-      ([PLAYTEST-114](playtests/PLAYTEST-114.md): "Pause etc should exist the same way it does
-      in the main game"). The escape's own boot builds no pause screen, so `Esc`, the pause
-      button and a window losing focus do nothing from the first brief to the epilogue —
-      several minutes that are the last of every winning run. It gets the pause screen a day
-      has, wired as a day wires it: `Esc` and the pause button open it, losing focus opens it
-      unless `--no-focus-pause` says otherwise, its continue resumes, its held restart and its
-      quit do what they do in a day, and it stashes and restores her heading through the touch
-      controls. **"etc" is an audit, not only the pause**: everything the ordinary boot builds
-      around a day and the escape's boot does not is listed, and each is either built the same
-      way or named in the report with the reason the escape cannot have it.
+- [ ] **The building shows what the city shows, and the escape is in the run log as a day is**
+      ([PLAYTEST-115](playtests/PLAYTEST-115.md): "The escape shouldn't behave any different
+      than the rest of the game"). The screen-edge badge, the excitement halo and the debug
+      view's layers are built for the city section only, because each reads a `City`'s own
+      `EventManager` and crowd, and the building's `InteriorEvents` is not shaped like one; and
+      neither section has the telemetry observer a day has, which is built around a day's
+      `City`, route tree and corridor. Each needs an adapter or an observer of its own rather
+      than wiring.
 
 **Four things the brief collided with in the finale as `docs/NARRATIVE.md` writes it today, each
 asked and each answered by the player on 2026-09-09:**

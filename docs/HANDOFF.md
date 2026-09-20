@@ -312,8 +312,8 @@ checks and worktrees can move independently of this file.
   shouting costs nothing to walk beside** — `homeless_yeller`, `loose_dog` and `dog_walker` cost
   more to be near, and the halo shows what the bar does. The player sees its proposed numbers
   before it merges.
-- **M102, the finale, has one open item in `TODO.md`**: the escape gets the pause and whatever else
-  a day has around it, built the same way.
+- **M102, the finale, has one open item in `TODO.md`**: the building has no screen-edge
+  badge, halo or debug layers, and the escape has no telemetry observer.
 - **M175, a row states what it costs, and the cost table is checked in, follows M174**
   ([PLAYTEST-114](playtests/PLAYTEST-114.md)); its tier values go to the player before it is built.
 - **M159, a slow frame names the frame that was slow, has its first optimization in and three
