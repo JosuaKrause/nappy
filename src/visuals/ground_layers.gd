@@ -62,7 +62,8 @@ const _COLOR_MATCH_TOLERANCE := 0.03
 ## source on its own authored picture rather than half-composed, so an unfinished art drop cannot
 ## erase a marking or change the TileSet's geometry. A source whose picture cannot be found at all
 ## is left out of the sheet and keeps no tiles, which is the same graceful fallback one level down:
-## `GroundTiles` still names it and `TileMapLayer` draws nothing for it.
+## `GroundTiles` still names it and `TileMapLayer` draws nothing for it — and it is an engine error,
+## since every authored name is a member of the group and the test gate is red for one.
 static func build_tile_set(authored: TileSet) -> TileSet:
 	if authored == null:
 		return null
@@ -95,6 +96,12 @@ static func build_tile_set(authored: TileSet) -> TileSet:
 			picture = _source_image(page, source)
 		if picture != null:
 			pictures[source_id] = picture
+		else:
+			# Every authored name is a member of the `ground` group, so this is a membership
+			# mistake rather than an unfinished art drop, and the test gate is red for an engine
+			# error where a tile that draws nothing would pass unseen.
+			push_error("Ground source %d names '%s', which is not a region of the baked '%s' page"
+					% [source_id, source.resource_name, ATLAS_GROUP])
 	_register_route_kerb_twins(result, manifest, page, pictures)
 	_upload_one_sheet(result, pictures, started)
 	return result

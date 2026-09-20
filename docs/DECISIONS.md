@@ -76,8 +76,10 @@ every tile differs — the region table is the new bake's and the pixels the old
 page of the same size, so nothing fails loudly. The import pass has to run between.
 
 **Open to overturn.** A source whose region the bake does not carry keeps no tiles and draws
-nothing, where it used to fall back to its authored SVG; unreachable today, and
-`test_atlas_ground` fails by name if it stops being. The sheet's separation went from 1px to
+nothing, where it used to fall back to its authored SVG — no individual texture is left to
+fall back to. It is a `push_error`, so the test gate is red for it; unreachable today, since a
+bake carries every member of the group in either mode, and `test_atlas_ground` fails by name
+if a name stops being a member. The sheet's separation went from 1px to
 2px with the packer.
 
 ## M171, the groups and the moments a page may load — built 2026-09-20
