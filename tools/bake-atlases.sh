@@ -20,6 +20,18 @@
 #
 # A mode mismatch is staleness like any other: a tree baked with --svg is stale for a default
 # bake and the other way round, so the release build can never pick up a local SVG bake.
+#
+# **A bake that succeeds can still make the engine complain.** This runs Godot with --script,
+# which still loads every autoload, and their dependency chain reaches picture preload()s; on a
+# checkout whose import cache (.godot/imported/) has not seen a picture yet -- a fresh clone or
+# worktree, or a pull that added one -- that load fails and the engine prints its own ERROR: and
+# SCRIPT ERROR: lines for it, right after a bake that wrote every page correctly (the bake reads
+# its sources itself and never through that cache). When that happens this script says so in
+# plain words after the engine's own lines, which stay visible, and still exits 0 -- every caller
+# runs this before its own import pass on purpose, on a fresh clone included, so failing here
+# would break all of them for a condition tools/check.sh already repairs. A real bake failure
+# (the engine process itself failing, or its outputs still stale afterwards) keeps its own
+# message and its non-zero exit, and this explanation is never printed over it.
 set -uo pipefail
 
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
@@ -169,8 +181,14 @@ bake_args=()
 if [[ "$mode" == "svg" ]]; then
     bake_args+=(--svg)
 fi
-if ! "$GODOT" --headless --path "$PROJECT_DIR" --script tools/bake_atlases.gd -- \
-        ${bake_args[@]+"${bake_args[@]}"}; then
+# Captured rather than left to stream straight through: the stale-cache check below reads it
+# back, and the engine's own lines still land on stdout/stderr exactly where they always did,
+# in order, via the echo right after.
+bake_output="$("$GODOT" --headless --path "$PROJECT_DIR" --script tools/bake_atlases.gd -- \
+        ${bake_args[@]+"${bake_args[@]}"} 2>&1)"
+bake_status=$?
+echo "$bake_output"
+if [[ $bake_status -ne 0 ]]; then
     echo "FAILED: the atlas bake did not succeed" >&2
     exit 1
 fi
@@ -182,3 +200,34 @@ if ! staleness_reason >/dev/null; then
     staleness_reason >&2
     exit 1
 fi
+
+# The pages above are correct: the bake reads its sources itself and never through the import
+# cache. But --script still loads every autoload, and their dependency chain reaches picture
+# preload()s (src/events/event_instance.gd among them) -- so on a checkout whose import cache
+# has not seen a picture yet, or does not exist at all (a fresh clone or worktree, or a pull
+# that added one), the engine prints its own ERROR:/SCRIPT ERROR: lines for that load failure
+# and for every script the failure cascades into, right above this line, while the bake has
+# already finished. check.sh's own error vocabulary is reused as the trigger rather than a
+# narrower pattern that names the .ctex/preload/compile-cascade shapes specifically: which
+# autoload fails first, and what it drags down with it, depends on load order and on the
+# dependency graph of whatever changed, so a parser that requires every ERROR: line to match a
+# fixed list of shapes would be chasing the engine's own diagnostics rather than checking a
+# stable contract -- and a change to what it does not recognise would silently stop explaining
+# the exact case this item exists for.
+if grep -qE "SCRIPT ERROR|Parse Error|ERROR:" <<<"$bake_output"; then
+    cat >&2 <<'EOF'
+
+The pages above were baked correctly. The errors above them are the engine loading the game's
+own scripts -- this wrapper starts Godot with --script, which still loads every autoload, and
+their dependency chain reaches picture preload()s -- against an import cache
+(.godot/imported/) that has not seen every picture yet, or does not exist at all. The bake reads
+its sources directly rather than through that cache, so its pages are unaffected.
+
+Run tools/check.sh: it bakes (nothing to redo, the pages above are current) and then runs the
+import pass the engine's own errors above are missing.
+EOF
+fi
+
+# Explicit: the grep above exits 1 on no match, and that must never become this script's own
+# exit code -- a bake that succeeded with a clean engine run is exit 0 whichever way it reads.
+exit 0
