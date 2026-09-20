@@ -9,6 +9,14 @@
 # only preset is Web, which carries none — a preset for a platform that does carry one belongs
 # back on an ignore line, not beside this one in the tracked file.
 
+# The baked atlas pages and their region table. A build output, not a source: tools/bake-atlases.sh
+# rebuilds them from assets/atlases/membership.json and the pictures it names whenever a source
+# hash changes, and every tool that needs them (check.sh, test.sh, run.sh, export-web.sh) calls it
+# first. Committing them would be committing a derived file that nothing verifies and that every
+# art change silently invalidates. The .import sidecars go with them, since a sidecar inside an
+# ignored folder cannot be committed either — the bake writes them itself.
+/assets/atlases/baked/
+
 # OS
 .DS_Store
 Thumbs.db

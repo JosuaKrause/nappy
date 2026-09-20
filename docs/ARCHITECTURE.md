@@ -125,6 +125,9 @@ src/
 	screen_orientation.gd the one rotation applied when the window is portrait
 	quit_option.gd        whether the game can quit itself, answered once
   visuals/                PNG selection with SVG override; see the illustrated-png skill
+	atlas_library.gd      the baked atlas pages, by region name: a group's page is loaded on
+	                       the first acquire() and dropped on the last release(), and a
+	                       region's native size is answered from the table with nothing loaded
 	texture_resolver.gd   cached same-size PNG selection, with SVG fallback
 	texture_atlas.gd      one shared texture per group of pictures: requested, packed on a
 	                       worker thread, collected on the main thread, released when its last
@@ -152,11 +155,21 @@ assets/
   ui/                     the title's two mode discs, continue, restart, pause
   shaders/                the excitement halo's silhouette rim
   illustrated/svg-transfer/  native-size PNG replacements, mirroring SVG family paths
+  atlases/membership.json which picture belongs on which atlas page, with each group's
+                          lifetime, its padding kind and the consumers that read it
+  atlases/baked/          the pages themselves, gitignored: one PNG per group, regions.json
+                          and bake_manifest.json, written by tools/bake-atlases.sh
   ground_tileset.tres     one TileSetAtlasSource per ground tile
   logo.*, icon_stroller*, social-card.png  the wordmark and the stroller on its own: the README
                           header, the social card the deploy publishes, store and social-media
                           headers. The game itself loads none of them
 tools/
+  bake-atlases.sh         bake the atlas pages when a source hash moved; --check asks, --svg is
+                          the custom local SVG build, and every tool that starts the engine
+                          (check, test, run, shot, export-web) calls it first
+  bake_atlases.gd         the bake itself, run headless with --script; rasterizes every member
+                          with the engine's own rasterizer and shelf-packs it into its page
+  audit-pck.sh            list an exported .pck and report the baked constituents left in it
   check.sh                import + headless boot, fails on any script error
   test.sh                 the headless suite, sharded; a filter runs one process and says PARTIAL RUN
   lint.sh                 the governed docs, for sentences that go stale on their own

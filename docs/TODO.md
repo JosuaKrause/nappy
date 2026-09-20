@@ -322,26 +322,20 @@ only export; the identity images (logo, icon, social card) leave the game packag
 deploy keeps copying the social card beside the page. Both are assumptions the player was told
 and did not speak to.
 
-Each item is one pull request. The first is alone; the next three touch disjoint files and run
-together; the ground and the events follow their own gates; the last closes the contract.
+The bake, the loader `AtlasLibrary`, the staleness check and the report-only package audit are
+built and nothing draws from them yet (`DECISIONS.md`, M171, the bake and the loader).
+`assets/atlases/membership.json` says which page a picture is on, and a consumer move edits it
+only to add a picture. A consumer acquires its group before drawing and releases it when its
+last user goes; `region()` never loads a page on its own, and `native_size()` answers with
+nothing acquired.
 
-- [ ] **The bake, the loader and the staleness check.** `tools/bake_atlases.gd`, run with
-      `--headless --script`, reads a checked-in membership file (group, members, lifetime,
-      padding kind), rasterizes SVGs with `Image.load_svg_from_buffer()` at scale 1, loads the
-      illustrated PNGs, applies `fix_alpha_edges()` to match the importer's
-      `fix_alpha_border`, shelf-packs within 2048px, and writes one PNG and one region table
-      (name, page, rect, native size) per group, with the source hashes, into a gitignored
-      output folder the engine imports. Opaque tile families get extruded edge padding, sprites
-      a transparent pixel. A wrapper, `tools/bake-atlases.sh`, follows the **cli-tools** rule
-      and carries the SVG-mode switch. The loader answers `acquire(group)`, `release(group)`
-      and `region(name)` as a cached `AtlasTexture`, and the native size of a region without
-      loading anything else. A parity test compares every baked region against today's imported
-      texture while both still exist. The package audit lists the exported `.pck` and reports
-      every constituent it finds; it reports only, until the last item makes it fatal. No
-      consumer moves in this item.
+Each item is one pull request. The first three touch disjoint files and run together; the
+ground and the events follow their own gates; the last closes the contract.
+
 - [ ] **The unatlased leaf consumers**: buildings, the city edge, closure markers, traffic
-      lights, checkpoints, the UI buttons and indicators, the interior scene and the interior
-      TileSet. `preload` constants become region names; a tinted draw keeps its `modulate`.
+      lights, the UI buttons and indicators, the interior scene and the interior TileSet. The
+      checkpoint pictures are `event_instance.gd`'s and move with the events; the city edge's
+      mountain is on the ground page, which the city always holds. `preload` constants become region names; a tinted draw keeps its `modulate`.
 - [ ] **The stroller, the head indicators and the crowd.** The crowd's synchronous first pack
       inside a draw call goes; `crowd_atlas.gd` and its suite go with it. Body and trim layers
       stay separate regions so tinting is unchanged; the halo's shader reads alpha only and is
@@ -352,8 +346,9 @@ together; the ground and the events follow their own gates; the last closes the 
       base and layer as a region of the ground page's image, composes at runtime as now, and
       the second runtime packer, `pack_into_one_texture()`, is replaced by one upload of the
       composed sheet. The per-day repaint keeps its variety and loses the GPU readbacks.
-- [ ] **The events**, one page, after the square poster crew's pull request has merged, since
-      both rewrite `event_instance.gd`'s picture tables. `EventManager` acquires and releases
+- [ ] **The events**, one page, checkpoints included, after the square poster crew's pull
+      request has merged, since both rewrite `event_instance.gd`'s picture tables; its six
+      `poster_crew_square` pictures join the `events` membership here. `EventManager` acquires and releases
       the one group; the screen-edge badge reads the same regions.
 - [ ] **Close the contract.** The runtime packer, the resolver, their phase-trace telemetry and
       the `--svg` and `?svg=1` flags are deleted; the run log says when a group loaded and was

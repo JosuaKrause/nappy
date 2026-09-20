@@ -96,6 +96,10 @@ assert_exit "telemetry.sh --help"  zero ./tools/telemetry.sh --help
 assert_exit "test.sh --help"       zero ./tools/test.sh --help
 assert_exit "clip.sh --help"       zero ./tools/clip.sh --help
 assert_exit "reference.sh --help"  zero ./tools/reference.sh --help
+assert_exit "bake-atlases.sh --help" zero ./tools/bake-atlases.sh --help
+assert_exit "bake-atlases.sh -h"     zero ./tools/bake-atlases.sh -h
+assert_exit "audit-pck.sh --help"    zero ./tools/audit-pck.sh --help
+assert_exit "audit-pck.sh -h"        zero ./tools/audit-pck.sh -h
 
 # ---------------------------------------- an unknown flag: rejected, usage, non-zero, no work ---
 assert_exit "check.sh --bogus"        nonzero ./tools/check.sh --bogus
@@ -110,6 +114,12 @@ assert_exit "stats.sh --bogus"        nonzero ./tools/stats.sh --bogus
 assert_exit "telemetry.sh --bogus"    nonzero ./tools/telemetry.sh --bogus
 assert_exit "clip.sh --bogus"         nonzero ./tools/clip.sh --bogus
 assert_exit "reference.sh --bogus"    nonzero ./tools/reference.sh --bogus
+assert_exit "bake-atlases.sh --bogus" nonzero ./tools/bake-atlases.sh --bogus
+# --check and --force mean opposite things about whether anything may be written, so asking for
+# both is a typo rather than a preference, and it is rejected before either happens.
+assert_exit "bake-atlases.sh --check --force" nonzero ./tools/bake-atlases.sh --check --force
+assert_exit "audit-pck.sh --bogus"    nonzero ./tools/audit-pck.sh --bogus
+assert_exit "audit-pck.sh (two packs)" nonzero ./tools/audit-pck.sh one.pck two.pck
 
 # A bare `--` before the flags -- Godot's own separator, and the form the docs quote -- is
 # accepted by run.sh and shot.sh and dropped before forwarding, so the stub sees the flags and
@@ -138,17 +148,28 @@ assert_launch() {
     fi
     echo "ok   $label"
 }
-# run.sh's launch path first checks .godot's class cache and rebuilds it through Godot when a
-# class is missing -- with the stub standing in, that rebuild registers nothing and run.sh
-# refuses to launch, which is correct and not what this case is about. So it runs only where a
-# real import has happened (a developer's checkout); on a runner with no cache, shot.sh's
-# identical case below covers the drop and the rejection case covers the rest.
-if [[ -f "$root/.godot/global_script_class_cache.cfg" ]]; then
+# Both launch paths repair before they start the game: run.sh rebuilds .godot's class cache when
+# a class_name is missing from it, and run.sh and shot.sh both rebuild the baked atlas pages
+# through tools/check.sh when a source hash has moved. Neither repair can succeed with the stub
+# standing in for Godot -- it registers no class and bakes no page -- so each script correctly
+# refuses to launch, which is not what these two cases are about.
+#
+# So each runs only where its own precondition is already met, which is a developer's checkout,
+# and says so loudly where it is not. What a skip costs is only the proof that a leading `--` is
+# dropped and the flags still arrive; the --help and rejection cases above cover both scripts
+# everywhere, including on a runner with nothing built.
+atlases_current() { ./tools/bake-atlases.sh --check >/dev/null 2>&1; }
+
+if [[ -f "$root/.godot/global_script_class_cache.cfg" ]] && atlases_current; then
     assert_launch "run.sh -- --overview (separator dropped)" ./tools/run.sh -- --overview
 else
-    echo "skip run.sh -- --overview (no import cache in this checkout; shot.sh's case covers the drop)"
+    echo "skip run.sh -- --overview (no import cache or no current atlases in this checkout)"
 fi
-assert_launch "shot.sh ... -- --overview (separator dropped)" ./tools/shot.sh "$work_dir/shot-sep.png" 1 -- --overview
+if atlases_current; then
+    assert_launch "shot.sh ... -- --overview (separator dropped)" ./tools/shot.sh "$work_dir/shot-sep.png" 1 -- --overview
+else
+    echo "skip shot.sh ... -- --overview (no current atlases in this checkout)"
+fi
 # And only there: a `--` after a flag is not a separator, it is a stray word.
 assert_exit "run.sh --overview -- (late separator)"  nonzero ./tools/run.sh --overview -- --debug
 assert_exit "shot.sh ... --overview -- (late separator)" nonzero ./tools/shot.sh "$work_dir/shot-sep2.png" 1 --overview --

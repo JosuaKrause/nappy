@@ -81,6 +81,17 @@ restore_side_effects() {
 }
 trap restore_side_effects EXIT
 
+# Before the import pass, because the pages it writes are resources the import pass has to see:
+# a tree whose art has changed carries stale atlases until something bakes them, and this is the
+# gate a fresh clone and CI both go through. It prints one line and does nothing when the
+# recorded source hashes still match.
+echo "== atlases =="
+if ! "$PROJECT_DIR/tools/bake-atlases.sh"; then
+    echo >&2
+    echo "FAILED: the atlas bake did not succeed" >&2
+    exit 1
+fi
+
 echo "== import =="
 "$GODOT" --headless --import --path "$PROJECT_DIR" >/dev/null 2>&1
 import_status=$?
