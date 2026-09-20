@@ -155,4 +155,3 @@ func _test_car_body_and_trim_are_separate_regions_on_every_view(t) -> void:
 		var body := AtlasLibrary.region_name_for(CrowdAgent.CAR_BODY_BY_VIEW[view])
 		var trim := AtlasLibrary.region_name_for(CrowdAgent.CAR_TRIM_BY_VIEW[view])
 		t.check(body != trim, "car %s: body and trim are separate regions" % view)
-
