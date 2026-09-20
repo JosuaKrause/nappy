@@ -51,8 +51,8 @@ const GEOMETRY_HEADERS: Array[String] = ["role", "intensity", "core_intensity", 
 		"walk_through_cost"]
 
 const TITLE_GEOMETRY := "Geometry and role"
-const TITLE_DISTANCE_AWAKE := "Standing at a fixed distance — awake"
-const TITLE_DISTANCE_ASLEEP := "Standing at a fixed distance — asleep"
+const TITLE_DISTANCE_AWAKE := "Walking at a fixed distance — awake"
+const TITLE_DISTANCE_ASLEEP := "Walking at a fixed distance — asleep"
 const TITLE_PASS_AWAKE := "The pass — awake"
 const TITLE_PASS_ASLEEP := "The pass — asleep"
 const TABLE_TITLES := [TITLE_GEOMETRY, TITLE_DISTANCE_AWAKE, TITLE_DISTANCE_ASLEEP,
@@ -340,7 +340,7 @@ func _header_text() -> String:
 			"centre, less the walking decay over the same crossing.")
 	lines.append("")
 	lines.append("**`" + TITLE_DISTANCE_AWAKE + "`/`" + TITLE_DISTANCE_ASLEEP + "`** are the net " +
-			"points a second standing still at a fixed distance from a row's centre: the field " +
+			"points a second while she walks and stays a fixed distance from a row's centre: the field " +
 			"(`EventDef.emission_at()`, which is what `contribution_at()` charges) averaged over " +
 			"the row's own pulse, times the sleeping sensitivity where the baby is asleep, less " +
 			"the walking decay. A pure query on the row's own data — no instance, no notice or " +

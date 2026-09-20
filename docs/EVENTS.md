@@ -1179,7 +1179,7 @@ rather than leaving it to follow from the `WALL` case by coincidence.
 ## What an event actually costs
 
 **[`docs/COSTS.md`](COSTS.md) is the generated, checked-in table**: one line per catalogue row, its
-geometry and role, the net rate a fixed distance from it standing still, and the net points from a
+geometry and role, the net rate while walking a fixed distance from it, and the net points from a
 real pass at `Tuning.WALK_SPEED` — awake and asleep, at fixed distances and offsets identical for
 every row. `tools/cost-table.sh` regenerates it from the real `EventDef`/`EventInstance`/`Tuning`
 code the game charges with, never a hand-computed copy; `tools/cost-table.sh --check` (wired into

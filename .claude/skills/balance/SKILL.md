@@ -69,7 +69,7 @@ cars**.
 ## What a route actually costs
 
 **[`docs/COSTS.md`](../../../docs/COSTS.md) is the generated, checked-in table** — one line per
-catalogue row: its geometry and role, the net rate a fixed distance away standing still, and the
+catalogue row: its geometry and role, the net rate while walking a fixed distance away, and the
 net points from a real pass at `Tuning.WALK_SPEED`, awake and asleep, at fixed distances and
 offsets identical for every row. `tools/cost-table.sh` writes it from the real
 `EventDef`/`EventInstance`/`Tuning` code the game charges with, never a second copy of the falloff

@@ -13,7 +13,7 @@ Every figure is on quiet sidewalk (ground multiplier 1.0); other grounds are not
 
 **`Geometry and role`** is what a row's own data says, unconditionally: `role` is `EventScheduler._role_for()` at day 0 (a row's cold shape, before any resistance heat); `core_intensity`/`core_radius` are a dash where a row has no core; `pulse_trough` is `intensity * 0.25`, the low point of the pulse envelope `current_intensity()` uses, and a dash where a row does not pulse; `speed` is a pursuer's `pursue_speed` (almost always faster than its own cold `speed`, which is usually 0), a mobile row's own `speed`, and a dash for anything that does not move; `walk_through_cost()` is the field integrated along a straight line through the centre, less the walking decay over the same crossing.
 
-**`Standing at a fixed distance — awake`/`Standing at a fixed distance — asleep`** are the net points a second standing still at a fixed distance from a row's centre: the field (`EventDef.emission_at()`, which is what `contribution_at()` charges) averaged over the row's own pulse, times the sleeping sensitivity where the baby is asleep, less the walking decay. A pure query on the row's own data — no instance, no notice or chase state — so every included row gets a real number here, pursuers and the three detainers (`chatting_mother`, `checkpoint_hut`, `checkpoint_post`) included, the same way `walk_through_cost()` already prices them: a detainer's real cost is `Tuning.CHAT_EXCITEMENT` over the hold rather than this field, so its figures here are notional, exactly as `docs/EVENTS.md` already says of its own column.
+**`Walking at a fixed distance — awake`/`Walking at a fixed distance — asleep`** are the net points a second while she walks and stays a fixed distance from a row's centre: the field (`EventDef.emission_at()`, which is what `contribution_at()` charges) averaged over the row's own pulse, times the sleeping sensitivity where the baby is asleep, less the walking decay. A pure query on the row's own data — no instance, no notice or chase state — so every included row gets a real number here, pursuers and the three detainers (`chatting_mother`, `checkpoint_hut`, `checkpoint_post`) included, the same way `walk_through_cost()` already prices them: a detainer's real cost is `Tuning.CHAT_EXCITEMENT` over the hold rather than this field, so its figures here are notional, exactly as `docs/EVENTS.md` already says of its own column.
 
 **`The pass — awake`/`The pass — asleep`** are the net points from one real pass at `Tuning.WALK_SPEED` — she and the row's own instance going different directions, the row moving exactly as the game moves it (pacing, mobile, or held still), averaged over 8 samples of its own pulse phase. `M174Pass.pass_net_averaged()` (`tests/probes/m174_pass.gd`) is the simulation, shared rather than duplicated — `tests/test_events.gd`'s own relationship test runs the identical code. Dashed for a pursuer (`pursues` or `pursues_within` set: alley_mouse, pigeon_flock, charging_dog, alley_robbery, masked_pursuer) — its notice and chase state is driven by where the player is, which the rig never tells it, so there is no pass to measure, the same reason `docs/EVENTS.md`'s own run-through column is empty for a pursuer. The 0px column is dashed for a row with a solid, still body (`obstructs_radius > 0.0`) — she cannot walk the same line as a thing she cannot walk through.
 
@@ -70,7 +70,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed 8-sample pulse ave
 | masked_pursuer       |      wall |      18.0 |              — |           — |         28.0 |        120.0 |           2.0 |            — |            — |     130.0 |              19.3 |
 | basement_steam       |  friction |      14.0 |              — |           — |         24.0 |         90.0 |           2.0 |          4.0 |          3.5 |         — |               9.0 |
 
-## Standing at a fixed distance — awake
+## Walking at a fixed distance — awake
 
 | id                   |       0px |      25px |      50px |      75px |     100px |     150px |     200px |     300px |     400px |     550px |
 | -------------------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- |
@@ -122,7 +122,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed 8-sample pulse ave
 | masked_pursuer       |      12.0 |      12.0 |      11.0 |       7.3 |       1.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | basement_steam       |       2.8 |       2.7 |       1.4 |      -2.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 
-## Standing at a fixed distance — asleep
+## Walking at a fixed distance — asleep
 
 | id                   |       0px |      25px |      50px |      75px |     100px |     150px |     200px |     300px |     400px |     550px |
 | -------------------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- |
