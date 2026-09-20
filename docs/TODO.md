@@ -421,47 +421,21 @@ through `tools/run.sh --start-escape --seed 4242`.
 
 ---
 
-## M167 — The father's legs read as legs · asked for 2026-09-19
 
-The provisional contact baseline is installed on main. This separate drawing refinement
-remains uninstalled; its source choices and rejected attempts are recorded under M160 and
-M167 in `DECISIONS.md`. Both pushing and carrying require clean PNG sheets and GIFs, per
-[PLAYTEST-103](playtests/PLAYTEST-103.md).
+## M167 — Deliver the approved father family · asked for 2026-09-19
 
-[PLAYTEST-98](playtests/PLAYTEST-98.md) accepts the left/right result in
-`color-match-2026-09-19/final/`: preserve those pixels exactly, along with N/S, NE/NW and
-every A/C frame. The uncrossed diagonal source is `uncrossed-southeast-2026-09-19/`.
+[PLAYTEST-104](playtests/PLAYTEST-104.md) approves the final pushing and carrying pixels.
+The artwork and reusable techniques are settled; the remaining work is delivery of the
+checkpointed installation. See `DECISIONS.md`, "M167, interrupted delivery checkpoint", and
+`HANDOFF.md` for the stopped worktrees and latest instruction to do no further work.
 
-[PLAYTEST-100](playtests/PLAYTEST-100.md) accepts the uncrossed diagonal legs and pose:
-"but the legs and pose is good now". Preserve the leg geometry, alpha and registration
-below the extended jacket hem exactly.
-The only geometry exception is the player's explicit jacket-hem edit: move its edge pixels
-down to match A/C, keeping the edge from the new frame and using the existing frame's body
-texture. Use the corresponding diagonal C body with the approved new B hem and legs; do not
-move the legs or pose. Remaining color work is a deterministic material-aware match.
-The player clarifies: "the pants are too dark and the jacket is too bright". Lighten the
-trousers and darken the jacket separately; uniform whole-picture darkening is wrong.
-
-- [ ] **Match the diagonal colors and hem to the rest of the family.** Use the existing
-      matching-state C body texture, with the new B hem edge moved down to A/C height.
-      Carrying must copy the complete existing upper body and full-size baby: the generated
-      baby is too short. Preserve its original native scale instead of resizing it separately.
-      Fill with the existing jacket texture and match the edge's jacket colors. Retain
-      the new legs and lighten their trousers separately. Preserve every leg pixel's
-      geometry below the extended hem. Keep E/W and every other frame byte-identical.
-- [ ] **Publish an early attempt and ask for feedback.** Use the clean eight-direction
-      A/C/B/C sheet and native/6× GIFs at 190ms per phase from [PLAYTEST-87](playtests/PLAYTEST-87.md).
-      Push and embed commit-pinned links before asking: the CLI cannot show local images.
-      Embed PNG sheets and GIFs for corrected pushing and carrying candidates, as requested
-      in [PLAYTEST-103](playtests/PLAYTEST-103.md), clearly labeling the two animation states.
-      Repeated feedback is welcome, per [PLAYTEST-89](playtests/PLAYTEST-89.md).
-      Preserve native canvases, scale, anchors and upper-body landmarks. Carrying corrections
-      belong to the PLAYTEST-103 request above; keep stroller art and gameplay unchanged.
-      Retain source crops, transforms, commands and hashes.
-- [ ] **Install only the visually accepted refinement.** Keep corresponding reviewed SVGs,
-      creation copies, registered PNGs and manifest hashes in agreement, preserve import sidecars,
-      and verify runtime bindings. The provisional splice is not a general successful procedure;
-      update shared graphics guidance only with a method accepted for final appearance.
+- [ ] Preserve historical recipe inputs using genuinely frozen SVGs, not the active creation
+      copies that change with runtime fallbacks. Keep historical image and GIF bytes intact.
+- [ ] Reconcile and integrate the installation and recipe checkpoints into PR #234. Update
+      its description to distinguish actual checks from the carrying capture that selected
+      the mother. Preserve the approved PNGs and import identities; do not redraw the family.
+- [ ] On authorization to resume, complete the reviewable PR and archive this delivery item.
+      New main conflicts are deferred. Do not rerun tests or captures under the current stop.
 
 ---
 

@@ -286,25 +286,40 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
 checks and worktrees can move independently of this file.
 
-- **PR #216 — M159, reduce crowd contribution cost and retain stutter measurements** is a draft with merge conflicts
-  and no CI result for its current head. The crowd-rejection optimization is locally verified;
-  its retained paired measurements show cheaper queries, while whole-frame tails remain.
-  Phone measurements and CPU attribution remain open. PLAYTEST-86 is its performance clarification.
-  Fetch the live PR and inspect its evidence before continuing.
-- **PR #234 — M167, the father's legs read as legs** has an approved final pushing and
-  carrying family. Install the exact `whole-figure-color-2026-09-19/` outputs, verify their
-  runtime bindings, and close the work before the authorized merge.
+**The user stopped work: "no more tests no more anything" and "handoff now!!!!".**
+Do not resume implementation, tests, captures, conflict resolution or merging without new
+instructions. The latest requested delivery is everything in PR #234 for review, with new
+main conflicts deferred. The earlier ship instruction is not a reason to work past this stop.
+
+- **PR #234 — M167, the father's legs read as legs** remains a draft. The artwork itself is
+  approved; do not regenerate or revise its accepted pixels. The PR checkout is
+  `.claude/worktrees/father-leg-refinement`. Its attempt history, reusable illustrated-PNG
+  toolbox and M171 atlas brief are written. Final installation is checkpointed separately in
+  `.claude/worktrees/father-final-install`; historical recipe work is checkpointed in
+  `.claude/worktrees/father-recipe-preservation`. Exact commits and verification are in
+  `DECISIONS.md`, "M167, interrupted delivery checkpoint". Both agents are stopped.
+  Neither checkpoint is integrated into the PR branch. The normalized-crop README overlaps
+  between the PR and installation checkpoint and needs a deliberate reconciliation.
+  The recipe checkpoint has a known flaw: it treats the active graphics-creation SVGs as
+  immutable, but installation changes those too. Preserve actual frozen originals before
+  relying on that recipe fix. Runtime evidence covers father pushing; the attempted carrying
+  capture selected the mother and does not establish father-carrying runtime appearance.
+  When authorized to resume, inspect the checkpoint diffs, fix only that remaining recipe
+  issue, integrate both checkpoints, update the PR description/check status, and make it
+  reviewable. Do not start a new art attempt or touch the separately owned optimization PR.
+
+- **PR #216 — M159, reduce crowd contribution cost and retain stutter measurements** is
+  handled by another session. Fetch its live state before doing related work; do not duplicate
+  that session's implementation or merge work.
+- **M171 — Build-time atlases replace individual textures** is specified in `TODO.md` and
+  [PLAYTEST-105](playtests/PLAYTEST-105.md). The atlas generator and runtime loading changes
+  remain unimplemented. Baked constituent images must be absent from shipped packages and
+  from individual CPU/GPU allocations; source artwork stays in the authoring repository.
 
 - **[PLAYTEST-94](playtests/PLAYTEST-94.md) is filed and unbuilt.** It opened M168, the escape
   after playtest 94, and added the walked-side
   wall measurement under M129, a path through the city never has to cost. Both are in
   `TODO.md` and each is one agent's brief.
-
-Number ownership remains distinct: PLAYTEST-84 and PLAYTEST-85 are the escape/save records
-on main, PLAYTEST-86 belongs to the performance work, and PLAYTEST-87 belongs to the father
-sheet instructions. Father follow-ups retain separate identities in PLAYTEST-88 through
-PLAYTEST-93 and PLAYTEST-98 through PLAYTEST-103. PLAYTEST-94 through PLAYTEST-97 belong
-to main's independent escape, save-symbol, window and route-tint feedback.
 
 No merge, auto-merge, rebase, merge from main or branch deletion is authorized without explicit permission in the current
 session. New implementation or investigation uses fresh agents with self-contained briefs; do not
