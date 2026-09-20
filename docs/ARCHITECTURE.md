@@ -166,7 +166,8 @@ assets/
                           lifetime, its padding kind and the consumers that read it
   atlases/baked/          the pages themselves, gitignored: one PNG per group, regions.json
                           and bake_manifest.json, written by tools/bake-atlases.sh
-  ground_tileset.tres     one TileSetAtlasSource per ground tile
+  ground_tileset.tres     one TileSetAtlasSource per ground tile, each naming its picture's
+                          baked region rather than holding a texture of its own
   logo.*, icon_stroller*, social-card.png  the wordmark and the stroller on its own: the README
                           header, the social card the deploy publishes, store and social-media
                           headers. The game itself loads none of them
@@ -422,9 +423,11 @@ kept strictly out of anything that touches the meters.
 - Ground: a `TileMapLayer` fed by `GroundTiles`, which is the only place that decides which
   tile a cell gets. Source ids in `assets/ground_tileset.tres` are positional and
   `ground_tiles.gd` mirrors them by hand — adding a tile means appending to both, in order.
-  `GroundLayers` composites presentation textures from shared bases and transparent components
-  while retaining those IDs. Grass atlas coordinates vary deterministically by seed and cell;
-  the selected source and gameplay geometry remain the map's own.
+  Each source names its picture's region on the baked `ground` page instead of holding a texture,
+  and `GroundLayers` composites shared bases and transparent components out of that page's image
+  into one sheet the `TileSet` holds, while retaining those IDs. Grass atlas coordinates vary
+  deterministically by seed and cell; the selected source and gameplay geometry remain the map's
+  own.
 - Buildings: `StaticBody2D` whose collision is the whole lot, plus a `_draw()` that
   assembles that same lot out of 32px tiles — a front wall (the southern `height` px) and a
   roof (the remainder). Fitting the mass inside the lot keeps extrusions off the *ground* she
