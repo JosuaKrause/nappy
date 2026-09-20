@@ -49,8 +49,8 @@
     "assets/illustrated/svg-transfer/rig/mother_front_diagonal_c.png",
     "docs/graphics-creation/player/mother_side_b.svg",
     "docs/graphics-creation/player/mother_front_diagonal_b.svg",
-    "assets/rig/father_side_b.svg",
-    "assets/rig/father_front_diagonal_b.svg"
+    "docs/evidence/male-player-2026-09-19/b-contact/inputs/father_side_b.svg",
+    "docs/evidence/male-player-2026-09-19/b-contact/inputs/father_front_diagonal_b.svg"
   ],
   "deterministic_selection": "Change only father side/front-diagonal B. Restore exact father rows 0..27 and direct mother-donor rows 34..45; all A/C and N/S/NE/NW B files remain byte-identical to the accepted baseline."
 }
