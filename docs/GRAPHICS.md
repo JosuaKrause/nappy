@@ -237,8 +237,8 @@ The names below use `mother`; the complete male counterpart uses `father` with t
 dimensions, poses, states and registration. `GameState.start_run()` makes an equal two-way
 choice through its independent seeded `player-presentation` stream, and `Main._make_player()`
 binds that choice before every ordinary or escape player enters the tree. Days, retries, pauses,
-carrying changes and texture resolution never reroll it. Both complete families share the warm
-player atlas; the stroller remains shared and the wife/event NPC artwork is independent.
+carrying changes and texture resolution never reroll it. Both complete families share the baked
+`stroller` atlas page; the stroller remains shared and the wife/event NPC artwork is independent.
 
 `mother_{front,back}_{a,b,c}.png` (24×46), `mother_side_{a,b,c}.png` (26×46),
 `pram_front.png` and `pram_back.png` (30×30), and `pram_side.png`

@@ -43,7 +43,6 @@ func run(t) -> void:
 	_test_body_and_trim_can_never_disagree(t)
 	_test_a_stopped_walker_keeps_its_view(t)
 	_test_a_fresh_heading_clears_the_previous_hold_in_one_step(t)
-	_test_unpaired_walker_views_still_fall_back_to_svg(t)
 	_test_advancing_the_gait_tracks_distance_not_time(t)
 	_test_a_moving_walker_alternates_gait_frames(t)
 	_test_a_stopped_walker_holds_gait_frame_a(t)
@@ -132,7 +131,9 @@ func _test_walker_headings_select_the_expected_view(t) -> void:
 
 ## `_draw_body()` looks the view up once and indexes both dictionaries with it, but this pins the
 ## invariant structurally too: nothing can add a body without its trim, or the two would be able
-## to draw two different walkers' worth of coat and hands.
+## to draw two different walkers' worth of coat and hands. And it pins the tint split at the same
+## time: body and trim have to be two distinct baked regions, or tinting the body (`_draw_body()`'s
+## own `colour` argument) would tint the trim drawn over it as well.
 func _test_body_and_trim_can_never_disagree(t) -> void:
 	var body_views := CrowdAgent.WALKER_BODY_BY_VIEW.keys()
 	var trim_views := CrowdAgent.WALKER_TRIM_BY_VIEW.keys()
@@ -141,9 +142,12 @@ func _test_body_and_trim_can_never_disagree(t) -> void:
 	for view in body_views:
 		t.check(CrowdAgent.WALKER_TRIM_BY_VIEW.has(view),
 				"every body view %s has a matching trim view" % view)
-		t.check(CrowdAgent.WALKER_BODY_BY_VIEW[view] != null
-				and CrowdAgent.WALKER_TRIM_BY_VIEW[view] != null,
-				"both textures for %s actually resolve" % view)
+		var body_region := AtlasLibrary.region_name_for(CrowdAgent.WALKER_BODY_BY_VIEW[view])
+		var trim_region := AtlasLibrary.region_name_for(CrowdAgent.WALKER_TRIM_BY_VIEW[view])
+		t.check(AtlasLibrary.has_region(body_region) and AtlasLibrary.has_region(trim_region),
+				"both regions for %s are actually baked" % view)
+		t.check(body_region != trim_region,
+				"body and trim for %s are two separate regions, so tinting one leaves the other" % view)
 	for sector in range(8):
 		t.check(body_views.has(CrowdAgent.WALKER_VIEW_BY_SECTOR[sector]),
 				"sector %d names a view the tables actually carry" % sector)
@@ -190,16 +194,6 @@ func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
 			"the new north heading already wins over the stale southeast view (got %d)"
 			% agent._frame())
 	agent.free()
-
-func _test_unpaired_walker_views_still_fall_back_to_svg(t) -> void:
-	var diagonal: Texture2D = CrowdAgent.WALKER_BODY_BY_VIEW["front_diagonal"]
-	TextureResolver.reset_for_tests(true)
-	t.check(TextureResolver.resolve(diagonal) == diagonal,
-			"explicit SVG mode keeps the authored walker diagonal SVG")
-	TextureResolver.reset_for_tests(false)
-	t.check(TextureResolver.resolve(diagonal) == diagonal,
-			"no PNG transfer exists yet, so default mode falls back to the same walker SVG")
-	TextureResolver.reset_for_tests(DevFlags.svg_requested())
 
 # ---------------------------------------------------------------------- gait ---
 # `CrowdAgent._advance_walker_gait()`/`_walker_gait_frame()`, the walker's own two-frame stride —
@@ -262,9 +256,9 @@ func _test_walker_gait_b_tables_agree_with_a(t) -> void:
 				"view %s has a gait-b body to match its gait-a body" % view)
 		t.check(CrowdAgent.WALKER_TRIM_BY_VIEW_B.has(view),
 				"view %s has a gait-b trim to match its gait-a trim" % view)
-		t.check(CrowdAgent.WALKER_BODY_BY_VIEW_B[view] != null
-				and CrowdAgent.WALKER_TRIM_BY_VIEW_B[view] != null,
-				"both gait-b textures for %s actually resolve" % view)
+		t.check(AtlasLibrary.has_region(AtlasLibrary.region_name_for(CrowdAgent.WALKER_BODY_BY_VIEW_B[view]))
+				and AtlasLibrary.has_region(AtlasLibrary.region_name_for(CrowdAgent.WALKER_TRIM_BY_VIEW_B[view])),
+				"both gait-b regions for %s are actually baked" % view)
 
 func _test_walker_gait_b_tables_cover_every_sector(t) -> void:
 	for sector in range(8):
@@ -274,8 +268,8 @@ func _test_walker_gait_b_tables_cover_every_sector(t) -> void:
 
 func _test_every_walker_gait_b_svg_is_native_18x38(t) -> void:
 	for view in CrowdAgent.WALKER_BODY_BY_VIEW_B.keys():
-		var body: Texture2D = CrowdAgent.WALKER_BODY_BY_VIEW_B[view]
-		t.check(body.get_size() == Vector2(18, 38), "gait-b body %s is native 18x38" % view)
+		var body := AtlasLibrary.native_size(AtlasLibrary.region_name_for(CrowdAgent.WALKER_BODY_BY_VIEW_B[view]))
+		t.check(body == Vector2i(18, 38), "gait-b body %s is native 18x38" % view)
 	for view in CrowdAgent.WALKER_TRIM_BY_VIEW_B.keys():
-		var trim: Texture2D = CrowdAgent.WALKER_TRIM_BY_VIEW_B[view]
-		t.check(trim.get_size() == Vector2(18, 38), "gait-b trim %s is native 18x38" % view)
+		var trim := AtlasLibrary.native_size(AtlasLibrary.region_name_for(CrowdAgent.WALKER_TRIM_BY_VIEW_B[view]))
+		t.check(trim == Vector2i(18, 38), "gait-b trim %s is native 18x38" % view)
