@@ -2858,11 +2858,11 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.BURNING_BUILDING:
 			_draw_fire(canvas)
 		EventDef.Look.BURNT_SHELL:
-			_draw_spread(RUBBLE, null, canvas)
+			_draw_spread(RUBBLE, "", canvas)
 		EventDef.Look.LOOSE_DOG:
 			_draw_loose_dog(canvas)
 		EventDef.Look.STALL:
-			_draw_spread(STALL, null, canvas)
+			_draw_spread(STALL, "", canvas)
 		EventDef.Look.LEAF_BLOWER:
 			_draw_eight_view(LEAF_BLOWER_BY_VIEW, _heading, canvas, false, LEAF_BLOWER_BY_VIEW_B)
 		EventDef.Look.BIRDS:
@@ -2911,7 +2911,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.ARMY_TRUCK:
 			_draw_eight_view(ARMY_TRUCK_BY_VIEW, _heading, canvas, true)
 		EventDef.Look.BARRICADE:
-			_draw_spread(BARRICADE_PILE, null, canvas)
+			_draw_spread(BARRICADE_PILE, "", canvas)
 		EventDef.Look.PROTEST:
 			_draw_protest(canvas)
 		EventDef.Look.FIREFIGHT:
@@ -2923,9 +2923,9 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.BURST_MAIN:
 			_draw_wide_scene(_wide_scene_texture(EventDef.Look.BURST_MAIN, _spread_vertical), canvas)
 		EventDef.Look.COLLAPSED_FRONTAGE:
-			_draw_spread(COLLAPSED_FRONTAGE, null, canvas)
+			_draw_spread(COLLAPSED_FRONTAGE, "", canvas)
 		EventDef.Look.SCAFFOLDING:
-			_draw_spread(SCAFFOLDING, null, canvas)
+			_draw_spread(SCAFFOLDING, "", canvas)
 		EventDef.Look.SKIP:
 			_draw_simple(SKIP, canvas)
 		EventDef.Look.MOVING_VAN:

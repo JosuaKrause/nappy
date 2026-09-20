@@ -3,11 +3,18 @@ extends RefCounted
 ## packs, and the three answers `texture_for()` gives across a group's life: the source before the
 ## atlas is collected, the region after it, and the source again once it is released.
 ##
-## The café event family (`EventDef.Look.CAFE`) is the set packed here, because it is a real group
-## with a real spread of canvas sizes rather than a fixture invented for the suite, and events are
-## the one family still packed by this class through every pull request of M171, build-time
-## atlases; `test_ground_layers.gd` holds the ground's own contract, which is packed a different
-## way.
+## Four prop pictures are the set packed here, loaded by path (`PACKED_SOURCES`): a real spread of
+## canvas sizes rather than a fixture invented for the suite, and each one has a PNG transfer of
+## its own, which is what keeps the two presentation-mode passes below asking different questions.
+## `test_ground_layers.gd` holds the ground's own contract, which is packed a different way.
+##
+## **Loaded by path rather than read off a consumer's constants.** This set used to be the café
+## event family, `EventInstance.family_sources(EventDef.Look.CAFE)`, whose members are region
+## names on the baked `events` page now rather than textures. What this suite is about is
+## `TextureAtlas`'s own packing, so what it packs only has to be pictures with real sizes and real
+## pixels; reading them off whichever family had not moved yet is what made it break each time one
+## did. Nothing in the game loads these paths individually — the props draw from the baked
+## `decoration` page — so this is a test fixture and not a second resident copy of anything.
 ##
 ## Run under both presentation modes, since the atlas packs whichever raster
 ## `TextureResolver.resolve()` currently chooses, and `TextureAtlas.reset_for_tests()` is paired
@@ -85,13 +92,27 @@ func _check_phase_trace(t) -> void:
 	AtlasPhaseTrace.reset(false)
 	TextureAtlas.reset_for_tests()
 
+## The pictures packed here: a 12×12 bollard, a 64×32 duct, a 42×34 sack pile and a 40×52 tree, so
+## the layout has narrow, wide, square and tall members to place rather than one repeated shape.
+const PACKED_SOURCES: Array[String] = [
+	"res://assets/props/bollard.svg",
+	"res://assets/props/roof_duct_straight.svg",
+	"res://assets/props/garbage_sacks_pile.svg",
+	"res://assets/props/tree_b.svg",
+]
+
 ## Key -> source texture, the shape `TextureAtlas.request()` takes. Keyed by the source texture
-## itself, which is how every drawing user in the game indexes its own pictures: a `_draw()` has
-## the constant in hand and wants the region standing in for it. The café family
-## (`EventInstance.family_sources(EventDef.Look.CAFE)`) is a real group with a real spread of
-## canvas sizes — both sitter views and the table — rather than a fixture invented for the suite.
+## itself, which is how every drawing user in the game indexed its own pictures: a `_draw()` had
+## the constant in hand and wanted the region standing in for it.
 func _sources() -> Dictionary:
-	return EventInstance.family_sources(EventDef.Look.CAFE)
+	var sources: Dictionary = {}
+	for path in PACKED_SOURCES:
+		var texture := load(path) as Texture2D
+		if texture == null:
+			push_error("test_texture_atlas: no source picture at %s" % path)
+			continue
+		sources[texture] = texture
+	return sources
 
 ## The layout on its own, which is the only part of the packing a suite can ask about a set that
 ## cannot fit: `request()` asserts on `fits`, and an assertion aborts the run rather than
@@ -128,8 +149,11 @@ func _check_plan(t) -> void:
 ## source image's.
 func _check_pack(t, label: String) -> void:
 	var sources := _sources()
-	t.check(TextureAtlas.texture_for(NAME, EventInstance.CAFE_TABLE, EventInstance.CAFE_TABLE)
-			== EventInstance.CAFE_TABLE,
+	t.check(sources.size() == PACKED_SOURCES.size(),
+			"%s: every source picture loaded (%d of %d)"
+			% [label, sources.size(), PACKED_SOURCES.size()])
+	var first: Texture2D = sources.keys()[0]
+	t.check(TextureAtlas.texture_for(NAME, first, first) == first,
 			"%s: a group nobody has requested answers the source it was handed" % label)
 
 	t.check(TextureAtlas.request(NAME, sources), "%s: the request is the one that starts the pack"

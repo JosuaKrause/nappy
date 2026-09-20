@@ -55,7 +55,6 @@ func run(t) -> void:
 	_test_idle_phase_offset_differs_by_siting(t)
 	_test_gait_and_idle_phase_reset_on_setup(t)
 	_test_gait_query_is_stable_within_a_tick(t)
-	_test_unpaired_b_view_still_falls_back_to_svg(t)
 
 # ------------------------------------------------------------------- the tables ---
 
@@ -181,9 +180,9 @@ func _test_dog_walker_and_dog_share_one_phase(t) -> void:
 	for i in 40:
 		instance._process(STEP)
 	var stepping := instance._gait_stepping()
-	var person_frame: Texture2D = EventInstance.PERSON_BY_VIEW_B["side"] if stepping \
+	var person_frame: String = EventInstance.PERSON_BY_VIEW_B["side"] if stepping \
 			else EventInstance.PERSON_BY_VIEW["side"]
-	var dog_frame: Texture2D = EventInstance.DOG_BY_VIEW_B["side"] if stepping \
+	var dog_frame: String = EventInstance.DOG_BY_VIEW_B["side"] if stepping \
 			else EventInstance.DOG_BY_VIEW["side"]
 	# Both read off the identical `stepping` value computed once — the same one-lookup shape
 	# `_draw_dog_walker()` itself uses — so there is no way for this pair to disagree.
@@ -292,16 +291,3 @@ func _test_gait_query_is_stable_within_a_tick(t) -> void:
 				"repeated calls within the same tick agree, the way a halo ring's own re-draw needs")
 	instance.free()
 
-# ------------------------------------------------------------------- texture fallback ---
-
-## `docs/GRAPHICS.md`: PNG generation stays with M109, so a b frame must still resolve in both
-## selection modes today, the same fallback `test_event_views.gd` pins for the unpaired diagonal.
-func _test_unpaired_b_view_still_falls_back_to_svg(t) -> void:
-	var b_diagonal: Texture2D = EventInstance.PERSON_BY_VIEW_B["front_diagonal"]
-	TextureResolver.reset_for_tests(true)
-	t.check(TextureResolver.resolve(b_diagonal) == b_diagonal,
-			"explicit SVG mode keeps the authored b-frame diagonal SVG")
-	TextureResolver.reset_for_tests(false)
-	t.check(TextureResolver.resolve(b_diagonal) == b_diagonal,
-			"no PNG transfer exists yet, so default mode falls back to the same b-frame SVG")
-	TextureResolver.reset_for_tests(DevFlags.svg_requested())

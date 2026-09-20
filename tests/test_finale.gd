@@ -351,10 +351,14 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 	t.check(burst != null and crater != null, "both finale rows are in the catalogue")
 	t.check(burst.spawns_on_finish == crater.id, "the burst names the crater it leaves")
 	t.check(burst.look == EventDef.Look.NONE, "and draws nothing itself")
+	# The width comes from the baked region table rather than from a loaded texture — the crater's
+	# picture is a region of the `events` page now, and `AtlasLibrary.native_size()` answers the
+	# source picture's own size with nothing acquired.
 	var picture := EventInstance.icon_for(crater.look)
-	t.check(is_equal_approx(crater.obstructs_radius, picture.get_width() * 0.5),
+	var drawn_width := EventInstance._native_size(picture).x
+	t.check(is_equal_approx(crater.obstructs_radius, drawn_width * 0.5),
 			"the crater obstructs %.0fpx against a %.0fpx picture"
-			% [crater.obstructs_radius, picture.get_width()])
+			% [crater.obstructs_radius, drawn_width])
 
 	# And the wiring: a burst that has run its course is replaced by a crater standing where it
 	# was, through the same `spawns_on_finish` mechanism a convoy leaves a barricade through.

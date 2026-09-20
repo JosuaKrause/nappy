@@ -47,16 +47,18 @@ creation-reference family for high-fidelity generation and its linked recipes fo
 back to the SVG. Drawing transforms, animation timing, mirroring, ground anchors, sorting,
 collision and camera framing remain the existing game's responsibility.
 
-`TextureAtlas` then relocates whichever raster the resolver chose into one shared texture per
-group of pictures — one group per event family — and hands out `AtlasTexture` regions over it.
-Every other family that has moved draws from the baked atlas below instead. The atlas changes no
-picture: a region reports its source's own size, so scale, offsets, mirroring, anchors, shadows
-and sorting read the same numbers in either presentation mode. A group is requested when its
-first user is placed and released when its last user is gone; until it is collected, and again
-after it is released, every user draws the source texture it would otherwise draw, so nothing
-waits on an atlas and nothing draws a missing picture. `GroundLayers` packs the ground the same
-way but in one texture the `TileSet` holds directly, each source reaching its own pictures
-through `margins` with `texture_region_size` and `separation` unchanged.
+`TextureAtlas` relocates whichever raster the resolver chose into one shared texture per group of
+pictures and hands out `AtlasTexture` regions over it. It changes no picture: a region reports its
+source's own size, so scale, offsets, mirroring, anchors, shadows and sorting read the same numbers
+in either presentation mode. A group is requested when its first user is placed and released when
+its last user is gone; until it is collected, and again after it is released, every user draws the
+source texture it would otherwise draw, so nothing waits on an atlas and nothing draws a missing
+picture. Every family that has moved draws from the baked atlas below instead, and no production
+caller asks this class for a group any more — `main._process()` still pumps its collection queue
+and the run log still counts what it collects, which the milestone's last item removes with the
+class itself. `GroundLayers` packs the ground a different way, in one texture the `TileSet` holds
+directly, each source reaching its own pictures through `margins` with `texture_region_size` and
+`separation` unchanged.
 
 ## Baked atlases
 
@@ -96,11 +98,13 @@ already holding. `src/city/prop.gd`, `src/city/litter.gd` and `src/city/city_dec
 `region()` and `native_size()` on region names rather than on loaded textures. Buildings, the
 street kit (the city edge, closure markers, traffic lights), the UI (`ModeButton`,
 `TouchControls`, `SaveIndicator`) and the interior (`InteriorScene`, `InteriorTileSet`) each
-acquire their own group as they enter the tree and release it as they leave. The ground and the
-events still reach their pictures through `TextureResolver` and `TextureAtlas` as described
-above, until their own consumers move; `tests/test_atlas_library.gd` compares every baked
-region against the picture its consumer draws today, pixel for pixel, for as long as that
-comparison is possible.
+acquire their own group as they enter the tree and release it as they leave. The events are one
+page — the whole catalogue, the checkpoint kit and the finale's crater — and `EventManager` holds
+one reference on it for its own life, which the screen-edge badge's silhouettes draw from too, so
+the thing at the edge of the screen and the thing in the street are the same pixels. The ground
+still reaches its pictures through `TextureResolver` and `TextureAtlas` as described above, until
+its own consumer moves; `tests/test_atlas_library.gd` compares every baked region against the
+picture its consumer draws today, pixel for pixel, for as long as that comparison is possible.
 
 ## When a page loads
 
@@ -120,13 +124,11 @@ that is already there. The residency is what makes that true by construction: a 
 release can drop the count to the residency underneath it and no further, so a city torn down
 between two runs or a node re-entering the tree costs no reload.
 
-**Three groups are not in that list.** The **other parent's** page — the choice is fixed for a
+**Two groups are not in that list.** The **other parent's** page — the choice is fixed for a
 run, so the run that draws the mother never loads the father's sixty views, and a held restart
-that rerolls the choice gives the previous one back. The **interior**, which only the escape
+that rerolls the choice gives the previous one back. And the **interior**, which only the escape
 sequence draws; it is held from the `--start-escape` boot, and moves to that sequence's own
-brief when M102, the finale, has one. And the **events**, whose page nothing reads yet: the
-events still draw through `TextureAtlas`, and moving `EventManager` onto the baked page is what
-adds `&"events"` to the residency.
+brief when M102, the finale, has one.
 
 The run log carries one `texture` line per page actually read, with the moment, the milliseconds
 the read took and the page's size.

@@ -66,10 +66,12 @@ src/
 	traffic_index.gd      where the cars are, lane by lane, so a turn can check for room
   events/
 	event_def.gd          authored event data
-	event_instance.gd     runtime node: position, lifetime, telegraph, emission
+	event_instance.gd     runtime node: position, lifetime, telegraph, emission; every picture
+	                       it draws is a region of the baked `events` page, by path
 	event_catalogue.gd    every event, defined in code
 	event_scheduler.gd    builds a day's event set from seed + day
-	event_manager.gd      owns the live instances; answers total_excitement_at
+	event_manager.gd      owns the live instances and one reference on the `events` atlas page;
+	                       answers total_excitement_at
 	event_director.gd     sites the budgeted one-shots in front of her as she walks
   day/
 	day_controller.gd     the clock, the two phases, the four ways a day ends
@@ -134,7 +136,9 @@ src/
 	texture_resolver.gd   cached same-size PNG selection, with SVG fallback
 	texture_atlas.gd      one shared texture per group of pictures: requested, packed on a
 	                       worker thread, collected on the main thread, released when its last
-	                       user is gone; users draw their source pictures until it is ready
+	                       user is gone; users draw their source pictures until it is ready.
+	                       No production caller asks it for a group any more — main still pumps
+	                       its collection queue and the run log still counts it
 	ground_layers.gd      shared ground bases, transparent overlays and sparse grass atlases,
 	                       then every TileSetAtlasSource packed into one texture through margins
 	eight_direction.gd    the eight-sector heading selector the stroller and the crowd both draw by

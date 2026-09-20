@@ -310,7 +310,8 @@ func _test_stationary_vehicles_face_their_street(t) -> void:
 		t.check(side != end, "'%s' has distinct side and end artwork" % def.id)
 		t.check(is_equal_approx(side_extent.x, def.obstructs_radius * 2.0),
 				"'%s' side view fits the diameter of its solid body" % def.id)
-		t.check(end_extent.is_equal_approx(end.get_size()) and end_extent.x < side_extent.x,
+		t.check(end_extent.is_equal_approx(EventInstance._native_size(end))
+				and end_extent.x < side_extent.x,
 				"'%s' end view keeps its narrower authored projection" % def.id)
 
 ## **A spread never lands on a corner.** `EventScheduler._is_a_corner` refuses any tile whose two
@@ -354,7 +355,7 @@ func _test_a_spread_never_lands_on_a_corner(t) -> void:
 func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
 	var def := EventCatalogue.by_id("construction")
 	var half := maxf(11.0, def.obstructs_radius)
-	var cap_along := EventInstance.BARRIER_END.get_size().x
+	var cap_along := EventInstance._native_size(EventInstance.BARRIER_END).x
 	var offset := EventInstance._cap_offset(half, cap_along, 1.0)
 	t.check(is_equal_approx(offset + cap_along * 0.5, half),
 			"the cap's outer edge (%.1f) lands on the %.1fpx obstruction, not past it"
@@ -381,7 +382,7 @@ func _test_a_wide_scene_faces_its_street(t) -> void:
 	var half := maxf(11.0, EventCatalogue.by_id("fallen_tree").obstructs_radius)
 	for is_vertical in [false, true]:
 		var texture := EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, is_vertical)
-		var size := texture.get_size()
+		var size := EventInstance._native_size(texture)
 		var anchor := EventInstance._wide_scene_anchor(is_vertical, half)
 		var extent := Vector2(size.x, half * 2.0) if is_vertical \
 				else Vector2(half * 2.0, size.y)
@@ -390,12 +391,12 @@ func _test_a_wide_scene_faces_its_street(t) -> void:
 			t.check(is_equal_approx(drawn.position.y, -half)
 					and is_equal_approx(drawn.end.y, half),
 					"'%s' vertical body spans the obstruction from -%.0f to %.0f"
-					% [texture.resource_path.get_file(), half, half])
+					% [texture.get_file(), half, half])
 		else:
 			t.check(is_equal_approx(drawn.position.x, -half)
 					and is_equal_approx(drawn.end.x, half),
 					"'%s' horizontal body spans the obstruction from -%.0f to %.0f"
-					% [texture.resource_path.get_file(), half, half])
+					% [texture.get_file(), half, half])
 
 	# The other two whole-scene rows carry the same guarantee — checked once each rather than
 	# re-running the segment arithmetic, since `_wide_scene_texture`'s own match is what could
@@ -2954,14 +2955,13 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 		if def.look == EventDef.Look.NONE:
 			continue
 		var icon := EventInstance.icon_for(def.look)
-		t.check(icon != null, "'%s' has a silhouette a badge could draw" % def.id)
-		if not icon:
+		t.check(not icon.is_empty(), "'%s' has a silhouette a badge could draw" % def.id)
+		if icon.is_empty():
 			continue
-		var path := icon.resource_path
-		t.check(not seen.has(path),
+		t.check(not seen.has(icon),
 				"'%s' draws %s, which nothing else draws (else '%s')"
-				% [def.id, path.get_file(), seen.get(path, "")])
-		seen[path] = def.id
+				% [def.id, icon.get_file(), seen.get(icon, "")])
+		seen[icon] = def.id
 
 # --------------------------------------------------- placement by role (M50) ---
 

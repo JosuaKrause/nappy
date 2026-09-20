@@ -45,12 +45,16 @@ func run(t) -> void:
 	_test_warm_under_svg_loads_nothing(t)
 	TextureResolver.reset_for_tests(DevFlags.svg_requested())
 
-## M147, "every picture loaded before it is needed": once `warm()` has run, every texture
-## `EventInstance` preloads is already in `TextureResolver`'s own cache, so resolving each of them
-## again — the same call `Sprites`/`EventInstance` make at draw time — must not move
-## `load_count()`. Reads the constants straight off the script with `get_script_constant_map()`
-## rather than hand-listing them here, so a picture added to the catalogue is covered without a
-## second edit to this file.
+## M147, "every picture loaded before it is needed": once `warm()` has run, every picture that has
+## a PNG transfer is already in `TextureResolver`'s own cache, so resolving one again — the same
+## call `Sprites` makes at draw time — must not move `load_count()`.
+##
+## **Asked over this suite's own `SOURCES`** — the six mother views and three pram views, which
+## have transfers on disk — rather than over a consumer's preloaded constants. It used to walk
+## `event_instance.gd` with `get_script_constant_map()` and resolve every `Texture2D` it found;
+## those constants are repository paths now that the events draw from the baked `events` page, so
+## the walk found nothing and the check passed vacuously on an empty map. Nine real transfer pairs
+## answer the same question and cannot quietly become none.
 func _test_warm_loads_every_transfer_once(t) -> void:
 	TextureResolver.reset_for_tests(false)
 	var loaded := TextureResolver.warm()
@@ -58,17 +62,10 @@ func _test_warm_loads_every_transfer_once(t) -> void:
 	t.check(loaded == TextureResolver.load_count(),
 		"warm()'s own return value agrees with the counter it moved")
 	var after_warm := TextureResolver.load_count()
-	var event_script: Script = load("res://src/events/event_instance.gd")
-	var constants: Dictionary = event_script.get_script_constant_map()
-	var textures_checked := 0
-	for constant_value: Variant in constants.values():
-		if constant_value is Texture2D:
-			TextureResolver.resolve(constant_value)
-			textures_checked += 1
-	t.check(textures_checked > 0,
-		"the audit found event pictures to check rather than an empty constant map")
+	for source: Texture2D in SOURCES:
+		TextureResolver.resolve(source)
 	t.check(TextureResolver.load_count() == after_warm,
-		"warm() already loaded every texture EventInstance preloads, so resolving them again " +
+		"warm() already loaded every picture with a transfer, so resolving %d of them again " % SOURCES.size() +
 		"loads nothing more")
 
 ## `resolve()` is a no-op under `--svg` — nothing is ever swapped for a PNG — so `warm()` must
