@@ -22,11 +22,10 @@ extends RefCounted
 
 const AUTHORED_PATH := "res://assets/ground_tileset.tres"
 const AUTHORED_GROUND: TileSet = preload(AUTHORED_PATH)
-const MANIFEST_PATH := "res://assets/illustrated/svg-transfer/tiles/layers/manifest.json"
-## Where a manifest component filename comes from as authored art, the one rule
-## `GroundLayers._layer_image()` applies: `curbstone.png` is `assets/tiles/layers/curbstone.svg`,
-## whose region is `tiles/layers/curbstone`.
-const LAYER_SOURCE_ROOT := "assets/tiles/layers/"
+const MANIFEST_PATH := "res://assets/ground_layers.json"
+## The region prefix a manifest component filename sits under, the one rule
+## `GroundLayers._layer_image()` applies: `curbstone.png` is the region `tiles/layers/curbstone`.
+const LAYER_REGION_ROOT := "tiles/layers/"
 ## Below this the sweep has stopped asking about the ground at all rather than found it correct.
 const FEWEST_CREDIBLE_SOURCES := 50
 
@@ -292,8 +291,7 @@ func _composition_recipe() -> Dictionary:
 func _layer(page: Image, _manifest: Dictionary, filename: String) -> Image:
 	if filename.is_empty():
 		return null
-	var name := AtlasLibrary.region_name_for(
-			LAYER_SOURCE_ROOT + filename.trim_suffix(".png") + ".svg")
+	var name := StringName(LAYER_REGION_ROOT + filename.trim_suffix(".png"))
 	var image := _region(page, name)
 	return image if image != null and image.get_size() == GroundLayers.TILE_SIZE else null
 

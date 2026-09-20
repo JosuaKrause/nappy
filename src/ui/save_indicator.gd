@@ -25,7 +25,7 @@ const FADE_SECONDS := 1.5
 const _TOTAL := HOLD_SECONDS + FADE_SECONDS
 
 ## The fade's own peak alpha, once fully shown — the same figure `Palette.CHALK_DONE.a` carried
-## back when this modulate also tinted the icon green. `assets/ui/save.svg` now carries its own
+## back when this modulate also tinted the icon green. `art/ui/save.svg` now carries its own
 ## blue case, silver-gray shutter and paper label (PLAYTEST-95: "make it bluish and the metal
 ## parts should be silver/gray"), so this modulate only ever multiplies alpha: a colour here would
 ## multiply into the icon's own hues and turn the blue case back toward green-gray, which is the

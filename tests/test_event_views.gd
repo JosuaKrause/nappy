@@ -519,13 +519,17 @@ func _test_reversing_lorry_only_ever_faces_the_side_view(t) -> void:
 const FOOTPRINT_TOLERANCE_PX := 8.0
 
 func _test_vehicle_views_are_grounded_at_the_canvas_bottom(t) -> void:
+	# The pixels come off the baked page rather than out of the authoring SVG: the sources live
+	# under `art/`, which the engine ignores, and the page is what the game actually draws.
+	var page := AtlasLibrary.page_image(EventInstance.ATLAS_GROUP)
+	t.check(page != null, "the baked events page reads back as an image")
+	if page == null:
+		return
 	for name in VEHICLE_SIDE_REUSE:
 		var by_view: Dictionary = FAMILY_DICTS[name]
 		for view in ["front", "back", "front_diagonal", "back_diagonal"]:
 			var picture: String = by_view[view]
-			var text := FileAccess.get_file_as_string(picture)
-			var image := Image.new()
-			image.load_svg_from_string(text, 1.0)
+			var image := page.get_region(AtlasLibrary.region_rect(StringName(picture)))
 			var bounds := image.get_used_rect()
 			t.check(bounds.size.y > 0, "%s's %s view has some ink to measure" % [name, view])
 			var gap := image.get_height() - bounds.end.y

@@ -287,7 +287,7 @@ func _draw_arrow(instance: EventInstance, distance: float, transform: Transform2
 		# fit is arithmetic that needs nothing loaded; the region itself is the one thing here
 		# that does, and `EventManager` is holding the page for as long as there is an instance
 		# to draw a badge for.
-		var name := AtlasLibrary.region_name_for(picture)
+		var name := StringName(picture)
 		var art := Vector2(AtlasLibrary.native_size(name))
 		var fit := ICON / maxf(art.x, art.y)
 		var drawn := art * fit

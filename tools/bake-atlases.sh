@@ -18,20 +18,27 @@
 # milliseconds, cheap enough to pay on every run of every tool. Launching Godot to ask would cost
 # a second and a half and defeat the point.
 #
+# A page no current group names counts as staleness too. Folding one group into another leaves
+# its page on disk, where every input hash still agrees and nothing says otherwise -- and because
+# assets/atlases/baked/ is an imported folder, the engine imports that page and exports it into
+# the pack. Reporting it here is what makes every tool that calls this rebake, and the bake is
+# what deletes it.
+#
 # A mode mismatch is staleness like any other: a tree baked with --svg is stale for a default
 # bake and the other way round, so the release build can never pick up a local SVG bake.
 #
 # **A bake that succeeds can still make the engine complain.** This runs Godot with --script,
-# which still loads every autoload, and their dependency chain reaches picture preload()s; on a
-# checkout whose import cache (.godot/imported/) has not seen a picture yet -- a fresh clone or
-# worktree, or a pull that added one -- that load fails and the engine prints its own ERROR: and
-# SCRIPT ERROR: lines for it, right after a bake that wrote every page correctly (the bake reads
-# its sources itself and never through that cache). When that happens this script says so in
-# plain words after the engine's own lines, which stay visible, and still exits 0 -- every caller
-# runs this before its own import pass on purpose, on a fresh clone included, so failing here
-# would break all of them for a condition tools/check.sh already repairs. A real bake failure
-# (the engine process itself failing, or its outputs still stale afterwards) keeps its own
-# message and its non-zero exit, and this explanation is never printed over it.
+# which loads every autoload first whatever the script references. On a checkout with no .godot/
+# at all -- every fresh clone and every new worktree -- there is no global class-name cache, so
+# no class_name resolves, every autoload fails to parse and the engine prints its own ERROR: and
+# SCRIPT ERROR: lines for the cascade, right after a bake that wrote every page correctly. The
+# bake reads its sources itself and builds nothing out of the project's own classes, so its
+# pages are unaffected. When that happens this script says so in plain words after the engine's
+# own lines, which stay visible, and still exits 0 -- every caller runs this before its own
+# import pass on purpose, on a fresh clone included, so failing here would break all of them for
+# a condition tools/check.sh already repairs. A real bake failure (the engine process itself
+# failing, or its outputs still stale afterwards) keeps its own message and its non-zero exit,
+# and this explanation is never printed over it.
 set -uo pipefail
 
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
@@ -49,7 +56,9 @@ flags it compares the recorded source hashes and prints one line saying whether 
   --svg     bake the authored SVG rasters alone, ignoring the illustrated PNGs. The custom
             local build; the release is always the default PNG bake, and a tree baked this way
             counts as stale for every tool that wants a release build.
-  --check   report whether a bake is needed and exit non-zero if it is; bake nothing.
+  --check   report whether a bake is needed and exit non-zero if it is; bake nothing. A page
+            left behind by a group that no longer exists counts as needing one, and the bake
+            is what removes it.
   --force   bake whether or not anything changed.
 
   tools/bake-atlases.sh
@@ -115,10 +124,25 @@ if manifest.get("version") != 1:
 if manifest.get("mode") != wanted_mode:
     print("baked in %s mode, %s mode wanted" % (manifest.get("mode"), wanted_mode))
     sys.exit(1)
-for output in manifest.get("outputs", []):
+baked = os.path.dirname(manifest_path)
+outputs = manifest.get("outputs", [])
+for output in outputs:
     if not os.path.exists(os.path.join(root, output)):
         print("missing output: %s" % output)
         sys.exit(1)
+
+# A page whose group is gone. `outputs` is exactly what the last bake wrote, so anything else
+# under the baked folder is a leftover -- and the bake is what deletes it, which is why this is
+# reported as staleness rather than as its own kind of failure.
+pages = set(os.path.basename(o) for o in outputs if o.endswith(".png"))
+orphans = sorted(
+    name for name in os.listdir(baked)
+    if (name.endswith(".png") or name.endswith(".png.import"))
+    and name[:-len(".import")] not in pages and name not in pages
+)
+if orphans:
+    print("pages no group names: %s" % ", ".join(orphans))
+    sys.exit(1)
 
 changed, missing = [], []
 for relative, digest in sorted(manifest.get("inputs", {}).items()):
@@ -201,15 +225,14 @@ if ! staleness_reason >/dev/null; then
     exit 1
 fi
 
-# The pages above are correct: the bake reads its sources itself and never through the import
-# cache. But --script still loads every autoload, and their dependency chain reaches picture
-# preload()s (src/events/event_instance.gd among them) -- so on a checkout whose import cache
-# has not seen a picture yet, or does not exist at all (a fresh clone or worktree, or a pull
-# that added one), the engine prints its own ERROR:/SCRIPT ERROR: lines for that load failure
-# and for every script the failure cascades into, right above this line, while the bake has
-# already finished. check.sh's own error vocabulary is reused as the trigger rather than a
-# narrower pattern that names the .ctex/preload/compile-cascade shapes specifically: which
-# autoload fails first, and what it drags down with it, depends on load order and on the
+# The pages above are correct: the bake reads its sources itself and builds nothing out of the
+# project's own classes. But --script still loads every autoload -- and on a checkout with no
+# .godot/ (a fresh clone or a new worktree) there is no global class-name cache for them to
+# resolve against, so the first autoload fails to parse and the engine prints its own
+# ERROR:/SCRIPT ERROR: lines for it and for every script the failure cascades into, right above
+# this line, while the bake has already finished. check.sh's own error vocabulary is reused as
+# the trigger rather than a narrower pattern that names the compile-cascade shapes specifically:
+# which autoload fails first, and what it drags down with it, depends on load order and on the
 # dependency graph of whatever changed, so a parser that requires every ERROR: line to match a
 # fixed list of shapes would be chasing the engine's own diagnostics rather than checking a
 # stable contract -- and a change to what it does not recognise would silently stop explaining
@@ -218,10 +241,10 @@ if grep -qE "SCRIPT ERROR|Parse Error|ERROR:" <<<"$bake_output"; then
     cat >&2 <<'EOF'
 
 The pages above were baked correctly. The errors above them are the engine loading the game's
-own scripts -- this wrapper starts Godot with --script, which still loads every autoload, and
-their dependency chain reaches picture preload()s -- against an import cache
-(.godot/imported/) that has not seen every picture yet, or does not exist at all. The bake reads
-its sources directly rather than through that cache, so its pages are unaffected.
+own scripts -- this wrapper starts Godot with --script, which loads every autoload first -- on a
+checkout with no .godot/ to resolve their class_names against, which is every fresh clone and
+every new worktree. The bake reads its sources directly and builds nothing out of those classes,
+so its pages are unaffected.
 
 Run tools/check.sh: it bakes (nothing to redo, the pages above are current) and then runs the
 import pass the engine's own errors above are missing.

@@ -278,8 +278,8 @@ name the question it answers, or it is a metric and does not belong.
 | `blocked` | observer | **Is she stuck, or standing on purpose?** Movement input held for about a second while she goes nowhere — the direction, how long, and where. `idle` already covers the legitimate stand-still, no direction held; without this one an immobile rig's log reads exactly like a run, and a person pressing into a blocker the engine never stopped them at has no trace of having done it |
 | `cue` | observer | **What was she warned about, and for how long** — the mark over her head and the screen-edge badges, each written when the span ends so the duration is on the line. A cue is a claim about a moment, and a complaint about a cue's *timing* is invisible to a trace that writes only what was marked |
 | `frame` | observer | **What the frames cost on the device this was played on** — once a second, the frame rate, the worst single frame in that second, the draw calls, renderable objects and primitives the renderer was handed, and the milliseconds spent in `_process` and `_physics_process`. The one entry that is about the machine rather than about the day, and the only way a session played on a phone or on the web page can be read back at all. See "What a frame cost" below |
-| `spike` | observer | **Under `--spikes` only: which frame in the second ran past twice the mean of the frames before it, and what the game did in it.** The frame's own length and that mean, in milliseconds, followed by what changed since the previous frame — her tile, the count of live event instances, how many transfer PNGs `TextureResolver` loaded, or how many atlases `TextureAtlas` collected — or "nothing else changed that frame" when none did. At most one line a second, the worst of that second if more than one frame qualified. See "What a frame cost" below |
-| `texture` | `AtlasLibrary`, `TextureResolver`, `TextureAtlas`, `GroundLayers` | **When a picture was loaded or dropped, and what it cost** — a transfer PNG read from disk with the path and the milliseconds the read took, an atlas becoming ready with its group, how many pictures it holds, its pixel size, the milliseconds from the request and the blit duration with its actual main/worker thread, an atlas being released with how long it was drawn from, and the ground's own sheet being composed out of the baked page with how many sources it covers, how many distinct pictures those are, its pixel size and what the whole build cost. A baked atlas page writes one line the first time it is read from disk, naming the group, the moment it loaded in (`startup`, `day brief`, `escape`, or `OUTSIDE` for a read that happened with no loading window open), the milliseconds the read took and the page's size; a later `acquire()` of a page already resident reads nothing and writes nothing. It is what says whether a picture arrived before it was drawn rather than during the frame that wanted it |
+| `spike` | observer | **Under `--spikes` only: which frame in the second ran past twice the mean of the frames before it, and what the game did in it.** The frame's own length and that mean, in milliseconds, followed by what changed since the previous frame — her tile or the count of live event instances — or "nothing else changed that frame" when neither did. At most one line a second, the worst of that second if more than one frame qualified. See "What a frame cost" below |
+| `texture` | `AtlasLibrary`, `GroundLayers` | **When a baked page arrived, when it went, and what each cost** — two lines per page, `atlas page 'ui' loaded in the startup: 1.4 ms, 262 x 392` when it is read from disk and `atlas page 'father' released after 31.7 s: 366 x 242` when the last reference drops it. The load line names the moment it happened in — `startup`, `day brief`, `escape`, or `OUTSIDE` for a read with no loading window open, which is also an engine error — and the release line says how long the page was resident. **One line each per page, not per call**: an `acquire()` of a page already resident reads nothing and a release above the last frees nothing, so neither writes. The ground's own sheet adds a third shape, `ground composed: …`, with how many sources it covers, how many distinct pictures those are, its pixel size and what the whole build cost. Together they are what say whether a picture was there before it was drawn rather than arriving in the frame that wanted it |
 | `freeze` / `thaw` | observer | Was the day lost to noise or to the clock? Freezing is the invisible failure |
 | `asleep` / `woke` | observer | How long the walk actually took, and what woke her |
 | `quiet` | observer | The sabotage landed and the masts went off |
@@ -375,20 +375,21 @@ machine cannot fill the log with it, which is the whole reason it stays behind i
 `--spikes` run on a fast machine that never has a frame twice its neighbours writes none at all.
 
 **What changed** is read off state the observer already holds for other entries — the tile
-`_watch_the_ground` already looks up, the live event count `_watch_what_is_near` already scans,
-`TextureResolver.load_count()`'s own static counter of transfer PNGs loaded from disk — never a
-new per-frame hook added to a gameplay class. A late load reads:
+`_watch_the_ground` already looks up and the live event count `_watch_what_is_near` already scans
+— never a new per-frame hook added to a gameplay class. A frame she walked out of one tile and
+into the next reads:
 
 ```
-  12.0  spike    38.4ms, mean 16.2ms — 1 pictures loaded
+  12.0  spike    38.4ms, mean 16.2ms — her tile changed to (34, 51)
 ```
 
-`"nothing else changed that frame"` means only that the watched tile, live count, picture loads
-and collected atlases did not change. It cannot exclude other game work, or a retirement and
-spawn that leave the live count unchanged. The legacy delta is simulation time; the counters on
-the once-a-second `frame` line belong to the reporting frame. Use the raw trace below for temporal
-attribution. `TextureResolver.warm()` loads every transfer before the day starts, so a `pictures
-loaded` line in play means the warm pass missed one rather than that late loading is expected.
+`"nothing else changed that frame"` means only that the watched tile and live count did not
+change. It cannot exclude other game work, or a retirement and spawn that leave the live count
+unchanged. The legacy delta is simulation time; the counters on the once-a-second `frame` line
+belong to the reporting frame. Use the raw trace below for temporal attribution. **A picture
+arriving late is not among the answers because it cannot happen**: every page a day draws is held
+from the boot's own loading window, and one read outside a window writes its own `texture` line
+and raises an engine error.
 
 ## Raw frame traces
 
@@ -416,8 +417,8 @@ Schema version 1 has `columns` naming the positional fields of every `samples` r
 its start is the preceding row's timestamp. A zero interval anchors each new segment. Pauses,
 title screens and ended days break the segment, so idle time is not a hitch. Rows include render
 draws/objects/primitives, live event count and instance-ID sum (a replacement can change the sum
-without changing the count; it is not a collision-free identity record), crowd count, cumulative
-picture loads and atlas collections, object/node/orphan counts, player position in thousandths of
+without changing the count; it is not a collision-free identity record), crowd count,
+object/node/orphan counts, player position in thousandths of
 a pixel, day, and the readout/graph/telemetry states. These describe coincident work; an unchanged
 counter does not establish a cause or rule out unobserved work.
 
@@ -446,23 +447,6 @@ off/on separately. Then compare normal VSync, engine `--disable-vsync`, and engi
 as separate diagnostic trials, keeping the other controls fixed. Inspect the recorded positions
 to verify the route moved, and reject a run with automatic telemetry captures during its measured
 interval. Use a normal exit so the export runs. A pacing trial does not choose shipping settings.
-
-The optional `atlas_phases` member records up to 4,096 CPU spans, including startup before the
-frame warmup, with its own omitted-tail count. Its columns name the group, phase, monotonic start
-and end, actual main-thread status and process frame (`-1` for worker work). Source resolution,
-renderer readback, copy and format conversion form one span; layout/allocation, task submission,
-blit, collection wait, texture creation/submission, region creation/CPU-image release, and release
-wait are separate spans. A threadless export can execute the blit inside task submission, so those
-spans can overlap and must not be summed as exclusive costs. Blit fields are read only after the
-task is joined; an unjoined task has no exported blit span. Report order is collection order, not
-timestamp order. Sort by the endpoints when matching spans to callback intervals.
-
-Texture creation measures the CPU call returning, not GPU upload completion. Release wait covers
-joining an outstanding task, not eventual GPU destruction. The recorder does not cover
-`GroundLayers`' separate ground compositor. A route with no atlas releases measures no release
-cost, and an unchanged collected count cannot exclude a readback or pending task. Normal runs
-retain no phase spans. The ordered log's atlas-ready entry reports the blit's observed thread,
-so a threadless web export does not claim that work ran off the main thread.
 
 ---
 
@@ -628,8 +612,8 @@ build has nothing in `project.godot` to reach:
   `main.gd` and toggleable like the other three in a debug build: off, the string is not
   assembled, not merely hidden behind an invisible label. **A release build carries it too when
   the page's own `?debug=1` (or the command line's `--debug`) holds** — `DevFlags.readout_requested()`,
-  parsed the same shape as `?svg=1` and not gated behind `enabled()`, the third bounded
-  release-safe query flag beside it and `?telemetry=1` — and nothing else: the three geometry
+  parsed straight off the page's query string and not gated behind `enabled()`, one of the two
+  bounded release-safe query flags beside `?telemetry=1` — and nothing else: the three geometry
   layers above, the snapshot key and every other dev flag stay behind `_debug` alone, so this flag
   reaches only the readout. Whenever it holds, a fixed "DEBUG MODE ON" note (`DebugModeNote`,
   `src/dev/debug_mode_note.gd`) is drawn for the whole session and answers to nothing that would

@@ -22,16 +22,15 @@ extends RefCounted
 ## the ones the build chose.
 
 ## The composition recipe: which shared base and which transparent overlays each source id wants,
-## which severity pool each damage source draws from, and the grass features. Its filenames are
-## the illustrated PNGs' — `_layer_image()` turns each one back into its authored SVG's region
-## name, so the recipe is read from the file it has always been read from and the pixels come off
-## the page.
-const MANIFEST_PATH := "res://assets/illustrated/svg-transfer/tiles/layers/manifest.json"
-## Where the manifest's component filenames come from as authored art. A manifest naming
-## `curbstone.png` means `assets/tiles/layers/curbstone.svg`, whose region is `tiles/layers/
-## curbstone` — the one rule, applied through `AtlasLibrary.region_name_for()` rather than spelt
-## out a second time.
-const LAYER_SOURCE_ROOT := "assets/tiles/layers/"
+## which severity pool each damage source draws from, and the grass features. **A data file the
+## game reads at runtime, so it lives under `assets/` and is named in the Web preset's
+## `include_filter`** — a `.json` is not a resource and would otherwise not be exported at all.
+## Its filenames are the illustrated PNGs' own; `_layer_image()` turns each one into a region name
+## and the pixels come off the page.
+const MANIFEST_PATH := "res://assets/ground_layers.json"
+## The region prefix the manifest's component filenames sit under: a manifest naming
+## `curbstone.png` means the region `tiles/layers/curbstone`.
+const LAYER_REGION_ROOT := "tiles/layers/"
 ## The baked page every ground picture is a region of. Held from startup by `main.gd`, so reading
 ## it here never touches the disk in a played frame.
 const ATLAS_GROUP := &"ground"
@@ -43,7 +42,7 @@ const GRASS_VARIANTS := 8
 const DAMAGE_VARIANTS := 6
 const DAMAGE_SOURCE_IDS := [40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
 
-## The curbstone's own fill in every `assets/tiles/sidewalk_kerb*.svg` — the road-side rect, whose
+## The curbstone's own fill in every `art/tiles/sidewalk_kerb*.svg` — the road-side rect, whose
 ## `x`/`y` and `width`/`height` differ by direction but whose colour does not. An SVG bake's
 ## route-kerb twins tint by this colour rather than by a rect per source, since the eight files
 ## already agree on it and a main kerb's red clearway line does not share it.
@@ -404,13 +403,13 @@ static func _component_image(name: String, manifest: Dictionary, page: Image) ->
 	return _layer_image(str(components.get(name, "")), page)
 
 ## A manifest filename (`curbstone.png`) is the leaf of the SVG it was drawn from
-## (`assets/tiles/layers/curbstone.svg`), and the region is that path's own name. A component the
+## (`art/tiles/layers/curbstone.svg`), and the region is that path's own name. A component the
 ## bake does not carry, or one that is not a whole tile, answers null and leaves its source on the
 ## authored picture.
 static func _layer_image(filename: String, page: Image) -> Image:
 	if filename.is_empty():
 		return null
-	var name := AtlasLibrary.region_name_for(LAYER_SOURCE_ROOT + filename.trim_suffix(".png") + ".svg")
+	var name := StringName(LAYER_REGION_ROOT + filename.trim_suffix(".png"))
 	var image := _region_image(page, name)
 	return image if image != null and image.get_size() == TILE_SIZE else null
 

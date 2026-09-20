@@ -1,191 +1,224 @@
 extends RefCounted
-## Focused contracts for default PNG style transfer textures and explicit SVG fallback.
+## What the artwork owes the game, asked of the pixels the game actually draws.
+##
+## **The pixels come off the baked page, because there is nowhere else to get them.** The authoring
+## sources live under `art/`, which the engine ignores, so nothing here loads a picture: each
+## region is read out of `AtlasLibrary.page_image()` with `Image.get_region()`, which is the same
+## rectangle `AtlasLibrary.region()` hands a draw call.
+##
+## Every sweep below is over `AtlasLibrary.region_names()` and carries a count with it, because a
+## sweep that silently finds nothing is the way this file has failed before: its predecessor walked
+## `event_instance.gd`'s constants for `Texture2D`s, and passed vacuously on an empty map the day
+## those constants became region names.
+##
+## **Three of the rules are the illustrated transfer's own, and are asked of the default bake
+## alone.** A redrawn picture owes its source the same registration — the same anchor, the same
+## centre, real alpha where the source had it — and that is what `_transfer_rules` below gates. An
+## SVG bake carries the thing being transferred *from*, where the same three are deliberately not
+## true: an authored `tiles/layers/*.svg` is a whole opaque tile, because an SVG bake composes
+## nothing (`GroundLayers._layer_recipe()` returns `{}` for one); the authored `props/garbage_sack`
+## leaves a pixel under its own feet; and the authored `rig/pram_side` is drawn two pixels left of
+## its canvas centre. The authored vectors are judged by eye under the **svg-art** skill. Every
+## release and every CI run is a default bake, so the gated half is asked on every tree that
+## matters and the suite says out loud when it is not.
+##
+## The rest are about *placement and coverage* and hold for either bake.
 
-const MOTHER: Texture2D = preload("res://assets/rig/mother_side_a.svg")
-## A synthetic path with no PNG transfer, for the fallback check without adding a fake asset.
-const TRANSFER_ROOT := "res://assets/illustrated/svg-transfer"
+## How far a picture's visible centre may sit from the anchor its caller draws it on.
 const ANCHOR_TOLERANCE := 1.5
-const SOURCES: Array[Texture2D] = [
-	preload("res://assets/rig/mother_front_a.svg"), preload("res://assets/rig/mother_front_b.svg"),
-	preload("res://assets/rig/mother_back_a.svg"), preload("res://assets/rig/mother_back_b.svg"),
-	preload("res://assets/rig/mother_side_a.svg"), preload("res://assets/rig/mother_side_b.svg"),
-	preload("res://assets/rig/pram_front.svg"), preload("res://assets/rig/pram_back.svg"),
-	preload("res://assets/rig/pram_side.svg")]
+## The ground components' own canvas — `GroundLayers.TILE_SIZE`, restated as the number this file
+## asserts rather than read from it, since a component that stopped being tile-sized would make
+## the compositor's own arithmetic wrong in a way reading its constant back could not catch.
+const LAYER_CANVAS := Vector2i(32, 32)
+
+## The props whose placement is a contract their caller relies on, by region name. Each is drawn
+## by `Prop`, `Litter` or `CityDecals` on a point — a ground decal on its own centre, a standing
+## object on its feet — so a picture that drifts inside its canvas moves in the world without
+## anything in the code changing.
+const CENTRED_PROPS: Array[StringName] = [&"props/bollard", &"props/litter_apple",
+		&"props/litter_bag", &"props/litter_can", &"props/litter_cup", &"props/litter_newspaper"]
+const STANDING_PROPS: Array[StringName] = [&"props/garbage_sack", &"props/garbage_sacks_pile",
+		&"props/tree_a", &"props/tree_b"]
+## The one prop that is ground rather than an object on it: the pit a street tree stands in, drawn
+## flat under the tree, so a transparent pixel in it would show the paving through the soil.
+const OPAQUE_PROP := &"props/tree_pit"
+
+## Whether this tree carries the default bake, which is the only one the transfer rules are about.
+var _transfer_rules := false
 
 func run(t) -> void:
-	TextureResolver.reset_for_tests(true)
-	t.check(TextureResolver.resolve(MOTHER) == MOTHER, "explicit SVG mode keeps the authored SVG")
-	t.check(TextureResolver.transfer_path_for(MOTHER) ==
-		"res://assets/illustrated/svg-transfer/rig/mother_side_a.png",
-		"transfers preserve the source path below the assets root")
-	TextureResolver.reset_for_tests(false)
-	var resolved: Texture2D = TextureResolver.resolve(MOTHER)
-	t.check(resolved != MOTHER and resolved.get_size() == MOTHER.get_size(),
-		"default mode loads the same-sized PNG transfer")
-	t.check(TextureResolver.resolve(null) == null,
-		"a missing source texture remains missing without constructing a transfer")
-	for source: Texture2D in SOURCES:
-		var transfer: Texture2D = TextureResolver.resolve(source)
-		t.check(transfer != source and transfer.get_size() == source.get_size(),
-			"each supplied transfer replaces its SVG at native dimensions")
-	var synthetic_image: Image = Image.create(2, 2, false, Image.FORMAT_RGBA8)
-	var synthetic_fallback: ImageTexture = ImageTexture.create_from_image(synthetic_image)
-	synthetic_fallback.resource_path = "res://assets/__tests__/missing-transfer.svg"
-	var fallback_path := TextureResolver.transfer_path_for(synthetic_fallback)
-	t.check(not fallback_path.is_empty() and not ResourceLoader.exists(fallback_path),
-		"a source with no registered replacement has a missing transfer path")
-	t.check(TextureResolver.resolve(synthetic_fallback) == synthetic_fallback,
-		"a missing PNG transfer falls back to the source texture")
-	t.check(TextureResolver.resolve(resolved) == resolved,
-		"a resolved PNG is idempotent and does not construct a second transfer path")
-	t.check(TextureResolver.resolve(MOTHER) == resolved,
-		"resolved textures are cached rather than loaded repeatedly")
-	_test_every_transfer_has_a_native_svg_pair(t)
-	_test_warm_loads_every_transfer_once(t)
-	_test_warm_under_svg_loads_nothing(t)
-	TextureResolver.reset_for_tests(DevFlags.svg_requested())
+	_transfer_rules = AtlasLibrary.bake_mode() == "png"
+	if not _transfer_rules:
+		print("test_visuals: %s bake — the transfer registration rules are not asked of the "
+				% AtlasLibrary.bake_mode() + "authored vectors; see this file's own note")
+	_test_the_rig_stands_on_its_canvas_bottom(t)
+	_test_ground_tiles_cover_their_cell(t)
+	_test_ground_components_keep_their_canvas(t)
+	_test_props_keep_the_placement_their_callers_draw_on(t)
 
-## M147, "every picture loaded before it is needed": once `warm()` has run, every picture that has
-## a PNG transfer is already in `TextureResolver`'s own cache, so resolving one again — the same
-## call `Sprites` makes at draw time — must not move `load_count()`.
+# ------------------------------------------------------------------- the rig ---
+
+## Every mother, father and pram view is an upright figure the game draws feet-down on a point
+## (`Sprites.draw_standing()`), so its artwork has to reach the bottom of its own canvas and sit
+## centred across it — otherwise she floats or walks beside herself when she turns. Each also has
+## to carry real transparency *inside* its own bounds: the gaps between an arm and a body, and
+## between a pram's wheels, are what stop a figure reading as a filled block.
+func _test_the_rig_stands_on_its_canvas_bottom(t) -> void:
+	var checked := 0
+	for name: StringName in AtlasLibrary.region_names():
+		if not String(name).begins_with("rig/"):
+			continue
+		var image := _region_image(name)
+		if image == null:
+			t.check(false, "%s reads back off its page" % name)
+			continue
+		checked += 1
+		var bounds := _visible_bounds(image)
+		t.check(bounds.has_area(), "%s has visible artwork" % name)
+		if not bounds.has_area():
+			continue
+		t.check(bounds.end.y == image.get_height(),
+				"%s keeps its canvas-bottom ground anchor" % name)
+		t.check(_has_a_clear_pixel_inside(image, bounds),
+				"%s keeps real transparency within its own artwork bounds" % name)
+		if _transfer_rules:
+			var visible_centre := float(bounds.position.x) + float(bounds.size.x) / 2.0
+			t.check(absf(visible_centre - float(image.get_width()) / 2.0) <= ANCHOR_TOLERANCE,
+					"%s stays centred on its ground anchor" % name)
+	t.check(checked >= 60, "there were rig views to ask about (%d)" % checked)
+
+# ---------------------------------------------------------------- the ground ---
+
+## A ground picture is the floor of a cell, so every pixel of it is opaque: the TileSet draws one
+## per cell with nothing behind it, and a hole shows the void. The layer components below are the
+## exception and are excluded here by name — those are drawn *over* a base and are supposed to be
+## mostly transparent.
+func _test_ground_tiles_cover_their_cell(t) -> void:
+	var checked := 0
+	var holed: Array[String] = []
+	for name: StringName in AtlasLibrary.region_names():
+		var text := String(name)
+		if not text.begins_with("tiles/") or text.begins_with("tiles/layers/"):
+			continue
+		var image := _region_image(name)
+		if image == null:
+			t.check(false, "%s reads back off its page" % name)
+			continue
+		checked += 1
+		if not _is_opaque(image):
+			holed.append(text)
+	t.check(holed.is_empty(), "every ground tile covers its full opaque canvas (%s)"
+			% ", ".join(holed.slice(0, 5)))
+	t.check(checked >= 40, "there were ground tiles to ask about (%d)" % checked)
+
+## A curb, a marking, a crack or a grass clump is blended over a shared base at build time
+## (`GroundLayers._layered_image()`), so each component owes the tile's own canvas — the blend
+## lands off-register otherwise — and, as a transfer, genuine transparency, or it paints out the
+## base it was meant to sit on.
 ##
-## **Asked over this suite's own `SOURCES`** — the six mother views and three pram views, which
-## have transfers on disk — rather than over a consumer's preloaded constants. It used to walk
-## `event_instance.gd` with `get_script_constant_map()` and resolve every `Texture2D` it found;
-## those constants are repository paths now that the events draw from the baked `events` page, so
-## the walk found nothing and the check passed vacuously on an empty map. Nine real transfer pairs
-## answer the same question and cannot quietly become none.
-func _test_warm_loads_every_transfer_once(t) -> void:
-	TextureResolver.reset_for_tests(false)
-	var loaded := TextureResolver.warm()
-	t.check(loaded > 0, "warm() loads at least one transfer on a checkout with illustrated assets")
-	t.check(loaded == TextureResolver.load_count(),
-		"warm()'s own return value agrees with the counter it moved")
-	var after_warm := TextureResolver.load_count()
-	for source: Texture2D in SOURCES:
-		TextureResolver.resolve(source)
-	t.check(TextureResolver.load_count() == after_warm,
-		"warm() already loaded every picture with a transfer, so resolving %d of them again " % SOURCES.size() +
-		"loads nothing more")
+## **The four `*_base` components are the bases themselves, not overlays**, and owe the opposite:
+## the paving, asphalt, alley and grass materials every other component is blended *onto* are what
+## the composed tile's opacity comes from, so a transparent pixel in one of those is a hole in
+## every tile built on it. That one holds in either bake.
+func _test_ground_components_keep_their_canvas(t) -> void:
+	var checked := 0
+	var bases := 0
+	for name: StringName in AtlasLibrary.region_names():
+		var text := String(name)
+		if not text.begins_with("tiles/layers/"):
+			continue
+		var image := _region_image(name)
+		if image == null:
+			t.check(false, "%s reads back off its page" % name)
+			continue
+		checked += 1
+		t.check(image.get_size() == LAYER_CANVAS,
+				"%s keeps the tile's native %dpx component canvas (got %s)"
+				% [name, LAYER_CANVAS.x, image.get_size()])
+		if text.ends_with("_base"):
+			bases += 1
+			t.check(_is_opaque(image),
+					"%s is a shared base and covers its full opaque canvas" % name)
+			continue
+		if _transfer_rules:
+			t.check(_has_opaque_and_clear(image),
+					"%s has visible detail and genuine transparency" % name)
+	t.check(checked >= 25, "there were ground components to ask about (%d)" % checked)
+	t.check(bases >= 4, "and the shared bases were among them (%d)" % bases)
 
-## `resolve()` is a no-op under `--svg` — nothing is ever swapped for a PNG — so `warm()` must
-## agree and load nothing either, rather than filling a cache no draw call will ever consult.
-func _test_warm_under_svg_loads_nothing(t) -> void:
-	TextureResolver.reset_for_tests(true)
-	t.check(TextureResolver.warm() == 0, "warm() under --svg loads nothing")
-	t.check(TextureResolver.load_count() == 0, "and the counter never moves")
+# ----------------------------------------------------------------- the props ---
 
-func _test_every_transfer_has_a_native_svg_pair(t) -> void:
-	var transfer_paths: PackedStringArray = _transfer_paths(TRANSFER_ROOT)
-	t.check(not transfer_paths.is_empty(), "the transfer audit discovers runtime PNG assets")
-	for transfer_path: String in transfer_paths:
-		var relative_path: String = transfer_path.trim_prefix(TRANSFER_ROOT + "/")
-		var source_path: String = "res://assets/" + relative_path.trim_suffix(".png") + ".svg"
-		var source: Texture2D = load(source_path) as Texture2D
-		var transfer: Texture2D = load(transfer_path) as Texture2D
-		t.check(source != null and transfer != null,
-			"runtime PNG has a loadable SVG pair: %s" % relative_path)
-		if source != null and transfer != null:
-			t.check(TextureResolver.resolve(source) == transfer,
-				"default resolver loads every discovered PNG pair: %s" % relative_path)
-			var dimensions_match := transfer.get_size() == source.get_size()
-			t.check(dimensions_match,
-				"runtime PNG keeps native dimensions: %s" % relative_path)
-			t.check(transfer.get_width() > 0 and transfer.get_height() > 0,
-				"runtime PNG has nonempty dimensions: %s" % relative_path)
-			if dimensions_match:
-				var transfer_image := transfer.get_image()
-				if relative_path.begins_with("rig/"):
-					_check_redrawn_rig_alpha(t, transfer_image, relative_path)
-				elif relative_path.begins_with("props/"):
-					_check_redrawn_prop_alpha(t, transfer_image, relative_path)
-				elif relative_path.begins_with("tiles/layers/"):
-					if relative_path.get_file().ends_with("_base.png"):
-						_check_opaque_ground_tile(t, transfer_image, relative_path)
-					else:
-						_check_ground_layer_alpha(t, transfer_image, relative_path)
-				elif relative_path.begins_with("tiles/"):
-					_check_opaque_ground_tile(t, transfer_image, relative_path)
-				else:
-					_check_redrawn_alpha(t, transfer_image, relative_path)
+## The props whose caller draws them on a point rather than on a rectangle. A ground decal is
+## placed by its canvas centre and a standing object by its canvas bottom, so where the artwork
+## sits inside its canvas *is* where the object sits in the world.
+func _test_props_keep_the_placement_their_callers_draw_on(t) -> void:
+	for name in CENTRED_PROPS:
+		var image := _region_image(name)
+		t.check(image != null, "%s is a baked region" % name)
+		if image == null:
+			continue
+		var bounds := _visible_bounds(image)
+		t.check(bounds.has_area(), "%s has visible artwork" % name)
+		if not bounds.has_area():
+			continue
+		var centre := Vector2(bounds.position) + Vector2(bounds.size) / 2.0
+		t.check(centre.distance_to(Vector2(image.get_size()) / 2.0) <= ANCHOR_TOLERANCE,
+				"%s stays centred on the decal anchor it is drawn from" % name)
+	for name in STANDING_PROPS:
+		var image := _region_image(name)
+		t.check(image != null, "%s is a baked region" % name)
+		if image == null:
+			continue
+		var bounds := _visible_bounds(image)
+		t.check(bounds.has_area(), "%s has visible artwork" % name)
+		if not bounds.has_area():
+			continue
+		t.check(_has_opaque_and_clear(image),
+				"%s has opaque art and genuine transparency around it" % name)
+		if _transfer_rules:
+			t.check(bounds.end.y == image.get_height(),
+					"%s keeps its canvas-bottom ground anchor" % name)
+	var pit := _region_image(OPAQUE_PROP)
+	t.check(pit != null, "%s is a baked region" % OPAQUE_PROP)
+	if pit != null:
+		t.check(_is_opaque(pit), "%s covers its full opaque canvas, since it is ground" % OPAQUE_PROP)
 
-func _check_redrawn_rig_alpha(t, image: Image, relative_path: String) -> void:
-	var bounds := _check_redrawn_alpha(t, image, relative_path)
-	if not bounds.has_area():
-		return
-	_check_bottom_center_anchor(t, image, bounds, relative_path)
-	var has_clear_gap := false
+# ----------------------------------------------------------------- the pixels ---
+
+## One region's own pixels, read out of its group's page. The page is loaded for the read and
+## dropped again, so this suite leaves nothing acquired behind it — and it is read per region
+## rather than cached, since `page_image()` deliberately does not cache a megabyte-scale image.
+func _region_image(name: StringName) -> Image:
+	if not AtlasLibrary.has_region(name):
+		return null
+	var page := AtlasLibrary.page_image(AtlasLibrary.group_of(name))
+	if page == null:
+		return null
+	return page.get_region(AtlasLibrary.region_rect(name))
+
+func _is_opaque(image: Image) -> bool:
+	for y in image.get_height():
+		for x in image.get_width():
+			if image.get_pixel(x, y).a < 0.99:
+				return false
+	return true
+
+func _has_opaque_and_clear(image: Image) -> bool:
+	var opaque := false
+	var clear := false
+	for y in image.get_height():
+		for x in image.get_width():
+			var alpha := image.get_pixel(x, y).a
+			opaque = opaque or alpha >= 0.95
+			clear = clear or alpha <= 0.01
+	return opaque and clear
+
+func _has_a_clear_pixel_inside(image: Image, bounds: Rect2i) -> bool:
 	for y in range(bounds.position.y, bounds.end.y):
 		for x in range(bounds.position.x, bounds.end.x):
 			if image.get_pixel(x, y).a <= 0.01:
-				has_clear_gap = true
-	t.check(has_clear_gap,
-		"redrawn rig PNG keeps real transparency within its artwork bounds: %s" % relative_path)
-
-func _check_redrawn_prop_alpha(t, image: Image, relative_path: String) -> void:
-	var name := relative_path.get_file().trim_suffix(".png")
-	if name == "tree_pit":
-		_check_opaque_ground_tile(t, image, relative_path)
-		return
-	var bounds := _check_redrawn_alpha(t, image, relative_path)
-	if not bounds.has_area():
-		return
-	if name.begins_with("garbage_") or name.begins_with("tree_"):
-		_check_bottom_center_anchor(t, image, bounds, relative_path)
-	elif name == "bollard":
-		var visible_center := Vector2(bounds.position) + Vector2(bounds.size) / 2.0
-		var canvas_center := Vector2(image.get_size()) / 2.0
-		t.check(visible_center.distance_to(canvas_center) <= ANCHOR_TOLERANCE,
-			"bollard artwork stays centered in its source disc canvas: %s" % relative_path)
-	elif name.begins_with("litter_"):
-		var visible_center := Vector2(bounds.position) + Vector2(bounds.size) / 2.0
-		var canvas_center := Vector2(image.get_size()) / 2.0
-		t.check(visible_center.distance_to(canvas_center) <= ANCHOR_TOLERANCE,
-			"redrawn litter PNG stays centered on its ground-decal anchor: %s" % relative_path)
-
-func _check_redrawn_alpha(t, image: Image, relative_path: String) -> Rect2i:
-	var bounds := _visible_bounds(image)
-	t.check(bounds.has_area(), "redrawn PNG contains visible artwork: %s" % relative_path)
-	var has_opaque := false
-	var has_clear := false
-	for y in image.get_height():
-		for x in image.get_width():
-			var alpha := image.get_pixel(x, y).a
-			has_opaque = has_opaque or alpha >= 0.95
-			has_clear = has_clear or alpha <= 0.01
-	t.check(has_opaque and has_clear,
-		"redrawn PNG contains opaque art and genuine transparency: %s" % relative_path)
-	return bounds
-
-func _check_opaque_ground_tile(t, image: Image, relative_path: String) -> void:
-	var is_opaque := true
-	for y in image.get_height():
-		for x in image.get_width():
-			is_opaque = is_opaque and image.get_pixel(x, y).a >= 0.99
-	t.check(is_opaque, "ground tile covers its full opaque canvas: %s" % relative_path)
-
-## Shared bases cover their cells, while layer inputs require both visible art and empty pixels so
-## the engine can preserve the base material wherever a curb, marking, crack or grass clump is absent.
-func _check_ground_layer_alpha(t, image: Image, relative_path: String) -> void:
-	t.check(image.get_size() == Vector2i(32, 32),
-			"ground layer keeps the tile's native 32px component canvas: %s" % relative_path)
-	var has_opaque := false
-	var has_clear := false
-	for y in image.get_height():
-		for x in image.get_width():
-			var alpha := image.get_pixel(x, y).a
-			has_opaque = has_opaque or alpha >= 0.95
-			has_clear = has_clear or alpha <= 0.01
-	t.check(has_opaque and has_clear,
-			"ground layer has visible detail and genuine transparency: %s" % relative_path)
-
-func _check_bottom_center_anchor(
-		t, image: Image, bounds: Rect2i, relative_path: String) -> void:
-	t.check(bounds.end.y == image.get_height(),
-		"redrawn PNG keeps its canvas-bottom ground anchor: %s" % relative_path)
-	var visible_center := float(bounds.position.x) + float(bounds.size.x) / 2.0
-	t.check(absf(visible_center - float(image.get_width()) / 2.0) <= ANCHOR_TOLERANCE,
-		"redrawn PNG stays centered on its ground anchor: %s" % relative_path)
+				return true
+	return false
 
 func _visible_bounds(image: Image) -> Rect2i:
 	var min_x := image.get_width()
@@ -202,21 +235,3 @@ func _visible_bounds(image: Image) -> Rect2i:
 	if max_x < 0:
 		return Rect2i()
 	return Rect2i(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
-
-func _transfer_paths(directory_path: String) -> PackedStringArray:
-	var directory: DirAccess = DirAccess.open(directory_path)
-	if directory == null:
-		return PackedStringArray()
-	directory.list_dir_begin()
-	var paths := PackedStringArray()
-	var filename: String = directory.get_next()
-	while not filename.is_empty():
-		var path: String = directory_path.path_join(filename)
-		if directory.current_is_dir():
-			paths.append_array(_transfer_paths(path))
-		elif filename.ends_with(".png"):
-			paths.append(path)
-		filename = directory.get_next()
-	directory.list_dir_end()
-	paths.sort()
-	return paths

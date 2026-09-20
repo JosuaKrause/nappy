@@ -41,7 +41,7 @@ player's to say, and until then he keeps one frame.
 - [ ] **Cars bob on their wheels.** *(2026-09-11, [PLAYTEST-56](playtests/PLAYTEST-56.md): "cars
       could bop up and down while the wheels stay in the same place")* A moving car's body rises
       and falls about a pixel on a phase advanced by its speed, and its wheels stay on the ground.
-      A crowd car is two layers today, `assets/crowd/car_{view}_{body,trim}.svg`, the tintable
+      A crowd car is two layers today, `art/crowd/car_{view}_{body,trim}.svg`, the tintable
       paint and one trim holding windows, tyres and lights together, so the wheels come out of the
       trim into a third layer per view, `car_{view}_wheels.svg`, SVG first and on the same canvas
       and anchor; body and the remaining trim bob together, the wheels draw fixed, and a stopped
@@ -308,10 +308,11 @@ design, has the inventory the design was read from, the rejected bakers and the 
 
 **The design.** A headless run of the engine itself bakes every picture family into one PNG page
 plus a region table, using the engine's own SVG rasterizer so a baked pixel is the pixel the
-import pass produces today. One runtime loader hands out regions by name and counts
+import pass produced for the same file. One runtime loader hands out regions by name and counts
 references; the pages themselves are held from startup. **The presentation mode is the bake's**: a build is PNG mode — the
 illustrated PNG where one exists, the SVG's raster where none does — and SVG mode is a custom
-local bake command, absent from the release; `--svg` and `?svg=1` stop existing at runtime.
+local bake command, `tools/bake-atlases.sh --svg`, absent from the release; nothing at runtime
+selects a mode.
 **Atlases are baked on demand and never committed**: `tools/check.sh`, `tools/test.sh`,
 `tools/run.sh` and `tools/export-web.sh` compare a manifest of source hashes and the bake tool's
 version against the tree and bake when they differ. **The events are one page** *("for now")*.
@@ -323,40 +324,17 @@ only export; the identity images (logo, icon, social card) leave the game packag
 deploy keeps copying the social card beside the page. Both are assumptions the player was told
 and did not speak to.
 
-The bake, the loader `AtlasLibrary`, the staleness check and the report-only package audit are
-built (`DECISIONS.md`, M171, the bake and the loader), and every family draws from its baked
-page (`DECISIONS.md`, the M171 consumer moves). `assets/atlases/membership.json` says which page a picture is on, and a consumer move edits it
-only to add a picture. **A page loads at startup or in the day brief and at no other moment**
+The milestone is built: `AtlasLibrary` is the one loader and every family draws from its baked
+page, the authoring sources live in `art/`, which the engine ignores, and the export fails on a
+pack that carries a baked constituent (`DECISIONS.md`, the sections starting "M171,").
+**A page loads at startup or in the day brief and at no other moment**
 ([PLAYTEST-109](playtests/PLAYTEST-109.md)): `main.gd`'s `RESIDENT_GROUPS` lists the pages
-every boot holds for the life of the process, the run's parent is held beside them, and the
-escape's boot adds `interior`; a consumer move adds its group to that list. A consumer's own
-`acquire()` and `release()` are a reference count on a page that is already there, and an
-`acquire()` that has to read from disk outside the two moments is an engine error the test
-gate is red for. `region()` never loads a page on its own, and `native_size()` answers with
-nothing acquired.
+every boot holds for the life of the process, and a read from disk outside the two moments is
+an engine error the test gate is red for.
 
-One item is open, and it closes the contract.
-
-- [ ] **Close the contract.** The runtime packer, the resolver — `TextureResolver.warm()`
-      still loads the `props`, `rig` and `tiles` transfers one picture at a time at boot, for
-      families that draw from baked pages — their phase-trace telemetry and
-      the `--svg` and `?svg=1` flags are deleted; the run log says when a group loaded and was
-      released, in how long and at what size. **The authoring sources move out of the imported
-      tree** into a folder the engine ignores, and every reference to an old path moves with
-      them — skills, docs, tool help, comments — *"so we don't have stale instructions or
-      comments (code will fail but documentation will not)"*; grep for each family's old path
-      before and after, the count after is zero. **The moved sources' `.import` sidecars are
-      deleted with the move** ([PLAYTEST-109](playtests/PLAYTEST-109.md): *"does that mean we
-      also don't need .import files anymore?"*): the bake reads a source itself and never through the import cache, so a
-      source the engine ignores needs none; a sidecar stays only beside what the engine still
-      imports — fonts, audio, and the baked pages' own, which the bake writes and git ignores.
-      The package audit becomes fatal in the export.
-      M159's atlas-measurement item is rewritten against the new spans before the old ones go.
-      `ARCHITECTURE.md`, `GRAPHICS.md`, `VISUALS.md`, `TELEMETRY.md`, the **illustrated-png**
-      and **svg-art** skills and `CLAUDE.md`'s path table describe what is then true.
-      **The release that follows is a minor version, and it waits for every item in this
-      section** — *"only release once all those new items are completed, too"*. *"after atlas we cut a new minor version"*: `tools/release.sh minor`
-      ([PLAYTEST-109](playtests/PLAYTEST-109.md)).
+- [ ] **Cut the minor release once every item in this section is in** — *"only release once
+      all those new items are completed, too"*; *"after atlas we cut a new minor version"*:
+      `tools/release.sh minor` ([PLAYTEST-109](playtests/PLAYTEST-109.md)).
 
 ---
 
@@ -397,15 +375,17 @@ and atlas CPU spans; its semantics and limits are in [TELEMETRY.md](TELEMETRY.md
       use `--invincible`: it skips the baby's source sweep and suppresses the meter behavior being
       measured. Measure the conservative contribution rejection on that device, including its
       effect on the baby and halo callers, before considering caching or lower tick rates.
-- [ ] **Complete atlas measurements alongside M171, build-time atlases.** The CPU spans distinguish
-      source readback/copy, blit, texture submission, regions and release joins, with actual thread
-      labels. Measure the threadless web export, observe real release events, and distinguish CPU
-      submission from GPU completion. Retain a baseline and compare the prepared atlas path's
-      loading and memory costs under M171's explicit build-time contract; that design does not
-      depend on proving atlases cause stutter. M171 owns atlas implementation and excludes baked
-      constituent textures from the build and individual CPU/GPU allocations. Do not add worker
-      jobs or larger runtime atlases on the native host evidence. The older laptop hitch predates
-      the atlas path, so no atlas result can be assumed to explain both platforms.
+- [ ] **Measure what the baked pages cost, on the run log's own lines.** A page writes one
+      `texture` line when it is read — `atlas page '<group>' loaded in the <moment>: <ms> ms,
+      <W> x <H>`, the moment being `startup`, `day brief`, `escape` or `OUTSIDE` — and one when
+      its last reference goes, `atlas page '<group>' released after <s> s: <W> x <H>`; the boot
+      prints how many pages it holds from startup and in how long. Collect those on the
+      threadless web export and on the phone as well as the desktop, with the page sizes as the
+      memory figure, and compare against the baseline retained from the runtime packer
+      (`DECISIONS.md`, M159 and M171). Distinguish the CPU read from GPU completion where the
+      platform allows it. No result here is assumed to explain the older laptop hitch, which
+      predates every atlas path, and the native-host evidence supports neither worker jobs nor
+      larger pages.
 
 ---
 
@@ -806,7 +786,7 @@ in the rig pictures the two are told apart by their roofs alone.
 re-pitched:
 
 - [ ] **Sound lines** — concentric arcs off a source on a pulse's rising edge, the visual form of a
-      discrete noise. `assets/events/sound_pulse.svg` supplies three open arcs in a 48×32 canvas,
+      discrete noise. `art/events/sound_pulse.svg` supplies three open arcs in a 48×32 canvas,
       anchored at (24, 32); pulse timing, orientation and runtime binding remain. The last gap in
       the visual channel comes **before** audio.
 - [ ] **Audio**, once the above is done and judged on its own: per-act beds, per-event cues, the

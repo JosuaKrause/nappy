@@ -11,7 +11,7 @@ extends RefCounted
 ## `EventInstance.family_sources()`.** `family_sources()` is read off `_draw_body()`'s arms by
 ## hand, so a picture a new branch draws and nobody added there would be missing from both the
 ## sweep and the answer — the failure would be invisible to a test that asked `family_sources()`
-## what to check. Every picture a draw can reach is a `res://assets/…` string constant on
+## what to check. Every picture a draw can reach is a region-name string constant on
 ## `event_instance.gd` or a value inside one of its tables, so walking `get_script_constant_map()`
 ## and recursing into the dictionaries and arrays asks the question of the file itself, and a
 ## picture added without a membership entry fails here on the next run.
@@ -41,8 +41,8 @@ func run(t) -> void:
 
 # ------------------------------------------------------------- the whole page ---
 
-## Every `res://assets/…` string on `event_instance.gd` — the plain constants, the eight-view and
-## stride tables, the pointing poses, the checkpoint fixtures — is a region of `events`.
+## Every region name on `event_instance.gd` — the plain constants, the eight-view and stride
+## tables, the pointing poses, the checkpoint fixtures — is a region of `events`.
 ##
 ## This is the contract in the player's own words, *"all textures that are loaded in an atlas must
 ## not be loaded individually"* ([PLAYTEST-105](../docs/playtests/PLAYTEST-105.md)), made checkable:
@@ -58,7 +58,7 @@ func _test_every_picture_the_events_can_draw_is_on_the_events_page(t) -> void:
 	t.check(pictures.size() > 200,
 			"the sweep found the catalogue's pictures to check (%d)" % pictures.size())
 	for picture: String in pictures.keys():
-		var name := AtlasLibrary.region_name_for(picture)
+		var name := StringName(picture)
 		t.check(AtlasLibrary.has_region(name),
 				"%s is baked, under the region name %s" % [picture.get_file(), name])
 		if not AtlasLibrary.has_region(name):
@@ -73,10 +73,16 @@ func _test_every_picture_the_events_can_draw_is_on_the_events_page(t) -> void:
 ## Recurses into dictionaries and arrays, since a view table's pictures are its values and the
 ## pointing poses are an array. Keyed into `found` so a picture several arms share — the guard, the
 ## dog, the boom kit — is checked once.
+##
+## **What makes a constant a picture is its shape, not a prefix a path used to carry**: a region
+## name is `<family>/<picture>`, one slash and no extension, which is what
+## `AtlasLibrary.region_name_for()` writes and what the file's constants now hold. Deliberately
+## not `AtlasLibrary.has_region()` — that would make the sweep select exactly the names that pass
+## the check below, which is the shape of a test that cannot fail.
 func _collect_paths(value: Variant, found: Dictionary) -> void:
 	if value is String:
 		var text: String = value
-		if text.begins_with("res://assets/"):
+		if text.count("/") == 1 and not text.contains("."):
 			found[text] = true
 		return
 	if value is Dictionary:
@@ -103,7 +109,7 @@ func _test_every_look_a_row_can_carry_has_pictures_on_the_page(t) -> void:
 				"the look drawn by '%s' has pictures listed for it" % looks[look])
 		for picture in sources:
 			checked += 1
-			var name := AtlasLibrary.region_name_for(picture)
+			var name := StringName(picture)
 			t.check(AtlasLibrary.group_of(name) == EventInstance.ATLAS_GROUP,
 					"'%s' draws %s from the '%s' page"
 					% [looks[look], picture.get_file(), EventInstance.ATLAS_GROUP])
@@ -123,7 +129,7 @@ func _test_every_badge_silhouette_is_on_the_page(t) -> void:
 		if icon.is_empty():
 			continue
 		checked += 1
-		var name := AtlasLibrary.region_name_for(icon)
+		var name := StringName(icon)
 		t.check(AtlasLibrary.group_of(name) == EventInstance.ATLAS_GROUP,
 				"'%s' badge draws %s from the '%s' page"
 				% [def.id, icon.get_file(), EventInstance.ATLAS_GROUP])

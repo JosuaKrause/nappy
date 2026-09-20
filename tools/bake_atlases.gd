@@ -6,10 +6,11 @@ extends SceneTree
 ## `tools/bake-atlases.sh` is the entry point anybody should use; it decides whether this needs
 ## to run at all. Run it directly and it always bakes.
 ##
-## **The presentation mode is the bake's.** By default a member with an illustrated PNG beside
-## it is baked from that PNG and everything else from its SVG's raster, which is exactly what
-## `TextureResolver.resolve()` chooses at runtime today; `--svg` bakes the SVG rasters alone and
-## is the custom local build, never the release.
+## **The presentation mode is the bake's, and there is no other.** By default a member with an
+## illustrated PNG beside it is baked from that PNG and everything else from its SVG's raster;
+## `--svg` bakes the SVG rasters alone and is the custom local build, never the release. Nothing
+## in the running game chooses between them — the pixels on the page are the ones the build
+## chose.
 ##
 ## **Every picture goes through `Image.load_svg_from_buffer()` at scale 1.0 and
 ## `fix_alpha_edges()`**, which is what the import pass does to the same file — `svg/scale=1.0`
@@ -115,6 +116,7 @@ func _init() -> void:
 			printerr("bake_atlases: " + failure)
 		quit(1)
 		return
+	_remove_orphan_pages(group_names)
 	outputs.append("assets/atlases/baked/regions.json")
 	outputs.append("assets/atlases/baked/bake_manifest.json")
 	_hash_input("assets/atlases/membership.json")
@@ -197,9 +199,9 @@ func _member_image(member: String) -> Image:
 	if transfer == null:
 		return null
 	if transfer.get_size() != authored.get_size():
-		# `TextureResolver.resolve()` falls back to the SVG here with a warning, so an
-		# unfinished art drop cannot change the presentation geometry mid-run. A bake is not
-		# mid-run: the mismatch is committed, and failing is what gets it looked at.
+		# A mis-sized transfer is a committed mistake rather than a picture to skip: the game
+		# has no second copy to fall back to, so a page baked around the wrong canvas would
+		# move an anchor in every frame that draws it. Failing is what gets it looked at.
 		_failures.append("illustrated transfer is %s and its source %s is %s: %s"
 				% [transfer.get_size(), member, authored.get_size(), illustrated])
 		return null
@@ -335,6 +337,41 @@ func _extrude(page: Image, image: Image, rect: Rect2i) -> void:
 	page.blit_rect(image, Rect2i(width - 1, height - 1, 1, 1), at + Vector2i(width, height))
 
 # ---------------------------------------------------------------- the writing ---
+
+## Deletes every page in `BAKED_DIR` that no current group names, and its `.import` sidecar with
+## it. A group that is folded into another — `head_indicators` into `ui` — leaves its page on
+## disk otherwise: nothing loads it, `regions.json` does not mention it, and the wrapper's hash
+## check calls the tree current, but `assets/atlases/baked/` **is** an imported folder, so the
+## engine imports that page and exports it into the pack. A picture nothing draws, shipped.
+##
+## **The direction is what makes deleting safe here**: this only ever removes, only inside a
+## gitignored folder the bake itself writes every file of, and only files that are not a page of
+## a group in the membership the bake has just read. It cannot take a page a group names, and it
+## cannot take anything a human put there, because nothing else belongs there. Called after every
+## group has baked successfully, so a failed bake — which stops above this — never removes a page
+## it was about to rewrite.
+func _remove_orphan_pages(group_names: Array) -> void:
+	var wanted: Dictionary = {}
+	for group: String in group_names:
+		wanted["%s.png" % group] = true
+		wanted["%s.png.import" % group] = true
+	var dir := DirAccess.open(BAKED_DIR)
+	if dir == null:
+		return
+	var removed: Array[String] = []
+	for entry in dir.get_files():
+		if not entry.ends_with(".png") and not entry.ends_with(".png.import"):
+			continue
+		if wanted.has(entry):
+			continue
+		if dir.remove(entry) != OK:
+			_failures.append("could not remove the orphan page %s/%s" % [BAKED_DIR, entry])
+			continue
+		removed.append(entry)
+	if not removed.is_empty():
+		removed.sort()
+		print("bake_atlases: removed %d page(s) no group names: %s"
+				% [removed.size(), ", ".join(removed)])
 
 ## Writes a page's import settings beside it, once. **Only when it is absent**: the import pass
 ## fills in the `uid` and the imported copy's path on first import, and rewriting the sidecar on

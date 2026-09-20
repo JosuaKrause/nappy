@@ -7,7 +7,7 @@ extends Button
 ## svgs".)* The disc is a `StyleBoxFlat` per state (`normal`/`hover`/`pressed`), its
 ## `corner_radius_*` set to half the button's own size so a square `Button` renders as a circle,
 ## and every glyph is the button's own `icon` — a region of the baked `ui` atlas page, sourced
-## from an SVG under `assets/ui/`, tinted through
+## from an SVG under `art/ui/`, tinted through
 ## `icon_normal_color` and its per-state siblings rather than drawn. Two earlier versions of this
 ## file painted the disc and the glyphs by hand in `_draw()`; both are gone, because a picture is
 ## an asset the moment a person could call it one.

@@ -56,8 +56,10 @@ func run(t) -> void:
 func _sector_heading(sector: int) -> Vector2:
 	return Vector2.from_angle(deg_to_rad(sector * 45.0))
 
-func _entry(texture: Texture2D, mirror: bool) -> Dictionary:
-	return {"texture": texture, "mirror": mirror}
+## `picture` is the baked region name every `_BY_VIEW` table holds; this probe re-rasterises the
+## authored SVG behind it rather than drawing the picture — see `_authored_svg()`.
+func _entry(picture: String, mirror: bool) -> Dictionary:
+	return {"picture": picture, "mirror": mirror}
 
 func _row(label: String, entries: Array) -> Dictionary:
 	return {"label": label, "entries": entries}
@@ -84,12 +86,18 @@ func _heading_row(def_id: String, by_view: Dictionary, side_faces_west: bool) ->
 
 # ------------------------------------------------------------------- rendering ---
 
-## Rasterises `entry`'s own texture from its SVG source text at `scale`, mirrored if the sector
+## **The authoring SVG behind a region name.** The sources live under `art/`, which carries a
+## `.gdignore`, so the engine imports nothing there and `load()` would answer null; a probe that
+## re-rasterises an authored picture reads its bytes with `FileAccess` instead, which is exactly
+## what `tools/bake_atlases.gd` does.
+func _authored_svg(region_name: String) -> String:
+	return "res://art/%s.svg" % region_name
+
+## Rasterises `entry`'s own picture from its SVG source text at `scale`, mirrored if the sector
 ## says so — `Image.flip_x()`, the same horizontal mirror `Sprites.draw_standing()` gives every
 ## mirrored sector, applied to a still image instead of a canvas transform.
 func _cell_image(entry: Dictionary, scale: float) -> Image:
-	var texture: Texture2D = entry["texture"]
-	var text := FileAccess.get_file_as_string(texture.resource_path)
+	var text := FileAccess.get_file_as_string(_authored_svg(entry["picture"]))
 	var image := Image.new()
 	image.load_svg_from_string(text, scale)
 	if entry["mirror"]:

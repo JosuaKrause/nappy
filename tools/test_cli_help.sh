@@ -13,7 +13,7 @@
 # tools/test.sh is deliberately not asserted against an unknown flag here in general: it forwards
 # anything that is not --serial/--plan/--record-costs/--shard/--help/-h straight to the test scene
 # as either a suite-name substring or a flag the scene itself reads off
-# OS.get_cmdline_user_args() (`--svg` is a real, documented example) -- there is no fixed list to
+# OS.get_cmdline_user_args() -- there is no fixed list to
 # validate that free-text surface against, so only its --help path is checked there. --shard and
 # --record-costs are its own recognised flags with their own shape to get wrong, though, and both
 # validate before the import pass that would otherwise touch the Godot stub -- so their malformed
@@ -159,6 +159,39 @@ assert_launch() {
 # dropped and the flags still arrive; the --help and rejection cases above cover both scripts
 # everywhere, including on a runner with nothing built.
 atlases_current() { ./tools/bake-atlases.sh --check >/dev/null 2>&1; }
+
+# A page whose group no longer exists is staleness, and --check has to say so by name -- the case
+# that reaches the player is a group folded into another (head_indicators into ui), whose page
+# then sits in assets/atlases/baked/ with every input hash still agreeing. It is not a picture
+# anything loads, but that folder is imported, so the engine exports it into the pack.
+#
+# Only checked where the atlases are already current, for the same reason the two launch cases
+# above are: on a checkout with nothing baked, --check is already non-zero for a different reason
+# and would pass this vacuously. It plants the page and takes it away again itself; the bake that
+# removes one for real needs the engine, which the stub above is not.
+checks=$(( checks + 1 ))
+if atlases_current; then
+    planted="$root/assets/atlases/baked/zz_no_such_group.png"
+    cp "$root/assets/atlases/baked/ui.png" "$planted"
+    reason="$(./tools/bake-atlases.sh --check 2>&1)"
+    status=$?
+    rm -f "$planted"
+    if [[ $status -eq 0 ]]; then
+        echo "FAIL bake-atlases.sh --check called a tree with an orphan page current" >&2
+        failures=$(( failures + 1 ))
+    elif ! grep -q "zz_no_such_group.png" <<<"$reason"; then
+        echo "FAIL bake-atlases.sh --check did not name the orphan page: $reason" >&2
+        failures=$(( failures + 1 ))
+    else
+        echo "ok   bake-atlases.sh --check names a page no group claims"
+    fi
+    if ! atlases_current; then
+        echo "FAIL the orphan-page case left the tree stale" >&2
+        failures=$(( failures + 1 ))
+    fi
+else
+    echo "skip bake-atlases.sh --check orphan page (no current atlases in this checkout)"
+fi
 
 if [[ -f "$root/.godot/global_script_class_cache.cfg" ]] && atlases_current; then
     assert_launch "run.sh -- --overview (separator dropped)" ./tools/run.sh -- --overview

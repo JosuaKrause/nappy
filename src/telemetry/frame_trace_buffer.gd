@@ -6,7 +6,7 @@ extends RefCounted
 const CAPACITY := 36000
 const COLUMNS := ["post_draw_usec", "process_frame", "draw_frame", "interval_usec",
 	"physics_frame", "draw_calls", "render_objects", "primitives", "live_events",
-	"event_identity_sum", "crowd_agents", "picture_loads", "atlases_collected",
+	"event_identity_sum", "crowd_agents",
 	"nodes", "objects", "orphan_nodes", "player_x_millipx", "player_y_millipx",
 	"day", "readout_on", "graph_on", "telemetry_on"]
 

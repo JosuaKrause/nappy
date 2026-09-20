@@ -57,7 +57,6 @@ func _sample() -> void:
 	var counters := PackedInt64Array([
 		Engine.get_physics_frames(), FrameCost.draw_calls(), FrameCost.objects(),
 		FrameCost.primitives(), live.size(), identities, _city.crowd.agent_count(),
-		TextureResolver.load_count(), TextureAtlas.collected_count(),
 		int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
 		int(Performance.get_monitor(Performance.OBJECT_COUNT)),
 		int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)),
@@ -96,7 +95,6 @@ func _exit_tree() -> void:
 	var report := buffer.report(float(_metadata.get("refresh_hz", -1.0)))
 	report["environment_start"] = _metadata
 	report["environment_end"] = environment()
-	report["atlas_phases"] = AtlasPhaseTrace.report()
 	var directory := "user://frame-traces"
 	if DirAccess.make_dir_recursive_absolute(directory) != OK:
 		push_error("Cannot create frame trace directory")

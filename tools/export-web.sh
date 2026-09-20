@@ -224,12 +224,21 @@ if [[ $status -ne 0 ]]; then
     exit 1
 fi
 
-# What the pack still carries of the atlases' own constituents. Report only: every consumer
-# still draws from its own preloaded textures, so the count is the work this milestone has left
-# rather than a failure -- the last item of M171 passes --fatal here, once it is nought.
+# What the pack carries that should not be in it: a baked constituent -- a member picture, its
+# .import sidecar or the imported .ctex -- or a page no group in the pack's own regions.json
+# names. --fatal, so either fails the export rather than being reported into a log nobody reads.
+# It is the last gate rather than the first because it can only be asked of the artefact: the
+# question is what the export actually wrote, not what the tree says it should have.
 echo
 echo "== package audit =="
-"$PROJECT_DIR/tools/audit-pck.sh" "$VERSIONED_DIR/index.pck"
+if ! "$PROJECT_DIR/tools/audit-pck.sh" --fatal "$VERSIONED_DIR/index.pck"; then
+    echo >&2
+    echo "FAILED: the export carries pictures that should have ceased to exist in the build." >&2
+    echo "The authoring sources live under art/, which carries a .gdignore; a constituent in" >&2
+    echo "the pack means something under assets/ still names one, or a page outlived its" >&2
+    echo "group -- run tools/bake-atlases.sh --check." >&2
+    exit 1
+fi
 
 echo
 echo "OK: wrote $OUT_DIR ($RELEASE_TAG/index.js, $RELEASE_TAG/index.wasm, $RELEASE_TAG/index.pck)"

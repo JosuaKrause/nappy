@@ -317,7 +317,7 @@ static func _cat_dash() -> EventDef:
 ## less than an alley's length. She can only ever be walking the long axis, so the dash is always
 ## across her path and never down it. See `EventInstance._alley_crossing_path()`.
 ##
-## **The picture is `assets/events/mouse.svg`, one look, mirrored — not the prepared directional
+## **The picture is `art/events/mouse.svg`, one look, mirrored — not the prepared directional
 ## family (`mouse_{front,back}[_diagonal].svg`).** `_cat_dash` does not pick a picture by heading
 ## either: `_draw_cat` swaps crouched for running on the telegraph alone and mirrors east/west the
 ## same way `_draw_simple` does for everything else. The mouse does not even keep a second posture
@@ -1463,7 +1463,7 @@ static func _curfew_announce() -> EventDef:
 ## orientation and concatenating that one?")* `EventInstance._draw_roadblock()` now reads
 ## `_draw_spread(ROADBLOCK_SEGMENT, ROADBLOCK_END)`, the same rail-with-caps construction
 ## `roadworks` already reads as one thing rather than a stack of blocks.
-## `assets/events/checkpoint_block.svg` stays bound as the badge's own icon
+## `art/events/checkpoint_block.svg` stays bound as the badge's own icon
 ## (`EventInstance.icon_for()`) — a badge is read small, and the concrete-block silhouette is still
 ## the clearest single frame of "a street being held"; only the drawn body changed.
 ##

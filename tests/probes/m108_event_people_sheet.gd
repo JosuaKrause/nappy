@@ -67,9 +67,9 @@ func run(t) -> void:
 func _sector_heading(sector: int) -> Vector2:
 	return Vector2.from_angle(deg_to_rad(sector * 45.0))
 
-## `picture` is the repository path of the source SVG, which is what every `_BY_VIEW` table holds
-## now that the events draw from the baked `events` page. This probe re-rasterises the authored
-## SVG itself rather than drawing the picture, so a path is all it ever needed.
+## `picture` is the baked region name, which is what every `_BY_VIEW` table holds now that the
+## events draw from the baked `events` page. This probe re-rasterises the authored SVG behind that
+## name rather than drawing the picture — see `_authored_svg()`.
 func _entry(picture: String, mirror: bool) -> Dictionary:
 	return {"picture": picture, "mirror": mirror}
 
@@ -121,11 +121,18 @@ func _bird_row(by_view: Dictionary) -> Array:
 
 # ------------------------------------------------------------------- rendering ---
 
+## **The authoring SVG behind a region name.** The sources live under `art/`, which carries a
+## `.gdignore`, so the engine imports nothing there and `load()` would answer null; a probe that
+## re-rasterises an authored picture reads its bytes with `FileAccess` instead, which is exactly
+## what `tools/bake_atlases.gd` does.
+func _authored_svg(region_name: String) -> String:
+	return "res://art/%s.svg" % region_name
+
 ## Rasterises `entry`'s own picture from its SVG source text at `scale`, mirrored if the sector
 ## says so — `Image.flip_x()`, the same horizontal mirror `Sprites.draw_standing()` gives every
 ## west-facing sector, applied to a still image instead of a canvas transform.
 func _cell_image(entry: Dictionary, scale: float) -> Image:
-	var text := FileAccess.get_file_as_string(entry["picture"])
+	var text := FileAccess.get_file_as_string(_authored_svg(entry["picture"]))
 	var image := Image.new()
 	image.load_svg_from_string(text, scale)
 	if entry["mirror"]:

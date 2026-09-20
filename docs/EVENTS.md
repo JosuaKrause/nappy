@@ -1768,7 +1768,7 @@ Defs live in code, not in `.tres` files — see "Where events are defined".
    (`TOWARD_PLAYER`).
 4. If it stands still and is drawn, give it an `obstructs_radius` of half its silhouette. That
    is a rule rather than a choice; see "Solid things are solid".
-5. **Draw it.** A new `EventDef.Look`, a new SVG in `assets/events/`, a `_draw_*` in
+5. **Draw it.** A new `EventDef.Look`, a new SVG in `art/events/`, a `_draw_*` in
    `EventInstance`, and a row in `EventInstance.icon_for()` so the screen-edge badge has a
    silhouette to show. There is no generic look to borrow — that is deliberate, and
    `tests/test_events.gd` fails the build if two rows share a picture. See "The visual
