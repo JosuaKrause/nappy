@@ -948,12 +948,17 @@ play can settle is in `REVIEW.md`. **One item is open**, found while the ending 
 
 **What is still open:**
 
-- [ ] **The escape can be paused.** The escape's own boot builds no pause screen, so `Esc`,
-      the pause button and a window losing focus do nothing from the first brief to the
-      epilogue — several minutes that are now the last of every winning run. It gets the pause
-      screen a day has, with its continue button; its held restart returns to the section's
-      brief at no nerve, which is what a loss does. That reading of the restart is the
-      orchestrator's and open to overturn.
+- [ ] **The escape has what a day has around it, built the same way**
+      ([PLAYTEST-114](playtests/PLAYTEST-114.md): "Pause etc should exist the same way it does
+      in the main game"). The escape's own boot builds no pause screen, so `Esc`, the pause
+      button and a window losing focus do nothing from the first brief to the epilogue —
+      several minutes that are the last of every winning run. It gets the pause screen a day
+      has, wired as a day wires it: `Esc` and the pause button open it, losing focus opens it
+      unless `--no-focus-pause` says otherwise, its continue resumes, its held restart and its
+      quit do what they do in a day, and it stashes and restores her heading through the touch
+      controls. **"etc" is an audit, not only the pause**: everything the ordinary boot builds
+      around a day and the escape's boot does not is listed, and each is either built the same
+      way or named in the report with the reason the escape cannot have it.
 
 **Four things the brief collided with in the finale as `docs/NARRATIVE.md` writes it today, each
 asked and each answered by the player on 2026-09-09:**
