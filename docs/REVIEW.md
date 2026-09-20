@@ -388,14 +388,28 @@ item below for as long as looking takes.
   2, 1) are the dials, all open to overturn. Same record.
 
 - **Lose a section on purpose and read the clock while you do** (either boot, without
-  `--invincible`). The clock is a day's own length counting down through both sections and draws
-  to the millisecond, `%d:%02d.%03d` where a day draws `%d:%02d`; capture, the meter, or zero puts
+  `--invincible`). Each section has a day's own length on its own clock, started by its brief's
+  continue and drawn to the millisecond, `%d:%02d.%03d` where a day draws `%d:%02d`; capture, the meter, or zero puts
   her back at the start of the section she was in with the baby asleep again and no Nerve spent.
   **Is the millisecond clock tension or noise** at the speed those digits move, and **is a restart
   at no cost the right feel** — *("sounds good at that point you earned it")* — or does a
   fourteen-day run deserve to be able to lose here? Same record.
 
-- **Reach the tunnel or the bridge and read the epilogue.** It is its own screen on `DaySummary`
+- **Win day 14 with every task complete and follow it into the building.** The day's own summary
+  comes first, then a scene reload, then the brief "Escape the building" over the hallway. **Does
+  the summary read as a lead-in rather than an ending**, is the black frame of the reload
+  acceptable, and does the brief sit well over the building, which fills only a narrow band of
+  the frame behind it? The section's name is on the brief and again as the HUD's hint line a
+  second later: **is the second one redundant?** Record is `DECISIONS.md`, M102, the finale is
+  the run's ending.
+
+- **Close the game inside each section and open it again** (a flagless windowed build; every
+  dev flag and headless run refuses the save). It comes back to that section's brief, with no
+  title screen first, a full clock and no Nerve spent. **Is skipping the title right here?** Same
+  record.
+
+- **Reach the tunnel or the bridge and read the epilogue.** After it a run's escape goes back to
+  the title, with no good-ending screen between: **should "Silence." still follow it?** It is its own screen on `DaySummary`
   rather than a fourth ending: two lines and the clock. **Is anything in it triumphant?** The tone
   rule is `NARRATIVE.md`'s *no triumphalism in the good ending*, and this is the one screen written
   after the escape, so it is the place that rule is easiest to break. Same record.
