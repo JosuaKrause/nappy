@@ -6,7 +6,8 @@ extends Button
 ## **No glyph is painted.** *(2026-09-06, the player: "never draw in code -- at the very least use
 ## svgs".)* The disc is a `StyleBoxFlat` per state (`normal`/`hover`/`pressed`), its
 ## `corner_radius_*` set to half the button's own size so a square `Button` renders as a circle,
-## and every glyph is the button's own `icon` — a preloaded SVG under `assets/ui/`, tinted through
+## and every glyph is the button's own `icon` — a region of the baked `ui` atlas page, sourced
+## from an SVG under `assets/ui/`, tinted through
 ## `icon_normal_color` and its per-state siblings rather than drawn. Two earlier versions of this
 ## file painted the disc and the glyphs by hand in `_draw()`; both are gone, because a picture is
 ## an asset the moment a person could call it one.
@@ -56,10 +57,11 @@ extends Button
 enum Symbol { RESTART, CONTINUE, JOYSTICK, TAP }
 @export var symbol: Symbol = Symbol.RESTART
 
-const _RESTART_ICON: Texture2D = preload("res://assets/ui/restart.svg")
-const _CONTINUE_ICON: Texture2D = preload("res://assets/ui/continue.svg")
-const _JOYSTICK_ICON: Texture2D = preload("res://assets/ui/joystick.svg")
-const _TAP_ICON: Texture2D = preload("res://assets/ui/tap.svg")
+## Region names on the `ui` atlas group — `_enter_tree()`/`_exit_tree()` acquire and release it.
+const _RESTART_ICON := &"ui/restart"
+const _CONTINUE_ICON := &"ui/continue"
+const _JOYSTICK_ICON := &"ui/joystick"
+const _TAP_ICON := &"ui/tap"
 
 const _ICON_BY_SYMBOL := {
 	Symbol.RESTART: _RESTART_ICON,
@@ -110,12 +112,22 @@ var _held_by := -1
 ## hold against `RESTART_HOLD_SECONDS` without keeping its own delta accumulator.
 var _held_since := 0.0
 
+## Acquires the `ui` group before `_ready()` sets `icon` from it — see `Building._enter_tree()`'s
+## own doc for why this is paired with `_exit_tree()` rather than folded into `_ready()`.
+## `AtlasLibrary` reference-counts, so every button on a screen acquiring the same group is one
+## page load.
+func _enter_tree() -> void:
+	AtlasLibrary.acquire(&"ui")
+
+func _exit_tree() -> void:
+	AtlasLibrary.release(&"ui")
+
 func _ready() -> void:
 	# A plain diameter square for both symbols — the extra height `RESTART`'s own hold bar used to
 	# reserve below the disc is gone along with the bar itself; the fill now lives inside the disc.
 	custom_minimum_size = Vector2(_DIAMETER, _DIAMETER)
 	_apply_disc_style()
-	icon = _ICON_BY_SYMBOL.get(symbol)
+	icon = AtlasLibrary.region(_ICON_BY_SYMBOL.get(symbol))
 	icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
 	expand_icon = true

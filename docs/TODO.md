@@ -333,13 +333,8 @@ nothing acquired.
 Each item is one pull request. The ground and the events follow their own gates; the last
 closes the contract.
 
-- [ ] **The unatlased leaf consumers**: buildings, the city edge, closure markers, traffic
-      lights, the UI buttons and indicators, the interior scene and the interior TileSet. The
-      checkpoint pictures are `event_instance.gd`'s and move with the events; the city edge's
-      mountain is on the ground page, which the city always holds. `preload` constants become region names; a tinted draw keeps its `modulate`.
 - [ ] **The pages are packed square, and what is always on screen is always loaded**
-      ([PLAYTEST-109](playtests/PLAYTEST-109.md)), after the leaf consumers have landed, since it
-      edits the groups the consumer moves draw from. *"it would be better to arrange
+      ([PLAYTEST-109](playtests/PLAYTEST-109.md)). *"it would be better to arrange
       things in a more squarish image (take the total number of cells and use the square root
       of it to define the width)"*: the page's target width comes from the square root of the
       group's padded area, never less than the widest member. *"if you don't use a proper full
@@ -395,28 +390,9 @@ closes the contract.
       and **svg-art** skills and `CLAUDE.md`'s path table describe what is then true.
       **The release that follows is a minor version, and it waits for every item in this
       section** — *"only release once all those new items are completed, too"* — **and for
-      M172, a suite that fails to parse hangs the test run, and M173, the standalone bake
-      speaks for a stale import cache, where they can be had** — *"include the bug fixes, too,
-      if possible"*. *"after atlas we cut a new minor version"*: `tools/release.sh minor`
+      M173, the standalone bake speaks for a stale import cache, where it can be had** —
+      *"include the bug fixes, too, if possible"*. *"after atlas we cut a new minor version"*: `tools/release.sh minor`
       ([PLAYTEST-109](playtests/PLAYTEST-109.md)).
-
----
-
-## M172 — A suite that fails to parse hangs the test run · found 2026-09-20
-
-`tests/run_tests.gd`'s `_ready()` loads every suite before it runs any, and a suite with a parse
-error aborts `_ready()` before it reaches `quit()`. The engine prints the `SCRIPT ERROR` and
-then idles forever: `tools/test.sh <that suite>` never exits, and in CI the shard that owns the
-suite runs until the job's timeout or until another shard's failure cancels it, so the pull
-request shows a cancelled shard where it should show a red one with the parse error beside it.
-`tools/test.sh`'s engine-error check reads the output after the process ends, so it never gets
-to speak.
-
-- [ ] **A suite that cannot load is a failure the runner reports and exits on.** The runner
-      records the load failure by suite name, runs the suites that did load, and quits non-zero.
-      A negative fixture beside `tests/runner_fixtures/engine_error.gd` — a script that does not
-      parse, outside suite discovery, run only when named — holds it, and CI's `gates` job
-      requires the non-zero exit, the fixture's name in the output and an exit within seconds.
 
 ---
 

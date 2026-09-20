@@ -11,9 +11,11 @@ extends Node2D
 ## Feet-anchored like everything else and added to the y-sorted layer, so she walks in front of a
 ## head on the near kerb and behind one on the far side of the junction.
 
-const HEAD := preload("res://assets/props/signal_head.svg")
-const HEAD_BACK := preload("res://assets/props/signal_head_back.svg")
-const HEAD_SIDE := preload("res://assets/props/signal_head_side.svg")
+## Region names on the `street_kit` atlas group — `_enter_tree()`/`_exit_tree()` acquire and
+## release it, matching `ClosureMarker`'s own pairing since both belong to the same group.
+const HEAD := &"props/signal_head"
+const HEAD_BACK := &"props/signal_head_back"
+const HEAD_SIDE := &"props/signal_head_side"
 
 ## Where each lamp sits on the head, as an offset from the node's feet, and how big the lit patch
 ## is. Matched by hand to the drawings: all are 42 tall with the lamps at y 2, 8 and 14 from
@@ -43,6 +45,12 @@ var _mirrored := false
 var _faces_away := false
 
 var signals: TrafficSignals
+
+func _enter_tree() -> void:
+	AtlasLibrary.acquire(&"street_kit")
+
+func _exit_tree() -> void:
+	AtlasLibrary.release(&"street_kit")
 
 ## What was drawn last, so a head redraws on the two or three frames a minute its lamp changes
 ## rather than on every frame of the day. The lights are the one piece of scenery in this city
@@ -82,10 +90,10 @@ func _draw() -> void:
 	# instance bought nothing over the literal `Sprites.draw_shadow` already took.
 	Sprites.draw_shadow(self, Vector2.ZERO, 5.0)
 	if arm_is_vertical and _faces_away:
-		Sprites.draw_standing(self, HEAD_BACK, Vector2.ZERO)
+		Sprites.draw_standing(self, AtlasLibrary.region(HEAD_BACK), Vector2.ZERO)
 		return
-	Sprites.draw_standing(self, HEAD if arm_is_vertical else HEAD_SIDE, Vector2.ZERO,
-			Vector2.ZERO, _mirrored)
+	Sprites.draw_standing(self, AtlasLibrary.region(HEAD if arm_is_vertical else HEAD_SIDE),
+			Vector2.ZERO, Vector2.ZERO, _mirrored)
 	var lamp := _lamp()
 	var colour := [Palette.SIGNAL_RED, Palette.SIGNAL_AMBER, Palette.SIGNAL_GREEN][lamp] as Color
 	var size := LAMP_SIZE if arm_is_vertical else LAMP_SIZE_SIDE

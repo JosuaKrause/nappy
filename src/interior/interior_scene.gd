@@ -30,27 +30,32 @@ extends WorldContext
 
 signal exit_requested
 
-const HALLWAY_WALL := preload("res://assets/interior/hallway_wall.svg")
-const HALLWAY_WINDOW := preload("res://assets/interior/hallway_wall_window.svg")
+## Every picture below is a region name on the `interior` atlas group; `_enter_tree()`/
+## `_exit_tree()` acquire and release it, and every draw site fetches its texture through
+## `AtlasLibrary.region()` — a live `AtlasTexture` over the group's shared page, whose own
+## `.atlas`/`.region` a test can read directly, unlike a `resource_path` a region-backed texture
+## does not carry.
+const HALLWAY_WALL := &"interior/hallway_wall"
+const HALLWAY_WINDOW := &"interior/hallway_wall_window"
 ## The same window with the street outside it lit. Swapped in for a fraction of a second whenever
 ## an explosion goes off — see `flash_windows()`.
-const HALLWAY_WINDOW_FLASH := preload("res://assets/interior/hallway_wall_window_flash.svg")
-const WALL_LAMP_TEXTURE := preload("res://assets/interior/wall_lamp.svg")
-const LIFT_DOOR_TEXTURE := preload("res://assets/interior/lift_door_dead.svg")
-const ENTRANCE_DOOR_TEXTURE := preload("res://assets/interior/entrance_door.svg")
-const ENTRANCE_BARRICADE_TEXTURE := preload("res://assets/interior/entrance_barricade.svg")
-const HALLWAY_RUBBLE_TEXTURE := preload("res://assets/interior/hallway_rubble.svg")
-const BRICK_WALL := preload("res://assets/interior/basement_wall_brick.svg")
-const DOOR_TEXTURE := preload("res://assets/interior/stairwell_door.svg")
-const APARTMENT_THRESHOLD_TEXTURE := preload("res://assets/interior/apartment_threshold.svg")
-const OPEN_THRESHOLD_TEXTURE := preload("res://assets/interior/open_threshold.svg")
-const EMERGENCY_EXIT_TEXTURE := preload("res://assets/interior/emergency_exit_door.svg")
-const PUDDLE_TEXTURE := preload("res://assets/interior/puddle.svg")
-const DEBRIS_TEXTURE := preload("res://assets/interior/basement_debris.svg")
-const RAT_TEXTURE := preload("res://assets/interior/rat.svg")
-const CHANDELIER_TEXTURE := preload("res://assets/interior/chandelier.svg")
-const STAIRWELL_SEGMENT_BACKDROP := preload("res://assets/interior/stairwell_segment_backdrop.svg")
-const STAIRWELL_SHAFT_CAP_TOP := preload("res://assets/interior/stairwell_shaft_cap_top.svg")
+const HALLWAY_WINDOW_FLASH := &"interior/hallway_wall_window_flash"
+const WALL_LAMP_TEXTURE := &"interior/wall_lamp"
+const LIFT_DOOR_TEXTURE := &"interior/lift_door_dead"
+const ENTRANCE_DOOR_TEXTURE := &"interior/entrance_door"
+const ENTRANCE_BARRICADE_TEXTURE := &"interior/entrance_barricade"
+const HALLWAY_RUBBLE_TEXTURE := &"interior/hallway_rubble"
+const BRICK_WALL := &"interior/basement_wall_brick"
+const DOOR_TEXTURE := &"interior/stairwell_door"
+const APARTMENT_THRESHOLD_TEXTURE := &"interior/apartment_threshold"
+const OPEN_THRESHOLD_TEXTURE := &"interior/open_threshold"
+const EMERGENCY_EXIT_TEXTURE := &"interior/emergency_exit_door"
+const PUDDLE_TEXTURE := &"interior/puddle"
+const DEBRIS_TEXTURE := &"interior/basement_debris"
+const RAT_TEXTURE := &"interior/rat"
+const CHANDELIER_TEXTURE := &"interior/chandelier"
+const STAIRWELL_SEGMENT_BACKDROP := &"interior/stairwell_segment_backdrop"
+const STAIRWELL_SHAFT_CAP_TOP := &"interior/stairwell_shaft_cap_top"
 
 const TILE := float(Tuning.TILE_SIZE)
 ## How long the fade to black takes, each way — brisk, since it stands in for a flight of stairs
@@ -84,6 +89,15 @@ var _door_release_latch := ReleaseLatch.new()
 ## (`Tuning.PLAYER_BODY_RADIUS`, 14px), so a step that only grazes the tile's edge still counts as
 ## staying rather than as leaving and re-entering.
 const _DOOR_RELEASE_RADIUS := TILE * 1.5
+
+## Acquires the `interior` atlas group before `_ready()` builds anything that draws from it, and
+## releases it on the matching exit — see `Building._enter_tree()`'s own doc for why this is
+## paired with `_exit_tree()` rather than folded into `_ready()`.
+func _enter_tree() -> void:
+	AtlasLibrary.acquire(&"interior")
+
+func _exit_tree() -> void:
+	AtlasLibrary.release(&"interior")
 
 func _ready() -> void:
 	super()
@@ -196,10 +210,10 @@ func _rebuild_walls() -> void:
 	_add_rubble()
 	for at: Vector2i in _plan.entrance_tiles:
 		var barricade := Sprite2D.new()
-		barricade.texture = ENTRANCE_BARRICADE_TEXTURE
+		var texture := AtlasLibrary.region(ENTRANCE_BARRICADE_TEXTURE)
+		barricade.texture = texture
 		barricade.centered = false
-		barricade.offset = Vector2(-ENTRANCE_BARRICADE_TEXTURE.get_width() * 0.5,
-				-ENTRANCE_BARRICADE_TEXTURE.get_height())
+		barricade.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 		barricade.position = Vector2((at.x + 0.5) * TILE, at.y * TILE + TILE * 0.5)
 		_walls.add_child(barricade)
 
@@ -214,13 +228,16 @@ func _add_rubble() -> void:
 	if _plan.rubble.size == Vector2i.ZERO:
 		return
 	var heap := Sprite2D.new()
-	heap.texture = HALLWAY_RUBBLE_TEXTURE
+	heap.texture = AtlasLibrary.region(HALLWAY_RUBBLE_TEXTURE)
 	heap.centered = false
 	heap.position = Vector2(_plan.rubble.position) * TILE
 	_walls.add_child(heap)
 
-func _add_wall_sprite(at: Vector2i, texture: Texture2D) -> Sprite2D:
-	if not texture:
+func _add_wall_sprite(at: Vector2i, name: StringName) -> Sprite2D:
+	if name == &"":
+		return null
+	var texture := AtlasLibrary.region(name)
+	if texture == null:
 		return null
 	var sprite := Sprite2D.new()
 	sprite.texture = texture
@@ -253,8 +270,9 @@ var _window_flash_left := 0.0
 ## two texture assignments.
 func flash_windows() -> void:
 	_window_flash_left = Tuning.FINALE_WINDOW_FLASH_SECONDS
+	var texture := AtlasLibrary.region(HALLWAY_WINDOW_FLASH)
 	for sprite in _window_sprites:
-		sprite.texture = HALLWAY_WINDOW_FLASH
+		sprite.texture = texture
 
 ## Whether a flash is on screen right now — what `tests/test_interior.gd` asks, since a texture
 ## swap is not something a headless run can see.
@@ -266,8 +284,9 @@ func windows_are_flashing() -> bool:
 ## flashing on its own.
 func windows_lit() -> int:
 	var lit := 0
+	var flash := AtlasLibrary.region(HALLWAY_WINDOW_FLASH)
 	for sprite in _window_sprites:
-		if sprite.texture == HALLWAY_WINDOW_FLASH:
+		if sprite.texture == flash:
 			lit += 1
 	return lit
 
@@ -282,10 +301,11 @@ func _process(delta: float) -> void:
 	_window_flash_left = maxf(0.0, _window_flash_left - delta)
 	if _window_flash_left > 0.0:
 		return
+	var texture := AtlasLibrary.region(HALLWAY_WINDOW)
 	for sprite in _window_sprites:
-		sprite.texture = HALLWAY_WINDOW
+		sprite.texture = texture
 
-func _wall_texture(kind: InteriorTile.Kind) -> Texture2D:
+func _wall_texture(kind: InteriorTile.Kind) -> StringName:
 	match kind:
 		InteriorTile.Kind.WINDOW:
 			return HALLWAY_WINDOW
@@ -300,7 +320,7 @@ func _wall_texture(kind: InteriorTile.Kind) -> Texture2D:
 		InteriorTile.Kind.BRICK_WALL:
 			return BRICK_WALL
 		_:
-			return null
+			return &""
 
 ## Doors, the chandeliers and every ground decal — everything that stands above the floor rather
 ## than being the floor, all in the y-sorted layer the player joins through `add_entity()`.
@@ -317,8 +337,9 @@ func _rebuild_overlays() -> void:
 		_add_standing(_plan.exit_tile, EMERGENCY_EXIT_TEXTURE)
 	for tile: Vector2i in _plan.decals:
 		var kind: InteriorTile.Kind = _plan.decals[tile]
+		var name := _decal_texture(kind)
 		var sprite := Sprite2D.new()
-		sprite.texture = _decal_texture(kind)
+		sprite.texture = AtlasLibrary.region(name)
 		sprite.position = tile_to_world(tile)
 		_entities.add_child(sprite)
 	_add_chandeliers()
@@ -334,13 +355,14 @@ func _add_chandeliers() -> void:
 		if not _plan.waypoints.has(id):
 			continue
 		var chandelier := Sprite2D.new()
-		chandelier.texture = CHANDELIER_TEXTURE
+		var texture := AtlasLibrary.region(CHANDELIER_TEXTURE)
+		chandelier.texture = texture
 		chandelier.centered = false
-		chandelier.offset = Vector2(-CHANDELIER_TEXTURE.get_width() * 0.5, -CHANDELIER_TEXTURE.get_height())
+		chandelier.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 		chandelier.position = tile_to_world(_plan.waypoints[id] + Vector2i(0, -1))
 		_entities.add_child(chandelier)
 
-func _decal_texture(kind: InteriorTile.Kind) -> Texture2D:
+func _decal_texture(kind: InteriorTile.Kind) -> StringName:
 	match kind:
 		InteriorTile.Kind.DEBRIS:
 			return DEBRIS_TEXTURE
@@ -351,8 +373,9 @@ func _decal_texture(kind: InteriorTile.Kind) -> Texture2D:
 
 ## A bottom-centre-anchored standing sprite at a tile's own centre — a door threshold, drawn the
 ## same way `Sprites.draw_standing()` draws every other feet-anchored actor.
-func _add_standing(tile: Vector2i, texture: Texture2D) -> void:
+func _add_standing(tile: Vector2i, name: StringName) -> void:
 	var sprite := Sprite2D.new()
+	var texture := AtlasLibrary.region(name)
 	sprite.texture = texture
 	sprite.centered = false
 	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
@@ -361,8 +384,9 @@ func _add_standing(tile: Vector2i, texture: Texture2D) -> void:
 
 ## A threshold sits at a floor tile's south boundary. Its origin is intentionally lower than an
 ## upright stairwell door's: the opening belongs to the wall beyond the corridor, not the floor.
-func _add_threshold(tile: Vector2i, texture: Texture2D) -> void:
+func _add_threshold(tile: Vector2i, name: StringName) -> void:
 	var sprite := Sprite2D.new()
+	var texture := AtlasLibrary.region(name)
 	sprite.texture = texture
 	sprite.centered = false
 	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
@@ -373,17 +397,19 @@ func _add_threshold(tile: Vector2i, texture: Texture2D) -> void:
 ## complete 26-row stairwell, including the final two-cell lobby approach, but add no floor:
 ## collision and walkability still come only from the parsed symbols.
 func _rebuild_stairwell_backdrops() -> void:
+	var segment_texture := AtlasLibrary.region(STAIRWELL_SEGMENT_BACKDROP)
+	var cap_texture := AtlasLibrary.region(STAIRWELL_SHAFT_CAP_TOP)
 	for side in ["left", "right"]:
 		var top_landing: Vector2i = _plan.waypoints["stairwell_%s" % side]
 		var origin := top_landing - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for panel in 4:
 			var backdrop := Sprite2D.new()
-			backdrop.texture = STAIRWELL_SEGMENT_BACKDROP
+			backdrop.texture = segment_texture
 			backdrop.centered = false
 			backdrop.position = Vector2(origin + Vector2i(0, panel * 8)) * TILE
 			_backdrops.add_child(backdrop)
 		var cap := Sprite2D.new()
-		cap.texture = STAIRWELL_SHAFT_CAP_TOP
+		cap.texture = cap_texture
 		cap.centered = false
 		cap.position = Vector2(origin + Vector2i(0, -2)) * TILE
 		_backdrops.add_child(cap)

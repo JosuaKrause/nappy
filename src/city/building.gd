@@ -41,21 +41,25 @@ const TILE := float(Tuning.TILE_SIZE)
 ## building meets the street) stays exactly where it was.
 const NORTH_EDGE_INSET := 6.0
 
-const WALL := preload("res://assets/buildings/wall.svg")
-const WALL_BASE := preload("res://assets/buildings/wall_base.svg")
-const WALL_EDGE_W := preload("res://assets/buildings/wall_edge_w.svg")
-const WALL_EDGE_E := preload("res://assets/buildings/wall_edge_e.svg")
-const ROOF := preload("res://assets/buildings/roof.svg")
-const ROOF_EDGE_N := preload("res://assets/buildings/roof_edge_n.svg")
-const ROOF_EDGE_S := preload("res://assets/buildings/roof_edge_s.svg")
-const ROOF_EDGE_W := preload("res://assets/buildings/roof_edge_w.svg")
-const ROOF_EDGE_E := preload("res://assets/buildings/roof_edge_e.svg")
-const WINDOW_DARK := preload("res://assets/buildings/window_dark.svg")
-const WINDOW_LIT := preload("res://assets/buildings/window_lit.svg")
-const WINDOW_TALL_DARK := preload("res://assets/buildings/window_tall_dark.svg")
-const WINDOW_TALL_LIT := preload("res://assets/buildings/window_tall_lit.svg")
-const WINDOW_SHUTTERED_DARK := preload("res://assets/buildings/window_shuttered_dark.svg")
-const WINDOW_SHUTTERED_LIT := preload("res://assets/buildings/window_shuttered_lit.svg")
+## Every picture below is a region name on the `buildings` atlas group — `AtlasLibrary.
+## region_name_for()`'s own rule, written as a literal since the group is baked before this file
+## ever runs. `_enter_tree()`/`_exit_tree()` acquire and release the group, so `AtlasLibrary.
+## region()` only ever runs while it is held.
+const WALL := &"buildings/wall"
+const WALL_BASE := &"buildings/wall_base"
+const WALL_EDGE_W := &"buildings/wall_edge_w"
+const WALL_EDGE_E := &"buildings/wall_edge_e"
+const ROOF := &"buildings/roof"
+const ROOF_EDGE_N := &"buildings/roof_edge_n"
+const ROOF_EDGE_S := &"buildings/roof_edge_s"
+const ROOF_EDGE_W := &"buildings/roof_edge_w"
+const ROOF_EDGE_E := &"buildings/roof_edge_e"
+const WINDOW_DARK := &"buildings/window_dark"
+const WINDOW_LIT := &"buildings/window_lit"
+const WINDOW_TALL_DARK := &"buildings/window_tall_dark"
+const WINDOW_TALL_LIT := &"buildings/window_tall_lit"
+const WINDOW_SHUTTERED_DARK := &"buildings/window_shuttered_dark"
+const WINDOW_SHUTTERED_LIT := &"buildings/window_shuttered_lit"
 
 ## Share of the wall cells that are lit at all. Fixed at build time, never per frame.
 const LIT_WINDOW_CHANCE := 0.28
@@ -76,30 +80,30 @@ const SHUTTERED_WINDOW_CHANCE := 0.15
 # textures is multiplied by `Palette.building_wall` — they are already-coloured overlays, the
 # same footing `WINDOW_DARK`/`WINDOW_LIT` already stand on.
 
-const STOREFRONT_TEXTURES: Array[Texture2D] = [
-	preload("res://assets/buildings/storefront_a.svg"),
-	preload("res://assets/buildings/storefront_b.svg"),
-	preload("res://assets/buildings/storefront_c.svg"),
-	preload("res://assets/buildings/storefront_d.svg"),
+const STOREFRONT_TEXTURES: Array[StringName] = [
+	&"buildings/storefront_a",
+	&"buildings/storefront_b",
+	&"buildings/storefront_c",
+	&"buildings/storefront_d",
 ]
-const STOREFRONT_AWNING_TEXTURES: Array[Texture2D] = [
-	preload("res://assets/buildings/storefront_a_awning.svg"),
-	preload("res://assets/buildings/storefront_b_awning.svg"),
-	preload("res://assets/buildings/storefront_c_awning.svg"),
-	preload("res://assets/buildings/storefront_d_awning.svg"),
+const STOREFRONT_AWNING_TEXTURES: Array[StringName] = [
+	&"buildings/storefront_a_awning",
+	&"buildings/storefront_b_awning",
+	&"buildings/storefront_c_awning",
+	&"buildings/storefront_d_awning",
 ]
 ## A shuttered shopfront: always on a `BOARDED` block, and — beneath the curve's own threshold —
 ## on a share of ordinary `LIVED_IN` commercial ground too, the city's own services failing ahead
 ## of any one block turning. See `_ground_floor_texture()`.
-const STOREFRONT_SHUTTERED_TEXTURES: Array[Texture2D] = [
-	preload("res://assets/buildings/storefront_a_shuttered.svg"),
-	preload("res://assets/buildings/storefront_b_shuttered.svg"),
-	preload("res://assets/buildings/storefront_c_shuttered.svg"),
-	preload("res://assets/buildings/storefront_d_shuttered.svg"),
+const STOREFRONT_SHUTTERED_TEXTURES: Array[StringName] = [
+	&"buildings/storefront_a_shuttered",
+	&"buildings/storefront_b_shuttered",
+	&"buildings/storefront_c_shuttered",
+	&"buildings/storefront_d_shuttered",
 ]
-const FIRE_ESCAPE_A := preload("res://assets/buildings/fire_escape_a.svg")
-const FIRE_ESCAPE_B := preload("res://assets/buildings/fire_escape_b.svg")
-const CIVIC_PORTICO := preload("res://assets/props/civic_portico.svg")
+const FIRE_ESCAPE_A := &"buildings/fire_escape_a"
+const FIRE_ESCAPE_B := &"buildings/fire_escape_b"
+const CIVIC_PORTICO := &"props/civic_portico"
 
 ## Share of a storefront cell that gets the sloped-awning variant instead of the plain one.
 const STOREFRONT_AWNING_SHARE := 0.35
@@ -118,16 +122,16 @@ const AMBIENT_SHUTTER_SHARE := 0.3
 # tiles and inside the Buildings layer, so a roof unit never enters the y-sorted comparison the
 # class doc's own warning is about.
 
-const VENT_A := preload("res://assets/props/industrial_vent.svg")
-const VENT_B := preload("res://assets/props/industrial_vent_b.svg")
-const HVAC_A := preload("res://assets/props/roof_hvac_unit.svg")
-const HVAC_B := preload("res://assets/props/roof_hvac_unit_b.svg")
-const DUCT_STRAIGHT := preload("res://assets/props/roof_duct_straight.svg")
-const DUCT_CORNER := preload("res://assets/props/roof_duct_corner.svg")
-const SKYLIGHT_A := preload("res://assets/props/roof_skylight.svg")
-const SKYLIGHT_B := preload("res://assets/props/roof_skylight_b.svg")
-const VENT_STACK := preload("res://assets/props/roof_vent_stack.svg")
-const WATER_TANK := preload("res://assets/props/roof_water_tank.svg")
+const VENT_A := &"props/industrial_vent"
+const VENT_B := &"props/industrial_vent_b"
+const HVAC_A := &"props/roof_hvac_unit"
+const HVAC_B := &"props/roof_hvac_unit_b"
+const DUCT_STRAIGHT := &"props/roof_duct_straight"
+const DUCT_CORNER := &"props/roof_duct_corner"
+const SKYLIGHT_A := &"props/roof_skylight"
+const SKYLIGHT_B := &"props/roof_skylight_b"
+const VENT_STACK := &"props/roof_vent_stack"
+const WATER_TANK := &"props/roof_water_tank"
 
 ## What stands on a roof. `VENT` is the one that animates; everything else is fixed art.
 enum _Furniture { VENT, HVAC_A, HVAC_B, DUCT_STRAIGHT, DUCT_CORNER, SKYLIGHT_A, SKYLIGHT_B,
@@ -259,6 +263,16 @@ var _has_vent := false
 var _vent_frame_b := false
 var _vent_timer := 0.0
 
+## Acquires the `buildings` atlas group rather than `_ready()`, so a building added and removed
+## from the tree more than once stays paired with `_exit_tree()` — `_ready()` only ever runs the
+## first time. `AtlasLibrary` reference-counts, so any number of buildings acquiring the same
+## group is one page load.
+func _enter_tree() -> void:
+	AtlasLibrary.acquire(&"buildings")
+
+func _exit_tree() -> void:
+	AtlasLibrary.release(&"buildings")
+
 func _ready() -> void:
 	_collision = CollisionShape2D.new()
 	add_child(_collision)
@@ -389,46 +403,47 @@ func _draw() -> void:
 	for row in wall_rows:
 		for col in cols:
 			var at := _cell(col, row)
-			draw_texture(TextureResolver.resolve(WALL), at, wall_colour)
+			draw_texture(AtlasLibrary.region(WALL), at, wall_colour)
 			var index := row * cols + col
 			var window_at := at
 			if row == 1 and not _storefront_variant.is_empty():
 				# The 36px storefront rises four pixels into this row; lift every upper window two
 				# pixels so its sill remains visible, including the odd column that stays wall.
 				window_at.y -= 2.0
-			draw_texture(TextureResolver.resolve(_window_texture(index)), window_at)
+			draw_texture(AtlasLibrary.region(_window_texture(index)), window_at)
 			if col == 0:
-				draw_texture(TextureResolver.resolve(WALL_EDGE_W), at)
+				draw_texture(AtlasLibrary.region(WALL_EDGE_W), at)
 			if col == cols - 1:
-				draw_texture(TextureResolver.resolve(WALL_EDGE_E), at)
+				draw_texture(AtlasLibrary.region(WALL_EDGE_E), at)
 			# With no roof at all, the parapet is what stops the wall.
 			if roof_rows == 0 and row == wall_rows - 1:
-				draw_texture(TextureResolver.resolve(ROOF_EDGE_N), at)
+				draw_texture(AtlasLibrary.region(ROOF_EDGE_N), at)
 
 	# Ground-floor substitutions are drawn after every wall cell, so a 64px storefront cannot be
 	# painted over by the neighboring half of its pair. A 36px source is offset four pixels north
 	# to keep its bottom edge on the shared ground line; facades with only one wall row keep the
 	# ordinary wall base because there is not enough height for the complete entrance.
 	for col in cols:
-		var ground_texture := _ground_floor_texture(col)
-		if ground_texture != null:
-			var y_offset := TILE - ground_texture.get_height()
-			draw_texture(TextureResolver.resolve(ground_texture), _cell(col, 0) + Vector2(0.0, y_offset))
+		var ground_name := _ground_floor_texture(col)
+		if ground_name != &"":
+			var texture := AtlasLibrary.region(ground_name)
+			var y_offset := TILE - texture.get_height()
+			draw_texture(texture, _cell(col, 0) + Vector2(0.0, y_offset))
 
 	_draw_front_overlay()
 
 	for row in roof_rows:
 		for col in cols:
 			var at := _cell(col, wall_rows + row)
-			draw_texture(TextureResolver.resolve(ROOF), at, roof_colour)
+			draw_texture(AtlasLibrary.region(ROOF), at, roof_colour)
 			if row == 0:
-				draw_texture(TextureResolver.resolve(ROOF_EDGE_S), at)
+				draw_texture(AtlasLibrary.region(ROOF_EDGE_S), at)
 			if row == roof_rows - 1:
-				draw_texture(TextureResolver.resolve(ROOF_EDGE_N), at)
+				draw_texture(AtlasLibrary.region(ROOF_EDGE_N), at)
 			if col == 0:
-				draw_texture(TextureResolver.resolve(ROOF_EDGE_W), at)
+				draw_texture(AtlasLibrary.region(ROOF_EDGE_W), at)
 			if col == cols - 1:
-				draw_texture(TextureResolver.resolve(ROOF_EDGE_E), at)
+				draw_texture(AtlasLibrary.region(ROOF_EDGE_E), at)
 
 	_draw_roof_furniture(wall_rows)
 
@@ -445,11 +460,11 @@ func _cell(col: int, row: int) -> Vector2:
 ## still shutters early once `Tuning.degradation_for(day) * AMBIENT_SHUTTER_SHARE` has passed the
 ## cell's own fixed roll — the city's services failing ahead of any one block's arc, which is why
 ## this reads `condition` and `day` as two separate questions rather than one.
-func _ground_floor_texture(col: int) -> Texture2D:
+func _ground_floor_texture(col: int) -> StringName:
 	if _storefront_variant.is_empty():
 		return WALL_BASE
 	if col % 2 == 1:
-		return null
+		return &""
 	var store := col / 2
 	if store >= _storefront_variant.size() or col + 1 >= columns():
 		return WALL_BASE
@@ -463,7 +478,7 @@ func _ground_floor_texture(col: int) -> Texture2D:
 ## `SHUTTERED` regardless of the building's own roll. Never lit there either, but only because
 ## `_lit()` already answers false off `LIVED_IN`; an ordinary `SHUTTERED` building lights up like
 ## any other.
-func _window_texture(index: int) -> Texture2D:
+func _window_texture(index: int) -> StringName:
 	var style := _WindowStyle.SHUTTERED if condition == Condition.BOARDED else _window_style
 	match style:
 		_WindowStyle.SHUTTERED:
@@ -480,11 +495,11 @@ func _window_texture(index: int) -> Texture2D:
 ## needs no offset math here.
 func _draw_front_overlay() -> void:
 	if _fire_escape_col >= 0:
-		var texture := FIRE_ESCAPE_B if _fire_escape_variant_b else FIRE_ESCAPE_A
+		var name := FIRE_ESCAPE_B if _fire_escape_variant_b else FIRE_ESCAPE_A
 		var x := _cell(_fire_escape_col, 0).x + TILE * 0.5
-		Sprites.draw_standing(self, texture, Vector2(x, 0.0))
+		Sprites.draw_standing(self, AtlasLibrary.region(name), Vector2(x, 0.0))
 	if district == GameEnums.BlockPurpose.CIVIC:
-		Sprites.draw_standing(self, CIVIC_PORTICO, Vector2(0.0, 0.0))
+		Sprites.draw_standing(self, AtlasLibrary.region(CIVIC_PORTICO), Vector2(0.0, 0.0))
 
 # ------------------------------------------------------------- roof furniture ---
 
@@ -570,9 +585,9 @@ func _draw_roof_furniture(wall_rows: int) -> void:
 		var span: int = entry["span"]
 		var at := _cell(cell.x, wall_rows + cell.y)
 		var anchor := at + Vector2(TILE * span * 0.5, TILE)
-		Sprites.draw_standing(self, _furniture_texture(entry["kind"]), anchor)
+		Sprites.draw_standing(self, AtlasLibrary.region(_furniture_texture(entry["kind"])), anchor)
 
-func _furniture_texture(kind: int) -> Texture2D:
+func _furniture_texture(kind: int) -> StringName:
 	match kind:
 		_Furniture.VENT:
 			return VENT_B if _vent_frame_b else VENT_A
