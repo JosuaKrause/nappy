@@ -14,6 +14,8 @@ extends RefCounted
 func run(t) -> void:
 	_test_the_rings_are_gone(t)
 	_test_a_stationary_thing_she_stands_in_is_unmarked(t)
+	_test_walking_toward_a_stationary_thing_earns_a_caret(t)
+	_test_the_caret_matches_the_halo_after_the_horizon(t)
 	_test_a_cat_dashing_at_her_is_unmarked(t)
 	_test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t)
 	_test_a_telegraphing_lethal_thing_on_course_is_still_red(t)
@@ -56,9 +58,11 @@ func _test_the_rings_are_gone(t) -> void:
 
 # ------------------------------------------------------------------- the mark ---
 
-## A stationary thing never earns a caret — held still, its own field does not change under the
-## projection, which is the halo's job from the moment she is in reach at all. Standing directly
-## in front of the café changes nothing about that.
+## **Both held still, a stationary thing earns no caret** — neither its own field nor her own
+## motion changes under the projection, which is the halo's job to report from the moment she is
+## in reach at all. `set_player_at()`'s default velocity is `Vector2.ZERO`, so a caller that gives
+## no velocity at all is exactly this case. See `_test_walking_toward_a_stationary_thing_earns_a_
+## caret` for the one PLAYTEST-115 overturned: the same café, her walking toward it.
 func _test_a_stationary_thing_she_stands_in_is_unmarked(t) -> void:
 	var def := EventCatalogue.by_id("cafe_tables")
 	t.check(def != null and not def.mobile, "cafe_tables is a stationary row")
@@ -68,6 +72,64 @@ func _test_a_stationary_thing_she_stands_in_is_unmarked(t) -> void:
 	instance.set_player_at(instance.global_position)
 	t.check(not instance.wants_a_mark(),
 			"a café she is standing in front of carries no caret at all")
+	instance.free()
+
+## *(2026-09-20, overturning 2026-09-08's "I don't want a caret when walking into a car from the
+## side": "caret communicates anticipated net gain. basically if I keep doing what I'm doing I
+## very likely get that amount in net gain".)* The same stationary café as the test above, her
+## position no longer held fixed: walking straight at it from outside its own field, at
+## `Tuning.WALK_SPEED` and no decay given back, the projection now nets something, because in five
+## seconds of carrying on she really is about to be inside it.
+func _test_walking_toward_a_stationary_thing_earns_a_caret(t) -> void:
+	var def := EventCatalogue.by_id("cafe_tables")
+	if not def:
+		return
+	var instance := _instance(def)
+	var approach := Vector2(-def.outer_radius - 30.0, 0.0)
+	instance.set_player_at(approach, Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
+	t.check(instance.expected_impact_at(approach) > 0.0,
+			"walking straight at a stationary café five seconds out nets something, unlike " +
+			"standing in front of it")
+	instance.free()
+
+## The test of done PLAYTEST-115 states directly: *"if I keep doing what I'm doing I very likely
+## get that amount in net gain (so the halo will match roughly the caret if that happens)".* A
+## single stationary, unpulsed source — no telegraph and no pulse to keep the comparison to the
+## one thing under test, since the caret's own projection freezes the row's rate at the moment it
+## is asked and a live pulse or telegraph evolving underneath the walk is a second variable this
+## test does not want — a straight pass at a constant `Tuning.WALK_SPEED` for the whole horizon,
+## exactly what the projection assumes. The halo's own backward-looking `ExcitementHalo.net_landed()`,
+## read after the horizon has actually elapsed, comes out close to what `expected_impact_at()`
+## said at the start of it. `total_landed` is `landed` itself: one source, so its whole share of
+## the decay is its own, the same simplification `expected_impact_at()`'s own doc names.
+func _test_the_caret_matches_the_halo_after_the_horizon(t) -> void:
+	var def := EventDef.new()
+	def.id = "caret_matches_halo"
+	def.intensity = 30.0
+	def.inner_radius = 40.0
+	def.outer_radius = 200.0
+	def.telegraph_time = 0.0
+	var instance := _instance(def)
+	var player_velocity := Vector2(Tuning.WALK_SPEED, 0.0)
+	var decay := Tuning.EXCITEMENT_DECAY_WALKING
+	var lead := player_velocity.length() * Tuning.EXPECTED_IMPACT_HORIZON * 0.5
+	var player_pos := Vector2(-lead, 20.0)
+	instance.set_player_at(player_pos, player_velocity, decay, 1.0)
+	var caret_now := instance.expected_impact_at(player_pos)
+	t.check(caret_now > 0.0, "a pass through the field projects a positive net gain")
+
+	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / STEP))
+	for i in steps:
+		instance._process(STEP)
+		player_pos += player_velocity * STEP
+		var contribution := instance.contribution_at(player_pos)
+		if contribution > 0.0:
+			instance.accumulate_landed(contribution * STEP)
+	var landed := instance.landed()
+	var halo_net := ExcitementHalo.net_landed(landed, landed, decay * Tuning.EXPECTED_IMPACT_HORIZON)
+	t.close_to(halo_net, caret_now,
+			"the halo's net after the horizon matches what the caret projected at the start of " +
+			"it, within a few points of a hundred-point bar", 3.0)
 	instance.free()
 
 ## *(2026-09-08, the player, opening the milestone that replaced the old catalogue-wide rule:

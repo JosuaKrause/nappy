@@ -1463,8 +1463,8 @@ source lands on the meter and the five seconds either side of now, carry all of 
 | Cue | Means | Where |
 | --- | --- | --- |
 | **Legible entity** | The thing itself reads as what it is: a crouched cat, an idling van, a scaffold, a burnt shell. **This carries most of the load, and everything below is for what it cannot carry.** It is a rule with a test rather than an aspiration — one picture per row, no two rows sharing one. See point 6 below. | the art, one `EventDef.Look` per row |
-| **Caret over the entity** | *Stand here and this will cost you*, or *end your day.* Raised by what the thing is **projected to do to her, her position held still**, and by nothing else — see point 1 below. | `Sprites.draw_caret()`, from `EventInstance._draw_mark()` and `CrowdAgent._draw_mark()` |
-| **Its colour** | **Amber** at `Tuning.EXPECTED_IMPACT_POINTS` expected over the horizon — go round it. **Deep red, doubled**, when a step of the projection puts her inside the thing's lethal reach on its current course — it ends your day. The gross points projected forward over the same horizon the halo reads back — see the halo's own row below for what "reads back" means. | `EventInstance.mark_colour()`, `CrowdAgent._caret_strength()` |
+| **Caret over the entity** | *If you both keep doing what you are doing, this will cost you*, or *end your day.* Raised by what the thing is **anticipated to net her — her own current velocity carried forward, not held still** — and by nothing else — see point 1 below. | `Sprites.draw_caret()`, from `EventInstance._draw_mark()` and `CrowdAgent._draw_mark()` |
+| **Its colour** | **Amber** at `Tuning.EXPECTED_IMPACT_POINTS` net over the horizon — go round it, or slow down, or speed up. **Deep red, doubled**, when a step of the *source's own* projection (her position held fixed for this one, since it is an absolute claim about the day ending) puts her inside the thing's lethal reach on its current course. The amber threshold reads the same net quantity the halo reads back — points anticipated over the horizon less what her own current decay would give back over it, floored at zero — so a source is amber only while it is actually projected to cost more than walking is already earning back. | `EventInstance.mark_colour()`, `CrowdAgent._caret_strength()` |
 | **Its flash** | *It has not started yet.* The telegraph phase, and the only channel carrying it — the colour cannot, because a telegraph is usually over before the event is on screen, so an amber that meant *telegraphing* would only ever be seen on the rows sited in front of the player and would read as *near*. | `EventInstance._draw_mark()` |
 | **Breathing** | The caret's size and ride height track *current* emission, so a pulsing event visibly swells and settles and can be timed. A car with no jolt running holds full size, having no pulse of its own to breathe with. | `EventInstance.mark_swell()`, `CrowdAgent._draw_mark()` |
 | **Entity halo** | *This is costing you now, and this much — and the bar is rising because of it.* A thin rim hugging the thing's own silhouette — its own sprite re-drawn a few pixels out in a ring of offsets, never a radius, and re-traced every frame so a turning car or a flying flock wears the rim of the body it is drawing now — for every live event and every startled crowd body (a honking car, a bumped walker) whose `contribution_at()` at her own position clears a floor. **Colour** is pale-to-red, linear over its own **net** — what it delivered to her in the last five seconds less its own share of the decay the bar took in that same five seconds, shared between every source in proportion to what each delivered, never below zero (`ExcitementHalo.net_landed()`) — so the halos of every source live at once sum to the bar's own rise over the window, and a rim reads red only while the bar is actually climbing because of it. **Transparency** is the same net on a curve that saturates by fifteen points, so it carries the low end colour cannot show yet. Both fade in and out over a third and four fifths of a second rather than switching. Drawn under the entities, the crowd and the player, and gone the instant she is out of reach of every candidate at once. | `ExcitementHalo`, `EntityHalo`, `assets/shaders/excitement_halo.gdshader` |
@@ -1486,32 +1486,48 @@ exactly what they meant before it existed.
 
 Three rules underneath the table, in the order they matter:
 
-1. **The caret is raised by expected impact, and by nothing else.**
+1. **The caret is raised by anticipated net gain, and by nothing else.**
 
    *(2026-09-08, the player, closing the fork this rule used to leave open: "carets shouldn't be
    chosen by source value but by expected impact value".)* What a row is declared to cost on
    paper decides nothing; what a source is actually projected to land on her, from wherever she is
-   actually standing, does. `EventInstance.expected_impact_at()` and `CrowdAgent.expected_impact_at()`
-   extrapolate the thing's own current velocity in quarter-second steps over
-   `Tuning.EXPECTED_IMPACT_HORIZON` (5s), sample its field at her *current* position at each step,
-   sum the points, and subtract its present rate times the horizon — so a stationary thing she is
-   standing in front of expects nothing, an approaching thing expects its approach, and a
-   departing one expects less than nothing and is unmarked. **Amber** at
+   actually standing and headed, does. `EventInstance.expected_impact_at()` and
+   `CrowdAgent.expected_impact_at()` extrapolate the thing's own current velocity **and her own**
+   in quarter-second steps over `Tuning.EXPECTED_IMPACT_HORIZON` (5s), sample the thing's field at
+   her own projected position at each step, sum the points, subtract its present rate times the
+   horizon, then net that gross figure against what her own current decay
+   (`Baby.decay_rate()`, scaled by `Baby.current_sensitivity()`) would give back over the same
+   horizon and floor it at zero — so two bodies both held still expect nothing, an approach either
+   of them is making expects its approach less what walking is already earning back, and a
+   departure expects nothing rather than a negative figure. **Amber** at
    `Tuning.EXPECTED_IMPACT_POINTS` (40, the same line the halo saturates red at); **doubled red**
-   when a step of the same projection puts her inside the thing's lethal reach — a `hard_fail`
-   row's `inner_radius`, a car's strike box — on its current course. `tests/test_danger.gd` holds
-   the scenarios this replaces the old catalogue-wide rule with.
+   when a step of the *source's own* projection, her position still held fixed for this one claim,
+   puts her inside the thing's lethal reach — a `hard_fail` row's `inner_radius`, a car's strike
+   box — on its current course. `tests/test_danger.gd` holds the scenarios this replaces the old
+   catalogue-wide rule with.
 
-   **Her stillness is the direction the whole rule turns on.** *(2026-09-08, the player: "I don't
-   want a caret when walking into a car from the side".)* Projected with her held still, a car
-   passing wide of her is never in its own path and carries no mark; one she is standing in the
-   lane of is projected straight into her.
+   **Charged against one source at a time.** The halo's own backward-looking net shares the
+   decay it subtracts across every source that actually landed something, in proportion to what
+   each did; the caret's forward-looking one does not; sharing it would need every other live
+   source's own projection first, which would cost the instance a second channel to the world it
+   has never needed. Independent charging is exact when only one source is worth a mark at once,
+   which is the ordinary case, and reads slightly more pessimistic — never more lenient — with
+   two or more live at once.
+
+   **Her own motion is now part of the projection, and that overturns the rule this replaced.**
+   *(2026-09-08: "I don't want a caret when walking into a car from the side" · overturned
+   2026-09-20: "caret communicates anticipated net gain. basically if I keep doing what I'm doing
+   I very likely get that amount in net gain (so the halo will match roughly the caret if that
+   happens)".)* A car passing wide of wherever she is *headed* still carries no mark, and one
+   whose course crosses her own projected path does — including a car she is walking toward from
+   the side, which used to be exempt because her position never moved under the old projection.
 
    **The trap it is written against** is a rule like *danger that changes over time* — lethal,
    telegraphing, swelling, or pulsing fast enough to be timed. Every clause of that is a true
-   statement about a thing and **none alone says what it will do to a standing player**. A fire
-   engine on a course that misses her may carry nothing; a stationary burning building uses its
-   silhouette and active-cost halo, not an approach caret.
+   statement about a thing and **none alone says what it will net a player who keeps doing what
+   she is doing**. A fire engine on a course that misses her may carry nothing; a stationary
+   burning building uses its silhouette and active-cost halo, not an approach caret, unless she is
+   walking straight at it.
 
    **A cue that marks everything says nothing**, so the ordinary crowd at ordinary density is left
    alone — measured on the arterial, not argued: a crowd at ordinary busyness around a standing

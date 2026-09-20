@@ -56,11 +56,15 @@ extends Node2D
 ## - `set_halo_strength(alpha: float, colour: Color) -> void` — told once a frame what to show, as
 ##   a *target* its own halo state eases toward rather than an immediate value; `0` for everything
 ##   not picked.
-## - `set_player_at(world_position: Vector2) -> void` — this frame's player position, told once a
-##   frame to every candidate whether or not it was picked. `EventInstance` already gets this from
-##   `EventManager`; `CrowdAgent` has no other channel to the player at all, since `Crowd` visits an
-##   agent only when it is near a road, and this node is the one place already visiting every agent
-##   in the crowd every frame regardless. Both classes read it back for their own `expected_impact_at()`.
+## - `set_player_at(world_position: Vector2, velocity: Vector2, decay_rate: float, sensitivity:
+##   float) -> void` — this frame's player position, velocity, `Baby.decay_rate()` and
+##   `Baby.current_sensitivity()`, told once a frame to every candidate whether or not it was
+##   picked. `EventInstance` already gets the position from `EventManager`; `CrowdAgent` has no
+##   other channel to the player at all, since `Crowd` visits an agent only when it is near a road,
+##   and this node is the one place already visiting every agent in the crowd every frame
+##   regardless. Both classes read all four back for their own `expected_impact_at()` — the
+##   caret's own net gain, projected forward the way `landed()` and `decay_in_window()` are read
+##   back.
 ##
 ## `EventInstance` and `CrowdAgent` both satisfy this without sharing a base class.
 
@@ -263,10 +267,20 @@ func setup(events: EventManager, crowd: Crowd, player: Node2D, baby: Baby) -> vo
 ## computed** — `net_landed()`'s own doc explains why the sum this buys is exact: every source
 ## scales by the identical factor, so the floor only ever catches all of them together, not one at
 ## a time depending on loop order.
+##
+## **`set_player_at()` also carries what every source's own `expected_impact_at()` needs to answer
+## the caret's "if I keep doing what I'm doing" — her velocity, `Baby.decay_rate()` and
+## `Baby.current_sensitivity()`.** `_player` is a `Node2D` by its own duck type, so the velocity
+## read is a soft cast: a player with no `CharacterBody2D` (a data-level test's stand-in) answers
+## zero, which is the same "held still" default `expected_impact_at()` already falls back to.
 func _process(_delta: float) -> void:
 	if not _events or not _crowd or not _player or not _baby:
 		return
 	var here := _player.global_position
+	var player_velocity := (_player as CharacterBody2D).velocity \
+			if _player is CharacterBody2D else Vector2.ZERO
+	var player_decay_rate := _baby.decay_rate()
+	var player_sensitivity := _baby.current_sensitivity()
 	_candidates.clear()
 	_candidates.append_array(_events.instances())
 	_candidates.append_array(_crowd.agents())
@@ -285,7 +299,7 @@ func _process(_delta: float) -> void:
 	for source in _candidates:
 		# Every candidate, picked or not — a source below the halo's own floor can still be worth
 		# a caret, since the two cues answer different questions over different sets.
-		source.set_player_at(here)
+		source.set_player_at(here, player_velocity, player_decay_rate, player_sensitivity)
 		if picked_set.has(source):
 			var net := net_landed(source.landed(), total_landed, decay)
 			source.set_halo_strength(magnitude_for(net), colour_for(net))
