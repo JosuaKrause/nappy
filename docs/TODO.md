@@ -332,23 +332,6 @@ pack that carries a baked constituent (`DECISIONS.md`, the sections starting "M1
 every boot holds for the life of the process, and a read from disk outside the two moments is
 an engine error the test gate is red for.
 
-- [ ] **The ground page holds what its bake mode draws, and a bake leaves no page behind**
-      ([PLAYTEST-110](playtests/PLAYTEST-110.md)): *"they should not exist anymore since we
-      composite on the fly now. I certainly don't want to see those svgs in the game. we can
-      keep the prebake for svg mode only. then we don't need those fallbacks."* A default bake
-      of the `ground` group carries the layers and the twelve whole tiles whose source the
-      recipe composes nothing for; the 46 whole tiles of composed sources — 18 of them SVG
-      rasters of cracked tiles, and `tiles/grass` and `tiles/forest` beside the flat
-      `tiles/layers/grass_base` the grass variants are composed on — are members of an `--svg`
-      bake only. `assets/atlases/membership.json` says which mode a member belongs to, the
-      bake and its manifest of source hashes follow it, and `tests/test_atlas_ground.gd` names
-      what each mode's page holds, so a whole tile cannot drift back. `GroundLayers` loses the
-      fallback from an incomplete recipe to the whole authored tile: a recipe that cannot be
-      composed is a `push_error`, as a missing region is. **Assumed, not spoken to:** an
-      `--svg` bake drops the layers in return, since it composes nothing.
-      **A bake leaves exactly the pages the membership names**: it stays all or nothing, and
-      the removal of a page no group names, by the bake, `--check` and the package audit
-      (`DECISIONS.md`, M171, the contract closed), holds under the per-mode membership.
 - [ ] **Cut the minor release once every item in this section is in** — *"only release once
       all those new items are completed, too"*; *"after atlas we cut a new minor version"*:
       `tools/release.sh minor` ([PLAYTEST-109](playtests/PLAYTEST-109.md)).
