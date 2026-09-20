@@ -1,0 +1,41 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+
+== M129: bodies that close the walked sidewalk, 6 seeds x one day per act [1, 5, 9, 13] ==
+   her clearance: 28px (2 * Tuning.PLAYER_BODY_RADIUS, 14px)
+
+-- walked-sidewalk bands with a lane she fits through --
+   act 1  closed   0 of 530    0.0%
+   act 2  closed   0 of 517    0.0%
+   act 3  closed   0 of 461    0.0%
+   act 4  closed   0 of 361    0.0%
+   all    closed   0 of 1869    0.0%
+   (0 bands closed by a closure tile / the ground alone, no body to blame)
+
+-- closing bodies per day, 24 days measured --
+   0.00 closing-body findings per day (a pair on the same band counts as two)
+
+-- by row and by the path that placed it --
+    count  row id                placing path(s)
+   none: no row closed a walked sidewalk in the sample
+
+-- the physical clause's own scope --
+   single-culprit closures: 0
+   of those, a row the candidate loop's own rule (cost or physical) already reads as a
+   wall: 0
+   -- none: every closure a wall-by-the-rule's-own-reading row causes is one the
+      rule already refuses; what remains, if anything, is ground the rule was never
+      asked about at all
+
+-- delivery_van, density and where it stands --
+   placed: 1036 over 24 days (43.2/day)
+   on a route street's far sidewalk (legal ground for a wall): 45
+
+-- the ten worst concrete cases --
+   none: every walked-sidewalk band in the sample kept a lane
+
+-- 24.4s --
+-- m129_walked_sidewalk_walls.gd   24418 ms
+
+1 checks, 0 failures
+PARTIAL RUN — only suites matching probes/m129_walked_sidewalk_walls.gd. Not a green build.
