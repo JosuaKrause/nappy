@@ -9,7 +9,9 @@
 # The contract this serves is the player's: "they should cease existing in the build once they
 # get baked into an atlas" (docs/playtests/PLAYTEST-105.md). A picture that is a member of an
 # atlas group must not also travel as its own texture, or the build carries it twice and the
-# memory the atlases were for is spent anyway.
+# memory the atlases were for is spent anyway. A group's members_png / members_svg lists count
+# as members here too: a picture only one bake mode draws is still an authoring source, and no
+# pack may carry one whichever mode wrote its page.
 #
 # It asks two questions of a pack. **Is a baked constituent in it** -- a member picture, its
 # .import sidecar or the imported .ctex that sidecar names. And **is a page in it that the pack's
@@ -151,12 +153,16 @@ def paths_in(path):
     return found
 
 
+# Every member of every mode, not just the default bake's. A picture only `--svg` draws is still
+# an authoring source under art/ that no pack may carry, and the question here is whether one
+# reached the artefact rather than which bake wrote its page.
 members = []
 membership = os.path.join(root, "assets/atlases/membership.json")
 with open(membership, encoding="utf-8") as handle:
     for group, record in json.load(handle)["groups"].items():
-        for member in record["members"]:
-            members.append((group, member))
+        for key in ("members", "members_png", "members_svg"):
+            for member in record.get(key, []):
+                members.append((group, member))
 
 # What a member can look like inside a pack: its own path, the .import sidecar that is the only
 # listing an exported source keeps, and the imported .ctex the sidecar names.

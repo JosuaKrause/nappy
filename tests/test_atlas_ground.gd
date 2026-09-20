@@ -19,6 +19,19 @@ extends RefCounted
 ## answers. A default bake gives a page of illustrated components and most sources compose from
 ## them; `tools/bake-atlases.sh --svg` gives a page of whole authored tiles and nothing composes
 ## but the route-kerb tint. There is no runtime switch between the two to drive from a test.
+##
+## **And the page holds what its own mode draws, which is what `_test_the_page_holds_what_this_
+## bake_draws()` pins.** A default bake carries the layers and the twelve whole tiles the recipe
+## composes nothing for, and no whole tile of a composed source; an `--svg` bake carries the 58
+## whole tiles and no layer. Without that check a whole tile could drift back onto the default
+## page — where nothing would draw it, and the only symptom would be a page a fifth larger.
+##
+## **Nothing here provokes the incomplete-recipe error, and that is deliberate.** A recipe that
+## cannot be composed is a `GroundLayers` `push_error`, and an engine error inside a suite makes
+## the gate red whether or not a test expected it — `tests/test_atlas_library.gd` stands down from
+## the released-group error for the same reason. What is checked instead is the condition that
+## makes it unreachable: that the page holds exactly what the recipe asks for, here, and that
+## every base and component the recipe names is on the page, in `tests/test_ground_layers.gd`.
 
 const AUTHORED_PATH := "res://assets/ground_tileset.tres"
 const AUTHORED_GROUND: TileSet = preload(AUTHORED_PATH)
@@ -32,6 +45,7 @@ const FEWEST_CREDIBLE_SOURCES := 50
 func run(t) -> void:
 	AtlasLibrary.reset_for_tests()
 	_test_the_authored_tile_set_names_regions_instead_of_pictures(t)
+	_test_the_page_holds_what_this_bake_draws(t)
 	_test_the_ground_is_one_composed_sheet(t)
 	_test_every_tile_is_the_page_the_manifest_asked_for(t)
 	_test_a_repaint_composes_the_same_pixels_again(t)
@@ -40,19 +54,26 @@ func run(t) -> void:
 # ------------------------------------------------------------- the authored file ---
 
 ## The authored TileSet is an id, a cell size and a region name per source, and nothing else: no
-## `ext_resource`, no texture, and every name a region the bake actually wrote on the `ground`
-## group. A `.tres` cannot carry tiles for a source with no texture, so the cells are created by
-## `GroundLayers._upload_one_sheet()` once the composed sheet exists — which is why the counts
-## below are asserted against the composed TileSet rather than against this one.
+## `ext_resource`, no texture, and every name either a region of the `ground` page or a picture
+## this bake mode does not draw. A `.tres` cannot carry tiles for a source with no texture, so the
+## cells are created by `GroundLayers._upload_one_sheet()` once the composed sheet exists — which
+## is why the counts below are asserted against the composed TileSet rather than against this one.
+##
+## **Which names are regions is the bake's own answer.** An `--svg` bake draws all 58 whole tiles,
+## so every name is one. A default bake composes 46 of them out of layers and carries the other
+## twelve whole, so those 46 names are deliberately regions of nothing — the check is that the
+## split is exactly the recipe's, in both directions, rather than that every name resolves.
 func _test_the_authored_tile_set_names_regions_instead_of_pictures(t) -> void:
 	var text := FileAccess.get_file_as_string(AUTHORED_PATH)
 	t.check(not text.is_empty(), "the authored ground TileSet reads back as text")
 	t.check(not text.contains("ext_resource"),
 			"the authored ground TileSet references no picture of its own")
+	var composed_ids := _composed_source_ids()
 	var named := 0
 	var unnamed: Array[String] = []
 	var missing: Array[String] = []
 	var misfiled: Array[String] = []
+	var uncomposed_but_baked: Array[String] = []
 	var textured: Array[String] = []
 	for index in AUTHORED_GROUND.get_source_count():
 		var id := AUTHORED_GROUND.get_source_id(index)
@@ -66,7 +87,12 @@ func _test_the_authored_tile_set_names_regions_instead_of_pictures(t) -> void:
 			unnamed.append(str(id))
 			continue
 		named += 1
-		if not AtlasLibrary.has_region(name):
+		if composed_ids.has(id):
+			# Composed out of layers here, so its whole picture is a member of an `--svg` bake
+			# alone and drawing it would be drawing an SVG the player asked to be rid of.
+			if AtlasLibrary.has_region(name):
+				uncomposed_but_baked.append("%d -> %s" % [id, name])
+		elif not AtlasLibrary.has_region(name):
 			missing.append("%d -> %s" % [id, name])
 		elif AtlasLibrary.group_of(name) != GroundLayers.ATLAS_GROUP:
 			misfiled.append("%d -> %s (on '%s')" % [id, name, AtlasLibrary.group_of(name)])
@@ -74,12 +100,106 @@ func _test_the_authored_tile_set_names_regions_instead_of_pictures(t) -> void:
 			% ", ".join(textured.slice(0, 5)))
 	t.check(unnamed.is_empty(), "every authored ground source names its region (%s unnamed)"
 			% ", ".join(unnamed.slice(0, 5)))
-	t.check(missing.is_empty(), "every named region is one the bake wrote (%d missing: %s)"
+	t.check(missing.is_empty(),
+			"every source this bake does not compose names a region the bake wrote (%d missing: %s)"
 			% [missing.size(), ", ".join(missing.slice(0, 5))])
+	t.check(uncomposed_but_baked.is_empty(),
+			"no composed source's whole tile is on this bake's page (%d are: %s)"
+			% [uncomposed_but_baked.size(), ", ".join(uncomposed_but_baked.slice(0, 5))])
 	t.check(misfiled.is_empty(), "every named region is on the '%s' group (%d elsewhere: %s)"
 			% [GroundLayers.ATLAS_GROUP, misfiled.size(), ", ".join(misfiled.slice(0, 5))])
 	t.check(named >= FEWEST_CREDIBLE_SOURCES,
 			"there were authored ground sources to ask about (%d)" % named)
+
+# ----------------------------------------------------------------- the page ---
+
+## The `ground` page holds exactly what this bake's own compositor draws from, derived from the
+## recipe and the authored TileSet rather than from a list kept by hand — M163's rule, with both
+## counts asserted so a page that lost everything cannot pass by comparing two empty sets.
+##
+## A default bake: the recipe's own bases and components, plus the whole tile of every source the
+## recipe composes nothing for. Nothing else — in particular no `*_cracked_*` whole tile, no
+## `tiles/grass` and no `tiles/forest`, the three shapes [PLAYTEST-110](
+## ../docs/playtests/PLAYTEST-110.md) named: *"they should not exist anymore since we composite on
+## the fly now. I certainly don't want to see those svgs in the game."*
+##
+## An `--svg` bake: every source's whole tile and no layer at all, since it composes nothing.
+func _test_the_page_holds_what_this_bake_draws(t) -> void:
+	var manifest := _composition_recipe()
+	var composed_ids := _composed_source_ids()
+	var expected: Dictionary = {}
+	if not manifest.is_empty():
+		for filename: Variant in (manifest.get("bases", {}) as Dictionary).values():
+			expected[String(_layer_region_name(str(filename)))] = true
+		for filename: Variant in (manifest.get("components", {}) as Dictionary).values():
+			expected[String(_layer_region_name(str(filename)))] = true
+	var whole := 0
+	for index in AUTHORED_GROUND.get_source_count():
+		var id := AUTHORED_GROUND.get_source_id(index)
+		var source := AUTHORED_GROUND.get_source(id) as TileSetAtlasSource
+		if source == null or composed_ids.has(id):
+			continue
+		expected[source.resource_name] = true
+		whole += 1
+	var actual: Dictionary = {}
+	for name: StringName in AtlasLibrary.region_names():
+		if AtlasLibrary.group_of(name) == GroundLayers.ATLAS_GROUP:
+			actual[String(name)] = true
+	var extra: Array[String] = []
+	for name: String in actual.keys():
+		if not expected.has(name):
+			extra.append(name)
+	var absent: Array[String] = []
+	for name: String in expected.keys():
+		if not actual.has(name):
+			absent.append(name)
+	extra.sort()
+	absent.sort()
+	t.check(extra.is_empty(), "the '%s' page carries nothing this %s bake does not draw (%d: %s)"
+			% [GroundLayers.ATLAS_GROUP, AtlasLibrary.bake_mode(), extra.size(),
+			", ".join(extra.slice(0, 5))])
+	t.check(absent.is_empty(),
+			"the '%s' page carries everything this %s bake draws (%d missing: %s)"
+			% [GroundLayers.ATLAS_GROUP, AtlasLibrary.bake_mode(), absent.size(),
+			", ".join(absent.slice(0, 5))])
+	t.check(actual.size() == expected.size(),
+			"the '%s' page holds exactly the %s bake's members (%d regions, %d wanted)"
+			% [GroundLayers.ATLAS_GROUP, AtlasLibrary.bake_mode(), actual.size(), expected.size()])
+	# The counts themselves, so a recipe or a TileSet that quietly shrank cannot make the two sets
+	# agree on nothing. An `--svg` bake composes nothing, so every source is a whole tile there.
+	var layers := 0
+	var cracked: Array[String] = []
+	for name: String in actual.keys():
+		if name.begins_with(LAYER_REGION_ROOT):
+			layers += 1
+		elif name.contains("_cracked_") or name == "tiles/grass" or name == "tiles/forest":
+			cracked.append(name)
+	if manifest.is_empty():
+		t.check(layers == 0, "an svg bake's page carries no layer to compose from (%d do)" % layers)
+		t.check(whole == AUTHORED_GROUND.get_source_count(),
+				"an svg bake draws every authored source's whole tile (%d of %d)"
+				% [whole, AUTHORED_GROUND.get_source_count()])
+	else:
+		t.check(layers >= 25, "a default bake's page carries the layers it composes from (%d)"
+				% layers)
+		t.check(whole > 0 and whole < AUTHORED_GROUND.get_source_count(),
+				"a default bake carries the whole tiles it composes nothing for, and only those"
+				+ " (%d of %d)" % [whole, AUTHORED_GROUND.get_source_count()])
+		t.check(cracked.is_empty(),
+				"no cracked whole tile, tiles/grass or tiles/forest is on a default bake's page"
+				+ " (%d: %s)" % [cracked.size(), ", ".join(cracked.slice(0, 5))])
+
+## The ids the recipe composes, which is exactly what `GroundLayers.build_tile_set()` branches on.
+## Empty for an `--svg` bake, whose recipe is `{}`.
+func _composed_source_ids() -> Dictionary:
+	var ids: Dictionary = {}
+	var source_bases: Dictionary = _composition_recipe().get("source_bases", {})
+	for key: String in source_bases.keys():
+		ids[int(key)] = true
+	return ids
+
+func _layer_region_name(filename: String) -> StringName:
+	return StringName(LAYER_REGION_ROOT + filename.trim_suffix(".png"))
 
 # ------------------------------------------------------------------- the sheet ---
 

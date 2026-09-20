@@ -124,7 +124,10 @@ from stable body landmarks so changing leg spread does not move the hands sidewa
   that starts the engine does that for you: `tools/bake-atlases.sh` compares a hash per source
   and bakes only when one moved. A new picture also needs a line in
   `assets/atlases/membership.json` naming the group it belongs on, or it is baked nowhere and
-  `AtlasLibrary` answers `has_region()` false for it.
+  `AtlasLibrary` answers `has_region()` false for it. **Which of the group's three lists it goes
+  in says which bake draws it**: `members` for a picture both modes carry, `members_png` or
+  `members_svg` for one only that mode draws — a bake reads and hashes its own mode's lists
+  alone, so a picture in the other's does not make this tree stale.
 - **A PNG whose size disagrees with its SVG fails the bake by name.** There is no fallback left:
   the game holds no second copy of the picture to fall back to, so a mismatch is a committed
   mistake rather than an unfinished art drop to work around.
@@ -171,7 +174,9 @@ Separate existing grass features from a soft green base and place them sparsely 
 city-seed variation, keeping grass detail quieter than the actors and route markings.
 Validate component IDs and rotations against the authored TileSet and ground selector rather
 than inferring their order from filenames. Verify the composed grass atlas itself as well as
-its selection logic; a missing component can leave a valid-looking fallback in place. Crop
+its selection logic; a missing component is a `push_error` naming the source and the component,
+and that source then draws nothing — a default bake's `ground` page carries no whole authored
+tile for a composed source to fall back to. Crop
 grass features to their visible bounds before placing them so their clumps remain whole.
 
 Resolve textures only. Keep original scale, offsets, animation, mirroring, sorting, shadows,

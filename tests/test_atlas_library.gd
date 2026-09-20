@@ -1,8 +1,9 @@
 extends RefCounted
 ## The baked atlases' own contract: that the pages on disk were baked from the tree the suite is
-## running against, that every picture the membership file names has a region, that no two
-## regions overlap on a page, that a group's page arrives on the first `acquire()` and is gone
-## after the last `release()`, and that geometry can be asked for with nothing acquired at all.
+## running against, that every picture the membership file names for *this bake's mode* has a
+## region and nothing else does, that no two regions overlap on a page, that a group's page
+## arrives on the first `acquire()` and is gone after the last `release()`, and that geometry can
+## be asked for with nothing acquired at all.
 ##
 ## **Nothing here compares a region against a separately loaded picture, because there is no
 ## second copy left to compare it with.** The authoring sources live under `art/`, which the engine
@@ -54,13 +55,23 @@ func _test_the_bake_is_not_stale(t) -> void:
 	t.check(str(manifest.get("mode", "")) == AtlasLibrary.bake_mode(),
 			"the region table and the bake manifest agree on the mode")
 
-## Every picture the membership file lists is in the page its group names, and nothing else is.
+## Every picture this bake's mode draws from the group is in its page, and nothing else is.
+##
+## **A member belongs to a mode, not only to a group.** `members` is what both bakes carry;
+## `members_png` and `members_svg` are what only that one draws, and the other mode's list is not
+## on the page at all — the `ground` group is why, since a default bake composes 46 of its tiles
+## out of layers and carries the whole pictures of none of them. So the expected count is this
+## mode's two lists, and a member of the other mode's list appearing here would fail the exact
+## count below.
 func _test_every_member_has_a_region(t, membership: Dictionary) -> void:
 	var groups: Dictionary = membership.get("groups", {})
 	t.check(not groups.is_empty(), "the membership file lists groups")
+	var mode_key := "members_svg" if AtlasLibrary.bake_mode() == "svg" else "members_png"
 	var expected := 0
 	for group: String in groups.keys():
-		var members: Array = (groups[group] as Dictionary).get("members", [])
+		var record: Dictionary = groups[group]
+		var members: Array = (record.get("members", []) as Array).duplicate()
+		members.append_array(record.get(mode_key, []))
 		expected += members.size()
 		var missing: Array[String] = []
 		var misfiled: Array[String] = []
