@@ -60,7 +60,7 @@ the same night. 4000 draws: mean 1.289s, none outside the bounds; 51 flashes a m
 louder building.
 
 **The basement stair.** *"can we just replace it with a full gray texture with dark gray lines
-every x pixels"* ([PLAYTEST-98](playtests/PLAYTEST-98.md)), with a 32 by 32 example of one dark
+every x pixels"* ([PLAYTEST-106](playtests/PLAYTEST-106.md)), with a 32 by 32 example of one dark
 row in four. `stair_down.svg` is a flat `#8b8e93` with a one-pixel `#4a4d52` line every four
 pixels from the top row down, so stacked tiles keep the rhythm; the narrowing treads, the stepped
 sides and the arrow are gone. The two grays are the orchestrator's pick. Still:
