@@ -113,7 +113,7 @@ func _test_every_view_resolves_every_pose_in_both_states(t) -> void:
 				# directly: `_mother_texture()` answers the baked region, and the assertion is
 				# about *which* view is selected either way.
 				t.check(rig._mother_texture(frame)
-						== AtlasLibrary.region(AtlasLibrary.region_name_for(expected[direction])),
+						== AtlasLibrary.region(StringName(expected[direction])),
 						"direction %d resolves %s pose %d"
 						% [direction, _state_name(carrying), frame])
 		rig.free()

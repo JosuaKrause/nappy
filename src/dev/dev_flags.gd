@@ -47,7 +47,6 @@ extends RefCounted
 ##   --ending        1
 ##   --controls      1
 ##   --layers        1
-##   --svg           0
 ##   --debug         0
 ##   --skip          1
 ##   --invincible    0
@@ -89,25 +88,10 @@ extends RefCounted
 static func enabled() -> bool:
 	return OS.is_debug_build()
 
-## Whether SVG presentation was explicitly requested. PNG transfers are the default whenever a
-## matching asset exists; this remains a user-facing override so release web builds can select SVG
-## with `?svg=1` even though developer flags are unavailable there.
-static func svg_requested() -> bool:
-	return _svg_from_args(OS.get_cmdline_user_args()) or _svg_from_query(_web_query())
-
-static func _svg_from_args(args: PackedStringArray) -> bool:
-	return "--svg" in args
-
-static func _svg_from_query(query: String) -> bool:
-	for parameter in query.trim_prefix("?").split("&"):
-		var pair := parameter.split("=", true, 1)
-		if pair.size() == 2 and pair[0] == "svg" and pair[1] == "1":
-			return true
-	return false
-
 ## Whether the developer readout was explicitly asked for on a release build — `?debug=1` (or the
-## command line's own `--debug`), parsed the same shape as `svg_requested()` and not gated behind
-## `enabled()`. The third bounded release-safe query flag, beside `?svg=1` and `?telemetry=1`: it
+## command line's own `--debug`), parsed straight off the command line or the page's query string
+## and not gated behind `enabled()`. One of the two bounded release-safe query flags, beside
+## `?telemetry=1`: it
 ## reaches the readout `main.gd` draws in the top-right corner, and gates the two flags whose own
 ## release-safe path runs through it in turn — `--skip`/`?skip=` (`skip_words()`) and `?seed=`'s
 ## own positive integer (`seed_override()`) — never the rest of the bundle `enabled()` gates: a
@@ -135,7 +119,7 @@ static func _readout_from_query(query: String) -> bool:
 const _SKIP_KNOWN_WORDS := ["events", "crowd", "shadows", "motion"]
 
 ## Whether `--skip`/`?skip=` named `events` — every `EventInstance._draw` returns before drawing
-## anything, the desktop's own row (e). Parsed the same shape as `svg_requested()`/
+## anything, the desktop's own row (e). Parsed the same shape as
 ## `readout_requested()` above (a bare command-line value or a `?skip=` query parameter, read
 ## without `enabled()`'s own gate) but **honoured only while `readout_requested()` holds**: a
 ## release page without the DEBUG MODE note never skips anything, so this cannot become a second
@@ -420,7 +404,7 @@ static func controls_override() -> String:
 ## layers_override()` the same way `_add_route_lines()` reads `5`. `4` (the readout) is not part of
 ## this list: it defaults on already, and this flag exists for a clean *geometry* shot. Gated
 ## behind `enabled()` explicitly, the same as `ControlsMode._url_word()` gates its own query read,
-## since `_web_query()` itself carries no gate — `svg_requested()` above is the one caller that
+## since `_web_query()` itself carries no gate — `readout_requested()` above is the caller that
 ## wants it to stay live in a release web build.
 static func layers_override() -> Array[int]:
 	if not enabled():
@@ -481,8 +465,8 @@ static var _invincible_override: Variant = null
 ## mode for playtesting" and "invincible freezes the clock and the meter".
 ##
 ## Gated behind `enabled()` explicitly, the same as `layers_override()` gates its own query read —
-## unlike `svg_requested()`, which stays live in a release web build by design, this reaches the
-## whole of a day's losing behaviour and must not survive outside a debug build.
+## unlike `readout_requested()`, which stays live in a release web build by design, this reaches
+## the whole of a day's losing behaviour and must not survive outside a debug build.
 static func invincible() -> bool:
 	if _invincible_override != null:
 		return bool(_invincible_override)

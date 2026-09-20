@@ -6,8 +6,9 @@ The male sources supply a short-haired parent in a blue overshirt, with the same
 registration and complete pushing/carrying pose matrix. The runtime catalogue supplies the game's
 vector artwork. Every state contains contact and together poses for every authored direction.
 
-The runtime SVGs supply the fallback and the explicit `--svg` review path. The accepted PNG
-counterparts are selected by default when their dimensions match. Keeping
+The runtime SVGs under `art/rig/` are what a `tools/bake-atlases.sh --svg` bake carries, and the
+accepted PNG counterparts beside them are what the default bake takes when their dimensions
+match. Keeping
 the authoring copies under `docs/graphics-creation/player/` prevents high-fidelity generation
 references from becoming an implicit runtime fallback.
 

@@ -102,10 +102,11 @@ leaks. `RefCounted` doubles do not.
 **Never commit `.godot/`.** It is gitignored, which means a fresh clone has no `class_name` registry
 and every typed reference fails to parse until `check.sh` runs the import pass.
 
-**Texture `.import` sidecars are repository files; `.godot/imported/` is the cache.** Preserve
-game-asset sidecars. A folder excluded by `.gdignore`, including all its descendants, keeps no
-`.import` sidecars; remove obsolete sidecars when moving assets into such a folder. Both `docs/`
-and `tools/` are excluded this way.
+**Texture `.import` sidecars are repository files; `.godot/imported/` is the cache.** A folder
+excluded by `.gdignore`, including all its descendants, keeps no `.import` sidecars; remove
+obsolete sidecars when moving assets into such a folder. `art/`, `docs/` and `tools/` are all
+excluded this way, so the game's own pictures have no sidecars at all: they are baked into atlas
+pages, and only the pages — written into the gitignored `assets/atlases/baked/` — are imported.
 After checking out an asset branch, run
 `check.sh` in the actual test folder: a worktree's imported textures do not travel with commits.
 `run.sh` checks for missing global classes and for `.import` sidecars whose imported copy is

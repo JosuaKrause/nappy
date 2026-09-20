@@ -72,7 +72,7 @@ case "$path" in
 	*/src/telemetry/*)         wanted+=(telemetry) ;;
 esac
 case "$path" in
-	*/assets/illustrated/*|*/src/visuals/*) wanted+=(illustrated-png) ;;
+	*/art/illustrated/*|*/src/visuals/*) wanted+=(illustrated-png) ;;
 esac
 case "$path" in
 	*/docs/evidence/archive/rejected-graphics/*) wanted+=(rejected-graphics) ;;

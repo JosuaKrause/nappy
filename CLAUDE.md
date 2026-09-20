@@ -92,7 +92,7 @@ is the moment somebody is about to touch the file.
 | `tools/**`, `src/dev/dev_flags.gd`, `src/dev/auto_screenshot.gd` | **cli-tools** |
 | `tests/**` | **verify** |
 | `docs/playtests/PLAYTEST-*.md`, `docs/TODO.md` | **playtest-feedback** |
-| `assets/illustrated/**`, `src/visuals/**` | **illustrated-png** |
+| `art/illustrated/**`, `src/visuals/**` | **illustrated-png** |
 | `docs/evidence/archive/rejected-graphics/**` | **rejected-graphics** |
 | `docs/evidence/archive/session-captures/**` | **session-captures** |
 | `docs/reference/**` | **reference-photos** |

@@ -1,6 +1,6 @@
 ---
 name: illustrated-png
-description: Add or revise illustrated PNG textures and their reproducible integration workflow. Use before changing assets/illustrated or src/visuals, or preparing an illustrated checkout for testing.
+description: Add or revise illustrated PNG textures and their reproducible integration workflow. Use before changing art/illustrated or src/visuals, or preparing an illustrated checkout for testing.
 ---
 
 # SVG-to-PNG workflow
@@ -13,8 +13,11 @@ generator outputs belong with generation evidence, not in the runtime asset cata
 
 Read `docs/VISUALS.md`, SVG-to-PNG style transfer in `docs/TODO.md`, and
 [the integration procedure](references/texture-integration.md) before working on this presentation.
-Registered PNG textures are used by default, with SVG fallback. `--svg` / `?svg=1` forces SVG
-textures, using the same drawing and animation code.
+**The presentation is chosen by the bake, not by the running game.** The default
+`tools/bake-atlases.sh` takes the registered PNG wherever one exists beside its SVG, and the
+SVG's own raster everywhere else; `tools/bake-atlases.sh --svg` bakes the SVGs alone and is a
+custom local build, never the release. There is no runtime flag for either — a build is whichever
+bake wrote its pages. Both use the same drawing and animation code.
 
 ## Reference authority
 
@@ -93,8 +96,8 @@ from stable body landmarks so changing leg spread does not move the hands sidewa
   review and artwork rejected by a human. Keep drafts rejected only internally by an assistant
   outside the repository. Record extraction commands, tool versions, source dimensions and
   registration measurements for retained derivatives.
-- Runtime PNGs use `assets/illustrated/svg-transfer/<family>/<name>.png`, corresponding to
-  `assets/<family>/<name>.svg`. Match native canvas dimensions, ground anchors and functional
+- Runtime PNGs use `art/illustrated/svg-transfer/<family>/<name>.png`, corresponding to
+  `art/<family>/<name>.svg`. Match native canvas dimensions, ground anchors and functional
   placement. Preserve the generated artwork's true alpha and expressive silhouette; do not
   reapply the SVG's primitive alpha mask to a redrawn figure or prop. Opaque ground stays fully
   opaque and functional markings retain their joins. Verify outlines, transparent gaps and
@@ -111,12 +114,20 @@ from stable body landmarks so changing leg spread does not move the hands sidewa
   buffer is not an alpha mask. Do not erase every neutral pixel to remove background residue:
   gray materials and enclosed light details are artwork too. Correct persistent background
   artifacts with the generator and preserve that correction's input and prompt.
-- Commit runtime PNGs with their `.import` sidecars. Preserve sidecar settings and identity.
-  `.godot/` is rebuildable and ignored; evidence under `docs/` is excluded by `docs/.gdignore`.
-  Let Godot create sidecars for new PNGs; copying another asset's sidecar can retain its UID or
-  source/remap path and load the wrong picture. Check each new resource's own source path and
-  unique identity, and verify through Godot's texture loader as well as reading the PNG bytes.
-  Preserve existing assets' identities when extending a family.
+- **Commit a runtime PNG on its own: `art/` carries a `.gdignore`, so nothing under it has an
+  `.import` sidecar and the engine never imports it.** Only `tools/bake_atlases.gd` reads it, with
+  `FileAccess`, and the page it bakes is the only raster in the build. A sidecar under `art/` is
+  a file naming an imported copy that is never written, and `find art -name '*.import'` is empty
+  on purpose. `.godot/` is rebuildable and ignored; evidence under `docs/` is excluded by
+  `docs/.gdignore`.
+- **A new or changed picture is not in the game until the pages are rebaked**, and every tool
+  that starts the engine does that for you: `tools/bake-atlases.sh` compares a hash per source
+  and bakes only when one moved. A new picture also needs a line in
+  `assets/atlases/membership.json` naming the group it belongs on, or it is baked nowhere and
+  `AtlasLibrary` answers `has_region()` false for it.
+- **A PNG whose size disagrees with its SVG fails the bake by name.** There is no fallback left:
+  the game holds no second copy of the picture to fall back to, so a mismatch is a committed
+  mistake rather than an unfinished art drop to work around.
 
 ## Runtime and review
 

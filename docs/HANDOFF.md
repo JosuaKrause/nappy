@@ -182,7 +182,7 @@ press on one now reaches the screen underneath it: `ModeButton` sets `mouse_filt
 MOUSE_FILTER_IGNORE`, because Godot's GUI layer consumes a raw `InputEventScreenTouch` that lands on
 a `MOUSE_FILTER_STOP` control and both screens read every press in `_unhandled_input()`. The restart
 hold fills the disc itself as a radial sweep rather than a bar beside it, and the pause button is
-`assets/ui/pause.svg` rather than `_draw()` primitives.
+the `ui/pause` picture rather than `_draw()` primitives.
 
 **The keyboard still works and nothing on screen says so.** Arrows, `WASD`, `Shift`, `Esc`, `space`,
 `R` and `Q` all press what they always did; no label, hint or teach line names a key, and the baked
@@ -198,10 +198,12 @@ last of those is the load-bearing one — *a tap that pathfinds hands the route 
 game*, and the route decision is the whole design. The records are in `DECISIONS.md` under M82 and
 M88.
 
-**SVG-first style transfer is the graphics workflow.** The game selects native-size PNG
-replacements where available; `--svg`, or `?svg=1` on the web, forces original SVGs.
-The existing drawing transforms and animation remain in charge. Unconverted families use SVGs.
-Read [VISUALS.md](VISUALS.md) for reference roles and the replacement contract, and
+**SVG-first style transfer is the graphics workflow.** The bake puts the native-size PNG
+replacement on the page where one exists and the SVG's raster where none does;
+`tools/bake-atlases.sh --svg` bakes the original SVGs for a local comparison, and nothing at
+runtime selects a mode. The authoring sources live in `art/`, which the engine ignores.
+The existing drawing transforms and animation remain in charge.
+Read [VISUALS.md](VISUALS.md) for reference roles and where the pictures live, and
 M108, eight-direction entity graphics, then M109, convert the SVG catalogue to PNG, in
 [TODO.md](TODO.md) for the remaining work. Every PNG asset needs a corresponding SVG authored first.
 Compare each character's directions, gait frames and state variants as one family; the
@@ -303,11 +305,8 @@ and one of it on a played branch; the record is in `DECISIONS.md` under M53.
 **This section is the pick-up for the next session and is replaced by it.** Fetch first; PR state,
 checks and worktrees can move independently of this file.
 
-- **M171 — Build-time atlases replace individual textures is next, and M159 follows it**
-  ([PLAYTEST-108](playtests/PLAYTEST-108.md)). Its `TODO.md` section is the design and its
-  staging, one pull request per open item, on top of the bake and the loader that are in;
-  the last item moves the sources out of the imported tree and turns the package audit fatal,
-  and the release after it is a minor version.
+- **M171 — Build-time atlases replace individual textures has its contract closed, and the
+  minor release it ends with is the open item in its `TODO.md` section**; M159 follows it.
 - **M159, a slow frame names the frame that was slow, has its first optimization in and three
   items open in `TODO.md`.** `CrowdAgent.contribution_at()` rejects distant sources before the
   velocity and ellipse work, with exact result parity (`DECISIONS.md`, M159, cheaper crowd

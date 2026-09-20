@@ -1,7 +1,7 @@
 extends RefCounted
 ## Evidence rig for M108's "every living thing that moves has a stride" item, event-family half:
 ## renders every family's five authored views with frame a beside frame b, straight from the SVG
-## source files under `assets/events/` rather than through `EventInstance`'s own texture
+## source files under `art/events/` rather than through `EventInstance`'s own texture
 ## dictionaries -- run once *before* those dictionaries exist, the way the walker's own precedent
 ## (`tests/probes/m108_walker_stride_sheet.gd`) was reviewed before its runtime binding landed.
 ## Not a suite: it saves PNGs and prints a manifest rather than asserting, so it lives under
@@ -54,8 +54,8 @@ func run(t) -> void:
 func _source_path(family: String, view: String, is_b: bool) -> String:
 	var suffix := "_b" if is_b else ""
 	if view == "side" and family in UNSUFFIXED_SIDE_FAMILIES:
-		return "res://assets/events/%s%s.svg" % [family, suffix]
-	return "res://assets/events/%s_%s%s.svg" % [family, view, suffix]
+		return "res://art/events/%s%s.svg" % [family, suffix]
+	return "res://art/events/%s_%s%s.svg" % [family, view, suffix]
 
 func _row(label: String, a_path: String, b_path: String) -> Dictionary:
 	return {"label": label, "a": a_path, "b": b_path}

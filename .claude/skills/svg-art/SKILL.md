@@ -105,8 +105,11 @@ and preserve the final evidence through `session-captures` where it is a gamepla
 
 ## Integrate and leave the inventory accurate
 
-Keep game asset `.import` sidecars with their SVGs; `.godot/` is rebuildable cache. Evidence under
-`docs/` has no sidecars because `docs/.gdignore` excludes it. Check both revisions if GitHub's
+**A game SVG has no `.import` sidecar.** The authoring sources live under `art/`, which carries
+a `.gdignore`: the engine imports nothing there, so a sidecar beside one would name an imported
+copy that is never written. `tools/bake_atlases.gd` reads the file itself and bakes it into its
+group's page, which is the only raster in the build; `.godot/` is rebuildable cache. Evidence
+under `docs/` has no sidecars for the same reason `docs/.gdignore` gives. Check both revisions if GitHub's
 image-diff viewer fails: malformed XML in the old side can break the comparison while the new
 file is valid. Link a current rendered preview rather than repeatedly altering valid artwork.
 
@@ -122,6 +125,10 @@ Run import/boot and XML/doc lint. Add focused tests only for behavior a picture 
 such as axis selection or grounding. Test the drawing path the runtime actually takes; do not
 re-derive repetition arithmetic for a whole-scene renderer that never repeats a texture.
 
-Commit each finished image promptly after visual review and validation, with its `.import`
-sidecar. Do not wait for the whole family. Keep inseparable body/trim layers together so a
+A new picture also needs a line in `assets/atlases/membership.json` naming the group it belongs
+on, or nothing can draw it: the bake carries only what the membership lists, and
+`AtlasLibrary.region()` answers null with an error for a name it does not know.
+
+Commit each finished image promptly after visual review and validation. Do not wait for the whole
+family. Keep inseparable body/trim layers together so a
 commit still contains a reviewable image.

@@ -51,7 +51,6 @@ static func mirrored_transform(at: Vector2) -> Transform2D:
 ## is emitting and a tree scales with its variant.
 static func draw_standing(canvas: CanvasItem, texture: Texture2D, at: Vector2,
 		size := Vector2.ZERO, flip_h := false, modulate := Color.WHITE) -> void:
-	texture = TextureResolver.resolve(texture)
 	var extent := size if size != Vector2.ZERO else texture.get_size()
 	if not flip_h:
 		canvas.draw_texture_rect(texture,

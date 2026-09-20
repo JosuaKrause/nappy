@@ -197,7 +197,6 @@ var _touch_available := TouchInput.available()
 ## alone is not enough.
 var _rotated := false
 func _ready() -> void:
-	AtlasPhaseTrace.reset(DevFlags.frame_trace_requested())
 	# Esc has to work even while the summary has the tree paused, so this node keeps running
 	# through a pause. Everything under it that *is* the game is put back to pausable as it is
 	# created — see `_pauses_with_the_game()`. A child left on the default INHERIT inherits
@@ -261,12 +260,12 @@ func _ready() -> void:
 	_city.build(CityGenerator.generate(GameState.run_seed))
 	print("[Main] city generated in %d ms (seed %d)" % [
 		Time.get_ticks_msec() - elapsed, _city.map.seed_used])
-	# On the doorstep before her own `Camera2D` exists, so the two frames `_warm_the_pictures()`
+	# On the doorstep before her own `Camera2D` exists, so the two frames `_warm_the_halo_shader()`
 	# awaits below draw the ground the title screen and the day itself will, rather than the
 	# world's default identity transform — see `_new_boot_camera()`'s own doc. Freed once
 	# `_start_day()` has put her camera in the same place for real.
 	var boot_camera := _new_boot_camera(_city.map.doorstep_world_position())
-	await _warm_the_pictures(boot_camera.global_position)
+	await _warm_the_halo_shader(boot_camera.global_position)
 
 	_player = _make_player()
 	_city.add_entity(_player)
@@ -414,15 +413,15 @@ func _ready_escape() -> void:
 	# is one, the sequence's own startup is the moment that satisfies the rule. Nothing else here
 	# has to change when it arrives: the call becomes `MOMENT_DAY_BRIEF` from that screen.
 	_hold_every_page_a_day_draws(AtlasLibrary.MOMENT_ESCAPE, ESCAPE_ONLY_GROUPS)
-	# The second boot entry point `TextureResolver.warm()` has to reach — see `_warm_the_pictures()`
-	# — since the epilogue draws its own pictures (the building's props, the city's events) and is
-	# reached without ever passing through `_ready()`'s own call above. This path awaits the same
-	# way `_ready()` does before anything of the world exists — neither `_interior` nor `_city` is
-	# built yet, whichever section this run opens on — so it needs the same boot camera for
-	# `_warm_the_halo_shader()`'s probe to have a screen to draw on; world origin is as good as any
-	# other point, since nothing is in the tree yet to show a wrong corner of.
+	# The second boot entry point the halo's shader warm-up has to reach, since the epilogue draws
+	# its own halo and is reached without ever passing through `_ready()`'s own call above. This
+	# path awaits the same way `_ready()` does before anything of the world exists — neither
+	# `_interior` nor `_city` is built yet, whichever section this run opens on — so it needs the
+	# same boot camera for `_warm_the_halo_shader()`'s probe to have a screen to draw on; world
+	# origin is as good as any other point, since nothing is in the tree yet to show a wrong
+	# corner of.
 	var boot_camera := _new_boot_camera(Vector2.ZERO)
-	await _warm_the_pictures(boot_camera.global_position)
+	await _warm_the_halo_shader(boot_camera.global_position)
 
 	_hud = HUD.instantiate()
 	add_child(_hud)
@@ -954,9 +953,9 @@ func _add_excitement_halo() -> void:
 	_pauses_with_the_game(_halo)
 
 ## A plain camera made current before either boot path's own player exists, so the two frames
-## `_warm_the_pictures()` awaits below draw `ground` — the doorstep, in `_ready()`'s case — rather
-## than the world's default identity transform, whose origin sits at the top-left of whatever is
-## in the tree under it.
+## `_warm_the_halo_shader()` awaits below draw `ground` — the doorstep, in `_ready()`'s case —
+## rather than the world's default identity transform, whose origin sits at the top-left of
+## whatever is in the tree under it.
 ##
 ## **Freeing it is what hands the viewport's current camera to the player's own.** A `Camera2D`
 ## that exits the tree while it is the viewport's current one looks for another enabled camera on
@@ -1007,8 +1006,8 @@ func _hold_every_page_a_day_draws(moment: StringName, also: Array[StringName]) -
 	AtlasLibrary.stop_holding(Stroller.parent_atlas(not GameState.player_is_male))
 	AtlasLibrary.hold_for_the_process(Stroller.parent_atlas(GameState.player_is_male))
 	AtlasLibrary.close_loading_window()
-	# Beside "city generated in N ms" and "N pictures warmed in N ms" for the same reason those
-	# two are printed: a reader working out where a boot went belongs next to the other numbers.
+	# Beside "city generated in N ms" for the same reason that one is printed: a reader working
+	# out where a boot went belongs next to the other numbers.
 	print("[Main] %d atlas pages held from %s in %d ms"
 			% [RESIDENT_GROUPS.size() + also.size() + 1, moment, Time.get_ticks_msec() - elapsed])
 
@@ -1018,22 +1017,6 @@ func _hold_every_page_a_day_draws(moment: StringName, also: Array[StringName]) -
 ## reload of every one of them, which is the thing the residency exists to prevent.
 func _exit_tree() -> void:
 	AtlasLibrary.release_the_loading_moments()
-
-## M147, "every picture loaded before it is needed": loads every transfer PNG and gets the halo's
-## shared shader compiled before either boot path's own `_start_day()`/`_finale.begin()`, so the
-## first frame that actually needs a picture or a halo never pays for either. Printed beside
-## "city generated in N ms" — the same shape `_plan_the_finale_city()` prints its own line beside
-## — because a phone's longer first load belongs next to the other number that already tells a
-## reader how long the boot took.
-##
-## `ground` is where the boot camera made current just before this call is standing — see
-## `_new_boot_camera()` — and is handed straight through to `_warm_the_halo_shader()`, which needs
-## a point it can be sure is on screen.
-func _warm_the_pictures(ground: Vector2) -> void:
-	var elapsed := Time.get_ticks_msec()
-	var loaded := TextureResolver.warm()
-	await _warm_the_halo_shader(ground)
-	print("[Main] %d pictures warmed in %d ms" % [loaded, Time.get_ticks_msec() - elapsed])
 
 ## Gets the Compatibility renderer to compile the halo's shader program before a real halo ever
 ## draws with it. **Godot 4.7 has no precompile call for this renderer** — `RenderingServer`'s own
@@ -1046,7 +1029,7 @@ func _warm_the_pictures(ground: Vector2) -> void:
 ## culled before it reaches the renderer — see M139, "one atlas for the crowd", on why an
 ## off-screen `CrowdAgent` costs nothing per frame — and a culled draw would compile nothing,
 ## defeating the whole pass. `ground` is the boot camera's own `global_position` (see
-## `_new_boot_camera()`, made current by both boot paths before `_warm_the_pictures()` is ever
+## `_new_boot_camera()`, made current by both boot paths before this is ever
 ## called), so a probe placed there sits exactly at that camera's own screen centre — on screen
 ## regardless of zoom or viewport size. Fully transparent (`halo_colour`'s instance uniform
 ## default, never set here) makes it imperceptible regardless: the GLSL program compiles from the
@@ -1505,12 +1488,6 @@ func _tree_is_paused() -> bool:
 	return loop is SceneTree and (loop as SceneTree).paused
 
 func _process(delta: float) -> void:
-	# The one place in the running game that finishes a `TextureAtlas` request. It sits above
-	# every early return below on purpose: a group is asked for while the city is built or while
-	# an event is placed off screen, and the title screen, the interior and the finale all return
-	# from this function before reaching the day, so a pump further down would leave an atlas
-	# packed and never collected for as long as one of those is on screen.
-	TextureAtlas.collect_ready()
 	_dev_rig.update_follow_camera(_city)
 	# Re-asked every frame rather than only on `size_changed` — see `_apply_orientation()`'s own
 	# doc for why a signal alone can latch the wrong answer. The cost is one vector comparison.
