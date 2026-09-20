@@ -404,16 +404,19 @@ func _test_a_wide_scene_faces_its_street(t) -> void:
 	for look in [EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN]:
 		var wide := EventInstance._wide_scene_texture(look, false)
 		var tall := EventInstance._wide_scene_texture(look, true)
-		t.check(wide != null and tall != null and wide != tall,
+		t.check(not wide.is_empty() and not tall.is_empty() and wide != tall,
 				"look %d has two distinct assets, one per street orientation" % look)
 
+	# `""`, not `null`: a picture is a repository path here, and "no authored contact art" is an
+	# empty one. Asked as `is_empty()` rather than against `null`, which a `String` is never equal
+	# to — the shape that made the fallen tree's check below fail and the crash's pass vacuously.
 	var crash_wide := EventInstance._wide_scene_texture(EventDef.Look.CAR_ACCIDENT, false)
 	var crash_tall := EventInstance._wide_scene_texture(EventDef.Look.CAR_ACCIDENT, true)
-	t.check(EventInstance._wide_scene_shadow(crash_wide) != null
-			and EventInstance._wide_scene_shadow(crash_tall) != null,
+	t.check(not EventInstance._wide_scene_shadow(crash_wide).is_empty()
+			and not EventInstance._wide_scene_shadow(crash_tall).is_empty(),
 			"both crash directions carry contact shadows instead of a street-wide slab")
 	t.check(EventInstance._wide_scene_shadow(
-			EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, false)) == null,
+			EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, false)).is_empty(),
 			"a continuous fallen tree keeps the generic wide-scene shadow")
 
 ## **A crash is solid only where the cars are.** *(2026-09-12: "a car crash right now has a full
