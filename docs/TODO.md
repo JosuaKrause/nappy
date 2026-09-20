@@ -323,16 +323,12 @@ that amount in net gain (so the halo will match roughly the caret if that happen
 > also checked in so we can see in the diff where the balance changed"
 
 [PLAYTEST-114](playtests/PLAYTEST-114.md) has the conversation and both options. What the
-player feels beside a source is its `intensity`, averaged over its pulse, scaled by
+player feels near a source is its `intensity`, averaged over its pulse, scaled by
 `Tuning.SLEEPING_SENSITIVITY` (0.55) when the baby sleeps, shaped by `inner_radius`,
 `outer_radius` and `falloff_power`, less `Tuning.EXCITEMENT_DECAY_WALKING` — several numbers
-nothing ties together, so moving one silently re-prices every row. **Built after M174, the man
-shouting costs nothing to walk beside, since both rewrite the same rows.** **The checked-in
-table is built first** ([PLAYTEST-115](playtests/PLAYTEST-115.md): "the \"survey\" should happen
-automatically every time and should show up in the commit diff if it changes"), and it carries
-the pass as well as the distances: for a row that moves, what a walk past it nets at the same
-fixed lateral offsets for every row. `tests/probes/m174_pass.gd` is the instrument the pass was
-first measured with, and `tests/probes/m174_walk_beside.gd` the one for standing beside a row.
+nothing ties together, so moving one silently re-prices every row. `docs/COSTS.md` is the
+generated table that shows such a move in a diff (`tools/cost-table.sh` writes it and CI checks
+it); what is open is the half that stops the move from happening.
 
 - [ ] **A row declares the net cost and its `intensity` is computed.** Option 1 as put to the
       player: a row states what the bar does while she walks beside it inside `inner_radius`
@@ -342,31 +338,12 @@ first measured with, and `tests/probes/m174_walk_beside.gd` the one for standing
       of rows moves with one number. Moving the decay or the pulse then leaves every row at
       the cost it declared. A row that is meant to sit under the decay declares a net at or
       below nothing, which is its existing relationship said out loud. The first version
-      reproduces today's costs, M174's included, so the change is visible as no change. **The
+      reproduces today's costs, so `docs/COSTS.md` does not change in the commit that builds it.
+      The measure a row declares is the orchestrator's first draft and predates the player's
+      "what matters … is walking past them" ([PLAYTEST-115](playtests/PLAYTEST-115.md)): for a
+      row that moves, the declared cost is the pass. **The
       tier names and values go to the player with M174's measurements beside them, before
       this is built.**
-- [ ] **A generated table of what every row costs, at several distances, is checked in.** One
-      file under `docs/`, one line per row: the net rise walking at **fixed distances that are
-      the same for every row** — each column is one distance in pixels, the same for every
-      object, so a column compares the real impact of one row against another and no column
-      goes stale when a radius moves ([PLAYTEST-114](playtests/PLAYTEST-114.md): "each column
-      represents the same distance for every object -- that way we can get the real impact and
-      not the relative impact dependent on the object"). The row's own `inner_radius`,
-      `outer_radius` and `falloff_power` are columns of the same line, so a radius change shows
-      as itself beside the costs it moved. Awake and asleep, on quiet sidewalk, computed from
-      the same functions the game charges with. The distances start at the center, are dense
-      inside the first hundred pixels where the inner radii sit, and reach past the widest
-      `outer_radius` in the catalogue, so the last column reads nothing for every row and a row
-      that grows past it is a visible change. A tool under
-      `tools/` rewrites it, and CI fails when the checked-in file differs from what the tool
-      prints, naming the rows that moved — so any change to a row, the decay, the falloff or
-      the sleeping factor shows in the diff as the lines of the table it moved, and a change
-      that moved the balance without touching the table cannot merge. The exact list of
-      distances, the file's format and whether other grounds get columns are the orchestrator's
-      and open to overturn.
-- [ ] **The balance skill says so**: the table is how a balance change is read, a row's cost is
-      declared rather than derived by hand, and `docs/EVENTS.md` points at the table rather
-      than repeating its numbers.
 
 ---
 

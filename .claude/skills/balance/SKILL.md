@@ -68,9 +68,25 @@ cars**.
 
 ## What a route actually costs
 
-The full table is in `docs/EVENTS.md`, "What an event actually costs". **Regenerate it whenever a
-rate in `Tuning` moves** — it is the fastest way to see what a balance change did to the whole
-catalogue.
+**[`docs/COSTS.md`](../../../docs/COSTS.md) is the generated, checked-in table** — one line per
+catalogue row: its geometry and role, the net rate while walking a fixed distance away, and the
+net points from a real pass at `Tuning.WALK_SPEED`, awake and asleep, at fixed distances and
+offsets identical for every row. `tools/cost-table.sh` writes it from the real
+`EventDef`/`EventInstance`/`Tuning` code the game charges with, never a second copy of the falloff
+or the decay.
+
+**This is how a balance change is read and reviewed.** Regenerate the table in the *same commit*
+as any number that moves — `tools/cost-table.sh`, then `git diff docs/COSTS.md` — and read the
+diff before asking anyone else to: it names every row a rate change touched and by how much, which
+is what turns "I raised the decay" into "here is what that did to all forty-odd rows at once."
+`tools/cost-table.sh --check` is wired into CI and fails the same way, naming what moved, if a
+balance change lands without a regenerated table.
+
+**Four things the table cannot see, all of them placement and density rather than a single row's
+own field**: how many of a row are placed a day, how many are live inside
+`Tuning.EVENT_STREAM_RADIUS`, how many are on screen at once, and how many a route actually meets.
+A row's number in `docs/COSTS.md` is what it costs *if you meet it*; whether a day makes you meet
+it, and how often, is "Never derive a density — measure it" above — the probes, not this table.
 
 **Walking through an event costs, and the falloff's shoulder is why.** `Tuning.falloff` is `1−t²`
 between the inner and outer radius, not `(1−t)²`. The squared-complement form puts a quarter of the

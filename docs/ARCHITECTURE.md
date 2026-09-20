@@ -190,6 +190,9 @@ tools/
                           either an error, which is how export-web.sh runs it
   check.sh                import + headless boot, fails on any script error
   test.sh                 the headless suite, sharded; a filter runs one process and says PARTIAL RUN
+  cost-table.sh           regenerate docs/COSTS.md from the real catalogue and Tuning; --check
+                          fails and names what moved, wired into CI
+  cost_table.gd           the survey itself, run headless as a scene (needs the Tuning autoload)
   lint.sh                 the governed docs, for sentences that go stale on their own
   pycheck.sh              ruff, mypy and the unit tests for the Python here
   run.sh                  play; rebuilds the import cache first when a pull left it stale

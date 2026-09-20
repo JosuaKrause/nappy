@@ -100,6 +100,8 @@ assert_exit "bake-atlases.sh --help" zero ./tools/bake-atlases.sh --help
 assert_exit "bake-atlases.sh -h"     zero ./tools/bake-atlases.sh -h
 assert_exit "audit-pck.sh --help"    zero ./tools/audit-pck.sh --help
 assert_exit "audit-pck.sh -h"        zero ./tools/audit-pck.sh -h
+assert_exit "cost-table.sh --help"   zero ./tools/cost-table.sh --help
+assert_exit "cost-table.sh -h"       zero ./tools/cost-table.sh -h
 
 # ---------------------------------------- an unknown flag: rejected, usage, non-zero, no work ---
 assert_exit "check.sh --bogus"        nonzero ./tools/check.sh --bogus
@@ -120,6 +122,7 @@ assert_exit "bake-atlases.sh --bogus" nonzero ./tools/bake-atlases.sh --bogus
 assert_exit "bake-atlases.sh --check --force" nonzero ./tools/bake-atlases.sh --check --force
 assert_exit "audit-pck.sh --bogus"    nonzero ./tools/audit-pck.sh --bogus
 assert_exit "audit-pck.sh (two packs)" nonzero ./tools/audit-pck.sh one.pck two.pck
+assert_exit "cost-table.sh --bogus"   nonzero ./tools/cost-table.sh --bogus
 
 # A bare `--` before the flags -- Godot's own separator, and the form the docs quote -- is
 # accepted by run.sh and shot.sh and dropped before forwarding, so the stub sees the flags and

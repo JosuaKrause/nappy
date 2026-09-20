@@ -1,7 +1,8 @@
 # The same gates a local commit rests on, plus the full suite split across parallel runners:
-#   gates    lint.sh, test_cli_help.sh, pycheck.sh, check.sh's boot check, then the two negative
-#            fixtures tools/test.sh must fail the gate on rather than hang or pass -- everything
-#            that needs no more than one process, run before the sharded suite rather than inside it.
+#   gates    lint.sh, test_cli_help.sh, pycheck.sh, check.sh's boot check, cost-table.sh --check,
+#            then the two negative fixtures tools/test.sh must fail the gate on rather than hang
+#            or pass -- everything that needs no more than one process, run before the sharded
+#            suite rather than inside it.
 #   shards   the headless suite, one matrix job per shard, each running tools/test.sh --shard
 #            I/8 -- planned from tests/suite_costs.txt exactly as a local sharded run is.
 #   test     what main's ruleset actually requires (a check named exactly `test`): it needs both
@@ -86,6 +87,12 @@ jobs:
 
       - name: Boot check
         run: GODOT="$HOME/godot/godot-bin" ./tools/check.sh
+
+      # docs/COSTS.md is generated from the same EventDef/EventInstance/Tuning code the game
+      # charges with -- a balance change that moved a row or a decay constant without
+      # regenerating the table fails here, and the output names every row and column that moved.
+      - name: Cost table is up to date
+        run: GODOT="$HOME/godot/godot-bin" ./tools/cost-table.sh --check
 
       # tests/runner_fixtures/engine_error.gd emits one push_error() sentinel while its own
       # check() still passes -- proof that tools/test.sh's classifier refuses a Godot engine

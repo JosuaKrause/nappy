@@ -44,6 +44,7 @@ spoke for it.
 ./tools/test.sh          # the full headless suite, minutes — CI's job, not a local gate
 ./tools/check.sh         # boots the project, fails on any script error
 ./tools/lint.sh          # the governed docs, for sentences that go stale on their own
+./tools/cost-table.sh    # rewrites docs/COSTS.md, what every event costs; --check is CI's gate
 ./tools/pycheck.sh       # ruff, mypy and the unit tests for the Python under tools/
 ./tools/run.sh           # plays it
 ./tools/serve-web.sh     # plays the *web* build, locally, in a browser
@@ -314,8 +315,9 @@ checks and worktrees can move independently of this file.
   open item in `TODO.md`: the caret against a pulsed row and against several sources.
 - **M102, the finale, has one open item in `TODO.md`**: the building has no screen-edge
   badge, halo or debug layers, and the escape has no telemetry observer.
-- **M175, a row states what it costs, and the cost table is checked in, follows M174**
-  ([PLAYTEST-114](playtests/PLAYTEST-114.md)); its tier values go to the player before it is built.
+- **M175, a row states what it costs, has its table built and one item open**: rows declaring
+  a net cost tier, whose tier names and values go to the player first
+  ([PLAYTEST-114](playtests/PLAYTEST-114.md)).
 - **M159, a slow frame names the frame that was slow, has its first optimization in and three
   items open in `TODO.md`.** `CrowdAgent.contribution_at()` rejects distant sources before the
   velocity and ellipse work, with exact result parity (`DECISIONS.md`, M159, cheaper crowd
