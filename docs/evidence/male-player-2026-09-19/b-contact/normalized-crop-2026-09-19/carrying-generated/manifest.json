@@ -1,5 +1,5 @@
 {
-  "status": "review of current installed father carrying PNGs; no art changes",
+  "status": "review of preserved pre-final father carrying PNGs; no art changes",
   "directions": [
     [
       "N",
@@ -62,7 +62,7 @@
     190,
     190
   ],
-  "input_manifest_sha256": "f005742f86ffce3621eb535e23f61395a84dfd347f1dc81852560ce9a9059713",
+  "input_manifest_sha256": "89bdfa2a30461d9671f4197362013a737219468a8723a4e76a27e2230bb6962f",
   "outputs": {
     "carrying-6x.gif": "8db8d5df2e78010b8ef726eeb0aa147472163a79b66faf9cd477e71abbdd93ab",
     "carrying-native.gif": "a4d65998afc1e5fe82fc2908a2eb2b3a092260a159b1320c83ce7b67b340b1fb",

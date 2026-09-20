@@ -13,8 +13,11 @@ references from becoming an implicit runtime fallback.
 
 `manifest.json` records the byte hashes, native canvases, runtime-to-authoring pairing, frame
 roles, accepted PNG hashes, and the generation recipe.
-The four player-approved father pushing B overrides additionally record their accepted generated
-source and the preserved original registered PNG, so provenance does not rewrite historical output.
+The six player-approved final father B overrides record their accepted generated source and the
+preserved original registered PNG, so provenance does not rewrite historical output. The existing
+pushing and carrying front-diagonal SVGs remain editable fallbacks: their same-side leg tracks
+were aligned after the approved raster removed the rejected crossed pose, so neither is claimed
+as the raster's generation source.
 for both complete families. The recipe links point to the retained P2 pushing, F carrying and
 [male player records](../../evidence/male-player-2026-09-19/GENERATION.md), which preserve source
 inputs and reproduction instructions. Male authoring SVGs and runtime fallbacks are byte-identical;

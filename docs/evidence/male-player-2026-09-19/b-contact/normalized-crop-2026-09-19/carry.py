@@ -1,4 +1,4 @@
-"""Assemble current installed father-carrying art into the pushing review format."""
+"""Assemble the preserved pre-final father-carrying review into the pushing review format."""
 
 import argparse
 import hashlib
@@ -11,7 +11,7 @@ from PIL import __version__ as pillow_version
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[4]
-RIG = ROOT / "assets/illustrated/svg-transfer/rig"
+HISTORICAL_RIG = ROOT / "docs/evidence/male-player-2026-09-19/registered/rig"
 P2_RECIPE = ROOT / "docs/evidence/comic-pushing-strides-2026-09-12/convert.py"
 VIEWS = ("front", "back", "side", "front_diagonal", "back_diagonal")
 LOOP = ("a", "c", "b", "c")
@@ -33,14 +33,14 @@ def p2_recipe():
 
 
 def source(view, pose, mirror=False):
-    picture = rgba(RIG / f"father_carrying_{view}_{pose}.png")
+    picture = rgba(HISTORICAL_RIG / f"father_carrying_{view}_{pose}.png")
     return ImageOps.mirror(picture) if mirror else picture
 
 
 def input_record():
     paths = [Path(__file__), P2_RECIPE]
     paths += [
-        RIG / f"father_carrying_{view}_{pose}.png"
+        HISTORICAL_RIG / f"father_carrying_{view}_{pose}.png"
         for view in VIEWS
         for pose in ("a", "c", "b")
     ]
@@ -89,10 +89,10 @@ def sheets(output, p2):
 
 
 def verify(output, p2, frozen):
-    assert frozen == input_record(), "an installed carrying PNG or recipe changed"
+    assert frozen == input_record(), "a preserved carrying input or recipe changed"
     for view in VIEWS:
         for pose in ("a", "c", "b"):
-            path = RIG / f"father_carrying_{view}_{pose}.png"
+            path = HISTORICAL_RIG / f"father_carrying_{view}_{pose}.png"
             picture = rgba(path)
             expected = (24, 46) if view in ("front", "back") else (26, 46)
             assert picture.size == expected
@@ -116,7 +116,7 @@ def assemble(output):
     sheets(output, p2)
     verify(output, p2, frozen)
     record = {
-        "status": "review of current installed father carrying PNGs; no art changes",
+        "status": "review of preserved pre-final father carrying PNGs; no art changes",
         "directions": p2.DIRECTIONS,
         "loop": LOOP,
         "frame_ms": [190] * 4,
@@ -128,7 +128,7 @@ def assemble(output):
         },
     }
     (output / "manifest.json").write_text(json.dumps(record, indent=2) + "\n")
-    print("Verified installed carrying inputs, eight directions, static sheets, and 190ms GIFs.")
+    print("Verified preserved carrying inputs, eight directions, static sheets, and 190ms GIFs.")
 
 
 def main():

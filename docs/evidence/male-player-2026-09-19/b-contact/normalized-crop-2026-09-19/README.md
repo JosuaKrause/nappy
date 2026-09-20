@@ -11,12 +11,13 @@ Inspect the [clean eight-direction sheet](generated/father-spritesheet-6x.png), 
 candidate for M167, the father's legs read as legs. Only E/W B and SE/SW B differ from
 the straight-contact baseline; every other rig PNG is byte-identical.
 
-For the separate baby-carrying review, see the current installed family's
+For the separate baby-carrying review, see the preserved pre-final family's
 [native](carrying-generated/carrying-native.gif) or
 [6×](carrying-generated/carrying-6x.gif) A/C/B/C loop and the
 [clean 6× sheet](carrying-generated/carrying-spritesheet-6x.png). Those artifacts read the
-installed `father_carrying_*` PNGs directly. They do not use the normalized pushing candidate
-and make no carrying-art change.
+immutable original registered `father_carrying_*` PNGs, which are the exact inputs installed
+when this rejected review was made. They do not use the normalized pushing candidate and make no
+carrying-art change.
 
 The preview removes the hard native crop, but it does not establish an accepted contact.
 The generated side figure's foreground thigh appears to continue to the advancing
@@ -122,6 +123,6 @@ diff -r \
   /tmp/father-carrying-review
 ```
 
-`carrying-inputs.json` pins all fifteen installed carrying PNGs and the shared sheet/GIF helper.
-The carrying assembler verifies their native canvases and hashes, the nearest-neighbor 6× sheet,
-all eight direction assignments and the four 190ms GIF phases.
+`carrying-inputs.json` pins all fifteen immutable original registered carrying PNGs and the shared
+sheet/GIF helper. The carrying assembler verifies their native canvases and hashes, the
+nearest-neighbor 6× sheet, all eight direction assignments and the four 190ms GIF phases.

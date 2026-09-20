@@ -1,22 +1,22 @@
 {
   "pillow": "12.3.0",
   "files": {
-    "docs/evidence/male-player-2026-09-19/b-contact/normalized-crop-2026-09-19/carry.py": "30f2d372f15f856a16dc2e17b1584d3ba673166ce9edafc237481cf0e6a3f8cd",
+    "docs/evidence/male-player-2026-09-19/b-contact/normalized-crop-2026-09-19/carry.py": "cd788fcedc93dcedd815a75758fc404a03272e5eb3e475fd14086d25457f752a",
     "docs/evidence/comic-pushing-strides-2026-09-12/convert.py": "bec4f0ed524d345e5545129743c99861c7d7ebe94b558a4b8f5983f93f8b7529",
-    "assets/illustrated/svg-transfer/rig/father_carrying_front_a.png": "5b3b2094df0627158a2982a787858556e121aecea5844b2cbf3e9eb13f447a37",
-    "assets/illustrated/svg-transfer/rig/father_carrying_front_c.png": "2e45e1d7ab07e5fd5bd46a2402da5dff7c72e5662440bc5e956c8d0fff3c204c",
-    "assets/illustrated/svg-transfer/rig/father_carrying_front_b.png": "0ffa21748ba257164efebc1700345c9c2fb1accc5f0d88ab6415abb831c6f1a3",
-    "assets/illustrated/svg-transfer/rig/father_carrying_back_a.png": "86c5dcc6cf0e0e63de85986caf209a09954aa559f30a8eac86aa048f40e3e13e",
-    "assets/illustrated/svg-transfer/rig/father_carrying_back_c.png": "282768f8a545db7bf6fe841a83127635c78bdce920d81ccdf85ac2442fbdb8cc",
-    "assets/illustrated/svg-transfer/rig/father_carrying_back_b.png": "5960b39208e83350cb0fa38eff0e17120a7812244d4fbdb5ff0341b125b5a32d",
-    "assets/illustrated/svg-transfer/rig/father_carrying_side_a.png": "acb36e5aee89698a266ad000d3be70563cbfaf21714b0105041bce95e6966bec",
-    "assets/illustrated/svg-transfer/rig/father_carrying_side_c.png": "488b4ab07f85678378aa497b7b0e1e1bb1dc172953fe091de0dc27146a863d44",
-    "assets/illustrated/svg-transfer/rig/father_carrying_side_b.png": "220cf508d1889efb27aa509edfd44a56ac120cb73a961c935dabdbf275745afd",
-    "assets/illustrated/svg-transfer/rig/father_carrying_front_diagonal_a.png": "be9f1a049c2b29f89e803a88f1fff08fb4c6ec9f80084404316c003e9988bbb7",
-    "assets/illustrated/svg-transfer/rig/father_carrying_front_diagonal_c.png": "93166bc4c89e77c65414deaa7995bfb7f5f2fe3eeb465b8c6a0f68fd1e9abf80",
-    "assets/illustrated/svg-transfer/rig/father_carrying_front_diagonal_b.png": "7fedf10de2222ea1a136e9162693423ba1d661958ce55bf7228d3787f8964f24",
-    "assets/illustrated/svg-transfer/rig/father_carrying_back_diagonal_a.png": "584185510f738423a654734c5b537380fbc44bc9cf1e013bef41a10fe4848acb",
-    "assets/illustrated/svg-transfer/rig/father_carrying_back_diagonal_c.png": "5fcc8b0629fb8a42187348b57ea7673f6e5155bed5ff21275a8c1761c412d99e",
-    "assets/illustrated/svg-transfer/rig/father_carrying_back_diagonal_b.png": "4a62f16c79af673794a8b7d0652d28b9f761202655627ad6d1348f3ccefefae8"
+    "docs/evidence/male-player-2026-09-19/registered/rig/father_carrying_front_a.png": "5b3b2094df0627158a2982a787858556e121aecea5844b2cbf3e9eb13f447a37",
+    "docs/evidence/male-player-2026-09-19/registered/rig/father_carrying_front_c.png": "2e45e1d7ab07e5fd5bd46a2402da5dff7c72e5662440bc5e956c8d0fff3c204c",
+    "docs/evidence/male-player-2026-09-19/registered/rig/father_carrying_front_b.png": "0ffa21748ba257164efebc1700345c9c2fb1accc5f0d88ab6415abb831c6f1a3",
+    "docs/evidence/male-player-2026-09-19/registered/rig/father_carrying_back_a.png": "86c5dcc6cf0e0e63de85986caf209a09954aa559f30a8eac86aa048f40e3e13e",
+    "docs/evidence/male-player-2026-09-19/registered/rig/father_carrying_back_c.png": "282768f8a545db7bf6fe841a83127635c78bdce920d81ccdf85ac2442fbdb8cc",
+    "docs/evidence/male-player-2026-09-19/registered/rig/father_carrying_back_b.png": "5960b39208e83350cb0fa38eff0e17120a7812244d4fbdb5ff0341b125b5a32d",
+    "docs/evidence/male-player-2026-09-19/registered/rig/father_carrying_side_a.png": "acb36e5aee89698a266ad000d3be70563cbfaf21714b0105041bce95e6966bec",
+    "docs/evidence/male-player-2026-09-19/registered/rig/father_carrying_side_c.png": "488b4ab07f85678378aa497b7b0e1e1bb1dc172953fe091de0dc27146a863d44",
+    "docs/evidence/male-player-2026-09-19/registered/rig/father_carrying_side_b.png": "220cf508d1889efb27aa509edfd44a56ac120cb73a961c935dabdbf275745afd",
+    "docs/evidence/male-player-2026-09-19/registered/rig/father_carrying_front_diagonal_a.png": "be9f1a049c2b29f89e803a88f1fff08fb4c6ec9f80084404316c003e9988bbb7",
+    "docs/evidence/male-player-2026-09-19/registered/rig/father_carrying_front_diagonal_c.png": "93166bc4c89e77c65414deaa7995bfb7f5f2fe3eeb465b8c6a0f68fd1e9abf80",
+    "docs/evidence/male-player-2026-09-19/registered/rig/father_carrying_front_diagonal_b.png": "7fedf10de2222ea1a136e9162693423ba1d661958ce55bf7228d3787f8964f24",
+    "docs/evidence/male-player-2026-09-19/registered/rig/father_carrying_back_diagonal_a.png": "584185510f738423a654734c5b537380fbc44bc9cf1e013bef41a10fe4848acb",
+    "docs/evidence/male-player-2026-09-19/registered/rig/father_carrying_back_diagonal_c.png": "5fcc8b0629fb8a42187348b57ea7673f6e5155bed5ff21275a8c1761c412d99e",
+    "docs/evidence/male-player-2026-09-19/registered/rig/father_carrying_back_diagonal_b.png": "4a62f16c79af673794a8b7d0652d28b9f761202655627ad6d1348f3ccefefae8"
   }
 }
