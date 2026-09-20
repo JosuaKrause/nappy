@@ -45,6 +45,19 @@ and at even steps out to `outer_radius`". The player, quoting that:
 Both halves are taken: the columns are fixed distances shared by every row, and each row's
 radii and falloff are written on its line as well.
 
+On M102, the finale is the run's ending, once it was reported built with one gap left open —
+the escape has never had a pause screen — and the orchestrator's reading that its held restart
+would return to the section's brief:
+
+> "Pause tec should exist the same way it does in the main game"
+
+> "etc"
+
+The second message corrects the first's typo: *pause etc*. The pause, and whatever else a day
+has around it that the escape lacks, exist in the escape the same way they do in a day. That
+overturns the orchestrator's reading of the held restart: in a day it restarts the run, so it
+does in the escape.
+
 ## What the repository says
 
 **The player is right, and the record names the change.** `homeless_yeller`'s intensity has

@@ -11,6 +11,8 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
+const PAUSE_SCREEN_SCENE := preload("res://scenes/ui/pause_screen.tscn")
+const TITLE_SCREEN_SCENE := preload("res://scenes/ui/title_screen.tscn")
 const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 
 ## Four cities rather than one. A chain is a search over a generated lattice and the thing most
@@ -38,6 +40,13 @@ func run(t) -> void:
 	_test_every_part_word_reaches_its_own_walkable_position(t)
 	_test_the_escape_owes_no_return_leg(t)
 	_test_nothing_the_escape_places_stands_in_a_street_tree(t)
+	_test_finale_entities_stop_when_the_tree_pauses(t)
+	_test_the_escape_pauses_the_same_way_a_day_does(t)
+	_test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t)
+	_test_escape_section_came_from_the_file(t)
+	_test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t)
+	_test_a_handover_does_not_open_on_the_title(t)
+	_test_the_held_restart_from_the_escape_clears_the_section(t)
 
 # --------------------------------------------------------------- the chains ---
 
@@ -510,7 +519,7 @@ func _test_each_section_opens_on_its_own_brief(t) -> void:
 		var started: Array = []
 		finale.section_started.connect(func(which: int, restarted: bool) -> void:
 			started.append([which, restarted])
-			main._show_the_finale_brief(which, restarted))
+			main._show_the_finale_brief(which))
 
 		var nerves := GameState.nerves
 		finale.begin(section)
@@ -533,6 +542,12 @@ func _test_each_section_opens_on_its_own_brief(t) -> void:
 		t.check(is_equal_approx(finale.time_remaining(), FinaleController.length()),
 				"section %d: and starts a full clock" % section)
 		t.check(main._hud.visible, "section %d: with the HUD back" % section)
+		# *(2026-09-20, the player: "the escape shouldn't behave any different than the rest of the
+		# game" — read here as the hint showing every time the section's clock starts, a fast click
+		# through the brief included, not only on a first entry.)*
+		var teach: Label = main._hud.get_node("Root/Teach")
+		t.check(teach.text == MAIN_SCRIPT.finale_hint_for(section),
+				"section %d: and the section's own hint line said on the first entry" % section)
 
 		finale._clock.time_remaining -= 30.0
 		EventBus.hard_fail_triggered.emit("abduction")
@@ -547,9 +562,13 @@ func _test_each_section_opens_on_its_own_brief(t) -> void:
 		t.check(not finale.is_running(),
 				"section %d: and the retry not under way until this screen is answered" % section)
 
+		teach.text = ""
 		main._summary.continued.emit()
 		t.check(is_equal_approx(finale.time_remaining(), FinaleController.length()),
 				"section %d: which then gives the retry a full clock too" % section)
+		t.check(teach.text == MAIN_SCRIPT.finale_hint_for(section),
+				"section %d: and the hint line said again on the retry, not only the first entry"
+						% section)
 
 		main._summary.free()
 		main._hud.free()
@@ -707,3 +726,332 @@ func _test_nothing_the_escape_places_stands_in_a_street_tree(t) -> void:
 	t.check(in_a_tree * 20 < checked,
 			"and seals held against a tree by the chain stay rare (%d of %d bodies)"
 					% [in_a_tree, checked])
+
+# ---------------------------------------------------------- pause, built the same way ---
+
+func _action(name: StringName) -> InputEventAction:
+	var event := InputEventAction.new()
+	event.action = name
+	event.pressed = true
+	return event
+
+## *"Pause etc should exist the same way it does in the main game"*
+## ([PLAYTEST-114](playtests/PLAYTEST-114.md)). `FinaleController`, `InteriorScene` and the finale's
+## own `City` all get `PROCESS_MODE_PAUSABLE` from `main._pauses_with_the_game()` in
+## `_ready_escape()`, the same call every one of a day's own entities gets — so the engine itself
+## refuses their `_process()`/`_physics_process()` the instant the tree pauses, without any of them
+## having to ask. `Node.can_process()` is the exact question the engine consults before delivering
+## either callback, which is what a suite with no per-frame engine loop of its own (see the
+## **verify** skill's testing policy) can still ask synchronously, rather than simulating a frame by
+## hand and proving nothing about whether the engine would actually have skipped it.
+func _test_finale_entities_stop_when_the_tree_pauses(t) -> void:
+	var saved_paused: bool = t.get_tree().paused
+
+	var finale := FinaleController.new()
+	t.add_child(finale)
+	finale.process_mode = Node.PROCESS_MODE_PAUSABLE
+
+	var interior := InteriorScene.new()
+	t.add_child(interior)
+	interior.process_mode = Node.PROCESS_MODE_PAUSABLE
+
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEEDS[0]))
+	city.process_mode = Node.PROCESS_MODE_PAUSABLE
+
+	t.get_tree().paused = false
+	t.check(finale._clock.can_process(), "the section's clock processes while the tree is running")
+	t.check(interior.can_process(), "so does the interior scene — its doors, its fire, its pursuer")
+	t.check(city.can_process(), "and the finale city — its trucks, its roadblocks, its bursts")
+
+	t.get_tree().paused = true
+	t.check(not finale._clock.can_process(),
+			"the section's clock does not advance while the pause screen is open")
+	t.check(not interior.can_process(), "and neither does anything in the building")
+	t.check(not city.can_process(), "nor anything in the finale city")
+
+	t.get_tree().paused = saved_paused
+	finale.free()
+	interior.free()
+	city.free()
+
+## `Esc`, the pause button's own action and a window losing focus all reach the pause screen during
+## a section exactly as they do during a day: the same continue, the same held restart, the same
+## quit, and the same stashed heading through `TouchControls`. Driven through `main.notification()`
+## and `main._unhandled_input()`'s own guards, against a `FinaleController` with no world built
+## behind it, the same split `_test_each_section_opens_on_its_own_brief` already makes for the half
+## this is not about.
+##
+## **Esc's own successful open is proven through focus loss, not through `_unhandled_input()`
+## itself.** Both reach `_pause.open()` behind the same two guards (`_pause`/`_title` not already
+## open, and — the escape's own addition — `_summary` not showing a brief or the epilogue); past
+## those, `_unhandled_input()` also calls `get_viewport().set_input_as_handled()`, which is null for
+## every `main` in this suite (see this file's own class doc on why `main` is never added to the
+## tree) and would crash rather than prove anything `_toggle_debug_layer()`'s own tests do not
+## already establish the pattern for: call the guarded action directly, not the input handler that
+## wraps it. So this exercises `_unhandled_input()` for its two *refusals* (guard coverage no
+## different from `_pause_on_focus_lost()`'s own), and `notification()` for the one open it can
+## prove end to end.
+func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
+	var saved_paused: bool = t.get_tree().paused
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._summary = SUMMARY_SCENE.instantiate()
+	t.add_child(main._summary)
+	main._hud = HUD_SCENE.instantiate()
+	t.add_child(main._hud)
+	main._title = TITLE_SCREEN_SCENE.instantiate()
+	t.add_child(main._title)
+	main._pause = PAUSE_SCREEN_SCENE.instantiate()
+	t.add_child(main._pause)
+	main._add_touch_controls()
+	# The two calls `_ready_escape()` itself makes, in the same order.
+	main._pause.set_touch_controls(main._touch_controls)
+	main._connect_pause_signals()
+	main._no_focus_pause = false
+
+	var finale := FinaleController.new()
+	t.add_child(finale)
+	main._finale = finale
+	main._summary.continued.connect(main._on_finale_summary_continued)
+	finale.section_started.connect(func(which: int, _restarted: bool) -> void:
+		main._show_the_finale_brief(which))
+
+	finale.begin(FinaleController.Section.BUILDING)
+	main._summary.continued.emit()
+	t.check(finale.is_running(), "the section's clock is running")
+	t.check(not main._pause.is_open(), "and nothing is paused yet")
+
+	t.check(main._pause.quit_requested.is_connected(main._quit),
+			"quit reaches the same main._quit() a day's pause reaches")
+	t.check(main._pause.restart_requested.is_connected(main._restart_run),
+			"and the held restart reaches the same main._restart_run()")
+	t.check(main._pause._touch_controls == main._touch_controls,
+			"the pause screen can stash and restore her heading through the same touch controls")
+
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(main._pause.is_open(), "losing the window's focus opens the same pause a day's does")
+	t.check(t.get_tree().paused, "and pauses the tree behind it")
+	# `Esc` never opens a second time over the screen focus loss just opened — the same refusal
+	# `_pause_on_focus_lost()` makes for itself, now asked of `_unhandled_input()`.
+	main._unhandled_input(_action("pause"))
+	t.check(main._pause.is_open(), "Esc does not need to do anything — it is already open")
+	main._pause.close()
+	t.get_tree().paused = false
+
+	main._no_focus_pause = true
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(not main._pause.is_open(), "--no-focus-pause suppresses that during the escape too")
+
+	main._summary.free()
+	main._hud.free()
+	main._title.free()
+	main._pause.free()
+	finale.free()
+	main.free()
+	t.get_tree().paused = saved_paused
+
+## Both of the escape's own screens — a section's brief and the epilogue — are the one exception to
+## an ordinary day's own "Esc opens over the summary too": neither stands between her and a day
+## already decided, so a second screen stacked over either would answer a question nobody asked, the
+## same reason focus loss never opens over any `_summary` at all. Both entry points are checked
+## against both screens.
+func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
+	var saved_paused: bool = t.get_tree().paused
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._summary = SUMMARY_SCENE.instantiate()
+	t.add_child(main._summary)
+	main._pause = PAUSE_SCREEN_SCENE.instantiate()
+	t.add_child(main._pause)
+	main._title = TITLE_SCREEN_SCENE.instantiate()
+	t.add_child(main._title)
+	var finale := FinaleController.new()
+	t.add_child(finale)
+	main._finale = finale
+	main._no_focus_pause = false
+
+	main._summary.show_finale_brief("Escape the building", GameState.nerves)
+	t.check(main._summary.is_showing(), "the section's brief is up")
+	main._unhandled_input(_action("pause"))
+	t.check(not main._pause.is_open(), "Esc does not open the pause over a section's brief")
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(not main._pause.is_open(), "and neither does losing focus")
+
+	main._summary.show_finale(CityEdge.Kind.TUNNEL, 42.0)
+	t.check(main._summary.is_showing(), "the epilogue is up")
+	main._unhandled_input(_action("pause"))
+	t.check(not main._pause.is_open(), "Esc does not open the pause over the epilogue either")
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(not main._pause.is_open(), "and neither does losing focus")
+
+	main._summary.free()
+	main._pause.free()
+	main._title.free()
+	finale.free()
+	main.free()
+	t.get_tree().paused = saved_paused
+
+# ------------------------------------------------------ a resumed escape, and a handover ---
+
+## `_escape_section_came_from_the_file()` is the boot policy with the two live
+## `GameState.escape_section` reads taken out of it, the same split `main._graph_starts_on()` makes
+## for its own two flags.
+func _test_escape_section_came_from_the_file(t) -> void:
+	var none := FinaleController.Section.NONE
+	var building := FinaleController.Section.BUILDING
+	t.check(MAIN_SCRIPT._escape_section_came_from_the_file(none, building),
+			"NONE before try_resume() ran and something after — a save on disk is where it came from")
+	t.check(not MAIN_SCRIPT._escape_section_came_from_the_file(building, building),
+			"already set before try_resume() ran — a handover reload carrying it on the autoload")
+	t.check(not MAIN_SCRIPT._escape_section_came_from_the_file(none, none),
+			"NONE both times — an ordinary run, nothing to do with the escape at all")
+
+## *(2026-09-20, the player, on a save closed inside a section: "if I load into the game and I'm at
+## escape I see the title screen, then the brief".)* Driven through `_on_finale_section_started()`
+## and `_on_escape_title_start()` the way the real boot reaches them, with
+## `_escape_resumed_from_disk` set the way `main._ready()` sets it for a save read off disk —
+## without paying for the whole async `_ready_escape()`, which nothing in this suite drives (see
+## `tests/test_main.gd`'s own class doc for why `main` is never added to the tree here).
+func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._summary = SUMMARY_SCENE.instantiate()
+	t.add_child(main._summary)
+	main._hud = HUD_SCENE.instantiate()
+	t.add_child(main._hud)
+	main._title = TITLE_SCREEN_SCENE.instantiate()
+	t.add_child(main._title)
+	main._add_touch_controls()
+	main._title.start_requested.connect(main._on_escape_title_start)
+
+	var interior := InteriorScene.new()
+	t.add_child(interior)
+	interior.build()
+	main._interior = interior
+
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	var stroller := Stroller.new()
+	stroller.add_child(camera)
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+	var baby := Baby.new()
+	baby.name = "Baby"
+	stroller.add_child(baby)
+	baby.set_physics_process(false)
+	main._player = stroller
+	main._baby = baby
+
+	var finale := FinaleController.new()
+	t.add_child(finale)
+	main._finale = finale
+	finale.section_started.connect(main._on_finale_section_started)
+
+	main._escape_resumed_from_disk = true
+	finale.begin(FinaleController.Section.BUILDING)
+
+	t.check(not main._summary.is_showing(), "the section's brief does not show yet")
+	t.check(main._title.is_open(), "a genuinely resumed escape opens on the title first")
+	t.check(not main._escape_resumed_from_disk, "consumed the instant it is read")
+	t.check(not finale.is_running(), "with nothing counting down behind either screen")
+
+	main._title.start_requested.emit(ControlsMode.Mode.TAP)
+	t.check(not main._title.is_open(), "pressing start closes the title")
+	t.check(main._summary.is_showing(), "and raises the section's own brief")
+	var title_label: Label = main._summary.get_node("Root/Center/Lines/Title")
+	t.check(title_label.text == MAIN_SCRIPT.finale_hint_for(FinaleController.Section.BUILDING),
+			"titled with the section's own name")
+	t.check(not finale.is_running(), "the clock still not running until that brief is answered")
+
+	main._summary.free()
+	main._hud.free()
+	main._title.free()
+	interior.free()
+	stroller.free()
+	finale.free()
+	main.free()
+	t.get_tree().paused = false
+
+## The handover reload from a won day 14 reaches `_on_finale_section_started()` with
+## `_escape_resumed_from_disk` still `false` — set only when `GameState.escape_section` was `NONE`
+## before `try_resume()` ran, which a handover's own value already isn't, since it was written to
+## the autoload before the reload — so it falls straight through to the section's own brief exactly
+## as it always has, with no title in front of it.
+func _test_a_handover_does_not_open_on_the_title(t) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._summary = SUMMARY_SCENE.instantiate()
+	t.add_child(main._summary)
+	main._hud = HUD_SCENE.instantiate()
+	t.add_child(main._hud)
+	main._title = TITLE_SCREEN_SCENE.instantiate()
+	t.add_child(main._title)
+
+	var interior := InteriorScene.new()
+	t.add_child(interior)
+	interior.build()
+	main._interior = interior
+
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	var stroller := Stroller.new()
+	stroller.add_child(camera)
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+	var baby := Baby.new()
+	baby.name = "Baby"
+	stroller.add_child(baby)
+	baby.set_physics_process(false)
+	main._player = stroller
+	main._baby = baby
+
+	var finale := FinaleController.new()
+	t.add_child(finale)
+	main._finale = finale
+	finale.section_started.connect(main._on_finale_section_started)
+
+	# `_escape_resumed_from_disk` left at its default `false` — the handover's own shape.
+	finale.begin(FinaleController.Section.BUILDING)
+
+	t.check(not main._title.is_open(), "a handover does not raise the title")
+	t.check(main._summary.is_showing(), "it opens straight on the section's own brief")
+
+	main._summary.free()
+	main._hud.free()
+	main._title.free()
+	interior.free()
+	stroller.free()
+	finale.free()
+	main.free()
+	t.get_tree().paused = false
+
+## *"the held restart from the escape ends in a fresh run with escape_section cleared"* —
+## `main._restart_run()` cannot safely run inside this suite: it defers a real
+## `reload_current_scene()` against the test runner's own tree, the same reason
+## `tests/test_pause.gd`'s own note gives for never calling it directly. What is checked instead is
+## the wiring that reaches it (both of the escape's own screens, the same as a day's two) and the one
+## fact of its own body that answers "a fresh run" for the escape specifically —
+## `GameState.escape_section = FinaleController.Section.NONE`; its `GameSave.clear()` is exercised
+## safely, behind a path override, by `tests/test_save.gd` and is not repeated here.
+func _test_the_held_restart_from_the_escape_clears_the_section(t) -> void:
+	var saved_section := GameState.escape_section
+	GameState.escape_section = FinaleController.Section.CITY
+
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._pause = PAUSE_SCREEN_SCENE.instantiate()
+	main._summary = SUMMARY_SCENE.instantiate()
+	main._connect_pause_signals()
+	t.check(main._pause.restart_requested.is_connected(main._restart_run),
+			"the escape's own pause screen reaches main._restart_run(), same as a day's")
+	main._summary.restart_requested.connect(main._restart_run)
+	t.check(main._summary.restart_requested.is_connected(main._restart_run),
+			"and so does the section brief's own restart button — the same DaySummary a day uses")
+
+	GameState.escape_section = FinaleController.Section.NONE
+	t.check(GameState.escape_section == FinaleController.Section.NONE,
+			"a fresh run has no escape section — the run `_restart_run()` reloads into is a fresh one")
+
+	main._pause.queue_free()
+	main._summary.queue_free()
+	main.free()
+	GameState.escape_section = saved_section
