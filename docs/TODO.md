@@ -915,14 +915,13 @@ re-pitched:
 
 ## M102 — The finale: out of the apartment, out of the city · asked for 2026-09-09
 
-**The sequence exists and is reached only through `--start-escape`** *(2026-09-12: "also build the
-entire escape sequence to the end but make it playable only via flag today (what is now the
-apartment escape should continue)")*: the building with its events, the service exit onto the city,
+**The sequence is the run's ending**: a won day 14 with every task complete goes on to it, and
+`--start-escape` reaches it directly. It is the building with its events, the service exit onto the city,
 the two chains through three calm areas each to the tunnel and the bridge, the explosions and their
 craters, the two hint lines, the millisecond clock, the section restart and the epilogue. What it
 does, what was measured and what was chosen where the design was silent is in `DECISIONS.md` under
-M102, the finale built behind the flag; what only a play can settle is in `REVIEW.md`. **One item
-is open**, and it is the switch that makes the sequence a run's ending rather than a flag's.
+M102, the finale built behind the flag, and M102, the finale is the run's ending; what only a
+play can settle is in `REVIEW.md`. **One item is open**, found while the ending was wired up.
 
 **The brief, in the player's words:**
 
@@ -949,19 +948,12 @@ is open**, and it is the switch that makes the sequence a run's ending rather th
 
 **What is still open:**
 
-- [ ] **The finale is the run's ending, and its two sections are days**
-      ([PLAYTEST-113](playtests/PLAYTEST-113.md)): *"the escape the building starts when the
-      player has completed all tasks by the end of day 14"*; *"each the apartment and escape
-      city are treated as their own \"days\" with brief and restart checkpoint. we keep the no
-      nerve costs for now."* A won day 14 with every task complete hands over to the building
-      instead of the ending screen; `--start-escape` stays as the way to reach it directly. The
-      building opens on a day brief titled "Escape the building" and the city on one titled
-      "Escape the city", in the day brief's own form. Each brief is a checkpoint: a loss in a
-      section returns to that section's brief at no nerve, and closing the game in a section
-      comes back to its brief, as closing mid-day does for a day. **Each section has its own
-      clock**: a brief starts a full `DAY_LENGTH_SECONDS` (180s) with milliseconds on it, and a
-      loss or a reopened game returns to that brief with a fresh one — the player's "180s per
-      section", which overturns answer 3 below on that one point.
+- [ ] **The escape can be paused.** The escape's own boot builds no pause screen, so `Esc`,
+      the pause button and a window losing focus do nothing from the first brief to the
+      epilogue — several minutes that are now the last of every winning run. It gets the pause
+      screen a day has, with its continue button; its held restart returns to the section's
+      brief at no nerve, which is what a loss does. That reading of the restart is the
+      orchestrator's and open to overturn.
 
 **Four things the brief collided with in the finale as `docs/NARRATIVE.md` writes it today, each
 asked and each answered by the player on 2026-09-09:**

@@ -8,11 +8,17 @@ extends RefCounted
 ## symbol is presentation, and the two only meet through `main._save_now()`.
 ##
 ## **The save is the run, never the moment inside a day.** `GameState.save_snapshot()` says what a
-## run holds; this file only adds the two facts a run does not know about itself — whether a day
-## was under way when the file was written, and which build wrote it — and turns the result into
-## JSON. *Asked for "that exact state", the crowd included, and overturned by the player to a
+## run holds; this file only adds the facts a run does not know about itself — whether a day was
+## under way when the file was written, which section of the escape it is in, and which build
+## wrote it — and turns the result into JSON. *Asked for "that exact state", the crowd included, and overturned by the player to a
 ## restart at dawn that costs a nerve* — see docs/MECHANICS.md, "Saving and resuming", for what
 ## that costs and why.
+##
+## **The escape's section rides beside those, not inside the snapshot.** `"escape_section"` is a
+## top-level key like `"day_under_way"`, so a file written before the escape was a run's ending is
+## still a complete snapshot (`GameState.snapshot_is_complete()` asks only about `"state"`) and
+## still resumes, reading as `FinaleController.Section.NONE` by absence. Putting it in
+## `_SAVE_FIELDS` instead would have made every save on disk unreadable for the sake of one int.
 ##
 ## **One save, no slots.** `_DEFAULT_PATH` is the only file this ever reads or writes on a real
 ## run; `set_path_override()` is the one seam a test uses to point at a scratch file instead, and
@@ -123,6 +129,7 @@ static func _write_now(day_under_way: bool) -> bool:
 		"format_version": FORMAT_VERSION,
 		"build": TitleScreen.build_text(),
 		"day_under_way": day_under_way,
+		"escape_section": GameState.escape_section,
 		"state": GameState.save_snapshot(),
 	}))
 	file.close()
@@ -197,4 +204,8 @@ static func _read_now() -> Dictionary:
 	if not GameState.snapshot_is_complete(state):
 		return {}
 	GameState.restore_snapshot(state)
+	# After the snapshot, never before: `restore_snapshot()` writes every field a run holds and
+	# this one is not among them, so a save from a build that never wrote the key leaves the run in
+	# the ordinary fourteen days rather than half-way into an escape it never reached.
+	GameState.escape_section = int(data.get("escape_section", 0))
 	return {"day_under_way": bool(data.get("day_under_way", false))}

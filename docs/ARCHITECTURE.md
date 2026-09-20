@@ -102,9 +102,11 @@ src/
 	interior_scene.gd     the WorldContext node: paints the building once, every door's
 	                      fade-teleport-fade transition, the service exit, and the hallway
 	                      windows that flash for a bang outside and for the far ones between them
-  finale/                 the escape sequence itself, behind --start-escape
-	finale_controller.gd  the two sections and the one clock they share; a lost section comes up
-	                      on the brief screen and starts again where it began, at no Nerve cost
+  finale/                 the escape: a won day 14 with every task complete goes here, and
+	                      --start-escape reaches the same sequence directly
+	finale_controller.gd  the two sections, each of them a day with its own full clock; every
+	                      section opens on its own brief, and a lost one comes back to that brief
+	                      and starts again where it began, at no Nerve cost
 	finale_planner.gd     the two chains — service exit, three calm areas, tunnel or bridge —
 	                      and the whole plan built off them
 	interior_events.gd    section one's events: the mouse, the masked man who keeps coming back,

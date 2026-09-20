@@ -31,7 +31,9 @@ func run(t) -> void:
 	_test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t)
 	_test_the_clock_reads_milliseconds_only_in_the_finale(t)
 	_test_a_lost_section_starts_again_and_costs_no_nerve(t)
-	_test_a_lost_section_comes_up_on_the_brief_before_it_starts_again(t)
+	_test_each_section_opens_on_its_own_brief(t)
+	_test_the_two_sections_are_named_for_the_player(t)
+	_test_only_a_won_last_day_with_every_task_done_hands_over(t)
 	_test_the_city_word_boots_the_second_section(t)
 	_test_every_part_word_reaches_its_own_walkable_position(t)
 	_test_the_escape_owes_no_return_leg(t)
@@ -412,8 +414,11 @@ func _test_the_clock_reads_milliseconds_only_in_the_finale(t) -> void:
 # ------------------------------------------------------------- the sections ---
 
 ## *"Losing the finale restarts the section, at no Nerve cost"* — *"sounds good at that point you
-## earned it."* Driven through the signal a real capture fires, so what is checked is the path the
-## game takes rather than a call this test invented.
+## earned it."* — and *"180s per section"*, which is the other half of the same walk through the
+## controller: nothing runs until a section's brief has been dismissed, and what it then starts is
+## a whole clock every time, whichever section it is and whatever the last one spent. Driven
+## through the signal a real capture fires, so what is checked is the path the game takes rather
+## than a call this test invented.
 func _test_a_lost_section_starts_again_and_costs_no_nerve(t) -> void:
 	DevFlags._invincible_override = false
 	var finale := FinaleController.new()
@@ -426,7 +431,12 @@ func _test_a_lost_section_starts_again_and_costs_no_nerve(t) -> void:
 
 	finale.begin(FinaleController.Section.BUILDING)
 	t.check(started.size() == 1 and not started[0][1], "the first section starts fresh")
+	t.check(not finale.is_running(),
+			"and nothing is counting down behind the brief it opens on")
 	var nerves := GameState.nerves
+	finale.start_section()
+	t.check(is_equal_approx(finale.time_remaining(), FinaleController.length()),
+			"the brief's own continue is what starts the clock, at full length")
 	# Half a minute off the clock, so a restart putting it back is visible.
 	finale._clock.time_remaining -= 30.0
 	var spent := finale.time_remaining()
@@ -438,43 +448,53 @@ func _test_a_lost_section_starts_again_and_costs_no_nerve(t) -> void:
 	# anything.
 	t.check(lost.size() == 1 and lost[0] == FinaleController.Section.BUILDING,
 			"being taken loses the section she was in")
-	t.check(started.size() == 1, "and nothing has started again yet")
+	t.check(started.size() == 1, "and nothing has started again by itself")
 	t.check(is_equal_approx(finale.time_remaining(), spent),
 			"with the clock still where the loss left it")
 
 	finale.restart_section()
-	t.check(started.size() == 2, "the brief's own continue starts the section again")
+	t.check(started.size() == 2, "the loss leads to the same section again")
 	t.check(started[1][0] == FinaleController.Section.BUILDING and started[1][1],
 			"and it is the same section, marked as a retry")
+	t.check(is_equal_approx(finale.time_remaining(), spent),
+			"still stopped, since a retry begins on its own brief like anything else")
+	finale.start_section()
 	t.check(is_equal_approx(finale.time_remaining(), FinaleController.length()),
-			"with the clock back at full length")
+			"and that brief's continue puts the clock back to full")
 	t.check(GameState.nerves == nerves, "and no Nerve spent")
 
-	# Crossing into the city keeps the clock the first section was spending: one clock, both halves.
+	# **Each section is a day, so each gets a day's clock** — what the building spent is not the
+	# city's to make up. Twenty seconds are taken off the building's clock first, so a city that
+	# carried it across would be visibly short here.
 	finale._clock.time_remaining -= 20.0
-	var carried := finale.time_remaining()
 	finale.enter_city()
 	t.check(started.size() == 3 and started[2][0] == FinaleController.Section.CITY,
 			"the service exit begins the second section")
-	t.check(is_equal_approx(finale.time_remaining(), carried),
-			"on the same clock, not a fresh one")
+	finale.start_section()
+	t.check(is_equal_approx(finale.time_remaining(), FinaleController.length()),
+			"on a full clock of its own, whatever the walk down the stairs cost")
 	# And the controller, whose `DayController` child listens on `EventBus` for the hard fail this
 	# test emits: one left in the tree restarts a section on the next suite's fail as well.
 	finale.free()
 	DevFlags._invincible_override = null
 
-## *"Restarting should still have the day brief for both the apartment escape and the city escape
-## even if the nerves don't go down."*
+## *"Each the apartment and escape city are treated as their own 'days' with brief and restart
+## checkpoint. We keep the no nerve costs for now."* — so a section opens on its brief the first
+## time it is walked as much as after a loss, and the brief is what starts it.
 ##
 ## Driven through `main`'s own handlers against a real `DaySummary` and a real `FinaleController`,
 ## so what is checked is the wiring a capture would go through rather than a call this test
-## invented: the loss raises the screen, the screen names the section she is about to walk again,
-## the Nerve count on it is the one she still has, and **continuing from it is what starts the
-## section** — not the loss.
+## invented: entering the section raises the screen, the screen is titled with the section's own
+## name, the Nerve count on it is the one she still has, **continuing from it is what starts the
+## clock**, and a loss brings the same screen back with the Nerves untouched.
 ##
-## Both sections, because the player asked for both by name and the building and the city reach
-## this through different branches of `_on_finale_section_started()`.
-func _test_a_lost_section_comes_up_on_the_brief_before_it_starts_again(t) -> void:
+## `section_started` is wired to `_show_the_finale_brief()` rather than to
+## `_on_finale_section_started()` whole, because the half this test is not about — putting her down
+## at the hallway door or the service exit — needs a built building and a built city, which is what
+## a headless `--start-escape` boot exercises instead.
+##
+## Both sections, because the player asked for both by name.
+func _test_each_section_opens_on_its_own_brief(t) -> void:
 	DevFlags._invincible_override = false
 	for section: int in [FinaleController.Section.BUILDING, FinaleController.Section.CITY]:
 		var main: Node2D = MAIN_SCRIPT.new()
@@ -489,34 +509,47 @@ func _test_a_lost_section_comes_up_on_the_brief_before_it_starts_again(t) -> voi
 		main._summary.continued.connect(main._on_finale_summary_continued)
 		var started: Array = []
 		finale.section_started.connect(func(which: int, restarted: bool) -> void:
-			started.append([which, restarted]))
-		finale.begin(section)
-		started.clear()
-		finale._clock.time_remaining -= 30.0
+			started.append([which, restarted])
+			main._show_the_finale_brief(which, restarted))
 
 		var nerves := GameState.nerves
-		EventBus.hard_fail_triggered.emit("abduction")
+		finale.begin(section)
+		t.check(started.size() == 1 and not started[0][1],
+				"section %d: it is entered fresh" % section)
 		t.check(main._summary.is_showing(),
-				"section %d: a loss comes up on the brief screen" % section)
-		t.check(started.is_empty(),
-				"section %d: and the section has not started again behind it" % section)
+				"section %d: and opens on the brief screen" % section)
 		var title: Label = main._summary.get_node("Root/Center/Lines/Title")
 		var body: Label = main._summary.get_node("Root/Center/Lines/Body")
 		t.check(title.text == MAIN_SCRIPT.finale_hint_for(section),
-				"section %d: the screen is titled with the section's own hint line ('%s')"
-				% [section, title.text])
+				"section %d: titled with the section's own name ('%s')" % [section, title.text])
 		t.check(body.text.contains("nerve"),
-				"section %d: and carries the nerve line ('%s')" % [section, body.text])
-		t.check(GameState.nerves == nerves,
-				"section %d: with the nerves unchanged, since a lost section spends none" % section)
+				"section %d: and carrying the nerve line ('%s')" % [section, body.text])
+		t.check(not finale.is_running(),
+				"section %d: with nothing counting down behind it" % section)
 
 		main._summary.continued.emit()
-		t.check(started.size() == 1 and started[0][0] == section and started[0][1],
-				"section %d: continuing from it starts the same section again" % section)
-		t.check(is_equal_approx(finale.time_remaining(), FinaleController.length()),
-				"section %d: with the clock back at full length" % section)
 		t.check(not main._summary.is_showing(),
-				"section %d: and the screen gone" % section)
+				"section %d: continuing takes the screen away" % section)
+		t.check(is_equal_approx(finale.time_remaining(), FinaleController.length()),
+				"section %d: and starts a full clock" % section)
+		t.check(main._hud.visible, "section %d: with the HUD back" % section)
+
+		finale._clock.time_remaining -= 30.0
+		EventBus.hard_fail_triggered.emit("abduction")
+		t.check(started.size() == 2 and started[1][0] == section and started[1][1],
+				"section %d: a loss leads to the same section again, as a retry" % section)
+		t.check(main._summary.is_showing(),
+				"section %d: on that section's own brief" % section)
+		t.check(title.text == MAIN_SCRIPT.finale_hint_for(section),
+				"section %d: titled the same as the first time" % section)
+		t.check(GameState.nerves == nerves,
+				"section %d: with the nerves unchanged, since a lost section spends none" % section)
+		t.check(not finale.is_running(),
+				"section %d: and the retry not under way until this screen is answered" % section)
+
+		main._summary.continued.emit()
+		t.check(is_equal_approx(finale.time_remaining(), FinaleController.length()),
+				"section %d: which then gives the retry a full clock too" % section)
 
 		main._summary.free()
 		main._hud.free()
@@ -524,6 +557,49 @@ func _test_a_lost_section_comes_up_on_the_brief_before_it_starts_again(t) -> voi
 		main.free()
 	t.get_tree().paused = false
 	DevFlags._invincible_override = null
+
+## The two names the briefs carry — *"something along 'Escape the building' and ... 'Escape the
+## city'"*. Pinned as literals because they are the player's own words for the two screens, and a
+## screen that renamed itself would be the one thing nothing else in this suite could see.
+func _test_the_two_sections_are_named_for_the_player(t) -> void:
+	t.check(MAIN_SCRIPT.finale_hint_for(FinaleController.Section.BUILDING)
+			== "Escape the building", "the building's brief is titled 'Escape the building'")
+	t.check(MAIN_SCRIPT.finale_hint_for(FinaleController.Section.CITY)
+			== "Escape the city", "the city's brief is titled 'Escape the city'")
+
+## *"The escape the building starts when the player has completed all tasks by the end of day
+## 14."* Every other way day 14 can end keeps the ending it already had, which is what the three
+## negative rows are for: a won last day with the legwork but not the sabotage is the neutral
+## ending and must not reach the escape, and neither must a won earlier day that happens to have
+## finished every task early.
+func _test_only_a_won_last_day_with_every_task_done_hands_over(t) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
+	var baseline := GameState.save_snapshot()
+	GameState.start_run(9182)
+
+	GameState.day = Tuning.RUN_LENGTH_DAYS
+	GameState.resistance_progress = Tuning.RESISTANCE_GOAL
+	GameState.sabotage_done = true
+	t.check(main._hands_over_to_the_escape(GameEnums.DayResult.WON),
+			"a won day 14 with every task complete hands over to the escape")
+	t.check(not main._hands_over_to_the_escape(GameEnums.DayResult.LOST_CRYING),
+			"a lost day 14 does not, however much was done")
+
+	GameState.sabotage_done = false
+	t.check(not main._hands_over_to_the_escape(GameEnums.DayResult.WON),
+			"nor a won day 14 with the errands run and the last night skipped")
+	GameState.sabotage_done = true
+	GameState.resistance_progress = Tuning.RESISTANCE_GOAL - 1
+	t.check(not main._hands_over_to_the_escape(GameEnums.DayResult.WON),
+			"nor one short of the goal")
+
+	GameState.resistance_progress = Tuning.RESISTANCE_GOAL
+	GameState.day = Tuning.RUN_LENGTH_DAYS - 1
+	t.check(not main._hands_over_to_the_escape(GameEnums.DayResult.WON),
+			"and nor does a won day before the last one")
+
+	GameState.restore_snapshot(baseline)
+	main.free()
 
 ## `--start-escape city` is the one word that is not a part of the building: it boots the second
 ## section on its own. The mapping is what a test can reach — nothing in the suite can put a word

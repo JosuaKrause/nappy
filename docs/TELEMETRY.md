@@ -157,17 +157,22 @@ run seed alone does **not** reproduce a city and both have to be written down.
 
 ### The escape's header
 
-The escape (`--start-escape`) is not a day and has no day number, act or city seed to head a
-section with, so `Telemetry.begin_finale()` writes `escape  run seed N  length Ns` instead —
-appending `invincible` on the same terms the day header does. **It has to open a section like a
-day does or the log cannot say when anything happened**: the timestamp column only moves while one
-is open, and a day is the only other thing that opens one.
+The escape — the run's own ending, and `--start-escape` — has no day number, act or city seed to
+head a section with, so `Telemetry.begin_finale()` writes `escape  run seed N  length Ns` instead,
+where the length is one section's, appending `invincible` on the same terms the day header does.
+**It has to open a section like a day does or the log cannot say when anything happened**: the
+timestamp column only moves while one is open, and a day is the only other thing that opens one.
+
+A run that reaches the escape from its own day 14 keeps writing the log it already has, rather
+than opening a second directory for one run: the handover passes through a scene reload and
+`Telemetry` is an autoload, so the log outlives it. A cold launch straight into a section — the
+flag, or a game closed in one and opened again — has no log yet and opens one.
 
 The clock itself is pushed by `main._process_the_finale()`, not by `TelemetryObserver` — the
 observer is built around a `City`, a `RouteTree` and a day's corridor, none of which the escape's
 first section has at all — and it is the same clock the HUD draws, so a log entry and the screen
-never disagree. A lost section writes a `lost` line before its clock goes back to full, so the
-timestamps starting again have a reason above them.
+never disagree. A lost section writes a `lost` line before the section starts again, so the
+timestamps starting from a fresh clock have a reason above them.
 
 ### `--invincible`
 
@@ -283,7 +288,7 @@ name the question it answers, or it is a metric and does not belong.
 | `freeze` / `thaw` | observer | Was the day lost to noise or to the clock? Freezing is the invisible failure |
 | `asleep` / `woke` | observer | How long the walk actually took, and what woke her |
 | `quiet` | observer | The sabotage landed and the masts went off |
-| `home` / `lost` | observer, `main.gd` | The outcome, the margin, and what was around when it happened. `main.gd` writes the escape's own `lost` line — which section went, and how far into the sequence — since a lost section restarts the clock and the timestamps would otherwise start again with nothing to say why |
+| `home` / `lost` | observer, `main.gd` | The outcome, the margin, and what was around when it happened. `main.gd` writes the escape's own `lost` line — which section went, and how far into the sequence — since a lost section comes back with a fresh clock and the timestamps would otherwise start again with nothing to say why |
 | `nerve` | `GameState` | Where the nerves went — which day, which act |
 | `ending` | `GameState` | How the run finished, and how long the world was actually moving to get there — `GameState.play_seconds`, formatted `%d:%02d.%03d` |
 | `save` | `GameSave` | When the run was written to disk, and whether a day was under way at the time — the only record of the one thing a trace cannot otherwise see, since a closed window and a reopened one are two different runs of the game and not two lines in the same log |
@@ -394,8 +399,8 @@ and raises an engine error.
 ## Raw frame traces
 
 `--frame-trace` adds an independent debug observer, including under `--no-telemetry`. It observes
-the ordinary city day and nothing else — an escape run (`--start-escape`) attaches no recorder and
-writes no trace — after five seconds of initial active-play wall-clock warmup, with no RNG,
+the ordinary city day and nothing else — the escape attaches no recorder and writes no trace —
+after five seconds of initial active-play wall-clock warmup, with no RNG,
 gameplay changes, per-frame printing or file writes. On scene exit (quit or restart), it exports
 one JSON file under `user://frame-traces/` and prints its absolute path. A forced kill or crash
 loses the in-memory capture. The ordered log's flush-on-entry policy does not apply to this
