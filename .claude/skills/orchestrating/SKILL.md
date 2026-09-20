@@ -200,6 +200,13 @@ merging is what collides — so parallelism is planned at the file level, before
   branch pointing at the worktree's base; after the feature branches are merged, `git worktree
   prune` and delete them with `git branch -d`, which still answers for a branch that has no
   pull request; a feature branch goes by the **committing** skill's PR-state check.
+- **Spawn from the main checkout, never from a worktree that has just been removed.** The
+  harness resolves `HEAD` in the shell's current directory before it creates an agent's
+  worktree, so a shell still standing in a deleted worktree fails every spawn; `cd` back to
+  the repository's own folder after removing one.
+- **A push that starts no CI run is re-triggered, not waited on.** `gh pr checks` answering
+  "no checks reported" minutes after a push means no run exists, and auto-merge then waits
+  forever on a check nobody is running; an empty commit on the branch starts one.
 - **Tell each agent who else is alive** and which files those agents own, so a scope fence is a
   sentence in the prompt rather than a discovery in the diff.
 
